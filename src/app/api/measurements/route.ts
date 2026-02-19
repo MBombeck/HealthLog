@@ -4,6 +4,7 @@ import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import {
   createMeasurementSchema,
+  createBatchMeasurementSchema,
   listMeasurementsSchema,
   getUnitForType,
 } from "@/lib/validations/measurement";
@@ -60,6 +61,45 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
+
+    // Batch mode (array of measurements, e.g. combined BP + Pulse)
+    if (Array.isArray(body)) {
+      const parsed = createBatchMeasurementSchema.safeParse({
+        measurements: body,
+      });
+      if (!parsed.success) {
+        return apiError(parsed.error.issues[0].message, 422);
+      }
+
+      const results = await prisma.$transaction(
+        parsed.data.measurements.map((m) =>
+          prisma.measurement.create({
+            data: {
+              userId: sessionData.user.id,
+              type: m.type as MeasurementType,
+              value: m.value,
+              unit: getUnitForType(m.type),
+              source: (m.source ?? "MANUAL") as MeasurementSource,
+              measuredAt: m.measuredAt,
+              notes: m.notes ?? null,
+            },
+          }),
+        ),
+      );
+
+      await auditLog("measurement.create.batch", {
+        userId: sessionData.user.id,
+        ipAddress: getClientIp(request),
+        details: {
+          count: results.length,
+          types: parsed.data.measurements.map((m) => m.type),
+        },
+      });
+
+      return apiSuccess(results, 201);
+    }
+
+    // Single mode (existing behavior)
     const parsed = createMeasurementSchema.safeParse(body);
     if (!parsed.success) {
       return apiError(parsed.error.issues[0].message, 422);

@@ -67,6 +67,7 @@ export function formatMedicationsForExport(
       windowStart: string;
       windowEnd: string;
       label: string | null;
+      dose: string | null;
     }>;
   }>,
 ): ExportableRecord[] {
@@ -77,7 +78,7 @@ export function formatMedicationsForExport(
     schedules: m.schedules
       .map(
         (s) =>
-          `${s.label ? s.label + ": " : ""}${s.windowStart}-${s.windowEnd}`,
+          `${s.label ? s.label + ": " : ""}${s.windowStart}-${s.windowEnd}${s.dose ? " (" + s.dose + ")" : ""}`,
       )
       .join("; "),
   }));

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { startAuthentication } from "@simplewebauthn/browser";
-import { Heart, KeyRound, Lock, Loader2 } from "lucide-react";
+import { KeyRound, Lock, Loader2 } from "lucide-react";
+import { Logo } from "@/components/ui/logo";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,19 +14,41 @@ import { Separator } from "@/components/ui/separator";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<"passkey" | "password">("passkey");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { data: registrationEnabled } = useQuery({
+    queryKey: ["auth", "registration-status"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/registration-status", {
+        cache: "no-store",
+      });
+      if (!res.ok) return true;
+      const json = await res.json();
+      return Boolean(json.data?.registrationEnabled ?? true);
+    },
+    staleTime: 60 * 1000,
+  });
+
+  function getRedirectTarget(): string {
+    const next = searchParams.get("next");
+    if (!next) return "/";
+    // Prevent open redirects: only allow local absolute paths.
+    if (next.startsWith("/") && !next.startsWith("//")) {
+      return next;
+    }
+    return "/";
+  }
 
   async function handlePasskeyLogin() {
     setError(null);
     setLoading(true);
 
     try {
-      // Get authentication options
       const optRes = await fetch("/api/auth/passkey/login-options", {
         method: "POST",
       });
@@ -37,11 +60,8 @@ export default function LoginPage() {
       }
 
       const { options, challengeId } = optJson.data;
-
-      // Start browser passkey flow
       const credential = await startAuthentication({ optionsJSON: options });
 
-      // Verify
       const verifyRes = await fetch("/api/auth/passkey/login-verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -56,7 +76,7 @@ export default function LoginPage() {
       }
 
       await queryClient.invalidateQueries({ queryKey: ["auth"] });
-      router.push("/");
+      router.push(getRedirectTarget());
     } catch {
       setError("Passkey-Anmeldung abgebrochen oder fehlgeschlagen");
     } finally {
@@ -84,7 +104,7 @@ export default function LoginPage() {
       }
 
       await queryClient.invalidateQueries({ queryKey: ["auth"] });
-      router.push("/");
+      router.push(getRedirectTarget());
     } catch {
       setError("Anmeldung fehlgeschlagen");
     } finally {
@@ -93,22 +113,18 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-[60vh] items-center justify-center">
-      <div className="bg-card border-border w-full max-w-sm rounded-xl border p-8">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-full">
-            <Heart className="text-primary h-6 w-6" />
+    <div className="w-full max-w-sm">
+      <div className="border-border bg-card rounded-xl border p-8 shadow-lg shadow-black/20">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-lg">
+            <Logo className="text-primary" size={28} />
           </div>
           <div>
-            <h1 className="text-xl font-bold">HealthLog</h1>
-            <p className="text-muted-foreground mt-1 text-sm">
-              Melde dich an, um fortzufahren
-            </p>
+            <h1 className="text-xl font-bold tracking-tight">HealthLog</h1>
           </div>
         </div>
 
         <div className="mt-8 space-y-4">
-          {/* Passkey login */}
           <Button
             onClick={handlePasskeyLogin}
             className="w-full"
@@ -148,6 +164,7 @@ export default function LoginPage() {
                   onChange={(e) => setUsername(e.target.value)}
                   required
                   autoComplete="username"
+                  placeholder="user"
                 />
               </div>
               <div className="space-y-2">
@@ -159,6 +176,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="current-password"
+                  placeholder="********"
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
@@ -185,15 +203,17 @@ export default function LoginPage() {
             </div>
           )}
 
-          <p className="text-muted-foreground text-center text-sm">
-            Noch kein Konto?{" "}
-            <Link
-              href="/auth/register"
-              className="text-primary hover:underline"
-            >
-              Registrieren
-            </Link>
-          </p>
+          {registrationEnabled === true && (
+            <p className="text-muted-foreground text-center text-xs">
+              Noch kein Konto?{" "}
+              <Link
+                href="/auth/register"
+                className="text-primary hover:underline"
+              >
+                Registrieren
+              </Link>
+            </p>
+          )}
         </div>
       </div>
     </div>

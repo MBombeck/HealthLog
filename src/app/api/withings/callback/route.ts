@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth/session";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
 import { exchangeCode } from "@/lib/withings/client";
+import { getUserWithingsCredentials } from "@/lib/withings/credentials";
 import { setupWebhook } from "@/lib/withings/sync";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -12,9 +13,12 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   const sessionData = await getSession();
   if (!sessionData) {
-    return NextResponse.redirect(
-      new URL("/auth/login", process.env.NEXT_PUBLIC_APP_URL),
+    const loginUrl = new URL("/auth/login", request.url);
+    loginUrl.searchParams.set(
+      "next",
+      `${request.nextUrl.pathname}${request.nextUrl.search}`,
     );
+    return NextResponse.redirect(loginUrl);
   }
 
   const { searchParams } = new URL(request.url);
@@ -53,7 +57,17 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const tokens = await exchangeCode(code);
+    const creds = await getUserWithingsCredentials(sessionData.user.id);
+    if (!creds) {
+      return NextResponse.redirect(
+        new URL(
+          "/settings?withings=error&reason=nocreds",
+          process.env.NEXT_PUBLIC_APP_URL!,
+        ),
+      );
+    }
+
+    const tokens = await exchangeCode(code, creds);
 
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
 

@@ -2,12 +2,22 @@ import { prisma } from "@/lib/db";
 import { syncUserMeasurements } from "@/lib/withings/sync";
 import { NextRequest, NextResponse } from "next/server";
 
+function hasValidWebhookSecret(request: NextRequest): boolean {
+  const expected = process.env.WITHINGS_WEBHOOK_SECRET;
+  if (!expected) return true;
+  return request.nextUrl.searchParams.get("secret") === expected;
+}
+
 /**
  * Withings webhook notification endpoint.
  * Withings sends a POST when new measurements are available.
  * The webhook sends: userid, startdate, enddate, appli
  */
 export async function POST(request: NextRequest) {
+  if (!hasValidWebhookSecret(request)) {
+    return NextResponse.json({ status: "unauthorized" }, { status: 401 });
+  }
+
   try {
     // Withings sends form-encoded or JSON depending on version
     const contentType = request.headers.get("content-type") ?? "";
@@ -56,13 +66,16 @@ export async function POST(request: NextRequest) {
 /**
  * Withings sends a HEAD request to verify the webhook URL.
  */
-export async function HEAD() {
+export async function HEAD(request: NextRequest) {
+  if (!hasValidWebhookSecret(request)) {
+    return new NextResponse(null, { status: 401 });
+  }
   return new NextResponse(null, { status: 200 });
 }
 
-/**
- * Withings may also send a GET to verify the webhook URL.
- */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!hasValidWebhookSecret(request)) {
+    return NextResponse.json({ status: "unauthorized" }, { status: 401 });
+  }
   return NextResponse.json({ status: "ok" }, { status: 200 });
 }

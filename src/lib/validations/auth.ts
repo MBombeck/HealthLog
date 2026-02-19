@@ -16,10 +16,8 @@ export const loginPasswordSchema = z.object({
 
 export const profileSchema = z.object({
   heightCm: z.number().min(50).max(300).nullable().optional(),
-  bpSysTargetLow: z.number().int().min(60).max(200).nullable().optional(),
-  bpSysTargetHigh: z.number().int().min(60).max(250).nullable().optional(),
-  bpDiaTargetLow: z.number().int().min(30).max(150).nullable().optional(),
-  bpDiaTargetHigh: z.number().int().min(30).max(150).nullable().optional(),
+  dateOfBirth: z.string().nullable().optional(), // ISO date string
+  gender: z.enum(["MALE", "FEMALE"]).nullable().optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

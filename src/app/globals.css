@@ -7,8 +7,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -61,8 +61,9 @@
  * Based on https://draculatheme.com/contribute
  * Mapped to shadcn/ui CSS variable system
  */
+
+/* ── Dracula palette (shared) ────────────────────── */
 :root {
-  /* Dracula palette tokens */
   --dracula-bg: #282a36;
   --dracula-current: #44475a;
   --dracula-fg: #f8f8f2;
@@ -76,42 +77,10 @@
   --dracula-yellow: #f1fa8c;
 
   --radius: 0.625rem;
-
-  /* Light mode: slightly warm Dracula-inspired light */
-  --background: #f8f8f2;
-  --foreground: #282a36;
-  --card: #ffffff;
-  --card-foreground: #282a36;
-  --popover: #ffffff;
-  --popover-foreground: #282a36;
-  --primary: #bd93f9;
-  --primary-foreground: #282a36;
-  --secondary: #e8e6f0;
-  --secondary-foreground: #282a36;
-  --muted: #eee8f5;
-  --muted-foreground: #6272a4;
-  --accent: #e8e6f0;
-  --accent-foreground: #282a36;
-  --destructive: #ff5555;
-  --border: #d6d0e0;
-  --input: #d6d0e0;
-  --ring: #bd93f9;
-  --chart-1: #bd93f9;
-  --chart-2: #50fa7b;
-  --chart-3: #ff79c6;
-  --chart-4: #8be9fd;
-  --chart-5: #ffb86c;
-  --sidebar: #f0ecf5;
-  --sidebar-foreground: #282a36;
-  --sidebar-primary: #bd93f9;
-  --sidebar-primary-foreground: #282a36;
-  --sidebar-accent: #e8e6f0;
-  --sidebar-accent-foreground: #282a36;
-  --sidebar-border: #d6d0e0;
-  --sidebar-ring: #bd93f9;
 }
 
-.dark {
+/* ── Dark mode (default) ─────────────────────────── */
+:root.dark {
   --background: #282a36;
   --foreground: #f8f8f2;
   --card: #1e1f29;
@@ -143,6 +112,45 @@
   --sidebar-accent-foreground: #f8f8f2;
   --sidebar-border: #44475a;
   --sidebar-ring: #bd93f9;
+
+  color-scheme: dark;
+}
+
+/* ── Light mode (Alucard — official Dracula light) ── */
+:root.light {
+  --background: #f5f5f5;
+  --foreground: #1f1f1f;
+  --card: #ffffff;
+  --card-foreground: #1f1f1f;
+  --popover: #ffffff;
+  --popover-foreground: #1f1f1f;
+  --primary: #644ac9;
+  --primary-foreground: #ffffff;
+  --secondary: #dcdeef;
+  --secondary-foreground: #1f1f1f;
+  --muted: #dcdeef;
+  --muted-foreground: #635d97;
+  --accent: #dcdeef;
+  --accent-foreground: #1f1f1f;
+  --destructive: #cb3a2a;
+  --border: #cfcfde;
+  --input: #cfcfde;
+  --ring: #644ac9;
+  --chart-1: #644ac9;
+  --chart-2: #14720a;
+  --chart-3: #a3134d;
+  --chart-4: #036a96;
+  --chart-5: #a34d14;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1f1f1f;
+  --sidebar-primary: #644ac9;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #dcdeef;
+  --sidebar-accent-foreground: #1f1f1f;
+  --sidebar-border: #cfcfde;
+  --sidebar-ring: #644ac9;
+
+  color-scheme: light;
 }
 
 @layer base {

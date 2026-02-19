@@ -2,19 +2,30 @@
  * AES-256-GCM encryption for sensitive data at rest.
  * Used for Withings OAuth tokens and other secrets.
  */
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  randomBytes,
+} from "node:crypto";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
 
 function getKey(): Buffer {
-  const hex = process.env.ENCRYPTION_KEY;
-  if (!hex || hex.length < 32) {
-    throw new Error("ENCRYPTION_KEY env var must be set (min 32 hex chars)");
+  const raw = process.env.ENCRYPTION_KEY;
+  if (!raw) {
+    throw new Error("ENCRYPTION_KEY env var must be set");
   }
-  // Take first 32 bytes of the hex-decoded key
-  return Buffer.from(hex.padEnd(64, "0"), "hex").subarray(0, 32);
+
+  // Backward-compatible path for hex-like keys.
+  if (/^[0-9a-fA-F]+$/.test(raw) && raw.length >= 32) {
+    return Buffer.from(raw.padEnd(64, "0").slice(0, 64), "hex");
+  }
+
+  // Fallback: derive a stable 32-byte key from arbitrary strings.
+  return createHash("sha256").update(raw, "utf8").digest();
 }
 
 /**

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { formatDateTime } from "@/lib/format";
 
 const TYPE_LABELS: Record<string, string> = {
   WEIGHT: "Gewicht",
@@ -146,14 +147,7 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground text-xs">
-                  {new Date(m.measuredAt).toLocaleString("de-DE", {
-                    timeZone: "Europe/Berlin",
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                  {formatDateTime(m.measuredAt)}
                 </span>
                 {m.source !== "MANUAL" && (
                   <Badge variant="outline" className="text-xs">

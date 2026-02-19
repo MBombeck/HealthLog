@@ -28,8 +28,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Idempotency check
     if (idempotencyKey) {
-      const existing = await prisma.medicationIntakeEvent.findUnique({
-        where: { idempotencyKey },
+      const existing = await prisma.medicationIntakeEvent.findFirst({
+        where: {
+          idempotencyKey,
+          userId: sessionData.user.id,
+          medicationId: id,
+        },
       });
       if (existing) {
         return apiSuccess(existing);

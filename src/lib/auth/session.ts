@@ -23,7 +23,9 @@ export async function createSession(
   cookieStore.set(SESSION_COOKIE, session.id, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    // OAuth callbacks (e.g. Withings) arrive via top-level cross-site redirect.
+    // Lax keeps CSRF protection for unsafe methods while allowing this flow.
+    sameSite: "lax",
     maxAge: SESSION_MAX_AGE_MS / 1000,
     path: "/",
   });
@@ -66,7 +68,7 @@ export async function getSession(): Promise<{
     cookieStore.set(SESSION_COOKIE, session.id, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       maxAge: SESSION_MAX_AGE_MS / 1000,
       path: "/",
     });
@@ -89,4 +91,15 @@ export async function destroySession(): Promise<void> {
 
 export async function destroyAllSessions(userId: string): Promise<void> {
   await prisma.session.deleteMany({ where: { userId } });
+}
+
+/**
+ * Require an authenticated admin user.
+ * Returns user if admin, null otherwise.
+ */
+export async function requireAdmin(): Promise<User | null> {
+  const sessionData = await getSession();
+  if (!sessionData) return null;
+  if (sessionData.user.role !== "ADMIN") return null;
+  return sessionData.user;
 }

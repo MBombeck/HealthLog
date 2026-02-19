@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { calculateCompliance } from "../compliance";
+import { calculateCompliance, classifyIntakeTiming } from "../compliance";
 
 describe("calculateCompliance", () => {
   // Fix "now" for deterministic tests
@@ -186,5 +186,95 @@ describe("calculateCompliance", () => {
     expect(result.rate).toBe(100);
     expect(result.missed).toBe(0);
     expect(result.streak).toBe(7);
+  });
+});
+
+describe("classifyIntakeTiming", () => {
+  const scheduledDate = new Date("2025-01-15T00:00:00Z");
+
+  it('returns "missed" when takenAt is null', () => {
+    expect(classifyIntakeTiming(null, "08:00", "09:00", scheduledDate)).toBe(
+      "missed",
+    );
+  });
+
+  it('returns "on_time" when taken within the window', () => {
+    const takenAt = new Date("2025-01-15T08:30:00Z");
+    expect(classifyIntakeTiming(takenAt, "08:00", "09:00", scheduledDate)).toBe(
+      "on_time",
+    );
+  });
+
+  it('returns "on_time" when taken exactly at windowStart', () => {
+    const takenAt = new Date("2025-01-15T08:00:00Z");
+    expect(classifyIntakeTiming(takenAt, "08:00", "09:00", scheduledDate)).toBe(
+      "on_time",
+    );
+  });
+
+  it('returns "on_time" when taken exactly at windowEnd', () => {
+    const takenAt = new Date("2025-01-15T09:00:00Z");
+    expect(classifyIntakeTiming(takenAt, "08:00", "09:00", scheduledDate)).toBe(
+      "on_time",
+    );
+  });
+
+  it('returns "on_time" when taken within 1h grace period before windowStart', () => {
+    const takenAt = new Date("2025-01-15T07:15:00Z"); // 45 min before 08:00
+    expect(classifyIntakeTiming(takenAt, "08:00", "09:00", scheduledDate)).toBe(
+      "on_time",
+    );
+  });
+
+  it('returns "late" when taken within 2h after windowEnd', () => {
+    const takenAt = new Date("2025-01-15T10:30:00Z"); // 1.5h after 09:00
+    expect(classifyIntakeTiming(takenAt, "08:00", "09:00", scheduledDate)).toBe(
+      "late",
+    );
+  });
+
+  it('returns "late" when taken right after windowEnd', () => {
+    const takenAt = new Date("2025-01-15T09:01:00Z"); // 1 min after 09:00
+    expect(classifyIntakeTiming(takenAt, "08:00", "09:00", scheduledDate)).toBe(
+      "late",
+    );
+  });
+
+  it('returns "very_late" when taken more than 2h after windowEnd', () => {
+    const takenAt = new Date("2025-01-15T14:00:00Z"); // 5h after 09:00
+    expect(classifyIntakeTiming(takenAt, "08:00", "09:00", scheduledDate)).toBe(
+      "very_late",
+    );
+  });
+
+  it('returns "very_late" when taken way before the grace period', () => {
+    const takenAt = new Date("2025-01-15T03:00:00Z"); // 5h before 08:00
+    expect(classifyIntakeTiming(takenAt, "08:00", "09:00", scheduledDate)).toBe(
+      "very_late",
+    );
+  });
+
+  it("handles overnight windows (windowEnd < windowStart)", () => {
+    // Schedule: 23:00 - 01:00 (overnight)
+    const takenAt = new Date("2025-01-15T23:30:00Z");
+    expect(classifyIntakeTiming(takenAt, "23:00", "01:00", scheduledDate)).toBe(
+      "on_time",
+    );
+  });
+
+  it("handles overnight window late intake", () => {
+    // Schedule: 23:00 - 01:00, taken at 02:00 (1h late)
+    const takenAt = new Date("2025-01-16T02:00:00Z");
+    expect(classifyIntakeTiming(takenAt, "23:00", "01:00", scheduledDate)).toBe(
+      "late",
+    );
+  });
+
+  it("handles overnight window very late intake", () => {
+    // Schedule: 23:00 - 01:00, taken at 04:00 (3h late)
+    const takenAt = new Date("2025-01-16T04:00:00Z");
+    expect(classifyIntakeTiming(takenAt, "23:00", "01:00", scheduledDate)).toBe(
+      "very_late",
+    );
   });
 });

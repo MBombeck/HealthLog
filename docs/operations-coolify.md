@@ -12,11 +12,14 @@ It's designed to run on [Coolify](https://coolify.io/) or any Docker-based PaaS.
 | `DATABASE_URL`           | Yes      | —                       | PostgreSQL connection string           |
 | `SESSION_SECRET`         | Yes      | —                       | 64-char hex string for session signing |
 | `ENCRYPTION_KEY`         | Yes      | —                       | 64-char hex string for AES-256-GCM     |
+| `APP_URL`                | Yes      | `http://localhost:3000` | Server base URL (webhooks/callbacks)   |
 | `NEXT_PUBLIC_APP_URL`    | Yes      | `http://localhost:3000` | Public URL of the app                  |
 | `NODE_ENV`               | No       | `production`            | Environment mode                       |
 | `WITHINGS_CLIENT_ID`     | No       | —                       | Withings OAuth client ID (M5)          |
 | `WITHINGS_CLIENT_SECRET` | No       | —                       | Withings OAuth client secret (M5)      |
 | `WITHINGS_REDIRECT_URI`  | No       | —                       | Withings OAuth redirect URI (M5)       |
+| `WITHINGS_WEBHOOK_SECRET`| No       | —                       | Shared secret for securing webhook URL |
+| `TELEGRAM_WEBHOOK_SECRET`| No       | —                       | Secret token for Telegram webhook      |
 
 ### Generating Secrets
 
@@ -36,6 +39,31 @@ openssl rand -hex 32
 4. **Database**: Use Coolify's built-in PostgreSQL service, or the one from docker-compose
 5. **Domain**: Configure your domain in Coolify's proxy settings
 6. **Health check**: Coolify will use the Docker HEALTHCHECK (`/api/health`)
+
+### Ready-to-use Values for `hard-healthlog.bombeck.io`
+
+Use `docs/coolify-hard-healthlog.env.example` as template.
+
+Minimum required values in Coolify:
+
+```env
+NODE_ENV=production
+NEXT_PUBLIC_APP_URL=https://hard-healthlog.bombeck.io
+APP_URL=https://hard-healthlog.bombeck.io
+DATABASE_URL=postgresql://healthlog:<DB_PASSWORD>@<DB_HOST>:5432/healthlog?schema=public
+SESSION_SECRET=<64-hex>
+ENCRYPTION_KEY=<64-hex>
+```
+
+Generate required secrets:
+
+```bash
+openssl rand -hex 32
+openssl rand -hex 32
+```
+
+Telegram/Withings webhooks only work with a **public HTTPS domain**.
+`localhost` and `http://` will fail.
 
 ## Docker Compose (local / self-hosted)
 

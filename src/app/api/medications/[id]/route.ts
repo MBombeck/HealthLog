@@ -3,6 +3,11 @@ import { getSession } from "@/lib/auth/session";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { updateMedicationSchema } from "@/lib/validations/medication";
+import {
+  deleteMedicationCategory,
+  getMedicationCategories,
+  setMedicationCategory,
+} from "@/lib/medication-category";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -24,7 +29,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return apiError(parsed.error.issues[0].message, 422);
     }
 
-    const { name, dose, active, schedules } = parsed.data;
+    const { name, dose, category, active, schedules } = parsed.data;
 
     // If schedules provided, replace all
     if (schedules) {
@@ -45,6 +50,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
               windowStart: s.windowStart,
               windowEnd: s.windowEnd,
               label: s.label ?? null,
+              dose: s.dose ?? null,
             })),
           },
         }),
@@ -52,13 +58,21 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       include: { schedules: true },
     });
 
+    const normalizedCategory =
+      category !== undefined
+        ? await setMedicationCategory(id, category)
+        : (await getMedicationCategories([id]))[id] ?? "OTHER";
+
     await auditLog("medication.update", {
       userId: sessionData.user.id,
       ipAddress: getClientIp(request),
       details: { medicationId: id },
     });
 
-    return apiSuccess(medication);
+    return apiSuccess({
+      ...medication,
+      category: normalizedCategory,
+    });
   } catch (err) {
     console.error("Update medication error:", err);
     return apiError("Medikament konnte nicht aktualisiert werden", 500);
@@ -75,6 +89,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     return apiError("Medikament nicht gefunden", 404);
   }
 
+  await deleteMedicationCategory(id);
   await prisma.medication.delete({ where: { id } });
 
   await auditLog("medication.delete", {

@@ -4,11 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { startRegistration } from "@simplewebauthn/browser";
-import { Heart, KeyRound, Loader2 } from "lucide-react";
+import { KeyRound, Loader2 } from "lucide-react";
+import { Logo } from "@/components/ui/logo";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordStrength } from "@/components/ui/password-strength";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -25,7 +27,6 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // Step 1: Register user
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -44,13 +45,11 @@ export default function RegisterPage() {
 
       setStep("passkey");
 
-      // Step 2: Start passkey registration
       const { options, challengeId } = json.data.passkey;
 
       try {
         const credential = await startRegistration({ optionsJSON: options });
 
-        // Step 3: Verify passkey
         const verifyRes = await fetch("/api/auth/passkey/register-verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -64,7 +63,6 @@ export default function RegisterPage() {
           return;
         }
       } catch {
-        // User cancelled passkey or not supported — that's okay, they're still registered
         console.log("Passkey registration skipped");
       }
 
@@ -78,18 +76,20 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-[60vh] items-center justify-center">
-      <div className="bg-card border-border w-full max-w-sm rounded-xl border p-8">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-full">
-            <Heart className="text-primary h-6 w-6" />
+    <div className="w-full max-w-sm">
+      <div className="border-border bg-card rounded-xl border p-8 shadow-lg shadow-black/20">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-lg">
+            <Logo className="text-primary" size={28} />
           </div>
           <div>
-            <h1 className="text-xl font-bold">Konto erstellen</h1>
+            <h1 className="text-xl font-bold tracking-tight">
+              Konto erstellen
+            </h1>
             <p className="text-muted-foreground mt-1 text-sm">
               {step === "form"
-                ? "Erstelle dein HealthLog Konto"
-                : "Registriere deinen Passkey..."}
+                ? "Neues Konto erstellen"
+                : "Passkey einrichten..."}
             </p>
           </div>
         </div>
@@ -112,7 +112,7 @@ export default function RegisterPage() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="max_mustermann"
+                placeholder="user"
                 required
                 autoComplete="username"
                 minLength={3}
@@ -135,6 +135,7 @@ export default function RegisterPage() {
                 placeholder="Min. 12 Zeichen"
                 autoComplete="new-password"
               />
+              <PasswordStrength password={password} />
               <p className="text-muted-foreground text-xs">
                 Passkeys sind die primäre Anmeldemethode. Passwort ist ein
                 Fallback.
@@ -156,7 +157,7 @@ export default function RegisterPage() {
               Registrieren
             </Button>
 
-            <p className="text-muted-foreground text-center text-sm">
+            <p className="text-muted-foreground text-center text-xs">
               Bereits ein Konto?{" "}
               <Link href="/auth/login" className="text-primary hover:underline">
                 Anmelden

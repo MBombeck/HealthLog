@@ -65,9 +65,12 @@ export async function POST(request: NextRequest) {
 
     const { medicationName, takenAt, idempotencyKey } = parsed.data;
 
-    // Idempotency check
-    const existing = await prisma.medicationIntakeEvent.findUnique({
-      where: { idempotencyKey },
+    // Idempotency check (scoped to token owner to prevent cross-user lookups)
+    const existing = await prisma.medicationIntakeEvent.findFirst({
+      where: {
+        idempotencyKey,
+        userId: apiToken.userId,
+      },
     });
     if (existing) {
       return apiSuccess(existing);
@@ -84,6 +87,14 @@ export async function POST(request: NextRequest) {
 
     if (!medication) {
       return apiError(`Medikament "${medicationName}" nicht gefunden`, 404);
+    }
+
+    const medicationScope = `medication:${medication.id}:ingest`;
+    if (!apiToken.permissions.includes(medicationScope)) {
+      return apiError(
+        `API-Endpoint für Medikament "${medication.name}" ist deaktiviert`,
+        403,
+      );
     }
 
     const event = await prisma.medicationIntakeEvent.create({
