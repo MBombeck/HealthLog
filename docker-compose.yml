@@ -19,8 +19,6 @@ services:
 
   db:
     image: postgres:16-alpine
-    ports:
-      - "${DB_PORT:-5432}:5432"
     environment:
       POSTGRES_USER: healthlog
       POSTGRES_PASSWORD: healthlog
