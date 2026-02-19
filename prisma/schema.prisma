@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── User & Auth ───────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String?  @unique
+  passwordHash String?  @map("password_hash") // argon2id, optional fallback
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Profile
+  heightCm  Float?   @map("height_cm")
+  timezone  String   @default("Europe/Berlin")
+
+  // BP target ranges (optional)
+  bpSysTargetLow  Int? @map("bp_sys_target_low")
+  bpSysTargetHigh Int? @map("bp_sys_target_high")
+  bpDiaTargetLow  Int? @map("bp_dia_target_low")
+  bpDiaTargetHigh Int? @map("bp_dia_target_high")
+
+  // OpenAI Insights (optional)
+  openaiKeyEncrypted  String?  @map("openai_key_encrypted") // AES-256-GCM encrypted
+  insightsPrivacyMode String   @default("aggregated") @map("insights_privacy_mode") // "aggregated" | "raw"
+  insightsCachedAt    DateTime? @map("insights_cached_at")
+  insightsCachedText  String?  @map("insights_cached_text") // cached JSON output
+
+  // Relations
+  passkeys    Passkey[]
+  sessions    Session[]
+  challenges  AuthChallenge[]
+  measurements Measurement[]
+  medications  Medication[]
+  intakeEvents MedicationIntakeEvent[]
+  apiTokens   ApiToken[]
+  auditLogs   AuditLog[]
+  withingsConnection WithingsConnection?
+
+  @@map("users")
+}
+
+model Passkey {
+  id                  String   @id @default(cuid())
+  userId              String   @map("user_id")
+  name                String   @default("Passkey")
+  credentialId        String   @unique @map("credential_id")
+  credentialPublicKey Bytes    @map("credential_public_key")
+  counter             BigInt   @default(0)
+  credentialDeviceType String  @map("credential_device_type")
+  credentialBackedUp  Boolean  @default(false) @map("credential_backed_up")
+  transports          String[] // e.g. ["usb", "ble", "nfc", "internal"]
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("passkeys")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model AuthChallenge {
+  id        String   @id @default(cuid())
+  userId    String?  @map("user_id") // null for registration
+  challenge String
+  type      String   // "registration" | "authentication"
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("auth_challenges")
+}
+
+// ─── Measurements ──────────────────────────────────────────
+
+enum MeasurementType {
+  WEIGHT
+  BLOOD_PRESSURE_SYS
+  BLOOD_PRESSURE_DIA
+  PULSE
+  BODY_FAT
+  SLEEP_DURATION
+  ACTIVITY_STEPS
+
+  @@map("measurement_type")
+}
+
+enum MeasurementSource {
+  MANUAL
+  WITHINGS
+  IMPORT
+
+  @@map("measurement_source")
+}
+
+model Measurement {
+  id         String            @id @default(cuid())
+  userId     String            @map("user_id")
+  type       MeasurementType
+  value      Float
+  unit       String            // kg, mmHg, bpm, %, hours, steps
+  source     MeasurementSource @default(MANUAL)
+  measuredAt DateTime          @map("measured_at")
+  notes      String?           // encrypted at app level if sensitive
+  externalId String?           @map("external_id") // Withings grpid for dedup
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, measuredAt, source])
+  @@index([userId, type, measuredAt])
+  @@index([externalId])
+  @@map("measurements")
+}
+
+// ─── Medications ───────────────────────────────────────────
+
+model Medication {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  name      String
+  dose      String   // e.g. "10mg"
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  schedules    MedicationSchedule[]
+  intakeEvents MedicationIntakeEvent[]
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("medications")
+}
+
+model MedicationSchedule {
+  id           String @id @default(cuid())
+  medicationId String @map("medication_id")
+  windowStart  String // HH:mm format, e.g. "08:00"
+  windowEnd    String // HH:mm format, e.g. "10:00"
+  label        String? // e.g. "Morning", "Evening"
+
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  @@map("medication_schedules")
+}
+
+enum IntakeSource {
+  WEB
+  API
+  REMINDER
+
+  @@map("intake_source")
+}
+
+model MedicationIntakeEvent {
+  id             String       @id @default(cuid())
+  userId         String       @map("user_id")
+  medicationId   String       @map("medication_id")
+  scheduledFor   DateTime     @map("scheduled_for")
+  takenAt        DateTime?    @map("taken_at")
+  skipped        Boolean      @default(false)
+  source         IntakeSource @default(WEB)
+  idempotencyKey String?      @unique @map("idempotency_key")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, medicationId, scheduledFor])
+  @@map("medication_intake_events")
+}
+
+// ─── API Tokens (for external ingest) ──────────────────────
+
+model ApiToken {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  name        String
+  tokenHash   String   @unique @map("token_hash") // SHA-256 of the token
+  permissions String[] @default(["medication:ingest"])
+  lastUsedAt  DateTime? @map("last_used_at")
+  expiresAt   DateTime? @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  revoked     Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("api_tokens")
+}
+
+// ─── Withings ──────────────────────────────────────────────
+
+model WithingsConnection {
+  id             String   @id @default(cuid())
+  userId         String   @unique @map("user_id")
+  withingsUserId String   @map("withings_user_id")
+  accessToken    String   @map("access_token")  // encrypted at app level
+  refreshToken   String   @map("refresh_token") // encrypted at app level
+  tokenExpiresAt DateTime @map("token_expires_at")
+  lastSyncedAt   DateTime? @map("last_synced_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("withings_connections")
+}
+
+// ─── Audit Log ─────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?  @map("user_id")
+  action    String   // e.g. "auth.login", "measurement.create", "export.csv"
+  details   String?  // JSON string, no sensitive data
+  ipAddress String?  @map("ip_address")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
