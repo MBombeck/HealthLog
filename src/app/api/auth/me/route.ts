@@ -4,21 +4,26 @@ import { apiSuccess, apiError } from "@/lib/api-response";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const sessionData = await getSession();
+  try {
+    const sessionData = await getSession();
 
-  if (!sessionData) {
-    return apiError("Nicht angemeldet", 401);
+    if (!sessionData) {
+      return apiError("Nicht angemeldet", 401);
+    }
+
+    const { user } = sessionData;
+    return apiSuccess({
+      id: user.id,
+      username: user.username,
+      role: user.role ?? "USER",
+      heightCm: user.heightCm,
+      dateOfBirth: user.dateOfBirth,
+      gender: user.gender,
+      timezone: user.timezone,
+      onboardingCompletedAt: user.onboardingCompletedAt,
+    });
+  } catch (err) {
+    console.error("Auth me error:", err);
+    return apiError("Sitzungsfehler", 500);
   }
-
-  const { user } = sessionData;
-  return apiSuccess({
-    id: user.id,
-    username: user.username,
-    heightCm: user.heightCm,
-    timezone: user.timezone,
-    bpSysTargetLow: user.bpSysTargetLow,
-    bpSysTargetHigh: user.bpSysTargetHigh,
-    bpDiaTargetLow: user.bpDiaTargetLow,
-    bpDiaTargetHigh: user.bpDiaTargetHigh,
-  });
 }

@@ -38,6 +38,11 @@ export function TrendCard({
         ? "text-dracula-cyan"
         : "text-muted-foreground";
 
+  const formatValue = (value: number) =>
+    new Intl.NumberFormat("de-DE", {
+      maximumFractionDigits: 1,
+    }).format(value);
+
   return (
     <div className="bg-card border-border rounded-xl border p-4">
       <div className="flex items-center justify-between">
@@ -48,14 +53,14 @@ export function TrendCard({
       </div>
       <div className="mt-2 flex items-baseline gap-2">
         <span className="text-2xl font-bold">
-          {latest !== null ? latest : "—"}
+          {latest !== null ? formatValue(latest) : "—"}
         </span>
         <span className="text-muted-foreground text-sm">{unit}</span>
         {slope30 && <TrendIcon className={`h-4 w-4 ${trendColor}`} />}
       </div>
       <div className="text-muted-foreground mt-1 flex gap-3 text-xs">
-        {avg7 !== null && <span>7T: {avg7}</span>}
-        {avg30 !== null && <span>30T: {avg30}</span>}
+        {avg7 !== null && <span>7T: {formatValue(avg7)}</span>}
+        {avg30 !== null && <span>30T: {formatValue(avg30)}</span>}
       </div>
     </div>
   );

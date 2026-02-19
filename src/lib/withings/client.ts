@@ -9,16 +9,9 @@ const WITHINGS_TOKEN_URL = "https://wbsapi.withings.net/v2/oauth2";
 const WITHINGS_MEASURE_URL = "https://wbsapi.withings.net/measure";
 const WITHINGS_NOTIFY_URL = "https://wbsapi.withings.net/notify";
 
-function getClientId(): string {
-  const id = process.env.WITHINGS_CLIENT_ID;
-  if (!id) throw new Error("WITHINGS_CLIENT_ID not set");
-  return id;
-}
-
-function getClientSecret(): string {
-  const secret = process.env.WITHINGS_CLIENT_SECRET;
-  if (!secret) throw new Error("WITHINGS_CLIENT_SECRET not set");
-  return secret;
+export interface WithingsCredentials {
+  clientId: string;
+  clientSecret: string;
 }
 
 function getRedirectUri(): string {
@@ -31,10 +24,13 @@ function getRedirectUri(): string {
 /**
  * Generate Withings OAuth authorization URL.
  */
-export function getAuthorizationUrl(state: string): string {
+export function getAuthorizationUrl(
+  state: string,
+  creds: WithingsCredentials,
+): string {
   const params = new URLSearchParams({
     response_type: "code",
-    client_id: getClientId(),
+    client_id: creds.clientId,
     redirect_uri: getRedirectUri(),
     scope: "user.metrics",
     state,
@@ -54,12 +50,13 @@ export interface WithingsTokenResponse {
  */
 export async function exchangeCode(
   code: string,
+  creds: WithingsCredentials,
 ): Promise<WithingsTokenResponse> {
   const params = new URLSearchParams({
     action: "requesttoken",
     grant_type: "authorization_code",
-    client_id: getClientId(),
-    client_secret: getClientSecret(),
+    client_id: creds.clientId,
+    client_secret: creds.clientSecret,
     redirect_uri: getRedirectUri(),
     code,
   });
@@ -82,12 +79,13 @@ export async function exchangeCode(
  */
 export async function refreshAccessToken(
   refreshToken: string,
+  creds: WithingsCredentials,
 ): Promise<WithingsTokenResponse> {
   const params = new URLSearchParams({
     action: "requesttoken",
     grant_type: "refresh_token",
-    client_id: getClientId(),
-    client_secret: getClientSecret(),
+    client_id: creds.clientId,
+    client_secret: creds.clientSecret,
     refresh_token: refreshToken,
   });
 
@@ -134,48 +132,70 @@ export async function fetchMeasurements(
   startDate?: Date,
   endDate?: Date,
 ): Promise<WithingsMeasure[]> {
-  const params: Record<string, string> = {
+  const baseParams: Record<string, string> = {
     action: "getmeas",
     meastypes: Object.keys(MEASURE_TYPE_MAP).join(","),
   };
-
-  if (startDate)
-    params.startdate = String(Math.floor(startDate.getTime() / 1000));
-  if (endDate) params.enddate = String(Math.floor(endDate.getTime() / 1000));
-
-  const res = await fetch(WITHINGS_MEASURE_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: new URLSearchParams(params).toString(),
-  });
-
-  const json = await res.json();
-  if (json.status !== 0) {
-    throw new Error(`Withings measure error: ${json.status}`);
+  if (startDate) {
+    baseParams.startdate = String(Math.floor(startDate.getTime() / 1000));
+  }
+  if (endDate) {
+    baseParams.enddate = String(Math.floor(endDate.getTime() / 1000));
   }
 
-  const groups: WithingsMeasureGroup[] = json.body?.measuregrps ?? [];
   const results: WithingsMeasure[] = [];
+  let offset = 0;
+  let pageCount = 0;
 
-  for (const group of groups) {
-    const measuredAt = new Date(group.date * 1000);
+  while (true) {
+    const params = new URLSearchParams({
+      ...baseParams,
+      offset: String(offset),
+    });
 
-    for (const m of group.measures) {
-      const mapping = MEASURE_TYPE_MAP[m.type];
-      if (!mapping) continue;
+    const res = await fetch(WITHINGS_MEASURE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: params.toString(),
+    });
 
-      // Withings stores value * 10^unit (unit is usually negative)
-      const value = m.value * Math.pow(10, m.unit);
-
-      results.push({
-        type: mapping.type,
-        value: parseFloat(value.toFixed(2)),
-        measuredAt,
-      });
+    const json = await res.json();
+    if (json.status !== 0) {
+      throw new Error(`Withings measure error: ${json.status}`);
     }
+
+    const body = json.body ?? {};
+    const groups: WithingsMeasureGroup[] = body.measuregrps ?? [];
+
+    for (const group of groups) {
+      const measuredAt = new Date(group.date * 1000);
+
+      for (const m of group.measures) {
+        const mapping = MEASURE_TYPE_MAP[m.type];
+        if (!mapping) continue;
+
+        // Withings stores value * 10^unit (unit is usually negative)
+        const value = m.value * Math.pow(10, m.unit);
+
+        results.push({
+          type: mapping.type,
+          value: parseFloat(value.toFixed(2)),
+          measuredAt,
+        });
+      }
+    }
+
+    const hasMore = body.more === true || body.more === 1;
+    if (!hasMore) break;
+
+    const nextOffset = Number(body.offset);
+    if (!Number.isFinite(nextOffset) || nextOffset <= offset) break;
+    offset = nextOffset;
+    pageCount += 1;
+    if (pageCount > 1000) break;
   }
 
   return results;

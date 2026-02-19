@@ -13,6 +13,8 @@ interface ScheduleWindow {
   windowEnd: string; // HH:mm
 }
 
+export type IntakeTimingClass = "on_time" | "late" | "very_late" | "missed";
+
 export interface ComplianceResult {
   totalExpected: number;
   taken: number;
@@ -20,6 +22,72 @@ export interface ComplianceResult {
   missed: number;
   rate: number; // 0-100
   streak: number; // consecutive days with all taken
+}
+
+/** Daily compliance data including timing breakdown. */
+export interface DailyComplianceEntry {
+  expected: number;
+  taken: number;
+  skipped: number;
+  onTime: number;
+  late: number;
+  veryLate: number;
+}
+
+/**
+ * Parse "HH:mm" into hours and minutes.
+ */
+function parseHHmm(time: string): { hours: number; minutes: number } {
+  const [h, m] = time.split(":").map(Number);
+  return { hours: h, minutes: m };
+}
+
+/**
+ * Build a Date for a given "HH:mm" on a specific date.
+ */
+function toDateOnDay(time: string, day: Date): Date {
+  const { hours, minutes } = parseHHmm(time);
+  const d = new Date(day);
+  d.setUTCHours(hours, minutes, 0, 0);
+  return d;
+}
+
+/**
+ * Classify how punctual an intake was relative to a schedule window.
+ *
+ * - "on_time":   within windowStart-1h .. windowEnd (1h early grace)
+ * - "late":      within windowEnd .. windowEnd+2h
+ * - "very_late": after windowEnd+2h
+ * - "missed":    takenAt is null
+ *
+ * Handles overnight windows (windowEnd < windowStart means next day).
+ */
+export function classifyIntakeTiming(
+  takenAt: Date | null,
+  windowStart: string, // "HH:mm"
+  windowEnd: string, // "HH:mm"
+  scheduledDate: Date, // the date this was scheduled
+): IntakeTimingClass {
+  if (takenAt === null) return "missed";
+
+  const start = toDateOnDay(windowStart, scheduledDate);
+  let end = toDateOnDay(windowEnd, scheduledDate);
+
+  // Handle overnight windows (e.g. windowStart="23:00", windowEnd="01:00")
+  if (end <= start) {
+    end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
+  }
+
+  // 1h grace period before windowStart
+  const graceStart = new Date(start.getTime() - 60 * 60 * 1000);
+  // 2h tolerance after windowEnd
+  const lateEnd = new Date(end.getTime() + 2 * 60 * 60 * 1000);
+
+  const t = takenAt.getTime();
+
+  if (t >= graceStart.getTime() && t <= end.getTime()) return "on_time";
+  if (t > end.getTime() && t <= lateEnd.getTime()) return "late";
+  return "very_late";
 }
 
 /**

@@ -11,8 +11,17 @@ import {
   refreshAccessToken,
   subscribeWebhook,
 } from "./client";
+import { getUserWithingsCredentials } from "./credentials";
 
-const WEBHOOK_CALLBACK = `${process.env.NEXT_PUBLIC_APP_URL}/api/withings/webhook`;
+export function getWithingsWebhookCallbackUrl(): string {
+  const baseUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/withings/webhook`;
+  const secret = process.env.WITHINGS_WEBHOOK_SECRET;
+  if (!secret) return baseUrl;
+
+  const url = new URL(baseUrl);
+  url.searchParams.set("secret", secret);
+  return url.toString();
+}
 
 /**
  * Get valid access token for a user, refreshing if expired.
@@ -33,7 +42,15 @@ async function getValidToken(userId: string): Promise<{
   // Check if token is expired (with 5 min buffer)
   if (connection.tokenExpiresAt.getTime() - 5 * 60 * 1000 < Date.now()) {
     try {
-      const newTokens = await refreshAccessToken(refreshToken);
+      const creds = await getUserWithingsCredentials(userId);
+      if (!creds) {
+        console.error(
+          `[withings] No credentials found for user ${userId} during token refresh`,
+        );
+        return null;
+      }
+
+      const newTokens = await refreshAccessToken(refreshToken, creds);
 
       const expiresAt = new Date(Date.now() + newTokens.expires_in * 1000);
       await prisma.withingsConnection.update({
@@ -71,7 +88,10 @@ async function getValidToken(userId: string): Promise<{
  * Sync measurements from Withings for a given user.
  * Fetches data since last sync (or last 30 days if first sync).
  */
-export async function syncUserMeasurements(userId: string): Promise<number> {
+export async function syncUserMeasurements(
+  userId: string,
+  opts: { fullSync?: boolean } = {},
+): Promise<number> {
   const tokenInfo = await getValidToken(userId);
   if (!tokenInfo) return 0;
 
@@ -80,9 +100,11 @@ export async function syncUserMeasurements(userId: string): Promise<number> {
   });
   if (!connection) return 0;
 
-  const startDate = connection.lastSyncedAt
-    ? new Date(connection.lastSyncedAt.getTime() - 60 * 1000) // overlap 1 min to avoid gaps
-    : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days back
+  const startDate = opts.fullSync
+    ? undefined
+    : connection.lastSyncedAt
+      ? new Date(connection.lastSyncedAt.getTime() - 60 * 1000) // overlap 1 min to avoid gaps
+      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days back
 
   const measures = await fetchMeasurements(tokenInfo.accessToken, startDate);
 
@@ -134,7 +156,7 @@ export async function setupWebhook(userId: string): Promise<void> {
   if (!tokenInfo) return;
 
   try {
-    await subscribeWebhook(tokenInfo.accessToken, WEBHOOK_CALLBACK);
+    await subscribeWebhook(tokenInfo.accessToken, getWithingsWebhookCallbackUrl());
     console.log(`[withings] Webhook subscribed for user ${userId}`);
   } catch (err) {
     console.error(

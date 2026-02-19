@@ -14,24 +14,33 @@ model User {
   username  String   @unique
   email     String?  @unique
   passwordHash String?  @map("password_hash") // argon2id, optional fallback
+  role      String   @default("USER") // "ADMIN" | "USER"
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Profile
-  heightCm  Float?   @map("height_cm")
-  timezone  String   @default("Europe/Berlin")
-
-  // BP target ranges (optional)
-  bpSysTargetLow  Int? @map("bp_sys_target_low")
-  bpSysTargetHigh Int? @map("bp_sys_target_high")
-  bpDiaTargetLow  Int? @map("bp_dia_target_low")
-  bpDiaTargetHigh Int? @map("bp_dia_target_high")
+  heightCm    Float?    @map("height_cm")
+  dateOfBirth DateTime? @map("date_of_birth")
+  gender      String?   @map("gender") // "MALE" | "FEMALE" | null = keine Angabe
+  timezone    String    @default("Europe/Berlin")
 
   // OpenAI Insights (optional)
   openaiKeyEncrypted  String?  @map("openai_key_encrypted") // AES-256-GCM encrypted
   insightsPrivacyMode String   @default("aggregated") @map("insights_privacy_mode") // "aggregated" | "raw"
   insightsCachedAt    DateTime? @map("insights_cached_at")
   insightsCachedText  String?  @map("insights_cached_text") // cached JSON output
+
+  // Telegram notifications (per-user)
+  telegramBotToken  String?  @map("telegram_bot_token")   // AES-256-GCM encrypted
+  telegramChatId    String?  @map("telegram_chat_id")
+  telegramEnabled   Boolean  @default(false) @map("telegram_enabled")
+
+  // Withings OAuth credentials (per-user, encrypted)
+  withingsClientIdEncrypted     String? @map("withings_client_id_encrypted")
+  withingsClientSecretEncrypted String? @map("withings_client_secret_encrypted")
+
+  // Onboarding
+  onboardingCompletedAt DateTime? @map("onboarding_completed_at")
 
   // Relations
   passkeys    Passkey[]
@@ -161,6 +170,7 @@ model MedicationSchedule {
   windowStart  String // HH:mm format, e.g. "08:00"
   windowEnd    String // HH:mm format, e.g. "10:00"
   label        String? // e.g. "Morning", "Evening"
+  dose         String? // Per-schedule dose override; null = use Medication.dose
 
   medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
 
@@ -171,6 +181,7 @@ enum IntakeSource {
   WEB
   API
   REMINDER
+  IMPORT
 
   @@map("intake_source")
 }
@@ -228,6 +239,15 @@ model WithingsConnection {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("withings_connections")
+}
+
+// ─── App Settings ─────────────────────────────────────────
+
+model AppSettings {
+  id                  String  @id @default("singleton")
+  registrationEnabled Boolean @default(true) @map("registration_enabled")
+
+  @@map("app_settings")
 }
 
 // ─── Audit Log ─────────────────────────────────────────────

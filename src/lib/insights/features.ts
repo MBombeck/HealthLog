@@ -6,6 +6,7 @@
 import { prisma } from "@/lib/db";
 import { summarize } from "@/lib/analytics/trends";
 import { calculateCompliance } from "@/lib/analytics/compliance";
+import { getBpTargets } from "@/lib/analytics/bp-targets";
 
 export interface AggregatedFeatures {
   weight?: {
@@ -71,10 +72,7 @@ export async function extractFeatures(
     where: { id: userId },
     select: {
       heightCm: true,
-      bpSysTargetLow: true,
-      bpSysTargetHigh: true,
-      bpDiaTargetLow: true,
-      bpDiaTargetHigh: true,
+      dateOfBirth: true,
     },
   });
 
@@ -88,10 +86,12 @@ export async function extractFeatures(
 
   const byType = (type: string) => measurements.filter((m) => m.type === type);
 
+  const bpTargets = getBpTargets(user?.dateOfBirth ?? null);
+
   const features: AggregatedFeatures = {
     context: {
       heightCm: user?.heightCm ?? null,
-      hasBpTargets: !!(user?.bpSysTargetLow && user?.bpSysTargetHigh),
+      hasBpTargets: !!bpTargets,
       totalMeasurements: measurements.length,
       dataSpanDays: 30,
     },
@@ -126,19 +126,12 @@ export async function extractFeatures(
       diaData.length > 0 ? summarize(toDataPoints(diaData)) : null;
 
     let pctInTarget: number | null = null;
-    if (
-      user?.bpSysTargetLow &&
-      user?.bpSysTargetHigh &&
-      user?.bpDiaTargetLow &&
-      user?.bpDiaTargetHigh
-    ) {
+    if (bpTargets) {
       const sysInRange = sysData.filter(
-        (m) =>
-          m.value >= user.bpSysTargetLow! && m.value <= user.bpSysTargetHigh!,
+        (m) => m.value >= bpTargets.sysLow && m.value <= bpTargets.sysHigh,
       ).length;
       const diaInRange = diaData.filter(
-        (m) =>
-          m.value >= user.bpDiaTargetLow! && m.value <= user.bpDiaTargetHigh!,
+        (m) => m.value >= bpTargets.diaLow && m.value <= bpTargets.diaHigh,
       ).length;
       const total = sysData.length + diaData.length;
       if (total > 0) {

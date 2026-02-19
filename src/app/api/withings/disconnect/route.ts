@@ -4,6 +4,7 @@ import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { decrypt } from "@/lib/crypto";
 import { unsubscribeWebhook } from "@/lib/withings/client";
+import { getWithingsWebhookCallbackUrl } from "@/lib/withings/sync";
 
 /**
  * Disconnect Withings integration for the current user.
@@ -23,7 +24,7 @@ export async function POST() {
   // Try to unsubscribe webhook (best-effort)
   try {
     const accessToken = decrypt(connection.accessToken);
-    const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/withings/webhook`;
+    const callbackUrl = getWithingsWebhookCallbackUrl();
     await unsubscribeWebhook(accessToken, callbackUrl);
   } catch {
     // Ignore — token might be expired

@@ -1,22 +1,30 @@
 import { z } from "zod/v4";
 
 const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+export const MEDICATION_CATEGORY_VALUES = [
+  "BLOOD_PRESSURE",
+  "VITAMIN",
+  "OTHER",
+] as const;
 
 export const scheduleSchema = z.object({
   windowStart: z.string().regex(timeRegex, "Format: HH:mm"),
   windowEnd: z.string().regex(timeRegex, "Format: HH:mm"),
   label: z.string().max(50).optional(),
+  dose: z.string().max(50).optional(),
 });
 
 export const createMedicationSchema = z.object({
   name: z.string().min(1).max(100),
   dose: z.string().min(1).max(50),
+  category: z.enum(MEDICATION_CATEGORY_VALUES).optional(),
   schedules: z.array(scheduleSchema).min(1, "Mindestens ein Zeitfenster"),
 });
 
 export const updateMedicationSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   dose: z.string().min(1).max(50).optional(),
+  category: z.enum(MEDICATION_CATEGORY_VALUES).optional(),
   active: z.boolean().optional(),
   schedules: z.array(scheduleSchema).optional(),
 });

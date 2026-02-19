@@ -24,10 +24,8 @@ export async function PUT(request: NextRequest) {
       where: { id: sessionData.user.id },
       data: {
         heightCm: data.heightCm ?? null,
-        bpSysTargetLow: data.bpSysTargetLow ?? null,
-        bpSysTargetHigh: data.bpSysTargetHigh ?? null,
-        bpDiaTargetLow: data.bpDiaTargetLow ?? null,
-        bpDiaTargetHigh: data.bpDiaTargetHigh ?? null,
+        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
+        ...(data.gender !== undefined ? { gender: data.gender } : {}),
       },
     });
 
@@ -39,11 +37,11 @@ export async function PUT(request: NextRequest) {
     return apiSuccess({
       id: user.id,
       username: user.username,
+      role: user.role,
       heightCm: user.heightCm,
-      bpSysTargetLow: user.bpSysTargetLow,
-      bpSysTargetHigh: user.bpSysTargetHigh,
-      bpDiaTargetLow: user.bpDiaTargetLow,
-      bpDiaTargetHigh: user.bpDiaTargetHigh,
+      dateOfBirth: user.dateOfBirth,
+      gender: user.gender,
+      timezone: user.timezone,
     });
   } catch (err) {
     console.error("Profile update error:", err);

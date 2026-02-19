@@ -3,6 +3,10 @@ import { getSession } from "@/lib/auth/session";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { createMedicationSchema } from "@/lib/validations/medication";
+import {
+  getMedicationCategories,
+  setMedicationCategory,
+} from "@/lib/medication-category";
 import { NextRequest } from "next/server";
 
 export async function GET() {
@@ -15,7 +19,14 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
   });
 
-  return apiSuccess(medications);
+  const categoryMap = await getMedicationCategories(medications.map((m) => m.id));
+
+  return apiSuccess(
+    medications.map((m) => ({
+      ...m,
+      category: categoryMap[m.id] ?? "OTHER",
+    })),
+  );
 }
 
 export async function POST(request: NextRequest) {
@@ -29,7 +40,7 @@ export async function POST(request: NextRequest) {
       return apiError(parsed.error.issues[0].message, 422);
     }
 
-    const { name, dose, schedules } = parsed.data;
+    const { name, dose, category, schedules } = parsed.data;
 
     const medication = await prisma.medication.create({
       data: {
@@ -41,11 +52,17 @@ export async function POST(request: NextRequest) {
             windowStart: s.windowStart,
             windowEnd: s.windowEnd,
             label: s.label ?? null,
+            dose: s.dose ?? null,
           })),
         },
       },
       include: { schedules: true },
     });
+
+    const normalizedCategory = await setMedicationCategory(
+      medication.id,
+      category,
+    );
 
     await auditLog("medication.create", {
       userId: sessionData.user.id,
@@ -53,7 +70,13 @@ export async function POST(request: NextRequest) {
       details: { medicationId: medication.id, name },
     });
 
-    return apiSuccess(medication, 201);
+    return apiSuccess(
+      {
+        ...medication,
+        category: normalizedCategory,
+      },
+      201,
+    );
   } catch (err) {
     console.error("Create medication error:", err);
     return apiError("Medikament konnte nicht erstellt werden", 500);

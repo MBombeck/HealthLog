@@ -1,24 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
-import { BottomNav } from "@/components/layout/bottom-nav";
-import { SidebarNav } from "@/components/layout/sidebar-nav";
-import { TopBar } from "@/components/layout/top-bar";
+import { AuthShell } from "@/components/layout/auth-shell";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-sans",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
   title: "HealthLog",
   description: "Personal health tracking — weight, blood pressure, medications",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export const viewport: Viewport = {
@@ -28,6 +25,9 @@ export const viewport: Viewport = {
   themeColor: "#282a36",
 };
 
+// Inline script to apply theme before first paint (prevents FOUC)
+const themeScript = `(function(){try{var t=localStorage.getItem("healthlog-theme");var c=(t==="light"||t==="dark")?t:(window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");document.documentElement.classList.add(c)}catch(e){document.documentElement.classList.add("dark")}})()`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -35,22 +35,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="de" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>
-          <div className="flex h-dvh flex-col md:flex-row">
-            <SidebarNav />
-            <div className="flex min-h-0 flex-1 flex-col">
-              <TopBar />
-              <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
-                <div className="mx-auto max-w-5xl px-4 py-6 md:px-6">
-                  {children}
-                </div>
-              </main>
-            </div>
-            <BottomNav />
-          </div>
+          <AuthShell>{children}</AuthShell>
         </Providers>
       </body>
     </html>

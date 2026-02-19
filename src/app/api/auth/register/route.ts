@@ -5,10 +5,39 @@ import { createRegistrationOptions } from "@/lib/auth/passkey";
 import { createSession } from "@/lib/auth/session";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
-import { NextRequest } from "next/server";
+import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request) ?? "unknown";
+  const rl = checkRateLimit(`auth:register:${ip}`, 5, 15 * 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      {
+        data: null,
+        error: "Zu viele Registrierungsversuche. Bitte später erneut versuchen.",
+      },
+      { status: 429, headers: rateLimitHeaders(rl) },
+    );
+  }
+
   try {
+    // Check if registration is enabled
+    let registrationEnabled = true;
+    try {
+      const settings = await prisma.appSettings.findUnique({
+        where: { id: "singleton" },
+      });
+      if (settings && !settings.registrationEnabled) {
+        registrationEnabled = false;
+      }
+    } catch {
+      // Table may not exist yet; allow registration
+    }
+    if (!registrationEnabled) {
+      return apiError("Registrierung ist deaktiviert", 403);
+    }
+
     const body = await request.json();
     const parsed = registerSchema.safeParse(body);
 
@@ -39,11 +68,16 @@ export async function POST(request: NextRequest) {
       passwordHash = await hashPassword(password);
     }
 
+    // First user becomes admin
+    const userCount = await prisma.user.count();
+    const role = userCount === 0 ? "ADMIN" : "USER";
+
     // Create user
     const user = await prisma.user.create({
       data: {
         username,
         passwordHash,
+        role,
       },
     });
 
@@ -54,7 +88,6 @@ export async function POST(request: NextRequest) {
     );
 
     // Create session immediately (user is "registered" even before passkey)
-    const ip = getClientIp(request);
     const ua = request.headers.get("user-agent");
     await createSession(user.id, ip, ua);
 

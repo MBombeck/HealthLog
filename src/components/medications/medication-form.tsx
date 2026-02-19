@@ -5,12 +5,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus, X } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Loader2, Plus, Trash2, X } from "lucide-react";
 
 interface Schedule {
   windowStart: string;
   windowEnd: string;
   label: string;
+  dose: string;
 }
 
 interface MedicationFormProps {
@@ -20,6 +22,8 @@ interface MedicationFormProps {
     id: string;
     name: string;
     dose: string;
+    category: "BLOOD_PRESSURE" | "VITAMIN" | "OTHER";
+    active: boolean;
     schedules: Schedule[];
   };
 }
@@ -28,7 +32,38 @@ const DEFAULT_SCHEDULE: Schedule = {
   windowStart: "08:00",
   windowEnd: "09:00",
   label: "",
+  dose: "",
 };
+
+function parseTimeToMinutes(value: string): number | null {
+  const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(value);
+  if (!m) return null;
+  return Number(m[1]) * 60 + Number(m[2]);
+}
+
+function sortSchedules(list: Schedule[]): Schedule[] {
+  return [...list]
+    .map((schedule, index) => ({ schedule, index }))
+    .sort((a, b) => {
+      const aStart = parseTimeToMinutes(a.schedule.windowStart);
+      const bStart = parseTimeToMinutes(b.schedule.windowStart);
+
+      if (aStart === null && bStart === null) return a.index - b.index;
+      if (aStart === null) return 1;
+      if (bStart === null) return -1;
+      if (aStart !== bStart) return aStart - bStart;
+
+      const aEnd = parseTimeToMinutes(a.schedule.windowEnd);
+      const bEnd = parseTimeToMinutes(b.schedule.windowEnd);
+      if (aEnd === null && bEnd === null) return a.index - b.index;
+      if (aEnd === null) return 1;
+      if (bEnd === null) return -1;
+      if (aEnd !== bEnd) return aEnd - bEnd;
+
+      return a.index - b.index;
+    })
+    .map((item) => item.schedule);
+}
 
 export function MedicationForm({
   onSuccess,
@@ -38,22 +73,31 @@ export function MedicationForm({
   const queryClient = useQueryClient();
   const [name, setName] = useState(initial?.name ?? "");
   const [dose, setDose] = useState(initial?.dose ?? "");
+  const [category, setCategory] = useState<
+    "BLOOD_PRESSURE" | "VITAMIN" | "OTHER"
+  >(initial?.category ?? "OTHER");
+  const [active, setActive] = useState(initial?.active ?? true);
   const [schedules, setSchedules] = useState<Schedule[]>(
-    initial?.schedules.length ? initial.schedules : [{ ...DEFAULT_SCHEDULE }],
+    sortSchedules(
+      initial?.schedules.length ? initial.schedules : [{ ...DEFAULT_SCHEDULE }],
+    ),
   );
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isEdit = !!initial;
 
   function updateSchedule(index: number, field: keyof Schedule, value: string) {
     setSchedules((prev) =>
-      prev.map((s, i) => (i === index ? { ...s, [field]: value } : s)),
+      sortSchedules(
+        prev.map((s, i) => (i === index ? { ...s, [field]: value } : s)),
+      ),
     );
   }
 
   function addSchedule() {
-    setSchedules((prev) => [...prev, { ...DEFAULT_SCHEDULE }]);
+    setSchedules((prev) => sortSchedules([...prev, { ...DEFAULT_SCHEDULE }]));
   }
 
   function removeSchedule(index: number) {
@@ -73,7 +117,16 @@ export function MedicationForm({
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, dose, schedules }),
+        body: JSON.stringify({
+          name,
+          dose,
+          category,
+          ...(isEdit ? { active } : {}),
+          schedules: sortSchedules(schedules).map((s) => ({
+            ...s,
+            dose: s.dose || undefined,
+          })),
+        }),
       });
 
       const json = await res.json();
@@ -89,6 +142,31 @@ export function MedicationForm({
       setError("Fehler beim Speichern");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!initial) return;
+    if (!confirm("Medikament wirklich löschen?")) return;
+
+    setError(null);
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/medications/${initial.id}`, {
+        method: "DELETE",
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(json?.error ?? "Fehler beim Löschen");
+        return;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["medications"] });
+      onSuccess?.();
+    } catch {
+      setError("Fehler beim Löschen");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -119,6 +197,39 @@ export function MedicationForm({
         </div>
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="med-category">Typ</Label>
+        <select
+          id="med-category"
+          value={category}
+          onChange={(e) =>
+            setCategory(e.target.value as "BLOOD_PRESSURE" | "VITAMIN" | "OTHER")
+          }
+          className="border-input bg-background text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+        >
+          <option value="BLOOD_PRESSURE">Blutdrucksenker</option>
+          <option value="VITAMIN">Vitamine</option>
+          <option value="OTHER">Sonstiges</option>
+        </select>
+      </div>
+
+      {isEdit && (
+        <div className="bg-muted/40 flex items-center justify-between rounded-lg border p-3">
+          <div>
+            <p className="text-sm font-medium">Medikament aktiv</p>
+            <p className="text-muted-foreground text-xs">
+              Deaktivierte Medikamente werden separat angezeigt.
+            </p>
+          </div>
+          <Switch
+            checked={active}
+            onCheckedChange={setActive}
+            disabled={loading || deleting}
+            aria-label="Medikament aktiv"
+          />
+        </div>
+      )}
+
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <Label>Zeitfenster</Label>
@@ -136,21 +247,29 @@ export function MedicationForm({
             <div className="flex-1 space-y-1">
               <Label className="text-xs">Von</Label>
               <Input
-                type="time"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-2][0-9]:[0-5][0-9]"
+                placeholder="08:00"
                 value={s.windowStart}
                 onChange={(e) =>
                   updateSchedule(i, "windowStart", e.target.value)
                 }
                 required
+                maxLength={5}
               />
             </div>
             <div className="flex-1 space-y-1">
               <Label className="text-xs">Bis</Label>
               <Input
-                type="time"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-2][0-9]:[0-5][0-9]"
+                placeholder="09:00"
                 value={s.windowEnd}
                 onChange={(e) => updateSchedule(i, "windowEnd", e.target.value)}
                 required
+                maxLength={5}
               />
             </div>
             <div className="flex-1 space-y-1">
@@ -159,6 +278,15 @@ export function MedicationForm({
                 value={s.label}
                 onChange={(e) => updateSchedule(i, "label", e.target.value)}
                 placeholder="z.B. Morgens"
+                maxLength={50}
+              />
+            </div>
+            <div className="flex-1 space-y-1">
+              <Label className="text-xs">Dosis</Label>
+              <Input
+                value={s.dose}
+                onChange={(e) => updateSchedule(i, "dose", e.target.value)}
+                placeholder={dose || "Standard"}
                 maxLength={50}
               />
             </div>
@@ -184,12 +312,29 @@ export function MedicationForm({
       )}
 
       <div className="flex gap-2">
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading || deleting}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isEdit ? "Speichern" : "Medikament anlegen"}
         </Button>
+        {isEdit && (
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={loading || deleting}
+          >
+            {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {!deleting && <Trash2 className="mr-2 h-4 w-4" />}
+            Löschen
+          </Button>
+        )}
         {onCancel && (
-          <Button type="button" variant="ghost" onClick={onCancel}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onCancel}
+            disabled={loading || deleting}
+          >
             Abbrechen
           </Button>
         )}

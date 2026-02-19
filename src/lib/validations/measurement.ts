@@ -57,6 +57,13 @@ export const listMeasurementsSchema = z.object({
   offset: z.coerce.number().int().min(0).optional().default(0),
 });
 
+export const createBatchMeasurementSchema = z.object({
+  measurements: z.array(createMeasurementSchema).min(1).max(5),
+});
+
 export type CreateMeasurementInput = z.infer<typeof createMeasurementSchema>;
+export type CreateBatchMeasurementInput = z.infer<
+  typeof createBatchMeasurementSchema
+>;
 export type UpdateMeasurementInput = z.infer<typeof updateMeasurementSchema>;
 export type ListMeasurementsInput = z.infer<typeof listMeasurementsSchema>;

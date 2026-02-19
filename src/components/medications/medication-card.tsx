@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Check,
@@ -13,7 +12,6 @@ import {
   Clock,
   Flame,
   Pencil,
-  Trash2,
   Loader2,
 } from "lucide-react";
 
@@ -22,12 +20,14 @@ interface Schedule {
   windowStart: string;
   windowEnd: string;
   label: string | null;
+  dose: string | null;
 }
 
 interface Medication {
   id: string;
   name: string;
   dose: string;
+  category: "BLOOD_PRESSURE" | "VITAMIN" | "OTHER";
   active: boolean;
   schedules: Schedule[];
 }
@@ -66,32 +66,6 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
     staleTime: 30 * 1000,
   });
 
-  const toggleActive = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`/api/medications/${medication.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ active: !medication.active }),
-      });
-      if (!res.ok) throw new Error("Toggle failed");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["medications"] });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`/api/medications/${medication.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Delete failed");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["medications"] });
-    },
-  });
-
   async function recordIntake(skipped: boolean) {
     const key = skipped ? "skip" : "take";
     setIntakeLoading(key);
@@ -113,6 +87,17 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
 
   const rate7 = compliance?.compliance7.rate ?? 0;
   const streak = compliance?.compliance7.streak ?? 0;
+  const categoryLabel =
+    medication.category === "BLOOD_PRESSURE"
+      ? "Blutdrucksenker"
+      : medication.category === "VITAMIN"
+        ? "Vitamine"
+        : "Sonstiges";
+  const sortedSchedules = [...medication.schedules].sort(
+    (a, b) =>
+      a.windowStart.localeCompare(b.windowStart) ||
+      a.windowEnd.localeCompare(b.windowEnd),
+  );
 
   return (
     <Card className={medication.active ? "" : "opacity-60"}>
@@ -120,14 +105,14 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <CardTitle className="text-lg">{medication.name}</CardTitle>
-            <p className="text-muted-foreground text-sm">{medication.dose}</p>
+            <div className="text-muted-foreground flex items-center gap-2 text-sm">
+              <span>{medication.dose}</span>
+              <Badge variant="outline" className="text-xs">
+                {categoryLabel}
+              </Badge>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Switch
-              checked={medication.active}
-              onCheckedChange={() => toggleActive.mutate()}
-              aria-label="Aktiv"
-            />
+          <div className="flex items-center">
             <Button
               variant="ghost"
               size="icon"
@@ -136,18 +121,6 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
             >
               <Pencil className="h-3.5 w-3.5" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-destructive h-8 w-8"
-              onClick={() => {
-                if (confirm("Medikament wirklich löschen?")) {
-                  deleteMutation.mutate();
-                }
-              }}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
           </div>
         </div>
       </CardHeader>
@@ -155,11 +128,16 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
       <CardContent className="space-y-4">
         {/* Schedule badges */}
         <div className="flex flex-wrap gap-2">
-          {medication.schedules.map((s) => (
+          {sortedSchedules.map((s) => (
             <Badge key={s.id} variant="secondary" className="gap-1">
               <Clock className="h-3 w-3" />
               {s.label ? `${s.label}: ` : ""}
               {s.windowStart}–{s.windowEnd}
+              {s.dose && (
+                <span className="ml-1 font-medium text-purple-400">
+                  {s.dose}
+                </span>
+              )}
             </Badge>
           ))}
         </div>

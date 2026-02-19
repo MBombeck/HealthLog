@@ -6,12 +6,12 @@ import { useRouter } from "next/navigation";
 export interface AuthUser {
   id: string;
   username: string;
+  role: string;
   heightCm: number | null;
+  dateOfBirth: string | null;
+  gender: string | null;
   timezone: string;
-  bpSysTargetLow: number | null;
-  bpSysTargetHigh: number | null;
-  bpDiaTargetLow: number | null;
-  bpDiaTargetHigh: number | null;
+  onboardingCompletedAt: string | null;
 }
 
 async function fetchMe(): Promise<AuthUser> {

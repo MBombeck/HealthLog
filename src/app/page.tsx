@@ -2,10 +2,9 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { Activity, Heart, Pill, TrendingUp } from "lucide-react";
+import { Activity, Heart, Percent, TrendingUp } from "lucide-react";
 import { TrendCard } from "@/components/charts/trend-card";
 import { HealthChart } from "@/components/charts/health-chart";
-import { InsightsCard } from "@/components/insights/insights-card";
 import type { DataSummary } from "@/lib/analytics/trends";
 
 interface AnalyticsData {
@@ -31,6 +30,8 @@ export default function DashboardPage() {
   const w = data?.summaries.WEIGHT;
   const sys = data?.summaries.BLOOD_PRESSURE_SYS;
   const p = data?.summaries.PULSE;
+  const bf = data?.summaries.BODY_FAT;
+  const showBodyFatCard = (bf?.count ?? 0) > 0;
 
   return (
     <div className="space-y-6">
@@ -42,7 +43,9 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div
+        className={`grid gap-4 sm:grid-cols-2 ${showBodyFatCard ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
+      >
         <TrendCard
           label="Gewicht"
           latest={w?.latest ?? null}
@@ -70,7 +73,17 @@ export default function DashboardPage() {
           slope30={p?.slope30 ?? null}
           icon={TrendingUp}
         />
-        <MedSummaryCard />
+        {showBodyFatCard && (
+          <TrendCard
+            label="Körperfett"
+            latest={bf?.latest ?? null}
+            unit="%"
+            avg7={bf?.avg7 ?? null}
+            avg30={bf?.avg30 ?? null}
+            slope30={bf?.slope30 ?? null}
+            icon={Percent}
+          />
+        )}
       </div>
 
       {data?.bpInTargetPct !== undefined && data.bpInTargetPct !== null && (
@@ -103,36 +116,14 @@ export default function DashboardPage() {
         unit="bpm"
       />
 
-      <InsightsCard />
-    </div>
-  );
-}
-
-function MedSummaryCard() {
-  const { isAuthenticated } = useAuth();
-  const { data: meds } = useQuery({
-    queryKey: ["medications"],
-    queryFn: async () => {
-      const res = await fetch("/api/medications");
-      if (!res.ok) return [];
-      const json = await res.json();
-      return json.data as Array<{ id: string; active: boolean }>;
-    },
-    enabled: isAuthenticated,
-  });
-
-  const active = meds?.filter((m) => m.active).length ?? 0;
-
-  return (
-    <div className="bg-card border-border rounded-xl border p-4">
-      <div className="flex items-center justify-between">
-        <span className="text-muted-foreground text-sm font-medium">
-          Medikamente
-        </span>
-        <Pill className="text-muted-foreground h-4 w-4" />
-      </div>
-      <div className="mt-2 text-2xl font-bold">{active}</div>
-      <p className="text-muted-foreground mt-1 text-xs">aktive Medikamente</p>
+      {showBodyFatCard && (
+        <HealthChart
+          types={["BODY_FAT"]}
+          title="Körperfett"
+          colors={["#ffb86c"]}
+          unit="%"
+        />
+      )}
     </div>
   );
 }

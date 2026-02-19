@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Check, SkipForward, Loader2 } from "lucide-react";
+import { formatDateWithWeekday, formatTime } from "@/lib/format";
 
 interface IntakeEvent {
   id: string;
@@ -52,12 +53,7 @@ export function IntakeTimeline({
   // Group by day
   const grouped = new Map<string, IntakeEvent[]>();
   for (const event of events) {
-    const day = new Date(event.scheduledFor).toLocaleDateString("de-DE", {
-      timeZone: "Europe/Berlin",
-      weekday: "short",
-      day: "2-digit",
-      month: "2-digit",
-    });
+    const day = formatDateWithWeekday(event.scheduledFor);
     const list = grouped.get(day) ?? [];
     list.push(event);
     grouped.set(day, list);
@@ -84,11 +80,7 @@ export function IntakeTimeline({
                 ) : (
                   <Check className="h-3 w-3" />
                 )}
-                {new Date(event.scheduledFor).toLocaleTimeString("de-DE", {
-                  timeZone: "Europe/Berlin",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {formatTime(event.scheduledFor)}
                 {event.source !== "WEB" && (
                   <span className="text-[10px] opacity-60">{event.source}</span>
                 )}

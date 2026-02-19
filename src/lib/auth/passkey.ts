@@ -19,6 +19,12 @@ type Transport =
 
 const rpName = "HealthLog";
 
+async function cleanupExpiredChallenges() {
+  await prisma.authChallenge.deleteMany({
+    where: { expiresAt: { lt: new Date() } },
+  });
+}
+
 function getRpId(): string {
   const url = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   return new URL(url).hostname;
@@ -34,6 +40,8 @@ export async function createRegistrationOptions(
   userId: string,
   username: string,
 ) {
+  await cleanupExpiredChallenges();
+
   const existingPasskeys = await prisma.passkey.findMany({
     where: { userId },
     select: { credentialId: true, transports: true },
@@ -80,22 +88,26 @@ export async function verifyRegistration(
     throw new Error("Challenge expired or not found");
   }
 
-  const verification = await verifyRegistrationResponse({
-    response,
-    expectedChallenge: challenge.challenge,
-    expectedOrigin: getOrigin(),
-    expectedRPID: getRpId(),
-  });
+  try {
+    const verification = await verifyRegistrationResponse({
+      response,
+      expectedChallenge: challenge.challenge,
+      expectedOrigin: getOrigin(),
+      expectedRPID: getRpId(),
+    });
 
-  // Clean up used challenge
-  await prisma.authChallenge.delete({ where: { id: challengeId } });
-
-  return verification;
+    return verification;
+  } finally {
+    // Invalidate challenge after first verification attempt (success or failure)
+    await prisma.authChallenge.delete({ where: { id: challengeId } }).catch(() => {});
+  }
 }
 
 // ── Authentication ───────────────────────────────────────
 
 export async function createAuthenticationOptions(userId?: string) {
+  await cleanupExpiredChallenges();
+
   let allowCredentials: { id: string; transports?: Transport[] }[] | undefined;
 
   if (userId) {
@@ -153,29 +165,31 @@ export async function verifyAuthentication(
     throw new Error("Passkey not found");
   }
 
-  const verification = await verifyAuthenticationResponse({
-    response,
-    expectedChallenge: challenge.challenge,
-    expectedOrigin: getOrigin(),
-    expectedRPID: getRpId(),
-    credential: {
-      id: passkey.credentialId,
-      publicKey: passkey.credentialPublicKey,
-      counter: Number(passkey.counter),
-      transports: passkey.transports as Transport[],
-    },
-  });
-
-  if (verification.verified) {
-    // Update counter
-    await prisma.passkey.update({
-      where: { id: passkey.id },
-      data: { counter: BigInt(verification.authenticationInfo.newCounter) },
+  try {
+    const verification = await verifyAuthenticationResponse({
+      response,
+      expectedChallenge: challenge.challenge,
+      expectedOrigin: getOrigin(),
+      expectedRPID: getRpId(),
+      credential: {
+        id: passkey.credentialId,
+        publicKey: passkey.credentialPublicKey,
+        counter: Number(passkey.counter),
+        transports: passkey.transports as Transport[],
+      },
     });
+
+    if (verification.verified) {
+      // Update counter
+      await prisma.passkey.update({
+        where: { id: passkey.id },
+        data: { counter: BigInt(verification.authenticationInfo.newCounter) },
+      });
+    }
+
+    return { verification, passkey: { userId: passkey.userId } };
+  } finally {
+    // Invalidate challenge after first verification attempt (success or failure)
+    await prisma.authChallenge.delete({ where: { id: challengeId } }).catch(() => {});
   }
-
-  // Clean up used challenge
-  await prisma.authChallenge.delete({ where: { id: challengeId } });
-
-  return { verification, passkey: { userId: passkey.userId } };
 }
