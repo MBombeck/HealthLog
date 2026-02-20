@@ -45,20 +45,28 @@ export async function POST(request: NextRequest) {
       return apiError(parsed.error.issues[0].message, 422);
     }
 
-    const { username, password } = parsed.data;
+    const { email, username, password } = parsed.data;
+
+    // Check if email taken
+    const existingEmail = await prisma.user.findUnique({
+      where: { email },
+    });
+    if (existingEmail) {
+      return apiError("E-Mail-Adresse bereits vergeben", 409);
+    }
 
     // Check if username taken
-    const existing = await prisma.user.findUnique({
+    const existingUsername = await prisma.user.findUnique({
       where: { username },
     });
-    if (existing) {
+    if (existingUsername) {
       return apiError("Benutzername bereits vergeben", 409);
     }
 
     // If password provided, validate strength
     let passwordHash: string | null = null;
     if (password) {
-      const strength = checkPasswordStrength(password, [username]);
+      const strength = checkPasswordStrength(password, [username, email]);
       if (!strength.isAcceptable) {
         return apiError(
           strength.feedback[0] || "Passwort zu schwach (Score < 3)",
@@ -75,6 +83,7 @@ export async function POST(request: NextRequest) {
     // Create user
     const user = await prisma.user.create({
       data: {
+        email,
         username,
         passwordHash,
         role,
@@ -84,7 +93,7 @@ export async function POST(request: NextRequest) {
     // Generate passkey registration options
     const { options, challengeId } = await createRegistrationOptions(
       user.id,
-      user.username,
+      user.email!,
     );
 
     // Create session immediately (user is "registered" even before passkey)
@@ -99,7 +108,7 @@ export async function POST(request: NextRequest) {
 
     return apiSuccess(
       {
-        user: { id: user.id, username: user.username },
+        user: { id: user.id, username: user.username, email: user.email },
         passkey: { options, challengeId },
       },
       201,
