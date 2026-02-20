@@ -24,7 +24,7 @@ echo "HealthLog: Database is reachable."
 
 # ── Run Prisma migrations ────────────────────────────────────
 echo "HealthLog: Running database migrations..."
-node ./node_modules/prisma/build/index.js migrate deploy
+node /opt/prisma-cli/node_modules/prisma/build/index.js migrate deploy
 echo "HealthLog: Migrations complete."
 
 # ── Start application ────────────────────────────────────────
