@@ -1,5 +1,6 @@
 import { hash, verify } from "@node-rs/argon2";
 import zxcvbn from "zxcvbn-typescript";
+import { translateZxcvbn } from "@/lib/zxcvbn-de";
 
 export async function hashPassword(password: string): Promise<string> {
   return hash(password, {
@@ -39,10 +40,10 @@ export function checkPasswordStrength(
   const feedback: string[] = [];
 
   if (result.feedback.warning) {
-    feedback.push(result.feedback.warning);
+    feedback.push(translateZxcvbn(result.feedback.warning));
   }
   if (result.feedback.suggestions) {
-    feedback.push(...result.feedback.suggestions);
+    feedback.push(...result.feedback.suggestions.map(translateZxcvbn));
   }
 
   return {

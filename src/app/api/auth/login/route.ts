@@ -25,14 +25,14 @@ export async function POST(request: NextRequest) {
       return apiError("Ungültige Anmeldedaten", 422);
     }
 
-    const { username, password } = parsed.data;
+    const { email, password } = parsed.data;
 
-    const user = await prisma.user.findUnique({ where: { username } });
+    const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user || !user.passwordHash) {
       await auditLog("auth.login.failed", {
         ipAddress: ip,
-        details: { username, reason: "user_not_found_or_no_password" },
+        details: { email, reason: "user_not_found_or_no_password" },
       });
       return apiError("Ungültige Anmeldedaten", 401);
     }

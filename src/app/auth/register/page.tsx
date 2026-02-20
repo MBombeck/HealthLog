@@ -15,6 +15,7 @@ import { PasswordStrength } from "@/components/ui/password-strength";
 export default function RegisterPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +32,7 @@ export default function RegisterPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          email,
           username,
           password: password || undefined,
         }),
@@ -106,6 +108,19 @@ export default function RegisterPage() {
         {step === "form" && (
           <form onSubmit={handleRegister} className="mt-8 space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="email">E-Mail-Adresse</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@beispiel.de"
+                required
+                autoComplete="email"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="username">Benutzername</Label>
               <Input
                 id="username"
@@ -124,7 +139,7 @@ export default function RegisterPage() {
               <Label htmlFor="password">
                 Passwort{" "}
                 <span className="text-muted-foreground font-normal">
-                  (optional)
+                  (optional, Fallback)
                 </span>
               </Label>
               <Input
