@@ -3,8 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "${APP_PORT:-3007}:3000"
+    expose:
+      - "3000"
     environment:
       DATABASE_URL: "postgresql://healthlog:healthlog@db:5432/healthlog?schema=public"
       NODE_ENV: production
