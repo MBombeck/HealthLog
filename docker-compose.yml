@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: healthlog-app
     expose:
       - "3000"
     environment:
@@ -19,6 +20,7 @@ services:
 
   db:
     image: postgres:16-alpine
+    container_name: healthlog-db
     environment:
       POSTGRES_USER: healthlog
       POSTGRES_PASSWORD: healthlog
