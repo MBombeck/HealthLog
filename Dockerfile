@@ -32,12 +32,6 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# Install production dependencies in runner so Prisma CLI engines are present
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
-RUN pnpm install --frozen-lockfile --prod
-
 # Copy built assets
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
@@ -47,6 +41,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/src/generated ./src/generated
+
+# Install Prisma CLI + engines for runtime migrations (isolated from Next standalone tree)
+RUN mkdir -p /opt/prisma-cli && \
+    cd /opt/prisma-cli && \
+    npm init -y && \
+    npm install --omit=dev prisma@7.4.0 @prisma/engines@7.4.0
 
 # Entrypoint script (runs migrations, then starts app)
 COPY docker-entrypoint.sh ./
