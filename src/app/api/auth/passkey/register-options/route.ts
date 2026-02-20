@@ -11,7 +11,7 @@ export async function POST() {
 
     const { options, challengeId } = await createRegistrationOptions(
       sessionData.user.id,
-      sessionData.user.username,
+      sessionData.user.email ?? sessionData.user.username,
     );
 
     return apiSuccess({ options, challengeId });

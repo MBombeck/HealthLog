@@ -15,6 +15,7 @@ export async function GET() {
     return apiSuccess({
       id: user.id,
       username: user.username,
+      email: user.email,
       role: user.role ?? "USER",
       heightCm: user.heightCm,
       dateOfBirth: user.dateOfBirth,

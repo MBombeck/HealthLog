@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import zxcvbn from "zxcvbn-typescript";
 import { cn } from "@/lib/utils";
+import { translateZxcvbn } from "@/lib/zxcvbn-de";
 
 interface PasswordStrengthProps {
   password: string;
@@ -46,10 +47,10 @@ export function PasswordStrength({
     feedback.push(`Mindestens ${minLength} Zeichen erforderlich.`);
   }
   if (result?.feedback.warning) {
-    feedback.push(result.feedback.warning);
+    feedback.push(translateZxcvbn(result.feedback.warning));
   }
   if (result?.feedback.suggestions) {
-    feedback.push(...result.feedback.suggestions);
+    feedback.push(...result.feedback.suggestions.map(translateZxcvbn));
   }
 
   return (

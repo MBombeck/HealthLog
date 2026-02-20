@@ -17,7 +17,7 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<"passkey" | "password">("passkey");
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -93,7 +93,7 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ email, password }),
       });
 
       const json = await res.json();
@@ -156,15 +156,15 @@ export default function LoginPage() {
           ) : (
             <form onSubmit={handlePasswordLogin} className="space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="username">Benutzername</Label>
+                <Label htmlFor="email">E-Mail-Adresse</Label>
                 <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
-                  autoComplete="username"
-                  placeholder="user"
+                  autoComplete="email"
+                  placeholder="name@beispiel.de"
                 />
               </div>
               <div className="space-y-2">
