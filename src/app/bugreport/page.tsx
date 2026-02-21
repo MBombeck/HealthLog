@@ -18,7 +18,6 @@ export default function BugReportPage() {
   const [result, setResult] = useState<{
     type: "success" | "error";
     message: string;
-    url?: string;
   } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslations();
@@ -74,8 +73,7 @@ export default function BugReportPage() {
       if (res.ok) {
         setResult({
           type: "success",
-          message: t("bugreport.success", { number: json.data.issueNumber }),
-          url: json.data.issueUrl,
+          message: t("bugreport.success"),
         });
         setTitle("");
         setDescription("");
@@ -195,16 +193,6 @@ export default function BugReportPage() {
                 <CheckCircle2 className="mr-2 inline h-4 w-4" />
               )}
               {result.message}
-              {result.url && (
-                <a
-                  href={result.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-2 underline"
-                >
-                  {t("bugreport.viewOnGithub")}
-                </a>
-              )}
             </div>
           )}
 

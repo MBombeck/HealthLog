@@ -933,7 +933,7 @@
     "imageOnly": "Only image files allowed",
     "tooLarge": "Screenshot is too large (max 5 MB)",
     "submit": "Send",
-    "success": "Bug Report #{number} was created successfully.",
+    "success": "Thank you! Your bug report has been submitted successfully.",
     "viewOnGithub": "View on GitHub",
     "errorCreating": "Error creating report"
   },
