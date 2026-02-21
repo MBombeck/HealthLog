@@ -32,7 +32,6 @@ import {
 import {
   Bell,
   BellOff,
-  History,
   Loader2,
   MoreHorizontal,
   MoreVertical,
@@ -143,8 +142,6 @@ interface MedicationFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
   editActions?: {
-    showEditTimeline: boolean;
-    onToggleEditTimeline: () => void;
     onImportIntakes: () => void;
     onApiAccess: () => void;
   };
@@ -669,12 +666,6 @@ export function MedicationForm({
               <>
                 {editActions && (
                   <>
-                    <DropdownMenuItem onClick={editActions.onToggleEditTimeline}>
-                      <History className="mr-2 h-4 w-4" />
-                      {editActions.showEditTimeline
-                        ? "Einnahmeverlauf ausblenden"
-                        : "Einnahmeverlauf anzeigen"}
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={editActions.onImportIntakes}>
                       <Upload className="mr-2 h-4 w-4" />
                       Einnahmen importieren
