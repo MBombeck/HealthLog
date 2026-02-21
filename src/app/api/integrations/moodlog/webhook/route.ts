@@ -1,0 +1,114 @@
+import { NextRequest } from "next/server";
+import { timingSafeEqual } from "node:crypto";
+import { prisma } from "@/lib/db";
+import { apiError } from "@/lib/api-response";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/api-response";
+import { moodLogWebhookPayloadSchema } from "@/lib/validations/moodlog";
+
+export const dynamic = "force-dynamic";
+
+export async function POST(request: NextRequest) {
+  // 1. Rate limit (30/min per IP)
+  const ip = getClientIp(request) ?? "unknown";
+  const rl = checkRateLimit(`moodlog-webhook:${ip}`, 30, 60_000);
+  if (!rl.allowed) {
+    return apiError("Rate limit exceeded", 429);
+  }
+
+  // 2. Check global toggle
+  const appSettings = await prisma.appSettings.findUnique({
+    where: { id: "singleton" },
+    select: { moodLogGlobal: true },
+  });
+  if (appSettings && !appSettings.moodLogGlobal) {
+    return apiError("moodLog integration is disabled", 403);
+  }
+
+  // 3. Get webhook secret from header
+  const webhookSecret = request.headers.get("x-webhook-secret");
+  if (!webhookSecret) {
+    return apiError("Missing X-Webhook-Secret header", 401);
+  }
+
+  // 4. Find all enabled users with webhook secrets and compare timing-safe
+  const candidates = await prisma.user.findMany({
+    where: {
+      moodLogEnabled: true,
+      moodLogWebhookSecret: { not: null },
+    },
+    select: { id: true, moodLogWebhookSecret: true },
+  });
+
+  const receivedBuf = Buffer.from(webhookSecret, "utf8");
+  const user = candidates.find((c) => {
+    const expectedBuf = Buffer.from(c.moodLogWebhookSecret!, "utf8");
+    if (expectedBuf.length !== receivedBuf.length) return false;
+    return timingSafeEqual(expectedBuf, receivedBuf);
+  });
+
+  if (!user) {
+    return apiError("Invalid webhook secret", 401);
+  }
+
+  // 4. Parse and validate body
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return apiError("Invalid JSON", 400);
+  }
+
+  const parsed = moodLogWebhookPayloadSchema.safeParse(body);
+  if (!parsed.success) {
+    return apiError("Invalid payload", 400);
+  }
+
+  const { event, entry } = parsed.data;
+
+  // 5. Process event (non-blocking — fire and forget with error logging)
+  const moodLoggedAt = new Date(entry.time);
+
+  try {
+    if (event === "mood.deleted") {
+      await prisma.moodEntry.deleteMany({
+        where: {
+          userId: user.id,
+          date: entry.date,
+          moodLoggedAt,
+        },
+      });
+    } else {
+      // mood.created or mood.updated
+      await prisma.moodEntry.upsert({
+        where: {
+          userId_date_moodLoggedAt: {
+            userId: user.id,
+            date: entry.date,
+            moodLoggedAt,
+          },
+        },
+        update: {
+          mood: entry.mood,
+          score: entry.score,
+          tags: entry.tags ? JSON.stringify(entry.tags) : null,
+          source: entry.loggedVia ?? "MOODLOG",
+        },
+        create: {
+          userId: user.id,
+          date: entry.date,
+          mood: entry.mood,
+          score: entry.score,
+          tags: entry.tags ? JSON.stringify(entry.tags) : null,
+          source: entry.loggedVia ?? "MOODLOG",
+          moodLoggedAt,
+        },
+      });
+    }
+  } catch (err) {
+    console.error("[moodlog-webhook] DB operation failed:", err);
+  }
+
+  // 6. Return 200 immediately
+  return new Response(null, { status: 200 });
+}

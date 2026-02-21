@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import {
@@ -28,9 +29,18 @@ interface TelegramUpdate {
 
 function hasValidSecret(request: NextRequest): boolean {
   const expected = process.env.TELEGRAM_WEBHOOK_SECRET;
-  if (!expected) return true;
+  if (!expected) {
+    console.error(
+      "[telegram] TELEGRAM_WEBHOOK_SECRET not configured — rejecting webhook",
+    );
+    return false;
+  }
   const received = request.headers.get("x-telegram-bot-api-secret-token");
-  return received === expected;
+  if (!received) return false;
+  const a = Buffer.from(expected, "utf8");
+  const b = Buffer.from(received, "utf8");
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
 }
 
 function toChatId(value: number | string | undefined | null): string | null {

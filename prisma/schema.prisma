@@ -39,6 +39,13 @@ model User {
   withingsClientIdEncrypted     String? @map("withings_client_id_encrypted")
   withingsClientSecretEncrypted String? @map("withings_client_secret_encrypted")
 
+  // moodLog integration (per-user, encrypted)
+  moodLogUrlEncrypted    String? @map("mood_log_url_encrypted")
+  moodLogApiKeyEncrypted String? @map("mood_log_api_key_encrypted")
+  moodLogEnabled         Boolean @default(false) @map("mood_log_enabled")
+  moodLogLastSyncedAt    DateTime? @map("mood_log_last_synced_at")
+  moodLogWebhookSecret   String? @map("mood_log_webhook_secret")
+
   // Locale (null = use system/admin default)
   locale    String?  @map("locale") // "de" | "en" | null
 
@@ -55,6 +62,7 @@ model User {
   apiTokens   ApiToken[]
   auditLogs   AuditLog[]
   withingsConnection WithingsConnection?
+  moodEntries  MoodEntry[]
   notificationChannels NotificationChannel[]
   pushSubscriptions    PushSubscription[]
 
@@ -250,6 +258,28 @@ model WithingsConnection {
   @@map("withings_connections")
 }
 
+// ─── Mood Entries (moodLog) ───────────────────────────────────
+
+model MoodEntry {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  date         String   // YYYY-MM-DD
+  mood         String   // SUPER_GUT, GUT, OKAY, SCHLECHT, LAUSIG
+  score        Int      // 1-5
+  tags         String?  // JSON array of tag keys
+  source       String   @default("MOODLOG") // WEB, TELEGRAM, DAYLIO
+  moodLoggedAt DateTime @map("mood_logged_at")
+  syncedAt     DateTime @default(now()) @map("synced_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date, moodLoggedAt])
+  @@index([userId, date])
+  @@map("mood_entries")
+}
+
 // ─── App Settings ─────────────────────────────────────────
 
 model AppSettings {
@@ -263,6 +293,7 @@ model AppSettings {
   webPushVapidPrivateKeyEncrypted String? @map("web_push_vapid_private_key_encrypted")
   webPushVapidSubject String? @map("web_push_vapid_subject")
   apiGlobal           Boolean @default(true) @map("api_global")      // global toggle
+  moodLogGlobal       Boolean @default(true) @map("mood_log_global")
   umamiEnabled        Boolean @default(false) @map("umami_enabled")
   umamiScriptUrl      String? @map("umami_script_url")
   umamiWebsiteId      String? @map("umami_website_id")

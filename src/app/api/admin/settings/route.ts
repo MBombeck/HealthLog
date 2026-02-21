@@ -41,6 +41,7 @@ export async function GET() {
     ),
     reminderLateMinutes: settings?.reminderLateMinutes ?? 120,
     reminderMissedMinutes: settings?.reminderMissedMinutes ?? 240,
+    moodLogGlobal: settings?.moodLogGlobal ?? true,
   });
 }
 
@@ -207,6 +208,10 @@ export async function PUT(request: NextRequest) {
       updates.reminderMissedMinutes = body.reminderMissedMinutes;
       auditDetails.reminderMissedMinutes = body.reminderMissedMinutes;
     }
+    if (typeof body.moodLogGlobal === "boolean") {
+      updates.moodLogGlobal = body.moodLogGlobal;
+      auditDetails.moodLogGlobal = body.moodLogGlobal;
+    }
 
     if (Object.keys(updates).length === 0) {
       return apiError("Keine gültigen Felder", 422);
@@ -251,6 +256,7 @@ export async function PUT(request: NextRequest) {
       ),
       reminderLateMinutes: settings.reminderLateMinutes,
       reminderMissedMinutes: settings.reminderMissedMinutes,
+      moodLogGlobal: settings.moodLogGlobal,
     });
   } catch (err) {
     console.error("Admin settings update error:", err);

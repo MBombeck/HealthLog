@@ -29,6 +29,7 @@ import {
 import { setGlobalBoss } from "@/lib/jobs/boss-instance";
 import { deleteMessage } from "@/lib/telegram";
 import { decrypt } from "@/lib/crypto";
+import { syncMoodLogEntries } from "@/lib/moodlog/sync";
 
 function parseTimeToMinutes(value: string): number {
   const [h, m] = value.split(":").map(Number);
@@ -67,6 +68,8 @@ const MEDICATION_COMPLIANCE_STATUS_QUEUE =
   "insights-medication-compliance-status";
 const MEDICATION_COMPLIANCE_STATUS_CRON = "25 2 * * *"; // daily at 02:25
 const TELEGRAM_CLEANUP_QUEUE = "telegram-message-cleanup";
+const MOODLOG_SYNC_QUEUE = "moodlog-sync";
+const MOODLOG_SYNC_CRON = "30 * * * *"; // every hour at :30
 
 interface ReminderCheckPayload {
   triggeredAt: string;
@@ -104,6 +107,10 @@ interface TelegramCleanupPayload {
   userId: string;
   chatId: string;
   messageId: number;
+}
+
+interface MoodLogSyncPayload {
+  triggeredAt: string;
 }
 
 /**
@@ -669,6 +676,56 @@ async function handleTelegramCleanup(jobs: Job<TelegramCleanupPayload>[]) {
   }
 }
 
+/**
+ * Fallback polling for moodLog data.
+ * Syncs mood entries for all users with moodLog enabled.
+ */
+async function handleMoodLogSync(jobs: Job<MoodLogSyncPayload>[]) {
+  void jobs;
+  const prisma = getWorkerPrisma();
+  try {
+    // Check global toggle
+    const appSettings = await prisma.appSettings.findUnique({
+      where: { id: "singleton" },
+      select: { moodLogGlobal: true },
+    });
+    if (appSettings && !appSettings.moodLogGlobal) {
+      console.log("[moodlog] Global toggle disabled, skipping sync");
+      return;
+    }
+
+    const users = await prisma.user.findMany({
+      where: { moodLogEnabled: true },
+      select: { id: true },
+    });
+
+    if (users.length === 0) return;
+
+    let synced = 0;
+    let totalImported = 0;
+
+    for (const user of users) {
+      try {
+        const imported = await syncMoodLogEntries(user.id);
+        synced++;
+        totalImported += imported;
+      } catch (err) {
+        console.error(
+          `[moodlog] Fallback sync failed for user ${user.id}:`,
+          err,
+        );
+      }
+    }
+
+    console.log(
+      `[moodlog] Fallback sync completed: ${synced}/${users.length} users, ${totalImported} entries imported`,
+    );
+  } catch (err) {
+    console.error("[moodlog] handleMoodLogSync failed:", err);
+    recordError();
+  }
+}
+
 export async function startReminderWorker() {
   console.log("[pg-boss] Initializing pg-boss with DATABASE_URL...");
   if (!DATABASE_URL) {
@@ -700,6 +757,7 @@ export async function startReminderWorker() {
     BMI_STATUS_QUEUE,
     MEDICATION_COMPLIANCE_STATUS_QUEUE,
     TELEGRAM_CLEANUP_QUEUE,
+    MOODLOG_SYNC_QUEUE,
   ];
 
   for (const q of allQueues) {
@@ -717,6 +775,7 @@ export async function startReminderWorker() {
     [PULSE_STATUS_QUEUE, PULSE_STATUS_CRON],
     [BMI_STATUS_QUEUE, BMI_STATUS_CRON],
     [MEDICATION_COMPLIANCE_STATUS_QUEUE, MEDICATION_COMPLIANCE_STATUS_CRON],
+    [MOODLOG_SYNC_QUEUE, MOODLOG_SYNC_CRON],
   ];
 
   for (const [name, cron] of schedules) {
@@ -769,6 +828,11 @@ export async function startReminderWorker() {
     TELEGRAM_CLEANUP_QUEUE,
     { localConcurrency: 1 },
     handleTelegramCleanup,
+  );
+  await boss.work<MoodLogSyncPayload>(
+    MOODLOG_SYNC_QUEUE,
+    { localConcurrency: 1 },
+    handleMoodLogSync,
   );
 
   return boss;

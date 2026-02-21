@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { syncUserMeasurements } from "@/lib/withings/sync";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -12,7 +13,12 @@ function hasValidWebhookSecret(request: NextRequest): boolean {
     );
     return false;
   }
-  return request.nextUrl.searchParams.get("secret") === expected;
+  const received = request.nextUrl.searchParams.get("secret");
+  if (!received) return false;
+  const a = Buffer.from(expected, "utf8");
+  const b = Buffer.from(received, "utf8");
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
 }
 
 /**

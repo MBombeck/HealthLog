@@ -32,6 +32,7 @@ import {
   Eye,
   EyeOff,
   User,
+  Smile,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -78,6 +79,7 @@ interface GlobalServiceAvailability {
   ntfyGlobal: boolean;
   webPushGlobal: boolean;
   apiGlobal: boolean;
+  moodLogGlobal: boolean;
 }
 
 export default function SettingsPage() {
@@ -273,6 +275,7 @@ export default function SettingsPage() {
     ntfyGlobal: globalServices?.ntfyGlobal ?? true,
     webPushGlobal: globalServices?.webPushGlobal ?? true,
     apiGlobal: globalServices?.apiGlobal ?? true,
+    moodLogGlobal: globalServices?.moodLogGlobal ?? true,
   };
   const hasNotificationServices =
     serviceAvailability.telegramGlobal ||
@@ -626,6 +629,7 @@ export default function SettingsPage() {
               {t("settings.categoryIntegration")}
             </h2>
             <WithingsSection id="withings" isAuthenticated={isAuthenticated} />
+            {serviceAvailability.moodLogGlobal !== false && <MoodLogSection t={t} />}
             <InsightsSettingsSection
               id="insights"
               isAuthenticated={isAuthenticated}
@@ -2555,6 +2559,247 @@ function urlBase64ToArrayBuffer(base64String: string): ArrayBuffer {
     view[i] = raw.charCodeAt(i);
   }
   return buffer;
+}
+
+/* ─────────────────────── moodLog Integration ─────────────────────── */
+
+function MoodLogSection({ t }: { t: (key: string) => string }) {
+  const [url, setUrl] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
+
+  const { data: status, refetch: refetchStatus } = useQuery({
+    queryKey: ["moodlog-status"],
+    queryFn: async () => {
+      const res = await fetch("/api/integrations/moodlog/status");
+      if (!res.ok) throw new Error("Failed");
+      return (await res.json()).data as {
+        configured: boolean;
+        enabled: boolean;
+        lastSyncedAt: string | null;
+        entryCount: number;
+        webhookSecret: string | null;
+      };
+    },
+  });
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setMsg(null);
+    const res = await fetch("/api/settings/moodlog", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: url.trim(), apiKey: apiKey.trim() }),
+    });
+    if (res.ok) {
+      setMsg(t("settings.moodLogSaved"));
+      setMsgType("success");
+      setUrl("");
+      setApiKey("");
+      await refetchStatus();
+    } else {
+      const json = await res.json();
+      setMsg(json.error || t("settings.savingError"));
+      setMsgType("error");
+    }
+    setSaving(false);
+  }
+
+  async function handleSync(fullSync = false) {
+    setSyncing(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/integrations/moodlog/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullSync }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setMsg(t("settings.moodLogSyncResult").replace("{count}", String(json.data.imported)));
+        setMsgType("success");
+        await refetchStatus();
+      } else {
+        setMsg(t("settings.moodLogSyncFailed"));
+        setMsgType("error");
+      }
+    } catch {
+      setMsg(t("settings.moodLogSyncFailed"));
+      setMsgType("error");
+    }
+    setSyncing(false);
+  }
+
+  async function handleDisconnect() {
+    const res = await fetch("/api/settings/moodlog", { method: "DELETE" });
+    if (res.ok) {
+      setMsg(t("settings.moodLogDisconnected"));
+      setMsgType("success");
+      await refetchStatus();
+    }
+  }
+
+  return (
+    <section id="moodlog" className="rounded-lg border p-4 space-y-4">
+      <div className="flex items-center gap-2">
+        <Smile className="h-5 w-5" />
+        <div>
+          <h2 className="font-semibold">{t("settings.moodLogTitle")}</h2>
+          <p className="text-muted-foreground text-sm">
+            {t("settings.moodLogDescription")}
+          </p>
+        </div>
+        {status?.configured && (
+          <Badge variant="outline" className="ml-auto">
+            {status.enabled ? t("settings.withingsConnected") : t("admin.configured")}
+          </Badge>
+        )}
+      </div>
+
+      {/* Credentials form */}
+      <form onSubmit={handleSave} className="space-y-3">
+        <div>
+          <Label>{t("settings.moodLogUrl")}</Label>
+          <Input
+            type="url"
+            placeholder={t("settings.moodLogUrlPlaceholder")}
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+          />
+        </div>
+        <div>
+          <Label>{t("settings.moodLogApiKey")}</Label>
+          <PasswordInput
+            placeholder={
+              status?.configured
+                ? t("settings.withingsCredentialsSavedPlaceholder")
+                : t("settings.moodLogApiKeyPlaceholder")
+            }
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+          />
+        </div>
+        <Button type="submit" disabled={saving || (!url.trim() && !apiKey.trim())} size="sm">
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Save className="mr-2 h-4 w-4" />
+          {t("common.save")}
+        </Button>
+      </form>
+
+      {/* Connected state */}
+      {status?.configured && (
+        <div className="space-y-3 border-t pt-3">
+          {/* Webhook Secret */}
+          {status.webhookSecret && (
+            <div>
+              <Label>{t("settings.moodLogWebhookSecret")}</Label>
+              <div className="flex gap-2">
+                <Input value={status.webhookSecret} readOnly className="font-mono text-xs" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(status.webhookSecret!);
+                    setMsg(t("common.copied"));
+                    setMsgType("success");
+                  }}
+                >
+                  {t("common.copied").replace("!", "")}
+                </Button>
+              </div>
+              <p className="text-muted-foreground text-xs mt-1">
+                {t("settings.moodLogWebhookSecretHelp")}
+              </p>
+            </div>
+          )}
+
+          {/* Status info */}
+          <div className="flex flex-wrap gap-4 text-sm">
+            {status.lastSyncedAt && (
+              <span>
+                {t("settings.moodLogLastSync")}:{" "}
+                {new Date(status.lastSyncedAt).toLocaleString("de-DE")}
+              </span>
+            )}
+            <span>
+              {t("settings.moodLogEntries")}: {status.entryCount}
+            </span>
+          </div>
+
+          {/* Sync buttons */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={syncing}
+              onClick={() => handleSync(false)}
+            >
+              {syncing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <RefreshCw className="mr-2 h-4 w-4" />
+              {t("settings.moodLogSync")}
+            </Button>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" disabled={syncing}>
+                  <Download className="mr-2 h-4 w-4" />
+                  {t("settings.moodLogFullSync")}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t("settings.moodLogFullSyncTitle")}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t("settings.moodLogFullSyncDescription")}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => handleSync(true)}>
+                    {t("settings.moodLogFullSync")}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Unlink className="mr-2 h-4 w-4" />
+                  {t("settings.moodLogDisconnect")}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t("settings.moodLogDisconnectTitle")}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t("settings.moodLogDisconnectDescription")}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDisconnect}>
+                    {t("settings.moodLogDisconnect")}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      )}
+
+      {/* Status message */}
+      {msg && (
+        <p className={`text-sm ${msgType === "error" ? "text-red-400" : "text-green-400"}`}>
+          {msg}
+        </p>
+      )}
+    </section>
+  );
 }
 
 /* ─────────────────────── OpenAI Insights Settings ─────────────────────── */
