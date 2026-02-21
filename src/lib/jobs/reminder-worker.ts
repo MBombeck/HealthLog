@@ -653,94 +653,41 @@ export async function startReminderWorker() {
   console.log("[pg-boss] Connecting to database...");
   await boss.start();
   markWorkerStarted();
-  console.log("[pg-boss] Started reminder worker successfully");
+  console.log("[pg-boss] Connected and started");
 
-  // Schedule the recurring check
-  await boss.schedule(
+  // pg-boss v12 requires explicit queue creation before scheduling
+  const allQueues = [
     QUEUE_NAME,
-    CHECK_INTERVAL_CRON,
-    {},
-    {
-      tz: "Europe/Berlin",
-    },
-  );
-  console.log(`[pg-boss] Scheduled ${QUEUE_NAME} at ${CHECK_INTERVAL_CRON}`);
-
-  await boss.schedule(
     WITHINGS_SYNC_QUEUE,
-    WITHINGS_SYNC_CRON,
-    {},
-    {
-      tz: "Europe/Berlin",
-    },
-  );
-  console.log(
-    `[pg-boss] Scheduled ${WITHINGS_SYNC_QUEUE} at ${WITHINGS_SYNC_CRON}`,
-  );
-  await boss.schedule(
     GENERAL_STATUS_QUEUE,
-    GENERAL_STATUS_CRON,
-    {},
-    {
-      tz: "Europe/Berlin",
-    },
-  );
-  console.log(
-    `[pg-boss] Scheduled ${GENERAL_STATUS_QUEUE} at ${GENERAL_STATUS_CRON}`,
-  );
-  await boss.schedule(
     BLOOD_PRESSURE_STATUS_QUEUE,
-    BLOOD_PRESSURE_STATUS_CRON,
-    {},
-    {
-      tz: "Europe/Berlin",
-    },
-  );
-  console.log(
-    `[pg-boss] Scheduled ${BLOOD_PRESSURE_STATUS_QUEUE} at ${BLOOD_PRESSURE_STATUS_CRON}`,
-  );
-  await boss.schedule(
     WEIGHT_STATUS_QUEUE,
-    WEIGHT_STATUS_CRON,
-    {},
-    {
-      tz: "Europe/Berlin",
-    },
-  );
-  console.log(
-    `[pg-boss] Scheduled ${WEIGHT_STATUS_QUEUE} at ${WEIGHT_STATUS_CRON}`,
-  );
-  await boss.schedule(
     PULSE_STATUS_QUEUE,
-    PULSE_STATUS_CRON,
-    {},
-    {
-      tz: "Europe/Berlin",
-    },
-  );
-  console.log(
-    `[pg-boss] Scheduled ${PULSE_STATUS_QUEUE} at ${PULSE_STATUS_CRON}`,
-  );
-  await boss.schedule(
     BMI_STATUS_QUEUE,
-    BMI_STATUS_CRON,
-    {},
-    {
-      tz: "Europe/Berlin",
-    },
-  );
-  console.log(`[pg-boss] Scheduled ${BMI_STATUS_QUEUE} at ${BMI_STATUS_CRON}`);
-  await boss.schedule(
     MEDICATION_COMPLIANCE_STATUS_QUEUE,
-    MEDICATION_COMPLIANCE_STATUS_CRON,
-    {},
-    {
-      tz: "Europe/Berlin",
-    },
-  );
-  console.log(
-    `[pg-boss] Scheduled ${MEDICATION_COMPLIANCE_STATUS_QUEUE} at ${MEDICATION_COMPLIANCE_STATUS_CRON}`,
-  );
+  ];
+
+  for (const q of allQueues) {
+    await boss.createQueue(q);
+  }
+  console.log(`[pg-boss] Created ${allQueues.length} queues`);
+
+  // Schedule recurring cron jobs
+  const schedules: [string, string][] = [
+    [QUEUE_NAME, CHECK_INTERVAL_CRON],
+    [WITHINGS_SYNC_QUEUE, WITHINGS_SYNC_CRON],
+    [GENERAL_STATUS_QUEUE, GENERAL_STATUS_CRON],
+    [BLOOD_PRESSURE_STATUS_QUEUE, BLOOD_PRESSURE_STATUS_CRON],
+    [WEIGHT_STATUS_QUEUE, WEIGHT_STATUS_CRON],
+    [PULSE_STATUS_QUEUE, PULSE_STATUS_CRON],
+    [BMI_STATUS_QUEUE, BMI_STATUS_CRON],
+    [MEDICATION_COMPLIANCE_STATUS_QUEUE, MEDICATION_COMPLIANCE_STATUS_CRON],
+  ];
+
+  for (const [name, cron] of schedules) {
+    await boss.schedule(name, cron, {}, { tz: "Europe/Berlin" });
+  }
+  console.log(`[pg-boss] Scheduled ${schedules.length} cron jobs`);
 
   // Register the handler
   await boss.work<ReminderCheckPayload>(
