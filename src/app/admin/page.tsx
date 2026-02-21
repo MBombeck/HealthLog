@@ -42,6 +42,7 @@ import {
   Globe,
   MessageCircle,
   Bell,
+  BellRing,
   Key,
 } from "lucide-react";
 import { PasswordStrength } from "@/components/ui/password-strength";
@@ -98,6 +99,9 @@ interface AdminSettings {
   telegramGlobal: boolean;
   ntfyGlobal: boolean;
   webPushGlobal: boolean;
+  webPushVapidPublicKey: string | null;
+  webPushVapidSubject: string | null;
+  webPushVapidConfigured: boolean;
   apiGlobal: boolean;
   umamiEnabled: boolean;
   umamiScriptUrl: string | null;
@@ -333,6 +337,13 @@ function AppSettingsSection({
   const [glitchtipEnvironmentDraft, setGlitchtipEnvironmentDraft] = useState<
     string | null
   >(null);
+  const [webPushVapidPublicKeyDraft, setWebPushVapidPublicKeyDraft] =
+    useState<string | null>(null);
+  const [webPushVapidPrivateKeyDraft, setWebPushVapidPrivateKeyDraft] =
+    useState("");
+  const [webPushVapidSubjectDraft, setWebPushVapidSubjectDraft] = useState<
+    string | null
+  >(null);
 
   const { data: settings } = useQuery({
     queryKey: ["admin", "settings"],
@@ -425,6 +436,10 @@ function AppSettingsSection({
   const glitchtipDsnValue = glitchtipDsnDraft ?? settings?.glitchtipDsn ?? "";
   const glitchtipEnvironmentValue =
     glitchtipEnvironmentDraft ?? settings?.glitchtipEnvironment ?? "production";
+  const webPushVapidPublicKeyValue =
+    webPushVapidPublicKeyDraft ?? settings?.webPushVapidPublicKey ?? "";
+  const webPushVapidSubjectValue =
+    webPushVapidSubjectDraft ?? settings?.webPushVapidSubject ?? "";
 
   function saveBugReportSettings() {
     const payload: Record<string, unknown> = {
@@ -448,7 +463,12 @@ function AppSettingsSection({
       umamiWebsiteId: umamiWebsiteIdValue,
       glitchtipDsn: glitchtipDsnValue,
       glitchtipEnvironment: glitchtipEnvironmentValue,
+      webPushVapidPublicKey: webPushVapidPublicKeyValue,
+      webPushVapidSubject: webPushVapidSubjectValue,
     };
+    if (webPushVapidPrivateKeyDraft.trim().length > 0) {
+      payload.webPushVapidPrivateKey = webPushVapidPrivateKeyDraft.trim();
+    }
 
     updateSettings.mutate(payload, {
       onSuccess: () => {
@@ -456,6 +476,9 @@ function AppSettingsSection({
         setUmamiWebsiteIdDraft(null);
         setGlitchtipDsnDraft(null);
         setGlitchtipEnvironmentDraft(null);
+        setWebPushVapidPublicKeyDraft(null);
+        setWebPushVapidPrivateKeyDraft("");
+        setWebPushVapidSubjectDraft(null);
       },
     });
   }
@@ -692,6 +715,84 @@ function AppSettingsSection({
                 )}
                 {t("admin.monitoringTestGlitchtip")}
               </Button>
+            </div>
+          </div>
+
+          <div className="space-y-3 rounded-lg border border-white/10 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <BellRing className="text-muted-foreground h-4 w-4" />
+                <p className="text-sm font-medium">{t("admin.webPushVapid")}</p>
+              </div>
+              {settings?.webPushVapidConfigured ? (
+                <Badge className="border-dracula-green/30 bg-dracula-green/15 text-dracula-green">
+                  {t("admin.configured")}
+                </Badge>
+              ) : (
+                <Badge variant="outline">{t("admin.notConfigured")}</Badge>
+              )}
+            </div>
+            <p className="text-muted-foreground text-xs">
+              {t("admin.webPushVapidDescription")}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="admin-web-push-public-key" className="text-xs">
+                  {t("admin.webPushVapidPublicKey")}
+                </Label>
+                <Input
+                  id="admin-web-push-public-key"
+                  name="admin-web-push-public-key"
+                  value={webPushVapidPublicKeyValue}
+                  onChange={(event) =>
+                    setWebPushVapidPublicKeyDraft(event.target.value)
+                  }
+                  placeholder={t("admin.webPushVapidPublicKeyPlaceholder")}
+                  autoComplete="new-password"
+                  spellCheck={false}
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  disabled={updateSettings.isPending}
+                />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="admin-web-push-private-key" className="text-xs">
+                  {t("admin.webPushVapidPrivateKey")}
+                </Label>
+                <PasswordInput
+                  id="admin-web-push-private-key"
+                  name="admin-web-push-private-key"
+                  value={webPushVapidPrivateKeyDraft}
+                  onChange={(event) =>
+                    setWebPushVapidPrivateKeyDraft(event.target.value)
+                  }
+                  placeholder={t("admin.webPushVapidPrivateKeyPlaceholder")}
+                  autoComplete="new-password"
+                  spellCheck={false}
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  disabled={updateSettings.isPending}
+                />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="admin-web-push-subject" className="text-xs">
+                  {t("admin.webPushVapidSubject")}
+                </Label>
+                <Input
+                  id="admin-web-push-subject"
+                  name="admin-web-push-subject"
+                  value={webPushVapidSubjectValue}
+                  onChange={(event) =>
+                    setWebPushVapidSubjectDraft(event.target.value)
+                  }
+                  placeholder={t("admin.webPushVapidSubjectPlaceholder")}
+                  autoComplete="new-password"
+                  spellCheck={false}
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  disabled={updateSettings.isPending}
+                />
+              </div>
             </div>
           </div>
 
