@@ -18,6 +18,7 @@ import {
   Sun,
   Target,
   Trophy,
+  Waves,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -49,6 +50,7 @@ const STORAGE_KEY = "healthlog-sidebar-collapsed";
 const navItems = [
   { href: "/", tKey: "nav.dashboard", icon: Home },
   { href: "/measurements", tKey: "nav.measurements", icon: Activity },
+  { href: "/stimmung", tKey: "nav.mood", icon: Waves },
   { href: "/medications", tKey: "nav.medications", icon: Pill },
   { href: "/insights", tKey: "nav.insights", icon: Lightbulb },
   { href: "/zielwerte", tKey: "nav.targets", icon: Target },

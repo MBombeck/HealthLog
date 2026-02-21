@@ -33,9 +33,74 @@ export const moodLogSyncResponseSchema = z.object({
 });
 
 export type MoodLogCredentials = z.infer<typeof moodLogCredentialsSchema>;
-export type MoodLogWebhookPayload = z.infer<
-  typeof moodLogWebhookPayloadSchema
->;
-export type MoodLogSyncResponse = z.infer<
-  typeof moodLogSyncResponseSchema
->;
+export type MoodLogWebhookPayload = z.infer<typeof moodLogWebhookPayloadSchema>;
+export type MoodLogSyncResponse = z.infer<typeof moodLogSyncResponseSchema>;
+
+// --- CRUD schemas for mood entries ---
+
+export const moodLevelEnum = z.enum([
+  "SUPER_GUT",
+  "GUT",
+  "OKAY",
+  "SCHLECHT",
+  "LAUSIG",
+]);
+
+export const moodSourceEnum = z.enum([
+  "MANUAL",
+  "MOODLOG",
+  "WEB",
+  "TELEGRAM",
+  "DAYLIO",
+]);
+
+const MOOD_SCORE_MAP: Record<string, number> = {
+  SUPER_GUT: 5,
+  GUT: 4,
+  OKAY: 3,
+  SCHLECHT: 2,
+  LAUSIG: 1,
+};
+
+export function getScoreForMood(mood: string): number {
+  return MOOD_SCORE_MAP[mood] ?? 3;
+}
+
+export const createMoodEntrySchema = z.object({
+  mood: moodLevelEnum,
+  tags: z.array(z.string().max(50)).max(20).optional(),
+  moodLoggedAt: z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
+  source: moodSourceEnum.optional().default("MANUAL"),
+});
+
+export const updateMoodEntrySchema = z.object({
+  mood: moodLevelEnum.optional(),
+  tags: z.array(z.string().max(50)).max(20).nullable().optional(),
+  moodLoggedAt: z.iso
+    .datetime({ offset: true })
+    .transform((s) => new Date(s))
+    .optional(),
+});
+
+export const listMoodEntriesSchema = z.object({
+  mood: moodLevelEnum.optional(),
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  limit: z.coerce.number().int().min(1).max(500).optional().default(100),
+  offset: z.coerce.number().int().min(0).optional().default(0),
+  sortBy: z
+    .enum(["date", "mood", "score", "moodLoggedAt", "source"])
+    .optional()
+    .default("moodLoggedAt"),
+  sortDir: z.enum(["asc", "desc"]).optional().default("desc"),
+});
+
+export type CreateMoodEntryInput = z.infer<typeof createMoodEntrySchema>;
+export type UpdateMoodEntryInput = z.infer<typeof updateMoodEntrySchema>;
+export type ListMoodEntriesInput = z.infer<typeof listMoodEntriesSchema>;
