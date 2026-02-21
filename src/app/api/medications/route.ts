@@ -38,6 +38,32 @@ export async function GET() {
       ]),
     );
 
+    // Count today's intake events per medication (user timezone)
+    const userTz = sessionData.user.timezone || "Europe/Berlin";
+    const nowLocal = new Date(
+      new Date().toLocaleString("en-US", { timeZone: userTz }),
+    );
+    const localMidnight = new Date(nowLocal);
+    localMidnight.setHours(0, 0, 0, 0);
+    const offsetMs =
+      Math.round((nowLocal.getTime() - new Date().getTime()) / 60000) * 60000;
+    const todayStartUtc = new Date(localMidnight.getTime() - offsetMs);
+    const todayEndUtc = new Date(
+      todayStartUtc.getTime() + 24 * 60 * 60 * 1000 - 1,
+    );
+
+    const todayEvents = await prisma.medicationIntakeEvent.groupBy({
+      by: ["medicationId"],
+      where: {
+        userId: sessionData.user.id,
+        scheduledFor: { gte: todayStartUtc, lte: todayEndUtc },
+      },
+      _count: { id: true },
+    });
+    const todayEventCountByMedId = Object.fromEntries(
+      todayEvents.map((entry: { medicationId: string; _count: { id: number } }) => [entry.medicationId, entry._count.id]),
+    );
+
     let categoryMap: Record<string, string> = {};
     try {
       categoryMap = await getMedicationCategories(
@@ -53,6 +79,7 @@ export async function GET() {
         ...m,
         category: categoryMap[m.id] ?? "OTHER",
         lastTakenAt: lastTakenAtByMedicationId[m.id] ?? null,
+        todayEventCount: todayEventCountByMedId[m.id] ?? 0,
       })),
     );
   } catch (error) {
