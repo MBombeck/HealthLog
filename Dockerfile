@@ -43,12 +43,13 @@ COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/src/generated ./src/generated
 
 # Install pg-boss + all transitive deps for the reminder worker (serverExternalPackage)
-# Isolated install to avoid conflicts with standalone node_modules structure
+# Isolated install so npm doesn't choke on pnpm's standalone node_modules layout
 RUN mkdir -p /tmp/pg-boss-install && \
     cd /tmp/pg-boss-install && \
     npm init -y && \
     npm install --omit=dev pg-boss@12 && \
-    cp -a node_modules/. /app/node_modules/ && \
+    mkdir -p /app/node_modules && \
+    cp -r node_modules/* /app/node_modules/ && \
     rm -rf /tmp/pg-boss-install
 
 # Install Prisma CLI + engines for runtime migrations (isolated from Next standalone tree)
