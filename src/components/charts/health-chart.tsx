@@ -469,15 +469,6 @@ export function HealthChart({
     return zones;
   }, [showBands, targetZones, yDomain]);
 
-  const showYearInAxis = useMemo(() => {
-    if (!chartData || chartData.length < 2) return false;
-    const first = chartData[0]?.timestamp;
-    const last = chartData[chartData.length - 1]?.timestamp;
-    if (typeof first !== "number" || typeof last !== "number") return false;
-    const spanDays = (last - first) / 86400000;
-    return spanDays > 365;
-  }, [chartData]);
-
   const formatAxisValue = (value: number) =>
     new Intl.NumberFormat("de-DE", {
       maximumFractionDigits: 0,
@@ -662,7 +653,7 @@ export function HealthChart({
                       new Date(
                         chartData?.[Math.round(value)]?.timestamp ?? Date.now(),
                       ),
-                      showYearInAxis,
+                      true,
                     )
                   }
                   interval="preserveStartEnd"

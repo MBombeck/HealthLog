@@ -307,7 +307,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">
           {t("settings.title")}
@@ -366,7 +366,7 @@ export default function SettingsPage() {
           </div>
         )}
 
-        <div className="space-y-8">
+        <div className="min-w-0 space-y-8">
           <section id="section-allgemein" className="scroll-mt-28 space-y-3">
             <h2 className="text-lg font-semibold">
               {t("settings.categoryGeneral")}

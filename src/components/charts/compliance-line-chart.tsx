@@ -55,7 +55,7 @@ export function ComplianceLineChart({
       .map(([dateKey, data]) => {
         const date = new Date(`${dateKey}T12:00:00.000Z`);
         return {
-          date: formatDateShort(date),
+          date: formatDateShort(date, true),
           rate: Math.min(100, Math.round((data.taken / data.expected) * 100)),
           timestamp: date.getTime(),
         };
