@@ -51,12 +51,17 @@ export async function POST(request: NextRequest) {
     return apiError("Invalid webhook secret", 401);
   }
 
-  // 4. Parse and validate body
-  let body: unknown;
+  // 5. Parse body
+  let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
     return apiError("Invalid JSON", 400);
+  }
+
+  // Handle test pings from moodLog's "Test senden" button
+  if (body.event === "webhook.test") {
+    return new Response(null, { status: 200 });
   }
 
   const parsed = moodLogWebhookPayloadSchema.safeParse(body);
