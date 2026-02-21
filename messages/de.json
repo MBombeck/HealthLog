@@ -726,7 +726,8 @@
     "reminderCheckResults": "Ergebnisse",
     "reminderCheckNotifOn": "Benachrichtigungen an",
     "reminderCheckNotifOff": "Benachrichtigungen aus",
-    "reminderCheckEventsToday": "Heutige Events"
+    "reminderCheckEventsToday": "Heutige Events",
+    "reminderCheckNotifSent": "Gesendet"
   },
   "achievements": {
     "title": "Erfolge",

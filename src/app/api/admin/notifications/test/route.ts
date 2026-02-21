@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth/session";
 import { apiError, apiSuccess } from "@/lib/api-response";
-import { decrypt } from "@/lib/crypto";
+import { decrypt, encrypt } from "@/lib/crypto";
 import { sendViaTelegram } from "@/lib/notifications/senders/telegram";
 import { sendViaNtfy } from "@/lib/notifications/senders/ntfy";
 import { sendViaWebPush } from "@/lib/notifications/senders/web-push";
@@ -14,11 +14,59 @@ import type {
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Ensure legacy Telegram config (stored on User model) has a matching
+ * NotificationChannel record. Returns true if a channel was created.
+ */
+async function ensureTelegramChannel(userId: string): Promise<boolean> {
+  const existing = await prisma.notificationChannel.findUnique({
+    where: { userId_type: { userId, type: "TELEGRAM" } },
+  });
+  if (existing) return false;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      telegramBotToken: true,
+      telegramChatId: true,
+      telegramEnabled: true,
+    },
+  });
+
+  if (!user?.telegramEnabled || !user.telegramBotToken || !user.telegramChatId) {
+    return false;
+  }
+
+  const botToken = decrypt(user.telegramBotToken);
+  const config = encrypt(
+    JSON.stringify({ botToken, chatId: user.telegramChatId }),
+  );
+
+  await prisma.notificationChannel.create({
+    data: {
+      userId,
+      type: "TELEGRAM",
+      enabled: true,
+      config,
+    },
+  });
+
+  return true;
+}
+
 export async function POST() {
   const admin = await requireAdmin();
   if (!admin) return apiError("Nicht berechtigt", 403);
 
   try {
+    // Auto-migrate legacy Telegram config before querying channels
+    const migrated = await ensureTelegramChannel(admin.id);
+    if (migrated) {
+      console.log(
+        `[notification-test] Auto-migrated legacy Telegram config for user ${admin.id}`,
+      );
+    }
+
     const channels = await prisma.notificationChannel.findMany({
       where: { userId: admin.id, enabled: true },
       include: {
@@ -73,7 +121,7 @@ export async function POST() {
               results.push({
                 channel: "TELEGRAM",
                 success: false,
-                error: `Senden fehlgeschlagen (chatId: ${config.chatId})`,
+                error: `Telegram API hat Fehler gemeldet (chatId: ${config.chatId})`,
               });
               continue;
             }

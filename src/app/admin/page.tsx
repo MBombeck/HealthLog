@@ -494,9 +494,11 @@ function AppSettingsSection({
               days: string;
               status: string;
               label: string;
+              notificationSent?: boolean;
             }>;
             eventsToday: number;
           }>;
+          notificationsSent?: number;
         };
       };
       return json.data;
@@ -1145,6 +1147,12 @@ function AppSettingsSection({
                           <span className="text-muted-foreground shrink-0">{sched.window}</span>
                           <span className="text-muted-foreground shrink-0">[{sched.days}]</span>
                           <span className={statusColor}>{sched.label}</span>
+                          {sched.notificationSent && (
+                            <span className="text-green-400 shrink-0 flex items-center gap-0.5">
+                              <Bell className="h-3 w-3" />
+                              {t("admin.reminderCheckNotifSent")}
+                            </span>
+                          )}
                         </div>
                       );
                     })}
