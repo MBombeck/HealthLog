@@ -279,32 +279,7 @@ export default function SettingsPage() {
     serviceAvailability.ntfyGlobal ||
     serviceAvailability.webPushGlobal;
 
-  const settingsSections = [
-    { id: "section-allgemein", label: t("settings.categoryGeneral") },
-    { id: "section-sicherheit", label: t("settings.security") },
-    { id: "section-integration", label: t("settings.categoryIntegration") },
-    { id: "section-export", label: t("settings.export") },
-    { id: "section-danger-zone", label: t("settings.dangerZoneTitle") },
-  ];
-  if (hasNotificationServices) {
-    settingsSections.splice(2, 0, {
-      id: "section-benachrichtigungen",
-      label: t("settings.categoryNotifications"),
-    });
-  }
-  if (serviceAvailability.apiGlobal) {
-    settingsSections.splice(hasNotificationServices ? 4 : 3, 0, {
-      id: "section-api",
-      label: t("settings.categoryApi"),
-    });
-  }
   const showAuditLogInSettings = false;
-
-  function scrollToSection(id: string) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
 
   return (
     <div className="space-y-6 overflow-x-hidden">
@@ -316,31 +291,6 @@ export default function SettingsPage() {
           {t("settings.subtitle")}
         </p>
       </div>
-
-      <div className="relative">
-        <aside className="fixed top-24 left-[calc((100vw-76.8rem)/2-14rem)] hidden max-h-[calc(100vh-7rem)] w-48 overflow-y-auto 2xl:block">
-          <p className="text-foreground/60 text-xs font-semibold tracking-wider uppercase">
-            {t("settings.sectionsTitle")}
-          </p>
-          <nav className="mt-2 space-y-0.5">
-            {settingsSections.map((section) => {
-              const isDanger = section.id === "section-danger-zone";
-              return (
-                <button
-                  key={section.id}
-                  onClick={() => scrollToSection(section.id)}
-                  className={`w-full px-0 py-1 text-left text-sm transition-colors ${
-                    isDanger
-                      ? "text-foreground hover:text-destructive"
-                      : "text-foreground hover:text-primary"
-                  }`}
-                >
-                  {section.label}
-                </button>
-              );
-            })}
-          </nav>
-        </aside>
 
         {user.role === "ADMIN" && (
           <div className="bg-card border-border mb-6 rounded-xl border p-6">
@@ -366,9 +316,9 @@ export default function SettingsPage() {
           </div>
         )}
 
-        <div className="min-w-0 space-y-8">
+        <div className="space-y-8">
           <section id="section-allgemein" className="scroll-mt-28 space-y-3">
-            <h2 className="text-lg font-semibold">
+            <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
               {t("settings.categoryGeneral")}
             </h2>
 
@@ -497,7 +447,7 @@ export default function SettingsPage() {
           </section>
 
           <section id="section-sicherheit" className="scroll-mt-28 space-y-3">
-            <h2 className="text-lg font-semibold">{t("settings.security")}</h2>
+            <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">{t("settings.security")}</h2>
 
             <div
               id="sicherheit"
@@ -653,7 +603,7 @@ export default function SettingsPage() {
               id="section-benachrichtigungen"
               className="scroll-mt-28 space-y-3"
             >
-              <h2 className="text-lg font-semibold">
+              <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
                 {t("settings.categoryNotifications")}
               </h2>
               {serviceAvailability.telegramGlobal && (
@@ -672,7 +622,7 @@ export default function SettingsPage() {
           )}
 
           <section id="section-integration" className="scroll-mt-28 space-y-3">
-            <h2 className="text-lg font-semibold">
+            <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
               {t("settings.categoryIntegration")}
             </h2>
             <WithingsSection id="withings" isAuthenticated={isAuthenticated} />
@@ -684,7 +634,7 @@ export default function SettingsPage() {
 
           {serviceAvailability.apiGlobal && (
             <section id="section-api" className="scroll-mt-28 space-y-3">
-              <h2 className="text-lg font-semibold">
+              <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
                 {t("settings.categoryApi")}
               </h2>
               <ApiEndpointsSection id="api-endpoints" />
@@ -696,18 +646,17 @@ export default function SettingsPage() {
           )}
 
           <section id="section-export" className="scroll-mt-28 space-y-3">
-            <h2 className="text-lg font-semibold">{t("settings.export")}</h2>
+            <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">{t("settings.export")}</h2>
             <ExportSection id="export" />
           </section>
 
           <section id="section-danger-zone" className="scroll-mt-28 space-y-3">
-            <h2 className="text-lg font-semibold">
+            <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
               {t("settings.dangerZoneTitle")}
             </h2>
             <DataResetSection id="daten" />
           </section>
         </div>
-      </div>
     </div>
   );
 }

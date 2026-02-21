@@ -141,27 +141,6 @@ export default function AdminPage() {
 
   if (!user || user.role !== "ADMIN") return null;
 
-  const adminSections = [
-    { id: "section-system-status", label: t("admin.systemStatus") },
-    { id: "section-admin-general", label: t("admin.appSettings") },
-    { id: "section-admin-services", label: t("admin.servicesGlobal") },
-    { id: "section-admin-umami", label: "Umami" },
-    { id: "section-admin-glitchtip", label: "GlitchTip" },
-    { id: "section-admin-webpush", label: t("admin.webPushVapidTitle") },
-    { id: "section-admin-bugreport", label: t("admin.bugReportGithub") },
-    { id: "section-admin-reminders", label: t("admin.medicationReminders") },
-    { id: "section-user-management", label: t("admin.userManagement") },
-    { id: "section-api-tokens", label: t("admin.apiTokens") },
-    { id: "section-login-overview", label: t("admin.loginOverview") },
-    { id: "section-danger-zone", label: t("admin.dangerZone") },
-  ];
-
-  function scrollToSection(id: string) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
   return (
     <div className="space-y-6">
       <div>
@@ -171,32 +150,7 @@ export default function AdminPage() {
         <p className="text-muted-foreground text-sm">{t("admin.subtitle")}</p>
       </div>
 
-      <div className="relative">
-        <aside className="fixed top-24 left-[calc((100vw-76.8rem)/2-14rem)] hidden max-h-[calc(100vh-7rem)] w-48 overflow-y-auto 2xl:block">
-          <p className="text-foreground/60 text-xs font-semibold tracking-wider uppercase">
-            {t("admin.sectionsTitle")}
-          </p>
-          <nav className="mt-2 space-y-0.5">
-            {adminSections.map((section) => {
-              const isDanger = section.id === "section-danger-zone";
-              return (
-                <button
-                  key={section.id}
-                  onClick={() => scrollToSection(section.id)}
-                  className={`w-full px-0 py-1 text-left text-sm transition-colors ${
-                    isDanger
-                      ? "text-foreground hover:text-destructive"
-                      : "text-foreground hover:text-primary"
-                  }`}
-                >
-                  {section.label}
-                </button>
-              );
-            })}
-          </nav>
-        </aside>
-
-        <div className="space-y-6">
+      <div className="space-y-6">
           <SystemStatusSection id="section-system-status" />
 
           <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
@@ -230,7 +184,6 @@ export default function AdminPage() {
           <LoginOverviewSection id="section-login-overview" />
           <DangerZoneSection id="section-danger-zone" />
         </div>
-      </div>
     </div>
   );
 }
