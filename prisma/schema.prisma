@@ -258,6 +258,9 @@ model AppSettings {
   telegramGlobal      Boolean @default(true) @map("telegram_global") // global toggle
   ntfyGlobal          Boolean @default(true) @map("ntfy_global")     // global toggle
   webPushGlobal       Boolean @default(true) @map("web_push_global") // global toggle
+  webPushVapidPublicKey String? @map("web_push_vapid_public_key")
+  webPushVapidPrivateKeyEncrypted String? @map("web_push_vapid_private_key_encrypted")
+  webPushVapidSubject String? @map("web_push_vapid_subject")
   apiGlobal           Boolean @default(true) @map("api_global")      // global toggle
   umamiEnabled        Boolean @default(false) @map("umami_enabled")
   umamiScriptUrl      String? @map("umami_script_url")

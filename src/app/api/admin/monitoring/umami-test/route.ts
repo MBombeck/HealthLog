@@ -8,8 +8,13 @@ export const dynamic = "force-dynamic";
 function resolveUmamiSendUrl(scriptUrl: string | null): string | null {
   if (!scriptUrl) return null;
   try {
-    const origin = new URL(scriptUrl).origin;
-    return `${origin}/api/send`;
+    const parsed = new URL(scriptUrl);
+    const segments = parsed.pathname.split("/").filter(Boolean);
+    if (segments.length > 0 && segments[segments.length - 1]?.includes(".")) {
+      segments.pop();
+    }
+    const prefix = segments.length > 0 ? `/${segments.join("/")}` : "";
+    return `${parsed.origin}${prefix}/api/send`;
   } catch {
     return null;
   }

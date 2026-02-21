@@ -1,10 +1,11 @@
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import type { NotificationPayload } from "@/lib/notifications/types";
+import { getVapidConfig } from "@/lib/notifications/vapid-config";
 
 /**
  * Send Web Push notification to all subscribed devices of a user.
- * Requires VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT env vars.
+ * VAPID config is loaded from app settings first, then env as fallback.
  * Returns true if at least one delivery succeeded.
  */
 export async function sendViaWebPush(
@@ -15,16 +16,17 @@ export async function sendViaWebPush(
     // Lazy import to avoid issues when web-push is not installed
     const webpush = await import("web-push");
 
-    const vapidPublic = process.env.VAPID_PUBLIC_KEY;
-    const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
-    const vapidSubject = process.env.VAPID_SUBJECT;
-
-    if (!vapidPublic || !vapidPrivate || !vapidSubject) {
+    const config = await getVapidConfig();
+    if (!config) {
       console.warn("Web Push: VAPID keys not configured");
       return false;
     }
 
-    webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
+    webpush.setVapidDetails(
+      config.subject,
+      config.publicKey,
+      config.privateKey,
+    );
 
     const subscriptions = await prisma.pushSubscription.findMany({
       where: { userId },

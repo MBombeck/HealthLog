@@ -21,6 +21,13 @@ export async function GET() {
     telegramGlobal: settings?.telegramGlobal ?? true,
     ntfyGlobal: settings?.ntfyGlobal ?? true,
     webPushGlobal: settings?.webPushGlobal ?? true,
+    webPushVapidPublicKey: settings?.webPushVapidPublicKey ?? null,
+    webPushVapidSubject: settings?.webPushVapidSubject ?? null,
+    webPushVapidConfigured: Boolean(
+      settings?.webPushVapidPublicKey &&
+        settings?.webPushVapidPrivateKeyEncrypted &&
+        settings?.webPushVapidSubject,
+    ),
     apiGlobal: settings?.apiGlobal ?? true,
     umamiEnabled: settings?.umamiEnabled ?? false,
     umamiScriptUrl: settings?.umamiScriptUrl ?? "https://cloud.umami.is/script.js",
@@ -66,6 +73,33 @@ export async function PUT(request: NextRequest) {
     if (typeof body.webPushGlobal === "boolean") {
       updates.webPushGlobal = body.webPushGlobal;
       auditDetails.webPushGlobal = body.webPushGlobal;
+    }
+    if (typeof body.webPushVapidPublicKey === "string") {
+      const value = body.webPushVapidPublicKey.trim();
+      updates.webPushVapidPublicKey = value.length > 0 ? value : null;
+      auditDetails.webPushVapidPublicKey = value.length > 0 ? "configured" : null;
+    }
+    if (typeof body.webPushVapidSubject === "string") {
+      const value = body.webPushVapidSubject.trim();
+      if (value.length > 0 && !/^mailto:.+@.+$/.test(value)) {
+        return apiError(
+          "Web Push Subject muss im Format mailto:adresse@example.com sein",
+          422,
+        );
+      }
+      updates.webPushVapidSubject = value.length > 0 ? value : null;
+      auditDetails.webPushVapidSubject = value.length > 0 ? value : null;
+    }
+    if (typeof body.webPushVapidPrivateKey === "string") {
+      const value = body.webPushVapidPrivateKey.trim();
+      if (value.length > 0) {
+        updates.webPushVapidPrivateKeyEncrypted = encrypt(value);
+        auditDetails.webPushVapidPrivateKeyUpdated = true;
+      }
+    }
+    if (body.clearWebPushVapidPrivateKey === true) {
+      updates.webPushVapidPrivateKeyEncrypted = null;
+      auditDetails.webPushVapidPrivateKeyUpdated = false;
     }
     if (typeof body.apiGlobal === "boolean") {
       updates.apiGlobal = body.apiGlobal;
@@ -176,6 +210,13 @@ export async function PUT(request: NextRequest) {
       telegramGlobal: settings.telegramGlobal,
       ntfyGlobal: settings.ntfyGlobal,
       webPushGlobal: settings.webPushGlobal,
+      webPushVapidPublicKey: settings.webPushVapidPublicKey,
+      webPushVapidSubject: settings.webPushVapidSubject,
+      webPushVapidConfigured: Boolean(
+        settings.webPushVapidPublicKey &&
+          settings.webPushVapidPrivateKeyEncrypted &&
+          settings.webPushVapidSubject,
+      ),
       apiGlobal: settings.apiGlobal,
       umamiEnabled: settings.umamiEnabled,
       umamiScriptUrl:
