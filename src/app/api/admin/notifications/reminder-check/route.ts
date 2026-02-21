@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth/session";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
+import { dispatchNotification } from "@/lib/notifications/dispatcher";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,7 @@ interface ScheduleStatus {
   status: "open" | "late" | "threshold" | "missed" | "skipped";
   label: string;
   minutesPastEnd: number | null;
+  notificationSent: boolean;
 }
 
 interface MedicationResult {
@@ -52,6 +54,11 @@ interface MedicationResult {
   eventsToday: number;
 }
 
+/**
+ * POST: Execute the reminder check — analyzes all medications AND sends
+ * notifications for overdue schedules (late + missed). Returns detailed
+ * results for display in the admin panel.
+ */
 export async function POST() {
   const admin = await requireAdmin();
   if (!admin) return apiError("Nicht berechtigt", 403);
@@ -74,6 +81,7 @@ export async function POST() {
     });
 
     const results: MedicationResult[] = [];
+    let notificationsSent = 0;
 
     for (const med of medications) {
       const userTz = med.user.timezone || "Europe/Berlin";
@@ -89,9 +97,22 @@ export async function POST() {
       });
       const todayDow = getDayOfWeekInTz(now, userTz);
 
-      const scheduleStatuses: ScheduleStatus[] = [];
+      const eventCount = await prisma.medicationIntakeEvent.count({
+        where: {
+          medicationId: med.id,
+          userId: med.user.id,
+          scheduledFor: { gte: todayStart, lte: todayEnd },
+        },
+      });
 
-      for (const schedule of med.schedules) {
+      const scheduleStatuses: ScheduleStatus[] = [];
+      let schedulesProcessed = 0;
+
+      const sortedSchedules = [...med.schedules].sort((a, b) =>
+        a.windowStart.localeCompare(b.windowStart),
+      );
+
+      for (const schedule of sortedSchedules) {
         const recurrence = parseScheduleRecurrence(schedule.daysOfWeek);
         const endMins = parseTimeToMinutes(schedule.windowEnd);
         const currentMins = parseTimeToMinutes(currentTime);
@@ -108,6 +129,7 @@ export async function POST() {
 
         let status: ScheduleStatus["status"];
         let label: string;
+        let notificationSent = false;
 
         if (!dayMatch) {
           status = "skipped";
@@ -123,22 +145,56 @@ export async function POST() {
           label = `Missed-Threshold erreicht (${minutesPastEnd} Min > ${missedMinutes} Min)`;
         }
 
+        // Send notification for overdue schedules that haven't been taken
+        const isOverdue = dayMatch && minutesPastEnd > 0;
+        const hasEvent = eventCount > schedulesProcessed;
+
+        if (isOverdue && !hasEvent && med.notificationsEnabled) {
+          const doseInfo = schedule.dose ?? med.dose;
+          const timeWindow = `${schedule.windowStart}–${schedule.windowEnd}`;
+
+          try {
+            if (status === "missed") {
+              await dispatchNotification({
+                eventType: "MEDICATION_REMINDER",
+                userId: med.user.id,
+                title: `Verpasst: ${med.name}`,
+                message: `<b>${med.name}</b> (${doseInfo}, ${timeWindow}) wurde als verpasst markiert.`,
+                metadata: { medicationId: med.id },
+              });
+            } else {
+              await dispatchNotification({
+                eventType: "MEDICATION_REMINDER",
+                userId: med.user.id,
+                title: `Erinnerung: ${med.name}`,
+                message: `Erinnerung: <b>${med.name}</b> (${doseInfo}, ${timeWindow}) wurde noch nicht eingenommen. Seit ${minutesPastEnd} Min überfällig.`,
+                metadata: { medicationId: med.id },
+              });
+            }
+            notificationSent = true;
+            notificationsSent++;
+          } catch (err) {
+            console.error(
+              `[reminder-check] Notification failed for ${med.name}:`,
+              err,
+            );
+          }
+        }
+
+        if (dayMatch && minutesPastEnd > 0) {
+          schedulesProcessed++;
+        }
+
         scheduleStatuses.push({
           window: `${schedule.windowStart}–${schedule.windowEnd}`,
           days: daysInfo,
           status,
           label,
-          minutesPastEnd: dayMatch && currentMins > endMins ? minutesPastEnd : null,
+          minutesPastEnd:
+            dayMatch && currentMins > endMins ? minutesPastEnd : null,
+          notificationSent,
         });
       }
-
-      const eventCount = await prisma.medicationIntakeEvent.count({
-        where: {
-          medicationId: med.id,
-          userId: med.user.id,
-          scheduledFor: { gte: todayStart, lte: todayEnd },
-        },
-      });
 
       results.push({
         name: med.name,
@@ -157,13 +213,14 @@ export async function POST() {
       timestamp: now.toISOString(),
       missedThresholdMinutes: missedMinutes,
       medications: results,
+      notificationsSent,
       message:
         results.length > 0
-          ? `${results.length} aktive Medikamente geprüft`
+          ? `${results.length} Medikamente geprüft, ${notificationsSent} Erinnerungen gesendet`
           : "Keine aktiven Medikamente gefunden",
     });
   } catch (error) {
-    console.error("Reminder check dry-run failed:", error);
+    console.error("Reminder check failed:", error);
     return apiError("Reminder-Check konnte nicht ausgeführt werden", 500);
   }
 }
