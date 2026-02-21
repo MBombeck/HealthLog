@@ -123,7 +123,7 @@ export default function BugReportPage() {
               id="bug-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={t("bugreport.bugTitlePlaceholder")}
+              placeholder=""
               required
               minLength={3}
               maxLength={200}
@@ -136,7 +136,7 @@ export default function BugReportPage() {
               id="bug-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder={t("bugreport.descriptionPlaceholder")}
+              placeholder=""
               required
               minLength={10}
               maxLength={5000}
