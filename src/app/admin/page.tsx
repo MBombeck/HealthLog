@@ -434,6 +434,71 @@ function AppSettingsSection({
     },
   });
 
+  const testNotification = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/notifications/test", {
+        method: "POST",
+      });
+      if (!res.ok) {
+        throw new Error(await getApiErrorMessage(res));
+      }
+      const json = (await res.json()) as { data?: { message?: string } };
+      return json.data?.message ?? t("admin.notificationTestSuccess");
+    },
+    onSuccess: (message) => {
+      toast.success(message);
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("admin.notificationTestFailed"),
+      );
+    },
+  });
+
+  const reminderCheck = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/notifications/reminder-check", {
+        method: "POST",
+      });
+      if (!res.ok) {
+        throw new Error(await getApiErrorMessage(res));
+      }
+      const json = (await res.json()) as {
+        data?: {
+          message?: string;
+          medications?: Array<{
+            name: string;
+            dose: string;
+            user: string;
+            localTime: string;
+            dayOfWeek: string;
+            notificationsEnabled: boolean;
+            schedules: Array<{
+              window: string;
+              days: string;
+              status: string;
+              label: string;
+            }>;
+            eventsToday: number;
+          }>;
+        };
+      };
+      return json.data;
+    },
+    onSuccess: (data) => {
+      toast.success(data?.message ?? t("admin.reminderCheckSuccess"));
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("admin.reminderCheckFailed"),
+      );
+    },
+  });
+
   const bugReportRepoValue = bugReportRepoDraft ?? settings?.bugReportRepo ?? "";
   const umamiScriptUrlValue =
     umamiScriptUrlDraft ?? settings?.umamiScriptUrl ?? "";
@@ -979,6 +1044,83 @@ function AppSettingsSection({
             )}
             {t("admin.reminderThresholdsSave")}
           </Button>
+
+          <Separator />
+
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium">{t("admin.notificationTest")}</h4>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => testNotification.mutate()}
+                disabled={testNotification.isPending}
+              >
+                {testNotification.isPending && (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                )}
+                <Bell className="mr-1.5 h-3.5 w-3.5" />
+                {t("admin.notificationTestSend")}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => reminderCheck.mutate()}
+                disabled={reminderCheck.isPending}
+              >
+                {reminderCheck.isPending && (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                )}
+                <Activity className="mr-1.5 h-3.5 w-3.5" />
+                {t("admin.reminderCheckRun")}
+              </Button>
+            </div>
+          </div>
+
+          {reminderCheck.data?.medications && reminderCheck.data.medications.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">{t("admin.reminderCheckResults")}</h4>
+              <div className="space-y-2">
+                {reminderCheck.data.medications.map((med, i) => (
+                  <div
+                    key={i}
+                    className="bg-muted/50 rounded-lg p-3 space-y-1.5"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">
+                        {med.name} ({med.dose})
+                      </span>
+                      <Badge variant={med.notificationsEnabled ? "default" : "secondary"}>
+                        {med.notificationsEnabled ? t("admin.reminderCheckNotifOn") : t("admin.reminderCheckNotifOff")}
+                      </Badge>
+                    </div>
+                    <p className="text-muted-foreground text-xs">
+                      {med.user} — {med.dayOfWeek} {med.localTime} — {t("admin.reminderCheckEventsToday")}: {med.eventsToday}
+                    </p>
+                    {med.schedules.map((sched, j) => {
+                      const statusColor =
+                        sched.status === "open"
+                          ? "text-green-400"
+                          : sched.status === "threshold"
+                            ? "text-yellow-400"
+                            : sched.status === "missed"
+                              ? "text-red-400"
+                              : sched.status === "skipped"
+                                ? "text-muted-foreground"
+                                : "";
+                      return (
+                        <div key={j} className="text-xs flex items-start gap-1.5">
+                          <span className="text-muted-foreground shrink-0">{sched.window}</span>
+                          <span className="text-muted-foreground shrink-0">[{sched.days}]</span>
+                          <span className={statusColor}>{sched.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
