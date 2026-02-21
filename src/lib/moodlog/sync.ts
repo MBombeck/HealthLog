@@ -98,7 +98,7 @@ export async function syncMoodLogEntries(
           mood: entry.mood,
           score: entry.score,
           tags: entry.tags ? JSON.stringify(entry.tags) : null,
-          source: entry.loggedVia ?? "MOODLOG",
+          source: "MOODLOG",
         },
         create: {
           userId,
@@ -106,7 +106,7 @@ export async function syncMoodLogEntries(
           mood: entry.mood,
           score: entry.score,
           tags: entry.tags ? JSON.stringify(entry.tags) : null,
-          source: entry.loggedVia ?? "MOODLOG",
+          source: "MOODLOG",
           moodLoggedAt,
         },
       });

@@ -17,32 +17,27 @@ import { useTranslations } from "@/lib/i18n/context";
 const MOOD_LEVELS = [
   {
     value: "SUPER_GUT",
-    emoji: "\u{1F604}",
-    labelKey: "mood.levelSuperGut",
+    score: 5,
     color: "bg-chart-2/20 text-chart-2 border-chart-2/40",
   },
   {
     value: "GUT",
-    emoji: "\u{1F642}",
-    labelKey: "mood.levelGut",
+    score: 4,
     color: "bg-chart-4/20 text-chart-4 border-chart-4/40",
   },
   {
     value: "OKAY",
-    emoji: "\u{1F610}",
-    labelKey: "mood.levelOkay",
+    score: 3,
     color: "bg-chart-5/20 text-chart-5 border-chart-5/40",
   },
   {
     value: "SCHLECHT",
-    emoji: "\u{1F614}",
-    labelKey: "mood.levelSchlecht",
+    score: 2,
     color: "bg-chart-3/20 text-chart-3 border-chart-3/40",
   },
   {
     value: "LAUSIG",
-    emoji: "\u{1F629}",
-    labelKey: "mood.levelLausig",
+    score: 1,
     color: "bg-chart-1/20 text-chart-1 border-chart-1/40",
   },
 ] as const;
@@ -134,9 +129,8 @@ export function MoodForm({ onSuccess, onCancel }: MoodFormProps) {
                     : "border-border hover:bg-accent"
                 }`}
               >
-                <span className="text-xl">{level.emoji}</span>
-                <span className="text-[10px] leading-tight sm:text-xs">
-                  {t(level.labelKey)}
+                <span className="text-2xl font-bold tabular-nums">
+                  {level.score}
                 </span>
               </button>
             );

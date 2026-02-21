@@ -59,20 +59,12 @@ import { useState } from "react";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 
-const MOOD_LABEL_KEYS: Record<string, string> = {
-  SUPER_GUT: "mood.levelSuperGut",
-  GUT: "mood.levelGut",
-  OKAY: "mood.levelOkay",
-  SCHLECHT: "mood.levelSchlecht",
-  LAUSIG: "mood.levelLausig",
-};
-
-const MOOD_EMOJIS: Record<string, string> = {
-  SUPER_GUT: "\u{1F604}",
-  GUT: "\u{1F642}",
-  OKAY: "\u{1F610}",
-  SCHLECHT: "\u{1F614}",
-  LAUSIG: "\u{1F629}",
+const MOOD_SCORES: Record<string, number> = {
+  SUPER_GUT: 5,
+  GUT: 4,
+  OKAY: 3,
+  SCHLECHT: 2,
+  LAUSIG: 1,
 };
 
 const MOOD_COLORS: Record<string, string> = {
@@ -86,9 +78,6 @@ const MOOD_COLORS: Record<string, string> = {
 const SOURCE_LABEL_KEYS: Record<string, string> = {
   MANUAL: "mood.sourceManual",
   MOODLOG: "mood.sourceMoodlog",
-  WEB: "mood.sourceWeb",
-  TELEGRAM: "mood.sourceTelegram",
-  DAYLIO: "mood.sourceDaylio",
 };
 
 interface MoodEntry {
@@ -291,7 +280,7 @@ export function MoodList() {
               <SelectItem value="ALL">{t("mood.allMoods")}</SelectItem>
               {MOOD_LEVELS_LIST.map((val) => (
                 <SelectItem key={val} value={val}>
-                  {MOOD_EMOJIS[val]} {t(MOOD_LABEL_KEYS[val])}
+                  {MOOD_SCORES[val]}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -355,12 +344,9 @@ export function MoodList() {
                       <TableCell className="pl-4">
                         <Badge
                           variant="secondary"
-                          className={MOOD_COLORS[entry.mood] ?? ""}
+                          className={`text-base font-bold tabular-nums ${MOOD_COLORS[entry.mood] ?? ""}`}
                         >
-                          {MOOD_EMOJIS[entry.mood]}{" "}
-                          {MOOD_LABEL_KEYS[entry.mood]
-                            ? t(MOOD_LABEL_KEYS[entry.mood])
-                            : entry.mood}
+                          {entry.score}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm">
@@ -386,9 +372,7 @@ export function MoodList() {
                       <TableCell>
                         {entry.source !== "MANUAL" && (
                           <Badge variant="outline" className="text-xs">
-                            {SOURCE_LABEL_KEYS[entry.source]
-                              ? t(SOURCE_LABEL_KEYS[entry.source])
-                              : entry.source}
+                            {t("mood.sourceMoodlog")}
                           </Badge>
                         )}
                       </TableCell>
@@ -424,14 +408,11 @@ export function MoodList() {
                     <div
                       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${MOOD_COLORS[entry.mood] ?? ""}`}
                     >
-                      <span className="text-lg">{MOOD_EMOJIS[entry.mood]}</span>
+                      <span className="text-lg font-bold tabular-nums">
+                        {entry.score}
+                      </span>
                     </div>
                     <div className="min-w-0">
-                      <span className="text-sm font-semibold">
-                        {MOOD_LABEL_KEYS[entry.mood]
-                          ? t(MOOD_LABEL_KEYS[entry.mood])
-                          : entry.mood}
-                      </span>
                       <p className="text-muted-foreground truncate text-xs">
                         {formatDateTime(entry.moodLoggedAt)}
                       </p>
@@ -526,9 +507,8 @@ export function MoodList() {
                             : "border-border hover:bg-accent"
                         }`}
                       >
-                        <span className="text-xl">{MOOD_EMOJIS[level]}</span>
-                        <span className="text-[10px] leading-tight sm:text-xs">
-                          {t(MOOD_LABEL_KEYS[level])}
+                        <span className="text-2xl font-bold tabular-nums">
+                          {MOOD_SCORES[level]}
                         </span>
                       </button>
                     );

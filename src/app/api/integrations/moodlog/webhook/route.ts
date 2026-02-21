@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
           mood: entry.mood,
           score: entry.score,
           tags: entry.tags ? JSON.stringify(entry.tags) : null,
-          source: entry.loggedVia ?? "MOODLOG",
+          source: "MOODLOG",
         },
         create: {
           userId: user.id,
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
           mood: entry.mood,
           score: entry.score,
           tags: entry.tags ? JSON.stringify(entry.tags) : null,
-          source: entry.loggedVia ?? "MOODLOG",
+          source: "MOODLOG",
           moodLoggedAt,
         },
       });
