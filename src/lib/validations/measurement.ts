@@ -30,7 +30,7 @@ export const createMeasurementSchema = z.object({
   type: measurementTypeEnum,
   value: z.number(),
   measuredAt: z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
-  notes: z.string().max(500).optional(),
+  notes: z.string().max(25, "Kommentar darf maximal 25 Zeichen haben").optional(),
   source: measurementSourceEnum.optional().default("MANUAL"),
 });
 
@@ -40,7 +40,11 @@ export const updateMeasurementSchema = z.object({
     .datetime({ offset: true })
     .transform((s) => new Date(s))
     .optional(),
-  notes: z.string().max(500).nullable().optional(),
+  notes: z
+    .string()
+    .max(25, "Kommentar darf maximal 25 Zeichen haben")
+    .nullable()
+    .optional(),
 });
 
 export const listMeasurementsSchema = z.object({
@@ -55,6 +59,11 @@ export const listMeasurementsSchema = z.object({
     .optional(),
   limit: z.coerce.number().int().min(1).max(500).optional().default(100),
   offset: z.coerce.number().int().min(0).optional().default(0),
+  sortBy: z
+    .enum(["type", "value", "measuredAt", "source"])
+    .optional()
+    .default("measuredAt"),
+  sortDir: z.enum(["asc", "desc"]).optional().default("desc"),
 });
 
 export const createBatchMeasurementSchema = z.object({

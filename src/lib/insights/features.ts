@@ -188,8 +188,8 @@ export async function extractFeatures(
         skipped: e.skipped,
         scheduledFor: e.scheduledFor,
       }));
-      const c7 = calculateCompliance(mapped, med.schedules, 7);
-      const c30 = calculateCompliance(mapped, med.schedules, 30);
+      const c7 = calculateCompliance(mapped, med.schedules, 7, med.createdAt);
+      const c30 = calculateCompliance(mapped, med.schedules, 30, med.createdAt);
 
       features.medications.push({
         name: med.name,

@@ -9,6 +9,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { I18nProvider } from "@/lib/i18n/context";
+import { Toaster } from "@/components/ui/sonner";
 
 // ── Theme Context ────────────────────────────────────
 
@@ -113,7 +115,12 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>{children}</ThemeProvider>
+      <ThemeProvider>
+        <I18nProvider>
+          {children}
+          <Toaster position="bottom-right" richColors />
+        </I18nProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

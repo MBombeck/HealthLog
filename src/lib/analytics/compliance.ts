@@ -92,11 +92,14 @@ export function classifyIntakeTiming(
 
 /**
  * Calculate compliance for a medication over a given period.
+ * If medicationCreatedAt is provided, days before creation are excluded
+ * so they don't count as "missed".
  */
 export function calculateCompliance(
   events: IntakeEvent[],
   schedules: ScheduleWindow[],
   days: number,
+  medicationCreatedAt?: Date,
 ): ComplianceResult {
   if (schedules.length === 0) {
     return {
@@ -112,12 +115,24 @@ export function calculateCompliance(
   const now = new Date();
   const periodStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
-  // Expected doses = schedules per day * days
-  const totalExpected = schedules.length * days;
+  // Don't count days before the medication existed
+  const effectiveStart =
+    medicationCreatedAt && medicationCreatedAt > periodStart
+      ? medicationCreatedAt
+      : periodStart;
+  const effectiveDays = Math.max(
+    1,
+    Math.ceil(
+      (now.getTime() - effectiveStart.getTime()) / (24 * 60 * 60 * 1000),
+    ),
+  );
 
-  // Filter events in period
+  // Expected doses = schedules per day * effective days
+  const totalExpected = schedules.length * effectiveDays;
+
+  // Filter events in effective period
   const periodEvents = events.filter(
-    (e) => e.scheduledFor >= periodStart && e.scheduledFor <= now,
+    (e) => e.scheduledFor >= effectiveStart && e.scheduledFor <= now,
   );
 
   const taken = periodEvents.filter(
@@ -127,13 +142,18 @@ export function calculateCompliance(
   const missed = Math.max(0, totalExpected - taken - skipped);
 
   const rate =
-    totalExpected > 0 ? Math.round((taken / totalExpected) * 100) : 100;
+    totalExpected > 0
+      ? Math.min(100, Math.round((taken / totalExpected) * 100))
+      : 100;
 
   // Calculate streak: consecutive days with all scheduled intakes taken
   let streak = 0;
-  for (let d = 0; d < days; d++) {
+  for (let d = 0; d < effectiveDays; d++) {
     const dayStart = new Date(now.getTime() - (d + 1) * 24 * 60 * 60 * 1000);
     const dayEnd = new Date(now.getTime() - d * 24 * 60 * 60 * 1000);
+
+    // Skip days before medication creation
+    if (medicationCreatedAt && dayEnd <= medicationCreatedAt) break;
 
     const dayEvents = periodEvents.filter(
       (e) => e.scheduledFor >= dayStart && e.scheduledFor < dayEnd,

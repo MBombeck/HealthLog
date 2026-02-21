@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { cookies } from "next/headers";
 import type { User } from "@/generated/prisma/client";
+import { ensureDbCompatibility } from "@/lib/db-compat";
 
 const SESSION_COOKIE = "healthlog_session";
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -37,6 +38,12 @@ export async function getSession(): Promise<{
   session: { id: string; expiresAt: Date };
   user: User;
 } | null> {
+  try {
+    await ensureDbCompatibility();
+  } catch (error) {
+    console.error("DB compatibility check failed:", error);
+  }
+
   const cookieStore = await cookies();
   const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
   if (!sessionId) return null;

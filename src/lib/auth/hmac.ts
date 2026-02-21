@@ -30,7 +30,6 @@ export function verifyHmacSignature(
  * Hash an API token for storage (SHA-256).
  */
 export function hashToken(token: string): string {
-  return createHmac("sha256", "healthlog-token-hash")
-    .update(token)
-    .digest("hex");
+  const key = process.env.API_TOKEN_HMAC_KEY ?? "healthlog-token-hash";
+  return createHmac("sha256", key).update(token).digest("hex");
 }

@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { parseScheduleRecurrence } from "@/lib/medication-schedule";
+import { formatTimeWindowRange } from "@/lib/time-window-format";
+import { formatDateTime } from "@/lib/format";
 import {
   Check,
   SkipForward,
@@ -21,14 +24,17 @@ interface Schedule {
   windowEnd: string;
   label: string | null;
   dose: string | null;
+  daysOfWeek: string | null;
 }
 
 interface Medication {
   id: string;
   name: string;
   dose: string;
-  category: "BLOOD_PRESSURE" | "VITAMIN" | "OTHER";
+  category: string;
   active: boolean;
+  notificationsEnabled: boolean;
+  pausedAt: string | null;
   schedules: Schedule[];
 }
 
@@ -79,6 +85,9 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
         await queryClient.invalidateQueries({
           queryKey: ["medications"],
         });
+        await queryClient.invalidateQueries({
+          queryKey: ["gamification", "achievements"],
+        });
       }
     } finally {
       setIntakeLoading(null);
@@ -86,13 +95,22 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
   }
 
   const rate7 = compliance?.compliance7.rate ?? 0;
+  const rate30 = compliance?.compliance30.rate ?? 0;
   const streak = compliance?.compliance7.streak ?? 0;
-  const categoryLabel =
-    medication.category === "BLOOD_PRESSURE"
-      ? "Blutdrucksenker"
-      : medication.category === "VITAMIN"
-        ? "Vitamine"
-        : "Sonstiges";
+  const categoryLabels: Record<string, string> = {
+    BLOOD_PRESSURE: "Blutdrucksenker",
+    VITAMIN: "Vitamine",
+    SUPPLEMENT: "Nahrungsergänzung",
+    PAIN_RELIEF: "Schmerzmittel",
+    ALLERGY: "Allergie",
+    DIGESTIVE: "Magen/Darm",
+    THYROID: "Schilddrüse",
+    HORMONE: "Hormone",
+    SKIN: "Hautpflege",
+    SLEEP_AID: "Schlafmittel",
+    OTHER: "Sonstiges",
+  };
+  const categoryLabel = categoryLabels[medication.category] ?? "Sonstiges";
   const sortedSchedules = [...medication.schedules].sort(
     (a, b) =>
       a.windowStart.localeCompare(b.windowStart) ||
@@ -101,7 +119,7 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
 
   return (
     <Card className={medication.active ? "" : "opacity-60"}>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2.5">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <CardTitle className="text-lg">{medication.name}</CardTitle>
@@ -110,6 +128,18 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
               <Badge variant="outline" className="text-xs">
                 {categoryLabel}
               </Badge>
+              {!medication.notificationsEnabled && (
+                <Badge variant="secondary" className="text-xs">
+                  Ohne Benachrichtigung
+                </Badge>
+              )}
+              {!medication.active && (
+                <Badge variant="secondary" className="text-xs">
+                  {medication.pausedAt
+                    ? `Pausiert seit ${formatDateTime(medication.pausedAt)}`
+                    : "Pausiert"}
+                </Badge>
+              )}
             </div>
           </div>
           <div className="flex items-center">
@@ -125,35 +155,61 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3.5">
         {/* Schedule badges */}
-        <div className="flex flex-wrap gap-2">
-          {sortedSchedules.map((s) => (
-            <Badge key={s.id} variant="secondary" className="gap-1">
-              <Clock className="h-3 w-3" />
-              {s.label ? `${s.label}: ` : ""}
-              {s.windowStart}–{s.windowEnd}
-              {s.dose && (
-                <span className="ml-1 font-medium text-purple-400">
-                  {s.dose}
-                </span>
-              )}
-            </Badge>
-          ))}
+        <div className="flex flex-wrap gap-1.5">
+          {sortedSchedules.map((s) => {
+            const dayLabels = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+            const recurrence = parseScheduleRecurrence(s.daysOfWeek);
+            const days =
+              recurrence.daysOfWeek.length > 0
+                ? recurrence.daysOfWeek.map((d) => dayLabels[d])
+                : null;
+            return (
+              <Badge key={s.id} variant="secondary" className="gap-1">
+                <Clock className="h-3 w-3" />
+                {s.label ? `${s.label}: ` : ""}
+                {formatTimeWindowRange(s.windowStart, s.windowEnd)}
+                {recurrence.intervalWeeks > 1 && (
+                  <span className="text-muted-foreground ml-1 text-[10px]">
+                    (alle {recurrence.intervalWeeks} Wochen)
+                  </span>
+                )}
+                {days && (
+                  <span className="text-muted-foreground ml-1 text-[10px]">
+                    ({days.join(", ")})
+                  </span>
+                )}
+                {s.dose && (
+                  <span className="ml-1 font-medium text-purple-400">
+                    {s.dose}
+                  </span>
+                )}
+              </Badge>
+            );
+          })}
         </div>
 
         {/* Compliance bar */}
         {medication.active && compliance && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">7-Tage-Compliance</span>
-              <span className="font-medium">{rate7}%</span>
+          <div className="space-y-2.5">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">7-Tage-Compliance</span>
+                <span className="font-medium">{rate7}%</span>
+              </div>
+              <Progress value={rate7} className="h-2" />
             </div>
-            <Progress value={rate7} className="h-2" />
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">30-Tage-Compliance</span>
+                <span className="font-medium">{rate30}%</span>
+              </div>
+              <Progress value={rate30} className="h-2" />
+            </div>
+
             <div className="flex items-center gap-4 text-xs">
-              <span className="text-muted-foreground">
-                30 Tage: {compliance.compliance30.rate}%
-              </span>
               {streak > 0 && (
                 <span className="flex items-center gap-1 font-medium text-orange-400">
                   <Flame className="h-3.5 w-3.5" />

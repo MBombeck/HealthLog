@@ -20,6 +20,11 @@ export async function POST(request: NextRequest) {
     );
 
     if (!verification.verified) {
+      const ip = getClientIp(request);
+      await auditLog("auth.login.failed", {
+        ipAddress: ip,
+        details: { reason: "passkey_verification_failed" },
+      });
       return apiError("Passkey-Verifizierung fehlgeschlagen", 401);
     }
 

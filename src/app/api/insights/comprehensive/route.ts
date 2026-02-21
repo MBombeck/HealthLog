@@ -120,7 +120,9 @@ export async function GET() {
     where: { userId, active: true },
     include: { schedules: true },
   });
-  const categoryMap = await getMedicationCategories(medications.map((m) => m.id));
+  const categoryMap = await getMedicationCategories(
+    medications.map((m) => m.id),
+  );
 
   const medCompliance = [];
   const bpMedicationEvents: Array<{
@@ -133,7 +135,11 @@ export async function GET() {
   );
   for (const med of medications) {
     const events = await prisma.medicationIntakeEvent.findMany({
-      where: { medicationId: med.id, userId, scheduledFor: { gte: ninetyDaysAgo } },
+      where: {
+        medicationId: med.id,
+        userId,
+        scheduledFor: { gte: ninetyDaysAgo },
+      },
       orderBy: { scheduledFor: "desc" },
     });
     const mapped = events.map((e) => ({
@@ -141,10 +147,11 @@ export async function GET() {
       skipped: e.skipped,
       scheduledFor: e.scheduledFor,
     }));
-    const c7 = calculateCompliance(mapped, med.schedules, 7);
-    const c30 = calculateCompliance(mapped, med.schedules, 30);
+    const c7 = calculateCompliance(mapped, med.schedules, 7, med.createdAt);
+    const c30 = calculateCompliance(mapped, med.schedules, 30, med.createdAt);
 
     medCompliance.push({
+      id: med.id,
       name: med.name,
       dose: med.dose,
       category: categoryMap[med.id] ?? "OTHER",
@@ -174,8 +181,10 @@ export async function GET() {
     n: number;
     medicationCount: number;
   } | null = null;
-  const bpMedicationScatterData: Array<{ continuityPct: number; sysBP: number }> =
-    [];
+  const bpMedicationScatterData: Array<{
+    continuityPct: number;
+    sysBP: number;
+  }> = [];
 
   const expectedBpIntakesPerDay = bpMedications.reduce(
     (sum, med) => sum + med.schedules.length,

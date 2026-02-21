@@ -20,9 +20,23 @@ export async function PUT(request: NextRequest) {
     }
 
     const data = parsed.data;
+    const normalizedEmail = data.email ? data.email.trim().toLowerCase() : null;
+
+    if (data.email !== undefined && normalizedEmail) {
+      const existingUser = await prisma.user.findUnique({
+        where: { email: normalizedEmail },
+        select: { id: true },
+      });
+
+      if (existingUser && existingUser.id !== sessionData.user.id) {
+        return apiError("E-Mail-Adresse wird bereits verwendet", 409);
+      }
+    }
+
     const user = await prisma.user.update({
       where: { id: sessionData.user.id },
       data: {
+        ...(data.email !== undefined ? { email: normalizedEmail } : {}),
         heightCm: data.heightCm ?? null,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
         ...(data.gender !== undefined ? { gender: data.gender } : {}),
@@ -37,6 +51,7 @@ export async function PUT(request: NextRequest) {
     return apiSuccess({
       id: user.id,
       username: user.username,
+      email: user.email,
       role: user.role,
       heightCm: user.heightCm,
       dateOfBirth: user.dateOfBirth,

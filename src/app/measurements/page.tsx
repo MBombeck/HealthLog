@@ -15,11 +15,13 @@ import {
 import { Plus, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useTranslations } from "@/lib/i18n/context";
 
 export default function MeasurementsPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { t } = useTranslations();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -39,23 +41,28 @@ export default function MeasurementsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Messungen</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {t("measurements.title")}
+          </h1>
           <p className="text-muted-foreground text-sm">
-            Gewicht, Blutdruck, Puls & mehr
+            {t("measurements.subtitle")}
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Neuer Messwert
+              {t("measurements.addMeasurement")}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Neuer Messwert</DialogTitle>
+              <DialogTitle>{t("measurements.addMeasurement")}</DialogTitle>
             </DialogHeader>
-            <MeasurementForm onSuccess={() => setDialogOpen(false)} />
+            <MeasurementForm
+              onSuccess={() => setDialogOpen(false)}
+              onCancel={() => setDialogOpen(false)}
+            />
           </DialogContent>
         </Dialog>
       </div>

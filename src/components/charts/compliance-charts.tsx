@@ -9,7 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "@/lib/i18n/context";
 import { ComplianceHeatmap } from "./compliance-heatmap";
 import { ComplianceLineChart } from "./compliance-line-chart";
 
@@ -38,7 +40,9 @@ interface ComplianceChartsProps {
 }
 
 export function ComplianceCharts({ medications }: ComplianceChartsProps) {
+  const { t } = useTranslations();
   const [selectedId, setSelectedId] = useState(medications[0]?.id ?? "");
+  const [rangePoints, setRangePoints] = useState<30 | 90 | 0>(30);
 
   const { data, isLoading } = useQuery({
     queryKey: ["compliance-chart", selectedId],
@@ -56,18 +60,20 @@ export function ComplianceCharts({ medications }: ComplianceChartsProps) {
 
   return (
     <div className="bg-card border-border space-y-4 rounded-xl border p-4 md:p-6">
-      <Select value={selectedId} onValueChange={setSelectedId}>
-        <SelectTrigger className="w-full sm:w-64">
-          <SelectValue placeholder="Medikament wählen" />
-        </SelectTrigger>
-        <SelectContent>
-          {medications.map((m) => (
-            <SelectItem key={m.id} value={m.id}>
-              {m.name} ({m.dose})
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="flex justify-end">
+        <Select value={selectedId} onValueChange={setSelectedId}>
+          <SelectTrigger className="w-full sm:w-64">
+            <SelectValue placeholder="Medikament wählen" />
+          </SelectTrigger>
+          <SelectContent>
+            {medications.map((m) => (
+              <SelectItem key={m.id} value={m.id}>
+                {m.name} ({m.dose})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {isLoading ? (
         <div className="flex h-48 items-center justify-center">
@@ -78,18 +84,59 @@ export function ComplianceCharts({ medications }: ComplianceChartsProps) {
           Keine Compliance-Daten verfügbar
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="space-y-2">
-            <h3 className="text-muted-foreground text-sm font-medium">
-              Kalender (90 Tage)
-            </h3>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="min-w-0 space-y-2">
+            <div className="flex h-7 items-center">
+              <h3 className="text-muted-foreground text-sm font-medium">
+                {t("charts.compliance")} (90 Tage)
+              </h3>
+            </div>
             <ComplianceHeatmap dailyCompliance={data.dailyCompliance} />
           </div>
-          <div className="space-y-2">
-            <h3 className="text-muted-foreground text-sm font-medium">
-              Verlauf
-            </h3>
-            <ComplianceLineChart dailyCompliance={data.dailyCompliance} />
+          <div className="min-w-0 space-y-2">
+            <div className="flex h-7 items-center justify-between gap-2">
+              <h3 className="text-muted-foreground text-sm font-medium">
+                Verlauf
+              </h3>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant={rangePoints === 30 ? "default" : "ghost"}
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setRangePoints(30)}
+                  title="Die dreissig letzten Messpunkte"
+                >
+                  30M
+                </Button>
+                <Button
+                  type="button"
+                  variant={rangePoints === 90 ? "default" : "ghost"}
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setRangePoints(90)}
+                  title="Die neunzig letzten Messpunkte"
+                >
+                  90M
+                </Button>
+                <Button
+                  type="button"
+                  variant={rangePoints === 0 ? "default" : "ghost"}
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setRangePoints(0)}
+                  title="Alle verfuegbaren Messpunkte"
+                >
+                  Alle
+                </Button>
+              </div>
+            </div>
+            <ComplianceLineChart
+              dailyCompliance={data.dailyCompliance}
+              rangePoints={rangePoints}
+              onRangePointsChange={setRangePoints}
+              showRangeControls={false}
+            />
           </div>
         </div>
       )}

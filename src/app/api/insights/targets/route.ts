@@ -4,14 +4,20 @@ import { apiSuccess, apiError } from "@/lib/api-response";
 import {
   classifyBMI,
   classifyBP,
-  classifyPulse,
   classifySleepDuration,
   classifyBodyFat,
+  classifySteps,
   getWeightRange,
-  getPulseRange,
   getSleepDurationRange,
+  getStepsRange,
   getBpTargetsByAge,
 } from "@/lib/analytics/classifications";
+import { calculateCompliance } from "@/lib/analytics/compliance";
+import { pairByTimestamp } from "@/lib/analytics/correlations";
+import {
+  classifyPulseByTarget,
+  getPersonalizedPulseTarget,
+} from "@/lib/analytics/pulse-targets";
 import type { MeasurementType } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +45,13 @@ interface TargetItem {
   range: { min: number; max: number } | null;
   classification: { category: string; color: string } | null;
   source: string;
+  details?: {
+    medications?: Array<{
+      name: string;
+      compliance7: number;
+      compliance30: number;
+    }>;
+  };
 }
 
 export async function GET() {
@@ -69,6 +82,7 @@ export async function GET() {
     "PULSE",
     "SLEEP_DURATION",
     "BODY_FAT",
+    "ACTIVITY_STEPS",
   ];
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -183,11 +197,59 @@ export async function GET() {
     // Extra fields for diastolic
   } as TargetItem);
 
+  // 2b. Blood pressure target-hit rate over 30 days
+  if (bpRange) {
+    const sysPoints = recentMeasurements
+      .filter((measurement) => measurement.type === "BLOOD_PRESSURE_SYS")
+      .map((measurement) => ({
+        date: measurement.measuredAt,
+        value: measurement.value,
+      }));
+    const diaPoints = recentMeasurements
+      .filter((measurement) => measurement.type === "BLOOD_PRESSURE_DIA")
+      .map((measurement) => ({
+        date: measurement.measuredAt,
+        value: measurement.value,
+      }));
+
+    const bpPairs = pairByTimestamp(sysPoints, diaPoints, 5 * 60 * 1000);
+    const bpInTargetCount = bpPairs.filter(
+      (pair) =>
+        pair.a >= bpRange.sysLow &&
+        pair.a <= bpRange.sysHigh &&
+        pair.b >= bpRange.diaLow &&
+        pair.b <= bpRange.diaHigh,
+    ).length;
+    const bpInTargetRate =
+      bpPairs.length > 0
+        ? Math.round((bpInTargetCount / bpPairs.length) * 100 * 10) / 10
+        : null;
+
+    targets.push({
+      type: "BLOOD_PRESSURE_IN_TARGET",
+      label: "Blutdruck im Zielbereich",
+      current: bpInTargetRate,
+      average30: bpInTargetRate,
+      trend: null,
+      unit: "%",
+      range: { min: 70, max: 100 },
+      classification:
+        bpInTargetRate != null
+          ? bpInTargetRate >= 70
+            ? { category: "Gut", color: "#50fa7b" }
+            : bpInTargetRate >= 40
+              ? { category: "Moderat", color: "#f1fa8c" }
+              : { category: "Niedrig", color: "#ff5555" }
+          : null,
+      source: "ESC/ESH 2018",
+    });
+  }
+
   // 3. Pulse
-  const pulseRange = getPulseRange();
+  const pulseTarget = getPersonalizedPulseTarget(age, gender);
   let pulseClassification: { category: string; color: string } | null = null;
   if (latestByType.PULSE != null) {
-    const cls = classifyPulse(latestByType.PULSE);
+    const cls = classifyPulseByTarget(latestByType.PULSE, pulseTarget);
     pulseClassification = { category: cls.category, color: cls.color };
   }
   targets.push({
@@ -197,9 +259,9 @@ export async function GET() {
     average30: avg30ByType.PULSE ?? null,
     trend: computeTrend("PULSE"),
     unit: "bpm",
-    range: pulseRange,
+    range: { min: pulseTarget.greenMin, max: pulseTarget.greenMax },
     classification: pulseClassification,
-    source: "AHA",
+    source: pulseTarget.source,
   });
 
   // 4. Sleep Duration
@@ -221,7 +283,41 @@ export async function GET() {
     source: "AASM/SRS",
   });
 
-  // 5. Body Fat
+  // 5. BMI (derived from weight + height)
+  if (heightCm) {
+    const heightM = heightCm / 100;
+    const heightSq = heightM * heightM;
+    const latestWeight = latestByType.WEIGHT ?? null;
+    const currentBmi =
+      latestWeight != null
+        ? Math.round((latestWeight / heightSq) * 10) / 10
+        : null;
+
+    // Compute 30-day average BMI from average weight
+    const avgWeight = avg30ByType.WEIGHT ?? null;
+    const avgBmi =
+      avgWeight != null ? Math.round((avgWeight / heightSq) * 10) / 10 : null;
+
+    let bmiClassification: { category: string; color: string } | null = null;
+    if (currentBmi != null) {
+      const cls = classifyBMI(currentBmi);
+      bmiClassification = { category: cls.category, color: cls.color };
+    }
+
+    targets.push({
+      type: "BMI",
+      label: "BMI",
+      current: currentBmi,
+      average30: avgBmi,
+      trend: computeTrend("WEIGHT"), // BMI trend follows weight trend
+      unit: "kg/m²",
+      range: { min: 18.5, max: 24.9 },
+      classification: bmiClassification,
+      source: "WHO",
+    });
+  }
+
+  // 6. Body Fat
   let bodyFatClassification: { category: string; color: string } | null = null;
   if (latestByType.BODY_FAT != null && age != null) {
     const cls = classifyBodyFat(latestByType.BODY_FAT, gender, age);
@@ -248,6 +344,129 @@ export async function GET() {
     classification: bodyFatClassification,
     source: "ACE",
   });
+
+  // 7. Activity Steps
+  const stepsRange = getStepsRange();
+  let stepsClassification: { category: string; color: string } | null = null;
+  if (avg30ByType.ACTIVITY_STEPS != null) {
+    const cls = classifySteps(avg30ByType.ACTIVITY_STEPS);
+    stepsClassification = { category: cls.category, color: cls.color };
+  }
+  targets.push({
+    type: "ACTIVITY_STEPS",
+    label: "Schritte/Tag",
+    current: latestByType.ACTIVITY_STEPS ?? null,
+    average30: avg30ByType.ACTIVITY_STEPS ?? null,
+    trend: computeTrend("ACTIVITY_STEPS"),
+    unit: "Schritte",
+    range: stepsRange,
+    classification: stepsClassification,
+    source: "WHO",
+  });
+
+  // 8. Medication Compliance (average across active medications)
+  const activeMedications = await prisma.medication.findMany({
+    where: { userId, active: true },
+    include: { schedules: true },
+    orderBy: { name: "asc" },
+  });
+
+  if (activeMedications.length > 0) {
+    const thirtyDaysAgoIntake = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const intakeEvents = await prisma.medicationIntakeEvent.findMany({
+      where: {
+        userId,
+        medicationId: { in: activeMedications.map((medication) => medication.id) },
+        scheduledFor: { gte: thirtyDaysAgoIntake },
+      },
+      orderBy: { scheduledFor: "desc" },
+      select: { medicationId: true, takenAt: true, skipped: true, scheduledFor: true },
+    });
+
+    const medicationStats = activeMedications.map((medication) => {
+      const medicationEvents = intakeEvents.filter(
+        (event) => event.medicationId === medication.id,
+      );
+      const compliance7 = calculateCompliance(
+        medicationEvents,
+        medication.schedules,
+        7,
+        medication.createdAt,
+      );
+      const compliance30 = calculateCompliance(
+        medicationEvents,
+        medication.schedules,
+        30,
+        medication.createdAt,
+      );
+
+      return {
+        name: medication.name,
+        compliance7: compliance7.rate,
+        compliance30: compliance30.rate,
+        totalExpected7: compliance7.totalExpected,
+        taken7: compliance7.taken,
+        totalExpected30: compliance30.totalExpected,
+        taken30: compliance30.taken,
+      };
+    });
+
+    const totalExpected7 = medicationStats.reduce(
+      (sum, medication) => sum + medication.totalExpected7,
+      0,
+    );
+    const totalTaken7 = medicationStats.reduce(
+      (sum, medication) => sum + medication.taken7,
+      0,
+    );
+    const totalExpected30 = medicationStats.reduce(
+      (sum, medication) => sum + medication.totalExpected30,
+      0,
+    );
+    const totalTaken30 = medicationStats.reduce(
+      (sum, medication) => sum + medication.taken30,
+      0,
+    );
+
+    const complianceRate7 =
+      totalExpected7 > 0
+        ? Math.round((Math.min(1, totalTaken7 / totalExpected7) * 100 + Number.EPSILON) * 10) /
+          10
+        : null;
+    const complianceRate30 =
+      totalExpected30 > 0
+        ? Math.round(
+            (Math.min(1, totalTaken30 / totalExpected30) * 100 + Number.EPSILON) *
+              10,
+          ) / 10
+        : complianceRate7;
+
+    targets.push({
+      type: "MEDICATION_COMPLIANCE",
+      label: "Einnahmetreue",
+      current: complianceRate7,
+      average30: complianceRate30,
+      trend: null,
+      unit: "%",
+      range: { min: 90, max: 100 },
+      classification:
+        complianceRate7 != null
+          ? complianceRate7 >= 90
+            ? { category: "Sehr gut", color: "#50fa7b" }
+            : complianceRate7 >= 70
+              ? { category: "Gut", color: "#f1fa8c" }
+              : { category: "Niedrig", color: "#ff5555" }
+          : null,
+      source: "7-Tage",
+      details: {
+        medications: medicationStats.map((medication) => ({
+          name: medication.name,
+          compliance7: medication.compliance7,
+          compliance30: medication.compliance30,
+        })),
+      },
+    });
+  }
 
   return apiSuccess({
     targets,

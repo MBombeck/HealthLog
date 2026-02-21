@@ -4,6 +4,7 @@ import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { hashToken } from "@/lib/auth/hmac";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { externalIntakeSchema } from "@/lib/validations/medication";
+import { isApiGloballyEnabled } from "@/lib/app-settings";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -13,6 +14,10 @@ import { NextRequest, NextResponse } from "next/server";
  * Rate limit: 60 requests per minute per IP.
  */
 export async function POST(request: NextRequest) {
+  if (!(await isApiGloballyEnabled())) {
+    return apiError("API ist global deaktiviert", 403);
+  }
+
   const ip = getClientIp(request);
 
   // Rate limiting: 60 requests per minute per IP

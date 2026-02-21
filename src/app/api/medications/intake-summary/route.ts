@@ -86,7 +86,9 @@ export async function GET(request: NextRequest) {
     byDay.set(dayKey, existing);
   }
 
-  const points = [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date));
+  const points = [...byDay.values()].sort((a, b) =>
+    a.date.localeCompare(b.date),
+  );
 
   return apiSuccess({
     points,

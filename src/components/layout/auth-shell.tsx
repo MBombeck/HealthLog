@@ -1,12 +1,13 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { AchievementUnlockNotifier } from "@/components/gamification/achievement-unlock-notifier";
 import { useAuth } from "@/hooks/use-auth";
+import { BottomNav } from "./bottom-nav";
 import { SidebarNav } from "./sidebar-nav";
 import { TopBar } from "./top-bar";
-import { BottomNav } from "./bottom-nav";
-import { Loader2 } from "lucide-react";
 
 const PUBLIC_PATHS = ["/auth/login", "/auth/register"];
 
@@ -18,6 +19,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
   const isPublicPage = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
   const isAdminPage = pathname.startsWith("/admin");
   const isOnboardingPage = pathname === "/onboarding";
+  const showUnlockNotifier = isAuthenticated && !isPublicPage && !!user?.id;
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated && !isPublicPage) {
@@ -88,23 +90,35 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
   // Onboarding page — minimal shell, no sidebar/nav
   if (isOnboardingPage) {
     return (
-      <div className="flex min-h-dvh items-center justify-center px-4 py-8">
-        {children}
-      </div>
+      <>
+        {showUnlockNotifier && user?.id ? (
+          <AchievementUnlockNotifier userId={user.id} />
+        ) : null}
+        <div className="flex min-h-dvh items-center justify-center px-4 py-8">
+          {children}
+        </div>
+      </>
     );
   }
 
   // Authenticated — full app shell
   return (
-    <div className="flex h-dvh flex-col md:flex-row">
-      <SidebarNav />
-      <div className="flex min-h-0 flex-1 flex-col">
-        <TopBar />
-        <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
-          <div className="mx-auto max-w-5xl px-4 py-6 md:px-6">{children}</div>
-        </main>
+    <>
+      {showUnlockNotifier && user?.id ? (
+        <AchievementUnlockNotifier userId={user.id} />
+      ) : null}
+      <div className="flex h-dvh flex-col md:flex-row">
+        <SidebarNav />
+        <div className="flex min-h-0 flex-1 flex-col">
+          <TopBar />
+          <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+            <div className="mx-auto max-w-[76.8rem] px-4 py-6 md:px-6">
+              {children}
+            </div>
+          </main>
+        </div>
+        <BottomNav />
       </div>
-      <BottomNav />
-    </div>
+    </>
   );
 }

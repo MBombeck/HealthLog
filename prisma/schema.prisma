@@ -39,6 +39,9 @@ model User {
   withingsClientIdEncrypted     String? @map("withings_client_id_encrypted")
   withingsClientSecretEncrypted String? @map("withings_client_secret_encrypted")
 
+  // Locale (null = use system/admin default)
+  locale    String?  @map("locale") // "de" | "en" | null
+
   // Onboarding
   onboardingCompletedAt DateTime? @map("onboarding_completed_at")
 
@@ -52,6 +55,8 @@ model User {
   apiTokens   ApiToken[]
   auditLogs   AuditLog[]
   withingsConnection WithingsConnection?
+  notificationChannels NotificationChannel[]
+  pushSubscriptions    PushSubscription[]
 
   @@map("users")
 }
@@ -152,6 +157,8 @@ model Medication {
   name      String
   dose      String   // e.g. "10mg"
   active    Boolean  @default(true)
+  notificationsEnabled Boolean @default(true) @map("notifications_enabled")
+  pausedAt  DateTime? @map("paused_at")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -165,12 +172,13 @@ model Medication {
 }
 
 model MedicationSchedule {
-  id           String @id @default(cuid())
-  medicationId String @map("medication_id")
-  windowStart  String // HH:mm format, e.g. "08:00"
-  windowEnd    String // HH:mm format, e.g. "10:00"
+  id           String  @id @default(cuid())
+  medicationId String  @map("medication_id")
+  windowStart  String  // HH:mm format, e.g. "08:00"
+  windowEnd    String  // HH:mm format, e.g. "10:00"
   label        String? // e.g. "Morning", "Evening"
   dose         String? // Per-schedule dose override; null = use Medication.dose
+  daysOfWeek   String? @map("days_of_week") // Comma-separated day numbers (0=Sun..6=Sat), null = daily
 
   medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
 
@@ -246,6 +254,19 @@ model WithingsConnection {
 model AppSettings {
   id                  String  @id @default("singleton")
   registrationEnabled Boolean @default(true) @map("registration_enabled")
+  defaultLocale       String  @default("de") @map("default_locale") // "de" | "en"
+  telegramGlobal      Boolean @default(true) @map("telegram_global") // global toggle
+  ntfyGlobal          Boolean @default(true) @map("ntfy_global")     // global toggle
+  webPushGlobal       Boolean @default(true) @map("web_push_global") // global toggle
+  apiGlobal           Boolean @default(true) @map("api_global")      // global toggle
+  umamiEnabled        Boolean @default(false) @map("umami_enabled")
+  umamiScriptUrl      String? @map("umami_script_url")
+  umamiWebsiteId      String? @map("umami_website_id")
+  glitchtipEnabled    Boolean @default(false) @map("glitchtip_enabled")
+  glitchtipDsn        String? @map("glitchtip_dsn")
+  glitchtipEnvironment String? @map("glitchtip_environment")
+  githubIssueTokenEncrypted String? @map("github_issue_token_encrypted")
+  githubIssueRepo     String? @map("github_issue_repo")
 
   @@map("app_settings")
 }
@@ -258,6 +279,7 @@ model AuditLog {
   action    String   // e.g. "auth.login", "measurement.create", "export.csv"
   details   String?  // JSON string, no sensitive data
   ipAddress String?  @map("ip_address")
+  location  String?  // e.g. "Berlin, DE" — resolved from IP at log time
   createdAt DateTime @default(now()) @map("created_at")
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -265,4 +287,51 @@ model AuditLog {
   @@index([userId, createdAt])
   @@index([action, createdAt])
   @@map("audit_logs")
+}
+
+// ─── Notification System ──────────────────────────────────────
+
+model NotificationChannel {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  type      String   // "TELEGRAM" | "NTFY" | "WEB_PUSH"
+  enabled   Boolean  @default(true)
+  config    String   // AES-256-GCM encrypted JSON (channel-specific config)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  preferences NotificationPreference[]
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@map("notification_channels")
+}
+
+model NotificationPreference {
+  id        String  @id @default(cuid())
+  channelId String  @map("channel_id")
+  eventType String  @map("event_type") // "MEDICATION_REMINDER" | "MEASUREMENT_ANOMALY" | etc.
+  enabled   Boolean @default(true)
+
+  channel NotificationChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, eventType])
+  @@map("notification_preferences")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  endpoint  String
+  p256dh    String   // encrypted
+  auth      String   // encrypted
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
+  @@index([userId])
+  @@map("push_subscriptions")
 }

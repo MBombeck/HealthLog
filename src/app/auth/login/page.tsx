@@ -11,11 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { useTranslations } from "@/lib/i18n/context";
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const { t } = useTranslations();
   const [mode, setMode] = useState<"passkey" | "password">("passkey");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -70,7 +72,7 @@ export default function LoginPage() {
 
       const verifyJson = await verifyRes.json();
       if (!verifyRes.ok) {
-        setError(verifyJson.error || "Anmeldung fehlgeschlagen");
+        setError(verifyJson.error || t("auth.loginFailed"));
         setLoading(false);
         return;
       }
@@ -78,7 +80,7 @@ export default function LoginPage() {
       await queryClient.invalidateQueries({ queryKey: ["auth"] });
       router.push(getRedirectTarget());
     } catch {
-      setError("Passkey-Anmeldung abgebrochen oder fehlgeschlagen");
+      setError(t("auth.passkeyFailed"));
     } finally {
       setLoading(false);
     }
@@ -106,7 +108,7 @@ export default function LoginPage() {
       await queryClient.invalidateQueries({ queryKey: ["auth"] });
       router.push(getRedirectTarget());
     } catch {
-      setError("Anmeldung fehlgeschlagen");
+      setError(t("auth.loginFailed"));
     } finally {
       setLoading(false);
     }
@@ -135,12 +137,14 @@ export default function LoginPage() {
             ) : (
               <KeyRound className="mr-2 h-4 w-4" />
             )}
-            Mit Passkey anmelden
+            {t("auth.loginWithPasskey")}
           </Button>
 
           <div className="flex items-center gap-3">
             <Separator className="flex-1" />
-            <span className="text-muted-foreground text-xs">oder</span>
+            <span className="text-muted-foreground text-xs">
+              {t("common.or")}
+            </span>
             <Separator className="flex-1" />
           </div>
 
@@ -151,12 +155,12 @@ export default function LoginPage() {
               onClick={() => setMode("password")}
             >
               <Lock className="mr-2 h-4 w-4" />
-              Mit Passwort anmelden
+              {t("auth.loginWithPassword")}
             </Button>
           ) : (
             <form onSubmit={handlePasswordLogin} className="space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="email">E-Mail-Adresse</Label>
+                <Label htmlFor="email">{t("auth.email")}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -164,11 +168,11 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoComplete="email"
-                  placeholder="name@beispiel.de"
+                  placeholder={t("auth.emailPlaceholder")}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Passwort</Label>
+                <Label htmlFor="password">{t("auth.password")}</Label>
                 <Input
                   id="password"
                   type="password"
@@ -185,14 +189,14 @@ export default function LoginPage() {
                 ) : (
                   <Lock className="mr-2 h-4 w-4" />
                 )}
-                Anmelden
+                {t("auth.login")}
               </Button>
               <button
                 type="button"
                 onClick={() => setMode("passkey")}
                 className="text-muted-foreground hover:text-foreground w-full text-center text-xs"
               >
-                Zurück zu Passkey
+                {t("auth.backToPasskey")}
               </button>
             </form>
           )}
@@ -205,12 +209,12 @@ export default function LoginPage() {
 
           {registrationEnabled === true && (
             <p className="text-muted-foreground text-center text-xs">
-              Noch kein Konto?{" "}
+              {t("auth.noAccount")}{" "}
               <Link
                 href="/auth/register"
                 className="text-primary hover:underline"
               >
-                Registrieren
+                {t("auth.register")}
               </Link>
             </p>
           )}

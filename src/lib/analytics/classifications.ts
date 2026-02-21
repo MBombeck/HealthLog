@@ -122,7 +122,11 @@ export function classifySleepDuration(
   hours: number,
 ): SleepDurationClassification {
   if (hours < 6) {
-    return { category: "Deutlich zu kurz", color: "#ff5555", severity: "warning" };
+    return {
+      category: "Deutlich zu kurz",
+      color: "#ff5555",
+      severity: "warning",
+    };
   }
   if (hours < 7) {
     return { category: "Zu kurz", color: "#ffb86c", severity: "warning" };
@@ -133,7 +137,11 @@ export function classifySleepDuration(
   if (hours <= 10) {
     return { category: "Etwas lang", color: "#8be9fd", severity: "info" };
   }
-  return { category: "Deutlich zu lang", color: "#ff79c6", severity: "warning" };
+  return {
+    category: "Deutlich zu lang",
+    color: "#ff79c6",
+    severity: "warning",
+  };
 }
 
 // ── Body Fat Classification (ACE) ───────────────────────
@@ -195,6 +203,42 @@ export function classifyBodyFat(
     };
   }
   return { category: "Adipös", color: "#ff5555", severity: "danger" };
+}
+
+// ── Activity Steps Classification (WHO) ─────────────────
+
+export interface StepsClassification {
+  category: string;
+  color: string;
+  severity: "normal" | "info" | "warning";
+}
+
+export function classifySteps(steps: number): StepsClassification {
+  if (steps < 3000) {
+    return {
+      category: "Sehr wenig",
+      color: "#ff5555",
+      severity: "warning",
+    };
+  }
+  if (steps < 5000) {
+    return { category: "Wenig aktiv", color: "#ffb86c", severity: "warning" };
+  }
+  if (steps < 7500) {
+    return {
+      category: "Moderat aktiv",
+      color: "#f1fa8c",
+      severity: "info",
+    };
+  }
+  if (steps < 10000) {
+    return { category: "Aktiv", color: "#50fa7b", severity: "normal" };
+  }
+  return { category: "Sehr aktiv", color: "#50fa7b", severity: "normal" };
+}
+
+export function getStepsRange(): { min: number; max: number } {
+  return { min: 7000, max: 10000 };
 }
 
 // ── Target Range Helpers ────────────────────────────────

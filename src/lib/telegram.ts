@@ -29,11 +29,14 @@ async function telegramApiRequest(
   payload: Record<string, unknown>,
 ): Promise<TelegramResponse> {
   try {
-    const res = await fetch(`https://api.telegram.org/bot${botToken}/${method}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const res = await fetch(
+      `https://api.telegram.org/bot${botToken}/${method}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
     return (await res.json()) as TelegramResponse;
   } catch (err) {
     console.error(`[telegram] ${method} error:`, err);
@@ -95,7 +98,9 @@ export async function setTelegramWebhook(
   return true;
 }
 
-export async function deleteTelegramWebhook(botToken: string): Promise<boolean> {
+export async function deleteTelegramWebhook(
+  botToken: string,
+): Promise<boolean> {
   const json = await telegramApiRequest(botToken, "deleteWebhook", {
     drop_pending_updates: false,
   });

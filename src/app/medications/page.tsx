@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { useTranslations } from "@/lib/i18n/context";
+import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import { MedicationForm } from "@/components/medications/medication-form";
 import { MedicationCard } from "@/components/medications/medication-card";
 import { IntakeTimeline } from "@/components/medications/intake-timeline";
@@ -14,6 +16,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -22,8 +30,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, Pill, Upload, Terminal, Copy } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import {
+  MoreHorizontal,
+  Loader2,
+  Plus,
+  Pill,
+  Upload,
+  Copy,
+  RefreshCw,
+  RotateCcw,
+} from "lucide-react";
 
 interface Schedule {
   id: string;
@@ -31,19 +47,23 @@ interface Schedule {
   windowEnd: string;
   label: string | null;
   dose: string | null;
+  daysOfWeek: string | null;
 }
 
 interface Medication {
   id: string;
   name: string;
   dose: string;
-  category: "BLOOD_PRESSURE" | "VITAMIN" | "OTHER";
+  category: string;
   active: boolean;
+  notificationsEnabled: boolean;
+  pausedAt: string | null;
   schedules: Schedule[];
 }
 
 export default function MedicationsPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { t } = useTranslations();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMed, setEditingMed] = useState<Medication | null>(null);
   const [showEditTimeline, setShowEditTimeline] = useState(false);
@@ -53,7 +73,12 @@ export default function MedicationsPage() {
     name: string;
   } | null>(null);
 
-  const { data: medications, isLoading } = useQuery({
+  const {
+    data: medications,
+    isLoading,
+    isError,
+    refetch: refetchMedications,
+  } = useQuery({
     queryKey: ["medications"],
     queryFn: async () => {
       const res = await fetch("/api/medications");
@@ -92,32 +117,41 @@ export default function MedicationsPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Medikamente</h1>
+      <div className="space-y-5">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">
+            {t("medications.title")}
+          </h1>
           <p className="text-muted-foreground text-sm">
-            Bitte anmelden, um Medikamente zu verwalten.
+            {t("medications.loginRequired")}
           </p>
         </div>
       </div>
     );
   }
 
-  const activeMeds = medications?.filter((m) => m.active) ?? [];
-  const inactiveMeds = medications?.filter((m) => !m.active) ?? [];
+  const byName = (a: Medication, b: Medication) =>
+    a.name.localeCompare(b.name, "de", { sensitivity: "base" });
+
+  const activeMeds = (medications?.filter((m) => m.active) ?? []).sort(byName);
+  const inactiveMeds = (medications?.filter((m) => !m.active) ?? []).sort(
+    byName,
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Medikamente</h1>
+    <div className="space-y-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">
+            {t("medications.title")}
+          </h1>
           <p className="text-muted-foreground text-sm">
-            Medikation, Zeitpläne & Einnahmen
+            {t("medications.subtitle")}
           </p>
         </div>
         <Button onClick={openCreate}>
           <Plus className="mr-2 h-4 w-4" />
-          Medikament
+          {t("medications.addMedication")}
         </Button>
       </div>
 
@@ -125,25 +159,40 @@ export default function MedicationsPage() {
         <div className="flex h-32 items-center justify-center">
           <Loader2 className="text-primary h-6 w-6 animate-spin" />
         </div>
+      ) : isError ? (
+        <div className="bg-card border-border flex h-64 items-center justify-center rounded-xl border">
+          <div className="flex flex-col items-center gap-3">
+            <p className="text-muted-foreground text-sm">
+              {t("medications.loadFailed")}
+            </p>
+            <Button variant="outline" size="sm" onClick={() => void refetchMedications()}>
+              {t("medications.retryLoad")}
+            </Button>
+          </div>
+        </div>
       ) : !medications?.length ? (
         <div className="bg-card border-border flex h-64 items-center justify-center rounded-xl border">
           <div className="text-muted-foreground flex flex-col items-center gap-2">
             <Pill className="h-8 w-8" />
-            <p>Noch keine Medikamente angelegt</p>
+            <p>{t("medications.noMedicationsYet")}</p>
             <Button variant="outline" size="sm" onClick={openCreate}>
               <Plus className="mr-1 h-3.5 w-3.5" />
-              Erstes Medikament anlegen
+              {t("medications.firstMedication")}
             </Button>
           </div>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Active medications */}
           {activeMeds.length > 0 && (
-            <div className="space-y-4">
+            <div className="space-y-3.5">
               <div className="grid gap-4 sm:grid-cols-2">
                 {activeMeds.map((med) => (
-                  <MedicationCard key={med.id} medication={med} onEdit={openEdit} />
+                  <MedicationCard
+                    key={med.id}
+                    medication={med}
+                    onEdit={openEdit}
+                  />
                 ))}
               </div>
             </div>
@@ -151,9 +200,9 @@ export default function MedicationsPage() {
 
           {/* Inactive medications */}
           {inactiveMeds.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               <h2 className="text-muted-foreground text-sm font-medium">
-                Inaktiv ({inactiveMeds.length})
+                {t("common.inactive")} ({inactiveMeds.length})
               </h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 {inactiveMeds.map((med) => (
@@ -170,10 +219,7 @@ export default function MedicationsPage() {
       )}
 
       {/* API Endpoint Dialog */}
-      <ApiEndpointDialog
-        medication={apiMed}
-        onClose={() => setApiMed(null)}
-      />
+      <ApiEndpointDialog medication={apiMed} onClose={() => setApiMed(null)} />
 
       {/* Import Dialog */}
       <IntakeImportDialog
@@ -186,7 +232,9 @@ export default function MedicationsPage() {
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {editingMed ? "Medikament bearbeiten" : "Neues Medikament"}
+              {editingMed
+                ? t("medications.editMedication")
+                : t("medications.newMedication")}
             </DialogTitle>
           </DialogHeader>
           <MedicationForm
@@ -198,59 +246,44 @@ export default function MedicationsPage() {
                     dose: editingMed.dose,
                     category: editingMed.category,
                     active: editingMed.active,
+                    notificationsEnabled: editingMed.notificationsEnabled,
                     schedules: editingMed.schedules.map((s) => ({
                       windowStart: s.windowStart,
                       windowEnd: s.windowEnd,
                       label: s.label ?? "",
                       dose: s.dose ?? "",
+                      ...parseScheduleRecurrence(s.daysOfWeek),
                     })),
                   }
                 : undefined
             }
+            editActions={
+              editingMed
+                ? {
+                    showEditTimeline,
+                    onToggleEditTimeline: () =>
+                      setShowEditTimeline((prev) => !prev),
+                    onImportIntakes: () => setImportMedId(editingMed.id),
+                    onApiAccess: () =>
+                      setApiMed({
+                        id: editingMed.id,
+                        name: editingMed.name,
+                      }),
+                  }
+                : undefined
+            }
             onSuccess={closeDialog}
-            onCancel={editingMed ? undefined : closeDialog}
+            onCancel={closeDialog}
           />
 
-          {editingMed && (
-            <div className="mt-4 space-y-3 border-t pt-4">
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowEditTimeline((prev) => !prev)}
-                >
-                  {showEditTimeline
-                    ? "Einnahme-Verlauf ausblenden"
-                    : "Einnahme-Verlauf anzeigen"}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setImportMedId(editingMed.id)}
-                >
-                  <Upload className="mr-1 h-3.5 w-3.5" />
-                  Import
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setApiMed({ id: editingMed.id, name: editingMed.name })
-                  }
-                >
-                  <Terminal className="mr-1 h-3.5 w-3.5" />
-                  API
-                </Button>
+          {editingMed && showEditTimeline && (
+            <div className="mt-4 border-t pt-4">
+              <div className="bg-card border-border rounded-lg border p-3">
+                <IntakeTimeline
+                  medicationId={editingMed.id}
+                  medicationName={editingMed.name}
+                />
               </div>
-
-              {showEditTimeline && (
-                <div className="bg-card border-border rounded-lg border p-3">
-                  <IntakeTimeline
-                    medicationId={editingMed.id}
-                    medicationName={editingMed.name}
-                  />
-                </div>
-              )}
             </div>
           )}
         </DialogContent>
@@ -266,6 +299,7 @@ function IntakeImportDialog({
   medicationId: string | null;
   onClose: () => void;
 }) {
+  const { t } = useTranslations();
   const [jsonText, setJsonText] = useState("");
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -276,12 +310,16 @@ function IntakeImportDialog({
   const [fileInputKey, setFileInputKey] = useState(0);
   const queryClient = useQueryClient();
 
-  function handleClose() {
+  function resetImportForm() {
     setJsonText("");
     setResult(null);
     setResultType(null);
     setSelectedFileName(null);
     setFileInputKey((prev) => prev + 1);
+  }
+
+  function handleClose() {
+    resetImportForm();
     onClose();
   }
 
@@ -297,10 +335,10 @@ function IntakeImportDialog({
       JSON.parse(content);
       setJsonText(content);
       setSelectedFileName(file.name);
-      setResult(`Datei "${file.name}" geladen`);
+      setResult(t("medications.importFileLoaded", { name: file.name }));
       setResultType("success");
     } catch {
-      setResult("Datei enthält kein gültiges JSON");
+      setResult(t("medications.importInvalidJson"));
       setResultType("error");
     }
   }
@@ -317,7 +355,7 @@ function IntakeImportDialog({
       if (!Array.isArray(data)) {
         const arrKey = Object.keys(data).find((k) => Array.isArray(data[k]));
         if (arrKey) data = data[arrKey];
-        else throw new Error("Kein Array gefunden");
+        else throw new Error(t("medications.importNoArray"));
       }
 
       const res = await fetch(
@@ -333,25 +371,25 @@ function IntakeImportDialog({
       if (res.ok) {
         const d = json.data;
         setResult(
-          `${d.imported} Einnahmen importiert` +
+          t("medications.importResult", { imported: d.imported }) +
             (d.skippedDuplicates > 0
-              ? `, ${d.skippedDuplicates} Duplikate übersprungen`
+              ? `, ${t("medications.importDuplicatesSkipped", { count: d.skippedDuplicates })}`
               : "") +
             (d.skippedInvalid > 0
-              ? `, ${d.skippedInvalid} ungültige Einträge übersprungen`
+              ? `, ${t("medications.importInvalidSkipped", { count: d.skippedInvalid })}`
               : ""),
         );
         setResultType("success");
         queryClient.invalidateQueries({ queryKey: ["medications"] });
       } else {
-        setResult(json.error || "Import fehlgeschlagen");
+        setResult(json.error || t("medications.importFailed"));
         setResultType("error");
       }
     } catch (err) {
       setResult(
         err instanceof SyntaxError
-          ? "Ungültiges JSON-Format"
-          : (err as Error).message || "Import fehlgeschlagen",
+          ? t("medications.importInvalidFormat")
+          : (err as Error).message || t("medications.importFailed"),
       );
       setResultType("error");
     } finally {
@@ -363,15 +401,15 @@ function IntakeImportDialog({
     <Dialog open={!!medicationId} onOpenChange={() => handleClose()}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Einnahmen importieren</DialogTitle>
+          <DialogTitle>{t("medications.importIntakes")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <p className="text-muted-foreground text-sm">
-            JSON-Array mit Einnahme-Daten einfügen. Erwartetes Format:
+            {t("medications.importDescription")}
           </p>
           <div className="space-y-1.5">
             <Label htmlFor="intake-import-file" className="text-xs font-medium">
-              JSON-Datei hochladen
+              {t("medications.importUploadFile")}
             </Label>
             <input
               key={fileInputKey}
@@ -383,7 +421,7 @@ function IntakeImportDialog({
             />
             {selectedFileName && (
               <p className="text-muted-foreground text-xs">
-                Ausgewählt: {selectedFileName}
+                {t("medications.importSelected", { name: selectedFileName })}
               </p>
             )}
           </div>
@@ -396,7 +434,7 @@ function IntakeImportDialog({
           <textarea
             value={jsonText}
             onChange={(e) => setJsonText(e.target.value)}
-            placeholder="JSON hier einfügen..."
+            placeholder={t("medications.importPaste")}
             rows={8}
             className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring w-full rounded-md border px-3 py-2 font-mono text-sm focus-visible:ring-2 focus-visible:outline-none"
           />
@@ -407,18 +445,40 @@ function IntakeImportDialog({
               {result}
             </p>
           )}
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={handleClose}>
-              Schließen
-            </Button>
-            <Button
-              onClick={handleImport}
-              disabled={importing || !jsonText.trim()}
-            >
-              {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <Upload className="mr-2 h-4 w-4" />
-              Importieren
-            </Button>
+          <div className="flex items-center justify-between gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9"
+                  disabled={importing}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={resetImportForm}>
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  {t("common.reset")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={handleClose} disabled={importing}>
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onClick={handleImport}
+                disabled={importing || !jsonText.trim()}
+              >
+                {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Upload className="mr-2 h-4 w-4" />
+                {t("common.import")}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
@@ -433,6 +493,7 @@ function ApiEndpointDialog({
   medication: { id: string; name: string } | null;
   onClose: () => void;
 }) {
+  const { t } = useTranslations();
   type ExampleType = "curl" | "wget" | "fetch" | "powershell";
 
   const [enabled, setEnabled] = useState(false);
@@ -466,14 +527,14 @@ function ApiEndpointDialog({
         setActiveTokenCount(json.data.activeTokenCount ?? 0);
       } else {
         const json = await res.json();
-        setMsg(json.error || "Status konnte nicht geladen werden");
+        setMsg(json.error || t("medications.statusLoadFailed"));
       }
     } catch {
-      setMsg("Status konnte nicht geladen werden");
+      setMsg(t("medications.statusLoadFailed"));
     } finally {
       setLoadingStatus(false);
     }
-  }, [medication]);
+  }, [medication, t]);
 
   async function toggleEndpoint(nextEnabled: boolean) {
     if (!medication) return;
@@ -481,21 +542,27 @@ function ApiEndpointDialog({
     setToken(null);
     setMsg(null);
     try {
-      const res = await fetch(`/api/medications/${medication.id}/api-endpoint`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled: nextEnabled }),
-      });
+      const res = await fetch(
+        `/api/medications/${medication.id}/api-endpoint`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled: nextEnabled }),
+        },
+      );
       const json = await res.json();
       if (!res.ok) {
-        setMsg(json.error || "Ändern fehlgeschlagen");
+        setMsg(json.error || t("medications.changeFailed"));
         return;
       }
 
       setEnabled(json.data.enabled === true);
       if (typeof json.data.activeTokenCount === "number") {
         setActiveTokenCount(json.data.activeTokenCount);
-      } else if (!json.data.enabled && typeof json.data.revokedTokenCount === "number") {
+      } else if (
+        !json.data.enabled &&
+        typeof json.data.revokedTokenCount === "number"
+      ) {
         setActiveTokenCount(0);
       }
 
@@ -503,9 +570,13 @@ function ApiEndpointDialog({
         setToken(json.data.token);
       }
 
-      setMsg(nextEnabled ? "API-Endpoint aktiviert" : "API-Endpoint deaktiviert");
+      setMsg(
+        nextEnabled
+          ? t("medications.apiEndpointActivated")
+          : t("medications.apiEndpointDeactivated"),
+      );
     } catch {
-      setMsg("Ändern fehlgeschlagen");
+      setMsg(t("medications.changeFailed"));
     } finally {
       setToggling(false);
     }
@@ -563,22 +634,29 @@ function ApiEndpointDialog({
     <Dialog open={!!medication} onOpenChange={() => handleClose()}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>API-Endpoint: {medication?.name}</DialogTitle>
+          <DialogTitle>
+            {t("medications.apiEndpointTitle", {
+              name: medication?.name ?? "",
+            })}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <p className="text-muted-foreground text-sm">
-            Nutze diesen Endpoint, um Einnahmen per API zu erfassen (z.B. via
-            iPhone-Kurzbefehl oder cron-Job).
+            {t("medications.apiEndpointDescription")}
           </p>
 
           <div className="bg-muted/40 rounded-lg border p-3">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-medium">API-Endpoint aktiv</p>
+                <p className="text-sm font-medium">
+                  {t("medications.apiEndpointActive")}
+                </p>
                 <p className="text-muted-foreground text-xs">
                   {enabled
-                    ? `Aktiv (${activeTokenCount} Token)`
-                    : "Deaktiviert"}
+                    ? t("medications.apiTokenCount", {
+                        count: activeTokenCount,
+                      })
+                    : t("common.disabled")}
                 </p>
               </div>
               <Switch
@@ -608,13 +686,15 @@ function ApiEndpointDialog({
               </Button>
             </div>
             {copied === "url" && (
-              <p className="text-dracula-green text-xs">Kopiert!</p>
+              <p className="text-dracula-green text-xs">{t("common.copied")}</p>
             )}
           </div>
 
           {/* Token */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium">API-Token</Label>
+            <Label className="text-xs font-medium">
+              {t("medications.apiToken")}
+            </Label>
             {token ? (
               <div className="flex items-center gap-2">
                 <code className="bg-muted flex-1 rounded px-3 py-2 font-mono text-xs break-all">
@@ -632,25 +712,26 @@ function ApiEndpointDialog({
             ) : (
               <p className="text-muted-foreground text-xs">
                 {enabled
-                  ? "Endpoint ist aktiv. Vorhandene Tokens bleiben gültig, können aber nicht erneut im Klartext angezeigt werden."
-                  : "Aktiviere den Endpoint, um einen neuen Token zu erstellen."}
+                  ? t("medications.apiTokenActiveHint")
+                  : t("medications.apiTokenActivateHint")}
               </p>
             )}
             {token && (
               <p className="text-muted-foreground text-xs">
-                Der Token wird nur bei der Erstellung einmal im Klartext
-                angezeigt.
+                {t("medications.apiTokenOnceHint")}
               </p>
             )}
             {copied === "token" && (
-              <p className="text-dracula-green text-xs">Kopiert!</p>
+              <p className="text-dracula-green text-xs">{t("common.copied")}</p>
             )}
           </div>
 
           {/* request examples */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between gap-2">
-              <Label className="text-xs font-medium">Request-Beispiel</Label>
+              <Label className="text-xs font-medium">
+                {t("medications.requestExample")}
+              </Label>
               <Select
                 value={exampleType}
                 onValueChange={(value) => setExampleType(value as ExampleType)}
@@ -667,7 +748,7 @@ function ApiEndpointDialog({
               </Select>
             </div>
             <div className="relative">
-              <pre className="bg-muted rounded-lg p-3 font-mono text-xs whitespace-pre-wrap break-all">
+              <pre className="bg-muted rounded-lg p-3 font-mono text-xs break-all whitespace-pre-wrap">
                 {selectedExample.value}
               </pre>
               <Button
@@ -680,21 +761,51 @@ function ApiEndpointDialog({
               </Button>
             </div>
             {copied === "example" && (
-              <p className="text-dracula-green text-xs">Kopiert!</p>
+              <p className="text-dracula-green text-xs">{t("common.copied")}</p>
             )}
           </div>
 
           {msg && (
             <p
-              className={`text-sm ${msg.includes("aktiv") || msg.includes("deaktiviert") ? "text-dracula-green" : "text-destructive"}`}
+              className={`text-sm ${msg === t("medications.apiEndpointActivated") || msg === t("medications.apiEndpointDeactivated") ? "text-dracula-green" : "text-destructive"}`}
             >
               {msg}
             </p>
           )}
 
-          <Button variant="outline" className="w-full" onClick={handleClose}>
-            Schließen
-          </Button>
+          <div className="flex items-center justify-between gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9"
+                  disabled={loadingStatus || toggling}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem
+                  onClick={() => {
+                    void loadStatus();
+                  }}
+                  disabled={loadingStatus || toggling}
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  {t("medications.retryLoad")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={handleClose}>
+                {t("common.cancel")}
+              </Button>
+              <Button onClick={handleClose}>{t("common.close")}</Button>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

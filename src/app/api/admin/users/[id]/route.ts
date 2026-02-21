@@ -20,46 +20,51 @@ export async function PUT(
 
   const { id } = await params;
 
-  const body = await request.json();
-  const parsed = updateUserSchema.safeParse(body);
-  if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 422);
-  }
-
-  const target = await prisma.user.findUnique({ where: { id } });
-  if (!target) return apiError("Benutzer nicht gefunden", 404);
-
-  // Prevent removing the last admin
-  if (parsed.data.role === "USER" && target.role === "ADMIN") {
-    const adminCount = await prisma.user.count({ where: { role: "ADMIN" } });
-    if (adminCount <= 1) {
-      return apiError("Der letzte Admin kann nicht degradiert werden", 400);
+  try {
+    const body = await request.json();
+    const parsed = updateUserSchema.safeParse(body);
+    if (!parsed.success) {
+      return apiError(parsed.error.issues[0].message, 422);
     }
+
+    const target = await prisma.user.findUnique({ where: { id } });
+    if (!target) return apiError("Benutzer nicht gefunden", 404);
+
+    // Prevent removing the last admin
+    if (parsed.data.role === "USER" && target.role === "ADMIN") {
+      const adminCount = await prisma.user.count({ where: { role: "ADMIN" } });
+      if (adminCount <= 1) {
+        return apiError("Der letzte Admin kann nicht degradiert werden", 400);
+      }
+    }
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: {
+        ...(parsed.data.username !== undefined && {
+          username: parsed.data.username,
+        }),
+        ...(parsed.data.email !== undefined && { email: parsed.data.email }),
+        ...(parsed.data.role !== undefined && { role: parsed.data.role }),
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    await auditLog("admin.user.update", {
+      userId: admin.id,
+      ipAddress: getClientIp(request),
+      details: { targetUserId: id, changes: parsed.data },
+    });
+
+    return apiSuccess(user);
+  } catch (err) {
+    console.error("Admin user update error:", err);
+    return apiError("Benutzer konnte nicht aktualisiert werden", 500);
   }
-
-  const user = await prisma.user.update({
-    where: { id },
-    data: {
-      ...(parsed.data.username !== undefined && {
-        username: parsed.data.username,
-      }),
-      ...(parsed.data.email !== undefined && { email: parsed.data.email }),
-      ...(parsed.data.role !== undefined && { role: parsed.data.role }),
-    },
-    select: {
-      id: true,
-      username: true,
-      email: true,
-      role: true,
-      createdAt: true,
-    },
-  });
-
-  await auditLog("admin.user.update", {
-    userId: admin.id,
-    ipAddress: getClientIp(request),
-    details: { targetUserId: id, changes: parsed.data },
-  });
-
-  return apiSuccess(user);
 }

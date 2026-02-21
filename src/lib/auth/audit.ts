@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { lookupIpLocation } from "@/lib/geo";
 
 export async function auditLog(
   action: string,
@@ -8,7 +9,7 @@ export async function auditLog(
     ipAddress?: string | null;
   } = {},
 ) {
-  await prisma.auditLog.create({
+  const entry = await prisma.auditLog.create({
     data: {
       action,
       userId: opts.userId ?? null,
@@ -16,4 +17,20 @@ export async function auditLog(
       ipAddress: opts.ipAddress ?? null,
     },
   });
+
+  // Fire-and-forget: resolve IP location and update the entry
+  if (opts.ipAddress && action.startsWith("auth.")) {
+    lookupIpLocation(opts.ipAddress)
+      .then((location) => {
+        if (location) {
+          return prisma.auditLog.update({
+            where: { id: entry.id },
+            data: { location },
+          });
+        }
+      })
+      .catch(() => {
+        // Silently ignore geo lookup failures
+      });
+  }
 }

@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/auth/session";
 import { apiSuccess, apiError } from "@/lib/api-response";
+import { getGravatarUrl } from "@/lib/gravatar";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,7 @@ export async function GET() {
       gender: user.gender,
       timezone: user.timezone,
       onboardingCompletedAt: user.onboardingCompletedAt,
+      gravatarUrl: user.email ? getGravatarUrl(user.email) : null,
     });
   } catch (err) {
     console.error("Auth me error:", err);

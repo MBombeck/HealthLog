@@ -4,6 +4,14 @@ const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 export const MEDICATION_CATEGORY_VALUES = [
   "BLOOD_PRESSURE",
   "VITAMIN",
+  "SUPPLEMENT",
+  "PAIN_RELIEF",
+  "ALLERGY",
+  "DIGESTIVE",
+  "THYROID",
+  "HORMONE",
+  "SKIN",
+  "SLEEP_AID",
   "OTHER",
 ] as const;
 
@@ -12,6 +20,8 @@ export const scheduleSchema = z.object({
   windowEnd: z.string().regex(timeRegex, "Format: HH:mm"),
   label: z.string().max(50).optional(),
   dose: z.string().max(50).optional(),
+  daysOfWeek: z.array(z.number().int().min(0).max(6)).optional(),
+  intervalWeeks: z.number().int().min(1).max(4).optional(),
 });
 
 export const createMedicationSchema = z.object({
@@ -26,6 +36,7 @@ export const updateMedicationSchema = z.object({
   dose: z.string().min(1).max(50).optional(),
   category: z.enum(MEDICATION_CATEGORY_VALUES).optional(),
   active: z.boolean().optional(),
+  notificationsEnabled: z.boolean().optional(),
   schedules: z.array(scheduleSchema).optional(),
 });
 

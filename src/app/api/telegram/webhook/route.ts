@@ -130,12 +130,14 @@ async function handleCallback(update: TelegramUpdate) {
   }
 
   const messageId = callback.message?.message_id ?? "na";
-  const idempotencyKey = `telegram:cb:${chatId}:${messageId}:${medicationId}`.slice(
-    0,
-    128,
-  );
+  const idempotencyKey =
+    `telegram:cb:${chatId}:${messageId}:${medicationId}`.slice(0, 128);
 
-  const result = await markMedicationTaken(user.id, medicationId, idempotencyKey);
+  const result = await markMedicationTaken(
+    user.id,
+    medicationId,
+    idempotencyKey,
+  );
   await answerTelegramCallbackQuery(botToken, callback.id, result.message);
   await sendTelegramMessage(
     botToken,
@@ -208,11 +210,13 @@ async function handleTextMessage(update: TelegramUpdate) {
     return;
   }
 
-  const idempotencyKey = `telegram:text:${update.update_id}:${medicationId}`.slice(
-    0,
-    128,
+  const idempotencyKey =
+    `telegram:text:${update.update_id}:${medicationId}`.slice(0, 128);
+  const result = await markMedicationTaken(
+    user.id,
+    medicationId,
+    idempotencyKey,
   );
-  const result = await markMedicationTaken(user.id, medicationId, idempotencyKey);
   await sendTelegramMessage(
     botToken,
     chatId,
