@@ -1,6 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import { verifyHmacSignature, hashToken } from "../hmac";
 import { createHmac } from "node:crypto";
+
+const TEST_HMAC_KEY = "test-hmac-key-for-unit-tests";
+
+beforeAll(() => {
+  process.env.API_TOKEN_HMAC_KEY = TEST_HMAC_KEY;
+});
 
 describe("verifyHmacSignature", () => {
   const secret = "test-secret-key";
@@ -60,11 +66,20 @@ describe("hashToken", () => {
     expect(hash).toMatch(/^[a-f0-9]{64}$/);
   });
 
-  it("uses healthlog-token-hash as the HMAC key", () => {
+  it("uses API_TOKEN_HMAC_KEY env var as the HMAC key", () => {
     const token = "test-token";
-    const expected = createHmac("sha256", "healthlog-token-hash")
+    const expected = createHmac("sha256", TEST_HMAC_KEY)
       .update(token)
       .digest("hex");
     expect(hashToken(token)).toBe(expected);
+  });
+
+  it("throws if API_TOKEN_HMAC_KEY is not set", () => {
+    const original = process.env.API_TOKEN_HMAC_KEY;
+    delete process.env.API_TOKEN_HMAC_KEY;
+    expect(() => hashToken("test")).toThrow(
+      "API_TOKEN_HMAC_KEY env var must be set",
+    );
+    process.env.API_TOKEN_HMAC_KEY = original;
   });
 });

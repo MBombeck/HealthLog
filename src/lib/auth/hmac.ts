@@ -28,8 +28,12 @@ export function verifyHmacSignature(
 
 /**
  * Hash an API token for storage (SHA-256).
+ * Requires API_TOKEN_HMAC_KEY env var to be set.
  */
 export function hashToken(token: string): string {
-  const key = process.env.API_TOKEN_HMAC_KEY ?? "healthlog-token-hash";
+  const key = process.env.API_TOKEN_HMAC_KEY;
+  if (!key) {
+    throw new Error("API_TOKEN_HMAC_KEY env var must be set");
+  }
   return createHmac("sha256", key).update(token).digest("hex");
 }

@@ -11,6 +11,7 @@ services:
       NODE_ENV: production
       SESSION_SECRET: "${SESSION_SECRET:?SESSION_SECRET is required}"
       ENCRYPTION_KEY: "${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}"
+      API_TOKEN_HMAC_KEY: "${API_TOKEN_HMAC_KEY:?API_TOKEN_HMAC_KEY is required}"
       NEXT_PUBLIC_APP_URL: "${NEXT_PUBLIC_APP_URL:-http://localhost:3000}"
       APP_URL: "${APP_URL:-http://localhost:3000}"
     depends_on:
