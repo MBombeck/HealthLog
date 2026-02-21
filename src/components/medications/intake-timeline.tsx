@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Check, SkipForward, Loader2, X } from "lucide-react";
 import { formatDateWithWeekday, formatTime } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/context";
 
 interface IntakeEvent {
   id: string;
@@ -36,6 +37,7 @@ export function IntakeTimeline({
   medicationName,
 }: IntakeTimelineProps) {
   const queryClient = useQueryClient();
+  const { t } = useTranslations();
 
   const { data: events, isLoading } = useQuery({
     queryKey: ["medications", medicationId, "intake"],
@@ -78,7 +80,7 @@ export function IntakeTimeline({
   if (!events?.length) {
     return (
       <p className="text-muted-foreground py-4 text-center text-sm">
-        Noch keine Einnahmen für {medicationName}
+        {`${t("medications.noIntakesForMedication")} ${medicationName}`}
       </p>
     );
   }
@@ -124,7 +126,7 @@ export function IntakeTimeline({
                   <AlertDialogTrigger asChild>
                     <button
                       className="text-destructive absolute top-1/2 right-1 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100"
-                      aria-label="Einnahme löschen"
+                      aria-label={t("medications.deleteIntakeAriaLabel")}
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -132,19 +134,19 @@ export function IntakeTimeline({
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>
-                        Einnahme-Eintrag löschen?
+                        {t("medications.intakeDeleteConfirm")}
                       </AlertDialogTitle>
                       <AlertDialogDescription>
-                        Dieser Einnahme-Eintrag wird unwiderruflich gelöscht.
+                        {t("medications.intakeDeleteDescription")}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                      <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                       <AlertDialogAction
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         onClick={() => deleteMutation.mutate(event.id)}
                       >
-                        Löschen
+                        {t("common.delete")}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

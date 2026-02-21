@@ -46,6 +46,7 @@ import {
   Upload,
 } from "lucide-react";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
+import { useTranslations } from "@/lib/i18n/context";
 
 const DOSE_UNITS = [
   "mg",
@@ -59,16 +60,31 @@ const DOSE_UNITS = [
   "µg",
 ] as const;
 
-const DAY_LABELS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"] as const;
-const DAY_LABELS_LONG = [
-  "Sonntags",
-  "Montags",
-  "Dienstags",
-  "Mittwochs",
-  "Donnerstags",
-  "Freitags",
-  "Samstags",
-] as const;
+type TranslateFn = (key: string, params?: Record<string, string | number>) => string;
+
+function getDayLabelsShort(t: TranslateFn): string[] {
+  return [
+    t("medications.daysSun"),
+    t("medications.daysMon"),
+    t("medications.daysTue"),
+    t("medications.daysWed"),
+    t("medications.daysThu"),
+    t("medications.daysFri"),
+    t("medications.daysSat"),
+  ];
+}
+
+function getDayLabelsLong(t: TranslateFn): string[] {
+  return [
+    t("medications.weekdaySundayPlural"),
+    t("medications.weekdayMondayPlural"),
+    t("medications.weekdayTuesdayPlural"),
+    t("medications.weekdayWednesdayPlural"),
+    t("medications.weekdayThursdayPlural"),
+    t("medications.weekdayFridayPlural"),
+    t("medications.weekdaySaturdayPlural"),
+  ];
+}
 
 function getNextRecurrenceDate(schedule: Schedule): Date | null {
   const now = new Date();
@@ -98,25 +114,27 @@ function getNextRecurrenceDate(schedule: Schedule): Date | null {
   return null;
 }
 
-function formatRecurrenceSummary(schedule: Schedule): string {
+function formatRecurrenceSummary(schedule: Schedule, t: TranslateFn): string {
+  const dayLabelsShort = getDayLabelsShort(t);
+  const dayLabelsLong = getDayLabelsLong(t);
   const dayText =
     schedule.daysOfWeek.length === 0
-      ? "Täglich"
+      ? t("medications.scheduleDaily")
       : schedule.daysOfWeek.length === 1
-        ? DAY_LABELS_LONG[schedule.daysOfWeek[0]]
-        : schedule.daysOfWeek.map((day) => DAY_LABELS[day]).join(", ");
+        ? dayLabelsLong[schedule.daysOfWeek[0]]
+        : schedule.daysOfWeek.map((day) => dayLabelsShort[day]).join(", ");
   const intervalText =
     schedule.intervalWeeks === 1
-      ? "jede Woche"
-      : `alle ${schedule.intervalWeeks} Wochen`;
-  return `Intervall: ${dayText} - ${intervalText}`;
+      ? t("medications.scheduleEveryWeek")
+      : `${t("medications.scheduleEveryNWeeks").replace("{n}", String(schedule.intervalWeeks))}`;
+  return `${t("medications.scheduleIntervalPrefix")} ${dayText} - ${intervalText}`;
 }
 
-function formatNextWindowSummary(schedule: Schedule): string {
+function formatNextWindowSummary(schedule: Schedule, t: TranslateFn): string {
   const isSimpleDaily =
     schedule.daysOfWeek.length === 0 && schedule.intervalWeeks === 1;
   if (isSimpleDaily) {
-    return `Nächstes Zeitfenster: täglich, ${formatTimeWindowRange(schedule.windowStart, schedule.windowEnd)}`;
+    return `${t("medications.nextSchedulePrefix")} ${t("medications.nextScheduleDaily")}, ${formatTimeWindowRange(schedule.windowStart, schedule.windowEnd)}`;
   }
 
   const nextDate = getNextRecurrenceDate(schedule);
@@ -126,7 +144,7 @@ function formatNextWindowSummary(schedule: Schedule): string {
         month: "2-digit",
       }).format(nextDate)}, ${formatTimeWindowRange(schedule.windowStart, schedule.windowEnd)}`
     : "—";
-  return `Nächstes Zeitfenster: ${nextText}`;
+  return `${t("medications.nextSchedulePrefix")} ${nextText}`;
 }
 
 interface Schedule {
@@ -218,6 +236,7 @@ export function MedicationForm({
   initial,
 }: MedicationFormProps) {
   const queryClient = useQueryClient();
+  const { t } = useTranslations();
   const [name, setName] = useState(initial?.name ?? "");
 
   const initialDose = parseDose(initial?.dose ?? "");
@@ -360,7 +379,7 @@ export function MedicationForm({
       await queryClient.invalidateQueries({ queryKey: ["medications"] });
       onSuccess?.();
     } catch {
-      setError("Fehler beim Speichern");
+      setError(t("medications.saveError"));
     } finally {
       setLoading(false);
     }
@@ -376,14 +395,14 @@ export function MedicationForm({
       });
       const json = await res.json().catch(() => null);
       if (!res.ok) {
-        setError(json?.error ?? "Fehler beim Löschen");
+        setError(json?.error ?? t("medications.deleteError"));
         return;
       }
 
       await queryClient.invalidateQueries({ queryKey: ["medications"] });
       onSuccess?.();
     } catch {
-      setError("Fehler beim Löschen");
+      setError(t("medications.deleteError"));
     } finally {
       setDeleting(false);
     }
@@ -399,14 +418,14 @@ export function MedicationForm({
       });
       const json = await res.json().catch(() => null);
       if (!res.ok) {
-        setError(json?.error ?? "Fehler beim Löschen der Aufzeichnungen");
+        setError(json?.error ?? t("medications.purgeError"));
         return;
       }
 
       await queryClient.invalidateQueries({ queryKey: ["medications"] });
       setPurgeDialogOpen(false);
     } catch {
-      setError("Fehler beim Löschen der Aufzeichnungen");
+      setError(t("medications.purgeError"));
     } finally {
       setPurging(false);
     }
@@ -415,7 +434,7 @@ export function MedicationForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
-        <Label htmlFor="med-name">Name</Label>
+        <Label htmlFor="med-name">{t("medications.name")}</Label>
         <Input
           id="med-name"
           value={name}
@@ -427,30 +446,30 @@ export function MedicationForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="med-category">Typ</Label>
+        <Label htmlFor="med-category">{t("medications.formType")}</Label>
         <Select value={category} onValueChange={setCategory}>
           <SelectTrigger id="med-category" className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="BLOOD_PRESSURE">Blutdrucksenker</SelectItem>
-            <SelectItem value="VITAMIN">Vitamine</SelectItem>
-            <SelectItem value="SUPPLEMENT">Nahrungsergänzung</SelectItem>
-            <SelectItem value="PAIN_RELIEF">Schmerzmittel</SelectItem>
-            <SelectItem value="ALLERGY">Allergie</SelectItem>
-            <SelectItem value="DIGESTIVE">Magen/Darm</SelectItem>
-            <SelectItem value="THYROID">Schilddrüse</SelectItem>
-            <SelectItem value="HORMONE">Hormone</SelectItem>
-            <SelectItem value="SKIN">Hautpflege</SelectItem>
-            <SelectItem value="SLEEP_AID">Schlafmittel</SelectItem>
-            <SelectItem value="OTHER">Sonstiges</SelectItem>
+            <SelectItem value="BLOOD_PRESSURE">{t("medications.categoryBloodPressure")}</SelectItem>
+            <SelectItem value="VITAMIN">{t("medications.categoryVitamin")}</SelectItem>
+            <SelectItem value="SUPPLEMENT">{t("medications.categorySupplement")}</SelectItem>
+            <SelectItem value="PAIN_RELIEF">{t("medications.categoryPainRelief")}</SelectItem>
+            <SelectItem value="ALLERGY">{t("medications.categoryAllergy")}</SelectItem>
+            <SelectItem value="DIGESTIVE">{t("medications.categoryDigestive")}</SelectItem>
+            <SelectItem value="THYROID">{t("medications.categoryThyroid")}</SelectItem>
+            <SelectItem value="HORMONE">{t("medications.categoryHormone")}</SelectItem>
+            <SelectItem value="SKIN">{t("medications.categorySkin")}</SelectItem>
+            <SelectItem value="SLEEP_AID">{t("medications.categorySleepAid")}</SelectItem>
+            <SelectItem value="OTHER">{t("medications.categoryOther")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label htmlFor="med-dose-amount">Dosis</Label>
+          <Label htmlFor="med-dose-amount">{t("medications.formDose")}</Label>
           <Input
             id="med-dose-amount"
             type="text"
@@ -463,7 +482,7 @@ export function MedicationForm({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="med-dose-unit">Einheit</Label>
+          <Label htmlFor="med-dose-unit">{t("medications.formUnit")}</Label>
           <Input
             id="med-dose-unit"
             list="dose-units"
@@ -483,7 +502,7 @@ export function MedicationForm({
 
       <div className="space-y-2">
         <div className="flex h-8 items-center justify-between">
-          <Label className="text-sm leading-none">Zeitfenster</Label>
+          <Label className="text-sm leading-none">{t("medications.formSchedule")}</Label>
           <Button
             type="button"
             variant="ghost"
@@ -492,7 +511,7 @@ export function MedicationForm({
             onClick={addSchedule}
           >
             <Plus className="mr-1 h-3.5 w-3.5" />
-            Neues Zeitfenster
+            {t("medications.newSchedule")}
           </Button>
         </div>
 
@@ -504,10 +523,10 @@ export function MedicationForm({
             <div className="flex items-center justify-between">
               <p className="flex-1 pr-2 pl-1 text-xs leading-5 break-words">
                 <span className="font-medium">
-                  {s.label.trim() || `Zeitfenster ${i + 1}`}
+                  {s.label.trim() || `${t("medications.formSchedule")} ${i + 1}`}
                 </span>{" "}
                 <span className="font-normal text-foreground/70">
-                  ({formatNextWindowSummary(s)})
+                  ({formatNextWindowSummary(s, t)})
                 </span>
               </p>
               <DropdownMenu>
@@ -525,8 +544,8 @@ export function MedicationForm({
                   <DropdownMenuItem onClick={() => toggleAdvanced(i)}>
                     <Settings2 className="mr-2 h-4 w-4" />
                     {s.showAdvanced
-                      ? "Erweiterte Bearbeitung ausblenden"
-                      : "Erweiterte Bearbeitung"}
+                      ? t("medications.advancedEditingHide")
+                      : t("medications.advancedEditing")}
                   </DropdownMenuItem>
                   {schedules.length > 1 && (
                     <DropdownMenuItem
@@ -534,7 +553,7 @@ export function MedicationForm({
                       onClick={() => removeSchedule(i)}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
-                      Zeitfenster entfernen
+                      {t("medications.removeSchedule")}
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
@@ -543,7 +562,7 @@ export function MedicationForm({
 
             <div className="mt-1 grid items-end gap-2 sm:grid-cols-2 xl:grid-cols-4">
               <div className="space-y-1.5">
-                <Label className="text-xs font-normal">Von</Label>
+                <Label className="text-xs font-normal">{t("medications.scheduleFrom")}</Label>
                 <Input
                   type="text"
                   inputMode="numeric"
@@ -559,7 +578,7 @@ export function MedicationForm({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-normal">Bis</Label>
+                <Label className="text-xs font-normal">{t("medications.scheduleTo")}</Label>
                 <Input
                   type="text"
                   inputMode="numeric"
@@ -575,7 +594,7 @@ export function MedicationForm({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-normal">Bezeichnung</Label>
+                <Label className="text-xs font-normal">{t("medications.scheduleLabel")}</Label>
                 <Input
                   value={s.label}
                   className="h-8 text-xs md:text-xs"
@@ -585,7 +604,7 @@ export function MedicationForm({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-normal">Dosis</Label>
+                <Label className="text-xs font-normal">{t("medications.dose")}</Label>
                 <Input
                   value={s.dose}
                   className="h-8 text-xs md:text-xs"
@@ -597,7 +616,7 @@ export function MedicationForm({
             </div>
             {s.showAdvanced && (
               <p className="text-muted-foreground mt-2 pl-1 text-xs leading-4">
-                {formatRecurrenceSummary(s)}
+                {formatRecurrenceSummary(s, t)}
               </p>
             )}
 
@@ -605,7 +624,7 @@ export function MedicationForm({
             {s.showAdvanced && (
               <div className="border-border/60 mt-2.5 space-y-2.5 border-t pt-2.5">
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Intervall</Label>
+                  <Label className="text-sm">{t("medications.scheduleInterval")}</Label>
                   <div className="grid grid-cols-4 gap-1">
                     {[1, 2, 3, 4].map((weeks) => (
                       <button
@@ -625,7 +644,7 @@ export function MedicationForm({
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Tage</Label>
+                  <Label className="text-sm">{t("medications.scheduleDays")}</Label>
                   <div className="flex w-full gap-1">
                     <button
                       type="button"
@@ -636,9 +655,9 @@ export function MedicationForm({
                           : "border-border/70 bg-muted text-foreground/70 hover:bg-accent hover:text-foreground"
                       }`}
                     >
-                      Täglich
+                      {t("medications.scheduleDaily")}
                     </button>
-                    {DAY_LABELS.map((label, dayIndex) => {
+                    {getDayLabelsShort(t).map((label, dayIndex) => {
                       const isSelected = s.daysOfWeek.includes(dayIndex);
                       return (
                         <button
@@ -694,11 +713,11 @@ export function MedicationForm({
                   <>
                     <DropdownMenuItem onClick={editActions.onImportIntakes}>
                       <Upload className="mr-2 h-4 w-4" />
-                      Einnahmen importieren
+                      {t("medications.importIntakesAction")}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={editActions.onApiAccess}>
                       <Terminal className="mr-2 h-4 w-4" />
-                      API-Endpunkt
+                      {t("medications.apiEndpointAction")}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
@@ -709,7 +728,7 @@ export function MedicationForm({
                   ) : (
                     <Play className="mr-2 h-4 w-4" />
                   )}
-                  {active ? "Pausieren" : "Aktivieren"}
+                  {active ? t("medications.pause") : t("medications.activate")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setNotificationsEnabled((prev) => !prev)}
@@ -720,8 +739,8 @@ export function MedicationForm({
                     <Bell className="mr-2 h-4 w-4" />
                   )}
                   {notificationsEnabled
-                    ? "Benachrichtigungen deaktivieren"
-                    : "Benachrichtigungen aktivieren"}
+                    ? t("medications.disableNotifications")
+                    : t("medications.enableNotifications")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -729,20 +748,20 @@ export function MedicationForm({
                   onClick={() => setPurgeDialogOpen(true)}
                 >
                   <Eraser className="mr-2 h-4 w-4" />
-                  Alle Aufzeichnungen löschen
+                  {t("medications.purgeRecords")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   variant="destructive"
                   onClick={() => setDeleteDialogOpen(true)}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Löschen
+                  {t("common.delete")}
                 </DropdownMenuItem>
               </>
             ) : (
               <DropdownMenuItem onClick={resetCreateForm}>
                 <RotateCcw className="mr-2 h-4 w-4" />
-                Formular zurücksetzen
+                {t("medications.formReset")}
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
@@ -756,12 +775,12 @@ export function MedicationForm({
               onClick={onCancel}
               disabled={loading || deleting}
             >
-              Abbrechen
+              {t("common.cancel")}
             </Button>
           )}
           <Button type="submit" disabled={loading || deleting}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isEdit ? "Speichern" : "Medikament anlegen"}
+            {isEdit ? t("common.save") : t("medications.createMedication")}
           </Button>
         </div>
       </div>
@@ -769,19 +788,18 @@ export function MedicationForm({
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Medikament löschen?</AlertDialogTitle>
+            <AlertDialogTitle>{t("medications.deleteConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Das Medikament und die gesamte Einnahme-Historie werden
-              unwiderruflich gelöscht.
+              {t("medications.deleteConfirmDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={handleDelete}
             >
-              Löschen
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -791,17 +809,15 @@ export function MedicationForm({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Alle Aufzeichnungen löschen?
+              {t("medications.purgeConfirmTitle")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Alle Einnahme-Aufzeichnungen für dieses Medikament werden
-              unwiderruflich gelöscht. Das Medikament selbst bleibt bestehen
-              und startet ohne Verlaufsdaten.
+              {t("medications.purgeConfirmDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={purging}>
-              Abbrechen
+              {t("common.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -811,7 +827,7 @@ export function MedicationForm({
               {purging ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
-              Alle Aufzeichnungen löschen
+              {t("medications.purgeRecords")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

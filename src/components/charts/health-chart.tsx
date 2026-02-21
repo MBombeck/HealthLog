@@ -20,12 +20,13 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { formatDateShort } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/context";
 
-const TIME_RANGES = [
-  { label: "7M", points: 7, title: "Die sieben letzten Messpunkte" },
-  { label: "30M", points: 30, title: "Die dreissig letzten Messpunkte" },
-  { label: "90M", points: 90, title: "Die neunzig letzten Messpunkte" },
-  { label: "Alle", points: 0, title: "Alle verfuegbaren Messpunkte" },
+const TIME_RANGES_KEYS = [
+  { labelKey: "charts.points7Label", points: 7, titleKey: "charts.points7Title" },
+  { labelKey: "charts.points30Label", points: 30, titleKey: "charts.points30Title" },
+  { labelKey: "charts.points90Label", points: 90, titleKey: "charts.points90Title" },
+  { labelKey: "charts.pointsAllLabel", points: 0, titleKey: "charts.pointsAllTitle" },
 ] as const;
 
 interface HealthChartProps {
@@ -80,21 +81,26 @@ interface VisibleTargetZone {
   lineOpacity: number;
 }
 
-const BASE_TYPE_LABELS: Record<string, string> = {
-  WEIGHT: "Gewicht",
-  BLOOD_PRESSURE_SYS: "Systolisch",
-  BLOOD_PRESSURE_DIA: "Diastolisch",
-  PULSE: "Puls",
-  BODY_FAT: "Körperfett",
-  SLEEP_DURATION: "Schlaf",
-  ACTIVITY_STEPS: "Schritte",
+const BASE_TYPE_LABEL_KEYS: Record<string, string> = {
+  WEIGHT: "charts.weight",
+  BLOOD_PRESSURE_SYS: "charts.systolic",
+  BLOOD_PRESSURE_DIA: "charts.diastolic",
+  PULSE: "charts.pulse",
+  BODY_FAT: "charts.bodyFat",
+  SLEEP_DURATION: "charts.sleep",
+  ACTIVITY_STEPS: "charts.steps",
 };
 
-function getTypeLabel(type: string, valueMode: "raw" | "bmi"): string {
+function getTypeLabel(
+  type: string,
+  valueMode: "raw" | "bmi",
+  t: (key: string) => string,
+): string {
   if (type === "WEIGHT" && valueMode === "bmi") {
     return "BMI";
   }
-  return BASE_TYPE_LABELS[type] ?? type;
+  const key = BASE_TYPE_LABEL_KEYS[type];
+  return key ? t(key) : type;
 }
 
 const BERLIN_DAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
@@ -193,6 +199,7 @@ export function HealthChart({
   targetZones,
 }: HealthChartProps) {
   const { isAuthenticated, user } = useAuth();
+  const { t } = useTranslations();
   const [rangePoints, setRangePoints] = useState(30);
   const [showMA, setShowMA] = useState(false);
   const [showTrend, setShowTrend] = useState(false);
@@ -515,14 +522,14 @@ export function HealthChart({
             : null;
         const unitSuffix = unit ? ` ${unit}` : "";
 
-        return `${getTypeLabel(type, valueMode)}: ${formatSigned(
+        return `${getTypeLabel(type, valueMode, t)}: ${formatSigned(
           weeklyDelta,
-        )}${unitSuffix}/Woche${
-          weeklyPct != null ? ` (${formatSigned(weeklyPct)} %/Woche)` : ""
+        )}${unitSuffix}${t("charts.perWeek")}${
+          weeklyPct != null ? ` (${formatSigned(weeklyPct)} %${t("charts.perWeek")})` : ""
         }`;
       })
       .filter((entry): entry is string => entry !== null);
-  }, [chartData, showTrend, types, unit, valueMode]);
+  }, [chartData, showTrend, types, unit, valueMode, t]);
 
   if (!isLoading && !data?.length) return null;
 
@@ -534,16 +541,16 @@ export function HealthChart({
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-sm font-semibold">{title}</h3>
         <div className="flex flex-wrap justify-end gap-1">
-          {TIME_RANGES.map((r) => (
+          {TIME_RANGES_KEYS.map((r) => (
             <Button
-              key={r.label}
+              key={r.labelKey}
               variant={rangePoints === r.points ? "default" : "ghost"}
               size="sm"
               className="h-7 px-2 text-xs"
               onClick={() => setRangePoints(r.points)}
-              title={r.title}
+              title={t(r.titleKey)}
             >
-              {r.label}
+              {t(r.labelKey)}
             </Button>
           ))}
         </div>
@@ -558,7 +565,7 @@ export function HealthChart({
             className="scale-75"
           />
           <Label htmlFor={maToggleId} className="cursor-pointer text-xs">
-            7T-Schnitt
+            {t("charts.movingAverage7d")}
           </Label>
         </div>
         <div className="flex items-center gap-1.5">
@@ -569,7 +576,7 @@ export function HealthChart({
             className="scale-75"
           />
           <Label htmlFor={trendToggleId} className="cursor-pointer text-xs">
-            Trend
+            {t("charts.trend")}
           </Label>
         </div>
         {valueBands?.length || targetZones?.length ? (
@@ -581,7 +588,7 @@ export function HealthChart({
               className="scale-75"
             />
             <Label htmlFor={bandsToggleId} className="cursor-pointer text-xs">
-              Zielbereiche
+              {t("charts.targetRanges")}
             </Label>
           </div>
         ) : null}
@@ -757,7 +764,7 @@ export function HealthChart({
                     key={type}
                     type="monotone"
                     dataKey={type}
-                    name={getTypeLabel(type, valueMode)}
+                    name={getTypeLabel(type, valueMode, t)}
                     stroke={colors[i % colors.length]}
                     strokeWidth={2}
                     dot={{ r: 3, fill: colors[i % colors.length] }}
@@ -771,7 +778,7 @@ export function HealthChart({
                       key={`${type}_ma`}
                       type="monotone"
                       dataKey={`${type}_ma`}
-                      name={`${getTypeLabel(type, valueMode)} (7T-Schnitt)`}
+                      name={`${getTypeLabel(type, valueMode, t)} (${t("charts.movingAverage7d")})`}
                       stroke={colors[i % colors.length]}
                       strokeWidth={1.5}
                       strokeDasharray="5 5"
@@ -786,7 +793,7 @@ export function HealthChart({
                       key={`${type}_trend`}
                       type="linear"
                       dataKey={`${type}_trend`}
-                      name={`${getTypeLabel(type, valueMode)} (Trend)`}
+                      name={`${getTypeLabel(type, valueMode, t)} (${t("charts.trend")})`}
                       stroke="var(--muted-foreground)"
                       strokeWidth={1}
                       strokeDasharray="8 4"

@@ -66,6 +66,7 @@ function getRangeColorClass(
 function getRangeHint(
   unit: string,
   config: RangeDisplayConfig,
+  t: (key: string) => string,
 ): React.ReactNode | undefined {
   const range = config.range;
   if (!range) return undefined;
@@ -79,17 +80,17 @@ function getRangeHint(
   return (
     <>
       <p>
-        <span className="font-bold text-green-400">Gruen:</span>{" "}
+        <span className="font-bold text-green-400">{t("charts.colorGreen")}</span>{" "}
         {format(range.greenMin)}-{format(range.greenMax)} {unit}
       </p>
       <p>
-        <span className="font-bold text-orange-400">Orange:</span>{" "}
-        {format(range.orangeMin)}-{format(range.greenMin)} oder{" "}
+        <span className="font-bold text-orange-400">{t("charts.colorOrange")}</span>{" "}
+        {format(range.orangeMin)}-{format(range.greenMin)} {t("common.or")}{" "}
         {format(range.greenMax)}-{format(range.orangeMax)} {unit}
       </p>
       <p>
-        <span className="font-bold text-red-400">Rot:</span> {"< "}
-        {format(range.orangeMin)} oder {"> "}
+        <span className="font-bold text-red-400">{t("charts.colorRed")}</span> {"< "}
+        {format(range.orangeMin)} {t("common.or")} {"> "}
         {format(range.orangeMax)} {unit}
       </p>
     </>
@@ -141,7 +142,7 @@ export default function DashboardPage() {
           max: bpTargets.sysHigh,
           color: "#ff79c6",
           opacity: 0.21,
-          label: "Systolisch",
+          label: t("charts.systolic"),
           textColor: "#ff79c6",
           lineOpacity: 0.24,
         },
@@ -150,7 +151,7 @@ export default function DashboardPage() {
           max: bpTargets.diaHigh,
           color: "#8be9fd",
           opacity: 0.21,
-          label: "Diastolisch",
+          label: t("charts.diastolic"),
           textColor: "#8be9fd",
           lineOpacity: 0.24,
         },
@@ -233,8 +234,8 @@ export default function DashboardPage() {
           avg30={w?.avg30 ?? null}
           avg7ColorClass={getRangeColorClass(w?.avg7, { range: weightRange })}
           avg30ColorClass={getRangeColorClass(w?.avg30, { range: weightRange })}
-          avg7Hint={getRangeHint("kg", { range: weightRange })}
-          avg30Hint={getRangeHint("kg", { range: weightRange })}
+          avg7Hint={getRangeHint("kg", { range: weightRange }, t)}
+          avg30Hint={getRangeHint("kg", { range: weightRange }, t)}
           slope30={w?.slope30 ?? null}
           icon={Activity}
         />
@@ -248,8 +249,8 @@ export default function DashboardPage() {
           avg30ColorClass={getRangeColorClass(sys?.avg30, {
             range: bpSysRange,
           })}
-          avg7Hint={getRangeHint("mmHg", { range: bpSysRange })}
-          avg30Hint={getRangeHint("mmHg", { range: bpSysRange })}
+          avg7Hint={getRangeHint("mmHg", { range: bpSysRange }, t)}
+          avg30Hint={getRangeHint("mmHg", { range: bpSysRange }, t)}
           slope30={sys?.slope30 ?? null}
           icon={Heart}
         />
@@ -263,8 +264,8 @@ export default function DashboardPage() {
           avg30ColorClass={getRangeColorClass(dia?.avg30, {
             range: bpDiaRange,
           })}
-          avg7Hint={getRangeHint("mmHg", { range: bpDiaRange })}
-          avg30Hint={getRangeHint("mmHg", { range: bpDiaRange })}
+          avg7Hint={getRangeHint("mmHg", { range: bpDiaRange }, t)}
+          avg30Hint={getRangeHint("mmHg", { range: bpDiaRange }, t)}
           slope30={dia?.slope30 ?? null}
           icon={Heart}
         />
@@ -280,8 +281,8 @@ export default function DashboardPage() {
           avg30ColorClass={getRangeColorClass(p?.avg30, {
             range: pulseDisplayRange,
           })}
-          avg7Hint={getRangeHint("bpm", { range: pulseDisplayRange })}
-          avg30Hint={getRangeHint("bpm", { range: pulseDisplayRange })}
+          avg7Hint={getRangeHint("bpm", { range: pulseDisplayRange }, t)}
+          avg30Hint={getRangeHint("bpm", { range: pulseDisplayRange }, t)}
           slope30={p?.slope30 ?? null}
           icon={TrendingUp}
         />

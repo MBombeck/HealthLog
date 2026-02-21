@@ -63,15 +63,16 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { formatDateTime } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/context";
 
-const TYPE_LABELS: Record<string, string> = {
-  WEIGHT: "Gewicht",
-  BLOOD_PRESSURE_SYS: "Sys",
-  BLOOD_PRESSURE_DIA: "Dia",
-  PULSE: "Puls",
-  BODY_FAT: "Körperfett",
-  SLEEP_DURATION: "Schlaf",
-  ACTIVITY_STEPS: "Schritte",
+const TYPE_LABEL_KEYS: Record<string, string> = {
+  WEIGHT: "measurements.typeWeight",
+  BLOOD_PRESSURE_SYS: "measurements.typeBpSys",
+  BLOOD_PRESSURE_DIA: "measurements.typeBpDia",
+  PULSE: "measurements.typePulse",
+  BODY_FAT: "measurements.typeBodyFat",
+  SLEEP_DURATION: "measurements.typeSleep",
+  ACTIVITY_STEPS: "measurements.typeSteps",
 };
 
 const TYPE_ICONS: Record<
@@ -127,6 +128,7 @@ function toDateTimeLocalValue(isoString: string): string {
 }
 
 export function MeasurementList({ onEdit }: MeasurementListProps) {
+  const { t } = useTranslations();
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   const [typeFilter, setTypeFilterRaw] = useState<string>("ALL");
@@ -227,7 +229,7 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
       setEditError(null);
     },
     onError: (err) => {
-      setEditError(err instanceof Error ? err.message : "Fehler beim Speichern");
+      setEditError(err instanceof Error ? err.message : t("measurements.saveError"));
     },
   });
 
@@ -261,7 +263,7 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
       await deleteMutation.mutateAsync(editing.id);
       closeEdit();
     } catch {
-      setEditError("Fehler beim Löschen");
+      setEditError(t("measurements.deleteError"));
     }
   }
 
@@ -271,13 +273,13 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
 
     const parsedValue = Number(editValue);
     if (!Number.isFinite(parsedValue)) {
-      setEditError("Bitte einen gültigen Wert eingeben.");
+      setEditError(t("measurements.invalidValue"));
       return;
     }
 
     const measuredDate = new Date(editMeasuredAt);
     if (Number.isNaN(measuredDate.getTime())) {
-      setEditError("Bitte einen gültigen Zeitpunkt wählen.");
+      setEditError(t("measurements.invalidTimestamp"));
       return;
     }
 
@@ -293,7 +295,7 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
   if (!isAuthenticated) {
     return (
       <p className="text-muted-foreground text-sm">
-        Bitte anmelden, um Messwerte zu sehen.
+        {t("measurements.loginRequired")}
       </p>
     );
   }
@@ -304,20 +306,20 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
         <div className="flex items-center justify-between">
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="Alle Typen" />
+              <SelectValue placeholder={t("measurements.allTypes")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">Alle Typen</SelectItem>
-              {Object.entries(TYPE_LABELS).map(([val, label]) => (
+              <SelectItem value="ALL">{t("measurements.allTypes")}</SelectItem>
+              {Object.entries(TYPE_LABEL_KEYS).map(([val, labelKey]) => (
                 <SelectItem key={val} value={val}>
-                  {label}
+                  {t(labelKey)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           {data?.meta.total !== undefined && (
             <span className="text-muted-foreground text-sm">
-              {data.meta.total.toLocaleString("de-DE")} Messwerte
+              {t("measurements.measurementCount", { count: data.meta.total.toLocaleString("de-DE") })}
             </span>
           )}
         </div>
@@ -328,7 +330,7 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
           </div>
         ) : !data?.measurements.length ? (
           <div className="text-muted-foreground flex h-32 items-center justify-center rounded-lg border border-dashed">
-            Keine Messwerte vorhanden
+            {t("measurements.noMeasurements")}
           </div>
         ) : (
           <>
@@ -337,32 +339,32 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-28 pl-4">Typ</TableHead>
+                    <TableHead className="w-28 pl-4">{t("measurements.type")}</TableHead>
                     <SortableHead
                       column="value"
-                      label="Wert"
+                      label={t("measurements.value")}
                       currentSort={sortBy}
                       currentDir={sortDir}
                       onSort={toggleSort}
                     />
                     <SortableHead
                       column="measuredAt"
-                      label="Datum"
+                      label={t("measurements.date")}
                       currentSort={sortBy}
                       currentDir={sortDir}
                       onSort={toggleSort}
                     />
-                    <TableHead className="w-56">Kommentar</TableHead>
+                    <TableHead className="w-56">{t("measurements.comment")}</TableHead>
                     <SortableHead
                       column="source"
-                      label="Quelle"
+                      label={t("measurements.source")}
                       currentSort={sortBy}
                       currentDir={sortDir}
                       onSort={toggleSort}
                       className="w-20"
                     />
                     <TableHead className="w-20 pr-4 text-right">
-                      Aktionen
+                      {t("measurements.actions")}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -374,7 +376,7 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
                           variant="secondary"
                           className={TYPE_COLORS[m.type] ?? ""}
                         >
-                          {TYPE_LABELS[m.type] ?? m.type}
+                          {TYPE_LABEL_KEYS[m.type] ? t(TYPE_LABEL_KEYS[m.type]) : m.type}
                         </Badge>
                       </TableCell>
                       <TableCell className="font-semibold tabular-nums">
@@ -471,7 +473,7 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
         {totalPages > 1 && (
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground text-sm">
-              Seite {page} von {totalPages}
+              {t("measurements.pageInfo", { page: String(page), total: String(totalPages) })}
             </span>
             <div className="flex gap-1">
               <Button
@@ -498,19 +500,19 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
       <Dialog open={!!editing} onOpenChange={(open) => !open && closeEdit()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Messwert bearbeiten</DialogTitle>
+            <DialogTitle>{t("measurements.editMeasurement")}</DialogTitle>
           </DialogHeader>
           {editing && (
             <form onSubmit={submitEdit} className="space-y-4">
               <div className="flex items-center gap-1.5">
-                <Label className="shrink-0">Typ</Label>
+                <Label className="shrink-0">{t("measurements.type")}</Label>
                 <span className="text-sm leading-none font-medium">
-                  {TYPE_LABELS[editing.type] ?? editing.type}
+                  {TYPE_LABEL_KEYS[editing.type] ? t(TYPE_LABEL_KEYS[editing.type]) : editing.type}
                 </span>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-value">Wert ({editing.unit})</Label>
+                <Label htmlFor="edit-value">{t("measurements.valueWithUnit", { unit: editing.unit })}</Label>
                 <Input
                   id="edit-value"
                   type="number"
@@ -522,7 +524,7 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-measuredAt">Zeitpunkt</Label>
+                <Label htmlFor="edit-measuredAt">{t("measurements.timestamp")}</Label>
                 <Input
                   id="edit-measuredAt"
                   type="datetime-local"
@@ -534,7 +536,7 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
-                  <Label htmlFor="edit-notes">Notizen (optional)</Label>
+                  <Label htmlFor="edit-notes">{t("measurements.notes")} ({t("common.optional")})</Label>
                   <span className="text-muted-foreground text-xs">
                     {editNotes.length}/{MAX_COMMENT_LENGTH}
                   </span>
@@ -572,7 +574,7 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
                       onClick={() => setEditDeleteDialogOpen(true)}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
-                      Löschen
+                      {t("common.delete")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -584,7 +586,7 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
                     onClick={closeEdit}
                     disabled={updateMutation.isPending || deleteMutation.isPending}
                   >
-                    Abbrechen
+                    {t("common.cancel")}
                   </Button>
                   <Button
                     type="submit"
@@ -593,7 +595,7 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
                     {updateMutation.isPending ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    Speichern
+                    {t("common.save")}
                   </Button>
                 </div>
               </div>
@@ -604,14 +606,14 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
               >
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Messwert löschen?</AlertDialogTitle>
+                    <AlertDialogTitle>{t("measurements.deleteConfirmTitle")}</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Dieser Messwert wird unwiderruflich gelöscht.
+                      {t("measurements.deleteConfirmDescription")}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel disabled={deleteMutation.isPending}>
-                      Abbrechen
+                      {t("common.cancel")}
                     </AlertDialogCancel>
                     <AlertDialogAction
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -621,7 +623,7 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
                       {deleteMutation.isPending ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       ) : null}
-                      Löschen
+                      {t("common.delete")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -673,6 +675,7 @@ function SortableHead({
 }
 
 function DeleteButton({ onConfirm }: { onConfirm: () => void }) {
+  const { t } = useTranslations();
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -686,18 +689,18 @@ function DeleteButton({ onConfirm }: { onConfirm: () => void }) {
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Messwert löschen?</AlertDialogTitle>
+          <AlertDialogTitle>{t("measurements.deleteConfirmTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            Dieser Messwert wird unwiderruflich gelöscht.
+            {t("measurements.deleteConfirmDescription")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+          <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
           <AlertDialogAction
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             onClick={onConfirm}
           >
-            Löschen
+            {t("common.delete")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

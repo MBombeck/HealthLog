@@ -63,7 +63,7 @@ export function ComplianceCharts({ medications }: ComplianceChartsProps) {
       <div className="flex justify-end">
         <Select value={selectedId} onValueChange={setSelectedId}>
           <SelectTrigger className="w-full sm:w-64">
-            <SelectValue placeholder="Medikament wählen" />
+            <SelectValue placeholder={t("charts.selectMedication")} />
           </SelectTrigger>
           <SelectContent>
             {medications.map((m) => (
@@ -81,14 +81,14 @@ export function ComplianceCharts({ medications }: ComplianceChartsProps) {
         </div>
       ) : !data?.dailyCompliance ? (
         <div className="text-muted-foreground flex h-48 items-center justify-center rounded-lg border border-dashed text-sm">
-          Keine Compliance-Daten verfügbar
+          {t("charts.noComplianceData")}
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="min-w-0 space-y-2">
             <div className="flex h-7 items-center">
               <h3 className="text-muted-foreground text-sm font-medium">
-                {t("charts.compliance")} (90 Tage)
+                {t("charts.complianceDays90")}
               </h3>
             </div>
             <ComplianceHeatmap dailyCompliance={data.dailyCompliance} />
@@ -96,7 +96,7 @@ export function ComplianceCharts({ medications }: ComplianceChartsProps) {
           <div className="min-w-0 space-y-2">
             <div className="flex h-7 items-center justify-between gap-2">
               <h3 className="text-muted-foreground text-sm font-medium">
-                Verlauf
+                {t("charts.history")}
               </h3>
               <div className="flex items-center gap-1">
                 <Button
@@ -105,9 +105,9 @@ export function ComplianceCharts({ medications }: ComplianceChartsProps) {
                   size="sm"
                   className="h-7 px-2 text-xs"
                   onClick={() => setRangePoints(30)}
-                  title="Die dreissig letzten Messpunkte"
+                  title={t("charts.points30Title")}
                 >
-                  30M
+                  {t("charts.points30Label")}
                 </Button>
                 <Button
                   type="button"
@@ -115,9 +115,9 @@ export function ComplianceCharts({ medications }: ComplianceChartsProps) {
                   size="sm"
                   className="h-7 px-2 text-xs"
                   onClick={() => setRangePoints(90)}
-                  title="Die neunzig letzten Messpunkte"
+                  title={t("charts.points90Title")}
                 >
-                  90M
+                  {t("charts.points90Label")}
                 </Button>
                 <Button
                   type="button"
@@ -125,9 +125,9 @@ export function ComplianceCharts({ medications }: ComplianceChartsProps) {
                   size="sm"
                   className="h-7 px-2 text-xs"
                   onClick={() => setRangePoints(0)}
-                  title="Alle verfuegbaren Messpunkte"
+                  title={t("charts.pointsAllTitle")}
                 >
-                  Alle
+                  {t("charts.pointsAllLabel")}
                 </Button>
               </div>
             </div>

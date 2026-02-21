@@ -18,6 +18,7 @@ import {
   History,
 } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "@/lib/i18n/context";
 
 interface Schedule {
   id: string;
@@ -155,6 +156,7 @@ function getWindowStatus(
 
 export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
   const queryClient = useQueryClient();
+  const { t } = useTranslations();
   const [intakeLoading, setIntakeLoading] = useState<string | null>(null);
 
   const { data: compliance } = useQuery({
@@ -212,19 +214,19 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
   const rate30 = compliance?.compliance30.rate ?? 0;
   const streak = compliance?.compliance7.streak ?? 0;
   const categoryLabels: Record<string, string> = {
-    BLOOD_PRESSURE: "Blutdrucksenker",
-    VITAMIN: "Vitamine",
-    SUPPLEMENT: "Nahrungsergänzung",
-    PAIN_RELIEF: "Schmerzmittel",
-    ALLERGY: "Allergie",
-    DIGESTIVE: "Magen/Darm",
-    THYROID: "Schilddrüse",
-    HORMONE: "Hormone",
-    SKIN: "Hautpflege",
-    SLEEP_AID: "Schlafmittel",
-    OTHER: "Sonstiges",
+    BLOOD_PRESSURE: t("medications.categoryBloodPressure"),
+    VITAMIN: t("medications.categoryVitamin"),
+    SUPPLEMENT: t("medications.categorySupplement"),
+    PAIN_RELIEF: t("medications.categoryPainRelief"),
+    ALLERGY: t("medications.categoryAllergy"),
+    DIGESTIVE: t("medications.categoryDigestive"),
+    THYROID: t("medications.categoryThyroid"),
+    HORMONE: t("medications.categoryHormone"),
+    SKIN: t("medications.categorySkin"),
+    SLEEP_AID: t("medications.categorySleepAid"),
+    OTHER: t("medications.categoryOther"),
   };
-  const categoryLabel = categoryLabels[medication.category] ?? "Sonstiges";
+  const categoryLabel = categoryLabels[medication.category] ?? t("medications.categoryOther");
   const sortedSchedules = [...medication.schedules].sort(
     (a, b) =>
       a.windowStart.localeCompare(b.windowStart) ||
@@ -299,8 +301,8 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
     const yesterdayDay = dayFormatter.format(yesterday);
     const time = formatTime(value);
 
-    if (intakeDay === todayDay) return `Heute, ${time}`;
-    if (intakeDay === yesterdayDay) return `Gestern, ${time}`;
+    if (intakeDay === todayDay) return `${t("medications.today")}, ${time}`;
+    if (intakeDay === yesterdayDay) return `${t("medications.yesterday")}, ${time}`;
     return formatDateTime(value);
   }
 
@@ -317,14 +319,14 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
               </Badge>
               {!medication.notificationsEnabled && (
                 <Badge variant="secondary" className="text-xs">
-                  Ohne Benachrichtigung
+                  {t("medications.withoutNotification")}
                 </Badge>
               )}
               {!medication.active && (
                 <Badge variant="secondary" className="text-xs">
                   {medication.pausedAt
-                    ? `Pausiert seit ${formatDateTime(medication.pausedAt)}`
-                    : "Pausiert"}
+                    ? `${t("medications.pausedSince")} ${formatDateTime(medication.pausedAt)}`
+                    : t("medications.inactive")}
                 </Badge>
               )}
             </div>
@@ -366,10 +368,10 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
               }
             >
               {currentWindowStatus.status === "in_window"
-                ? "Jetzt einnehmen"
+                ? t("medications.takeNow")
                 : currentWindowStatus.status === "late"
-                  ? "Überfällig"
-                  : "Stark überfällig"}
+                  ? t("medications.overdue")
+                  : t("medications.veryOverdue")}
             </span>
             <span className="text-muted-foreground hidden sm:inline">
               {" "}— {formatTimeWindowRange(
@@ -382,7 +384,7 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
 
         {medication.lastTakenAt && (
           <p className="text-muted-foreground text-sm">
-            <span className="font-medium">Letzte Einnahme:</span>{" "}
+            <span className="font-medium">{t("medications.lastIntake")}</span>{" "}
             {formatLastTakenAt(medication.lastTakenAt)}
           </p>
         )}
@@ -404,11 +406,19 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
             const diffDays = Math.round((nextDate.getTime() - nowBerlin.getTime()) / (24 * 60 * 60 * 1000));
 
             if (nextStr === todayStr) {
-              dayLabel = "Heute";
+              dayLabel = t("medications.today");
             } else if (nextStr === tomorrowStr) {
-              dayLabel = "Morgen";
+              dayLabel = t("medications.tomorrow");
             } else if (diffDays <= 5) {
-              const weekdayLabels = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+              const weekdayLabels = [
+                t("medications.weekdaySunday"),
+                t("medications.weekdayMonday"),
+                t("medications.weekdayTuesday"),
+                t("medications.weekdayWednesday"),
+                t("medications.weekdayThursday"),
+                t("medications.weekdayFriday"),
+                t("medications.weekdaySaturday"),
+              ];
               dayLabel = weekdayLabels[nextDate.getDay()];
             } else {
               dayLabel = nextDate.toLocaleDateString("de-DE", {
@@ -421,7 +431,7 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
 
           return (
             <p className="text-muted-foreground text-sm">
-              <span className="font-medium">Nächste Einnahme:</span>{" "}
+              <span className="font-medium">{t("medications.nextIntake")}</span>{" "}
               {dayLabel && `${dayLabel}, `}
               {formatTimeWindowRange(s.windowStart, s.windowEnd)}
               {s.label && (
@@ -441,7 +451,7 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
           <div className="space-y-2.5">
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">7-Tage-Compliance</span>
+                <span className="text-muted-foreground">{t("medications.compliance7d")}</span>
                 <span className="font-medium">{rate7}%</span>
               </div>
               <Progress value={rate7} className="h-2" />
@@ -449,7 +459,7 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">30-Tage-Compliance</span>
+                <span className="text-muted-foreground">{t("medications.compliance30d")}</span>
                 <span className="font-medium">{rate30}%</span>
               </div>
               <Progress value={rate30} className="h-2" />
@@ -459,7 +469,7 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
               {streak > 0 && (
                 <span className="flex items-center gap-1 font-medium text-orange-400">
                   <Flame className="h-3.5 w-3.5" />
-                  {streak} Tage Serie
+                  {streak} {t("medications.dayStreak")}
                 </span>
               )}
             </div>
@@ -480,7 +490,7 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
               ) : (
                 <Check className="mr-1 h-3.5 w-3.5" />
               )}
-              Genommen
+              {t("medications.taken")}
             </Button>
             <Button
               size="sm"
@@ -493,7 +503,7 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
               ) : (
                 <SkipForward className="mr-1 h-3.5 w-3.5" />
               )}
-              Übersprungen
+              {t("medications.skipped")}
             </Button>
           </div>
         )}

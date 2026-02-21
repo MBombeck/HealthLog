@@ -19,24 +19,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, MoreHorizontal, Plus, RotateCcw } from "lucide-react";
+import { useTranslations } from "@/lib/i18n/context";
 
 const MAX_COMMENT_LENGTH = 25;
 
 const MEASUREMENT_TYPES = [
-  { value: "BLOOD_PRESSURE", label: "Blutdruck", unit: "mmHg" },
-  { value: "WEIGHT", label: "Gewicht", unit: "kg", placeholder: "75.5" },
-  { value: "PULSE", label: "Puls", unit: "bpm", placeholder: "72" },
-  { value: "BODY_FAT", label: "Körperfett", unit: "%", placeholder: "22" },
+  { value: "BLOOD_PRESSURE", labelKey: "measurements.typeBloodPressure", unit: "mmHg" },
+  { value: "WEIGHT", labelKey: "measurements.typeWeight", unit: "kg", placeholder: "75.5" },
+  { value: "PULSE", labelKey: "measurements.typePulse", unit: "bpm", placeholder: "72" },
+  { value: "BODY_FAT", labelKey: "measurements.typeBodyFat", unit: "%", placeholder: "22" },
   {
     value: "SLEEP_DURATION",
-    label: "Schlaf",
-    unit: "Stunden",
+    labelKey: "measurements.typeSleep",
+    unitKey: "measurements.unitHours",
     placeholder: "7.5",
   },
   {
     value: "ACTIVITY_STEPS",
-    label: "Schritte",
-    unit: "Schritte",
+    labelKey: "measurements.typeSteps",
+    unitKey: "measurements.unitSteps",
     placeholder: "8000",
   },
 ] as const;
@@ -59,6 +60,7 @@ export function MeasurementForm({
   onCancel,
   defaultType,
 }: MeasurementFormProps) {
+  const { t } = useTranslations();
   const queryClient = useQueryClient();
 
   // Normalize legacy BP types to combined mode
@@ -172,7 +174,7 @@ export function MeasurementForm({
       await queryClient.invalidateQueries({ queryKey: ["measurements"] });
       onSuccess?.();
     } catch {
-      setError("Fehler beim Speichern");
+      setError(t("measurements.saveError"));
     } finally {
       setLoading(false);
     }
@@ -182,16 +184,16 @@ export function MeasurementForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex items-center gap-3">
         <Label htmlFor="measurement-type" className="shrink-0">
-          Typ
+          {t("measurements.type")}
         </Label>
         <Select value={type} onValueChange={setType}>
           <SelectTrigger id="measurement-type" className="flex-1">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {MEASUREMENT_TYPES.map((t) => (
-              <SelectItem key={t.value} value={t.value}>
-                {t.label}
+            {MEASUREMENT_TYPES.map((mt) => (
+              <SelectItem key={mt.value} value={mt.value}>
+                {t(mt.labelKey)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -201,7 +203,7 @@ export function MeasurementForm({
       {isBpMode ? (
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-2">
-            <Label htmlFor="sys">Systolisch (mmHg)</Label>
+            <Label htmlFor="sys">{t("measurements.systolicLabel")}</Label>
             <Input
               id="sys"
               type="number"
@@ -215,7 +217,7 @@ export function MeasurementForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="dia">Diastolisch (mmHg)</Label>
+            <Label htmlFor="dia">{t("measurements.diastolicLabel")}</Label>
             <Input
               id="dia"
               type="number"
@@ -229,7 +231,7 @@ export function MeasurementForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="puls">Puls (bpm)</Label>
+            <Label htmlFor="puls">{t("measurements.pulseLabel")}</Label>
             <Input
               id="puls"
               type="number"
@@ -244,7 +246,15 @@ export function MeasurementForm({
         </div>
       ) : (
         <div className="space-y-2">
-          <Label htmlFor="value">Wert {typeInfo && `(${typeInfo.unit})`}</Label>
+          <Label htmlFor="value">
+            {t("measurements.valueWithUnit", {
+              unit: typeInfo
+                ? "unitKey" in typeInfo
+                  ? t(typeInfo.unitKey)
+                  : typeInfo.unit
+                : "",
+            })}
+          </Label>
           <Input
             id="value"
             type="number"
@@ -262,7 +272,7 @@ export function MeasurementForm({
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="measuredAt">Zeitpunkt</Label>
+        <Label htmlFor="measuredAt">{t("measurements.timestamp")}</Label>
         <Input
           id="measuredAt"
           type="datetime-local"
@@ -275,8 +285,8 @@ export function MeasurementForm({
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-3">
           <Label htmlFor="notes">
-            Notizen{" "}
-            <span className="text-muted-foreground font-normal">(optional)</span>
+            {t("measurements.notes")}{" "}
+            <span className="text-muted-foreground font-normal">({t("common.optional")})</span>
           </Label>
           <span className="text-muted-foreground text-xs">
             {notes.length}/{MAX_COMMENT_LENGTH}
@@ -286,7 +296,7 @@ export function MeasurementForm({
           id="notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="z.B. nach dem Essen"
+          placeholder={t("measurements.notesPlaceholder")}
           maxLength={MAX_COMMENT_LENGTH}
         />
       </div>
@@ -313,7 +323,7 @@ export function MeasurementForm({
           <DropdownMenuContent align="start">
             <DropdownMenuItem onClick={resetForm}>
               <RotateCcw className="mr-2 h-4 w-4" />
-              Formular zurücksetzen
+              {t("measurements.formReset")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -321,7 +331,7 @@ export function MeasurementForm({
         <div className="flex items-center gap-2">
           {onCancel && (
             <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
-              Abbrechen
+              {t("common.cancel")}
             </Button>
           )}
           <Button type="submit" disabled={loading}>
@@ -330,7 +340,7 @@ export function MeasurementForm({
             ) : (
               <Plus className="mr-2 h-4 w-4" />
             )}
-            Speichern
+            {t("common.save")}
           </Button>
         </div>
       </div>
