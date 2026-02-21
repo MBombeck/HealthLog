@@ -224,7 +224,21 @@
     "daysWed": "Wed",
     "daysThu": "Thu",
     "daysFri": "Fri",
-    "daysSat": "Sat"
+    "daysSat": "Sat",
+    "intakeHistoryTitle": "Intake History",
+    "newIntake": "New Intake",
+    "editIntake": "Edit Intake",
+    "intakeScheduledFor": "Scheduled",
+    "intakeTakenAt": "Taken at",
+    "intakeStatus": "Status",
+    "intakeSource": "Source",
+    "intakeStatusTaken": "Taken",
+    "intakeStatusSkipped": "Skipped",
+    "intakeStatusMissed": "Missed",
+    "intakeDeleteConfirm": "Delete intake record?",
+    "intakeDeleteDescription": "This intake record will be permanently deleted.",
+    "intakeCount": "{count} intakes",
+    "viewHistory": "History"
   },
   "charts": {
     "title": "History",

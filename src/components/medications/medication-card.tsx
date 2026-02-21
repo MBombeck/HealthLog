@@ -16,7 +16,9 @@ import {
   Flame,
   Pencil,
   Loader2,
+  History,
 } from "lucide-react";
+import Link from "next/link";
 
 interface Schedule {
   id: string;
@@ -333,7 +335,17 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
               )}
             </div>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center gap-0.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              asChild
+            >
+              <Link href={`/medications/${medication.id}/history`}>
+                <History className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
             <Button
               variant="ghost"
               size="icon"

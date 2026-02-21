@@ -42,6 +42,10 @@ export const updateMedicationSchema = z.object({
 
 export const intakeSchema = z.object({
   medicationId: z.string().min(1),
+  scheduledFor: z.iso
+    .datetime({ offset: true })
+    .transform((s) => new Date(s))
+    .optional(),
   takenAt: z.iso
     .datetime({ offset: true })
     .transform((s) => new Date(s))
@@ -59,5 +63,30 @@ export const externalIntakeSchema = z.object({
   idempotencyKey: z.string().max(128),
 });
 
+export const listIntakeEventsSchema = z.object({
+  limit: z.coerce.number().int().min(1).max(500).optional().default(25),
+  offset: z.coerce.number().int().min(0).optional().default(0),
+  sortBy: z
+    .enum(["scheduledFor", "takenAt", "source", "createdAt"])
+    .optional()
+    .default("scheduledFor"),
+  sortDir: z.enum(["asc", "desc"]).optional().default("desc"),
+});
+
+export const updateIntakeEventSchema = z.object({
+  takenAt: z.iso
+    .datetime({ offset: true })
+    .transform((s) => new Date(s))
+    .nullable()
+    .optional(),
+  skipped: z.boolean().optional(),
+  scheduledFor: z.iso
+    .datetime({ offset: true })
+    .transform((s) => new Date(s))
+    .optional(),
+});
+
 export type CreateMedicationInput = z.infer<typeof createMedicationSchema>;
 export type IntakeInput = z.infer<typeof intakeSchema>;
+export type ListIntakeEventsInput = z.infer<typeof listIntakeEventsSchema>;
+export type UpdateIntakeEventInput = z.infer<typeof updateIntakeEventSchema>;
