@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload, X, CheckCircle2, ImageIcon } from "lucide-react";
+import { Loader2, Upload, X, CheckCircle2, ImageIcon, Bug } from "lucide-react";
 import { useTranslations } from "@/lib/i18n/context";
 
 export default function BugReportPage() {
@@ -220,6 +220,7 @@ export default function BugReportPage() {
             </Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Bug className="mr-2 h-4 w-4" />
               {t("bugreport.submit")}
             </Button>
           </div>
