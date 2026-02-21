@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/ui/logo";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "@/lib/i18n/context";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function OnboardingPage() {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState("");
   const [saving, setSaving] = useState(false);
+  const { t } = useTranslations();
 
   async function handleComplete(e: React.FormEvent) {
     e.preventDefault();
@@ -52,19 +54,18 @@ export default function OnboardingPage() {
       <div className="text-center">
         <Logo className="text-primary mx-auto mb-4" size={48} />
         <h1 className="text-2xl font-bold tracking-tight">
-          Willkommen bei HealthLog!
+          {t("onboarding.welcome")}
         </h1>
         <p className="text-muted-foreground mt-2 text-sm">
-          Richte dein Profil ein, um loszulegen. Du kannst das auch später in
-          den Einstellungen ändern.
+          {t("onboarding.setupDescription")}
         </p>
       </div>
 
       <form onSubmit={handleComplete} className="space-y-6">
         <div className="bg-card border-border space-y-4 rounded-xl border p-6">
-          <h2 className="font-semibold">Profil</h2>
+          <h2 className="text-lg font-semibold">{t("settings.profile")}</h2>
           <div className="space-y-2">
-            <Label htmlFor="ob-height">Körpergröße (cm)</Label>
+            <Label htmlFor="ob-height">{t("settings.height")}</Label>
             <Input
               id="ob-height"
               type="number"
@@ -77,23 +78,23 @@ export default function OnboardingPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="ob-gender">Geschlecht</Label>
+            <Label htmlFor="ob-gender">{t("settings.gender")}</Label>
             <select
               id="ob-gender"
               value={gender}
               onChange={(e) => setGender(e.target.value)}
-              className="border-input bg-background text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+              className="border-input bg-background text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-none"
             >
-              <option value="">Keine Angabe</option>
-              <option value="MALE">Männlich</option>
-              <option value="FEMALE">Weiblich</option>
+              <option value="">{t("settings.genderNone")}</option>
+              <option value="MALE">{t("settings.genderMale")}</option>
+              <option value="FEMALE">{t("settings.genderFemale")}</option>
             </select>
             <p className="text-muted-foreground text-xs">
-              Wird für geschlechtsspezifische Zielwerte verwendet.
+              {t("settings.genderHint")}
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="ob-dob">Geburtsdatum</Label>
+            <Label htmlFor="ob-dob">{t("settings.dateOfBirth")}</Label>
             <Input
               id="ob-dob"
               type="date"
@@ -102,8 +103,7 @@ export default function OnboardingPage() {
               max={new Date().toISOString().slice(0, 10)}
             />
             <p className="text-muted-foreground text-xs">
-              Wird für die automatische Berechnung der Blutdruck-Zielwerte
-              benötigt.
+              {t("settings.dateOfBirthHint")}
             </p>
           </div>
         </div>
@@ -111,7 +111,7 @@ export default function OnboardingPage() {
         <div className="flex gap-3">
           <Button type="submit" className="flex-1" disabled={saving}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Einrichtung abschließen
+            {t("onboarding.completeSetup")}
           </Button>
         </div>
 
@@ -122,7 +122,7 @@ export default function OnboardingPage() {
             disabled={saving}
             className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-4 transition-colors"
           >
-            Überspringen
+            {t("onboarding.skip")}
           </button>
         </div>
       </form>

@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { auditLog } from "@/lib/auth/audit";
 import { hashToken } from "@/lib/auth/hmac";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { isApiGloballyEnabled } from "@/lib/app-settings";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -15,6 +16,9 @@ function medicationScope(medicationId: string): string {
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   const sessionData = await getSession();
   if (!sessionData) return apiError("Nicht angemeldet", 401);
+  if (!(await isApiGloballyEnabled())) {
+    return apiError("API ist global deaktiviert", 403);
+  }
 
   const { id } = await params;
   const medication = await prisma.medication.findUnique({ where: { id } });
@@ -43,6 +47,9 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   const sessionData = await getSession();
   if (!sessionData) return apiError("Nicht angemeldet", 401);
+  if (!(await isApiGloballyEnabled())) {
+    return apiError("API ist global deaktiviert", 403);
+  }
 
   const { id } = await params;
   const medication = await prisma.medication.findUnique({ where: { id } });

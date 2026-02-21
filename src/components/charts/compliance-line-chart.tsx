@@ -25,61 +25,70 @@ interface DailyData {
 
 interface ComplianceLineChartProps {
   dailyCompliance: Record<string, DailyData>;
+  rangePoints?: 30 | 90 | 0;
+  onRangePointsChange?: (value: 30 | 90 | 0) => void;
+  showRangeControls?: boolean;
 }
 
 const TIME_RANGES = [
-  { label: "30T", days: 30 },
-  { label: "90T", days: 90 },
+  { label: "30M", points: 30, title: "Die dreissig letzten Messpunkte" },
+  { label: "90M", points: 90, title: "Die neunzig letzten Messpunkte" },
+  { label: "Alle", points: 0, title: "Alle verfuegbaren Messpunkte" },
 ] as const;
 
 export function ComplianceLineChart({
   dailyCompliance,
+  rangePoints,
+  onRangePointsChange,
+  showRangeControls = true,
 }: ComplianceLineChartProps) {
-  const [rangeDays, setRangeDays] = useState<30 | 90>(30);
+  const [internalRangePoints, setInternalRangePoints] = useState<30 | 90 | 0>(
+    30,
+  );
+  const activeRangePoints = rangePoints ?? internalRangePoints;
+  const setActiveRangePoints = onRangePointsChange ?? setInternalRangePoints;
 
   const chartData = useMemo(() => {
-    const now = new Date();
-    const points: Array<{ date: string; rate: number; timestamp: number }> = [];
-
-    for (let d = rangeDays - 1; d >= 0; d--) {
-      const date = new Date(now.getTime() - d * 24 * 60 * 60 * 1000);
-      const dateKey = date.toISOString().slice(0, 10);
-      const data = dailyCompliance[dateKey];
-
-      if (data && data.expected > 0) {
-        points.push({
+    const points = Object.entries(dailyCompliance)
+      .filter(([, data]) => data.expected > 0)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([dateKey, data]) => {
+        const date = new Date(`${dateKey}T12:00:00.000Z`);
+        return {
           date: formatDateShort(date),
-          rate: Math.round((data.taken / data.expected) * 100),
+          rate: Math.min(100, Math.round((data.taken / data.expected) * 100)),
           timestamp: date.getTime(),
-        });
-      }
-    }
+        };
+      });
 
-    return points;
-  }, [dailyCompliance, rangeDays]);
+    return activeRangePoints > 0 ? points.slice(-activeRangePoints) : points;
+  }, [dailyCompliance, activeRangePoints]);
 
   return (
     <div>
-      <div className="mb-3 flex justify-end gap-1">
-        {TIME_RANGES.map((r) => (
-          <Button
-            key={r.label}
-            variant={rangeDays === r.days ? "default" : "ghost"}
-            size="sm"
-            className="h-7 px-2 text-xs"
-            onClick={() => setRangeDays(r.days)}
-          >
-            {r.label}
-          </Button>
-        ))}
-      </div>
+      {showRangeControls ? (
+        <div className="mb-3 flex justify-end gap-1">
+          {TIME_RANGES.map((r) => (
+            <Button
+              key={r.label}
+              variant={activeRangePoints === r.points ? "default" : "ghost"}
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => setActiveRangePoints(r.points)}
+              title={r.title}
+            >
+              {r.label}
+            </Button>
+          ))}
+        </div>
+      ) : null}
 
       {chartData.length === 0 ? (
         <div className="text-muted-foreground flex h-48 items-center justify-center rounded-lg border border-dashed text-sm">
           Keine Daten im gewählten Zeitraum
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={200}>
+        <ResponsiveContainer width="100%" height={180}>
           <LineChart data={chartData}>
             <CartesianGrid
               strokeDasharray="3 3"

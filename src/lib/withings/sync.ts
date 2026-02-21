@@ -156,7 +156,10 @@ export async function setupWebhook(userId: string): Promise<void> {
   if (!tokenInfo) return;
 
   try {
-    await subscribeWebhook(tokenInfo.accessToken, getWithingsWebhookCallbackUrl());
+    await subscribeWebhook(
+      tokenInfo.accessToken,
+      getWithingsWebhookCallbackUrl(),
+    );
     console.log(`[withings] Webhook subscribed for user ${userId}`);
   } catch (err) {
     console.error(

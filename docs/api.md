@@ -87,6 +87,15 @@ Get trend summaries for all measurement types. Returns moving averages, slopes, 
 
 ---
 
+## Gamification
+
+### `GET /api/gamification/achievements`
+
+Get dynamic achievement progress (streaks, compliance, active-day milestones) for the authenticated user.
+Evaluation starts at feature rollout (and never before account creation) and ignores imported historical entries (`source=IMPORT`).
+
+---
+
 ## Medications
 
 ### `GET /api/medications`

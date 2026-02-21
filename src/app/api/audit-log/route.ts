@@ -12,8 +12,14 @@ export async function GET(request: NextRequest) {
   if (!sessionData) return apiError("Nicht angemeldet", 401);
 
   const { searchParams } = new URL(request.url);
-  const limit = Math.min(parseInt(searchParams.get("limit") ?? "50"), 200);
-  const offset = parseInt(searchParams.get("offset") ?? "0");
+  const limit = Math.min(
+    Math.max(1, parseInt(searchParams.get("limit") ?? "50", 10) || 50),
+    200,
+  );
+  const offset = Math.max(
+    0,
+    parseInt(searchParams.get("offset") ?? "0", 10) || 0,
+  );
 
   const [entries, total] = await Promise.all([
     prisma.auditLog.findMany({
@@ -25,6 +31,7 @@ export async function GET(request: NextRequest) {
         id: true,
         action: true,
         ipAddress: true,
+        location: true,
         details: true,
         createdAt: true,
       },

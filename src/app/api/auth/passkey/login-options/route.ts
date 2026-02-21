@@ -5,7 +5,11 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   const ip = getClientIp(request) ?? "unknown";
-  const rl = checkRateLimit(`auth:passkey-login-options:${ip}`, 10, 15 * 60 * 1000);
+  const rl = checkRateLimit(
+    `auth:passkey-login-options:${ip}`,
+    10,
+    15 * 60 * 1000,
+  );
   if (!rl.allowed) {
     return NextResponse.json(
       {

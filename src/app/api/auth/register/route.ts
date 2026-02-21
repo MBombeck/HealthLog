@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/db";
 import { registerSchema } from "@/lib/validations/auth";
 import { hashPassword, checkPasswordStrength } from "@/lib/auth/password";
-import { createRegistrationOptions } from "@/lib/auth/passkey";
 import { createSession } from "@/lib/auth/session";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
@@ -15,7 +14,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         data: null,
-        error: "Zu viele Registrierungsversuche. Bitte später erneut versuchen.",
+        error:
+          "Zu viele Registrierungsversuche. Bitte später erneut versuchen.",
       },
       { status: 429, headers: rateLimitHeaders(rl) },
     );
@@ -63,18 +63,15 @@ export async function POST(request: NextRequest) {
       return apiError("Benutzername bereits vergeben", 409);
     }
 
-    // If password provided, validate strength
-    let passwordHash: string | null = null;
-    if (password) {
-      const strength = checkPasswordStrength(password, [username, email]);
-      if (!strength.isAcceptable) {
-        return apiError(
-          strength.feedback[0] || "Passwort zu schwach (Score < 3)",
-          422,
-        );
-      }
-      passwordHash = await hashPassword(password);
+    // Validate password strength
+    const strength = checkPasswordStrength(password, [username, email]);
+    if (!strength.isAcceptable) {
+      return apiError(
+        strength.feedback[0] || "Passwort zu schwach (Score < 3)",
+        422,
+      );
     }
+    const passwordHash = await hashPassword(password);
 
     // First user becomes admin
     const userCount = await prisma.user.count();
@@ -90,26 +87,19 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Generate passkey registration options
-    const { options, challengeId } = await createRegistrationOptions(
-      user.id,
-      user.email!,
-    );
-
-    // Create session immediately (user is "registered" even before passkey)
+    // Create session immediately
     const ua = request.headers.get("user-agent");
     await createSession(user.id, ip, ua);
 
     await auditLog("auth.register", {
       userId: user.id,
       ipAddress: ip,
-      details: { method: password ? "password+passkey" : "passkey" },
+      details: { method: "password" },
     });
 
     return apiSuccess(
       {
         user: { id: user.id, username: user.username, email: user.email },
-        passkey: { options, challengeId },
       },
       201,
     );

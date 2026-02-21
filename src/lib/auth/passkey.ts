@@ -99,7 +99,9 @@ export async function verifyRegistration(
     return verification;
   } finally {
     // Invalidate challenge after first verification attempt (success or failure)
-    await prisma.authChallenge.delete({ where: { id: challengeId } }).catch(() => {});
+    await prisma.authChallenge
+      .delete({ where: { id: challengeId } })
+      .catch(() => {});
   }
 }
 
@@ -190,6 +192,8 @@ export async function verifyAuthentication(
     return { verification, passkey: { userId: passkey.userId } };
   } finally {
     // Invalidate challenge after first verification attempt (success or failure)
-    await prisma.authChallenge.delete({ where: { id: challengeId } }).catch(() => {});
+    await prisma.authChallenge
+      .delete({ where: { id: challengeId } })
+      .catch(() => {});
   }
 }

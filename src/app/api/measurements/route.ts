@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     return apiError(parsed.error.issues[0].message, 422);
   }
 
-  const { type, from, to, limit, offset } = parsed.data;
+  const { type, from, to, limit, offset, sortBy, sortDir } = parsed.data;
 
   const where = {
     userId: sessionData.user.id,
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
   const [measurements, total] = await Promise.all([
     prisma.measurement.findMany({
       where,
-      orderBy: { measuredAt: "desc" },
+      orderBy: { [sortBy]: sortDir },
       take: limit,
       skip: offset,
     }),

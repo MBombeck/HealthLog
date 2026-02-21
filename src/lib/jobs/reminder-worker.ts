@@ -1,7 +1,7 @@
 /**
  * pg-boss based reminder worker.
  * Checks for overdue medication intakes and creates reminder events.
- * Sends Telegram notifications if configured.
+ * Sends notifications via the dispatcher (Telegram, ntfy, Web Push).
  *
  * Usage: Run as a standalone process or call startReminderWorker() from a
  * custom server setup. In dev, use: npx tsx src/lib/jobs/reminder-worker.ts
@@ -10,9 +10,14 @@ import { PgBoss } from "pg-boss";
 import type { Job } from "pg-boss";
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { sendTelegramMessage } from "@/lib/telegram";
-import { decrypt } from "@/lib/crypto";
+import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { syncUserMeasurements } from "@/lib/withings/sync";
+import { generateGeneralStatusForUser } from "@/lib/insights/general-status";
+import { generateBloodPressureStatusForUser } from "@/lib/insights/blood-pressure-status";
+import { generateWeightStatusForUser } from "@/lib/insights/weight-status";
+import { generatePulseStatusForUser } from "@/lib/insights/pulse-status";
+import { generateBmiStatusForUser } from "@/lib/insights/bmi-status";
+import { generateMedicationComplianceStatusForUser } from "@/lib/insights/medication-compliance-status";
 
 const DATABASE_URL = process.env.DATABASE_URL!;
 
@@ -25,12 +30,49 @@ const QUEUE_NAME = "medication-reminder-check";
 const CHECK_INTERVAL_CRON = "*/15 * * * *"; // every 15 minutes
 const WITHINGS_SYNC_QUEUE = "withings-fallback-sync";
 const WITHINGS_SYNC_CRON = "0 * * * *"; // every 60 minutes
+const GENERAL_STATUS_QUEUE = "insights-general-status";
+const GENERAL_STATUS_CRON = "0 2 * * *"; // daily at 02:00
+const BLOOD_PRESSURE_STATUS_QUEUE = "insights-blood-pressure-status";
+const BLOOD_PRESSURE_STATUS_CRON = "5 2 * * *"; // daily at 02:05
+const WEIGHT_STATUS_QUEUE = "insights-weight-status";
+const WEIGHT_STATUS_CRON = "10 2 * * *"; // daily at 02:10
+const PULSE_STATUS_QUEUE = "insights-pulse-status";
+const PULSE_STATUS_CRON = "15 2 * * *"; // daily at 02:15
+const BMI_STATUS_QUEUE = "insights-bmi-status";
+const BMI_STATUS_CRON = "20 2 * * *"; // daily at 02:20
+const MEDICATION_COMPLIANCE_STATUS_QUEUE =
+  "insights-medication-compliance-status";
+const MEDICATION_COMPLIANCE_STATUS_CRON = "25 2 * * *"; // daily at 02:25
 
 interface ReminderCheckPayload {
   triggeredAt: string;
 }
 
 interface WithingsSyncPayload {
+  triggeredAt: string;
+}
+
+interface GeneralStatusPayload {
+  triggeredAt: string;
+}
+
+interface BloodPressureStatusPayload {
+  triggeredAt: string;
+}
+
+interface WeightStatusPayload {
+  triggeredAt: string;
+}
+
+interface PulseStatusPayload {
+  triggeredAt: string;
+}
+
+interface BmiStatusPayload {
+  triggeredAt: string;
+}
+
+interface MedicationComplianceStatusPayload {
   triggeredAt: string;
 }
 
@@ -59,9 +101,6 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
           select: {
             id: true,
             timezone: true,
-            telegramEnabled: true,
-            telegramBotToken: true,
-            telegramChatId: true,
           },
         },
       },
@@ -105,40 +144,20 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
             `[reminder] Missed dose: ${med.name} for user ${med.user.id}, schedule ${schedule.windowStart}-${schedule.windowEnd}`,
           );
 
-          // Send Telegram notification (best-effort)
-          if (
-            med.user.telegramEnabled &&
-            med.user.telegramBotToken &&
-            med.user.telegramChatId
-          ) {
-            try {
-              const botToken = decrypt(med.user.telegramBotToken);
-              const doseInfo = schedule.dose ?? med.dose;
-              const timeWindow = `${schedule.windowStart}–${schedule.windowEnd}`;
-              await sendTelegramMessage(
-                botToken,
-                med.user.telegramChatId,
-                `Erinnerung: <b>${med.name}</b> (${doseInfo}, ${timeWindow}) wurde noch nicht als eingenommen markiert.`,
-                {
-                  replyMarkup: {
-                    inline_keyboard: [
-                      [
-                        {
-                          text: "Als genommen markieren",
-                          callback_data: `taken:${med.id}`,
-                        },
-                      ],
-                    ],
-                  },
-                },
-              );
-            } catch (err) {
-              console.error(
-                `[reminder] Telegram notification failed for user ${med.user.id}:`,
-                err,
-              );
-            }
+          if (!med.notificationsEnabled) {
+            continue;
           }
+
+          // Send notification via dispatcher (best-effort, respects user preferences)
+          const doseInfo = schedule.dose ?? med.dose;
+          const timeWindow = `${schedule.windowStart}–${schedule.windowEnd}`;
+          await dispatchNotification({
+            eventType: "MEDICATION_REMINDER",
+            userId: med.user.id,
+            title: `Erinnerung: ${med.name}`,
+            message: `Erinnerung: <b>${med.name}</b> (${doseInfo}, ${timeWindow}) wurde noch nicht als eingenommen markiert.`,
+            metadata: { medicationId: med.id },
+          });
         }
       }
     }
@@ -187,6 +206,250 @@ async function handleWithingsFallbackSync(jobs: Job<WithingsSyncPayload>[]) {
   }
 }
 
+async function handleGeneralStatusGenerate(jobs: Job<GeneralStatusPayload>[]) {
+  void jobs;
+  const prisma = createPrisma();
+  try {
+    const users = await prisma.user.findMany({
+      where: { openaiKeyEncrypted: { not: null } },
+      select: { id: true, locale: true },
+    });
+
+    if (users.length === 0) {
+      return;
+    }
+
+    let generated = 0;
+    let failed = 0;
+
+    for (const user of users) {
+      try {
+        await generateGeneralStatusForUser(user.id, {
+          locale: user.locale ?? "de",
+          force: false,
+        });
+        generated++;
+      } catch (error) {
+        failed++;
+        console.error(
+          `[insights.general-status] generation failed for user ${user.id}:`,
+          error,
+        );
+      }
+    }
+
+    console.log(
+      `[insights.general-status] completed: generated=${generated}, failed=${failed}, total=${users.length}`,
+    );
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function handleBloodPressureStatusGenerate(
+  jobs: Job<BloodPressureStatusPayload>[],
+) {
+  void jobs;
+  const prisma = createPrisma();
+  try {
+    const users = await prisma.user.findMany({
+      where: { openaiKeyEncrypted: { not: null } },
+      select: { id: true, locale: true },
+    });
+
+    if (users.length === 0) {
+      return;
+    }
+
+    let generated = 0;
+    let failed = 0;
+
+    for (const user of users) {
+      try {
+        await generateBloodPressureStatusForUser(user.id, {
+          locale: user.locale ?? "de",
+          force: false,
+        });
+        generated++;
+      } catch (error) {
+        failed++;
+        console.error(
+          `[insights.blood-pressure-status] generation failed for user ${user.id}:`,
+          error,
+        );
+      }
+    }
+
+    console.log(
+      `[insights.blood-pressure-status] completed: generated=${generated}, failed=${failed}, total=${users.length}`,
+    );
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function handleWeightStatusGenerate(jobs: Job<WeightStatusPayload>[]) {
+  void jobs;
+  const prisma = createPrisma();
+  try {
+    const users = await prisma.user.findMany({
+      where: { openaiKeyEncrypted: { not: null } },
+      select: { id: true, locale: true },
+    });
+
+    if (users.length === 0) {
+      return;
+    }
+
+    let generated = 0;
+    let failed = 0;
+
+    for (const user of users) {
+      try {
+        await generateWeightStatusForUser(user.id, {
+          locale: user.locale ?? "de",
+          force: false,
+        });
+        generated++;
+      } catch (error) {
+        failed++;
+        console.error(
+          `[insights.weight-status] generation failed for user ${user.id}:`,
+          error,
+        );
+      }
+    }
+
+    console.log(
+      `[insights.weight-status] completed: generated=${generated}, failed=${failed}, total=${users.length}`,
+    );
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function handlePulseStatusGenerate(jobs: Job<PulseStatusPayload>[]) {
+  void jobs;
+  const prisma = createPrisma();
+  try {
+    const users = await prisma.user.findMany({
+      where: { openaiKeyEncrypted: { not: null } },
+      select: { id: true, locale: true },
+    });
+
+    if (users.length === 0) {
+      return;
+    }
+
+    let generated = 0;
+    let failed = 0;
+
+    for (const user of users) {
+      try {
+        await generatePulseStatusForUser(user.id, {
+          locale: user.locale ?? "de",
+          force: false,
+        });
+        generated++;
+      } catch (error) {
+        failed++;
+        console.error(
+          `[insights.pulse-status] generation failed for user ${user.id}:`,
+          error,
+        );
+      }
+    }
+
+    console.log(
+      `[insights.pulse-status] completed: generated=${generated}, failed=${failed}, total=${users.length}`,
+    );
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function handleBmiStatusGenerate(jobs: Job<BmiStatusPayload>[]) {
+  void jobs;
+  const prisma = createPrisma();
+  try {
+    const users = await prisma.user.findMany({
+      where: { openaiKeyEncrypted: { not: null } },
+      select: { id: true, locale: true },
+    });
+
+    if (users.length === 0) {
+      return;
+    }
+
+    let generated = 0;
+    let failed = 0;
+
+    for (const user of users) {
+      try {
+        await generateBmiStatusForUser(user.id, {
+          locale: user.locale ?? "de",
+          force: false,
+        });
+        generated++;
+      } catch (error) {
+        failed++;
+        console.error(
+          `[insights.bmi-status] generation failed for user ${user.id}:`,
+          error,
+        );
+      }
+    }
+
+    console.log(
+      `[insights.bmi-status] completed: generated=${generated}, failed=${failed}, total=${users.length}`,
+    );
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function handleMedicationComplianceStatusGenerate(
+  jobs: Job<MedicationComplianceStatusPayload>[],
+) {
+  void jobs;
+  const prisma = createPrisma();
+  try {
+    const users = await prisma.user.findMany({
+      where: { openaiKeyEncrypted: { not: null } },
+      select: { id: true, locale: true },
+    });
+
+    if (users.length === 0) {
+      return;
+    }
+
+    let generated = 0;
+    let failed = 0;
+
+    for (const user of users) {
+      try {
+        await generateMedicationComplianceStatusForUser(user.id, {
+          locale: user.locale ?? "de",
+          force: false,
+        });
+        generated++;
+      } catch (error) {
+        failed++;
+        console.error(
+          `[insights.medication-compliance-status] generation failed for user ${user.id}:`,
+          error,
+        );
+      }
+    }
+
+    console.log(
+      `[insights.medication-compliance-status] completed: generated=${generated}, failed=${failed}, total=${users.length}`,
+    );
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 export async function startReminderWorker() {
   const boss = new PgBoss(DATABASE_URL);
 
@@ -219,6 +482,70 @@ export async function startReminderWorker() {
   console.log(
     `[pg-boss] Scheduled ${WITHINGS_SYNC_QUEUE} at ${WITHINGS_SYNC_CRON}`,
   );
+  await boss.schedule(
+    GENERAL_STATUS_QUEUE,
+    GENERAL_STATUS_CRON,
+    {},
+    {
+      tz: "Europe/Berlin",
+    },
+  );
+  console.log(
+    `[pg-boss] Scheduled ${GENERAL_STATUS_QUEUE} at ${GENERAL_STATUS_CRON}`,
+  );
+  await boss.schedule(
+    BLOOD_PRESSURE_STATUS_QUEUE,
+    BLOOD_PRESSURE_STATUS_CRON,
+    {},
+    {
+      tz: "Europe/Berlin",
+    },
+  );
+  console.log(
+    `[pg-boss] Scheduled ${BLOOD_PRESSURE_STATUS_QUEUE} at ${BLOOD_PRESSURE_STATUS_CRON}`,
+  );
+  await boss.schedule(
+    WEIGHT_STATUS_QUEUE,
+    WEIGHT_STATUS_CRON,
+    {},
+    {
+      tz: "Europe/Berlin",
+    },
+  );
+  console.log(
+    `[pg-boss] Scheduled ${WEIGHT_STATUS_QUEUE} at ${WEIGHT_STATUS_CRON}`,
+  );
+  await boss.schedule(
+    PULSE_STATUS_QUEUE,
+    PULSE_STATUS_CRON,
+    {},
+    {
+      tz: "Europe/Berlin",
+    },
+  );
+  console.log(
+    `[pg-boss] Scheduled ${PULSE_STATUS_QUEUE} at ${PULSE_STATUS_CRON}`,
+  );
+  await boss.schedule(
+    BMI_STATUS_QUEUE,
+    BMI_STATUS_CRON,
+    {},
+    {
+      tz: "Europe/Berlin",
+    },
+  );
+  console.log(`[pg-boss] Scheduled ${BMI_STATUS_QUEUE} at ${BMI_STATUS_CRON}`);
+  await boss.schedule(
+    MEDICATION_COMPLIANCE_STATUS_QUEUE,
+    MEDICATION_COMPLIANCE_STATUS_CRON,
+    {},
+    {
+      tz: "Europe/Berlin",
+    },
+  );
+  console.log(
+    `[pg-boss] Scheduled ${MEDICATION_COMPLIANCE_STATUS_QUEUE} at ${MEDICATION_COMPLIANCE_STATUS_CRON}`,
+  );
 
   // Register the handler
   await boss.work<ReminderCheckPayload>(
@@ -230,6 +557,36 @@ export async function startReminderWorker() {
     WITHINGS_SYNC_QUEUE,
     { localConcurrency: 1 },
     handleWithingsFallbackSync,
+  );
+  await boss.work<GeneralStatusPayload>(
+    GENERAL_STATUS_QUEUE,
+    { localConcurrency: 1 },
+    handleGeneralStatusGenerate,
+  );
+  await boss.work<BloodPressureStatusPayload>(
+    BLOOD_PRESSURE_STATUS_QUEUE,
+    { localConcurrency: 1 },
+    handleBloodPressureStatusGenerate,
+  );
+  await boss.work<WeightStatusPayload>(
+    WEIGHT_STATUS_QUEUE,
+    { localConcurrency: 1 },
+    handleWeightStatusGenerate,
+  );
+  await boss.work<PulseStatusPayload>(
+    PULSE_STATUS_QUEUE,
+    { localConcurrency: 1 },
+    handlePulseStatusGenerate,
+  );
+  await boss.work<BmiStatusPayload>(
+    BMI_STATUS_QUEUE,
+    { localConcurrency: 1 },
+    handleBmiStatusGenerate,
+  );
+  await boss.work<MedicationComplianceStatusPayload>(
+    MEDICATION_COMPLIANCE_STATUS_QUEUE,
+    { localConcurrency: 1 },
+    handleMedicationComplianceStatusGenerate,
   );
 
   return boss;

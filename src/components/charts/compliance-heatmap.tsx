@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 
 interface DailyData {
   expected: number;
@@ -14,10 +14,11 @@ interface DailyData {
 interface ComplianceHeatmapProps {
   dailyCompliance: Record<string, DailyData>;
   days?: number;
+  stretch?: boolean;
 }
 
-const CELL_SIZE = 14;
-const GAP = 2;
+const CELL_SIZE = 18;
+const GAP = 3;
 const WEEKDAY_LABELS = ["Mo", "", "Mi", "", "Fr", "", "So"];
 const MONTH_LABELS = [
   "Jan",
@@ -77,12 +78,33 @@ function formatDateDE(dateStr: string): string {
 export function ComplianceHeatmap({
   dailyCompliance,
   days = 90,
+  stretch = false,
 }: ComplianceHeatmapProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
   const [tooltip, setTooltip] = useState<{
     x: number;
     y: number;
     text: string;
   } | null>(null);
+
+  useEffect(() => {
+    if (!stretch) return;
+    const element = containerRef.current;
+    if (!element) return;
+
+    const updateWidth = () => {
+      setContainerWidth(element.clientWidth);
+    };
+
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [stretch]);
 
   const { cells, weeks, monthMarkers } = useMemo(() => {
     const now = new Date();
@@ -142,25 +164,37 @@ export function ComplianceHeatmap({
     return { cells: cellList, weeks: col + 1, monthMarkers: markers };
   }, [dailyCompliance, days]);
 
-  const labelWidth = 24;
-  const headerHeight = 16;
-  const svgWidth = labelWidth + weeks * (CELL_SIZE + GAP);
-  const svgHeight = headerHeight + 7 * (CELL_SIZE + GAP);
+  const labelWidth = stretch ? 0 : 76;
+  const headerHeight = 18;
+  const cellSize =
+    stretch && containerWidth > 0
+      ? Math.max(
+          8,
+          (containerWidth - labelWidth - Math.max(0, weeks - 1) * GAP) /
+            Math.max(weeks, 1),
+        )
+      : CELL_SIZE;
+  const step = cellSize + GAP;
+  const svgWidth = labelWidth + weeks * cellSize + Math.max(0, weeks - 1) * GAP;
+  const svgHeight = headerHeight + 7 * cellSize + 6 * GAP;
 
   return (
-    <div className="relative">
-      <div className="overflow-x-auto">
+    <div
+      className={`relative ${stretch ? "w-full" : ""}`}
+      ref={containerRef}
+    >
+      <div className={stretch ? "w-full" : "overflow-x-auto"}>
         <svg
           width={svgWidth}
           height={svgHeight}
-          className="block"
+          className={stretch ? "block w-full" : "block"}
           onMouseLeave={() => setTooltip(null)}
         >
           {/* Month labels */}
           {monthMarkers.map((m, i) => (
             <text
               key={i}
-              x={labelWidth + m.col * (CELL_SIZE + GAP)}
+              x={labelWidth + m.col * step}
               y={11}
               className="fill-muted-foreground"
               fontSize={10}
@@ -170,36 +204,41 @@ export function ComplianceHeatmap({
           ))}
 
           {/* Weekday labels */}
-          {WEEKDAY_LABELS.map(
-            (label, i) =>
-              label && (
-                <text
-                  key={i}
-                  x={0}
-                  y={headerHeight + i * (CELL_SIZE + GAP) + 11}
-                  className="fill-muted-foreground"
-                  fontSize={10}
-                >
-                  {label}
-                </text>
-              ),
-          )}
+          {!stretch &&
+            WEEKDAY_LABELS.map(
+              (label, i) =>
+                label && (
+                  <text
+                    key={i}
+                    x={labelWidth - 6}
+                    y={headerHeight + i * step + cellSize * 0.65}
+                    textAnchor="end"
+                    className="fill-muted-foreground"
+                    fontSize={10}
+                  >
+                    {label}
+                  </text>
+                ),
+            )}
 
           {/* Cells */}
           {cells.map((cell) => (
             <rect
               key={cell.dateKey}
-              x={labelWidth + cell.col * (CELL_SIZE + GAP)}
-              y={headerHeight + cell.row * (CELL_SIZE + GAP)}
-              width={CELL_SIZE}
-              height={CELL_SIZE}
+              x={labelWidth + cell.col * step}
+              y={headerHeight + cell.row * step}
+              width={cellSize}
+              height={cellSize}
               rx={2}
               fill={cell.color}
               className="cursor-pointer"
               onMouseEnter={(e) => {
                 const rate =
                   cell.data.expected > 0
-                    ? Math.round((cell.data.taken / cell.data.expected) * 100)
+                    ? Math.min(
+                        100,
+                        Math.round((cell.data.taken / cell.data.expected) * 100),
+                      )
                     : 0;
                 const hasTimingData =
                   cell.data.onTime !== undefined ||
@@ -231,7 +270,10 @@ export function ComplianceHeatmap({
       )}
 
       {/* Legend */}
-      <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-3 text-xs">
+      <div
+        className="text-muted-foreground mt-2 flex flex-wrap items-center gap-3 text-xs"
+        style={{ marginLeft: stretch ? 0 : labelWidth }}
+      >
         {[
           { color: "var(--dracula-green)", label: "Pünktlich" },
           { color: "var(--dracula-yellow)", label: "Spät" },

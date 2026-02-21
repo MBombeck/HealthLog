@@ -67,7 +67,7 @@
   --dracula-bg: #282a36;
   --dracula-current: #44475a;
   --dracula-fg: #f8f8f2;
-  --dracula-comment: #6272a4;
+  --dracula-comment: #9aa3b3;
   --dracula-cyan: #8be9fd;
   --dracula-green: #50fa7b;
   --dracula-orange: #ffb86c;
@@ -92,7 +92,7 @@
   --secondary: #44475a;
   --secondary-foreground: #f8f8f2;
   --muted: #44475a;
-  --muted-foreground: #6272a4;
+  --muted-foreground: #f8f8f2;
   --accent: #44475a;
   --accent-foreground: #f8f8f2;
   --destructive: #ff5555;
@@ -129,7 +129,7 @@
   --secondary: #dcdeef;
   --secondary-foreground: #1f1f1f;
   --muted: #dcdeef;
-  --muted-foreground: #635d97;
+  --muted-foreground: #1f1f1f;
   --accent: #dcdeef;
   --accent-foreground: #1f1f1f;
   --destructive: #cb3a2a;
@@ -159,5 +159,8 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  p {
+    color: var(--foreground);
   }
 }

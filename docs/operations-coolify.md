@@ -7,19 +7,19 @@ It's designed to run on [Coolify](https://coolify.io/) or any Docker-based PaaS.
 
 ## Environment Variables
 
-| Variable                 | Required | Default                 | Description                            |
-| ------------------------ | -------- | ----------------------- | -------------------------------------- |
-| `DATABASE_URL`           | Yes      | —                       | PostgreSQL connection string           |
-| `SESSION_SECRET`         | Yes      | —                       | 64-char hex string for session signing |
-| `ENCRYPTION_KEY`         | Yes      | —                       | 64-char hex string for AES-256-GCM     |
-| `APP_URL`                | Yes      | `http://localhost:3000` | Server base URL (webhooks/callbacks)   |
-| `NEXT_PUBLIC_APP_URL`    | Yes      | `http://localhost:3000` | Public URL of the app                  |
-| `NODE_ENV`               | No       | `production`            | Environment mode                       |
-| `WITHINGS_CLIENT_ID`     | No       | —                       | Withings OAuth client ID (M5)          |
-| `WITHINGS_CLIENT_SECRET` | No       | —                       | Withings OAuth client secret (M5)      |
-| `WITHINGS_REDIRECT_URI`  | No       | —                       | Withings OAuth redirect URI (M5)       |
-| `WITHINGS_WEBHOOK_SECRET`| No       | —                       | Shared secret for securing webhook URL |
-| `TELEGRAM_WEBHOOK_SECRET`| No       | —                       | Secret token for Telegram webhook      |
+| Variable                  | Required | Default                 | Description                            |
+| ------------------------- | -------- | ----------------------- | -------------------------------------- |
+| `DATABASE_URL`            | Yes      | —                       | PostgreSQL connection string           |
+| `SESSION_SECRET`          | Yes      | —                       | 64-char hex string for session signing |
+| `ENCRYPTION_KEY`          | Yes      | —                       | 64-char hex string for AES-256-GCM     |
+| `APP_URL`                 | Yes      | `http://localhost:3000` | Server base URL (webhooks/callbacks)   |
+| `NEXT_PUBLIC_APP_URL`     | Yes      | `http://localhost:3000` | Public URL of the app                  |
+| `NODE_ENV`                | No       | `production`            | Environment mode                       |
+| `WITHINGS_CLIENT_ID`      | No       | —                       | Withings OAuth client ID (M5)          |
+| `WITHINGS_CLIENT_SECRET`  | No       | —                       | Withings OAuth client secret (M5)      |
+| `WITHINGS_REDIRECT_URI`   | No       | —                       | Withings OAuth redirect URI (M5)       |
+| `WITHINGS_WEBHOOK_SECRET` | No       | —                       | Shared secret for securing webhook URL |
+| `TELEGRAM_WEBHOOK_SECRET` | No       | —                       | Secret token for Telegram webhook      |
 
 ### Generating Secrets
 
@@ -39,6 +39,8 @@ openssl rand -hex 32
 4. **Database**: Use Coolify's built-in PostgreSQL service, or the one from docker-compose
 5. **Domain**: Configure your domain in Coolify's proxy settings
 6. **Health check**: Coolify will use the Docker HEALTHCHECK (`/api/health`)
+7. **No manual migration step needed**: each new container run applies pending Prisma migrations automatically before app start.
+8. **Do not override Entrypoint/Command** in Coolify, otherwise automatic migrations on startup are skipped.
 
 ### Ready-to-use Values for `hard-healthlog.bombeck.io`
 
@@ -83,8 +85,10 @@ docker compose exec db psql -U healthlog
 
 ## Migrations
 
-Migrations run automatically on container startup via `docker-entrypoint.sh`.
-For manual migration:
+Migrations run automatically on container startup via `docker-entrypoint.sh` (`prisma migrate deploy`).
+This is the default production path for Coolify and requires no manual command execution after deployment.
+
+Manual migration commands are only for local development or recovery:
 
 ```bash
 # Create a new migration (development)

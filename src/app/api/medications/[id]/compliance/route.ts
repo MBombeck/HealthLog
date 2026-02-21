@@ -34,8 +34,19 @@ export async function GET(_request: Request, { params }: RouteParams) {
     scheduledFor: e.scheduledFor,
   }));
 
-  const compliance7 = calculateCompliance(mapped, medication.schedules, 7);
-  const compliance30 = calculateCompliance(mapped, medication.schedules, 30);
+  const createdAt = medication.createdAt;
+  const compliance7 = calculateCompliance(
+    mapped,
+    medication.schedules,
+    7,
+    createdAt,
+  );
+  const compliance30 = calculateCompliance(
+    mapped,
+    medication.schedules,
+    30,
+    createdAt,
+  );
 
   // Build daily compliance map for heatmap/line chart (90 days)
   const now = new Date();
@@ -45,6 +56,10 @@ export async function GET(_request: Request, { params }: RouteParams) {
   for (let d = 0; d < 90; d++) {
     const dayStart = new Date(now.getTime() - (d + 1) * 24 * 60 * 60 * 1000);
     const dayEnd = new Date(now.getTime() - d * 24 * 60 * 60 * 1000);
+
+    // Skip days before medication was created
+    if (dayEnd <= createdAt) continue;
+
     const dateKey = dayStart.toISOString().slice(0, 10);
 
     const dayEvents = mapped.filter(

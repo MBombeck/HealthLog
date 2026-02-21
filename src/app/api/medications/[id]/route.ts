@@ -8,6 +8,7 @@ import {
   getMedicationCategories,
   setMedicationCategory,
 } from "@/lib/medication-category";
+import { serializeScheduleRecurrence } from "@/lib/medication-schedule";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -29,7 +30,17 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return apiError(parsed.error.issues[0].message, 422);
     }
 
-    const { name, dose, category, active, schedules } = parsed.data;
+    const { name, dose, category, active, notificationsEnabled, schedules } =
+      parsed.data;
+
+    const pausedAtPatch =
+      active === undefined
+        ? {}
+        : active
+          ? { pausedAt: null as Date | null }
+          : existing.active
+            ? { pausedAt: new Date() }
+            : {};
 
     // If schedules provided, replace all
     if (schedules) {
@@ -38,30 +49,68 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       });
     }
 
-    const medication = await prisma.medication.update({
-      where: { id },
-      data: {
-        ...(name !== undefined && { name }),
-        ...(dose !== undefined && { dose }),
-        ...(active !== undefined && { active }),
-        ...(schedules && {
-          schedules: {
-            create: schedules.map((s) => ({
-              windowStart: s.windowStart,
-              windowEnd: s.windowEnd,
-              label: s.label ?? null,
-              dose: s.dose ?? null,
-            })),
-          },
-        }),
-      },
-      include: { schedules: true },
-    });
+    const baseUpdateData = {
+      ...(name !== undefined && { name }),
+      ...(dose !== undefined && { dose }),
+      ...(active !== undefined && { active }),
+      ...(notificationsEnabled !== undefined && { notificationsEnabled }),
+      ...(schedules && {
+        schedules: {
+          create: schedules.map((s) => ({
+            windowStart: s.windowStart,
+            windowEnd: s.windowEnd,
+            label: s.label ?? null,
+            dose: s.dose ?? null,
+            daysOfWeek: serializeScheduleRecurrence({
+              daysOfWeek: s.daysOfWeek ?? [],
+              intervalWeeks: s.intervalWeeks ?? 1,
+            }),
+          })),
+        },
+      }),
+    };
+
+    const withoutNotifications = { ...baseUpdateData } as Record<
+      string,
+      unknown
+    >;
+    delete withoutNotifications.notificationsEnabled;
+    const hasPausedAtPatch = Object.keys(pausedAtPatch).length > 0;
+    const hasNotificationsPatch = notificationsEnabled !== undefined;
+
+    const updateCandidates: Array<Record<string, unknown>> = [
+      { ...baseUpdateData, ...pausedAtPatch },
+    ];
+    if (hasPausedAtPatch) {
+      updateCandidates.push(baseUpdateData);
+    }
+    if (hasNotificationsPatch) {
+      updateCandidates.push({ ...withoutNotifications, ...pausedAtPatch });
+      if (hasPausedAtPatch) {
+        updateCandidates.push(withoutNotifications);
+      }
+    }
+
+    let medication;
+    let lastUpdateErr: unknown;
+    for (const candidate of updateCandidates) {
+      try {
+        medication = await prisma.medication.update({
+          where: { id },
+          data: candidate,
+          include: { schedules: true },
+        });
+        break;
+      } catch (updateErr) {
+        lastUpdateErr = updateErr;
+      }
+    }
+    if (!medication) throw lastUpdateErr;
 
     const normalizedCategory =
       category !== undefined
         ? await setMedicationCategory(id, category)
-        : (await getMedicationCategories([id]))[id] ?? "OTHER";
+        : ((await getMedicationCategories([id]))[id] ?? "OTHER");
 
     await auditLog("medication.update", {
       userId: sessionData.user.id,

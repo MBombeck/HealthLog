@@ -187,6 +187,18 @@ describe("calculateCompliance", () => {
     expect(result.missed).toBe(0);
     expect(result.streak).toBe(7);
   });
+
+  it("caps compliance rate at 100% when more intakes than expected exist", () => {
+    const schedules = [{ windowStart: "08:00", windowEnd: "09:00" }];
+    const events = Array.from({ length: 10 }, (_, i) => ({
+      takenAt: new Date("2025-01-14T08:30:00Z"),
+      skipped: false,
+      scheduledFor: new Date(`2025-01-14T08:${String(i).padStart(2, "0")}:00Z`),
+    }));
+
+    const result = calculateCompliance(events, schedules, 7);
+    expect(result.rate).toBe(100);
+  });
 });
 
 describe("classifyIntakeTiming", () => {

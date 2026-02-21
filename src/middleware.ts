@@ -1,9 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
-  void request;
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-  const response = NextResponse.next();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 
   // Security headers
   response.headers.set("X-Content-Type-Options", "nosniff");
@@ -17,8 +23,8 @@ export function middleware(request: NextRequest) {
   // CSP — permissive in dev, strict in production
   const isDev = process.env.NODE_ENV === "development";
   const csp = isDev
-    ? `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self';`
-    : `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.openai.com https://wbsapi.withings.net; font-src 'self';`;
+    ? `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.gravatar.com; connect-src 'self'; font-src 'self';`
+    : `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.gravatar.com; connect-src 'self' https://api.openai.com https://wbsapi.withings.net; font-src 'self';`;
   response.headers.set("Content-Security-Policy", csp);
   response.headers.set("x-nonce", nonce);
 

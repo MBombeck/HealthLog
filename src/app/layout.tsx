@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { AuthShell } from "@/components/layout/auth-shell";
+import { MonitoringBootstrap } from "@/components/monitoring/bootstrap";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -34,15 +35,23 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const nonce = (await headers()).get("x-nonce") ?? "";
+  const nonce =
+    process.env.NODE_ENV === "production"
+      ? ((await headers()).get("x-nonce") ?? undefined)
+      : undefined;
 
   return (
     <html lang="de" suppressHydrationWarning>
       <head>
-        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script
+          suppressHydrationWarning
+          nonce={nonce}
+          dangerouslySetInnerHTML={{ __html: themeScript }}
+        />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>
+          <MonitoringBootstrap />
           <AuthShell>{children}</AuthShell>
         </Providers>
       </body>

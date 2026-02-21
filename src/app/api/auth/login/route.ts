@@ -12,7 +12,10 @@ export async function POST(request: NextRequest) {
   const rl = checkRateLimit(`auth:login:${ip}`, 5, 15 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json(
-      { data: null, error: "Zu viele Anmeldeversuche. Bitte später erneut versuchen." },
+      {
+        data: null,
+        error: "Zu viele Anmeldeversuche. Bitte später erneut versuchen.",
+      },
       { status: 429, headers: rateLimitHeaders(rl) },
     );
   }

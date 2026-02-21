@@ -1,0 +1,2 @@
+ALTER TABLE "app_settings"
+ADD COLUMN IF NOT EXISTS "api_global" BOOLEAN NOT NULL DEFAULT true;

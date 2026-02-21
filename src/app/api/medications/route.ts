@@ -7,26 +7,40 @@ import {
   getMedicationCategories,
   setMedicationCategory,
 } from "@/lib/medication-category";
+import { serializeScheduleRecurrence } from "@/lib/medication-schedule";
 import { NextRequest } from "next/server";
 
 export async function GET() {
   const sessionData = await getSession();
   if (!sessionData) return apiError("Nicht angemeldet", 401);
 
-  const medications = await prisma.medication.findMany({
-    where: { userId: sessionData.user.id },
-    include: { schedules: true },
-    orderBy: { createdAt: "desc" },
-  });
+  try {
+    const medications = await prisma.medication.findMany({
+      where: { userId: sessionData.user.id },
+      include: { schedules: true },
+      orderBy: { createdAt: "desc" },
+    });
 
-  const categoryMap = await getMedicationCategories(medications.map((m) => m.id));
+    let categoryMap: Record<string, string> = {};
+    try {
+      categoryMap = await getMedicationCategories(
+        medications.map((m) => m.id),
+      );
+    } catch (error) {
+      // Category enrichment is optional and must not break medication loading.
+      console.error("Medication categories could not be loaded:", error);
+    }
 
-  return apiSuccess(
-    medications.map((m) => ({
-      ...m,
-      category: categoryMap[m.id] ?? "OTHER",
-    })),
-  );
+    return apiSuccess(
+      medications.map((m) => ({
+        ...m,
+        category: categoryMap[m.id] ?? "OTHER",
+      })),
+    );
+  } catch (error) {
+    console.error("Load medications error:", error);
+    return apiError("Medikamente konnten nicht geladen werden", 500);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -53,6 +67,10 @@ export async function POST(request: NextRequest) {
             windowEnd: s.windowEnd,
             label: s.label ?? null,
             dose: s.dose ?? null,
+            daysOfWeek: serializeScheduleRecurrence({
+              daysOfWeek: s.daysOfWeek ?? [],
+              intervalWeeks: s.intervalWeeks ?? 1,
+            }),
           })),
         },
       },

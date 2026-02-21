@@ -29,12 +29,16 @@ export function formatDate(date: Date | string): string {
   });
 }
 
-/** "19.02." */
-export function formatDateShort(date: Date | string): string {
+/** "19.02." or "19.02.2026" if includeYear */
+export function formatDateShort(
+  date: Date | string,
+  includeYear = false,
+): string {
   return new Date(date).toLocaleDateString(LOCALE, {
     timeZone: TIMEZONE,
     day: "2-digit",
     month: "2-digit",
+    ...(includeYear ? { year: "numeric" } : {}),
   });
 }
 

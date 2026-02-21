@@ -3,6 +3,12 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -12,7 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, MoreHorizontal, Plus, RotateCcw } from "lucide-react";
+
+const MAX_COMMENT_LENGTH = 25;
 
 const MEASUREMENT_TYPES = [
   { value: "BLOOD_PRESSURE", label: "Blutdruck", unit: "mmHg" },
@@ -35,11 +43,20 @@ const MEASUREMENT_TYPES = [
 
 interface MeasurementFormProps {
   onSuccess?: () => void;
+  onCancel?: () => void;
   defaultType?: string;
+}
+
+function getDefaultMeasuredAtValue() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset();
+  const local = new Date(now.getTime() - offset * 60 * 1000);
+  return local.toISOString().slice(0, 16);
 }
 
 export function MeasurementForm({
   onSuccess,
+  onCancel,
   defaultType,
 }: MeasurementFormProps) {
   const queryClient = useQueryClient();
@@ -56,17 +73,23 @@ export function MeasurementForm({
   const [diaBp, setDiaBp] = useState("");
   const [pulse, setPulse] = useState("");
   const [notes, setNotes] = useState("");
-  const [measuredAt, setMeasuredAt] = useState(() => {
-    const now = new Date();
-    const offset = now.getTimezoneOffset();
-    const local = new Date(now.getTime() - offset * 60 * 1000);
-    return local.toISOString().slice(0, 16);
-  });
+  const [measuredAt, setMeasuredAt] = useState(getDefaultMeasuredAtValue);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const typeInfo = MEASUREMENT_TYPES.find((t) => t.value === type);
   const isBpMode = type === "BLOOD_PRESSURE";
+
+  function resetForm() {
+    setType(normalizedDefault || "BLOOD_PRESSURE");
+    setValue("");
+    setSysBp("");
+    setDiaBp("");
+    setPulse("");
+    setNotes("");
+    setMeasuredAt(getDefaultMeasuredAtValue());
+    setError(null);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -157,10 +180,12 @@ export function MeasurementForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label>Typ</Label>
+      <div className="flex items-center gap-3">
+        <Label htmlFor="measurement-type" className="shrink-0">
+          Typ
+        </Label>
         <Select value={type} onValueChange={setType}>
-          <SelectTrigger>
+          <SelectTrigger id="measurement-type" className="flex-1">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -204,12 +229,7 @@ export function MeasurementForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="puls">
-              Puls (bpm){" "}
-              <span className="text-muted-foreground font-normal">
-                (optional)
-              </span>
-            </Label>
+            <Label htmlFor="puls">Puls (bpm)</Label>
             <Input
               id="puls"
               type="number"
@@ -253,16 +273,21 @@ export function MeasurementForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="notes">
-          Notizen{" "}
-          <span className="text-muted-foreground font-normal">(optional)</span>
-        </Label>
+        <div className="flex items-center justify-between gap-3">
+          <Label htmlFor="notes">
+            Notizen{" "}
+            <span className="text-muted-foreground font-normal">(optional)</span>
+          </Label>
+          <span className="text-muted-foreground text-xs">
+            {notes.length}/{MAX_COMMENT_LENGTH}
+          </span>
+        </div>
         <Input
           id="notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="z.B. nach dem Essen"
-          maxLength={500}
+          maxLength={MAX_COMMENT_LENGTH}
         />
       </div>
 
@@ -272,14 +297,43 @@ export function MeasurementForm({
         </div>
       )}
 
-      <Button type="submit" disabled={loading}>
-        {loading ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <Plus className="mr-2 h-4 w-4" />
-        )}
-        {isBpMode ? "Blutdruck speichern" : "Messwert speichern"}
-      </Button>
+      <div className="flex items-center justify-between gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              disabled={loading}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem onClick={resetForm}>
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Formular zurücksetzen
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <div className="flex items-center gap-2">
+          {onCancel && (
+            <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+              Abbrechen
+            </Button>
+          )}
+          <Button type="submit" disabled={loading}>
+            {loading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="mr-2 h-4 w-4" />
+            )}
+            Speichern
+          </Button>
+        </div>
+      </div>
     </form>
   );
 }

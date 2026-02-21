@@ -4,7 +4,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 function hasValidWebhookSecret(request: NextRequest): boolean {
   const expected = process.env.WITHINGS_WEBHOOK_SECRET;
-  if (!expected) return true;
+  if (!expected) {
+    console.error(
+      "[withings] WITHINGS_WEBHOOK_SECRET not configured — rejecting webhook",
+    );
+    return false;
+  }
   return request.nextUrl.searchParams.get("secret") === expected;
 }
 

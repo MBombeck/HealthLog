@@ -2,12 +2,16 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { hashToken } from "@/lib/auth/hmac";
+import { isApiGloballyEnabled } from "@/lib/app-settings";
 import { randomBytes } from "node:crypto";
 import { NextRequest } from "next/server";
 
 export async function GET() {
   const sessionData = await getSession();
   if (!sessionData) return apiError("Nicht angemeldet", 401);
+  if (!(await isApiGloballyEnabled())) {
+    return apiError("API ist global deaktiviert", 403);
+  }
 
   const tokens = await prisma.apiToken.findMany({
     where: { userId: sessionData.user.id },
@@ -29,6 +33,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const sessionData = await getSession();
   if (!sessionData) return apiError("Nicht angemeldet", 401);
+  if (!(await isApiGloballyEnabled())) {
+    return apiError("API ist global deaktiviert", 403);
+  }
 
   try {
     const body = await request.json();

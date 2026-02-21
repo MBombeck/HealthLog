@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { apiSuccess, apiError } from "@/lib/api-response";
+import { isApiGloballyEnabled } from "@/lib/app-settings";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -10,6 +11,9 @@ type RouteParams = { params: Promise<{ id: string }> };
 export async function DELETE(_request: Request, { params }: RouteParams) {
   const sessionData = await getSession();
   if (!sessionData) return apiError("Nicht angemeldet", 401);
+  if (!(await isApiGloballyEnabled())) {
+    return apiError("API ist global deaktiviert", 403);
+  }
 
   const { id } = await params;
   const token = await prisma.apiToken.findUnique({ where: { id } });
