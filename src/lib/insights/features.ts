@@ -8,6 +8,14 @@ import { summarize } from "@/lib/analytics/trends";
 import { calculateCompliance } from "@/lib/analytics/compliance";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 
+interface DataCoverage {
+  count: number;
+  spanDays: number;
+  avgDaysBetween: number | null;
+  oldestDaysAgo: number;
+  newestDaysAgo: number;
+}
+
 export interface AggregatedFeatures {
   weight?: {
     latest: number;
@@ -16,6 +24,7 @@ export interface AggregatedFeatures {
     slope30: number | null;
     outlierCount: number;
     bmi: number | null;
+    coverage: DataCoverage;
   };
   bloodPressure?: {
     avgSys30: number | null;
@@ -23,16 +32,19 @@ export interface AggregatedFeatures {
     slopeSys30: number | null;
     slopeDia30: number | null;
     pctInTarget: number | null;
+    coverage: DataCoverage;
   };
   pulse?: {
     avg30: number | null;
     slope30: number | null;
     anomalyCount: number;
+    coverage: DataCoverage;
   };
   bodyFat?: {
     latest: number | null;
     avg30: number | null;
     slope30: number | null;
+    coverage: DataCoverage;
   };
   medications?: Array<{
     name: string;
@@ -47,6 +59,8 @@ export interface AggregatedFeatures {
     hasBpTargets: boolean;
     totalMeasurements: number;
     dataSpanDays: number;
+    oldestMeasurementDaysAgo: number | null;
+    newestMeasurementDaysAgo: number | null;
   };
 }
 
@@ -64,6 +78,26 @@ function toDataPoints(
   return records.map((r) => ({ date: r.measuredAt, value: r.value }));
 }
 
+function computeCoverage(
+  records: Array<{ measuredAt: Date }>,
+  now: number,
+): DataCoverage {
+  if (records.length === 0) {
+    return { count: 0, spanDays: 0, avgDaysBetween: null, oldestDaysAgo: 0, newestDaysAgo: 0 };
+  }
+  const oldest = records[0].measuredAt.getTime();
+  const newest = records[records.length - 1].measuredAt.getTime();
+  const spanDays = Math.round((newest - oldest) / (24 * 60 * 60 * 1000));
+  const avgDaysBetween = records.length > 1 ? Math.round(spanDays / (records.length - 1) * 10) / 10 : null;
+  return {
+    count: records.length,
+    spanDays,
+    avgDaysBetween,
+    oldestDaysAgo: Math.round((now - oldest) / (24 * 60 * 60 * 1000)),
+    newestDaysAgo: Math.round((now - newest) / (24 * 60 * 60 * 1000)),
+  };
+}
+
 export async function extractFeatures(
   userId: string,
   includeRaw: boolean,
@@ -76,11 +110,11 @@ export async function extractFeatures(
     },
   });
 
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const now = Date.now();
 
-  // Fetch all recent measurements
+  // Fetch ALL measurements (not just 30 days) for full temporal context
   const measurements = await prisma.measurement.findMany({
-    where: { userId, measuredAt: { gte: thirtyDaysAgo } },
+    where: { userId },
     orderBy: { measuredAt: "asc" },
   });
 
@@ -88,12 +122,25 @@ export async function extractFeatures(
 
   const bpTargets = getBpTargets(user?.dateOfBirth ?? null);
 
+  // Compute overall data span
+  const oldestMeasurement = measurements.length > 0 ? measurements[0].measuredAt : null;
+  const newestMeasurement = measurements.length > 0 ? measurements[measurements.length - 1].measuredAt : null;
+  const overallSpanDays = oldestMeasurement && newestMeasurement
+    ? Math.round((newestMeasurement.getTime() - oldestMeasurement.getTime()) / (24 * 60 * 60 * 1000))
+    : 0;
+
   const features: AggregatedFeatures = {
     context: {
       heightCm: user?.heightCm ?? null,
       hasBpTargets: !!bpTargets,
       totalMeasurements: measurements.length,
-      dataSpanDays: 30,
+      dataSpanDays: overallSpanDays,
+      oldestMeasurementDaysAgo: oldestMeasurement
+        ? Math.round((now - oldestMeasurement.getTime()) / (24 * 60 * 60 * 1000))
+        : null,
+      newestMeasurementDaysAgo: newestMeasurement
+        ? Math.round((now - newestMeasurement.getTime()) / (24 * 60 * 60 * 1000))
+        : null,
     },
   };
 
@@ -113,6 +160,7 @@ export async function extractFeatures(
       slope30: summary.slope30?.slope ?? null,
       outlierCount: summary.anomalyCount,
       bmi,
+      coverage: computeCoverage(weightData, now),
     };
   }
 
@@ -145,6 +193,7 @@ export async function extractFeatures(
       slopeSys30: sysSummary?.slope30?.slope ?? null,
       slopeDia30: diaSummary?.slope30?.slope ?? null,
       pctInTarget,
+      coverage: computeCoverage([...sysData, ...diaData].sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime()), now),
     };
   }
 
@@ -156,6 +205,7 @@ export async function extractFeatures(
       avg30: summary.avg30,
       slope30: summary.slope30?.slope ?? null,
       anomalyCount: summary.anomalyCount,
+      coverage: computeCoverage(pulseData, now),
     };
   }
 
@@ -167,6 +217,7 @@ export async function extractFeatures(
       latest: summary.latest,
       avg30: summary.avg30,
       slope30: summary.slope30?.slope ?? null,
+      coverage: computeCoverage(fatData, now),
     };
   }
 
@@ -204,7 +255,6 @@ export async function extractFeatures(
 
   // Raw mode: add anonymized raw data points
   if (includeRaw) {
-    const now = Date.now();
     const rawFeatures: RawFeatures = {
       ...features,
       rawMeasurements: measurements.map((m) => ({

@@ -58,6 +58,8 @@ function getSystemPrompt(locale: SupportedLocale): string {
       "Write exactly one compact paragraph with 5-7 sentences in English.",
       "Focus on overall state and clearly mention positive and negative trends.",
       "Base your summary strictly on the provided data snapshot.",
+      "Consider the measurement time spans and data density: if too few data points exist for a metric (<5), say that not enough data is available for a qualified assessment. If data is sparse but covers a long period, still try to derive rough trends but note the limited reliability.",
+      "If the most recent measurement is more than 7 days old, mention that the data is not current.",
       "Do not include warnings, disclaimers, or references to AI/model limitations.",
       'Return valid JSON only: {"summary":"..."}',
     ].join(" ");
@@ -68,6 +70,8 @@ function getSystemPrompt(locale: SupportedLocale): string {
     "Schreibe genau einen kompakten Fließtext mit 5-7 Sätzen auf Deutsch.",
     "Fokussiere den allgemeinen Zustand und benenne positive wie negative Tendenzen klar.",
     "Nutze ausschließlich den bereitgestellten Datensnapshot.",
+    "Berücksichtige die Messzeiträume und Datendichte: Wenn zu wenige Messpunkte (<5) für eine Metrik existieren, sage dass noch nicht genügend Daten für eine fundierte Aussage vorliegen. Wenn Daten spärlich sind aber einen langen Zeitraum abdecken, leite trotzdem grobe Trends ab, weise aber auf die eingeschränkte Belastbarkeit hin.",
+    "Wenn die neueste Messung länger als 7 Tage zurückliegt, erwähne dass die Daten nicht aktuell sind.",
     "Keine Warnhinweise, keine Haftungsausschlüsse, keine Hinweise auf KI oder Modellgrenzen.",
     'Gib nur valides JSON zurück: {"summary":"..."}',
   ].join(" ");
@@ -313,11 +317,29 @@ export async function generateGeneralStatusForUser(
     }
   }
 
+  // Compute overall data coverage info
+  const oldestDay = measurements.length > 0 ? measurements[0].measuredAt : null;
+  const newestDay = measurements.length > 0 ? measurements[measurements.length - 1].measuredAt : null;
+  const totalSpanDays = oldestDay && newestDay
+    ? Math.round((newestDay.getTime() - oldestDay.getTime()) / (24 * 60 * 60 * 1000))
+    : 0;
+  const newestDaysAgo = newestDay
+    ? Math.round((Date.now() - newestDay.getTime()) / (24 * 60 * 60 * 1000))
+    : null;
+
   const snapshot = {
     locale,
     generatedForDay: todayKey,
     interpretationHint:
-      "Use trend direction and deltas. Prioritize the newest data if trends conflict.",
+      "Use trend direction and deltas. Prioritize the newest data if trends conflict. Consider dataCoverage for reliability assessment.",
+    dataCoverage: {
+      totalMeasurements: measurements.length,
+      totalSpanDays,
+      newestMeasurementDaysAgo: newestDaysAgo,
+      avgDaysBetweenMeasurements: measurements.length > 1
+        ? Math.round(totalSpanDays / (measurements.length - 1) * 10) / 10
+        : null,
+    },
     measurementSeries,
     medicationAdherence: {
       summary: summarizeSeries(

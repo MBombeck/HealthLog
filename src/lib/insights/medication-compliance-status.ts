@@ -56,6 +56,7 @@ function getSystemPrompt(locale: SupportedLocale): string {
       "Use only the latest 30 daily points and prioritize the latest day for each medication.",
       "Account for medication name, category, dose strength, and adherence details in your interpretation.",
       "Weight findings by importance: persistent misses and low adherence should be emphasized much more than minor variance.",
+      "If fewer than 5 data points exist, state that insufficient data is available for a qualified assessment. If data is sparse over a long period, still derive rough trends but note limited reliability. If the newest measurement is more than 7 days old, mention the data may not be current.",
       "Do not include warnings, disclaimers, or references to AI/model limitations.",
       'Return valid JSON only: {"summary":"...","medications":[{"medicationId":"...","summary":"..."}]}',
     ].join(" ");
@@ -68,6 +69,7 @@ function getSystemPrompt(locale: SupportedLocale): string {
     "Nutze nur die letzten 30 Tagesmesspunkte und priorisiere je Medikament den neuesten Tag.",
     "Berücksichtige in der Interpretation Medikamentenname, Kategorie, Dosisstärke und Einnahmedetails.",
     "Gewichte Aussagen nach Wichtigkeit: dauerhafte Ausfälle und niedrige Treue sollen deutlich stärker betont werden als kleine Schwankungen.",
+    "Wenn weniger als 5 Messpunkte vorliegen, sage dass noch nicht genügend Daten für eine fundierte Aussage vorhanden sind. Bei spärlichen Daten über einen langen Zeitraum leite trotzdem grobe Trends ab, weise aber auf eingeschränkte Belastbarkeit hin. Wenn die neueste Messung älter als 7 Tage ist, erwähne dass die Daten möglicherweise nicht aktuell sind.",
     "Keine Warnhinweise, keine Haftungsausschlüsse, keine Hinweise auf KI oder Modellgrenzen.",
     'Gib nur valides JSON zurück: {"summary":"...","medications":[{"medicationId":"...","summary":"..."}]}',
   ].join(" ");
@@ -306,10 +308,36 @@ export async function generateMedicationComplianceStatusForUser(
         )
       : null;
 
+  const oldestEvent =
+    medicationEvents.length > 0
+      ? medicationEvents[0].scheduledFor
+      : null;
+  const newestEvent =
+    medicationEvents.length > 0
+      ? medicationEvents[medicationEvents.length - 1].scheduledFor
+      : null;
+  const totalSpanDays =
+    oldestEvent && newestEvent
+      ? Math.round(
+          (newestEvent.getTime() - oldestEvent.getTime()) /
+            (24 * 60 * 60 * 1000),
+        )
+      : 0;
+  const newestMeasurementDaysAgo = newestEvent
+    ? Math.round(
+        (Date.now() - newestEvent.getTime()) / (24 * 60 * 60 * 1000),
+      )
+    : null;
+
   const snapshot = {
     locale,
     generatedForDay: todayKey,
     focus: "medication_compliance",
+    dataCoverage: {
+      totalMeasurements: medicationEvents.length,
+      totalSpanDays,
+      newestMeasurementDaysAgo,
+    },
     overall: {
       medicationCount: medicationSnapshots.length,
       averageCompliance30: avgCompliance30,

@@ -92,6 +92,7 @@ function getSystemPrompt(locale: SupportedLocale): string {
       "Use only the provided snapshot with the latest 30 daily points.",
       "Prioritize the newest measurement day in your interpretation.",
       "Weight findings by importance: clear trend shifts and severe BMI-class deviations should be emphasized more strongly.",
+      "If fewer than 5 data points exist, state that insufficient data is available for a qualified assessment. If data is sparse over a long period, still derive rough trends but note limited reliability. If the newest measurement is more than 7 days old, mention the data may not be current.",
       "Do not include warnings, disclaimers, or references to AI/model limitations.",
       'Return valid JSON only: {"summary":"..."}',
     ].join(" ");
@@ -104,6 +105,7 @@ function getSystemPrompt(locale: SupportedLocale): string {
     "Nutze ausschließlich den bereitgestellten Snapshot mit den letzten 30 Tagesmesspunkten.",
     "Priorisiere in der Interpretation den neuesten Messpunkt-Tag.",
     "Gewichte Aussagen nach Wichtigkeit: klare Trendwechsel und starke BMI-Abweichungen sollen stärker betont werden.",
+    "Wenn weniger als 5 Messpunkte vorliegen, sage dass noch nicht genügend Daten für eine fundierte Aussage vorhanden sind. Bei spärlichen Daten über einen langen Zeitraum leite trotzdem grobe Trends ab, weise aber auf eingeschränkte Belastbarkeit hin. Wenn die neueste Messung älter als 7 Tage ist, erwähne dass die Daten möglicherweise nicht aktuell sind.",
     "Keine Warnhinweise, keine Haftungsausschlüsse, keine Hinweise auf KI oder Modellgrenzen.",
     'Gib nur valides JSON zurück: {"summary":"..."}',
   ].join(" ");
@@ -241,10 +243,34 @@ export async function generateBmiStatusForUser(
   const previousBmi = bmiSeries.length > 1 ? (bmiSeries.at(-2) ?? null) : null;
   const latestClassification = latestBmi ? classifyBMI(latestBmi.value) : null;
 
+  const oldestMeasurement =
+    measurements.length > 0 ? measurements[0].measuredAt : null;
+  const newestMeasurement =
+    measurements.length > 0
+      ? measurements[measurements.length - 1].measuredAt
+      : null;
+  const totalSpanDays =
+    oldestMeasurement && newestMeasurement
+      ? Math.round(
+          (newestMeasurement.getTime() - oldestMeasurement.getTime()) /
+            (24 * 60 * 60 * 1000),
+        )
+      : 0;
+  const newestMeasurementDaysAgo = newestMeasurement
+    ? Math.round(
+        (Date.now() - newestMeasurement.getTime()) / (24 * 60 * 60 * 1000),
+      )
+    : null;
+
   const snapshot = {
     locale,
     generatedForDay: todayKey,
     focus: "bmi",
+    dataCoverage: {
+      totalMeasurements: measurements.length,
+      totalSpanDays,
+      newestMeasurementDaysAgo,
+    },
     bmi: {
       summary: summarizeSeries(bmiSeries),
       series: bmiSeries,
