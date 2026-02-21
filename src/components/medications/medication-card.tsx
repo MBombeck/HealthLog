@@ -395,13 +395,21 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
             tomorrow.setDate(tomorrow.getDate() + 1);
             const tomorrowStr = `${tomorrow.getFullYear()}-${tomorrow.getMonth()}-${tomorrow.getDate()}`;
 
+            const diffDays = Math.round((nextDate.getTime() - nowBerlin.getTime()) / (24 * 60 * 60 * 1000));
+
             if (nextStr === todayStr) {
               dayLabel = "Heute";
             } else if (nextStr === tomorrowStr) {
               dayLabel = "Morgen";
-            } else {
+            } else if (diffDays <= 5) {
               const weekdayLabels = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
               dayLabel = weekdayLabels[nextDate.getDay()];
+            } else {
+              dayLabel = nextDate.toLocaleDateString("de-DE", {
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+              });
             }
           }
 
