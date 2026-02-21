@@ -90,20 +90,17 @@ export default function MedicationsPage() {
 
   function openCreate() {
     setEditingMed(null);
-    setShowEditTimeline(false);
     setDialogOpen(true);
   }
 
   function openEdit(med: Medication) {
     setEditingMed(med);
-    setShowEditTimeline(false);
     setDialogOpen(true);
   }
 
   function closeDialog() {
     setDialogOpen(false);
     setEditingMed(null);
-    setShowEditTimeline(false);
   }
 
   if (authLoading) {
