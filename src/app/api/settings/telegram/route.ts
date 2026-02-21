@@ -149,6 +149,44 @@ export async function PUT(request: NextRequest) {
     data,
   });
 
+  // Sync to NotificationChannel so the dispatcher can find Telegram
+  const finalToken = trimmedToken
+    ? trimmedToken
+    : currentTokenPlain;
+  const finalChatId = trimmedChatId ?? current.telegramChatId;
+
+  if (finalToken && finalChatId) {
+    const channelConfig = encrypt(
+      JSON.stringify({ botToken: finalToken, chatId: finalChatId }),
+    );
+    await prisma.notificationChannel.upsert({
+      where: {
+        userId_type: {
+          userId: sessionData.user.id,
+          type: "TELEGRAM",
+        },
+      },
+      create: {
+        userId: sessionData.user.id,
+        type: "TELEGRAM",
+        enabled,
+        config: channelConfig,
+      },
+      update: {
+        enabled,
+        config: channelConfig,
+      },
+    });
+  } else if (!enabled) {
+    // Remove the channel record if disabled and no credentials
+    await prisma.notificationChannel.deleteMany({
+      where: {
+        userId: sessionData.user.id,
+        type: "TELEGRAM",
+      },
+    });
+  }
+
   if (!enabled && tokenForWebhook) {
     await deleteTelegramWebhook(tokenForWebhook).catch(() => {});
   }
