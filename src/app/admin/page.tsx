@@ -111,6 +111,8 @@ interface AdminSettings {
   glitchtipEnvironment: string | null;
   bugReportRepo: string | null;
   bugReportConfigured: boolean;
+  reminderLateMinutes: number;
+  reminderMissedMinutes: number;
 }
 
 export default function AdminPage() {
@@ -126,6 +128,7 @@ export default function AdminPage() {
     { id: "section-admin-services", label: t("admin.servicesGlobal") },
     { id: "section-admin-monitoring", label: t("admin.monitoring") },
     { id: "section-admin-bugreport", label: t("admin.bugReportGithub") },
+    { id: "section-admin-reminders", label: t("admin.medicationReminders") },
     { id: "section-user-management", label: t("admin.userManagement") },
     { id: "section-api-tokens", label: t("admin.apiTokens") },
     { id: "section-login-overview", label: t("admin.loginOverview") },
@@ -180,6 +183,7 @@ export default function AdminPage() {
               services: "section-admin-services",
               monitoring: "section-admin-monitoring",
               bugReport: "section-admin-bugreport",
+              reminders: "section-admin-reminders",
             }}
           />
           <UserManagementSection
@@ -317,6 +321,7 @@ function AppSettingsSection({
     services: string;
     monitoring: string;
     bugReport: string;
+    reminders: string;
   };
 }) {
   const { t } = useTranslations();
@@ -344,6 +349,8 @@ function AppSettingsSection({
   const [webPushVapidSubjectDraft, setWebPushVapidSubjectDraft] = useState<
     string | null
   >(null);
+  const [reminderLateDraft, setReminderLateDraft] = useState<number | null>(null);
+  const [reminderMissedDraft, setReminderMissedDraft] = useState<number | null>(null);
 
   const { data: settings } = useQuery({
     queryKey: ["admin", "settings"],
@@ -885,6 +892,84 @@ function AppSettingsSection({
               {t("admin.bugReportSave")}
             </Button>
           </div>
+        </div>
+
+        <Separator />
+
+        {/* ── Medication Reminders ── */}
+        <div id={ids.reminders} className="scroll-mt-28 space-y-3">
+          <div className="flex items-center gap-2">
+            <Clock className="text-muted-foreground h-4 w-4" />
+            <div>
+              <p className="text-sm font-medium">
+                {t("admin.medicationReminders")}
+              </p>
+              <p className="text-muted-foreground text-xs">
+                {t("admin.medicationRemindersDescription")}
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="admin-reminder-late" className="text-xs">
+                {t("admin.reminderLateMinutes")}
+              </Label>
+              <p className="text-muted-foreground text-xs">
+                {t("admin.reminderLateMinutesDescription")}
+              </p>
+              <Input
+                id="admin-reminder-late"
+                type="number"
+                min={15}
+                max={480}
+                value={reminderLateDraft ?? settings?.reminderLateMinutes ?? 120}
+                onChange={(e) => setReminderLateDraft(Number(e.target.value))}
+                disabled={updateSettings.isPending}
+                className="w-32"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="admin-reminder-missed" className="text-xs">
+                {t("admin.reminderMissedMinutes")}
+              </Label>
+              <p className="text-muted-foreground text-xs">
+                {t("admin.reminderMissedMinutesDescription")}
+              </p>
+              <Input
+                id="admin-reminder-missed"
+                type="number"
+                min={30}
+                max={720}
+                value={reminderMissedDraft ?? settings?.reminderMissedMinutes ?? 240}
+                onChange={(e) => setReminderMissedDraft(Number(e.target.value))}
+                disabled={updateSettings.isPending}
+                className="w-32"
+              />
+            </div>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => {
+              updateSettings.mutate(
+                {
+                  ...(reminderLateDraft != null && { reminderLateMinutes: reminderLateDraft }),
+                  ...(reminderMissedDraft != null && { reminderMissedMinutes: reminderMissedDraft }),
+                },
+                {
+                  onSuccess: () => {
+                    setReminderLateDraft(null);
+                    setReminderMissedDraft(null);
+                  },
+                },
+              );
+            }}
+            disabled={updateSettings.isPending || (reminderLateDraft == null && reminderMissedDraft == null)}
+          >
+            {updateSettings.isPending && (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            )}
+            {t("admin.reminderThresholdsSave")}
+          </Button>
         </div>
       </div>
     </div>

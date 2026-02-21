@@ -708,7 +708,14 @@
     "authLoginFailed": "Fehlgeschlagen",
     "authLogout": "Abmeldung",
     "authPasskeyRegister": "Passkey hinzugefügt",
-    "authPasskeyDelete": "Passkey gelöscht"
+    "authPasskeyDelete": "Passkey gelöscht",
+    "medicationReminders": "Medikamentenerinnerungen",
+    "medicationRemindersDescription": "Schwellenwerte für die Farbübergänge der Erinnerungs-Badges auf den Medikamentenkarten.",
+    "reminderLateMinutes": "Spät-Schwellenwert (Minuten)",
+    "reminderLateMinutesDescription": "Minuten nach Fenster-Ende bis der Badge von Gelb auf Orange wechselt.",
+    "reminderMissedMinutes": "Verpasst-Schwellenwert (Minuten)",
+    "reminderMissedMinutesDescription": "Minuten nach Fenster-Ende bis die Einnahme als verpasst gilt.",
+    "reminderThresholdsSave": "Schwellenwerte speichern"
   },
   "achievements": {
     "title": "Erfolge",
