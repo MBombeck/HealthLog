@@ -42,6 +42,9 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/src/generated ./src/generated
 
+# Install pg-boss + all transitive deps for the reminder worker (serverExternalPackage)
+RUN npm install --omit=dev --no-package-lock pg-boss@12
+
 # Install Prisma CLI + engines for runtime migrations (isolated from Next standalone tree)
 RUN mkdir -p /opt/prisma-cli && \
     cd /opt/prisma-cli && \

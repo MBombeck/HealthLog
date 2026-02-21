@@ -7,7 +7,6 @@ import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
 const bugReportSchema = z.object({
-  title: z.string().min(3, "Titel zu kurz").max(200),
   description: z.string().min(10, "Beschreibung zu kurz").max(5000),
   screenshot: z
     .string()
@@ -52,11 +51,14 @@ export async function POST(request: NextRequest) {
     return apiError(parsed.error.issues[0].message, 422);
   }
 
-  const { title, description, screenshot } = parsed.data;
+  const { description, screenshot } = parsed.data;
+
+  const dateStr = new Date().toLocaleString("de-DE", { timeZone: "Europe/Berlin" });
+  const title = `Bug Report – ${dateStr}`;
 
   // Build issue body
   let issueBody = `**Gemeldet von:** ${session.user.username}\n`;
-  issueBody += `**Datum:** ${new Date().toLocaleString("de-DE", { timeZone: "Europe/Berlin" })}\n\n`;
+  issueBody += `**Datum:** ${dateStr}\n\n`;
   issueBody += `## Beschreibung\n\n${description}\n`;
   issueBody += `\n---\n*Erstellt über die HealthLog Bugreport-Funktion*`;
 

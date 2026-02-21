@@ -3,14 +3,12 @@
 import { useState, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Upload, X, CheckCircle2, ImageIcon, Bug } from "lucide-react";
 import { useTranslations } from "@/lib/i18n/context";
 
 export default function BugReportPage() {
   const { isAuthenticated } = useAuth();
-  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [screenshotName, setScreenshotName] = useState<string | null>(null);
@@ -63,7 +61,6 @@ export default function BugReportPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title,
           description,
           ...(screenshot ? { screenshot } : {}),
         }),
@@ -75,7 +72,6 @@ export default function BugReportPage() {
           type: "success",
           message: t("bugreport.success"),
         });
-        setTitle("");
         setDescription("");
         removeScreenshot();
       } else {
@@ -117,19 +113,6 @@ export default function BugReportPage() {
 
       <div className="bg-card border-border w-full rounded-xl border p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="bug-title">{t("bugreport.bugTitle")}</Label>
-            <Input
-              id="bug-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder=""
-              required
-              minLength={3}
-              maxLength={200}
-            />
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="bug-desc">{t("bugreport.description")}</Label>
             <textarea
