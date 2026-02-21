@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { getWorkerStatus } from "@/lib/jobs/worker-status";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,15 @@ export async function GET() {
     checks.database = "connected";
   } catch {
     checks.database = "disconnected";
+    checks.status = "degraded";
+  }
+
+  const worker = getWorkerStatus();
+  checks.worker = worker.running ? "running" : "stopped";
+  if (worker.lastHeartbeat) {
+    checks.workerLastHeartbeat = worker.lastHeartbeat;
+  }
+  if (!worker.running) {
     checks.status = "degraded";
   }
 

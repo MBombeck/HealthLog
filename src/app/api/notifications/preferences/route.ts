@@ -5,6 +5,7 @@ import { apiSuccess, apiError } from "@/lib/api-response";
 import { notificationPreferenceSchema } from "@/lib/validations/notifications";
 import { EVENT_TYPES, CHANNEL_TYPE_LABELS } from "@/lib/notifications/types";
 import type { ChannelType } from "@/lib/notifications/types";
+import { decrypt, encrypt } from "@/lib/crypto";
 
 export async function GET() {
   const session = await getSession();
@@ -24,6 +25,46 @@ export async function GET() {
     where: { userId: session.user.id },
     include: { preferences: true },
   });
+
+  // Auto-migrate legacy Telegram config from User model if no channel record exists
+  const hasTelegramChannel = channels.some((ch) => ch.type === "TELEGRAM");
+  if (!hasTelegramChannel) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: {
+          telegramBotToken: true,
+          telegramChatId: true,
+          telegramEnabled: true,
+        },
+      });
+
+      if (user?.telegramBotToken && user.telegramChatId) {
+        const botToken = decrypt(user.telegramBotToken);
+        const channelConfig = encrypt(
+          JSON.stringify({ botToken, chatId: user.telegramChatId }),
+        );
+
+        const created = await prisma.notificationChannel.upsert({
+          where: {
+            userId_type: { userId: session.user.id, type: "TELEGRAM" },
+          },
+          create: {
+            userId: session.user.id,
+            type: "TELEGRAM",
+            enabled: user.telegramEnabled ?? true,
+            config: channelConfig,
+          },
+          update: {},
+          include: { preferences: true },
+        });
+
+        channels.push(created);
+      }
+    } catch (err) {
+      console.error("[preferences] Legacy Telegram migration failed:", err);
+    }
+  }
 
   const channelData = channels.map((ch) => ({
     id: ch.id,

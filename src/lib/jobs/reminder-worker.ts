@@ -35,9 +35,15 @@ function parseTimeToMinutes(value: string): number {
 
 const DATABASE_URL = process.env.DATABASE_URL!;
 
-function createPrisma() {
-  const adapter = new PrismaPg({ connectionString: DATABASE_URL });
-  return new PrismaClient({ adapter });
+// Reuse a single PrismaClient across all job handlers to avoid connection pool exhaustion
+let workerPrisma: PrismaClient | null = null;
+
+function getWorkerPrisma(): PrismaClient {
+  if (!workerPrisma) {
+    const adapter = new PrismaPg({ connectionString: DATABASE_URL });
+    workerPrisma = new PrismaClient({ adapter });
+  }
+  return workerPrisma;
 }
 
 const QUEUE_NAME = "medication-reminder-check";
@@ -135,7 +141,7 @@ function getDayOfWeekInTz(now: Date, tz: string): number {
  */
 async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
   void jobs;
-  const prisma = createPrisma();
+  const prisma = getWorkerPrisma();
   try {
     recordReminderCheck();
     const now = new Date();
@@ -268,13 +274,20 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
             );
 
             if (med.notificationsEnabled) {
-              await dispatchNotification({
-                eventType: "MEDICATION_REMINDER",
-                userId: med.user.id,
-                title: `Verpasst: ${med.name}`,
-                message: `<b>${med.name}</b> (${doseInfo}, ${timeWindow}) wurde als verpasst markiert.`,
-                metadata: { medicationId: med.id },
-              });
+              try {
+                await dispatchNotification({
+                  eventType: "MEDICATION_REMINDER",
+                  userId: med.user.id,
+                  title: `Verpasst: ${med.name}`,
+                  message: `<b>${med.name}</b> (${doseInfo}, ${timeWindow}) wurde als verpasst markiert.`,
+                  metadata: { medicationId: med.id },
+                });
+              } catch (notifErr) {
+                console.error(
+                  `[reminder] Notification dispatch failed for missed dose ${med.name}:`,
+                  notifErr,
+                );
+              }
             }
           }
         } else if (med.notificationsEnabled) {
@@ -284,34 +297,49 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
               `[reminder] Pre-end reminder (${minutesToEnd} min left): ${med.name} for user ${med.user.id}, schedule ${schedule.windowStart}-${schedule.windowEnd}`,
             );
 
-            await dispatchNotification({
-              eventType: "MEDICATION_REMINDER",
-              userId: med.user.id,
-              title: `Erinnerung: ${med.name}`,
-              message: `Erinnerung: <b>${med.name}</b> (${doseInfo}, ${timeWindow}) — Zeitfenster endet in ${minutesToEnd} Min.`,
-              metadata: { medicationId: med.id },
-            });
+            try {
+              await dispatchNotification({
+                eventType: "MEDICATION_REMINDER",
+                userId: med.user.id,
+                title: `Erinnerung: ${med.name}`,
+                message: `Erinnerung: <b>${med.name}</b> (${doseInfo}, ${timeWindow}) — Zeitfenster endet in ${minutesToEnd} Min.`,
+                metadata: { medicationId: med.id },
+              });
+            } catch (notifErr) {
+              console.error(
+                `[reminder] Notification dispatch failed for pre-end reminder ${med.name}:`,
+                notifErr,
+              );
+            }
           } else {
             // ── Late but not yet missed: past windowEnd ──
             console.log(
               `[reminder] Late dose (${minutesPastEnd} min): ${med.name} for user ${med.user.id}, schedule ${schedule.windowStart}-${schedule.windowEnd}`,
             );
 
-            await dispatchNotification({
-              eventType: "MEDICATION_REMINDER",
-              userId: med.user.id,
-              title: `Überfällig: ${med.name}`,
-              message: `Überfällig: <b>${med.name}</b> (${doseInfo}, ${timeWindow}) — seit ${minutesPastEnd} Min überfällig.`,
-              metadata: { medicationId: med.id },
-            });
+            try {
+              await dispatchNotification({
+                eventType: "MEDICATION_REMINDER",
+                userId: med.user.id,
+                title: `Überfällig: ${med.name}`,
+                message: `Überfällig: <b>${med.name}</b> (${doseInfo}, ${timeWindow}) — seit ${minutesPastEnd} Min überfällig.`,
+                metadata: { medicationId: med.id },
+              });
+            } catch (notifErr) {
+              console.error(
+                `[reminder] Notification dispatch failed for late dose ${med.name}:`,
+                notifErr,
+              );
+            }
           }
         }
 
         schedulesProcessed++;
       }
     }
-  } finally {
-    await prisma.$disconnect();
+  } catch (err) {
+    console.error("[reminder] handleReminderCheck failed:", err);
+    recordError();
   }
 }
 
@@ -321,7 +349,7 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
  */
 async function handleWithingsFallbackSync(jobs: Job<WithingsSyncPayload>[]) {
   void jobs;
-  const prisma = createPrisma();
+  const prisma = getWorkerPrisma();
   try {
     recordWithingsSync();
     const connections = await prisma.withingsConnection.findMany({
@@ -351,14 +379,15 @@ async function handleWithingsFallbackSync(jobs: Job<WithingsSyncPayload>[]) {
     console.log(
       `[withings] Fallback sync completed: ${usersSynced}/${connections.length} users, ${measurementsImported} measurements imported`,
     );
-  } finally {
-    await prisma.$disconnect();
+  } catch (err) {
+    console.error("[withings] handleWithingsFallbackSync failed:", err);
+    recordError();
   }
 }
 
 async function handleGeneralStatusGenerate(jobs: Job<GeneralStatusPayload>[]) {
   void jobs;
-  const prisma = createPrisma();
+  const prisma = getWorkerPrisma();
   try {
     recordInsightsRun();
     const users = await prisma.user.findMany({
@@ -392,8 +421,9 @@ async function handleGeneralStatusGenerate(jobs: Job<GeneralStatusPayload>[]) {
     console.log(
       `[insights.general-status] completed: generated=${generated}, failed=${failed}, total=${users.length}`,
     );
-  } finally {
-    await prisma.$disconnect();
+  } catch (err) {
+    console.error("[insights.general-status] handler failed:", err);
+    recordError();
   }
 }
 
@@ -401,7 +431,7 @@ async function handleBloodPressureStatusGenerate(
   jobs: Job<BloodPressureStatusPayload>[],
 ) {
   void jobs;
-  const prisma = createPrisma();
+  const prisma = getWorkerPrisma();
   try {
     const users = await prisma.user.findMany({
       where: { openaiKeyEncrypted: { not: null } },
@@ -434,14 +464,15 @@ async function handleBloodPressureStatusGenerate(
     console.log(
       `[insights.blood-pressure-status] completed: generated=${generated}, failed=${failed}, total=${users.length}`,
     );
-  } finally {
-    await prisma.$disconnect();
+  } catch (err) {
+    console.error("[insights.blood-pressure-status] handler failed:", err);
+    recordError();
   }
 }
 
 async function handleWeightStatusGenerate(jobs: Job<WeightStatusPayload>[]) {
   void jobs;
-  const prisma = createPrisma();
+  const prisma = getWorkerPrisma();
   try {
     const users = await prisma.user.findMany({
       where: { openaiKeyEncrypted: { not: null } },
@@ -474,14 +505,15 @@ async function handleWeightStatusGenerate(jobs: Job<WeightStatusPayload>[]) {
     console.log(
       `[insights.weight-status] completed: generated=${generated}, failed=${failed}, total=${users.length}`,
     );
-  } finally {
-    await prisma.$disconnect();
+  } catch (err) {
+    console.error("[insights.weight-status] handler failed:", err);
+    recordError();
   }
 }
 
 async function handlePulseStatusGenerate(jobs: Job<PulseStatusPayload>[]) {
   void jobs;
-  const prisma = createPrisma();
+  const prisma = getWorkerPrisma();
   try {
     const users = await prisma.user.findMany({
       where: { openaiKeyEncrypted: { not: null } },
@@ -514,14 +546,15 @@ async function handlePulseStatusGenerate(jobs: Job<PulseStatusPayload>[]) {
     console.log(
       `[insights.pulse-status] completed: generated=${generated}, failed=${failed}, total=${users.length}`,
     );
-  } finally {
-    await prisma.$disconnect();
+  } catch (err) {
+    console.error("[insights.pulse-status] handler failed:", err);
+    recordError();
   }
 }
 
 async function handleBmiStatusGenerate(jobs: Job<BmiStatusPayload>[]) {
   void jobs;
-  const prisma = createPrisma();
+  const prisma = getWorkerPrisma();
   try {
     const users = await prisma.user.findMany({
       where: { openaiKeyEncrypted: { not: null } },
@@ -554,8 +587,9 @@ async function handleBmiStatusGenerate(jobs: Job<BmiStatusPayload>[]) {
     console.log(
       `[insights.bmi-status] completed: generated=${generated}, failed=${failed}, total=${users.length}`,
     );
-  } finally {
-    await prisma.$disconnect();
+  } catch (err) {
+    console.error("[insights.bmi-status] handler failed:", err);
+    recordError();
   }
 }
 
@@ -563,7 +597,7 @@ async function handleMedicationComplianceStatusGenerate(
   jobs: Job<MedicationComplianceStatusPayload>[],
 ) {
   void jobs;
-  const prisma = createPrisma();
+  const prisma = getWorkerPrisma();
   try {
     const users = await prisma.user.findMany({
       where: { openaiKeyEncrypted: { not: null } },
@@ -596,8 +630,9 @@ async function handleMedicationComplianceStatusGenerate(
     console.log(
       `[insights.medication-compliance-status] completed: generated=${generated}, failed=${failed}, total=${users.length}`,
     );
-  } finally {
-    await prisma.$disconnect();
+  } catch (err) {
+    console.error("[insights.medication-compliance-status] handler failed:", err);
+    recordError();
   }
 }
 
