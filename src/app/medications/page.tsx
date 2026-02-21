@@ -58,6 +58,7 @@ interface Medication {
   active: boolean;
   notificationsEnabled: boolean;
   pausedAt: string | null;
+  lastTakenAt: string | null;
   schedules: Schedule[];
 }
 
