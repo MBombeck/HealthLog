@@ -11,6 +11,7 @@ import type { Job } from "pg-boss";
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
+import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import { syncUserMeasurements } from "@/lib/withings/sync";
 import { generateGeneralStatusForUser } from "@/lib/insights/general-status";
 import { generateBloodPressureStatusForUser } from "@/lib/insights/blood-pressure-status";
@@ -77,6 +78,44 @@ interface MedicationComplianceStatusPayload {
 }
 
 /**
+ * Get the start and end of "today" in the user's timezone, returned as UTC Dates.
+ * Example: For Europe/Berlin (UTC+1) at 2026-02-21 10:00 Berlin,
+ * returns start=2026-02-20T23:00:00Z, end=2026-02-21T22:59:59.999Z
+ */
+function getUserTodayBounds(
+  now: Date,
+  tz: string,
+): { start: Date; end: Date } {
+  // Get the user's local time representation to compute the offset
+  const localStr = now.toLocaleString("en-US", { timeZone: tz });
+  const localDate = new Date(localStr);
+
+  // Offset in ms (positive = user is ahead of UTC)
+  const offsetMs =
+    Math.round((localDate.getTime() - now.getTime()) / 60000) * 60000;
+
+  // User's local midnight
+  const localMidnight = new Date(localDate);
+  localMidnight.setHours(0, 0, 0, 0);
+
+  // Convert back to UTC
+  const start = new Date(localMidnight.getTime() - offsetMs);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000 - 1);
+
+  return { start, end };
+}
+
+/**
+ * Get the day of the week (0=Sun..6=Sat) in the user's timezone.
+ */
+function getDayOfWeekInTz(now: Date, tz: string): number {
+  const localDate = new Date(
+    now.toLocaleString("en-US", { timeZone: tz }),
+  );
+  return localDate.getDay();
+}
+
+/**
  * Check all active medications for each user and find overdue doses.
  * A dose is overdue when current time is past windowEnd and no intake event
  * exists for today in that schedule window.
@@ -86,11 +125,6 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
   const prisma = createPrisma();
   try {
     const now = new Date();
-    const todayStart = new Date(now);
-    todayStart.setHours(0, 0, 0, 0);
-
-    const todayEnd = new Date(now);
-    todayEnd.setHours(23, 59, 59, 999);
 
     // Get all active medications with schedules
     const medications = await prisma.medication.findMany({
@@ -107,58 +141,95 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
     });
 
     for (const med of medications) {
+      const userTz = med.user.timezone || "Europe/Berlin";
+      const { start: todayStart, end: todayEnd } = getUserTodayBounds(
+        now,
+        userTz,
+      );
+
       const currentTime = now.toLocaleTimeString("de-DE", {
-        timeZone: med.user.timezone || "Europe/Berlin",
+        timeZone: userTz,
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
       });
 
-      for (const schedule of med.schedules) {
-        // Only check if we're past the windowEnd
-        if (currentTime <= schedule.windowEnd) continue;
+      const todayDow = getDayOfWeekInTz(now, userTz);
 
-        // Check if there's already an intake event for today in this window
-        const existingEvent = await prisma.medicationIntakeEvent.findFirst({
-          where: {
-            medicationId: med.id,
+      // Determine which schedules have passed their window today
+      const passedSchedules = med.schedules.filter((schedule: { windowStart: string; windowEnd: string; dose: string | null; daysOfWeek: string | null }) => {
+        // Check if past window end
+        if (currentTime <= schedule.windowEnd) return false;
+
+        // Check day-of-week / recurrence constraints
+        const recurrence = parseScheduleRecurrence(schedule.daysOfWeek);
+        if (
+          recurrence.daysOfWeek.length > 0 &&
+          !recurrence.daysOfWeek.includes(todayDow)
+        ) {
+          return false;
+        }
+
+        return true;
+      });
+
+      if (passedSchedules.length === 0) continue;
+
+      // Count existing intake events for this medication today (user's timezone)
+      const eventCount = await prisma.medicationIntakeEvent.count({
+        where: {
+          medicationId: med.id,
+          userId: med.user.id,
+          scheduledFor: { gte: todayStart, lte: todayEnd },
+        },
+      });
+
+      // If we already have enough events for all passed schedules, skip
+      const missedCount = passedSchedules.length - eventCount;
+      if (missedCount <= 0) continue;
+
+      // Pick the most recent N missed schedules (latest windowEnd first)
+      const missedSchedules = [...passedSchedules]
+        .sort((a, b) => b.windowEnd.localeCompare(a.windowEnd))
+        .slice(0, missedCount);
+
+      for (const schedule of missedSchedules) {
+        // Set scheduledFor to the schedule's window start time in UTC
+        const [h, m] = schedule.windowStart.split(":").map(Number);
+        const scheduledFor = new Date(
+          todayStart.getTime() + h * 3600000 + m * 60000,
+        );
+
+        // Create a "missed" event
+        await prisma.medicationIntakeEvent.create({
+          data: {
             userId: med.user.id,
-            scheduledFor: { gte: todayStart, lte: todayEnd },
+            medicationId: med.id,
+            scheduledFor,
+            takenAt: null,
+            skipped: false,
+            source: "REMINDER",
           },
         });
 
-        if (!existingEvent) {
-          // Create a "missed" event
-          await prisma.medicationIntakeEvent.create({
-            data: {
-              userId: med.user.id,
-              medicationId: med.id,
-              scheduledFor: now,
-              takenAt: null,
-              skipped: false,
-              source: "REMINDER",
-            },
-          });
+        console.log(
+          `[reminder] Missed dose: ${med.name} for user ${med.user.id}, schedule ${schedule.windowStart}-${schedule.windowEnd}`,
+        );
 
-          console.log(
-            `[reminder] Missed dose: ${med.name} for user ${med.user.id}, schedule ${schedule.windowStart}-${schedule.windowEnd}`,
-          );
-
-          if (!med.notificationsEnabled) {
-            continue;
-          }
-
-          // Send notification via dispatcher (best-effort, respects user preferences)
-          const doseInfo = schedule.dose ?? med.dose;
-          const timeWindow = `${schedule.windowStart}–${schedule.windowEnd}`;
-          await dispatchNotification({
-            eventType: "MEDICATION_REMINDER",
-            userId: med.user.id,
-            title: `Erinnerung: ${med.name}`,
-            message: `Erinnerung: <b>${med.name}</b> (${doseInfo}, ${timeWindow}) wurde noch nicht als eingenommen markiert.`,
-            metadata: { medicationId: med.id },
-          });
+        if (!med.notificationsEnabled) {
+          continue;
         }
+
+        // Send notification via dispatcher (best-effort, respects user preferences)
+        const doseInfo = schedule.dose ?? med.dose;
+        const timeWindow = `${schedule.windowStart}–${schedule.windowEnd}`;
+        await dispatchNotification({
+          eventType: "MEDICATION_REMINDER",
+          userId: med.user.id,
+          title: `Erinnerung: ${med.name}`,
+          message: `Erinnerung: <b>${med.name}</b> (${doseInfo}, ${timeWindow}) wurde noch nicht als eingenommen markiert.`,
+          metadata: { medicationId: med.id },
+        });
       }
     }
   } finally {
