@@ -47,24 +47,29 @@ export default function IntakeHistoryPage({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="text-muted-foreground -ml-2 gap-1"
+        asChild
+      >
+        <Link href="/medications">
+          <ArrowLeft className="h-4 w-4" />
+          Zurück
+        </Link>
+      </Button>
+
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-            <Link href="/medications">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              {t("medications.intakeHistoryTitle")}
-            </h1>
-            {medication && (
-              <p className="text-muted-foreground text-sm">
-                {medication.name} — {medication.dose}
-              </p>
-            )}
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {t("medications.intakeHistoryTitle")}
+          </h1>
+          {medication && (
+            <p className="text-muted-foreground text-sm">
+              {medication.name} — {medication.dose}
+            </p>
+          )}
         </div>
         <Button onClick={() => setCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />

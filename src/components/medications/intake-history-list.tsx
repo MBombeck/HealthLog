@@ -372,7 +372,7 @@ export function IntakeHistoryList({ medicationId, createOpen, onCreateOpenChange
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="flex items-center justify-end">
           {data?.meta.total !== undefined && (
             <span className="text-muted-foreground text-sm">
