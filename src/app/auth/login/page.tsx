@@ -160,15 +160,15 @@ export default function LoginPage() {
           ) : (
             <form onSubmit={handlePasswordLogin} className="space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="email">{t("auth.email")}</Label>
+                <Label htmlFor="email">{t("auth.emailOrUsername")}</Label>
                 <Input
                   id="email"
-                  type="email"
+                  type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  autoComplete="email"
-                  placeholder={t("auth.emailPlaceholder")}
+                  autoComplete="username"
+                  placeholder={t("auth.emailOrUsernamePlaceholder")}
                 />
               </div>
               <div className="space-y-2">

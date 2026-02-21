@@ -3,10 +3,13 @@ import { createSession } from "@/lib/auth/session";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
+import { ensureDbCompatibility } from "@/lib/db-compat";
 import { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
+    await ensureDbCompatibility();
+
     const body = await request.json();
     const { challengeId, credential } = body;
 

@@ -62,6 +62,7 @@ All core milestones are complete:
 | Security: password change          | Added self-service password change in Settings > Security (`/api/auth/password`, strength check, audit-log action, localized UI).                                                                                         |
 | Global service gating + API master switch | Added global service availability API for user settings visibility, introduced admin `apiGlobal` toggle, and enforced backend API shutdown (`/api/tokens`, `/api/ingest/medication`, per-medication API endpoint). |
 | Monitoring integrations               | Added configurable Umami + Glitchtip integrations in Admin settings, app-level runtime activation, Umami script proxy endpoint, and Glitchtip client error forwarding endpoint. |
+| Auth upgrade compatibility            | Hardened update path for older deployments: login supports email/username again, passkey origin accepts APP_URL/NEXT_PUBLIC_APP_URL variants, and startup compatibility guard auto-adds critical legacy DB columns/tables. |
 
 ## Open Tasks
 

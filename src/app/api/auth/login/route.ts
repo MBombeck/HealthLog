@@ -5,6 +5,7 @@ import { createSession } from "@/lib/auth/session";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { ensureDbCompatibility } from "@/lib/db-compat";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -21,6 +22,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    await ensureDbCompatibility();
+
     const body = await request.json();
     const parsed = loginPasswordSchema.safeParse(body);
 
@@ -29,13 +32,21 @@ export async function POST(request: NextRequest) {
     }
 
     const { email, password } = parsed.data;
+    const identifier = email.trim();
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: identifier, mode: "insensitive" } },
+          { username: { equals: identifier, mode: "insensitive" } },
+        ],
+      },
+    });
 
     if (!user || !user.passwordHash) {
       await auditLog("auth.login.failed", {
         ipAddress: ip,
-        details: { email, reason: "user_not_found_or_no_password" },
+        details: { identifier, reason: "user_not_found_or_no_password" },
       });
       return apiError("Ungültige Anmeldedaten", 401);
     }

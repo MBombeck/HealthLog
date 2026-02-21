@@ -5,6 +5,7 @@ import { createSession } from "@/lib/auth/session";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { ensureDbCompatibility } from "@/lib/db-compat";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -22,13 +23,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Check if registration is enabled
+    await ensureDbCompatibility();
+
+    const userCount = await prisma.user.count();
+
+    // Check if registration is enabled.
+    // Safety valve: when there are zero users, always allow bootstrap registration.
     let registrationEnabled = true;
     try {
       const settings = await prisma.appSettings.findUnique({
         where: { id: "singleton" },
       });
-      if (settings && !settings.registrationEnabled) {
+      if (settings && !settings.registrationEnabled && userCount > 0) {
         registrationEnabled = false;
       }
     } catch {
@@ -74,7 +80,6 @@ export async function POST(request: NextRequest) {
     const passwordHash = await hashPassword(password);
 
     // First user becomes admin
-    const userCount = await prisma.user.count();
     const role = userCount === 0 ? "ADMIN" : "USER";
 
     // Create user

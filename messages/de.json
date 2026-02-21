@@ -64,6 +64,8 @@
     "password": "Passwort",
     "email": "E-Mail-Adresse",
     "emailPlaceholder": "name@beispiel.de",
+    "emailOrUsername": "E-Mail-Adresse oder Benutzername",
+    "emailOrUsernamePlaceholder": "name@beispiel.de oder benutzername",
     "loginWithPasskey": "Mit Passkey anmelden",
     "loginWithPassword": "Mit Passwort anmelden",
     "noAccount": "Noch kein Konto?",

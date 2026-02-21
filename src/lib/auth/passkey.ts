@@ -25,13 +25,36 @@ async function cleanupExpiredChallenges() {
   });
 }
 
-function getRpId(): string {
-  const url = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  return new URL(url).hostname;
+function getConfiguredOrigins(): string[] {
+  const candidates = [
+    process.env.APP_URL,
+    process.env.NEXT_PUBLIC_APP_URL,
+    "http://localhost:3000",
+  ]
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value));
+
+  const validOrigins = candidates
+    .map((value) => {
+      try {
+        return new URL(value).origin;
+      } catch {
+        return null;
+      }
+    })
+    .filter((value): value is string => Boolean(value));
+
+  return Array.from(new Set(validOrigins));
 }
 
-function getOrigin(): string {
-  return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+function getRpId(): string {
+  const origins = getConfiguredOrigins();
+  return new URL(origins[0]).hostname;
+}
+
+function getExpectedOrigin(): string | string[] {
+  const origins = getConfiguredOrigins();
+  return origins.length === 1 ? origins[0] : origins;
 }
 
 // ── Registration ─────────────────────────────────────────
@@ -92,7 +115,7 @@ export async function verifyRegistration(
     const verification = await verifyRegistrationResponse({
       response,
       expectedChallenge: challenge.challenge,
-      expectedOrigin: getOrigin(),
+      expectedOrigin: getExpectedOrigin(),
       expectedRPID: getRpId(),
     });
 
@@ -171,7 +194,7 @@ export async function verifyAuthentication(
     const verification = await verifyAuthenticationResponse({
       response,
       expectedChallenge: challenge.challenge,
-      expectedOrigin: getOrigin(),
+      expectedOrigin: getExpectedOrigin(),
       expectedRPID: getRpId(),
       credential: {
         id: passkey.credentialId,
