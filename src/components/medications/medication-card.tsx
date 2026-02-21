@@ -402,7 +402,7 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
             } else if (nextStr === tomorrowStr) {
               dayLabel = "Morgen";
             } else if (diffDays <= 5) {
-              const weekdayLabels = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+              const weekdayLabels = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
               dayLabel = weekdayLabels[nextDate.getDay()];
             } else {
               dayLabel = nextDate.toLocaleDateString("de-DE", {
