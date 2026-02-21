@@ -5,6 +5,8 @@ import {
   editMessageReplyMarkup,
   sendTelegramMessage,
 } from "@/lib/telegram";
+import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/api-response";
 import { NextRequest, NextResponse } from "next/server";
 
 interface TelegramUpdate {
@@ -325,6 +327,15 @@ async function handleTextMessage(update: TelegramUpdate) {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  const rl = checkRateLimit(`telegram-webhook:${ip}`, 120, 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { status: "rate_limited" },
+      { status: 429, headers: rateLimitHeaders(rl) },
+    );
+  }
+
   if (!hasValidSecret(request)) {
     return NextResponse.json({ status: "unauthorized" }, { status: 401 });
   }

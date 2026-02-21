@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/db";
 import { syncUserMeasurements } from "@/lib/withings/sync";
+import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/api-response";
 import { NextRequest, NextResponse } from "next/server";
 
 function hasValidWebhookSecret(request: NextRequest): boolean {
@@ -19,6 +21,15 @@ function hasValidWebhookSecret(request: NextRequest): boolean {
  * The webhook sends: userid, startdate, enddate, appli
  */
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  const rl = checkRateLimit(`withings-webhook:${ip}`, 30, 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { status: "rate_limited" },
+      { status: 429, headers: rateLimitHeaders(rl) },
+    );
+  }
+
   if (!hasValidWebhookSecret(request)) {
     return NextResponse.json({ status: "unauthorized" }, { status: 401 });
   }

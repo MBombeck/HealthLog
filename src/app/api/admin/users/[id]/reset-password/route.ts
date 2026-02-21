@@ -3,12 +3,22 @@ import { requireAdmin } from "@/lib/auth/session";
 import { hashPassword, checkPasswordStrength } from "@/lib/auth/password";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
-import { NextRequest } from "next/server";
+import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ip = getClientIp(request);
+  const rl = checkRateLimit(`admin-reset-pw:${ip}`, 10, 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { data: null, error: "Rate limit exceeded" },
+      { status: 429, headers: rateLimitHeaders(rl) },
+    );
+  }
+
   const admin = await requireAdmin();
   if (!admin) return apiError("Nicht berechtigt", 403);
 

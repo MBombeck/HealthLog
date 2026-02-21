@@ -2,7 +2,8 @@ import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth/session";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
-import { NextRequest } from "next/server";
+import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,15 @@ export const dynamic = "force-dynamic";
  * Keeps users/passkeys so access to the app remains possible.
  */
 export async function DELETE(request: NextRequest) {
+  const ip = getClientIp(request);
+  const rl = checkRateLimit(`admin-data-delete:${ip}`, 5, 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { data: null, error: "Rate limit exceeded" },
+      { status: 429, headers: rateLimitHeaders(rl) },
+    );
+  }
+
   const admin = await requireAdmin();
   if (!admin) return apiError("Nicht berechtigt", 403);
 
