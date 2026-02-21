@@ -183,16 +183,16 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
   );
   const hasMultipleSchedules = sortedSchedules.length > 1;
   const nowBerlin = toBerlinDate(new Date());
-  const nextScheduleId = hasMultipleSchedules
+  const nextSchedule = sortedSchedules.length > 0
     ? sortedSchedules
         .map((schedule) => ({
-          id: schedule.id,
+          schedule,
           nextAt: getNextOccurrenceTimestamp(schedule, nowBerlin),
         }))
-        .filter((entry): entry is { id: string; nextAt: number } =>
+        .filter((entry): entry is { schedule: Schedule; nextAt: number } =>
           Number.isFinite(entry.nextAt),
         )
-        .sort((a, b) => a.nextAt - b.nextAt)[0]?.id ?? null
+        .sort((a, b) => a.nextAt - b.nextAt)[0]?.schedule ?? sortedSchedules[0]
     : null;
 
   function formatLastTakenAt(value: string): string {
@@ -260,28 +260,20 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
       </CardHeader>
 
       <CardContent className="space-y-3.5">
-        {/* Schedule badges */}
-        <div className="flex flex-wrap gap-1.5">
-          {sortedSchedules.map((s) => {
-            const dayLabels = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-            const recurrence = parseScheduleRecurrence(s.daysOfWeek);
-            const days =
-              recurrence.daysOfWeek.length > 0
-                ? recurrence.daysOfWeek.map((d) => dayLabels[d])
-                : null;
-            const isNextSchedule = hasMultipleSchedules && s.id === nextScheduleId;
-            return (
-              <Badge
-                key={s.id}
-                variant="secondary"
-                className={
-                  isNextSchedule
-                    ? "border-dracula-yellow/40 bg-dracula-yellow/15 text-dracula-yellow gap-1 border"
-                    : "gap-1"
-                }
-              >
+        {/* Next schedule badge */}
+        {nextSchedule && (() => {
+          const s = nextSchedule;
+          const dayLabels = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+          const recurrence = parseScheduleRecurrence(s.daysOfWeek);
+          const days =
+            recurrence.daysOfWeek.length > 0
+              ? recurrence.daysOfWeek.map((d) => dayLabels[d])
+              : null;
+          return (
+            <div className="flex flex-wrap gap-1.5">
+              <Badge variant="secondary" className="gap-1">
                 <Clock className="h-3 w-3" />
-                {isNextSchedule && <span className="font-semibold">Nächstes:</span>}
+                {hasMultipleSchedules && <span className="font-semibold">Nächstes:</span>}
                 {s.label ? `${s.label}: ` : ""}
                 {formatTimeWindowRange(s.windowStart, s.windowEnd)}
                 {recurrence.intervalWeeks > 1 && (
@@ -300,9 +292,9 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
                   </span>
                 )}
               </Badge>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })()}
 
         {/* Compliance bar */}
         {medication.active && compliance && (
