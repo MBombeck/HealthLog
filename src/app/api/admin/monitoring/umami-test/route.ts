@@ -5,18 +5,27 @@ import { getPublicMonitoringSettings } from "@/lib/monitoring-settings";
 
 export const dynamic = "force-dynamic";
 
-function resolveUmamiSendUrl(scriptUrl: string | null): string | null {
-  if (!scriptUrl) return null;
+function resolveUmamiSendUrls(scriptUrl: string | null): string[] {
+  if (!scriptUrl) return [];
   try {
     const parsed = new URL(scriptUrl);
-    const segments = parsed.pathname.split("/").filter(Boolean);
+    const origin = parsed.origin;
+    const pathSegments = parsed.pathname.split("/").filter(Boolean);
+    const segments = [...pathSegments];
+
     if (segments.length > 0 && segments[segments.length - 1]?.includes(".")) {
       segments.pop();
     }
+
     const prefix = segments.length > 0 ? `/${segments.join("/")}` : "";
-    return `${parsed.origin}${prefix}/api/send`;
+    const candidates = [
+      `${origin}${prefix}/api/send`,
+      `${origin}/api/send`,
+      `${origin}/umami/api/send`,
+    ];
+    return Array.from(new Set(candidates));
   } catch {
-    return null;
+    return [];
   }
 }
 
@@ -48,8 +57,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const targetUrl = resolveUmamiSendUrl(settings.umamiScriptUrl);
-  if (!targetUrl) {
+  const targetUrls = resolveUmamiSendUrls(settings.umamiScriptUrl);
+  if (targetUrls.length === 0) {
     return apiError("Umami Script-URL ist ungültig", 422);
   }
 
@@ -72,29 +81,40 @@ export async function POST(request: NextRequest) {
   };
 
   try {
-    const upstream = await fetch(targetUrl, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "user-agent": "healthlog-admin-monitoring-test",
-      },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
+    let lastStatus = 404;
+    let lastDetails = "";
 
-    if (!upstream.ok) {
-      const details = await upstream.text().catch(() => "");
-      console.error("Umami test event rejected:", upstream.status, details);
-      return apiError(
-        `Umami-Testevent wurde abgelehnt (HTTP ${upstream.status})`,
-        502,
-      );
+    for (const targetUrl of targetUrls) {
+      const upstream = await fetch(targetUrl, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "user-agent": "healthlog-admin-monitoring-test",
+        },
+        body: JSON.stringify(payload),
+        cache: "no-store",
+      });
+
+      if (upstream.ok) {
+        return apiSuccess({
+          sent: true,
+          message: "Umami-Testevent wurde gesendet",
+        });
+      }
+
+      lastStatus = upstream.status;
+      lastDetails = await upstream.text().catch(() => "");
+
+      // Try next candidate only for path misses.
+      if (upstream.status === 404) {
+        continue;
+      }
+
+      break;
     }
 
-    return apiSuccess({
-      sent: true,
-      message: "Umami-Testevent wurde gesendet",
-    });
+    console.error("Umami test event rejected:", lastStatus, lastDetails);
+    return apiError(`Umami-Testevent wurde abgelehnt (HTTP ${lastStatus})`, 502);
   } catch (error) {
     console.error("Umami test event failed:", error);
     return apiError("Umami ist nicht erreichbar", 502);

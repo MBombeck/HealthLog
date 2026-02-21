@@ -429,9 +429,7 @@ function AppSettingsSection({
 
   const bugReportRepoValue = bugReportRepoDraft ?? settings?.bugReportRepo ?? "";
   const umamiScriptUrlValue =
-    umamiScriptUrlDraft ??
-    settings?.umamiScriptUrl ??
-    "https://cloud.umami.is/script.js";
+    umamiScriptUrlDraft ?? settings?.umamiScriptUrl ?? "";
   const umamiWebsiteIdValue = umamiWebsiteIdDraft ?? settings?.umamiWebsiteId ?? "";
   const glitchtipDsnValue = glitchtipDsnDraft ?? settings?.glitchtipDsn ?? "";
   const glitchtipEnvironmentValue =
@@ -481,6 +479,21 @@ function AppSettingsSection({
         setWebPushVapidSubjectDraft(null);
       },
     });
+  }
+
+  function saveUmamiSettings() {
+    updateSettings.mutate(
+      {
+        umamiScriptUrl: umamiScriptUrlValue,
+        umamiWebsiteId: umamiWebsiteIdValue,
+      },
+      {
+        onSuccess: () => {
+          setUmamiScriptUrlDraft(null);
+          setUmamiWebsiteIdDraft(null);
+        },
+      },
+    );
   }
 
   return (
@@ -639,7 +652,17 @@ function AppSettingsSection({
                 />
               </div>
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              <Button
+                size="sm"
+                onClick={saveUmamiSettings}
+                disabled={updateSettings.isPending}
+              >
+                {updateSettings.isPending && (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                )}
+                {t("admin.monitoringSave")}
+              </Button>
               <Button
                 size="sm"
                 variant="outline"

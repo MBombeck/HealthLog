@@ -30,7 +30,7 @@ export async function GET() {
     ),
     apiGlobal: settings?.apiGlobal ?? true,
     umamiEnabled: settings?.umamiEnabled ?? false,
-    umamiScriptUrl: settings?.umamiScriptUrl ?? "https://cloud.umami.is/script.js",
+    umamiScriptUrl: settings?.umamiScriptUrl ?? null,
     umamiWebsiteId: settings?.umamiWebsiteId ?? null,
     glitchtipEnabled: settings?.glitchtipEnabled ?? false,
     glitchtipDsn: settings?.glitchtipDsn ?? null,
@@ -123,6 +123,9 @@ export async function PUT(request: NextRequest) {
         }
         if (!["https:", "http:"].includes(parsed.protocol)) {
           return apiError("Umami Script-URL muss mit http:// oder https:// beginnen", 422);
+        }
+        if (parsed.pathname === "/" || parsed.pathname === "") {
+          parsed.pathname = "/script.js";
         }
         updates.umamiScriptUrl = parsed.toString();
         auditDetails.umamiScriptUrl = parsed.toString();
@@ -219,8 +222,7 @@ export async function PUT(request: NextRequest) {
       ),
       apiGlobal: settings.apiGlobal,
       umamiEnabled: settings.umamiEnabled,
-      umamiScriptUrl:
-        settings.umamiScriptUrl ?? "https://cloud.umami.is/script.js",
+      umamiScriptUrl: settings.umamiScriptUrl,
       umamiWebsiteId: settings.umamiWebsiteId,
       glitchtipEnabled: settings.glitchtipEnabled,
       glitchtipDsn: settings.glitchtipDsn,

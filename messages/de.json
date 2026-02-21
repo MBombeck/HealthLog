@@ -621,7 +621,7 @@
     "monitoringDescription": "Konfiguration für Website-Analytics und Fehler-Tracking.",
     "umamiEnabled": "Umami-Tracking aktivieren.",
     "umamiScriptUrl": "Umami Script-URL",
-    "umamiScriptUrlPlaceholder": "https://cloud.umami.is/script.js",
+    "umamiScriptUrlPlaceholder": "https://analytics.example.com/script.js",
     "umamiWebsiteId": "Umami Website-ID",
     "umamiWebsiteIdPlaceholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
     "glitchtipEnabled": "Glitchtip Fehler-Tracking aktivieren.",
