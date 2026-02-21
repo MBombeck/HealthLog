@@ -158,8 +158,9 @@ model Medication {
   dose      String   // e.g. "10mg"
   active    Boolean  @default(true)
   notificationsEnabled Boolean @default(true) @map("notifications_enabled")
-  pausedAt  DateTime? @map("paused_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  pausedAt     DateTime? @map("paused_at")
+  snoozedUntil DateTime? @map("snoozed_until")
+  createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   schedules    MedicationSchedule[]

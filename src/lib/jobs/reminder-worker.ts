@@ -141,6 +141,12 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
     });
     const missedMinutes = appSettings?.reminderMissedMinutes ?? 240;
 
+    // Clean up expired snoozes
+    await prisma.medication.updateMany({
+      where: { snoozedUntil: { lt: now } },
+      data: { snoozedUntil: null },
+    });
+
     // Get all active medications with schedules
     const medications = await prisma.medication.findMany({
       where: { active: true },
@@ -198,13 +204,20 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
 
         const endMins = parseTimeToMinutes(schedule.windowEnd);
         const currentMins = parseTimeToMinutes(currentTime);
+        const minutesToEnd = endMins - currentMins;
         const minutesPastEnd = currentMins - endMins;
 
-        // Skip if window hasn't ended yet
-        if (minutesPastEnd <= 0) continue;
+        // Skip if we're before the pre-end reminder window (30 min before end)
+        if (minutesToEnd > 30) continue;
 
         // Skip if enough intake events exist for schedules processed so far
         if (eventCount > schedulesProcessed) {
+          schedulesProcessed++;
+          continue;
+        }
+
+        // Skip if medication is currently snoozed
+        if (med.snoozedUntil && now < med.snoozedUntil) {
           schedulesProcessed++;
           continue;
         }
@@ -257,18 +270,33 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
             }
           }
         } else if (med.notificationsEnabled) {
-          // ── Late but not yet missed: send reminder notification ──
-          console.log(
-            `[reminder] Late dose (${minutesPastEnd} min): ${med.name} for user ${med.user.id}, schedule ${schedule.windowStart}-${schedule.windowEnd}`,
-          );
+          if (minutesToEnd > 0) {
+            // ── Pre-end reminder: window still open but ending soon ──
+            console.log(
+              `[reminder] Pre-end reminder (${minutesToEnd} min left): ${med.name} for user ${med.user.id}, schedule ${schedule.windowStart}-${schedule.windowEnd}`,
+            );
 
-          await dispatchNotification({
-            eventType: "MEDICATION_REMINDER",
-            userId: med.user.id,
-            title: `Erinnerung: ${med.name}`,
-            message: `Erinnerung: <b>${med.name}</b> (${doseInfo}, ${timeWindow}) wurde noch nicht eingenommen. Seit ${minutesPastEnd} Min überfällig.`,
-            metadata: { medicationId: med.id },
-          });
+            await dispatchNotification({
+              eventType: "MEDICATION_REMINDER",
+              userId: med.user.id,
+              title: `Erinnerung: ${med.name}`,
+              message: `Erinnerung: <b>${med.name}</b> (${doseInfo}, ${timeWindow}) — Zeitfenster endet in ${minutesToEnd} Min.`,
+              metadata: { medicationId: med.id },
+            });
+          } else {
+            // ── Late but not yet missed: past windowEnd ──
+            console.log(
+              `[reminder] Late dose (${minutesPastEnd} min): ${med.name} for user ${med.user.id}, schedule ${schedule.windowStart}-${schedule.windowEnd}`,
+            );
+
+            await dispatchNotification({
+              eventType: "MEDICATION_REMINDER",
+              userId: med.user.id,
+              title: `Überfällig: ${med.name}`,
+              message: `Überfällig: <b>${med.name}</b> (${doseInfo}, ${timeWindow}) — seit ${minutesPastEnd} Min überfällig.`,
+              metadata: { medicationId: med.id },
+            });
+          }
         }
 
         schedulesProcessed++;
