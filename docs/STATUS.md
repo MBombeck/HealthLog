@@ -63,6 +63,9 @@ All core milestones are complete:
 | Global service gating + API master switch | Added global service availability API for user settings visibility, introduced admin `apiGlobal` toggle, and enforced backend API shutdown (`/api/tokens`, `/api/ingest/medication`, per-medication API endpoint). |
 | Monitoring integrations               | Added configurable Umami + Glitchtip integrations in Admin settings, app-level runtime activation, Umami script proxy endpoint, and Glitchtip client error forwarding endpoint. |
 | Auth upgrade compatibility            | Hardened update path for older deployments: login supports email/username again, passkey origin accepts APP_URL/NEXT_PUBLIC_APP_URL variants, and startup compatibility guard auto-adds critical legacy DB columns/tables. |
+| Monitoring test tooling               | Added admin-side one-click test endpoints/buttons for Umami and Glitchtip plus anti-autofill guards on monitoring config fields.                                                                 |
+| Legacy DB compatibility expansion     | Extended runtime compatibility migration with `medication_schedules.days_of_week`, `medication_schedules.dose`, and enum value `intake_source.IMPORT` to keep medications/insights/achievements working on older DB states. |
+| Chart date consistency                | Standardized chart x-axis date labels to always include full year across health/compliance charts.                                                                                                       |
 
 ## Open Tasks
 

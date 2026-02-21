@@ -147,12 +147,32 @@ async function ensureMedicationSchema() {
   `);
 }
 
+async function ensureMedicationScheduleSchema() {
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "medication_schedules"
+    ADD COLUMN IF NOT EXISTS "dose" TEXT;
+  `);
+
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "medication_schedules"
+    ADD COLUMN IF NOT EXISTS "days_of_week" TEXT;
+  `);
+}
+
+async function ensureEnumCompatibility() {
+  await prisma.$executeRawUnsafe(`
+    ALTER TYPE "intake_source" ADD VALUE IF NOT EXISTS 'IMPORT';
+  `);
+}
+
 export async function ensureDbCompatibility() {
   if (!dbCompatibilityPromise) {
     dbCompatibilityPromise = Promise.all([
       ensureUserSchema(),
       ensureAppSettingsSchema(),
       ensureMedicationSchema(),
+      ensureMedicationScheduleSchema(),
+      ensureEnumCompatibility(),
     ])
       .then(() => undefined)
       .catch((error) => {

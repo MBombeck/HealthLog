@@ -47,6 +47,7 @@ import {
 import { PasswordStrength } from "@/components/ui/password-strength";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
+import { toast } from "sonner";
 
 function PasswordInput(props: React.ComponentProps<typeof Input>) {
   const [visible, setVisible] = useState(false);
@@ -356,6 +357,65 @@ function AppSettingsSection({
     },
   });
 
+  async function getApiErrorMessage(response: Response): Promise<string> {
+    const fallback = `HTTP ${response.status}`;
+    try {
+      const json = (await response.json()) as { error?: string };
+      if (typeof json?.error === "string" && json.error.trim().length > 0) {
+        return json.error;
+      }
+    } catch {
+      return fallback;
+    }
+    return fallback;
+  }
+
+  const testUmami = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/monitoring/umami-test", {
+        method: "POST",
+      });
+      if (!res.ok) {
+        throw new Error(await getApiErrorMessage(res));
+      }
+      const json = (await res.json()) as { data?: { message?: string } };
+      return json.data?.message ?? t("admin.monitoringTestSuccess");
+    },
+    onSuccess: (message) => {
+      toast.success(message);
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("admin.monitoringTestFailed"),
+      );
+    },
+  });
+
+  const testGlitchtip = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/monitoring/glitchtip-test", {
+        method: "POST",
+      });
+      if (!res.ok) {
+        throw new Error(await getApiErrorMessage(res));
+      }
+      const json = (await res.json()) as { data?: { message?: string } };
+      return json.data?.message ?? t("admin.monitoringTestSuccess");
+    },
+    onSuccess: (message) => {
+      toast.success(message);
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("admin.monitoringTestFailed"),
+      );
+    },
+  });
+
   const bugReportRepoValue = bugReportRepoDraft ?? settings?.bugReportRepo ?? "";
   const umamiScriptUrlValue =
     umamiScriptUrlDraft ??
@@ -523,11 +583,16 @@ function AppSettingsSection({
                 </Label>
                 <Input
                   id="admin-umami-script-url"
+                  name="admin-umami-script-url"
                   value={umamiScriptUrlValue}
                   onChange={(event) =>
                     setUmamiScriptUrlDraft(event.target.value)
                   }
                   placeholder={t("admin.umamiScriptUrlPlaceholder")}
+                  autoComplete="new-password"
+                  spellCheck={false}
+                  data-lpignore="true"
+                  data-1p-ignore="true"
                   disabled={updateSettings.isPending}
                 />
               </div>
@@ -537,14 +602,32 @@ function AppSettingsSection({
                 </Label>
                 <Input
                   id="admin-umami-website-id"
+                  name="admin-umami-website-id"
                   value={umamiWebsiteIdValue}
                   onChange={(event) =>
                     setUmamiWebsiteIdDraft(event.target.value)
                   }
                   placeholder={t("admin.umamiWebsiteIdPlaceholder")}
+                  autoComplete="new-password"
+                  spellCheck={false}
+                  data-lpignore="true"
+                  data-1p-ignore="true"
                   disabled={updateSettings.isPending}
                 />
               </div>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => testUmami.mutate()}
+                disabled={testUmami.isPending || updateSettings.isPending}
+              >
+                {testUmami.isPending && (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                )}
+                {t("admin.monitoringTestUmami")}
+              </Button>
             </div>
           </div>
 
@@ -564,11 +647,16 @@ function AppSettingsSection({
                 <Label htmlFor="admin-glitchtip-dsn" className="text-xs">
                   {t("admin.glitchtipDsn")}
                 </Label>
-                <PasswordInput
+                <Input
                   id="admin-glitchtip-dsn"
+                  name="admin-glitchtip-dsn"
                   value={glitchtipDsnValue}
                   onChange={(event) => setGlitchtipDsnDraft(event.target.value)}
                   placeholder={t("admin.glitchtipDsnPlaceholder")}
+                  autoComplete="new-password"
+                  spellCheck={false}
+                  data-lpignore="true"
+                  data-1p-ignore="true"
                   disabled={updateSettings.isPending}
                 />
               </div>
@@ -578,14 +666,32 @@ function AppSettingsSection({
                 </Label>
                 <Input
                   id="admin-glitchtip-environment"
+                  name="admin-glitchtip-environment"
                   value={glitchtipEnvironmentValue}
                   onChange={(event) =>
                     setGlitchtipEnvironmentDraft(event.target.value)
                   }
                   placeholder={t("admin.glitchtipEnvironmentPlaceholder")}
+                  autoComplete="new-password"
+                  spellCheck={false}
+                  data-lpignore="true"
+                  data-1p-ignore="true"
                   disabled={updateSettings.isPending}
                 />
               </div>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => testGlitchtip.mutate()}
+                disabled={testGlitchtip.isPending || updateSettings.isPending}
+              >
+                {testGlitchtip.isPending && (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                )}
+                {t("admin.monitoringTestGlitchtip")}
+              </Button>
             </div>
           </div>
 
