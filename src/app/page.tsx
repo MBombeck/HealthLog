@@ -3,8 +3,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Activity, Heart, Percent, TrendingUp } from "lucide-react";
+import dynamic from "next/dynamic";
 import { TrendCard } from "@/components/charts/trend-card";
-import { HealthChart } from "@/components/charts/health-chart";
+
+const HealthChart = dynamic(
+  () =>
+    import("@/components/charts/health-chart").then((mod) => ({
+      default: mod.HealthChart,
+    })),
+  { ssr: false },
+);
 import { useTranslations } from "@/lib/i18n/context";
 import type { DataSummary } from "@/lib/analytics/trends";
 import { getBpTargets } from "@/lib/analytics/bp-targets";

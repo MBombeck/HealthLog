@@ -21,21 +21,29 @@ export async function GET() {
     "ACTIVITY_STEPS",
   ];
 
+  const measurementsByType = await Promise.all(
+    types.map((type) =>
+      prisma.measurement
+        .findMany({
+          where: { userId: sessionData.user.id, type },
+          orderBy: { measuredAt: "asc" },
+          select: { value: true, measuredAt: true },
+        })
+        .then((measurements) => ({
+          type,
+          summary: summarize(
+            measurements.map((m): DataPoint => ({
+              date: m.measuredAt,
+              value: m.value,
+            })),
+          ),
+        })),
+    ),
+  );
+
   const results: Record<string, ReturnType<typeof summarize>> = {};
-
-  for (const type of types) {
-    const measurements = await prisma.measurement.findMany({
-      where: { userId: sessionData.user.id, type },
-      orderBy: { measuredAt: "asc" },
-      select: { value: true, measuredAt: true },
-    });
-
-    const dataPoints: DataPoint[] = measurements.map((m) => ({
-      date: m.measuredAt,
-      value: m.value,
-    }));
-
-    results[type] = summarize(dataPoints);
+  for (const { type, summary } of measurementsByType) {
+    results[type] = summary;
   }
 
   // BMI calculation
@@ -49,26 +57,25 @@ export async function GET() {
   let bpInTargetPct: number | null = null;
   const bpTargets = getBpTargets(sessionData.user.dateOfBirth);
   if (bpTargets) {
-    const sysData = await prisma.measurement.findMany({
-      where: {
-        userId: sessionData.user.id,
-        type: "BLOOD_PRESSURE_SYS",
-        measuredAt: {
-          gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const [sysData, diaData] = await Promise.all([
+      prisma.measurement.findMany({
+        where: {
+          userId: sessionData.user.id,
+          type: "BLOOD_PRESSURE_SYS",
+          measuredAt: { gte: thirtyDaysAgo },
         },
-      },
-      select: { measuredAt: true, value: true },
-    });
-    const diaData = await prisma.measurement.findMany({
-      where: {
-        userId: sessionData.user.id,
-        type: "BLOOD_PRESSURE_DIA",
-        measuredAt: {
-          gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        select: { measuredAt: true, value: true },
+      }),
+      prisma.measurement.findMany({
+        where: {
+          userId: sessionData.user.id,
+          type: "BLOOD_PRESSURE_DIA",
+          measuredAt: { gte: thirtyDaysAgo },
         },
-      },
-      select: { measuredAt: true, value: true },
-    });
+        select: { measuredAt: true, value: true },
+      }),
+    ]);
 
     if (sysData.length > 0 && diaData.length > 0) {
       let inTarget = 0;

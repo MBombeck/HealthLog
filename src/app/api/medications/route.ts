@@ -15,30 +15,7 @@ export async function GET() {
   if (!sessionData) return apiError("Nicht angemeldet", 401);
 
   try {
-    const medications = await prisma.medication.findMany({
-      where: { userId: sessionData.user.id },
-      include: { schedules: true },
-      orderBy: { createdAt: "desc" },
-    });
-    const latestIntakes = await prisma.medicationIntakeEvent.groupBy({
-      by: ["medicationId"],
-      where: {
-        userId: sessionData.user.id,
-        skipped: false,
-        takenAt: { not: null },
-      },
-      _max: {
-        takenAt: true,
-      },
-    });
-    const lastTakenAtByMedicationId = Object.fromEntries(
-      latestIntakes.map((entry) => [
-        entry.medicationId,
-        entry._max.takenAt ? entry._max.takenAt.toISOString() : null,
-      ]),
-    );
-
-    // Count today's intake events per medication (user timezone)
+    // Compute today's UTC range for event counting
     const userTz = sessionData.user.timezone || "Europe/Berlin";
     const nowLocal = new Date(
       new Date().toLocaleString("en-US", { timeZone: userTz }),
@@ -52,14 +29,38 @@ export async function GET() {
       todayStartUtc.getTime() + 24 * 60 * 60 * 1000 - 1,
     );
 
-    const todayEvents = await prisma.medicationIntakeEvent.groupBy({
-      by: ["medicationId"],
-      where: {
-        userId: sessionData.user.id,
-        scheduledFor: { gte: todayStartUtc, lte: todayEndUtc },
-      },
-      _count: { id: true },
-    });
+    // Run all three queries in parallel
+    const [medications, latestIntakes, todayEvents] = await Promise.all([
+      prisma.medication.findMany({
+        where: { userId: sessionData.user.id },
+        include: { schedules: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.medicationIntakeEvent.groupBy({
+        by: ["medicationId"],
+        where: {
+          userId: sessionData.user.id,
+          skipped: false,
+          takenAt: { not: null },
+        },
+        _max: { takenAt: true },
+      }),
+      prisma.medicationIntakeEvent.groupBy({
+        by: ["medicationId"],
+        where: {
+          userId: sessionData.user.id,
+          scheduledFor: { gte: todayStartUtc, lte: todayEndUtc },
+        },
+        _count: { id: true },
+      }),
+    ]);
+
+    const lastTakenAtByMedicationId = Object.fromEntries(
+      latestIntakes.map((entry) => [
+        entry.medicationId,
+        entry._max.takenAt ? entry._max.takenAt.toISOString() : null,
+      ]),
+    );
     const todayEventCountByMedId = Object.fromEntries(
       todayEvents.map((entry: { medicationId: string; _count: { id: number } }) => [entry.medicationId, entry._count.id]),
     );
@@ -70,7 +71,6 @@ export async function GET() {
         medications.map((m) => m.id),
       );
     } catch (error) {
-      // Category enrichment is optional and must not break medication loading.
       console.error("Medication categories could not be loaded:", error);
     }
 

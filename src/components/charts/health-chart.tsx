@@ -280,9 +280,7 @@ export function HealthChart({
         }
       }
 
-      for (const type of types) {
-        await fetchAllMeasurementsByType(type);
-      }
+      await Promise.all(types.map(fetchAllMeasurementsByType));
 
       const allData: ChartDataPoint[] = Array.from(dailyAggregates.values())
         .map((bucket) => {

@@ -6,7 +6,15 @@ import { useTranslations } from "@/lib/i18n/context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { HealthChart } from "@/components/charts/health-chart";
+import dynamic from "next/dynamic";
+
+const HealthChart = dynamic(
+  () =>
+    import("@/components/charts/health-chart").then((mod) => ({
+      default: mod.HealthChart,
+    })),
+  { ssr: false },
+);
 import { TrendCard } from "@/components/charts/trend-card";
 import { ComplianceHeatmap } from "@/components/charts/compliance-heatmap";
 import {
