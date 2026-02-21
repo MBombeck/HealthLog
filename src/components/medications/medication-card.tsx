@@ -316,11 +316,6 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
               <Badge variant="outline" className="text-xs">
                 {categoryLabel}
               </Badge>
-              {medication.lastTakenAt && (
-                <Badge variant="secondary" className="text-xs">
-                  Letzte Einnahme: {formatLastTakenAt(medication.lastTakenAt)}
-                </Badge>
-              )}
               {!medication.notificationsEnabled && (
                 <Badge variant="secondary" className="text-xs">
                   Ohne Benachrichtigung
@@ -380,7 +375,14 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
           </Badge>
         )}
 
-        {/* Next schedule info */}
+        {/* Last & next intake info */}
+        {medication.lastTakenAt && (
+          <p className="text-muted-foreground text-sm">
+            <span className="font-medium">Letzte Einnahme:</span>{" "}
+            {formatLastTakenAt(medication.lastTakenAt)}
+          </p>
+        )}
+
         {nextSchedule && (() => {
           const s = nextSchedule;
           const nextAt = nextOccurrence?.nextAt;
@@ -418,9 +420,11 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
               <span className="font-medium">Nächste Einnahme:</span>{" "}
               {dayLabel && `${dayLabel}, `}
               {formatTimeWindowRange(s.windowStart, s.windowEnd)}
-              {s.label && ` (${s.label})`}
+              {s.label && (
+                <span className="hidden sm:inline"> ({s.label})</span>
+              )}
               {s.dose && (
-                <span className="font-medium text-purple-400">
+                <span className="hidden font-medium text-purple-400 sm:inline">
                   {" "}— {s.dose}
                 </span>
               )}
