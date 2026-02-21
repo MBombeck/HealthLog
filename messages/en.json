@@ -64,6 +64,8 @@
     "password": "Password",
     "email": "Email address",
     "emailPlaceholder": "name@example.com",
+    "emailOrUsername": "Email address or username",
+    "emailOrUsernamePlaceholder": "name@example.com or username",
     "loginWithPasskey": "Sign in with Passkey",
     "loginWithPassword": "Sign in with password",
     "noAccount": "Don't have an account?",
