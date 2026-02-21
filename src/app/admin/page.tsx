@@ -442,11 +442,25 @@ function AppSettingsSection({
       if (!res.ok) {
         throw new Error(await getApiErrorMessage(res));
       }
-      const json = (await res.json()) as { data?: { message?: string } };
-      return json.data?.message ?? t("admin.notificationTestSuccess");
+      const json = (await res.json()) as {
+        data?: {
+          message?: string;
+          results?: Array<{
+            channel: string;
+            success: boolean;
+            error?: string;
+          }>;
+        };
+      };
+      return json.data;
     },
-    onSuccess: (message) => {
-      toast.success(message);
+    onSuccess: (data) => {
+      const hasFailures = data?.results?.some((r) => !r.success);
+      if (hasFailures) {
+        toast.error(data?.message ?? t("admin.notificationTestFailed"));
+      } else {
+        toast.success(data?.message ?? t("admin.notificationTestSuccess"));
+      }
     },
     onError: (error) => {
       toast.error(
@@ -1075,6 +1089,24 @@ function AppSettingsSection({
                 {t("admin.reminderCheckRun")}
               </Button>
             </div>
+
+            {testNotification.data?.results && testNotification.data.results.length > 0 && (
+              <div className="space-y-1">
+                {testNotification.data.results.map((r, i) => (
+                  <div key={i} className="text-xs flex items-center gap-1.5">
+                    {r.success ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-400 shrink-0" />
+                    ) : (
+                      <XCircle className="h-3.5 w-3.5 text-red-400 shrink-0" />
+                    )}
+                    <span className="font-medium">{r.channel}</span>
+                    {r.error && (
+                      <span className="text-muted-foreground">— {r.error}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {reminderCheck.data?.medications && reminderCheck.data.medications.length > 0 && (
