@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, use } from "react";
+import { useEffect, use, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { IntakeHistoryList } from "@/components/medications/intake-history-list";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -19,6 +19,7 @@ export default function IntakeHistoryPage({
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const { t } = useTranslations();
+  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -47,25 +48,35 @@ export default function IntakeHistoryPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-          <Link href="/medications">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {t("medications.intakeHistoryTitle")}
-          </h1>
-          {medication && (
-            <p className="text-muted-foreground text-sm">
-              {medication.name} — {medication.dose}
-            </p>
-          )}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+            <Link href="/medications">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">
+              {t("medications.intakeHistoryTitle")}
+            </h1>
+            {medication && (
+              <p className="text-muted-foreground text-sm">
+                {medication.name} — {medication.dose}
+              </p>
+            )}
+          </div>
         </div>
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          {t("medications.newIntake")}
+        </Button>
       </div>
 
-      <IntakeHistoryList medicationId={id} />
+      <IntakeHistoryList
+        medicationId={id}
+        createOpen={createOpen}
+        onCreateOpenChange={setCreateOpen}
+      />
     </div>
   );
 }

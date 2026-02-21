@@ -51,9 +51,8 @@ import {
   Check,
   SkipForward,
   AlertTriangle,
-  Plus,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -69,13 +68,15 @@ interface IntakeEvent {
 
 interface IntakeHistoryListProps {
   medicationId: string;
+  createOpen?: boolean;
+  onCreateOpenChange?: (open: boolean) => void;
 }
 
 const SOURCE_LABELS: Record<string, string> = {
-  WEB: "Web",
-  API: "API",
-  REMINDER: "Erinnerung",
-  IMPORT: "Import",
+  WEB: "Webseite",
+  API: "Externe API",
+  REMINDER: "Telegram / Erinnerung",
+  IMPORT: "CSV-Import",
 };
 
 const PAGE_SIZE = 25;
@@ -91,7 +92,7 @@ function dateTimeLocalToISO(value: string): string {
   return new Date(value).toISOString();
 }
 
-export function IntakeHistoryList({ medicationId }: IntakeHistoryListProps) {
+export function IntakeHistoryList({ medicationId, createOpen, onCreateOpenChange }: IntakeHistoryListProps) {
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   const { t } = useTranslations();
@@ -108,12 +109,24 @@ export function IntakeHistoryList({ medicationId }: IntakeHistoryListProps) {
   const [editError, setEditError] = useState<string | null>(null);
   const [editDeleteDialogOpen, setEditDeleteDialogOpen] = useState(false);
 
-  // Create state
-  const [creating, setCreating] = useState(false);
+  // Create state — controlled via props or internal
+  const [internalCreating, setInternalCreating] = useState(false);
+  const creating = createOpen ?? internalCreating;
   const [createScheduledFor, setCreateScheduledFor] = useState("");
   const [createTakenAt, setCreateTakenAt] = useState("");
   const [createSkipped, setCreateSkipped] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const setCreatingRaw = onCreateOpenChange ?? setInternalCreating;
+  const setCreating = useCallback((open: boolean) => {
+    if (open) {
+      const now = toDateTimeLocalValue(new Date().toISOString());
+      setCreateScheduledFor(now);
+      setCreateTakenAt(now);
+      setCreateSkipped(false);
+      setCreateError(null);
+    }
+    setCreatingRaw(open);
+  }, [setCreatingRaw]);
 
   function toggleSort(column: string) {
     if (sortBy === column) {
@@ -266,14 +279,6 @@ export function IntakeHistoryList({ medicationId }: IntakeHistoryListProps) {
     setEditDeleteDialogOpen(false);
   }
 
-  function openCreate() {
-    const now = toDateTimeLocalValue(new Date().toISOString());
-    setCreateScheduledFor(now);
-    setCreateTakenAt(now);
-    setCreateSkipped(false);
-    setCreateError(null);
-    setCreating(true);
-  }
 
   function closeCreate() {
     if (createMutation.isPending) return;
@@ -368,11 +373,7 @@ export function IntakeHistoryList({ medicationId }: IntakeHistoryListProps) {
   return (
     <>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="mr-1.5 h-4 w-4" />
-            {t("medications.newIntake")}
-          </Button>
+        <div className="flex items-center justify-end">
           {data?.meta.total !== undefined && (
             <span className="text-muted-foreground text-sm">
               {t("medications.intakeCount", { count: data.meta.total })}

@@ -7,7 +7,6 @@ import { useTranslations } from "@/lib/i18n/context";
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import { MedicationForm } from "@/components/medications/medication-form";
 import { MedicationCard } from "@/components/medications/medication-card";
-import { IntakeTimeline } from "@/components/medications/intake-timeline";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -67,7 +66,6 @@ export default function MedicationsPage() {
   const { t } = useTranslations();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMed, setEditingMed] = useState<Medication | null>(null);
-  const [showEditTimeline, setShowEditTimeline] = useState(false);
   const [importMedId, setImportMedId] = useState<string | null>(null);
   const [apiMed, setApiMed] = useState<{
     id: string;
@@ -261,9 +259,6 @@ export default function MedicationsPage() {
             editActions={
               editingMed
                 ? {
-                    showEditTimeline,
-                    onToggleEditTimeline: () =>
-                      setShowEditTimeline((prev) => !prev),
                     onImportIntakes: () => setImportMedId(editingMed.id),
                     onApiAccess: () =>
                       setApiMed({
@@ -277,16 +272,6 @@ export default function MedicationsPage() {
             onCancel={closeDialog}
           />
 
-          {editingMed && showEditTimeline && (
-            <div className="mt-4 border-t pt-4">
-              <div className="bg-card border-border rounded-lg border p-3">
-                <IntakeTimeline
-                  medicationId={editingMed.id}
-                  medicationName={editingMed.name}
-                />
-              </div>
-            </div>
-          )}
         </DialogContent>
       </Dialog>
     </div>
