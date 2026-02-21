@@ -67,6 +67,43 @@ openssl rand -hex 32
 Telegram/Withings webhooks only work with a **public HTTPS domain**.
 `localhost` and `http://` will fail.
 
+## Monitoring: Umami + Glitchtip
+
+Both integrations are configured in **Admin → Anwendungseinstellungen → Monitoring (Umami/Glitchtip)**.
+No additional Coolify environment variables are required.
+
+### Umami
+
+Required fields:
+
+- `Umami Script-URL` (example: `https://cloud.umami.is/script.js` or your self-hosted script URL)
+- `Umami Website-ID` (UUID from Umami)
+- Toggle `Umami-Tracking aktivieren`
+
+Implementation note:
+
+- HealthLog loads Umami via `/api/monitoring/umami-script` and sends events through same-origin `/api/send`.
+- This keeps CSP strict and avoids browser-side cross-origin tracking issues.
+
+### Glitchtip
+
+Required fields:
+
+- `Glitchtip DSN` (format: `https://<public-key>@glitchtip.example.com/<project-id>`)
+- Optional `Glitchtip Environment` (recommended: `production`)
+- Toggle `Glitchtip Fehler-Tracking aktivieren`
+
+Implementation note:
+
+- Browser errors are captured client-side and forwarded server-side via `/api/monitoring/glitchtip`.
+- If Glitchtip is not configured or disabled, events are safely ignored.
+
+### Recommended rollout order
+
+1. Deploy first.
+2. Configure Umami and/or Glitchtip in Admin.
+3. Reload the app and verify incoming events in the respective dashboards.
+
 ## Docker Compose (local / self-hosted)
 
 ```bash
