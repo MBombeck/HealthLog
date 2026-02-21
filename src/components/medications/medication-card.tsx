@@ -58,6 +58,70 @@ interface MedicationCardProps {
   onEdit: (med: Medication) => void;
 }
 
+function parseTimeToMinutes(value: string): number {
+  const [h, m] = value.split(":").map(Number);
+  if (
+    !Number.isFinite(h) ||
+    !Number.isFinite(m) ||
+    h < 0 ||
+    h > 23 ||
+    m < 0 ||
+    m > 59
+  ) {
+    return 0;
+  }
+  return h * 60 + m;
+}
+
+function toBerlinDate(date: Date): Date {
+  return new Date(
+    date.toLocaleString("en-US", {
+      timeZone: "Europe/Berlin",
+    }),
+  );
+}
+
+function getNextOccurrenceTimestamp(
+  schedule: Schedule,
+  nowBerlin: Date,
+): number | null {
+  const recurrence = parseScheduleRecurrence(schedule.daysOfWeek);
+  const baseDay = new Date(nowBerlin);
+  baseDay.setHours(0, 0, 0, 0);
+
+  const nowMinutes = nowBerlin.getHours() * 60 + nowBerlin.getMinutes();
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+  const baseWeekIndex = Math.floor(baseDay.getTime() / weekMs);
+  const startMinutes = parseTimeToMinutes(schedule.windowStart);
+
+  for (let offset = 0; offset <= 400; offset += 1) {
+    const candidate = new Date(baseDay);
+    candidate.setDate(baseDay.getDate() + offset);
+
+    const candidateWeekIndex = Math.floor(candidate.getTime() / weekMs);
+    const isAllowedWeek =
+      recurrence.intervalWeeks <= 1 ||
+      candidateWeekIndex % recurrence.intervalWeeks ===
+        baseWeekIndex % recurrence.intervalWeeks;
+    if (!isAllowedWeek) continue;
+
+    if (
+      recurrence.daysOfWeek.length > 0 &&
+      !recurrence.daysOfWeek.includes(candidate.getDay())
+    ) {
+      continue;
+    }
+
+    if (offset === 0 && startMinutes <= nowMinutes) {
+      continue;
+    }
+
+    return candidate.getTime() + startMinutes * 60 * 1000;
+  }
+
+  return null;
+}
+
 export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
   const queryClient = useQueryClient();
   const [intakeLoading, setIntakeLoading] = useState<string | null>(null);
@@ -117,6 +181,19 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
       a.windowStart.localeCompare(b.windowStart) ||
       a.windowEnd.localeCompare(b.windowEnd),
   );
+  const hasMultipleSchedules = sortedSchedules.length > 1;
+  const nowBerlin = toBerlinDate(new Date());
+  const nextScheduleId = hasMultipleSchedules
+    ? sortedSchedules
+        .map((schedule) => ({
+          id: schedule.id,
+          nextAt: getNextOccurrenceTimestamp(schedule, nowBerlin),
+        }))
+        .filter((entry): entry is { id: string; nextAt: number } =>
+          Number.isFinite(entry.nextAt),
+        )
+        .sort((a, b) => a.nextAt - b.nextAt)[0]?.id ?? null
+    : null;
 
   function formatLastTakenAt(value: string): string {
     const dayFormatter = new Intl.DateTimeFormat("en-CA", {
@@ -192,9 +269,19 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
               recurrence.daysOfWeek.length > 0
                 ? recurrence.daysOfWeek.map((d) => dayLabels[d])
                 : null;
+            const isNextSchedule = hasMultipleSchedules && s.id === nextScheduleId;
             return (
-              <Badge key={s.id} variant="secondary" className="gap-1">
+              <Badge
+                key={s.id}
+                variant="secondary"
+                className={
+                  isNextSchedule
+                    ? "border-dracula-yellow/40 bg-dracula-yellow/15 text-dracula-yellow gap-1 border"
+                    : "gap-1"
+                }
+              >
                 <Clock className="h-3 w-3" />
+                {isNextSchedule && <span className="font-semibold">Nächstes:</span>}
                 {s.label ? `${s.label}: ` : ""}
                 {formatTimeWindowRange(s.windowStart, s.windowEnd)}
                 {recurrence.intervalWeeks > 1 && (
