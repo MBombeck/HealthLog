@@ -3,11 +3,15 @@ import type { Instrumentation } from "next";
 export async function register() {
   // Only start the worker on the Node.js server runtime (not Edge, not build)
   if (process.env.NEXT_RUNTIME === "nodejs") {
+    console.log("[instrumentation] Node.js runtime detected, starting reminder worker...");
+    console.log("[instrumentation] NODE_PATH:", process.env.NODE_PATH ?? "(not set)");
     try {
       const { startReminderWorker } = await import("@/lib/jobs/reminder-worker");
+      console.log("[instrumentation] reminder-worker module loaded successfully");
       await startReminderWorker();
+      console.log("[instrumentation] Reminder worker started successfully");
     } catch (err) {
-      console.error("[instrumentation] Failed to start reminder worker:", err);
+      console.error("[instrumentation] CRITICAL: Failed to start reminder worker:", err);
     }
   }
 }

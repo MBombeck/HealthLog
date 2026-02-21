@@ -43,12 +43,14 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/src/generated ./src/generated
 
-# Install pg-boss in its own prefix so Node finds it via NODE_PATH
-# (avoids merging into pnpm's standalone node_modules structure)
+# Install all worker runtime dependencies in a shared prefix.
+# NODE_PATH makes them available to Node.js module resolution.
+# These packages are listed in next.config.ts serverExternalPackages
+# and are NOT bundled by Next.js — they must exist at runtime.
 RUN mkdir -p /opt/pg-boss && \
     cd /opt/pg-boss && \
     npm init -y && \
-    npm install --omit=dev pg-boss@12
+    npm install --omit=dev pg-boss@12 @prisma/adapter-pg@7 pg@8
 
 # Install Prisma CLI + engines for runtime migrations (isolated from Next standalone tree)
 RUN mkdir -p /opt/prisma-cli && \

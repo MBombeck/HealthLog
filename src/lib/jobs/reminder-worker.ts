@@ -637,6 +637,12 @@ async function handleMedicationComplianceStatusGenerate(
 }
 
 export async function startReminderWorker() {
+  console.log("[pg-boss] Initializing pg-boss with DATABASE_URL...");
+  if (!DATABASE_URL) {
+    console.error("[pg-boss] CRITICAL: DATABASE_URL is not set!");
+    return;
+  }
+
   const boss = new PgBoss(DATABASE_URL);
 
   boss.on("error", (error: unknown) => {
@@ -644,9 +650,10 @@ export async function startReminderWorker() {
     recordError();
   });
 
+  console.log("[pg-boss] Connecting to database...");
   await boss.start();
   markWorkerStarted();
-  console.log("[pg-boss] Started reminder worker");
+  console.log("[pg-boss] Started reminder worker successfully");
 
   // Schedule the recurring check
   await boss.schedule(
