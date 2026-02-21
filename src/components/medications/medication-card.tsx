@@ -231,9 +231,8 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
       a.windowStart.localeCompare(b.windowStart) ||
       a.windowEnd.localeCompare(b.windowEnd),
   );
-  const hasMultipleSchedules = sortedSchedules.length > 1;
   const nowBerlin = toBerlinDate(new Date());
-  const nextSchedule = sortedSchedules.length > 0
+  const nextOccurrence = sortedSchedules.length > 0
     ? sortedSchedules
         .map((schedule) => ({
           schedule,
@@ -242,8 +241,9 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
         .filter((entry): entry is { schedule: Schedule; nextAt: number } =>
           Number.isFinite(entry.nextAt),
         )
-        .sort((a, b) => a.nextAt - b.nextAt)[0]?.schedule ?? sortedSchedules[0]
+        .sort((a, b) => a.nextAt - b.nextAt)[0] ?? null
     : null;
+  const nextSchedule = nextOccurrence?.schedule ?? sortedSchedules[0] ?? null;
 
   const lateMinutes = thresholds?.lateMinutes ?? 120;
   const missedMinutes = thresholds?.missedMinutes ?? 240;
@@ -380,39 +380,43 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
           </Badge>
         )}
 
-        {/* Next schedule badge */}
+        {/* Next schedule info */}
         {nextSchedule && (() => {
           const s = nextSchedule;
-          const dayLabels = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-          const recurrence = parseScheduleRecurrence(s.daysOfWeek);
-          const days =
-            recurrence.daysOfWeek.length > 0
-              ? recurrence.daysOfWeek.map((d) => dayLabels[d])
-              : null;
+          const nextAt = nextOccurrence?.nextAt;
+
+          // Format day label relative to today
+          let dayLabel = "";
+          if (nextAt) {
+            const nextDate = toBerlinDate(new Date(nextAt));
+            const todayStr = `${nowBerlin.getFullYear()}-${nowBerlin.getMonth()}-${nowBerlin.getDate()}`;
+            const nextStr = `${nextDate.getFullYear()}-${nextDate.getMonth()}-${nextDate.getDate()}`;
+            const tomorrow = new Date(nowBerlin);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowStr = `${tomorrow.getFullYear()}-${tomorrow.getMonth()}-${tomorrow.getDate()}`;
+
+            if (nextStr === todayStr) {
+              dayLabel = "Heute";
+            } else if (nextStr === tomorrowStr) {
+              dayLabel = "Morgen";
+            } else {
+              const weekdayLabels = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+              dayLabel = weekdayLabels[nextDate.getDay()];
+            }
+          }
+
           return (
-            <div className="flex flex-wrap gap-1.5">
-              <Badge variant="secondary" className="gap-1">
-                <Clock className="h-3 w-3" />
-                {hasMultipleSchedules && <span className="font-semibold">Nächstes:</span>}
-                {s.label ? `${s.label}: ` : ""}
-                {formatTimeWindowRange(s.windowStart, s.windowEnd)}
-                {recurrence.intervalWeeks > 1 && (
-                  <span className="text-muted-foreground ml-1 text-[10px]">
-                    (alle {recurrence.intervalWeeks} Wochen)
-                  </span>
-                )}
-                {days && (
-                  <span className="text-muted-foreground ml-1 text-[10px]">
-                    ({days.join(", ")})
-                  </span>
-                )}
-                {s.dose && (
-                  <span className="ml-1 font-medium text-purple-400">
-                    {s.dose}
-                  </span>
-                )}
-              </Badge>
-            </div>
+            <p className="text-muted-foreground text-sm">
+              <span className="font-medium">Nächste Einnahme:</span>{" "}
+              {dayLabel && `${dayLabel}, `}
+              {formatTimeWindowRange(s.windowStart, s.windowEnd)}
+              {s.label && ` (${s.label})`}
+              {s.dose && (
+                <span className="font-medium text-purple-400">
+                  {" "}— {s.dose}
+                </span>
+              )}
+            </p>
           );
         })()}
 
