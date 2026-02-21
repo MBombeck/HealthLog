@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { decrypt } from "@/lib/crypto";
+import { decrypt, encrypt } from "@/lib/crypto";
 import type {
   NotificationPayload,
   TelegramChannelConfig,
@@ -18,6 +18,9 @@ import { sendViaWebPush } from "@/lib/notifications/senders/web-push";
  *  1. Check if the channel is enabled
  *  2. Check if a preference exists for this eventType (default: enabled / opt-out)
  *  3. Call the appropriate sender
+ *
+ * Also handles legacy Telegram config stored on the User model by
+ * auto-migrating it to a NotificationChannel record on first dispatch.
  */
 export async function dispatchNotification(
   payload: NotificationPayload,
@@ -31,6 +34,62 @@ export async function dispatchNotification(
         },
       },
     });
+
+    // Check for legacy Telegram config on User model if no TELEGRAM channel exists
+    const hasTelegramChannel = channels.some(
+      (ch: { type: string }) => ch.type === "TELEGRAM",
+    );
+    if (!hasTelegramChannel) {
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: payload.userId },
+          select: {
+            telegramBotToken: true,
+            telegramChatId: true,
+            telegramEnabled: true,
+          },
+        });
+
+        if (user?.telegramEnabled && user.telegramBotToken && user.telegramChatId) {
+          const botToken = decrypt(user.telegramBotToken);
+          const channelConfig = encrypt(
+            JSON.stringify({ botToken, chatId: user.telegramChatId }),
+          );
+
+          // Auto-migrate: create NotificationChannel record
+          const created = await prisma.notificationChannel.upsert({
+            where: {
+              userId_type: {
+                userId: payload.userId,
+                type: "TELEGRAM",
+              },
+            },
+            create: {
+              userId: payload.userId,
+              type: "TELEGRAM",
+              enabled: true,
+              config: channelConfig,
+            },
+            update: {
+              enabled: true,
+              config: channelConfig,
+            },
+            include: {
+              preferences: {
+                where: { eventType: payload.eventType },
+              },
+            },
+          });
+
+          channels.push(created);
+          console.log(
+            `[dispatcher] Auto-migrated legacy Telegram config for user ${payload.userId}`,
+          );
+        }
+      } catch (err) {
+        console.error("[dispatcher] Legacy Telegram migration failed:", err);
+      }
+    }
 
     for (const channel of channels) {
       // Opt-out model: if no preference row exists, default to enabled
