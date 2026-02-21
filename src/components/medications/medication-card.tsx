@@ -36,6 +36,7 @@ interface Medication {
   notificationsEnabled: boolean;
   pausedAt: string | null;
   lastTakenAt: string | null;
+  todayEventCount?: number;
   schedules: Schedule[];
 }
 
@@ -245,11 +246,32 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
   const lateMinutes = thresholds?.lateMinutes ?? 120;
   const missedMinutes = thresholds?.missedMinutes ?? 240;
 
+  // Count schedules that are past their window (overdue today)
+  const passedScheduleCount = medication.active
+    ? sortedSchedules.filter((s) => {
+        const recurrence = parseScheduleRecurrence(s.daysOfWeek);
+        if (
+          recurrence.daysOfWeek.length > 0 &&
+          !recurrence.daysOfWeek.includes(nowBerlin.getDay())
+        ) {
+          return false;
+        }
+        const endMins = parseTimeToMinutes(s.windowEnd);
+        const nowMins = nowBerlin.getHours() * 60 + nowBerlin.getMinutes();
+        return nowMins > endMins;
+      }).length
+    : 0;
+
+  const todayEvents = medication.todayEventCount ?? 0;
+  const hasUncoveredOverdue = todayEvents < passedScheduleCount;
+
   const currentWindowStatus = medication.active
     ? sortedSchedules.reduce<{ status: MedicationWindowStatus; schedule: Schedule | null }>(
         (best, s) => {
           const status = getWindowStatus(s, nowBerlin, lateMinutes, missedMinutes);
           if (!status) return best;
+          // Don't show late/very_late if all overdue schedules are covered by events
+          if (status !== "in_window" && !hasUncoveredOverdue) return best;
           const priority = { in_window: 3, late: 2, very_late: 1 };
           if (!best.status || priority[status] > priority[best.status]) {
             return { status, schedule: s };
