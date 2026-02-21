@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import {
   answerTelegramCallbackQuery,
+  editMessageReplyMarkup,
   sendTelegramMessage,
 } from "@/lib/telegram";
 import { NextRequest, NextResponse } from "next/server";
@@ -75,17 +76,23 @@ async function markMedicationTaken(
   });
 
   if (!existing) {
-    await prisma.medicationIntakeEvent.create({
-      data: {
-        userId,
-        medicationId: medication.id,
-        scheduledFor: new Date(),
-        takenAt: new Date(),
-        skipped: false,
-        source: "REMINDER",
-        idempotencyKey,
-      },
-    });
+    await prisma.$transaction([
+      prisma.medicationIntakeEvent.create({
+        data: {
+          userId,
+          medicationId: medication.id,
+          scheduledFor: new Date(),
+          takenAt: new Date(),
+          skipped: false,
+          source: "REMINDER",
+          idempotencyKey,
+        },
+      }),
+      prisma.medication.update({
+        where: { id: medication.id },
+        data: { snoozedUntil: null },
+      }),
+    ]);
   }
 
   return {
@@ -95,6 +102,16 @@ async function markMedicationTaken(
       : `${medication.name} als eingenommen erfasst.`,
     medicationName: medication.name,
   };
+}
+
+async function removeButtons(
+  botToken: string,
+  chatId: string,
+  messageId: number | undefined,
+) {
+  if (messageId) {
+    await editMessageReplyMarkup(botToken, chatId, messageId);
+  }
 }
 
 async function handleCallback(update: TelegramUpdate) {
@@ -110,42 +127,123 @@ async function handleCallback(update: TelegramUpdate) {
   const botToken = decrypt(user.telegramBotToken);
 
   const data = callback.data ?? "";
-  if (!data.startsWith("taken:")) {
+  const messageId = callback.message?.message_id;
+
+  if (data.startsWith("taken:")) {
+    const medicationId = data.slice("taken:".length).trim();
+    if (!medicationId) {
+      await answerTelegramCallbackQuery(botToken, callback.id, "Ungültige Aktion.");
+      return;
+    }
+
+    const msgId = messageId ?? "na";
+    const idempotencyKey =
+      `telegram:cb:${chatId}:${msgId}:${medicationId}`.slice(0, 128);
+
+    const result = await markMedicationTaken(user.id, medicationId, idempotencyKey);
+    await answerTelegramCallbackQuery(botToken, callback.id, result.message);
+    await removeButtons(botToken, chatId, messageId);
+    await sendTelegramMessage(
+      botToken,
+      chatId,
+      result.ok
+        ? `✅ ${escapeHtml(result.message)}`
+        : `⚠️ ${escapeHtml(result.message)}`,
+    );
+  } else if (data.startsWith("snooze:")) {
+    // Format: "snooze:{medicationId}:{minutes}"
+    const parts = data.split(":");
+    const medicationId = parts[1];
+    const minutes = parseInt(parts[2], 10);
+    if (!medicationId || !Number.isFinite(minutes)) {
+      await answerTelegramCallbackQuery(botToken, callback.id, "Ungültige Aktion.");
+      return;
+    }
+
+    const medication = await prisma.medication.findFirst({
+      where: { id: medicationId, userId: user.id, active: true },
+      select: { id: true, name: true },
+    });
+    if (!medication) {
+      await answerTelegramCallbackQuery(botToken, callback.id, "Medikament nicht gefunden.");
+      return;
+    }
+
+    await prisma.medication.update({
+      where: { id: medication.id },
+      data: { snoozedUntil: new Date(Date.now() + minutes * 60000) },
+    });
+
+    const label = minutes <= 60 ? "1 Stunde" : "3 Stunden";
+    await answerTelegramCallbackQuery(botToken, callback.id, `Für ${label} zurückgestellt.`);
+    await removeButtons(botToken, chatId, messageId);
+    await sendTelegramMessage(
+      botToken,
+      chatId,
+      `🔕 ${escapeHtml(medication.name)} für ${label} zurückgestellt.`,
+    );
+  } else if (data.startsWith("skip:")) {
+    const medicationId = data.slice("skip:".length).trim();
+    if (!medicationId) {
+      await answerTelegramCallbackQuery(botToken, callback.id, "Ungültige Aktion.");
+      return;
+    }
+
+    const medication = await prisma.medication.findFirst({
+      where: { id: medicationId, userId: user.id, active: true },
+      select: { id: true, name: true },
+    });
+    if (!medication) {
+      await answerTelegramCallbackQuery(botToken, callback.id, "Medikament nicht gefunden.");
+      return;
+    }
+
+    const msgId = messageId ?? "na";
+    const idempotencyKey =
+      `telegram:skip:${chatId}:${msgId}:${medicationId}`.slice(0, 128);
+
+    const existing = await prisma.medicationIntakeEvent.findFirst({
+      where: { userId: user.id, medicationId: medication.id, idempotencyKey },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+
+      await prisma.$transaction([
+        prisma.medicationIntakeEvent.create({
+          data: {
+            userId: user.id,
+            medicationId: medication.id,
+            scheduledFor: new Date(),
+            takenAt: null,
+            skipped: true,
+            source: "REMINDER",
+            idempotencyKey,
+          },
+        }),
+        prisma.medication.update({
+          where: { id: medication.id },
+          data: { snoozedUntil: endOfDay },
+        }),
+      ]);
+    }
+
     await answerTelegramCallbackQuery(
       botToken,
       callback.id,
-      "Unbekannte Aktion.",
+      `${medication.name} übersprungen.`,
     );
-    return;
-  }
-
-  const medicationId = data.slice("taken:".length).trim();
-  if (!medicationId) {
-    await answerTelegramCallbackQuery(
+    await removeButtons(botToken, chatId, messageId);
+    await sendTelegramMessage(
       botToken,
-      callback.id,
-      "Ungültige Aktion.",
+      chatId,
+      `⏭ ${escapeHtml(medication.name)} für heute übersprungen.`,
     );
-    return;
+  } else {
+    await answerTelegramCallbackQuery(botToken, callback.id, "Unbekannte Aktion.");
   }
-
-  const messageId = callback.message?.message_id ?? "na";
-  const idempotencyKey =
-    `telegram:cb:${chatId}:${messageId}:${medicationId}`.slice(0, 128);
-
-  const result = await markMedicationTaken(
-    user.id,
-    medicationId,
-    idempotencyKey,
-  );
-  await answerTelegramCallbackQuery(botToken, callback.id, result.message);
-  await sendTelegramMessage(
-    botToken,
-    chatId,
-    result.ok
-      ? `✅ ${escapeHtml(result.message)}`
-      : `⚠️ ${escapeHtml(result.message)}`,
-  );
 }
 
 async function handleTextMessage(update: TelegramUpdate) {

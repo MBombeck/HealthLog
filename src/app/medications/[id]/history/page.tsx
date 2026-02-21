@@ -66,7 +66,7 @@ export default function IntakeHistoryPage({
             {t("medications.intakeHistoryTitle")}
           </h1>
           {medication && (
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground hidden text-sm sm:block">
               {medication.name} — {medication.dose}
             </p>
           )}

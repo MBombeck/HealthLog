@@ -141,7 +141,7 @@ export default function MedicationsPage() {
           <h1 className="text-2xl font-bold tracking-tight">
             {t("medications.title")}
           </h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground hidden text-sm sm:block">
             {t("medications.subtitle")}
           </p>
         </div>

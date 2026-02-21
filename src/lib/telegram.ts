@@ -81,6 +81,23 @@ export async function answerTelegramCallbackQuery(
   return json.ok;
 }
 
+export async function editMessageReplyMarkup(
+  botToken: string,
+  chatId: string,
+  messageId: number,
+  replyMarkup?: TelegramReplyMarkup,
+): Promise<boolean> {
+  const json = await telegramApiRequest(botToken, "editMessageReplyMarkup", {
+    chat_id: chatId,
+    message_id: messageId,
+    reply_markup: replyMarkup ?? { inline_keyboard: [] },
+  });
+  if (!json.ok) {
+    console.error("[telegram] editMessageReplyMarkup failed:", json.description);
+  }
+  return json.ok;
+}
+
 export async function setTelegramWebhook(
   botToken: string,
   webhookUrl: string,

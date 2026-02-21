@@ -43,17 +43,28 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    const event = await prisma.medicationIntakeEvent.create({
-      data: {
-        userId: sessionData.user.id,
-        medicationId: id,
-        scheduledFor: scheduledFor ?? takenAt ?? new Date(),
-        takenAt: skipped ? null : (takenAt ?? new Date()),
-        skipped,
-        source: "WEB",
-        idempotencyKey: idempotencyKey ?? null,
-      },
-    });
+    const [event] = await prisma.$transaction([
+      prisma.medicationIntakeEvent.create({
+        data: {
+          userId: sessionData.user.id,
+          medicationId: id,
+          scheduledFor: scheduledFor ?? takenAt ?? new Date(),
+          takenAt: skipped ? null : (takenAt ?? new Date()),
+          skipped,
+          source: "WEB",
+          idempotencyKey: idempotencyKey ?? null,
+        },
+      }),
+      // Reset snooze when medication is taken
+      ...(!skipped
+        ? [
+            prisma.medication.update({
+              where: { id },
+              data: { snoozedUntil: null },
+            }),
+          ]
+        : []),
+    ]);
 
     await auditLog("medication.intake", {
       userId: sessionData.user.id,

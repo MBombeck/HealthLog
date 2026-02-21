@@ -44,7 +44,7 @@ export default function MeasurementsPage() {
           <h1 className="text-2xl font-bold tracking-tight">
             {t("measurements.title")}
           </h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground hidden text-sm sm:block">
             {t("measurements.subtitle")}
           </p>
         </div>
