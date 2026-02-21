@@ -715,7 +715,18 @@
     "reminderLateMinutesDescription": "Minutes after window end until the badge changes from yellow to orange.",
     "reminderMissedMinutes": "Missed threshold (minutes)",
     "reminderMissedMinutesDescription": "Minutes after window end until the intake is considered missed.",
-    "reminderThresholdsSave": "Save thresholds"
+    "reminderThresholdsSave": "Save thresholds",
+    "notificationTest": "Test Notifications",
+    "notificationTestSend": "Send test notification",
+    "notificationTestSuccess": "Test notification sent",
+    "notificationTestFailed": "Failed to send test notification",
+    "reminderCheckRun": "Run reminder check",
+    "reminderCheckSuccess": "Reminder check completed",
+    "reminderCheckFailed": "Failed to run reminder check",
+    "reminderCheckResults": "Results",
+    "reminderCheckNotifOn": "Notifications on",
+    "reminderCheckNotifOff": "Notifications off",
+    "reminderCheckEventsToday": "Events today"
   },
   "achievements": {
     "title": "Achievements",

@@ -715,7 +715,18 @@
     "reminderLateMinutesDescription": "Minuten nach Fenster-Ende bis der Badge von Gelb auf Orange wechselt.",
     "reminderMissedMinutes": "Verpasst-Schwellenwert (Minuten)",
     "reminderMissedMinutesDescription": "Minuten nach Fenster-Ende bis die Einnahme als verpasst gilt.",
-    "reminderThresholdsSave": "Schwellenwerte speichern"
+    "reminderThresholdsSave": "Schwellenwerte speichern",
+    "notificationTest": "Benachrichtigungen testen",
+    "notificationTestSend": "Test-Notification senden",
+    "notificationTestSuccess": "Test-Notification wurde gesendet",
+    "notificationTestFailed": "Test-Notification konnte nicht gesendet werden",
+    "reminderCheckRun": "Reminder-Check ausführen",
+    "reminderCheckSuccess": "Reminder-Check abgeschlossen",
+    "reminderCheckFailed": "Reminder-Check konnte nicht ausgeführt werden",
+    "reminderCheckResults": "Ergebnisse",
+    "reminderCheckNotifOn": "Benachrichtigungen an",
+    "reminderCheckNotifOff": "Benachrichtigungen aus",
+    "reminderCheckEventsToday": "Heutige Events"
   },
   "achievements": {
     "title": "Erfolge",
