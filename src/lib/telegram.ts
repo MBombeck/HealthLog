@@ -45,16 +45,21 @@ async function telegramApiRequest(
   }
 }
 
+export interface SendMessageResult {
+  ok: boolean;
+  messageId?: number;
+}
+
 /**
  * Send a text message via the Telegram Bot API.
- * Returns true on success, false on failure (never throws).
+ * Returns { ok, messageId } on success, { ok: false } on failure (never throws).
  */
 export async function sendTelegramMessage(
   botToken: string,
   chatId: string,
   text: string,
   options: SendMessageOptions = {},
-): Promise<boolean> {
+): Promise<SendMessageResult> {
   const json = await telegramApiRequest(botToken, "sendMessage", {
     chat_id: chatId,
     text,
@@ -63,8 +68,10 @@ export async function sendTelegramMessage(
   });
   if (!json.ok) {
     console.error("[telegram] sendMessage failed:", json.description);
+    return { ok: false };
   }
-  return json.ok;
+  const messageId = (json.result as { message_id?: number })?.message_id;
+  return { ok: true, messageId };
 }
 
 export async function answerTelegramCallbackQuery(
@@ -114,6 +121,21 @@ export async function setTelegramWebhook(
     return false;
   }
   return true;
+}
+
+export async function deleteMessage(
+  botToken: string,
+  chatId: string,
+  messageId: number,
+): Promise<boolean> {
+  const json = await telegramApiRequest(botToken, "deleteMessage", {
+    chat_id: chatId,
+    message_id: messageId,
+  });
+  if (!json.ok) {
+    console.error("[telegram] deleteMessage failed:", json.description);
+  }
+  return json.ok;
 }
 
 export async function deleteTelegramWebhook(

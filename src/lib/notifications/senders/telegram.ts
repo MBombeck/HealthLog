@@ -1,18 +1,25 @@
 import { sendTelegramMessage } from "@/lib/telegram";
+import type { SendMessageResult } from "@/lib/telegram";
+import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import type {
   TelegramChannelConfig,
   NotificationPayload,
 } from "@/lib/notifications/types";
 
+const TELEGRAM_CLEANUP_QUEUE = "telegram-message-cleanup";
+
 /**
  * Send notification via Telegram.
  * For MEDICATION_REMINDER events with medicationId metadata,
  * includes an inline keyboard button for marking as taken.
+ *
+ * After successful send, schedules a delayed pg-boss job
+ * to delete the message after 24 hours.
  */
 export async function sendViaTelegram(
   config: TelegramChannelConfig,
   payload: NotificationPayload,
-): Promise<boolean> {
+): Promise<SendMessageResult> {
   const medicationId = payload.metadata?.medicationId;
   const replyMarkup =
     payload.eventType === "MEDICATION_REMINDER" && medicationId
@@ -20,7 +27,7 @@ export async function sendViaTelegram(
           inline_keyboard: [
             [
               {
-                text: "✅ Genommen",
+                text: "Genommen",
                 callback_data: `taken:${medicationId}`,
               },
             ],
@@ -42,8 +49,35 @@ export async function sendViaTelegram(
         }
       : undefined;
 
-  return sendTelegramMessage(config.botToken, config.chatId, payload.message, {
-    parseMode: "HTML",
-    replyMarkup,
-  });
+  const result = await sendTelegramMessage(
+    config.botToken,
+    config.chatId,
+    payload.message,
+    {
+      parseMode: "HTML",
+      replyMarkup,
+    },
+  );
+
+  // Schedule cleanup: delete this message after 24 hours
+  if (result.ok && result.messageId) {
+    const boss = getGlobalBoss();
+    if (boss) {
+      try {
+        await boss.send(
+          TELEGRAM_CLEANUP_QUEUE,
+          {
+            userId: payload.userId,
+            chatId: config.chatId,
+            messageId: result.messageId,
+          },
+          { startAfter: 86400 },
+        );
+      } catch (err) {
+        console.error("[telegram] Failed to schedule cleanup:", err);
+      }
+    }
+  }
+
+  return result;
 }

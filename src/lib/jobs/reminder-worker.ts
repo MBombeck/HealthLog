@@ -26,6 +26,9 @@ import {
   recordInsightsRun,
   recordError,
 } from "@/lib/jobs/worker-status";
+import { setGlobalBoss } from "@/lib/jobs/boss-instance";
+import { deleteMessage } from "@/lib/telegram";
+import { decrypt } from "@/lib/crypto";
 
 function parseTimeToMinutes(value: string): number {
   const [h, m] = value.split(":").map(Number);
@@ -63,6 +66,7 @@ const BMI_STATUS_CRON = "20 2 * * *"; // daily at 02:20
 const MEDICATION_COMPLIANCE_STATUS_QUEUE =
   "insights-medication-compliance-status";
 const MEDICATION_COMPLIANCE_STATUS_CRON = "25 2 * * *"; // daily at 02:25
+const TELEGRAM_CLEANUP_QUEUE = "telegram-message-cleanup";
 
 interface ReminderCheckPayload {
   triggeredAt: string;
@@ -94,6 +98,12 @@ interface BmiStatusPayload {
 
 interface MedicationComplianceStatusPayload {
   triggeredAt: string;
+}
+
+interface TelegramCleanupPayload {
+  userId: string;
+  chatId: string;
+  messageId: number;
 }
 
 /**
@@ -279,7 +289,7 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
                   eventType: "MEDICATION_REMINDER",
                   userId: med.user.id,
                   title: `Verpasst: ${med.name}`,
-                  message: `<b>${med.name}</b> (${doseInfo}, ${timeWindow}) wurde als verpasst markiert.`,
+                  message: `Verpasst:\n<b>${med.name}</b> (${doseInfo}, ${timeWindow})\nAls verpasst markiert.`,
                   metadata: { medicationId: med.id },
                 });
               } catch (notifErr) {
@@ -302,7 +312,7 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
                 eventType: "MEDICATION_REMINDER",
                 userId: med.user.id,
                 title: `Erinnerung: ${med.name}`,
-                message: `Erinnerung: <b>${med.name}</b> (${doseInfo}, ${timeWindow}) — Zeitfenster endet in ${minutesToEnd} Min.`,
+                message: `Erinnerung:\n<b>${med.name}</b> (${doseInfo}, ${timeWindow})\nZeitfenster endet in ${minutesToEnd} Min.`,
                 metadata: { medicationId: med.id },
               });
             } catch (notifErr) {
@@ -322,7 +332,7 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
                 eventType: "MEDICATION_REMINDER",
                 userId: med.user.id,
                 title: `Überfällig: ${med.name}`,
-                message: `Überfällig: <b>${med.name}</b> (${doseInfo}, ${timeWindow}) — seit ${minutesPastEnd} Min überfällig.`,
+                message: `Überfällig:\n<b>${med.name}</b> (${doseInfo}, ${timeWindow})\nSeit ${minutesPastEnd} Min. überfällig.`,
                 metadata: { medicationId: med.id },
               });
             } catch (notifErr) {
@@ -636,6 +646,29 @@ async function handleMedicationComplianceStatusGenerate(
   }
 }
 
+/**
+ * Delete a Telegram message after a 24h delay.
+ * Scheduled by the Telegram sender when a notification is sent.
+ */
+async function handleTelegramCleanup(jobs: Job<TelegramCleanupPayload>[]) {
+  const prisma = getWorkerPrisma();
+  for (const job of jobs) {
+    try {
+      const { userId, chatId, messageId } = job.data;
+      const user = await prisma.user.findFirst({
+        where: { id: userId, telegramBotToken: { not: null } },
+        select: { telegramBotToken: true },
+      });
+      if (user?.telegramBotToken) {
+        const botToken = decrypt(user.telegramBotToken);
+        await deleteMessage(botToken, chatId, messageId);
+      }
+    } catch (err) {
+      console.error("[telegram-cleanup] Failed to delete message:", err);
+    }
+  }
+}
+
 export async function startReminderWorker() {
   console.log("[pg-boss] Initializing pg-boss with DATABASE_URL...");
   if (!DATABASE_URL) {
@@ -652,6 +685,7 @@ export async function startReminderWorker() {
 
   console.log("[pg-boss] Connecting to database...");
   await boss.start();
+  setGlobalBoss(boss);
   markWorkerStarted();
   console.log("[pg-boss] Connected and started");
 
@@ -665,6 +699,7 @@ export async function startReminderWorker() {
     PULSE_STATUS_QUEUE,
     BMI_STATUS_QUEUE,
     MEDICATION_COMPLIANCE_STATUS_QUEUE,
+    TELEGRAM_CLEANUP_QUEUE,
   ];
 
   for (const q of allQueues) {
@@ -729,6 +764,11 @@ export async function startReminderWorker() {
     MEDICATION_COMPLIANCE_STATUS_QUEUE,
     { localConcurrency: 1 },
     handleMedicationComplianceStatusGenerate,
+  );
+  await boss.work<TelegramCleanupPayload>(
+    TELEGRAM_CLEANUP_QUEUE,
+    { localConcurrency: 1 },
+    handleTelegramCleanup,
   );
 
   return boss;

@@ -124,7 +124,8 @@ async function sendToChannel(
       const config = JSON.parse(
         decrypt(encryptedConfig),
       ) as TelegramChannelConfig;
-      return sendViaTelegram(config, payload);
+      const result = await sendViaTelegram(config, payload);
+      return result.ok;
     }
     case "NTFY": {
       const config = JSON.parse(decrypt(encryptedConfig)) as NtfyChannelConfig;

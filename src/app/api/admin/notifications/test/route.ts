@@ -116,7 +116,8 @@ export async function POST() {
             const config = JSON.parse(
               decrypt(channel.config),
             ) as TelegramChannelConfig;
-            success = await sendViaTelegram(config, payload);
+            const telegramResult = await sendViaTelegram(config, payload);
+            success = telegramResult.ok;
             if (!success) {
               results.push({
                 channel: "TELEGRAM",

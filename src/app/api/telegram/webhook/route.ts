@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import {
   answerTelegramCallbackQuery,
-  editMessageReplyMarkup,
+  deleteMessage,
   sendTelegramMessage,
 } from "@/lib/telegram";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -106,16 +106,6 @@ async function markMedicationTaken(
   };
 }
 
-async function removeButtons(
-  botToken: string,
-  chatId: string,
-  messageId: number | undefined,
-) {
-  if (messageId) {
-    await editMessageReplyMarkup(botToken, chatId, messageId);
-  }
-}
-
 async function handleCallback(update: TelegramUpdate) {
   const callback = update.callback_query;
   if (!callback) return;
@@ -144,14 +134,9 @@ async function handleCallback(update: TelegramUpdate) {
 
     const result = await markMedicationTaken(user.id, medicationId, idempotencyKey);
     await answerTelegramCallbackQuery(botToken, callback.id, result.message);
-    await removeButtons(botToken, chatId, messageId);
-    await sendTelegramMessage(
-      botToken,
-      chatId,
-      result.ok
-        ? `✅ ${escapeHtml(result.message)}`
-        : `⚠️ ${escapeHtml(result.message)}`,
-    );
+    if (messageId) {
+      await deleteMessage(botToken, chatId, messageId);
+    }
   } else if (data.startsWith("snooze:")) {
     // Format: "snooze:{medicationId}:{minutes}"
     const parts = data.split(":");
@@ -177,13 +162,10 @@ async function handleCallback(update: TelegramUpdate) {
     });
 
     const label = minutes <= 60 ? "1 Stunde" : "3 Stunden";
-    await answerTelegramCallbackQuery(botToken, callback.id, `Für ${label} zurückgestellt.`);
-    await removeButtons(botToken, chatId, messageId);
-    await sendTelegramMessage(
-      botToken,
-      chatId,
-      `🔕 ${escapeHtml(medication.name)} für ${label} zurückgestellt.`,
-    );
+    await answerTelegramCallbackQuery(botToken, callback.id, `${medication.name} für ${label} zurückgestellt.`);
+    if (messageId) {
+      await deleteMessage(botToken, chatId, messageId);
+    }
   } else if (data.startsWith("skip:")) {
     const medicationId = data.slice("skip:".length).trim();
     if (!medicationId) {
@@ -237,12 +219,9 @@ async function handleCallback(update: TelegramUpdate) {
       callback.id,
       `${medication.name} übersprungen.`,
     );
-    await removeButtons(botToken, chatId, messageId);
-    await sendTelegramMessage(
-      botToken,
-      chatId,
-      `⏭ ${escapeHtml(medication.name)} für heute übersprungen.`,
-    );
+    if (messageId) {
+      await deleteMessage(botToken, chatId, messageId);
+    }
   } else {
     await answerTelegramCallbackQuery(botToken, callback.id, "Unbekannte Aktion.");
   }
