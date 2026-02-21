@@ -32,7 +32,8 @@
     "or": "oder",
     "unknown": "Unbekannt",
     "replace": "Ersetzen",
-    "import": "Importieren"
+    "import": "Importieren",
+    "test": "Test"
   },
   "nav": {
     "home": "Home",
@@ -631,6 +632,15 @@
     "ntfyGlobal": "ntfy-Benachrichtigungen systemweit erlauben.",
     "webPushGlobal": "Browser-Push-Benachrichtigungen systemweit erlauben.",
     "apiGlobal": "API-Endpunkte und API-Tokens systemweit erlauben.",
+    "sectionGeneral": "Allgemein",
+    "sectionIntegrations": "Integrationen",
+    "sectionMedication": "Medikamente",
+    "sectionManagement": "Verwaltung",
+    "umamiTitle": "Umami",
+    "umamiDescription": "Web-Analyse mit Umami",
+    "glitchtipTitle": "GlitchTip",
+    "glitchtipDescription": "Fehler-Tracking mit GlitchTip",
+    "webPushVapidTitle": "Web Push VAPID",
     "monitoring": "Monitoring (Umami/Glitchtip)",
     "monitoringDescription": "Konfiguration für Website-Analytics und Fehler-Tracking.",
     "umamiEnabled": "Umami-Tracking aktivieren.",

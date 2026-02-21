@@ -38,12 +38,12 @@ import {
   Eye,
   EyeOff,
   Clock,
-  GitCommit,
   Globe,
   MessageCircle,
   Bell,
   BellRing,
   Key,
+  Bug,
 } from "lucide-react";
 import { PasswordStrength } from "@/components/ui/password-strength";
 import { formatDate, formatDateTime } from "@/lib/format";
@@ -91,6 +91,12 @@ interface SystemStatus {
     activeTokens: number;
     activeSessions: number;
   };
+  integrations: {
+    umami: { configured: boolean; enabled: boolean } | null;
+    glitchtip: { configured: boolean; enabled: boolean } | null;
+    webPush: { configured: boolean } | null;
+    bugReport: { configured: boolean } | null;
+  };
 }
 
 interface AdminSettings {
@@ -126,7 +132,9 @@ export default function AdminPage() {
     { id: "section-system-status", label: t("admin.systemStatus") },
     { id: "section-admin-general", label: t("admin.appSettings") },
     { id: "section-admin-services", label: t("admin.servicesGlobal") },
-    { id: "section-admin-monitoring", label: t("admin.monitoring") },
+    { id: "section-admin-umami", label: "Umami" },
+    { id: "section-admin-glitchtip", label: "GlitchTip" },
+    { id: "section-admin-webpush", label: t("admin.webPushVapidTitle") },
     { id: "section-admin-bugreport", label: t("admin.bugReportGithub") },
     { id: "section-admin-reminders", label: t("admin.medicationReminders") },
     { id: "section-user-management", label: t("admin.userManagement") },
@@ -177,15 +185,29 @@ export default function AdminPage() {
 
         <div className="space-y-6">
           <SystemStatusSection id="section-system-status" />
-          <AppSettingsSection
-            ids={{
-              general: "section-admin-general",
-              services: "section-admin-services",
-              monitoring: "section-admin-monitoring",
-              bugReport: "section-admin-bugreport",
-              reminders: "section-admin-reminders",
-            }}
-          />
+
+          <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+            {t("admin.sectionGeneral")}
+          </h2>
+          <GeneralSettingsSection id="section-admin-general" />
+          <ServicesSection id="section-admin-services" />
+
+          <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+            {t("admin.sectionIntegrations")}
+          </h2>
+          <UmamiSection id="section-admin-umami" />
+          <GlitchtipSection id="section-admin-glitchtip" />
+          <WebPushVapidSection id="section-admin-webpush" />
+          <BugReportSection id="section-admin-bugreport" />
+
+          <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+            {t("admin.sectionMedication")}
+          </h2>
+          <RemindersSection id="section-admin-reminders" />
+
+          <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+            {t("admin.sectionManagement")}
+          </h2>
           <UserManagementSection
             id="section-user-management"
             queryClient={queryClient}
@@ -198,6 +220,49 @@ export default function AdminPage() {
       </div>
     </div>
   );
+}
+
+/* ─────────────────────── Shared helpers ─────────────────────── */
+
+function useAdminSettings() {
+  return useQuery({
+    queryKey: ["admin", "settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/settings");
+      if (!res.ok) throw new Error("Failed");
+      return (await res.json()).data as AdminSettings;
+    },
+  });
+}
+
+function useUpdateSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: Record<string, unknown>) => {
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "settings"] });
+    },
+  });
+}
+
+async function getApiErrorMessage(response: Response): Promise<string> {
+  const fallback = `HTTP ${response.status}`;
+  try {
+    const json = (await response.json()) as { error?: string };
+    if (typeof json?.error === "string" && json.error.trim().length > 0) {
+      return json.error;
+    }
+  } catch {
+    return fallback;
+  }
+  return fallback;
 }
 
 /* ─────────────────────── System Status ─────────────────────── */
@@ -223,11 +288,6 @@ function SystemStatusSection({ id }: { id: string }) {
       {status ? (
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatusItem
-            icon={Activity}
-            label={t("admin.version")}
-            value={`v${status.version}`}
-          />
-          <StatusItem
             icon={Database}
             label={t("admin.database")}
             value={
@@ -240,12 +300,6 @@ function SystemStatusSection({ id }: { id: string }) {
                 ? "text-dracula-green"
                 : "text-destructive"
             }
-          />
-          <StatusItem
-            icon={GitCommit}
-            label={t("admin.gitCommit")}
-            value={status.gitCommit}
-            className="font-mono"
           />
           <StatusItem
             icon={Clock}
@@ -272,6 +326,54 @@ function SystemStatusSection({ id }: { id: string }) {
             label={t("admin.activeSessions")}
             value={String(status.counts.activeSessions)}
           />
+          {status.integrations.umami && (
+            <StatusItem
+              icon={Activity}
+              label="Umami"
+              value={
+                status.integrations.umami.enabled
+                  ? t("common.active")
+                  : t("common.disabled")
+              }
+              className={
+                status.integrations.umami.enabled
+                  ? "text-dracula-green"
+                  : "text-destructive"
+              }
+            />
+          )}
+          {status.integrations.glitchtip && (
+            <StatusItem
+              icon={AlertTriangle}
+              label="GlitchTip"
+              value={
+                status.integrations.glitchtip.enabled
+                  ? t("common.active")
+                  : t("common.disabled")
+              }
+              className={
+                status.integrations.glitchtip.enabled
+                  ? "text-dracula-green"
+                  : "text-destructive"
+              }
+            />
+          )}
+          {status.integrations.webPush && (
+            <StatusItem
+              icon={BellRing}
+              label="Web Push"
+              value={t("admin.configured")}
+              className="text-dracula-green"
+            />
+          )}
+          {status.integrations.bugReport && (
+            <StatusItem
+              icon={Bug}
+              label="Bug Report"
+              value={t("admin.configured")}
+              className="text-dracula-green"
+            />
+          )}
         </div>
       ) : (
         <div className="mt-4 flex items-center gap-2">
@@ -307,86 +409,131 @@ function StatusItem({
   );
 }
 
-function Separator() {
-  return <div className="border-border border-t" />;
+/* ─────────────────────── General Settings ─────────────────────── */
+
+function GeneralSettingsSection({ id }: { id: string }) {
+  const { t } = useTranslations();
+  const { data: settings } = useAdminSettings();
+  const updateSettings = useUpdateSettings();
+
+  return (
+    <div id={id} className="bg-card border-border scroll-mt-28 rounded-xl border p-6">
+      <div className="flex items-center gap-2">
+        <Settings className="text-primary h-5 w-5" />
+        <h2 className="text-lg font-semibold">{t("admin.appSettings")}</h2>
+      </div>
+      <div className="mt-4 space-y-4">
+        <SettingsToggle
+          label={t("admin.registrationEnabled")}
+          description={t("admin.registrationEnabledDescription")}
+          checked={settings?.registrationEnabled ?? true}
+          onCheckedChange={(checked) =>
+            updateSettings.mutate({ registrationEnabled: checked })
+          }
+          disabled={updateSettings.isPending}
+        />
+
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium">{t("admin.defaultLanguage")}</p>
+            <p className="text-muted-foreground text-xs">
+              {t("admin.defaultLanguageDescription")}
+            </p>
+          </div>
+          <select
+            value={settings?.defaultLocale ?? "de"}
+            onChange={(e) =>
+              updateSettings.mutate({ defaultLocale: e.target.value })
+            }
+            disabled={updateSettings.isPending}
+            className="border-input bg-background text-foreground ring-offset-background focus-visible:ring-ring flex h-9 rounded-md border px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-none"
+          >
+            <option value="de">Deutsch</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-/* ─────────────────────── App Settings ─────────────────────── */
+/* ─────────────────────── Services ─────────────────────── */
 
-function AppSettingsSection({
-  ids,
-}: {
-  ids: {
-    general: string;
-    services: string;
-    monitoring: string;
-    bugReport: string;
-    reminders: string;
-  };
-}) {
+function ServicesSection({ id }: { id: string }) {
   const { t } = useTranslations();
-  const queryClient = useQueryClient();
-  const [bugReportRepoDraft, setBugReportRepoDraft] = useState<string | null>(
-    null,
-  );
-  const [bugReportTokenDraft, setBugReportTokenDraft] = useState("");
-  const [umamiScriptUrlDraft, setUmamiScriptUrlDraft] = useState<string | null>(
-    null,
-  );
-  const [umamiWebsiteIdDraft, setUmamiWebsiteIdDraft] = useState<string | null>(
-    null,
-  );
-  const [glitchtipDsnDraft, setGlitchtipDsnDraft] = useState<string | null>(
-    null,
-  );
-  const [glitchtipEnvironmentDraft, setGlitchtipEnvironmentDraft] = useState<
-    string | null
-  >(null);
-  const [webPushVapidPublicKeyDraft, setWebPushVapidPublicKeyDraft] =
-    useState<string | null>(null);
-  const [webPushVapidPrivateKeyDraft, setWebPushVapidPrivateKeyDraft] =
-    useState("");
-  const [webPushVapidSubjectDraft, setWebPushVapidSubjectDraft] = useState<
-    string | null
-  >(null);
-  const [reminderLateDraft, setReminderLateDraft] = useState<number | null>(null);
-  const [reminderMissedDraft, setReminderMissedDraft] = useState<number | null>(null);
+  const { data: settings } = useAdminSettings();
+  const updateSettings = useUpdateSettings();
 
-  const { data: settings } = useQuery({
-    queryKey: ["admin", "settings"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/settings");
-      if (!res.ok) throw new Error("Failed");
-      return (await res.json()).data as AdminSettings;
-    },
-  });
+  return (
+    <div id={id} className="bg-card border-border scroll-mt-28 rounded-xl border p-6">
+      <div className="flex items-center gap-2">
+        <Globe className="text-primary h-5 w-5" />
+        <h2 className="text-lg font-semibold">{t("admin.servicesGlobal")}</h2>
+      </div>
+      <p className="text-muted-foreground mt-1 text-xs">
+        {t("admin.servicesGlobalDescription")}
+      </p>
+      <div className="mt-4 space-y-3">
+        <SettingsToggle
+          label="Telegram"
+          description={t("admin.telegramGlobal")}
+          icon={MessageCircle}
+          checked={settings?.telegramGlobal ?? true}
+          onCheckedChange={(checked) =>
+            updateSettings.mutate({ telegramGlobal: checked })
+          }
+          disabled={updateSettings.isPending}
+        />
+        <SettingsToggle
+          label="ntfy"
+          description={t("admin.ntfyGlobal")}
+          icon={Bell}
+          checked={settings?.ntfyGlobal ?? true}
+          onCheckedChange={(checked) =>
+            updateSettings.mutate({ ntfyGlobal: checked })
+          }
+          disabled={updateSettings.isPending}
+        />
+        <SettingsToggle
+          label="Web Push"
+          description={t("admin.webPushGlobal")}
+          icon={Globe}
+          checked={settings?.webPushGlobal ?? true}
+          onCheckedChange={(checked) =>
+            updateSettings.mutate({ webPushGlobal: checked })
+          }
+          disabled={updateSettings.isPending}
+        />
+        <SettingsToggle
+          label="API"
+          description={t("admin.apiGlobal")}
+          icon={Key}
+          checked={settings?.apiGlobal ?? true}
+          onCheckedChange={(checked) =>
+            updateSettings.mutate({ apiGlobal: checked })
+          }
+          disabled={updateSettings.isPending}
+        />
+      </div>
+    </div>
+  );
+}
 
-  const updateSettings = useMutation({
-    mutationFn: async (data: Record<string, unknown>) => {
-      const res = await fetch("/api/admin/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error("Failed");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "settings"] });
-    },
-  });
+/* ─────────────────────── Umami ─────────────────────── */
 
-  async function getApiErrorMessage(response: Response): Promise<string> {
-    const fallback = `HTTP ${response.status}`;
-    try {
-      const json = (await response.json()) as { error?: string };
-      if (typeof json?.error === "string" && json.error.trim().length > 0) {
-        return json.error;
-      }
-    } catch {
-      return fallback;
-    }
-    return fallback;
-  }
+function UmamiSection({ id }: { id: string }) {
+  const { t } = useTranslations();
+  const { data: settings } = useAdminSettings();
+  const updateSettings = useUpdateSettings();
+  const [umamiScriptUrlDraft, setUmamiScriptUrlDraft] = useState<string | null>(null);
+  const [umamiWebsiteIdDraft, setUmamiWebsiteIdDraft] = useState<string | null>(null);
+
+  const umamiScriptUrlValue =
+    umamiScriptUrlDraft ?? settings?.umamiScriptUrl ?? "";
+  const umamiWebsiteIdValue =
+    umamiWebsiteIdDraft ?? settings?.umamiWebsiteId ?? "";
+
+  const configured = Boolean(settings?.umamiScriptUrl && settings?.umamiWebsiteId);
 
   const testUmami = useMutation({
     mutationFn: async () => {
@@ -411,6 +558,135 @@ function AppSettingsSection({
     },
   });
 
+  function saveUmamiSettings() {
+    updateSettings.mutate(
+      {
+        umamiScriptUrl: umamiScriptUrlValue,
+        umamiWebsiteId: umamiWebsiteIdValue,
+      },
+      {
+        onSuccess: () => {
+          setUmamiScriptUrlDraft(null);
+          setUmamiWebsiteIdDraft(null);
+        },
+      },
+    );
+  }
+
+  return (
+    <div id={id} className="bg-card border-border scroll-mt-28 rounded-xl border p-6">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Activity className="text-primary h-5 w-5" />
+          <h2 className="text-lg font-semibold">{t("admin.umamiTitle")}</h2>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {configured && (
+            <Badge className="border-dracula-green/30 bg-dracula-green/15 text-dracula-green">
+              {t("admin.configured")}
+            </Badge>
+          )}
+        </div>
+      </div>
+      <p className="text-muted-foreground mt-1 text-xs">
+        {t("admin.umamiDescription")}
+      </p>
+
+      <div className="mt-4 space-y-3">
+        <SettingsToggle
+          label="Umami"
+          description={t("admin.umamiEnabled")}
+          icon={Activity}
+          checked={settings?.umamiEnabled ?? false}
+          onCheckedChange={(checked) =>
+            updateSettings.mutate({ umamiEnabled: checked })
+          }
+          disabled={updateSettings.isPending}
+        />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="admin-umami-script-url" className="text-xs">
+              {t("admin.umamiScriptUrl")}
+            </Label>
+            <Input
+              id="admin-umami-script-url"
+              name="admin-umami-script-url"
+              value={umamiScriptUrlValue}
+              onChange={(event) =>
+                setUmamiScriptUrlDraft(event.target.value)
+              }
+              placeholder={t("admin.umamiScriptUrlPlaceholder")}
+              autoComplete="new-password"
+              spellCheck={false}
+              data-lpignore="true"
+              data-1p-ignore="true"
+              disabled={updateSettings.isPending}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="admin-umami-website-id" className="text-xs">
+              {t("admin.umamiWebsiteId")}
+            </Label>
+            <Input
+              id="admin-umami-website-id"
+              name="admin-umami-website-id"
+              value={umamiWebsiteIdValue}
+              onChange={(event) =>
+                setUmamiWebsiteIdDraft(event.target.value)
+              }
+              placeholder={t("admin.umamiWebsiteIdPlaceholder")}
+              autoComplete="new-password"
+              spellCheck={false}
+              data-lpignore="true"
+              data-1p-ignore="true"
+              disabled={updateSettings.isPending}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex justify-end gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => testUmami.mutate()}
+          disabled={testUmami.isPending || updateSettings.isPending}
+        >
+          {testUmami.isPending && (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          )}
+          {t("common.test")}
+        </Button>
+        <Button
+          size="sm"
+          onClick={saveUmamiSettings}
+          disabled={updateSettings.isPending}
+        >
+          {updateSettings.isPending && (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          )}
+          {t("common.save")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────── GlitchTip ─────────────────────── */
+
+function GlitchtipSection({ id }: { id: string }) {
+  const { t } = useTranslations();
+  const { data: settings } = useAdminSettings();
+  const updateSettings = useUpdateSettings();
+  const [glitchtipDsnDraft, setGlitchtipDsnDraft] = useState<string | null>(null);
+  const [glitchtipEnvironmentDraft, setGlitchtipEnvironmentDraft] = useState<string | null>(null);
+
+  const glitchtipDsnValue = glitchtipDsnDraft ?? settings?.glitchtipDsn ?? "";
+  const glitchtipEnvironmentValue =
+    glitchtipEnvironmentDraft ?? settings?.glitchtipEnvironment ?? "production";
+
+  const configured = Boolean(settings?.glitchtipDsn);
+
   const testGlitchtip = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/admin/monitoring/glitchtip-test", {
@@ -433,6 +709,353 @@ function AppSettingsSection({
       );
     },
   });
+
+  function saveGlitchtipSettings() {
+    updateSettings.mutate(
+      {
+        glitchtipDsn: glitchtipDsnValue,
+        glitchtipEnvironment: glitchtipEnvironmentValue,
+      },
+      {
+        onSuccess: () => {
+          setGlitchtipDsnDraft(null);
+          setGlitchtipEnvironmentDraft(null);
+        },
+      },
+    );
+  }
+
+  return (
+    <div id={id} className="bg-card border-border scroll-mt-28 rounded-xl border p-6">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="text-primary h-5 w-5" />
+          <h2 className="text-lg font-semibold">{t("admin.glitchtipTitle")}</h2>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {configured && (
+            <Badge className="border-dracula-green/30 bg-dracula-green/15 text-dracula-green">
+              {t("admin.configured")}
+            </Badge>
+          )}
+        </div>
+      </div>
+      <p className="text-muted-foreground mt-1 text-xs">
+        {t("admin.glitchtipDescription")}
+      </p>
+
+      <div className="mt-4 space-y-3">
+        <SettingsToggle
+          label="GlitchTip"
+          description={t("admin.glitchtipEnabled")}
+          icon={AlertTriangle}
+          checked={settings?.glitchtipEnabled ?? false}
+          onCheckedChange={(checked) =>
+            updateSettings.mutate({ glitchtipEnabled: checked })
+          }
+          disabled={updateSettings.isPending}
+        />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="admin-glitchtip-dsn" className="text-xs">
+              {t("admin.glitchtipDsn")}
+            </Label>
+            <Input
+              id="admin-glitchtip-dsn"
+              name="admin-glitchtip-dsn"
+              value={glitchtipDsnValue}
+              onChange={(event) => setGlitchtipDsnDraft(event.target.value)}
+              placeholder={t("admin.glitchtipDsnPlaceholder")}
+              autoComplete="new-password"
+              spellCheck={false}
+              data-lpignore="true"
+              data-1p-ignore="true"
+              disabled={updateSettings.isPending}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="admin-glitchtip-environment" className="text-xs">
+              {t("admin.glitchtipEnvironment")}
+            </Label>
+            <Input
+              id="admin-glitchtip-environment"
+              name="admin-glitchtip-environment"
+              value={glitchtipEnvironmentValue}
+              onChange={(event) =>
+                setGlitchtipEnvironmentDraft(event.target.value)
+              }
+              placeholder={t("admin.glitchtipEnvironmentPlaceholder")}
+              autoComplete="new-password"
+              spellCheck={false}
+              data-lpignore="true"
+              data-1p-ignore="true"
+              disabled={updateSettings.isPending}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex justify-end gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => testGlitchtip.mutate()}
+          disabled={testGlitchtip.isPending || updateSettings.isPending}
+        >
+          {testGlitchtip.isPending && (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          )}
+          {t("common.test")}
+        </Button>
+        <Button
+          size="sm"
+          onClick={saveGlitchtipSettings}
+          disabled={updateSettings.isPending}
+        >
+          {updateSettings.isPending && (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          )}
+          {t("common.save")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────── Web Push VAPID ─────────────────────── */
+
+function WebPushVapidSection({ id }: { id: string }) {
+  const { t } = useTranslations();
+  const { data: settings } = useAdminSettings();
+  const updateSettings = useUpdateSettings();
+  const [webPushVapidPublicKeyDraft, setWebPushVapidPublicKeyDraft] =
+    useState<string | null>(null);
+  const [webPushVapidPrivateKeyDraft, setWebPushVapidPrivateKeyDraft] =
+    useState("");
+  const [webPushVapidSubjectDraft, setWebPushVapidSubjectDraft] =
+    useState<string | null>(null);
+
+  const webPushVapidPublicKeyValue =
+    webPushVapidPublicKeyDraft ?? settings?.webPushVapidPublicKey ?? "";
+  const webPushVapidSubjectValue =
+    webPushVapidSubjectDraft ?? settings?.webPushVapidSubject ?? "";
+
+  const configured = settings?.webPushVapidConfigured ?? false;
+
+  function saveWebPushVapidSettings() {
+    const payload: Record<string, unknown> = {
+      webPushVapidPublicKey: webPushVapidPublicKeyValue,
+      webPushVapidSubject: webPushVapidSubjectValue,
+    };
+    if (webPushVapidPrivateKeyDraft.trim().length > 0) {
+      payload.webPushVapidPrivateKey = webPushVapidPrivateKeyDraft.trim();
+    }
+
+    updateSettings.mutate(payload, {
+      onSuccess: () => {
+        setWebPushVapidPublicKeyDraft(null);
+        setWebPushVapidPrivateKeyDraft("");
+        setWebPushVapidSubjectDraft(null);
+      },
+    });
+  }
+
+  return (
+    <div id={id} className="bg-card border-border scroll-mt-28 rounded-xl border p-6">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <BellRing className="text-primary h-5 w-5" />
+          <h2 className="text-lg font-semibold">{t("admin.webPushVapidTitle")}</h2>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {configured && (
+            <Badge className="border-dracula-green/30 bg-dracula-green/15 text-dracula-green">
+              {t("admin.configured")}
+            </Badge>
+          )}
+        </div>
+      </div>
+      <p className="text-muted-foreground mt-1 text-xs">
+        {t("admin.webPushVapidDescription")}
+      </p>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label htmlFor="admin-web-push-public-key" className="text-xs">
+            {t("admin.webPushVapidPublicKey")}
+          </Label>
+          <Input
+            id="admin-web-push-public-key"
+            name="admin-web-push-public-key"
+            value={webPushVapidPublicKeyValue}
+            onChange={(event) =>
+              setWebPushVapidPublicKeyDraft(event.target.value)
+            }
+            placeholder={t("admin.webPushVapidPublicKeyPlaceholder")}
+            autoComplete="new-password"
+            spellCheck={false}
+            data-lpignore="true"
+            data-1p-ignore="true"
+            disabled={updateSettings.isPending}
+          />
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label htmlFor="admin-web-push-private-key" className="text-xs">
+            {t("admin.webPushVapidPrivateKey")}
+          </Label>
+          <PasswordInput
+            id="admin-web-push-private-key"
+            name="admin-web-push-private-key"
+            value={webPushVapidPrivateKeyDraft}
+            onChange={(event) =>
+              setWebPushVapidPrivateKeyDraft(event.target.value)
+            }
+            placeholder={t("admin.webPushVapidPrivateKeyPlaceholder")}
+            autoComplete="new-password"
+            spellCheck={false}
+            data-lpignore="true"
+            data-1p-ignore="true"
+            disabled={updateSettings.isPending}
+          />
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label htmlFor="admin-web-push-subject" className="text-xs">
+            {t("admin.webPushVapidSubject")}
+          </Label>
+          <Input
+            id="admin-web-push-subject"
+            name="admin-web-push-subject"
+            value={webPushVapidSubjectValue}
+            onChange={(event) =>
+              setWebPushVapidSubjectDraft(event.target.value)
+            }
+            placeholder={t("admin.webPushVapidSubjectPlaceholder")}
+            autoComplete="new-password"
+            spellCheck={false}
+            data-lpignore="true"
+            data-1p-ignore="true"
+            disabled={updateSettings.isPending}
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 flex justify-end gap-2">
+        <Button
+          size="sm"
+          onClick={saveWebPushVapidSettings}
+          disabled={updateSettings.isPending}
+        >
+          {updateSettings.isPending && (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          )}
+          {t("common.save")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────── Bug Report ─────────────────────── */
+
+function BugReportSection({ id }: { id: string }) {
+  const { t } = useTranslations();
+  const { data: settings } = useAdminSettings();
+  const updateSettings = useUpdateSettings();
+  const [bugReportRepoDraft, setBugReportRepoDraft] = useState<string | null>(null);
+  const [bugReportTokenDraft, setBugReportTokenDraft] = useState("");
+
+  const bugReportRepoValue = bugReportRepoDraft ?? settings?.bugReportRepo ?? "";
+  const configured = settings?.bugReportConfigured ?? false;
+
+  function saveBugReportSettings() {
+    const payload: Record<string, unknown> = {
+      bugReportRepo: bugReportRepoValue,
+    };
+    if (bugReportTokenDraft.trim().length > 0) {
+      payload.bugReportToken = bugReportTokenDraft.trim();
+    }
+
+    updateSettings.mutate(payload, {
+      onSuccess: () => {
+        setBugReportRepoDraft(null);
+        setBugReportTokenDraft("");
+      },
+    });
+  }
+
+  return (
+    <div id={id} className="bg-card border-border scroll-mt-28 rounded-xl border p-6">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Bug className="text-primary h-5 w-5" />
+          <h2 className="text-lg font-semibold">{t("admin.bugReportGithub")}</h2>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {configured && (
+            <Badge className="border-dracula-green/30 bg-dracula-green/15 text-dracula-green">
+              {t("admin.configured")}
+            </Badge>
+          )}
+        </div>
+      </div>
+      <p className="text-muted-foreground mt-1 text-xs">
+        {t("admin.bugReportGithubDescription")}
+      </p>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="admin-bugreport-repo" className="text-xs">
+            {t("admin.bugReportRepo")}
+          </Label>
+          <Input
+            id="admin-bugreport-repo"
+            value={bugReportRepoValue}
+            onChange={(event) => setBugReportRepoDraft(event.target.value)}
+            placeholder={t("admin.bugReportRepoPlaceholder")}
+            autoComplete="off"
+            data-lpignore="true"
+            data-1p-ignore="true"
+            disabled={updateSettings.isPending}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="admin-bugreport-token" className="text-xs">
+            {t("admin.bugReportToken")}
+          </Label>
+          <PasswordInput
+            id="admin-bugreport-token"
+            value={bugReportTokenDraft}
+            onChange={(event) => setBugReportTokenDraft(event.target.value)}
+            placeholder={t("admin.bugReportTokenPlaceholder")}
+            disabled={updateSettings.isPending}
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 flex justify-end gap-2">
+        <Button
+          size="sm"
+          onClick={saveBugReportSettings}
+          disabled={updateSettings.isPending}
+        >
+          {updateSettings.isPending && (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          )}
+          {t("common.save")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────── Reminders ─────────────────────── */
+
+function RemindersSection({ id }: { id: string }) {
+  const { t } = useTranslations();
+  const { data: settings } = useAdminSettings();
+  const updateSettings = useUpdateSettings();
+  const [reminderLateDraft, setReminderLateDraft] = useState<number | null>(null);
+  const [reminderMissedDraft, setReminderMissedDraft] = useState<number | null>(null);
 
   const testNotification = useMutation({
     mutationFn: async () => {
@@ -515,657 +1138,188 @@ function AppSettingsSection({
     },
   });
 
-  const bugReportRepoValue = bugReportRepoDraft ?? settings?.bugReportRepo ?? "";
-  const umamiScriptUrlValue =
-    umamiScriptUrlDraft ?? settings?.umamiScriptUrl ?? "";
-  const umamiWebsiteIdValue = umamiWebsiteIdDraft ?? settings?.umamiWebsiteId ?? "";
-  const glitchtipDsnValue = glitchtipDsnDraft ?? settings?.glitchtipDsn ?? "";
-  const glitchtipEnvironmentValue =
-    glitchtipEnvironmentDraft ?? settings?.glitchtipEnvironment ?? "production";
-  const webPushVapidPublicKeyValue =
-    webPushVapidPublicKeyDraft ?? settings?.webPushVapidPublicKey ?? "";
-  const webPushVapidSubjectValue =
-    webPushVapidSubjectDraft ?? settings?.webPushVapidSubject ?? "";
-
-  function saveBugReportSettings() {
-    const payload: Record<string, unknown> = {
-      bugReportRepo: bugReportRepoValue,
-    };
-    if (bugReportTokenDraft.trim().length > 0) {
-      payload.bugReportToken = bugReportTokenDraft.trim();
-    }
-
-    updateSettings.mutate(payload, {
-      onSuccess: () => {
-        setBugReportRepoDraft(null);
-        setBugReportTokenDraft("");
-      },
-    });
-  }
-
-  function saveMonitoringSettings() {
-    const payload: Record<string, unknown> = {
-      umamiScriptUrl: umamiScriptUrlValue,
-      umamiWebsiteId: umamiWebsiteIdValue,
-      glitchtipDsn: glitchtipDsnValue,
-      glitchtipEnvironment: glitchtipEnvironmentValue,
-      webPushVapidPublicKey: webPushVapidPublicKeyValue,
-      webPushVapidSubject: webPushVapidSubjectValue,
-    };
-    if (webPushVapidPrivateKeyDraft.trim().length > 0) {
-      payload.webPushVapidPrivateKey = webPushVapidPrivateKeyDraft.trim();
-    }
-
-    updateSettings.mutate(payload, {
-      onSuccess: () => {
-        setUmamiScriptUrlDraft(null);
-        setUmamiWebsiteIdDraft(null);
-        setGlitchtipDsnDraft(null);
-        setGlitchtipEnvironmentDraft(null);
-        setWebPushVapidPublicKeyDraft(null);
-        setWebPushVapidPrivateKeyDraft("");
-        setWebPushVapidSubjectDraft(null);
-      },
-    });
-  }
-
-  function saveUmamiSettings() {
-    updateSettings.mutate(
-      {
-        umamiScriptUrl: umamiScriptUrlValue,
-        umamiWebsiteId: umamiWebsiteIdValue,
-      },
-      {
-        onSuccess: () => {
-          setUmamiScriptUrlDraft(null);
-          setUmamiWebsiteIdDraft(null);
-        },
-      },
-    );
-  }
-
   return (
-    <div id={ids.general} className="bg-card border-border scroll-mt-28 rounded-xl border p-6">
+    <div id={id} className="bg-card border-border scroll-mt-28 rounded-xl border p-6">
       <div className="flex items-center gap-2">
-        <Settings className="text-primary h-5 w-5" />
-        <h2 className="text-lg font-semibold">{t("admin.appSettings")}</h2>
+        <Clock className="text-primary h-5 w-5" />
+        <h2 className="text-lg font-semibold">
+          {t("admin.medicationReminders")}
+        </h2>
       </div>
-      <div className="mt-4 space-y-4">
-        {/* Registration toggle */}
-        <SettingsToggle
-          label={t("admin.registrationEnabled")}
-          description={t("admin.registrationEnabledDescription")}
-          checked={settings?.registrationEnabled ?? true}
-          onCheckedChange={(checked) =>
-            updateSettings.mutate({ registrationEnabled: checked })
-          }
-          disabled={updateSettings.isPending}
-        />
+      <p className="text-muted-foreground mt-1 text-xs">
+        {t("admin.medicationRemindersDescription")}
+      </p>
 
-        <Separator />
-
-        {/* Default locale */}
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium">{t("admin.defaultLanguage")}</p>
+      <div className="mt-4 space-y-3">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="admin-reminder-late" className="text-xs">
+              {t("admin.reminderLateMinutes")}
+            </Label>
             <p className="text-muted-foreground text-xs">
-              {t("admin.defaultLanguageDescription")}
+              {t("admin.reminderLateMinutesDescription")}
             </p>
+            <Input
+              id="admin-reminder-late"
+              type="number"
+              min={15}
+              max={480}
+              value={reminderLateDraft ?? settings?.reminderLateMinutes ?? 120}
+              onChange={(e) => setReminderLateDraft(Number(e.target.value))}
+              autoComplete="off"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              disabled={updateSettings.isPending}
+              className="w-32"
+            />
           </div>
-          <select
-            value={settings?.defaultLocale ?? "de"}
-            onChange={(e) =>
-              updateSettings.mutate({ defaultLocale: e.target.value })
-            }
-            disabled={updateSettings.isPending}
-            className="border-input bg-background text-foreground ring-offset-background focus-visible:ring-ring flex h-9 rounded-md border px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-none"
-          >
-            <option value="de">Deutsch</option>
-            <option value="en">English</option>
-          </select>
-        </div>
-
-        <Separator />
-
-        {/* Service toggles */}
-        <div id={ids.services} className="scroll-mt-28">
-          <p className="mb-3 text-sm font-medium">
-            {t("admin.servicesGlobal")}
-          </p>
-          <p className="text-muted-foreground mb-3 text-xs">
-            {t("admin.servicesGlobalDescription")}
-          </p>
-          <div className="space-y-3">
-            <SettingsToggle
-              label="Telegram"
-              description={t("admin.telegramGlobal")}
-              icon={MessageCircle}
-              checked={settings?.telegramGlobal ?? true}
-              onCheckedChange={(checked) =>
-                updateSettings.mutate({ telegramGlobal: checked })
-              }
+          <div className="space-y-1.5">
+            <Label htmlFor="admin-reminder-missed" className="text-xs">
+              {t("admin.reminderMissedMinutes")}
+            </Label>
+            <p className="text-muted-foreground text-xs">
+              {t("admin.reminderMissedMinutesDescription")}
+            </p>
+            <Input
+              id="admin-reminder-missed"
+              type="number"
+              min={30}
+              max={720}
+              value={reminderMissedDraft ?? settings?.reminderMissedMinutes ?? 240}
+              onChange={(e) => setReminderMissedDraft(Number(e.target.value))}
+              autoComplete="off"
+              data-lpignore="true"
+              data-1p-ignore="true"
               disabled={updateSettings.isPending}
-            />
-            <SettingsToggle
-              label="ntfy"
-              description={t("admin.ntfyGlobal")}
-              icon={Bell}
-              checked={settings?.ntfyGlobal ?? true}
-              onCheckedChange={(checked) =>
-                updateSettings.mutate({ ntfyGlobal: checked })
-              }
-              disabled={updateSettings.isPending}
-            />
-            <SettingsToggle
-              label="Web Push"
-              description={t("admin.webPushGlobal")}
-              icon={Globe}
-              checked={settings?.webPushGlobal ?? true}
-              onCheckedChange={(checked) =>
-                updateSettings.mutate({ webPushGlobal: checked })
-              }
-              disabled={updateSettings.isPending}
-            />
-            <SettingsToggle
-              label="API"
-              description={t("admin.apiGlobal")}
-              icon={Key}
-              checked={settings?.apiGlobal ?? true}
-              onCheckedChange={(checked) =>
-                updateSettings.mutate({ apiGlobal: checked })
-              }
-              disabled={updateSettings.isPending}
+              className="w-32"
             />
           </div>
         </div>
+      </div>
 
-        <Separator />
-
-        <div id={ids.monitoring} className="scroll-mt-28 space-y-4">
-          <div>
-            <p className="text-sm font-medium">{t("admin.monitoring")}</p>
-            <p className="text-muted-foreground text-xs">
-              {t("admin.monitoringDescription")}
-            </p>
-          </div>
-
-          <div className="space-y-3 rounded-lg border border-white/10 p-3">
-            <SettingsToggle
-              label="Umami"
-              description={t("admin.umamiEnabled")}
-              icon={Activity}
-              checked={settings?.umamiEnabled ?? false}
-              onCheckedChange={(checked) =>
-                updateSettings.mutate({ umamiEnabled: checked })
-              }
-              disabled={updateSettings.isPending}
-            />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="admin-umami-script-url" className="text-xs">
-                  {t("admin.umamiScriptUrl")}
-                </Label>
-                <Input
-                  id="admin-umami-script-url"
-                  name="admin-umami-script-url"
-                  value={umamiScriptUrlValue}
-                  onChange={(event) =>
-                    setUmamiScriptUrlDraft(event.target.value)
-                  }
-                  placeholder={t("admin.umamiScriptUrlPlaceholder")}
-                  autoComplete="new-password"
-                  spellCheck={false}
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  disabled={updateSettings.isPending}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="admin-umami-website-id" className="text-xs">
-                  {t("admin.umamiWebsiteId")}
-                </Label>
-                <Input
-                  id="admin-umami-website-id"
-                  name="admin-umami-website-id"
-                  value={umamiWebsiteIdValue}
-                  onChange={(event) =>
-                    setUmamiWebsiteIdDraft(event.target.value)
-                  }
-                  placeholder={t("admin.umamiWebsiteIdPlaceholder")}
-                  autoComplete="new-password"
-                  spellCheck={false}
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  disabled={updateSettings.isPending}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                size="sm"
-                onClick={saveUmamiSettings}
-                disabled={updateSettings.isPending}
-              >
-                {updateSettings.isPending && (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                )}
-                {t("admin.monitoringSave")}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => testUmami.mutate()}
-                disabled={testUmami.isPending || updateSettings.isPending}
-              >
-                {testUmami.isPending && (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                )}
-                {t("admin.monitoringTestUmami")}
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-3 rounded-lg border border-white/10 p-3">
-            <SettingsToggle
-              label="Glitchtip"
-              description={t("admin.glitchtipEnabled")}
-              icon={AlertTriangle}
-              checked={settings?.glitchtipEnabled ?? false}
-              onCheckedChange={(checked) =>
-                updateSettings.mutate({ glitchtipEnabled: checked })
-              }
-              disabled={updateSettings.isPending}
-            />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="admin-glitchtip-dsn" className="text-xs">
-                  {t("admin.glitchtipDsn")}
-                </Label>
-                <Input
-                  id="admin-glitchtip-dsn"
-                  name="admin-glitchtip-dsn"
-                  value={glitchtipDsnValue}
-                  onChange={(event) => setGlitchtipDsnDraft(event.target.value)}
-                  placeholder={t("admin.glitchtipDsnPlaceholder")}
-                  autoComplete="new-password"
-                  spellCheck={false}
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  disabled={updateSettings.isPending}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="admin-glitchtip-environment" className="text-xs">
-                  {t("admin.glitchtipEnvironment")}
-                </Label>
-                <Input
-                  id="admin-glitchtip-environment"
-                  name="admin-glitchtip-environment"
-                  value={glitchtipEnvironmentValue}
-                  onChange={(event) =>
-                    setGlitchtipEnvironmentDraft(event.target.value)
-                  }
-                  placeholder={t("admin.glitchtipEnvironmentPlaceholder")}
-                  autoComplete="new-password"
-                  spellCheck={false}
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  disabled={updateSettings.isPending}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => testGlitchtip.mutate()}
-                disabled={testGlitchtip.isPending || updateSettings.isPending}
-              >
-                {testGlitchtip.isPending && (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                )}
-                {t("admin.monitoringTestGlitchtip")}
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-3 rounded-lg border border-white/10 p-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <BellRing className="text-muted-foreground h-4 w-4" />
-                <p className="text-sm font-medium">{t("admin.webPushVapid")}</p>
-              </div>
-              {settings?.webPushVapidConfigured ? (
-                <Badge className="border-dracula-green/30 bg-dracula-green/15 text-dracula-green">
-                  {t("admin.configured")}
-                </Badge>
-              ) : (
-                <Badge variant="outline">{t("admin.notConfigured")}</Badge>
-              )}
-            </div>
-            <p className="text-muted-foreground text-xs">
-              {t("admin.webPushVapidDescription")}
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="admin-web-push-public-key" className="text-xs">
-                  {t("admin.webPushVapidPublicKey")}
-                </Label>
-                <Input
-                  id="admin-web-push-public-key"
-                  name="admin-web-push-public-key"
-                  value={webPushVapidPublicKeyValue}
-                  onChange={(event) =>
-                    setWebPushVapidPublicKeyDraft(event.target.value)
-                  }
-                  placeholder={t("admin.webPushVapidPublicKeyPlaceholder")}
-                  autoComplete="new-password"
-                  spellCheck={false}
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  disabled={updateSettings.isPending}
-                />
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="admin-web-push-private-key" className="text-xs">
-                  {t("admin.webPushVapidPrivateKey")}
-                </Label>
-                <PasswordInput
-                  id="admin-web-push-private-key"
-                  name="admin-web-push-private-key"
-                  value={webPushVapidPrivateKeyDraft}
-                  onChange={(event) =>
-                    setWebPushVapidPrivateKeyDraft(event.target.value)
-                  }
-                  placeholder={t("admin.webPushVapidPrivateKeyPlaceholder")}
-                  autoComplete="new-password"
-                  spellCheck={false}
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  disabled={updateSettings.isPending}
-                />
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="admin-web-push-subject" className="text-xs">
-                  {t("admin.webPushVapidSubject")}
-                </Label>
-                <Input
-                  id="admin-web-push-subject"
-                  name="admin-web-push-subject"
-                  value={webPushVapidSubjectValue}
-                  onChange={(event) =>
-                    setWebPushVapidSubjectDraft(event.target.value)
-                  }
-                  placeholder={t("admin.webPushVapidSubjectPlaceholder")}
-                  autoComplete="new-password"
-                  spellCheck={false}
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  disabled={updateSettings.isPending}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <Button
-              size="sm"
-              onClick={saveMonitoringSettings}
-              disabled={updateSettings.isPending}
-            >
-              {updateSettings.isPending && (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              )}
-              {t("admin.monitoringSave")}
-            </Button>
-          </div>
-        </div>
-
-        <Separator />
-
-        <div id={ids.bugReport} className="scroll-mt-28 space-y-3">
-          <div>
-            <p className="text-sm font-medium">{t("admin.bugReportGithub")}</p>
-            <p className="text-muted-foreground text-xs">
-              {t("admin.bugReportGithubDescription")}
-            </p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="admin-bugreport-repo" className="text-xs">
-                {t("admin.bugReportRepo")}
-              </Label>
-              <Input
-                id="admin-bugreport-repo"
-                value={bugReportRepoValue}
-                onChange={(event) => setBugReportRepoDraft(event.target.value)}
-                placeholder={t("admin.bugReportRepoPlaceholder")}
-                autoComplete="off"
-                data-lpignore="true"
-                data-1p-ignore="true"
-                disabled={updateSettings.isPending}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="admin-bugreport-token" className="text-xs">
-                {t("admin.bugReportToken")}
-              </Label>
-              <PasswordInput
-                id="admin-bugreport-token"
-                value={bugReportTokenDraft}
-                onChange={(event) => setBugReportTokenDraft(event.target.value)}
-                placeholder={t("admin.bugReportTokenPlaceholder")}
-                disabled={updateSettings.isPending}
-              />
-            </div>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-muted-foreground text-xs">
-              {settings?.bugReportConfigured
-                ? t("admin.bugReportConfigured")
-                : t("admin.bugReportNotConfigured")}
-            </p>
-            <Button
-              size="sm"
-              onClick={saveBugReportSettings}
-              disabled={updateSettings.isPending}
-            >
-              {updateSettings.isPending && (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              )}
-              {t("admin.bugReportSave")}
-            </Button>
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* ── Medication Reminders ── */}
-        <div id={ids.reminders} className="scroll-mt-28 space-y-3">
-          <div className="flex items-center gap-2">
-            <Clock className="text-muted-foreground h-4 w-4" />
-            <div>
-              <p className="text-sm font-medium">
-                {t("admin.medicationReminders")}
-              </p>
-              <p className="text-muted-foreground text-xs">
-                {t("admin.medicationRemindersDescription")}
-              </p>
-            </div>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="admin-reminder-late" className="text-xs">
-                {t("admin.reminderLateMinutes")}
-              </Label>
-              <p className="text-muted-foreground text-xs">
-                {t("admin.reminderLateMinutesDescription")}
-              </p>
-              <Input
-                id="admin-reminder-late"
-                type="number"
-                min={15}
-                max={480}
-                value={reminderLateDraft ?? settings?.reminderLateMinutes ?? 120}
-                onChange={(e) => setReminderLateDraft(Number(e.target.value))}
-                autoComplete="off"
-                data-lpignore="true"
-                data-1p-ignore="true"
-                disabled={updateSettings.isPending}
-                className="w-32"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="admin-reminder-missed" className="text-xs">
-                {t("admin.reminderMissedMinutes")}
-              </Label>
-              <p className="text-muted-foreground text-xs">
-                {t("admin.reminderMissedMinutesDescription")}
-              </p>
-              <Input
-                id="admin-reminder-missed"
-                type="number"
-                min={30}
-                max={720}
-                value={reminderMissedDraft ?? settings?.reminderMissedMinutes ?? 240}
-                onChange={(e) => setReminderMissedDraft(Number(e.target.value))}
-                autoComplete="off"
-                data-lpignore="true"
-                data-1p-ignore="true"
-                disabled={updateSettings.isPending}
-                className="w-32"
-              />
-            </div>
-          </div>
-          <Button
-            size="sm"
-            onClick={() => {
-              updateSettings.mutate(
-                {
-                  ...(reminderLateDraft != null && { reminderLateMinutes: reminderLateDraft }),
-                  ...(reminderMissedDraft != null && { reminderMissedMinutes: reminderMissedDraft }),
-                },
-                {
-                  onSuccess: () => {
-                    setReminderLateDraft(null);
-                    setReminderMissedDraft(null);
-                  },
-                },
-              );
-            }}
-            disabled={updateSettings.isPending || (reminderLateDraft == null && reminderMissedDraft == null)}
-          >
-            {updateSettings.isPending && (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            )}
-            {t("admin.reminderThresholdsSave")}
-          </Button>
-
-          <Separator />
-
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium">{t("admin.notificationTest")}</h4>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => testNotification.mutate()}
-                disabled={testNotification.isPending}
-              >
-                {testNotification.isPending && (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                )}
-                <Bell className="mr-1.5 h-3.5 w-3.5" />
-                {t("admin.notificationTestSend")}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => reminderCheck.mutate()}
-                disabled={reminderCheck.isPending}
-              >
-                {reminderCheck.isPending && (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                )}
-                <Activity className="mr-1.5 h-3.5 w-3.5" />
-                {t("admin.reminderCheckRun")}
-              </Button>
-            </div>
-
-            {testNotification.data?.results && testNotification.data.results.length > 0 && (
-              <div className="space-y-1">
-                {testNotification.data.results.map((r, i) => (
-                  <div key={i} className="text-xs flex items-center gap-1.5">
-                    {r.success ? (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-green-400 shrink-0" />
-                    ) : (
-                      <XCircle className="h-3.5 w-3.5 text-red-400 shrink-0" />
-                    )}
-                    <span className="font-medium">{r.channel}</span>
-                    {r.error && (
-                      <span className="text-muted-foreground">— {r.error}</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {reminderCheck.data?.medications && reminderCheck.data.medications.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">{t("admin.reminderCheckResults")}</h4>
-              <div className="space-y-2">
-                {reminderCheck.data.medications.map((med, i) => (
-                  <div
-                    key={i}
-                    className="bg-muted/50 rounded-lg p-3 space-y-1.5"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">
-                        {med.name} ({med.dose})
-                      </span>
-                      <Badge variant={med.notificationsEnabled ? "default" : "secondary"}>
-                        {med.notificationsEnabled ? t("admin.reminderCheckNotifOn") : t("admin.reminderCheckNotifOff")}
-                      </Badge>
-                    </div>
-                    <p className="text-muted-foreground text-xs">
-                      {med.user} — {med.dayOfWeek} {med.localTime} — {t("admin.reminderCheckEventsToday")}: {med.eventsToday}
-                    </p>
-                    {med.schedules.map((sched, j) => {
-                      const statusColor =
-                        sched.status === "open"
-                          ? "text-green-400"
-                          : sched.status === "threshold"
-                            ? "text-yellow-400"
-                            : sched.status === "missed"
-                              ? "text-red-400"
-                              : sched.status === "skipped"
-                                ? "text-muted-foreground"
-                                : "";
-                      return (
-                        <div key={j} className="text-xs flex items-start gap-1.5">
-                          <span className="text-muted-foreground shrink-0">{sched.window}</span>
-                          <span className="text-muted-foreground shrink-0">[{sched.days}]</span>
-                          <span className={statusColor}>{sched.label}</span>
-                          {sched.notificationSent && (
-                            <span className="text-green-400 shrink-0 flex items-center gap-0.5">
-                              <Bell className="h-3 w-3" />
-                              {t("admin.reminderCheckNotifSent")}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-            </div>
+      <div className="mt-4 flex justify-end gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => testNotification.mutate()}
+          disabled={testNotification.isPending}
+        >
+          {testNotification.isPending && (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
           )}
-        </div>
+          <Bell className="mr-1.5 h-3.5 w-3.5" />
+          {t("admin.notificationTestSend")}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => reminderCheck.mutate()}
+          disabled={reminderCheck.isPending}
+        >
+          {reminderCheck.isPending && (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          )}
+          <Activity className="mr-1.5 h-3.5 w-3.5" />
+          {t("admin.reminderCheckRun")}
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => {
+            updateSettings.mutate(
+              {
+                ...(reminderLateDraft != null && { reminderLateMinutes: reminderLateDraft }),
+                ...(reminderMissedDraft != null && { reminderMissedMinutes: reminderMissedDraft }),
+              },
+              {
+                onSuccess: () => {
+                  setReminderLateDraft(null);
+                  setReminderMissedDraft(null);
+                },
+              },
+            );
+          }}
+          disabled={updateSettings.isPending || (reminderLateDraft == null && reminderMissedDraft == null)}
+        >
+          {updateSettings.isPending && (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          )}
+          {t("common.save")}
+        </Button>
       </div>
+
+      {testNotification.data?.results && testNotification.data.results.length > 0 && (
+        <div className="mt-4 space-y-1">
+          {testNotification.data.results.map((r, i) => (
+            <div key={i} className="text-xs flex items-center gap-1.5">
+              {r.success ? (
+                <CheckCircle2 className="h-3.5 w-3.5 text-green-400 shrink-0" />
+              ) : (
+                <XCircle className="h-3.5 w-3.5 text-red-400 shrink-0" />
+              )}
+              <span className="font-medium">{r.channel}</span>
+              {r.error && (
+                <span className="text-muted-foreground">— {r.error}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {reminderCheck.data?.medications && reminderCheck.data.medications.length > 0 && (
+        <div className="mt-4 space-y-2">
+          <h4 className="text-sm font-medium">{t("admin.reminderCheckResults")}</h4>
+          <div className="space-y-2">
+            {reminderCheck.data.medications.map((med, i) => (
+              <div
+                key={i}
+                className="bg-muted/50 rounded-lg p-3 space-y-1.5"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">
+                    {med.name} ({med.dose})
+                  </span>
+                  <Badge variant={med.notificationsEnabled ? "default" : "secondary"}>
+                    {med.notificationsEnabled ? t("admin.reminderCheckNotifOn") : t("admin.reminderCheckNotifOff")}
+                  </Badge>
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  {med.user} — {med.dayOfWeek} {med.localTime} — {t("admin.reminderCheckEventsToday")}: {med.eventsToday}
+                </p>
+                {med.schedules.map((sched, j) => {
+                  const statusColor =
+                    sched.status === "open"
+                      ? "text-green-400"
+                      : sched.status === "threshold"
+                        ? "text-yellow-400"
+                        : sched.status === "missed"
+                          ? "text-red-400"
+                          : sched.status === "skipped"
+                            ? "text-muted-foreground"
+                            : "";
+                  return (
+                    <div key={j} className="text-xs flex items-start gap-1.5">
+                      <span className="text-muted-foreground shrink-0">{sched.window}</span>
+                      <span className="text-muted-foreground shrink-0">[{sched.days}]</span>
+                      <span className={statusColor}>{sched.label}</span>
+                      {sched.notificationSent && (
+                        <span className="text-green-400 shrink-0 flex items-center gap-0.5">
+                          <Bell className="h-3 w-3" />
+                          {t("admin.reminderCheckNotifSent")}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+/* ─────────────────────── Shared UI Components ─────────────────────── */
 
 function SettingsToggle({
   label,

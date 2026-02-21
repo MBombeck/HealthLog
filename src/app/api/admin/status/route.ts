@@ -34,6 +34,7 @@ export async function GET() {
       intakeEventCount,
       tokenCount,
       sessionCount,
+      appSettings,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.measurement.count(),
@@ -41,7 +42,21 @@ export async function GET() {
       prisma.medicationIntakeEvent.count(),
       prisma.apiToken.count({ where: { revoked: false } }),
       prisma.session.count(),
+      prisma.appSettings.findUnique({ where: { id: "singleton" } }),
     ]);
+
+    const umamiConfigured = Boolean(
+      appSettings?.umamiScriptUrl && appSettings?.umamiWebsiteId,
+    );
+    const glitchtipConfigured = Boolean(appSettings?.glitchtipDsn);
+    const webPushConfigured = Boolean(
+      appSettings?.webPushVapidPublicKey &&
+        appSettings?.webPushVapidPrivateKeyEncrypted &&
+        appSettings?.webPushVapidSubject,
+    );
+    const bugReportConfigured = Boolean(
+      appSettings?.githubIssueRepo && appSettings?.githubIssueTokenEncrypted,
+    );
 
     return apiSuccess({
       version: process.env.npm_package_version ?? "0.1.0",
@@ -57,6 +72,16 @@ export async function GET() {
         intakeEvents: intakeEventCount,
         activeTokens: tokenCount,
         activeSessions: sessionCount,
+      },
+      integrations: {
+        umami: umamiConfigured
+          ? { configured: true, enabled: appSettings?.umamiEnabled ?? false }
+          : null,
+        glitchtip: glitchtipConfigured
+          ? { configured: true, enabled: appSettings?.glitchtipEnabled ?? false }
+          : null,
+        webPush: webPushConfigured ? { configured: true } : null,
+        bugReport: bugReportConfigured ? { configured: true } : null,
       },
     });
   } catch (err) {
