@@ -12,7 +12,6 @@ import { formatDateTime, formatTime } from "@/lib/format";
 import {
   Check,
   SkipForward,
-  Clock,
   Flame,
   Pencil,
   Loader2,
@@ -354,28 +353,33 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
       </CardHeader>
 
       <CardContent className="space-y-3.5">
-        {/* Status badge */}
+        {/* Status, last & next intake info */}
         {currentWindowStatus.status && (
-          <Badge
-            variant="outline"
-            className={
-              currentWindowStatus.status === "in_window"
-                ? "border-dracula-green/40 bg-dracula-green/15 text-dracula-green gap-1"
+          <p className="text-sm">
+            <span
+              className={
+                currentWindowStatus.status === "in_window"
+                  ? "text-dracula-green font-medium"
+                  : currentWindowStatus.status === "late"
+                    ? "text-dracula-yellow font-medium"
+                    : "text-dracula-orange font-medium"
+              }
+            >
+              {currentWindowStatus.status === "in_window"
+                ? "Jetzt einnehmen"
                 : currentWindowStatus.status === "late"
-                  ? "border-dracula-yellow/40 bg-dracula-yellow/15 text-dracula-yellow gap-1"
-                  : "border-dracula-orange/40 bg-dracula-orange/15 text-dracula-orange gap-1"
-            }
-          >
-            <Clock className="h-3 w-3" />
-            {currentWindowStatus.status === "in_window"
-              ? "Jetzt einnehmen"
-              : currentWindowStatus.status === "late"
-                ? "Überfällig"
-                : "Stark überfällig"}
-          </Badge>
+                  ? "Überfällig"
+                  : "Stark überfällig"}
+            </span>
+            <span className="text-muted-foreground hidden sm:inline">
+              {" "}— {formatTimeWindowRange(
+                currentWindowStatus.schedule!.windowStart,
+                currentWindowStatus.schedule!.windowEnd,
+              )}
+            </span>
+          </p>
         )}
 
-        {/* Last & next intake info */}
         {medication.lastTakenAt && (
           <p className="text-muted-foreground text-sm">
             <span className="font-medium">Letzte Einnahme:</span>{" "}
