@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatTime } from "@/lib/format";
 import {
   Check,
   SkipForward,
@@ -35,6 +35,7 @@ interface Medication {
   active: boolean;
   notificationsEnabled: boolean;
   pausedAt: string | null;
+  lastTakenAt: string | null;
   schedules: Schedule[];
 }
 
@@ -117,6 +118,27 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
       a.windowEnd.localeCompare(b.windowEnd),
   );
 
+  function formatLastTakenAt(value: string): string {
+    const dayFormatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Berlin",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const intakeDay = dayFormatter.format(new Date(value));
+    const todayDay = dayFormatter.format(now);
+    const yesterdayDay = dayFormatter.format(yesterday);
+    const time = formatTime(value);
+
+    if (intakeDay === todayDay) return `Heute, ${time}`;
+    if (intakeDay === yesterdayDay) return `Gestern, ${time}`;
+    return formatDateTime(value);
+  }
+
   return (
     <Card className={medication.active ? "" : "opacity-60"}>
       <CardHeader className="pb-2.5">
@@ -128,6 +150,11 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
               <Badge variant="outline" className="text-xs">
                 {categoryLabel}
               </Badge>
+              {medication.lastTakenAt && (
+                <Badge variant="secondary" className="text-xs">
+                  Letzte Einnahme: {formatLastTakenAt(medication.lastTakenAt)}
+                </Badge>
+              )}
               {!medication.notificationsEnabled && (
                 <Badge variant="secondary" className="text-xs">
                   Ohne Benachrichtigung

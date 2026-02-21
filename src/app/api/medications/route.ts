@@ -20,6 +20,23 @@ export async function GET() {
       include: { schedules: true },
       orderBy: { createdAt: "desc" },
     });
+    const latestIntakes = await prisma.medicationIntakeEvent.groupBy({
+      by: ["medicationId"],
+      where: {
+        userId: sessionData.user.id,
+        skipped: false,
+        takenAt: { not: null },
+      },
+      _max: {
+        takenAt: true,
+      },
+    });
+    const lastTakenAtByMedicationId = Object.fromEntries(
+      latestIntakes.map((entry) => [
+        entry.medicationId,
+        entry._max.takenAt ? entry._max.takenAt.toISOString() : null,
+      ]),
+    );
 
     let categoryMap: Record<string, string> = {};
     try {
@@ -35,6 +52,7 @@ export async function GET() {
       medications.map((m) => ({
         ...m,
         category: categoryMap[m.id] ?? "OTHER",
+        lastTakenAt: lastTakenAtByMedicationId[m.id] ?? null,
       })),
     );
   } catch (error) {
