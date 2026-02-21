@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useReducer } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -122,6 +122,35 @@ function getNextOccurrenceTimestamp(
   return null;
 }
 
+type MedicationWindowStatus = "in_window" | "late" | "very_late" | null;
+
+function getWindowStatus(
+  schedule: Schedule,
+  nowBerlin: Date,
+  lateMinutes: number,
+  missedMinutes: number,
+): MedicationWindowStatus {
+  const nowMins = nowBerlin.getHours() * 60 + nowBerlin.getMinutes();
+  const startMins = parseTimeToMinutes(schedule.windowStart);
+  let endMins = parseTimeToMinutes(schedule.windowEnd);
+
+  // Handle overnight windows
+  if (endMins <= startMins) endMins += 24 * 60;
+  const adjustedNow = nowMins < startMins && endMins > 24 * 60
+    ? nowMins + 24 * 60
+    : nowMins;
+
+  // Currently in window
+  if (adjustedNow >= startMins && adjustedNow <= endMins) return "in_window";
+
+  // Past window end: check late thresholds
+  const minutesPastEnd = adjustedNow - endMins;
+  if (minutesPastEnd > 0 && minutesPastEnd <= lateMinutes) return "late";
+  if (minutesPastEnd > lateMinutes && minutesPastEnd <= missedMinutes) return "very_late";
+
+  return null;
+}
+
 export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
   const queryClient = useQueryClient();
   const [intakeLoading, setIntakeLoading] = useState<string | null>(null);
@@ -136,6 +165,24 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
     },
     staleTime: 30 * 1000,
   });
+
+  const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
+
+  const { data: thresholds } = useQuery({
+    queryKey: ["settings", "reminder-thresholds"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings/reminder-thresholds");
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json.data as { lateMinutes: number; missedMinutes: number };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    const interval = setInterval(forceUpdate, 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   async function recordIntake(skipped: boolean) {
     const key = skipped ? "skip" : "take";
@@ -194,6 +241,24 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
         )
         .sort((a, b) => a.nextAt - b.nextAt)[0]?.schedule ?? sortedSchedules[0]
     : null;
+
+  const lateMinutes = thresholds?.lateMinutes ?? 120;
+  const missedMinutes = thresholds?.missedMinutes ?? 240;
+
+  const currentWindowStatus = medication.active
+    ? sortedSchedules.reduce<{ status: MedicationWindowStatus; schedule: Schedule | null }>(
+        (best, s) => {
+          const status = getWindowStatus(s, nowBerlin, lateMinutes, missedMinutes);
+          if (!status) return best;
+          const priority = { in_window: 3, late: 2, very_late: 1 };
+          if (!best.status || priority[status] > priority[best.status]) {
+            return { status, schedule: s };
+          }
+          return best;
+        },
+        { status: null, schedule: null },
+      )
+    : { status: null, schedule: null };
 
   function formatLastTakenAt(value: string): string {
     const dayFormatter = new Intl.DateTimeFormat("en-CA", {
@@ -260,6 +325,27 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
       </CardHeader>
 
       <CardContent className="space-y-3.5">
+        {/* Status badge */}
+        {currentWindowStatus.status && (
+          <Badge
+            variant="outline"
+            className={
+              currentWindowStatus.status === "in_window"
+                ? "border-dracula-green/40 bg-dracula-green/15 text-dracula-green gap-1"
+                : currentWindowStatus.status === "late"
+                  ? "border-dracula-yellow/40 bg-dracula-yellow/15 text-dracula-yellow gap-1"
+                  : "border-dracula-orange/40 bg-dracula-orange/15 text-dracula-orange gap-1"
+            }
+          >
+            <Clock className="h-3 w-3" />
+            {currentWindowStatus.status === "in_window"
+              ? "Jetzt einnehmen"
+              : currentWindowStatus.status === "late"
+                ? "Überfällig"
+                : "Stark überfällig"}
+          </Badge>
+        )}
+
         {/* Next schedule badge */}
         {nextSchedule && (() => {
           const s = nextSchedule;

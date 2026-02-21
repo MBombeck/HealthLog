@@ -40,3 +40,28 @@ export async function isApiGloballyEnabled(): Promise<boolean> {
   const settings = await getGlobalServiceAvailability();
   return settings.apiGlobal;
 }
+
+export interface ReminderThresholds {
+  lateMinutes: number;
+  missedMinutes: number;
+}
+
+export async function getReminderThresholds(): Promise<ReminderThresholds> {
+  try {
+    const settings = await prisma.appSettings.findUnique({
+      where: { id: "singleton" },
+      select: {
+        reminderLateMinutes: true,
+        reminderMissedMinutes: true,
+      },
+    });
+
+    return {
+      lateMinutes: settings?.reminderLateMinutes ?? 120,
+      missedMinutes: settings?.reminderMissedMinutes ?? 240,
+    };
+  } catch (error) {
+    console.error("Failed to load reminder thresholds, using defaults:", error);
+    return { lateMinutes: 120, missedMinutes: 240 };
+  }
+}

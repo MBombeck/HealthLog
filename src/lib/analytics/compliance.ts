@@ -67,6 +67,7 @@ export function classifyIntakeTiming(
   windowStart: string, // "HH:mm"
   windowEnd: string, // "HH:mm"
   scheduledDate: Date, // the date this was scheduled
+  options?: { lateMinutes?: number },
 ): IntakeTimingClass {
   if (takenAt === null) return "missed";
 
@@ -80,8 +81,9 @@ export function classifyIntakeTiming(
 
   // 1h grace period before windowStart
   const graceStart = new Date(start.getTime() - 60 * 60 * 1000);
-  // 2h tolerance after windowEnd
-  const lateEnd = new Date(end.getTime() + 2 * 60 * 60 * 1000);
+  // Configurable tolerance after windowEnd (default 120 min)
+  const lateTolerance = (options?.lateMinutes ?? 120) * 60 * 1000;
+  const lateEnd = new Date(end.getTime() + lateTolerance);
 
   const t = takenAt.getTime();
 

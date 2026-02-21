@@ -708,7 +708,14 @@
     "authLoginFailed": "Failed",
     "authLogout": "Logout",
     "authPasskeyRegister": "Passkey added",
-    "authPasskeyDelete": "Passkey deleted"
+    "authPasskeyDelete": "Passkey deleted",
+    "medicationReminders": "Medication Reminders",
+    "medicationRemindersDescription": "Thresholds for reminder badge color transitions on medication cards.",
+    "reminderLateMinutes": "Late threshold (minutes)",
+    "reminderLateMinutesDescription": "Minutes after window end until the badge changes from yellow to orange.",
+    "reminderMissedMinutes": "Missed threshold (minutes)",
+    "reminderMissedMinutesDescription": "Minutes after window end until the intake is considered missed.",
+    "reminderThresholdsSave": "Save thresholds"
   },
   "achievements": {
     "title": "Achievements",

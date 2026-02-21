@@ -39,6 +39,8 @@ export async function GET() {
     bugReportConfigured: Boolean(
       settings?.githubIssueRepo && settings?.githubIssueTokenEncrypted,
     ),
+    reminderLateMinutes: settings?.reminderLateMinutes ?? 120,
+    reminderMissedMinutes: settings?.reminderMissedMinutes ?? 240,
   });
 }
 
@@ -191,6 +193,21 @@ export async function PUT(request: NextRequest) {
       auditDetails.bugReportTokenUpdated = false;
     }
 
+    if (typeof body.reminderLateMinutes === "number") {
+      if (body.reminderLateMinutes < 15 || body.reminderLateMinutes > 480) {
+        return apiError("Spät-Schwellenwert muss zwischen 15 und 480 Minuten liegen", 422);
+      }
+      updates.reminderLateMinutes = body.reminderLateMinutes;
+      auditDetails.reminderLateMinutes = body.reminderLateMinutes;
+    }
+    if (typeof body.reminderMissedMinutes === "number") {
+      if (body.reminderMissedMinutes < 30 || body.reminderMissedMinutes > 720) {
+        return apiError("Verpasst-Schwellenwert muss zwischen 30 und 720 Minuten liegen", 422);
+      }
+      updates.reminderMissedMinutes = body.reminderMissedMinutes;
+      auditDetails.reminderMissedMinutes = body.reminderMissedMinutes;
+    }
+
     if (Object.keys(updates).length === 0) {
       return apiError("Keine gültigen Felder", 422);
     }
@@ -232,6 +249,8 @@ export async function PUT(request: NextRequest) {
       bugReportConfigured: Boolean(
         settings.githubIssueRepo && settings.githubIssueTokenEncrypted,
       ),
+      reminderLateMinutes: settings.reminderLateMinutes,
+      reminderMissedMinutes: settings.reminderMissedMinutes,
     });
   } catch (err) {
     console.error("Admin settings update error:", err);

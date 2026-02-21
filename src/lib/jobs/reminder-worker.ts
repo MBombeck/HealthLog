@@ -20,6 +20,12 @@ import { generatePulseStatusForUser } from "@/lib/insights/pulse-status";
 import { generateBmiStatusForUser } from "@/lib/insights/bmi-status";
 import { generateMedicationComplianceStatusForUser } from "@/lib/insights/medication-compliance-status";
 
+function parseTimeToMinutes(value: string): number {
+  const [h, m] = value.split(":").map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return 0;
+  return h * 60 + m;
+}
+
 const DATABASE_URL = process.env.DATABASE_URL!;
 
 function createPrisma() {
@@ -126,6 +132,15 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
   try {
     const now = new Date();
 
+    // Read configurable thresholds
+    const appSettings = await prisma.appSettings.findUnique({
+      where: { id: "singleton" },
+      select: {
+        reminderMissedMinutes: true,
+      },
+    });
+    const missedMinutes = appSettings?.reminderMissedMinutes ?? 240;
+
     // Get all active medications with schedules
     const medications = await prisma.medication.findMany({
       where: { active: true },
@@ -158,8 +173,10 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
 
       // Determine which schedules have passed their window today
       const passedSchedules = med.schedules.filter((schedule: { windowStart: string; windowEnd: string; dose: string | null; daysOfWeek: string | null }) => {
-        // Check if past window end
-        if (currentTime <= schedule.windowEnd) return false;
+        // Check if past window end + full missed threshold
+        const endMins = parseTimeToMinutes(schedule.windowEnd);
+        const currentMins = parseTimeToMinutes(currentTime);
+        if (currentMins <= endMins + missedMinutes) return false;
 
         // Check day-of-week / recurrence constraints
         const recurrence = parseScheduleRecurrence(schedule.daysOfWeek);
