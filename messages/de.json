@@ -224,7 +224,21 @@
     "daysWed": "Mi",
     "daysThu": "Do",
     "daysFri": "Fr",
-    "daysSat": "Sa"
+    "daysSat": "Sa",
+    "intakeHistoryTitle": "Einnahme-Verlauf",
+    "newIntake": "Neue Einnahme",
+    "editIntake": "Einnahme bearbeiten",
+    "intakeScheduledFor": "Geplant",
+    "intakeTakenAt": "Eingenommen um",
+    "intakeStatus": "Status",
+    "intakeSource": "Quelle",
+    "intakeStatusTaken": "Eingenommen",
+    "intakeStatusSkipped": "Übersprungen",
+    "intakeStatusMissed": "Verpasst",
+    "intakeDeleteConfirm": "Einnahme-Eintrag löschen?",
+    "intakeDeleteDescription": "Dieser Einnahme-Eintrag wird unwiderruflich gelöscht.",
+    "intakeCount": "{count} Einnahmen",
+    "viewHistory": "Verlauf"
   },
   "charts": {
     "title": "Verlauf",

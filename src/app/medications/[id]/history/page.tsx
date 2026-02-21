@@ -1,0 +1,71 @@
+"use client";
+
+import { useEffect, use } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { IntakeHistoryList } from "@/components/medications/intake-history-list";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useTranslations } from "@/lib/i18n/context";
+
+export default function IntakeHistoryPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const router = useRouter();
+  const { t } = useTranslations();
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push("/auth/login");
+    }
+  }, [authLoading, isAuthenticated, router]);
+
+  const { data: medication, isLoading: medLoading } = useQuery({
+    queryKey: ["medications", id],
+    queryFn: async () => {
+      const res = await fetch(`/api/medications/${id}`);
+      if (!res.ok) throw new Error("Failed to fetch");
+      const json = await res.json();
+      return json.data as { id: string; name: string; dose: string };
+    },
+    enabled: isAuthenticated,
+  });
+
+  if (authLoading || medLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="text-primary h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+          <Link href="/medications">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {t("medications.intakeHistoryTitle")}
+          </h1>
+          {medication && (
+            <p className="text-muted-foreground text-sm">
+              {medication.name} — {medication.dose}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <IntakeHistoryList medicationId={id} />
+    </div>
+  );
+}

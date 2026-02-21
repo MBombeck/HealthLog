@@ -40,10 +40,12 @@ export function IntakeTimeline({
   const { data: events, isLoading } = useQuery({
     queryKey: ["medications", medicationId, "intake"],
     queryFn: async () => {
-      const res = await fetch(`/api/medications/${medicationId}/intake`);
+      const res = await fetch(
+        `/api/medications/${medicationId}/intake?limit=50`,
+      );
       if (!res.ok) throw new Error("Failed to fetch");
       const json = await res.json();
-      return json.data as IntakeEvent[];
+      return json.data.events as IntakeEvent[];
     },
   });
 

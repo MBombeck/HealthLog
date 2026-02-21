@@ -13,6 +13,31 @@ import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
+export async function GET(_request: NextRequest, { params }: RouteParams) {
+  const sessionData = await getSession();
+  if (!sessionData) return apiError("Nicht angemeldet", 401);
+
+  const { id } = await params;
+  const medication = await prisma.medication.findUnique({
+    where: { id },
+    include: { schedules: true },
+  });
+
+  if (!medication || medication.userId !== sessionData.user.id) {
+    return apiError("Medikament nicht gefunden", 404);
+  }
+
+  let category = "OTHER";
+  try {
+    const categories = await getMedicationCategories([id]);
+    category = categories[id] ?? "OTHER";
+  } catch {
+    // Category enrichment is optional
+  }
+
+  return apiSuccess({ ...medication, category });
+}
+
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   const sessionData = await getSession();
   if (!sessionData) return apiError("Nicht angemeldet", 401);

@@ -2,7 +2,10 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
-import { intakeSchema } from "@/lib/validations/medication";
+import {
+  intakeSchema,
+  listIntakeEventsSchema,
+} from "@/lib/validations/medication";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -24,7 +27,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return apiError(parsed.error.issues[0].message, 422);
     }
 
-    const { takenAt, skipped, idempotencyKey } = parsed.data;
+    const { scheduledFor, takenAt, skipped, idempotencyKey } = parsed.data;
 
     // Idempotency check
     if (idempotencyKey) {
@@ -44,7 +47,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       data: {
         userId: sessionData.user.id,
         medicationId: id,
-        scheduledFor: takenAt ?? new Date(),
+        scheduledFor: scheduledFor ?? takenAt ?? new Date(),
         takenAt: skipped ? null : (takenAt ?? new Date()),
         skipped,
         source: "WEB",
@@ -65,7 +68,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-export async function GET(_request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   const sessionData = await getSession();
   if (!sessionData) return apiError("Nicht angemeldet", 401);
 
@@ -75,11 +78,24 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     return apiError("Medikament nicht gefunden", 404);
   }
 
-  const events = await prisma.medicationIntakeEvent.findMany({
-    where: { medicationId: id, userId: sessionData.user.id },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  });
+  const searchParams = Object.fromEntries(request.nextUrl.searchParams);
+  const parsed = listIntakeEventsSchema.safeParse(searchParams);
+  if (!parsed.success) {
+    return apiError(parsed.error.issues[0].message, 422);
+  }
 
-  return apiSuccess(events);
+  const { limit, offset, sortBy, sortDir } = parsed.data;
+  const where = { medicationId: id, userId: sessionData.user.id };
+
+  const [events, total] = await Promise.all([
+    prisma.medicationIntakeEvent.findMany({
+      where,
+      orderBy: { [sortBy]: sortDir },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.medicationIntakeEvent.count({ where }),
+  ]);
+
+  return apiSuccess({ events, meta: { total, limit, offset } });
 }
