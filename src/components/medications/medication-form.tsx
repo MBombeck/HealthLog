@@ -32,6 +32,7 @@ import {
 import {
   Bell,
   BellOff,
+  Eraser,
   Loader2,
   MoreHorizontal,
   MoreVertical,
@@ -250,8 +251,10 @@ export function MedicationForm({
   );
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [purging, setPurging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
 
   const isEdit = !!initial;
   const dose = doseAmount
@@ -383,6 +386,29 @@ export function MedicationForm({
       setError("Fehler beim Löschen");
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function handlePurge() {
+    if (!initial) return;
+    setError(null);
+    setPurging(true);
+    try {
+      const res = await fetch(`/api/medications/${initial.id}/intake/purge`, {
+        method: "DELETE",
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(json?.error ?? "Fehler beim Löschen der Aufzeichnungen");
+        return;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["medications"] });
+      setPurgeDialogOpen(false);
+    } catch {
+      setError("Fehler beim Löschen der Aufzeichnungen");
+    } finally {
+      setPurging(false);
     }
   }
 
@@ -700,6 +726,13 @@ export function MedicationForm({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   variant="destructive"
+                  onClick={() => setPurgeDialogOpen(true)}
+                >
+                  <Eraser className="mr-2 h-4 w-4" />
+                  Alle Aufzeichnungen löschen
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
                   onClick={() => setDeleteDialogOpen(true)}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
@@ -749,6 +782,36 @@ export function MedicationForm({
               onClick={handleDelete}
             >
               Löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={purgeDialogOpen} onOpenChange={setPurgeDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Alle Aufzeichnungen löschen?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Alle Einnahme-Aufzeichnungen für dieses Medikament werden
+              unwiderruflich gelöscht. Das Medikament selbst bleibt bestehen
+              und startet ohne Verlaufsdaten.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={purging}>
+              Abbrechen
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handlePurge}
+              disabled={purging}
+            >
+              {purging ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Alle Aufzeichnungen löschen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
