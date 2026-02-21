@@ -1,5 +1,17 @@
 import type { Instrumentation } from "next";
 
+export async function register() {
+  // Only start the worker on the Node.js server runtime (not Edge, not build)
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    try {
+      const { startReminderWorker } = await import("@/lib/jobs/reminder-worker");
+      await startReminderWorker();
+    } catch (err) {
+      console.error("[instrumentation] Failed to start reminder worker:", err);
+    }
+  }
+}
+
 export const onRequestError: Instrumentation.onRequestError = async (
   error,
   request,

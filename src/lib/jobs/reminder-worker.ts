@@ -19,6 +19,13 @@ import { generateWeightStatusForUser } from "@/lib/insights/weight-status";
 import { generatePulseStatusForUser } from "@/lib/insights/pulse-status";
 import { generateBmiStatusForUser } from "@/lib/insights/bmi-status";
 import { generateMedicationComplianceStatusForUser } from "@/lib/insights/medication-compliance-status";
+import {
+  markWorkerStarted,
+  recordReminderCheck,
+  recordWithingsSync,
+  recordInsightsRun,
+  recordError,
+} from "@/lib/jobs/worker-status";
 
 function parseTimeToMinutes(value: string): number {
   const [h, m] = value.split(":").map(Number);
@@ -130,6 +137,7 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
   void jobs;
   const prisma = createPrisma();
   try {
+    recordReminderCheck();
     const now = new Date();
 
     // Read configurable thresholds
@@ -315,6 +323,7 @@ async function handleWithingsFallbackSync(jobs: Job<WithingsSyncPayload>[]) {
   void jobs;
   const prisma = createPrisma();
   try {
+    recordWithingsSync();
     const connections = await prisma.withingsConnection.findMany({
       select: { userId: true },
     });
@@ -351,6 +360,7 @@ async function handleGeneralStatusGenerate(jobs: Job<GeneralStatusPayload>[]) {
   void jobs;
   const prisma = createPrisma();
   try {
+    recordInsightsRun();
     const users = await prisma.user.findMany({
       where: { openaiKeyEncrypted: { not: null } },
       select: { id: true, locale: true },
@@ -596,9 +606,11 @@ export async function startReminderWorker() {
 
   boss.on("error", (error: unknown) => {
     console.error("[pg-boss] Error:", error);
+    recordError();
   });
 
   await boss.start();
+  markWorkerStarted();
   console.log("[pg-boss] Started reminder worker");
 
   // Schedule the recurring check

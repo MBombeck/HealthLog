@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { apiSuccess, apiError } from "@/lib/api-response";
+import { getWorkerStatus } from "@/lib/jobs/worker-status";
 import { readFileSync } from "node:fs";
 
 // Build timestamp (set at build time via next.config)
@@ -58,6 +59,8 @@ export async function GET() {
       appSettings?.githubIssueRepo && appSettings?.githubIssueTokenEncrypted,
     );
 
+    const workerStatus = getWorkerStatus();
+
     return apiSuccess({
       version: process.env.npm_package_version ?? "0.1.0",
       nodeVersion: process.version,
@@ -65,6 +68,7 @@ export async function GET() {
       buildTime: BUILD_TIME,
       startTime: START_TIME,
       database: "connected",
+      worker: workerStatus,
       counts: {
         users: userCount,
         measurements: measurementCount,

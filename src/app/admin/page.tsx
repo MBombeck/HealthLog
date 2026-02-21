@@ -44,6 +44,7 @@ import {
   BellRing,
   Key,
   Bug,
+  Cog,
 } from "lucide-react";
 import { PasswordStrength } from "@/components/ui/password-strength";
 import { formatDate, formatDateTime } from "@/lib/format";
@@ -76,6 +77,17 @@ interface AdminUser {
   passkeyCount: number;
 }
 
+interface WorkerStatus {
+  running: boolean;
+  startedAt: string | null;
+  lastHeartbeat: string | null;
+  lastReminderCheck: string | null;
+  lastWithingsSync: string | null;
+  lastInsightsRun: string | null;
+  jobsProcessed: number;
+  errors: number;
+}
+
 interface SystemStatus {
   version: string;
   nodeVersion: string;
@@ -83,6 +95,7 @@ interface SystemStatus {
   buildTime: string;
   startTime: string;
   database: string;
+  worker: WorkerStatus;
   counts: {
     users: number;
     measurements: number;
@@ -326,6 +339,27 @@ function SystemStatusSection({ id }: { id: string }) {
             label={t("admin.activeSessions")}
             value={String(status.counts.activeSessions)}
           />
+          <StatusItem
+            icon={Cog}
+            label={t("admin.workerStatus")}
+            value={
+              status.worker.running
+                ? t("admin.workerRunning")
+                : t("admin.workerStopped")
+            }
+            className={
+              status.worker.running
+                ? "text-dracula-green"
+                : "text-destructive"
+            }
+          />
+          {status.worker.lastReminderCheck && (
+            <StatusItem
+              icon={Bell}
+              label={t("admin.lastReminderCheck")}
+              value={formatDateTime(status.worker.lastReminderCheck)}
+            />
+          )}
           {status.integrations.umami && (
             <StatusItem
               icon={Activity}
