@@ -28,6 +28,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_PATH="/opt/pg-boss/node_modules"
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
@@ -42,15 +43,12 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/src/generated ./src/generated
 
-# Install pg-boss + all transitive deps for the reminder worker (serverExternalPackage)
-# Isolated install so npm doesn't choke on pnpm's standalone node_modules layout
-RUN mkdir -p /tmp/pg-boss-install && \
-    cd /tmp/pg-boss-install && \
+# Install pg-boss in its own prefix so Node finds it via NODE_PATH
+# (avoids merging into pnpm's standalone node_modules structure)
+RUN mkdir -p /opt/pg-boss && \
+    cd /opt/pg-boss && \
     npm init -y && \
-    npm install --omit=dev pg-boss@12 && \
-    mkdir -p /app/node_modules && \
-    cp -r node_modules/* /app/node_modules/ && \
-    rm -rf /tmp/pg-boss-install
+    npm install --omit=dev pg-boss@12
 
 # Install Prisma CLI + engines for runtime migrations (isolated from Next standalone tree)
 RUN mkdir -p /opt/prisma-cli && \
