@@ -859,6 +859,9 @@ function AppSettingsSection({
                 value={bugReportRepoValue}
                 onChange={(event) => setBugReportRepoDraft(event.target.value)}
                 placeholder={t("admin.bugReportRepoPlaceholder")}
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
                 disabled={updateSettings.isPending}
               />
             </div>
@@ -924,6 +927,9 @@ function AppSettingsSection({
                 max={480}
                 value={reminderLateDraft ?? settings?.reminderLateMinutes ?? 120}
                 onChange={(e) => setReminderLateDraft(Number(e.target.value))}
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
                 disabled={updateSettings.isPending}
                 className="w-32"
               />
@@ -942,6 +948,9 @@ function AppSettingsSection({
                 max={720}
                 value={reminderMissedDraft ?? settings?.reminderMissedMinutes ?? 240}
                 onChange={(e) => setReminderMissedDraft(Number(e.target.value))}
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
                 disabled={updateSettings.isPending}
                 className="w-32"
               />
@@ -1640,6 +1649,9 @@ function UserManagementSection({
                 id="edit-username"
                 value={editUsername}
                 onChange={(e) => setEditUsername(e.target.value)}
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
               />
             </div>
             <div className="space-y-1">
@@ -1650,6 +1662,9 @@ function UserManagementSection({
                 value={editEmail}
                 onChange={(e) => setEditEmail(e.target.value)}
                 placeholder={t("common.optional")}
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
               />
             </div>
             <div className="flex gap-2">
