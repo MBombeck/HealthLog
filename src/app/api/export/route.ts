@@ -7,6 +7,7 @@ import {
   formatMeasurementsForExport,
   formatMedicationsForExport,
   formatIntakeEventsForExport,
+  formatMoodEntriesForExport,
 } from "@/lib/export";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -28,6 +29,9 @@ export async function GET(request: NextRequest) {
 
   if (!["csv", "json"].includes(format)) {
     return apiError("Format muss csv oder json sein", 422);
+  }
+  if (!["measurements", "medications", "intake", "mood", "all"].includes(type)) {
+    return apiError("Typ muss measurements, medications, intake, mood oder all sein", 422);
   }
 
   const userId = sessionData.user.id;
@@ -70,6 +74,17 @@ export async function GET(request: NextRequest) {
           : formatIntakeEventsForExport(events);
     }
 
+    if (type === "mood" || type === "all") {
+      const moodEntries = await prisma.moodEntry.findMany({
+        where: { userId },
+        orderBy: { moodLoggedAt: "desc" },
+      });
+      data.moodEntries =
+        format === "csv"
+          ? toCSV(formatMoodEntriesForExport(moodEntries))
+          : formatMoodEntriesForExport(moodEntries);
+    }
+
     await auditLog("export.download", {
       userId,
       ipAddress: getClientIp(request),
@@ -87,6 +102,9 @@ export async function GET(request: NextRequest) {
       }
       if (data.intakeEvents) {
         csvParts.push("# Intake Events\n" + data.intakeEvents);
+      }
+      if (data.moodEntries) {
+        csvParts.push("# Mood Entries\n" + data.moodEntries);
       }
       const csvContent = csvParts.join("\n\n");
 

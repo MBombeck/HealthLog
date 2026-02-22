@@ -65,6 +65,7 @@ model User {
   moodEntries  MoodEntry[]
   notificationChannels NotificationChannel[]
   pushSubscriptions    PushSubscription[]
+  dataBackups          DataBackup[]
 
   @@map("users")
 }
@@ -438,4 +439,20 @@ model PushSubscription {
   @@unique([userId, endpoint])
   @@index([userId])
   @@map("push_subscriptions")
+}
+
+// ─── Data Backups ────────────────────────────────────────────
+
+model DataBackup {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  type      String   @default("WEEKLY_AUTO") // WEEKLY_AUTO, MANUAL
+  data      String   // JSON export blob
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type], map: "data_backups_user_id_type_key")
+  @@index([userId])
+  @@map("data_backups")
 }

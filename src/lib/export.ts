@@ -104,3 +104,26 @@ export function formatIntakeEventsForExport(
     source: e.source,
   }));
 }
+
+/**
+ * Format mood entries for export.
+ */
+export function formatMoodEntriesForExport(
+  entries: Array<{
+    date: string;
+    mood: string;
+    score: number;
+    tags: string | null;
+    source: string;
+    moodLoggedAt: Date;
+  }>,
+): ExportableRecord[] {
+  return entries.map((e) => ({
+    date: e.date,
+    mood: e.mood,
+    score: e.score,
+    tags: e.tags ?? "",
+    source: e.source,
+    loggedAt: e.moodLoggedAt.toISOString(),
+  }));
+}

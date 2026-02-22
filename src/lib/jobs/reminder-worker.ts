@@ -77,6 +77,8 @@ const MEDICATION_COMPLIANCE_STATUS_CRON = "25 2 * * *"; // daily at 02:25
 const TELEGRAM_CLEANUP_QUEUE = "telegram-message-cleanup";
 const MOODLOG_SYNC_QUEUE = "moodlog-sync";
 const MOODLOG_SYNC_CRON = "30 * * * *"; // every hour at :30
+const DATA_BACKUP_QUEUE = "data-backup";
+const DATA_BACKUP_CRON = "0 3 * * 0"; // weekly Sunday at 03:00
 
 interface ReminderCheckPayload {
   triggeredAt: string;
@@ -117,6 +119,10 @@ interface TelegramCleanupPayload {
 }
 
 interface MoodLogSyncPayload {
+  triggeredAt: string;
+}
+
+interface DataBackupPayload {
   triggeredAt: string;
 }
 
@@ -821,6 +827,109 @@ async function handleMoodLogSync(jobs: Job<MoodLogSyncPayload>[]) {
   }
 }
 
+async function handleDataBackup(jobs: Job<DataBackupPayload>[]) {
+  void jobs;
+  const prisma = getWorkerPrisma();
+  try {
+    const users = await prisma.user.findMany({
+      select: { id: true, username: true },
+    });
+
+    let backed = 0;
+    for (const user of users) {
+      try {
+        const [measurements, medications, intakeEvents, moodEntries] =
+          await Promise.all([
+            prisma.measurement.findMany({
+              where: { userId: user.id },
+              orderBy: { measuredAt: "desc" },
+            }),
+            prisma.medication.findMany({
+              where: { userId: user.id },
+              include: { schedules: true },
+            }),
+            prisma.medicationIntakeEvent.findMany({
+              where: { userId: user.id },
+              include: { medication: { select: { name: true } } },
+              orderBy: { scheduledFor: "desc" },
+            }),
+            prisma.moodEntry.findMany({
+              where: { userId: user.id },
+              orderBy: { moodLoggedAt: "desc" },
+            }),
+          ]);
+
+        const backup = JSON.stringify({
+          exportedAt: new Date().toISOString(),
+          userId: user.id,
+          measurements: measurements.map((m) => ({
+            type: m.type,
+            value: m.value,
+            unit: m.unit,
+            measuredAt: m.measuredAt.toISOString(),
+            source: m.source,
+            notes: m.notes,
+          })),
+          medications: medications.map((m) => ({
+            name: m.name,
+            dose: m.dose,
+            active: m.active,
+            schedules: m.schedules.map((s) => ({
+              windowStart: s.windowStart,
+              windowEnd: s.windowEnd,
+              label: s.label,
+              dose: s.dose,
+            })),
+          })),
+          intakeEvents: intakeEvents.map((e) => ({
+            medication: e.medication.name,
+            scheduledFor: e.scheduledFor.toISOString(),
+            takenAt: e.takenAt?.toISOString() ?? null,
+            skipped: e.skipped,
+            source: e.source,
+          })),
+          moodEntries: moodEntries.map((e) => ({
+            date: e.date,
+            mood: e.mood,
+            score: e.score,
+            tags: e.tags,
+            source: e.source,
+            loggedAt: e.moodLoggedAt.toISOString(),
+          })),
+        });
+
+        await prisma.dataBackup.upsert({
+          where: {
+            userId_type: { userId: user.id, type: "WEEKLY_AUTO" },
+          },
+          update: {
+            data: backup,
+            createdAt: new Date(),
+          },
+          create: {
+            userId: user.id,
+            type: "WEEKLY_AUTO",
+            data: backup,
+          },
+        });
+        backed++;
+      } catch (err) {
+        console.error(
+          `[data-backup] Failed for user ${user.id}:`,
+          err,
+        );
+      }
+    }
+
+    console.log(
+      `[data-backup] Completed: ${backed}/${users.length} users backed up`,
+    );
+  } catch (err) {
+    console.error("[data-backup] handleDataBackup failed:", err);
+    recordError();
+  }
+}
+
 export async function startReminderWorker() {
   console.log("[pg-boss] Initializing pg-boss with DATABASE_URL...");
   if (!DATABASE_URL) {
@@ -853,6 +962,7 @@ export async function startReminderWorker() {
     MEDICATION_COMPLIANCE_STATUS_QUEUE,
     TELEGRAM_CLEANUP_QUEUE,
     MOODLOG_SYNC_QUEUE,
+    DATA_BACKUP_QUEUE,
   ];
 
   for (const q of allQueues) {
@@ -871,6 +981,7 @@ export async function startReminderWorker() {
     [BMI_STATUS_QUEUE, BMI_STATUS_CRON],
     [MEDICATION_COMPLIANCE_STATUS_QUEUE, MEDICATION_COMPLIANCE_STATUS_CRON],
     [MOODLOG_SYNC_QUEUE, MOODLOG_SYNC_CRON],
+    [DATA_BACKUP_QUEUE, DATA_BACKUP_CRON],
   ];
 
   for (const [name, cron] of schedules) {
@@ -928,6 +1039,11 @@ export async function startReminderWorker() {
     MOODLOG_SYNC_QUEUE,
     { localConcurrency: 1 },
     handleMoodLogSync,
+  );
+  await boss.work<DataBackupPayload>(
+    DATA_BACKUP_QUEUE,
+    { localConcurrency: 1 },
+    handleDataBackup,
   );
 
   return boss;
