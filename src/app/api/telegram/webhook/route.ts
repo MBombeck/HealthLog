@@ -266,6 +266,22 @@ async function handleCallback(update: TelegramUpdate) {
       await deleteMessage(botToken, chatId, messageId);
     }
     await cleanupReminderTracking(medicationId);
+  } else if (data.startsWith("add:")) {
+    const medicationId = data.slice("add:".length).trim();
+    if (!medicationId) {
+      await answerTelegramCallbackQuery(botToken, callback.id, "Ungültige Aktion.");
+      return;
+    }
+
+    const msgId = messageId ?? "na";
+    const idempotencyKey =
+      `telegram:add:${chatId}:${msgId}:${medicationId}`.slice(0, 128);
+
+    const result = await markMedicationTaken(user.id, medicationId, idempotencyKey);
+    await answerTelegramCallbackQuery(botToken, callback.id, result.message);
+    if (messageId) {
+      await deleteMessage(botToken, chatId, messageId);
+    }
   } else {
     await answerTelegramCallbackQuery(botToken, callback.id, "Unbekannte Aktion.");
   }
@@ -287,6 +303,7 @@ async function handleTextMessage(update: TelegramUpdate) {
       chatId,
       `<b>Verfügbare Befehle:</b>\n\n` +
         `/help — Diese Hilfe anzeigen\n` +
+        `/add — Einnahme erfassen\n` +
         `/start — Bot starten\n\n` +
         `<b>Textbefehle:</b>\n` +
         `genommen &lt;Name&gt; — Einnahme bestätigen\n\n` +
@@ -295,6 +312,57 @@ async function handleTextMessage(update: TelegramUpdate) {
         `• 🕐 1h / 🕐 3h — Erinnerung verschieben\n` +
         `• ⏭ Überspringen — Einnahme überspringen\n` +
         `• ✓ Bestätigen — Verpasste Einnahme bestätigen`,
+    );
+    return;
+  }
+
+  if (/^\/add\b/i.test(text)) {
+    const meds = await prisma.medication.findMany({
+      where: { userId: user.id, active: true },
+      select: { id: true, name: true, dose: true },
+      orderBy: { name: "asc" },
+    });
+
+    if (meds.length === 0) {
+      await sendTelegramMessage(
+        botToken,
+        chatId,
+        "Keine aktiven Medikamente gefunden.",
+      );
+      return;
+    }
+
+    if (meds.length === 1) {
+      const idempotencyKey =
+        `telegram:add:${update.update_id}:${meds[0].id}`.slice(0, 128);
+      const result = await markMedicationTaken(
+        user.id,
+        meds[0].id,
+        idempotencyKey,
+      );
+      await sendTelegramMessage(
+        botToken,
+        chatId,
+        result.ok
+          ? `✅ ${escapeHtml(result.message)}`
+          : `⚠️ ${escapeHtml(result.message)}`,
+      );
+      return;
+    }
+
+    const keyboard = {
+      inline_keyboard: meds.map((med) => [
+        {
+          text: `💊 ${med.name} (${med.dose})`,
+          callback_data: `add:${med.id}`,
+        },
+      ]),
+    };
+    await sendTelegramMessage(
+      botToken,
+      chatId,
+      "<b>Welches Medikament eingenommen?</b>",
+      { parseMode: "HTML", replyMarkup: keyboard },
     );
     return;
   }

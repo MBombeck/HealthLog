@@ -8,17 +8,17 @@ import { prisma } from "@/lib/db";
 import type { ReminderPhase } from "@/generated/prisma/client";
 
 /**
- * Delete all existing Telegram reminder messages for a medication on a given date.
+ * Delete ALL existing Telegram reminder messages for a medication (any date).
+ * Ensures max one active message per medication in the chat.
  * Best-effort: logs errors but never throws.
  */
 async function deleteExistingReminders(
   botToken: string,
   medicationId: string,
-  date: string,
 ): Promise<void> {
   try {
     const existing = await prisma.telegramReminderMessage.findMany({
-      where: { medicationId, date },
+      where: { medicationId },
     });
 
     for (const msg of existing) {
@@ -31,7 +31,7 @@ async function deleteExistingReminders(
 
     if (existing.length > 0) {
       await prisma.telegramReminderMessage.deleteMany({
-        where: { medicationId, date },
+        where: { medicationId },
       });
     }
   } catch (err) {
@@ -61,8 +61,8 @@ export async function sendViaTelegram(
     | undefined;
 
   // Phase-aware: delete old messages before sending new one
-  if (medicationId && phase && date) {
-    await deleteExistingReminders(config.botToken, medicationId, date);
+  if (medicationId && phase) {
+    await deleteExistingReminders(config.botToken, medicationId);
   }
 
   // Build reply markup
