@@ -15,31 +15,11 @@ import { Loader2, MoreHorizontal, Plus, RotateCcw } from "lucide-react";
 import { useTranslations } from "@/lib/i18n/context";
 
 const MOOD_LEVELS = [
-  {
-    value: "SUPER_GUT",
-    score: 5,
-    color: "bg-chart-2/20 text-chart-2 border-chart-2/40",
-  },
-  {
-    value: "GUT",
-    score: 4,
-    color: "bg-chart-4/20 text-chart-4 border-chart-4/40",
-  },
-  {
-    value: "OKAY",
-    score: 3,
-    color: "bg-chart-5/20 text-chart-5 border-chart-5/40",
-  },
-  {
-    value: "SCHLECHT",
-    score: 2,
-    color: "bg-chart-3/20 text-chart-3 border-chart-3/40",
-  },
-  {
-    value: "LAUSIG",
-    score: 1,
-    color: "bg-chart-1/20 text-chart-1 border-chart-1/40",
-  },
+  { value: "SUPER_GUT", score: 5, labelKey: "mood.levelSuperGut" },
+  { value: "GUT", score: 4, labelKey: "mood.levelGut" },
+  { value: "OKAY", score: 3, labelKey: "mood.levelOkay" },
+  { value: "SCHLECHT", score: 2, labelKey: "mood.levelSchlecht" },
+  { value: "LAUSIG", score: 1, labelKey: "mood.levelLausig" },
 ] as const;
 
 interface MoodFormProps {
@@ -125,12 +105,15 @@ export function MoodForm({ onSuccess, onCancel }: MoodFormProps) {
                 onClick={() => setMood(level.value)}
                 className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-center transition-colors ${
                   isSelected
-                    ? `${level.color} border-2`
+                    ? "border-primary bg-primary/10 text-primary border-2"
                     : "border-border hover:bg-accent"
                 }`}
               >
-                <span className="text-2xl font-bold tabular-nums">
+                <span className="text-lg font-semibold tabular-nums">
                   {level.score}
+                </span>
+                <span className="text-[10px] leading-tight sm:text-xs">
+                  {t(level.labelKey)}
                 </span>
               </button>
             );

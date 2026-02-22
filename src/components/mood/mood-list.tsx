@@ -67,12 +67,12 @@ const MOOD_SCORES: Record<string, number> = {
   LAUSIG: 1,
 };
 
-const MOOD_COLORS: Record<string, string> = {
-  SUPER_GUT: "bg-chart-2/20 text-chart-2",
-  GUT: "bg-chart-4/20 text-chart-4",
-  OKAY: "bg-chart-5/20 text-chart-5",
-  SCHLECHT: "bg-chart-3/20 text-chart-3",
-  LAUSIG: "bg-chart-1/20 text-chart-1",
+const MOOD_LABEL_KEYS: Record<string, string> = {
+  SUPER_GUT: "mood.levelSuperGut",
+  GUT: "mood.levelGut",
+  OKAY: "mood.levelOkay",
+  SCHLECHT: "mood.levelSchlecht",
+  LAUSIG: "mood.levelLausig",
 };
 
 const SOURCE_LABEL_KEYS: Record<string, string> = {
@@ -280,7 +280,7 @@ export function MoodList() {
               <SelectItem value="ALL">{t("mood.allMoods")}</SelectItem>
               {MOOD_LEVELS_LIST.map((val) => (
                 <SelectItem key={val} value={val}>
-                  {MOOD_SCORES[val]}
+                  {MOOD_SCORES[val]} ({t(MOOD_LABEL_KEYS[val])})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -341,30 +341,14 @@ export function MoodList() {
                 <TableBody>
                   {data.entries.map((entry) => (
                     <TableRow key={entry.id}>
-                      <TableCell className="pl-4">
-                        <Badge
-                          variant="secondary"
-                          className={`text-base font-bold tabular-nums ${MOOD_COLORS[entry.mood] ?? ""}`}
-                        >
-                          {entry.score}
-                        </Badge>
+                      <TableCell className="pl-4 font-semibold tabular-nums">
+                        {entry.score}{" "}
+                        <span className="text-muted-foreground font-normal">
+                          ({MOOD_LABEL_KEYS[entry.mood] ? t(MOOD_LABEL_KEYS[entry.mood]) : entry.mood})
+                        </span>
                       </TableCell>
-                      <TableCell className="text-sm">
-                        {entry.tags.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {entry.tags.map((tag) => (
-                              <Badge
-                                key={tag}
-                                variant="outline"
-                                className="text-xs"
-                              >
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
+                      <TableCell className="text-muted-foreground text-sm">
+                        {entry.tags.length > 0 ? entry.tags.join(", ") : "-"}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {formatDateTime(entry.moodLoggedAt)}
@@ -405,14 +389,18 @@ export function MoodList() {
                   className="bg-card border-border flex items-center justify-between rounded-lg border p-3"
                 >
                   <div className="flex items-center gap-2.5 overflow-hidden">
-                    <div
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${MOOD_COLORS[entry.mood] ?? ""}`}
-                    >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
                       <span className="text-lg font-bold tabular-nums">
                         {entry.score}
                       </span>
                     </div>
                     <div className="min-w-0">
+                      <span className="text-sm font-semibold tabular-nums">
+                        {entry.score}{" "}
+                        <span className="text-muted-foreground font-normal">
+                          ({MOOD_LABEL_KEYS[entry.mood] ? t(MOOD_LABEL_KEYS[entry.mood]) : entry.mood})
+                        </span>
+                      </span>
                       <p className="text-muted-foreground truncate text-xs">
                         {formatDateTime(entry.moodLoggedAt)}
                       </p>
@@ -486,16 +474,6 @@ export function MoodList() {
                 <div className="grid grid-cols-5 gap-2">
                   {MOOD_LEVELS_LIST.map((level) => {
                     const isSelected = editMood === level;
-                    const color =
-                      level === "SUPER_GUT"
-                        ? "bg-chart-2/20 text-chart-2 border-chart-2/40"
-                        : level === "GUT"
-                          ? "bg-chart-4/20 text-chart-4 border-chart-4/40"
-                          : level === "OKAY"
-                            ? "bg-chart-5/20 text-chart-5 border-chart-5/40"
-                            : level === "SCHLECHT"
-                              ? "bg-chart-3/20 text-chart-3 border-chart-3/40"
-                              : "bg-chart-1/20 text-chart-1 border-chart-1/40";
                     return (
                       <button
                         key={level}
@@ -503,12 +481,15 @@ export function MoodList() {
                         onClick={() => setEditMood(level)}
                         className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-center transition-colors ${
                           isSelected
-                            ? `${color} border-2`
+                            ? "border-primary bg-primary/10 text-primary border-2"
                             : "border-border hover:bg-accent"
                         }`}
                       >
-                        <span className="text-2xl font-bold tabular-nums">
+                        <span className="text-lg font-semibold tabular-nums">
                           {MOOD_SCORES[level]}
+                        </span>
+                        <span className="text-[10px] leading-tight sm:text-xs">
+                          {t(MOOD_LABEL_KEYS[level])}
                         </span>
                       </button>
                     );
