@@ -55,6 +55,16 @@ function escapeHtml(input: string): string {
     .replaceAll(">", "&gt;");
 }
 
+async function cleanupReminderTracking(medicationId: string): Promise<void> {
+  try {
+    await prisma.telegramReminderMessage.deleteMany({
+      where: { medicationId },
+    });
+  } catch {
+    // Best-effort cleanup
+  }
+}
+
 async function findTelegramUser(chatId: string) {
   return prisma.user.findFirst({
     where: {
@@ -147,6 +157,7 @@ async function handleCallback(update: TelegramUpdate) {
     if (messageId) {
       await deleteMessage(botToken, chatId, messageId);
     }
+    await cleanupReminderTracking(medicationId);
   } else if (data.startsWith("snooze:")) {
     // Format: "snooze:{medicationId}:{minutes}"
     const parts = data.split(":");
@@ -176,6 +187,7 @@ async function handleCallback(update: TelegramUpdate) {
     if (messageId) {
       await deleteMessage(botToken, chatId, messageId);
     }
+    await cleanupReminderTracking(medicationId);
   } else if (data.startsWith("skip:")) {
     const medicationId = data.slice("skip:".length).trim();
     if (!medicationId) {
@@ -232,6 +244,28 @@ async function handleCallback(update: TelegramUpdate) {
     if (messageId) {
       await deleteMessage(botToken, chatId, messageId);
     }
+    await cleanupReminderTracking(medicationId);
+  } else if (data.startsWith("ack:")) {
+    const medicationId = data.slice("ack:".length).trim();
+    if (!medicationId) {
+      await answerTelegramCallbackQuery(botToken, callback.id, "Ungültige Aktion.");
+      return;
+    }
+
+    const medication = await prisma.medication.findFirst({
+      where: { id: medicationId, userId: user.id },
+      select: { id: true, name: true },
+    });
+
+    await answerTelegramCallbackQuery(
+      botToken,
+      callback.id,
+      medication ? `${medication.name} bestätigt.` : "Bestätigt.",
+    );
+    if (messageId) {
+      await deleteMessage(botToken, chatId, messageId);
+    }
+    await cleanupReminderTracking(medicationId);
   } else {
     await answerTelegramCallbackQuery(botToken, callback.id, "Unbekannte Aktion.");
   }
@@ -247,12 +281,31 @@ async function handleTextMessage(update: TelegramUpdate) {
   if (!user?.telegramBotToken) return;
   const botToken = decrypt(user.telegramBotToken);
 
-  if (/^\/start\b/i.test(text) || /^hilfe$/i.test(text)) {
+  if (/^\/help\b/i.test(text) || /^\/start\b/i.test(text) || /^hilfe$/i.test(text)) {
     await sendTelegramMessage(
       botToken,
       chatId,
-      "HealthLog Bot: Sende <b>genommen MedikamentName</b> oder nutze den Button in einer Erinnerung.",
+      `<b>Verfügbare Befehle:</b>\n\n` +
+        `/help — Diese Hilfe anzeigen\n` +
+        `/start — Bot starten\n\n` +
+        `<b>Textbefehle:</b>\n` +
+        `genommen &lt;Name&gt; — Einnahme bestätigen\n\n` +
+        `<b>Über die Buttons in Erinnerungen:</b>\n` +
+        `• Genommen — Einnahme bestätigen\n` +
+        `• 🕐 1h / 🕐 3h — Erinnerung verschieben\n` +
+        `• ⏭ Überspringen — Einnahme überspringen\n` +
+        `• ✓ Bestätigen — Verpasste Einnahme bestätigen`,
     );
+    return;
+  }
+
+  // Greeting responses
+  const greetings = ["hi", "hallo", "hey", "moin"];
+  const lowerText = text.toLowerCase();
+  const matchedGreeting = greetings.find((g) => lowerText === g);
+  if (matchedGreeting) {
+    const reply = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+    await sendTelegramMessage(botToken, chatId, `${reply}! 👋`);
     return;
   }
 
