@@ -436,12 +436,19 @@ async function handleTextMessage(update: TelegramUpdate) {
         ],
       ],
     };
-    await sendTelegramMessage(
+    const resp = await sendTelegramMessage(
       botToken,
       chatId,
       "<b>Welches Medikament eingenommen?</b>",
       { parseMode: "HTML", replyMarkup: keyboard },
     );
+    // Fallback auto-delete if user never interacts with the selection
+    const toDelete = [userMsgId, resp.messageId].filter(
+      (id): id is number => id != null,
+    );
+    if (toDelete.length > 0) {
+      await scheduleAutoDelete(user.id, chatId, toDelete);
+    }
     return;
   }
 

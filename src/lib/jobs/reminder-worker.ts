@@ -166,56 +166,66 @@ function getDayOfWeekInTz(now: Date, tz: string): number {
 async function cleanupScheduledTelegramDeletions(): Promise<void> {
   const prisma = getWorkerPrisma();
   try {
-    const expired = await prisma.telegramScheduledDeletion.findMany({
-      where: { deleteAfter: { lte: new Date() } },
-      take: 100,
-    });
+    let totalDeleted = 0;
 
-    if (expired.length === 0) return;
-
-    // Group by userId to fetch bot token once per user
-    const byUser = new Map<
-      string,
-      { chatId: string; messageId: number; id: string }[]
-    >();
-    for (const record of expired) {
-      const list = byUser.get(record.userId) ?? [];
-      list.push({
-        chatId: record.chatId,
-        messageId: record.messageId,
-        id: record.id,
+    // Process in batches until all expired records are handled
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const expired = await prisma.telegramScheduledDeletion.findMany({
+        where: { deleteAfter: { lte: new Date() } },
+        take: 100,
       });
-      byUser.set(record.userId, list);
-    }
 
-    const deletedIds: string[] = [];
-    for (const [userId, messages] of byUser) {
-      const user = await prisma.user.findFirst({
-        where: { id: userId, telegramBotToken: { not: null } },
-        select: { telegramBotToken: true },
-      });
-      if (!user?.telegramBotToken) {
-        // No bot token — just clean up the records
-        deletedIds.push(...messages.map((m) => m.id));
-        continue;
+      if (expired.length === 0) break;
+
+      // Group by userId to fetch bot token once per user
+      const byUser = new Map<
+        string,
+        { chatId: string; messageId: number; id: string }[]
+      >();
+      for (const record of expired) {
+        const list = byUser.get(record.userId) ?? [];
+        list.push({
+          chatId: record.chatId,
+          messageId: record.messageId,
+          id: record.id,
+        });
+        byUser.set(record.userId, list);
       }
-      const botToken = decrypt(user.telegramBotToken);
-      for (const msg of messages) {
-        try {
-          await deleteMessage(botToken, msg.chatId, msg.messageId);
-        } catch {
-          // Best-effort: message may already be deleted
+
+      const deletedIds: string[] = [];
+      for (const [userId, messages] of byUser) {
+        const user = await prisma.user.findFirst({
+          where: { id: userId, telegramBotToken: { not: null } },
+          select: { telegramBotToken: true },
+        });
+        if (!user?.telegramBotToken) {
+          // No bot token — just clean up the records
+          deletedIds.push(...messages.map((m) => m.id));
+          continue;
         }
-        deletedIds.push(msg.id);
+        const botToken = decrypt(user.telegramBotToken);
+        for (const msg of messages) {
+          try {
+            await deleteMessage(botToken, msg.chatId, msg.messageId);
+          } catch {
+            // Best-effort: message may already be deleted
+          }
+          deletedIds.push(msg.id);
+        }
+      }
+
+      if (deletedIds.length > 0) {
+        await prisma.telegramScheduledDeletion.deleteMany({
+          where: { id: { in: deletedIds } },
+        });
+        totalDeleted += deletedIds.length;
       }
     }
 
-    if (deletedIds.length > 0) {
-      await prisma.telegramScheduledDeletion.deleteMany({
-        where: { id: { in: deletedIds } },
-      });
+    if (totalDeleted > 0) {
       console.log(
-        `[telegram-scheduled-cleanup] Deleted ${deletedIds.length} expired messages`,
+        `[telegram-scheduled-cleanup] Deleted ${totalDeleted} expired messages`,
       );
     }
   } catch (err) {
