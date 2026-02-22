@@ -15,9 +15,15 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "HealthLog",
   description: "Personal health tracking — weight, blood pressure, medications",
+  manifest: "/manifest.json",
   icons: {
     icon: "/favicon.svg",
-    apple: "/icon-192.png",
+    apple: "/logo-192.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "HealthLog",
   },
 };
 
