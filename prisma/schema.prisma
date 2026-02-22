@@ -275,6 +275,17 @@ model TelegramReminderMessage {
   @@map("telegram_reminder_messages")
 }
 
+model TelegramScheduledDeletion {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  chatId      String   @map("chat_id")
+  messageId   Int      @map("message_id")
+  deleteAfter DateTime @map("delete_after")
+
+  @@index([deleteAfter])
+  @@map("telegram_scheduled_deletions")
+}
+
 // ─── API Tokens (for external ingest) ──────────────────────
 
 model ApiToken {

@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
 interface TelegramUpdate {
   update_id: number;
   message?: {
+    message_id?: number;
     text?: string;
     chat?: { id: number | string };
   };
@@ -62,6 +63,28 @@ async function cleanupReminderTracking(medicationId: string): Promise<void> {
     });
   } catch {
     // Best-effort cleanup
+  }
+}
+
+const AUTO_DELETE_DELAY_MS = 60 * 60 * 1000; // 1 hour
+
+async function scheduleAutoDelete(
+  userId: string,
+  chatId: string,
+  messageIds: number[],
+): Promise<void> {
+  const deleteAfter = new Date(Date.now() + AUTO_DELETE_DELAY_MS);
+  try {
+    await prisma.telegramScheduledDeletion.createMany({
+      data: messageIds.map((messageId) => ({
+        userId,
+        chatId,
+        messageId,
+        deleteAfter,
+      })),
+    });
+  } catch {
+    // Best-effort
   }
 }
 
@@ -267,7 +290,10 @@ async function handleCallback(update: TelegramUpdate) {
     }
     await cleanupReminderTracking(medicationId);
   } else if (data.startsWith("add:")) {
-    const medicationId = data.slice("add:".length).trim();
+    // Format: "add:{medicationId}" or "add:{medicationId}:umid:{userMsgId}"
+    const withoutPrefix = data.slice("add:".length);
+    const umidIdx = withoutPrefix.indexOf(":umid:");
+    const medicationId = umidIdx >= 0 ? withoutPrefix.slice(0, umidIdx) : withoutPrefix.trim();
     if (!medicationId) {
       await answerTelegramCallbackQuery(botToken, callback.id, "Ungültige Aktion.");
       return;
@@ -282,6 +308,28 @@ async function handleCallback(update: TelegramUpdate) {
     if (messageId) {
       await deleteMessage(botToken, chatId, messageId);
     }
+    // Also delete the user's /add command message if encoded
+    const userMsgMatch = data.match(/:umid:(\d+)$/);
+    if (userMsgMatch) {
+      const userMsgId = parseInt(userMsgMatch[1], 10);
+      if (Number.isFinite(userMsgId)) {
+        await deleteMessage(botToken, chatId, userMsgId).catch(() => {});
+      }
+    }
+  } else if (data.startsWith("cancel_add")) {
+    // Delete the bot's selection message
+    if (messageId) {
+      await deleteMessage(botToken, chatId, messageId);
+    }
+    // Delete the user's original /add command message if encoded
+    const userMsgMatch = data.match(/:umid:(\d+)$/);
+    if (userMsgMatch) {
+      const userMsgId = parseInt(userMsgMatch[1], 10);
+      if (Number.isFinite(userMsgId)) {
+        await deleteMessage(botToken, chatId, userMsgId).catch(() => {});
+      }
+    }
+    await answerTelegramCallbackQuery(botToken, callback.id, "Abgebrochen.");
   } else {
     await answerTelegramCallbackQuery(botToken, callback.id, "Unbekannte Aktion.");
   }
@@ -298,7 +346,8 @@ async function handleTextMessage(update: TelegramUpdate) {
   const botToken = decrypt(user.telegramBotToken);
 
   if (/^\/help\b/i.test(text) || /^\/start\b/i.test(text) || /^hilfe$/i.test(text)) {
-    await sendTelegramMessage(
+    const userMsgId = message?.message_id;
+    const resp = await sendTelegramMessage(
       botToken,
       chatId,
       `<b>Verfügbare Befehle:</b>\n\n` +
@@ -313,10 +362,17 @@ async function handleTextMessage(update: TelegramUpdate) {
         `• ⏭ Überspringen — Einnahme überspringen\n` +
         `• ✓ Bestätigen — Verpasste Einnahme bestätigen`,
     );
+    const toDelete = [userMsgId, resp.messageId].filter(
+      (id): id is number => id != null,
+    );
+    if (toDelete.length > 0) {
+      await scheduleAutoDelete(user.id, chatId, toDelete);
+    }
     return;
   }
 
   if (/^\/add\b/i.test(text)) {
+    const userMsgId = message?.message_id;
     const meds = await prisma.medication.findMany({
       where: { userId: user.id, active: true },
       select: { id: true, name: true, dose: true },
@@ -324,11 +380,17 @@ async function handleTextMessage(update: TelegramUpdate) {
     });
 
     if (meds.length === 0) {
-      await sendTelegramMessage(
+      const resp = await sendTelegramMessage(
         botToken,
         chatId,
         "Keine aktiven Medikamente gefunden.",
       );
+      const toDelete = [userMsgId, resp.messageId].filter(
+        (id): id is number => id != null,
+      );
+      if (toDelete.length > 0) {
+        await scheduleAutoDelete(user.id, chatId, toDelete);
+      }
       return;
     }
 
@@ -340,23 +402,39 @@ async function handleTextMessage(update: TelegramUpdate) {
         meds[0].id,
         idempotencyKey,
       );
-      await sendTelegramMessage(
+      const resp = await sendTelegramMessage(
         botToken,
         chatId,
         result.ok
-          ? `✅ ${escapeHtml(result.message)}`
-          : `⚠️ ${escapeHtml(result.message)}`,
+          ? `${escapeHtml(result.message)}`
+          : `${escapeHtml(result.message)}`,
       );
+      const toDelete = [userMsgId, resp.messageId].filter(
+        (id): id is number => id != null,
+      );
+      if (toDelete.length > 0) {
+        await scheduleAutoDelete(user.id, chatId, toDelete);
+      }
       return;
     }
 
+    // Encode user's message ID in callback data so cancel/add can delete it
+    const umidSuffix = userMsgId ? `:umid:${userMsgId}` : "";
     const keyboard = {
-      inline_keyboard: meds.map((med) => [
-        {
-          text: `💊 ${med.name} (${med.dose})`,
-          callback_data: `add:${med.id}`,
-        },
-      ]),
+      inline_keyboard: [
+        ...meds.map((med) => [
+          {
+            text: `${med.name} (${med.dose})`,
+            callback_data: `add:${med.id}${umidSuffix}`,
+          },
+        ]),
+        [
+          {
+            text: "Abbrechen",
+            callback_data: `cancel_add${umidSuffix}`,
+          },
+        ],
+      ],
     };
     await sendTelegramMessage(
       botToken,
@@ -372,13 +450,21 @@ async function handleTextMessage(update: TelegramUpdate) {
   const lowerText = text.toLowerCase();
   const matchedGreeting = greetings.find((g) => lowerText === g);
   if (matchedGreeting) {
+    const userMsgId = message?.message_id;
     const reply = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
-    await sendTelegramMessage(botToken, chatId, `${reply}! 👋`);
+    const resp = await sendTelegramMessage(botToken, chatId, `${reply}! 👋`);
+    const toDelete = [userMsgId, resp.messageId].filter(
+      (id): id is number => id != null,
+    );
+    if (toDelete.length > 0) {
+      await scheduleAutoDelete(user.id, chatId, toDelete);
+    }
     return;
   }
 
   if (!/^genommen\b/i.test(text)) return;
 
+  const userMsgId = message?.message_id;
   const nameInput = text.replace(/^genommen\b/i, "").trim();
 
   let medicationId: string | null = null;
@@ -402,21 +488,33 @@ async function handleTextMessage(update: TelegramUpdate) {
     if (meds.length === 1) {
       medicationId = meds[0].id;
     } else {
-      await sendTelegramMessage(
+      const resp = await sendTelegramMessage(
         botToken,
         chatId,
         "Bitte Medikament angeben, z.B. <b>genommen Ramipril</b>.",
       );
+      const toDelete = [userMsgId, resp.messageId].filter(
+        (id): id is number => id != null,
+      );
+      if (toDelete.length > 0) {
+        await scheduleAutoDelete(user.id, chatId, toDelete);
+      }
       return;
     }
   }
 
   if (!medicationId) {
-    await sendTelegramMessage(
+    const resp = await sendTelegramMessage(
       botToken,
       chatId,
       "Medikament nicht gefunden. Bitte Namen exakt wie in HealthLog senden.",
     );
+    const toDelete = [userMsgId, resp.messageId].filter(
+      (id): id is number => id != null,
+    );
+    if (toDelete.length > 0) {
+      await scheduleAutoDelete(user.id, chatId, toDelete);
+    }
     return;
   }
 
@@ -427,13 +525,19 @@ async function handleTextMessage(update: TelegramUpdate) {
     medicationId,
     idempotencyKey,
   );
-  await sendTelegramMessage(
+  const resp = await sendTelegramMessage(
     botToken,
     chatId,
     result.ok
       ? `✅ ${escapeHtml(result.message)}`
       : `⚠️ ${escapeHtml(result.message)}`,
   );
+  const toDelete = [userMsgId, resp.messageId].filter(
+    (id): id is number => id != null,
+  );
+  if (toDelete.length > 0) {
+    await scheduleAutoDelete(user.id, chatId, toDelete);
+  }
 }
 
 export async function POST(request: NextRequest) {

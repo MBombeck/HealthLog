@@ -159,6 +159,71 @@ function getDayOfWeekInTz(now: Date, tz: string): number {
 }
 
 /**
+ * Process expired TelegramScheduledDeletion records.
+ * Deletes messages from Telegram and removes the DB records.
+ * Called at the start of every reminder check (every 15 minutes).
+ */
+async function cleanupScheduledTelegramDeletions(): Promise<void> {
+  const prisma = getWorkerPrisma();
+  try {
+    const expired = await prisma.telegramScheduledDeletion.findMany({
+      where: { deleteAfter: { lte: new Date() } },
+      take: 100,
+    });
+
+    if (expired.length === 0) return;
+
+    // Group by userId to fetch bot token once per user
+    const byUser = new Map<
+      string,
+      { chatId: string; messageId: number; id: string }[]
+    >();
+    for (const record of expired) {
+      const list = byUser.get(record.userId) ?? [];
+      list.push({
+        chatId: record.chatId,
+        messageId: record.messageId,
+        id: record.id,
+      });
+      byUser.set(record.userId, list);
+    }
+
+    const deletedIds: string[] = [];
+    for (const [userId, messages] of byUser) {
+      const user = await prisma.user.findFirst({
+        where: { id: userId, telegramBotToken: { not: null } },
+        select: { telegramBotToken: true },
+      });
+      if (!user?.telegramBotToken) {
+        // No bot token — just clean up the records
+        deletedIds.push(...messages.map((m) => m.id));
+        continue;
+      }
+      const botToken = decrypt(user.telegramBotToken);
+      for (const msg of messages) {
+        try {
+          await deleteMessage(botToken, msg.chatId, msg.messageId);
+        } catch {
+          // Best-effort: message may already be deleted
+        }
+        deletedIds.push(msg.id);
+      }
+    }
+
+    if (deletedIds.length > 0) {
+      await prisma.telegramScheduledDeletion.deleteMany({
+        where: { id: { in: deletedIds } },
+      });
+      console.log(
+        `[telegram-scheduled-cleanup] Deleted ${deletedIds.length} expired messages`,
+      );
+    }
+  } catch (err) {
+    console.error("[telegram-scheduled-cleanup] Failed:", err);
+  }
+}
+
+/**
  * Check all active medications for each user and determine reminder phases.
  * Uses phase-based logic (GREEN/YELLOW/ORANGE/RED) to send one notification
  * per phase transition rather than every 15 minutes.
@@ -169,6 +234,9 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
   try {
     recordReminderCheck();
     const now = new Date();
+
+    // Clean up expired scheduled Telegram message deletions
+    await cleanupScheduledTelegramDeletions();
 
     // Clean up expired snoozes
     await prisma.medication.updateMany({
