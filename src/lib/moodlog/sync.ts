@@ -37,9 +37,8 @@ export async function syncMoodLogEntries(
 
   let from: string;
   if (opts?.fullSync || !user.moodLogLastSyncedAt) {
-    // Full sync: 90 days back
-    const d = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-    from = d.toISOString().slice(0, 10);
+    // Full sync: fetch all available data
+    from = "2000-01-01";
   } else {
     // Incremental: from lastSyncedAt - 1 hour overlap
     const d = new Date(user.moodLogLastSyncedAt.getTime() - 3600 * 1000);
@@ -52,7 +51,8 @@ export async function syncMoodLogEntries(
   url.searchParams.set("to", to);
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeoutMs = opts?.fullSync ? 60000 : 15000;
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   let response: Response;
   try {
