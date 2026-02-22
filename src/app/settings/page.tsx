@@ -2585,6 +2585,7 @@ function InsightsSettingsSection({
   const queryClient = useQueryClient();
   const [apiKey, setApiKey] = useState("");
   const [saving, setSaving] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
 
@@ -2641,6 +2642,37 @@ function InsightsSettingsSection({
   async function togglePrivacyMode() {
     const newMode = settings?.privacyMode === "raw" ? "aggregated" : "raw";
     await updateSettings.mutateAsync({ privacyMode: newMode });
+  }
+
+  async function handleRegenerate() {
+    setRegenerating(true);
+    setMsg(null);
+    setMsgType(null);
+    try {
+      const res = await fetch("/api/insights/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ force: true }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        if (res.status === 429) {
+          setMsg(t("settings.regenerateRateLimit"));
+        } else {
+          setMsg(json.error || t("settings.savingError"));
+        }
+        setMsgType("error");
+        return;
+      }
+      setMsg(t("settings.regenerateSuccess"));
+      setMsgType("success");
+      queryClient.invalidateQueries({ queryKey: ["insights"] });
+    } catch {
+      setMsg(t("settings.savingError"));
+      setMsgType("error");
+    } finally {
+      setRegenerating(false);
+    }
   }
 
   return (
@@ -2760,6 +2792,23 @@ function InsightsSettingsSection({
               </div>
             )}
           </div>
+        )}
+
+        {/* Regenerate Reports */}
+        {settings?.hasKey && (
+          <Button
+            variant="outline"
+            onClick={handleRegenerate}
+            disabled={regenerating}
+            className="w-full sm:w-auto"
+          >
+            {regenerating ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            {t("settings.regenerateInsights")}
+          </Button>
         )}
       </div>
     </div>
