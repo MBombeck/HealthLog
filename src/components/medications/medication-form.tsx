@@ -32,6 +32,7 @@ import {
 import {
   Bell,
   BellOff,
+  Clock,
   Eraser,
   Loader2,
   MoreHorizontal,
@@ -47,6 +48,7 @@ import {
 } from "lucide-react";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
 import { useTranslations } from "@/lib/i18n/context";
+import { PhaseConfigDialog } from "@/components/medications/phase-config-dialog";
 
 const DOSE_UNITS = [
   "mg",
@@ -274,6 +276,7 @@ export function MedicationForm({
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
+  const [phaseConfigOpen, setPhaseConfigOpen] = useState(false);
 
   const isEdit = !!initial;
   const dose = doseAmount
@@ -719,6 +722,10 @@ export function MedicationForm({
                       <Terminal className="mr-2 h-4 w-4" />
                       {t("medications.apiEndpointAction")}
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setPhaseConfigOpen(true)}>
+                      <Clock className="mr-2 h-4 w-4" />
+                      {t("medications.phaseConfig")}
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
                 )}
@@ -832,6 +839,14 @@ export function MedicationForm({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {isEdit && initial?.id && (
+        <PhaseConfigDialog
+          medicationId={initial.id}
+          open={phaseConfigOpen}
+          onOpenChange={setPhaseConfigOpen}
+        />
+      )}
     </form>
   );
 }

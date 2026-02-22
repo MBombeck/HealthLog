@@ -362,7 +362,20 @@
     "actions": "Aktionen",
     "pageInfo": "Seite {page} von {total}",
     "loginRequiredIntakes": "Bitte anmelden, um Einnahmen zu sehen.",
-    "clear": "Löschen"
+    "clear": "Löschen",
+    "phaseConfig": "Erinnerungsphasen",
+    "phaseConfigDescription": "Konfiguriere die Zeitpunkte für Erinnerungen.",
+    "phaseGreen": "Grün",
+    "phaseYellow": "Gelb",
+    "phaseOrange": "Orange",
+    "phaseRed": "Rot",
+    "phaseMinutes": "Min",
+    "phasePercent": "%",
+    "phaseBeforeEnd": "vor Ende",
+    "phaseAfterEnd": "nach Ende",
+    "phaseResetDefaults": "Auf Defaults zurücksetzen",
+    "phaseSaved": "Erinnerungsphasen gespeichert",
+    "phaseReset": "Auf Defaults zurückgesetzt"
   },
   "charts": {
     "title": "Verlauf",

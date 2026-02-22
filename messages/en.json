@@ -362,7 +362,20 @@
     "actions": "Actions",
     "pageInfo": "Page {page} of {total}",
     "loginRequiredIntakes": "Please sign in to view intakes.",
-    "clear": "Clear"
+    "clear": "Clear",
+    "phaseConfig": "Reminder phases",
+    "phaseConfigDescription": "Configure timing for reminders.",
+    "phaseGreen": "Green",
+    "phaseYellow": "Yellow",
+    "phaseOrange": "Orange",
+    "phaseRed": "Red",
+    "phaseMinutes": "Min",
+    "phasePercent": "%",
+    "phaseBeforeEnd": "before end",
+    "phaseAfterEnd": "after end",
+    "phaseResetDefaults": "Reset to defaults",
+    "phaseSaved": "Reminder phases saved",
+    "phaseReset": "Reset to defaults"
   },
   "charts": {
     "title": "History",
