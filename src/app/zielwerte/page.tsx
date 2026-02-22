@@ -81,8 +81,8 @@ const TYPE_COLORS: Record<string, string> = {
   SLEEP_DURATION: "text-dracula-cyan",
   BODY_FAT: "text-dracula-orange",
   BMI: "text-dracula-yellow",
-  MOOD_SCORE: "text-dracula-red",
-  MOOD_STABILITY: "text-dracula-red",
+  MOOD_SCORE: "text-dracula-lavender",
+  MOOD_STABILITY: "text-dracula-lavender",
 };
 
 function getTargetSourceLink(target: TargetData): string | null {

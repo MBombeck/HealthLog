@@ -54,6 +54,7 @@
   --color-dracula-orange: var(--dracula-orange);
   --color-dracula-red: var(--dracula-red);
   --color-dracula-yellow: var(--dracula-yellow);
+  --color-dracula-lavender: var(--dracula-lavender);
 }
 
 /*
@@ -75,6 +76,7 @@
   --dracula-purple: #bd93f9;
   --dracula-red: #ff5555;
   --dracula-yellow: #f1fa8c;
+  --dracula-lavender: #d6acff;
 
   --radius: 0.625rem;
 }

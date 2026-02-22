@@ -253,7 +253,7 @@ export default function DashboardPage() {
         <p className="mt-1 text-sm">{welcomeText}</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
         <TrendCard
           label={t("dashboard.weight")}
           latest={w?.latest ?? null}

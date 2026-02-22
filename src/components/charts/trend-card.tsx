@@ -59,7 +59,7 @@ export function TrendCard({
     }).format(value);
 
   return (
-    <div className="bg-card border-border rounded-xl border p-4">
+    <div className="bg-card border-border rounded-xl border p-3">
       <div className="flex items-center justify-between">
         <span className="text-muted-foreground text-sm font-medium">
           {label}

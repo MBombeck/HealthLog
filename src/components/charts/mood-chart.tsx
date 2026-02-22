@@ -70,7 +70,7 @@ const VALUE_BANDS = [
   { min: 3, max: 5, color: "#50fa7b", opacity: 0.2 },
 ] as const;
 
-const COLOR_MAIN = "#ff5555";
+const COLOR_MAIN = "#d6acff";
 const COLOR_MA = "#ff79c6";
 const COLOR_TREND = "#8be9fd";
 
