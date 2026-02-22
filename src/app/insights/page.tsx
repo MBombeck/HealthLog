@@ -27,8 +27,8 @@ import { ComplianceHeatmap } from "@/components/charts/compliance-heatmap";
 import {
   Activity,
   Heart,
-  Scale,
   Loader2,
+  Percent,
   Pill,
   Smile,
   TrendingUp,
@@ -53,7 +53,7 @@ import {
   getAgeFromDateOfBirth,
   getPersonalizedPulseTarget,
 } from "@/lib/analytics/pulse-targets";
-import type { DataSummary } from "@/lib/analytics/trends";
+import type { DataSummary, TrendSlope } from "@/lib/analytics/trends";
 
 interface ComprehensiveData {
   summaries: Record<
@@ -634,7 +634,20 @@ export default function InsightsPage() {
   const sys = analytics?.summaries.BLOOD_PRESSURE_SYS;
   const dia = analytics?.summaries.BLOOD_PRESSURE_DIA;
   const p = analytics?.summaries.PULSE;
+  const bf = analytics?.summaries.BODY_FAT;
+  const showBodyFatCard = (bf?.count ?? 0) > 0;
+  const moodSummary = data?.moodSummary;
+  const showMoodCard = (moodSummary?.count ?? 0) > 0;
   const bmiDivisor = user?.heightCm ? (user.heightCm / 100) ** 2 : null;
+  // bmiAvg30 and bmiSlope30 still used for overallStatus + bmiSectionStatus
+  const bmiAvg30 = bmiDivisor && w?.avg30 != null ? w.avg30 / bmiDivisor : null;
+  const bmiSlope30 =
+    bmiDivisor && w?.slope30
+      ? {
+          ...w.slope30,
+          slope: w.slope30.slope / bmiDivisor,
+        }
+      : null;
 
   const bpTargets =
     user?.dateOfBirth != null ? getBpTargets(new Date(user.dateOfBirth)) : null;
@@ -687,17 +700,6 @@ export default function InsightsPage() {
     orangeMin: pulseTarget.orangeMin,
     orangeMax: pulseTarget.orangeMax,
   };
-  const bmiLatest =
-    bmiDivisor && w?.latest != null ? w.latest / bmiDivisor : null;
-  const bmiAvg7 = bmiDivisor && w?.avg7 != null ? w.avg7 / bmiDivisor : null;
-  const bmiAvg30 = bmiDivisor && w?.avg30 != null ? w.avg30 / bmiDivisor : null;
-  const bmiSlope30 =
-    bmiDivisor && w?.slope30
-      ? {
-          ...w.slope30,
-          slope: w.slope30.slope / bmiDivisor,
-        }
-      : null;
   const overallStatus = getOverallHealthStatus([
     classifyRangeValue(w?.avg30, weightRange),
     classifyRangeValue(sys?.avg30, bpSysRange),
@@ -821,7 +823,7 @@ export default function InsightsPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
         <TrendCard
           label={t("dashboard.weight")}
           latest={w?.latest ?? null}
@@ -882,19 +884,28 @@ export default function InsightsPage() {
           slope30={p?.slope30 ?? null}
           icon={TrendingUp}
         />
-        <TrendCard
-          label="BMI"
-          latest={bmiLatest}
-          unit="kg/m²"
-          avg7={bmiAvg7}
-          avg30={bmiAvg30}
-          avg7ColorClass={getRangeColorClass(bmiAvg7, { range: bmiRange })}
-          avg30ColorClass={getRangeColorClass(bmiAvg30, { range: bmiRange })}
-          avg7Hint={getRangeHint("kg/m²", { range: bmiRange }, t)}
-          avg30Hint={getRangeHint("kg/m²", { range: bmiRange }, t)}
-          slope30={bmiSlope30}
-          icon={Scale}
-        />
+        {showBodyFatCard ? (
+          <TrendCard
+            label={t("dashboard.bodyFat")}
+            latest={bf?.latest ?? null}
+            unit="%"
+            avg7={bf?.avg7 ?? null}
+            avg30={bf?.avg30 ?? null}
+            slope30={bf?.slope30 ?? null}
+            icon={Percent}
+          />
+        ) : null}
+        {showMoodCard ? (
+          <TrendCard
+            label={t("dashboard.mood")}
+            latest={moodSummary?.latest ?? null}
+            unit="/ 5"
+            avg7={moodSummary?.avg7 ?? null}
+            avg30={moodSummary?.avg30 ?? null}
+            slope30={(moodSummary?.slope30 as TrendSlope | undefined) ?? null}
+            icon={Smile}
+          />
+        ) : null}
       </div>
 
       <section className="space-y-2">
