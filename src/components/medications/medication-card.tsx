@@ -154,6 +154,38 @@ function getWindowStatus(
   return null;
 }
 
+function isLastIntakeInCurrentWindow(
+  lastTakenAt: string | null,
+  schedule: Schedule,
+  nowBerlin: Date,
+): boolean {
+  if (!lastTakenAt) return false;
+
+  const intake = toBerlinDate(new Date(lastTakenAt));
+
+  // Must be same calendar day
+  if (
+    intake.getFullYear() !== nowBerlin.getFullYear() ||
+    intake.getMonth() !== nowBerlin.getMonth() ||
+    intake.getDate() !== nowBerlin.getDate()
+  ) {
+    return false;
+  }
+
+  const intakeMins = intake.getHours() * 60 + intake.getMinutes();
+  const startMins = parseTimeToMinutes(schedule.windowStart);
+  let endMins = parseTimeToMinutes(schedule.windowEnd);
+
+  // Handle overnight windows
+  if (endMins <= startMins) endMins += 24 * 60;
+  const adjustedIntake =
+    intakeMins < startMins && endMins > 24 * 60
+      ? intakeMins + 24 * 60
+      : intakeMins;
+
+  return adjustedIntake >= startMins && adjustedIntake <= endMins;
+}
+
 export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
   const queryClient = useQueryClient();
   const { t } = useTranslations();
@@ -275,6 +307,8 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
           if (!status) return best;
           // Don't show late/very_late if all overdue schedules are covered by events
           if (status !== "in_window" && !hasUncoveredOverdue) return best;
+          // Don't show in_window if last intake is already within this window today
+          if (status === "in_window" && isLastIntakeInCurrentWindow(medication.lastTakenAt, s, nowBerlin)) return best;
           const priority = { in_window: 3, late: 2, very_late: 1 };
           if (!best.status || priority[status] > priority[best.status]) {
             return { status, schedule: s };
