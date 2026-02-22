@@ -30,6 +30,13 @@ import { setGlobalBoss } from "@/lib/jobs/boss-instance";
 import { deleteMessage } from "@/lib/telegram";
 import { decrypt } from "@/lib/crypto";
 import { syncMoodLogEntries } from "@/lib/moodlog/sync";
+import {
+  DEFAULT_PHASE_CONFIG,
+  resolvePhaseThresholds,
+  determinePhase,
+  getPhaseMessage,
+  getPhaseKeyboard,
+} from "@/lib/jobs/reminder-phases";
 
 function parseTimeToMinutes(value: string): number {
   const [h, m] = value.split(":").map(Number);
@@ -152,9 +159,9 @@ function getDayOfWeekInTz(now: Date, tz: string): number {
 }
 
 /**
- * Check all active medications for each user and find overdue doses.
- * A dose is overdue when current time is past windowEnd and no intake event
- * exists for today in that schedule window.
+ * Check all active medications for each user and determine reminder phases.
+ * Uses phase-based logic (GREEN/YELLOW/ORANGE/RED) to send one notification
+ * per phase transition rather than every 15 minutes.
  */
 async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
   void jobs;
@@ -163,26 +170,18 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
     recordReminderCheck();
     const now = new Date();
 
-    // Read configurable thresholds
-    const appSettings = await prisma.appSettings.findUnique({
-      where: { id: "singleton" },
-      select: {
-        reminderMissedMinutes: true,
-      },
-    });
-    const missedMinutes = appSettings?.reminderMissedMinutes ?? 240;
-
     // Clean up expired snoozes
     await prisma.medication.updateMany({
       where: { snoozedUntil: { lt: now } },
       data: { snoozedUntil: null },
     });
 
-    // Get all active medications with schedules
+    // Get all active medications with schedules and phase config
     const medications = await prisma.medication.findMany({
       where: { active: true },
       include: {
         schedules: true,
+        phaseConfig: true,
         user: {
           select: {
             id: true,
@@ -208,7 +207,12 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
 
       const todayDow = getDayOfWeekInTz(now, userTz);
 
-      // Count existing intake events for this medication today (user's timezone)
+      // Get today's date string in user's timezone for message tracking
+      const localDateStr = now.toLocaleDateString("sv-SE", {
+        timeZone: userTz,
+      }); // YYYY-MM-DD format
+
+      // Count existing intake events for this medication today
       const eventCount = await prisma.medicationIntakeEvent.count({
         where: {
           medicationId: med.id,
@@ -217,7 +221,9 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
         },
       });
 
-      // Process each schedule individually
+      // Resolve phase configuration
+      const phaseConfig = med.phaseConfig ?? DEFAULT_PHASE_CONFIG;
+
       let schedulesProcessed = 0;
       const sortedSchedules = [...med.schedules].sort((a, b) =>
         a.windowStart.localeCompare(b.windowStart),
@@ -233,22 +239,55 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
           continue;
         }
 
+        const startMins = parseTimeToMinutes(schedule.windowStart);
         const endMins = parseTimeToMinutes(schedule.windowEnd);
         const currentMins = parseTimeToMinutes(currentTime);
+        const windowDuration = endMins - startMins;
         const minutesToEnd = endMins - currentMins;
-        const minutesPastEnd = currentMins - endMins;
+        const minutesFromStart = currentMins - startMins;
 
-        // Skip if we're before the pre-end reminder window (30 min before end)
-        if (minutesToEnd > 30) continue;
-
-        // Skip if enough intake events exist for schedules processed so far
+        // Skip if enough intake events exist
         if (eventCount > schedulesProcessed) {
           schedulesProcessed++;
           continue;
         }
 
-        // Skip if medication is currently snoozed
+        // Skip if medication is snoozed
         if (med.snoozedUntil && now < med.snoozedUntil) {
+          schedulesProcessed++;
+          continue;
+        }
+
+        // Resolve phase thresholds
+        const thresholds = resolvePhaseThresholds(phaseConfig, windowDuration);
+
+        // Determine current phase
+        const currentPhase = determinePhase(
+          minutesToEnd,
+          minutesFromStart,
+          thresholds,
+        );
+
+        if (!currentPhase) {
+          schedulesProcessed++;
+          continue;
+        }
+
+        // Check if this phase was already notified today
+        const existingMessage =
+          await prisma.telegramReminderMessage.findUnique({
+            where: {
+              medicationId_scheduleId_date_phase: {
+                medicationId: med.id,
+                scheduleId: schedule.id,
+                date: localDateStr,
+                phase: currentPhase,
+              },
+            },
+          });
+
+        if (existingMessage) {
+          // Already sent for this phase — skip
           schedulesProcessed++;
           continue;
         }
@@ -256,14 +295,13 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
         const doseInfo = schedule.dose ?? med.dose;
         const timeWindow = `${schedule.windowStart}–${schedule.windowEnd}`;
 
-        if (minutesPastEnd > missedMinutes) {
-          // ── Missed threshold reached: create missed event + notify ──
+        // RED phase: create missed intake event
+        if (currentPhase === "RED") {
           const [h, m] = schedule.windowStart.split(":").map(Number);
           const scheduledFor = new Date(
             todayStart.getTime() + h * 3600000 + m * 60000,
           );
 
-          // Check if a missed event already exists for this exact schedule
           const existingMissed = await prisma.medicationIntakeEvent.count({
             where: {
               medicationId: med.id,
@@ -289,65 +327,44 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
             console.log(
               `[reminder] Missed dose: ${med.name} for user ${med.user.id}, schedule ${schedule.windowStart}-${schedule.windowEnd}`,
             );
-
-            if (med.notificationsEnabled) {
-              try {
-                await dispatchNotification({
-                  eventType: "MEDICATION_REMINDER",
-                  userId: med.user.id,
-                  title: `Verpasst: ${med.name}`,
-                  message: `Verpasst:\n<b>${med.name}</b> (${doseInfo}, ${timeWindow})\nAls verpasst markiert.`,
-                  metadata: { medicationId: med.id },
-                });
-              } catch (notifErr) {
-                console.error(
-                  `[reminder] Notification dispatch failed for missed dose ${med.name}:`,
-                  notifErr,
-                );
-              }
-            }
           }
-        } else if (med.notificationsEnabled) {
-          if (minutesToEnd > 0) {
-            // ── Pre-end reminder: window still open but ending soon ──
-            console.log(
-              `[reminder] Pre-end reminder (${minutesToEnd} min left): ${med.name} for user ${med.user.id}, schedule ${schedule.windowStart}-${schedule.windowEnd}`,
-            );
+        }
 
-            try {
-              await dispatchNotification({
-                eventType: "MEDICATION_REMINDER",
-                userId: med.user.id,
-                title: `Erinnerung: ${med.name}`,
-                message: `Erinnerung:\n<b>${med.name}</b> (${doseInfo}, ${timeWindow})\nZeitfenster endet in ${minutesToEnd} Min.`,
-                metadata: { medicationId: med.id },
-              });
-            } catch (notifErr) {
-              console.error(
-                `[reminder] Notification dispatch failed for pre-end reminder ${med.name}:`,
-                notifErr,
-              );
-            }
-          } else {
-            // ── Late but not yet missed: past windowEnd ──
-            console.log(
-              `[reminder] Late dose (${minutesPastEnd} min): ${med.name} for user ${med.user.id}, schedule ${schedule.windowStart}-${schedule.windowEnd}`,
-            );
+        // Send notification if enabled
+        if (med.notificationsEnabled) {
+          const { title, message } = getPhaseMessage(
+            currentPhase,
+            med.name,
+            doseInfo,
+            timeWindow,
+            minutesToEnd,
+          );
 
-            try {
-              await dispatchNotification({
-                eventType: "MEDICATION_REMINDER",
-                userId: med.user.id,
-                title: `Überfällig: ${med.name}`,
-                message: `Überfällig:\n<b>${med.name}</b> (${doseInfo}, ${timeWindow})\nSeit ${minutesPastEnd} Min. überfällig.`,
-                metadata: { medicationId: med.id },
-              });
-            } catch (notifErr) {
-              console.error(
-                `[reminder] Notification dispatch failed for late dose ${med.name}:`,
-                notifErr,
-              );
-            }
+          const keyboard = getPhaseKeyboard(currentPhase, med.id);
+
+          console.log(
+            `[reminder] Phase ${currentPhase}: ${med.name} for user ${med.user.id}, schedule ${schedule.windowStart}-${schedule.windowEnd}`,
+          );
+
+          try {
+            await dispatchNotification({
+              eventType: "MEDICATION_REMINDER",
+              userId: med.user.id,
+              title,
+              message,
+              metadata: {
+                medicationId: med.id,
+                scheduleId: schedule.id,
+                phase: currentPhase,
+                date: localDateStr,
+                replyMarkup: keyboard,
+              },
+            });
+          } catch (notifErr) {
+            console.error(
+              `[reminder] Notification dispatch failed for ${currentPhase} phase ${med.name}:`,
+              notifErr,
+            );
           }
         }
 
