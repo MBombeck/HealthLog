@@ -437,14 +437,16 @@ export default function SettingsPage() {
                   </div>
                 )}
 
-                <Button type="submit" disabled={saving}>
-                  {saving ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="mr-2 h-4 w-4" />
-                  )}
-                  {t("common.save")}
-                </Button>
+                <div className="flex justify-end">
+                  <Button type="submit" disabled={saving}>
+                    {saving ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
+                    {t("common.save")}
+                  </Button>
+                </div>
               </form>
             </div>
           </section>
@@ -463,7 +465,7 @@ export default function SettingsPage() {
                 </h2>
               </div>
               <PasskeyListSection isAuthenticated={isAuthenticated} />
-              <div className="mt-4">
+              <div className="mt-4 flex justify-end">
                 <Button
                   variant="outline"
                   onClick={handleAddPasskey}
@@ -491,23 +493,24 @@ export default function SettingsPage() {
             </div>
 
             <div className="bg-card border-border rounded-xl border p-6">
-              <div className="mb-4 flex items-center gap-2">
-                <Shield className="text-primary h-5 w-5" />
-                <h2 className="text-lg font-semibold">
-                  {t("settings.passwordReset")}
-                </h2>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Shield className="text-primary h-5 w-5" />
+                  <h2 className="text-lg font-semibold">
+                    {t("settings.passwordReset")}
+                  </h2>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPasswordDialogOpen(true)}
+                >
+                  {t("settings.changePassword")}
+                </Button>
               </div>
-              <p className="text-muted-foreground text-xs">
+              <p className="text-muted-foreground mt-1 text-xs">
                 {t("settings.changePasswordDescription")}
               </p>
-              <Button
-                type="button"
-                variant="outline"
-                className="mt-3"
-                onClick={() => setPasswordDialogOpen(true)}
-              >
-                {t("settings.changePassword")}
-              </Button>
             </div>
 
             <Dialog
@@ -2085,15 +2088,7 @@ function TelegramSection({
             </p>
           )}
 
-          <div className="flex gap-2">
-            <Button type="submit" disabled={saving}>
-              {saving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-2 h-4 w-4" />
-              )}
-              {t("common.save")}
-            </Button>
+          <div className="flex justify-end gap-2">
             <Button
               type="button"
               variant="outline"
@@ -2106,6 +2101,14 @@ function TelegramSection({
                 <Send className="mr-2 h-4 w-4" />
               )}
               {t("settings.testMessage")}
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              {t("common.save")}
             </Button>
           </div>
         </form>
@@ -2296,13 +2299,7 @@ function NtfySection({
             </p>
           )}
 
-          <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={save.isPending}>
-              {save.isPending && (
-                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-              )}
-              {t("common.save")}
-            </Button>
+          <div className="flex justify-end gap-2">
             <Button
               type="button"
               variant="outline"
@@ -2316,6 +2313,12 @@ function NtfySection({
                 <Send className="mr-1 h-3.5 w-3.5" />
               )}
               {t("settings.testMessage")}
+            </Button>
+            <Button type="submit" size="sm" disabled={save.isPending}>
+              {save.isPending && (
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+              )}
+              {t("common.save")}
             </Button>
           </div>
         </form>
@@ -2503,23 +2506,17 @@ function WebPushSection({ id }: { id: string }) {
             {t("settings.webPushDenied")}
           </p>
         ) : isSubscribed ? (
-          <div className="space-y-3">
-            <div className="bg-dracula-green/10 text-dracula-green flex items-center gap-2 rounded-lg p-3 text-sm">
-              <BellRing className="h-4 w-4 shrink-0" />
-              {t("settings.webPushActive")}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleUnsubscribe}
-              disabled={actionLoading}
-            >
-              {actionLoading && (
-                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-              )}
-              {t("settings.webPushUnsubscribe")}
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleUnsubscribe}
+            disabled={actionLoading}
+          >
+            {actionLoading && (
+              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+            )}
+            {t("settings.webPushUnsubscribe")}
+          </Button>
         ) : (
           <Button
             variant="outline"
@@ -2644,21 +2641,25 @@ function MoodLogSection({ t }: { t: (key: string) => string }) {
   }
 
   return (
-    <section id="moodlog" className="rounded-lg border p-4 space-y-4">
-      <div className="flex items-center gap-2">
-        <Smile className="h-5 w-5" />
-        <div>
-          <h2 className="font-semibold">{t("settings.moodLogTitle")}</h2>
-          <p className="text-muted-foreground text-sm">
-            {t("settings.moodLogDescription")}
-          </p>
+    <div id="moodlog" className="bg-card border-border scroll-mt-28 rounded-xl border p-6 space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Smile className="text-primary h-5 w-5" />
+          <h2 className="text-lg font-semibold">
+            <a href="https://moodlog.onback.io" target="_blank" rel="noopener noreferrer" className="hover:underline">
+              {t("settings.moodLogTitle")}
+            </a>
+          </h2>
         </div>
         {status?.configured && (
-          <Badge variant="outline" className="ml-auto">
-            {status.enabled ? t("settings.withingsConnected") : t("admin.configured")}
+          <Badge className="border-dracula-green/30 bg-dracula-green/15 text-dracula-green">
+            {status.enabled ? t("settings.withingsConnected") : t("settings.configured")}
           </Badge>
         )}
       </div>
+      <p className="text-muted-foreground text-xs">
+        {t("settings.moodLogDescription")}
+      </p>
 
       {/* Credentials form */}
       <form onSubmit={handleSave} className="space-y-3">
@@ -2794,11 +2795,11 @@ function MoodLogSection({ t }: { t: (key: string) => string }) {
 
       {/* Status message */}
       {msg && (
-        <p className={`text-sm ${msgType === "error" ? "text-red-400" : "text-green-400"}`}>
+        <p className={`text-sm ${msgType === "error" ? "text-destructive" : "text-dracula-green"}`}>
           {msg}
         </p>
       )}
-    </section>
+    </div>
   );
 }
 

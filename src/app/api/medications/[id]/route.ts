@@ -163,6 +163,17 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     return apiError("Medikament nicht gefunden", 404);
   }
 
+  // Revoke API tokens scoped to this medication
+  const medicationScope = `medication:${id}:ingest`;
+  await prisma.apiToken.updateMany({
+    where: {
+      userId: sessionData.user.id,
+      revoked: false,
+      permissions: { has: medicationScope },
+    },
+    data: { revoked: true },
+  });
+
   await deleteMedicationCategory(id);
   await prisma.medication.delete({ where: { id } });
 
