@@ -173,6 +173,8 @@ model Medication {
 
   schedules    MedicationSchedule[]
   intakeEvents MedicationIntakeEvent[]
+  phaseConfig        ReminderPhaseConfig?
+  telegramMessages   TelegramReminderMessage[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -190,6 +192,7 @@ model MedicationSchedule {
   daysOfWeek   String? @map("days_of_week") // Comma-separated day numbers (0=Sun..6=Sat), null = daily
 
   medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  telegramMessages TelegramReminderMessage[]
 
   @@map("medication_schedules")
 }
@@ -201,6 +204,22 @@ enum IntakeSource {
   IMPORT
 
   @@map("intake_source")
+}
+
+enum ReminderPhase {
+  GREEN
+  YELLOW
+  ORANGE
+  RED
+
+  @@map("reminder_phase")
+}
+
+enum PhaseMode {
+  MINUTES
+  PERCENT
+
+  @@map("phase_mode")
 }
 
 model MedicationIntakeEvent {
@@ -219,6 +238,41 @@ model MedicationIntakeEvent {
 
   @@index([userId, medicationId, scheduledFor])
   @@map("medication_intake_events")
+}
+
+model ReminderPhaseConfig {
+  id           String    @id @default(cuid())
+  medicationId String    @unique @map("medication_id")
+  greenValue   Int       @default(60) @map("green_value")
+  greenMode    PhaseMode @default(MINUTES) @map("green_mode")
+  yellowValue  Int       @default(30) @map("yellow_value")
+  yellowMode   PhaseMode @default(MINUTES) @map("yellow_mode")
+  orangeValue  Int       @default(0) @map("orange_value")
+  orangeMode   PhaseMode @default(MINUTES) @map("orange_mode")
+  redValue     Int       @default(240) @map("red_value")
+  redMode      PhaseMode @default(MINUTES) @map("red_mode")
+
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  @@map("reminder_phase_configs")
+}
+
+model TelegramReminderMessage {
+  id           String        @id @default(cuid())
+  medicationId String        @map("medication_id")
+  scheduleId   String        @map("schedule_id")
+  chatId       String        @map("chat_id")
+  messageId    Int           @map("message_id")
+  phase        ReminderPhase
+  sentAt       DateTime      @default(now()) @map("sent_at")
+  date         String        // YYYY-MM-DD for day grouping
+
+  medication Medication         @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  schedule   MedicationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@unique([medicationId, scheduleId, date, phase])
+  @@index([medicationId, date])
+  @@map("telegram_reminder_messages")
 }
 
 // ─── API Tokens (for external ingest) ──────────────────────
