@@ -9,12 +9,25 @@ import {
 import { changePasswordSchema } from "@/lib/validations/auth";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
     const sessionData = await getSession();
     if (!sessionData) {
       return apiError("Nicht angemeldet", 401);
+    }
+
+    const rl = checkRateLimit(
+      `auth:password:${sessionData.user.id}`,
+      5,
+      15 * 60 * 1000,
+    );
+    if (!rl.allowed) {
+      return apiError(
+        "Zu viele Versuche. Bitte 15 Minuten warten.",
+        429,
+      );
     }
 
     const body = await request.json();

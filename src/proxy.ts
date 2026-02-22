@@ -1,6 +1,43 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+/**
+ * Paths that do NOT require a session cookie (public pages + external webhooks).
+ */
+const PUBLIC_PATHS = [
+  "/auth/",
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/registration-status",
+  "/api/auth/passkey/login-options",
+  "/api/auth/passkey/login-verify",
+  "/api/health",
+  "/api/notifications/vapid",
+  "/api/monitoring/",
+  "/api/send",
+  "/api/withings/webhook",
+  "/api/telegram/webhook",
+  "/api/integrations/moodlog/webhook",
+  "/api/ingest/",
+  "/onboarding",
+];
+
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+}
+
 export function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Server-side route protection for pages (not API routes — those have their own getSession checks)
+  const isApiRoute = pathname.startsWith("/api/");
+  const isPublic = isPublicPath(pathname);
+  if (!isApiRoute && !isPublic) {
+    const hasSession = request.cookies.has("healthlog_session");
+    if (!hasSession) {
+      return NextResponse.redirect(new URL("/auth/login", request.url));
+    }
+  }
+
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
@@ -41,7 +78,7 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Apply to all routes except static files and Next.js internals
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Apply to all routes except static files, Next.js internals, SW, and manifest
+    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

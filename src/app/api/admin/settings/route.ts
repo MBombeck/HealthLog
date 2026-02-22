@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth/session";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { encrypt } from "@/lib/crypto";
+import { adminSettingsSchema } from "@/lib/validations/admin";
 import { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -51,82 +52,72 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json();
+    const parsed = adminSettingsSchema.safeParse(body);
+    if (!parsed.success) {
+      return apiError(parsed.error.issues[0].message, 422);
+    }
+
+    const data = parsed.data;
     const updates: Record<string, unknown> = {};
     const auditDetails: Record<string, unknown> = {};
 
-    if (typeof body.registrationEnabled === "boolean") {
-      updates.registrationEnabled = body.registrationEnabled;
-      auditDetails.registrationEnabled = body.registrationEnabled;
-    }
-    if (
-      typeof body.defaultLocale === "string" &&
-      ["de", "en"].includes(body.defaultLocale)
-    ) {
-      updates.defaultLocale = body.defaultLocale;
-      auditDetails.defaultLocale = body.defaultLocale;
-    }
-    if (typeof body.telegramGlobal === "boolean") {
-      updates.telegramGlobal = body.telegramGlobal;
-      auditDetails.telegramGlobal = body.telegramGlobal;
-    }
-    if (typeof body.ntfyGlobal === "boolean") {
-      updates.ntfyGlobal = body.ntfyGlobal;
-      auditDetails.ntfyGlobal = body.ntfyGlobal;
-    }
-    if (typeof body.webPushGlobal === "boolean") {
-      updates.webPushGlobal = body.webPushGlobal;
-      auditDetails.webPushGlobal = body.webPushGlobal;
-    }
-    if (typeof body.webPushVapidPublicKey === "string") {
-      const value = body.webPushVapidPublicKey.trim();
-      updates.webPushVapidPublicKey = value.length > 0 ? value : null;
-      auditDetails.webPushVapidPublicKey = value.length > 0 ? "configured" : null;
-    }
-    if (typeof body.webPushVapidSubject === "string") {
-      const value = body.webPushVapidSubject.trim();
-      if (value.length > 0 && !/^mailto:.+@.+$/.test(value)) {
-        return apiError(
-          "Web Push Subject muss im Format mailto:adresse@example.com sein",
-          422,
-        );
+    // Boolean fields — direct mapping
+    const booleanFields = [
+      "registrationEnabled",
+      "telegramGlobal",
+      "ntfyGlobal",
+      "webPushGlobal",
+      "apiGlobal",
+      "umamiEnabled",
+      "glitchtipEnabled",
+      "moodLogGlobal",
+    ] as const;
+    for (const field of booleanFields) {
+      if (data[field] !== undefined) {
+        updates[field] = data[field];
+        auditDetails[field] = data[field];
       }
-      updates.webPushVapidSubject = value.length > 0 ? value : null;
-      auditDetails.webPushVapidSubject = value.length > 0 ? value : null;
     }
-    if (typeof body.webPushVapidPrivateKey === "string") {
-      const value = body.webPushVapidPrivateKey.trim();
-      if (value.length > 0) {
+
+    if (data.defaultLocale !== undefined) {
+      updates.defaultLocale = data.defaultLocale;
+      auditDetails.defaultLocale = data.defaultLocale;
+    }
+
+    // String fields that map directly (with empty → null)
+    if (data.webPushVapidPublicKey !== undefined) {
+      const value = data.webPushVapidPublicKey.trim();
+      updates.webPushVapidPublicKey = value || null;
+      auditDetails.webPushVapidPublicKey = value ? "configured" : null;
+    }
+
+    if (data.webPushVapidSubject !== undefined) {
+      const value = data.webPushVapidSubject.trim();
+      updates.webPushVapidSubject = value || null;
+      auditDetails.webPushVapidSubject = value || null;
+    }
+
+    // Encrypted fields
+    if (data.webPushVapidPrivateKey !== undefined) {
+      const value = data.webPushVapidPrivateKey.trim();
+      if (value) {
         updates.webPushVapidPrivateKeyEncrypted = encrypt(value);
         auditDetails.webPushVapidPrivateKeyUpdated = true;
       }
     }
-    if (body.clearWebPushVapidPrivateKey === true) {
+    if (data.clearWebPushVapidPrivateKey === true) {
       updates.webPushVapidPrivateKeyEncrypted = null;
       auditDetails.webPushVapidPrivateKeyUpdated = false;
     }
-    if (typeof body.apiGlobal === "boolean") {
-      updates.apiGlobal = body.apiGlobal;
-      auditDetails.apiGlobal = body.apiGlobal;
-    }
-    if (typeof body.umamiEnabled === "boolean") {
-      updates.umamiEnabled = body.umamiEnabled;
-      auditDetails.umamiEnabled = body.umamiEnabled;
-    }
-    if (typeof body.umamiScriptUrl === "string") {
-      const value = body.umamiScriptUrl.trim();
+
+    // URL fields with normalization
+    if (data.umamiScriptUrl !== undefined) {
+      const value = data.umamiScriptUrl.trim();
       if (!value) {
         updates.umamiScriptUrl = null;
         auditDetails.umamiScriptUrl = null;
       } else {
-        let parsed: URL;
-        try {
-          parsed = new URL(value);
-        } catch {
-          return apiError("Umami Script-URL ist ungültig", 422);
-        }
-        if (!["https:", "http:"].includes(parsed.protocol)) {
-          return apiError("Umami Script-URL muss mit http:// oder https:// beginnen", 422);
-        }
+        const parsed = new URL(value);
         if (parsed.pathname === "/" || parsed.pathname === "") {
           parsed.pathname = "/script.js";
         }
@@ -134,83 +125,56 @@ export async function PUT(request: NextRequest) {
         auditDetails.umamiScriptUrl = parsed.toString();
       }
     }
-    if (typeof body.umamiWebsiteId === "string") {
-      const value = body.umamiWebsiteId.trim();
-      updates.umamiWebsiteId = value.length > 0 ? value : null;
-      auditDetails.umamiWebsiteId = value.length > 0 ? value : null;
+
+    if (data.umamiWebsiteId !== undefined) {
+      const value = data.umamiWebsiteId.trim();
+      updates.umamiWebsiteId = value || null;
+      auditDetails.umamiWebsiteId = value || null;
     }
-    if (typeof body.glitchtipEnabled === "boolean") {
-      updates.glitchtipEnabled = body.glitchtipEnabled;
-      auditDetails.glitchtipEnabled = body.glitchtipEnabled;
-    }
-    if (typeof body.glitchtipDsn === "string") {
-      const value = body.glitchtipDsn.trim();
+
+    if (data.glitchtipDsn !== undefined) {
+      const value = data.glitchtipDsn.trim();
       if (!value) {
         updates.glitchtipDsn = null;
         auditDetails.glitchtipDsn = null;
       } else {
-        let parsed: URL;
-        try {
-          parsed = new URL(value);
-        } catch {
-          return apiError("Glitchtip DSN ist ungültig", 422);
-        }
-        if (!["https:", "http:"].includes(parsed.protocol)) {
-          return apiError("Glitchtip DSN muss mit http:// oder https:// beginnen", 422);
-        }
-        updates.glitchtipDsn = parsed.toString();
+        updates.glitchtipDsn = new URL(value).toString();
         auditDetails.glitchtipDsn = "configured";
       }
     }
-    if (typeof body.glitchtipEnvironment === "string") {
-      const value = body.glitchtipEnvironment.trim();
-      updates.glitchtipEnvironment = value.length > 0 ? value : null;
-      auditDetails.glitchtipEnvironment = value.length > 0 ? value : null;
+
+    if (data.glitchtipEnvironment !== undefined) {
+      const value = data.glitchtipEnvironment.trim();
+      updates.glitchtipEnvironment = value || null;
+      auditDetails.glitchtipEnvironment = value || null;
     }
 
-    if (typeof body.bugReportRepo === "string") {
-      const repo = body.bugReportRepo.trim();
-      if (repo.length === 0) {
-        updates.githubIssueRepo = null;
-        auditDetails.bugReportRepo = null;
-      } else if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) {
-        return apiError("GitHub-Repository muss im Format owner/repo sein", 422);
-      } else {
-        updates.githubIssueRepo = repo;
-        auditDetails.bugReportRepo = repo;
-      }
+    // Bug report
+    if (data.bugReportRepo !== undefined) {
+      const repo = data.bugReportRepo.trim();
+      updates.githubIssueRepo = repo || null;
+      auditDetails.bugReportRepo = repo || null;
     }
-
-    if (typeof body.bugReportToken === "string") {
-      const token = body.bugReportToken.trim();
-      if (token.length > 0) {
+    if (data.bugReportToken !== undefined) {
+      const token = data.bugReportToken.trim();
+      if (token) {
         updates.githubIssueTokenEncrypted = encrypt(token);
         auditDetails.bugReportTokenUpdated = true;
       }
     }
-
-    if (body.clearBugReportToken === true) {
+    if (data.clearBugReportToken === true) {
       updates.githubIssueTokenEncrypted = null;
       auditDetails.bugReportTokenUpdated = false;
     }
 
-    if (typeof body.reminderLateMinutes === "number") {
-      if (body.reminderLateMinutes < 15 || body.reminderLateMinutes > 480) {
-        return apiError("Spät-Schwellenwert muss zwischen 15 und 480 Minuten liegen", 422);
-      }
-      updates.reminderLateMinutes = body.reminderLateMinutes;
-      auditDetails.reminderLateMinutes = body.reminderLateMinutes;
+    // Numeric thresholds
+    if (data.reminderLateMinutes !== undefined) {
+      updates.reminderLateMinutes = data.reminderLateMinutes;
+      auditDetails.reminderLateMinutes = data.reminderLateMinutes;
     }
-    if (typeof body.reminderMissedMinutes === "number") {
-      if (body.reminderMissedMinutes < 30 || body.reminderMissedMinutes > 720) {
-        return apiError("Verpasst-Schwellenwert muss zwischen 30 und 720 Minuten liegen", 422);
-      }
-      updates.reminderMissedMinutes = body.reminderMissedMinutes;
-      auditDetails.reminderMissedMinutes = body.reminderMissedMinutes;
-    }
-    if (typeof body.moodLogGlobal === "boolean") {
-      updates.moodLogGlobal = body.moodLogGlobal;
-      auditDetails.moodLogGlobal = body.moodLogGlobal;
+    if (data.reminderMissedMinutes !== undefined) {
+      updates.reminderMissedMinutes = data.reminderMissedMinutes;
+      auditDetails.reminderMissedMinutes = data.reminderMissedMinutes;
     }
 
     if (Object.keys(updates).length === 0) {
