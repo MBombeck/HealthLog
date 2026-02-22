@@ -468,6 +468,98 @@ export async function GET() {
     });
   }
 
+  // 9. Mood targets (if mood data exists)
+  const moodEntries = await prisma.moodEntry.findMany({
+    where: { userId },
+    orderBy: { moodLoggedAt: "desc" },
+    select: { score: true, moodLoggedAt: true },
+  });
+
+  if (moodEntries.length >= 3) {
+    const thirtyDaysAgoMood = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const recentMood = moodEntries.filter(
+      (entry) => entry.moodLoggedAt >= thirtyDaysAgoMood,
+    );
+    const latestMoodScore = moodEntries[0]?.score ?? null;
+
+    const moodAvg30 =
+      recentMood.length > 0
+        ? Math.round(
+            (recentMood.reduce((sum, e) => sum + e.score, 0) /
+              recentMood.length) *
+              10,
+          ) / 10
+        : null;
+
+    // Mood trend: compare first half to second half of last 30 days
+    let moodTrend: "up" | "down" | "stable" | null = null;
+    if (recentMood.length >= 4) {
+      const sorted = [...recentMood].sort(
+        (a, b) => a.moodLoggedAt.getTime() - b.moodLoggedAt.getTime(),
+      );
+      const mid = Math.floor(sorted.length / 2);
+      const firstHalf = sorted.slice(0, mid);
+      const secondHalf = sorted.slice(mid);
+      const avgFirst =
+        firstHalf.reduce((s, e) => s + e.score, 0) / firstHalf.length;
+      const avgSecond =
+        secondHalf.reduce((s, e) => s + e.score, 0) / secondHalf.length;
+      const diff = avgSecond - avgFirst;
+      if (diff > 0.2) moodTrend = "up";
+      else if (diff < -0.2) moodTrend = "down";
+      else moodTrend = "stable";
+    }
+
+    const moodClassification =
+      latestMoodScore != null
+        ? latestMoodScore >= 3.5
+          ? { category: "Gut", color: "#50fa7b" }
+          : latestMoodScore >= 2
+            ? { category: "Moderat", color: "#f1fa8c" }
+            : { category: "Niedrig", color: "#ff5555" }
+        : null;
+
+    targets.push({
+      type: "MOOD_SCORE",
+      label: "Stimmung",
+      current: latestMoodScore,
+      average30: moodAvg30,
+      trend: moodTrend,
+      unit: "/ 5",
+      range: { min: 3.5, max: 5 },
+      classification: moodClassification,
+      source: "moodLog",
+    });
+
+    // Mood stability: standard deviation of recent scores (lower = more stable)
+    if (recentMood.length >= 5) {
+      const mean = moodAvg30 ?? latestMoodScore ?? 3;
+      const variance =
+        recentMood.reduce((sum, e) => sum + (e.score - mean) ** 2, 0) /
+        recentMood.length;
+      const stdDev = Math.round(Math.sqrt(variance) * 100) / 100;
+
+      const stabilityClassification =
+        stdDev <= 0.5
+          ? { category: "Sehr stabil", color: "#50fa7b" }
+          : stdDev <= 1.0
+            ? { category: "Stabil", color: "#f1fa8c" }
+            : { category: "Schwankend", color: "#ff5555" };
+
+      targets.push({
+        type: "MOOD_STABILITY",
+        label: "Stimmungsstabilität",
+        current: stdDev,
+        average30: stdDev,
+        trend: null,
+        unit: "σ",
+        range: { min: 0, max: 0.5 },
+        classification: stabilityClassification,
+        source: "moodLog",
+      });
+    }
+  }
+
   return apiSuccess({
     targets,
     // Extra diastolic data for BP display

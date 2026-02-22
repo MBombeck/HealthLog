@@ -70,7 +70,7 @@ const VALUE_BANDS = [
   { min: 3, max: 5, color: "#50fa7b", opacity: 0.2 },
 ] as const;
 
-const COLOR_MAIN = "#f1fa8c";
+const COLOR_MAIN = "#ff5555";
 const COLOR_MA = "#ff79c6";
 const COLOR_TREND = "#8be9fd";
 
@@ -146,8 +146,10 @@ export function MoodChart({ title }: MoodChartProps) {
   const [rangePoints, setRangePoints] = useState(30);
   const [showMA, setShowMA] = useState(false);
   const [showTrend, setShowTrend] = useState(false);
+  const [showBands, setShowBands] = useState(false);
   const maToggleId = useId();
   const trendToggleId = useId();
+  const bandsToggleId = useId();
 
   const displayTitle = title ?? t("charts.mood");
 
@@ -286,6 +288,17 @@ export function MoodChart({ title }: MoodChartProps) {
               {t("charts.trend")}
             </Label>
           </div>
+          <div className="flex items-center gap-1.5">
+            <Switch
+              id={bandsToggleId}
+              checked={showBands}
+              onCheckedChange={setShowBands}
+              className="scale-75"
+            />
+            <Label htmlFor={bandsToggleId} className="cursor-pointer text-xs">
+              {t("charts.targetRanges")}
+            </Label>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -309,17 +322,18 @@ export function MoodChart({ title }: MoodChartProps) {
                   stroke="hsl(var(--border))"
                   opacity={0.5}
                 />
-                {VALUE_BANDS.map((band) => (
-                  <ReferenceArea
-                    key={`band-${band.min}-${band.max}`}
-                    y1={band.min}
-                    y2={band.max}
-                    fill={band.color}
-                    fillOpacity={band.opacity}
-                    strokeOpacity={0}
-                    ifOverflow="discard"
-                  />
-                ))}
+                {showBands &&
+                  VALUE_BANDS.map((band) => (
+                    <ReferenceArea
+                      key={`band-${band.min}-${band.max}`}
+                      y1={band.min}
+                      y2={band.max}
+                      fill={band.color}
+                      fillOpacity={band.opacity}
+                      strokeOpacity={0}
+                      ifOverflow="discard"
+                    />
+                  ))}
                 <XAxis
                   type="number"
                   dataKey="pointIndex"

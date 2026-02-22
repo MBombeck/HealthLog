@@ -451,8 +451,11 @@ function getMoodSectionStatus(input: {
 
 function getMedicationComplianceSectionStatus(input: {
   average30: number | null;
+  totalEvents: number;
 }): { level: "good" | "watch" | "critical"; className: string } {
-  if (input.average30 == null) {
+  const MIN_EVENTS_FOR_ASSESSMENT = 14;
+
+  if (input.average30 == null || input.totalEvents < MIN_EVENTS_FOR_ASSESSMENT) {
     return {
       level: "watch",
       className: "border-yellow-500/30 bg-yellow-500/15 text-yellow-300",
@@ -748,9 +751,14 @@ export default function InsightsPage() {
           0,
         ) / medicationList.length
       : null;
+  const medicationTotalEvents = medicationList.reduce(
+    (sum, med) => sum + med.taken7 + med.skipped7 + med.missed7,
+    0,
+  );
   const medicationComplianceSectionStatus =
     getMedicationComplianceSectionStatus({
       average30: medicationComplianceAverage30,
+      totalEvents: medicationTotalEvents,
     });
   const medicationSummaryById = new Map(
     (medicationComplianceStatus?.medications ?? []).map((entry) => [
@@ -1152,6 +1160,102 @@ export default function InsightsPage() {
               )}
             </CardContent>
           </Card>
+
+          {showMoodSection && (
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Smile className="text-dracula-red h-4 w-4" />
+                    <CardTitle className="text-sm font-medium">
+                      {t("insights.moodVsBp")}
+                    </CardTitle>
+                  </div>
+                  {data?.moodBpCorrelation && (
+                    <Badge variant="outline">
+                      r = {data.moodBpCorrelation.r} ·{" "}
+                      {STRENGTH_LABELS[data.moodBpCorrelation.strength] ??
+                        data.moodBpCorrelation.strength}
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {(data?.moodBpScatterData?.length ?? 0) >= 5 ? (
+                  <div className="space-y-2">
+                    <ResponsiveContainer width="100%" height={250}>
+                      <ScatterChart
+                        margin={{ top: 10, right: 20, bottom: 36, left: 12 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="hsl(var(--border))"
+                        />
+                        <XAxis
+                          dataKey="mood"
+                          type="number"
+                          name={t("insights.moodScoreLabel")}
+                          tick={{ fontSize: 12, fill: "var(--dracula-fg)" }}
+                          tickMargin={8}
+                          height={52}
+                          domain={[1, 5]}
+                          ticks={[1, 2, 3, 4, 5]}
+                          stroke="var(--dracula-comment)"
+                          label={{
+                            value: t("insights.moodScoreLabel"),
+                            position: "bottom",
+                            fontSize: 12,
+                            fill: "var(--dracula-comment)",
+                          }}
+                        />
+                        <YAxis
+                          dataKey="sysBP"
+                          type="number"
+                          name="Sys. BP"
+                          unit=" mmHg"
+                          tick={{ fontSize: 12, fill: "var(--dracula-fg)" }}
+                          stroke="var(--dracula-comment)"
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "hsl(var(--card))",
+                            border: "1px solid hsl(var(--border))",
+                            borderRadius: "0.5rem",
+                            fontSize: "0.75rem",
+                          }}
+                          itemStyle={{ color: "var(--dracula-fg)" }}
+                          labelStyle={{ color: "var(--dracula-fg)" }}
+                        />
+                        <Scatter
+                          data={data?.moodBpScatterData}
+                          fill="var(--dracula-red)"
+                          opacity={0.8}
+                        />
+                      </ScatterChart>
+                    </ResponsiveContainer>
+                    {data?.moodBpCorrelation && (
+                      <p className="text-muted-foreground text-center text-xs">
+                        {data.moodBpCorrelation.strength === "stark"
+                          ? t("insights.moodBpStrong")
+                          : data.moodBpCorrelation.strength === "moderat"
+                            ? t("insights.moodBpModerate")
+                            : data.moodBpCorrelation.strength === "schwach"
+                              ? t("insights.moodBpWeak")
+                              : t("insights.moodBpNone")}{" "}
+                        (n = {data.moodBpCorrelation.n})
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground flex flex-col items-center justify-center py-8 text-sm">
+                    <Smile className="mb-2 h-8 w-8 opacity-50" />
+                    <p>{t("insights.notEnoughMoodCorrelationData")}</p>
+                    <p className="text-xs">{t("insights.minMoodCorrelationData")}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <Card>
@@ -1340,6 +1444,102 @@ export default function InsightsPage() {
           </CardContent>
         </Card>
 
+        {showMoodSection && (
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Smile className="text-dracula-red h-4 w-4" />
+                  <CardTitle className="text-sm font-medium">
+                    {t("insights.moodVsWeight")}
+                  </CardTitle>
+                </div>
+                {data?.moodWeightCorrelation && (
+                  <Badge variant="outline">
+                    r = {data.moodWeightCorrelation.r} ·{" "}
+                    {STRENGTH_LABELS[data.moodWeightCorrelation.strength] ??
+                      data.moodWeightCorrelation.strength}
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {(data?.moodWeightScatterData?.length ?? 0) >= 5 ? (
+                <div className="space-y-2">
+                  <ResponsiveContainer width="100%" height={250}>
+                    <ScatterChart
+                      margin={{ top: 10, right: 20, bottom: 36, left: 12 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="hsl(var(--border))"
+                      />
+                      <XAxis
+                        dataKey="mood"
+                        type="number"
+                        name={t("insights.moodScoreLabel")}
+                        tick={{ fontSize: 12, fill: "var(--dracula-fg)" }}
+                        tickMargin={8}
+                        height={52}
+                        domain={[1, 5]}
+                        ticks={[1, 2, 3, 4, 5]}
+                        stroke="var(--dracula-comment)"
+                        label={{
+                          value: t("insights.moodScoreLabel"),
+                          position: "bottom",
+                          fontSize: 12,
+                          fill: "var(--dracula-comment)",
+                        }}
+                      />
+                      <YAxis
+                        dataKey="weight"
+                        type="number"
+                        name={t("dashboard.weight")}
+                        unit=" kg"
+                        tick={{ fontSize: 12, fill: "var(--dracula-fg)" }}
+                        stroke="var(--dracula-comment)"
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "0.5rem",
+                          fontSize: "0.75rem",
+                        }}
+                        itemStyle={{ color: "var(--dracula-fg)" }}
+                        labelStyle={{ color: "var(--dracula-fg)" }}
+                      />
+                      <Scatter
+                        data={data?.moodWeightScatterData}
+                        fill="var(--dracula-red)"
+                        opacity={0.8}
+                      />
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                  {data?.moodWeightCorrelation && (
+                    <p className="text-muted-foreground text-center text-xs">
+                      {data.moodWeightCorrelation.strength === "stark"
+                        ? t("insights.moodWeightStrong")
+                        : data.moodWeightCorrelation.strength === "moderat"
+                          ? t("insights.moodWeightModerate")
+                          : data.moodWeightCorrelation.strength === "schwach"
+                            ? t("insights.moodWeightWeak")
+                            : t("insights.moodWeightNone")}{" "}
+                      (n = {data.moodWeightCorrelation.n})
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="text-muted-foreground flex flex-col items-center justify-center py-8 text-sm">
+                  <Smile className="mb-2 h-8 w-8 opacity-50" />
+                  <p>{t("insights.notEnoughMoodCorrelationData")}</p>
+                  <p className="text-xs">{t("insights.minMoodCorrelationData")}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         <div className="space-y-1">
           <h3 className="text-base font-semibold">
             {t("insights.assessmentTitle")}
@@ -1434,196 +1634,6 @@ export default function InsightsPage() {
           </div>
 
           <MoodChart />
-
-          <div className="grid gap-4 xl:grid-cols-2">
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Smile className="text-dracula-yellow h-4 w-4" />
-                    <CardTitle className="text-sm font-medium">
-                      {t("insights.moodVsBp")}
-                    </CardTitle>
-                  </div>
-                  {data?.moodBpCorrelation && (
-                    <Badge variant="outline">
-                      r = {data.moodBpCorrelation.r} ·{" "}
-                      {STRENGTH_LABELS[data.moodBpCorrelation.strength] ??
-                        data.moodBpCorrelation.strength}
-                    </Badge>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                {(data?.moodBpScatterData?.length ?? 0) >= 5 ? (
-                  <div className="space-y-2">
-                    <ResponsiveContainer width="100%" height={250}>
-                      <ScatterChart
-                        margin={{ top: 10, right: 20, bottom: 36, left: 12 }}
-                      >
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          stroke="hsl(var(--border))"
-                        />
-                        <XAxis
-                          dataKey="mood"
-                          type="number"
-                          name={t("insights.moodScoreLabel")}
-                          tick={{ fontSize: 12, fill: "var(--dracula-fg)" }}
-                          tickMargin={8}
-                          height={52}
-                          domain={[1, 5]}
-                          ticks={[1, 2, 3, 4, 5]}
-                          stroke="var(--dracula-comment)"
-                          label={{
-                            value: t("insights.moodScoreLabel"),
-                            position: "bottom",
-                            fontSize: 12,
-                            fill: "var(--dracula-comment)",
-                          }}
-                        />
-                        <YAxis
-                          dataKey="sysBP"
-                          type="number"
-                          name="Sys. BP"
-                          unit=" mmHg"
-                          tick={{ fontSize: 12, fill: "var(--dracula-fg)" }}
-                          stroke="var(--dracula-comment)"
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "hsl(var(--card))",
-                            border: "1px solid hsl(var(--border))",
-                            borderRadius: "0.5rem",
-                            fontSize: "0.75rem",
-                          }}
-                          itemStyle={{ color: "var(--dracula-fg)" }}
-                          labelStyle={{ color: "var(--dracula-fg)" }}
-                        />
-                        <Scatter
-                          data={data?.moodBpScatterData}
-                          fill="var(--dracula-yellow)"
-                          opacity={0.8}
-                        />
-                      </ScatterChart>
-                    </ResponsiveContainer>
-                    {data?.moodBpCorrelation && (
-                      <p className="text-muted-foreground text-center text-xs">
-                        {data.moodBpCorrelation.strength === "stark"
-                          ? t("insights.moodBpStrong")
-                          : data.moodBpCorrelation.strength === "moderat"
-                            ? t("insights.moodBpModerate")
-                            : data.moodBpCorrelation.strength === "schwach"
-                              ? t("insights.moodBpWeak")
-                              : t("insights.moodBpNone")}{" "}
-                        (n = {data.moodBpCorrelation.n})
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-muted-foreground flex flex-col items-center justify-center py-8 text-sm">
-                    <Smile className="mb-2 h-8 w-8 opacity-50" />
-                    <p>{t("insights.notEnoughMoodCorrelationData")}</p>
-                    <p className="text-xs">{t("insights.minMoodCorrelationData")}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Smile className="text-dracula-yellow h-4 w-4" />
-                    <CardTitle className="text-sm font-medium">
-                      {t("insights.moodVsWeight")}
-                    </CardTitle>
-                  </div>
-                  {data?.moodWeightCorrelation && (
-                    <Badge variant="outline">
-                      r = {data.moodWeightCorrelation.r} ·{" "}
-                      {STRENGTH_LABELS[data.moodWeightCorrelation.strength] ??
-                        data.moodWeightCorrelation.strength}
-                    </Badge>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                {(data?.moodWeightScatterData?.length ?? 0) >= 5 ? (
-                  <div className="space-y-2">
-                    <ResponsiveContainer width="100%" height={250}>
-                      <ScatterChart
-                        margin={{ top: 10, right: 20, bottom: 36, left: 12 }}
-                      >
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          stroke="hsl(var(--border))"
-                        />
-                        <XAxis
-                          dataKey="mood"
-                          type="number"
-                          name={t("insights.moodScoreLabel")}
-                          tick={{ fontSize: 12, fill: "var(--dracula-fg)" }}
-                          tickMargin={8}
-                          height={52}
-                          domain={[1, 5]}
-                          ticks={[1, 2, 3, 4, 5]}
-                          stroke="var(--dracula-comment)"
-                          label={{
-                            value: t("insights.moodScoreLabel"),
-                            position: "bottom",
-                            fontSize: 12,
-                            fill: "var(--dracula-comment)",
-                          }}
-                        />
-                        <YAxis
-                          dataKey="weight"
-                          type="number"
-                          name={t("dashboard.weight")}
-                          unit=" kg"
-                          tick={{ fontSize: 12, fill: "var(--dracula-fg)" }}
-                          stroke="var(--dracula-comment)"
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "hsl(var(--card))",
-                            border: "1px solid hsl(var(--border))",
-                            borderRadius: "0.5rem",
-                            fontSize: "0.75rem",
-                          }}
-                          itemStyle={{ color: "var(--dracula-fg)" }}
-                          labelStyle={{ color: "var(--dracula-fg)" }}
-                        />
-                        <Scatter
-                          data={data?.moodWeightScatterData}
-                          fill="var(--dracula-yellow)"
-                          opacity={0.8}
-                        />
-                      </ScatterChart>
-                    </ResponsiveContainer>
-                    {data?.moodWeightCorrelation && (
-                      <p className="text-muted-foreground text-center text-xs">
-                        {data.moodWeightCorrelation.strength === "stark"
-                          ? t("insights.moodWeightStrong")
-                          : data.moodWeightCorrelation.strength === "moderat"
-                            ? t("insights.moodWeightModerate")
-                            : data.moodWeightCorrelation.strength === "schwach"
-                              ? t("insights.moodWeightWeak")
-                              : t("insights.moodWeightNone")}{" "}
-                        (n = {data.moodWeightCorrelation.n})
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-muted-foreground flex flex-col items-center justify-center py-8 text-sm">
-                    <Smile className="mb-2 h-8 w-8 opacity-50" />
-                    <p>{t("insights.notEnoughMoodCorrelationData")}</p>
-                    <p className="text-xs">{t("insights.minMoodCorrelationData")}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
 
           <div className="space-y-1">
             <h3 className="text-base font-semibold">

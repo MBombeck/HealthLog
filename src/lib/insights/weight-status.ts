@@ -404,6 +404,10 @@ export async function generateWeightStatusForUser(
             mean: moodMean,
             latest: dailyMoodSeries.at(-1)?.value ?? null,
             series: dailyMoodSeries.slice(-10),
+            moodVsWeightCorrelation: (() => {
+              const moodVsWeightPairs = pairDailySeries(dailyMoodSeries, weightSeries);
+              return pearsonCorrelation(moodVsWeightPairs);
+            })(),
           }
         : null,
   };

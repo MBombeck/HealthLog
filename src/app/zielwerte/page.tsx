@@ -23,6 +23,7 @@ import {
   Minus,
   AlertCircle,
   ExternalLink,
+  Smile,
 } from "lucide-react";
 
 interface TargetData {
@@ -68,6 +69,8 @@ const TYPE_ICONS: Record<string, typeof Scale> = {
   SLEEP_DURATION: Moon,
   BODY_FAT: Percent,
   BMI: Scale,
+  MOOD_SCORE: Smile,
+  MOOD_STABILITY: Smile,
 };
 
 const TYPE_COLORS: Record<string, string> = {
@@ -78,6 +81,8 @@ const TYPE_COLORS: Record<string, string> = {
   SLEEP_DURATION: "text-dracula-cyan",
   BODY_FAT: "text-dracula-orange",
   BMI: "text-dracula-yellow",
+  MOOD_SCORE: "text-dracula-red",
+  MOOD_STABILITY: "text-dracula-red",
 };
 
 function getTargetSourceLink(target: TargetData): string | null {
@@ -111,6 +116,10 @@ function getTargetSourceLink(target: TargetData): string | null {
 
   if (target.type === "ACTIVITY_STEPS") {
     return "https://www.who.int/publications/i/item/9789240015128";
+  }
+
+  if (target.type === "MOOD_SCORE" || target.type === "MOOD_STABILITY") {
+    return null;
   }
 
   return null;

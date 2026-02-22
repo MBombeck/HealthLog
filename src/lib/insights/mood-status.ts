@@ -1,6 +1,10 @@
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { getNoKeyMoodStatusText } from "@/lib/insights/no-key-fallbacks";
+import {
+  pearsonCorrelation,
+  type PairedPoint,
+} from "@/lib/analytics/correlations";
 
 const MOOD_STATUS_MODEL = "gpt-4o-mini";
 const MOOD_STATUS_POINTS = 30;
@@ -82,6 +86,46 @@ function summarizeSeries(series: Array<{ value: number }>) {
   };
 }
 
+function aggregateMeasurementDailySeries(
+  records: Array<{ measuredAt: Date; value: number }>,
+) {
+  const byDay = new Map<string, { sum: number; count: number }>();
+
+  for (const record of records) {
+    const dayKey = toBerlinDayKey(record.measuredAt);
+    const current = byDay.get(dayKey) ?? { sum: 0, count: 0 };
+    current.sum += record.value;
+    current.count += 1;
+    byDay.set(dayKey, current);
+  }
+
+  return Array.from(byDay.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, stats]) => ({
+      day,
+      value: round(stats.sum / stats.count, 2),
+    }));
+}
+
+function pairDailySeries(
+  seriesA: Array<{ day: string; value: number }>,
+  seriesB: Array<{ day: string; value: number }>,
+): PairedPoint[] {
+  const mapB = new Map(seriesB.map((entry) => [entry.day, entry.value]));
+
+  return seriesA
+    .map((entry) => {
+      const b = mapB.get(entry.day);
+      if (b == null) return null;
+      return {
+        a: entry.value,
+        b,
+        date: new Date(`${entry.day}T00:00:00.000Z`),
+      };
+    })
+    .filter((entry): entry is PairedPoint => entry !== null);
+}
+
 function getSystemPrompt(locale: SupportedLocale): string {
   if (locale === "en") {
     return [
@@ -92,6 +136,8 @@ function getSystemPrompt(locale: SupportedLocale): string {
       "Prioritize the newest measurement day in your interpretation.",
       "Weight findings by importance: clear mood shifts and sustained periods of poor mood should be emphasized more strongly.",
       "If fewer than 5 data points exist, state that insufficient data is available for a qualified assessment. If data is sparse over a long period, still derive rough trends but note limited reliability. If the newest measurement is more than 7 days old, mention the data may not be current.",
+      "If cross-metric context (weight, blood pressure, pulse) is provided and shows a notable correlation with mood, briefly mention it in 1-2 sentences. Do not force cross-metric references if no clear pattern exists.",
+      "If mood tags are available, consider whether specific tags correlate with mood levels.",
       "Do not include warnings, disclaimers, or references to AI/model limitations.",
       'Return valid JSON only: {"summary":"..."}',
     ].join(" ");
@@ -105,6 +151,8 @@ function getSystemPrompt(locale: SupportedLocale): string {
     "Priorisiere in der Interpretation den neuesten Messpunkt-Tag.",
     "Gewichte Aussagen nach Wichtigkeit: klare Stimmungswechsel und anhaltende Phasen schlechter Stimmung sollen stärker betont werden.",
     "Wenn weniger als 5 Messpunkte vorliegen, sage dass noch nicht genügend Daten für eine fundierte Aussage vorhanden sind. Bei spärlichen Daten über einen langen Zeitraum leite trotzdem grobe Trends ab, weise aber auf eingeschränkte Belastbarkeit hin. Wenn die neueste Messung älter als 7 Tage ist, erwähne dass die Daten möglicherweise nicht aktuell sind.",
+    "Falls Kontext zu anderen Gesundheitsmetriken (Gewicht, Blutdruck, Puls) vorhanden ist und eine auffällige Korrelation mit der Stimmung zeigt, erwähne dies kurz in 1-2 Sätzen. Erzwinge keine Querverweise, wenn kein klares Muster erkennbar ist.",
+    "Falls Stimmungs-Tags vorhanden sind, prüfe ob bestimmte Tags mit Stimmungslevels korrelieren.",
     "Keine Warnhinweise, keine Haftungsausschlüsse, keine Hinweise auf KI oder Modellgrenzen.",
     'Gib nur valides JSON zurück: {"summary":"..."}',
   ].join(" ");
@@ -208,6 +256,7 @@ export async function generateMoodStatusForUser(
     select: {
       date: true,
       score: true,
+      tags: true,
       moodLoggedAt: true,
     },
   });
@@ -259,6 +308,67 @@ export async function generateMoodStatusForUser(
       )
     : null;
 
+  // Fetch cross-metric context for enrichment
+  const measurements = await prisma.measurement.findMany({
+    where: {
+      userId,
+      type: { in: ["WEIGHT", "BLOOD_PRESSURE_SYS", "PULSE"] },
+    },
+    orderBy: { measuredAt: "asc" },
+    select: { type: true, value: true, measuredAt: true },
+  });
+
+  const weightSeries = aggregateMeasurementDailySeries(
+    measurements
+      .filter((m) => m.type === "WEIGHT")
+      .map((m) => ({ measuredAt: m.measuredAt, value: m.value })),
+  ).slice(-MOOD_STATUS_POINTS);
+
+  const sysSeries = aggregateMeasurementDailySeries(
+    measurements
+      .filter((m) => m.type === "BLOOD_PRESSURE_SYS")
+      .map((m) => ({ measuredAt: m.measuredAt, value: m.value })),
+  ).slice(-MOOD_STATUS_POINTS);
+
+  const pulseSeries = aggregateMeasurementDailySeries(
+    measurements
+      .filter((m) => m.type === "PULSE")
+      .map((m) => ({ measuredAt: m.measuredAt, value: m.value })),
+  ).slice(-MOOD_STATUS_POINTS);
+
+  // Correlations between mood and other metrics
+  const moodVsWeightPairs = pairDailySeries(moodSeries, weightSeries);
+  const moodVsWeightCorrelation = pearsonCorrelation(moodVsWeightPairs);
+
+  const moodVsSysPairs = pairDailySeries(moodSeries, sysSeries);
+  const moodVsSysCorrelation = pearsonCorrelation(moodVsSysPairs);
+
+  const moodVsPulsePairs = pairDailySeries(moodSeries, pulseSeries);
+  const moodVsPulseCorrelation = pearsonCorrelation(moodVsPulsePairs);
+
+  // Extract tag frequencies from recent entries
+  const recentEntries = entries.slice(-MOOD_STATUS_POINTS * 3);
+  const tagCounts = new Map<string, { count: number; scoreSum: number }>();
+  for (const entry of recentEntries) {
+    if (entry.tags && Array.isArray(entry.tags)) {
+      for (const tag of entry.tags as string[]) {
+        const current = tagCounts.get(tag) ?? { count: 0, scoreSum: 0 };
+        current.count += 1;
+        current.scoreSum += entry.score;
+        tagCounts.set(tag, current);
+      }
+    }
+  }
+  const tagSummary = Array.from(tagCounts.entries())
+    .filter(([, stats]) => stats.count >= 2)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 10)
+    .map(([tag, stats]) => ({
+      tag,
+      count: stats.count,
+      avgScore: round(stats.scoreSum / stats.count, 2),
+    }));
+
   const snapshot = {
     locale,
     generatedForDay: todayKey,
@@ -288,7 +398,34 @@ export async function generateMoodStatusForUser(
         orangeMax,
         inTargetPctLast30DailyPoints,
       },
+      tags: tagSummary.length > 0 ? tagSummary : null,
     },
+    crossMetricContext:
+      weightSeries.length >= 3 || sysSeries.length >= 3 || pulseSeries.length >= 3
+        ? {
+            weight:
+              weightSeries.length >= 3
+                ? {
+                    summary: summarizeSeries(weightSeries),
+                    correlation: moodVsWeightCorrelation,
+                  }
+                : null,
+            bloodPressureSystolic:
+              sysSeries.length >= 3
+                ? {
+                    summary: summarizeSeries(sysSeries),
+                    correlation: moodVsSysCorrelation,
+                  }
+                : null,
+            pulse:
+              pulseSeries.length >= 3
+                ? {
+                    summary: summarizeSeries(pulseSeries),
+                    correlation: moodVsPulseCorrelation,
+                  }
+                : null,
+          }
+        : null,
   };
 
   const snapshotJson = JSON.stringify(snapshot, null, 2);

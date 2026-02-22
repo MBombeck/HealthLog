@@ -507,6 +507,10 @@ export async function generateBloodPressureStatusForUser(
             mean: moodMean,
             latest: dailyMoodSeries.at(-1)?.value ?? null,
             series: dailyMoodSeries.slice(-10),
+            moodVsSystolicCorrelation: (() => {
+              const moodVsSysPairs = pairDailySeries(dailyMoodSeries, sysSeries);
+              return pearsonCorrelation(moodVsSysPairs);
+            })(),
           }
         : null,
   };
