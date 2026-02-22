@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -818,10 +820,12 @@ export default function InsightsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold">{t("insights.title")}</h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground hidden text-sm sm:block">
           {t("insights.overviewSubtitle")}
         </p>
       </div>
+
+      <InsightsSectionNav />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
         <TrendCard
@@ -908,7 +912,7 @@ export default function InsightsPage() {
         ) : null}
       </div>
 
-      <section className="space-y-2">
+      <section id="section-general" className="scroll-mt-28 space-y-2">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold">
             {t("insights.generalStatusTitle")}
@@ -944,7 +948,7 @@ export default function InsightsPage() {
       </section>
 
       {/* Section 3: Blood pressure */}
-      <section className="space-y-4">
+      <section id="section-bp" className="scroll-mt-28 space-y-4">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold">
             {t("insights.bloodPressureSectionTitle")}
@@ -1234,7 +1238,7 @@ export default function InsightsPage() {
       </section>
 
       {/* Section 4: Weight */}
-      <section className="space-y-4">
+      <section id="section-weight" className="scroll-mt-28 space-y-4">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold">
             {t("insights.weightSectionTitle")}
@@ -1482,7 +1486,7 @@ export default function InsightsPage() {
       </section>
 
       {/* Section 5: Pulse */}
-      <section className="space-y-4">
+      <section id="section-pulse" className="scroll-mt-28 space-y-4">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold">
             {t("insights.pulseSectionTitle")}
@@ -1533,7 +1537,7 @@ export default function InsightsPage() {
 
       {/* Section: Mood */}
       {showMoodSection && (
-        <section className="space-y-4">
+        <section id="section-mood" className="scroll-mt-28 space-y-4">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold">
               {t("insights.moodSectionTitle")}
@@ -1578,7 +1582,7 @@ export default function InsightsPage() {
       )}
 
       {/* Section 6: Medication Compliance */}
-      <section className="space-y-4">
+      <section id="section-meds" className="scroll-mt-28 space-y-4">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold">
             {t("insights.medicationCompliance")}
@@ -1689,7 +1693,7 @@ export default function InsightsPage() {
       </section>
 
       {/* Section 7: BMI */}
-      <section className="space-y-4">
+      <section id="section-bmi" className="scroll-mt-28 space-y-4">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold">
             {t("insights.bmiSectionTitle")}
@@ -1784,5 +1788,79 @@ function MedicationComplianceCalendar({
     <div className="w-full">
       <ComplianceHeatmap dailyCompliance={data.dailyCompliance} stretch />
     </div>
+  );
+}
+
+// ── Section Navigation ───────────────────────────────────────────────────────
+
+const SECTION_IDS = [
+  "section-general",
+  "section-bp",
+  "section-weight",
+  "section-pulse",
+  "section-mood",
+  "section-meds",
+  "section-bmi",
+] as const;
+
+const SECTION_LABEL_KEYS: Record<(typeof SECTION_IDS)[number], string> = {
+  "section-general": "insights.navGeneral",
+  "section-bp": "insights.navBloodPressure",
+  "section-weight": "insights.navWeight",
+  "section-pulse": "insights.navPulse",
+  "section-mood": "insights.navMood",
+  "section-meds": "insights.navMedication",
+  "section-bmi": "insights.navBmi",
+};
+
+function InsightsSectionNav() {
+  const { t } = useTranslations();
+  const [activeId, setActiveId] = useState<string>(SECTION_IDS[0]);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  useEffect(() => {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveId(entry.target.id);
+          }
+        }
+      },
+      { rootMargin: "-30% 0px -60% 0px" },
+    );
+
+    for (const id of SECTION_IDS) {
+      const el = document.getElementById(id);
+      if (el) observerRef.current.observe(el);
+    }
+
+    return () => observerRef.current?.disconnect();
+  }, []);
+
+  function scrollTo(id: string) {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  }
+
+  return (
+    <nav className="bg-background/80 sticky top-0 z-30 -mx-4 overflow-x-auto border-b px-4 py-2 backdrop-blur-sm md:-mx-6 md:px-6">
+      <div className="flex gap-2">
+        {SECTION_IDS.map((id) => (
+          <button
+            key={id}
+            onClick={() => scrollTo(id)}
+            className={cn(
+              "shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+              activeId === id
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {t(SECTION_LABEL_KEYS[id])}
+          </button>
+        ))}
+      </div>
+    </nav>
   );
 }
