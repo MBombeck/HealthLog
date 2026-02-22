@@ -25,7 +25,6 @@ import {
   Unlink,
   RefreshCw,
   Download,
-  ScrollText,
   Sparkles,
   AlertTriangle,
   ChevronDown,
@@ -282,8 +281,6 @@ export default function SettingsPage() {
     serviceAvailability.ntfyGlobal ||
     serviceAvailability.webPushGlobal;
 
-  const showAuditLogInSettings = false;
-
   return (
     <div className="space-y-6 overflow-x-hidden">
       <div>
@@ -426,15 +423,15 @@ export default function SettingsPage() {
                 </div>
 
                 {saveMsg && (
-                  <div
-                    className={`rounded-lg p-3 text-sm ${
+                  <p
+                    className={`text-sm ${
                       saveMsgType === "success"
-                        ? "bg-dracula-green/10 text-dracula-green"
-                        : "bg-destructive/10 text-destructive"
+                        ? "text-dracula-green"
+                        : "text-destructive"
                     }`}
                   >
                     {saveMsg}
-                  </div>
+                  </p>
                 )}
 
                 <div className="flex justify-end">
@@ -455,8 +452,8 @@ export default function SettingsPage() {
             <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">{t("settings.security")}</h2>
 
             <div
-              id="sicherheit"
-              className="bg-card border-border rounded-xl border p-6"
+              id="passkeys"
+              className="bg-card border-border scroll-mt-28 rounded-xl border p-6"
             >
               <div className="mb-4 flex items-center gap-2">
                 <Shield className="text-primary h-5 w-5" />
@@ -492,7 +489,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="bg-card border-border rounded-xl border p-6">
+            <div id="passwort" className="bg-card border-border scroll-mt-28 rounded-xl border p-6">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <Shield className="text-primary h-5 w-5" />
@@ -596,12 +593,6 @@ export default function SettingsPage() {
               </DialogContent>
             </Dialog>
 
-            {showAuditLogInSettings && (
-              <AuditLogSection
-                id="protokoll"
-                isAuthenticated={isAuthenticated}
-              />
-            )}
           </section>
 
           {hasNotificationServices && (
@@ -1638,7 +1629,7 @@ function DataResetSection({ id }: { id: string }) {
   return (
     <div
       id={id}
-      className="bg-destructive/5 border-destructive/30 scroll-mt-28 rounded-xl border p-6"
+      className="bg-card border-border scroll-mt-28 rounded-xl border p-6"
     >
       <div className="flex items-center gap-2">
         <AlertTriangle className="text-destructive h-5 w-5" />
@@ -1689,227 +1680,6 @@ function DataResetSection({ id }: { id: string }) {
           className={`mt-3 text-sm ${msgType === "success" ? "text-dracula-green" : "text-destructive"}`}
         >
           {msg}
-        </p>
-      )}
-    </div>
-  );
-}
-
-/* ─────────────────────── Audit Log Section ─────────────────────── */
-
-interface AuditEntry {
-  id: string;
-  action: string;
-  ipAddress: string | null;
-  location: string | null;
-  details: Record<string, unknown> | null;
-  createdAt: string;
-}
-
-const ACTION_LABEL_KEYS: Record<string, string> = {
-  "auth.register": "settings.auditActionAuthRegister",
-  "auth.login": "settings.auditActionAuthLogin",
-  "auth.login.passkey": "settings.auditActionAuthLoginPasskey",
-  "auth.login.password": "settings.auditActionAuthLoginPassword",
-  "auth.login.failed": "settings.auditActionAuthLoginFailed",
-  "auth.logout": "settings.auditActionAuthLogout",
-  "auth.passkey.register": "settings.auditActionAuthPasskeyRegister",
-  "auth.passkey.delete": "settings.auditActionAuthPasskeyDelete",
-  "auth.password.change": "settings.auditActionAuthPasswordChange",
-  "measurement.create": "settings.auditActionMeasurementCreate",
-  "measurement.update": "settings.auditActionMeasurementUpdate",
-  "measurement.delete": "settings.auditActionMeasurementDelete",
-  "medication.create": "settings.auditActionMedicationCreate",
-  "medication.update": "settings.auditActionMedicationUpdate",
-  "medication.delete": "settings.auditActionMedicationDelete",
-  "medication.intake": "settings.auditActionMedicationIntake",
-  "medication.ingest.external": "settings.auditActionMedicationIngestExternal",
-  "withings.connect": "settings.auditActionWithingsConnect",
-  "withings.disconnect": "settings.auditActionWithingsDisconnect",
-  "export.download": "settings.auditActionExportDownload",
-  "insights.generate": "settings.auditActionInsightsGenerate",
-  "admin.user.update": "settings.auditActionAdminUserUpdate",
-  "admin.user.reset-password": "settings.auditActionAdminUserResetPassword",
-  "admin.settings.update": "settings.auditActionAdminSettingsUpdate",
-};
-
-const ACTION_CATEGORY_KEYS: Record<
-  string,
-  { labelKey: string; color: string }
-> = {
-  auth: {
-    labelKey: "settings.auditCategoryAuth",
-    color: "bg-blue-500/15 text-blue-400",
-  },
-  measurement: {
-    labelKey: "settings.auditCategoryData",
-    color: "bg-emerald-500/15 text-emerald-400",
-  },
-  medication: {
-    labelKey: "settings.auditCategoryData",
-    color: "bg-emerald-500/15 text-emerald-400",
-  },
-  withings: {
-    labelKey: "settings.auditCategoryIntegration",
-    color: "bg-violet-500/15 text-violet-400",
-  },
-  export: {
-    labelKey: "settings.auditCategoryIntegration",
-    color: "bg-violet-500/15 text-violet-400",
-  },
-  insights: {
-    labelKey: "settings.auditCategoryAI",
-    color: "bg-amber-500/15 text-amber-400",
-  },
-  admin: {
-    labelKey: "settings.auditCategoryAdmin",
-    color: "bg-red-500/15 text-red-400",
-  },
-  profile: {
-    labelKey: "settings.auditCategoryData",
-    color: "bg-emerald-500/15 text-emerald-400",
-  },
-};
-
-function AuditLogSection({
-  id,
-  isAuthenticated,
-}: {
-  id: string;
-  isAuthenticated: boolean;
-}) {
-  const { t } = useTranslations();
-  const [expanded, setExpanded] = useState(false);
-
-  const { data } = useQuery({
-    queryKey: ["audit-log"],
-    queryFn: async () => {
-      const res = await fetch("/api/audit-log?limit=50");
-      if (!res.ok) throw new Error("Failed");
-      const json = await res.json();
-      return json.data as {
-        entries: AuditEntry[];
-        meta: { total: number };
-      };
-    },
-    enabled: isAuthenticated && expanded,
-  });
-
-  function getActionLabel(action: string): string {
-    const key = ACTION_LABEL_KEYS[action];
-    return key ? t(key) : action;
-  }
-
-  function getActionCategory(action: string) {
-    const prefix = action.split(".")[0];
-    const cat = ACTION_CATEGORY_KEYS[prefix];
-    if (cat) {
-      return { label: t(cat.labelKey), color: cat.color };
-    }
-    return {
-      label: t("settings.auditOther"),
-      color: "bg-muted text-muted-foreground",
-    };
-  }
-
-  return (
-    <div
-      id={id}
-      className="bg-card border-border scroll-mt-28 rounded-xl border p-6"
-    >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <ScrollText className="text-primary h-5 w-5" />
-          <h2 className="text-lg font-semibold">{t("settings.auditLog")}</h2>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setExpanded((prev) => !prev)}
-          aria-expanded={expanded}
-          aria-controls="audit-log-content"
-        >
-          {expanded ? t("settings.collapse") : t("settings.expand")}
-          <ChevronDown
-            className={`ml-1 h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`}
-          />
-        </Button>
-      </div>
-
-      {expanded ? (
-        <div id="audit-log-content" className="mt-4">
-          {!data ? (
-            <div className="flex justify-center py-4">
-              <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
-            </div>
-          ) : data.entries.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              {t("settings.auditNoActivities")}
-            </p>
-          ) : (
-            <>
-              {/* Table header */}
-              <div className="text-muted-foreground mb-1 hidden grid-cols-[1fr_auto_auto_auto_auto] gap-3 px-3 text-xs font-medium sm:grid">
-                <span>{t("settings.auditAction")}</span>
-                <span className="w-20 text-center">
-                  {t("settings.auditCategory")}
-                </span>
-                <span className="w-28 text-right">{t("settings.auditIp")}</span>
-                <span className="w-28 text-right">
-                  {t("settings.auditLocation")}
-                </span>
-                <span className="w-36 text-right">
-                  {t("settings.auditTimestamp")}
-                </span>
-              </div>
-              <div className="divide-border divide-y">
-                {data.entries.map((entry, i) => {
-                  const cat = getActionCategory(entry.action);
-                  const isFailed = entry.action === "auth.login.failed";
-                  return (
-                    <div
-                      key={entry.id}
-                      className={`grid grid-cols-1 gap-1 px-3 py-2 text-sm sm:grid-cols-[1fr_auto_auto_auto_auto] sm:items-center sm:gap-3 ${
-                        i % 2 === 0 ? "bg-muted/30" : ""
-                      } ${isFailed ? "text-destructive" : ""}`}
-                    >
-                      <span className="truncate">
-                        {getActionLabel(entry.action)}
-                      </span>
-                      <span className="flex sm:w-20 sm:justify-center">
-                        <span
-                          className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${cat.color}`}
-                        >
-                          {cat.label}
-                        </span>
-                      </span>
-                      <span className="text-muted-foreground w-28 text-right font-mono text-xs">
-                        {entry.ipAddress ?? "—"}
-                      </span>
-                      <span className="text-muted-foreground w-28 text-right text-xs">
-                        {entry.location ?? "—"}
-                      </span>
-                      <span className="text-muted-foreground w-36 text-right text-xs whitespace-nowrap">
-                        {formatDateTime(entry.createdAt)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-              {data.meta.total > 50 && (
-                <p className="text-muted-foreground mt-3 text-center text-xs">
-                  {t("settings.auditLogShowing", {
-                    count: 50,
-                    total: data.meta.total,
-                  })}
-                </p>
-              )}
-            </>
-          )}
-        </div>
-      ) : (
-        <p className="text-muted-foreground mt-3 text-sm">
-          {t("settings.auditLogHidden")}
         </p>
       )}
     </div>
@@ -2232,7 +2002,7 @@ function NtfySection({
           )}
         </div>
       </div>
-      <p className="text-muted-foreground mt-1 text-sm">
+      <p className="text-muted-foreground mt-1 text-xs">
         {t("settings.ntfyDescription")}
       </p>
 
@@ -2252,10 +2022,10 @@ function NtfySection({
             e.preventDefault();
             save.mutate(settings?.enabled ?? false);
           }}
-          className="space-y-3"
+          className="space-y-4"
         >
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
               <Label htmlFor="ntfy-server">{t("settings.ntfyServer")}</Label>
               <Input
                 id="ntfy-server"
@@ -2264,7 +2034,7 @@ function NtfySection({
                 onChange={(e) => setServerUrl(e.target.value)}
               />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-2">
               <Label htmlFor="ntfy-topic">{t("settings.ntfyTopic")}</Label>
               <Input
                 id="ntfy-topic"
@@ -2273,7 +2043,7 @@ function NtfySection({
                 onChange={(e) => setTopic(e.target.value)}
               />
             </div>
-            <div className="space-y-1 sm:col-span-2">
+            <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="ntfy-auth">{t("settings.ntfyAuthToken")}</Label>
               <PasswordInput
                 id="ntfy-auth"
@@ -2303,7 +2073,6 @@ function NtfySection({
             <Button
               type="button"
               variant="outline"
-              size="sm"
               disabled={test.isPending || !settings?.enabled}
               onClick={() => test.mutate()}
             >
@@ -2314,7 +2083,7 @@ function NtfySection({
               )}
               {t("settings.testMessage")}
             </Button>
-            <Button type="submit" size="sm" disabled={save.isPending}>
+            <Button type="submit" disabled={save.isPending}>
               {save.isPending && (
                 <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
               )}
@@ -2881,7 +2650,7 @@ function InsightsSettingsSection({
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Sparkles className="text-dracula-purple h-5 w-5" />
+          <Sparkles className="text-primary h-5 w-5" />
           <h2 className="text-lg font-semibold">{t("settings.kiInsights")}</h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">

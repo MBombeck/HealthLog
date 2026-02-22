@@ -17,6 +17,7 @@ export const metadata: Metadata = {
   description: "Personal health tracking — weight, blood pressure, medications",
   icons: {
     icon: "/favicon.svg",
+    apple: "/icon-192.png",
   },
 };
 

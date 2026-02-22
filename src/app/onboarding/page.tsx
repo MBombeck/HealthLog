@@ -83,7 +83,7 @@ export default function OnboardingPage() {
               id="ob-gender"
               value={gender}
               onChange={(e) => setGender(e.target.value)}
-              className="border-input bg-background text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-none"
+              className="border-input bg-background text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
             >
               <option value="">{t("settings.genderNone")}</option>
               <option value="MALE">{t("settings.genderMale")}</option>
