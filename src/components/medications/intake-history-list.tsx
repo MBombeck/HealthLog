@@ -560,20 +560,7 @@ export function IntakeHistoryList({ medicationId, createOpen, onCreateOpenChange
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="edit-takenAt">{t("medications.intakeTakenAt")}</Label>
-                  {editTakenAt && !editSkipped && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 text-xs"
-                      onClick={() => setEditTakenAt("")}
-                    >
-                      Löschen
-                    </Button>
-                  )}
-                </div>
+                <Label htmlFor="edit-takenAt">{t("medications.intakeTakenAt")}</Label>
                 <Input
                   id="edit-takenAt"
                   type="datetime-local"
