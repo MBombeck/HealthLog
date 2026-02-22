@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -64,7 +64,7 @@ export function PhaseConfigDialog({
 }: PhaseConfigDialogProps) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState<PhaseConfigData>(DEFAULTS);
+  const [localForm, setLocalForm] = useState<PhaseConfigData | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -77,11 +77,8 @@ export function PhaseConfigDialog({
     enabled: open,
   });
 
-  useEffect(() => {
-    if (data) {
-      setForm(data);
-    }
-  }, [data]);
+  // Use local overrides if user has edited, otherwise use fetched data or defaults
+  const form = localForm ?? data ?? DEFAULTS;
 
   const saveMutation = useMutation({
     mutationFn: async (config: PhaseConfigData) => {
@@ -94,6 +91,7 @@ export function PhaseConfigDialog({
       return res.json();
     },
     onSuccess: () => {
+      setLocalForm(null);
       queryClient.invalidateQueries({ queryKey: ["phase-config", medicationId] });
       setStatusMessage(t("medications.phaseSaved"));
       setTimeout(() => setStatusMessage(null), 2000);
@@ -109,7 +107,7 @@ export function PhaseConfigDialog({
       return res.json();
     },
     onSuccess: () => {
-      setForm(DEFAULTS);
+      setLocalForm(null);
       queryClient.invalidateQueries({ queryKey: ["phase-config", medicationId] });
       setStatusMessage(t("medications.phaseReset"));
       setTimeout(() => setStatusMessage(null), 2000);
@@ -118,15 +116,15 @@ export function PhaseConfigDialog({
 
   function updateValue(phase: PhaseKey, value: number) {
     const valueKey = `${phase}Value` as keyof PhaseConfigData;
-    setForm((prev) => ({ ...prev, [valueKey]: value }));
+    setLocalForm({ ...form, [valueKey]: value });
   }
 
   function toggleMode(phase: PhaseKey) {
     const modeKey = `${phase}Mode` as keyof PhaseConfigData;
-    setForm((prev) => ({
-      ...prev,
-      [modeKey]: prev[modeKey] === "MINUTES" ? "PERCENT" : "MINUTES",
-    }));
+    setLocalForm({
+      ...form,
+      [modeKey]: form[modeKey] === "MINUTES" ? "PERCENT" : "MINUTES",
+    });
   }
 
   const phaseLabel = (key: PhaseKey): string => {
