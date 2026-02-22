@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { Activity, Heart, Percent, TrendingUp } from "lucide-react";
+import { Activity, Heart, Percent, Smile, TrendingUp } from "lucide-react";
 import dynamic from "next/dynamic";
 import { TrendCard } from "@/components/charts/trend-card";
 
@@ -10,6 +10,13 @@ const HealthChart = dynamic(
   () =>
     import("@/components/charts/health-chart").then((mod) => ({
       default: mod.HealthChart,
+    })),
+  { ssr: false },
+);
+const MoodChart = dynamic(
+  () =>
+    import("@/components/charts/mood-chart").then((mod) => ({
+      default: mod.MoodChart,
     })),
   { ssr: false },
 );
@@ -120,12 +127,25 @@ export default function DashboardPage() {
     enabled: isAuthenticated,
   });
 
+  const { data: moodData } = useQuery({
+    queryKey: ["mood-analytics"],
+    queryFn: async () => {
+      const res = await fetch("/api/mood/analytics");
+      if (!res.ok) throw new Error("Failed");
+      const json = await res.json();
+      return json.data as { entries: Array<{ date: string; score: number; samples: number }>; summary: DataSummary };
+    },
+    enabled: isAuthenticated,
+  });
+
   const w = data?.summaries.WEIGHT;
   const sys = data?.summaries.BLOOD_PRESSURE_SYS;
   const dia = data?.summaries.BLOOD_PRESSURE_DIA;
   const p = data?.summaries.PULSE;
   const bf = data?.summaries.BODY_FAT;
   const showBodyFatCard = (bf?.count ?? 0) > 0;
+  const moodSummary = moodData?.summary;
+  const showMoodCard = (moodSummary?.count ?? 0) > 0;
   const bpTargets =
     user?.dateOfBirth != null ? getBpTargets(new Date(user.dateOfBirth)) : null;
   const pulseAge = getAgeFromDateOfBirth(user?.dateOfBirth ?? null);
@@ -305,6 +325,17 @@ export default function DashboardPage() {
             icon={Percent}
           />
         ) : null}
+        {showMoodCard ? (
+          <TrendCard
+            label={t("dashboard.mood")}
+            latest={moodSummary?.latest ?? null}
+            unit="/ 5"
+            avg7={moodSummary?.avg7 ?? null}
+            avg30={moodSummary?.avg30 ?? null}
+            slope30={moodSummary?.slope30 ?? null}
+            icon={Smile}
+          />
+        ) : null}
       </div>
 
       <HealthChart
@@ -382,6 +413,7 @@ export default function DashboardPage() {
           valueBands={bodyFatBands}
         />
       )}
+      {showMoodCard && <MoodChart />}
     </div>
   );
 }

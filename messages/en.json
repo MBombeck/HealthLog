@@ -117,7 +117,8 @@
     "addMeasurement": "Add measurement",
     "compliance7d": "Compliance (7 days)",
     "complianceGood": "Good",
-    "complianceLow": "Low"
+    "complianceLow": "Low",
+    "mood": "Mood"
   },
   "measurements": {
     "title": "Measurements",
@@ -416,7 +417,10 @@
     "complianceDays90": "Compliance (90 days)",
     "colorGreen": "Green:",
     "colorOrange": "Orange:",
-    "colorRed": "Red:"
+    "colorRed": "Red:",
+    "mood": "Mood",
+    "moodScore": "Mood Score",
+    "moodMA": "7-Day Average"
   },
   "insights": {
     "title": "Insights",
@@ -505,7 +509,25 @@
     "noInsights": "No analysis available yet.",
     "rateLimit": "Please wait before generating a new analysis.",
     "noApiKey": "Please add an OpenAI API key in Settings first.",
-    "sendRawData": "Send raw data"
+    "sendRawData": "Send raw data",
+    "minMoodCorrelationData": "At least 5 temporally matched mood and measurement data points required.",
+    "moodBpModerate": "There is a moderate correlation between mood and blood pressure.",
+    "moodBpNone": "No detectable correlation between mood and blood pressure.",
+    "moodBpStrong": "There is a strong correlation between mood and blood pressure.",
+    "moodBpWeak": "There is a weak correlation between mood and blood pressure.",
+    "moodScoreLabel": "Mood (avg)",
+    "moodSectionTitle": "Mood",
+    "moodStatusLoading": "Generating mood analysis...",
+    "moodStatusNoKey": "Mood summary cannot be generated because no OpenAI API key is configured.",
+    "moodStatusUnavailable": "Mood analysis unavailable",
+    "moodVsBp": "Mood vs. Blood Pressure (Systolic)",
+    "moodVsPulse": "Mood vs. Pulse",
+    "moodVsWeight": "Mood vs. Weight",
+    "moodWeightModerate": "There is a moderate correlation between mood and weight.",
+    "moodWeightNone": "No detectable correlation between mood and weight.",
+    "moodWeightStrong": "There is a strong correlation between mood and weight.",
+    "moodWeightWeak": "There is a weak correlation between mood and weight.",
+    "notEnoughMoodCorrelationData": "Not enough mood data for correlation analysis."
   },
   "targets": {
     "title": "Targets",

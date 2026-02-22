@@ -11,6 +11,7 @@ import {
 import {
   pairByTimestamp,
   pearsonCorrelation,
+  type PairedPoint,
 } from "@/lib/analytics/correlations";
 import { calculateCompliance } from "@/lib/analytics/compliance";
 import { getMedicationCategories } from "@/lib/medication-category";
@@ -49,6 +50,35 @@ export async function GET() {
     orderBy: { measuredAt: "asc" },
     select: { type: true, value: true, measuredAt: true },
   });
+
+  // Fetch mood entries (90 days)
+  const moodEntries = await prisma.moodEntry.findMany({
+    where: { userId, moodLoggedAt: { gte: ninetyDaysAgo } },
+    orderBy: { moodLoggedAt: "asc" },
+    select: { date: true, score: true, moodLoggedAt: true },
+  });
+
+  // Aggregate mood to daily averages
+  const moodByDay = new Map<string, { sum: number; count: number }>();
+  for (const entry of moodEntries) {
+    const current = moodByDay.get(entry.date) ?? { sum: 0, count: 0 };
+    current.sum += entry.score;
+    current.count += 1;
+    moodByDay.set(entry.date, current);
+  }
+  const dailyMoodEntries = Array.from(moodByDay.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, stats]) => ({
+      day,
+      value: Math.round((stats.sum / stats.count) * 100) / 100,
+    }));
+
+  // Build DataPoint array for mood summary
+  const moodDataPoints: DataPoint[] = moodEntries.map((e) => ({
+    date: e.moodLoggedAt,
+    value: e.score,
+  }));
+  const moodSummary = moodDataPoints.length > 0 ? summarize(moodDataPoints) : null;
 
   const byType = (t: MeasurementType): DataPoint[] =>
     allMeasurements
@@ -114,6 +144,59 @@ export async function GET() {
     weight: p.a,
     sysBP: p.b,
   }));
+
+  // Correlations: Mood vs metrics (using daily averages matched by date)
+  function buildMoodMetricPairs(
+    dailyMood: Array<{ day: string; value: number }>,
+    measurements: Array<{ measuredAt: Date; value: number }>,
+  ): PairedPoint[] {
+    // Group measurements by day
+    const metricByDay = new Map<string, { sum: number; count: number }>();
+    for (const m of measurements) {
+      const dayKey = m.measuredAt.toISOString().slice(0, 10);
+      const current = metricByDay.get(dayKey) ?? { sum: 0, count: 0 };
+      current.sum += m.value;
+      current.count += 1;
+      metricByDay.set(dayKey, current);
+    }
+
+    const pairs: PairedPoint[] = [];
+    for (const mood of dailyMood) {
+      const metric = metricByDay.get(mood.day);
+      if (metric) {
+        pairs.push({
+          a: mood.value,
+          b: Math.round((metric.sum / metric.count) * 100) / 100,
+          date: new Date(`${mood.day}T12:00:00.000Z`),
+        });
+      }
+    }
+    return pairs;
+  }
+
+  // Mood vs Systolic BP
+  const moodBpPairs = buildMoodMetricPairs(
+    dailyMoodEntries,
+    allMeasurements.filter((m) => m.type === "BLOOD_PRESSURE_SYS").map((m) => ({ measuredAt: m.measuredAt, value: m.value })),
+  );
+  const moodBpCorrelation = pearsonCorrelation(moodBpPairs);
+  const moodBpScatterData = moodBpPairs.map((p) => ({ mood: p.a, sysBP: p.b }));
+
+  // Mood vs Weight
+  const moodWeightPairs = buildMoodMetricPairs(
+    dailyMoodEntries,
+    allMeasurements.filter((m) => m.type === "WEIGHT").map((m) => ({ measuredAt: m.measuredAt, value: m.value })),
+  );
+  const moodWeightCorrelation = pearsonCorrelation(moodWeightPairs);
+  const moodWeightScatterData = moodWeightPairs.map((p) => ({ mood: p.a, weight: p.b }));
+
+  // Mood vs Pulse
+  const moodPulsePairs = buildMoodMetricPairs(
+    dailyMoodEntries,
+    allMeasurements.filter((m) => m.type === "PULSE").map((m) => ({ measuredAt: m.measuredAt, value: m.value })),
+  );
+  const moodPulseCorrelation = pearsonCorrelation(moodPulsePairs);
+  const moodPulseScatterData = moodPulsePairs.map((p) => ({ mood: p.a, pulse: p.b }));
 
   // Medication compliance
   const medications = await prisma.medication.findMany({
@@ -270,6 +353,13 @@ export async function GET() {
     scatterData,
     bpMedicationCorrelation,
     bpMedicationScatterData,
+    moodSummary,
+    moodBpCorrelation,
+    moodBpScatterData,
+    moodWeightCorrelation,
+    moodWeightScatterData,
+    moodPulseCorrelation,
+    moodPulseScatterData,
     medications: medCompliance,
     alerts,
     hasOpenAiKey: !!user?.openaiKeyEncrypted,

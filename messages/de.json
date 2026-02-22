@@ -117,7 +117,8 @@
     "addMeasurement": "Messwert hinzufügen",
     "compliance7d": "Einnahmetreue (7 Tage)",
     "complianceGood": "Gut",
-    "complianceLow": "Niedrig"
+    "complianceLow": "Niedrig",
+    "mood": "Stimmung"
   },
   "measurements": {
     "title": "Messungen",
@@ -416,7 +417,10 @@
     "complianceDays90": "Einnahmetreue (90 Tage)",
     "colorGreen": "Grün:",
     "colorOrange": "Orange:",
-    "colorRed": "Rot:"
+    "colorRed": "Rot:",
+    "mood": "Stimmung",
+    "moodScore": "Stimmungswert",
+    "moodMA": "7-Tage-Schnitt"
   },
   "insights": {
     "title": "Insights",
@@ -505,7 +509,25 @@
     "noInsights": "Noch keine Analyse vorhanden.",
     "rateLimit": "Bitte warte, bevor du eine neue Analyse erstellst.",
     "noApiKey": "Bitte hinterlege zuerst einen OpenAI API-Key in den Einstellungen.",
-    "sendRawData": "Rohdaten mitsenden"
+    "sendRawData": "Rohdaten mitsenden",
+    "minMoodCorrelationData": "Mindestens 5 zeitlich übereinstimmende Stimmungs- und Messdaten nötig.",
+    "moodBpModerate": "Es besteht ein moderater Zusammenhang zwischen Stimmung und Blutdruck.",
+    "moodBpNone": "Kein erkennbarer Zusammenhang zwischen Stimmung und Blutdruck.",
+    "moodBpStrong": "Es besteht ein starker Zusammenhang zwischen Stimmung und Blutdruck.",
+    "moodBpWeak": "Es besteht ein schwacher Zusammenhang zwischen Stimmung und Blutdruck.",
+    "moodScoreLabel": "Stimmung (Ø)",
+    "moodSectionTitle": "Stimmung",
+    "moodStatusLoading": "Stimmungsanalyse wird erstellt...",
+    "moodStatusNoKey": "Die Stimmungs-Zusammenfassung kann nicht erstellt werden, da kein OpenAI-KI-Schlüssel hinterlegt ist.",
+    "moodStatusUnavailable": "Stimmungsanalyse nicht verfügbar",
+    "moodVsBp": "Stimmung vs. Blutdruck (Systolisch)",
+    "moodVsPulse": "Stimmung vs. Puls",
+    "moodVsWeight": "Stimmung vs. Gewicht",
+    "moodWeightModerate": "Es besteht ein moderater Zusammenhang zwischen Stimmung und Gewicht.",
+    "moodWeightNone": "Kein erkennbarer Zusammenhang zwischen Stimmung und Gewicht.",
+    "moodWeightStrong": "Es besteht ein starker Zusammenhang zwischen Stimmung und Gewicht.",
+    "moodWeightWeak": "Es besteht ein schwacher Zusammenhang zwischen Stimmung und Gewicht.",
+    "notEnoughMoodCorrelationData": "Zu wenig Stimmungsdaten für Korrelationsanalyse."
   },
   "targets": {
     "title": "Zielwerte",

@@ -61,6 +61,7 @@ function getSystemPrompt(locale: SupportedLocale): string {
       "Consider the measurement time spans and data density: if too few data points exist for a metric (<5), say that not enough data is available for a qualified assessment. If data is sparse but covers a long period, still try to derive rough trends but note the limited reliability.",
       "If the most recent measurement is more than 7 days old, mention that the data is not current.",
       "Do not include warnings, disclaimers, or references to AI/model limitations.",
+      "If mood data is available and shows a notable correlation or pattern, briefly mention it. Do not force mood into the assessment if nothing stands out.",
       'Return valid JSON only: {"summary":"..."}',
     ].join(" ");
   }
@@ -73,6 +74,7 @@ function getSystemPrompt(locale: SupportedLocale): string {
     "Berücksichtige die Messzeiträume und Datendichte: Wenn zu wenige Messpunkte (<5) für eine Metrik existieren, sage dass noch nicht genügend Daten für eine fundierte Aussage vorliegen. Wenn Daten spärlich sind aber einen langen Zeitraum abdecken, leite trotzdem grobe Trends ab, weise aber auf die eingeschränkte Belastbarkeit hin.",
     "Wenn die neueste Messung länger als 7 Tage zurückliegt, erwähne dass die Daten nicht aktuell sind.",
     "Keine Warnhinweise, keine Haftungsausschlüsse, keine Hinweise auf KI oder Modellgrenzen.",
+    "Falls Stimmungsdaten vorhanden sind und einen bemerkenswerten Zusammenhang zeigen, erwähne dies kurz. Erzwinge keine Stimmungsaussage, wenn nichts auffällt.",
     'Gib nur valides JSON zurück: {"summary":"..."}',
   ].join(" ");
 }
@@ -284,6 +286,37 @@ export async function generateGeneralStatusForUser(
     }))
     .slice(-GENERAL_STATUS_POINTS);
 
+  // Fetch mood context (optional — for enrichment only)
+  const moodEntries = await prisma.moodEntry.findMany({
+    where: { userId },
+    orderBy: { moodLoggedAt: "asc" },
+    select: { date: true, score: true, moodLoggedAt: true },
+  });
+
+  const moodByDay = new Map<string, { sum: number; count: number }>();
+  for (const entry of moodEntries) {
+    const current = moodByDay.get(entry.date) ?? { sum: 0, count: 0 };
+    current.sum += entry.score;
+    current.count += 1;
+    moodByDay.set(entry.date, current);
+  }
+  const dailyMoodSeries = Array.from(moodByDay.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, stats]) => ({
+      day,
+      value: round(stats.sum / stats.count, 2),
+    }))
+    .slice(-30);
+
+  const moodMean =
+    dailyMoodSeries.length > 0
+      ? round(
+          dailyMoodSeries.reduce((s, e) => s + e.value, 0) /
+            dailyMoodSeries.length,
+          2,
+        )
+      : null;
+
   const bpTargets = getBpTargets(user.dateOfBirth ?? null);
   let bpInTargetLast30Days: number | null = null;
   if (bpTargets) {
@@ -354,6 +387,15 @@ export async function generateGeneralStatusForUser(
           inTargetPctLast30DailyPoints: bpInTargetLast30Days,
         }
       : null,
+    moodContext:
+      dailyMoodSeries.length >= 3
+        ? {
+            points: dailyMoodSeries.length,
+            mean: moodMean,
+            latest: dailyMoodSeries.at(-1)?.value ?? null,
+            series: dailyMoodSeries.slice(-10),
+          }
+        : null,
   };
 
   const snapshotJson = JSON.stringify(snapshot, null, 2);

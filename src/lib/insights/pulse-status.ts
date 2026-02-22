@@ -97,6 +97,7 @@ function getSystemPrompt(locale: SupportedLocale): string {
       "Weight findings by importance: clear trend changes and strong target deviations should be emphasized more strongly.",
       "If fewer than 5 data points exist, state that insufficient data is available for a qualified assessment. If data is sparse over a long period, still derive rough trends but note limited reliability. If the newest measurement is more than 7 days old, mention the data may not be current.",
       "Do not include warnings, disclaimers, or references to AI/model limitations.",
+      "If mood data is available and shows a notable correlation or pattern, briefly mention it. Do not force mood into the assessment if nothing stands out.",
       'Return valid JSON only: {"summary":"..."}',
     ].join(" ");
   }
@@ -110,6 +111,7 @@ function getSystemPrompt(locale: SupportedLocale): string {
     "Gewichte Aussagen nach Wichtigkeit: klare Trendwechsel und deutliche Zielabweichungen sollen stärker betont werden.",
     "Wenn weniger als 5 Messpunkte vorliegen, sage dass noch nicht genügend Daten für eine fundierte Aussage vorhanden sind. Bei spärlichen Daten über einen langen Zeitraum leite trotzdem grobe Trends ab, weise aber auf eingeschränkte Belastbarkeit hin. Wenn die neueste Messung älter als 7 Tage ist, erwähne dass die Daten möglicherweise nicht aktuell sind.",
     "Keine Warnhinweise, keine Haftungsausschlüsse, keine Hinweise auf KI oder Modellgrenzen.",
+    "Falls Stimmungsdaten vorhanden sind und einen bemerkenswerten Zusammenhang zeigen, erwähne dies kurz. Erzwinge keine Stimmungsaussage, wenn nichts auffällt.",
     'Gib nur valides JSON zurück: {"summary":"..."}',
   ].join(" ");
 }
@@ -225,6 +227,37 @@ export async function generatePulseStatusForUser(
     })),
   ).slice(-PULSE_STATUS_POINTS);
 
+  // Fetch mood context (optional — for enrichment only)
+  const moodEntries = await prisma.moodEntry.findMany({
+    where: { userId },
+    orderBy: { moodLoggedAt: "asc" },
+    select: { date: true, score: true, moodLoggedAt: true },
+  });
+
+  const moodByDay = new Map<string, { sum: number; count: number }>();
+  for (const entry of moodEntries) {
+    const current = moodByDay.get(entry.date) ?? { sum: 0, count: 0 };
+    current.sum += entry.score;
+    current.count += 1;
+    moodByDay.set(entry.date, current);
+  }
+  const dailyMoodSeries = Array.from(moodByDay.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, stats]) => ({
+      day,
+      value: round(stats.sum / stats.count, 2),
+    }))
+    .slice(-30);
+
+  const moodMean =
+    dailyMoodSeries.length > 0
+      ? round(
+          dailyMoodSeries.reduce((s, e) => s + e.value, 0) /
+            dailyMoodSeries.length,
+          2,
+        )
+      : null;
+
   const pulseAge = getAgeFromDateOfBirth(user.dateOfBirth ?? null);
   const pulseTarget = getPersonalizedPulseTarget(
     pulseAge,
@@ -298,6 +331,15 @@ export async function generatePulseStatusForUser(
         inTargetPctLast30DailyPoints,
       },
     },
+    moodContext:
+      dailyMoodSeries.length >= 3
+        ? {
+            points: dailyMoodSeries.length,
+            mean: moodMean,
+            latest: dailyMoodSeries.at(-1)?.value ?? null,
+            series: dailyMoodSeries.slice(-10),
+          }
+        : null,
   };
 
   const snapshotJson = JSON.stringify(snapshot, null, 2);

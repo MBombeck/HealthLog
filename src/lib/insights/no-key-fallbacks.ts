@@ -57,3 +57,11 @@ export function getNoKeyMedicationComplianceStatusText(
     "Consistency in intake matters more than isolated perfect days. Evaluate adherence per medication and also in the overall multi-week picture. Pay special attention to repeated misses and stabilize fixed time-window routines.",
   );
 }
+
+export function getNoKeyMoodStatusText(locale: InsightLocale): string {
+  return getLocalizedText(
+    locale,
+    "Bewerte die Stimmung im Verlauf über mehrere Wochen statt einzelne Tage isoliert zu betrachten. Achte auf wiederkehrende Muster und Zusammenhänge mit anderen Gesundheitswerten. Anhaltende Phasen niedriger Stimmung verdienen besondere Aufmerksamkeit.",
+    "Evaluate mood trends over several weeks rather than isolated daily readings. Watch for recurring patterns and correlations with other health metrics. Sustained periods of low mood deserve special attention.",
+  );
+}
