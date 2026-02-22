@@ -1,9 +1,25 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { Activity, Heart, Percent, Smile, TrendingUp } from "lucide-react";
+import { Activity, Heart, Percent, Plus, Smile, TrendingUp, Waves } from "lucide-react";
 import dynamic from "next/dynamic";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MeasurementForm } from "@/components/measurements/measurement-form";
+import { MoodForm } from "@/components/mood/mood-form";
 import { TrendCard } from "@/components/charts/trend-card";
 
 const HealthChart = dynamic(
@@ -115,6 +131,7 @@ function getRangeHint(
 export default function DashboardPage() {
   const { isAuthenticated, user } = useAuth();
   const { t } = useTranslations();
+  const [quickEntryDialog, setQuickEntryDialog] = useState<"measurement" | "mood" | null>(null);
 
   const { data } = useQuery({
     queryKey: ["analytics"],
@@ -246,12 +263,62 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          {t("dashboard.title")}
-        </h1>
-        <p className="mt-1 text-sm">{welcomeText}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {t("dashboard.title")}
+          </h1>
+          <p className="mt-1 hidden text-sm sm:block">{welcomeText}</p>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm">
+              <Plus className="mr-1 h-4 w-4" />
+              {t("common.add")}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setQuickEntryDialog("measurement")}>
+              <Activity className="mr-2 h-4 w-4" />
+              {t("measurements.addMeasurement")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setQuickEntryDialog("mood")}>
+              <Waves className="mr-2 h-4 w-4" />
+              {t("mood.addEntry")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+
+      {/* Quick Entry Dialogs */}
+      <Dialog
+        open={quickEntryDialog === "measurement"}
+        onOpenChange={(open) => !open && setQuickEntryDialog(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("measurements.addMeasurement")}</DialogTitle>
+          </DialogHeader>
+          <MeasurementForm
+            onSuccess={() => setQuickEntryDialog(null)}
+            onCancel={() => setQuickEntryDialog(null)}
+          />
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={quickEntryDialog === "mood"}
+        onOpenChange={(open) => !open && setQuickEntryDialog(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("mood.addEntry")}</DialogTitle>
+          </DialogHeader>
+          <MoodForm
+            onSuccess={() => setQuickEntryDialog(null)}
+            onCancel={() => setQuickEntryDialog(null)}
+          />
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
         <TrendCard
