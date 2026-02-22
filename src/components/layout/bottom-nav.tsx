@@ -31,7 +31,7 @@ export function BottomNav() {
   const items = navItems;
 
   return (
-    <nav className="bg-card/80 border-border fixed bottom-0 left-0 z-50 w-full border-t backdrop-blur-md md:hidden">
+    <nav className="bg-card/80 border-border fixed bottom-0 left-0 z-50 w-full border-t pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
       <div className="mx-auto flex h-14 max-w-lg items-center justify-around px-2">
         {items.map((item) => {
           const isActive =
