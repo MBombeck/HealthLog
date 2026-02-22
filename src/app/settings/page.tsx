@@ -1532,6 +1532,7 @@ function ApiTokensSection({
 function ExportSection({ id }: { id: string }) {
   const { t } = useTranslations();
   const [exporting, setExporting] = useState(false);
+  const [generatingReport, setGeneratingReport] = useState(false);
 
   async function handleExport(format: "csv" | "json") {
     setExporting(true);
@@ -1553,6 +1554,29 @@ function ExportSection({ id }: { id: string }) {
     }
   }
 
+  async function handleDoctorReport() {
+    setGeneratingReport(true);
+    try {
+      const res = await fetch("/api/doctor-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ days: 90 }),
+      });
+      if (!res.ok) return;
+      const json = await res.json();
+
+      const { generateDoctorReportPDF } = await import(
+        "@/lib/doctor-report-pdf"
+      );
+      const doc = generateDoctorReportPDF(json.data);
+      doc.save(
+        `gesundheitsbericht-${new Date().toISOString().slice(0, 10)}.pdf`,
+      );
+    } finally {
+      setGeneratingReport(false);
+    }
+  }
+
   return (
     <div
       id={id}
@@ -1565,7 +1589,7 @@ function ExportSection({ id }: { id: string }) {
       <p className="text-muted-foreground mt-1 text-xs">
         {t("settings.exportDescription")}
       </p>
-      <div className="mt-4 flex gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
         <Button
           variant="outline"
           size="sm"
@@ -1583,6 +1607,17 @@ function ExportSection({ id }: { id: string }) {
         >
           {exporting && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
           {t("settings.exportCsv")}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleDoctorReport}
+          disabled={generatingReport}
+        >
+          {generatingReport && (
+            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+          )}
+          {t("settings.doctorReport")}
         </Button>
       </div>
     </div>

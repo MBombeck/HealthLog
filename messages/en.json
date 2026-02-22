@@ -741,6 +741,7 @@
     "exportDescription": "Export all your health data.",
     "exportJson": "JSON Export",
     "exportCsv": "CSV Export",
+    "doctorReport": "Doctor Report (PDF)",
     "auditLog": "Activity Log",
     "auditLogHidden": "Log hidden.",
     "auditLogShowing": "Showing last {count} of {total} entries",
