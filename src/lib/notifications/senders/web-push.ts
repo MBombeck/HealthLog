@@ -74,7 +74,8 @@ export async function sendViaWebPush(
     }
 
     return anySuccess;
-  } catch {
+  } catch (err) {
+    console.error("[web-push] sendViaWebPush failed:", err);
     return false;
   }
 }

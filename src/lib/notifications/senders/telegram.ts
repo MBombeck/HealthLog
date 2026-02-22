@@ -4,20 +4,8 @@ import type {
   TelegramChannelConfig,
   NotificationPayload,
 } from "@/lib/notifications/types";
-import { PrismaClient, type ReminderPhase } from "@/generated/prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-
-let senderPrisma: PrismaClient | null = null;
-
-function getSenderPrisma(): PrismaClient {
-  if (!senderPrisma) {
-    const adapter = new PrismaPg({
-      connectionString: process.env.DATABASE_URL!,
-    });
-    senderPrisma = new PrismaClient({ adapter });
-  }
-  return senderPrisma;
-}
+import { prisma } from "@/lib/db";
+import type { ReminderPhase } from "@/generated/prisma/client";
 
 /**
  * Delete all existing Telegram reminder messages for a medication on a given date.
@@ -28,7 +16,6 @@ async function deleteExistingReminders(
   medicationId: string,
   date: string,
 ): Promise<void> {
-  const prisma = getSenderPrisma();
   try {
     const existing = await prisma.telegramReminderMessage.findMany({
       where: { medicationId, date },
@@ -127,7 +114,6 @@ export async function sendViaTelegram(
     phase &&
     date
   ) {
-    const prisma = getSenderPrisma();
     try {
       await prisma.telegramReminderMessage.upsert({
         where: {
