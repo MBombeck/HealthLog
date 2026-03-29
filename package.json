@@ -23,7 +23,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@node-rs/argon2": "^2.0.2",
     "@prisma/adapter-pg": "^7.6.0",
-    "@prisma/client": "^7.5.0",
+    "@prisma/client": "^7.6.0",
     "@simplewebauthn/browser": "^13.3.0",
     "@simplewebauthn/server": "^13.3.0",
     "@tanstack/react-query": "^5.95.2",
