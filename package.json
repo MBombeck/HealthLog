@@ -29,7 +29,7 @@
     "@tanstack/react-query": "^5.96.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "dotenv": "^17.4.0",
+    "dotenv": "^17.4.1",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^1.7.0",
