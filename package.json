@@ -57,7 +57,7 @@
     "@vitejs/plugin-react": "^5.1.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
-    "prettier": "^3.5.0",
+    "prettier": "^3.8.2",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "shadcn": "^4.1.2",
     "tailwindcss": "^4",
