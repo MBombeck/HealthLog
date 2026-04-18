@@ -318,7 +318,7 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 - Code style: `pnpm format && pnpm lint`
 - Type safety: `pnpm typecheck` must pass
 - Tests: `pnpm test`
-- UI language: German. Code, comments, and commits: English.
+- UI language: English by default, German selectable per user. Code, comments, and commits: English.
 
 ---
 

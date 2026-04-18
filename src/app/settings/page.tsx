@@ -56,6 +56,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { locales, localeLabels, type Locale } from "@/lib/i18n/config";
 import { invalidateKeys, measurementDependentKeys } from "@/lib/query-keys";
 import { describePasskeyError } from "@/lib/passkey-errors";
+import { ThresholdsSection } from "@/components/settings/thresholds-section";
 
 function PasswordInput(props: React.ComponentProps<typeof Input>) {
   const [visible, setVisible] = useState(false);
@@ -623,6 +624,16 @@ export default function SettingsPage() {
               )}
             </section>
           )}
+
+          <section
+            id="section-personalization"
+            className="scroll-mt-28 space-y-3"
+          >
+            <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+              {t("settings.categoryPersonalization")}
+            </h2>
+            <ThresholdsSection id="thresholds" />
+          </section>
 
           <section id="section-integration" className="scroll-mt-28 space-y-3">
             <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
