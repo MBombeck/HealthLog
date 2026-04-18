@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { useTranslations } from "@/lib/i18n/context";
+import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -222,15 +222,12 @@ function getRangeHint(
   unit: string,
   config: RangeDisplayConfig,
   t: (key: string) => string,
+  formatNumber: (value: number, fractionDigits?: number) => string,
 ): React.ReactNode | undefined {
   const range = config.range;
   if (!range) return undefined;
 
-  const format = (value: number) =>
-    new Intl.NumberFormat("de-DE", {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-    }).format(value);
+  const format = (value: number) => formatNumber(value, 1);
 
   return (
     <>
@@ -496,6 +493,7 @@ function getMedicationComplianceSectionStatus(input: {
 export default function InsightsPage() {
   const { isAuthenticated, user } = useAuth();
   const { t, locale } = useTranslations();
+  const fmt = useFormatters();
 
   const STRENGTH_LABELS: Record<string, string> = {
     stark: t("insights.strengthStrong"),
@@ -838,8 +836,8 @@ export default function InsightsPage() {
           avg30={w?.avg30 ?? null}
           avg7ColorClass={getRangeColorClass(w?.avg7, { range: weightRange })}
           avg30ColorClass={getRangeColorClass(w?.avg30, { range: weightRange })}
-          avg7Hint={getRangeHint("kg", { range: weightRange }, t)}
-          avg30Hint={getRangeHint("kg", { range: weightRange }, t)}
+          avg7Hint={getRangeHint("kg", { range: weightRange }, t, fmt.number)}
+          avg30Hint={getRangeHint("kg", { range: weightRange }, t, fmt.number)}
           slope30={w?.slope30 ?? null}
           icon={Activity}
         />
@@ -853,8 +851,8 @@ export default function InsightsPage() {
           avg30ColorClass={getRangeColorClass(sys?.avg30, {
             range: bpSysRange,
           })}
-          avg7Hint={getRangeHint("mmHg", { range: bpSysRange }, t)}
-          avg30Hint={getRangeHint("mmHg", { range: bpSysRange }, t)}
+          avg7Hint={getRangeHint("mmHg", { range: bpSysRange }, t, fmt.number)}
+          avg30Hint={getRangeHint("mmHg", { range: bpSysRange }, t, fmt.number)}
           slope30={sys?.slope30 ?? null}
           icon={Heart}
         />
@@ -868,8 +866,8 @@ export default function InsightsPage() {
           avg30ColorClass={getRangeColorClass(dia?.avg30, {
             range: bpDiaRange,
           })}
-          avg7Hint={getRangeHint("mmHg", { range: bpDiaRange }, t)}
-          avg30Hint={getRangeHint("mmHg", { range: bpDiaRange }, t)}
+          avg7Hint={getRangeHint("mmHg", { range: bpDiaRange }, t, fmt.number)}
+          avg30Hint={getRangeHint("mmHg", { range: bpDiaRange }, t, fmt.number)}
           slope30={dia?.slope30 ?? null}
           icon={Heart}
         />
@@ -885,8 +883,8 @@ export default function InsightsPage() {
           avg30ColorClass={getRangeColorClass(p?.avg30, {
             range: pulseDisplayRange,
           })}
-          avg7Hint={getRangeHint("bpm", { range: pulseDisplayRange }, t)}
-          avg30Hint={getRangeHint("bpm", { range: pulseDisplayRange }, t)}
+          avg7Hint={getRangeHint("bpm", { range: pulseDisplayRange }, t, fmt.number)}
+          avg30Hint={getRangeHint("bpm", { range: pulseDisplayRange }, t, fmt.number)}
           slope30={p?.slope30 ?? null}
           icon={TrendingUp}
         />

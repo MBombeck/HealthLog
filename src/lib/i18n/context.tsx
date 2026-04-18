@@ -4,11 +4,13 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useState,
   useCallback,
   type ReactNode,
 } from "react";
 import { locales, defaultLocale, type Locale } from "./config";
+import { makeFormatters, type Formatters } from "../format-locale";
 
 import deMessages from "../../../messages/de.json";
 import enMessages from "../../../messages/en.json";
@@ -71,13 +73,19 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     if ((locales as readonly string[]).includes(newLocale)) {
       setLocaleState(newLocale);
       localStorage.setItem("healthlog-locale", newLocale);
+      // Also mirror to cookie so SSR (layout, metadata) renders in the
+      // user's language. 1-year expiry, Lax samesite, not HttpOnly so the
+      // client continues to own it.
+      document.cookie = `healthlog-locale=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
       document.documentElement.lang = newLocale;
     }
   }, []);
 
-  // Set HTML lang on mount
+  // Keep the HTML lang and the cookie in sync with the active locale on
+  // mount. The cookie acts as the SSR handoff for the next request.
   useEffect(() => {
     document.documentElement.lang = locale;
+    document.cookie = `healthlog-locale=${locale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
   }, [locale]);
 
   const t = useCallback(
@@ -119,4 +127,14 @@ export function useTranslations() {
     throw new Error("useTranslations must be used within I18nProvider");
   }
   return context;
+}
+
+/**
+ * Locale-aware formatters tied to the active UI locale. Use for every number,
+ * date, and time rendered in the UI so regional conventions (70,5 vs 70.5,
+ * 19.02.2026 vs Feb 19, 2026) follow the user's language choice.
+ */
+export function useFormatters(): Formatters {
+  const { locale } = useTranslations();
+  return useMemo(() => makeFormatters(locale), [locale]);
 }

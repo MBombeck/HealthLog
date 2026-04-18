@@ -1,9 +1,15 @@
 /**
  * Client-side PDF generation for doctor reports.
- * Uses jspdf + jspdf-autotable for professional medical-style reports.
+ *
+ * Every string and every number/date is driven by an injected `t()` and
+ * locale-aware formatters so the exported PDF matches the user's UI language.
+ * Call sites must pass `{ t, locale }` (use the ones from `useTranslations()`
+ * / `useFormatters()`).
  */
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { makeFormatters } from "./format-locale";
+import type { Locale } from "./i18n/config";
 
 interface ReportData {
   period: { days: number; since: string };
@@ -40,109 +46,129 @@ interface ReportData {
   } | null;
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  WEIGHT: "Körpergewicht",
-  BLOOD_PRESSURE_SYS: "Systolischer Blutdruck",
-  BLOOD_PRESSURE_DIA: "Diastolischer Blutdruck",
-  PULSE: "Ruhepuls",
-  BODY_FAT: "Körperfettanteil",
-  SLEEP_DURATION: "Schlafdauer",
-  ACTIVITY_STEPS: "Aktivität (Schritte)",
+type T = (key: string, params?: Record<string, string | number>) => string;
+
+export interface DoctorReportOptions {
+  t: T;
+  locale: Locale;
+}
+
+const TYPE_LABEL_KEYS: Record<string, string> = {
+  WEIGHT: "doctorReport.typeWeight",
+  BLOOD_PRESSURE_SYS: "doctorReport.typeBpSys",
+  BLOOD_PRESSURE_DIA: "doctorReport.typeBpDia",
+  PULSE: "doctorReport.typePulse",
+  BODY_FAT: "doctorReport.typeBodyFat",
+  SLEEP_DURATION: "doctorReport.typeSleep",
+  ACTIVITY_STEPS: "doctorReport.typeSteps",
 };
 
-const TYPE_UNITS: Record<string, string> = {
+const TYPE_UNIT_KEYS: Record<string, string | null> = {
   WEIGHT: "kg",
   BLOOD_PRESSURE_SYS: "mmHg",
   BLOOD_PRESSURE_DIA: "mmHg",
   PULSE: "bpm",
   BODY_FAT: "%",
   SLEEP_DURATION: "h",
-  ACTIVITY_STEPS: "Schritte",
+  ACTIVITY_STEPS: null, // translated unit
 };
 
-const MOOD_LABELS: Record<number, string> = {
-  1: "Sehr schlecht",
-  2: "Schlecht",
-  3: "Neutral",
-  4: "Gut",
-  5: "Sehr gut",
+const MOOD_LABEL_KEYS: Record<number, string> = {
+  1: "doctorReport.moodAwful",
+  2: "doctorReport.moodBad",
+  3: "doctorReport.moodNeutral",
+  4: "doctorReport.moodGood",
+  5: "doctorReport.moodGreat",
 };
 
-function fmt(value: number, decimals = 1): string {
-  return value.toFixed(decimals).replace(".", ",");
+function getBmiClassificationKey(bmi: number): string {
+  if (bmi < 18.5) return "doctorReport.bmiUnderweight";
+  if (bmi < 25) return "doctorReport.bmiNormal";
+  if (bmi < 30) return "doctorReport.bmiOverweight";
+  if (bmi < 35) return "doctorReport.bmiObeseGrade1";
+  if (bmi < 40) return "doctorReport.bmiObeseGrade2";
+  return "doctorReport.bmiObeseGrade3";
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+function getBpClassificationKey(sys: number, dia: number): string {
+  if (sys < 120 && dia < 80) return "doctorReport.bpOptimal";
+  if (sys < 130 && dia < 85) return "doctorReport.bpNormal";
+  if (sys < 140 && dia < 90) return "doctorReport.bpHighNormal";
+  if (sys < 160 && dia < 100) return "doctorReport.bpHypertensionGrade1";
+  if (sys < 180 && dia < 110) return "doctorReport.bpHypertensionGrade2";
+  return "doctorReport.bpHypertensionGrade3";
 }
 
-function getBmiClassification(bmi: number): string {
-  if (bmi < 18.5) return "Untergewicht";
-  if (bmi < 25) return "Normalgewicht";
-  if (bmi < 30) return "Übergewicht (Präadipositas)";
-  if (bmi < 35) return "Adipositas Grad I";
-  if (bmi < 40) return "Adipositas Grad II";
-  return "Adipositas Grad III";
-}
+export function generateDoctorReportPDF(
+  data: ReportData,
+  options: DoctorReportOptions,
+): jsPDF {
+  const { t, locale } = options;
+  const formatters = makeFormatters(locale);
+  const num = (value: number, decimals = 1) =>
+    formatters.number(value, decimals);
+  const fmtDate = (iso: string) => formatters.date(iso);
 
-function getBpClassification(sys: number, dia: number): string {
-  if (sys < 120 && dia < 80) return "Optimal";
-  if (sys < 130 && dia < 85) return "Normal";
-  if (sys < 140 && dia < 90) return "Hochnormal";
-  if (sys < 160 && dia < 100) return "Hypertonie Grad 1";
-  if (sys < 180 && dia < 110) return "Hypertonie Grad 2";
-  return "Hypertonie Grad 3";
-}
+  const unitFor = (type: string): string => {
+    const staticUnit = TYPE_UNIT_KEYS[type];
+    if (staticUnit !== null) return staticUnit ?? "";
+    if (type === "ACTIVITY_STEPS") return t("doctorReport.unitSteps");
+    return "";
+  };
 
-export function generateDoctorReportPDF(data: ReportData): jsPDF {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
   let y = margin;
 
-  // ── Header ──────────────────────────────────────────────────────────────
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(30, 30, 30);
-  doc.text("Gesundheitsbericht", margin, y);
+  doc.text(t("doctorReport.title"), margin, y);
   y += 8;
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 100, 100);
-  doc.text("HealthLog — Persönlicher Gesundheitsbericht", margin, y);
+  doc.text(t("doctorReport.subtitle"), margin, y);
   y += 6;
 
-  // Divider
   doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.5);
   doc.line(margin, y, pageWidth - margin, y);
   y += 8;
 
-  // ── Patient info ────────────────────────────────────────────────────────
   doc.setFontSize(9);
   doc.setTextColor(80, 80, 80);
   const patientInfo: string[] = [];
-  if (data.patient.username) patientInfo.push(`Patient: ${data.patient.username}`);
-  if (data.patient.dateOfBirth) {
-    patientInfo.push(`Geburtsdatum: ${formatDate(data.patient.dateOfBirth)}`);
+  if (data.patient.username) {
+    patientInfo.push(`${t("doctorReport.patient")}: ${data.patient.username}`);
   }
-  if (data.patient.gender) {
+  if (data.patient.dateOfBirth) {
     patientInfo.push(
-      `Geschlecht: ${data.patient.gender === "MALE" ? "Männlich" : data.patient.gender === "FEMALE" ? "Weiblich" : "Divers"}`,
+      `${t("doctorReport.dateOfBirth")}: ${fmtDate(data.patient.dateOfBirth)}`,
     );
   }
+  if (data.patient.gender) {
+    const genderKey =
+      data.patient.gender === "MALE"
+        ? "doctorReport.genderMale"
+        : data.patient.gender === "FEMALE"
+          ? "doctorReport.genderFemale"
+          : "doctorReport.genderOther";
+    patientInfo.push(`${t("doctorReport.gender")}: ${t(genderKey)}`);
+  }
   if (data.patient.heightCm) {
-    patientInfo.push(`Körpergröße: ${data.patient.heightCm} cm`);
+    patientInfo.push(
+      `${t("doctorReport.height")}: ${data.patient.heightCm} cm`,
+    );
   }
   patientInfo.push(
-    `Berichtszeitraum: ${formatDate(data.period.since)} — ${formatDate(new Date().toISOString())}`,
+    `${t("doctorReport.period")}: ${fmtDate(data.period.since)} — ${fmtDate(new Date().toISOString())}`,
   );
-  patientInfo.push(`Erstellt am: ${formatDate(new Date().toISOString())}`);
+  patientInfo.push(
+    `${t("doctorReport.createdOn")}: ${fmtDate(new Date().toISOString())}`,
+  );
 
   for (const line of patientInfo) {
     doc.text(line, margin, y);
@@ -150,11 +176,10 @@ export function generateDoctorReportPDF(data: ReportData): jsPDF {
   }
   y += 4;
 
-  // ── Vital Signs Summary ─────────────────────────────────────────────────
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(30, 30, 30);
-  doc.text("Vitalparameter — Übersicht", margin, y);
+  doc.text(t("doctorReport.vitalsTitle"), margin, y);
   y += 6;
 
   const vitalRows: string[][] = [];
@@ -169,20 +194,30 @@ export function generateDoctorReportPDF(data: ReportData): jsPDF {
   for (const type of vitalTypes) {
     const s = data.stats[type];
     if (!s) continue;
+    const unit = unitFor(type);
     vitalRows.push([
-      TYPE_LABELS[type] || type,
-      `${fmt(s.latest)} ${TYPE_UNITS[type] || ""}`,
-      `${fmt(s.avg)} ${TYPE_UNITS[type] || ""}`,
-      `${fmt(s.min)}`,
-      `${fmt(s.max)}`,
-      `${s.count}`,
+      t(TYPE_LABEL_KEYS[type] ?? ""),
+      `${num(s.latest)} ${unit}`.trim(),
+      `${num(s.avg)} ${unit}`.trim(),
+      num(s.min),
+      num(s.max),
+      String(s.count),
     ]);
   }
 
   if (vitalRows.length > 0) {
     autoTable(doc, {
       startY: y,
-      head: [["Parameter", "Aktuell", "Ø Zeitraum", "Min", "Max", "n"]],
+      head: [
+        [
+          t("doctorReport.colParameter"),
+          t("doctorReport.colCurrent"),
+          t("doctorReport.colAvgPeriod"),
+          t("doctorReport.colMin"),
+          t("doctorReport.colMax"),
+          t("doctorReport.colN"),
+        ],
+      ],
       body: vitalRows,
       theme: "grid",
       styles: {
@@ -200,48 +235,49 @@ export function generateDoctorReportPDF(data: ReportData): jsPDF {
       alternateRowStyles: { fillColor: [252, 252, 252] },
       margin: { left: margin, right: margin },
     });
-    y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
-      .finalY + 8;
+    y =
+      (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
+        .finalY + 8;
   }
 
-  // ── Blood Pressure Classification ────────────────────────────────────────
   const sysStat = data.stats.BLOOD_PRESSURE_SYS;
   const diaStat = data.stats.BLOOD_PRESSURE_DIA;
   if (sysStat && diaStat) {
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text("Blutdruck — ESC/ESH-Klassifikation (2018)", margin, y);
+    doc.text(t("doctorReport.bpClassificationTitle"), margin, y);
     y += 5;
 
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    const bpClass = getBpClassification(sysStat.avg, diaStat.avg);
+    const bpClass = t(getBpClassificationKey(sysStat.avg, diaStat.avg));
     doc.text(
-      `Durchschnittlicher Blutdruck: ${fmt(sysStat.avg, 0)}/${fmt(diaStat.avg, 0)} mmHg — Klassifikation: ${bpClass}`,
+      `${t("doctorReport.avgBp")}: ${num(sysStat.avg, 0)}/${num(diaStat.avg, 0)} mmHg — ${t("doctorReport.classification")}: ${bpClass}`,
       margin,
       y,
     );
     y += 8;
   }
 
-  // ── BMI ──────────────────────────────────────────────────────────────────
   if (data.bmi) {
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text("Body-Mass-Index (BMI)", margin, y);
+    doc.text(t("doctorReport.bmiTitle"), margin, y);
     y += 5;
 
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.text(
-      `BMI: ${fmt(data.bmi)} kg/m² — Klassifikation: ${getBmiClassification(data.bmi)} (WHO)`,
+      t("doctorReport.bmiRow", {
+        bmi: num(data.bmi, 1),
+        class: t(getBmiClassificationKey(data.bmi)),
+      }),
       margin,
       y,
     );
     y += 8;
   }
 
-  // ── Medication Compliance ────────────────────────────────────────────────
   const complianceEntries = Object.entries(data.compliance);
   if (complianceEntries.length > 0) {
     if (y > 240) {
@@ -251,18 +287,33 @@ export function generateDoctorReportPDF(data: ReportData): jsPDF {
 
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text("Medikamenten-Compliance", margin, y);
+    doc.text(t("doctorReport.complianceTitle"), margin, y);
     y += 6;
 
     const compRows = complianceEntries.map(([name, c]) => {
-      const rate = c.total > 0 ? ((c.taken / c.total) * 100).toFixed(1) : "—";
-      return [name, `${c.taken}`, `${c.skipped}`, `${c.missed}`, `${c.total}`, `${rate}%`];
+      const rate =
+        c.total > 0 ? `${num((c.taken / c.total) * 100, 1)}%` : "—";
+      return [
+        name,
+        String(c.taken),
+        String(c.skipped),
+        String(c.missed),
+        String(c.total),
+        rate,
+      ];
     });
 
     autoTable(doc, {
       startY: y,
       head: [
-        ["Medikament", "Eingenommen", "Übersprungen", "Verpasst", "Gesamt", "Compliance-Rate"],
+        [
+          t("doctorReport.colMedication"),
+          t("doctorReport.colTaken"),
+          t("doctorReport.colSkipped"),
+          t("doctorReport.colMissed"),
+          t("doctorReport.colTotal"),
+          t("doctorReport.colComplianceRate"),
+        ],
       ],
       body: compRows,
       theme: "grid",
@@ -281,11 +332,11 @@ export function generateDoctorReportPDF(data: ReportData): jsPDF {
       alternateRowStyles: { fillColor: [252, 252, 252] },
       margin: { left: margin, right: margin },
     });
-    y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
-      .finalY + 8;
+    y =
+      (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
+        .finalY + 8;
   }
 
-  // ── Mood ─────────────────────────────────────────────────────────────────
   if (data.mood) {
     if (y > 240) {
       doc.addPage();
@@ -294,13 +345,18 @@ export function generateDoctorReportPDF(data: ReportData): jsPDF {
 
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text("Stimmungsverlauf", margin, y);
+    doc.text(t("doctorReport.moodTitle"), margin, y);
     y += 6;
 
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.text(
-      `Durchschnitt: ${fmt(data.mood.avg)} / 5,0  |  Einträge: ${data.mood.count}  |  Bereich: ${data.mood.min} – ${data.mood.max}`,
+      t("doctorReport.moodSummary", {
+        avg: num(data.mood.avg, 1),
+        count: data.mood.count,
+        min: num(data.mood.min, 0),
+        max: num(data.mood.max, 0),
+      }),
       margin,
       y,
     );
@@ -308,15 +364,23 @@ export function generateDoctorReportPDF(data: ReportData): jsPDF {
 
     const distRows = Object.entries(data.mood.distribution).map(
       ([score, count]) => [
-        MOOD_LABELS[Number(score)] || score,
-        `${count}`,
-        `${data.mood!.count > 0 ? ((count / data.mood!.count) * 100).toFixed(1) : 0}%`,
+        t(MOOD_LABEL_KEYS[Number(score)] ?? "doctorReport.moodNeutral"),
+        String(count),
+        data.mood!.count > 0
+          ? `${num((count / data.mood!.count) * 100, 1)}%`
+          : "0%",
       ],
     );
 
     autoTable(doc, {
       startY: y,
-      head: [["Stimmung", "Anzahl", "Anteil"]],
+      head: [
+        [
+          t("doctorReport.colMood"),
+          t("doctorReport.colCount"),
+          t("doctorReport.colShare"),
+        ],
+      ],
       body: distRows,
       theme: "grid",
       styles: {
@@ -333,34 +397,35 @@ export function generateDoctorReportPDF(data: ReportData): jsPDF {
       },
       margin: { left: margin, right: margin },
     });
-    y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
-      .finalY + 8;
+    y =
+      (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
+        .finalY + 8;
   }
 
-  // ── Footer / Disclaimer ──────────────────────────────────────────────────
   const addFooter = (pageDoc: jsPDF) => {
     const pageHeight = pageDoc.internal.pageSize.getHeight();
     pageDoc.setFontSize(7);
     pageDoc.setFont("helvetica", "italic");
     pageDoc.setTextColor(140, 140, 140);
     pageDoc.text(
-      "Dieser Bericht wurde automatisch aus selbst erfassten Daten generiert und dient ausschließlich zur Unterstützung",
+      t("doctorReport.footerDisclaimer1"),
       margin,
       pageHeight - 14,
     );
     pageDoc.text(
-      "des Arzt-Patienten-Gesprächs. Er ersetzt keine ärztliche Diagnose. Korrelationen implizieren keine Kausalität.",
+      t("doctorReport.footerDisclaimer2"),
       margin,
       pageHeight - 10,
     );
     pageDoc.text(
-      `Quelle: HealthLog | Zeitzone: Europe/Berlin | Erstellt: ${new Date().toLocaleString("de-DE", { timeZone: "Europe/Berlin" })}`,
+      t("doctorReport.footerSource", {
+        timestamp: formatters.dateTime(new Date()),
+      }),
       margin,
       pageHeight - 6,
     );
   };
 
-  // Add footer to all pages
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);

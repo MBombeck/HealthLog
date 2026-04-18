@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { useTranslations, useFormatters } from "@/lib/i18n/context";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -26,22 +27,21 @@ export function InsightStatusCard({
   updatedAt,
   loading = false,
 }: InsightStatusCardProps) {
-  // ── Loading State ─────────────────────────────────────
+  const { t } = useTranslations();
+
   if (loading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-8">
           <Loader2 className="h-5 w-5 animate-spin text-dracula-purple" />
           <span className="ml-2 text-sm text-muted-foreground">
-            {/* TODO: i18n */}
-            Wird geladen...
+            {t("common.loading")}
           </span>
         </CardContent>
       </Card>
     );
   }
 
-  // ── No Provider State ─────────────────────────────────
   if (!hasProvider) {
     return (
       <Card className="opacity-60">
@@ -53,15 +53,13 @@ export function InsightStatusCard({
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            {/* TODO: i18n */}
-            KI-Provider nicht konfiguriert.
+            {t("insights.noProviderConfigured")}
           </p>
         </CardContent>
       </Card>
     );
   }
 
-  // ── No Data State ─────────────────────────────────────
   if (!text) {
     return (
       <Card>
@@ -73,15 +71,13 @@ export function InsightStatusCard({
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            {/* TODO: i18n */}
-            Noch keine Analyse vorhanden.
+            {t("insights.noAnalysisYet")}
           </p>
         </CardContent>
       </Card>
     );
   }
 
-  // ── Populated Card ────────────────────────────────────
   return (
     <Card className="animate-insight-in border-l-2 border-l-dracula-purple">
       <CardHeader className="pb-2">
@@ -92,28 +88,26 @@ export function InsightStatusCard({
           </div>
           {cached && (
             <span className="text-xs text-muted-foreground">
-              {/* TODO: i18n */}
-              Zwischengespeichert
+              {t("insights.cached")}
             </span>
           )}
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
         <p className="text-sm leading-relaxed text-muted-foreground">{text}</p>
-        {updatedAt && (
-          <p className="text-xs text-muted-foreground">
-            {/* TODO: i18n */}
-            Zuletzt aktualisiert:{" "}
-            {new Date(updatedAt).toLocaleString("de-DE", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
-        )}
+        <LastUpdatedFooter updatedAt={updatedAt} />
       </CardContent>
     </Card>
+  );
+}
+
+function LastUpdatedFooter({ updatedAt }: { updatedAt: string | null }) {
+  const { t } = useTranslations();
+  const fmt = useFormatters();
+  if (!updatedAt) return null;
+  return (
+    <p className="text-xs text-muted-foreground">
+      {t("insights.lastUpdated")}: {fmt.dateTime(updatedAt)}
+    </p>
   );
 }

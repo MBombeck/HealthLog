@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { formatDateShort } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useTranslations, useFormatters } from "@/lib/i18n/context";
 
 const TIME_RANGES_KEYS = [
   {
@@ -216,6 +216,7 @@ export function HealthChart({
 }: HealthChartProps) {
   const { isAuthenticated, user } = useAuth();
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const [rangePoints, setRangePoints] = useState(30);
   const [showMA, setShowMA] = useState(false);
   const [showTrend, setShowTrend] = useState(false);
@@ -490,25 +491,15 @@ export function HealthChart({
     return zones;
   }, [showBands, targetZones, yDomain]);
 
-  const formatAxisValue = (value: number) =>
-    new Intl.NumberFormat("de-DE", {
-      maximumFractionDigits: 0,
-    }).format(value);
+  const formatAxisValue = (value: number) => fmt.integer(value);
 
-  const formatTooltipValue = (value: number) =>
-    new Intl.NumberFormat("de-DE", {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-    }).format(value);
+  const formatTooltipValue = (value: number) => fmt.number(value, 1);
 
   const trendInfo = useMemo(() => {
     if (!showTrend || !chartData?.length) return [];
 
     const formatSigned = (value: number) => {
-      const formatted = new Intl.NumberFormat("de-DE", {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-      }).format(Math.abs(value));
+      const formatted = fmt.number(Math.abs(value), 1);
       return `${value > 0 ? "+" : value < 0 ? "-" : ""}${formatted}`;
     };
 

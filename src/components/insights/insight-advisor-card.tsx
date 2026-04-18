@@ -17,6 +17,7 @@ import {
   ChevronUp,
   Info,
 } from "lucide-react";
+import { useTranslations, useFormatters } from "@/lib/i18n/context";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -91,10 +92,10 @@ const CONFIDENCE_STYLES: Record<string, string> = {
   gering: "text-dracula-orange",
 };
 
-const CONFIDENCE_LABELS: Record<string, string> = {
-  hoch: "Hoch",
-  mittel: "Mittel",
-  gering: "Gering",
+const CONFIDENCE_LABEL_KEYS: Record<string, string> = {
+  hoch: "insights.confidenceHoch",
+  mittel: "insights.confidenceMittel",
+  gering: "insights.confidenceGering",
 };
 
 // ─── Section Separator ────────────────────────────────────
@@ -120,6 +121,8 @@ export function InsightAdvisorCard({
   regenerating = false,
   cachedAt,
 }: InsightAdvisorCardProps) {
+  const { t } = useTranslations();
+  const fmt = useFormatters();
   const [dataQualityOpen, setDataQualityOpen] = useState(false);
 
   const classStyle = insight
@@ -134,8 +137,7 @@ export function InsightAdvisorCard({
         <CardContent className="flex items-center justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-dracula-purple" />
           <span className="ml-2 text-sm text-muted-foreground">
-            {/* TODO: i18n */}
-            Analyse wird erstellt...
+            {t("insights.generating")}
           </span>
         </CardContent>
       </Card>
@@ -152,8 +154,9 @@ export function InsightAdvisorCard({
               {icon ?? (
                 <Sparkles className="h-5 w-5 text-dracula-purple" />
               )}
-              {/* TODO: i18n */}
-              <CardTitle className="text-lg">KI-Gesundheitsanalyse</CardTitle>
+              <CardTitle className="text-lg">
+                {t("insights.aiAnalysisTitle")}
+              </CardTitle>
             </div>
           </div>
           <p className="text-sm text-muted-foreground">{title}</p>
@@ -168,8 +171,7 @@ export function InsightAdvisorCard({
           {!error && (
             <div className="flex flex-col items-center gap-3 py-6">
               <p className="text-sm text-muted-foreground">
-                {/* TODO: i18n */}
-                Noch keine Analyse vorhanden.
+                {t("insights.noAnalysisYet")}
               </p>
               {onRegenerate && (
                 <Button
@@ -183,8 +185,7 @@ export function InsightAdvisorCard({
                   ) : (
                     <Sparkles className="mr-1.5 h-3.5 w-3.5" />
                   )}
-                  {/* TODO: i18n */}
-                  Analyse starten
+                  {t("insights.startAnalysis")}
                 </Button>
               )}
             </div>
@@ -204,8 +205,9 @@ export function InsightAdvisorCard({
             {icon ?? (
               <Sparkles className="h-5 w-5 text-dracula-purple" />
             )}
-            {/* TODO: i18n */}
-            <CardTitle className="text-lg">KI-Gesundheitsanalyse</CardTitle>
+            <CardTitle className="text-lg">
+              {t("insights.aiAnalysisTitle")}
+            </CardTitle>
           </div>
           <div className="flex items-center gap-2">
             <Badge className={classStyle.badge}>
@@ -218,7 +220,7 @@ export function InsightAdvisorCard({
                 className="h-7 w-7"
                 onClick={onRegenerate}
                 disabled={regenerating}
-                title="Analyse aktualisieren" // TODO: i18n
+                title={t("insights.refreshAnalysis")}
               >
                 {regenerating ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -245,8 +247,7 @@ export function InsightAdvisorCard({
         {insight.primaryRecommendation && (
           <div className="rounded-md border-l-2 border-dracula-purple bg-dracula-purple/5 px-4 py-3">
             <p className="mb-1 text-xs font-medium uppercase tracking-widest text-dracula-purple">
-              {/* TODO: i18n */}
-              Das Wichtigste
+              {t("insights.keyTakeaway")}
             </p>
             <p className="text-sm">{insight.primaryRecommendation}</p>
           </div>
@@ -260,8 +261,7 @@ export function InsightAdvisorCard({
         {/* Findings */}
         {insight.findings.length > 0 && (
           <div className="space-y-3">
-            {/* TODO: i18n */}
-            <SectionSeparator label="Befunde" />
+            <SectionSeparator label={t("insights.findingsTitle")} />
             <div className="space-y-2">
               {insight.findings.map((finding, i) => (
                 <div key={i}>
@@ -288,8 +288,7 @@ export function InsightAdvisorCard({
         {/* Correlations */}
         {insight.correlations.length > 0 && (
           <div className="space-y-3">
-            {/* TODO: i18n */}
-            <SectionSeparator label="Zusammenhänge" />
+            <SectionSeparator label={t("insights.correlationsTitle")} />
             <div className="flex flex-wrap gap-2">
               {insight.correlations.map((corr, i) => (
                 <div
@@ -313,8 +312,7 @@ export function InsightAdvisorCard({
         {/* Recommendations */}
         {insight.recommendations.length > 0 && (
           <div className="space-y-3">
-            {/* TODO: i18n */}
-            <SectionSeparator label="Empfehlungen" />
+            <SectionSeparator label={t("insights.recommendationsTitle")} />
             <ol className="space-y-1.5 pl-0">
               {insight.recommendations.map((rec, i) => (
                 <li key={i} className="flex gap-2 text-sm">
@@ -341,15 +339,17 @@ export function InsightAdvisorCard({
               ) : (
                 <ChevronDown className="h-3.5 w-3.5" />
               )}
-              {/* TODO: i18n */}
-              <span>Datengrundlage</span>
+              <span>{t("insights.dataFoundation")}</span>
               <span className="mx-1">·</span>
               <span>
-                Konfidenz:{" "}
+                {t("insights.confidence")}:{" "}
                 <span
                   className={`font-medium ${CONFIDENCE_STYLES[insight.dataQuality.confidence] ?? ""}`}
                 >
-                  {CONFIDENCE_LABELS[insight.dataQuality.confidence]}
+                  {t(
+                    CONFIDENCE_LABEL_KEYS[insight.dataQuality.confidence] ??
+                      "insights.confidenceMittel",
+                  )}
                 </span>
               </span>
             </button>
@@ -359,8 +359,7 @@ export function InsightAdvisorCard({
                 <p>{insight.dataQuality.coverage}</p>
                 {insight.dataQuality.gaps.length > 0 && (
                   <div>
-                    {/* TODO: i18n */}
-                    <p className="font-medium">Datenlücken:</p>
+                    <p className="font-medium">{t("insights.dataGaps")}</p>
                     <ul className="mt-1 list-inside list-disc space-y-0.5">
                       {insight.dataQuality.gaps.map((gap, i) => (
                         <li key={i}>{gap}</li>
@@ -373,18 +372,9 @@ export function InsightAdvisorCard({
           </div>
         )}
 
-        {/* Cached timestamp */}
         {cachedAt && (
           <p className="text-xs text-muted-foreground">
-            {/* TODO: i18n */}
-            Zuletzt aktualisiert:{" "}
-            {new Date(cachedAt).toLocaleString("de-DE", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
+            {t("insights.lastUpdated")}: {fmt.dateTime(cachedAt)}
           </p>
         )}
 

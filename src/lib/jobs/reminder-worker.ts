@@ -259,7 +259,7 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
         userTz,
       );
 
-      const currentTime = now.toLocaleTimeString("de-DE", {
+      const currentTime = now.toLocaleTimeString("en-GB", {
         timeZone: userTz,
         hour: "2-digit",
         minute: "2-digit",

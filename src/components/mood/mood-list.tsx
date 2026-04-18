@@ -57,7 +57,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { formatDateTime } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { moodDependentKeys } from "@/lib/query-keys";
 
 const MOOD_SCORES: Record<string, number> = {
@@ -106,6 +106,7 @@ function toDateTimeLocalValue(isoString: string): string {
 
 export function MoodList() {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   const [moodFilter, setMoodFilterRaw] = useState<string>("ALL");
@@ -291,7 +292,7 @@ export function MoodList() {
           {data?.meta.total !== undefined && (
             <span className="text-muted-foreground text-sm">
               {t("mood.entryCount", {
-                count: data.meta.total.toLocaleString("de-DE"),
+                count: fmt.integer(data.meta.total),
               })}
             </span>
           )}

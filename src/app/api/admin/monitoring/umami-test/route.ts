@@ -72,7 +72,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       website: settings.umamiWebsiteId,
       hostname: appUrl.hostname,
       screen: "1920x1080",
-      language: "de-DE",
+      language: "en-US",
       title: "HealthLog Monitoring Test",
       url: "/admin",
       referrer: "",

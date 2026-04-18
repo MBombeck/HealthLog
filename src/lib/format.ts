@@ -1,63 +1,53 @@
 /**
- * Consistent date/time formatting for the HealthLog UI.
- * All functions use de-DE locale, Europe/Berlin timezone, 24h format.
+ * Legacy locale-aware date/time helpers.
+ *
+ * These originally hard-coded `de-DE`. They are now locale-aware via the
+ * reader resolution below. New code should prefer `useFormatters()` from
+ * `@/lib/i18n/context` (client) or `makeFormatters(locale)` from
+ * `@/lib/format-locale` (server). These helpers remain so existing call sites
+ * work during migration.
  */
 
-const TIMEZONE = "Europe/Berlin";
-const LOCALE = "de-DE";
+import { makeFormatters, DISPLAY_TIMEZONE } from "./format-locale";
+import type { Locale } from "./i18n/config";
 
-/** "19.02.2026, 14:30" */
+export { DISPLAY_TIMEZONE };
+
+function activeLocale(): Locale {
+  if (typeof window === "undefined") return "en";
+  const saved = window.localStorage?.getItem("healthlog-locale");
+  return saved === "de" ? "de" : "en";
+}
+
+function formatters() {
+  return makeFormatters(activeLocale());
+}
+
+/** Locale-aware "19.02.2026, 14:30" or "02/19/2026, 2:30 PM". */
 export function formatDateTime(date: Date | string): string {
-  return new Date(date).toLocaleString(LOCALE, {
-    timeZone: TIMEZONE,
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+  return formatters().dateTime(date);
 }
 
-/** "19.02.2026" */
+/** Locale-aware "19.02.2026" or "02/19/2026". */
 export function formatDate(date: Date | string): string {
-  return new Date(date).toLocaleDateString(LOCALE, {
-    timeZone: TIMEZONE,
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  return formatters().date(date);
 }
 
-/** "19.02." or "19.02.2026" if includeYear */
+/** Locale-aware short date without year unless `includeYear`. */
 export function formatDateShort(
   date: Date | string,
   includeYear = false,
 ): string {
-  return new Date(date).toLocaleDateString(LOCALE, {
-    timeZone: TIMEZONE,
-    day: "2-digit",
-    month: "2-digit",
-    ...(includeYear ? { year: "numeric" } : {}),
-  });
+  const f = formatters();
+  return includeYear ? f.date(date) : f.dateShort(date);
 }
 
-/** "14:30" */
+/** Locale-aware "14:30". */
 export function formatTime(date: Date | string): string {
-  return new Date(date).toLocaleTimeString(LOCALE, {
-    timeZone: TIMEZONE,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+  return formatters().time(date);
 }
 
-/** "Do., 19.02." */
+/** Locale-aware short weekday + date. */
 export function formatDateWithWeekday(date: Date | string): string {
-  return new Date(date).toLocaleDateString(LOCALE, {
-    timeZone: TIMEZONE,
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-  });
+  return formatters().dateWithWeekday(date);
 }

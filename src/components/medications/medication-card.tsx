@@ -18,7 +18,7 @@ import {
   History,
 } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "@/lib/i18n/context";
+import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { medicationDependentKeys } from "@/lib/query-keys";
 
 interface Schedule {
@@ -190,6 +190,7 @@ function isLastIntakeInCurrentWindow(
 export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
   const queryClient = useQueryClient();
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const [intakeLoading, setIntakeLoading] = useState<string | null>(null);
 
   const { data: compliance } = useQuery({
@@ -462,11 +463,7 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
                 ];
                 dayLabel = weekdayLabels[nextDate.getDay()];
               } else {
-                dayLabel = nextDate.toLocaleDateString("de-DE", {
-                  weekday: "short",
-                  day: "numeric",
-                  month: "short",
-                });
+                dayLabel = fmt.dateWithWeekday(nextDate);
               }
             }
 

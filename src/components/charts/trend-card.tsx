@@ -9,6 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useTranslations, useFormatters } from "@/lib/i18n/context";
 
 interface TrendCardProps {
   label: string;
@@ -37,6 +38,8 @@ export function TrendCard({
   slope30,
   icon: Icon,
 }: TrendCardProps) {
+  const { t } = useTranslations();
+  const fmt = useFormatters();
   const TrendIcon =
     slope30?.direction === "up"
       ? ArrowUp
@@ -53,10 +56,7 @@ export function TrendCard({
         ? "text-dracula-cyan"
         : "text-muted-foreground";
 
-  const formatValue = (value: number) =>
-    new Intl.NumberFormat("de-DE", {
-      maximumFractionDigits: 1,
-    }).format(value);
+  const formatValue = (value: number) => fmt.number(value, 1);
 
   return (
     <div className="bg-card border-border rounded-xl border p-3">
@@ -77,7 +77,7 @@ export function TrendCard({
         <div className="text-muted-foreground mt-1 flex gap-3 text-xs">
           {avg7 !== null && (
             <span>
-              7T:{" "}
+              {t("charts.avg7dShort")}:{" "}
               {avg7Hint ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -98,7 +98,7 @@ export function TrendCard({
           )}
           {avg30 !== null && (
             <span>
-              30T:{" "}
+              {t("charts.avg30dShort")}:{" "}
               {avg30Hint ? (
                 <Tooltip>
                   <TooltipTrigger asChild>

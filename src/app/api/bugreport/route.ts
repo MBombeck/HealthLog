@@ -63,9 +63,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const { description, screenshot } = parsed.data;
 
-  const dateStr = new Date().toLocaleString("de-DE", {
-    timeZone: "Europe/Berlin",
-  });
+  // GitHub issues are maintainer-facing and the repo's primary language is English.
+  // Use an ISO-8601 timestamp so titles are unambiguous and sortable.
+  const now = new Date();
+  const dateStr = now.toISOString().replace("T", " ").slice(0, 16) + " UTC";
   const title = `Bug Report – ${dateStr}`;
 
   // Sanitize user-provided content for GitHub markdown

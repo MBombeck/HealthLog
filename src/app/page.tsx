@@ -36,7 +36,7 @@ const MoodChart = dynamic(
     })),
   { ssr: false },
 );
-import { useTranslations } from "@/lib/i18n/context";
+import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import type { DataSummary } from "@/lib/analytics/trends";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import {
@@ -66,7 +66,7 @@ function getHourForTimeZone(timeZone?: string): number {
   if (!timeZone) return now.getHours();
 
   try {
-    const parts = new Intl.DateTimeFormat("de-DE", {
+    const parts = new Intl.DateTimeFormat("en-US", {
       hour: "2-digit",
       hour12: false,
       timeZone,
@@ -98,15 +98,12 @@ function getRangeHint(
   unit: string,
   config: RangeDisplayConfig,
   t: (key: string) => string,
+  formatNumber: (value: number, fractionDigits?: number) => string,
 ): React.ReactNode | undefined {
   const range = config.range;
   if (!range) return undefined;
 
-  const format = (value: number) =>
-    new Intl.NumberFormat("de-DE", {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-    }).format(value);
+  const format = (value: number) => formatNumber(value, 1);
 
   return (
     <>
@@ -136,6 +133,7 @@ function getRangeHint(
 export default function DashboardPage() {
   const { isAuthenticated, user } = useAuth();
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const [quickEntryDialog, setQuickEntryDialog] = useState<"measurement" | "mood" | null>(null);
 
   const { data } = useQuery({
@@ -334,8 +332,8 @@ export default function DashboardPage() {
           avg30={w?.avg30 ?? null}
           avg7ColorClass={getRangeColorClass(w?.avg7, { range: weightRange })}
           avg30ColorClass={getRangeColorClass(w?.avg30, { range: weightRange })}
-          avg7Hint={getRangeHint("kg", { range: weightRange }, t)}
-          avg30Hint={getRangeHint("kg", { range: weightRange }, t)}
+          avg7Hint={getRangeHint("kg", { range: weightRange }, t, fmt.number)}
+          avg30Hint={getRangeHint("kg", { range: weightRange }, t, fmt.number)}
           slope30={w?.slope30 ?? null}
           icon={Activity}
         />
@@ -349,8 +347,8 @@ export default function DashboardPage() {
           avg30ColorClass={getRangeColorClass(sys?.avg30, {
             range: bpSysRange,
           })}
-          avg7Hint={getRangeHint("mmHg", { range: bpSysRange }, t)}
-          avg30Hint={getRangeHint("mmHg", { range: bpSysRange }, t)}
+          avg7Hint={getRangeHint("mmHg", { range: bpSysRange }, t, fmt.number)}
+          avg30Hint={getRangeHint("mmHg", { range: bpSysRange }, t, fmt.number)}
           slope30={sys?.slope30 ?? null}
           icon={Heart}
         />
@@ -364,8 +362,8 @@ export default function DashboardPage() {
           avg30ColorClass={getRangeColorClass(dia?.avg30, {
             range: bpDiaRange,
           })}
-          avg7Hint={getRangeHint("mmHg", { range: bpDiaRange }, t)}
-          avg30Hint={getRangeHint("mmHg", { range: bpDiaRange }, t)}
+          avg7Hint={getRangeHint("mmHg", { range: bpDiaRange }, t, fmt.number)}
+          avg30Hint={getRangeHint("mmHg", { range: bpDiaRange }, t, fmt.number)}
           slope30={dia?.slope30 ?? null}
           icon={Heart}
         />
@@ -381,8 +379,8 @@ export default function DashboardPage() {
           avg30ColorClass={getRangeColorClass(p?.avg30, {
             range: pulseDisplayRange,
           })}
-          avg7Hint={getRangeHint("bpm", { range: pulseDisplayRange }, t)}
-          avg30Hint={getRangeHint("bpm", { range: pulseDisplayRange }, t)}
+          avg7Hint={getRangeHint("bpm", { range: pulseDisplayRange }, t, fmt.number)}
+          avg30Hint={getRangeHint("bpm", { range: pulseDisplayRange }, t, fmt.number)}
           slope30={p?.slope30 ?? null}
           icon={TrendingUp}
         />

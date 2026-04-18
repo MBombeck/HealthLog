@@ -1,10 +1,22 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { AuthShell } from "@/components/layout/auth-shell";
 import { MonitoringBootstrap } from "@/components/monitoring/bootstrap";
+import { parseLocaleFromAcceptLanguage } from "@/lib/format-locale";
+import { locales, type Locale } from "@/lib/i18n/config";
+
+async function resolveInitialLocale(): Promise<Locale> {
+  const cookieStore = await cookies();
+  const cookieLocale = cookieStore.get("healthlog-locale")?.value;
+  if (cookieLocale && (locales as readonly string[]).includes(cookieLocale)) {
+    return cookieLocale as Locale;
+  }
+  const headerList = await headers();
+  return parseLocaleFromAcceptLanguage(headerList.get("accept-language"));
+}
 
 const inter = Inter({
   variable: "--font-sans",
@@ -31,7 +43,8 @@ export const metadata: Metadata = {
     description:
       "Personal health tracking — weight, blood pressure, pulse, mood, medication compliance",
     type: "website",
-    locale: "de_DE",
+    locale: "en_US",
+    alternateLocale: ["de_DE"],
     siteName: "HealthLog",
   },
   twitter: {
@@ -62,8 +75,10 @@ export default async function RootLayout({
       ? ((await headers()).get("x-nonce") ?? undefined)
       : undefined;
 
+  const initialLocale = await resolveInitialLocale();
+
   return (
-    <html lang="de" suppressHydrationWarning>
+    <html lang={initialLocale} suppressHydrationWarning>
       <head>
         <script
           suppressHydrationWarning

@@ -48,7 +48,7 @@ import {
 } from "lucide-react";
 import { PasswordStrength } from "@/components/ui/password-strength";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { toast } from "sonner";
 
 function PasswordInput(props: React.ComponentProps<typeof Input>) {
@@ -246,6 +246,7 @@ async function getApiErrorMessage(response: Response): Promise<string> {
 
 function SystemStatusSection({ id }: { id: string }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
 
   const { data: status } = useQuery({
     queryKey: ["admin", "status"],
@@ -294,7 +295,7 @@ function SystemStatusSection({ id }: { id: string }) {
           <StatusItem
             icon={Activity}
             label={t("admin.measurementsCount")}
-            value={status.counts.measurements.toLocaleString("de-DE")}
+            value={fmt.integer(status.counts.measurements)}
           />
           <StatusItem
             icon={Key}

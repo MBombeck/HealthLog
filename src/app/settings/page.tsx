@@ -1538,7 +1538,7 @@ function ApiTokensSection({
 /* ─────────────────────── Export Section ─────────────────────── */
 
 function ExportSection({ id }: { id: string }) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const [exporting, setExporting] = useState(false);
   const [generatingReport, setGeneratingReport] = useState(false);
 
@@ -1576,10 +1576,9 @@ function ExportSection({ id }: { id: string }) {
       const { generateDoctorReportPDF } = await import(
         "@/lib/doctor-report-pdf"
       );
-      const doc = generateDoctorReportPDF(json.data);
-      doc.save(
-        `gesundheitsbericht-${new Date().toISOString().slice(0, 10)}.pdf`,
-      );
+      const doc = generateDoctorReportPDF(json.data, { t, locale });
+      const fileSlug = locale === "de" ? "gesundheitsbericht" : "health-report";
+      doc.save(`${fileSlug}-${new Date().toISOString().slice(0, 10)}.pdf`);
     } finally {
       setGeneratingReport(false);
     }
@@ -2539,7 +2538,7 @@ function MoodLogSection({ t }: { t: (key: string) => string }) {
             {status.lastSyncedAt && (
               <span>
                 {t("settings.moodLogLastSync")}:{" "}
-                {new Date(status.lastSyncedAt).toLocaleString("de-DE")}
+                {formatDateTime(status.lastSyncedAt)}
               </span>
             )}
             <span>
