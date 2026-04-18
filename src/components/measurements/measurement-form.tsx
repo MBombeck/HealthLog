@@ -61,7 +61,22 @@ const MEASUREMENT_TYPES = [
     unitKey: "measurements.unitSteps",
     placeholder: "8000",
   },
+  {
+    value: "BLOOD_GLUCOSE",
+    labelKey: "measurements.typeBloodGlucose",
+    unit: "mg/dL",
+    placeholder: "95",
+  },
 ] as const;
+
+const GLUCOSE_CONTEXTS = [
+  { value: "FASTING", labelKey: "measurements.glucoseContextFasting" },
+  { value: "POSTPRANDIAL", labelKey: "measurements.glucoseContextPostprandial" },
+  { value: "RANDOM", labelKey: "measurements.glucoseContextRandom" },
+  { value: "BEDTIME", labelKey: "measurements.glucoseContextBedtime" },
+] as const;
+
+type GlucoseContextValue = (typeof GLUCOSE_CONTEXTS)[number]["value"];
 
 interface MeasurementFormProps {
   onSuccess?: () => void;
@@ -97,11 +112,14 @@ export function MeasurementForm({
   const [pulse, setPulse] = useState("");
   const [notes, setNotes] = useState("");
   const [measuredAt, setMeasuredAt] = useState(getDefaultMeasuredAtValue);
+  const [glucoseContext, setGlucoseContext] =
+    useState<GlucoseContextValue>("FASTING");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const typeInfo = MEASUREMENT_TYPES.find((t) => t.value === type);
   const isBpMode = type === "BLOOD_PRESSURE";
+  const isGlucoseMode = type === "BLOOD_GLUCOSE";
 
   function resetForm() {
     setType(normalizedDefault || "BLOOD_PRESSURE");
@@ -175,6 +193,7 @@ export function MeasurementForm({
             value: parseFloat(value),
             measuredAt: timestamp,
             notes: notes || undefined,
+            ...(isGlucoseMode ? { glucoseContext } : {}),
           }),
         });
 
@@ -290,6 +309,29 @@ export function MeasurementForm({
             }
             required
           />
+        </div>
+      )}
+
+      {isGlucoseMode && (
+        <div className="space-y-2">
+          <Label htmlFor="glucose-context">
+            {t("measurements.glucoseContext")}
+          </Label>
+          <Select
+            value={glucoseContext}
+            onValueChange={(v) => setGlucoseContext(v as GlucoseContextValue)}
+          >
+            <SelectTrigger id="glucose-context">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {GLUCOSE_CONTEXTS.map((ctx) => (
+                <SelectItem key={ctx.value} value={ctx.value}>
+                  {t(ctx.labelKey)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
 
