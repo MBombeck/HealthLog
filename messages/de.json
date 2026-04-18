@@ -106,7 +106,16 @@
     "moodBad": "Schlecht",
     "moodNeutral": "Neutral",
     "moodGood": "Gut",
-    "moodGreat": "Sehr gut"
+    "moodGreat": "Sehr gut",
+    "typeGlucoseFasting": "Glukose (nüchtern)",
+    "typeGlucosePostprandial": "Glukose (postprandial)",
+    "typeGlucoseRandom": "Glukose (beliebig)",
+    "typeGlucoseBedtime": "Glukose (vor dem Schlafen)",
+    "glucoseClassificationTitle": "Blutzucker — Referenzbereiche (ADA 2024 / DDG)",
+    "glucoseRow": "{label}: Ø {avg} {unit} (Ziel {rangeMin}–{rangeMax}) — {class}",
+    "glucoseInTarget": "im Ziel",
+    "glucoseBelowTarget": "unter Ziel",
+    "glucoseAboveTarget": "über Ziel"
   },
   "errorBoundary": {
     "title": "Da ist etwas schiefgelaufen",

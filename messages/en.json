@@ -106,7 +106,16 @@
     "moodBad": "Bad",
     "moodNeutral": "Neutral",
     "moodGood": "Good",
-    "moodGreat": "Very good"
+    "moodGreat": "Very good",
+    "typeGlucoseFasting": "Glucose (fasting)",
+    "typeGlucosePostprandial": "Glucose (postprandial)",
+    "typeGlucoseRandom": "Glucose (random)",
+    "typeGlucoseBedtime": "Glucose (bedtime)",
+    "glucoseClassificationTitle": "Blood glucose — reference ranges (ADA 2024 / DDG)",
+    "glucoseRow": "{label}: avg {avg} {unit} (target {rangeMin}–{rangeMax}) — {class}",
+    "glucoseInTarget": "in target",
+    "glucoseBelowTarget": "below target",
+    "glucoseAboveTarget": "above target"
   },
   "errorBoundary": {
     "title": "Something went wrong",
