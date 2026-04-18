@@ -37,10 +37,10 @@ export const POST = apiHandler(
     if (!feedback) return apiError("Feedback not found", 404);
 
     if (feedback.gitHubIssueUrl) {
-      return apiSuccess({
-        issueUrl: feedback.gitHubIssueUrl,
-        alreadyPublished: true,
-      });
+      return apiError(
+        `Already published: ${feedback.gitHubIssueUrl}`,
+        409,
+      );
     }
 
     try {
@@ -69,7 +69,7 @@ export const POST = apiHandler(
         meta: { feedback_id: id, issue_number: result.issueNumber },
       });
 
-      return apiSuccess({ issueUrl: result.issueUrl, alreadyPublished: false });
+      return apiSuccess({ issueUrl: result.issueUrl });
     } catch (err) {
       if (err instanceof GithubPublishError) {
         return apiError(err.message, err.status);
