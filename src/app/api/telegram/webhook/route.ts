@@ -11,6 +11,8 @@ import { getClientIp } from "@/lib/api-response";
 import { NextRequest, NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { locales, type Locale } from "@/lib/i18n/config";
 
 interface TelegramUpdate {
   update_id: number;
@@ -56,6 +58,20 @@ function escapeHtml(input: string): string {
     .replaceAll(">", "&gt;");
 }
 
+/**
+ * Resolve the bot locale for an existing Telegram user.
+ *
+ * Defaults to "de" when User.locale is null — existing bots were set up in
+ * German and we don't want to silently flip them. Users who have switched
+ * the UI to English (User.locale = "en") get an English bot too.
+ */
+function resolveBotLocale(value: string | null | undefined): Locale {
+  if (value && (locales as readonly string[]).includes(value)) {
+    return value as Locale;
+  }
+  return "de";
+}
+
 async function cleanupReminderTracking(medicationId: string): Promise<void> {
   try {
     await prisma.telegramReminderMessage.deleteMany({
@@ -98,6 +114,7 @@ async function findTelegramUser(chatId: string) {
     select: {
       id: true,
       telegramBotToken: true,
+      locale: true,
     },
   });
 }
@@ -106,13 +123,15 @@ async function markMedicationTaken(
   userId: string,
   medicationId: string,
   idempotencyKey: string,
+  locale: Locale,
 ): Promise<{ ok: boolean; message: string; medicationName?: string }> {
+  const { t } = getServerTranslator(locale);
   const medication = await prisma.medication.findFirst({
     where: { id: medicationId, userId, active: true },
     select: { id: true, name: true },
   });
   if (!medication) {
-    return { ok: false, message: "Medikament nicht gefunden oder inaktiv." };
+    return { ok: false, message: t("telegram.errorMedicationInactive") };
   }
 
   const existing = await prisma.medicationIntakeEvent.findFirst({
@@ -143,8 +162,8 @@ async function markMedicationTaken(
   return {
     ok: true,
     message: existing
-      ? `${medication.name} war bereits erfasst.`
-      : `${medication.name} als eingenommen erfasst.`,
+      ? t("telegram.alreadyRecorded", { name: medication.name })
+      : t("telegram.recordedAsTaken", { name: medication.name }),
     medicationName: medication.name,
   };
 }
@@ -160,6 +179,8 @@ async function handleCallback(update: TelegramUpdate) {
   const user = await findTelegramUser(chatId);
   if (!user?.telegramBotToken) return;
   const botToken = decrypt(user.telegramBotToken);
+  const locale = resolveBotLocale(user.locale);
+  const { t } = getServerTranslator(locale);
 
   const data = callback.data ?? "";
   const messageId = callback.message?.message_id;
@@ -170,7 +191,7 @@ async function handleCallback(update: TelegramUpdate) {
       await answerTelegramCallbackQuery(
         botToken,
         callback.id,
-        "Ungültige Aktion.",
+        t("telegram.errorInvalidAction"),
       );
       return;
     }
@@ -183,6 +204,7 @@ async function handleCallback(update: TelegramUpdate) {
       user.id,
       medicationId,
       idempotencyKey,
+      locale,
     );
     await answerTelegramCallbackQuery(botToken, callback.id, result.message);
     if (messageId) {
@@ -198,7 +220,7 @@ async function handleCallback(update: TelegramUpdate) {
       await answerTelegramCallbackQuery(
         botToken,
         callback.id,
-        "Ungültige Aktion.",
+        t("telegram.errorInvalidAction"),
       );
       return;
     }
@@ -211,7 +233,7 @@ async function handleCallback(update: TelegramUpdate) {
       await answerTelegramCallbackQuery(
         botToken,
         callback.id,
-        "Medikament nicht gefunden.",
+        t("telegram.errorMedicationNotFound"),
       );
       return;
     }
@@ -221,11 +243,12 @@ async function handleCallback(update: TelegramUpdate) {
       data: { snoozedUntil: new Date(Date.now() + minutes * 60000) },
     });
 
-    const label = minutes <= 60 ? "1 Stunde" : "3 Stunden";
+    const duration =
+      minutes <= 60 ? t("telegram.snoozeOneHour") : t("telegram.snoozeThreeHours");
     await answerTelegramCallbackQuery(
       botToken,
       callback.id,
-      `${medication.name} für ${label} zurückgestellt.`,
+      t("telegram.snoozedFor", { name: medication.name, duration }),
     );
     if (messageId) {
       await deleteMessage(botToken, chatId, messageId);
@@ -237,7 +260,7 @@ async function handleCallback(update: TelegramUpdate) {
       await answerTelegramCallbackQuery(
         botToken,
         callback.id,
-        "Ungültige Aktion.",
+        t("telegram.errorInvalidAction"),
       );
       return;
     }
@@ -250,7 +273,7 @@ async function handleCallback(update: TelegramUpdate) {
       await answerTelegramCallbackQuery(
         botToken,
         callback.id,
-        "Medikament nicht gefunden.",
+        t("telegram.errorMedicationNotFound"),
       );
       return;
     }
@@ -290,7 +313,7 @@ async function handleCallback(update: TelegramUpdate) {
     await answerTelegramCallbackQuery(
       botToken,
       callback.id,
-      `${medication.name} übersprungen.`,
+      t("telegram.skipped", { name: medication.name }),
     );
     if (messageId) {
       await deleteMessage(botToken, chatId, messageId);
@@ -299,7 +322,11 @@ async function handleCallback(update: TelegramUpdate) {
   } else if (data.startsWith("ack:")) {
     const medicationId = data.slice("ack:".length).trim();
     if (!medicationId) {
-      await answerTelegramCallbackQuery(botToken, callback.id, "Ungültige Aktion.");
+      await answerTelegramCallbackQuery(
+        botToken,
+        callback.id,
+        t("telegram.errorInvalidAction"),
+      );
       return;
     }
 
@@ -311,7 +338,9 @@ async function handleCallback(update: TelegramUpdate) {
     await answerTelegramCallbackQuery(
       botToken,
       callback.id,
-      medication ? `${medication.name} bestätigt.` : "Bestätigt.",
+      medication
+        ? t("telegram.confirmed", { name: medication.name })
+        : t("telegram.genericConfirmed"),
     );
     if (messageId) {
       await deleteMessage(botToken, chatId, messageId);
@@ -323,7 +352,11 @@ async function handleCallback(update: TelegramUpdate) {
     const umidIdx = withoutPrefix.indexOf(":umid:");
     const medicationId = umidIdx >= 0 ? withoutPrefix.slice(0, umidIdx) : withoutPrefix.trim();
     if (!medicationId) {
-      await answerTelegramCallbackQuery(botToken, callback.id, "Ungültige Aktion.");
+      await answerTelegramCallbackQuery(
+        botToken,
+        callback.id,
+        t("telegram.errorInvalidAction"),
+      );
       return;
     }
 
@@ -331,7 +364,12 @@ async function handleCallback(update: TelegramUpdate) {
     const idempotencyKey =
       `telegram:add:${chatId}:${msgId}:${medicationId}`.slice(0, 128);
 
-    const result = await markMedicationTaken(user.id, medicationId, idempotencyKey);
+    const result = await markMedicationTaken(
+      user.id,
+      medicationId,
+      idempotencyKey,
+      locale,
+    );
     await answerTelegramCallbackQuery(botToken, callback.id, result.message);
     if (messageId) {
       await deleteMessage(botToken, chatId, messageId);
@@ -357,12 +395,12 @@ async function handleCallback(update: TelegramUpdate) {
         await deleteMessage(botToken, chatId, userMsgId).catch(() => {});
       }
     }
-    await answerTelegramCallbackQuery(botToken, callback.id, "Abgebrochen.");
+    await answerTelegramCallbackQuery(botToken, callback.id, t("telegram.cancelled"));
   } else {
     await answerTelegramCallbackQuery(
       botToken,
       callback.id,
-      "Unbekannte Aktion.",
+      t("telegram.errorUnknownAction"),
     );
   }
 }
@@ -376,23 +414,21 @@ async function handleTextMessage(update: TelegramUpdate) {
   const user = await findTelegramUser(chatId);
   if (!user?.telegramBotToken) return;
   const botToken = decrypt(user.telegramBotToken);
+  const locale = resolveBotLocale(user.locale);
+  const { t } = getServerTranslator(locale);
 
-  if (/^\/help\b/i.test(text) || /^\/start\b/i.test(text) || /^hilfe$/i.test(text)) {
+  // "Help" / start: accept English + German keyword aliases independent of locale
+  if (
+    /^\/help\b/i.test(text) ||
+    /^\/start\b/i.test(text) ||
+    /^hilfe$/i.test(text) ||
+    /^help$/i.test(text)
+  ) {
     const userMsgId = message?.message_id;
     const resp = await sendTelegramMessage(
       botToken,
       chatId,
-      `<b>Verfügbare Befehle:</b>\n\n` +
-        `/help — Diese Hilfe anzeigen\n` +
-        `/add — Einnahme erfassen\n` +
-        `/start — Bot starten\n\n` +
-        `<b>Textbefehle:</b>\n` +
-        `genommen &lt;Name&gt; — Einnahme bestätigen\n\n` +
-        `<b>Über die Buttons in Erinnerungen:</b>\n` +
-        `• Genommen — Einnahme bestätigen\n` +
-        `• 🕐 1h / 🕐 3h — Erinnerung verschieben\n` +
-        `• ⏭ Überspringen — Einnahme überspringen\n` +
-        `• ✓ Bestätigen — Verpasste Einnahme bestätigen`,
+      `${t("telegram.helpHeader")}\n\n${t("telegram.helpBody")}`,
     );
     const toDelete = [userMsgId, resp.messageId].filter(
       (id): id is number => id != null,
@@ -415,7 +451,7 @@ async function handleTextMessage(update: TelegramUpdate) {
       const resp = await sendTelegramMessage(
         botToken,
         chatId,
-        "Keine aktiven Medikamente gefunden.",
+        t("telegram.noActiveMedications"),
       );
       const toDelete = [userMsgId, resp.messageId].filter(
         (id): id is number => id != null,
@@ -433,6 +469,7 @@ async function handleTextMessage(update: TelegramUpdate) {
         user.id,
         meds[0].id,
         idempotencyKey,
+        locale,
       );
       const resp = await sendTelegramMessage(
         botToken,
@@ -462,7 +499,7 @@ async function handleTextMessage(update: TelegramUpdate) {
         ]),
         [
           {
-            text: "Abbrechen",
+            text: t("telegram.cancelButton"),
             callback_data: `cancel_add${umidSuffix}`,
           },
         ],
@@ -471,7 +508,7 @@ async function handleTextMessage(update: TelegramUpdate) {
     const resp = await sendTelegramMessage(
       botToken,
       chatId,
-      "<b>Welches Medikament eingenommen?</b>",
+      t("telegram.whichMedication"),
       { parseMode: "HTML", replyMarkup: keyboard },
     );
     // Fallback auto-delete if user never interacts with the selection
@@ -484,8 +521,8 @@ async function handleTextMessage(update: TelegramUpdate) {
     return;
   }
 
-  // Greeting responses
-  const greetings = ["hi", "hallo", "hey", "moin"];
+  // Greeting responses (kept locale-independent)
+  const greetings = ["hi", "hallo", "hey", "moin", "hello"];
   const lowerText = text.toLowerCase();
   const matchedGreeting = greetings.find((g) => lowerText === g);
   if (matchedGreeting) {
@@ -501,10 +538,13 @@ async function handleTextMessage(update: TelegramUpdate) {
     return;
   }
 
-  if (!/^genommen\b/i.test(text)) return;
+  // Accept both "genommen <name>" (DE) and "taken <name>" (EN) regardless of
+  // the user's UI locale — keeps backwards compatibility.
+  const intakeKeyword = /^(?:genommen|taken)\b/i;
+  if (!intakeKeyword.test(text)) return;
 
   const userMsgId = message?.message_id;
-  const nameInput = text.replace(/^genommen\b/i, "").trim();
+  const nameInput = text.replace(intakeKeyword, "").trim();
 
   let medicationId: string | null = null;
   if (nameInput) {
@@ -530,7 +570,7 @@ async function handleTextMessage(update: TelegramUpdate) {
       const resp = await sendTelegramMessage(
         botToken,
         chatId,
-        "Bitte Medikament angeben, z.B. <b>genommen Ramipril</b>.",
+        t("telegram.askMedicationName"),
       );
       const toDelete = [userMsgId, resp.messageId].filter(
         (id): id is number => id != null,
@@ -546,7 +586,7 @@ async function handleTextMessage(update: TelegramUpdate) {
     const resp = await sendTelegramMessage(
       botToken,
       chatId,
-      "Medikament nicht gefunden. Bitte Namen exakt wie in HealthLog senden.",
+      t("telegram.medicationNotFoundExact"),
     );
     const toDelete = [userMsgId, resp.messageId].filter(
       (id): id is number => id != null,
@@ -563,6 +603,7 @@ async function handleTextMessage(update: TelegramUpdate) {
     user.id,
     medicationId,
     idempotencyKey,
+    locale,
   );
   const resp = await sendTelegramMessage(
     botToken,
