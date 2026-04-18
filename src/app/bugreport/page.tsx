@@ -20,8 +20,6 @@ import { queryKeys } from "@/lib/query-keys";
 
 interface BugReportStatus {
   configured: boolean;
-  hasToken: boolean;
-  hasRepo: boolean;
   isAdmin: boolean;
 }
 

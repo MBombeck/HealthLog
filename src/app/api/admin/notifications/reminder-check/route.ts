@@ -11,7 +11,9 @@ export const dynamic = "force-dynamic";
 function parseTimeToMinutes(value: string): number {
   const [h, m] = value.split(":").map(Number);
   if (!Number.isFinite(h) || !Number.isFinite(m)) return 0;
-  return h * 60 + m;
+  // Normalize "24:00" → "00:00" (some ICU builds emit that for midnight).
+  const hours = h === 24 ? 0 : h;
+  return hours * 60 + m;
 }
 
 const dayLabels = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];

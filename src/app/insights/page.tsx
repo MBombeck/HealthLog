@@ -506,7 +506,7 @@ export default function InsightsPage() {
     queryKey: ["insights", "comprehensive"],
     queryFn: async () => {
       const res = await fetch("/api/insights/comprehensive");
-      if (!res.ok) throw new Error("Fehler beim Laden");
+      if (!res.ok) throw new Error(t("insights.loadError"));
       const json = await res.json();
       return json.data as ComprehensiveData;
     },

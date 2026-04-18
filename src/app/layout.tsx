@@ -9,13 +9,20 @@ import { parseLocaleFromAcceptLanguage } from "@/lib/format-locale";
 import { locales, type Locale } from "@/lib/i18n/config";
 
 async function resolveInitialLocale(): Promise<Locale> {
-  const cookieStore = await cookies();
-  const cookieLocale = cookieStore.get("healthlog-locale")?.value;
-  if (cookieLocale && (locales as readonly string[]).includes(cookieLocale)) {
-    return cookieLocale as Locale;
+  // Both cookies() and headers() can throw (DynamicServerError, etc.) —
+  // fall back to the default so a locale hiccup never crashes the root
+  // layout into global-error.tsx.
+  try {
+    const cookieStore = await cookies();
+    const cookieLocale = cookieStore.get("healthlog-locale")?.value;
+    if (cookieLocale && (locales as readonly string[]).includes(cookieLocale)) {
+      return cookieLocale as Locale;
+    }
+    const headerList = await headers();
+    return parseLocaleFromAcceptLanguage(headerList.get("accept-language"));
+  } catch {
+    return "en";
   }
-  const headerList = await headers();
-  return parseLocaleFromAcceptLanguage(headerList.get("accept-language"));
 }
 
 const inter = Inter({

@@ -1,11 +1,18 @@
 /**
  * Legacy locale-aware date/time helpers.
  *
- * These originally hard-coded `de-DE`. They are now locale-aware via the
- * reader resolution below. New code should prefer `useFormatters()` from
+ * These originally hard-coded `de-DE`. They now defer to `makeFormatters`
+ * using a best-effort read of `healthlog-locale` from cookie → localStorage,
+ * falling back to `en`. New code should prefer `useFormatters()` from
  * `@/lib/i18n/context` (client) or `makeFormatters(locale)` from
- * `@/lib/format-locale` (server). These helpers remain so existing call sites
- * work during migration.
+ * `@/lib/format-locale` (server).
+ *
+ * SSR caveat: on the server `activeLocale()` always returns `en` because
+ * `document` is undefined. All current call sites render their formatted
+ * strings only after a `useQuery` fetch — i.e. post-hydration — so there is
+ * no hydration-mismatch path today. If you add a new caller that renders
+ * pre-fetch data (e.g. a static prop), migrate it to `useFormatters()` to
+ * stay consistent with the server-rendered locale.
  */
 
 import { makeFormatters, DISPLAY_TIMEZONE } from "./format-locale";
@@ -14,9 +21,16 @@ import type { Locale } from "./i18n/config";
 export { DISPLAY_TIMEZONE };
 
 function activeLocale(): Locale {
-  if (typeof window === "undefined") return "en";
-  const saved = window.localStorage?.getItem("healthlog-locale");
-  return saved === "de" ? "de" : "en";
+  if (typeof document === "undefined") return "en";
+  // Prefer the cookie (what SSR used) over localStorage to stay in sync
+  // across hydration. Falls back to localStorage for backwards compat.
+  const cookieMatch = document.cookie.match(
+    /(?:^|;\s*)healthlog-locale=([^;]+)/,
+  );
+  const fromCookie = cookieMatch?.[1];
+  if (fromCookie === "de" || fromCookie === "en") return fromCookie;
+  const fromStorage = window.localStorage?.getItem("healthlog-locale");
+  return fromStorage === "de" ? "de" : "en";
 }
 
 function formatters() {

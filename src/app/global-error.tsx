@@ -13,12 +13,15 @@ export default function GlobalError({
   reset: () => void;
 }) {
   async function handleCopy() {
+    // Strip query string — OAuth callback routes carry sensitive tokens.
+    const loc =
+      typeof window !== "undefined" ? window.location : null;
     const payload = {
       message: error.message,
       digest: error.digest,
       name: error.name,
       stack: error.stack?.split("\n").slice(0, 10).join("\n"),
-      url: typeof window !== "undefined" ? window.location.href : null,
+      urlPath: loc?.pathname ?? null,
       userAgent:
         typeof navigator !== "undefined" ? navigator.userAgent : null,
       timestamp: new Date().toISOString(),

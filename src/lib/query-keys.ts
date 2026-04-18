@@ -108,12 +108,17 @@ export const medicationDependentKeys = [
  * Invalidate every key in the bundle in parallel. Use this from mutation
  * `onSuccess` handlers so the call site stays a one-liner instead of repeating
  * `Promise.all(keys.map(...))` everywhere.
+ *
+ * Uses `allSettled` so one transient network failure doesn't abort subsequent
+ * invalidations (cache would otherwise be left half-stale) and so the `void
+ * invalidateKeys(...)` fire-and-forget pattern in delete handlers never
+ * surfaces an unhandled rejection.
  */
 export function invalidateKeys(
   queryClient: QueryClient,
   keys: readonly QueryKey[],
-): Promise<unknown[]> {
-  return Promise.all(
+): Promise<PromiseSettledResult<unknown>[]> {
+  return Promise.allSettled(
     keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
   );
 }

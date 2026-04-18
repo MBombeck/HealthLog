@@ -46,7 +46,11 @@ import {
 function parseTimeToMinutes(value: string): number {
   const [h, m] = value.split(":").map(Number);
   if (!Number.isFinite(h) || !Number.isFinite(m)) return 0;
-  return h * 60 + m;
+  // Some Node ICU builds render midnight as "24:00" via toLocaleTimeString.
+  // Normalize so comparisons against schedule windows that wrap midnight
+  // don't produce a 1440-minute value.
+  const hours = h === 24 ? 0 : h;
+  return hours * 60 + m;
 }
 
 const DATABASE_URL = process.env.DATABASE_URL!;

@@ -55,8 +55,23 @@ function detectSystemLocale(): Locale {
     : defaultLocale;
 }
 
+function readLocaleCookie(): Locale | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|;\s*)healthlog-locale=([^;]+)/);
+  const value = match?.[1];
+  if (value && (locales as readonly string[]).includes(value)) {
+    return value as Locale;
+  }
+  return null;
+}
+
 function getSavedLocale(): Locale | null {
   if (typeof window === "undefined") return null;
+  // Cookie wins over localStorage: the root layout already rendered the
+  // server HTML using the cookie, so matching the cookie on first client
+  // render avoids a hydration flash of the wrong language.
+  const fromCookie = readLocaleCookie();
+  if (fromCookie) return fromCookie;
   const saved = localStorage.getItem("healthlog-locale");
   if (saved && (locales as readonly string[]).includes(saved)) {
     return saved as Locale;

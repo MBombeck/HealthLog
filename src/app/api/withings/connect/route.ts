@@ -17,7 +17,7 @@ export const GET = apiHandler(async () => {
   const creds = await getUserWithingsCredentials(user.id);
   if (!creds) {
     return apiError(
-      "Bitte zuerst Withings Client-ID und Client-Secret in den Einstellungen hinterlegen.",
+      "Please configure your Withings Client ID and Client Secret in Settings first.",
       400,
     );
   }

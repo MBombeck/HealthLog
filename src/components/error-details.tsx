@@ -35,13 +35,26 @@ export function ErrorDetails({
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
+    // Only capture the pathname — some flows carry OAuth codes / state tokens
+    // in the query string (Withings connect, password reset) and we don't
+    // want users pasting those into public GitHub issues. Preserve the count
+    // for context without exposing values.
+    const loc =
+      typeof window !== "undefined" ? window.location : null;
+    const urlPath = loc?.pathname ?? null;
+    const searchParamCount = loc?.search
+      ? new URLSearchParams(loc.search).toString().split("&").filter(Boolean)
+          .length
+      : 0;
+
     const payload = {
       message: error.message,
       digest: error.digest,
       name: error.name,
       stack: error.stack?.split("\n").slice(0, 10).join("\n"),
       requestId: requestId ?? null,
-      url: typeof window !== "undefined" ? window.location.href : null,
+      urlPath,
+      searchParamCount,
       userAgent:
         typeof navigator !== "undefined" ? navigator.userAgent : null,
       locale,
