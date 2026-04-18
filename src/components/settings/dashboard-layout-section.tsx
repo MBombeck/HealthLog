@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import {
   LayoutDashboard,
@@ -46,13 +46,13 @@ export function DashboardLayoutSection({ id }: { id: string }) {
     },
   });
 
-  const [layout, setLayout] = useState<DashboardLayout | null>(null);
-
-  // Sync local copy when server data arrives. Any user edit is held locally
-  // until Save so reordering doesn't fire a network call per click.
-  useEffect(() => {
-    if (remote) setLayout(remote);
-  }, [remote]);
+  // Local draft state — null means "use server copy". User edits create the
+  // draft so reordering/toggling doesn't fire a network call per click; Save
+  // flushes it, Cancel clears it. Avoids a setState-in-effect (eslint
+  // react-hooks/set-state-in-effect is strict in this repo).
+  const [draft, setDraft] = useState<DashboardLayout | null>(null);
+  const layout = draft ?? remote ?? null;
+  const setLayout = (next: DashboardLayout) => setDraft(next);
 
   const saveMutation = useMutation({
     mutationFn: async (next: DashboardLayout) => {
@@ -66,6 +66,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
     },
     onSuccess: (saved) => {
       queryClient.setQueryData(["user", "dashboardWidgets"], saved);
+      setDraft(null);
       toast.success(t("dashboard.layoutSaveSuccess"));
     },
     onError: () => toast.error(t("dashboard.layoutSaveError")),
@@ -79,7 +80,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
     },
     onSuccess: (saved) => {
       queryClient.setQueryData(["user", "dashboardWidgets"], saved);
-      setLayout(saved);
+      setDraft(null);
       toast.success(t("dashboard.layoutResetSuccess"));
     },
   });
@@ -107,10 +108,8 @@ export function DashboardLayoutSection({ id }: { id: string }) {
     });
   }
 
-  const dirty =
-    layout &&
-    remote &&
-    JSON.stringify(layout.widgets) !== JSON.stringify(remote.widgets);
+  // Presence of a draft implies dirty — no JSON comparison needed.
+  const dirty = draft !== null && layout !== null;
 
   return (
     <div
@@ -197,7 +196,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => remote && setLayout(remote)}
+            onClick={() => setDraft(null)}
             disabled={saveMutation.isPending}
           >
             {t("common.cancel")}

@@ -786,7 +786,11 @@
     "classificationNormal": "Normal",
     "classificationElevated": "Erhöht",
     "classificationHigh": "Hoch",
-    "classificationLow": "Niedrig"
+    "classificationLow": "Niedrig",
+    "glucoseFasting": "Glukose — nüchtern",
+    "glucosePostprandial": "Glukose — postprandial",
+    "glucoseRandom": "Glukose — beliebig",
+    "glucoseBedtime": "Glukose — vor dem Schlafen"
   },
   "onboarding": {
     "welcome": "Willkommen bei HealthLog!",

@@ -21,5 +21,6 @@ export const GET = apiHandler(async () => {
     timezone: user.timezone,
     onboardingCompletedAt: user.onboardingCompletedAt,
     gravatarUrl: user.email ? getGravatarUrl(user.email) : null,
+    glucoseUnit: user.glucoseUnit ?? null,
   });
 });
