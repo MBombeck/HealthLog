@@ -52,7 +52,6 @@ export function DashboardLayoutSection({ id }: { id: string }) {
   // react-hooks/set-state-in-effect is strict in this repo).
   const [draft, setDraft] = useState<DashboardLayout | null>(null);
   const layout = draft ?? remote ?? null;
-  const setLayout = (next: DashboardLayout) => setDraft(next);
 
   const saveMutation = useMutation({
     mutationFn: async (next: DashboardLayout) => {
@@ -87,7 +86,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
 
   function toggle(widgetId: DashboardWidgetId, visible: boolean) {
     if (!layout) return;
-    setLayout({
+    setDraft({
       ...layout,
       widgets: layout.widgets.map((w) =>
         w.id === widgetId ? { ...w, visible } : w,
@@ -102,7 +101,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
     const targetIdx = idx + delta;
     if (idx < 0 || targetIdx < 0 || targetIdx >= sorted.length) return;
     [sorted[idx], sorted[targetIdx]] = [sorted[targetIdx], sorted[idx]];
-    setLayout({
+    setDraft({
       ...layout,
       widgets: sorted.map((w, i) => ({ ...w, order: i })),
     });
@@ -146,7 +145,9 @@ export function DashboardLayoutSection({ id }: { id: string }) {
         <div className="space-y-2">
           {[...layout.widgets]
             .sort((a, b) => a.order - b.order)
-            .map((widget, index, arr) => (
+            .map((widget, index, arr) => {
+              const labelKey = WIDGET_LABEL_KEYS[widget.id] ?? widget.id;
+              return (
               <div
                 key={widget.id}
                 className="flex items-center gap-3 rounded-md border border-border bg-background/30 p-3"
@@ -177,17 +178,16 @@ export function DashboardLayoutSection({ id }: { id: string }) {
                     <ArrowDown className="h-3 w-3" />
                   </Button>
                 </div>
-                <span className="flex-1 text-sm">
-                  {t(WIDGET_LABEL_KEYS[widget.id] ?? widget.id)}
-                </span>
+                <span className="flex-1 text-sm">{t(labelKey)}</span>
                 <Switch
                   checked={widget.visible}
                   onCheckedChange={(v) => toggle(widget.id, v)}
-                  aria-label={t(WIDGET_LABEL_KEYS[widget.id] ?? widget.id)}
+                  aria-label={t(labelKey)}
                   disabled={saveMutation.isPending}
                 />
               </div>
-            ))}
+              );
+            })}
         </div>
       )}
 
