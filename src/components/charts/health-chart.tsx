@@ -536,7 +536,7 @@ export function HealthChart({
         }`;
       })
       .filter((entry): entry is string => entry !== null);
-  }, [chartData, showTrend, types, unit, valueMode, t]);
+  }, [chartData, showTrend, types, unit, valueMode, t, fmt]);
 
   if (!isLoading && !data?.length) return null;
 

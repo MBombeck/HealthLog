@@ -37,6 +37,7 @@ const MoodChart = dynamic(
   { ssr: false },
 );
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import type { DataSummary } from "@/lib/analytics/trends";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import {
@@ -137,7 +138,7 @@ export default function DashboardPage() {
   const [quickEntryDialog, setQuickEntryDialog] = useState<"measurement" | "mood" | null>(null);
 
   const { data } = useQuery({
-    queryKey: ["analytics"],
+    queryKey: queryKeys.analytics(),
     queryFn: async () => {
       const res = await fetch("/api/analytics");
       if (!res.ok) throw new Error("Failed");
@@ -148,7 +149,7 @@ export default function DashboardPage() {
   });
 
   const { data: moodData } = useQuery({
-    queryKey: ["mood-analytics"],
+    queryKey: queryKeys.moodAnalytics(),
     queryFn: async () => {
       const res = await fetch("/api/mood/analytics");
       if (!res.ok) throw new Error("Failed");

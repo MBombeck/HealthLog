@@ -110,10 +110,12 @@ export function generateDoctorReportPDF(
   const fmtDate = (iso: string) => formatters.date(iso);
 
   const unitFor = (type: string): string => {
+    // Map entry === null means the unit needs translation (e.g. ACTIVITY_STEPS).
     const staticUnit = TYPE_UNIT_KEYS[type];
-    if (staticUnit !== null) return staticUnit ?? "";
-    if (type === "ACTIVITY_STEPS") return t("doctorReport.unitSteps");
-    return "";
+    if (staticUnit === null && type === "ACTIVITY_STEPS") {
+      return t("doctorReport.unitSteps");
+    }
+    return staticUnit ?? "";
   };
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -150,12 +152,11 @@ export function generateDoctorReportPDF(
     );
   }
   if (data.patient.gender) {
-    const genderKey =
-      data.patient.gender === "MALE"
-        ? "doctorReport.genderMale"
-        : data.patient.gender === "FEMALE"
-          ? "doctorReport.genderFemale"
-          : "doctorReport.genderOther";
+    const genderKeys: Record<string, string> = {
+      MALE: "doctorReport.genderMale",
+      FEMALE: "doctorReport.genderFemale",
+    };
+    const genderKey = genderKeys[data.patient.gender] ?? "doctorReport.genderOther";
     patientInfo.push(`${t("doctorReport.gender")}: ${t(genderKey)}`);
   }
   if (data.patient.heightCm) {

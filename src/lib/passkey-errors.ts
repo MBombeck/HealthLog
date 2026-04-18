@@ -21,14 +21,7 @@ export function describePasskeyError(error: unknown): PasskeyErrorMessage {
 
   // SimpleWebAuthn wraps DOMException into WebAuthnError with a `code`
   // property, but the underlying DOMException name is the stable signal.
-  const name =
-    typeof (error as { name?: string }).name === "string"
-      ? (error as { name?: string }).name
-      : undefined;
-
-  const message = error.message || "";
-
-  switch (name) {
+  switch (error.name) {
     case "NotAllowedError":
       // The user cancelled, or the OS-level prompt timed out. Prefer the
       // cancelled copy — it matches what the user did in the common case.
@@ -51,6 +44,6 @@ export function describePasskeyError(error: unknown): PasskeyErrorMessage {
 
   return {
     key: "settings.passkeyUnknownError",
-    params: { message: message || "unknown" },
+    params: { message: error.message || "unknown" },
   };
 }
