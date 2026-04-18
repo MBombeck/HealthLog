@@ -201,7 +201,17 @@
     "compliance7d": "Compliance (7 days)",
     "complianceGood": "Good",
     "complianceLow": "Low",
-    "mood": "Mood"
+    "mood": "Mood",
+    "customizeTitle": "Dashboard layout",
+    "customizeSubtitle": "Choose which cards appear on your dashboard and in what order. Defaults work out of the box.",
+    "layoutReset": "Reset to defaults",
+    "layoutSaveSuccess": "Dashboard layout saved",
+    "layoutSaveError": "Could not save dashboard layout",
+    "layoutResetSuccess": "Reset to default layout",
+    "layoutUsingDefaults": "Using default layout",
+    "layoutCustomized": "Custom layout active",
+    "moveUp": "Move up",
+    "moveDown": "Move down"
   },
   "measurements": {
     "title": "Measurements",

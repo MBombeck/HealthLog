@@ -201,7 +201,17 @@
     "compliance7d": "Einnahmetreue (7 Tage)",
     "complianceGood": "Gut",
     "complianceLow": "Niedrig",
-    "mood": "Stimmung"
+    "mood": "Stimmung",
+    "customizeTitle": "Dashboard-Layout",
+    "customizeSubtitle": "Wähle, welche Karten auf dem Dashboard angezeigt werden und in welcher Reihenfolge. Defaults funktionieren sofort.",
+    "layoutReset": "Auf Defaults zurücksetzen",
+    "layoutSaveSuccess": "Dashboard-Layout gespeichert",
+    "layoutSaveError": "Layout konnte nicht gespeichert werden",
+    "layoutResetSuccess": "Auf Standard-Layout zurückgesetzt",
+    "layoutUsingDefaults": "Standard-Layout aktiv",
+    "layoutCustomized": "Eigenes Layout aktiv",
+    "moveUp": "Nach oben",
+    "moveDown": "Nach unten"
   },
   "measurements": {
     "title": "Messungen",
