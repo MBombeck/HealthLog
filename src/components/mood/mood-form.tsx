@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, MoreHorizontal, Plus, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "@/lib/i18n/context";
-import { moodDependentKeys } from "@/lib/query-keys";
+import { invalidateKeys, moodDependentKeys } from "@/lib/query-keys";
 
 const MOOD_LEVELS = [
   { value: "SUPER_GUT", score: 5, labelKey: "mood.levelSuperGut" },
@@ -84,11 +84,7 @@ export function MoodForm({ onSuccess, onCancel }: MoodFormProps) {
       }
 
       resetForm();
-      await Promise.all(
-        moodDependentKeys.map((queryKey) =>
-          queryClient.invalidateQueries({ queryKey }),
-        ),
-      );
+      await invalidateKeys(queryClient, moodDependentKeys);
       toast.success(t("common.saved"));
       onSuccess?.();
     } catch {

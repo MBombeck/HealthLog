@@ -7,6 +7,8 @@
  * dashboard), so treat this file as the single source of truth.
  */
 
+import type { QueryClient, QueryKey } from "@tanstack/react-query";
+
 export const queryKeys = {
   auth: () => ["auth"] as const,
   authRegistrationStatus: () => ["auth", "registration-status"] as const,
@@ -101,3 +103,17 @@ export const medicationDependentKeys = [
   queryKeys.medicationIntakeSummary(),
   queryKeys.gamificationAchievements(),
 ];
+
+/**
+ * Invalidate every key in the bundle in parallel. Use this from mutation
+ * `onSuccess` handlers so the call site stays a one-liner instead of repeating
+ * `Promise.all(keys.map(...))` everywhere.
+ */
+export function invalidateKeys(
+  queryClient: QueryClient,
+  keys: readonly QueryKey[],
+): Promise<unknown[]> {
+  return Promise.all(
+    keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+  );
+}

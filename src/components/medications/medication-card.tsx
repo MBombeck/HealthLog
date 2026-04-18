@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
-import { medicationDependentKeys } from "@/lib/query-keys";
+import { invalidateKeys, medicationDependentKeys } from "@/lib/query-keys";
 
 interface Schedule {
   id: string;
@@ -232,11 +232,7 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
         body: JSON.stringify({ skipped }),
       });
       if (res.ok) {
-        await Promise.all(
-          medicationDependentKeys.map((queryKey) =>
-            queryClient.invalidateQueries({ queryKey }),
-          ),
-        );
+        await invalidateKeys(queryClient, medicationDependentKeys);
       }
     } finally {
       setIntakeLoading(null);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { medicationDependentKeys } from "@/lib/query-keys";
+import { invalidateKeys, medicationDependentKeys } from "@/lib/query-keys";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
@@ -61,9 +61,7 @@ export function IntakeTimeline({
       if (!res.ok) throw new Error("Delete failed");
     },
     onSuccess: () => {
-      medicationDependentKeys.forEach((queryKey) =>
-        queryClient.invalidateQueries({ queryKey }),
-      );
+      void invalidateKeys(queryClient, medicationDependentKeys);
     },
   });
 

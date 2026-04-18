@@ -21,7 +21,7 @@ import {
 import { Loader2, MoreHorizontal, Plus, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "@/lib/i18n/context";
-import { measurementDependentKeys } from "@/lib/query-keys";
+import { invalidateKeys, measurementDependentKeys } from "@/lib/query-keys";
 
 const MAX_COMMENT_LENGTH = 25;
 
@@ -192,11 +192,7 @@ export function MeasurementForm({
       setDiaBp("");
       setPulse("");
       setNotes("");
-      await Promise.all(
-        measurementDependentKeys.map((queryKey) =>
-          queryClient.invalidateQueries({ queryKey }),
-        ),
-      );
+      await invalidateKeys(queryClient, measurementDependentKeys);
       toast.success(t("common.saved"));
       onSuccess?.();
     } catch {
