@@ -56,6 +56,8 @@ import { useTranslations } from "@/lib/i18n/context";
 import { locales, localeLabels, type Locale } from "@/lib/i18n/config";
 import { invalidateKeys, measurementDependentKeys } from "@/lib/query-keys";
 import { describePasskeyError } from "@/lib/passkey-errors";
+import { ThresholdsSection } from "@/components/settings/thresholds-section";
+import { DashboardLayoutSection } from "@/components/settings/dashboard-layout-section";
 
 function PasswordInput(props: React.ComponentProps<typeof Input>) {
   const [visible, setVisible] = useState(false);
@@ -623,6 +625,17 @@ export default function SettingsPage() {
               )}
             </section>
           )}
+
+          <section
+            id="section-personalization"
+            className="scroll-mt-28 space-y-3"
+          >
+            <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+              {t("settings.categoryPersonalization")}
+            </h2>
+            <DashboardLayoutSection id="dashboard-layout" />
+            <ThresholdsSection id="thresholds" />
+          </section>
 
           <section id="section-integration" className="scroll-mt-28 space-y-3">
             <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
@@ -2884,7 +2897,247 @@ function InsightsSettingsSection({
             {t("settings.regenerateInsights")}
           </Button>
         )}
+
+        {/* Multi-provider AI selection (per-user override) */}
+        <UserAIProviderSubsection />
       </div>
+    </div>
+  );
+}
+
+/* ─────────────────────── User AI Provider Override ─────────────────────── */
+
+function UserAIProviderSubsection() {
+  const queryClient = useQueryClient();
+  const [provider, setProvider] = useState<string>("");
+  const [model, setModel] = useState<string>("");
+  const [baseUrl, setBaseUrl] = useState<string>("");
+  const [anthropicKey, setAnthropicKey] = useState<string>("");
+  const [localKey, setLocalKey] = useState<string>("");
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [saveOk, setSaveOk] = useState<boolean>(false);
+  const [testMsg, setTestMsg] = useState<string | null>(null);
+  const [testOk, setTestOk] = useState<boolean>(false);
+  const [testing, setTesting] = useState<boolean>(false);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["user", "ai-provider"],
+    queryFn: async () => {
+      const res = await fetch("/api/user/ai-provider");
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json.data as {
+        provider: string | null;
+        model: string | null;
+        baseUrl: string | null;
+        hasAnthropicKey: boolean;
+        anthropicKeyPreview: string | null;
+        hasLocalKey: boolean;
+      };
+    },
+  });
+
+  useEffect(() => {
+    if (!data) return;
+    setProvider(data.provider ?? "");
+    setModel(data.model ?? "");
+    setBaseUrl(data.baseUrl ?? "");
+  }, [data]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const body: Record<string, unknown> = {
+        provider: provider || null,
+        model: model || null,
+        baseUrl: baseUrl || null,
+      };
+      if (anthropicKey.trim()) body.anthropicKey = anthropicKey.trim();
+      if (localKey.trim()) body.localKey = localKey.trim();
+      const res = await fetch("/api/user/ai-provider", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Save failed");
+    },
+    onSuccess: () => {
+      setSaveMsg("Gespeichert");
+      setSaveOk(true);
+      setAnthropicKey("");
+      setLocalKey("");
+      queryClient.invalidateQueries({ queryKey: ["user", "ai-provider"] });
+      queryClient.invalidateQueries({ queryKey: ["insights"] });
+    },
+    onError: (e) => {
+      setSaveMsg(e instanceof Error ? e.message : "Fehler");
+      setSaveOk(false);
+    },
+  });
+
+  async function runTest() {
+    setTesting(true);
+    setTestMsg(null);
+    try {
+      const res = await fetch("/api/ai/test", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) {
+        setTestMsg(json.error || `HTTP ${res.status}`);
+        setTestOk(false);
+        return;
+      }
+      setTestMsg(
+        `OK — ${json.data.providerType} (${json.data.model})${
+          json.data.tokensUsed ? `, ${json.data.tokensUsed} tokens` : ""
+        }`,
+      );
+      setTestOk(true);
+    } catch (e) {
+      setTestMsg(e instanceof Error ? e.message : "Test fehlgeschlagen");
+      setTestOk(false);
+    } finally {
+      setTesting(false);
+    }
+  }
+
+  if (isLoading) return null;
+
+  return (
+    <div className="bg-muted/50 mt-2 rounded-lg p-4">
+      <div className="mb-3">
+        <p className="text-sm font-medium">KI-Provider (persönlich)</p>
+        <p className="text-muted-foreground text-xs">
+          Eigener KI-Anbieter überschreibt die Admin-Einstellung. Leer lassen
+          für Standard.
+        </p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="ai-provider-select">Provider</Label>
+          <select
+            id="ai-provider-select"
+            value={provider}
+            onChange={(e) => setProvider(e.target.value)}
+            className="bg-background border-input mt-1 h-9 w-full rounded-md border px-2 text-sm"
+          >
+            <option value="">— Standard (Admin/Codex) —</option>
+            <option value="OPENAI">OpenAI</option>
+            <option value="ANTHROPIC">Anthropic (Claude)</option>
+            <option value="LOCAL">Lokal (OpenAI-kompatibel)</option>
+            <option value="CHATGPT_OAUTH">ChatGPT OAuth</option>
+          </select>
+        </div>
+
+        <div>
+          <Label htmlFor="ai-model-input">Modell</Label>
+          <Input
+            id="ai-model-input"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            placeholder={
+              provider === "ANTHROPIC"
+                ? "claude-3-5-sonnet-latest"
+                : provider === "LOCAL"
+                  ? "llama3:8b"
+                  : "gpt-4o-mini"
+            }
+            className="mt-1"
+          />
+        </div>
+
+        {provider === "ANTHROPIC" && (
+          <div className="sm:col-span-2">
+            <Label htmlFor="ai-anthropic-key">
+              Anthropic API Key
+              {data?.hasAnthropicKey && (
+                <span className="text-muted-foreground ml-2 text-xs">
+                  (gespeichert {data.anthropicKeyPreview})
+                </span>
+              )}
+            </Label>
+            <PasswordInput
+              id="ai-anthropic-key"
+              value={anthropicKey}
+              onChange={(e) => setAnthropicKey(e.target.value)}
+              placeholder="sk-ant-..."
+              className="mt-1"
+            />
+          </div>
+        )}
+
+        {provider === "LOCAL" && (
+          <>
+            <div className="sm:col-span-2">
+              <Label htmlFor="ai-base-url">Base URL</Label>
+              <Input
+                id="ai-base-url"
+                value={baseUrl}
+                onChange={(e) => setBaseUrl(e.target.value)}
+                placeholder="http://localhost:11434/v1"
+                className="mt-1"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <Label htmlFor="ai-local-key">API Key (optional)</Label>
+              <PasswordInput
+                id="ai-local-key"
+                value={localKey}
+                onChange={(e) => setLocalKey(e.target.value)}
+                placeholder={data?.hasLocalKey ? "(gespeichert)" : ""}
+                className="mt-1"
+              />
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          onClick={() => saveMutation.mutate()}
+          disabled={saveMutation.isPending}
+        >
+          {saveMutation.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="mr-2 h-4 w-4" />
+          )}
+          Speichern
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={runTest}
+          disabled={testing}
+        >
+          {testing ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Sparkles className="mr-2 h-4 w-4" />
+          )}
+          Verbindung testen
+        </Button>
+      </div>
+
+      {saveMsg && (
+        <p
+          className={`mt-2 text-xs ${
+            saveOk ? "text-dracula-green" : "text-destructive"
+          }`}
+        >
+          {saveMsg}
+        </p>
+      )}
+      {testMsg && (
+        <p
+          className={`mt-2 text-xs ${
+            testOk ? "text-dracula-green" : "text-destructive"
+          }`}
+        >
+          {testMsg}
+        </p>
+      )}
     </div>
   );
 }

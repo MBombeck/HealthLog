@@ -96,7 +96,7 @@ docker compose logs -f app    # Tail app logs
 - SimpleWebAuthn v13 has no `@simplewebauthn/server/script/deps` — define Transport type inline
 - `zxcvbn-typescript` uses default export only (no named `zxcvbnAsync`/`zxcvbnOptions`)
 - pg-boss v12: `{ PgBoss }` named import, `localConcurrency` instead of `teamSize`, handler receives `Job<T>[]` array
-- **i18n**: All UI text uses `useTranslations()` hook with `t("section.key")`. Messages in `messages/de.json` (German, primary) + `messages/en.json`
+- **i18n**: All UI text uses `useTranslations()` hook with `t("section.key")`. Messages in `messages/en.json` (English, default) + `messages/de.json` (German, user-selectable). Keys missing in the active locale fall back to English; missing from both surfaces the raw key — the `src/lib/__tests__/i18n*.test.ts` suite guards against that. Numbers/dates go through `useFormatters()` — never hand-roll `Intl.*` with a fixed locale.
 - **Notifications**: 3 channels (Telegram, ntfy, Web Push). Dispatcher at `src/lib/notifications/dispatcher.ts`. Opt-out model (all events enabled by default)
 - **Gravatar**: Server-side SHA-256 hash via `src/lib/gravatar.ts`. URL returned in `/api/auth/me` response as `gravatarUrl` field
 - **Sidebar**: Collapsible (localStorage-persisted). Settings mode with section shortcuts. User section at bottom with three-dot dropdown menu

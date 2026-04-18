@@ -71,8 +71,39 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   if (baseUrl !== undefined) {
     const trimmed = baseUrl.trim();
     if (!trimmed) throw new HttpError(422, "Base URL cannot be empty");
-    if (!trimmed.startsWith("https://")) {
-      throw new HttpError(422, "Base URL must start with https://");
+
+    // The admin AI base URL has full egress of the bearer key on every
+    // insight call. Lock it to HTTPS + a hostname allowlist so a
+    // compromised admin (or stolen cookie) cannot point it at
+    // attacker.example and exfiltrate the key on the next AI call.
+    let parsed: URL;
+    try {
+      parsed = new URL(trimmed);
+    } catch {
+      throw new HttpError(422, "Base URL is not a valid URL");
+    }
+    if (parsed.protocol !== "https:") {
+      throw new HttpError(422, "Base URL must use https://");
+    }
+    const allowedHosts = new Set([
+      "api.openai.com",
+      "api.anthropic.com",
+      "generativelanguage.googleapis.com",
+      "api.mistral.ai",
+      "api.groq.com",
+      "openrouter.ai",
+    ]);
+    for (const h of (process.env.ADMIN_AI_BASE_URL_ALLOWLIST ?? "")
+      .split(",")
+      .map((h) => h.trim())
+      .filter(Boolean)) {
+      allowedHosts.add(h);
+    }
+    if (!allowedHosts.has(parsed.hostname)) {
+      throw new HttpError(
+        422,
+        `Base URL host '${parsed.hostname}' not in allowlist. Set ADMIN_AI_BASE_URL_ALLOWLIST if you need a custom provider.`,
+      );
     }
     updates.adminAiBaseUrl = trimmed;
     auditDetails.baseUrl = trimmed;

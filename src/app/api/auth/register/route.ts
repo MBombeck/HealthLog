@@ -9,6 +9,7 @@ import { ensureDbCompatibility } from "@/lib/db-compat";
 import { NextRequest, NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 
 export const POST = apiHandler(async (request: NextRequest) => {
   const ip = getClientIp(request) ?? "unknown";
@@ -65,8 +66,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Username or email already taken", 409);
   }
 
-  // Validate password strength
-  const strength = checkPasswordStrength(password, [username, email]);
+  // Validate password strength (locale-aware feedback)
+  const locale = await resolveServerLocale({ request });
+  const strength = checkPasswordStrength(password, [username, email], locale);
   if (!strength.isAcceptable) {
     return apiError(
       strength.feedback[0] || "Password too weak (score < 3)",

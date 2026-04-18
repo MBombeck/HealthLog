@@ -7,8 +7,9 @@ export const notificationPreferenceSchema = z.object({
   enabled: z.boolean(),
 });
 
-// Block private/internal network URLs to prevent SSRF
-function isPublicUrl(url: string): boolean {
+// Block private/internal network URLs to prevent SSRF. Exported so other
+// server-initiated egress (AI providers, webhooks) can reuse it.
+export function isPublicUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== "https:" && parsed.protocol !== "http:")

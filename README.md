@@ -37,7 +37,11 @@ Most health apps lock your data behind proprietary clouds, push subscriptions, a
 
 ## Key Features
 
-**Health Metrics** -- Track weight, blood pressure, pulse, body fat, sleep, and steps with interactive trend charts, moving averages, and traffic-light ranges based on ESC/ESH 2018 guidelines.
+**Health Metrics** -- Track weight, blood pressure, pulse, body fat, sleep, steps, and blood glucose (fasting/postprandial/random/bedtime, mg/dL ↔ mmol/L) with interactive trend charts, moving averages, and traffic-light ranges based on ESC/ESH 2018 and ADA 2024 guidelines.
+
+**Custom Thresholds** -- Override the computed default ranges per metric with the targets your clinician set. Audit-logged. Doctor Report PDF prints both your target and the standard reference.
+
+**Customizable Dashboard** -- Show, hide, and drag-to-reorder every widget. Per-user layout with reset-to-defaults.
 
 **Mood Logging** -- 5-point scale with tags, notes, and trend analytics. Syncs automatically from moodLog.app via webhook.
 
@@ -45,9 +49,11 @@ Most health apps lock your data behind proprietary clouds, push subscriptions, a
 
 **Withings Integration** -- OAuth2 device sync for scales, blood pressure monitors, and activity trackers with automatic deduplication.
 
-**AI-Powered Insights** -- Bring your own OpenAI API key. Personalized analysis across blood pressure, weight, pulse, mood, BMI, and medication adherence. Cached daily to minimize API usage.
+**Multi-Provider AI Insights** -- Pick OpenAI, Anthropic Claude, or any local OpenAI-compatible endpoint (Ollama, LM Studio, vLLM). BYOK or admin-shared key. Cached daily. Local endpoints keep all data on your network.
 
-**Doctor Report PDF Export** -- Generate professional medical reports client-side. European format with vital sign summaries, BP/BMI classification, compliance rates, and optional AI analysis.
+**Doctor Report PDF Export** -- Generate professional medical reports client-side. Locale-aware (English/German), with vital sign summaries, BP/BMI/glucose classification, compliance rates, custom-threshold badges, and optional AI analysis.
+
+**Built-in Feedback** -- Send bug reports and feature requests from inside the app. Stored in your HealthLog database — no GitHub config required. Optional GitHub escalation for admins.
 
 **PWA with Offline Support** -- Installable on iOS and Android. Service worker with intelligent caching strategies for reliable offline access.
 
@@ -55,7 +61,7 @@ Most health apps lock your data behind proprietary clouds, push subscriptions, a
 
 **Gamification** -- 30+ persistent achievements across intake streaks, compliance milestones, and healthy metric streaks.
 
-**Internationalization** -- Full German and English UI with 1000+ translation keys. Browser-based locale detection with per-user override.
+**Internationalization** -- English (default) and German UI with 1000+ translation keys. Numbers, dates, units, and AI prompts all locale-aware via `useFormatters()`. Browser-based detection with per-user override.
 
 ---
 
@@ -318,7 +324,7 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 - Code style: `pnpm format && pnpm lint`
 - Type safety: `pnpm typecheck` must pass
 - Tests: `pnpm test`
-- UI language: German. Code, comments, and commits: English.
+- UI language: English by default, German selectable per user. Code, comments, and commits: English.
 
 ---
 

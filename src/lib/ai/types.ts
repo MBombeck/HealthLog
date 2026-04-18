@@ -39,7 +39,7 @@ export type InsightFinding = z.infer<typeof insightFindingSchema>;
 
 // ─── Provider Types ────────────────────────────────────────
 
-export type ProviderType = "codex" | "admin-key" | "none";
+export type ProviderType = "codex" | "admin-key" | "anthropic" | "local" | "none";
 
 export interface AIProvider {
   type: ProviderType;

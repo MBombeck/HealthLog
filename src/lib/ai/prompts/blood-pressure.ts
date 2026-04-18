@@ -1,9 +1,7 @@
-import { BASE_SYSTEM_PROMPT } from "./base-system";
+import type { Locale } from "@/lib/i18n/config";
+import { getBaseSystemPrompt } from "./base-system";
 
-export function getBloodPressureSystemPrompt(): string {
-  return `${BASE_SYSTEM_PROMPT}
-
-FACHSPEZIFISCH — BLUTDRUCK:
+const BP_SECTION_DE = `FACHSPEZIFISCH — BLUTDRUCK:
 - Klassifikation nach ESC/ESH 2023:
   * Optimal: < 120/80 mmHg
   * Normal: 120-129/80-84 mmHg
@@ -30,9 +28,55 @@ FACHSPEZIFISCH — BLUTDRUCK:
 - Rate-Pressure Product: Wenn ratePressureProduct.rpp30 > 12.000: "Erhöhter kardialer Sauerstoffbedarf" mit assessment "warning" bewerten.
 - Saisonale Variation: Falls seasonalVariation vorhanden und delta > 5 mmHg: "Physiologisch normale saisonale Schwankung — kein Grund zur Sorge, ggf. Winter-Dosisanpassung besprechen."
 - Salz-Signal: Akuter Gewichtsanstieg ≥ 1 kg in 3 Tagen + systolischer Anstieg ≥ 5 mmHg = mögliche erhöhte Natriumzufuhr.`;
+
+const BP_SECTION_EN = `DOMAIN — BLOOD PRESSURE:
+- ESC/ESH 2023 classification:
+  * Optimal: < 120/80 mmHg
+  * Normal: 120-129/80-84 mmHg
+  * High-normal: 130-139/85-89 mmHg
+  * Hypertension grade 1: 140-159/90-99 mmHg
+  * Hypertension grade 2: 160-179/100-109 mmHg
+  * Hypertension grade 3: ≥ 180/≥ 110 mmHg
+  * Isolated systolic hypertension: ≥ 140/< 90 mmHg
+- Targets: For uncomplicated hypertension aim for < 130/80 mmHg (age 18-69), < 140/80 mmHg (age ≥ 70).
+- Morning surge: Identify a morning systolic rise > 20 mmHg as a risk factor.
+- Pulse pressure: (systolic - diastolic) > 60 mmHg flagged as a marker of arterial stiffness.
+- Medication correlation: Correlate antihypertensive adherence with blood-pressure trajectory.
+- Weight correlation: Compare weight trend with BP trajectory (~1 mmHg drop expected per kg lost).
+- Mood correlation: Mention only if moodVsSystolicCorrelation is present in the snapshot and |r| > 0.4. Otherwise do not interpret a correlation.
+- weightVsSystolic correlation: Analyse only if present and |r| > 0.4. Roughly 1 mmHg systolic drop per kg lost.
+- weightVsDiastolic correlation: Analyse only if present and |r| > 0.4.
+- Compare avgSys30 and avgSys90 with allTimeAvg to surface long-term trends.
+- Use historicalComparison.systolic and historicalComparison.diastolic: rate ≥5 mmHg systolic or ≥3 mmHg diastolic deltas clinically.
+- Morning risk ladder (J-HOP study):
+  * Morning BP 135-144: stroke HR 2.45
+  * Morning BP 145-154: HR 2.80
+  * Morning BP 155-164: HR 3.58
+  * Morning BP ≥ 165: HR 6.52
+- Rate-pressure product: If ratePressureProduct.rpp30 > 12,000, label "Elevated cardiac oxygen demand" with assessment "warning".
+- Seasonal variation: If seasonalVariation is present and delta > 5 mmHg: "Physiologically normal seasonal swing — no cause for concern, optionally discuss a winter dose adjustment."
+- Salt signal: Acute weight gain ≥ 1 kg over 3 days plus systolic rise ≥ 5 mmHg = possible elevated sodium intake.`;
+
+export function getBloodPressureSystemPrompt(locale: Locale): string {
+  const section = locale === "en" ? BP_SECTION_EN : BP_SECTION_DE;
+  return `${getBaseSystemPrompt(locale)}
+
+${section}`;
 }
 
-export function getBloodPressureUserPrompt(snapshotJson: string, todayKey: string): string {
+export function getBloodPressureUserPrompt(
+  snapshotJson: string,
+  todayKey: string,
+  locale: Locale,
+): string {
+  if (locale === "en") {
+    return `Date: ${todayKey} (Europe/Berlin)
+Analyse the following blood-pressure data with focus on trends, target attainment and medication effectiveness.
+Account for measurement timing and density when judging confidence.
+Use the precomputed correlations and historicalComparison for a sound temporal assessment.
+
+${snapshotJson}`;
+  }
   return `Datum: ${todayKey} (Europe/Berlin)
 Analysiere die folgenden Blutdruck-Daten mit Fokus auf Trends, Zielwerterreichung und Medikamentenwirksamkeit.
 Berücksichtige die Messzeiträume und Datendichte für die Konfidenzeinschätzung.

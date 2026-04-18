@@ -351,8 +351,8 @@ export async function generateWeightStatusForUser(
   const snapshotJson = JSON.stringify(snapshot, null, 2);
 
   const result = await provider.generateCompletion({
-    systemPrompt: getWeightSystemPrompt(),
-    userPrompt: getWeightUserPrompt(snapshotJson, todayKey),
+    systemPrompt: getWeightSystemPrompt(locale),
+    userPrompt: getWeightUserPrompt(snapshotJson, todayKey, locale),
     temperature: 0.3,
     maxTokens: 1000,
   });

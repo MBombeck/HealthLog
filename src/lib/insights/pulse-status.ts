@@ -287,8 +287,8 @@ export async function generatePulseStatusForUser(
   const snapshotJson = JSON.stringify(snapshot, null, 2);
 
   const result = await provider.generateCompletion({
-    systemPrompt: getPulseSystemPrompt(),
-    userPrompt: getPulseUserPrompt(snapshotJson, todayKey),
+    systemPrompt: getPulseSystemPrompt(locale),
+    userPrompt: getPulseUserPrompt(snapshotJson, todayKey, locale),
     temperature: 0.3,
     maxTokens: 1000,
   });

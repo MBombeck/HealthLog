@@ -6,6 +6,7 @@ import {
 } from "@/lib/insights/general-status";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +14,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
 
   const localeParam = request.nextUrl.searchParams.get("locale");
-  const locale = resolveGeneralStatusLocale(
-    localeParam ?? user.locale ?? "de",
-  );
+  const resolved = await resolveServerLocale({
+    request,
+    userLocale: user.locale ?? null,
+    override: localeParam,
+  });
+  const locale = resolveGeneralStatusLocale(resolved);
 
   const result = await generateGeneralStatusForUser(user.id, {
     locale,

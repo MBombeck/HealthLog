@@ -1,9 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { Activity, Heart, Percent, Plus, Smile, TrendingUp, Waves } from "lucide-react";
+import {
+  Activity,
+  Droplet,
+  Footprints,
+  Heart,
+  Moon,
+  Percent,
+  Pill,
+  Plus,
+  Smile,
+  Target,
+  TrendingUp,
+  Waves,
+} from "lucide-react";
+import { convertGlucose, resolveGlucoseUnit } from "@/lib/glucose";
+import {
+  resolveDashboardLayout,
+  type DashboardLayout,
+} from "@/lib/dashboard-layout";
+import type { DataSummary as DataSummaryType } from "@/lib/analytics/trends";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,6 +75,7 @@ import {
 interface AnalyticsData {
   summaries: Record<string, DataSummary>;
   bpInTargetPct: number | null;
+  glucoseByContext?: Record<string, DataSummaryType>;
 }
 
 interface RangeDisplayConfig {
@@ -148,6 +168,17 @@ export default function DashboardPage() {
     enabled: isAuthenticated,
   });
 
+  const { data: layoutData } = useQuery({
+    queryKey: ["user", "dashboardWidgets"],
+    queryFn: async () => {
+      const res = await fetch("/api/dashboard/widgets");
+      if (!res.ok) throw new Error("Failed");
+      const json = await res.json();
+      return json.data as DashboardLayout;
+    },
+    enabled: isAuthenticated,
+  });
+
   const { data: moodData } = useQuery({
     queryKey: queryKeys.moodAnalytics(),
     queryFn: async () => {
@@ -164,9 +195,52 @@ export default function DashboardPage() {
   const dia = data?.summaries.BLOOD_PRESSURE_DIA;
   const p = data?.summaries.PULSE;
   const bf = data?.summaries.BODY_FAT;
-  const showBodyFatCard = (bf?.count ?? 0) > 0;
+  const sleepSummary = data?.summaries.SLEEP_DURATION;
+  const stepsSummary = data?.summaries.ACTIVITY_STEPS;
   const moodSummary = moodData?.summary;
-  const showMoodCard = (moodSummary?.count ?? 0) > 0;
+
+  // Resolve full dashboard layout — controls visibility + order of every widget
+  const layout = resolveDashboardLayout(layoutData);
+  const isWidgetVisible = (id: string) =>
+    layout.widgets.find((widget) => widget.id === id)?.visible ?? false;
+  const widgetOrder = (id: string) =>
+    layout.widgets.find((widget) => widget.id === id)?.order ?? 999;
+
+  // Data-floor gates (widget shows iff visible AND has data)
+  const hasWeight = (w?.count ?? 0) > 0;
+  const hasBp = (sys?.count ?? 0) > 0 || (dia?.count ?? 0) > 0;
+  const hasPulse = (p?.count ?? 0) > 0;
+  const hasBodyFat = (bf?.count ?? 0) > 0;
+  const hasMood = (moodSummary?.count ?? 0) > 0;
+  const hasSleep = (sleepSummary?.count ?? 0) > 0;
+  const hasSteps = (stepsSummary?.count ?? 0) > 0;
+  const hasBpInTarget = data?.bpInTargetPct != null;
+
+  const showWeightCard = isWidgetVisible("weight") && hasWeight;
+  const showBpCards = isWidgetVisible("bp") && hasBp;
+  const showPulseCard = isWidgetVisible("pulse") && hasPulse;
+  const showBodyFatCard = isWidgetVisible("bodyFat") && hasBodyFat;
+  const showMoodCard = isWidgetVisible("mood") && hasMood;
+  const showSleepCard = isWidgetVisible("sleep") && hasSleep;
+  const showStepsCard = isWidgetVisible("steps") && hasSteps;
+  const showBpInTargetCard = isWidgetVisible("bpInTarget") && hasBpInTarget;
+  const showMedicationsCard = isWidgetVisible("medications");
+
+  // Glucose widget — visible iff layout enables it AND at least one reading exists.
+  const glucoseWidgetVisible = isWidgetVisible("glucose");
+  const displayGlucoseUnit = resolveGlucoseUnit(user?.glucoseUnit ?? null);
+  const glucoseByContext = data?.glucoseByContext ?? {};
+  const glucoseContexts = ["FASTING", "POSTPRANDIAL", "RANDOM", "BEDTIME"] as const;
+  const glucoseSummariesPresent = glucoseContexts.filter(
+    (ctx) => (glucoseByContext[ctx]?.count ?? 0) > 0,
+  );
+  const showGlucoseCards = glucoseWidgetVisible && glucoseSummariesPresent.length > 0;
+  const glucoseLabelKey: Record<string, string> = {
+    FASTING: "targets.glucoseFasting",
+    POSTPRANDIAL: "targets.glucosePostprandial",
+    RANDOM: "targets.glucoseRandom",
+    BEDTIME: "targets.glucoseBedtime",
+  };
   const bpTargets =
     user?.dateOfBirth != null ? getBpTargets(new Date(user.dateOfBirth)) : null;
   const pulseAge = getAgeFromDateOfBirth(user?.dateOfBirth ?? null);
@@ -324,167 +398,378 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-        <TrendCard
-          label={t("dashboard.weight")}
-          latest={w?.latest ?? null}
-          unit="kg"
-          avg7={w?.avg7 ?? null}
-          avg30={w?.avg30 ?? null}
-          avg7ColorClass={getRangeColorClass(w?.avg7, { range: weightRange })}
-          avg30ColorClass={getRangeColorClass(w?.avg30, { range: weightRange })}
-          avg7Hint={getRangeHint("kg", { range: weightRange }, t, fmt.number)}
-          avg30Hint={getRangeHint("kg", { range: weightRange }, t, fmt.number)}
-          slope30={w?.slope30 ?? null}
-          icon={Activity}
-        />
-        <TrendCard
-          label={t("dashboard.bloodPressureSys")}
-          latest={sys?.latest ?? null}
-          unit="mmHg"
-          avg7={sys?.avg7 ?? null}
-          avg30={sys?.avg30 ?? null}
-          avg7ColorClass={getRangeColorClass(sys?.avg7, { range: bpSysRange })}
-          avg30ColorClass={getRangeColorClass(sys?.avg30, {
-            range: bpSysRange,
-          })}
-          avg7Hint={getRangeHint("mmHg", { range: bpSysRange }, t, fmt.number)}
-          avg30Hint={getRangeHint("mmHg", { range: bpSysRange }, t, fmt.number)}
-          slope30={sys?.slope30 ?? null}
-          icon={Heart}
-        />
-        <TrendCard
-          label={t("dashboard.bloodPressureDia")}
-          latest={dia?.latest ?? null}
-          unit="mmHg"
-          avg7={dia?.avg7 ?? null}
-          avg30={dia?.avg30 ?? null}
-          avg7ColorClass={getRangeColorClass(dia?.avg7, { range: bpDiaRange })}
-          avg30ColorClass={getRangeColorClass(dia?.avg30, {
-            range: bpDiaRange,
-          })}
-          avg7Hint={getRangeHint("mmHg", { range: bpDiaRange }, t, fmt.number)}
-          avg30Hint={getRangeHint("mmHg", { range: bpDiaRange }, t, fmt.number)}
-          slope30={dia?.slope30 ?? null}
-          icon={Heart}
-        />
-        <TrendCard
-          label={t("dashboard.pulse")}
-          latest={p?.latest ?? null}
-          unit="bpm"
-          avg7={p?.avg7 ?? null}
-          avg30={p?.avg30 ?? null}
-          avg7ColorClass={getRangeColorClass(p?.avg7, {
-            range: pulseDisplayRange,
-          })}
-          avg30ColorClass={getRangeColorClass(p?.avg30, {
-            range: pulseDisplayRange,
-          })}
-          avg7Hint={getRangeHint("bpm", { range: pulseDisplayRange }, t, fmt.number)}
-          avg30Hint={getRangeHint("bpm", { range: pulseDisplayRange }, t, fmt.number)}
-          slope30={p?.slope30 ?? null}
-          icon={TrendingUp}
-        />
-        {showBodyFatCard ? (
-          <TrendCard
-            label={t("dashboard.bodyFat")}
-            latest={bf?.latest ?? null}
-            unit="%"
-            avg7={bf?.avg7 ?? null}
-            avg30={bf?.avg30 ?? null}
-            slope30={bf?.slope30 ?? null}
-            icon={Percent}
-          />
-        ) : null}
-        {showMoodCard ? (
-          <TrendCard
-            label={t("dashboard.mood")}
-            latest={moodSummary?.latest ?? null}
-            unit="/ 5"
-            avg7={moodSummary?.avg7 ?? null}
-            avg30={moodSummary?.avg30 ?? null}
-            slope30={moodSummary?.slope30 ?? null}
-            icon={Smile}
-          />
-        ) : null}
-      </div>
+      {(() => {
+        type TrendEntry = { id: string; order: number; node: React.ReactNode };
+        const trendCards: TrendEntry[] = [];
 
-      <HealthChart
-        types={["WEIGHT"]}
-        title={t("dashboard.weight")}
-        colors={["#bd93f9"]}
-        unit="kg"
-        valueBands={weightBands}
-      />
+        if (showWeightCard) {
+          trendCards.push({
+            id: "weight",
+            order: widgetOrder("weight"),
+            node: (
+              <TrendCard
+                key="weight"
+                label={t("dashboard.weight")}
+                latest={w?.latest ?? null}
+                unit="kg"
+                avg7={w?.avg7 ?? null}
+                avg30={w?.avg30 ?? null}
+                avg7ColorClass={getRangeColorClass(w?.avg7, { range: weightRange })}
+                avg30ColorClass={getRangeColorClass(w?.avg30, { range: weightRange })}
+                avg7Hint={getRangeHint("kg", { range: weightRange }, t, fmt.number)}
+                avg30Hint={getRangeHint("kg", { range: weightRange }, t, fmt.number)}
+                slope30={w?.slope30 ?? null}
+                icon={Activity}
+              />
+            ),
+          });
+        }
+        if (showBpCards) {
+          trendCards.push({
+            id: "bp",
+            order: widgetOrder("bp"),
+            node: (
+              <React.Fragment key="bp">
+                <TrendCard
+                  label={t("dashboard.bloodPressureSys")}
+                  latest={sys?.latest ?? null}
+                  unit="mmHg"
+                  avg7={sys?.avg7 ?? null}
+                  avg30={sys?.avg30 ?? null}
+                  avg7ColorClass={getRangeColorClass(sys?.avg7, { range: bpSysRange })}
+                  avg30ColorClass={getRangeColorClass(sys?.avg30, { range: bpSysRange })}
+                  avg7Hint={getRangeHint("mmHg", { range: bpSysRange }, t, fmt.number)}
+                  avg30Hint={getRangeHint("mmHg", { range: bpSysRange }, t, fmt.number)}
+                  slope30={sys?.slope30 ?? null}
+                  icon={Heart}
+                />
+                <TrendCard
+                  label={t("dashboard.bloodPressureDia")}
+                  latest={dia?.latest ?? null}
+                  unit="mmHg"
+                  avg7={dia?.avg7 ?? null}
+                  avg30={dia?.avg30 ?? null}
+                  avg7ColorClass={getRangeColorClass(dia?.avg7, { range: bpDiaRange })}
+                  avg30ColorClass={getRangeColorClass(dia?.avg30, { range: bpDiaRange })}
+                  avg7Hint={getRangeHint("mmHg", { range: bpDiaRange }, t, fmt.number)}
+                  avg30Hint={getRangeHint("mmHg", { range: bpDiaRange }, t, fmt.number)}
+                  slope30={dia?.slope30 ?? null}
+                  icon={Heart}
+                />
+              </React.Fragment>
+            ),
+          });
+        }
+        if (showPulseCard) {
+          trendCards.push({
+            id: "pulse",
+            order: widgetOrder("pulse"),
+            node: (
+              <TrendCard
+                key="pulse"
+                label={t("dashboard.pulse")}
+                latest={p?.latest ?? null}
+                unit="bpm"
+                avg7={p?.avg7 ?? null}
+                avg30={p?.avg30 ?? null}
+                avg7ColorClass={getRangeColorClass(p?.avg7, { range: pulseDisplayRange })}
+                avg30ColorClass={getRangeColorClass(p?.avg30, { range: pulseDisplayRange })}
+                avg7Hint={getRangeHint("bpm", { range: pulseDisplayRange }, t, fmt.number)}
+                avg30Hint={getRangeHint("bpm", { range: pulseDisplayRange }, t, fmt.number)}
+                slope30={p?.slope30 ?? null}
+                icon={TrendingUp}
+              />
+            ),
+          });
+        }
+        if (showBodyFatCard) {
+          trendCards.push({
+            id: "bodyFat",
+            order: widgetOrder("bodyFat"),
+            node: (
+              <TrendCard
+                key="bodyFat"
+                label={t("dashboard.bodyFat")}
+                latest={bf?.latest ?? null}
+                unit="%"
+                avg7={bf?.avg7 ?? null}
+                avg30={bf?.avg30 ?? null}
+                slope30={bf?.slope30 ?? null}
+                icon={Percent}
+              />
+            ),
+          });
+        }
+        if (showMoodCard) {
+          trendCards.push({
+            id: "mood",
+            order: widgetOrder("mood"),
+            node: (
+              <TrendCard
+                key="mood"
+                label={t("dashboard.mood")}
+                latest={moodSummary?.latest ?? null}
+                unit="/ 5"
+                avg7={moodSummary?.avg7 ?? null}
+                avg30={moodSummary?.avg30 ?? null}
+                slope30={moodSummary?.slope30 ?? null}
+                icon={Smile}
+              />
+            ),
+          });
+        }
+        if (showSleepCard) {
+          trendCards.push({
+            id: "sleep",
+            order: widgetOrder("sleep"),
+            node: (
+              <TrendCard
+                key="sleep"
+                label={t("dashboard.sleep") ?? "Sleep"}
+                latest={sleepSummary?.latest ?? null}
+                unit="h"
+                avg7={sleepSummary?.avg7 ?? null}
+                avg30={sleepSummary?.avg30 ?? null}
+                slope30={sleepSummary?.slope30 ?? null}
+                icon={Moon}
+              />
+            ),
+          });
+        }
+        if (showStepsCard) {
+          trendCards.push({
+            id: "steps",
+            order: widgetOrder("steps"),
+            node: (
+              <TrendCard
+                key="steps"
+                label={t("dashboard.steps") ?? "Steps"}
+                latest={stepsSummary?.latest ?? null}
+                unit=""
+                avg7={stepsSummary?.avg7 ?? null}
+                avg30={stepsSummary?.avg30 ?? null}
+                slope30={stepsSummary?.slope30 ?? null}
+                icon={Footprints}
+              />
+            ),
+          });
+        }
+        if (showBpInTargetCard) {
+          trendCards.push({
+            id: "bpInTarget",
+            order: widgetOrder("bpInTarget"),
+            node: (
+              <TrendCard
+                key="bpInTarget"
+                label={t("dashboard.bpInTarget")}
+                latest={data?.bpInTargetPct ?? null}
+                unit="%"
+                avg7={null}
+                avg30={null}
+                slope30={null}
+                icon={Target}
+              />
+            ),
+          });
+        }
+        if (showGlucoseCards) {
+          const glucoseOrder = widgetOrder("glucose");
+          glucoseSummariesPresent.forEach((ctx, idx) => {
+            const s = glucoseByContext[ctx];
+            trendCards.push({
+              id: `glucose-${ctx}`,
+              // sub-order so all glucose cards stay in a block and order stable
+              order: glucoseOrder + idx / 1000,
+              node: (
+                <TrendCard
+                  key={`glucose-${ctx}`}
+                  label={t(glucoseLabelKey[ctx])}
+                  latest={
+                    s.latest != null
+                      ? convertGlucose(s.latest, displayGlucoseUnit)
+                      : null
+                  }
+                  unit={displayGlucoseUnit}
+                  avg7={
+                    s.avg7 != null
+                      ? convertGlucose(s.avg7, displayGlucoseUnit)
+                      : null
+                  }
+                  avg30={
+                    s.avg30 != null
+                      ? convertGlucose(s.avg30, displayGlucoseUnit)
+                      : null
+                  }
+                  slope30={s.slope30 ?? null}
+                  icon={Droplet}
+                />
+              ),
+            });
+          });
+        }
 
-      <HealthChart
-        types={["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"]}
-        title={t("dashboard.bloodPressure")}
-        colors={["#ff79c6", "#8be9fd"]}
-        unit="mmHg"
-        yAxisUnit="Hg"
-        targetZones={bpTargetZones}
-      />
+        trendCards.sort((a, b) => a.order - b.order);
 
-      <HealthChart
-        types={["PULSE"]}
-        title={t("dashboard.pulse")}
-        colors={["#50fa7b"]}
-        unit="bpm"
-        valueBands={pulseBands}
-      />
-      {user?.heightCm ? (
-        <HealthChart
-          types={["WEIGHT"]}
-          title={t("targets.bmi")}
-          colors={["#f1fa8c"]}
-          unit="kg/m²"
-          valueMode="bmi"
-          valueBands={[
-            {
-              min: 0,
-              max: 17,
-              color: "#ff5555",
-              opacity: 0.16,
-            },
-            {
-              min: 17,
-              max: 18.5,
-              color: "#ffb86c",
-              opacity: 0.18,
-            },
-            {
-              min: 18.5,
-              max: 24.9,
-              color: "#50fa7b",
-              opacity: 0.2,
-            },
-            {
-              min: 24.9,
-              max: 29.9,
-              color: "#ffb86c",
-              opacity: 0.18,
-            },
-            {
-              min: 29.9,
-              max: 120,
-              color: "#ff5555",
-              opacity: 0.16,
-            },
-          ]}
-        />
-      ) : null}
+        type ChartEntry = { id: string; order: number; node: React.ReactNode };
+        const charts: ChartEntry[] = [];
+        if (showWeightCard) {
+          charts.push({
+            id: "weight-chart",
+            order: widgetOrder("weight"),
+            node: (
+              <HealthChart
+                key="weight-chart"
+                types={["WEIGHT"]}
+                title={t("dashboard.weight")}
+                colors={["#bd93f9"]}
+                unit="kg"
+                valueBands={weightBands}
+              />
+            ),
+          });
+          if (user?.heightCm) {
+            charts.push({
+              id: "bmi-chart",
+              order: widgetOrder("weight") + 0.5,
+              node: (
+                <HealthChart
+                  key="bmi-chart"
+                  types={["WEIGHT"]}
+                  title={t("targets.bmi")}
+                  colors={["#f1fa8c"]}
+                  unit="kg/m²"
+                  valueMode="bmi"
+                  valueBands={[
+                    { min: 0, max: 17, color: "#ff5555", opacity: 0.16 },
+                    { min: 17, max: 18.5, color: "#ffb86c", opacity: 0.18 },
+                    { min: 18.5, max: 24.9, color: "#50fa7b", opacity: 0.2 },
+                    { min: 24.9, max: 29.9, color: "#ffb86c", opacity: 0.18 },
+                    { min: 29.9, max: 120, color: "#ff5555", opacity: 0.16 },
+                  ]}
+                />
+              ),
+            });
+          }
+        }
+        if (showBpCards) {
+          charts.push({
+            id: "bp-chart",
+            order: widgetOrder("bp"),
+            node: (
+              <HealthChart
+                key="bp-chart"
+                types={["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"]}
+                title={t("dashboard.bloodPressure")}
+                colors={["#ff79c6", "#8be9fd"]}
+                unit="mmHg"
+                yAxisUnit="Hg"
+                targetZones={bpTargetZones}
+              />
+            ),
+          });
+        }
+        if (showPulseCard) {
+          charts.push({
+            id: "pulse-chart",
+            order: widgetOrder("pulse"),
+            node: (
+              <HealthChart
+                key="pulse-chart"
+                types={["PULSE"]}
+                title={t("dashboard.pulse")}
+                colors={["#50fa7b"]}
+                unit="bpm"
+                valueBands={pulseBands}
+              />
+            ),
+          });
+        }
+        if (showBodyFatCard) {
+          charts.push({
+            id: "bodyFat-chart",
+            order: widgetOrder("bodyFat"),
+            node: (
+              <HealthChart
+                key="bodyFat-chart"
+                types={["BODY_FAT"]}
+                title={t("dashboard.bodyFat")}
+                colors={["#ffb86c"]}
+                unit="%"
+                valueBands={bodyFatBands}
+              />
+            ),
+          });
+        }
+        if (showMoodCard) {
+          charts.push({
+            id: "mood-chart",
+            order: widgetOrder("mood"),
+            node: <MoodChart key="mood-chart" />,
+          });
+        }
+        if (showSleepCard) {
+          charts.push({
+            id: "sleep-chart",
+            order: widgetOrder("sleep"),
+            node: (
+              <HealthChart
+                key="sleep-chart"
+                types={["SLEEP_DURATION"]}
+                title={t("dashboard.sleep") ?? "Sleep"}
+                colors={["#8be9fd"]}
+                unit="h"
+              />
+            ),
+          });
+        }
+        if (showStepsCard) {
+          charts.push({
+            id: "steps-chart",
+            order: widgetOrder("steps"),
+            node: (
+              <HealthChart
+                key="steps-chart"
+                types={["ACTIVITY_STEPS"]}
+                title={t("dashboard.steps") ?? "Steps"}
+                colors={["#50fa7b"]}
+              />
+            ),
+          });
+        }
+        if (showMedicationsCard) {
+          charts.push({
+            id: "medications",
+            order: widgetOrder("medications"),
+            node: (
+              <div
+                key="medications"
+                className="bg-card rounded-lg border p-4"
+              >
+                <div className="mb-3 flex items-center gap-2">
+                  <Pill className="h-4 w-4" />
+                  <h3 className="text-sm font-medium">
+                    {t("dashboard.medications")}
+                  </h3>
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  {t("medications.title") ?? ""}
+                </p>
+              </div>
+            ),
+          });
+        }
 
-      {showBodyFatCard && (
-        <HealthChart
-          types={["BODY_FAT"]}
-          title={t("dashboard.bodyFat")}
-          colors={["#ffb86c"]}
-          unit="%"
-          valueBands={bodyFatBands}
-        />
-      )}
-      {showMoodCard && <MoodChart />}
+        charts.sort((a, b) => a.order - b.order);
+
+        return (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+              {trendCards.map((entry) => entry.node)}
+            </div>
+            {charts.map((entry) => entry.node)}
+          </>
+        );
+      })()}
     </div>
   );
 }

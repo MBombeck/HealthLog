@@ -53,6 +53,24 @@ model User {
   // Locale (null = use system/admin default)
   locale    String?  @map("locale") // "de" | "en" | null
 
+  // Personalization
+  // Per-user overrides for computed default thresholds. Shape:
+  //   { "WEIGHT": { "min": 70, "max": 85 },
+  //     "BLOOD_PRESSURE_SYS": { "min": 110, "max": 130 }, ... }
+  // Null or missing metric → use computed default.
+  thresholdsJson Json? @map("thresholds_json")
+  // Per-user dashboard layout — widget visibility + ordering.
+  // Shape: { "widgets": [{ "id": "weight", "visible": true, "order": 0 }, ...], "version": 1 }
+  dashboardWidgetsJson Json? @map("dashboard_widgets_json")
+  // Blood-glucose display unit preference. Canonical storage is mg/dL.
+  glucoseUnit String? @map("glucose_unit") // "mg/dL" | "mmol/L" | null = default "mg/dL"
+  // AI provider selection for insights. Null = OPENAI fallback.
+  aiProvider String? @map("ai_provider") // "OPENAI" | "ANTHROPIC" | "LOCAL" | "CHATGPT_OAUTH"
+  aiModel String? @map("ai_model")
+  aiBaseUrl String? @map("ai_base_url")
+  aiAnthropicKeyEncrypted String? @map("ai_anthropic_key_encrypted")
+  aiLocalKeyEncrypted String? @map("ai_local_key_encrypted")
+
   // Onboarding
   onboardingCompletedAt DateTime? @map("onboarding_completed_at")
 
@@ -71,6 +89,7 @@ model User {
   pushSubscriptions    PushSubscription[]
   dataBackups          DataBackup[]
   achievements         UserAchievement[]
+  feedback             Feedback[]
 
   @@map("users")
 }
@@ -130,8 +149,20 @@ enum MeasurementType {
   BODY_FAT
   SLEEP_DURATION
   ACTIVITY_STEPS
+  BLOOD_GLUCOSE // Canonical storage: mg/dL. Display unit (mg/dL or mmol/L) is user preference.
 
   @@map("measurement_type")
+}
+
+/// Context for glucose measurements — affects which target range applies.
+/// NULL for non-glucose measurements.
+enum GlucoseContext {
+  FASTING      // ≥8h without food, typically morning
+  POSTPRANDIAL // 2h after meal
+  RANDOM       // any time, non-fasting, non-post-meal
+  BEDTIME      // before sleep
+
+  @@map("glucose_context")
 }
 
 enum MeasurementSource {
@@ -147,11 +178,13 @@ model Measurement {
   userId     String            @map("user_id")
   type       MeasurementType
   value      Float
-  unit       String            // kg, mmHg, bpm, %, hours, steps
+  unit       String            // kg, mmHg, bpm, %, hours, steps, mg/dL
   source     MeasurementSource @default(MANUAL)
   measuredAt DateTime          @map("measured_at")
   notes      String?           // encrypted at app level if sensitive
   externalId String?           @map("external_id") // Withings grpid for dedup
+  // Only set for BLOOD_GLUCOSE measurements. NULL for all others.
+  glucoseContext GlucoseContext? @map("glucose_context")
   createdAt  DateTime          @default(now()) @map("created_at")
   updatedAt  DateTime          @updatedAt @map("updated_at")
 
@@ -384,6 +417,52 @@ model AppSettings {
   adminAiBaseUrl        String  @default("https://api.openai.com/v1") @map("admin_ai_base_url")
 
   @@map("app_settings")
+}
+
+// ─── Built-in Feedback ───────────────────────────────────────
+
+enum FeedbackCategory {
+  BUG
+  FEATURE_REQUEST
+  QUESTION
+  OTHER
+
+  @@map("feedback_category")
+}
+
+enum FeedbackStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  ARCHIVED
+
+  @@map("feedback_status")
+}
+
+/// Stores user-submitted feedback without requiring external GitHub config.
+/// Admin inbox lives at /admin#feedback; optional escalation publishes to a
+/// GitHub issue reusing the existing integration when configured.
+model Feedback {
+  id             String           @id @default(cuid())
+  userId         String?          @map("user_id") // Null after user deletion; email snapshot remains.
+  email          String?          // Snapshot at submission time for triage continuity.
+  category       FeedbackCategory @default(BUG)
+  subject        String
+  description    String
+  screenshotBase64 String?        @map("screenshot_base64") // Optional, <5MB, PNG/JPG.
+  metadata       Json?            // URL, userAgent, locale, appVersion, …
+  status         FeedbackStatus   @default(OPEN)
+  adminNote      String?          @map("admin_note")
+  gitHubIssueUrl String?          @map("github_issue_url")
+  notifiedEmail  Boolean          @default(false) @map("notified_email")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([userId])
+  @@map("feedback")
 }
 
 // ─── Audit Log ─────────────────────────────────────────────

@@ -239,8 +239,8 @@ export async function generateBmiStatusForUser(
   const snapshotJson = JSON.stringify(snapshot, null, 2);
 
   const result = await provider.generateCompletion({
-    systemPrompt: getBmiSystemPrompt(),
-    userPrompt: getBmiUserPrompt(snapshotJson, todayKey),
+    systemPrompt: getBmiSystemPrompt(locale),
+    userPrompt: getBmiUserPrompt(snapshotJson, todayKey, locale),
     temperature: 0.3,
     maxTokens: 1000,
   });

@@ -1,9 +1,13 @@
 /**
- * German translations for zxcvbn feedback messages.
- * Used by both client-side password-strength component and server-side validation.
+ * Locale-aware translations for zxcvbn-typescript feedback messages.
+ *
+ * The library only emits English warnings/suggestions, so we map them
+ * client-side to the user's UI language. Used by both the
+ * password-strength component and the server-side checkPasswordStrength.
  */
+import type { Locale } from "@/lib/i18n/config";
 
-const warnings: Record<string, string> = {
+const warningsDe: Record<string, string> = {
   "Straight rows of keys are easy to guess":
     "Gerade Tastenreihen sind leicht zu erraten",
   "Short keyboard patterns are easy to guess":
@@ -32,7 +36,7 @@ const warnings: Record<string, string> = {
     "Häufige Namen sind leicht zu erraten",
 };
 
-const suggestions: Record<string, string> = {
+const suggestionsDe: Record<string, string> = {
   "Use a few words, avoid common phrases":
     "Verwende mehrere Wörter, vermeide gängige Phrasen",
   "No need for symbols, digits, or uppercase letters":
@@ -59,6 +63,25 @@ const suggestions: Record<string, string> = {
     'Vorhersehbare Ersetzungen wie „@" statt „a" helfen nicht wesentlich',
 };
 
-export function translateZxcvbn(text: string): string {
-  return warnings[text] ?? suggestions[text] ?? text;
+// English: identity map for all known strings (the library already returns
+// English, but we wrap them so unknown values still pass through unchanged).
+const warningsEn: Record<string, string> = Object.fromEntries(
+  Object.keys(warningsDe).map((key) => [key, key]),
+);
+const suggestionsEn: Record<string, string> = Object.fromEntries(
+  Object.keys(suggestionsDe).map((key) => [key, key]),
+);
+
+export interface ZxcvbnTranslations {
+  translate(text: string): string;
+}
+
+export function getZxcvbnTranslations(locale: Locale): ZxcvbnTranslations {
+  const warnings = locale === "de" ? warningsDe : warningsEn;
+  const suggestions = locale === "de" ? suggestionsDe : suggestionsEn;
+  return {
+    translate(text: string): string {
+      return warnings[text] ?? suggestions[text] ?? text;
+    },
+  };
 }

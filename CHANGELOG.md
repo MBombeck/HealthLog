@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.2.0] — 2026-04-18
+
+### Added — Personalization, Glucose & Multi-Provider AI
+
+- **Per-user custom thresholds**: Override the computed default ranges (BP, BMI, glucose, pulse) with values from your clinician. Audit-logged with previous/new values and timestamps. Doctor Report PDF flags custom ranges and prints both your target and the standard guideline value.
+- **Blood glucose tracking**: New metric with `fasting`, `postprandial`, `random`, and `bedtime` contexts. Display unit switch between mg/dL and mmol/L (lossless conversion). Context-aware classification per ADA 2024 / DGIM. Per-context charting on dashboard and Doctor Report PDF.
+- **Dashboard customization**: Show/hide and drag-to-reorder every dashboard widget. Per-user preference, reset-to-defaults button. Layout persists across the same user on the same device.
+- **Built-in feedback system**: New in-app Send Feedback flow (Bug / Feature / Question / Other) with anonymized system info attachment. Stored in HealthLog's own database — no GitHub config required. Optional `Escalate to GitHub` button for admins who configure a PAT.
+- **Multi-provider AI insights**: Provider abstraction extended with **Anthropic Claude** and **local OpenAI-compatible endpoints** (Ollama, LM Studio, vLLM, LiteLLM) alongside OpenAI. Per-user provider selection. Local endpoints keep all health data on your network.
+- **Locale-aware UI polish (English-first)**: Numbers, dates, glucose units, BP, weight, and BMI all formatted via `useFormatters()` from the active locale. Doctor Report PDF and AI insight prompts now respect locale end-to-end (no hand-rolled `Intl.*` with fixed locales).
+
+### Changed
+
+- Reference range computation extracted into a dedicated `src/lib/health/thresholds.ts` module with computed defaults and override resolution.
+- AI provider routing reworked to dispatch by `provider` field on the user record; OpenAI remains the default for legacy users.
+- Dashboard route renders widgets from `UserDashboardLayout` model when present, otherwise falls back to the default order.
+- Doctor Report PDF: locale-aware headers, glucose section, custom-range badges.
+
+### Security
+
+- GitHub PAT for feedback escalation stored AES-256-GCM encrypted in the database (never as env var).
+- Local AI endpoint URLs validated against SSRF (no localhost/RFC1918 unless explicitly allowed by admin).
+- Custom threshold writes rate-limited and audit-logged with IP.
+
 ## [1.1.0] — 2026-04-06
 
 ### Added — AI Insights Overhaul

@@ -5,6 +5,12 @@ import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp, safeJson } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
+import {
+  getEffectiveRange,
+  type ThresholdOverridesJson,
+} from "@/lib/analytics/effective-range";
+import { resolveGlucoseUnit, thresholdMetricForContext } from "@/lib/glucose";
+import type { GlucoseContext } from "@/generated/prisma/client";
 
 /**
  * Collect data for doctor report PDF generation (client-side).
@@ -58,6 +64,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
           dateOfBirth: true,
           gender: true,
           heightCm: true,
+          glucoseUnit: true,
+          thresholdsJson: true,
         },
       }),
     ]);
@@ -145,6 +153,46 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   annotate({ meta: { report_days: days } });
 
+  // Per-context glucose stats (canonical mg/dL) and effective ranges.
+  const glucoseContexts: GlucoseContext[] = [
+    "FASTING",
+    "POSTPRANDIAL",
+    "RANDOM",
+    "BEDTIME",
+  ];
+  const glucoseStats: Record<
+    string,
+    { avg: number; min: number; max: number; count: number; latest: number }
+  > = {};
+  const glucoseRanges: Record<string, { min: number; max: number }> = {};
+  const glucoseRows = measurements.filter((m) => m.type === "BLOOD_GLUCOSE");
+  const overrides = (userProfile?.thresholdsJson ?? null) as ThresholdOverridesJson | null;
+  const profileForRange = {
+    heightCm: userProfile?.heightCm ?? null,
+    dateOfBirth: userProfile?.dateOfBirth ?? null,
+    gender: userProfile?.gender ?? null,
+  };
+  for (const ctx of glucoseContexts) {
+    const rows = glucoseRows.filter((m) => m.glucoseContext === ctx);
+    if (rows.length === 0) continue;
+    const values = rows.map((r) => r.value);
+    glucoseStats[ctx] = {
+      avg: values.reduce((a, b) => a + b, 0) / values.length,
+      min: Math.min(...values),
+      max: Math.max(...values),
+      count: values.length,
+      latest: values[values.length - 1],
+    };
+    const eff = getEffectiveRange(
+      thresholdMetricForContext(ctx),
+      profileForRange,
+      overrides,
+    );
+    if (eff.range) {
+      glucoseRanges[ctx] = { min: eff.range.greenMin, max: eff.range.greenMax };
+    }
+  }
+
   return apiSuccess({
     period: { days, since: since.toISOString() },
     patient: {
@@ -155,6 +203,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
     },
     measurements: byType,
     stats,
+    glucoseStats,
+    glucoseRanges,
+    glucoseUnit: resolveGlucoseUnit(userProfile?.glucoseUnit ?? null),
     bmi: bmi ? Math.round(bmi * 10) / 10 : null,
     compliance: complianceByMed,
     medications: medications.map((m) => ({

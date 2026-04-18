@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { translateZxcvbn } from "@/lib/zxcvbn-de";
+import { getZxcvbnTranslations } from "@/lib/zxcvbn-i18n";
 import { useTranslations } from "@/lib/i18n/context";
 
 interface PasswordStrengthProps {
@@ -22,7 +22,11 @@ export function PasswordStrength({
   password,
   minLength = 12,
 }: PasswordStrengthProps) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
+  const { translate } = useMemo(
+    () => getZxcvbnTranslations(locale),
+    [locale],
+  );
   const [result, setResult] = useState<{
     score: number;
     feedback: { warning: string; suggestions: string[] };
@@ -70,10 +74,10 @@ export function PasswordStrength({
     feedback.push(t("passwordStrength.minLength", { count: minLength }));
   }
   if (result?.feedback.warning) {
-    feedback.push(translateZxcvbn(result.feedback.warning));
+    feedback.push(translate(result.feedback.warning));
   }
   if (result?.feedback.suggestions) {
-    feedback.push(...result.feedback.suggestions.map(translateZxcvbn));
+    feedback.push(...result.feedback.suggestions.map(translate));
   }
 
   return (

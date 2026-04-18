@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { I18nProvider } from "@/lib/i18n/context";
+import type { Locale } from "@/lib/i18n/config";
 import { Toaster } from "@/components/ui/sonner";
 
 // ── Theme Context ────────────────────────────────────
@@ -100,7 +101,13 @@ function ThemeProvider({ children }: { children: ReactNode }) {
 
 // ── Root Providers ───────────────────────────────────
 
-export function Providers({ children }: { children: ReactNode }) {
+export function Providers({
+  children,
+  initialLocale,
+}: {
+  children: ReactNode;
+  initialLocale?: Locale;
+}) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -118,7 +125,7 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <I18nProvider>
+        <I18nProvider initialLocale={initialLocale}>
           {children}
           <Toaster position="bottom-right" richColors />
         </I18nProvider>

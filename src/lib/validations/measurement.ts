@@ -8,6 +8,14 @@ export const measurementTypeEnum = z.enum([
   "BODY_FAT",
   "SLEEP_DURATION",
   "ACTIVITY_STEPS",
+  "BLOOD_GLUCOSE",
+]);
+
+export const glucoseContextEnum = z.enum([
+  "FASTING",
+  "POSTPRANDIAL",
+  "RANDOM",
+  "BEDTIME",
 ]);
 
 export const measurementSourceEnum = z.enum(["MANUAL", "WITHINGS", "IMPORT"]);
@@ -20,6 +28,7 @@ const unitMap: Record<string, string> = {
   BODY_FAT: "%",
   SLEEP_DURATION: "hours",
   ACTIVITY_STEPS: "steps",
+  BLOOD_GLUCOSE: "mg/dL",
 };
 
 export function getUnitForType(type: string): string {
@@ -35,6 +44,7 @@ const VALUE_RANGES: Record<string, { min: number; max: number }> = {
   BODY_FAT: { min: 1, max: 80 },
   SLEEP_DURATION: { min: 0, max: 24 },
   ACTIVITY_STEPS: { min: 0, max: 200000 },
+  BLOOD_GLUCOSE: { min: 20, max: 800 }, // mg/dL — covers severe hypo to severe hyperglycemia
 };
 
 export function validateMeasurementRange(
@@ -53,15 +63,25 @@ export const createMeasurementSchema = z
     type: measurementTypeEnum,
     value: z.number(),
     measuredAt: z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
-    notes: z
-      .string()
-      .max(25, "Kommentar darf maximal 25 Zeichen haben")
-      .optional(),
+    notes: z.string().max(25).optional(),
     source: measurementSourceEnum.optional().default("MANUAL"),
+    // Only applies when type === BLOOD_GLUCOSE. Mirrored by a CHECK
+    // constraint in Postgres (see migration 0021).
+    glucoseContext: glucoseContextEnum.optional(),
   })
   .refine(
     (data) => validateMeasurementRange(data.type, data.value) === null,
-    "Wert ausserhalb des plausiblen Bereichs",
+    { message: "Value out of plausible range" },
+  )
+  .refine(
+    (data) =>
+      (data.type === "BLOOD_GLUCOSE" && data.glucoseContext !== undefined) ||
+      (data.type !== "BLOOD_GLUCOSE" && data.glucoseContext === undefined),
+    {
+      message:
+        "Blood glucose measurements require a context (fasting/postprandial/random/bedtime); other types must not set one.",
+      path: ["glucoseContext"],
+    },
   );
 
 export const updateMeasurementSchema = z.object({

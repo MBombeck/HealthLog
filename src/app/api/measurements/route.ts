@@ -13,6 +13,7 @@ import { NextRequest } from "next/server";
 import type {
   MeasurementType,
   MeasurementSource,
+  GlucoseContext,
 } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
 
@@ -85,6 +86,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
             source: (m.source ?? "MANUAL") as MeasurementSource,
             measuredAt: m.measuredAt,
             notes: m.notes ?? null,
+            glucoseContext:
+              (m.glucoseContext as GlucoseContext | undefined) ?? null,
           },
         }),
       ),
@@ -116,7 +119,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError(parsed.error.issues[0].message, 422);
   }
 
-  const { type, value, measuredAt, notes, source } = parsed.data;
+  const { type, value, measuredAt, notes, source, glucoseContext } =
+    parsed.data;
 
   // Handle unique constraint violation
   let measurement;
@@ -130,6 +134,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
         source: (source ?? "MANUAL") as MeasurementSource,
         measuredAt,
         notes: notes ?? null,
+        glucoseContext: (glucoseContext as GlucoseContext | undefined) ?? null,
       },
     });
   } catch (err) {

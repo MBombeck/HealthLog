@@ -94,7 +94,7 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <Providers>
+        <Providers initialLocale={initialLocale}>
           <MonitoringBootstrap />
           <AuthShell>{children}</AuthShell>
         </Providers>

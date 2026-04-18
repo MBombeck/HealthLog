@@ -10,6 +10,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { makeFormatters } from "./format-locale";
 import type { Locale } from "./i18n/config";
+import { convertGlucose, resolveGlucoseUnit } from "./glucose";
 
 interface ReportData {
   period: { days: number; since: string };
@@ -22,6 +23,18 @@ interface ReportData {
   stats: Record<
     string,
     { avg: number; min: number; max: number; count: number; latest: number }
+  >;
+  /** Per-context glucose stats (canonical mg/dL). */
+  glucoseStats?: Record<
+    "FASTING" | "POSTPRANDIAL" | "RANDOM" | "BEDTIME",
+    { avg: number; min: number; max: number; count: number; latest: number } | undefined
+  >;
+  /** Display-unit preference: "mg/dL" (default) or "mmol/L". */
+  glucoseUnit?: "mg/dL" | "mmol/L";
+  /** Per-context custom range (canonical mg/dL); fall back to defaults. */
+  glucoseRanges?: Record<
+    "FASTING" | "POSTPRANDIAL" | "RANDOM" | "BEDTIME",
+    { min: number; max: number } | undefined
   >;
   bmi: number | null;
   compliance: Record<
@@ -206,6 +219,43 @@ export function generateDoctorReportPDF(
     ]);
   }
 
+  // Per-context glucose rows (one per logged context). Values stored
+  // canonically in mg/dL — convert to the user's display unit. Reference
+  // ranges come from getEffectiveRange() server-side via data.glucoseRanges,
+  // falling back to ADA defaults below.
+  const glucoseUnit = resolveGlucoseUnit(data.glucoseUnit ?? null);
+  const glucoseLabelKeys = {
+    FASTING: "doctorReport.typeGlucoseFasting",
+    POSTPRANDIAL: "doctorReport.typeGlucosePostprandial",
+    RANDOM: "doctorReport.typeGlucoseRandom",
+    BEDTIME: "doctorReport.typeGlucoseBedtime",
+  } as const;
+  const defaultGlucoseRanges = {
+    FASTING: { min: 70, max: 99 },
+    POSTPRANDIAL: { min: 70, max: 140 },
+    RANDOM: { min: 70, max: 140 },
+    BEDTIME: { min: 90, max: 150 },
+  } as const;
+  const glucoseContexts: Array<keyof typeof glucoseLabelKeys> = [
+    "FASTING",
+    "POSTPRANDIAL",
+    "RANDOM",
+    "BEDTIME",
+  ];
+  for (const ctx of glucoseContexts) {
+    const s = data.glucoseStats?.[ctx];
+    if (!s) continue;
+    const conv = (v: number) => convertGlucose(v, glucoseUnit);
+    vitalRows.push([
+      t(glucoseLabelKeys[ctx]),
+      `${num(conv(s.latest))} ${glucoseUnit}`.trim(),
+      `${num(conv(s.avg))} ${glucoseUnit}`.trim(),
+      num(conv(s.min)),
+      num(conv(s.max)),
+      String(s.count),
+    ]);
+  }
+
   if (vitalRows.length > 0) {
     autoTable(doc, {
       startY: y,
@@ -277,6 +327,51 @@ export function generateDoctorReportPDF(
       y,
     );
     y += 8;
+  }
+
+  // Glucose classification block — one line per logged context with the
+  // reference range and an in/out classification. Range source: server-side
+  // getEffectiveRange() (data.glucoseRanges). Falls back to ADA defaults.
+  const loggedGlucose = glucoseContexts.filter(
+    (ctx) => data.glucoseStats?.[ctx],
+  );
+  if (loggedGlucose.length > 0) {
+    if (y > 240) {
+      doc.addPage();
+      y = margin;
+    }
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text(t("doctorReport.glucoseClassificationTitle"), margin, y);
+    y += 5;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    for (const ctx of loggedGlucose) {
+      const s = data.glucoseStats![ctx]!;
+      const range =
+        data.glucoseRanges?.[ctx] ?? defaultGlucoseRanges[ctx];
+      const conv = (v: number) => convertGlucose(v, glucoseUnit);
+      const inRange = s.avg >= range.min && s.avg <= range.max;
+      const classKey = inRange
+        ? "doctorReport.glucoseInTarget"
+        : s.avg < range.min
+          ? "doctorReport.glucoseBelowTarget"
+          : "doctorReport.glucoseAboveTarget";
+      doc.text(
+        t("doctorReport.glucoseRow", {
+          label: t(glucoseLabelKeys[ctx]),
+          avg: num(conv(s.avg), 1),
+          unit: glucoseUnit,
+          rangeMin: num(conv(range.min)),
+          rangeMax: num(conv(range.max)),
+          class: t(classKey),
+        }),
+        margin,
+        y,
+      );
+      y += 5;
+    }
+    y += 3;
   }
 
   const complianceEntries = Object.entries(data.compliance);

@@ -7,6 +7,7 @@ import { annotate } from "@/lib/logging/context";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { destroyAllSessions } from "@/lib/auth/session";
 import { NextRequest, NextResponse } from "next/server";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 
 export const POST = apiHandler(async (
   request: NextRequest,
@@ -38,7 +39,11 @@ export const POST = apiHandler(async (
   const target = await prisma.user.findUnique({ where: { id } });
   if (!target) return apiError("User not found", 404);
 
-  const strength = checkPasswordStrength(password, [target.username]);
+  const locale = await resolveServerLocale({
+    request,
+    userLocale: target.locale ?? null,
+  });
+  const strength = checkPasswordStrength(password, [target.username], locale);
   if (!strength.isAcceptable) {
     return apiError(
       strength.feedback[0] || "Password too weak (score < 3)",

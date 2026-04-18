@@ -8,11 +8,16 @@ import { decrypt } from "@/lib/crypto";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
+// Strict image/* data URL (no SVG — it can carry inline JS).
+const SCREENSHOT_DATA_URL =
+  /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/;
+
 const bugReportSchema = z.object({
   description: z.string().min(10, "Description too short").max(5000),
   screenshot: z
     .string()
     .max(7_000_000, "Screenshot too large (max 5 MB)")
+    .regex(SCREENSHOT_DATA_URL, "Screenshot must be a base64-encoded PNG/JPEG/WEBP/GIF data URL")
     .optional(),
 });
 
@@ -72,16 +77,24 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const dateStr = now.toISOString().replace("T", " ").slice(0, 16) + " UTC";
   const title = `Bug Report – ${dateStr}`;
 
-  // Sanitize user-provided content for GitHub markdown
+  // Sanitize user-provided content for GitHub markdown. Strip HTML tags
+  // entirely (prevents `<img onerror=>` etc.) and neutralise markdown link
+  // targets that start with dangerous schemes like javascript: or data:.
   const safeUsername = user.username.replace(/[`*_~<>\[\]|]/g, "");
   const safeDescription = description
+    .replace(/<[^>]*>/g, "") // strip HTML tags
+    .replace(
+      /\]\(\s*(javascript|data|vbscript|file):/gi,
+      "](about:blank#",
+    ) // neutralise dangerous markdown link schemes
     .replace(/```/g, "\\`\\`\\`")
     .slice(0, 5000);
 
-  // Build issue body
+  // Wrap the user's description in a fenced code block so any residual
+  // markdown renders literally rather than as executable markup.
   let issueBody = `**Reported by:** ${safeUsername}\n`;
   issueBody += `**Date:** ${dateStr}\n\n`;
-  issueBody += `## Description\n\n${safeDescription}\n`;
+  issueBody += `## Description\n\n\`\`\`\n${safeDescription}\n\`\`\`\n`;
   issueBody += `\n---\n*Created via HealthLog bug report*`;
 
   // If screenshot provided, upload to GitHub as a gist or include as base64

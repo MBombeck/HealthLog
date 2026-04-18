@@ -105,6 +105,7 @@ const BASE_TYPE_LABEL_KEYS: Record<string, string> = {
   BODY_FAT: "charts.bodyFat",
   SLEEP_DURATION: "charts.sleep",
   ACTIVITY_STEPS: "charts.steps",
+  BLOOD_GLUCOSE: "measurements.typeBloodGlucose",
 };
 
 function getTypeLabel(

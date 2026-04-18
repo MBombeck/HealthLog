@@ -365,8 +365,8 @@ export async function generateMoodStatusForUser(
   const snapshotJson = JSON.stringify(snapshot, null, 2);
 
   const result = await provider.generateCompletion({
-    systemPrompt: getMoodSystemPrompt(),
-    userPrompt: getMoodUserPrompt(snapshotJson, todayKey),
+    systemPrompt: getMoodSystemPrompt(locale),
+    userPrompt: getMoodUserPrompt(snapshotJson, todayKey, locale),
     temperature: 0.3,
     maxTokens: 1000,
   });
