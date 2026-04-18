@@ -2,13 +2,14 @@ import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { extractFeatures } from "@/lib/insights/features";
-import { INSIGHTS_SYSTEM_PROMPT, buildUserPrompt } from "@/lib/insights/prompt";
+import { getInsightsSystemPrompt, buildUserPrompt } from "@/lib/insights/prompt";
 import { insightResultSchema, type InsightResult } from "@/lib/ai/types";
 import { resolveProvider } from "@/lib/ai/provider";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -25,7 +26,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
       insightsPrivacyMode: true,
       insightsCachedAt: true,
       insightsCachedText: true,
+      locale: true,
     },
+  });
+
+  const locale = await resolveServerLocale({
+    request,
+    userLocale: dbUser?.locale ?? user.locale ?? null,
   });
 
   const body = await request.json().catch(() => ({}));
@@ -55,10 +62,14 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const includeRaw = dbUser?.insightsPrivacyMode === "raw";
   const features = await extractFeatures(userId, includeRaw);
   const featuresJson = JSON.stringify(features, null, 2);
-  const userPrompt = buildUserPrompt(featuresJson, dbUser?.insightsPrivacyMode ?? "aggregated");
+  const userPrompt = buildUserPrompt(
+    featuresJson,
+    dbUser?.insightsPrivacyMode ?? "aggregated",
+    locale,
+  );
 
   const result = await provider.generateCompletion({
-    systemPrompt: INSIGHTS_SYSTEM_PROMPT,
+    systemPrompt: getInsightsSystemPrompt(locale),
     userPrompt,
     temperature: 0.3,
     maxTokens: 1500,

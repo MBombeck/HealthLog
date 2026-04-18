@@ -356,8 +356,8 @@ export async function generateGeneralStatusForUser(
   const snapshotJson = JSON.stringify(snapshot, null, 2);
 
   const result = await provider.generateCompletion({
-    systemPrompt: getGeneralStatusSystemPrompt(),
-    userPrompt: getGeneralStatusUserPrompt(snapshotJson, todayKey),
+    systemPrompt: getGeneralStatusSystemPrompt(locale),
+    userPrompt: getGeneralStatusUserPrompt(snapshotJson, todayKey, locale),
     temperature: 0.3,
     maxTokens: 1000,
   });

@@ -292,8 +292,8 @@ export async function generateMedicationComplianceStatusForUser(
   const snapshotJson = JSON.stringify(snapshot, null, 2);
 
   const result = await provider.generateCompletion({
-    systemPrompt: getMedicationComplianceSystemPrompt(),
-    userPrompt: getMedicationComplianceUserPrompt(snapshotJson, todayKey),
+    systemPrompt: getMedicationComplianceSystemPrompt(locale),
+    userPrompt: getMedicationComplianceUserPrompt(snapshotJson, todayKey, locale),
     temperature: 0.3,
     maxTokens: 1000,
   });

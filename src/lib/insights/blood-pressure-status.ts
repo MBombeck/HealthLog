@@ -463,8 +463,8 @@ export async function generateBloodPressureStatusForUser(
   const snapshotJson = JSON.stringify(snapshot, null, 2);
 
   const result = await provider.generateCompletion({
-    systemPrompt: getBloodPressureSystemPrompt(),
-    userPrompt: getBloodPressureUserPrompt(snapshotJson, todayKey),
+    systemPrompt: getBloodPressureSystemPrompt(locale),
+    userPrompt: getBloodPressureUserPrompt(snapshotJson, todayKey, locale),
     temperature: 0.3,
     maxTokens: 1000,
   });
