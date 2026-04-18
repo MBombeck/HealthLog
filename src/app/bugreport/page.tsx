@@ -20,7 +20,7 @@ import {
   CheckCircle2,
   ImageIcon,
   Bug,
-  Github,
+  GitPullRequest,
   Info,
 } from "lucide-react";
 import { useTranslations } from "@/lib/i18n/context";
@@ -164,7 +164,7 @@ export default function BugReportPage() {
 
       {status?.configured && (
         <div className="bg-card border-border flex gap-2 rounded-lg border-l-4 border-l-dracula-cyan p-3 text-sm">
-          <Github className="mt-0.5 h-4 w-4 shrink-0 text-dracula-cyan" />
+          <GitPullRequest className="mt-0.5 h-4 w-4 shrink-0 text-dracula-cyan" />
           <p className="text-muted-foreground">
             {t("bugreport.githubEscalationNote")}
           </p>

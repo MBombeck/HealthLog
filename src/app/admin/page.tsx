@@ -56,7 +56,7 @@ import {
   MessageSquare,
   Inbox,
   ExternalLink,
-  Github,
+  GitPullRequest,
 } from "lucide-react";
 import { PasswordStrength } from "@/components/ui/password-strength";
 import { formatDate, formatDateTime } from "@/lib/format";
@@ -2513,7 +2513,7 @@ function FeedbackDetailDialog({
                   rel="noopener noreferrer"
                   className="text-primary inline-flex items-center gap-1"
                 >
-                  <Github className="h-3 w-3" />
+                  <GitPullRequest className="h-3 w-3" />
                   {t("admin.feedback.viewIssue")}
                   <ExternalLink className="h-3 w-3" />
                 </a>
@@ -2668,7 +2668,7 @@ function FeedbackDetailDialog({
                 {publish.isPending ? (
                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <Github className="mr-1.5 h-3.5 w-3.5" />
+                  <GitPullRequest className="mr-1.5 h-3.5 w-3.5" />
                 )}
                 {t("admin.feedback.actionPublishGithub")}
               </Button>
