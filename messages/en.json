@@ -108,6 +108,10 @@
     "moodGood": "Good",
     "moodGreat": "Very good"
   },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "description": "An unexpected error occurred. You can retry, copy the technical details, or open a bug report."
+  },
   "nav": {
     "home": "Home",
     "dashboard": "Dashboard",
@@ -799,6 +803,11 @@
     "passkeyOptionsError": "Could not load passkey options",
     "passkeyRegistrationFailed": "Passkey registration failed",
     "passkeyRegistrationCancelled": "Passkey registration cancelled",
+    "passkeyNotSupported": "Your browser or device doesn't support passkeys yet. Try a different browser or device.",
+    "passkeyAlreadyRegistered": "This device is already registered as a passkey for your account.",
+    "passkeySecurityBlocked": "Your browser blocked the passkey request for security reasons. Make sure you're on a trusted HTTPS origin and try again.",
+    "passkeyTimeout": "The passkey prompt timed out. Please try again.",
+    "passkeyUnknownError": "Passkey registration failed: {message}",
     "deletePasskey": "Delete passkey?",
     "deletePasskeyDescription": "The passkey will be permanently deleted.",
     "singleDevice": "Single device",
@@ -1339,7 +1348,11 @@
     "submit": "Send",
     "success": "Thank you! Your bug report has been submitted successfully.",
     "viewOnGithub": "View on GitHub",
-    "errorCreating": "Error creating report"
+    "errorCreating": "Error creating report",
+    "notConfiguredTitle": "Bug reports not available yet",
+    "notConfiguredUser": "Bug reporting is disabled on this server. Please contact your administrator.",
+    "notConfiguredAdmin": "Bug reporting requires a GitHub integration (issue token + repository). Configure it in the admin panel under Settings → Bug reports.",
+    "openAdminSettings": "Open admin settings"
   },
   "notifications": {
     "title": "Notifications",

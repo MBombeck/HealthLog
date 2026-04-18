@@ -55,6 +55,7 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 import { locales, localeLabels, type Locale } from "@/lib/i18n/config";
 import { measurementDependentKeys } from "@/lib/query-keys";
+import { describePasskeyError } from "@/lib/passkey-errors";
 
 function PasswordInput(props: React.ComponentProps<typeof Input>) {
   const [visible, setVisible] = useState(false);
@@ -209,8 +210,9 @@ export default function SettingsPage() {
         );
         setPasskeyMsgType("error");
       }
-    } catch {
-      setPasskeyMsg(t("settings.passkeyRegistrationCancelled"));
+    } catch (err) {
+      const { key, params } = describePasskeyError(err);
+      setPasskeyMsg(t(key, params));
       setPasskeyMsgType("error");
     } finally {
       setPasskeyLoading(false);

@@ -108,6 +108,10 @@
     "moodGood": "Gut",
     "moodGreat": "Sehr gut"
   },
+  "errorBoundary": {
+    "title": "Da ist etwas schiefgelaufen",
+    "description": "Ein unerwarteter Fehler ist aufgetreten. Du kannst es erneut versuchen, die technischen Details kopieren oder einen Bug-Report öffnen."
+  },
   "nav": {
     "home": "Home",
     "dashboard": "Dashboard",
@@ -799,6 +803,11 @@
     "passkeyOptionsError": "Konnte Passkey-Optionen nicht laden",
     "passkeyRegistrationFailed": "Fehler bei Passkey-Registrierung",
     "passkeyRegistrationCancelled": "Passkey-Registrierung abgebrochen",
+    "passkeyNotSupported": "Dein Browser oder Gerät unterstützt Passkeys noch nicht. Bitte einen anderen Browser oder ein anderes Gerät verwenden.",
+    "passkeyAlreadyRegistered": "Dieses Gerät ist bereits als Passkey für dein Konto registriert.",
+    "passkeySecurityBlocked": "Dein Browser hat die Passkey-Anfrage aus Sicherheitsgründen blockiert. Bitte auf einer vertrauenswürdigen HTTPS-URL erneut versuchen.",
+    "passkeyTimeout": "Die Passkey-Aufforderung ist abgelaufen. Bitte erneut versuchen.",
+    "passkeyUnknownError": "Passkey-Registrierung fehlgeschlagen: {message}",
     "deletePasskey": "Passkey löschen?",
     "deletePasskeyDescription": "Der Passkey wird unwiderruflich gelöscht.",
     "singleDevice": "Einzelgerät",
@@ -1339,7 +1348,11 @@
     "submit": "Senden",
     "success": "Vielen Dank! Dein Bug Report wurde erfolgreich übermittelt.",
     "viewOnGithub": "Auf GitHub ansehen",
-    "errorCreating": "Fehler beim Erstellen"
+    "errorCreating": "Fehler beim Erstellen",
+    "notConfiguredTitle": "Bug-Reports noch nicht aktiviert",
+    "notConfiguredUser": "Bug-Reports sind auf diesem Server nicht aktiv. Bitte wende dich an den Administrator.",
+    "notConfiguredAdmin": "Für Bug-Reports wird eine GitHub-Integration benötigt (Issue-Token + Repository). Im Admin-Panel unter Einstellungen → Bug-Reports einrichten.",
+    "openAdminSettings": "Admin-Einstellungen öffnen"
   },
   "notifications": {
     "title": "Benachrichtigungen",

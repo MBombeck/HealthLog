@@ -47,9 +47,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const ghRepo = appSettings?.githubIssueRepo || process.env.GITHUB_ISSUE_REPO; // e.g. "owner/repo"
 
   if (!ghToken || !ghRepo) {
+    // 503 instead of 500: the client keys off status to render the "not
+    // configured" screen. The user also sees a clear message rather than
+    // "Internal server error".
     return apiError(
       "Bug report not configured (GitHub issue token/repository missing in admin settings)",
-      500,
+      503,
     );
   }
 

@@ -1,14 +1,33 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload, X, CheckCircle2, ImageIcon, Bug } from "lucide-react";
+import {
+  Loader2,
+  Upload,
+  X,
+  CheckCircle2,
+  ImageIcon,
+  Bug,
+  AlertCircle,
+} from "lucide-react";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
+
+interface BugReportStatus {
+  configured: boolean;
+  hasToken: boolean;
+  hasRepo: boolean;
+  isAdmin: boolean;
+}
 
 export default function BugReportPage() {
   const { isAuthenticated } = useAuth();
+  const { t } = useTranslations();
   const [description, setDescription] = useState("");
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [screenshotName, setScreenshotName] = useState<string | null>(null);
@@ -18,7 +37,17 @@ export default function BugReportPage() {
     message: string;
   } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const { t } = useTranslations();
+
+  const { data: status, isLoading: statusLoading } = useQuery({
+    queryKey: queryKeys.bugreportStatus(),
+    queryFn: async () => {
+      const res = await fetch("/api/bugreport/status");
+      if (!res.ok) throw new Error("Failed to load status");
+      const json = await res.json();
+      return json.data as BugReportStatus;
+    },
+    enabled: isAuthenticated,
+  });
 
   async function handleScreenshot(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -30,10 +59,7 @@ export default function BugReportPage() {
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setResult({
-        type: "error",
-        message: t("bugreport.tooLarge"),
-      });
+      setResult({ type: "error", message: t("bugreport.tooLarge") });
       return;
     }
 
@@ -68,10 +94,7 @@ export default function BugReportPage() {
 
       const json = await res.json();
       if (res.ok) {
-        setResult({
-          type: "success",
-          message: t("bugreport.success"),
-        });
+        setResult({ type: "success", message: t("bugreport.success") });
         setDescription("");
         removeScreenshot();
       } else {
@@ -100,6 +123,56 @@ export default function BugReportPage() {
     );
   }
 
+  if (statusLoading) {
+    return (
+      <div className="mx-auto w-full max-w-6xl space-y-6">
+        <h1 className="text-2xl font-bold tracking-tight">
+          {t("bugreport.title")}
+        </h1>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="text-sm">{t("common.loading")}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (status && !status.configured) {
+    return (
+      <div className="mx-auto w-full max-w-6xl space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {t("bugreport.title")}
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            {t("bugreport.subtitle")}
+          </p>
+        </div>
+
+        <div className="bg-card border-border flex gap-3 rounded-xl border-l-4 border-l-orange-500 p-5">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-orange-500" />
+          <div className="space-y-2">
+            <p className="text-sm font-medium">
+              {t("bugreport.notConfiguredTitle")}
+            </p>
+            <p className="text-muted-foreground text-sm">
+              {status.isAdmin
+                ? t("bugreport.notConfiguredAdmin")
+                : t("bugreport.notConfiguredUser")}
+            </p>
+            {status.isAdmin && (
+              <Button asChild size="sm" variant="outline" className="mt-2">
+                <Link href="/admin#bug-reports">
+                  {t("bugreport.openAdminSettings")}
+                </Link>
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
       <div>
@@ -119,7 +192,6 @@ export default function BugReportPage() {
               id="bug-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder=""
               required
               minLength={10}
               maxLength={5000}

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { describePasskeyError } from "@/lib/passkey-errors";
 import { useTranslations } from "@/lib/i18n/context";
 
 export default function LoginPage() {
@@ -81,8 +82,9 @@ export default function LoginPage() {
 
       await queryClient.invalidateQueries({ queryKey: ["auth"] });
       router.push(getRedirectTarget());
-    } catch {
-      setError(t("auth.passkeyFailed"));
+    } catch (err) {
+      const { key, params } = describePasskeyError(err);
+      setError(t(key, params));
     } finally {
       setLoading(false);
     }
