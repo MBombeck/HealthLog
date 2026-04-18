@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { medicationDependentKeys } from "@/lib/query-keys";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -177,12 +178,9 @@ export function IntakeHistoryList({ medicationId, createOpen, onCreateOpenChange
       if (!res.ok) throw new Error("Delete failed");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["medications", medicationId, "intake"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["medications", medicationId, "compliance"],
-      });
+      medicationDependentKeys.forEach((queryKey) =>
+        queryClient.invalidateQueries({ queryKey }),
+      );
     },
   });
 
@@ -210,12 +208,11 @@ export function IntakeHistoryList({ medicationId, createOpen, onCreateOpenChange
       if (!res.ok) throw new Error(json.error ?? "Update failed");
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ["medications", medicationId, "intake"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["medications", medicationId, "compliance"],
-      });
+      await Promise.all(
+        medicationDependentKeys.map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      );
       setEditing(null);
       setEditError(null);
     },
@@ -248,12 +245,11 @@ export function IntakeHistoryList({ medicationId, createOpen, onCreateOpenChange
       if (!res.ok) throw new Error(json.error ?? "Create failed");
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ["medications", medicationId, "intake"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["medications", medicationId, "compliance"],
-      });
+      await Promise.all(
+        medicationDependentKeys.map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      );
       setCreating(false);
       setCreateError(null);
     },

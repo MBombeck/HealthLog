@@ -203,6 +203,7 @@ function useAdminSettings() {
 
 function useUpdateSettings() {
   const queryClient = useQueryClient();
+  const { t } = useTranslations();
   return useMutation({
     mutationFn: async (data: Record<string, unknown>) => {
       const res = await fetch("/api/admin/settings", {
@@ -210,10 +211,20 @@ function useUpdateSettings() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        throw new Error(await getApiErrorMessage(res));
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "settings"] });
+      toast.success(t("common.saved"));
+    },
+    onError: (err) => {
+      toast.error(
+        err instanceof Error && err.message
+          ? err.message
+          : t("admin.settingsSaveError"),
+      );
     },
   });
 }
@@ -1875,6 +1886,14 @@ function UserManagementSection({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       setEditingUser(null);
+      toast.success(t("common.saved"));
+    },
+    onError: (err) => {
+      toast.error(
+        err instanceof Error && err.message
+          ? err.message
+          : t("admin.settingsSaveError"),
+      );
     },
   });
 

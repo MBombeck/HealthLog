@@ -64,6 +64,7 @@ import {
 import { useState } from "react";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
+import { measurementDependentKeys } from "@/lib/query-keys";
 
 const TYPE_LABEL_KEYS: Record<string, string> = {
   WEIGHT: "measurements.typeWeight",
@@ -192,7 +193,9 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
       if (!res.ok) throw new Error("Delete failed");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["measurements"] });
+      measurementDependentKeys.forEach((queryKey) =>
+        queryClient.invalidateQueries({ queryKey }),
+      );
     },
   });
 
@@ -224,7 +227,11 @@ export function MeasurementList({ onEdit }: MeasurementListProps) {
       }
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["measurements"] });
+      await Promise.all(
+        measurementDependentKeys.map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      );
       setEditing(null);
       setEditError(null);
     },

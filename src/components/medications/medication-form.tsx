@@ -49,6 +49,17 @@ import {
 import { formatTimeWindowRange } from "@/lib/time-window-format";
 import { toast } from "sonner";
 import { useTranslations } from "@/lib/i18n/context";
+import { medicationDependentKeys } from "@/lib/query-keys";
+
+async function invalidateMedicationRelated(
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
+  await Promise.all(
+    medicationDependentKeys.map((queryKey) =>
+      queryClient.invalidateQueries({ queryKey }),
+    ),
+  );
+}
 import { PhaseConfigDialog } from "@/components/medications/phase-config-dialog";
 
 // DOSE_UNITS built dynamically via t() in the component
@@ -385,7 +396,7 @@ export function MedicationForm({
         return;
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["medications"] });
+      await invalidateMedicationRelated(queryClient);
       toast.success(t("common.saved"));
       onSuccess?.();
     } catch {
@@ -409,7 +420,7 @@ export function MedicationForm({
         return;
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["medications"] });
+      await invalidateMedicationRelated(queryClient);
       onSuccess?.();
     } catch {
       setError(t("medications.deleteError"));
@@ -432,7 +443,7 @@ export function MedicationForm({
         return;
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["medications"] });
+      await invalidateMedicationRelated(queryClient);
       setPurgeDialogOpen(false);
     } catch {
       setError(t("medications.purgeError"));

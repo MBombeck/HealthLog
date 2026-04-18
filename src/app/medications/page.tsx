@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
+import { medicationDependentKeys } from "@/lib/query-keys";
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import { MedicationForm } from "@/components/medications/medication-form";
 import { MedicationCard } from "@/components/medications/medication-card";
@@ -366,7 +367,9 @@ function IntakeImportDialog({
               : ""),
         );
         setResultType("success");
-        queryClient.invalidateQueries({ queryKey: ["medications"] });
+        medicationDependentKeys.forEach((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        );
       } else {
         setResult(json.error || t("medications.importFailed"));
         setResultType("error");

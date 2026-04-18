@@ -58,6 +58,7 @@ import {
 import { useState } from "react";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
+import { moodDependentKeys } from "@/lib/query-keys";
 
 const MOOD_SCORES: Record<string, number> = {
   SUPER_GUT: 5,
@@ -168,7 +169,9 @@ export function MoodList() {
       if (!res.ok) throw new Error("Delete failed");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["mood-entries"] });
+      moodDependentKeys.forEach((queryKey) =>
+        queryClient.invalidateQueries({ queryKey }),
+      );
     },
   });
 
@@ -196,7 +199,11 @@ export function MoodList() {
       }
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["mood-entries"] });
+      await Promise.all(
+        moodDependentKeys.map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      );
       setEditing(null);
       setEditError(null);
     },

@@ -54,6 +54,7 @@ import {
 import { formatDate, formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 import { locales, localeLabels, type Locale } from "@/lib/i18n/config";
+import { measurementDependentKeys } from "@/lib/query-keys";
 
 function PasswordInput(props: React.ComponentProps<typeof Input>) {
   const [visible, setVisible] = useState(false);
@@ -891,7 +892,9 @@ function WithingsSection({
             : t("settings.withingsSyncResult", { count: json.data.imported }),
         );
         setSyncMsgType("success");
-        queryClient.invalidateQueries({ queryKey: ["measurements"] });
+        measurementDependentKeys.forEach((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        );
       } else {
         setSyncMsg(json.error || t("settings.withingsSyncFailed"));
         setSyncMsgType("error");
