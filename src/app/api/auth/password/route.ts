@@ -12,6 +12,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { destroyAllSessions, createSession } from "@/lib/auth/session";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -56,10 +57,15 @@ export const POST = apiHandler(async (request: NextRequest) => {
     );
   }
 
-  const strength = checkPasswordStrength(newPassword, [
-    user.username,
-    user.email ?? "",
-  ]);
+  const locale = await resolveServerLocale({
+    request,
+    userLocale: user.locale ?? null,
+  });
+  const strength = checkPasswordStrength(
+    newPassword,
+    [user.username, user.email ?? ""],
+    locale,
+  );
   if (!strength.isAcceptable) {
     return apiError(
       strength.feedback[0] || "Password too weak (score < 3)",

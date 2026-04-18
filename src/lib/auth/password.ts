@@ -1,6 +1,8 @@
 import { hash, verify } from "@node-rs/argon2";
 import zxcvbn from "zxcvbn-typescript";
-import { translateZxcvbn } from "@/lib/zxcvbn-de";
+import { getZxcvbnTranslations } from "@/lib/zxcvbn-i18n";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { defaultLocale, type Locale } from "@/lib/i18n/config";
 
 export async function hashPassword(password: string): Promise<string> {
   return hash(password, {
@@ -24,14 +26,22 @@ export interface PasswordStrength {
   isAcceptable: boolean;
 }
 
+const MIN_PASSWORD_LENGTH = 12;
+
 export function checkPasswordStrength(
   password: string,
   userInputs: string[] = [],
+  locale: Locale = defaultLocale,
 ): PasswordStrength {
-  if (password.length < 12) {
+  const { t } = getServerTranslator(locale);
+  const { translate } = getZxcvbnTranslations(locale);
+
+  if (password.length < MIN_PASSWORD_LENGTH) {
     return {
       score: 0,
-      feedback: ["Passwort muss mindestens 12 Zeichen lang sein."],
+      feedback: [
+        t("auth.passwordTooShort", { minLength: MIN_PASSWORD_LENGTH }),
+      ],
       isAcceptable: false,
     };
   }
@@ -40,10 +50,10 @@ export function checkPasswordStrength(
   const feedback: string[] = [];
 
   if (result.feedback.warning) {
-    feedback.push(translateZxcvbn(result.feedback.warning));
+    feedback.push(translate(result.feedback.warning));
   }
   if (result.feedback.suggestions) {
-    feedback.push(...result.feedback.suggestions.map(translateZxcvbn));
+    feedback.push(...result.feedback.suggestions.map(translate));
   }
 
   return {
