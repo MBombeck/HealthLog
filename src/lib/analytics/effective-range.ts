@@ -101,17 +101,18 @@ function normalizedGender(value: string | null): "MALE" | "FEMALE" | null {
   return null;
 }
 
+function toDate(value: Date | string | null): Date | null {
+  if (!value) return null;
+  return value instanceof Date ? value : new Date(value);
+}
+
 function defaultRange(
   metric: ThresholdMetric,
   profile: UserProfileForRange,
 ): TrafficRange | null {
   const age = getAgeFromDateOfBirth(profile.dateOfBirth ?? null);
   const gender = normalizedGender(profile.gender ?? null);
-  const dateOfBirth = profile.dateOfBirth
-    ? profile.dateOfBirth instanceof Date
-      ? profile.dateOfBirth
-      : new Date(profile.dateOfBirth)
-    : null;
+  const dateOfBirth = toDate(profile.dateOfBirth);
 
   switch (metric) {
     case "WEIGHT":
@@ -165,43 +166,30 @@ function defaultRange(
       // WHO: ≥8000 steps/day; no upper bound in reality, but orange over 25k
       // for edge detection.
       return { greenMin: 8000, greenMax: 15000, orangeMin: 5000, orangeMax: 25000 };
-    case "BLOOD_GLUCOSE_FASTING": {
-      const d = GLUCOSE_DEFAULTS.FASTING;
-      return {
-        greenMin: d.min,
-        greenMax: d.max,
-        orangeMin: d.min - 10,
-        orangeMax: 125, // pre-diabetes upper bound
-      };
-    }
-    case "BLOOD_GLUCOSE_POSTPRANDIAL": {
-      const d = GLUCOSE_DEFAULTS.POSTPRANDIAL;
-      return {
-        greenMin: d.min,
-        greenMax: d.max,
-        orangeMin: d.min - 10,
-        orangeMax: 199, // impaired glucose tolerance upper
-      };
-    }
-    case "BLOOD_GLUCOSE_RANDOM": {
-      const d = GLUCOSE_DEFAULTS.RANDOM;
-      return {
-        greenMin: d.min,
-        greenMax: d.max,
-        orangeMin: d.min - 10,
-        orangeMax: 199,
-      };
-    }
-    case "BLOOD_GLUCOSE_BEDTIME": {
-      const d = GLUCOSE_DEFAULTS.BEDTIME;
-      return {
-        greenMin: d.min,
-        greenMax: d.max,
-        orangeMin: d.min - 10,
-        orangeMax: d.max + 30,
-      };
-    }
+    case "BLOOD_GLUCOSE_FASTING":
+      return glucoseRange(GLUCOSE_DEFAULTS.FASTING, 125); // pre-diabetes upper bound
+    case "BLOOD_GLUCOSE_POSTPRANDIAL":
+      return glucoseRange(GLUCOSE_DEFAULTS.POSTPRANDIAL, 199); // impaired glucose tolerance upper
+    case "BLOOD_GLUCOSE_RANDOM":
+      return glucoseRange(GLUCOSE_DEFAULTS.RANDOM, 199);
+    case "BLOOD_GLUCOSE_BEDTIME":
+      return glucoseRange(
+        GLUCOSE_DEFAULTS.BEDTIME,
+        GLUCOSE_DEFAULTS.BEDTIME.max + 30,
+      );
   }
+}
+
+function glucoseRange(
+  d: { min: number; max: number },
+  orangeMax: number,
+): TrafficRange {
+  return {
+    greenMin: d.min,
+    greenMax: d.max,
+    orangeMin: d.min - 10,
+    orangeMax,
+  };
 }
 
 export interface EffectiveRange {
@@ -258,19 +246,7 @@ export function getAllEffectiveRanges(
   profile: UserProfileForRange,
   overrides: ThresholdOverridesJson | null | undefined,
 ): Record<ThresholdMetric, EffectiveRange> {
-  const metrics: ThresholdMetric[] = [
-    "WEIGHT",
-    "BLOOD_PRESSURE_SYS",
-    "BLOOD_PRESSURE_DIA",
-    "PULSE",
-    "BODY_FAT",
-    "SLEEP_DURATION",
-    "ACTIVITY_STEPS",
-    "BLOOD_GLUCOSE_FASTING",
-    "BLOOD_GLUCOSE_POSTPRANDIAL",
-    "BLOOD_GLUCOSE_RANDOM",
-    "BLOOD_GLUCOSE_BEDTIME",
-  ];
+  const metrics = Object.keys(METRIC_BOUNDS) as ThresholdMetric[];
   return Object.fromEntries(
     metrics.map((m) => [m, getEffectiveRange(m, profile, overrides)]),
   ) as Record<ThresholdMetric, EffectiveRange>;
