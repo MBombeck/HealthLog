@@ -17,9 +17,14 @@ import {
   classifyPulseByTarget,
   getPersonalizedPulseTarget,
 } from "@/lib/analytics/pulse-targets";
-import type { MeasurementType } from "@/generated/prisma/client";
+import type { MeasurementType, GlucoseContext } from "@/generated/prisma/client";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
+import {
+  getEffectiveRange,
+  type ThresholdOverridesJson,
+} from "@/lib/analytics/effective-range";
+import { thresholdMetricForContext, resolveGlucoseUnit } from "@/lib/glucose";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +72,8 @@ export const GET = apiHandler(async () => {
       heightCm: true,
       dateOfBirth: true,
       gender: true,
+      glucoseUnit: true,
+      thresholdsJson: true,
     },
   });
 
@@ -570,6 +577,80 @@ export const GET = apiHandler(async () => {
     }
   }
 
+  // 10. Blood glucose — one card per logged context.
+  const glucoseContexts: GlucoseContext[] = [
+    "FASTING",
+    "POSTPRANDIAL",
+    "RANDOM",
+    "BEDTIME",
+  ];
+  const glucoseUnit = resolveGlucoseUnit(dbUser?.glucoseUnit ?? null);
+  const overrides = (dbUser?.thresholdsJson ?? null) as ThresholdOverridesJson | null;
+  const profileForRange = {
+    heightCm,
+    dateOfBirth: dbUser?.dateOfBirth ?? null,
+    gender: dbUser?.gender ?? null,
+  };
+  const thirtyDaysAgoGlucose = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const glucoseRows = await prisma.measurement.findMany({
+    where: { userId, type: "BLOOD_GLUCOSE" },
+    orderBy: { measuredAt: "desc" },
+    select: { value: true, measuredAt: true, glucoseContext: true },
+  });
+
+  const labelKeyByContext: Record<GlucoseContext, string> = {
+    FASTING: "targets.glucoseFasting",
+    POSTPRANDIAL: "targets.glucosePostprandial",
+    RANDOM: "targets.glucoseRandom",
+    BEDTIME: "targets.glucoseBedtime",
+  };
+
+  for (const ctx of glucoseContexts) {
+    const ctxRows = glucoseRows.filter((r) => r.glucoseContext === ctx);
+    if (ctxRows.length === 0) continue;
+    const latest = ctxRows[0].value;
+    const recent = ctxRows.filter((r) => r.measuredAt >= thirtyDaysAgoGlucose);
+    const avg30 =
+      recent.length > 0
+        ? Math.round(
+            (recent.reduce((s, r) => s + r.value, 0) / recent.length) * 10,
+          ) / 10
+        : null;
+
+    const metric = thresholdMetricForContext(ctx);
+    const eff = getEffectiveRange(metric, profileForRange, overrides);
+    const range = eff.range
+      ? { min: eff.range.greenMin, max: eff.range.greenMax }
+      : null;
+
+    let classification: { category: string; color: string } | null = null;
+    if (range) {
+      if (latest >= range.min && latest <= range.max) {
+        classification = { category: "Optimal", color: "#50fa7b" };
+      } else if (
+        eff.range &&
+        latest >= eff.range.orangeMin &&
+        latest <= eff.range.orangeMax
+      ) {
+        classification = { category: "Elevated", color: "#f1fa8c" };
+      } else {
+        classification = { category: "High", color: "#ff5555" };
+      }
+    }
+
+    targets.push({
+      type: `BLOOD_GLUCOSE_${ctx}`,
+      label: labelKeyByContext[ctx],
+      current: latest,
+      average30: avg30,
+      trend: null,
+      unit: glucoseUnit,
+      range,
+      classification,
+      source: eff.isOverride ? "Custom" : "ADA 2024 / DDG",
+    });
+  }
+
   annotate({ action: { name: "insights.targets" }, meta: { targetCount: targets.length } });
 
   return apiSuccess({
@@ -584,6 +665,7 @@ export const GET = apiHandler(async () => {
       heightCm,
       age,
       gender,
+      glucoseUnit,
     },
   });
 });

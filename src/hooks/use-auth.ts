@@ -14,6 +14,7 @@ export interface AuthUser {
   timezone: string;
   onboardingCompletedAt: string | null;
   gravatarUrl: string | null;
+  glucoseUnit: string | null;
 }
 
 async function fetchMe(): Promise<AuthUser> {

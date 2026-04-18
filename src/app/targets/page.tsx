@@ -24,7 +24,9 @@ import {
   AlertCircle,
   ExternalLink,
   Smile,
+  Droplet,
 } from "lucide-react";
+import { convertGlucose, resolveGlucoseUnit } from "@/lib/glucose";
 
 interface TargetData {
   type: string;
@@ -58,6 +60,7 @@ interface TargetsResponse {
     heightCm: number | null;
     age: number | null;
     gender: string | null;
+    glucoseUnit?: string | null;
   };
 }
 
@@ -71,6 +74,10 @@ const TYPE_ICONS: Record<string, typeof Scale> = {
   BMI: Scale,
   MOOD_SCORE: Smile,
   MOOD_STABILITY: Smile,
+  BLOOD_GLUCOSE_FASTING: Droplet,
+  BLOOD_GLUCOSE_POSTPRANDIAL: Droplet,
+  BLOOD_GLUCOSE_RANDOM: Droplet,
+  BLOOD_GLUCOSE_BEDTIME: Droplet,
 };
 
 const TYPE_COLORS: Record<string, string> = {
@@ -83,7 +90,18 @@ const TYPE_COLORS: Record<string, string> = {
   BMI: "text-dracula-yellow",
   MOOD_SCORE: "text-dracula-lavender",
   MOOD_STABILITY: "text-dracula-lavender",
+  BLOOD_GLUCOSE_FASTING: "text-dracula-red",
+  BLOOD_GLUCOSE_POSTPRANDIAL: "text-dracula-red",
+  BLOOD_GLUCOSE_RANDOM: "text-dracula-red",
+  BLOOD_GLUCOSE_BEDTIME: "text-dracula-red",
 };
+
+const GLUCOSE_TYPES = new Set([
+  "BLOOD_GLUCOSE_FASTING",
+  "BLOOD_GLUCOSE_POSTPRANDIAL",
+  "BLOOD_GLUCOSE_RANDOM",
+  "BLOOD_GLUCOSE_BEDTIME",
+]);
 
 function getTargetSourceLink(target: TargetData): string | null {
   if (target.type === "WEIGHT" || target.type === "BMI") {
@@ -503,9 +521,32 @@ export default function TargetsPage() {
   }
 
   const profileIncomplete = !data.profile.heightCm || !data.profile.age;
-  const visibleTargets = data.targets.filter(
-    (target) => target.current != null,
+  const displayGlucoseUnit = resolveGlucoseUnit(
+    data.profile.glucoseUnit ?? null,
   );
+  const visibleTargets = data.targets
+    .filter((target) => target.current != null)
+    .map((target) => {
+      if (!GLUCOSE_TYPES.has(target.type)) return target;
+      // Server label is an i18n key for glucose; resolve here.
+      const label = t(target.label);
+      // Convert mg/dL canonical values to the user's display unit.
+      const convert = (v: number | null) =>
+        v == null ? null : convertGlucose(v, displayGlucoseUnit);
+      return {
+        ...target,
+        label,
+        unit: displayGlucoseUnit,
+        current: convert(target.current),
+        average30: convert(target.average30),
+        range: target.range
+          ? {
+              min: convertGlucose(target.range.min, displayGlucoseUnit),
+              max: convertGlucose(target.range.max, displayGlucoseUnit),
+            }
+          : null,
+      };
+    });
 
   return (
     <div className="space-y-8">
