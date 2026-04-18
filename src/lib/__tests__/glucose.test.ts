@@ -47,4 +47,20 @@ describe("glucose conversion", () => {
     expect(thresholdMetricForContext("RANDOM")).toBe("BLOOD_GLUCOSE_RANDOM");
     expect(thresholdMetricForContext("BEDTIME")).toBe("BLOOD_GLUCOSE_BEDTIME");
   });
+
+  // Display-unit logic guard for the targets/dashboard surfaces:
+  // canonical mg/dL stays integer; mmol/L stays 1-decimal; ranges convert too.
+  it("display unit conversion preserves integer/decimal precision", () => {
+    const fastingMin = 70; // mg/dL
+    const fastingMax = 99;
+    const ada126 = 126; // diabetes threshold
+
+    expect(convertGlucose(fastingMin, "mg/dL")).toBe(70);
+    expect(convertGlucose(fastingMax, "mg/dL")).toBe(99);
+    expect(convertGlucose(ada126, "mg/dL")).toBe(126);
+
+    expect(convertGlucose(fastingMin, "mmol/L")).toBe(3.9);
+    expect(convertGlucose(fastingMax, "mmol/L")).toBe(5.5);
+    expect(convertGlucose(ada126, "mmol/L")).toBe(7);
+  });
 });
