@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { Activity, Heart, Percent, Plus, Smile, TrendingUp, Waves } from "lucide-react";
+import { Activity, Droplet, Heart, Percent, Plus, Smile, TrendingUp, Waves } from "lucide-react";
+import { convertGlucose, resolveGlucoseUnit } from "@/lib/glucose";
+import {
+  resolveDashboardLayout,
+  type DashboardLayout,
+} from "@/lib/dashboard-layout";
+import type { DataSummary as DataSummaryType } from "@/lib/analytics/trends";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,6 +62,7 @@ import {
 interface AnalyticsData {
   summaries: Record<string, DataSummary>;
   bpInTargetPct: number | null;
+  glucoseByContext?: Record<string, DataSummaryType>;
 }
 
 interface RangeDisplayConfig {
@@ -148,6 +155,17 @@ export default function DashboardPage() {
     enabled: isAuthenticated,
   });
 
+  const { data: layoutData } = useQuery({
+    queryKey: ["user", "dashboardWidgets"],
+    queryFn: async () => {
+      const res = await fetch("/api/dashboard/widgets");
+      if (!res.ok) throw new Error("Failed");
+      const json = await res.json();
+      return json.data as DashboardLayout;
+    },
+    enabled: isAuthenticated,
+  });
+
   const { data: moodData } = useQuery({
     queryKey: queryKeys.moodAnalytics(),
     queryFn: async () => {
@@ -167,6 +185,25 @@ export default function DashboardPage() {
   const showBodyFatCard = (bf?.count ?? 0) > 0;
   const moodSummary = moodData?.summary;
   const showMoodCard = (moodSummary?.count ?? 0) > 0;
+
+  // Glucose widget — only visible when the user has the widget enabled AND
+  // there is at least one glucose reading. Default layout has glucose: false.
+  const layout = resolveDashboardLayout(layoutData);
+  const glucoseWidgetVisible =
+    layout.widgets.find((w) => w.id === "glucose")?.visible ?? false;
+  const displayGlucoseUnit = resolveGlucoseUnit(user?.glucoseUnit ?? null);
+  const glucoseByContext = data?.glucoseByContext ?? {};
+  const glucoseContexts = ["FASTING", "POSTPRANDIAL", "RANDOM", "BEDTIME"] as const;
+  const glucoseSummariesPresent = glucoseContexts.filter(
+    (ctx) => (glucoseByContext[ctx]?.count ?? 0) > 0,
+  );
+  const showGlucoseCards = glucoseWidgetVisible && glucoseSummariesPresent.length > 0;
+  const glucoseLabelKey: Record<string, string> = {
+    FASTING: "targets.glucoseFasting",
+    POSTPRANDIAL: "targets.glucosePostprandial",
+    RANDOM: "targets.glucoseRandom",
+    BEDTIME: "targets.glucoseBedtime",
+  };
   const bpTargets =
     user?.dateOfBirth != null ? getBpTargets(new Date(user.dateOfBirth)) : null;
   const pulseAge = getAgeFromDateOfBirth(user?.dateOfBirth ?? null);
@@ -407,6 +444,35 @@ export default function DashboardPage() {
             icon={Smile}
           />
         ) : null}
+        {showGlucoseCards
+          ? glucoseSummariesPresent.map((ctx) => {
+              const s = glucoseByContext[ctx];
+              return (
+                <TrendCard
+                  key={`glucose-${ctx}`}
+                  label={t(glucoseLabelKey[ctx])}
+                  latest={
+                    s.latest != null
+                      ? convertGlucose(s.latest, displayGlucoseUnit)
+                      : null
+                  }
+                  unit={displayGlucoseUnit}
+                  avg7={
+                    s.avg7 != null
+                      ? convertGlucose(s.avg7, displayGlucoseUnit)
+                      : null
+                  }
+                  avg30={
+                    s.avg30 != null
+                      ? convertGlucose(s.avg30, displayGlucoseUnit)
+                      : null
+                  }
+                  slope30={s.slope30 ?? null}
+                  icon={Droplet}
+                />
+              );
+            })
+          : null}
       </div>
 
       <HealthChart

@@ -20,6 +20,7 @@ export const GET = apiHandler(async () => {
     "BODY_FAT",
     "SLEEP_DURATION",
     "ACTIVITY_STEPS",
+    "BLOOD_GLUCOSE",
   ];
 
   const measurementsByType = await Promise.all(
@@ -110,9 +111,28 @@ export const GET = apiHandler(async () => {
     }
   }
 
+  // Per-context glucose summaries (canonical mg/dL).
+  const glucoseRows = await prisma.measurement.findMany({
+    where: { userId: user.id, type: "BLOOD_GLUCOSE" },
+    orderBy: { measuredAt: "asc" },
+    select: { value: true, measuredAt: true, glucoseContext: true },
+  });
+  const glucoseByContext: Record<string, ReturnType<typeof summarize>> = {};
+  if (glucoseRows.length > 0) {
+    const contexts = ["FASTING", "POSTPRANDIAL", "RANDOM", "BEDTIME"] as const;
+    for (const ctx of contexts) {
+      const ctxRows = glucoseRows.filter((r) => r.glucoseContext === ctx);
+      if (ctxRows.length === 0) continue;
+      glucoseByContext[ctx] = summarize(
+        ctxRows.map((r): DataPoint => ({ date: r.measuredAt, value: r.value })),
+      );
+    }
+  }
+
   return apiSuccess({
     summaries: results,
     bmi,
     bpInTargetPct,
+    glucoseByContext,
   });
 });

@@ -1438,7 +1438,7 @@
   },
   "bugreport": {
     "title": "Bug Report",
-    "subtitle": "Report a bug or issue. A GitHub issue will be created automatically.",
+    "subtitle": "Send a bug report, feature request, or question. The server administrator will see your submission.",
     "loginRequired": "Please sign in to report a bug.",
     "bugTitle": "Title",
     "bugTitlePlaceholder": "Brief description of the problem",
