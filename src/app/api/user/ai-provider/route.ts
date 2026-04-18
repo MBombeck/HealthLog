@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
-import { apiSuccess, safeJson } from "@/lib/api-response";
+import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
+import { isPublicUrl } from "@/lib/validations/notifications";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { annotate } from "@/lib/logging/context";
 
@@ -67,7 +68,19 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     if (body.baseUrl === null || body.baseUrl === "") {
       updates.aiBaseUrl = null;
     } else if (typeof body.baseUrl === "string") {
-      updates.aiBaseUrl = body.baseUrl.trim();
+      const trimmed = body.baseUrl.trim();
+      // SSRF guard: by default reject private/internal hostnames so a
+      // compromised user account cannot point the server at the cloud
+      // metadata endpoint or internal admin panels. Ops can enable local
+      // Ollama / LM Studio on this instance via env flag.
+      const allowPrivate = process.env.ALLOW_LOCAL_AI_PRIVATE_HOSTS === "true";
+      if (!allowPrivate && !isPublicUrl(trimmed)) {
+        return apiError(
+          "Base URL points to an internal/private host. Ops must set ALLOW_LOCAL_AI_PRIVATE_HOSTS=true on this instance to allow it (intended for self-hosted Ollama / LM Studio).",
+          422,
+        );
+      }
+      updates.aiBaseUrl = trimmed;
     }
   }
 

@@ -43,6 +43,19 @@ export const POST = apiHandler(
       );
     }
 
+    // Atomic claim to prevent concurrent admin clicks from creating two
+    // duplicate GitHub issues. Only the first caller whose updateMany
+    // matches (gitHubIssueUrl still null) proceeds. We write a PENDING
+    // sentinel now and replace it with the real URL after the API call.
+    const PENDING = "pending://creating";
+    const claim = await prisma.feedback.updateMany({
+      where: { id, gitHubIssueUrl: null },
+      data: { gitHubIssueUrl: PENDING },
+    });
+    if (claim.count !== 1) {
+      return apiError("Already being published by another request", 409);
+    }
+
     try {
       const result = await publishFeedbackToGithub({
         category: feedback.category,
@@ -71,6 +84,13 @@ export const POST = apiHandler(
 
       return apiSuccess({ issueUrl: result.issueUrl });
     } catch (err) {
+      // Release the PENDING claim so a retry can succeed.
+      await prisma.feedback
+        .updateMany({
+          where: { id, gitHubIssueUrl: PENDING },
+          data: { gitHubIssueUrl: null },
+        })
+        .catch(() => undefined);
       if (err instanceof GithubPublishError) {
         return apiError(err.message, err.status);
       }
