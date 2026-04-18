@@ -1393,7 +1393,15 @@
     "notConfiguredTitle": "Bug-Reports noch nicht aktiviert",
     "notConfiguredUser": "Bug-Reports sind auf diesem Server nicht aktiv. Bitte wende dich an den Administrator.",
     "notConfiguredAdmin": "Für Bug-Reports wird eine GitHub-Integration benötigt (Issue-Token + Repository). Im Admin-Panel unter Einstellungen → Bug-Reports einrichten.",
-    "openAdminSettings": "Admin-Einstellungen öffnen"
+    "openAdminSettings": "Admin-Einstellungen öffnen",
+    "category": "Art",
+    "categoryBug": "Fehlermeldung",
+    "categoryFeature": "Feature-Wunsch",
+    "categoryQuestion": "Frage",
+    "categoryOther": "Sonstiges Feedback",
+    "bugTitlePlaceholder": "Kurze Zusammenfassung (optional)",
+    "githubEscalationNote": "Dein Feedback wird lokal gespeichert. Wenn der Administrator die GitHub-Integration aktiviert, kann es auf Wunsch als öffentliches Issue veröffentlicht werden.",
+    "internalOnlyNote": "Dein Feedback wird lokal gespeichert und ist nur für den Administrator dieses Servers sichtbar."
   },
   "notifications": {
     "title": "Benachrichtigungen",
@@ -1547,5 +1555,27 @@
     "tooShort": "Zu kurz",
     "characters": "Zeichen",
     "minLength": "Mindestens {count} Zeichen erforderlich."
+  },
+  "telegram": {
+    "errorInvalidAction": "Ungültige Aktion.",
+    "errorMedicationNotFound": "Medikament nicht gefunden.",
+    "errorMedicationInactive": "Medikament nicht gefunden oder inaktiv.",
+    "errorUnknownAction": "Unbekannte Aktion.",
+    "snoozeOneHour": "1 Stunde",
+    "snoozeThreeHours": "3 Stunden",
+    "snoozedFor": "{name} für {duration} zurückgestellt.",
+    "skipped": "{name} übersprungen.",
+    "alreadyRecorded": "{name} war bereits erfasst.",
+    "recordedAsTaken": "{name} als eingenommen erfasst.",
+    "confirmed": "{name} bestätigt.",
+    "genericConfirmed": "Bestätigt.",
+    "cancelled": "Abgebrochen.",
+    "noActiveMedications": "Keine aktiven Medikamente gefunden.",
+    "whichMedication": "<b>Welches Medikament eingenommen?</b>",
+    "cancelButton": "Abbrechen",
+    "askMedicationName": "Bitte Medikament angeben, z.B. <b>genommen Ramipril</b>.",
+    "medicationNotFoundExact": "Medikament nicht gefunden. Bitte Namen exakt wie in HealthLog senden.",
+    "helpHeader": "<b>Verfügbare Befehle:</b>",
+    "helpBody": "/help — Diese Hilfe anzeigen\n/add — Einnahme erfassen\n/start — Bot starten\n\n<b>Textbefehle:</b>\ngenommen &lt;Name&gt; — Einnahme bestätigen\n\n<b>Über die Buttons in Erinnerungen:</b>\n• Genommen — Einnahme bestätigen\n• 🕐 1h / 🕐 3h — Erinnerung verschieben\n• ⏭ Überspringen — Einnahme überspringen\n• ✓ Bestätigen — Verpasste Einnahme bestätigen"
   }
 }

@@ -2,10 +2,17 @@
 
 import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Loader2,
   Upload,
@@ -13,7 +20,8 @@ import {
   CheckCircle2,
   ImageIcon,
   Bug,
-  AlertCircle,
+  Github,
+  Info,
 } from "lucide-react";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -23,9 +31,20 @@ interface BugReportStatus {
   isAdmin: boolean;
 }
 
+const CATEGORIES = [
+  { value: "BUG", labelKey: "bugreport.categoryBug" },
+  { value: "FEATURE_REQUEST", labelKey: "bugreport.categoryFeature" },
+  { value: "QUESTION", labelKey: "bugreport.categoryQuestion" },
+  { value: "OTHER", labelKey: "bugreport.categoryOther" },
+] as const;
+
+type CategoryValue = (typeof CATEGORIES)[number]["value"];
+
 export default function BugReportPage() {
   const { isAuthenticated } = useAuth();
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
+  const [category, setCategory] = useState<CategoryValue>("BUG");
+  const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [screenshotName, setScreenshotName] = useState<string | null>(null);
@@ -36,7 +55,8 @@ export default function BugReportPage() {
   } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const { data: status, isLoading: statusLoading } = useQuery({
+  // Status is now informational only — submission always works.
+  const { data: status } = useQuery({
     queryKey: queryKeys.bugreportStatus(),
     queryFn: async () => {
       const res = await fetch("/api/bugreport/status");
@@ -81,18 +101,28 @@ export default function BugReportPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/bugreport", {
+      const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          category,
+          subject: subject || description.slice(0, 60),
           description,
           ...(screenshot ? { screenshot } : {}),
+          metadata: {
+            locale,
+            userAgent:
+              typeof navigator !== "undefined" ? navigator.userAgent : null,
+            url:
+              typeof window !== "undefined" ? window.location.pathname : null,
+          },
         }),
       });
 
       const json = await res.json();
       if (res.ok) {
         setResult({ type: "success", message: t("bugreport.success") });
+        setSubject("");
         setDescription("");
         removeScreenshot();
       } else {
@@ -121,56 +151,6 @@ export default function BugReportPage() {
     );
   }
 
-  if (statusLoading) {
-    return (
-      <div className="mx-auto w-full max-w-6xl space-y-6">
-        <h1 className="text-2xl font-bold tracking-tight">
-          {t("bugreport.title")}
-        </h1>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span className="text-sm">{t("common.loading")}</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (status && !status.configured) {
-    return (
-      <div className="mx-auto w-full max-w-6xl space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {t("bugreport.title")}
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            {t("bugreport.subtitle")}
-          </p>
-        </div>
-
-        <div className="bg-card border-border flex gap-3 rounded-xl border-l-4 border-l-orange-500 p-5">
-          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-orange-500" />
-          <div className="space-y-2">
-            <p className="text-sm font-medium">
-              {t("bugreport.notConfiguredTitle")}
-            </p>
-            <p className="text-muted-foreground text-sm">
-              {status.isAdmin
-                ? t("bugreport.notConfiguredAdmin")
-                : t("bugreport.notConfiguredUser")}
-            </p>
-            {status.isAdmin && (
-              <Button asChild size="sm" variant="outline" className="mt-2">
-                <Link href="/admin#bug-reports">
-                  {t("bugreport.openAdminSettings")}
-                </Link>
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
       <div>
@@ -182,8 +162,56 @@ export default function BugReportPage() {
         </p>
       </div>
 
+      {status?.configured && (
+        <div className="bg-card border-border flex gap-2 rounded-lg border-l-4 border-l-dracula-cyan p-3 text-sm">
+          <Github className="mt-0.5 h-4 w-4 shrink-0 text-dracula-cyan" />
+          <p className="text-muted-foreground">
+            {t("bugreport.githubEscalationNote")}
+          </p>
+        </div>
+      )}
+      {!status?.configured && (
+        <div className="bg-card border-border flex gap-2 rounded-lg border-l-4 border-l-dracula-purple p-3 text-sm">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-dracula-purple" />
+          <p className="text-muted-foreground">
+            {t("bugreport.internalOnlyNote")}
+          </p>
+        </div>
+      )}
+
       <div className="bg-card border-border w-full rounded-xl border p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-[200px_1fr]">
+            <div className="space-y-2">
+              <Label htmlFor="category">{t("bugreport.category")}</Label>
+              <Select
+                value={category}
+                onValueChange={(v) => setCategory(v as CategoryValue)}
+              >
+                <SelectTrigger id="category">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {t(c.labelKey)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="subject">{t("bugreport.bugTitle")}</Label>
+              <Input
+                id="subject"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder={t("bugreport.bugTitlePlaceholder")}
+                maxLength={200}
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="bug-desc">{t("bugreport.description")}</Label>
             <textarea
@@ -193,7 +221,7 @@ export default function BugReportPage() {
               required
               minLength={10}
               maxLength={5000}
-              rows={9}
+              rows={8}
               className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
             />
           </div>

@@ -1393,7 +1393,15 @@
     "notConfiguredTitle": "Bug reports not available yet",
     "notConfiguredUser": "Bug reporting is disabled on this server. Please contact your administrator.",
     "notConfiguredAdmin": "Bug reporting requires a GitHub integration (issue token + repository). Configure it in the admin panel under Settings → Bug reports.",
-    "openAdminSettings": "Open admin settings"
+    "openAdminSettings": "Open admin settings",
+    "category": "Type",
+    "categoryBug": "Bug report",
+    "categoryFeature": "Feature request",
+    "categoryQuestion": "Question",
+    "categoryOther": "Other feedback",
+    "bugTitlePlaceholder": "Short summary (optional)",
+    "githubEscalationNote": "Your feedback is stored locally. If the admin enables GitHub integration, it can be promoted to a public issue on request.",
+    "internalOnlyNote": "Your feedback is stored locally and only visible to the administrator of this server."
   },
   "notifications": {
     "title": "Notifications",
@@ -1547,5 +1555,27 @@
     "tooShort": "Too short",
     "characters": "characters",
     "minLength": "At least {count} characters required."
+  },
+  "telegram": {
+    "errorInvalidAction": "Invalid action.",
+    "errorMedicationNotFound": "Medication not found.",
+    "errorMedicationInactive": "Medication not found or inactive.",
+    "errorUnknownAction": "Unknown action.",
+    "snoozeOneHour": "1 hour",
+    "snoozeThreeHours": "3 hours",
+    "snoozedFor": "{name} snoozed for {duration}.",
+    "skipped": "{name} skipped.",
+    "alreadyRecorded": "{name} was already recorded.",
+    "recordedAsTaken": "{name} recorded as taken.",
+    "confirmed": "{name} confirmed.",
+    "genericConfirmed": "Confirmed.",
+    "cancelled": "Cancelled.",
+    "noActiveMedications": "No active medications found.",
+    "whichMedication": "<b>Which medication did you take?</b>",
+    "cancelButton": "Cancel",
+    "askMedicationName": "Please specify a medication, e.g. <b>taken Ramipril</b>.",
+    "medicationNotFoundExact": "Medication not found. Please send the name exactly as in HealthLog.",
+    "helpHeader": "<b>Available commands:</b>",
+    "helpBody": "/help — show this help\n/add — record an intake\n/start — start the bot\n\n<b>Text commands:</b>\ntaken &lt;name&gt; — confirm an intake\n\n<b>Buttons in reminders:</b>\n• Taken — confirm intake\n• 🕐 1h / 🕐 3h — postpone reminder\n• ⏭ Skip — skip intake\n• ✓ Confirm — confirm a missed intake"
   }
 }
