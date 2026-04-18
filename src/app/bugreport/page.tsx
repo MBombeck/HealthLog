@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
