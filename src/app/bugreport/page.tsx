@@ -151,6 +151,56 @@ export default function BugReportPage() {
     );
   }
 
+  if (statusLoading) {
+    return (
+      <div className="mx-auto w-full max-w-6xl space-y-6">
+        <h1 className="text-2xl font-bold tracking-tight">
+          {t("bugreport.title")}
+        </h1>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="text-sm">{t("common.loading")}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (status && !status.configured) {
+    return (
+      <div className="mx-auto w-full max-w-6xl space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {t("bugreport.title")}
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            {t("bugreport.subtitle")}
+          </p>
+        </div>
+
+        <div className="bg-card border-border flex gap-3 rounded-xl border-l-4 border-l-orange-500 p-5">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-orange-500" />
+          <div className="space-y-2">
+            <p className="text-sm font-medium">
+              {t("bugreport.notConfiguredTitle")}
+            </p>
+            <p className="text-muted-foreground text-sm">
+              {status.isAdmin
+                ? t("bugreport.notConfiguredAdmin")
+                : t("bugreport.notConfiguredUser")}
+            </p>
+            {status.isAdmin && (
+              <Button asChild size="sm" variant="outline" className="mt-2">
+                <Link href="/admin#bug-reports">
+                  {t("bugreport.openAdminSettings")}
+                </Link>
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
       <div>
