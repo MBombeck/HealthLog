@@ -26,7 +26,7 @@
     "@prisma/client": "^7.7.0",
     "@simplewebauthn/browser": "^13.3.0",
     "@simplewebauthn/server": "^13.3.0",
-    "@tanstack/react-query": "^5.99.0",
+    "@tanstack/react-query": "^5.99.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^17.4.1",
