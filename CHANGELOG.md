@@ -52,11 +52,14 @@
   and Kubernetes pod terminations now trigger `boss.stop({ graceful: true,
 timeout: 30s })` so in-flight handlers finish instead of being killed.
   Previously, pending handlers could be lost or replayed on restart.
-- **CI now blocks on ESLint and TypeScript.** `continue-on-error: true`
-  removed from `.github/workflows/security.yml` for both checks. Tests
-  already were blocking. Required cleaning up two long-standing `any`
-  types in `api-handler.ts` (justified inline — Next.js variadic
-  handler signature constrained by `Promise<Response>` return).
+- **CI now blocks on TypeScript strict checks.** `continue-on-error: true`
+  removed for typecheck. Tests already were blocking. ESLint stays
+  non-blocking for now — the existing `settings/page.tsx` monolith has
+  long-standing `react-hooks/set-state-in-effect` violations whose proper
+  fix lives in the 1.4.0 settings-split refactor; a blocking lint here
+  would just gate every PR until that refactor lands. Required cleaning
+  up two `any` types in `api-handler.ts` (justified inline — Next.js
+  variadic handler signature constrained by `Promise<Response>` return).
 
 ### Polish
 
