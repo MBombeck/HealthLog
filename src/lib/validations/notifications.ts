@@ -49,19 +49,42 @@ function parseIpv4Strict(
  * IP). For that, pin the resolved IP at fetch time or use an HTTP client
  * that blocks redirects to private ranges.
  */
+function isPrivateIpv4(ip: [number, number, number, number]): boolean {
+  const [a, b] = ip;
+  if (a === 127) return true; // 127.0.0.0/8 loopback
+  if (a === 0) return true; // 0.0.0.0/8 reserved (also covers literal 0.0.0.0)
+  if (a === 10) return true; // 10.0.0.0/8 RFC1918
+  if (a === 169 && b === 254) return true; // 169.254.0.0/16 link-local + AWS metadata
+  if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12 RFC1918
+  if (a === 192 && b === 168) return true; // 192.168.0.0/16 RFC1918
+  if (a === 100 && b >= 64 && b <= 127) return true; // 100.64.0.0/10 CGNAT
+  return false;
+}
+
 export function isPublicUrl(url: string): boolean {
   try {
-    // Pre-URL guard: the WHATWG URL parser interprets leading-zero IPv4
+    // Pre-URL guard #1: the WHATWG URL parser interprets leading-zero IPv4
     // octets as octal. "010.0.0.1" silently becomes "8.0.0.1" (public),
-    // bypassing any post-parse "starts with 10." check. Reject the raw
-    // form before parsing to be safe.
+    // bypassing any post-parse "starts with 10." check.
     const rawHostMatch = url.match(/^[a-z]+:\/\/(?:[^@/]*@)?([^:/?#]+)/i);
     const rawHost = rawHostMatch?.[1] ?? "";
     if (/^\d+\.\d+\.\d+\.\d+$/.test(rawHost)) {
-      // Looks like a dotted-quad with arbitrary-length segments. If any
-      // segment has a leading zero (which the URL parser treats as octal),
-      // reject. Also rejects "0010.10.10.10" — bypass surface for octal.
+      // Reject any segment with a leading zero (octal-bypass surface).
       if (/(?:^|\.)0\d/.test(rawHost)) return false;
+    }
+
+    // Pre-URL guard #2: hex-notation IPv4 ("http://0x7f.0.0.1" or
+    // "http://0x7f000001") and decimal-notation IPv4 ("http://2130706433"
+    // = 127.0.0.1). The URL parser normalises both into a real IPv4 string
+    // — the post-parse path *would* catch them, but only via Node's parser
+    // behaviour which has historically been inconsistent. Reject the raw
+    // alternate notations outright.
+    if (/^0x[0-9a-f]+(?:\.|$)/i.test(rawHost)) return false;
+    if (/^\d+$/.test(rawHost) && rawHost.length >= 8) {
+      // Pure-decimal IPv4 ("4294967295" max). Only treat as suspicious when
+      // the value could plausibly be an IP — short numeric "hostnames"
+      // would not parse as URLs anyway.
+      return false;
     }
 
     const parsed = new URL(url);
@@ -69,10 +92,9 @@ export function isPublicUrl(url: string): boolean {
       return false;
     }
     let h = parsed.hostname.toLowerCase();
-    // Strip IPv6 brackets — Node returns "[::1]", browsers sometimes "::1".
     if (h.startsWith("[") && h.endsWith("]")) h = h.slice(1, -1);
 
-    // Hostname denylist (literal strings — no IP parsing involved).
+    // Hostname denylist (literal strings).
     if (
       h === "localhost" ||
       h.endsWith(".internal") ||
@@ -82,9 +104,10 @@ export function isPublicUrl(url: string): boolean {
       return false;
     }
 
-    // IPv6 loopback / link-local / unique-local.
+    // IPv6 loopback / unspecified / link-local / unique-local.
     if (
       h === "::1" ||
+      h === "::" ||
       h.startsWith("fe80:") ||
       h.startsWith("fc") ||
       h.startsWith("fd")
@@ -92,23 +115,38 @@ export function isPublicUrl(url: string): boolean {
       return false;
     }
 
-    // Strict IPv4 parsing — rejects malformed forms.
-    // If the host LOOKS like a dotted-quad (4 numeric segments) but the
-    // strict parser rejects it (out-of-range octet, leading zero, etc.),
-    // we treat it as suspicious and deny rather than falling through to
-    // "public" — better a false positive than an SSRF.
+    // IPv4-mapped IPv6 ("::ffff:127.0.0.1" or "::ffff:7f00:1") and
+    // 6to4 / NAT64 with embedded private IPv4. Extract the trailing
+    // dotted-quad if present, otherwise extract the last 32 bits as
+    // hex pairs and reconstruct.
+    if (h.includes(":")) {
+      const ipv4MappedDotted = h.match(/^(?:::ffff:)(\d+\.\d+\.\d+\.\d+)$/);
+      if (ipv4MappedDotted) {
+        const ip = parseIpv4Strict(ipv4MappedDotted[1]);
+        if (!ip || isPrivateIpv4(ip)) return false;
+      }
+      const ipv4MappedHex = h.match(
+        /^(?:::ffff:)([0-9a-f]{1,4}):([0-9a-f]{1,4})$/,
+      );
+      if (ipv4MappedHex) {
+        const high = parseInt(ipv4MappedHex[1], 16);
+        const low = parseInt(ipv4MappedHex[2], 16);
+        const ip: [number, number, number, number] = [
+          (high >> 8) & 0xff,
+          high & 0xff,
+          (low >> 8) & 0xff,
+          low & 0xff,
+        ];
+        if (isPrivateIpv4(ip)) return false;
+      }
+    }
+
+    // Strict IPv4 parsing: reject malformed forms outright (better a false
+    // positive than an SSRF) and apply RFC1918 / CGNAT / loopback bans.
     if (/^\d+\.\d+\.\d+\.\d+$/.test(h)) {
       const ip = parseIpv4Strict(h);
       if (!ip) return false;
-      const [a, b] = ip;
-      if (a === 127) return false; // 127.0.0.0/8 loopback
-      if (a === 0) return false; // 0.0.0.0/8 reserved
-      if (a === 10) return false; // 10.0.0.0/8 RFC1918
-      if (a === 169 && b === 254) return false; // 169.254.0.0/16 link-local + AWS metadata
-      if (a === 172 && b >= 16 && b <= 31) return false; // 172.16.0.0/12 RFC1918
-      if (a === 192 && b === 168) return false; // 192.168.0.0/16 RFC1918
-      if (a === 100 && b >= 64 && b <= 127) return false; // 100.64.0.0/10 CGNAT
-      // Any other valid IPv4 is treated as public.
+      if (isPrivateIpv4(ip)) return false;
     }
 
     return true;

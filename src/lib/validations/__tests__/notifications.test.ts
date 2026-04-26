@@ -38,11 +38,21 @@ describe("isPublicUrl SSRF guard", () => {
       expect(isPublicUrl("http://169.254.0.1")).toBe(false);
     });
 
-    it("IPv6 loopback and link-local", () => {
+    it("IPv6 loopback / unspecified / link-local / unique-local", () => {
       expect(isPublicUrl("http://[::1]")).toBe(false);
+      expect(isPublicUrl("http://[::]")).toBe(false);
       expect(isPublicUrl("http://[fe80::1]")).toBe(false);
       expect(isPublicUrl("http://[fc00::1]")).toBe(false);
       expect(isPublicUrl("http://[fd12:3456::1]")).toBe(false);
+    });
+
+    it("IPv4-mapped IPv6 (::ffff:...) embedding private IPv4", () => {
+      // Both notations parsers might emit:
+      expect(isPublicUrl("http://[::ffff:127.0.0.1]")).toBe(false);
+      expect(isPublicUrl("http://[::ffff:10.0.0.1]")).toBe(false);
+      expect(isPublicUrl("http://[::ffff:192.168.1.1]")).toBe(false);
+      expect(isPublicUrl("http://[::ffff:7f00:1]")).toBe(false); // hex form of 127.0.0.1
+      expect(isPublicUrl("http://[::ffff:c0a8:0101]")).toBe(false); // hex form of 192.168.1.1
     });
   });
 
@@ -93,6 +103,20 @@ describe("isPublicUrl SSRF guard", () => {
       // falling through to "public" we deny — refusing a malformed URL is
       // better than risking misinterpretation as an internal address.
       expect(isPublicUrl("http://256.0.0.1")).toBe(false);
+    });
+  });
+
+  describe("regression: alternate IPv4 notations cannot bypass private checks", () => {
+    it("hex IPv4 (0x7f.0.0.1 = 127.0.0.1)", () => {
+      expect(isPublicUrl("http://0x7f.0.0.1")).toBe(false);
+      expect(isPublicUrl("http://0x7f000001")).toBe(false);
+      expect(isPublicUrl("http://0xa.0.0.1")).toBe(false); // 10.0.0.1
+    });
+
+    it("decimal IPv4 (2130706433 = 127.0.0.1)", () => {
+      expect(isPublicUrl("http://2130706433")).toBe(false);
+      expect(isPublicUrl("http://167772161")).toBe(false); // 10.0.0.1
+      expect(isPublicUrl("http://3232235777")).toBe(false); // 192.168.1.1
     });
   });
 
