@@ -819,7 +819,12 @@
     "targetsDescription": "Set optional target values for blood pressure and weight.",
     "targetSys": "Systolic (mmHg)",
     "targetDia": "Diastolic (mmHg)",
-    "targetWeight": "Target weight (kg)"
+    "targetWeight": "Target weight (kg)",
+    "errorProfile": "Could not save your profile. Please try again.",
+    "errorMedication": "Could not add the medication \"{name}\". Please try again or add it later in Medications.",
+    "errorTargets": "Could not save your target values. Please try again.",
+    "errorGeneric": "Something went wrong while finishing setup. Please try again.",
+    "medScheduleHint": "We'll add a default reminder window (08:00–09:00 daily). You can adjust it anytime in Medications."
   },
   "settings": {
     "title": "Settings",

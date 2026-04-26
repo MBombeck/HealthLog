@@ -819,7 +819,12 @@
     "targetsDescription": "Setze optionale Zielwerte für Blutdruck und Gewicht.",
     "targetSys": "Systolisch (mmHg)",
     "targetDia": "Diastolisch (mmHg)",
-    "targetWeight": "Zielgewicht (kg)"
+    "targetWeight": "Zielgewicht (kg)",
+    "errorProfile": "Dein Profil konnte nicht gespeichert werden. Bitte erneut versuchen.",
+    "errorMedication": "Das Medikament „{name}\" konnte nicht angelegt werden. Bitte erneut versuchen oder später unter „Medikamente\" hinzufügen.",
+    "errorTargets": "Deine Zielwerte konnten nicht gespeichert werden. Bitte erneut versuchen.",
+    "errorGeneric": "Beim Abschluss des Setups ist etwas schiefgelaufen. Bitte erneut versuchen.",
+    "medScheduleHint": "Wir legen ein Standard-Erinnerungsfenster an (08:00–09:00 täglich). Du kannst es jederzeit unter „Medikamente\" anpassen."
   },
   "settings": {
     "title": "Einstellungen",

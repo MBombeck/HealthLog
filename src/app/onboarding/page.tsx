@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,45 +40,63 @@ export default function OnboardingPage() {
   async function finishOnboarding() {
     setSaving(true);
 
-    const body: Record<string, unknown> = {};
-    if (heightCm) body.heightCm = parseFloat(heightCm);
-    if (dateOfBirth) body.dateOfBirth = dateOfBirth;
-    if (gender) body.gender = gender;
+    try {
+      const body: Record<string, unknown> = {};
+      if (heightCm) body.heightCm = parseFloat(heightCm);
+      if (dateOfBirth) body.dateOfBirth = dateOfBirth;
+      if (gender) body.gender = gender;
 
-    await fetch("/api/onboarding/complete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    // Create medications if any
-    for (const med of meds) {
-      await fetch("/api/medications", {
+      const profileRes = await fetch("/api/onboarding/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: med.name,
-          dose: med.dose,
-          schedules: [],
-        }),
+        body: JSON.stringify(body),
       });
-    }
+      if (!profileRes.ok) {
+        throw new Error(t("onboarding.errorProfile"));
+      }
 
-    // Save targets if set
-    if (targetSys || targetDia || targetWeight) {
-      const targets: Record<string, unknown> = {};
-      if (targetSys) targets.bpSysTarget = parseInt(targetSys);
-      if (targetDia) targets.bpDiaTarget = parseInt(targetDia);
-      if (targetWeight) targets.weightTarget = parseFloat(targetWeight);
-      await fetch("/api/insights/targets", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(targets),
-      });
-    }
+      // Create medications. Server validation requires at least one schedule,
+      // so we attach a sensible default — the user is informed via medScheduleHint
+      // and can refine it in Medications later. Phase 3.5 of the audit replaces
+      // this entire wizard with an empty-state-driven flow.
+      for (const med of meds) {
+        const medRes = await fetch("/api/medications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: med.name,
+            dose: med.dose,
+            schedules: [{ windowStart: "08:00", windowEnd: "09:00" }],
+          }),
+        });
+        if (!medRes.ok) {
+          throw new Error(t("onboarding.errorMedication", { name: med.name }));
+        }
+      }
 
-    await queryClient.invalidateQueries({ queryKey: ["auth"] });
-    router.replace("/");
+      if (targetSys || targetDia || targetWeight) {
+        const targets: Record<string, unknown> = {};
+        if (targetSys) targets.bpSysTarget = parseInt(targetSys);
+        if (targetDia) targets.bpDiaTarget = parseInt(targetDia);
+        if (targetWeight) targets.weightTarget = parseFloat(targetWeight);
+        const targetsRes = await fetch("/api/insights/targets", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(targets),
+        });
+        if (!targetsRes.ok) {
+          throw new Error(t("onboarding.errorTargets"));
+        }
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["auth"] });
+      router.replace("/");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : t("onboarding.errorGeneric");
+      toast.error(message);
+      setSaving(false);
+    }
   }
 
   function addMedication() {
@@ -191,27 +210,40 @@ export default function OnboardingPage() {
               placeholder={t("onboarding.medDosePlaceholder")}
               className="w-24"
             />
-            <Button type="button" variant="outline" size="sm" onClick={addMedication}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addMedication}
+            >
               +
             </Button>
           </div>
           {meds.length > 0 && (
-            <ul className="space-y-1 text-sm">
-              {meds.map((m, i) => (
-                <li key={i} className="bg-muted/50 flex items-center justify-between rounded px-3 py-1.5">
-                  <span>
-                    {m.name} {m.dose && `(${m.dose})`}
-                  </span>
-                  <button
-                    type="button"
-                    className="text-muted-foreground hover:text-destructive text-xs"
-                    onClick={() => setMeds(meds.filter((_, j) => j !== i))}
+            <>
+              <ul className="space-y-1 text-sm">
+                {meds.map((m, i) => (
+                  <li
+                    key={i}
+                    className="bg-muted/50 flex items-center justify-between rounded px-3 py-1.5"
                   >
-                    ✕
-                  </button>
-                </li>
-              ))}
-            </ul>
+                    <span>
+                      {m.name} {m.dose && `(${m.dose})`}
+                    </span>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-destructive text-xs"
+                      onClick={() => setMeds(meds.filter((_, j) => j !== i))}
+                    >
+                      ✕
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-muted-foreground text-xs">
+                {t("onboarding.medScheduleHint")}
+              </p>
+            </>
           )}
         </div>
       )}
@@ -226,8 +258,12 @@ export default function OnboardingPage() {
             {t("onboarding.notificationsDescription")}
           </p>
           <div className="bg-muted/50 space-y-2 rounded-lg p-4 text-sm">
-            <p>📱 <strong>Telegram</strong> — {t("onboarding.telegramHint")}</p>
-            <p>🔔 <strong>Web Push</strong> — {t("onboarding.webPushHint")}</p>
+            <p>
+              📱 <strong>Telegram</strong> — {t("onboarding.telegramHint")}
+            </p>
+            <p>
+              🔔 <strong>Web Push</strong> — {t("onboarding.webPushHint")}
+            </p>
           </div>
           <p className="text-muted-foreground text-xs">
             {t("onboarding.notificationsLater")}
