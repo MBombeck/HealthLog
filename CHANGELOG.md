@@ -1,5 +1,88 @@
 # Changelog
 
+## [1.3.0] — 2026-04-27
+
+### Added — Body composition + targeted hardening
+
+- **Total body water and bone mass as measurement types** (closes #89). New
+  enum values `TOTAL_BODY_WATER` and `BONE_MASS`, both stored canonically
+  in kilograms (matches Withings hydration/bone-mass measures and Health
+  Connect's `TotalBodyWaterRecord` / `BoneMassRecord`). Migration is
+  purely additive (`ALTER TYPE ... ADD VALUE`) — safe to apply against
+  any 1.2.x database without downtime.
+- **Withings sync picks both up automatically.** The Withings client now
+  maps measure type `77` (hydration / water mass) and `88` (bone mass).
+  Anyone with a Withings Body+ scale and an active connection will see
+  the new metrics flowing in on the next sync without any extra config.
+- **Doctor-report PDF includes both new types** in the vital-signs table
+  when data exists, with locale-aware labels in English and German.
+- **Dashboard widgets registered for both** (default-invisible — opt in
+  via Settings → Dashboard layout).
+
+### Security
+
+- **SSRF guard hardened** (`isPublicUrl`). The previous implementation
+  used `parseInt` with permissive prefix checks like `h.startsWith("10.")`
+  which let `010.0.0.1` slip through — and worse, the WHATWG URL parser
+  silently normalises `010.0.0.1` to `8.0.0.1` (octal interpretation), a
+  real bypass on naive checks. The new guard adds a pre-URL leading-zero
+  check on the raw input, a strict IPv4 parser, and proper IPv6
+  bracket / loopback / link-local handling. Now blocks `127.0.0.0/8`,
+  `0.0.0.0/8`, `10.0.0.0/8`, `169.254.0.0/16`, `172.16.0.0/12`,
+  `192.168.0.0/16`, `100.64.0.0/10` (CGNAT), `::1`, `fe80::/10`,
+  `fc00::/7`. Comprehensive regression tests included.
+- **GitHub PAT redacted from logged error bodies.** When a feedback
+  escalation to GitHub fails, the response body was being passed
+  verbatim into `getEvent()?.addWarning(...)` — flowing to Loki. The
+  body is now stripped of the configured token before logging.
+- **Per-user threshold writes are rate-limited** (30 writes / 5 min) to
+  make audit-log enumeration unattractive. Audit-logging itself was
+  already there.
+
+### Performance
+
+- **N+1 in `/api/insights/comprehensive` fixed.** The medication-compliance
+  loop hit Postgres once per active medication. It now batches into a
+  single `medicationId IN (...)` query and groups in memory. Latency
+  improvement scales linearly with the user's active medication count.
+
+### Reliability
+
+- **pg-boss draining on SIGTERM/SIGINT.** `docker stop`, Coolify redeploys,
+  and Kubernetes pod terminations now trigger `boss.stop({ graceful: true,
+timeout: 30s })` so in-flight handlers finish instead of being killed.
+  Previously, pending handlers could be lost or replayed on restart.
+- **CI now blocks on ESLint and TypeScript.** `continue-on-error: true`
+  removed from `.github/workflows/security.yml` for both checks. Tests
+  already were blocking. Required cleaning up two long-standing `any`
+  types in `api-handler.ts` (justified inline — Next.js variadic
+  handler signature constrained by `Promise<Response>` return).
+
+### Polish
+
+- **Bottom-nav touch targets** sized to WCAG 2.5.5 minimum (44×44 CSS px).
+  Visual icon stays at 20 px so the design doesn't shift.
+- **Phase-config dialog** marks the decorative coloured dot `aria-hidden`
+  because the redundant text label already conveys the phase to screen
+  readers. No more meaningless `image` node announcements.
+- **Admin-status labels** for "Web Push" and "Bug Report" now go through
+  `t()` (new `admin.integrationWebPush` / `admin.integrationBugReport`
+  keys in en + de). They were the last hard-coded English strings on
+  the admin page.
+
+### What's _not_ in this release (tracked for later)
+
+- **Onboarding redesign** (dashboard-first empty-state flow + persistent
+  Getting Started checklist) and the **typed `apiClient` wrapper** that
+  underpins it are tracked for a focused 1.4.0 cycle. The 1.2.1 patch
+  already closed the acute symptoms of #87 (silent-failure toast +
+  default schedule), so the redesign is now a proper UI investment
+  rather than a bug-fix.
+- **Withings sync is mapping both new measures**, but **a dedicated
+  Bearer-auth ingest endpoint for external pipelines** (n8n + Health
+  Connect, requested in #89) ships in 1.4.0 alongside the API-token
+  flow.
+
 ## [1.2.1] — 2026-04-27
 
 ### Fixed
