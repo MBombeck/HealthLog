@@ -27,7 +27,8 @@ interface ReportData {
   /** Per-context glucose stats (canonical mg/dL). */
   glucoseStats?: Record<
     "FASTING" | "POSTPRANDIAL" | "RANDOM" | "BEDTIME",
-    { avg: number; min: number; max: number; count: number; latest: number } | undefined
+    | { avg: number; min: number; max: number; count: number; latest: number }
+    | undefined
   >;
   /** Display-unit preference: "mg/dL" (default) or "mmol/L". */
   glucoseUnit?: "mg/dL" | "mmol/L";
@@ -74,6 +75,8 @@ const TYPE_LABEL_KEYS: Record<string, string> = {
   BODY_FAT: "doctorReport.typeBodyFat",
   SLEEP_DURATION: "doctorReport.typeSleep",
   ACTIVITY_STEPS: "doctorReport.typeSteps",
+  TOTAL_BODY_WATER: "doctorReport.typeTotalBodyWater",
+  BONE_MASS: "doctorReport.typeBoneMass",
 };
 
 const TYPE_UNIT_KEYS: Record<string, string | null> = {
@@ -84,6 +87,8 @@ const TYPE_UNIT_KEYS: Record<string, string | null> = {
   BODY_FAT: "%",
   SLEEP_DURATION: "h",
   ACTIVITY_STEPS: null, // translated unit
+  TOTAL_BODY_WATER: "kg",
+  BONE_MASS: "kg",
 };
 
 const MOOD_LABEL_KEYS: Record<number, string> = {
@@ -169,7 +174,8 @@ export function generateDoctorReportPDF(
       MALE: "doctorReport.genderMale",
       FEMALE: "doctorReport.genderFemale",
     };
-    const genderKey = genderKeys[data.patient.gender] ?? "doctorReport.genderOther";
+    const genderKey =
+      genderKeys[data.patient.gender] ?? "doctorReport.genderOther";
     patientInfo.push(`${t("doctorReport.gender")}: ${t(genderKey)}`);
   }
   if (data.patient.heightCm) {
@@ -203,6 +209,8 @@ export function generateDoctorReportPDF(
     "BLOOD_PRESSURE_DIA",
     "PULSE",
     "BODY_FAT",
+    "TOTAL_BODY_WATER",
+    "BONE_MASS",
   ];
 
   for (const type of vitalTypes) {
@@ -348,8 +356,7 @@ export function generateDoctorReportPDF(
     doc.setFont("helvetica", "normal");
     for (const ctx of loggedGlucose) {
       const s = data.glucoseStats![ctx]!;
-      const range =
-        data.glucoseRanges?.[ctx] ?? defaultGlucoseRanges[ctx];
+      const range = data.glucoseRanges?.[ctx] ?? defaultGlucoseRanges[ctx];
       const conv = (v: number) => convertGlucose(v, glucoseUnit);
       const inRange = s.avg >= range.min && s.avg <= range.max;
       const classKey = inRange
@@ -387,8 +394,7 @@ export function generateDoctorReportPDF(
     y += 6;
 
     const compRows = complianceEntries.map(([name, c]) => {
-      const rate =
-        c.total > 0 ? `${num((c.taken / c.total) * 100, 1)}%` : "—";
+      const rate = c.total > 0 ? `${num((c.taken / c.total) * 100, 1)}%` : "—";
       return [
         name,
         String(c.taken),
@@ -503,16 +509,8 @@ export function generateDoctorReportPDF(
     pageDoc.setFontSize(7);
     pageDoc.setFont("helvetica", "italic");
     pageDoc.setTextColor(140, 140, 140);
-    pageDoc.text(
-      t("doctorReport.footerDisclaimer1"),
-      margin,
-      pageHeight - 14,
-    );
-    pageDoc.text(
-      t("doctorReport.footerDisclaimer2"),
-      margin,
-      pageHeight - 10,
-    );
+    pageDoc.text(t("doctorReport.footerDisclaimer1"), margin, pageHeight - 14);
+    pageDoc.text(t("doctorReport.footerDisclaimer2"), margin, pageHeight - 10);
     pageDoc.text(
       t("doctorReport.footerSource", {
         timestamp: formatters.dateTime(new Date()),

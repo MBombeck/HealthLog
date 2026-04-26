@@ -9,6 +9,8 @@ export const measurementTypeEnum = z.enum([
   "SLEEP_DURATION",
   "ACTIVITY_STEPS",
   "BLOOD_GLUCOSE",
+  "TOTAL_BODY_WATER",
+  "BONE_MASS",
 ]);
 
 export const glucoseContextEnum = z.enum([
@@ -29,6 +31,8 @@ const unitMap: Record<string, string> = {
   SLEEP_DURATION: "hours",
   ACTIVITY_STEPS: "steps",
   BLOOD_GLUCOSE: "mg/dL",
+  TOTAL_BODY_WATER: "kg",
+  BONE_MASS: "kg",
 };
 
 export function getUnitForType(type: string): string {
@@ -45,6 +49,8 @@ const VALUE_RANGES: Record<string, { min: number; max: number }> = {
   SLEEP_DURATION: { min: 0, max: 24 },
   ACTIVITY_STEPS: { min: 0, max: 200000 },
   BLOOD_GLUCOSE: { min: 20, max: 800 }, // mg/dL — covers severe hypo to severe hyperglycemia
+  TOTAL_BODY_WATER: { min: 5, max: 100 }, // kg of water — adults typically 30–55 kg
+  BONE_MASS: { min: 0.5, max: 8 }, // kg — adult plausibility (typical 2.5–4.5 kg)
 };
 
 export function validateMeasurementRange(
@@ -69,10 +75,9 @@ export const createMeasurementSchema = z
     // constraint in Postgres (see migration 0021).
     glucoseContext: glucoseContextEnum.optional(),
   })
-  .refine(
-    (data) => validateMeasurementRange(data.type, data.value) === null,
-    { message: "Value out of plausible range" },
-  )
+  .refine((data) => validateMeasurementRange(data.type, data.value) === null, {
+    message: "Value out of plausible range",
+  })
   .refine(
     (data) =>
       (data.type === "BLOOD_GLUCOSE" && data.glucoseContext !== undefined) ||

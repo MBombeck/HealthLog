@@ -29,6 +29,8 @@ const widgetIdEnum = z.enum([
   "sleep",
   "steps",
   "glucose",
+  "totalBodyWater",
+  "boneMass",
   "bpInTarget",
 ]);
 

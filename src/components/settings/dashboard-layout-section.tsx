@@ -29,6 +29,8 @@ const WIDGET_LABEL_KEYS: Record<DashboardWidgetId, string> = {
   sleep: "measurements.typeSleep",
   steps: "measurements.typeSteps",
   glucose: "measurements.typeBloodGlucose",
+  totalBodyWater: "measurements.typeTotalBodyWater",
+  boneMass: "measurements.typeBoneMass",
   bpInTarget: "dashboard.bpInTarget",
 };
 
@@ -113,7 +115,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
   return (
     <div
       id={id}
-      className="bg-card border-border scroll-mt-28 rounded-xl border p-6 space-y-5"
+      className="bg-card border-border scroll-mt-28 space-y-5 rounded-xl border p-6"
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -137,7 +139,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
       </p>
 
       {isLoading || !layout ? (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="text-muted-foreground flex items-center gap-2 text-sm">
           <Loader2 className="h-4 w-4 animate-spin" />
           {t("common.loading")}
         </div>
@@ -148,44 +150,44 @@ export function DashboardLayoutSection({ id }: { id: string }) {
             .map((widget, index, arr) => {
               const labelKey = WIDGET_LABEL_KEYS[widget.id] ?? widget.id;
               return (
-              <div
-                key={widget.id}
-                className="flex items-center gap-3 rounded-md border border-border bg-background/30 p-3"
-              >
-                <div className="flex flex-col gap-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-5 w-5"
-                    onClick={() => move(widget.id, -1)}
-                    disabled={index === 0 || saveMutation.isPending}
-                    aria-label={t("dashboard.moveUp")}
-                  >
-                    <ArrowUp className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-5 w-5"
-                    onClick={() => move(widget.id, 1)}
-                    disabled={
-                      index === arr.length - 1 || saveMutation.isPending
-                    }
-                    aria-label={t("dashboard.moveDown")}
-                  >
-                    <ArrowDown className="h-3 w-3" />
-                  </Button>
+                <div
+                  key={widget.id}
+                  className="border-border bg-background/30 flex items-center gap-3 rounded-md border p-3"
+                >
+                  <div className="flex flex-col gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5"
+                      onClick={() => move(widget.id, -1)}
+                      disabled={index === 0 || saveMutation.isPending}
+                      aria-label={t("dashboard.moveUp")}
+                    >
+                      <ArrowUp className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5"
+                      onClick={() => move(widget.id, 1)}
+                      disabled={
+                        index === arr.length - 1 || saveMutation.isPending
+                      }
+                      aria-label={t("dashboard.moveDown")}
+                    >
+                      <ArrowDown className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <span className="flex-1 text-sm">{t(labelKey)}</span>
+                  <Switch
+                    checked={widget.visible}
+                    onCheckedChange={(v) => toggle(widget.id, v)}
+                    aria-label={t(labelKey)}
+                    disabled={saveMutation.isPending}
+                  />
                 </div>
-                <span className="flex-1 text-sm">{t(labelKey)}</span>
-                <Switch
-                  checked={widget.visible}
-                  onCheckedChange={(v) => toggle(widget.id, v)}
-                  aria-label={t(labelKey)}
-                  disabled={saveMutation.isPending}
-                />
-              </div>
               );
             })}
         </div>

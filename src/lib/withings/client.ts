@@ -127,6 +127,8 @@ const MEASURE_TYPE_MAP: Record<number, { type: string; factor?: number }> = {
   10: { type: "BLOOD_PRESSURE_SYS" }, // Systolic BP
   11: { type: "PULSE" }, // Heart rate
   6: { type: "BODY_FAT" }, // Body fat %
+  77: { type: "TOTAL_BODY_WATER" }, // Hydration / water mass (kg)
+  88: { type: "BONE_MASS" }, // Bone mass (kg)
 };
 
 export interface WithingsMeasure {

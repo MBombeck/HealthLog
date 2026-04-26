@@ -150,6 +150,8 @@ enum MeasurementType {
   SLEEP_DURATION
   ACTIVITY_STEPS
   BLOOD_GLUCOSE // Canonical storage: mg/dL. Display unit (mg/dL or mmol/L) is user preference.
+  TOTAL_BODY_WATER // Canonical storage: kilograms (kg of water). Matches Withings' hydration measure (type 77) and Health Connect's TotalBodyWaterRecord. Display can compute % from same-day weight if desired.
+  BONE_MASS // Canonical storage: kilograms (kg). Matches Withings' bone mass measure (type 88).
 
   @@map("measurement_type")
 }

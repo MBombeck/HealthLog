@@ -15,6 +15,8 @@ export type DashboardWidgetId =
   | "sleep"
   | "steps"
   | "glucose"
+  | "totalBodyWater"
+  | "boneMass"
   | "bpInTarget";
 
 export interface DashboardWidgetConfig {
@@ -48,12 +50,12 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayout = {
     { id: "sleep", visible: false, order: 7 },
     { id: "steps", visible: false, order: 8 },
     { id: "glucose", visible: false, order: 9 },
+    { id: "totalBodyWater", visible: false, order: 10 },
+    { id: "boneMass", visible: false, order: 11 },
   ],
 };
 
-export function resolveDashboardLayout(
-  raw: unknown,
-): DashboardLayout {
+export function resolveDashboardLayout(raw: unknown): DashboardLayout {
   if (!raw || typeof raw !== "object") return DEFAULT_DASHBOARD_LAYOUT;
   const candidate = raw as Partial<DashboardLayout>;
   if (

@@ -67,11 +67,26 @@ const MEASUREMENT_TYPES = [
     unit: "mg/dL",
     placeholder: "95",
   },
+  {
+    value: "TOTAL_BODY_WATER",
+    labelKey: "measurements.typeTotalBodyWater",
+    unit: "kg",
+    placeholder: "42",
+  },
+  {
+    value: "BONE_MASS",
+    labelKey: "measurements.typeBoneMass",
+    unit: "kg",
+    placeholder: "3.2",
+  },
 ] as const;
 
 const GLUCOSE_CONTEXTS = [
   { value: "FASTING", labelKey: "measurements.glucoseContextFasting" },
-  { value: "POSTPRANDIAL", labelKey: "measurements.glucoseContextPostprandial" },
+  {
+    value: "POSTPRANDIAL",
+    labelKey: "measurements.glucoseContextPostprandial",
+  },
   { value: "RANDOM", labelKey: "measurements.glucoseContextRandom" },
   { value: "BEDTIME", labelKey: "measurements.glucoseContextBedtime" },
 ] as const;
@@ -368,7 +383,11 @@ export function MeasurementForm({
       </div>
 
       {error && (
-        <div role="alert" aria-live="assertive" className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm"
+        >
           {error}
         </div>
       )}
