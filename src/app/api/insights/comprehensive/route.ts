@@ -216,15 +216,30 @@ export const GET = apiHandler(async () => {
   const bpMedications = medications.filter(
     (med) => (categoryMap[med.id] ?? "OTHER") === "BLOOD_PRESSURE",
   );
+  // Single round-trip for all medications instead of N+1: one query keyed
+  // on `medicationId IN (...)`, then group in memory. The previous loop
+  // hit Postgres once per medication, which scales poorly for users with
+  // many active meds.
+  const allEvents = medications.length
+    ? await prisma.medicationIntakeEvent.findMany({
+        where: {
+          medicationId: { in: medications.map((m) => m.id) },
+          userId,
+          scheduledFor: { gte: ninetyDaysAgo },
+        },
+        orderBy: { scheduledFor: "desc" },
+      })
+    : [];
+
+  const eventsByMed = new Map<string, typeof allEvents>();
+  for (const ev of allEvents) {
+    const list = eventsByMed.get(ev.medicationId);
+    if (list) list.push(ev);
+    else eventsByMed.set(ev.medicationId, [ev]);
+  }
+
   for (const med of medications) {
-    const events = await prisma.medicationIntakeEvent.findMany({
-      where: {
-        medicationId: med.id,
-        userId,
-        scheduledFor: { gte: ninetyDaysAgo },
-      },
-      orderBy: { scheduledFor: "desc" },
-    });
+    const events = eventsByMed.get(med.id) ?? [];
     const mapped = events.map((e) => ({
       takenAt: e.takenAt,
       skipped: e.skipped,

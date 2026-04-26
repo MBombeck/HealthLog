@@ -75,6 +75,15 @@ function sanitize(text: string, max = 5000): string {
 }
 
 /**
+ * Escape a string for safe inclusion in a `RegExp(..)` constructor — the
+ * standard "don't let an attacker turn input into regex metacharacters"
+ * helper. Used to redact secrets from logged error bodies.
+ */
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
  * Publishes a feedback item as a GitHub Issue. Returns issue number + URL.
  * Throws GithubPublishError on API failure.
  */
@@ -146,7 +155,14 @@ export async function publishFeedbackToGithub(
 
   if (!res.ok) {
     const errBody = await res.text();
-    getEvent()?.addWarning("GitHub issue creation failed: " + errBody.slice(0, 500));
+    // Strip the GitHub PAT before logging — GitHub error responses can echo
+    // request headers in some failure modes, and Wide Events flow to Loki
+    // unredacted. Keep the response shape useful for debugging without
+    // leaking the credential.
+    const sanitisedErr = errBody
+      .replace(new RegExp(escapeRegex(config.token), "g"), "[REDACTED]")
+      .slice(0, 500);
+    getEvent()?.addWarning("GitHub issue creation failed: " + sanitisedErr);
     throw new GithubPublishError(
       `Failed to create GitHub issue (HTTP ${res.status})`,
       res.status === 401 || res.status === 403 ? res.status : 502,

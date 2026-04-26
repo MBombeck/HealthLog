@@ -12,6 +12,7 @@ import { apiSuccess, apiError, safeJson, getClientIp } from "@/lib/api-response"
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
+import { checkRateLimit } from "@/lib/rate-limit";
 import {
   getAllEffectiveRanges,
   type ThresholdOverridesJson,
@@ -58,6 +59,17 @@ export const GET = apiHandler(async () => {
 export const PUT = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
   annotate({ action: { name: "user.thresholds.update" } });
+
+  // 30 writes / 5 min — generous for legitimate UI edits, tight enough to
+  // make audit-log enumeration unattractive. Per-user, not per-IP.
+  const rl = await checkRateLimit(
+    `thresholds:update:${user.id}`,
+    30,
+    5 * 60 * 1000,
+  );
+  if (!rl.allowed) {
+    return apiError("Too many requests, please slow down", 429);
+  }
 
   const { data: body, error: jsonError } = await safeJson(request);
   if (jsonError) return jsonError;

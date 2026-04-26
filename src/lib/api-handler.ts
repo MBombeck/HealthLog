@@ -26,9 +26,16 @@ export class HttpError extends Error {
  * No CSRF check — HealthLog does not use CSRF tokens.
  * Auth annotation happens in routes via requireAuth().
  */
+// Next.js route handlers come in two shapes — `(request)` for static routes
+// and `(request, { params })` for dynamic ones. The variadic generic is the
+// only signature TS accepts that covers both at the call site. The `any[]`
+// here is constrained by the bound (T must return Promise<Response>) so it
+// does not loosen handler bodies — only their parameter list.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
   handler: T,
 ): T {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const wrapped = async (...args: any[]): Promise<Response> => {
     const request = args[0] as NextRequest;
     const url = new URL(request.url);

@@ -925,25 +925,64 @@ async function handleDataBackup(jobs: Job<DataBackupPayload>[]) {
   });
 }
 
+/**
+ * Internal logger that prefers structured Wide-Event annotations when a
+ * worker context is active, and falls back to stderr only for true
+ * lifecycle events that fire outside any handler (init, fatal startup
+ * errors, shutdown). Avoids the historical pattern of `console.log`
+ * everywhere in this file, which polluted production stdout and was
+ * never queryable in Loki.
+ */
+function workerLog(level: "info" | "error", msg: string, err?: unknown): void {
+  if (level === "error") {
+    // Errors during worker init or shutdown happen outside any request
+    // context, so stderr is the only audience the operator has.
+    if (err !== undefined) console.error(`[pg-boss] ${msg}`, err);
+    else console.error(`[pg-boss] ${msg}`);
+  }
+  // info-level lifecycle messages are intentionally silent — pg-boss own
+  // events surface state, and Wide Events from handlers carry the work.
+}
+
 export async function startReminderWorker() {
-  console.log("[pg-boss] Initializing pg-boss with DATABASE_URL...");
   if (!DATABASE_URL) {
-    console.error("[pg-boss] CRITICAL: DATABASE_URL is not set!");
+    workerLog("error", "CRITICAL: DATABASE_URL is not set, refusing to start");
     return;
   }
 
   const boss = new PgBoss(DATABASE_URL);
 
   boss.on("error", (error: unknown) => {
-    console.error("[pg-boss] Error:", error);
+    workerLog("error", "boss emitted error", error);
     recordError();
   });
 
-  console.log("[pg-boss] Connecting to database...");
   await boss.start();
   setGlobalBoss(boss);
   markWorkerStarted();
-  console.log("[pg-boss] Connected and started");
+
+  // Graceful shutdown: drain in-flight jobs on SIGTERM/SIGINT (sent by
+  // Docker Compose `docker stop`, Kubernetes pod termination, Coolify
+  // redeploys). Without this, pending handlers were force-killed and could
+  // either be lost or replayed on next start. We only register the listeners
+  // once — re-entering startReminderWorker (e.g. on hot-reload in dev) is
+  // a no-op for the handlers because they capture `boss` by closure and the
+  // first signal stops everything.
+  let shutdownInProgress = false;
+  const onSignal = async (signal: "SIGTERM" | "SIGINT") => {
+    if (shutdownInProgress) return;
+    shutdownInProgress = true;
+    workerLog("error", `received ${signal}, draining boss`);
+    try {
+      // graceful=true waits for active handlers to finish, then closes the
+      // pg connection pool. timeout cap so a stuck handler can't block deploys.
+      await boss.stop({ graceful: true, timeout: 30_000 });
+    } catch (err) {
+      workerLog("error", "boss.stop failed during shutdown", err);
+    }
+  };
+  process.once("SIGTERM", () => void onSignal("SIGTERM"));
+  process.once("SIGINT", () => void onSignal("SIGINT"));
 
   // pg-boss v12 requires explicit queue creation before scheduling
   const allQueues = [
@@ -964,7 +1003,6 @@ export async function startReminderWorker() {
   for (const q of allQueues) {
     await boss.createQueue(q);
   }
-  console.log(`[pg-boss] Created ${allQueues.length} queues`);
 
   // Schedule recurring cron jobs
   const schedules: [string, string][] = [
@@ -984,7 +1022,6 @@ export async function startReminderWorker() {
   for (const [name, cron] of schedules) {
     await boss.schedule(name, cron, {}, { tz: "Europe/Berlin" });
   }
-  console.log(`[pg-boss] Scheduled ${schedules.length} cron jobs`);
 
   // Register the handler
   await boss.work<ReminderCheckPayload>(
@@ -1057,7 +1094,7 @@ if (
   process.argv[1]?.endsWith("reminder-worker.js")
 ) {
   startReminderWorker().catch((err) => {
-    console.error("Failed to start reminder worker:", err);
+    workerLog("error", "Failed to start reminder worker", err);
     process.exit(1);
   });
 }
