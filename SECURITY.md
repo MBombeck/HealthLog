@@ -5,7 +5,7 @@
 Only the latest release on the `main` branch is actively supported with security updates.
 
 | Version | Supported |
-|---------|-----------|
+| ------- | --------- |
 | Latest  | Yes       |
 | Older   | No        |
 
@@ -59,3 +59,17 @@ HealthLog is designed with security as a core principle:
 - **Proxy-level route protection** via `proxy.ts` (session cookie validation on all non-public paths)
 
 For more details, see the [security documentation](https://docs.healthlog.dev/security/overview/).
+
+## Supply Chain
+
+HealthLog Docker images are built and published from this repository's CI:
+
+- **Source**: [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml) — runs on every push to `main` and every `v*` tag
+- **Registry**: [`ghcr.io/mbombeck/healthlog`](https://github.com/MBombeck/HealthLog/pkgs/container/healthlog)
+- **Architectures**: `linux/amd64` and `linux/arm64`
+- **Provenance attestation**: each image carries a [SLSA build provenance](https://slsa.dev/spec/v1.0/provenance) statement linking it back to the GitHub Actions run, the commit SHA, and the workflow definition
+- **SBOM**: each image includes a [Software Bill of Materials](https://docs.docker.com/build/metadata/attestations/sbom/) you can inspect with `docker buildx imagetools inspect ghcr.io/mbombeck/healthlog:latest --format '{{ json .SBOM }}'`
+
+To pin to a specific version in production, replace `:latest` with the released tag in your `docker-compose.yml`, e.g. `ghcr.io/mbombeck/healthlog:1.2.0`. Pinning is recommended for self-hosters who want explicit control over upgrades.
+
+If you discover a tampered or unexpected image, please report it as a vulnerability via the email above.
