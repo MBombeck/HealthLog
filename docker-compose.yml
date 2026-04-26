@@ -1,5 +1,12 @@
 services:
   app:
+    # Pre-built multi-arch images are published to GHCR by
+    # .github/workflows/docker-publish.yml on every push to main and on
+    # tagged releases. Pin to a specific version in production:
+    # e.g. ghcr.io/mbombeck/healthlog:1.2.0
+    image: ghcr.io/mbombeck/healthlog:latest
+    # Fallback build context: if the image is not yet in the registry,
+    # or you want to test local changes, run `docker compose up --build`.
     build:
       context: .
       dockerfile: Dockerfile

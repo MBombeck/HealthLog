@@ -67,7 +67,7 @@ Most health apps lock your data behind proprietary clouds, push subscriptions, a
 
 ## Quick Start
 
-Plan ~5 minutes for a working install. The bundled `docker-compose.yml` builds the app from source — pre-built images on GHCR are coming in a separate release.
+Plan ~5 minutes for a working install. The bundled `docker-compose.yml` pulls a pre-built multi-arch image (`linux/amd64` + `linux/arm64`) from [GitHub Container Registry](https://github.com/MBombeck/HealthLog/pkgs/container/healthlog); no build step required for self-hosters. Contributors who want to test local changes can `docker compose up --build`.
 
 ```bash
 git clone https://github.com/MBombeck/HealthLog.git
