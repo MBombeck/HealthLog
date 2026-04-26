@@ -36,7 +36,7 @@ docker compose logs -f app    # Tail app logs
 ## Architecture
 
 - **Next.js 16** App Router with TypeScript strict. Pages are RSC by default; `"use client"` only for interactivity.
-- **Prisma 7** ORM with PostgreSQL (22 models). Uses `PrismaPg` adapter from `@prisma/adapter-pg`. Client singleton at `src/lib/db.ts`. Generated client at `src/generated/prisma/client` (note the `/client` suffix). Prisma config in `prisma.config.ts` (not in schema.prisma).
+- **Prisma 7** ORM with PostgreSQL (23 models). Uses `PrismaPg` adapter from `@prisma/adapter-pg`. Client singleton at `src/lib/db.ts`. Generated client at `src/generated/prisma/client` (note the `/client` suffix). Prisma config in `prisma.config.ts` (not in schema.prisma).
 - **shadcn/ui** components (new-york style) in `src/components/ui/`. Add new ones via `pnpm dlx shadcn@latest add <component>`.
 - **Dracula theme** via CSS variables in `globals.css`. Dark mode is default. Use `--dracula-*` tokens for chart colors.
 - **TanStack Query** for client-side data fetching. Provider in `src/components/providers.tsx`.
@@ -81,7 +81,7 @@ docker compose logs -f app    # Tail app logs
 - `src/lib/validations/` — Zod schemas shared between API + client
 - `src/hooks/` — React hooks (`use-auth`)
 - `messages/de.json` + `messages/en.json` — i18n translations
-- `prisma/schema.prisma` — database schema (21 models)
+- `prisma/schema.prisma` — database schema (23 models)
 - `prisma.config.ts` — Prisma config (DB URL here, not in schema)
 - `public/sw.js` — Service worker for Web Push notifications + offline caching
 - `docs/` — architecture, security, assumptions, ops, API docs, ADRs

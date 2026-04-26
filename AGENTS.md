@@ -6,7 +6,7 @@ Instructions for AI coding agents (OpenAI Codex, Claude Code, Cursor, etc.) work
 
 **HealthLog** — a personal health-tracking web app (weight, blood pressure, pulse, mood, medication compliance) with Withings integration, moodLog.app sync, Dracula-themed UI, mobile-first PWA design.
 
-**Status**: Feature-complete (v1.0.0). See GitHub Issues for open tasks.
+**Status**: v1.2.0 (Custom Thresholds, Blood Glucose, Dashboard Customization, Built-in Feedback, Multi-Provider AI). See GitHub Issues for open tasks.
 
 ## Tech Stack
 
@@ -117,7 +117,7 @@ messages/
 ├── de.json                       # German translations (primary UI language)
 └── en.json                       # English translations
 prisma/
-├── schema.prisma                 # Database schema (22 models)
+├── schema.prisma                 # Database schema (23 models)
 └── migrations/                   # Migration files (0001–0018)
 prisma.config.ts                  # Prisma config (DB URL lives here, NOT in schema)
 public/
@@ -207,7 +207,7 @@ These are hard-won lessons. Ignoring them will cause errors:
 
 ## Database Models (Prisma)
 
-22 models: `User`, `Passkey`, `Session`, `AuthChallenge`, `Measurement`, `Medication`, `MedicationSchedule`, `MedicationIntakeEvent`, `ReminderPhaseConfig`, `TelegramReminderMessage`, `TelegramScheduledDeletion`, `ApiToken`, `WithingsConnection`, `MoodEntry`, `AppSettings`, `AuditLog`, `NotificationChannel`, `NotificationPreference`, `PushSubscription`, `DataBackup`, `UserAchievement`, `RateLimit`.
+23 models: `User`, `Passkey`, `Session`, `AuthChallenge`, `Measurement`, `Medication`, `MedicationSchedule`, `MedicationIntakeEvent`, `ReminderPhaseConfig`, `TelegramReminderMessage`, `TelegramScheduledDeletion`, `ApiToken`, `WithingsConnection`, `MoodEntry`, `AppSettings`, `Feedback`, `AuditLog`, `NotificationChannel`, `NotificationPreference`, `PushSubscription`, `DataBackup`, `UserAchievement`, `RateLimit`.
 
 ## When Making Changes
 
