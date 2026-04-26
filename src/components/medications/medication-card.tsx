@@ -78,6 +78,10 @@ function parseTimeToMinutes(value: string): number {
 }
 
 function toBerlinDate(date: Date): Date {
+  // Intentionally en-US: this is not user-facing display — it produces a
+  // parseable string ("1/2/2026, 3:04:05 PM") that we feed back into Date
+  // to shift the *value* from UTC to Berlin-local for arithmetic. Display
+  // formatting goes through useFormatters() elsewhere.
   return new Date(
     date.toLocaleString("en-US", {
       timeZone: "Europe/Berlin",
@@ -315,7 +319,11 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
           // Don't show late/very_late if all overdue schedules are covered by events
           if (status !== "in_window" && !hasUncoveredOverdue) return best;
           // Don't show in_window if last intake is already within this window today
-          if (status === "in_window" && isLastIntakeInCurrentWindow(medication.lastTakenAt, s, nowBerlin)) return best;
+          if (
+            status === "in_window" &&
+            isLastIntakeInCurrentWindow(medication.lastTakenAt, s, nowBerlin)
+          )
+            return best;
           const priority = { in_window: 3, late: 2, very_late: 1 };
           if (!best.status || priority[status] > priority[best.status]) {
             return { status, schedule: s };
@@ -327,6 +335,9 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
     : { status: null, schedule: null };
 
   function formatLastTakenAt(value: string): string {
+    // Intentionally en-CA: gives YYYY-MM-DD which is locale-independent and
+    // string-comparable for the today / yesterday / older bucketing below.
+    // The actual user-facing display goes through formatTime / formatDateTime.
     const dayFormatter = new Intl.DateTimeFormat("en-CA", {
       timeZone: "Europe/Berlin",
       year: "numeric",
@@ -374,7 +385,13 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
             </div>
           </div>
           <div className="flex items-center gap-0.5">
-            <Button variant="ghost" size="icon" className="h-8 w-8" asChild aria-label={t("medications.intakeHistory")}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              asChild
+              aria-label={t("medications.intakeHistory")}
+            >
               <Link href={`/medications/${medication.id}/history`}>
                 <History className="h-3.5 w-3.5" />
               </Link>

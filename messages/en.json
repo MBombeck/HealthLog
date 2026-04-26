@@ -1107,6 +1107,8 @@
     "telegramGlobal": "Allow Telegram notifications system-wide.",
     "ntfyGlobal": "Allow ntfy notifications system-wide.",
     "webPushGlobal": "Allow browser push notifications system-wide.",
+    "integrationWebPush": "Web Push",
+    "integrationBugReport": "Bug Report",
     "apiGlobal": "Allow API endpoints and API tokens system-wide.",
     "moodLogGlobal": "Allow moodLog integration system-wide.",
     "sectionGeneral": "General",

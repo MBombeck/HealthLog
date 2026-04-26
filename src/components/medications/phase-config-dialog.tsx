@@ -51,9 +51,24 @@ const PHASES: {
   dotClass: string;
   direction: "before" | "after";
 }[] = [
-  { key: "green", color: "green", dotClass: "bg-green-500", direction: "before" },
-  { key: "yellow", color: "yellow", dotClass: "bg-yellow-500", direction: "before" },
-  { key: "orange", color: "orange", dotClass: "bg-orange-500", direction: "after" },
+  {
+    key: "green",
+    color: "green",
+    dotClass: "bg-green-500",
+    direction: "before",
+  },
+  {
+    key: "yellow",
+    color: "yellow",
+    dotClass: "bg-yellow-500",
+    direction: "before",
+  },
+  {
+    key: "orange",
+    color: "orange",
+    dotClass: "bg-orange-500",
+    direction: "after",
+  },
   { key: "red", color: "red", dotClass: "bg-red-500", direction: "after" },
 ];
 
@@ -92,7 +107,9 @@ export function PhaseConfigDialog({
     },
     onSuccess: () => {
       setLocalForm(null);
-      queryClient.invalidateQueries({ queryKey: ["phase-config", medicationId] });
+      queryClient.invalidateQueries({
+        queryKey: ["phase-config", medicationId],
+      });
       setStatusMessage(t("medications.phaseSaved"));
       setTimeout(() => setStatusMessage(null), 2000);
     },
@@ -108,7 +125,9 @@ export function PhaseConfigDialog({
     },
     onSuccess: () => {
       setLocalForm(null);
-      queryClient.invalidateQueries({ queryKey: ["phase-config", medicationId] });
+      queryClient.invalidateQueries({
+        queryKey: ["phase-config", medicationId],
+      });
       setStatusMessage(t("medications.phaseReset"));
       setTimeout(() => setStatusMessage(null), 2000);
     },
@@ -129,10 +148,14 @@ export function PhaseConfigDialog({
 
   const phaseLabel = (key: PhaseKey): string => {
     switch (key) {
-      case "green": return t("medications.phaseGreen");
-      case "yellow": return t("medications.phaseYellow");
-      case "orange": return t("medications.phaseOrange");
-      case "red": return t("medications.phaseRed");
+      case "green":
+        return t("medications.phaseGreen");
+      case "yellow":
+        return t("medications.phaseYellow");
+      case "orange":
+        return t("medications.phaseOrange");
+      case "red":
+        return t("medications.phaseRed");
     }
   };
 
@@ -160,8 +183,11 @@ export function PhaseConfigDialog({
 
               return (
                 <div key={key} className="flex items-center gap-2">
-                  <div className={`h-3 w-3 rounded-full ${dotClass} shrink-0`} />
-                  <span className="w-14 text-sm font-medium shrink-0">
+                  <div
+                    className={`h-3 w-3 rounded-full ${dotClass} shrink-0`}
+                    aria-hidden="true"
+                  />
+                  <span className="w-14 shrink-0 text-sm font-medium">
                     {phaseLabel(key)}
                   </span>
                   <Input
@@ -172,20 +198,20 @@ export function PhaseConfigDialog({
                     onChange={(e) =>
                       updateValue(key, parseInt(e.target.value, 10) || 0)
                     }
-                    className="w-20 h-8 text-sm"
+                    className="h-8 w-20 text-sm"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-8 w-12 text-xs px-0"
+                    className="h-8 w-12 px-0 text-xs"
                     onClick={() => toggleMode(key)}
                   >
                     {mode === "MINUTES"
                       ? t("medications.phaseMinutes")
                       : t("medications.phasePercent")}
                   </Button>
-                  <span className="text-muted-foreground text-xs shrink-0">
+                  <span className="text-muted-foreground shrink-0 text-xs">
                     {direction === "before"
                       ? t("medications.phaseBeforeEnd")
                       : t("medications.phaseAfterEnd")}
@@ -197,12 +223,12 @@ export function PhaseConfigDialog({
         )}
 
         {statusMessage && (
-          <div className="text-sm text-green-500 text-center">
+          <div className="text-center text-sm text-green-500">
             {statusMessage}
           </div>
         )}
 
-        <DialogFooter className="flex-row justify-between sm:justify-between gap-2">
+        <DialogFooter className="flex-row justify-between gap-2 sm:justify-between">
           <Button
             type="button"
             variant="ghost"

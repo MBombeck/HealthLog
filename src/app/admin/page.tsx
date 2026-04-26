@@ -378,7 +378,7 @@ function SystemStatusSection({ id }: { id: string }) {
           {status.integrations.webPush && (
             <StatusItem
               icon={BellRing}
-              label="Web Push"
+              label={t("admin.integrationWebPush")}
               value={t("admin.configured")}
               className="text-dracula-green"
             />
@@ -386,7 +386,7 @@ function SystemStatusSection({ id }: { id: string }) {
           {status.integrations.bugReport && (
             <StatusItem
               icon={Bug}
-              label="Bug Report"
+              label={t("admin.integrationBugReport")}
               value={t("admin.configured")}
               className="text-dracula-green"
             />
@@ -518,7 +518,7 @@ function ServicesSection({ id }: { id: string }) {
           disabled={updateSettings.isPending}
         />
         <SettingsToggle
-          label="Web Push"
+          label={t("admin.integrationWebPush")}
           description={t("admin.webPushGlobal")}
           icon={Globe}
           checked={settings?.webPushGlobal ?? true}
@@ -2239,8 +2239,7 @@ function FeedbackInboxSection({ id }: { id: string }) {
   });
   const githubConfigured = Boolean(status?.integrations.bugReport?.configured);
 
-  const [activeStatus, setActiveStatus] =
-    useState<FeedbackStatusType>("OPEN");
+  const [activeStatus, setActiveStatus] = useState<FeedbackStatusType>("OPEN");
   const [selected, setSelected] = useState<FeedbackItem | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -2281,7 +2280,11 @@ function FeedbackInboxSection({ id }: { id: string }) {
         <TabsList>
           {STATUS_TABS.map((s) => (
             <TabsTrigger key={s} value={s}>
-              <span>{t(`admin.feedback.tab${s.charAt(0) + s.slice(1).toLowerCase()}`)}</span>
+              <span>
+                {t(
+                  `admin.feedback.tab${s.charAt(0) + s.slice(1).toLowerCase()}`,
+                )}
+              </span>
               <Badge variant="secondary" className="ml-1.5 text-xs">
                 {counts[s] ?? 0}
               </Badge>
@@ -2328,7 +2331,7 @@ function FeedbackInboxSection({ id }: { id: string }) {
                     {data.items.map((item, i) => (
                       <tr
                         key={item.id}
-                        className={`cursor-pointer hover:bg-muted/40 ${i % 2 === 0 ? "bg-muted/30" : ""}`}
+                        className={`hover:bg-muted/40 cursor-pointer ${i % 2 === 0 ? "bg-muted/30" : ""}`}
                         onClick={() => setSelected(item)}
                       >
                         <td className="text-muted-foreground px-3 py-2 text-xs whitespace-nowrap">
@@ -2337,7 +2340,7 @@ function FeedbackInboxSection({ id }: { id: string }) {
                         <td className="px-3 py-2">
                           <FeedbackCategoryBadge category={item.category} />
                         </td>
-                        <td className="px-3 py-2 font-medium truncate max-w-[28ch]">
+                        <td className="max-w-[28ch] truncate px-3 py-2 font-medium">
                           {item.subject}
                         </td>
                         <td className="text-muted-foreground px-3 py-2 text-xs">
@@ -2379,9 +2382,16 @@ function FeedbackInboxSection({ id }: { id: string }) {
   );
 }
 
-function FeedbackCategoryBadge({ category }: { category: FeedbackCategoryType }) {
+function FeedbackCategoryBadge({
+  category,
+}: {
+  category: FeedbackCategoryType;
+}) {
   const { t } = useTranslations();
-  const map: Record<FeedbackCategoryType, { label: string; className: string }> = {
+  const map: Record<
+    FeedbackCategoryType,
+    { label: string; className: string }
+  > = {
     BUG: {
       label: t("admin.feedback.categoryBug"),
       className: "bg-red-500/15 text-red-400 border-red-500/30",
@@ -2400,7 +2410,9 @@ function FeedbackCategoryBadge({ category }: { category: FeedbackCategoryType })
     },
   };
   const cfg = map[category];
-  return <Badge className={`text-xs border ${cfg.className}`}>{cfg.label}</Badge>;
+  return (
+    <Badge className={`border text-xs ${cfg.className}`}>{cfg.label}</Badge>
+  );
 }
 
 function FeedbackDetailDialog({
@@ -2487,11 +2499,12 @@ function FeedbackDetailDialog({
   const url = typeof meta.url === "string" ? meta.url : null;
   const locale = typeof meta.locale === "string" ? meta.locale : null;
   const userAgent = typeof meta.userAgent === "string" ? meta.userAgent : null;
-  const appVersion = typeof meta.appVersion === "string" ? meta.appVersion : null;
+  const appVersion =
+    typeof meta.appVersion === "string" ? meta.appVersion : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5" />
@@ -2529,7 +2542,7 @@ function FeedbackDetailDialog({
 
           {(url || locale || userAgent || appVersion) && (
             <div>
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <h4 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                 {t("admin.feedback.metadataHeading")}
               </h4>
               <dl className="mt-2 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-xs">
@@ -2571,14 +2584,14 @@ function FeedbackDetailDialog({
 
           {item.screenshotBase64 && (
             <div>
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              <h4 className="text-muted-foreground mb-2 text-xs font-semibold tracking-wider uppercase">
                 {t("admin.feedback.screenshotHeading")}
               </h4>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={item.screenshotBase64}
                 alt="Screenshot"
-                className="max-h-72 rounded-md border border-border"
+                className="border-border max-h-72 rounded-md border"
               />
             </div>
           )}
@@ -2611,7 +2624,7 @@ function FeedbackDetailDialog({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+          <div className="border-border flex flex-wrap items-center gap-2 border-t pt-3">
             <Button
               size="sm"
               variant="outline"
@@ -2674,7 +2687,7 @@ function FeedbackDetailDialog({
               </Button>
             )}
             {issueUrl && (
-              <Badge className="ml-auto border-dracula-green/30 bg-dracula-green/15 text-dracula-green">
+              <Badge className="border-dracula-green/30 bg-dracula-green/15 text-dracula-green ml-auto">
                 {t("admin.feedback.publishedToGithub")}
               </Badge>
             )}

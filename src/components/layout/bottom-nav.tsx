@@ -31,8 +31,11 @@ export function BottomNav() {
   const items = navItems;
 
   return (
-    <nav aria-label={t("nav.mobileNavigation")} className="bg-card/80 border-border fixed bottom-0 left-0 z-50 w-full border-t pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
-      <div className="mx-auto flex h-14 max-w-lg items-center justify-around px-2">
+    <nav
+      aria-label={t("nav.mobileNavigation")}
+      className="bg-card/80 border-border fixed bottom-0 left-0 z-50 w-full border-t pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
+    >
+      <div className="mx-auto flex h-16 max-w-lg items-stretch justify-around px-1">
         {items.map((item) => {
           const isActive =
             item.href === "/"
@@ -44,8 +47,11 @@ export function BottomNav() {
               href={item.href}
               aria-label={t(item.tKey)}
               aria-current={isActive ? "page" : undefined}
+              // Touch target sized to WCAG 2.5.5 minimum (44×44 CSS px). The
+              // outer min-h-11 min-w-11 is the actual hit area; the icon
+              // stays visually centered at 20px so the design doesn't shift.
               className={cn(
-                "relative flex items-center justify-center rounded-lg p-2.5 transition-colors",
+                "relative flex min-h-11 min-w-11 flex-1 items-center justify-center rounded-lg transition-colors",
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground",
@@ -53,7 +59,7 @@ export function BottomNav() {
             >
               <item.icon className="h-5 w-5" />
               {isActive && (
-                <span className="bg-primary absolute -bottom-1 h-1 w-1 rounded-full" />
+                <span className="bg-primary absolute bottom-1.5 h-1 w-1 rounded-full" />
               )}
             </Link>
           );
