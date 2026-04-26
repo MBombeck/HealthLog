@@ -67,21 +67,24 @@ Most health apps lock your data behind proprietary clouds, push subscriptions, a
 
 ## Quick Start
 
+Plan ~5 minutes for a working install. The bundled `docker-compose.yml` builds the app from source — pre-built images on GHCR are coming in a separate release.
+
 ```bash
 git clone https://github.com/MBombeck/HealthLog.git
 cd HealthLog
 cp .env.example .env
 ```
 
-Generate the required secrets:
+Generate the four required secrets and paste them into `.env`:
 
 ```bash
-openssl rand -hex 32  # SESSION_SECRET
-openssl rand -hex 32  # ENCRYPTION_KEY
-openssl rand -hex 32  # API_TOKEN_HMAC_KEY
+echo "POSTGRES_PASSWORD=$(openssl rand -base64 24)" >> .env
+echo "SESSION_SECRET=$(openssl rand -hex 32)"       >> .env
+echo "ENCRYPTION_KEY=$(openssl rand -hex 32)"       >> .env
+echo "API_TOKEN_HMAC_KEY=$(openssl rand -hex 32)"   >> .env
 ```
 
-Add them to `.env`, then:
+Then bring the stack up:
 
 ```bash
 docker compose up -d
@@ -89,25 +92,27 @@ docker compose up -d
 
 Open **http://localhost:3000**. The first registered user becomes admin.
 
+> Behind a reverse proxy (Caddy / Traefik / Nginx) for TLS, set `NEXT_PUBLIC_APP_URL` and `APP_URL` to your public URL in `.env` before starting. See [Self-Hosting → Reverse Proxy](https://docs.healthlog.dev/self-hosting/reverse-proxy/) for examples.
+
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 16 (App Router, React Server Components) |
-| Language | TypeScript (strict mode) |
-| Database | PostgreSQL 16 + Prisma 7 (22 models) |
-| Job Queue | pg-boss 12 (reminders, insights, backups) |
-| UI | shadcn/ui, Tailwind CSS 4, Radix UI, Lucide Icons |
-| Charts | Recharts 3 |
-| Data Fetching | TanStack Query 5 |
-| Forms | React Hook Form 7 + Zod 4 |
-| Auth | SimpleWebAuthn 13, Argon2id |
-| Notifications | Telegram Bot API, ntfy, Web Push (VAPID) |
-| PDF | jsPDF (client-side generation) |
-| Testing | Vitest 4 |
-| Deployment | Docker (multi-stage Alpine) |
+| Layer         | Technology                                        |
+| ------------- | ------------------------------------------------- |
+| Framework     | Next.js 16 (App Router, React Server Components)  |
+| Language      | TypeScript (strict mode)                          |
+| Database      | PostgreSQL 16 + Prisma 7 (23 models)              |
+| Job Queue     | pg-boss 12 (reminders, insights, backups)         |
+| UI            | shadcn/ui, Tailwind CSS 4, Radix UI, Lucide Icons |
+| Charts        | Recharts 3                                        |
+| Data Fetching | TanStack Query 5                                  |
+| Forms         | React Hook Form 7 + Zod 4                         |
+| Auth          | SimpleWebAuthn 13, Argon2id                       |
+| Notifications | Telegram Bot API, ntfy, Web Push (VAPID)          |
+| PDF           | jsPDF (client-side generation)                    |
+| Testing       | Vitest 4                                          |
+| Deployment    | Docker (multi-stage Alpine)                       |
 
 ---
 
@@ -130,23 +135,24 @@ HealthLog is designed for people who take data ownership seriously.
 
 ### Required
 
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `SESSION_SECRET` | 64-char hex string for session signing |
-| `ENCRYPTION_KEY` | 64-char hex string for AES-256-GCM |
-| `API_TOKEN_HMAC_KEY` | 64-char hex string for API token hashing |
+| Variable             | Description                                                   |
+| -------------------- | ------------------------------------------------------------- |
+| `POSTGRES_PASSWORD`  | Password for the bundled Postgres service (Docker Compose)    |
+| `DATABASE_URL`       | PostgreSQL connection string (uses `POSTGRES_PASSWORD` above) |
+| `SESSION_SECRET`     | 64-char hex string for session signing                        |
+| `ENCRYPTION_KEY`     | 64-char hex string for AES-256-GCM                            |
+| `API_TOKEN_HMAC_KEY` | 64-char hex string for API token hashing                      |
 
 ### Optional
 
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_APP_URL` | Public-facing URL (default: `http://localhost:3000`) |
-| `WITHINGS_CLIENT_ID` | Withings OAuth2 client ID |
-| `WITHINGS_CLIENT_SECRET` | Withings OAuth2 client secret |
-| `WITHINGS_REDIRECT_URI` | OAuth callback URL |
-| `WITHINGS_WEBHOOK_SECRET` | Webhook URL hardening secret |
-| `TELEGRAM_WEBHOOK_SECRET` | Telegram bot webhook secret |
+| Variable                  | Description                                          |
+| ------------------------- | ---------------------------------------------------- |
+| `NEXT_PUBLIC_APP_URL`     | Public-facing URL (default: `http://localhost:3000`) |
+| `WITHINGS_CLIENT_ID`      | Withings OAuth2 client ID                            |
+| `WITHINGS_CLIENT_SECRET`  | Withings OAuth2 client secret                        |
+| `WITHINGS_REDIRECT_URI`   | OAuth callback URL                                   |
+| `WITHINGS_WEBHOOK_SECRET` | Webhook URL hardening secret                         |
+| `TELEGRAM_WEBHOOK_SECRET` | Telegram bot webhook secret                          |
 
 Telegram bot token, ntfy settings, Web Push VAPID keys, Umami, and GlitchTip URLs are configured in the **Admin Panel** and stored encrypted in the database.
 
@@ -205,60 +211,60 @@ All mutations require authentication via session cookie. External ingest uses Be
 <details>
 <summary><strong>Health Data</strong></summary>
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/measurements` | List measurements (paginated, filterable) |
-| `POST` | `/api/measurements` | Create measurement |
-| `DELETE` | `/api/measurements/:id` | Delete measurement |
-| `GET` | `/api/analytics` | Trend summaries (7d/30d) |
-| `GET` | `/api/export` | Export as CSV or JSON |
-| `POST` | `/api/import` | Import from JSON |
-| `POST` | `/api/doctor-report` | Aggregated data for PDF |
+| Method   | Endpoint                | Description                               |
+| -------- | ----------------------- | ----------------------------------------- |
+| `GET`    | `/api/measurements`     | List measurements (paginated, filterable) |
+| `POST`   | `/api/measurements`     | Create measurement                        |
+| `DELETE` | `/api/measurements/:id` | Delete measurement                        |
+| `GET`    | `/api/analytics`        | Trend summaries (7d/30d)                  |
+| `GET`    | `/api/export`           | Export as CSV or JSON                     |
+| `POST`   | `/api/import`           | Import from JSON                          |
+| `POST`   | `/api/doctor-report`    | Aggregated data for PDF                   |
 
 </details>
 
 <details>
 <summary><strong>Mood</strong></summary>
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/mood-entries` | List mood entries |
-| `POST` | `/api/mood-entries` | Create mood entry |
-| `DELETE` | `/api/mood-entries/:id` | Delete mood entry |
-| `GET` | `/api/mood/analytics` | Mood trend analytics |
-| `POST` | `/api/integrations/moodlog/webhook` | moodLog.app webhook |
+| Method   | Endpoint                            | Description          |
+| -------- | ----------------------------------- | -------------------- |
+| `GET`    | `/api/mood-entries`                 | List mood entries    |
+| `POST`   | `/api/mood-entries`                 | Create mood entry    |
+| `DELETE` | `/api/mood-entries/:id`             | Delete mood entry    |
+| `GET`    | `/api/mood/analytics`               | Mood trend analytics |
+| `POST`   | `/api/integrations/moodlog/webhook` | moodLog.app webhook  |
 
 </details>
 
 <details>
 <summary><strong>Medications</strong></summary>
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/medications` | List all medications |
-| `POST` | `/api/medications` | Create medication |
-| `PUT` | `/api/medications/:id` | Update medication |
-| `DELETE` | `/api/medications/:id` | Delete medication |
-| `POST` | `/api/medications/:id/intake` | Log intake event |
-| `GET` | `/api/medications/:id/compliance` | Compliance stats |
-| `POST` | `/api/ingest/medication` | External intake (Bearer) |
+| Method   | Endpoint                          | Description              |
+| -------- | --------------------------------- | ------------------------ |
+| `GET`    | `/api/medications`                | List all medications     |
+| `POST`   | `/api/medications`                | Create medication        |
+| `PUT`    | `/api/medications/:id`            | Update medication        |
+| `DELETE` | `/api/medications/:id`            | Delete medication        |
+| `POST`   | `/api/medications/:id/intake`     | Log intake event         |
+| `GET`    | `/api/medications/:id/compliance` | Compliance stats         |
+| `POST`   | `/api/ingest/medication`          | External intake (Bearer) |
 
 </details>
 
 <details>
 <summary><strong>Auth and Integrations</strong></summary>
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/auth/register` | Create account |
-| `POST` | `/api/auth/login` | Password login |
-| `POST` | `/api/auth/logout` | Destroy session |
-| `GET` | `/api/auth/me` | Current user profile |
-| `POST` | `/api/auth/passkey/*` | WebAuthn flows |
-| `GET` | `/api/withings/connect` | Initiate Withings OAuth |
-| `POST` | `/api/insights/generate` | Regenerate AI insights |
-| `GET` | `/api/gamification/achievements` | Achievement progress |
-| `GET` | `/api/health` | Docker health check |
+| Method | Endpoint                         | Description             |
+| ------ | -------------------------------- | ----------------------- |
+| `POST` | `/api/auth/register`             | Create account          |
+| `POST` | `/api/auth/login`                | Password login          |
+| `POST` | `/api/auth/logout`               | Destroy session         |
+| `GET`  | `/api/auth/me`                   | Current user profile    |
+| `POST` | `/api/auth/passkey/*`            | WebAuthn flows          |
+| `GET`  | `/api/withings/connect`          | Initiate Withings OAuth |
+| `POST` | `/api/insights/generate`         | Regenerate AI insights  |
+| `GET`  | `/api/gamification/achievements` | Achievement progress    |
+| `GET`  | `/api/health`                    | Docker health check     |
 
 </details>
 
@@ -266,16 +272,16 @@ All mutations require authentication via session cookie. External ingest uses Be
 
 ## Integrations
 
-| Integration | Setup | Purpose |
-|-------------|-------|---------|
-| **Withings** | Env vars | Auto-sync weight, BP, and activity |
-| **Telegram** | Admin Panel | Medication reminders with inline buttons |
-| **ntfy** | User Settings | Self-hosted push notifications |
-| **Web Push** | Admin Panel | Browser-native VAPID notifications |
-| **OpenAI** | User Settings | AI health insights (BYOK) |
-| **moodLog.app** | User Settings | Mood tracking sync |
-| **Umami** | Admin Panel | Privacy-friendly analytics |
-| **GlitchTip** | Admin Panel | Sentry-compatible error tracking |
+| Integration     | Setup         | Purpose                                  |
+| --------------- | ------------- | ---------------------------------------- |
+| **Withings**    | Env vars      | Auto-sync weight, BP, and activity       |
+| **Telegram**    | Admin Panel   | Medication reminders with inline buttons |
+| **ntfy**        | User Settings | Self-hosted push notifications           |
+| **Web Push**    | Admin Panel   | Browser-native VAPID notifications       |
+| **OpenAI**      | User Settings | AI health insights (BYOK)                |
+| **moodLog.app** | User Settings | Mood tracking sync                       |
+| **Umami**       | Admin Panel   | Privacy-friendly analytics               |
+| **GlitchTip**   | Admin Panel   | Sentry-compatible error tracking         |
 
 ---
 

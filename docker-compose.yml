@@ -4,10 +4,10 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: healthlog-app
-    expose:
-      - "3000"
+    ports:
+      - "3000:3000"
     environment:
-      DATABASE_URL: "postgresql://healthlog:healthlog@db:5432/healthlog?schema=public"
+      DATABASE_URL: "postgresql://healthlog:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/healthlog?schema=public"
       NODE_ENV: production
       SESSION_SECRET: "${SESSION_SECRET:?SESSION_SECRET is required}"
       ENCRYPTION_KEY: "${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}"
@@ -24,7 +24,7 @@ services:
     container_name: healthlog-db
     environment:
       POSTGRES_USER: healthlog
-      POSTGRES_PASSWORD: healthlog
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}"
       POSTGRES_DB: healthlog
     volumes:
       - pgdata:/var/lib/postgresql/data
