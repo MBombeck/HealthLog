@@ -37,6 +37,7 @@ export function PasswordStrength({
 
   useEffect(() => {
     if (!password) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResult(null);
       return;
     }

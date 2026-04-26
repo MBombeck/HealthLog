@@ -2939,8 +2939,15 @@ function UserAIProviderSubsection() {
 
   useEffect(() => {
     if (!data) return;
+    // Sync-from-server pattern: form draft state is initialised from the
+    // fetched user record. Could be reworked into a derived-state approach,
+    // but that's a non-trivial refactor of this monolithic settings page —
+    // tracked for the 1.4.0 settings split.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setProvider(data.provider ?? "");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setModel(data.model ?? "");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setBaseUrl(data.baseUrl ?? "");
   }, [data]);
 
