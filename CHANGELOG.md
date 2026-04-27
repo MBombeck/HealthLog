@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.3.1] — 2026-04-27
+
+### Fixed
+
+- **Compose env-var validation no longer breaks Coolify-style deploys.**
+  `docker-compose.yml` previously used `${VAR:?required}` shell-parameter
+  syntax for the four secrets and `POSTGRES_PASSWORD`. Some hosting
+  platforms (Coolify in particular) parse compose files eagerly and
+  store the _fallback error string_ (`"POSTGRES_PASSWORD is required"`)
+  as the literal env-var value when `POSTGRES_PASSWORD` was unset,
+  which then collided with `DATABASE_URL` and broke the running app
+  with `P1000: Authentication failed`. Compose now uses plain `${VAR}`
+  interpolation; validation moved into `docker-entrypoint.sh`, which
+  fails fast with a clear stderr message listing the unset variables.
+
+### Notes
+
+If you upgraded an existing Compose stack from 1.2.x → 1.3.0 and hit
+the `POSTGRES_PASSWORD is required` literal-as-value bug, set
+`POSTGRES_PASSWORD` in your environment to whatever your existing
+Postgres data volume was originally initialised with (likely
+`healthlog` if you started from a pre-1.2.1 release), then redeploy.
+Postgres only honours `POSTGRES_PASSWORD` on first volume init — the
+existing user keeps the original password regardless of env changes.
+
 ## [1.3.0] — 2026-04-27
 
 ### Added — Body composition + targeted hardening

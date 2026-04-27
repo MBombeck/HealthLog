@@ -1,6 +1,26 @@
 #!/bin/sh
 set -e
 
+# ── Validate required env vars ───────────────────────────────
+# We do this in the entrypoint instead of in docker-compose.yml's
+# environment block (which used to use the ${VAR:?error} syntax)
+# because some hosting platforms parse compose files eagerly and
+# end up storing the fallback error string as the literal value.
+# Validating here guarantees a clear, deploy-platform-agnostic
+# failure message before we touch the database.
+missing=""
+for var in DATABASE_URL SESSION_SECRET ENCRYPTION_KEY API_TOKEN_HMAC_KEY; do
+  eval "value=\$$var"
+  if [ -z "$value" ]; then
+    missing="$missing $var"
+  fi
+done
+if [ -n "$missing" ]; then
+  echo "HealthLog: ERROR — required env vars not set:$missing" >&2
+  echo "HealthLog: see .env.example for the full list and how to generate each value." >&2
+  exit 1
+fi
+
 # ── Wait for PostgreSQL ──────────────────────────────────────
 MAX_RETRIES=30
 RETRY=0
@@ -15,7 +35,7 @@ until node -e "
 " 2>/dev/null; do
   RETRY=$((RETRY + 1))
   if [ "$RETRY" -ge "$MAX_RETRIES" ]; then
-    echo "HealthLog: ERROR — Database not reachable after ${MAX_RETRIES}s, aborting."
+    echo "HealthLog: ERROR — Database not reachable after ${MAX_RETRIES}s, aborting." >&2
     exit 1
   fi
   sleep 1
