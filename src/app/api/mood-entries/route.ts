@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
-import { apiSuccess, apiError, getClientIp, safeJson } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiError,
+  getClientIp,
+  safeJson,
+} from "@/lib/api-response";
 import {
   createMoodEntrySchema,
   listMoodEntriesSchema,
@@ -11,12 +16,6 @@ import { Prisma } from "@/generated/prisma/client";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { withIdempotency } from "@/lib/idempotency";
-import { getSession } from "@/lib/auth/session";
-
-async function resolveUserIdForIdempotency(): Promise<string | null> {
-  const session = await getSession().catch(() => null);
-  return session?.user.id ?? null;
-}
 
 function toBerlinDate(date: Date): string {
   return new Intl.DateTimeFormat("sv-SE", {
@@ -67,7 +66,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
     prisma.moodEntry.count({ where }),
   ]);
 
-  annotate({ action: { name: "mood-entries.list" }, meta: { total, limit, offset } });
+  annotate({
+    action: { name: "mood-entries.list" },
+    meta: { total, limit, offset },
+  });
 
   const entriesWithParsedTags = entries.map((e) => ({
     ...e,
@@ -80,9 +82,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   });
 });
 
-export const POST = apiHandler(
-  withIdempotency<[NextRequest]>(postMoodEntry, resolveUserIdForIdempotency),
-);
+export const POST = apiHandler(withIdempotency<[NextRequest]>(postMoodEntry));
 
 async function postMoodEntry(request: NextRequest) {
   const { user } = await requireAuth();
@@ -118,15 +118,18 @@ async function postMoodEntry(request: NextRequest) {
       details: { moodEntryId: entry.id, mood },
     });
 
-    annotate({ action: { name: "mood-entries.create" }, meta: { moodEntryId: entry.id, mood } });
+    annotate({
+      action: { name: "mood-entries.create" },
+      meta: { moodEntryId: entry.id, mood },
+    });
 
     return apiSuccess({ ...entry, tags: parseTags(entry.tags) }, 201);
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-      return apiError(
-        "A mood entry with this data already exists",
-        409,
-      );
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2002"
+    ) {
+      return apiError("A mood entry with this data already exists", 409);
     }
     throw err;
   }

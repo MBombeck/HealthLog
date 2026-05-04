@@ -10,6 +10,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth/session";
 import { annotate } from "@/lib/logging/context";
 
 const TTL_MS = 24 * 60 * 60 * 1000;
@@ -36,7 +37,9 @@ function getIdempotencyKey(request: Request | NextRequest): string | null {
  * Look up a cached response for a (userId, key, method, path) tuple.
  * Returns the cached NextResponse or null.
  */
-async function findCached(ctx: IdempotencyContext): Promise<NextResponse | null> {
+async function findCached(
+  ctx: IdempotencyContext,
+): Promise<NextResponse | null> {
   const row = await prisma.idempotencyKey.findUnique({
     where: {
       userId_key_method_path: {
@@ -51,7 +54,9 @@ async function findCached(ctx: IdempotencyContext): Promise<NextResponse | null>
   if (!row) return null;
   if (row.expiresAt <= new Date()) {
     // Stale — purge and fall through.
-    await prisma.idempotencyKey.delete({ where: { id: row.id } }).catch(() => {});
+    await prisma.idempotencyKey
+      .delete({ where: { id: row.id } })
+      .catch(() => {});
     return null;
   }
 
@@ -82,7 +87,11 @@ async function persistCached(
   preReadBody?: string,
 ): Promise<void> {
   const body =
-    preReadBody ?? (await response.clone().text().catch(() => ""));
+    preReadBody ??
+    (await response
+      .clone()
+      .text()
+      .catch(() => ""));
 
   await prisma.idempotencyKey
     .create({
@@ -108,7 +117,9 @@ async function persistCached(
  *
  * The wrapped handler is responsible for authentication itself — this
  * helper only triggers for methods in {POST, PUT, PATCH, DELETE} and only
- * once `userIdResolver` returns a non-null value.
+ * once `userIdResolver` returns a non-null value. By default the userId
+ * is read from the cookie session; pass a custom resolver for routes
+ * that authenticate via Bearer token or other means.
  *
  * No-op when the header is missing or the value is malformed.
  */
@@ -116,7 +127,10 @@ export function withIdempotency<
   Args extends [Request | NextRequest, ...unknown[]],
 >(
   handler: (...args: Args) => Promise<Response>,
-  userIdResolver: (...args: Args) => Promise<string | null>,
+  userIdResolver: (...args: Args) => Promise<string | null> = async () => {
+    const session = await getSession().catch(() => null);
+    return session?.user.id ?? null;
+  },
 ): (...args: Args) => Promise<Response> {
   return async (...args: Args): Promise<Response> => {
     const request = args[0];

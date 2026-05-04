@@ -15,8 +15,13 @@ vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
 }));
 
+vi.mock("@/lib/auth/session", () => ({
+  getSession: vi.fn(),
+}));
+
 import { withIdempotency } from "../idempotency";
 import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth/session";
 
 function makeRequest(
   method: string,
@@ -141,5 +146,34 @@ describe("withIdempotency", () => {
     const wrapped = withIdempotency<[NextRequest]>(handler, async () => "u-1");
     await wrapped(makeRequest("GET", { "idempotency-key": "abc-12345678" }));
     expect(prisma.idempotencyKey.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("defaults to the cookie session when no resolver is given", async () => {
+    vi.mocked(getSession).mockResolvedValue({
+      session: { id: "s-1", expiresAt: new Date(Date.now() + 60_000) },
+      user: { id: "u-default" },
+    } as never);
+    const handler = vi.fn(async () =>
+      NextResponse.json({ data: "ok", error: null }, { status: 201 }),
+    );
+    const wrapped = withIdempotency<[NextRequest]>(handler);
+    await wrapped(makeRequest("POST", { "idempotency-key": "abc-12345678" }));
+    expect(getSession).toHaveBeenCalledTimes(1);
+    expect(prisma.idempotencyKey.create).toHaveBeenCalledTimes(1);
+    const persisted = vi.mocked(prisma.idempotencyKey.create).mock
+      .calls[0][0] as { data: { userId: string } };
+    expect(persisted.data.userId).toBe("u-default");
+  });
+
+  it("skips caching when the default resolver finds no session", async () => {
+    vi.mocked(getSession).mockResolvedValue(null);
+    const handler = vi.fn(async () =>
+      NextResponse.json({ data: "ok", error: null }, { status: 201 }),
+    );
+    const wrapped = withIdempotency<[NextRequest]>(handler);
+    await wrapped(makeRequest("POST", { "idempotency-key": "abc-12345678" }));
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(prisma.idempotencyKey.findUnique).not.toHaveBeenCalled();
+    expect(prisma.idempotencyKey.create).not.toHaveBeenCalled();
   });
 });

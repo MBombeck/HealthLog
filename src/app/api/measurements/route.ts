@@ -2,7 +2,12 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
-import { apiSuccess, apiError, getClientIp, safeJson } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiError,
+  getClientIp,
+  safeJson,
+} from "@/lib/api-response";
 import {
   createMeasurementSchema,
   createBatchMeasurementSchema,
@@ -10,7 +15,6 @@ import {
   getUnitForType,
 } from "@/lib/validations/measurement";
 import { withIdempotency } from "@/lib/idempotency";
-import { getSession } from "@/lib/auth/session";
 import { NextRequest } from "next/server";
 import type {
   MeasurementType,
@@ -18,11 +22,6 @@ import type {
   GlucoseContext,
 } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
-
-async function resolveUserIdForIdempotency(): Promise<string | null> {
-  const session = await getSession().catch(() => null);
-  return session?.user.id ?? null;
-}
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -66,9 +65,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   });
 });
 
-export const POST = apiHandler(
-  withIdempotency<[NextRequest]>(postMeasurement, resolveUserIdForIdempotency),
-);
+export const POST = apiHandler(withIdempotency<[NextRequest]>(postMeasurement));
 
 async function postMeasurement(request: NextRequest) {
   const { user } = await requireAuth();
@@ -149,7 +146,10 @@ async function postMeasurement(request: NextRequest) {
       },
     });
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2002"
+    ) {
       return apiError("A measurement with this data already exists", 409);
     }
     throw err;

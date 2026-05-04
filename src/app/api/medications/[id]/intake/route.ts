@@ -2,27 +2,23 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
-import { apiSuccess, apiError, getClientIp, safeJson } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiError,
+  getClientIp,
+  safeJson,
+} from "@/lib/api-response";
 import {
   intakeSchema,
   listIntakeEventsSchema,
 } from "@/lib/validations/medication";
 import { withIdempotency } from "@/lib/idempotency";
-import { getSession } from "@/lib/auth/session";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-async function resolveUserIdForIdempotency(): Promise<string | null> {
-  const session = await getSession().catch(() => null);
-  return session?.user.id ?? null;
-}
-
 export const POST = apiHandler(
-  withIdempotency<[NextRequest, RouteParams]>(
-    postIntake,
-    resolveUserIdForIdempotency,
-  ),
+  withIdempotency<[NextRequest, RouteParams]>(postIntake),
 );
 
 async function postIntake(request: NextRequest, { params }: RouteParams) {
@@ -116,38 +112,40 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
   return apiSuccess(event, 201);
 }
 
-export const GET = apiHandler(async (request: NextRequest, { params }: RouteParams) => {
-  const { user } = await requireAuth();
+export const GET = apiHandler(
+  async (request: NextRequest, { params }: RouteParams) => {
+    const { user } = await requireAuth();
 
-  const { id } = await params;
-  const medication = await prisma.medication.findUnique({ where: { id } });
-  if (!medication || medication.userId !== user.id) {
-    return apiError("Medication not found", 404);
-  }
+    const { id } = await params;
+    const medication = await prisma.medication.findUnique({ where: { id } });
+    if (!medication || medication.userId !== user.id) {
+      return apiError("Medication not found", 404);
+    }
 
-  const searchParams = Object.fromEntries(request.nextUrl.searchParams);
-  const parsed = listIntakeEventsSchema.safeParse(searchParams);
-  if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 422);
-  }
+    const searchParams = Object.fromEntries(request.nextUrl.searchParams);
+    const parsed = listIntakeEventsSchema.safeParse(searchParams);
+    if (!parsed.success) {
+      return apiError(parsed.error.issues[0].message, 422);
+    }
 
-  const { limit, offset, sortBy, sortDir } = parsed.data;
-  const where = { medicationId: id, userId: user.id };
+    const { limit, offset, sortBy, sortDir } = parsed.data;
+    const where = { medicationId: id, userId: user.id };
 
-  const [events, total] = await Promise.all([
-    prisma.medicationIntakeEvent.findMany({
-      where,
-      orderBy: { [sortBy]: sortDir },
-      take: limit,
-      skip: offset,
-    }),
-    prisma.medicationIntakeEvent.count({ where }),
-  ]);
+    const [events, total] = await Promise.all([
+      prisma.medicationIntakeEvent.findMany({
+        where,
+        orderBy: { [sortBy]: sortDir },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.medicationIntakeEvent.count({ where }),
+    ]);
 
-  annotate({
-    action: { name: "medication.intake.list" },
-    meta: { medication_id: id, total },
-  });
+    annotate({
+      action: { name: "medication.intake.list" },
+      meta: { medication_id: id, total },
+    });
 
-  return apiSuccess({ events, meta: { total, limit, offset } });
-});
+    return apiSuccess({ events, meta: { total, limit, offset } });
+  },
+);
