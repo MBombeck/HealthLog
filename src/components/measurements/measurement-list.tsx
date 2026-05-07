@@ -54,50 +54,16 @@ import {
   ArrowDown,
   ArrowUpDown,
   MoreHorizontal,
-  Scale,
-  Heart,
-  Activity,
-  Droplets,
-  Moon,
-  Footprints,
 } from "lucide-react";
 import { useState } from "react";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { invalidateKeys, measurementDependentKeys } from "@/lib/query-keys";
-
-const TYPE_LABEL_KEYS: Record<string, string> = {
-  WEIGHT: "measurements.typeWeight",
-  BLOOD_PRESSURE_SYS: "measurements.typeBpSys",
-  BLOOD_PRESSURE_DIA: "measurements.typeBpDia",
-  PULSE: "measurements.typePulse",
-  BODY_FAT: "measurements.typeBodyFat",
-  SLEEP_DURATION: "measurements.typeSleep",
-  ACTIVITY_STEPS: "measurements.typeSteps",
-};
-
-const TYPE_ICONS: Record<
-  string,
-  React.ComponentType<{ className?: string }>
-> = {
-  WEIGHT: Scale,
-  BLOOD_PRESSURE_SYS: Heart,
-  BLOOD_PRESSURE_DIA: Heart,
-  PULSE: Activity,
-  BODY_FAT: Droplets,
-  SLEEP_DURATION: Moon,
-  ACTIVITY_STEPS: Footprints,
-};
-
-const TYPE_COLORS: Record<string, string> = {
-  WEIGHT: "bg-chart-1/20 text-chart-1",
-  BLOOD_PRESSURE_SYS: "bg-chart-3/20 text-chart-3",
-  BLOOD_PRESSURE_DIA: "bg-chart-3/20 text-chart-3",
-  PULSE: "bg-chart-5/20 text-chart-5",
-  BODY_FAT: "bg-chart-4/20 text-chart-4",
-  SLEEP_DURATION: "bg-chart-2/20 text-chart-2",
-  ACTIVITY_STEPS: "bg-chart-2/20 text-chart-2",
-};
+import {
+  MEASUREMENT_TYPE_LABEL_KEYS as TYPE_LABEL_KEYS,
+  MEASUREMENT_TYPE_ICONS as TYPE_ICONS,
+  MEASUREMENT_TYPE_COLORS as TYPE_COLORS,
+} from "./measurement-list-meta";
 
 interface Measurement {
   id: string;

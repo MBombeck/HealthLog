@@ -37,7 +37,9 @@ export type ThresholdMetric =
   | "BLOOD_GLUCOSE_FASTING"
   | "BLOOD_GLUCOSE_POSTPRANDIAL"
   | "BLOOD_GLUCOSE_RANDOM"
-  | "BLOOD_GLUCOSE_BEDTIME";
+  | "BLOOD_GLUCOSE_BEDTIME"
+  | "TOTAL_BODY_WATER"
+  | "BONE_MASS";
 
 export interface ThresholdOverride {
   min: number;
@@ -79,6 +81,10 @@ export const METRIC_BOUNDS: Record<
   BLOOD_GLUCOSE_POSTPRANDIAL: { min: 40, max: 500, unit: "mg/dL" },
   BLOOD_GLUCOSE_RANDOM: { min: 40, max: 500, unit: "mg/dL" },
   BLOOD_GLUCOSE_BEDTIME: { min: 40, max: 400, unit: "mg/dL" },
+  // Body composition (Withings type 77 / 88, stored canonically in kg).
+  // Bounds match VALUE_RANGES in src/lib/validations/measurement.ts.
+  TOTAL_BODY_WATER: { min: 5, max: 100, unit: "kg" },
+  BONE_MASS: { min: 0.5, max: 8, unit: "kg" },
 };
 
 /**
@@ -177,6 +183,16 @@ function defaultRange(
         GLUCOSE_DEFAULTS.BEDTIME,
         GLUCOSE_DEFAULTS.BEDTIME.max + 30,
       );
+    case "TOTAL_BODY_WATER":
+      // Adult typical ~50% body weight as water (kg). Without weight context
+      // the gender-neutral band is wide; users can tighten it via override.
+      // Reference: ESPEN Body Composition Guidance 2017.
+      return { greenMin: 28, greenMax: 50, orangeMin: 22, orangeMax: 55 };
+    case "BONE_MASS":
+      // DEXA-equivalent body bone mineral content. Adult typical 2.5–4.0 kg
+      // (women slightly lower than men). Generous orange band before
+      // surfacing as a concern.
+      return { greenMin: 2.0, greenMax: 4.0, orangeMin: 1.5, orangeMax: 5.0 };
   }
 }
 

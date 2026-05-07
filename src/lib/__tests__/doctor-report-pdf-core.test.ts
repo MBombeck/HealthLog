@@ -2,7 +2,11 @@ import { describe, it, expect } from "vitest";
 import {
   buildDoctorReportPdfDocument,
   renderDoctorReportPdfBytes,
+  DOCTOR_REPORT_VITAL_TYPES,
+  DOCTOR_REPORT_TYPE_LABEL_KEYS,
+  DOCTOR_REPORT_TYPE_UNIT_KEYS,
 } from "../doctor-report-pdf-core";
+import { measurementTypeEnum } from "../validations/measurement";
 import type { DoctorReportData } from "../doctor-report-data";
 import { getServerTranslator } from "../i18n/server-translator";
 
@@ -159,5 +163,58 @@ describe("buildDoctorReportPdfDocument", () => {
       now: FIXED_NOW,
     });
     expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// Audit-2026-05-07 / phase P0 / closes audit C-9: server-side PDF used a
+// stale type map and silently dropped body composition while the browser
+// PDF rendered them. These tests pin the contract.
+describe("doctor-report-pdf-core type-map coverage", () => {
+  it("exposes body composition (TOTAL_BODY_WATER, BONE_MASS) as vital types", () => {
+    expect(DOCTOR_REPORT_VITAL_TYPES).toContain("TOTAL_BODY_WATER");
+    expect(DOCTOR_REPORT_VITAL_TYPES).toContain("BONE_MASS");
+  });
+
+  it("provides a label key + unit for every vital type", () => {
+    for (const type of DOCTOR_REPORT_VITAL_TYPES) {
+      expect(DOCTOR_REPORT_TYPE_LABEL_KEYS[type]).toBeTruthy();
+      const unit = DOCTOR_REPORT_TYPE_UNIT_KEYS[type];
+      expect(
+        unit === null || (typeof unit === "string" && unit.length > 0),
+      ).toBe(true);
+    }
+  });
+
+  it("vital types are a subset of the canonical measurement enum", () => {
+    const enumSet = new Set<string>(measurementTypeEnum.options);
+    for (const type of DOCTOR_REPORT_VITAL_TYPES) {
+      expect(enumSet.has(type), `${type} not in measurementTypeEnum`).toBe(
+        true,
+      );
+    }
+  });
+
+  it("renders body composition rows when stats are supplied", () => {
+    const data = makeData({
+      stats: {
+        WEIGHT: { avg: 80, min: 79, max: 81, count: 5, latest: 80 },
+        TOTAL_BODY_WATER: {
+          avg: 42,
+          min: 40,
+          max: 44,
+          count: 5,
+          latest: 42,
+        },
+        BONE_MASS: { avg: 3.2, min: 3.1, max: 3.3, count: 5, latest: 3.2 },
+      },
+    });
+    const bytes = renderDoctorReportPdfBytes(data, {
+      t: getServerTranslator("de").t,
+      locale: "de",
+      now: FIXED_NOW,
+    });
+    expect(bytes.byteLength).toBeGreaterThan(1024);
+    const header = String.fromCharCode(...bytes.slice(0, 5));
+    expect(header).toBe("%PDF-");
   });
 });

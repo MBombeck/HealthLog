@@ -538,6 +538,8 @@
     "pointsAllTitle": "All available data points",
     "systolic": "Systolic",
     "diastolic": "Diastolic",
+    "bodyWater": "Body water",
+    "boneMass": "Bone mass",
     "movingAverage7d": "7d avg",
     "avg7dShort": "7d",
     "avg30dShort": "30d",
@@ -760,6 +762,8 @@
     "metricGlucosePostprandial": "Glucose — post-meal",
     "metricGlucoseRandom": "Glucose — random",
     "metricGlucoseBedtime": "Glucose — bedtime",
+    "metricBodyWater": "Body water",
+    "metricBoneMass": "Bone mass",
     "unsetExplanation": "No override — using computed default.",
     "loadError": "Could not load thresholds"
   },

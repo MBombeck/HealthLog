@@ -88,6 +88,52 @@ describe("getAllEffectiveRanges", () => {
     const keys = Object.keys(ranges);
     expect(keys).toContain("WEIGHT");
     expect(keys).toContain("BLOOD_GLUCOSE_FASTING");
-    expect(keys.length).toBeGreaterThanOrEqual(11);
+    expect(keys).toContain("TOTAL_BODY_WATER");
+    expect(keys).toContain("BONE_MASS");
+    expect(keys.length).toBeGreaterThanOrEqual(13);
+  });
+});
+
+// Audit-2026-05-07 / phase P0 / closes audit C-15: TOTAL_BODY_WATER and
+// BONE_MASS lacked threshold definitions. Severity logic returned `nominal`
+// for any value, so users would see "all healthy" regardless of input.
+describe("body composition thresholds", () => {
+  it("TOTAL_BODY_WATER has a sensible non-null green band", () => {
+    const result = getEffectiveRange("TOTAL_BODY_WATER", baseProfile, null);
+    expect(result.range).not.toBeNull();
+    expect(result.range!.greenMin).toBeGreaterThan(0);
+    expect(result.range!.greenMax).toBeGreaterThan(result.range!.greenMin);
+    expect(result.range!.orangeMin).toBeLessThan(result.range!.greenMin);
+    expect(result.range!.orangeMax).toBeGreaterThan(result.range!.greenMax);
+  });
+
+  it("BONE_MASS has a sensible non-null green band", () => {
+    const result = getEffectiveRange("BONE_MASS", baseProfile, null);
+    expect(result.range).not.toBeNull();
+    expect(result.range!.greenMin).toBeGreaterThan(0);
+    expect(result.range!.greenMax).toBeGreaterThan(result.range!.greenMin);
+  });
+
+  it("respects user override for body water", () => {
+    const overrides: ThresholdOverridesJson = {
+      TOTAL_BODY_WATER: { min: 30, max: 45 },
+    };
+    const result = getEffectiveRange(
+      "TOTAL_BODY_WATER",
+      baseProfile,
+      overrides,
+    );
+    expect(result.isOverride).toBe(true);
+    expect(result.range!.greenMin).toBe(30);
+    expect(result.range!.greenMax).toBe(45);
+  });
+
+  it("METRIC_BOUNDS for body composition match VALUE_RANGES in validation", () => {
+    expect(METRIC_BOUNDS.TOTAL_BODY_WATER).toEqual({
+      min: 5,
+      max: 100,
+      unit: "kg",
+    });
+    expect(METRIC_BOUNDS.BONE_MASS).toEqual({ min: 0.5, max: 8, unit: "kg" });
   });
 });
