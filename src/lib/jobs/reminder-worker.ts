@@ -29,6 +29,7 @@ import {
 import { setGlobalBoss } from "@/lib/jobs/boss-instance";
 import { cleanupExpiredIdempotencyKeys } from "@/lib/jobs/idempotency-cleanup";
 import { cleanupOldAuditLogs } from "@/lib/jobs/audit-log-cleanup";
+import { rotateLegacyMoodLogSecrets } from "@/lib/moodlog-secret";
 import { deleteMessage } from "@/lib/telegram";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { syncMoodLogEntries } from "@/lib/moodlog/sync";
@@ -1002,6 +1003,31 @@ export async function startReminderWorker() {
   await boss.start();
   setGlobalBoss(boss);
   markWorkerStarted();
+
+  // V3 audit STILL-V2-C-2: encrypt-at-rest one-shot migration. Rotates
+  // any rows that still hold a plaintext mood_log_webhook_secret to the
+  // AES-256-GCM envelope. Idempotent — encrypted rows are skipped.
+  try {
+    const p = getWorkerPrisma();
+    const rotated = await rotateLegacyMoodLogSecrets({
+      findLegacy: () =>
+        p.user.findMany({
+          where: { moodLogWebhookSecret: { not: null } },
+          select: { id: true, moodLogWebhookSecret: true },
+        }),
+      rotate: async (id, encryptedSecret) => {
+        await p.user.update({
+          where: { id },
+          data: { moodLogWebhookSecret: encryptedSecret },
+        });
+      },
+    });
+    if (rotated > 0) {
+      workerLog("error", `moodlog-secret-migration: rotated ${rotated} legacy plaintext secret(s)`);
+    }
+  } catch (err) {
+    workerLog("error", `moodlog-secret-migration failed: ${err}`);
+  }
 
   // Graceful shutdown: drain in-flight jobs on SIGTERM/SIGINT (sent by
   // Docker Compose `docker stop`, Kubernetes pod termination, Coolify

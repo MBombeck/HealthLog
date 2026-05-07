@@ -5,6 +5,7 @@ import { apiError } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/api-response";
 import { moodLogWebhookPayloadSchema } from "@/lib/validations/moodlog";
+import { readMoodLogSecret } from "@/lib/moodlog-secret";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 
@@ -44,10 +45,14 @@ export const POST = apiHandler(async (request: NextRequest) => {
     select: { id: true, moodLogWebhookSecret: true },
   });
 
+  // V3 audit STILL-V2-C-2: stored secret is now encrypted at rest. Decrypt
+  // each candidate before the timing-safe compare. `readMoodLogSecret`
+  // also tolerates legacy plaintext rows during the transition window.
   const receivedBuf = Buffer.from(webhookSecret, "utf8");
   const user = candidates.find((c) => {
-    if (!c.moodLogWebhookSecret) return false;
-    const expectedBuf = Buffer.from(c.moodLogWebhookSecret, "utf8");
+    const expected = readMoodLogSecret(c.moodLogWebhookSecret);
+    if (!expected) return false;
+    const expectedBuf = Buffer.from(expected, "utf8");
     if (expectedBuf.length !== receivedBuf.length) return false;
     return timingSafeEqual(expectedBuf, receivedBuf);
   });

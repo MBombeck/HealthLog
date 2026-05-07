@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
+import { readMoodLogSecret } from "@/lib/moodlog-secret";
 
 export const dynamic = "force-dynamic";
 
@@ -23,11 +24,15 @@ export const GET = apiHandler(async () => {
     where: { userId: user.id },
   });
 
+  // V3 audit STILL-V2-C-2: stored secret is now AES-GCM encrypted at rest.
+  // Decrypt for the user's settings page; legacy plaintext is also handled.
+  const webhookSecret = readMoodLogSecret(dbUser?.moodLogWebhookSecret ?? null);
+
   return apiSuccess({
     configured: Boolean(dbUser?.moodLogUrlEncrypted),
     enabled: dbUser?.moodLogEnabled ?? false,
     lastSyncedAt: dbUser?.moodLogLastSyncedAt ?? null,
     entryCount,
-    webhookSecret: dbUser?.moodLogWebhookSecret ?? null,
+    webhookSecret,
   });
 });
