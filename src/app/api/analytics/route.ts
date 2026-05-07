@@ -5,6 +5,7 @@ import { apiSuccess } from "@/lib/api-response";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import type { MeasurementType } from "@/generated/prisma/client";
+import { measurementTypeEnum } from "@/lib/validations/measurement";
 
 export const dynamic = "force-dynamic";
 
@@ -12,16 +13,9 @@ export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
   annotate({ action: { name: "analytics.get" } });
 
-  const types: MeasurementType[] = [
-    "WEIGHT",
-    "BLOOD_PRESSURE_SYS",
-    "BLOOD_PRESSURE_DIA",
-    "PULSE",
-    "BODY_FAT",
-    "SLEEP_DURATION",
-    "ACTIVITY_STEPS",
-    "BLOOD_GLUCOSE",
-  ];
+  // Derived from canonical enum so a new measurement type is auto-summarised
+  // by /api/analytics (V3 audit: enum drift cousins).
+  const types = [...measurementTypeEnum.options] as MeasurementType[];
 
   const measurementsByType = await Promise.all(
     types.map((type) =>

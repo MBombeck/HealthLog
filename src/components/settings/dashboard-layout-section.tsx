@@ -32,6 +32,7 @@ const WIDGET_LABEL_KEYS: Record<DashboardWidgetId, string> = {
   totalBodyWater: "measurements.typeTotalBodyWater",
   boneMass: "measurements.typeBoneMass",
   bpInTarget: "dashboard.bpInTarget",
+  oxygenSaturation: "measurements.typeOxygenSaturation",
 };
 
 export function DashboardLayoutSection({ id }: { id: string }) {

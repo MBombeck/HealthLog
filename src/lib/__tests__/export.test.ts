@@ -66,6 +66,26 @@ describe("formatMeasurementsForExport", () => {
       measuredAt: "2025-01-15T08:00:00.000Z",
       source: "MANUAL",
       notes: "",
+      glucoseContext: "",
+    });
+  });
+
+  it("round-trips glucoseContext on BLOOD_GLUCOSE rows", () => {
+    const measurements = [
+      {
+        type: "BLOOD_GLUCOSE",
+        value: 92,
+        unit: "mg/dL",
+        measuredAt: new Date("2025-01-15T08:00:00Z"),
+        source: "MANUAL",
+        notes: null,
+        glucoseContext: "FASTING",
+      },
+    ];
+    const result = formatMeasurementsForExport(measurements);
+    expect(result[0]).toMatchObject({
+      type: "BLOOD_GLUCOSE",
+      glucoseContext: "FASTING",
     });
   });
 });

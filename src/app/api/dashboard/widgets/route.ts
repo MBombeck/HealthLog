@@ -32,6 +32,7 @@ const widgetIdEnum = z.enum([
   "totalBodyWater",
   "boneMass",
   "bpInTarget",
+  "oxygenSaturation",
 ]);
 
 const layoutSchema = z.object({

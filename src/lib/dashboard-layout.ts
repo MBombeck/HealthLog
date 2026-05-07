@@ -17,7 +17,8 @@ export type DashboardWidgetId =
   | "glucose"
   | "totalBodyWater"
   | "boneMass"
-  | "bpInTarget";
+  | "bpInTarget"
+  | "oxygenSaturation";
 
 export interface DashboardWidgetConfig {
   id: DashboardWidgetId;
@@ -52,6 +53,7 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayout = {
     { id: "glucose", visible: false, order: 9 },
     { id: "totalBodyWater", visible: false, order: 10 },
     { id: "boneMass", visible: false, order: 11 },
+    { id: "oxygenSaturation", visible: false, order: 12 },
   ],
 };
 

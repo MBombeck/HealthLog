@@ -3,6 +3,7 @@ import { resolveProvider } from "@/lib/ai/provider";
 import { getGeneralStatusSystemPrompt, getGeneralStatusUserPrompt } from "@/lib/ai/prompts/general-status";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import { getNoKeyGeneralStatusText } from "@/lib/insights/no-key-fallbacks";
+import { measurementTypeEnum } from "@/lib/validations/measurement";
 
 const GENERAL_STATUS_POINTS = 30;
 
@@ -15,15 +16,9 @@ const BERLIN_DAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
 
 type SupportedLocale = "de" | "en";
 
-const MEASUREMENT_TYPES = [
-  "WEIGHT",
-  "BLOOD_PRESSURE_SYS",
-  "BLOOD_PRESSURE_DIA",
-  "PULSE",
-  "BODY_FAT",
-  "SLEEP_DURATION",
-  "ACTIVITY_STEPS",
-] as const;
+// Derived from canonical enum so a new measurement type is auto-included
+// in the AI general-status fetch (V3 audit: enum drift cousins).
+const MEASUREMENT_TYPES = measurementTypeEnum.options;
 
 function toBerlinDayKey(date: Date): string {
   const parts = BERLIN_DAY_FORMATTER.formatToParts(date);

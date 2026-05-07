@@ -14,6 +14,7 @@ import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
+import { measurementTypeEnum } from "@/lib/validations/measurement";
 
 const SPARK_DAYS = 7;
 const STREAK_WINDOW_DAYS = 365;
@@ -25,7 +26,10 @@ type MetricKind =
   | "bodyFat"
   | "glucose"
   | "sleep"
-  | "steps";
+  | "steps"
+  | "totalBodyWater"
+  | "boneMass"
+  | "oxygenSaturation";
 
 interface MetricCard {
   id: string;
@@ -47,6 +51,9 @@ const METRIC_TITLES: Record<MetricKind, string> = {
   glucose: "Blutzucker",
   sleep: "Schlaf",
   steps: "Schritte",
+  totalBodyWater: "Gesamtkörperwasser",
+  boneMass: "Knochenmasse",
+  oxygenSaturation: "Sauerstoffsättigung",
 };
 
 const METRIC_UNITS: Record<MetricKind, string> = {
@@ -57,6 +64,9 @@ const METRIC_UNITS: Record<MetricKind, string> = {
   glucose: "mg/dL",
   sleep: "h",
   steps: "Schritte",
+  totalBodyWater: "kg",
+  boneMass: "kg",
+  oxygenSaturation: "%",
 };
 
 function trendOf(values: number[]): MetricCard["trend"] {
@@ -142,16 +152,12 @@ export const GET = apiHandler(async () => {
   const todayStart = startOfDayBerlin(now);
   const todayEnd = new Date(todayStart.getTime() + 86_400_000);
 
-  const measurementTypes: MeasurementType[] = [
-    "WEIGHT",
-    "BLOOD_PRESSURE_SYS",
-    "BLOOD_PRESSURE_DIA",
-    "PULSE",
-    "BODY_FAT",
-    "BLOOD_GLUCOSE",
-    "SLEEP_DURATION",
-    "ACTIVITY_STEPS",
-  ];
+  // Derived from canonical enum so a new measurement type is auto-included
+  // (V3 audit: enum drift cousins). Per-kind display blocks below decide
+  // which types render as MetricCards.
+  const measurementTypes = [
+    ...measurementTypeEnum.options,
+  ] as MeasurementType[];
 
   const [recentMeasurements, todaysIntakes, streakActivity] =
     await Promise.all([
@@ -296,11 +302,14 @@ export const GET = apiHandler(async () => {
     }
   }
 
-  // Glucose / sleep / steps — only if data is present.
+  // Optional cards — only emitted if the user has data for that type.
   for (const [type, kind] of [
     ["BLOOD_GLUCOSE", "glucose"],
     ["SLEEP_DURATION", "sleep"],
     ["ACTIVITY_STEPS", "steps"],
+    ["TOTAL_BODY_WATER", "totalBodyWater"],
+    ["BONE_MASS", "boneMass"],
+    ["OXYGEN_SATURATION", "oxygenSaturation"],
   ] as const) {
     const latest = latestOf(type);
     if (!latest) continue;

@@ -18,6 +18,7 @@ import { getMedicationCategories } from "@/lib/medication-category";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
+import { measurementTypeEnum } from "@/lib/validations/measurement";
 
 export const dynamic = "force-dynamic";
 
@@ -36,14 +37,9 @@ export const GET = apiHandler(async () => {
     },
   });
 
-  // Fetch all measurements (90 days)
-  const types: MeasurementType[] = [
-    "WEIGHT",
-    "BLOOD_PRESSURE_SYS",
-    "BLOOD_PRESSURE_DIA",
-    "PULSE",
-    "BODY_FAT",
-  ];
+  // Derived from canonical enum so adding a new measurement type does not
+  // require touching this file (V3 audit finding: enum drift cousins).
+  const types = [...measurementTypeEnum.options] as MeasurementType[];
 
   const allMeasurements = await prisma.measurement.findMany({
     where: { userId, type: { in: types }, measuredAt: { gte: ninetyDaysAgo } },

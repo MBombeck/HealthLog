@@ -43,6 +43,7 @@ export function formatMeasurementsForExport(
     measuredAt: Date;
     source: string;
     notes: string | null;
+    glucoseContext?: string | null;
   }>,
 ): ExportableRecord[] {
   return measurements.map((m) => ({
@@ -52,6 +53,7 @@ export function formatMeasurementsForExport(
     measuredAt: m.measuredAt.toISOString(),
     source: m.source,
     notes: m.notes ?? "",
+    glucoseContext: m.glucoseContext ?? "",
   }));
 }
 
