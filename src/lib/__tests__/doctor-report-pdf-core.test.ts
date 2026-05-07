@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { PDFParse } from "pdf-parse";
 import {
   buildDoctorReportPdfDocument,
   renderDoctorReportPdfBytes,
@@ -9,6 +10,16 @@ import {
 import { measurementTypeEnum } from "../validations/measurement";
 import type { DoctorReportData } from "../doctor-report-data";
 import { getServerTranslator } from "../i18n/server-translator";
+
+async function extractText(bytes: Uint8Array): Promise<string> {
+  const parser = new PDFParse({ data: bytes });
+  try {
+    const result = await parser.getText();
+    return result.text;
+  } finally {
+    await parser.destroy();
+  }
+}
 
 const FIXED_NOW = new Date("2026-05-03T12:00:00.000Z");
 
@@ -194,7 +205,7 @@ describe("doctor-report-pdf-core type-map coverage", () => {
     }
   });
 
-  it("renders body composition rows when stats are supplied", () => {
+  it("renders body composition rows with their German labels in the document text", async () => {
     const data = makeData({
       stats: {
         WEIGHT: { avg: 80, min: 79, max: 81, count: 5, latest: 80 },
@@ -213,8 +224,60 @@ describe("doctor-report-pdf-core type-map coverage", () => {
       locale: "de",
       now: FIXED_NOW,
     });
-    expect(bytes.byteLength).toBeGreaterThan(1024);
-    const header = String.fromCharCode(...bytes.slice(0, 5));
-    expect(header).toBe("%PDF-");
+    const text = await extractText(bytes);
+    expect(text).toContain("Gesamtkörperwasser");
+    expect(text).toContain("Knochenmasse");
+    expect(text).toContain("42,0");
+    expect(text).toContain("3,2");
+  });
+
+  it("renders an OXYGEN_SATURATION row with the SpO2 label when stats are supplied", async () => {
+    const data = makeData({
+      stats: {
+        WEIGHT: { avg: 80, min: 79, max: 81, count: 5, latest: 80 },
+        OXYGEN_SATURATION: {
+          avg: 97.4,
+          min: 95,
+          max: 99,
+          count: 12,
+          latest: 98,
+        },
+      },
+    });
+    const bytes = renderDoctorReportPdfBytes(data, {
+      t: getServerTranslator("de").t,
+      locale: "de",
+      now: FIXED_NOW,
+    });
+    const text = await extractText(bytes);
+    expect(text).toContain("Sauerstoffsättigung");
+    expect(text).toContain("97,4");
+    expect(text).toContain("%");
+  });
+
+  it("renders body composition rows in English when locale is en", async () => {
+    const data = makeData({
+      stats: {
+        WEIGHT: { avg: 80, min: 79, max: 81, count: 5, latest: 80 },
+        TOTAL_BODY_WATER: { avg: 42, min: 40, max: 44, count: 5, latest: 42 },
+        BONE_MASS: { avg: 3.2, min: 3.1, max: 3.3, count: 5, latest: 3.2 },
+        OXYGEN_SATURATION: {
+          avg: 97.4,
+          min: 95,
+          max: 99,
+          count: 12,
+          latest: 98,
+        },
+      },
+    });
+    const bytes = renderDoctorReportPdfBytes(data, {
+      t: getServerTranslator("en").t,
+      locale: "en",
+      now: FIXED_NOW,
+    });
+    const text = await extractText(bytes);
+    expect(text).toContain("Total body water");
+    expect(text).toContain("Bone mass");
+    expect(text).toContain("Oxygen saturation");
   });
 });
