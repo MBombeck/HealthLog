@@ -62,7 +62,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Token expired", 401);
   }
 
-  if (!apiToken.permissions.includes("medication:ingest")) {
+  if (
+    !apiToken.permissions.includes("*") &&
+    !apiToken.permissions.includes("medication:ingest")
+  ) {
     return apiError("Insufficient permissions", 403);
   }
 
@@ -113,7 +116,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   const medicationScope = `medication:${medication.id}:ingest`;
-  if (!apiToken.permissions.includes(medicationScope)) {
+  if (
+    !apiToken.permissions.includes("*") &&
+    !apiToken.permissions.includes(medicationScope)
+  ) {
     return apiError("API endpoint for this medication is disabled", 403);
   }
 

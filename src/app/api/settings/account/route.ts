@@ -44,7 +44,9 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
   const userId = user.id;
   const username = user.username;
 
-  // Log before deletion (userId will be SetNull in audit_logs after cascade)
+  // Log BEFORE deletion. The audit row's userId is SetNull post-cascade
+  // (per schema), but we then immediately purge it below for GDPR Art. 17
+  // erasure completeness — see comment further down.
   await auditLog("user.account.delete", {
     userId,
     ipAddress: getClientIp(request),
@@ -54,7 +56,15 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
   // Destroy all sessions first
   await destroyAllSessions(userId);
 
-  // Delete user — all related data is removed via onDelete: Cascade
+  // Audit V3 NEW-V3-2 / GDPR Art. 17 fix: Feedback and AuditLog rows have
+  // `onDelete: SetNull` in the schema, which keeps PII (free-text symptom
+  // descriptions, IP addresses, login city geo) attached to the record after
+  // the user is deleted. We explicitly purge them inside the same logical
+  // operation so account deletion is genuinely complete erasure.
+  await prisma.feedback.deleteMany({ where: { userId } });
+  await prisma.auditLog.deleteMany({ where: { userId } });
+
+  // Delete user — all other related data is removed via onDelete: Cascade
   await prisma.user.delete({ where: { id: userId } });
 
   annotate({

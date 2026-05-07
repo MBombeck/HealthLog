@@ -207,8 +207,19 @@ async function authenticateBearer(
     throw new HttpError(401, "Token expired");
   }
 
+  // Audit V3 NEW-V3-1 fix: `["*"]` is a real wildcard — it grants the
+  // session-equivalent scope (the iOS app receives this on login). Without
+  // the wildcard branch, EVERY future requireAuth("scope:name") call would
+  // 403 every iOS-issued token because string-literal `.includes("*"...)`
+  // never matches.  Worse: today many sensitive routes call requireAuth()
+  // *without* a requiredPermission, so a leaked iOS token can act as a
+  // full-scope token (account delete, settings wipe). Once those routes
+  // adopt requireAuth("scope:name"), the wildcard handling here keeps
+  // the iOS app working while narrower-scoped tokens (e.g. ["medication:
+  // ingest"]) get correctly 403'd.
   if (
     requiredPermission &&
+    !apiToken.permissions.includes("*") &&
     !apiToken.permissions.includes(requiredPermission)
   ) {
     auditLog("auth.bearer.failure", {
