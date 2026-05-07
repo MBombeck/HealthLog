@@ -34,10 +34,28 @@ export const POST = apiHandler(async () => {
       sample: result.content.slice(0, 200),
     });
   } catch (e) {
+    // V3 audit: do not return provider error message + bodyExcerpt to the
+    // client (leaks provider URL / partial keys / internal headers).
+    // Log full details server-side for the operator and respond with a
+    // categorised, generic message.
     const err = e as Error & { httpStatus?: number; bodyExcerpt?: string };
-    return apiError(
-      `${err.message}${err.bodyExcerpt ? ` — ${err.bodyExcerpt.slice(0, 200)}` : ""}`,
-      502,
-    );
+    annotate({
+      meta: {
+        ai_test_error: err.message.slice(0, 500),
+        ai_test_status: err.httpStatus ?? null,
+        ai_test_body_excerpt: err.bodyExcerpt?.slice(0, 500) ?? null,
+        ai_test_provider: provider.type,
+      },
+    });
+    const status = err.httpStatus ?? 0;
+    const safeMessage =
+      status === 401 || status === 403
+        ? "Provider rejected the credentials"
+        : status === 429
+          ? "Provider rate-limited the request"
+          : status >= 500
+            ? "Provider returned a server error"
+            : "Provider connection failed";
+    return apiError(safeMessage, 502);
   }
 });

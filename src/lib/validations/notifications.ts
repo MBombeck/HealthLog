@@ -104,15 +104,20 @@ export function isPublicUrl(url: string): boolean {
       return false;
     }
 
-    // IPv6 loopback / unspecified / link-local / unique-local.
-    if (
-      h === "::1" ||
-      h === "::" ||
-      h.startsWith("fe80:") ||
-      h.startsWith("fc") ||
-      h.startsWith("fd")
-    ) {
+    // IPv6 loopback / unspecified / link-local / unique-local. Must be
+    // gated on a colon — the previous `startsWith("fc")` falsely blocked
+    // any DNS hostname starting with "fc" or "fd" (e.g. fcm.googleapis.com).
+    if (h === "::1" || h === "::") {
       return false;
+    }
+    if (h.includes(":")) {
+      if (
+        h.startsWith("fe80:") ||
+        /^fc[0-9a-f]{0,2}:/.test(h) ||
+        /^fd[0-9a-f]{0,2}:/.test(h)
+      ) {
+        return false;
+      }
     }
 
     // IPv4-mapped IPv6 ("::ffff:127.0.0.1" or "::ffff:7f00:1") and
@@ -171,7 +176,17 @@ export const ntfySettingsSchema = z.object({
 });
 
 export const webPushSubscriptionSchema = z.object({
-  endpoint: z.url("Ungültiger Endpoint"),
+  endpoint: z
+    .url("Ungültiger Endpoint")
+    .max(500)
+    .refine(
+      (url) => url.startsWith("https://"),
+      "Endpoint muss HTTPS verwenden",
+    )
+    .refine(
+      (url) => isPublicUrl(url),
+      "Endpoint darf nicht auf interne Netzwerke zeigen",
+    ),
   keys: z.object({
     p256dh: z.string().min(1),
     auth: z.string().min(1),

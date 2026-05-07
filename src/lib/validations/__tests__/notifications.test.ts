@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPublicUrl } from "../notifications";
+import { isPublicUrl, webPushSubscriptionSchema } from "../notifications";
 
 describe("isPublicUrl SSRF guard", () => {
   describe("allows public addresses", () => {
@@ -7,6 +7,20 @@ describe("isPublicUrl SSRF guard", () => {
       expect(isPublicUrl("https://api.openai.com/v1")).toBe(true);
       expect(isPublicUrl("https://wbsapi.withings.net/v2/oauth2")).toBe(true);
       expect(isPublicUrl("http://example.com")).toBe(true);
+    });
+
+    it("does not block DNS labels that happen to start with 'fc'/'fd' (V3 audit regression)", () => {
+      // The IPv6 unique-local-address check is gated on a colon. A domain
+      // like fcm.googleapis.com or fd-cdn.example.com previously matched
+      // `startsWith("fc"/"fd")` and was rejected. Pin the contract.
+      expect(isPublicUrl("https://fcm.googleapis.com/fcm/send/abc")).toBe(true);
+      expect(isPublicUrl("https://fd-cdn.example.com")).toBe(true);
+      expect(isPublicUrl("https://fc.example.com")).toBe(true);
+    });
+
+    it("still blocks real IPv6 unique-local addresses (must contain colon)", () => {
+      expect(isPublicUrl("http://[fc00::1]")).toBe(false);
+      expect(isPublicUrl("http://[fd12:3456::1]")).toBe(false);
     });
 
     it("public IPv4 addresses", () => {
@@ -131,5 +145,52 @@ describe("isPublicUrl SSRF guard", () => {
       expect(isPublicUrl("not a url")).toBe(false);
       expect(isPublicUrl("")).toBe(false);
     });
+  });
+});
+
+// V3 audit: webPushSubscriptionSchema previously accepted any URL,
+// allowing an authenticated user to point Push delivery at a private
+// network (RFC1918 / link-local / loopback) → blind SSRF probe.
+describe("webPushSubscriptionSchema SSRF guard (V3 audit)", () => {
+  const keys = { p256dh: "abc", auth: "def" };
+
+  it("accepts a real public HTTPS endpoint", () => {
+    const r = webPushSubscriptionSchema.safeParse({
+      endpoint: "https://fcm.googleapis.com/fcm/send/abc",
+      keys,
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("rejects an HTTP endpoint", () => {
+    const r = webPushSubscriptionSchema.safeParse({
+      endpoint: "http://fcm.googleapis.com/fcm/send/abc",
+      keys,
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("rejects an internal RFC1918 endpoint over https", () => {
+    const r = webPushSubscriptionSchema.safeParse({
+      endpoint: "https://10.0.0.1/push",
+      keys,
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("rejects loopback https endpoint", () => {
+    const r = webPushSubscriptionSchema.safeParse({
+      endpoint: "https://127.0.0.1/push",
+      keys,
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("rejects AWS metadata service link-local", () => {
+    const r = webPushSubscriptionSchema.safeParse({
+      endpoint: "https://169.254.169.254/latest/meta-data/",
+      keys,
+    });
+    expect(r.success).toBe(false);
   });
 });

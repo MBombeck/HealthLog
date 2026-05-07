@@ -2,7 +2,8 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
-import { apiSuccess, getClientIp, safeJson } from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp, safeJson } from "@/lib/api-response";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
@@ -50,6 +51,14 @@ const importSchema = z.object({
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
   annotate({ action: { name: "import.upload" } });
+
+  // V3 audit: bulk-injection vector unchecked. 5/hour matches the export
+  // limit (10/hour) but is tighter because import writes have a higher
+  // blast radius (DB writes vs. read-only export).
+  const rl = await checkRateLimit(`import:${user.id}`, 5, 60 * 60 * 1000);
+  if (!rl.allowed) {
+    return apiError("Maximum 5 imports per hour", 429);
+  }
 
   const { data: body, error: jsonError } = await safeJson(request);
 

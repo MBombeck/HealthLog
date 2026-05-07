@@ -108,12 +108,19 @@ export function proxy(request: NextRequest) {
     "camera=(), microphone=(), geolocation=()",
   );
 
-  // CSP — permissive in dev, strict in production
+  // CSP — permissive in dev, strict in production. AI provider hosts
+  // (OpenAI / chatgpt.com) are gated to /settings/ai/** because that is
+  // the only surface a browser fetch is needed (V3 audit: blanket
+  // chatgpt.com on /auth/login is a DOM-XSS exfil channel).
   const isDev = process.env.NODE_ENV === "development";
   const cspReportEndpoint = "/api/monitoring/csp-report";
+  const isAiSettingsRoute = pathname.startsWith("/settings/ai");
+  const aiConnectSrc = isAiSettingsRoute
+    ? " https://api.openai.com https://chatgpt.com"
+    : "";
   const csp = isDev
     ? `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.gravatar.com; connect-src 'self'; font-src 'self';`
-    : `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.gravatar.com; connect-src 'self' https://api.openai.com https://chatgpt.com https://wbsapi.withings.net; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self'; report-uri ${cspReportEndpoint}; report-to csp-endpoint;`;
+    : `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.gravatar.com; connect-src 'self'${aiConnectSrc} https://wbsapi.withings.net; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self'; report-uri ${cspReportEndpoint}; report-to csp-endpoint;`;
   response.headers.set("Content-Security-Policy", csp);
 
   // Production-only headers
