@@ -171,6 +171,20 @@ describe("OXYGEN_SATURATION thresholds", () => {
     expect(result.range!.greenMax).toBe(92);
   });
 
+  it("clamps override orangeMax to physiological 100% (no impossible saturations)", () => {
+    // Without the bounds clamp this used to emit orangeMax = 100.75.
+    const overrides: ThresholdOverridesJson = {
+      OXYGEN_SATURATION: { min: 95, max: 100 },
+    };
+    const result = getEffectiveRange(
+      "OXYGEN_SATURATION",
+      baseProfile,
+      overrides,
+    );
+    expect(result.range!.orangeMax).toBeLessThanOrEqual(100);
+    expect(result.range!.orangeMin).toBeGreaterThanOrEqual(50);
+  });
+
   it("METRIC_BOUNDS plausibility floor is 50% (incompatible-with-life below)", () => {
     expect(METRIC_BOUNDS.OXYGEN_SATURATION).toEqual({
       min: 50,

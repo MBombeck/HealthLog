@@ -174,8 +174,11 @@ function defaultRange(
       // AASM: 7–9h for adults; warning yellow either side.
       return { greenMin: 7, greenMax: 9, orangeMin: 6, orangeMax: 10 };
     case "ACTIVITY_STEPS":
-      // WHO: ≥8000 steps/day; no upper bound in reality, but orange over 25k
-      // for edge detection.
+      // ≥8000 steps/day per Saint-Maurice et al., JAMA 2020 (mortality
+      // plateau 8000–12000 steps). WHO 2020 PA guidelines publish minutes
+      // per week (150–300 min moderate / 75–150 min vigorous) — *not* a
+      // step quota. No upper bound in reality, orange over 25k caps edge
+      // detection.
       return { greenMin: 8000, greenMax: 15000, orangeMin: 5000, orangeMax: 25000 };
     case "BLOOD_GLUCOSE_FASTING":
       return glucoseRange(GLUCOSE_DEFAULTS.FASTING, 125); // pre-diabetes upper bound
@@ -189,24 +192,31 @@ function defaultRange(
         GLUCOSE_DEFAULTS.BEDTIME.max + 30,
       );
     case "TOTAL_BODY_WATER":
-      // Adult typical ~50% body weight as water (kg). Without weight context
-      // the gender-neutral band is wide; users can tighten it via override.
-      // Reference: ESPEN Body Composition Guidance 2017.
+      // Adult total body water typically ~50% of body weight in kg
+      // (Watson formula / ICRP Reference Man: ~42 L male, ~30 L female).
+      // Without per-user weight context the gender-neutral band is wide
+      // by design; users tighten via threshold override.
       return { greenMin: 28, greenMax: 50, orangeMin: 22, orangeMax: 55 };
     case "BONE_MASS":
-      // DEXA-equivalent body bone mineral content. Adult typical 2.5–4.0 kg
-      // (women slightly lower than men). Generous orange band before
-      // surfacing as a concern.
+      // Bioimpedance-estimated bone mass from a Withings-class scale —
+      // NOT DEXA-comparable (BIA-derived values typically run 5–7% below
+      // DEXA bone-mineral-content). Adult BIA-typical 2.0–4.0 kg (women
+      // slightly lower than men). Wide orange band before surfacing as a
+      // concern given BIA's intrinsic noise.
       return { greenMin: 2.0, greenMax: 4.0, orangeMin: 1.5, orangeMax: 5.0 };
     case "OXYGEN_SATURATION":
-      // BTS Guideline 2017 (target 94–98%) + ATS clinical practice (≥95% at
-      // rest is healthy). Lower-only concern: clinical literature flags <92%
-      // as "call your provider" and <88% as ER. Saturation is bounded above
-      // by 100% physically, so we collapse the upper orange wing onto greenMax
-      // — severity logic only fires for hypoxemia.
-      // COPD / chronic-respiratory-failure users typically run 88–92% and
-      // should personalise via the threshold-override UI (saved in
-      // User.thresholdsJson).
+      // Conservative band aligned with consumer pulse-oximeter consensus
+      // (≥95% normal at rest); slightly tighter than the BTS Emergency
+      // Oxygen Guideline 2017 explicit treatment target of 94–98%, looser
+      // than the WHO ≥90% acute-care floor. Lower-only concern: ≤92% is
+      // the NICE NG115 escalation threshold ("call provider"); ≤88%
+      // (BMJ panel / FDA pulse-oximeter labelling) is the ER threshold.
+      // Saturation is bounded above by 100% physically, so we collapse
+      // the upper orange wing onto greenMax — severity logic only fires
+      // for hypoxemia.
+      // COPD / chronic-respiratory-failure / high-altitude users
+      // typically run 88–92% and should personalise via the
+      // threshold-override UI (saved in User.thresholdsJson).
       return { greenMin: 95, greenMax: 100, orangeMin: 92, orangeMax: 100 };
   }
 }
@@ -252,7 +262,10 @@ export function getEffectiveRange(
     return { range: fallback, isOverride: false, default: fallback, bounds };
   }
 
-  // User override replaces the green band. Orange wings stretch 10% below/above.
+  // User override replaces the green band. Orange wings stretch 15% below/above,
+  // clamped to the metric's physiological bounds — without the clamp, an
+  // override like SpO2 {95,100} would emit orangeMax = 100.75 (impossible
+  // saturation) and BODY_FAT {2,80} would emit orangeMin = -9.7.
   const span = Math.max(1, override.max - override.min);
   const orangeWidth = span * 0.15;
 
@@ -260,8 +273,8 @@ export function getEffectiveRange(
     range: {
       greenMin: override.min,
       greenMax: override.max,
-      orangeMin: override.min - orangeWidth,
-      orangeMax: override.max + orangeWidth,
+      orangeMin: Math.max(bounds.min, override.min - orangeWidth),
+      orangeMax: Math.min(bounds.max, override.max + orangeWidth),
     },
     isOverride: true,
     default: fallback,
