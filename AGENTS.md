@@ -6,7 +6,7 @@ Instructions for AI coding agents (OpenAI Codex, Claude Code, Cursor, etc.) work
 
 **HealthLog** — a personal health-tracking web app (weight, blood pressure, pulse, mood, medication compliance) with Withings integration, moodLog.app sync, Dracula-themed UI, mobile-first PWA design.
 
-**Status**: v1.3.2 — Body composition (Total Body Water + Bone Mass), SSRF-hardened outbound fetches, GHCR multi-arch images (`linux/amd64` + `linux/arm64`) with SLSA provenance + SBOM, pg-boss graceful SIGTERM drain, blocking TypeScript CI, locale-integrity test guard. See GitHub Releases + CHANGELOG.md for the full feature timeline (v1.0 → v1.3).
+**Status**: v1.3.3 — Pulse oximetry (SpO₂) as a first-class measurement type, layered on top of v1.3.2 body composition (TBW + Bone Mass). SSRF-hardened outbound fetches (now also covers Web-Push endpoint + Bearer-scope wildcard handling + IP-geolocation HTTPS-only), GHCR multi-arch images (`linux/amd64` + `linux/arm64`) with SLSA provenance + SBOM, pg-boss graceful SIGTERM drain + audit-log retention purge (GDPR Art. 5(1)(e)), blocking TypeScript CI, locale-integrity test guard. moodLog webhook secret now AES-GCM encrypted at rest. See GitHub Releases + CHANGELOG.md for the full feature timeline (v1.0 → v1.3).
 
 ## Tech Stack
 
@@ -20,7 +20,7 @@ Instructions for AI coding agents (OpenAI Codex, Claude Code, Cursor, etc.) work
 | CSS             | Tailwind             | 4       | CSS-first config (`@import "tailwindcss"` syntax)                       |
 | Data fetching   | TanStack Query       | 5       | Provider in `src/components/providers.tsx`                              |
 | Validation      | Zod                  | v4      | Import as `zod/v4` (not `zod`)                                          |
-| Testing         | Vitest               | latest  | Config in `vitest.config.ts`                                            |
+| Testing         | Vitest               | latest  | Config in `vitest.config.mts`                                           |
 | Package manager | pnpm                 | latest  | **Not** npm or yarn                                                     |
 | Node            | 20.x                 | via nvm |                                                                         |
 | Job queue       | pg-boss              | 12      | Named import `{ PgBoss }`, see gotchas                                  |
@@ -126,8 +126,8 @@ messages/
 ├── de.json                       # German translations (primary UI language)
 └── en.json                       # English translations
 prisma/
-├── schema.prisma                 # Database schema (23 models)
-└── migrations/                   # Migration files (0001–0022; latest: body_composition_metrics)
+├── schema.prisma                 # Database schema (25 models)
+└── migrations/                   # Migration files (0001–0024; latest: oxygen_saturation)
 prisma.config.ts                  # Prisma config (DB URL lives here, NOT in schema)
 public/
 ├── sw.js                         # Service worker (Web Push + offline caching)
@@ -216,7 +216,7 @@ These are hard-won lessons. Ignoring them will cause errors:
 
 ## Database Models (Prisma)
 
-23 models: `User`, `Passkey`, `Session`, `AuthChallenge`, `Measurement`, `Medication`, `MedicationSchedule`, `MedicationIntakeEvent`, `ReminderPhaseConfig`, `TelegramReminderMessage`, `TelegramScheduledDeletion`, `ApiToken`, `WithingsConnection`, `MoodEntry`, `AppSettings`, `Feedback`, `AuditLog`, `NotificationChannel`, `NotificationPreference`, `PushSubscription`, `DataBackup`, `UserAchievement`, `RateLimit`.
+25 models: `User`, `Passkey`, `Session`, `AuthChallenge`, `Measurement`, `Medication`, `MedicationSchedule`, `MedicationIntakeEvent`, `ReminderPhaseConfig`, `TelegramReminderMessage`, `TelegramScheduledDeletion`, `ApiToken`, `WithingsConnection`, `MoodEntry`, `AppSettings`, `Feedback`, `AuditLog`, `NotificationChannel`, `NotificationPreference`, `PushSubscription`, `DataBackup`, `UserAchievement`, `RateLimit`, `Device`, `IdempotencyKey`.
 
 ## When Making Changes
 

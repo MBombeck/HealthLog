@@ -3296,10 +3296,13 @@ components:
         Long-lived API token issued via `POST /api/tokens`. Accepted on all
         user endpoints (interchangeable with the session cookie) and required
         on external ingest endpoints (e.g. `/api/ingest/medication`). Tokens
-        are prefixed `hlk_` and stored as SHA-256 hashes server-side. Bearer
-        tokens never grant admin access — admin routes require the session
-        cookie. Permission scopes are enforced from the token's `permissions`
-        array.
+        are prefixed `hlk_` and stored as HMAC-SHA-256 hashes server-side
+        (keyed with `API_TOKEN_HMAC_KEY` so a DB dump alone does not allow
+        precomputed-rainbow lookups). Bearer tokens never grant admin access
+        — admin routes require the session cookie. Permission scopes are
+        enforced from the token's `permissions` array; a token MUST declare
+        either the explicit required permission for the route or the
+        wildcard `"*"`.
     sessionCookie:
       type: apiKey
       in: cookie

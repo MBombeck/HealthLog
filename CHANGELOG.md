@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.3.3] — 2026-05-07
+## [1.3.3] — 2026-05-08
 
 ### Added
 
@@ -54,6 +54,82 @@
   claimed `TOTAL_BODY_WATER: percent of body weight (%)` while every other
   surface (validators, Withings client, doctor PDF) treated it as `kg`.
   Comment corrected to match reality.
+
+### Security
+
+- **Bearer-scope wildcard handling (CRITICAL — V3-1).** `requireAuth()`
+  previously accepted any non-admin token regardless of declared
+  permission scope, so a token with `permissions:["medication:ingest"]`
+  could DELETE the user account. Spec now requires `permissions:["*"]`
+  or the explicit required permission.
+- **Account-deletion completeness (CRITICAL — V3-2 / GDPR Art. 17).**
+  Cascades through `Feedback` + `AuditLog` rows so user-erasure is
+  actually total. Daily retention job sweeps orphaned audit rows after
+  90 days as a defence-in-depth.
+- **Withings webhook secret header migration (audit C-3)**, idempotency
+  Bearer-resolver (audit C-4), GlitchTip URL strip (audit H-B7).
+- **Truthfulness pass on medical citations** — SpO2 normal-range source
+  is now consumer-pulse-oximeter consensus + NICE NG115 + FDA labelling
+  (BTS-2017 was for clinical hypoxaemia thresholds, not consumer
+  monitoring); body-composition metrics are explicitly labelled
+  "bioimpedance-estimated, not DEXA-comparable" in the doctor PDF;
+  TBW citation now references the Watson formula / ICRP Reference Man
+  (was misattributed to ESPEN 2017); steps target now references
+  Saint-Maurice JAMA 2020 (WHO publishes minutes/week, not steps).
+- **SpO2 user-override clamp** — overrides could emit physical
+  impossibilities (e.g. `orangeMax = 100.75`); clamped to METRIC_BOUNDS
+  for SpO2 + BODY_FAT.
+- **moodLog webhook secret encrypted at rest with AES-256-GCM** (V3
+  STILL-V2-C-2). Read path tolerates legacy plaintext rows during the
+  transition window; one-shot startup migration in the worker rotates
+  any leftover plaintext rows.
+- **CSP tightening** — `chatgpt.com` + `api.openai.com` `connect-src`
+  now gated to `/settings/ai/**` (was a global blanket on every page,
+  including `/auth/login` → DOM-XSS exfil channel).
+- **Web-Push subscription endpoint SSRF guard** — `endpoint` now
+  requires HTTPS + passes `isPublicUrl()` (was `z.url()` only).
+  Side-fix: `isPublicUrl()` no longer falsely classifies DNS labels
+  starting with `fc`/`fd` (e.g. `fcm.googleapis.com`) as IPv6
+  unique-local; the IPv6 check is now gated on a colon being present.
+- **IP-geolocation lookup is now HTTPS-only.** Default provider is
+  `ipwho.is` (free, HTTPS, no key). Existing `ip-api.com` plaintext
+  HTTP path leaked auth-event IP + timestamp on every login (GDPR Art.
+  32 + Art. 44). Operators can override via `IP_GEO_LOOKUP_URL` (HTTPS
+  only) or disable entirely with `IP_GEO_LOOKUP_DISABLED=1`.
+- **`/api/ai/test` no longer returns provider error message + body
+  excerpt to the client.** Diagnostics land server-side via Wide Events
+  (annotate); client gets a categorised generic message. Closes provider
+  URL / partial key / internal header leak.
+- **`/api/import` rate-limit added** — 5 imports/hour/user. Was
+  unlimited (bulk-injection vector).
+- **Trusted-proxy XFF semantics** — `getClientIp()` now reads
+  `X-Forwarded-For` right-to-left with a configurable
+  `TRUST_PROXY_HOPS` (default 1, matches typical single-proxy
+  self-host). Closes XFF rotation bypass of per-IP rate-limits.
+- **Audit-log retention job** — `audit_logs` rows older than
+  `AUDIT_LOG_RETENTION_DAYS` (default 365) are purged daily. Closes
+  GDPR Art. 5(1)(e) "storage limitation" gap.
+- **Idempotency cachable-status filter** is now an exported, unit-tested
+  function — pins the do-not-cache contract for 401/403/408/429/5xx.
+- **Bearer mock tightening** in `require-auth-bearer.test.ts` +
+  `idempotency.test.ts`: `apiToken.findUnique` calls are now asserted
+  to use `where: { tokenHash: <hashed> }`, so a regression to raw-token
+  comparison would break the suite immediately.
+
+### Internal
+
+- **Server-side enum drift cousins closed.** Five module-level
+  hardcoded type-arrays in `/api/insights/comprehensive`,
+  `/api/dashboard/summary`, `/api/analytics`, `/lib/insights/general-status`,
+  `/api/import` are now derived from `measurementTypeEnum.options`.
+  External-contract enums extended additively:
+  `/api/measurements/series` (`oxygen`, `totalBodyWater`, `boneMass`),
+  `/api/dashboard/widgets` (`oxygenSaturation`), `DashboardWidgetId` +
+  `DEFAULT_DASHBOARD_LAYOUT`. New coverage test asserts the canonical
+  enum stays the source of truth.
+- **Doctor-PDF text-content tests** — replaced bytes-only "renders body
+  composition rows" theatre with `pdf-parse`-driven assertions on the
+  actual rendered DE + EN labels and values. Adds dev dep `pdf-parse`.
 
 ## [1.3.2] — 2026-04-28
 

@@ -37,7 +37,7 @@ Most health apps lock your data behind proprietary clouds, push subscriptions, a
 
 ## Key Features
 
-**Health Metrics** -- Track weight, blood pressure, pulse, body fat, sleep, steps, blood glucose (fasting/postprandial/random/bedtime, mg/dL ↔ mmol/L), total body water, and bone mass with interactive trend charts, moving averages, and traffic-light ranges based on ESC/ESH 2018 and ADA 2024 guidelines. Body-composition metrics sync automatically from Withings Body+ scales.
+**Health Metrics** -- Track weight, blood pressure, pulse, body fat, sleep, steps, blood glucose (fasting/postprandial/random/bedtime, mg/dL ↔ mmol/L), total body water, bone mass, and pulse oximetry (SpO₂) with interactive trend charts, moving averages, and traffic-light ranges based on ESC/ESH 2018, ADA 2024, and consensus pulse-oximeter guidance (NICE NG115). Body-composition + SpO₂ metrics sync automatically from Withings Body+ scales and ScanWatch devices.
 
 **Custom Thresholds** -- Override the computed default ranges per metric with the targets your clinician set. Audit-logged. Doctor Report PDF prints both your target and the standard reference.
 
@@ -102,7 +102,7 @@ Open **http://localhost:3000**. The first registered user becomes admin.
 | ------------- | ------------------------------------------------- |
 | Framework     | Next.js 16 (App Router, React Server Components)  |
 | Language      | TypeScript (strict mode)                          |
-| Database      | PostgreSQL 16 + Prisma 7 (23 models)              |
+| Database      | PostgreSQL 16 + Prisma 7 (25 models)              |
 | Job Queue     | pg-boss 12 (reminders, insights, backups)         |
 | UI            | shadcn/ui, Tailwind CSS 4, Radix UI, Lucide Icons |
 | Charts        | Recharts 3                                        |
