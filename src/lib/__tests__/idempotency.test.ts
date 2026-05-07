@@ -8,6 +8,9 @@ vi.mock("@/lib/db", () => ({
       create: vi.fn(),
       delete: vi.fn(),
     },
+    apiToken: {
+      findUnique: vi.fn(),
+    },
   },
 }));
 
@@ -19,9 +22,18 @@ vi.mock("@/lib/auth/session", () => ({
   getSession: vi.fn(),
 }));
 
-import { withIdempotency } from "../idempotency";
+vi.mock("next/headers", () => ({
+  headers: vi.fn(),
+}));
+
+vi.mock("@/lib/auth/hmac", () => ({
+  hashToken: vi.fn((raw: string) => `hashed:${raw}`),
+}));
+
+import { withIdempotency, defaultUserIdResolver } from "../idempotency";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+import { headers } from "next/headers";
 
 function makeRequest(
   method: string,
@@ -167,6 +179,11 @@ describe("withIdempotency", () => {
 
   it("skips caching when the default resolver finds no session", async () => {
     vi.mocked(getSession).mockResolvedValue(null);
+    vi.mocked(headers).mockResolvedValue({
+      get: vi.fn().mockReturnValue(null),
+    } as unknown as ReturnType<typeof headers> extends Promise<infer T>
+      ? T
+      : never);
     const handler = vi.fn(async () =>
       NextResponse.json({ data: "ok", error: null }, { status: 201 }),
     );
@@ -175,5 +192,68 @@ describe("withIdempotency", () => {
     expect(handler).toHaveBeenCalledTimes(1);
     expect(prisma.idempotencyKey.findUnique).not.toHaveBeenCalled();
     expect(prisma.idempotencyKey.create).not.toHaveBeenCalled();
+  });
+});
+
+// Audit C-4 / phase P2: defaultUserIdResolver must support both cookie
+// sessions AND Bearer tokens. Without the Bearer fallback, idempotency
+// silently turned off for the iOS / external-ingest paths it was built for.
+describe("defaultUserIdResolver (audit C-4)", () => {
+  function mockHeader(value: string | null) {
+    vi.mocked(headers).mockResolvedValue({
+      get: vi.fn().mockImplementation((name: string) =>
+        name.toLowerCase() === "authorization" ? value : null,
+      ),
+    } as unknown as ReturnType<typeof headers> extends Promise<infer T>
+      ? T
+      : never);
+  }
+
+  it("returns the session user id when a cookie session is present", async () => {
+    vi.mocked(getSession).mockResolvedValue({
+      session: { id: "s-1" },
+      user: { id: "u-cookie", role: "USER" },
+    } as Awaited<ReturnType<typeof getSession>>);
+    mockHeader(null);
+    expect(await defaultUserIdResolver()).toBe("u-cookie");
+  });
+
+  it("falls back to Bearer-token resolution when no cookie session", async () => {
+    vi.mocked(getSession).mockResolvedValue(null);
+    mockHeader("Bearer hlk_abcdef");
+    vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+      userId: "u-bearer",
+      revoked: false,
+      expiresAt: null,
+    } as never);
+    expect(await defaultUserIdResolver()).toBe("u-bearer");
+  });
+
+  it("rejects revoked Bearer tokens", async () => {
+    vi.mocked(getSession).mockResolvedValue(null);
+    mockHeader("Bearer hlk_abcdef");
+    vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+      userId: "u-bearer",
+      revoked: true,
+      expiresAt: null,
+    } as never);
+    expect(await defaultUserIdResolver()).toBeNull();
+  });
+
+  it("rejects expired Bearer tokens", async () => {
+    vi.mocked(getSession).mockResolvedValue(null);
+    mockHeader("Bearer hlk_abcdef");
+    vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+      userId: "u-bearer",
+      revoked: false,
+      expiresAt: new Date(Date.now() - 1000),
+    } as never);
+    expect(await defaultUserIdResolver()).toBeNull();
+  });
+
+  it("returns null when no auth method is provided", async () => {
+    vi.mocked(getSession).mockResolvedValue(null);
+    mockHeader(null);
+    expect(await defaultUserIdResolver()).toBeNull();
   });
 });

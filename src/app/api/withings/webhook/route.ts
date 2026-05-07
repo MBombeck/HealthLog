@@ -7,14 +7,34 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 
+/**
+ * Audit C-3 / phase P2: Withings legacy callback URLs include the shared
+ * secret as a `?secret=…` query param, which leaks into reverse-proxy
+ * access logs and any error-tracking pipeline that captures `request.url`
+ * (see `reportToGlitchtip`). New deployments should configure Withings to
+ * send the secret via the `X-Withings-Webhook-Secret` header instead.
+ *
+ * The query-param fallback stays for backwards compatibility with existing
+ * Withings configurations; remove once all integrators have migrated.
+ */
 function hasValidWebhookSecret(request: NextRequest): boolean {
   const expected = process.env.WITHINGS_WEBHOOK_SECRET;
   if (!expected) {
     getEvent()?.addWarning("WITHINGS_WEBHOOK_SECRET not configured");
     return false;
   }
-  const received = request.nextUrl.searchParams.get("secret");
+
+  const fromHeader = request.headers.get("x-withings-webhook-secret");
+  const fromQuery = request.nextUrl.searchParams.get("secret");
+  const received = fromHeader ?? fromQuery;
   if (!received) return false;
+
+  if (!fromHeader && fromQuery) {
+    getEvent()?.addWarning(
+      "withings webhook secret received via legacy URL query — migrate to X-Withings-Webhook-Secret header",
+    );
+  }
+
   const a = Buffer.from(expected, "utf8");
   const b = Buffer.from(received, "utf8");
   if (a.length !== b.length) return false;

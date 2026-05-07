@@ -316,6 +316,20 @@ async function reportToGlitchtip(
   // Skip expected errors from bot scanners (malformed JSON bodies)
   if (err instanceof SyntaxError) return;
 
+  // Audit H-B7 / phase P2: strip the query string before forwarding to
+  // GlitchTip. Withings legacy callbacks ship `?secret=…` (see C-3) and
+  // OAuth callbacks ship `?code=…&state=…`; if any of those error we
+  // don't want their secrets in someone's incident UI.
+  let scrubbedUrl = request.url;
+  try {
+    const u = new URL(request.url);
+    u.search = "";
+    scrubbedUrl = u.toString();
+  } catch {
+    // Invalid URL — fall through with the raw value (only happens in
+    // degenerate test fixtures).
+  }
+
   await sendGlitchtipEvent({
     dsn: settings.glitchtipDsn,
     input: {
@@ -324,7 +338,7 @@ async function reportToGlitchtip(
       level: "error",
       type: err.name || "Error",
       stack: err.stack,
-      url: request.url,
+      url: scrubbedUrl,
       sourceTag: "healthlog-api-handler",
       requestId: evt.getRequestId(),
     },

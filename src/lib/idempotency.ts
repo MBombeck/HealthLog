@@ -8,9 +8,11 @@
  * status inside the JSON if needed) — no second side-effect.
  */
 import type { NextRequest } from "next/server";
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+import { hashToken } from "@/lib/auth/hmac";
 import { annotate } from "@/lib/logging/context";
 
 const TTL_MS = 24 * 60 * 60 * 1000;
@@ -112,14 +114,49 @@ async function persistCached(
 }
 
 /**
+ * Default resolver: cookie session first, then Bearer token. The Bearer
+ * fallback is what makes idempotency actually fire for native iOS / n8n
+ * /external clients — without it, every Bearer-authed retry was running
+ * the handler again and creating duplicate measurements (audit C-4).
+ *
+ * Exported for unit testing; production callers should let
+ * `withIdempotency()` pick this up automatically via its default arg.
+ */
+export async function defaultUserIdResolver(): Promise<string | null> {
+  const session = await getSession().catch(() => null);
+  if (session) return session.user.id;
+
+  let authHeader: string | null = null;
+  try {
+    const headerList = await headers();
+    authHeader = headerList.get("authorization");
+  } catch {
+    authHeader = null;
+  }
+  if (!authHeader?.startsWith("Bearer ")) return null;
+
+  const tokenHashValue = hashToken(authHeader.slice(7));
+  const apiToken = await prisma.apiToken
+    .findUnique({
+      where: { tokenHash: tokenHashValue },
+      select: { userId: true, revoked: true, expiresAt: true },
+    })
+    .catch(() => null);
+
+  if (!apiToken || apiToken.revoked) return null;
+  if (apiToken.expiresAt && apiToken.expiresAt <= new Date()) return null;
+  return apiToken.userId;
+}
+
+/**
  * Wrap a write handler so a repeat call with the same `Idempotency-Key`
  * (and same userId/method/path) returns the originally cached response.
  *
  * The wrapped handler is responsible for authentication itself — this
  * helper only triggers for methods in {POST, PUT, PATCH, DELETE} and only
- * once `userIdResolver` returns a non-null value. By default the userId
- * is read from the cookie session; pass a custom resolver for routes
- * that authenticate via Bearer token or other means.
+ * once `userIdResolver` returns a non-null value. The default resolver
+ * supports both cookie sessions and Bearer-token clients; pass a custom
+ * resolver only for routes that authenticate via something exotic.
  *
  * No-op when the header is missing or the value is malformed.
  */
@@ -127,10 +164,7 @@ export function withIdempotency<
   Args extends [Request | NextRequest, ...unknown[]],
 >(
   handler: (...args: Args) => Promise<Response>,
-  userIdResolver: (...args: Args) => Promise<string | null> = async () => {
-    const session = await getSession().catch(() => null);
-    return session?.user.id ?? null;
-  },
+  userIdResolver: (...args: Args) => Promise<string | null> = defaultUserIdResolver,
 ): (...args: Args) => Promise<Response> {
   return async (...args: Args): Promise<Response> => {
     const request = args[0];
