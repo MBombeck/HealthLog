@@ -36,6 +36,22 @@ describe("getClientIp trusted-proxy semantics (V3 audit)", () => {
     expect(ip).toBe("1.2.3.4");
   });
 
+  it("with TRUST_PROXY_HOPS=2 and a chain shorter than 2 returns null (fixes review M-3)", () => {
+    process.env.TRUST_PROXY_HOPS = "2";
+    // Misconfigured deployment: claims 2 trusted hops but only 1 proxy is
+    // in the chain. Falling back to the leftmost (attacker-controlled)
+    // entry would re-introduce XFF rotation. Refuse the chain entirely.
+    const ip = getClientIp(makeRequest({ "x-forwarded-for": "5.6.7.8" }));
+    expect(ip).toBeNull();
+  });
+
+  it("throws at boot when TRUST_PROXY_HOPS is unparseable (fixes review L-1)", () => {
+    process.env.TRUST_PROXY_HOPS = "garbage";
+    expect(() =>
+      getClientIp(makeRequest({ "x-forwarded-for": "5.6.7.8" })),
+    ).toThrow(/TRUST_PROXY_HOPS/);
+  });
+
   it("with TRUST_PROXY_HOPS=0 ignores XFF entirely", () => {
     process.env.TRUST_PROXY_HOPS = "0";
     const ip = getClientIp(

@@ -4737,6 +4737,11 @@ components:
         glitchtipEnvironment: { type: [string, 'null'] }
 
     # ─── iOS adapter DTOs (v1.3) ──────────────────────────────
+    # Used by /api/dashboard/summary (`MetricCard.kind`) and the
+    # /api/measurements/series adapter. Extended in v1.3.3 to cover the
+    # body-composition + SpO2 measurements that the server already emits.
+    # iOS clients SHOULD decode unknown values defensively; we still
+    # publish the canonical list here so generated codecs stay accurate.
     MetricKind:
       type: string
       enum:
@@ -4747,6 +4752,9 @@ components:
         - glucose
         - sleep
         - steps
+        - totalBodyWater
+        - boneMass
+        - oxygenSaturation
 
     InsightSeverityIos:
       type: string

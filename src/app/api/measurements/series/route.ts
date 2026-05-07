@@ -27,7 +27,7 @@ const kindEnum = z.enum([
   "steps",
   "totalBodyWater",
   "boneMass",
-  "oxygen",
+  "oxygenSaturation",
 ]);
 
 const querySchema = z.object({
@@ -45,7 +45,7 @@ const KIND_TO_TYPE: Record<z.infer<typeof kindEnum>, MeasurementType> = {
   steps: "ACTIVITY_STEPS",
   totalBodyWater: "TOTAL_BODY_WATER",
   boneMass: "BONE_MASS",
-  oxygen: "OXYGEN_SATURATION",
+  oxygenSaturation: "OXYGEN_SATURATION",
 };
 
 interface SeriesPoint {

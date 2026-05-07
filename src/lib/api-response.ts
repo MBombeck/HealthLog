@@ -49,9 +49,22 @@ function looksLikeIp(s: string): boolean {
   return /^[0-9a-fA-F.:]+$/.test(s) && s.length >= 3 && s.length <= 45;
 }
 
+function parseTrustProxyHops(raw: string | undefined): number {
+  if (raw === undefined) return 1;
+  const trimmed = raw.trim();
+  if (!/^\d+$/.test(trimmed)) {
+    // Reject explicitly-invalid values so an operator typo doesn't silently
+    // switch a real-proxy deployment to "no XFF trust" mode (review
+    // finding L-1: TRUST_PROXY_HOPS=garbage degraded to hops=0 silently).
+    throw new Error(
+      `TRUST_PROXY_HOPS must be a non-negative integer, got: ${JSON.stringify(raw)}`,
+    );
+  }
+  return parseInt(trimmed, 10);
+}
+
 export function getClientIp(request: Request): string | null {
-  const hopsRaw = process.env.TRUST_PROXY_HOPS;
-  const hops = hopsRaw === undefined ? 1 : Math.max(0, parseInt(hopsRaw, 10) || 0);
+  const hops = parseTrustProxyHops(process.env.TRUST_PROXY_HOPS);
 
   if (hops > 0) {
     const forwarded = request.headers.get("x-forwarded-for");
@@ -60,9 +73,13 @@ export function getClientIp(request: Request): string | null {
         .split(",")
         .map((s) => s.trim())
         .filter(looksLikeIp);
-      if (chain.length > 0) {
-        const idx = Math.max(0, chain.length - hops);
-        return chain[idx];
+      // Review finding M-3: when the chain is shorter than the configured
+      // hops count, the operator misconfigured TRUST_PROXY_HOPS or a
+      // proxy was bypassed. Falling back to the leftmost (now
+      // attacker-controlled) entry would re-introduce the very rotation
+      // attack TRUST_PROXY_HOPS was meant to close. Refuse to read XFF.
+      if (chain.length >= hops) {
+        return chain[chain.length - hops];
       }
     }
   }
