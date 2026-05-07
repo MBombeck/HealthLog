@@ -79,6 +79,12 @@ const MEASUREMENT_TYPES = [
     unit: "kg",
     placeholder: "3.2",
   },
+  {
+    value: "OXYGEN_SATURATION",
+    labelKey: "measurements.typeOxygenSaturation",
+    unit: "%",
+    placeholder: "98",
+  },
 ] as const;
 
 const GLUCOSE_CONTEXTS = [

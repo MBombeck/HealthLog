@@ -1,5 +1,60 @@
 # Changelog
 
+## [1.3.3] — 2026-05-07
+
+### Added
+
+- **Pulse oximetry as a first-class measurement type (`OXYGEN_SATURATION`).**
+  Closes the SpO2 part of #109. Migration `0024_oxygen_saturation` extends
+  the `MeasurementType` enum. Plausibility range 50–100% (below 50% is
+  incompatible with sustained life and almost certainly a faulty sensor;
+  upper bound 100% is physical). Default severity bands follow BTS Guideline
+  2017 + ATS clinical practice: green 95–100%, orange 92–94%, red <92% —
+  lower-only concern (the upper orange wing collapses onto greenMax since
+  saturation cannot physically exceed 100%). COPD / chronic-respiratory
+  users with a doctor-set baseline of 88–92% can personalize via the
+  threshold-override UI. Wired through Withings (ScanWatch type 54),
+  measurement form, list, charts, doctor PDF, OpenAPI spec, and i18n (DE +
+  EN). iOS DTO already declared `OXYGEN_SATURATION` from a prior commit;
+  the server enum addition closes the long-standing drift.
+- **Body composition surfaces (TOTAL_BODY_WATER, BONE_MASS, BLOOD_GLUCOSE)
+  in the measurements list filter, badge, mobile icon, edit dialog, and
+  server-rendered doctor-report PDF** — closes the UI side of #109. Root
+  cause was three local maps in `measurement-list.tsx` that drifted from
+  the v1.3 server enum; extracted to `measurement-list-meta.ts` with
+  fail-fast coverage tests so future enum additions are caught at build
+  time. Server-side PDF used a separately-drifted type map vs. the
+  browser-side renderer; both are now in sync.
+- **Effective-range thresholds for `TOTAL_BODY_WATER` and `BONE_MASS`** —
+  severity logic was returning `nominal` for any value because no defaults
+  existed.
+
+### Changed
+
+- **OpenAPI `MeasurementType` enum extended + spec version bumped 1.3.0 →
+  1.3.3** to match the actual app. Spec was lagging by two minor releases.
+- **Withings webhook secret now reads from `X-Withings-Webhook-Secret`
+  header** in preference to the legacy `?secret=…` URL query parameter.
+  Closes the URL-leak-via-access-logs vector flagged in audit C-3. Legacy
+  query-param path is retained for backwards compatibility and emits a
+  Wide Event warning so operators can spot still-using-the-old-flow
+  integrators. Plan: remove the query fallback in 1.4.x once warnings drain.
+- **Idempotency `defaultUserIdResolver` now supports Bearer tokens.**
+  Cookie sessions tried first, then Bearer-token via `hashToken` lookup.
+  Without the Bearer fallback, every iOS / external-ingest retry was
+  hitting the handler again and creating duplicate measurements (audit
+  C-4 — the exact use case `withIdempotency` was built for).
+- **GlitchTip URL stripping** — `reportToGlitchtip` now strips the URL
+  query string before forwarding so Withings legacy `?secret=…` and OAuth
+  `?code=…` callbacks cannot leak via the error tracker (audit H-B7).
+
+### Fixed
+
+- **Migration `0022_body_composition_metrics` unit comment lied** —
+  claimed `TOTAL_BODY_WATER: percent of body weight (%)` while every other
+  surface (validators, Withings client, doctor PDF) treated it as `kg`.
+  Comment corrected to match reality.
+
 ## [1.3.2] — 2026-04-28
 
 ### Fixed

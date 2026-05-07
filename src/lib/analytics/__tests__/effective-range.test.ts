@@ -90,7 +90,8 @@ describe("getAllEffectiveRanges", () => {
     expect(keys).toContain("BLOOD_GLUCOSE_FASTING");
     expect(keys).toContain("TOTAL_BODY_WATER");
     expect(keys).toContain("BONE_MASS");
-    expect(keys.length).toBeGreaterThanOrEqual(13);
+    expect(keys).toContain("OXYGEN_SATURATION");
+    expect(keys.length).toBeGreaterThanOrEqual(14);
   });
 });
 
@@ -135,5 +136,46 @@ describe("body composition thresholds", () => {
       unit: "kg",
     });
     expect(METRIC_BOUNDS.BONE_MASS).toEqual({ min: 0.5, max: 8, unit: "kg" });
+  });
+});
+
+// Audit-2026-05-07 / v1.3.3: SpO2 (pulse oximetry) added as a single-value
+// metric with lower-only severity (saturation cannot exceed 100% by definition).
+// Defaults follow BTS Guideline 2017 (target 94–98%) and ATS clinical practice
+// (≥95% at rest is healthy). Below 92% triggers orange band; below 88% in
+// real-world clinical literature is the ER threshold.
+describe("OXYGEN_SATURATION thresholds", () => {
+  it("has a non-null green band centred on the BTS healthy range", () => {
+    const result = getEffectiveRange("OXYGEN_SATURATION", baseProfile, null);
+    expect(result.range).not.toBeNull();
+    expect(result.range!.greenMin).toBe(95);
+    expect(result.range!.greenMax).toBe(100);
+  });
+
+  it("collapses upper orange wing to greenMax (no upper concern)", () => {
+    const result = getEffectiveRange("OXYGEN_SATURATION", baseProfile, null);
+    expect(result.range!.orangeMax).toBe(result.range!.greenMax);
+  });
+
+  it("respects user override (e.g. COPD baseline 88-92)", () => {
+    const overrides: ThresholdOverridesJson = {
+      OXYGEN_SATURATION: { min: 88, max: 92 },
+    };
+    const result = getEffectiveRange(
+      "OXYGEN_SATURATION",
+      baseProfile,
+      overrides,
+    );
+    expect(result.isOverride).toBe(true);
+    expect(result.range!.greenMin).toBe(88);
+    expect(result.range!.greenMax).toBe(92);
+  });
+
+  it("METRIC_BOUNDS plausibility floor is 50% (incompatible-with-life below)", () => {
+    expect(METRIC_BOUNDS.OXYGEN_SATURATION).toEqual({
+      min: 50,
+      max: 100,
+      unit: "%",
+    });
   });
 });

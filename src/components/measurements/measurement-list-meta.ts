@@ -23,6 +23,7 @@ import {
   Moon,
   Footprints,
   Bone,
+  Wind,
   type LucideIcon,
 } from "lucide-react";
 
@@ -37,6 +38,7 @@ export const MEASUREMENT_TYPE_LABEL_KEYS: Record<string, string> = {
   BLOOD_GLUCOSE: "measurements.typeBloodGlucose",
   TOTAL_BODY_WATER: "measurements.typeTotalBodyWater",
   BONE_MASS: "measurements.typeBoneMass",
+  OXYGEN_SATURATION: "measurements.typeOxygenSaturation",
 };
 
 export const MEASUREMENT_TYPE_ICONS: Record<string, LucideIcon> = {
@@ -50,6 +52,7 @@ export const MEASUREMENT_TYPE_ICONS: Record<string, LucideIcon> = {
   BLOOD_GLUCOSE: Droplet,
   TOTAL_BODY_WATER: Droplet,
   BONE_MASS: Bone,
+  OXYGEN_SATURATION: Wind,
 };
 
 export const MEASUREMENT_TYPE_COLORS: Record<string, string> = {
@@ -63,4 +66,5 @@ export const MEASUREMENT_TYPE_COLORS: Record<string, string> = {
   BLOOD_GLUCOSE: "bg-chart-3/20 text-chart-3",
   TOTAL_BODY_WATER: "bg-chart-2/20 text-chart-2",
   BONE_MASS: "bg-chart-4/20 text-chart-4",
+  OXYGEN_SATURATION: "bg-chart-5/20 text-chart-5",
 };

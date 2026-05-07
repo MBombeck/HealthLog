@@ -108,6 +108,7 @@ const BASE_TYPE_LABEL_KEYS: Record<string, string> = {
   BLOOD_GLUCOSE: "measurements.typeBloodGlucose",
   TOTAL_BODY_WATER: "charts.bodyWater",
   BONE_MASS: "charts.boneMass",
+  OXYGEN_SATURATION: "charts.spo2",
 };
 
 function getTypeLabel(

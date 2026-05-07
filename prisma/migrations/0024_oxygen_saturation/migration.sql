@@ -1,0 +1,12 @@
+-- v1.3.3: Add OXYGEN_SATURATION (SpO2) measurement type
+--
+-- Closes #109 feature request. Single-value type (no per-context split like
+-- BLOOD_GLUCOSE — context goes into the free-text `notes` field).
+--
+-- Storage unit: percent (0..100). Plausibility range 50..100 in
+-- src/lib/validations/measurement.ts (anything below 50% is incompatible with
+-- sustained life and almost certainly a faulty sensor).
+--
+-- Withings devices that support SpO2 (e.g. ScanWatch) report measure type 54.
+-- See src/lib/withings/client.ts MEASURE_TYPE_MAP.
+ALTER TYPE "measurement_type" ADD VALUE IF NOT EXISTS 'OXYGEN_SATURATION';

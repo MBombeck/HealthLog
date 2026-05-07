@@ -11,6 +11,7 @@ export const measurementTypeEnum = z.enum([
   "BLOOD_GLUCOSE",
   "TOTAL_BODY_WATER",
   "BONE_MASS",
+  "OXYGEN_SATURATION",
 ]);
 
 export const glucoseContextEnum = z.enum([
@@ -33,6 +34,7 @@ const unitMap: Record<string, string> = {
   BLOOD_GLUCOSE: "mg/dL",
   TOTAL_BODY_WATER: "kg",
   BONE_MASS: "kg",
+  OXYGEN_SATURATION: "%",
 };
 
 export function getUnitForType(type: string): string {
@@ -51,6 +53,11 @@ const VALUE_RANGES: Record<string, { min: number; max: number }> = {
   BLOOD_GLUCOSE: { min: 20, max: 800 }, // mg/dL — covers severe hypo to severe hyperglycemia
   TOTAL_BODY_WATER: { min: 5, max: 100 }, // kg of water — adults typically 30–55 kg
   BONE_MASS: { min: 0.5, max: 8 }, // kg — adult plausibility (typical 2.5–4.5 kg)
+  // Pulse oximetry (SpO2). BTS Guideline 2017 + ATS clinical practice put the
+  // healthy resting range at 95–100%. We accept down to 50% so a faulty-sensor
+  // critically-low reading still gets logged for the doctor to see; below 50%
+  // is incompatible with sustained life and almost certainly a sensor glitch.
+  OXYGEN_SATURATION: { min: 50, max: 100 },
 };
 
 export function validateMeasurementRange(

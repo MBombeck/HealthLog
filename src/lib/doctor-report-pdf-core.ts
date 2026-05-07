@@ -43,6 +43,7 @@ export const DOCTOR_REPORT_TYPE_LABEL_KEYS: Record<string, string> = {
   ACTIVITY_STEPS: "doctorReport.typeSteps",
   TOTAL_BODY_WATER: "doctorReport.typeTotalBodyWater",
   BONE_MASS: "doctorReport.typeBoneMass",
+  OXYGEN_SATURATION: "doctorReport.typeOxygenSaturation",
 };
 
 export const DOCTOR_REPORT_TYPE_UNIT_KEYS: Record<string, string | null> = {
@@ -55,13 +56,16 @@ export const DOCTOR_REPORT_TYPE_UNIT_KEYS: Record<string, string | null> = {
   ACTIVITY_STEPS: null, // translated unit
   TOTAL_BODY_WATER: "kg",
   BONE_MASS: "kg",
+  OXYGEN_SATURATION: "%",
 };
 
 /**
  * Vital types rendered in the main vitals table. Body composition
  * (TOTAL_BODY_WATER, BONE_MASS) ships alongside body fat — Withings
- * smart scales report all three together. Glucose ships separately
- * via per-context `glucoseStats`. Sleep + activity are intentionally
+ * smart scales report all three together. SpO2 (Withings ScanWatch type
+ * 54, HealthKit, n8n / Health Connect) is rendered last in the same
+ * table for clinical readability. Glucose ships separately via
+ * per-context `glucoseStats`. Sleep + activity are intentionally
  * excluded from a clinical-focused report.
  */
 export const DOCTOR_REPORT_VITAL_TYPES = [
@@ -72,6 +76,7 @@ export const DOCTOR_REPORT_VITAL_TYPES = [
   "BODY_FAT",
   "TOTAL_BODY_WATER",
   "BONE_MASS",
+  "OXYGEN_SATURATION",
 ] as const;
 
 const MOOD_LABEL_KEYS: Record<number, string> = {

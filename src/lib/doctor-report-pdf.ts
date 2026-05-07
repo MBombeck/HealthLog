@@ -77,6 +77,7 @@ const TYPE_LABEL_KEYS: Record<string, string> = {
   ACTIVITY_STEPS: "doctorReport.typeSteps",
   TOTAL_BODY_WATER: "doctorReport.typeTotalBodyWater",
   BONE_MASS: "doctorReport.typeBoneMass",
+  OXYGEN_SATURATION: "doctorReport.typeOxygenSaturation",
 };
 
 const TYPE_UNIT_KEYS: Record<string, string | null> = {
@@ -89,6 +90,7 @@ const TYPE_UNIT_KEYS: Record<string, string | null> = {
   ACTIVITY_STEPS: null, // translated unit
   TOTAL_BODY_WATER: "kg",
   BONE_MASS: "kg",
+  OXYGEN_SATURATION: "%",
 };
 
 const MOOD_LABEL_KEYS: Record<number, string> = {
@@ -211,6 +213,7 @@ export function generateDoctorReportPDF(
     "BODY_FAT",
     "TOTAL_BODY_WATER",
     "BONE_MASS",
+    "OXYGEN_SATURATION",
   ];
 
   for (const type of vitalTypes) {

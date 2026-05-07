@@ -162,6 +162,7 @@ enum MeasurementType {
   BLOOD_GLUCOSE // Canonical storage: mg/dL. Display unit (mg/dL or mmol/L) is user preference.
   TOTAL_BODY_WATER // Canonical storage: kilograms (kg of water). Matches Withings' hydration measure (type 77) and Health Connect's TotalBodyWaterRecord. Display can compute % from same-day weight if desired.
   BONE_MASS // Canonical storage: kilograms (kg). Matches Withings' bone mass measure (type 88).
+  OXYGEN_SATURATION // Canonical storage: percent (0..100). Withings ScanWatch reports type 54. Health Connect's OxygenSaturationRecord uses Percentage (already 0..100). HealthKit uses HKQuantityTypeIdentifierOxygenSaturation as a fraction (0..1) — iOS DTO must multiply by 100 before submitting.
 
   @@map("measurement_type")
 }

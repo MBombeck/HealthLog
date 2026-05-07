@@ -39,7 +39,8 @@ export type ThresholdMetric =
   | "BLOOD_GLUCOSE_RANDOM"
   | "BLOOD_GLUCOSE_BEDTIME"
   | "TOTAL_BODY_WATER"
-  | "BONE_MASS";
+  | "BONE_MASS"
+  | "OXYGEN_SATURATION";
 
 export interface ThresholdOverride {
   min: number;
@@ -85,6 +86,10 @@ export const METRIC_BOUNDS: Record<
   // Bounds match VALUE_RANGES in src/lib/validations/measurement.ts.
   TOTAL_BODY_WATER: { min: 5, max: 100, unit: "kg" },
   BONE_MASS: { min: 0.5, max: 8, unit: "kg" },
+  // Pulse oximetry (Withings ScanWatch reports type 54). Plausibility floor
+  // 50% to allow truly critical readings to be logged; saturation cannot
+  // exceed 100% by physical definition.
+  OXYGEN_SATURATION: { min: 50, max: 100, unit: "%" },
 };
 
 /**
@@ -193,6 +198,16 @@ function defaultRange(
       // (women slightly lower than men). Generous orange band before
       // surfacing as a concern.
       return { greenMin: 2.0, greenMax: 4.0, orangeMin: 1.5, orangeMax: 5.0 };
+    case "OXYGEN_SATURATION":
+      // BTS Guideline 2017 (target 94–98%) + ATS clinical practice (≥95% at
+      // rest is healthy). Lower-only concern: clinical literature flags <92%
+      // as "call your provider" and <88% as ER. Saturation is bounded above
+      // by 100% physically, so we collapse the upper orange wing onto greenMax
+      // — severity logic only fires for hypoxemia.
+      // COPD / chronic-respiratory-failure users typically run 88–92% and
+      // should personalise via the threshold-override UI (saved in
+      // User.thresholdsJson).
+      return { greenMin: 95, greenMax: 100, orangeMin: 92, orangeMax: 100 };
   }
 }
 

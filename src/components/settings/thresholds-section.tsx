@@ -35,6 +35,7 @@ const METRIC_ORDER: ThresholdMetric[] = [
   "BLOOD_GLUCOSE_POSTPRANDIAL",
   "BLOOD_GLUCOSE_RANDOM",
   "BLOOD_GLUCOSE_BEDTIME",
+  "OXYGEN_SATURATION",
 ];
 
 const METRIC_LABEL_KEYS: Record<ThresholdMetric, string> = {
@@ -51,6 +52,7 @@ const METRIC_LABEL_KEYS: Record<ThresholdMetric, string> = {
   BLOOD_GLUCOSE_BEDTIME: "thresholds.metricGlucoseBedtime",
   TOTAL_BODY_WATER: "thresholds.metricBodyWater",
   BONE_MASS: "thresholds.metricBoneMass",
+  OXYGEN_SATURATION: "thresholds.metricOxygenSaturation",
 };
 
 export function ThresholdsSection({ id }: { id: string }) {

@@ -129,6 +129,7 @@ const MEASURE_TYPE_MAP: Record<number, { type: string; factor?: number }> = {
   6: { type: "BODY_FAT" }, // Body fat %
   77: { type: "TOTAL_BODY_WATER" }, // Hydration / water mass (kg)
   88: { type: "BONE_MASS" }, // Bone mass (kg)
+  54: { type: "OXYGEN_SATURATION" }, // SpO2 (% — only ScanWatch / pulse-ox products)
 };
 
 export interface WithingsMeasure {
