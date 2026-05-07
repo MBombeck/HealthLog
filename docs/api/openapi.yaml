@@ -2,12 +2,12 @@ openapi: 3.1.0
 
 info:
   title: HealthLog API
-  version: 1.3.0
+  version: 1.3.2
   description: |
     REST API for HealthLog — a personal health-tracking PWA covering weight,
-    blood pressure, pulse, mood, medication compliance, blood glucose, and
-    sleep. The same API powers the Next.js web client and the native iOS
-    client.
+    blood pressure, pulse, mood, medication compliance, blood glucose, body
+    composition (total body water + bone mass), and sleep. The same API
+    powers the Next.js web client and the native iOS client.
 
     ## Authentication
 
@@ -3442,6 +3442,8 @@ components:
         - SLEEP_DURATION
         - ACTIVITY_STEPS
         - BLOOD_GLUCOSE
+        - TOTAL_BODY_WATER
+        - BONE_MASS
 
     MeasurementSource:
       type: string
