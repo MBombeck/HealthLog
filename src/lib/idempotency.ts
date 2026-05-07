@@ -114,6 +114,30 @@ async function persistCached(
 }
 
 /**
+ * Whether a response with the given HTTP status should be cached for
+ * idempotent replay.
+ *
+ * Cached: any 2xx/3xx, plus 4xx-validation (so the same broken request
+ * doesn't re-execute side-effects). Specifically NOT cached:
+ *   401 — token may have expired between the original call and the retry
+ *   403 — likewise authorization can change
+ *   408 — caller timed out, retry deserves a fresh attempt
+ *   429 — caller hit a rate-limit, retry deserves a fresh window check
+ *   5xx — server fault, retry must not be locked into a bogus result
+ *
+ * Exported so the do-not-cache contract is unit-tested independently of
+ * the database-backed wrapper.
+ */
+export function isCachableStatus(status: number): boolean {
+  if (status < 400) return true;
+  if (status >= 500) return false;
+  if (status === 401 || status === 403 || status === 408 || status === 429) {
+    return false;
+  }
+  return true;
+}
+
+/**
  * Default resolver: cookie session first, then Bearer token. The Bearer
  * fallback is what makes idempotency actually fire for native iOS / n8n
  * /external clients — without it, every Bearer-authed retry was running
@@ -191,21 +215,7 @@ export function withIdempotency<
 
     const response = await handler(...args);
 
-    // Cache only client-stable responses. Replaying a stale 401/403
-    // (token expired mid-flight) or a 5xx would lock the user into a
-    // bogus result for the TTL window. 4xx-validation responses are
-    // intentionally cached so the same broken request doesn't hit the
-    // DB twice — but auth/throttle/server faults must not poison.
-    const cachable =
-      response.status < 400 ||
-      (response.status >= 400 &&
-        response.status < 500 &&
-        response.status !== 401 &&
-        response.status !== 403 &&
-        response.status !== 408 &&
-        response.status !== 429);
-
-    if (cachable) {
+    if (isCachableStatus(response.status)) {
       // Defence-in-depth: never persist a body that carries a freshly-issued
       // bearer token. Auth routes shouldn't be wrapped in withIdempotency to
       // begin with, but if a future caller forgets, we refuse to leak.

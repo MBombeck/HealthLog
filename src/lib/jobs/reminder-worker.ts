@@ -28,6 +28,7 @@ import {
 } from "@/lib/jobs/worker-status";
 import { setGlobalBoss } from "@/lib/jobs/boss-instance";
 import { cleanupExpiredIdempotencyKeys } from "@/lib/jobs/idempotency-cleanup";
+import { cleanupOldAuditLogs } from "@/lib/jobs/audit-log-cleanup";
 import { deleteMessage } from "@/lib/telegram";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { syncMoodLogEntries } from "@/lib/moodlog/sync";
@@ -93,6 +94,8 @@ const RATE_LIMIT_CLEANUP_QUEUE = "rate-limit-cleanup";
 const RATE_LIMIT_CLEANUP_CRON = "*/5 * * * *"; // every 5 minutes
 const IDEMPOTENCY_CLEANUP_QUEUE = "idempotency-cleanup";
 const IDEMPOTENCY_CLEANUP_CRON = "0 3 * * *"; // daily at 03:00 (Europe/Berlin)
+const AUDIT_LOG_CLEANUP_QUEUE = "audit-log-cleanup";
+const AUDIT_LOG_CLEANUP_CRON = "15 3 * * *"; // daily at 03:15 (Europe/Berlin)
 
 interface ReminderCheckPayload {
   triggeredAt: string;
@@ -145,6 +148,10 @@ interface RateLimitCleanupPayload {
 }
 
 interface IdempotencyCleanupPayload {
+  triggeredAt: string;
+}
+
+interface AuditLogCleanupPayload {
   triggeredAt: string;
 }
 
@@ -840,6 +847,19 @@ async function handleIdempotencyCleanup(
   });
 }
 
+async function handleAuditLogCleanup(jobs: Job<AuditLogCleanupPayload>[]) {
+  void jobs;
+  await withBackgroundEvent("job.audit_log_cleanup", async (evt) => {
+    const p = getWorkerPrisma();
+    try {
+      const deleted = await cleanupOldAuditLogs(p);
+      evt.addMeta("audit_log_cleanup_deleted", deleted);
+    } catch (err) {
+      evt.addWarning(`audit-log-cleanup failed: ${err}`);
+    }
+  });
+}
+
 async function handleDataBackup(jobs: Job<DataBackupPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.data_backup", async (evt) => {
@@ -1021,6 +1041,7 @@ export async function startReminderWorker() {
     DATA_BACKUP_QUEUE,
     RATE_LIMIT_CLEANUP_QUEUE,
     IDEMPOTENCY_CLEANUP_QUEUE,
+    AUDIT_LOG_CLEANUP_QUEUE,
   ];
 
   for (const q of allQueues) {
@@ -1041,6 +1062,7 @@ export async function startReminderWorker() {
     [DATA_BACKUP_QUEUE, DATA_BACKUP_CRON],
     [RATE_LIMIT_CLEANUP_QUEUE, RATE_LIMIT_CLEANUP_CRON],
     [IDEMPOTENCY_CLEANUP_QUEUE, IDEMPOTENCY_CLEANUP_CRON],
+    [AUDIT_LOG_CLEANUP_QUEUE, AUDIT_LOG_CLEANUP_CRON],
   ];
 
   for (const [name, cron] of schedules) {
@@ -1112,6 +1134,11 @@ export async function startReminderWorker() {
     IDEMPOTENCY_CLEANUP_QUEUE,
     { localConcurrency: 1 },
     handleIdempotencyCleanup,
+  );
+  await boss.work<AuditLogCleanupPayload>(
+    AUDIT_LOG_CLEANUP_QUEUE,
+    { localConcurrency: 1 },
+    handleAuditLogCleanup,
   );
 
   return boss;

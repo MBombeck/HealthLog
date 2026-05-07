@@ -86,6 +86,12 @@ describe("requireAuth — Bearer token path", () => {
     const ctx = await requireAuth();
 
     expect(hashToken).toHaveBeenCalledWith(RAW_TOKEN);
+    // V3 audit: pin the where-clause shape — a regression that switches
+    // back to raw-token comparison (where: { tokenHash: RAW_TOKEN }) would
+    // be a CRITICAL leak of stored hashes. Tests must enforce the hash.
+    expect(prisma.apiToken.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { tokenHash: FAKE_HASH } }),
+    );
     expect(ctx.user.id).toBe("user-1");
     expect(ctx.session.id).toBe("token-1");
     expect(ctx.session.expiresAt).toEqual(expiresAt);

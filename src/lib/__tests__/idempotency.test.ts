@@ -30,7 +30,11 @@ vi.mock("@/lib/auth/hmac", () => ({
   hashToken: vi.fn((raw: string) => `hashed:${raw}`),
 }));
 
-import { withIdempotency, defaultUserIdResolver } from "../idempotency";
+import {
+  withIdempotency,
+  defaultUserIdResolver,
+  isCachableStatus,
+} from "../idempotency";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { headers } from "next/headers";
@@ -227,6 +231,14 @@ describe("defaultUserIdResolver (audit C-4)", () => {
       expiresAt: null,
     } as never);
     expect(await defaultUserIdResolver()).toBe("u-bearer");
+    // V3 audit: assert the where-clause used the hashed token, not the
+    // raw bearer. The hashToken mock returns "hashed:<raw>" — the lookup
+    // MUST be against that, otherwise we are storing recoverable secrets.
+    expect(prisma.apiToken.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { tokenHash: "hashed:hlk_abcdef" },
+      }),
+    );
   });
 
   it("rejects revoked Bearer tokens", async () => {
@@ -255,5 +267,46 @@ describe("defaultUserIdResolver (audit C-4)", () => {
     vi.mocked(getSession).mockResolvedValue(null);
     mockHeader(null);
     expect(await defaultUserIdResolver()).toBeNull();
+  });
+});
+
+// V3 audit STILL-V2-NEW: the cachable-status filter (do-not-cache for
+// 401/403/408/429/5xx) had zero tests, so a regression that re-cached an
+// expired bearer token's 401 would have been silent.
+describe("isCachableStatus do-not-cache rules (V3 audit)", () => {
+  it("caches 2xx success responses", () => {
+    expect(isCachableStatus(200)).toBe(true);
+    expect(isCachableStatus(201)).toBe(true);
+    expect(isCachableStatus(204)).toBe(true);
+  });
+
+  it("caches 4xx validation responses (so retries don't re-execute side-effects)", () => {
+    expect(isCachableStatus(400)).toBe(true);
+    expect(isCachableStatus(404)).toBe(true);
+    expect(isCachableStatus(409)).toBe(true);
+    expect(isCachableStatus(422)).toBe(true);
+  });
+
+  it("does NOT cache 401 — the token may have been refreshed between attempts", () => {
+    expect(isCachableStatus(401)).toBe(false);
+  });
+
+  it("does NOT cache 403 — authorization can change between attempts", () => {
+    expect(isCachableStatus(403)).toBe(false);
+  });
+
+  it("does NOT cache 408 — caller-side timeout deserves a fresh attempt", () => {
+    expect(isCachableStatus(408)).toBe(false);
+  });
+
+  it("does NOT cache 429 — caller deserves a fresh window-check on retry", () => {
+    expect(isCachableStatus(429)).toBe(false);
+  });
+
+  it("does NOT cache any 5xx — server fault must not lock the user out", () => {
+    expect(isCachableStatus(500)).toBe(false);
+    expect(isCachableStatus(502)).toBe(false);
+    expect(isCachableStatus(503)).toBe(false);
+    expect(isCachableStatus(504)).toBe(false);
   });
 });
