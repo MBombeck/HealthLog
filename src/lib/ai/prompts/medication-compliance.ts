@@ -52,17 +52,22 @@ export function getMedicationComplianceUserPrompt(
   snapshotJson: string,
   todayKey: string,
   locale: Locale,
+  previousContextBlock?: string,
 ): string {
+  const ctxBlock =
+    previousContextBlock && previousContextBlock.trim().length > 0
+      ? `\n\n${previousContextBlock}\n`
+      : "";
   if (locale === "en") {
     return `Date: ${todayKey} (Europe/Berlin)
 Analyse medication adherence with focus on patterns, effectiveness correlation and concrete suggestions for improvement.
-Use the correlation data and historical comparison to back up the link between adherence and vital signs.
+Use the correlation data and historical comparison to back up the link between adherence and vital signs.${ctxBlock}
 
 ${snapshotJson}`;
   }
   return `Datum: ${todayKey} (Europe/Berlin)
 Analysiere die Medikamenten-Einnahmetreue mit Fokus auf Muster, Wirksamkeitskorrelation und konkrete Verbesserungsvorschläge.
-Nutze die Korrelationsdaten und den historischen Vergleich um den Zusammenhang zwischen Adhärenz und Vitalwerten zu belegen.
+Nutze die Korrelationsdaten und den historischen Vergleich um den Zusammenhang zwischen Adhärenz und Vitalwerten zu belegen.${ctxBlock}
 
 ${snapshotJson}`;
 }

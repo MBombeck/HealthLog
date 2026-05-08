@@ -3,6 +3,10 @@ import { resolveProvider } from "@/lib/ai/provider";
 import { getBmiSystemPrompt, getBmiUserPrompt } from "@/lib/ai/prompts/bmi";
 import { classifyBMI } from "@/lib/analytics/classifications";
 import { getNoKeyBmiStatusText } from "@/lib/insights/no-key-fallbacks";
+import {
+  formatPreviousContextForPrompt,
+  getPreviousInsightContext,
+} from "@/lib/insights/memory";
 
 const BMI_STATUS_POINTS = 30;
 
@@ -238,9 +242,25 @@ export async function generateBmiStatusForUser(
 
   const snapshotJson = JSON.stringify(snapshot, null, 2);
 
+  const previousContext = await getPreviousInsightContext(
+    userId,
+    "bmi-status",
+    locale,
+    12,
+  );
+  const previousContextBlock = formatPreviousContextForPrompt(
+    previousContext,
+    locale,
+  );
+
   const result = await provider.generateCompletion({
     systemPrompt: getBmiSystemPrompt(locale),
-    userPrompt: getBmiUserPrompt(snapshotJson, todayKey, locale),
+    userPrompt: getBmiUserPrompt(
+      snapshotJson,
+      todayKey,
+      locale,
+      previousContextBlock,
+    ),
     temperature: 0.3,
     maxTokens: 1000,
   });

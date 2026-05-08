@@ -1,10 +1,17 @@
 import { prisma } from "@/lib/db";
 import { resolveProvider } from "@/lib/ai/provider";
-import { getMedicationComplianceSystemPrompt, getMedicationComplianceUserPrompt } from "@/lib/ai/prompts/medication-compliance";
+import {
+  getMedicationComplianceSystemPrompt,
+  getMedicationComplianceUserPrompt,
+} from "@/lib/ai/prompts/medication-compliance";
 import { calculateCompliance } from "@/lib/analytics/compliance";
 import { getMedicationCategories } from "@/lib/medication-category";
 import { sanitizeForPrompt } from "@/lib/insights/sanitize";
 import { getNoKeyMedicationComplianceStatusText } from "@/lib/insights/no-key-fallbacks";
+import {
+  formatPreviousContextForPrompt,
+  getPreviousInsightContext,
+} from "@/lib/insights/memory";
 
 const MEDICATION_COMPLIANCE_STATUS_POINTS = 30;
 
@@ -291,9 +298,25 @@ export async function generateMedicationComplianceStatusForUser(
 
   const snapshotJson = JSON.stringify(snapshot, null, 2);
 
+  const previousContext = await getPreviousInsightContext(
+    userId,
+    "medication-compliance-status",
+    locale,
+    12,
+  );
+  const previousContextBlock = formatPreviousContextForPrompt(
+    previousContext,
+    locale,
+  );
+
   const result = await provider.generateCompletion({
     systemPrompt: getMedicationComplianceSystemPrompt(locale),
-    userPrompt: getMedicationComplianceUserPrompt(snapshotJson, todayKey, locale),
+    userPrompt: getMedicationComplianceUserPrompt(
+      snapshotJson,
+      todayKey,
+      locale,
+      previousContextBlock,
+    ),
     temperature: 0.3,
     maxTokens: 1000,
   });

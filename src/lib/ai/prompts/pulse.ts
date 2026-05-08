@@ -58,17 +58,22 @@ export function getPulseUserPrompt(
   snapshotJson: string,
   todayKey: string,
   locale: Locale,
+  previousContextBlock?: string,
 ): string {
+  const ctxBlock =
+    previousContextBlock && previousContextBlock.trim().length > 0
+      ? `\n\n${previousContextBlock}\n`
+      : "";
   if (locale === "en") {
     return `Date: ${todayKey} (Europe/Berlin)
 Analyse the pulse / heart-rate data with focus on resting-pulse trend, variability and links to medication and mood.
-Use the precomputed correlations and historical comparison for a sound analysis.
+Use the precomputed correlations and historical comparison for a sound analysis.${ctxBlock}
 
 ${snapshotJson}`;
   }
   return `Datum: ${todayKey} (Europe/Berlin)
 Analysiere die Puls-/Herzfrequenzdaten mit Fokus auf Ruhepulstrend, Variabilität und Zusammenhänge mit Medikation und Stimmung.
-Nutze die vorberechneten Korrelationen und den historischen Vergleich für eine fundierte Analyse.
+Nutze die vorberechneten Korrelationen und den historischen Vergleich für eine fundierte Analyse.${ctxBlock}
 
 ${snapshotJson}`;
 }

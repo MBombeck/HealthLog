@@ -1,11 +1,18 @@
 import { prisma } from "@/lib/db";
 import { resolveProvider } from "@/lib/ai/provider";
-import { getWeightSystemPrompt, getWeightUserPrompt } from "@/lib/ai/prompts/weight";
+import {
+  getWeightSystemPrompt,
+  getWeightUserPrompt,
+} from "@/lib/ai/prompts/weight";
 import {
   pearsonCorrelation,
   type PairedPoint,
 } from "@/lib/analytics/correlations";
 import { getNoKeyWeightStatusText } from "@/lib/insights/no-key-fallbacks";
+import {
+  formatPreviousContextForPrompt,
+  getPreviousInsightContext,
+} from "@/lib/insights/memory";
 
 const WEIGHT_STATUS_POINTS = 30;
 
@@ -341,7 +348,10 @@ export async function generateWeightStatusForUser(
             latest: dailyMoodSeries.at(-1)?.value ?? null,
             series: dailyMoodSeries.slice(-10),
             moodVsWeightCorrelation: (() => {
-              const moodVsWeightPairs = pairDailySeries(dailyMoodSeries, weightSeries);
+              const moodVsWeightPairs = pairDailySeries(
+                dailyMoodSeries,
+                weightSeries,
+              );
               return pearsonCorrelation(moodVsWeightPairs);
             })(),
           }
@@ -350,9 +360,25 @@ export async function generateWeightStatusForUser(
 
   const snapshotJson = JSON.stringify(snapshot, null, 2);
 
+  const previousContext = await getPreviousInsightContext(
+    userId,
+    "weight-status",
+    locale,
+    12,
+  );
+  const previousContextBlock = formatPreviousContextForPrompt(
+    previousContext,
+    locale,
+  );
+
   const result = await provider.generateCompletion({
     systemPrompt: getWeightSystemPrompt(locale),
-    userPrompt: getWeightUserPrompt(snapshotJson, todayKey, locale),
+    userPrompt: getWeightUserPrompt(
+      snapshotJson,
+      todayKey,
+      locale,
+      previousContextBlock,
+    ),
     temperature: 0.3,
     maxTokens: 1000,
   });

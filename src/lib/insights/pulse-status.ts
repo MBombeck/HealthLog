@@ -1,6 +1,13 @@
 import { prisma } from "@/lib/db";
 import { resolveProvider } from "@/lib/ai/provider";
-import { getPulseSystemPrompt, getPulseUserPrompt } from "@/lib/ai/prompts/pulse";
+import {
+  getPulseSystemPrompt,
+  getPulseUserPrompt,
+} from "@/lib/ai/prompts/pulse";
+import {
+  formatPreviousContextForPrompt,
+  getPreviousInsightContext,
+} from "@/lib/insights/memory";
 import {
   getAgeFromDateOfBirth,
   getPersonalizedPulseTarget,
@@ -286,9 +293,25 @@ export async function generatePulseStatusForUser(
 
   const snapshotJson = JSON.stringify(snapshot, null, 2);
 
+  const previousContext = await getPreviousInsightContext(
+    userId,
+    "pulse-status",
+    locale,
+    12,
+  );
+  const previousContextBlock = formatPreviousContextForPrompt(
+    previousContext,
+    locale,
+  );
+
   const result = await provider.generateCompletion({
     systemPrompt: getPulseSystemPrompt(locale),
-    userPrompt: getPulseUserPrompt(snapshotJson, todayKey, locale),
+    userPrompt: getPulseUserPrompt(
+      snapshotJson,
+      todayKey,
+      locale,
+      previousContextBlock,
+    ),
     temperature: 0.3,
     maxTokens: 1000,
   });

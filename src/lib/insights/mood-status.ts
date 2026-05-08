@@ -3,6 +3,10 @@ import { resolveProvider } from "@/lib/ai/provider";
 import { getMoodSystemPrompt, getMoodUserPrompt } from "@/lib/ai/prompts/mood";
 import { getNoKeyMoodStatusText } from "@/lib/insights/no-key-fallbacks";
 import {
+  formatPreviousContextForPrompt,
+  getPreviousInsightContext,
+} from "@/lib/insights/memory";
+import {
   pearsonCorrelation,
   type PairedPoint,
 } from "@/lib/analytics/correlations";
@@ -212,8 +216,7 @@ export async function generateMoodStatusForUser(
       ? null
       : round(
           (moodSeries.filter(
-            (entry) =>
-              entry.value >= greenMin && entry.value <= greenMax,
+            (entry) => entry.value >= greenMin && entry.value <= greenMax,
           ).length /
             moodSeries.length) *
             100,
@@ -226,9 +229,7 @@ export async function generateMoodStatusForUser(
 
   const oldestEntry = entries.length > 0 ? entries[0].moodLoggedAt : null;
   const newestEntry =
-    entries.length > 0
-      ? entries[entries.length - 1].moodLoggedAt
-      : null;
+    entries.length > 0 ? entries[entries.length - 1].moodLoggedAt : null;
   const totalSpanDays =
     oldestEntry && newestEntry
       ? Math.round(
@@ -237,9 +238,7 @@ export async function generateMoodStatusForUser(
         )
       : 0;
   const newestEntryDaysAgo = newestEntry
-    ? Math.round(
-        (Date.now() - newestEntry.getTime()) / (24 * 60 * 60 * 1000),
-      )
+    ? Math.round((Date.now() - newestEntry.getTime()) / (24 * 60 * 60 * 1000))
     : null;
 
   // Fetch cross-metric context for enrichment
@@ -335,7 +334,9 @@ export async function generateMoodStatusForUser(
       tags: tagSummary.length > 0 ? tagSummary : null,
     },
     crossMetricContext:
-      weightSeries.length >= 3 || sysSeries.length >= 3 || pulseSeries.length >= 3
+      weightSeries.length >= 3 ||
+      sysSeries.length >= 3 ||
+      pulseSeries.length >= 3
         ? {
             weight:
               weightSeries.length >= 3
@@ -364,9 +365,25 @@ export async function generateMoodStatusForUser(
 
   const snapshotJson = JSON.stringify(snapshot, null, 2);
 
+  const previousContext = await getPreviousInsightContext(
+    userId,
+    "mood-status",
+    locale,
+    12,
+  );
+  const previousContextBlock = formatPreviousContextForPrompt(
+    previousContext,
+    locale,
+  );
+
   const result = await provider.generateCompletion({
     systemPrompt: getMoodSystemPrompt(locale),
-    userPrompt: getMoodUserPrompt(snapshotJson, todayKey, locale),
+    userPrompt: getMoodUserPrompt(
+      snapshotJson,
+      todayKey,
+      locale,
+      previousContextBlock,
+    ),
     temperature: 0.3,
     maxTokens: 1000,
   });

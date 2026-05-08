@@ -40,15 +40,20 @@ export function getBmiUserPrompt(
   snapshotJson: string,
   todayKey: string,
   locale: Locale,
+  previousContextBlock?: string,
 ): string {
+  const ctxBlock =
+    previousContextBlock && previousContextBlock.trim().length > 0
+      ? `\n\n${previousContextBlock}\n`
+      : "";
   if (locale === "en") {
     return `Date: ${todayKey} (Europe/Berlin)
-Analyse the BMI trajectory taking age, sex and weight trend into account. Place the WHO classification.
+Analyse the BMI trajectory taking age, sex and weight trend into account. Place the WHO classification.${ctxBlock}
 
 ${snapshotJson}`;
   }
   return `Datum: ${todayKey} (Europe/Berlin)
-Analysiere den BMI-Verlauf unter Berücksichtigung von Alter, Geschlecht und Gewichtstrend. Ordne die Klassifikation nach WHO ein.
+Analysiere den BMI-Verlauf unter Berücksichtigung von Alter, Geschlecht und Gewichtstrend. Ordne die Klassifikation nach WHO ein.${ctxBlock}
 
 ${snapshotJson}`;
 }

@@ -52,17 +52,22 @@ export function getWeightUserPrompt(
   snapshotJson: string,
   todayKey: string,
   locale: Locale,
+  previousContextBlock?: string,
 ): string {
+  const ctxBlock =
+    previousContextBlock && previousContextBlock.trim().length > 0
+      ? `\n\n${previousContextBlock}\n`
+      : "";
   if (locale === "en") {
     return `Date: ${todayKey} (Europe/Berlin)
 Analyse the weight trajectory with focus on trends, BMI classification and links to other vital signs.
-Use the temporal layers (avg7, avg30, avg90, allTime) and the historical comparison for a nuanced assessment.
+Use the temporal layers (avg7, avg30, avg90, allTime) and the historical comparison for a nuanced assessment.${ctxBlock}
 
 ${snapshotJson}`;
   }
   return `Datum: ${todayKey} (Europe/Berlin)
 Analysiere die Gewichtsentwicklung mit Fokus auf Trends, BMI-Klassifikation und Zusammenhang mit anderen Vitalwerten.
-Nutze die temporalen Schichten (avg7, avg30, avg90, allTime) und den historischen Vergleich für eine differenzierte Bewertung.
+Nutze die temporalen Schichten (avg7, avg30, avg90, allTime) und den historischen Vergleich für eine differenzierte Bewertung.${ctxBlock}
 
 ${snapshotJson}`;
 }

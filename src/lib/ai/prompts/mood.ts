@@ -30,15 +30,20 @@ export function getMoodUserPrompt(
   snapshotJson: string,
   todayKey: string,
   locale: Locale,
+  previousContextBlock?: string,
 ): string {
+  const ctxBlock =
+    previousContextBlock && previousContextBlock.trim().length > 0
+      ? `\n\n${previousContextBlock}\n`
+      : "";
   if (locale === "en") {
     return `Date: ${todayKey} (Europe/Berlin)
-Analyse the mood data with focus on trend, stability and links to other health metrics.
+Analyse the mood data with focus on trend, stability and links to other health metrics.${ctxBlock}
 
 ${snapshotJson}`;
   }
   return `Datum: ${todayKey} (Europe/Berlin)
-Analysiere die Stimmungsdaten mit Fokus auf Trend, Stabilitat und Zusammenhange mit anderen Gesundheitsmetriken.
+Analysiere die Stimmungsdaten mit Fokus auf Trend, Stabilitat und Zusammenhange mit anderen Gesundheitsmetriken.${ctxBlock}
 
 ${snapshotJson}`;
 }
