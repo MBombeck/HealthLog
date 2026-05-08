@@ -155,7 +155,9 @@ export default function DashboardPage() {
   const { isAuthenticated, user } = useAuth();
   const { t } = useTranslations();
   const fmt = useFormatters();
-  const [quickEntryDialog, setQuickEntryDialog] = useState<"measurement" | "mood" | null>(null);
+  const [quickEntryDialog, setQuickEntryDialog] = useState<
+    "measurement" | "mood" | null
+  >(null);
 
   const { data } = useQuery({
     queryKey: queryKeys.analytics(),
@@ -185,7 +187,10 @@ export default function DashboardPage() {
       const res = await fetch("/api/mood/analytics");
       if (!res.ok) throw new Error("Failed");
       const json = await res.json();
-      return json.data as { entries: Array<{ date: string; score: number; samples: number }>; summary: DataSummary };
+      return json.data as {
+        entries: Array<{ date: string; score: number; samples: number }>;
+        summary: DataSummary;
+      };
     },
     enabled: isAuthenticated,
   });
@@ -230,11 +235,17 @@ export default function DashboardPage() {
   const glucoseWidgetVisible = isWidgetVisible("glucose");
   const displayGlucoseUnit = resolveGlucoseUnit(user?.glucoseUnit ?? null);
   const glucoseByContext = data?.glucoseByContext ?? {};
-  const glucoseContexts = ["FASTING", "POSTPRANDIAL", "RANDOM", "BEDTIME"] as const;
+  const glucoseContexts = [
+    "FASTING",
+    "POSTPRANDIAL",
+    "RANDOM",
+    "BEDTIME",
+  ] as const;
   const glucoseSummariesPresent = glucoseContexts.filter(
     (ctx) => (glucoseByContext[ctx]?.count ?? 0) > 0,
   );
-  const showGlucoseCards = glucoseWidgetVisible && glucoseSummariesPresent.length > 0;
+  const showGlucoseCards =
+    glucoseWidgetVisible && glucoseSummariesPresent.length > 0;
   const glucoseLabelKey: Record<string, string> = {
     FASTING: "targets.glucoseFasting",
     POSTPRANDIAL: "targets.glucosePostprandial",
@@ -356,7 +367,9 @@ export default function DashboardPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setQuickEntryDialog("measurement")}>
+            <DropdownMenuItem
+              onClick={() => setQuickEntryDialog("measurement")}
+            >
               <Activity className="mr-2 h-4 w-4" />
               {t("measurements.addMeasurement")}
             </DropdownMenuItem>
@@ -414,10 +427,24 @@ export default function DashboardPage() {
                 unit="kg"
                 avg7={w?.avg7 ?? null}
                 avg30={w?.avg30 ?? null}
-                avg7ColorClass={getRangeColorClass(w?.avg7, { range: weightRange })}
-                avg30ColorClass={getRangeColorClass(w?.avg30, { range: weightRange })}
-                avg7Hint={getRangeHint("kg", { range: weightRange }, t, fmt.number)}
-                avg30Hint={getRangeHint("kg", { range: weightRange }, t, fmt.number)}
+                avg7ColorClass={getRangeColorClass(w?.avg7, {
+                  range: weightRange,
+                })}
+                avg30ColorClass={getRangeColorClass(w?.avg30, {
+                  range: weightRange,
+                })}
+                avg7Hint={getRangeHint(
+                  "kg",
+                  { range: weightRange },
+                  t,
+                  fmt.number,
+                )}
+                avg30Hint={getRangeHint(
+                  "kg",
+                  { range: weightRange },
+                  t,
+                  fmt.number,
+                )}
                 slope30={w?.slope30 ?? null}
                 icon={Activity}
               />
@@ -436,10 +463,24 @@ export default function DashboardPage() {
                   unit="mmHg"
                   avg7={sys?.avg7 ?? null}
                   avg30={sys?.avg30 ?? null}
-                  avg7ColorClass={getRangeColorClass(sys?.avg7, { range: bpSysRange })}
-                  avg30ColorClass={getRangeColorClass(sys?.avg30, { range: bpSysRange })}
-                  avg7Hint={getRangeHint("mmHg", { range: bpSysRange }, t, fmt.number)}
-                  avg30Hint={getRangeHint("mmHg", { range: bpSysRange }, t, fmt.number)}
+                  avg7ColorClass={getRangeColorClass(sys?.avg7, {
+                    range: bpSysRange,
+                  })}
+                  avg30ColorClass={getRangeColorClass(sys?.avg30, {
+                    range: bpSysRange,
+                  })}
+                  avg7Hint={getRangeHint(
+                    "mmHg",
+                    { range: bpSysRange },
+                    t,
+                    fmt.number,
+                  )}
+                  avg30Hint={getRangeHint(
+                    "mmHg",
+                    { range: bpSysRange },
+                    t,
+                    fmt.number,
+                  )}
                   slope30={sys?.slope30 ?? null}
                   icon={Heart}
                 />
@@ -449,10 +490,24 @@ export default function DashboardPage() {
                   unit="mmHg"
                   avg7={dia?.avg7 ?? null}
                   avg30={dia?.avg30 ?? null}
-                  avg7ColorClass={getRangeColorClass(dia?.avg7, { range: bpDiaRange })}
-                  avg30ColorClass={getRangeColorClass(dia?.avg30, { range: bpDiaRange })}
-                  avg7Hint={getRangeHint("mmHg", { range: bpDiaRange }, t, fmt.number)}
-                  avg30Hint={getRangeHint("mmHg", { range: bpDiaRange }, t, fmt.number)}
+                  avg7ColorClass={getRangeColorClass(dia?.avg7, {
+                    range: bpDiaRange,
+                  })}
+                  avg30ColorClass={getRangeColorClass(dia?.avg30, {
+                    range: bpDiaRange,
+                  })}
+                  avg7Hint={getRangeHint(
+                    "mmHg",
+                    { range: bpDiaRange },
+                    t,
+                    fmt.number,
+                  )}
+                  avg30Hint={getRangeHint(
+                    "mmHg",
+                    { range: bpDiaRange },
+                    t,
+                    fmt.number,
+                  )}
                   slope30={dia?.slope30 ?? null}
                   icon={Heart}
                 />
@@ -472,10 +527,24 @@ export default function DashboardPage() {
                 unit="bpm"
                 avg7={p?.avg7 ?? null}
                 avg30={p?.avg30 ?? null}
-                avg7ColorClass={getRangeColorClass(p?.avg7, { range: pulseDisplayRange })}
-                avg30ColorClass={getRangeColorClass(p?.avg30, { range: pulseDisplayRange })}
-                avg7Hint={getRangeHint("bpm", { range: pulseDisplayRange }, t, fmt.number)}
-                avg30Hint={getRangeHint("bpm", { range: pulseDisplayRange }, t, fmt.number)}
+                avg7ColorClass={getRangeColorClass(p?.avg7, {
+                  range: pulseDisplayRange,
+                })}
+                avg30ColorClass={getRangeColorClass(p?.avg30, {
+                  range: pulseDisplayRange,
+                })}
+                avg7Hint={getRangeHint(
+                  "bpm",
+                  { range: pulseDisplayRange },
+                  t,
+                  fmt.number,
+                )}
+                avg30Hint={getRangeHint(
+                  "bpm",
+                  { range: pulseDisplayRange },
+                  t,
+                  fmt.number,
+                )}
                 slope30={p?.slope30 ?? null}
                 icon={TrendingUp}
               />
@@ -741,10 +810,7 @@ export default function DashboardPage() {
             id: "medications",
             order: widgetOrder("medications"),
             node: (
-              <div
-                key="medications"
-                className="bg-card rounded-lg border p-4"
-              >
+              <div key="medications" className="bg-card rounded-lg border p-4">
                 <div className="mb-3 flex items-center gap-2">
                   <Pill className="h-4 w-4" />
                   <h3 className="text-sm font-medium">
@@ -763,8 +829,32 @@ export default function DashboardPage() {
 
         return (
           <>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-              {trendCards.map((entry) => entry.node)}
+            {/* v1.4: dashboard tiles are *always* a single row.
+             * Marc-explicit (memory feedback_dashboard_one_row.md): a 2-row
+             * tile strip breaks the visual hierarchy and reads like an
+             * Excel grid. Total width caps at the parent container —
+             * exactly the chart-width below. When the active tile count
+             * exceeds what fits the viewport, the strip horizontal-scrolls
+             * instead of wrapping; the user trims the set in
+             * Settings → Dashboard Layout (`/settings#dashboard-layout`).
+             * Each tile keeps a `min-w-[10rem]` so a single tile still
+             * looks substantial on a wide screen, and `snap-x snap-mandatory`
+             * makes the scroll feel deliberate rather than arbitrary on
+             * touch.
+             */}
+            <div
+              className="-mx-2 flex snap-x snap-mandatory gap-3 overflow-x-auto px-2 pb-2"
+              data-slot="dashboard-tile-strip"
+              data-tile-count={trendCards.length}
+            >
+              {trendCards.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="shrink-0 grow basis-[10rem] snap-start"
+                >
+                  {entry.node}
+                </div>
+              ))}
             </div>
             {charts.map((entry) => entry.node)}
           </>
