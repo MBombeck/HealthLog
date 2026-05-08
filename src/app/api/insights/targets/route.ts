@@ -17,7 +17,10 @@ import {
   classifyPulseByTarget,
   getPersonalizedPulseTarget,
 } from "@/lib/analytics/pulse-targets";
-import type { MeasurementType, GlucoseContext } from "@/generated/prisma/client";
+import type {
+  MeasurementType,
+  GlucoseContext,
+} from "@/generated/prisma/client";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -200,7 +203,7 @@ export const GET = apiHandler(async () => {
     unit: "mmHg",
     range: bpRange ? { min: bpRange.sysLow, max: bpRange.sysHigh } : null,
     classification: bpClassification,
-    source: "ESC/ESH 2018",
+    source: "ESH 2023",
     // Extra fields for diastolic
   } as TargetItem);
 
@@ -248,7 +251,7 @@ export const GET = apiHandler(async () => {
               ? { category: "Moderate", color: "#f1fa8c" }
               : { category: "Low", color: "#ff5555" }
           : null,
-      source: "ESC/ESH 2018",
+      source: "ESH 2023",
     });
   }
 
@@ -585,7 +588,8 @@ export const GET = apiHandler(async () => {
     "BEDTIME",
   ];
   const glucoseUnit = resolveGlucoseUnit(dbUser?.glucoseUnit ?? null);
-  const overrides = (dbUser?.thresholdsJson ?? null) as ThresholdOverridesJson | null;
+  const overrides = (dbUser?.thresholdsJson ??
+    null) as ThresholdOverridesJson | null;
   const profileForRange = {
     heightCm,
     dateOfBirth: dbUser?.dateOfBirth ?? null,
@@ -651,7 +655,10 @@ export const GET = apiHandler(async () => {
     });
   }
 
-  annotate({ action: { name: "insights.targets" }, meta: { targetCount: targets.length } });
+  annotate({
+    action: { name: "insights.targets" },
+    meta: { targetCount: targets.length },
+  });
 
   return apiSuccess({
     targets,

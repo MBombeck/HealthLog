@@ -145,10 +145,23 @@ function defaultRange(
       if (!dateOfBirth) return null;
       const t = getBpTargets(dateOfBirth);
       if (!t) return null;
+      // The lower orange wing must NOT extend to 60 mmHg — sustained
+      // diastolic ≤ 60 is a clinical hypotension / perfusion-risk
+      // threshold, not "mildly low":
+      // - General-adult hypotension: <90/60 (AHA, NIH).
+      // - J-curve evidence in older / treated hypertensives: DBP <70
+      //   raises events. Boehm M et al. (Lancet 2017) ONTARGET / TRANSCEND.
+      //   https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(17)32478-7/fulltext
+      // - ESH 2023 caution: "treatment should not lower DBP below 70 in
+      //   the elderly and below 80 in those with significant CAD".
+      //   https://journals.lww.com/jhypertension/fulltext/2023/12000/2023_esh_guidelines_for_the_management_of_arterial.2.aspx
+      // We therefore floor orangeMin at 65 across ages so a reading of
+      // 60 mmHg lands in red, not yellow. The override path
+      // (User.thresholdsJson) is audit-logged and respects the floor.
       return {
         greenMin: t.diaLow,
         greenMax: t.diaHigh,
-        orangeMin: t.diaLow - 10,
+        orangeMin: Math.max(t.diaLow - 10, 65),
         orangeMax: t.diaHigh + 10,
       };
     }
@@ -179,7 +192,12 @@ function defaultRange(
       // per week (150–300 min moderate / 75–150 min vigorous) — *not* a
       // step quota. No upper bound in reality, orange over 25k caps edge
       // detection.
-      return { greenMin: 8000, greenMax: 15000, orangeMin: 5000, orangeMax: 25000 };
+      return {
+        greenMin: 8000,
+        greenMax: 15000,
+        orangeMin: 5000,
+        orangeMax: 25000,
+      };
     case "BLOOD_GLUCOSE_FASTING":
       return glucoseRange(GLUCOSE_DEFAULTS.FASTING, 125); // pre-diabetes upper bound
     case "BLOOD_GLUCOSE_POSTPRANDIAL":

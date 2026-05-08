@@ -2,7 +2,7 @@ import type { Locale } from "@/lib/i18n/config";
 import { getBaseSystemPrompt } from "./base-system";
 
 const BP_SECTION_DE = `FACHSPEZIFISCH — BLUTDRUCK:
-- Klassifikation nach ESC/ESH 2023:
+- Klassifikation nach ESH 2023:
   * Optimal: < 120/80 mmHg
   * Normal: 120-129/80-84 mmHg
   * Hochnormal: 130-139/85-89 mmHg
@@ -30,7 +30,7 @@ const BP_SECTION_DE = `FACHSPEZIFISCH — BLUTDRUCK:
 - Salz-Signal: Akuter Gewichtsanstieg ≥ 1 kg in 3 Tagen + systolischer Anstieg ≥ 5 mmHg = mögliche erhöhte Natriumzufuhr.`;
 
 const BP_SECTION_EN = `DOMAIN — BLOOD PRESSURE:
-- ESC/ESH 2023 classification:
+- ESH 2023 classification:
   * Optimal: < 120/80 mmHg
   * Normal: 120-129/80-84 mmHg
   * High-normal: 130-139/85-89 mmHg
