@@ -97,7 +97,7 @@ export interface AggregatedFeatures {
   ratePressureProduct?: {
     rpp7: number | null;
     rpp30: number | null;
-    risk: 'normal' | 'elevated' | null;
+    risk: "normal" | "elevated" | null;
   };
   bodyCompositionDivergence?: {
     weightStable: boolean;
@@ -109,7 +109,7 @@ export interface AggregatedFeatures {
     winterAvgSys: number | null;
     summerAvgSys: number | null;
     delta: number | null;
-    significance: 'normal' | 'elevated' | null;
+    significance: "normal" | "elevated" | null;
   };
   correlations?: {
     weightVsSystolic: CorrelationResult | null;
@@ -176,7 +176,8 @@ export interface RawFeatures extends AggregatedFeatures {
 function stdDev(values: number[]): number | null {
   if (values.length < 2) return null;
   const mean = values.reduce((s, v) => s + v, 0) / values.length;
-  const variance = values.reduce((s, v) => s + (v - mean) ** 2, 0) / (values.length - 1);
+  const variance =
+    values.reduce((s, v) => s + (v - mean) ** 2, 0) / (values.length - 1);
   return Math.round(Math.sqrt(variance) * 10) / 10;
 }
 
@@ -237,7 +238,11 @@ function avgInWindow(
 function computeHistoricalComparison(
   records: Array<{ value: number; measuredAt: Date }>,
   now: number,
-): { current7dAvg: number | null; previous30dAvg: number | null; change: number | null } {
+): {
+  current7dAvg: number | null;
+  previous30dAvg: number | null;
+  change: number | null;
+} {
   const current7dAvg = avgInWindow(records, now, 7, 0);
   const previous30dAvg = avgInWindow(records, now, 37, 7);
   const change =
@@ -355,19 +360,28 @@ export async function extractFeatures(
 
     let pctInTarget: number | null = null;
     if (bpTargets) {
-      const sysByTime = new Map(sysData.map(m => [m.measuredAt.getTime(), m.value]));
+      const sysByTime = new Map(
+        sysData.map((m) => [m.measuredAt.getTime(), m.value]),
+      );
       let inTargetCount = 0;
       let pairedCount = 0;
       for (const dia of diaData) {
         const sysVal = sysByTime.get(dia.measuredAt.getTime());
         if (sysVal === undefined) continue;
         pairedCount++;
-        if (sysVal >= bpTargets.sysLow && sysVal <= bpTargets.sysHigh &&
-            dia.value >= bpTargets.diaLow && dia.value <= bpTargets.diaHigh) {
+        if (
+          sysVal >= bpTargets.sysLow &&
+          sysVal <= bpTargets.sysHigh &&
+          dia.value >= bpTargets.diaLow &&
+          dia.value <= bpTargets.diaHigh
+        ) {
           inTargetCount++;
         }
       }
-      pctInTarget = pairedCount > 0 ? Math.round((inTargetCount / pairedCount) * 100) : null;
+      pctInTarget =
+        pairedCount > 0
+          ? Math.round((inTargetCount / pairedCount) * 100)
+          : null;
     }
 
     features.bloodPressure = {
@@ -385,12 +399,16 @@ export async function extractFeatures(
       slopeDia30: diaSummary?.slope30?.slope ?? null,
       sdSys30: (() => {
         const fromMs = now - 30 * 24 * 60 * 60 * 1000;
-        const vals = sysData.filter(m => m.measuredAt.getTime() >= fromMs).map(m => m.value);
+        const vals = sysData
+          .filter((m) => m.measuredAt.getTime() >= fromMs)
+          .map((m) => m.value);
         return stdDev(vals);
       })(),
       sdDia30: (() => {
         const fromMs = now - 30 * 24 * 60 * 60 * 1000;
-        const vals = diaData.filter(m => m.measuredAt.getTime() >= fromMs).map(m => m.value);
+        const vals = diaData
+          .filter((m) => m.measuredAt.getTime() >= fromMs)
+          .map((m) => m.value);
         return stdDev(vals);
       })(),
       pulsePressure30: (() => {
@@ -556,15 +574,20 @@ export async function extractFeatures(
     moodVsPulse: computeCorr(moodPoints, pulsePoints),
     moodVsSystolic: computeCorr(moodPoints, sysPoints),
     moodVsWeight: computeCorr(moodPoints, weightPoints),
-    sleepVsPulse: sleepData.length > 0 ? computeCorr(sleepPoints, pulsePoints) : null,
-    sleepVsSystolic: sleepData.length > 0 ? computeCorr(sleepPoints, sysPoints) : null,
+    sleepVsPulse:
+      sleepData.length > 0 ? computeCorr(sleepPoints, pulsePoints) : null,
+    sleepVsSystolic:
+      sleepData.length > 0 ? computeCorr(sleepPoints, sysPoints) : null,
   };
 
   // Rate-Pressure Product (RPP) — myocardial oxygen demand indicator
   if (features.pulse && features.bloodPressure) {
     const rpp7 =
       features.pulse.avg7 !== null && features.bloodPressure.avgSys30 !== null
-        ? Math.round(features.pulse.avg7 * (avgInWindow(sysData, now, 7) ?? features.bloodPressure.avgSys30))
+        ? Math.round(
+            features.pulse.avg7 *
+              (avgInWindow(sysData, now, 7) ?? features.bloodPressure.avgSys30),
+          )
         : null;
     const rpp30 =
       features.pulse.avg30 !== null && features.bloodPressure.avgSys30 !== null
@@ -574,14 +597,17 @@ export async function extractFeatures(
     features.ratePressureProduct = {
       rpp7,
       rpp30,
-      risk: rppRef !== null ? (rppRef > 12000 ? 'elevated' : 'normal') : null,
+      risk: rppRef !== null ? (rppRef > 12000 ? "elevated" : "normal") : null,
     };
   }
 
   // Body Composition Divergence
   if (features.weight && features.bodyFat) {
-    const weightStable = features.weight.slope30 !== null && Math.abs(features.weight.slope30) < 0.01;
-    const bodyFatRising = features.bodyFat.slope30 !== null && features.bodyFat.slope30 > 0;
+    const weightStable =
+      features.weight.slope30 !== null &&
+      Math.abs(features.weight.slope30) < 0.01;
+    const bodyFatRising =
+      features.bodyFat.slope30 !== null && features.bodyFat.slope30 > 0;
     features.bodyCompositionDivergence = {
       weightStable,
       bodyFatRising,
@@ -590,43 +616,77 @@ export async function extractFeatures(
   }
 
   // Mood-Adherence Risk Flag
-  if (features.mood && features.medications && features.medications.length > 0) {
+  if (
+    features.mood &&
+    features.medications &&
+    features.medications.length > 0
+  ) {
     features.moodAdherenceRisk =
       features.mood.avg7 !== null &&
       features.mood.avg7 <= 2.5 &&
-      features.mood.trend30 === 'declining';
+      features.mood.trend30 === "declining";
   }
 
   // Seasonal BP Variation (only if > 180 days of data)
   if (features.context.dataSpanDays > 180 && sysData.length > 0) {
     const winterMonths = [11, 0, 1]; // Dec, Jan, Feb (0-indexed)
     const summerMonths = [5, 6, 7]; // Jun, Jul, Aug
-    const winterVals = sysData.filter(m => winterMonths.includes(m.measuredAt.getMonth())).map(m => m.value);
-    const summerVals = sysData.filter(m => summerMonths.includes(m.measuredAt.getMonth())).map(m => m.value);
-    const winterAvg = winterVals.length > 0 ? Math.round((winterVals.reduce((s, v) => s + v, 0) / winterVals.length) * 10) / 10 : null;
-    const summerAvg = summerVals.length > 0 ? Math.round((summerVals.reduce((s, v) => s + v, 0) / summerVals.length) * 10) / 10 : null;
-    const delta = winterAvg !== null && summerAvg !== null ? Math.round((winterAvg - summerAvg) * 10) / 10 : null;
+    const winterVals = sysData
+      .filter((m) => winterMonths.includes(m.measuredAt.getMonth()))
+      .map((m) => m.value);
+    const summerVals = sysData
+      .filter((m) => summerMonths.includes(m.measuredAt.getMonth()))
+      .map((m) => m.value);
+    const winterAvg =
+      winterVals.length > 0
+        ? Math.round(
+            (winterVals.reduce((s, v) => s + v, 0) / winterVals.length) * 10,
+          ) / 10
+        : null;
+    const summerAvg =
+      summerVals.length > 0
+        ? Math.round(
+            (summerVals.reduce((s, v) => s + v, 0) / summerVals.length) * 10,
+          ) / 10
+        : null;
+    const delta =
+      winterAvg !== null && summerAvg !== null
+        ? Math.round((winterAvg - summerAvg) * 10) / 10
+        : null;
     features.seasonalVariation = {
       winterAvgSys: winterAvg,
       summerAvgSys: summerAvg,
       delta,
-      significance: delta !== null ? (Math.abs(delta) > 5 ? 'elevated' : 'normal') : null,
+      significance:
+        delta !== null ? (Math.abs(delta) > 5 ? "elevated" : "normal") : null,
     };
   }
 
   // Historical comparison: current 7d avg vs previous 30d avg (days 7-37)
   features.historicalComparison = {};
   if (weightData.length > 0) {
-    features.historicalComparison.weight = computeHistoricalComparison(weightData, now);
+    features.historicalComparison.weight = computeHistoricalComparison(
+      weightData,
+      now,
+    );
   }
   if (sysData.length > 0) {
-    features.historicalComparison.systolic = computeHistoricalComparison(sysData, now);
+    features.historicalComparison.systolic = computeHistoricalComparison(
+      sysData,
+      now,
+    );
   }
   if (diaData.length > 0) {
-    features.historicalComparison.diastolic = computeHistoricalComparison(diaData, now);
+    features.historicalComparison.diastolic = computeHistoricalComparison(
+      diaData,
+      now,
+    );
   }
   if (pulseData.length > 0) {
-    features.historicalComparison.pulse = computeHistoricalComparison(pulseData, now);
+    features.historicalComparison.pulse = computeHistoricalComparison(
+      pulseData,
+      now,
+    );
   }
 
   // Medications
@@ -640,22 +700,47 @@ export async function extractFeatures(
       medications.map((med) => med.id),
     );
 
-    features.medications = [];
-    for (const med of medications) {
-      const events = await prisma.medicationIntakeEvent.findMany({
-        where: { medicationId: med.id, userId },
-        orderBy: { scheduledFor: "desc" },
-      });
-      const mapped = events.map((e) => ({
+    // Single batched fetch + in-memory grouping replaces the per-medication
+    // findMany loop. Same shape as the v1.3.0 fix to /api/insights/comprehensive
+    // (the previous N+1 the v3 audit closed). 90 days is the longest window
+    // calculateCompliance uses below, so we don't need the full intake history.
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 86_400_000);
+    const allEvents = await prisma.medicationIntakeEvent.findMany({
+      where: {
+        userId,
+        medicationId: { in: medications.map((med) => med.id) },
+        scheduledFor: { gte: ninetyDaysAgo },
+      },
+      orderBy: { scheduledFor: "desc" },
+      select: {
+        medicationId: true,
+        takenAt: true,
+        skipped: true,
+        scheduledFor: true,
+      },
+    });
+
+    const eventsByMed = new Map<
+      string,
+      { takenAt: Date | null; skipped: boolean; scheduledFor: Date }[]
+    >();
+    for (const e of allEvents) {
+      const list = eventsByMed.get(e.medicationId) ?? [];
+      list.push({
         takenAt: e.takenAt,
         skipped: e.skipped,
         scheduledFor: e.scheduledFor,
-      }));
+      });
+      eventsByMed.set(e.medicationId, list);
+    }
+
+    features.medications = medications.map((med) => {
+      const mapped = eventsByMed.get(med.id) ?? [];
       const c7 = calculateCompliance(mapped, med.schedules, 7, med.createdAt);
       const c30 = calculateCompliance(mapped, med.schedules, 30, med.createdAt);
       const c90 = calculateCompliance(mapped, med.schedules, 90, med.createdAt);
 
-      features.medications.push({
+      return {
         name: med.name,
         dose: med.dose,
         category: categoryMap[med.id] ?? "OTHER",
@@ -664,8 +749,8 @@ export async function extractFeatures(
         compliance90: c90.rate,
         streak: c30.streak,
         missedLast7: c7.missed,
-      });
-    }
+      };
+    });
   }
 
   // Raw mode: add anonymized raw data points
