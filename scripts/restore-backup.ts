@@ -25,12 +25,64 @@ import {
   OffhostBackupNotConfiguredError,
 } from "@/lib/jobs/offhost-backup";
 
+/**
+ * Schema-validate the decrypted JSON before writing it to disk. The wire
+ * format from `runOffhostBackup` always carries `userId` and the four data
+ * arrays — anything else means the operator may be looking at a tampered or
+ * mis-targeted object. We reject rather than silently writing a body that a
+ * later import script would trust.
+ */
+function validateBackupShape(payload: unknown): {
+  exportedAt: string;
+  userId: string;
+  measurements: unknown[];
+  medications: unknown[];
+  intakeEvents: unknown[];
+  moodEntries: unknown[];
+} {
+  if (!payload || typeof payload !== "object") {
+    throw new Error("backup payload is not a JSON object");
+  }
+  const p = payload as Record<string, unknown>;
+  const required = [
+    "exportedAt",
+    "userId",
+    "measurements",
+    "medications",
+    "intakeEvents",
+    "moodEntries",
+  ] as const;
+  for (const k of required) {
+    if (!(k in p)) throw new Error(`backup is missing required field: ${k}`);
+  }
+  if (typeof p.exportedAt !== "string")
+    throw new Error("backup.exportedAt must be string");
+  if (typeof p.userId !== "string" || p.userId.length === 0)
+    throw new Error("backup.userId must be a non-empty string");
+  for (const k of [
+    "measurements",
+    "medications",
+    "intakeEvents",
+    "moodEntries",
+  ] as const) {
+    if (!Array.isArray(p[k])) throw new Error(`backup.${k} must be an array`);
+  }
+  return p as ReturnType<typeof validateBackupShape>;
+}
+
 async function main() {
   const key = process.argv[2];
   const out = process.argv[3] ?? "./restored.json";
+  // Optional positional arg: --user-id=<id> requires the dump's `userId`
+  // field to match. Defends against an operator pointing the script at the
+  // wrong S3 key (e.g. another tenant's dump under a similar path) and
+  // silently importing the wrong user's data downstream.
+  const expectedUserId = process.argv
+    .find((a) => a.startsWith("--user-id="))
+    ?.slice("--user-id=".length);
   if (!key) {
     console.error(
-      "Usage: pnpm tsx scripts/restore-backup.ts <s3-key> [output-file]",
+      "Usage: pnpm tsx scripts/restore-backup.ts <s3-key> [output-file] [--user-id=<id>]",
     );
     process.exit(1);
   }
@@ -48,8 +100,26 @@ async function main() {
   );
   const ciphertext = await s3.getObject(key);
   const plaintext = decryptBackup(ciphertext, cfg.encryptionKey);
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(plaintext);
+  } catch (err) {
+    throw new Error(
+      `Decrypted payload is not valid JSON: ${(err as Error).message}`,
+    );
+  }
+  const body = validateBackupShape(parsed);
+  if (expectedUserId && body.userId !== expectedUserId) {
+    throw new Error(
+      `Refusing to write: backup.userId='${body.userId}' does not match --user-id='${expectedUserId}'`,
+    );
+  }
+
   writeFileSync(out, plaintext, "utf8");
-  console.log(`Restored ${plaintext.length} bytes -> ${out}`);
+  console.log(
+    `Restored userId=${body.userId} (${plaintext.length} bytes) -> ${out}`,
+  );
 }
 
 main().catch((err) => {

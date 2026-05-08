@@ -96,9 +96,11 @@ describe("runOffhostBackup", () => {
     vi.stubEnv("BACKUP_ENCRYPTION_KEY", ENC_KEY);
   });
 
-  it("uploads one object per user and prunes old ones", async () => {
+  it("uploads one object per user and never deletes existing ones", async () => {
     const s3 = makeS3Mock();
-    // Pre-seed an old object that should be pruned.
+    // Pre-seed an old object — the worker must NOT touch it. Retention is
+    // the bucket's lifecycle-policy job; the worker's IAM grant is
+    // intentionally PutObject + GetObject only.
     s3.store.set("2020-01-01/user-old.json.enc", Buffer.from([0]));
 
     const prisma = {
@@ -121,10 +123,11 @@ describe("runOffhostBackup", () => {
     expect(report.uploaded).toBe(2);
     expect(report.failed).toBe(0);
     expect(report.totalUsers).toBe(2);
-    expect(report.pruned).toBeGreaterThanOrEqual(1);
     expect(s3.store.has("2026-05-08/user-u1.json.enc")).toBe(true);
     expect(s3.store.has("2026-05-08/user-u2.json.enc")).toBe(true);
-    expect(s3.store.has("2020-01-01/user-old.json.enc")).toBe(false);
+    // Stale object stays — worker has no DeleteObject side-effects.
+    expect(s3.store.has("2020-01-01/user-old.json.enc")).toBe(true);
+    expect(s3.deleteObject).not.toHaveBeenCalled();
 
     const ct = s3.store.get("2026-05-08/user-u1.json.enc")!;
     const decoded = decryptBackup(ct, Buffer.from(ENC_KEY, "hex"));

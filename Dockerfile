@@ -23,12 +23,17 @@ RUN pnpm build
 
 # ── Stage 3: Production runner ─────────────────────────────
 FROM node:22-alpine AS runner
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# `tzdata` is required so Europe/Berlin schedules (pg-boss cron, locale-aware
+# timestamp formatting) resolve to the actual offset instead of silently
+# falling back to UTC on Alpine images that ship without it.
+RUN apk add --no-cache tzdata && \
+    corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_PATH="/opt/pg-boss/node_modules"
+ENV TZ=Europe/Berlin
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs

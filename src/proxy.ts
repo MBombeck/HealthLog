@@ -1,7 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { shouldRunWeb } from "@/lib/process-type";
 
 /**
  * Paths that do NOT require a session cookie (public pages + external webhooks).
+ *
+ * `/api/version` is intentionally public — both the in-app About page and the
+ * compose healthcheck rely on it. `/api/health` stays public for the same
+ * reason.
  */
 const PUBLIC_PATHS = [
   "/auth/",
@@ -11,6 +16,7 @@ const PUBLIC_PATHS = [
   "/api/auth/passkey/login-options",
   "/api/auth/passkey/login-verify",
   "/api/health",
+  "/api/version",
   "/api/notifications/vapid",
   "/api/monitoring/",
   "/api/send",
@@ -46,6 +52,20 @@ const LEGACY_REDIRECTS: Record<string, string> = {
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Worker-only container: refuse HTTP traffic with a clear hint instead of
+  // serving requests that would either crash (no DB pool ready for writes from
+  // the worker) or duplicate work that the dedicated web container is doing.
+  if (!shouldRunWeb()) {
+    return NextResponse.json(
+      {
+        data: null,
+        error:
+          "This container runs the worker only — point HTTP at the web service.",
+      },
+      { status: 503, headers: { "X-HealthLog-Process-Type": "worker" } },
+    );
+  }
+
   // 301 redirects for renamed routes
   const redirect = LEGACY_REDIRECTS[pathname];
   if (redirect) {
@@ -55,11 +75,20 @@ export function proxy(request: NextRequest) {
   // Demo mode: block all mutations except login
   if (process.env.DEMO_MODE === "true") {
     const method = request.method.toUpperCase();
-    const isMutation = method !== "GET" && method !== "HEAD" && method !== "OPTIONS";
+    const isMutation =
+      method !== "GET" && method !== "HEAD" && method !== "OPTIONS";
     const isApi = pathname.startsWith("/api/");
-    if (isApi && isMutation && !DEMO_MUTATION_ALLOWLIST.some((p) => pathname === p)) {
+    if (
+      isApi &&
+      isMutation &&
+      !DEMO_MUTATION_ALLOWLIST.some((p) => pathname === p)
+    ) {
       return NextResponse.json(
-        { data: null, error: "Demo mode: modifications are disabled", meta: { demo: true } },
+        {
+          data: null,
+          error: "Demo mode: modifications are disabled",
+          meta: { demo: true },
+        },
         { status: 403 },
       );
     }
@@ -77,15 +106,14 @@ export function proxy(request: NextRequest) {
   }
 
   // Generate or propagate x-request-id for request correlation
-  const requestId =
-    request.headers.get("x-request-id") || crypto.randomUUID();
+  const requestId = request.headers.get("x-request-id") || crypto.randomUUID();
 
   // 128 bits of random, base64-encoded. randomUUID().toString() only carries
   // ~122 bits and has a predictable structure that base64-encodes to a
   // partially guessable pattern.
-  const nonce = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString(
-    "base64",
-  );
+  const nonce = Buffer.from(
+    crypto.getRandomValues(new Uint8Array(16)),
+  ).toString("base64");
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("x-request-id", requestId);

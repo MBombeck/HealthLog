@@ -368,9 +368,11 @@ model RefreshToken {
   /// `Device` row when the caller advertised one (X-Device-Id header). Used
   /// to revoke all tokens issued for a stolen/lost device.
   deviceId    String?   @map("device_id")
-  /// SHA-256 of the access token issued in the same response. When the
-  /// refresh token is rotated we revoke the matching access token via
-  /// `ApiToken.tokenHash`. Null if the access token was issued out-of-band.
+  /// HMAC-SHA-256 (matching `ApiToken.tokenHash` format, keyed by
+  /// `API_TOKEN_HMAC_KEY`) of the access token issued in the same response.
+  /// When the refresh token is rotated we revoke the matching access token
+  /// via `ApiToken.tokenHash`. Null if the access token was issued
+  /// out-of-band.
   accessTokenHash String? @map("access_token_hash")
   expiresAt   DateTime  @map("expires_at")
   createdAt   DateTime  @default(now()) @map("created_at")
@@ -387,7 +389,12 @@ model RefreshToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([deviceId])
+  /// Composite index — every reuse-detection / device-scoped lookup filters
+  /// on (userId, deviceId), so a single-column device_id index would never
+  /// be used while costing writes. Multiple live rows per (userId, deviceId)
+  /// are intentional: rotated rows linger in `revokedAt != null` state for
+  /// audit and reuse-detection.
+  @@index([userId, deviceId])
   @@index([expiresAt])
   @@map("refresh_tokens")
 }

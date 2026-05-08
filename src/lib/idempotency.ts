@@ -188,7 +188,9 @@ export function withIdempotency<
   Args extends [Request | NextRequest, ...unknown[]],
 >(
   handler: (...args: Args) => Promise<Response>,
-  userIdResolver: (...args: Args) => Promise<string | null> = defaultUserIdResolver,
+  userIdResolver: (
+    ...args: Args
+  ) => Promise<string | null> = defaultUserIdResolver,
 ): (...args: Args) => Promise<Response> {
   return async (...args: Args): Promise<Response> => {
     const request = args[0];
@@ -217,11 +219,12 @@ export function withIdempotency<
 
     if (isCachableStatus(response.status)) {
       // Defence-in-depth: never persist a body that carries a freshly-issued
-      // bearer token. Auth routes shouldn't be wrapped in withIdempotency to
-      // begin with, but if a future caller forgets, we refuse to leak.
+      // bearer or refresh token. Auth routes shouldn't be wrapped in
+      // withIdempotency to begin with, but if a future caller forgets we
+      // refuse to leak. `hlk_` = access tokens, `hlr_` = refresh tokens.
       const cloned = response.clone();
       const text = await cloned.text();
-      if (!text.includes("hlk_")) {
+      if (!text.includes("hlk_") && !text.includes("hlr_")) {
         await persistCached(ctx, response, text);
       }
     }

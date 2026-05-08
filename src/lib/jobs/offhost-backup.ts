@@ -11,12 +11,15 @@
  * Object key layout:
  *   <bucket>/<YYYY-MM-DD>/user-<userId>.json.enc
  *
- * Rotation: the worker's `cleanOldOffhostBackups` deletes anything older
- * than `BACKUP_RETENTION_DAYS` (default 30). Operators are encouraged to
- * also set a bucket-level lifecycle rule for defence in depth.
+ * Retention: the worker NEVER calls DeleteObject on backup keys. Operators
+ * MUST configure a bucket-level lifecycle rule (e.g. expire after
+ * `BACKUP_RETENTION_DAYS`). This keeps the IAM grant for the worker
+ * limited to PutObject + GetObject, so a compromised worker cannot wipe
+ * the backup history. See docs/ops/backup-restore.md.
  */
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
+import { getEvent } from "@/lib/logging/context";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
@@ -186,7 +189,7 @@ interface BackupRunReport {
   config: { endpoint: string; bucket: string; region: string };
   uploaded: number;
   failed: number;
-  pruned: number;
+  failures: Array<{ userId: string; message: string }>;
   totalUsers: number;
 }
 
@@ -207,6 +210,8 @@ export async function runOffhostBackup(
   const users = await prisma.user.findMany({ select: { id: true } });
   let uploaded = 0;
   let failed = 0;
+  const failures: Array<{ userId: string; message: string }> = [];
+  const evt = getEvent();
   for (const user of users) {
     try {
       const [measurements, medications, intakeEvents, moodEntries] =
@@ -233,28 +238,16 @@ export async function runOffhostBackup(
       const key = `${dateKey}/user-${user.id}.json.enc`;
       await s3.putObject(key, ciphertext);
       uploaded++;
-    } catch {
+    } catch (err) {
       failed++;
+      const message = (err as Error).message ?? "unknown";
+      failures.push({ userId: user.id, message: message.slice(0, 200) });
+      // Surface per-user failure detail so an operator can tell WHICH user
+      // failed and WHY without scraping stdout.
+      evt?.addWarning(
+        `offhost-backup user ${user.id} failed: ${message.slice(0, 200)}`,
+      );
     }
-  }
-
-  // Rotation: prune anything older than retentionDays.
-  let pruned = 0;
-  try {
-    const cutoff = new Date(now.getTime() - cfg.retentionDays * 86400000);
-    const objects = await s3.listObjects("");
-    for (const obj of objects) {
-      // YYYY-MM-DD/user-...
-      const m = obj.key.match(/^(\d{4})-(\d{2})-(\d{2})\//);
-      if (!m) continue;
-      const objDate = new Date(`${m[1]}-${m[2]}-${m[3]}T00:00:00Z`);
-      if (objDate < cutoff) {
-        await s3.deleteObject(obj.key);
-        pruned++;
-      }
-    }
-  } catch {
-    // Best-effort pruning
   }
 
   return {
@@ -265,7 +258,7 @@ export async function runOffhostBackup(
     },
     uploaded,
     failed,
-    pruned,
+    failures,
     totalUsers: users.length,
   };
 }

@@ -204,6 +204,10 @@ export function encrypt(plaintext: string): string {
 /**
  * Decrypt a previously encrypted string. Accepts both the versioned
  * `<id>.<payload>` format and the legacy bare-base64 format.
+ *
+ * Once the prefix is recognised as a versioned id we trust the key id.
+ * If decrypt fails under that key the error surfaces — silently retrying as
+ * legacy would mask data corruption.
  */
 export function decrypt(encoded: string): string {
   const dot = encoded.indexOf(".");
@@ -212,16 +216,28 @@ export function decrypt(encoded: string): string {
     const payload = encoded.slice(dot + 1);
     if (/^[A-Za-z0-9_-]{1,32}$/.test(id)) {
       const key = getKeyById(id);
-      if (key) {
-        try {
-          return decryptWithKey(payload, key);
-        } catch {
-          // fall through to legacy attempt — extremely rare collision
-        }
+      if (!key) {
+        throw new Error(
+          `Encryption key id '${id}' is not configured. Add it to ` +
+            `ENCRYPTION_KEYS before decrypting rows written under that key.`,
+        );
       }
+      return decryptWithKey(payload, key);
     }
   }
-  const legacy = getKeyById(LEGACY_KEY_ID) ?? getActiveKey().key;
+  // Legacy bare-base64 row. Refuse to decrypt under the active key — that
+  // would give an opaque GCM tag error AND succeed silently with junk if a
+  // key collision ever occurs. Require the operator to keep the v1 key in
+  // `ENCRYPTION_KEYS` until rotation has fully drained legacy rows.
+  const legacy = getKeyById(LEGACY_KEY_ID);
+  if (!legacy) {
+    throw new Error(
+      "Found a legacy-format ciphertext but no v1 key is configured. " +
+        "Restore the original ENCRYPTION_KEY (or add a 'v1' entry to " +
+        "ENCRYPTION_KEYS) and run scripts/rotate-encryption-key.ts before " +
+        "removing it.",
+    );
+  }
   return decryptWithKey(encoded, legacy);
 }
 

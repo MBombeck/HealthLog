@@ -116,11 +116,13 @@ export async function rotateRefreshToken(input: {
 
   if (row.usedAt) {
     // Reuse-detection: a previously-consumed refresh token shouldn't be
-    // presented again. Treat as compromise — revoke every refresh token
-    // for this user/device family and the corresponding access tokens.
-    const where = row.deviceId
-      ? { userId: row.userId, deviceId: row.deviceId, revokedAt: null }
-      : { userId: row.userId, revokedAt: null };
+    // presented again. Treat as compromise. Defence-in-depth justifies the
+    // user-wide blast radius: an attacker who stole the token could rotate
+    // without an X-Device-Id header (or with a different one); device-scoped
+    // revocation would leave the attacker's family alive on a "no-device" or
+    // different-device branch. The legitimate user logging back in is the
+    // small price; an undetected stolen-token replay is the bigger problem.
+    const where = { userId: row.userId, revokedAt: null };
     const compromised = await prisma.refreshToken.findMany({ where });
     await prisma.refreshToken.updateMany({
       where,
@@ -193,14 +195,30 @@ export async function rotateRefreshToken(input: {
   return { ok: true, bundle };
 }
 
-/** Revoke a specific refresh token (logout-on-device). */
+/** Revoke a specific refresh token (logout-on-device).
+ *  Also revokes the paired access token so a leaked access token cannot
+ *  outlive the refresh-token sibling that the user just killed. */
 export async function revokeRefreshToken(
   refreshToken: string,
 ): Promise<boolean> {
   const hash = hashToken(refreshToken);
+  const row = await prisma.refreshToken.findUnique({
+    where: { tokenHash: hash },
+    select: { accessTokenHash: true, revokedAt: true },
+  });
+  if (!row || row.revokedAt) return false;
+
   const result = await prisma.refreshToken.updateMany({
     where: { tokenHash: hash, revokedAt: null },
     data: { revokedAt: new Date() },
   });
-  return result.count > 0;
+  if (result.count === 0) return false;
+
+  if (row.accessTokenHash) {
+    await prisma.apiToken.updateMany({
+      where: { tokenHash: row.accessTokenHash, revoked: false },
+      data: { revoked: true },
+    });
+  }
+  return true;
 }

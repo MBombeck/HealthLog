@@ -156,14 +156,12 @@ async function main() {
       adminAiKeyEncrypted: true,
       webPushVapidPrivateKeyEncrypted: true,
       githubIssueTokenEncrypted: true,
-      bugReportTokenEncrypted: true,
     },
   });
   const appFields = [
     "adminAiKeyEncrypted",
     "webPushVapidPrivateKeyEncrypted",
     "githubIssueTokenEncrypted",
-    "bugReportTokenEncrypted",
   ] as const;
   for (const field of appFields) {
     const r = await rotateField(
@@ -179,6 +177,51 @@ async function main() {
       },
     );
     results.push(r);
+  }
+
+  // ───── NotificationChannel.config ─────
+  // Channel config (Telegram chat id, ntfy topic, etc.) is encrypted JSON.
+  // Skipping these on rotation would leave channels permanently undecryptable
+  // once the operator drops `v1` from the key map.
+  const channels = await prisma.notificationChannel.findMany({
+    select: { id: true, config: true },
+  });
+  results.push(
+    await rotateField(
+      "NotificationChannel",
+      "config",
+      channels,
+      (c) => c.config,
+      async (id, ciphertext) => {
+        await prisma.notificationChannel.update({
+          where: { id },
+          data: { config: ciphertext },
+        });
+      },
+    ),
+  );
+
+  // ───── PushSubscription.{p256dh, auth} ─────
+  // Web-push routing secrets — without these, the push endpoint is reachable
+  // but the browser ignores the message (auth tag mismatch).
+  const subs = await prisma.pushSubscription.findMany({
+    select: { id: true, p256dh: true, auth: true },
+  });
+  for (const field of ["p256dh", "auth"] as const) {
+    results.push(
+      await rotateField(
+        "PushSubscription",
+        field,
+        subs,
+        (s) => s[field],
+        async (id, ciphertext) => {
+          await prisma.pushSubscription.update({
+            where: { id },
+            data: { [field]: ciphertext } as Record<string, string>,
+          });
+        },
+      ),
+    );
   }
 
   console.log("\n=== Rotation summary ===");

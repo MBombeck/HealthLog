@@ -923,10 +923,17 @@ async function handleOffhostBackup(jobs: Job<OffhostBackupPayload>[]) {
       const report = await runOffhostBackup(p);
       evt.addMeta("offhost_backup_uploaded", report.uploaded);
       evt.addMeta("offhost_backup_failed", report.failed);
-      evt.addMeta("offhost_backup_pruned", report.pruned);
       evt.addMeta("offhost_backup_total_users", report.totalUsers);
       evt.addMeta("offhost_backup_endpoint", report.config.endpoint);
       evt.addMeta("offhost_backup_bucket", report.config.bucket);
+      // Per-user failure detail is also emitted as warnings inside
+      // runOffhostBackup; echo a structured digest for at-a-glance triage.
+      if (report.failures.length > 0) {
+        evt.addMeta(
+          "offhost_backup_failures",
+          JSON.stringify(report.failures.slice(0, 10)),
+        );
+      }
     } catch (err) {
       // Not configured ⇒ skip silently with a warning, not an error.
       evt.addWarning(`offhost-backup skipped/failed: ${err}`);

@@ -3,6 +3,10 @@ import type { Instrumentation } from "next";
 export async function register() {
   // Only start the worker on the Node.js server runtime (not Edge, not build)
   if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { shouldRunWorker } = await import("@/lib/process-type");
+    // Web-only container — the dedicated worker service runs the queues.
+    if (!shouldRunWorker()) return;
+
     const { WideEventBuilder } = await import("@/lib/logging/event-builder");
     const { emitIfSampled } = await import("@/lib/logging/transports");
 
