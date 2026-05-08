@@ -297,383 +297,387 @@ export default function SettingsPage() {
         </p>
       </div>
 
-        {user.role === "ADMIN" && (
-          <div className="bg-card border-border mb-6 rounded-xl border p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Shield className="text-primary h-5 w-5" />
-                  <h2 className="text-lg font-semibold">
-                    {t("settings.adminAreaTitle")}
-                  </h2>
-                </div>
-                <p className="text-muted-foreground text-sm">
-                  {t("settings.adminAreaDescription")}
-                </p>
-              </div>
-              <Button asChild variant="outline">
-                <Link href="/admin">
-                  <Shield className="mr-2 h-4 w-4" />
-                  {t("settings.openAdminConsole")}
-                </Link>
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-8">
-          <section id="section-allgemein" className="scroll-mt-28 space-y-3">
-            <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
-              {t("settings.categoryGeneral")}
-            </h2>
-
-            {/* Profile Section */}
-            <div
-              id="profil"
-              className="bg-card border-border rounded-xl border p-6"
-            >
-              <div className="mb-4 flex items-center gap-2">
-                <User className="text-primary h-5 w-5" />
+      {user.role === "ADMIN" && (
+        <div className="bg-card border-border mb-6 rounded-xl border p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <Shield className="text-primary h-5 w-5" />
                 <h2 className="text-lg font-semibold">
-                  {t("settings.profile")}
+                  {t("settings.adminAreaTitle")}
                 </h2>
               </div>
-              <form onSubmit={handleSaveProfile} className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="username">{t("settings.username")}</Label>
-                    <Input id="username" value={user.username} disabled />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">{t("auth.email")}</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder={t("auth.emailPlaceholder")}
-                      maxLength={320}
-                    />
-                  </div>
-                </div>
+              <p className="text-muted-foreground text-sm">
+                {t("settings.adminAreaDescription")}
+              </p>
+            </div>
+            <Button asChild variant="outline">
+              <Link href="/admin">
+                <Shield className="mr-2 h-4 w-4" />
+                {t("settings.openAdminConsole")}
+              </Link>
+            </Button>
+          </div>
+        </div>
+      )}
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="gender">{t("settings.gender")}</Label>
-                    <select
-                      id="gender"
-                      value={gender}
-                      onChange={(e) => setGender(e.target.value)}
-                      className="border-input bg-background text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-                    >
-                      <option value="">{t("settings.genderNone")}</option>
-                      <option value="MALE">{t("settings.genderMale")}</option>
-                      <option value="FEMALE">
-                        {t("settings.genderFemale")}
+      <div className="space-y-8">
+        <section id="section-allgemein" className="scroll-mt-28 space-y-3">
+          <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+            {t("settings.categoryGeneral")}
+          </h2>
+
+          {/* Profile Section */}
+          <div
+            id="profil"
+            className="bg-card border-border rounded-xl border p-6"
+          >
+            <div className="mb-4 flex items-center gap-2">
+              <User className="text-primary h-5 w-5" />
+              <h2 className="text-lg font-semibold">{t("settings.profile")}</h2>
+            </div>
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="username">{t("settings.username")}</Label>
+                  <Input id="username" value={user.username} disabled />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">{t("auth.email")}</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={t("auth.emailPlaceholder")}
+                    maxLength={320}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="gender">{t("settings.gender")}</Label>
+                  <select
+                    id="gender"
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="border-input bg-background text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                  >
+                    <option value="">{t("settings.genderNone")}</option>
+                    <option value="MALE">{t("settings.genderMale")}</option>
+                    <option value="FEMALE">{t("settings.genderFemale")}</option>
+                  </select>
+                  <p className="text-muted-foreground text-xs">
+                    {t("settings.genderHint")}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="height">{t("settings.height")}</Label>
+                  <Input
+                    id="height"
+                    type="number"
+                    value={heightCm}
+                    onChange={(e) => setHeightCm(e.target.value)}
+                    placeholder="175"
+                    min={50}
+                    max={300}
+                    step={0.1}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="dob">{t("settings.dateOfBirth")}</Label>
+                  <Input
+                    id="dob"
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
+                    max={new Date().toISOString().slice(0, 10)}
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    {t("settings.dateOfBirthHint")}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="language-select">
+                    {t("settings.language")}
+                  </Label>
+                  <select
+                    id="language-select"
+                    value={locale}
+                    onChange={(e) => setLocale(e.target.value as Locale)}
+                    className="border-input bg-background text-foreground ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                  >
+                    {locales.map((loc) => (
+                      <option key={loc} value={loc}>
+                        {localeLabels[loc as Locale]}
                       </option>
-                    </select>
-                    <p className="text-muted-foreground text-xs">
-                      {t("settings.genderHint")}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="height">{t("settings.height")}</Label>
-                    <Input
-                      id="height"
-                      type="number"
-                      value={heightCm}
-                      onChange={(e) => setHeightCm(e.target.value)}
-                      placeholder="175"
-                      min={50}
-                      max={300}
-                      step={0.1}
-                    />
-                  </div>
+                    ))}
+                  </select>
+                  <p className="text-muted-foreground text-xs">
+                    {t("settings.languageDescription")}
+                  </p>
                 </div>
+              </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="dob">{t("settings.dateOfBirth")}</Label>
-                    <Input
-                      id="dob"
-                      type="date"
-                      value={dateOfBirth}
-                      onChange={(e) => setDateOfBirth(e.target.value)}
-                      max={new Date().toISOString().slice(0, 10)}
-                    />
-                    <p className="text-muted-foreground text-xs">
-                      {t("settings.dateOfBirthHint")}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="language-select">
-                      {t("settings.language")}
+              {saveMsg && (
+                <p
+                  role="alert"
+                  className={`text-sm ${
+                    saveMsgType === "success"
+                      ? "text-dracula-green"
+                      : "text-destructive"
+                  }`}
+                >
+                  {saveMsg}
+                </p>
+              )}
+
+              <div className="flex justify-end">
+                <Button type="submit" disabled={saving}>
+                  {saving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="mr-2 h-4 w-4" />
+                  )}
+                  {t("common.save")}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section id="section-sicherheit" className="scroll-mt-28 space-y-3">
+          <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+            {t("settings.security")}
+          </h2>
+
+          <div
+            id="passkeys"
+            className="bg-card border-border scroll-mt-28 rounded-xl border p-6"
+          >
+            <div className="mb-4 flex items-center gap-2">
+              <Shield className="text-primary h-5 w-5" />
+              <h2 className="text-lg font-semibold">
+                {t("settings.passkeys")}
+              </h2>
+            </div>
+            <PasskeyListSection isAuthenticated={isAuthenticated} />
+            <div className="mt-4 flex justify-end">
+              <Button
+                variant="outline"
+                onClick={handleAddPasskey}
+                disabled={passkeyLoading}
+              >
+                {passkeyLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <KeyRound className="mr-2 h-4 w-4" />
+                )}
+                {t("settings.addPasskey")}
+              </Button>
+              {passkeyMsg && (
+                <p
+                  role="alert"
+                  className={`mt-2 text-sm ${
+                    passkeyMsgType === "success"
+                      ? "text-dracula-green"
+                      : "text-destructive"
+                  }`}
+                >
+                  {passkeyMsg}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div
+            id="passwort"
+            className="bg-card border-border scroll-mt-28 rounded-xl border p-6"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Shield className="text-primary h-5 w-5" />
+                <h2 className="text-lg font-semibold">
+                  {t("settings.passwordReset")}
+                </h2>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPasswordDialogOpen(true)}
+              >
+                {t("settings.changePassword")}
+              </Button>
+            </div>
+            <p className="text-muted-foreground mt-1 text-xs">
+              {t("settings.changePasswordDescription")}
+            </p>
+          </div>
+
+          <Dialog
+            open={passwordDialogOpen}
+            onOpenChange={(open) => {
+              setPasswordDialogOpen(open);
+              if (!open) {
+                setCurrentPassword("");
+                setNewPassword("");
+                setConfirmPassword("");
+                setPasswordMsg(null);
+                setPasswordMsgType(null);
+              }
+            }}
+          >
+            <DialogContent className="sm:max-w-xl">
+              <DialogHeader>
+                <DialogTitle>{t("settings.passwordReset")}</DialogTitle>
+                <DialogDescription>
+                  {t("settings.changePasswordDescription")}
+                </DialogDescription>
+              </DialogHeader>
+
+              <form onSubmit={handleChangePassword} className="space-y-3">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="current-password">
+                      {t("settings.currentPassword")}
                     </Label>
-                    <select
-                      id="language-select"
-                      value={locale}
-                      onChange={(e) => setLocale(e.target.value as Locale)}
-                      className="border-input bg-background text-foreground ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-                    >
-                      {locales.map((loc) => (
-                        <option key={loc} value={loc}>
-                          {localeLabels[loc as Locale]}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-muted-foreground text-xs">
-                      {t("settings.languageDescription")}
-                    </p>
+                    <PasswordInput
+                      id="current-password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-password">
+                      {t("settings.newPassword")}
+                    </Label>
+                    <PasswordInput
+                      id="new-password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="confirm-password">
+                      {t("settings.confirmNewPassword")}
+                    </Label>
+                    <PasswordInput
+                      id="confirm-password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
                   </div>
                 </div>
 
-                {saveMsg && (
+                {passwordMsg && (
                   <p
                     role="alert"
                     className={`text-sm ${
-                      saveMsgType === "success"
+                      passwordMsgType === "success"
                         ? "text-dracula-green"
                         : "text-destructive"
                     }`}
                   >
-                    {saveMsg}
+                    {passwordMsg}
                   </p>
                 )}
 
-                <div className="flex justify-end">
-                  <Button type="submit" disabled={saving}>
-                    {saving ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="mr-2 h-4 w-4" />
-                    )}
-                    {t("common.save")}
-                  </Button>
-                </div>
-              </form>
-            </div>
-          </section>
-
-          <section id="section-sicherheit" className="scroll-mt-28 space-y-3">
-            <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">{t("settings.security")}</h2>
-
-            <div
-              id="passkeys"
-              className="bg-card border-border scroll-mt-28 rounded-xl border p-6"
-            >
-              <div className="mb-4 flex items-center gap-2">
-                <Shield className="text-primary h-5 w-5" />
-                <h2 className="text-lg font-semibold">
-                  {t("settings.passkeys")}
-                </h2>
-              </div>
-              <PasskeyListSection isAuthenticated={isAuthenticated} />
-              <div className="mt-4 flex justify-end">
                 <Button
+                  type="submit"
                   variant="outline"
-                  onClick={handleAddPasskey}
-                  disabled={passkeyLoading}
+                  disabled={passwordSaving}
                 >
-                  {passkeyLoading ? (
+                  {passwordSaving ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
-                    <KeyRound className="mr-2 h-4 w-4" />
+                    <Save className="mr-2 h-4 w-4" />
                   )}
-                  {t("settings.addPasskey")}
-                </Button>
-                {passkeyMsg && (
-                  <p
-                    role="alert"
-                    className={`mt-2 text-sm ${
-                      passkeyMsgType === "success"
-                        ? "text-dracula-green"
-                        : "text-destructive"
-                    }`}
-                  >
-                    {passkeyMsg}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div id="passwort" className="bg-card border-border scroll-mt-28 rounded-xl border p-6">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Shield className="text-primary h-5 w-5" />
-                  <h2 className="text-lg font-semibold">
-                    {t("settings.passwordReset")}
-                  </h2>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setPasswordDialogOpen(true)}
-                >
                   {t("settings.changePassword")}
                 </Button>
-              </div>
-              <p className="text-muted-foreground mt-1 text-xs">
-                {t("settings.changePasswordDescription")}
-              </p>
-            </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </section>
 
-            <Dialog
-              open={passwordDialogOpen}
-              onOpenChange={(open) => {
-                setPasswordDialogOpen(open);
-                if (!open) {
-                  setCurrentPassword("");
-                  setNewPassword("");
-                  setConfirmPassword("");
-                  setPasswordMsg(null);
-                  setPasswordMsgType(null);
-                }
-              }}
-            >
-              <DialogContent className="sm:max-w-xl">
-                <DialogHeader>
-                  <DialogTitle>{t("settings.passwordReset")}</DialogTitle>
-                  <DialogDescription>
-                    {t("settings.changePasswordDescription")}
-                  </DialogDescription>
-                </DialogHeader>
-
-                <form onSubmit={handleChangePassword} className="space-y-3">
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="current-password">
-                        {t("settings.currentPassword")}
-                      </Label>
-                      <PasswordInput
-                        id="current-password"
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="new-password">
-                        {t("settings.newPassword")}
-                      </Label>
-                      <PasswordInput
-                        id="new-password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="confirm-password">
-                        {t("settings.confirmNewPassword")}
-                      </Label>
-                      <PasswordInput
-                        id="confirm-password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  {passwordMsg && (
-                    <p
-                      role="alert"
-                      className={`text-sm ${
-                        passwordMsgType === "success"
-                          ? "text-dracula-green"
-                          : "text-destructive"
-                      }`}
-                    >
-                      {passwordMsg}
-                    </p>
-                  )}
-
-                  <Button
-                    type="submit"
-                    variant="outline"
-                    disabled={passwordSaving}
-                  >
-                    {passwordSaving ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="mr-2 h-4 w-4" />
-                    )}
-                    {t("settings.changePassword")}
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
-
-          </section>
-
-          {hasNotificationServices && (
-            <section
-              id="section-benachrichtigungen"
-              className="scroll-mt-28 space-y-3"
-            >
-              <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
-                {t("settings.categoryNotifications")}
-              </h2>
-              {serviceAvailability.telegramGlobal && (
-                <TelegramSection
-                  id="telegram"
-                  isAuthenticated={isAuthenticated}
-                />
-              )}
-              {serviceAvailability.ntfyGlobal && (
-                <NtfySection id="ntfy" isAuthenticated={isAuthenticated} />
-              )}
-              {serviceAvailability.webPushGlobal && (
-                <WebPushSection id="web-push" />
-              )}
-            </section>
-          )}
-
+        {hasNotificationServices && (
           <section
-            id="section-personalization"
+            id="section-benachrichtigungen"
             className="scroll-mt-28 space-y-3"
           >
             <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
-              {t("settings.categoryPersonalization")}
+              {t("settings.categoryNotifications")}
             </h2>
-            <DashboardLayoutSection id="dashboard-layout" />
-            <ThresholdsSection id="thresholds" />
+            {serviceAvailability.telegramGlobal && (
+              <TelegramSection
+                id="telegram"
+                isAuthenticated={isAuthenticated}
+              />
+            )}
+            {serviceAvailability.ntfyGlobal && (
+              <NtfySection id="ntfy" isAuthenticated={isAuthenticated} />
+            )}
+            {serviceAvailability.webPushGlobal && (
+              <WebPushSection id="web-push" />
+            )}
           </section>
+        )}
 
-          <section id="section-integration" className="scroll-mt-28 space-y-3">
+        <section
+          id="section-personalization"
+          className="scroll-mt-28 space-y-3"
+        >
+          <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+            {t("settings.categoryPersonalization")}
+          </h2>
+          <DashboardLayoutSection id="dashboard-layout" />
+          <ThresholdsSection id="thresholds" />
+        </section>
+
+        <section id="section-integration" className="scroll-mt-28 space-y-3">
+          <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+            {t("settings.categoryIntegration")}
+          </h2>
+          <WithingsSection id="withings" isAuthenticated={isAuthenticated} />
+          {serviceAvailability.moodLogGlobal !== false && (
+            <MoodLogSection t={t} />
+          )}
+          <InsightsSettingsSection
+            id="insights"
+            isAuthenticated={isAuthenticated}
+          />
+        </section>
+
+        {serviceAvailability.apiGlobal && (
+          <section id="section-api" className="scroll-mt-28 space-y-3">
             <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
-              {t("settings.categoryIntegration")}
+              {t("settings.categoryApi")}
             </h2>
-            <WithingsSection id="withings" isAuthenticated={isAuthenticated} />
-            {serviceAvailability.moodLogGlobal !== false && <MoodLogSection t={t} />}
-            <InsightsSettingsSection
-              id="insights"
+            <ApiEndpointsSection id="api-endpoints" />
+            <ApiTokensSection
+              id="api-tokens"
               isAuthenticated={isAuthenticated}
             />
           </section>
+        )}
 
-          {serviceAvailability.apiGlobal && (
-            <section id="section-api" className="scroll-mt-28 space-y-3">
-              <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
-                {t("settings.categoryApi")}
-              </h2>
-              <ApiEndpointsSection id="api-endpoints" />
-              <ApiTokensSection
-                id="api-tokens"
-                isAuthenticated={isAuthenticated}
-              />
-            </section>
-          )}
+        <section id="section-export" className="scroll-mt-28 space-y-3">
+          <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+            {t("settings.export")}
+          </h2>
+          <ExportSection id="export" />
+        </section>
 
-          <section id="section-export" className="scroll-mt-28 space-y-3">
-            <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">{t("settings.export")}</h2>
-            <ExportSection id="export" />
-          </section>
-
-          <section id="section-danger-zone" className="scroll-mt-28 space-y-3">
-            <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
-              {t("settings.dangerZoneTitle")}
-            </h2>
-            <DataResetSection id="daten" />
-          </section>
-        </div>
+        <section id="section-danger-zone" className="scroll-mt-28 space-y-3">
+          <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+            {t("settings.dangerZoneTitle")}
+          </h2>
+          <DataResetSection id="daten" />
+        </section>
+      </div>
     </div>
   );
 }
@@ -827,7 +831,10 @@ function PasskeyListSection({ isAuthenticated }: { isAuthenticated: boolean }) {
         </table>
       </div>
       {deleteMsg && (
-        <div role="alert" className="text-destructive mt-2 flex items-center gap-2 text-sm">
+        <div
+          role="alert"
+          className="text-destructive mt-2 flex items-center gap-2 text-sm"
+        >
           <AlertTriangle className="h-4 w-4" />
           {deleteMsg}
         </div>
@@ -1326,7 +1333,8 @@ function ApiTokensSection({
           )}
           {latestActiveUse && (
             <Badge variant="outline" className="text-xs">
-              {t("settings.tokenTableLastUsed")}: {formatDateTime(latestActiveUse)}
+              {t("settings.tokenTableLastUsed")}:{" "}
+              {formatDateTime(latestActiveUse)}
             </Badge>
           )}
         </div>
@@ -1368,7 +1376,11 @@ function ApiTokensSection({
           </div>
         )}
 
-        {tokenMsg && <p role="alert" className="text-destructive text-sm">{tokenMsg}</p>}
+        {tokenMsg && (
+          <p role="alert" className="text-destructive text-sm">
+            {tokenMsg}
+          </p>
+        )}
 
         {/* Token table (active) */}
         <div>
@@ -1586,9 +1598,8 @@ function ExportSection({ id }: { id: string }) {
       if (!res.ok) return;
       const json = await res.json();
 
-      const { generateDoctorReportPDF } = await import(
-        "@/lib/doctor-report-pdf"
-      );
+      const { generateDoctorReportPDF } =
+        await import("@/lib/doctor-report-pdf");
       const doc = generateDoctorReportPDF(json.data, { t, locale });
       const fileSlug = locale === "de" ? "gesundheitsbericht" : "health-report";
       doc.save(`${fileSlug}-${new Date().toISOString().slice(0, 10)}.pdf`);
@@ -2445,7 +2456,12 @@ function MoodLogSection({ t }: { t: (key: string) => string }) {
       });
       if (res.ok) {
         const json = await res.json();
-        setMsg(t("settings.moodLogSyncResult").replace("{count}", String(json.data.imported)));
+        setMsg(
+          t("settings.moodLogSyncResult").replace(
+            "{count}",
+            String(json.data.imported),
+          ),
+        );
         setMsgType("success");
         await refetchStatus();
       } else {
@@ -2469,19 +2485,29 @@ function MoodLogSection({ t }: { t: (key: string) => string }) {
   }
 
   return (
-    <div id="moodlog" className="bg-card border-border scroll-mt-28 rounded-xl border p-6 space-y-4">
+    <div
+      id="moodlog"
+      className="bg-card border-border scroll-mt-28 space-y-4 rounded-xl border p-6"
+    >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <Smile className="text-primary h-5 w-5" />
           <h2 className="text-lg font-semibold">
-            <a href="https://moodlog.onback.io" target="_blank" rel="noopener noreferrer" className="hover:underline">
+            <a
+              href="https://moodlog.onback.io"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline"
+            >
               {t("settings.moodLogTitle")}
             </a>
           </h2>
         </div>
         {status?.configured && (
           <Badge className="border-dracula-green/30 bg-dracula-green/15 text-dracula-green">
-            {status.enabled ? t("settings.withingsConnected") : t("settings.configured")}
+            {status.enabled
+              ? t("settings.withingsConnected")
+              : t("settings.configured")}
           </Badge>
         )}
       </div>
@@ -2512,7 +2538,11 @@ function MoodLogSection({ t }: { t: (key: string) => string }) {
             onChange={(e) => setApiKey(e.target.value)}
           />
         </div>
-        <Button type="submit" disabled={saving || (!url.trim() && !apiKey.trim())} size="sm">
+        <Button
+          type="submit"
+          disabled={saving || (!url.trim() && !apiKey.trim())}
+          size="sm"
+        >
           {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <Save className="mr-2 h-4 w-4" />
           {t("common.save")}
@@ -2527,7 +2557,11 @@ function MoodLogSection({ t }: { t: (key: string) => string }) {
             <div>
               <Label>{t("settings.moodLogWebhookSecret")}</Label>
               <div className="flex gap-2">
-                <Input value={status.webhookSecret} readOnly className="font-mono text-xs" />
+                <Input
+                  value={status.webhookSecret}
+                  readOnly
+                  className="font-mono text-xs"
+                />
                 <Button
                   variant="outline"
                   size="sm"
@@ -2540,7 +2574,7 @@ function MoodLogSection({ t }: { t: (key: string) => string }) {
                   {t("common.copied").replace("!", "")}
                 </Button>
               </div>
-              <p className="text-muted-foreground text-xs mt-1">
+              <p className="text-muted-foreground mt-1 text-xs">
                 {t("settings.moodLogWebhookSecretHelp")}
               </p>
             </div>
@@ -2581,7 +2615,9 @@ function MoodLogSection({ t }: { t: (key: string) => string }) {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>{t("settings.moodLogFullSyncTitle")}</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    {t("settings.moodLogFullSyncTitle")}
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
                     {t("settings.moodLogFullSyncDescription")}
                   </AlertDialogDescription>
@@ -2604,7 +2640,9 @@ function MoodLogSection({ t }: { t: (key: string) => string }) {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>{t("settings.moodLogDisconnectTitle")}</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    {t("settings.moodLogDisconnectTitle")}
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
                     {t("settings.moodLogDisconnectDescription")}
                   </AlertDialogDescription>
@@ -2623,7 +2661,10 @@ function MoodLogSection({ t }: { t: (key: string) => string }) {
 
       {/* Status message */}
       {msg && (
-        <p role="alert" className={`text-sm ${msgType === "error" ? "text-destructive" : "text-dracula-green"}`}>
+        <p
+          role="alert"
+          className={`text-sm ${msgType === "error" ? "text-destructive" : "text-dracula-green"}`}
+        >
           {msg}
         </p>
       )}
@@ -2694,7 +2735,8 @@ function InsightsSettingsSection({
     }
   }, [queryClient, t]);
 
-  const hasProvider = settings?.codexStatus === "connected" || settings?.hasAdminKey;
+  const hasProvider =
+    settings?.codexStatus === "connected" || settings?.hasAdminKey;
 
   async function handleConnect() {
     window.location.href = "/api/auth/codex/authorize";
@@ -2704,7 +2746,9 @@ function InsightsSettingsSection({
     setDisconnecting(true);
     setMsg(null);
     try {
-      const res = await fetch("/api/auth/codex/disconnect", { method: "DELETE" });
+      const res = await fetch("/api/auth/codex/disconnect", {
+        method: "DELETE",
+      });
       if (!res.ok) {
         const json = await res.json();
         throw new Error(json.error);
@@ -2802,9 +2846,14 @@ function InsightsSettingsSection({
               <div>
                 <p className="text-sm font-medium">ChatGPT verbunden</p>
                 <p className="text-muted-foreground text-xs">
-                  Insights werden über dein ChatGPT-Abo generiert — keine zusätzlichen Kosten.
+                  Insights werden über dein ChatGPT-Abo generiert — keine
+                  zusätzlichen Kosten.
                   {settings.codexConnectedAt && (
-                    <> Verbunden seit {formatDateTime(settings.codexConnectedAt)}.</>
+                    <>
+                      {" "}
+                      Verbunden seit {formatDateTime(settings.codexConnectedAt)}
+                      .
+                    </>
                   )}
                 </p>
               </div>
@@ -2828,17 +2877,23 @@ function InsightsSettingsSection({
               <div>
                 <p className="text-sm font-medium">Mit ChatGPT verbinden</p>
                 <p className="text-muted-foreground text-xs">
-                  Verbinde dein ChatGPT Pro/Max-Konto um KI-gestützte Gesundheitsanalysen basierend auf
-                  aktuellen medizinischen Leitlinien zu erhalten. Keine zusätzlichen API-Kosten.
+                  Verbinde dein ChatGPT Pro/Max-Konto um KI-gestützte
+                  Gesundheitsanalysen basierend auf aktuellen medizinischen
+                  Leitlinien zu erhalten. Keine zusätzlichen API-Kosten.
                 </p>
               </div>
-              <Button variant="outline" onClick={handleConnect} className="w-full sm:w-auto">
+              <Button
+                variant="outline"
+                onClick={handleConnect}
+                className="w-full sm:w-auto"
+              >
                 <Sparkles className="mr-2 h-4 w-4" />
                 Mit ChatGPT verbinden
               </Button>
               {settings?.hasAdminKey && (
                 <p className="text-muted-foreground text-xs">
-                  Alternativ nutzt HealthLog den vom Administrator konfigurierten KI-Anbieter.
+                  Alternativ nutzt HealthLog den vom Administrator
+                  konfigurierten KI-Anbieter.
                 </p>
               )}
             </div>
@@ -2986,7 +3041,20 @@ function UserAIProviderSubsection() {
     setTesting(true);
     setTestMsg(null);
     try {
-      const res = await fetch("/api/ai/test", { method: "POST" });
+      // v1.4: pass the *current* dropdown / input selection so the test
+      // honours unsaved changes. Plaintext keys never persist server-side.
+      const overrideBody: Record<string, string> = {};
+      if (provider) overrideBody.provider = provider;
+      if (model.trim()) overrideBody.model = model.trim();
+      if (baseUrl.trim()) overrideBody.baseUrl = baseUrl.trim();
+      if (anthropicKey.trim()) overrideBody.anthropicKey = anthropicKey.trim();
+      if (localKey.trim()) overrideBody.localKey = localKey.trim();
+      const hasOverride = Object.keys(overrideBody).length > 0;
+      const res = await fetch("/api/ai/test", {
+        method: "POST",
+        headers: hasOverride ? { "Content-Type": "application/json" } : {},
+        body: hasOverride ? JSON.stringify(overrideBody) : undefined,
+      });
       const json = await res.json();
       if (!res.ok) {
         setTestMsg(json.error || `HTTP ${res.status}`);

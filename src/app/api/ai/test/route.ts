@@ -1,19 +1,62 @@
+import type { NextRequest } from "next/server";
+import { z } from "zod/v4";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { resolveProvider } from "@/lib/ai/provider";
-import { apiSuccess, apiError } from "@/lib/api-response";
+import {
+  resolveProviderForTest,
+  AITestConfigError,
+  type AITestOverride,
+} from "@/lib/ai/provider";
+import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 
 export const dynamic = "force-dynamic";
 
-export const POST = apiHandler(async () => {
+const overrideSchema = z
+  .object({
+    provider: z
+      .enum(["OPENAI", "ANTHROPIC", "LOCAL", "CHATGPT_OAUTH"])
+      .optional()
+      .nullable(),
+    model: z.string().min(1).max(120).optional().nullable(),
+    baseUrl: z.string().url().max(2048).optional().nullable(),
+    anthropicKey: z.string().min(1).max(500).optional().nullable(),
+    localKey: z.string().min(1).max(500).optional().nullable(),
+  })
+  .strict();
+
+export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
   annotate({ action: { name: "ai.test" } });
 
   const rl = await checkRateLimit(`ai-test:${user.id}`, 5, 60_000);
   if (!rl.allowed) return apiError("Too many test requests", 429);
 
-  const provider = await resolveProvider(user.id);
+  // Body is optional. Empty body → behaves like before (test the saved
+  // config). Non-empty body → tests the unsaved selection without
+  // mutating the user row. Plaintext keys never persist.
+  let override: AITestOverride = {};
+  const contentLength = Number(request.headers.get("content-length") ?? "0");
+  if (contentLength > 0) {
+    const { data, error } = await safeJson<unknown>(request);
+    if (error) return error;
+    const parsed = overrideSchema.safeParse(data);
+    if (!parsed.success) {
+      return apiError("Invalid override payload", 422);
+    }
+    override = parsed.data;
+  }
+
+  let provider;
+  try {
+    provider = await resolveProviderForTest(user.id, override);
+  } catch (e) {
+    if (e instanceof AITestConfigError) {
+      return apiError(e.message, e.status);
+    }
+    throw e;
+  }
+
   if (provider.type === "none") {
     return apiError("No AI provider configured", 422);
   }
