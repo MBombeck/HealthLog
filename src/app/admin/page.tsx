@@ -62,6 +62,7 @@ import { PasswordStrength } from "@/components/ui/password-strength";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { toast } from "sonner";
+import { StatusCardGrid } from "@/components/admin/status-card-grid";
 
 function PasswordInput(props: React.ComponentProps<typeof Input>) {
   const [visible, setVisible] = useState(false);
@@ -161,6 +162,8 @@ export default function AdminPage() {
         </h1>
         <p className="text-muted-foreground text-sm">{t("admin.subtitle")}</p>
       </div>
+
+      <StatusCardGrid />
 
       <div className="space-y-6">
         <SystemStatusSection id="section-system-status" />
