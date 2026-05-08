@@ -152,42 +152,80 @@ export interface BodyFatClassification {
   severity: "normal" | "warning" | "danger";
 }
 
+/**
+ * Classify a body-fat percentage according to the ACE (American Council
+ * on Exercise) standard table. Source:
+ *   https://www.acefitness.org/resources/everyone/blog/112/what-are-the-guidelines-for-percentage-of-body-fat-loss/
+ *
+ * v1.3.3 used `essential = 6 (M)` / `14 (F)` for the lower boundary,
+ * which actually matches ACE's *Athletes* lower bound — readings below
+ * that bound were mislabelled "Essential" instead of either "Below
+ * essential" (a danger floor) or "Essential" proper (the 2-5 / 10-13
+ * band, which is athletic-extreme but not pathological). v1.4 splits
+ * that range into a danger band below the ACE essential floor and the
+ * actual essential band as a warning.
+ *
+ * Cross-checked against:
+ *   - Heyward V & Wagner D, "Applied Body Composition Assessment" 2nd
+ *     ed (ACE's underlying source).
+ *   - Gallagher D et al., "Healthy percentage body fat ranges: an
+ *     approach for developing guidelines based on body mass index."
+ *     Am J Clin Nutr. 2000.
+ *     https://academic.oup.com/ajcn/article/72/3/694/4729363
+ *   - NIH NHLBI Practical Guide on the Identification, Evaluation, and
+ *     Treatment of Overweight and Obesity in Adults (2000) — does NOT
+ *     publish percent-fat bands; flagged here as a hallucination
+ *     avoidance reminder.
+ */
 export function classifyBodyFat(
   pct: number,
   gender: "MALE" | "FEMALE" | null,
   age?: number,
 ): BodyFatClassification {
   void age;
-  // Define thresholds per gender; null uses average of male/female
-  let essential: number;
+
+  // ACE bands per gender. Order: dangerFloor, essentialMax, athleteMax,
+  // fitnessMax, acceptableMax. Above acceptableMax = obese.
+  let dangerFloor: number;
+  let essentialMax: number;
   let athleteMax: number;
   let fitnessMax: number;
-  let averageMax: number;
+  let acceptableMax: number;
 
   if (gender === "MALE") {
-    essential = 6;
+    // ACE: essential 2-5, athletes 6-13, fitness 14-17, acceptable 18-24.
+    dangerFloor = 2;
+    essentialMax = 5;
     athleteMax = 13;
     fitnessMax = 17;
-    averageMax = 24;
+    acceptableMax = 24;
   } else if (gender === "FEMALE") {
-    essential = 14;
+    // ACE: essential 10-13, athletes 14-20, fitness 21-24, acceptable 25-31.
+    dangerFloor = 10;
+    essentialMax = 13;
     athleteMax = 20;
     fitnessMax = 24;
-    averageMax = 31;
+    acceptableMax = 31;
   } else {
-    // Average of male and female thresholds
-    essential = 10;
+    // Gender-neutral fallback: midpoint of M/F bands.
+    dangerFloor = 6;
+    essentialMax = 9;
     athleteMax = 16.5;
     fitnessMax = 20.5;
-    averageMax = 27.5;
+    acceptableMax = 27.5;
   }
 
-  if (pct < essential) {
+  if (pct < dangerFloor) {
+    // Below ACE essential floor — clinically concerning (immune /
+    // hormonal / cardiac risk in chronic depletion).
     return {
-      category: "Essential",
-      color: "#f1fa8c",
-      severity: "warning",
+      category: "Below essential",
+      color: "#ff5555",
+      severity: "danger",
     };
+  }
+  if (pct <= essentialMax) {
+    return { category: "Essential", color: "#f1fa8c", severity: "warning" };
   }
   if (pct <= athleteMax) {
     return { category: "Athletic", color: "#50fa7b", severity: "normal" };
@@ -195,12 +233,8 @@ export function classifyBodyFat(
   if (pct <= fitnessMax) {
     return { category: "Fitness", color: "#50fa7b", severity: "normal" };
   }
-  if (pct <= averageMax) {
-    return {
-      category: "Average",
-      color: "#ffb86c",
-      severity: "warning",
-    };
+  if (pct <= acceptableMax) {
+    return { category: "Acceptable", color: "#ffb86c", severity: "warning" };
   }
   return { category: "Obese", color: "#ff5555", severity: "danger" };
 }

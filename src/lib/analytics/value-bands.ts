@@ -111,11 +111,40 @@ export function buildWeightBandsFromHeight(
   ].filter((band) => band.max > band.min);
 }
 
+/**
+ * Body-fat target range — the "green" band shown on the dashboard /
+ * targets page / chart value-bands.
+ *
+ * Source: ACE (American Council on Exercise) body-composition standards
+ *   https://www.acefitness.org/resources/everyone/blog/112/what-are-the-guidelines-for-percentage-of-body-fat-loss/
+ * Bands per ACE:
+ *   - Essential: M 2-5 / F 10-13 (warning band, very low; below ACE
+ *     "essential" is dangerous)
+ *   - Athletes:  M 6-13 / F 14-20 (clinically lean)
+ *   - Fitness:   M 14-17 / F 21-24 (target floor for the typical
+ *     non-athlete)
+ *   - Acceptable:M 18-24 / F 25-31 (target ceiling)
+ *   - Obese:     M 25+   / F 32+   (warning)
+ *
+ * The "green" band combines Fitness + Acceptable so the typical user's
+ * realistic healthy range is shown, not the athlete band. Three sites
+ * had different numbers in v1.3.3 — this is now the single source of
+ * truth (targets/route.ts and chart value-bands import this helper).
+ *
+ * Cross-checked against:
+ *   - Heyward V & Wagner D, "Applied Body Composition Assessment" 2nd ed
+ *     (the underlying source ACE references for its public table).
+ *   - WHO Expert Consultation 2008 ("Waist circumference and waist-hip
+ *     ratio") — does NOT publish percent-fat bands; included here only
+ *     to flag that "WHO body-fat thresholds" is a recurring
+ *     hallucination to avoid.
+ */
 export function getBodyFatTargetRange(gender: string | null | undefined): {
   min: number;
   max: number;
 } {
-  if (gender === "MALE") return { min: 10, max: 20 };
-  if (gender === "FEMALE") return { min: 18, max: 28 };
-  return { min: 12, max: 25 };
+  if (gender === "MALE") return { min: 14, max: 24 };
+  if (gender === "FEMALE") return { min: 21, max: 31 };
+  // Gender-neutral fallback: midpoint of male/female fitness+acceptable.
+  return { min: 17, max: 27 };
 }

@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { classifyBMI, classifyBP, generateAlerts } from "../classifications";
+import {
+  classifyBMI,
+  classifyBP,
+  classifyBodyFat,
+  generateAlerts,
+} from "../classifications";
 
 describe("classifyBMI", () => {
   it("classifies underweight", () => {
@@ -163,5 +168,54 @@ describe("generateAlerts", () => {
     );
     expect(lowAlert).toBeDefined();
     expect(highAlert).toBeDefined();
+  });
+});
+
+// v1.4 marathon — closes the body-fat ACE drift identified in the
+// medical-truthfulness audit. Below-essential is now a danger band,
+// "Essential" is the warning band proper, and the labels match ACE.
+describe("classifyBodyFat (ACE bands)", () => {
+  it("flags below-essential as danger for males", () => {
+    expect(classifyBodyFat(1, "MALE").category).toBe("Below essential");
+    expect(classifyBodyFat(1, "MALE").severity).toBe("danger");
+  });
+
+  it("flags below-essential as danger for females", () => {
+    expect(classifyBodyFat(8, "FEMALE").category).toBe("Below essential");
+    expect(classifyBodyFat(8, "FEMALE").severity).toBe("danger");
+  });
+
+  it("classifies the ACE essential band as a warning, not normal", () => {
+    expect(classifyBodyFat(4, "MALE").category).toBe("Essential");
+    expect(classifyBodyFat(4, "MALE").severity).toBe("warning");
+    expect(classifyBodyFat(11, "FEMALE").category).toBe("Essential");
+    expect(classifyBodyFat(11, "FEMALE").severity).toBe("warning");
+  });
+
+  it("recognises ACE Athletic and Fitness as normal", () => {
+    expect(classifyBodyFat(10, "MALE").category).toBe("Athletic");
+    expect(classifyBodyFat(15, "MALE").category).toBe("Fitness");
+    expect(classifyBodyFat(17, "FEMALE").category).toBe("Athletic");
+    expect(classifyBodyFat(22, "FEMALE").category).toBe("Fitness");
+    for (const result of [
+      classifyBodyFat(10, "MALE"),
+      classifyBodyFat(15, "MALE"),
+      classifyBodyFat(17, "FEMALE"),
+      classifyBodyFat(22, "FEMALE"),
+    ]) {
+      expect(result.severity).toBe("normal");
+    }
+  });
+
+  it("acceptable band uses the new label and warning severity", () => {
+    expect(classifyBodyFat(20, "MALE").category).toBe("Acceptable");
+    expect(classifyBodyFat(20, "MALE").severity).toBe("warning");
+    expect(classifyBodyFat(28, "FEMALE").category).toBe("Acceptable");
+    expect(classifyBodyFat(28, "FEMALE").severity).toBe("warning");
+  });
+
+  it("classifies obesity by ACE upper bound", () => {
+    expect(classifyBodyFat(30, "MALE").category).toBe("Obese");
+    expect(classifyBodyFat(35, "FEMALE").category).toBe("Obese");
   });
 });

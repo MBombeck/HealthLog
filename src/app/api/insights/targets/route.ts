@@ -27,6 +27,7 @@ import {
   getEffectiveRange,
   type ThresholdOverridesJson,
 } from "@/lib/analytics/effective-range";
+import { getBodyFatTargetRange } from "@/lib/analytics/value-bands";
 import { thresholdMetricForContext, resolveGlucoseUnit } from "@/lib/glucose";
 
 export const dynamic = "force-dynamic";
@@ -333,16 +334,12 @@ export const GET = apiHandler(async () => {
     const cls = classifyBodyFat(latestByType.BODY_FAT, gender, age);
     bodyFatClassification = { category: cls.category, color: cls.color };
   }
-  // Body fat ranges depend on gender/age; provide simplified ranges
-  let bodyFatRange: { min: number; max: number } | null = null;
-  if (gender === "MALE") {
-    bodyFatRange = { min: 14, max: 24 };
-  } else if (gender === "FEMALE") {
-    bodyFatRange = { min: 21, max: 31 };
-  } else if (age != null) {
-    // Average of male/female fitness+average ranges
-    bodyFatRange = { min: 17.5, max: 27.5 };
-  }
+  // Single source of truth for the body-fat green band lives in
+  // `value-bands.ts`. v1.3.3 had three different hardcoded ranges across
+  // value-bands.ts / targets/route.ts / classifications.ts; the v1.4
+  // marathon consolidated them onto `getBodyFatTargetRange` (ACE
+  // fitness + acceptable bands).
+  const bodyFatRange = age != null ? getBodyFatTargetRange(gender) : null;
   targets.push({
     type: "BODY_FAT",
     label: "Body fat",

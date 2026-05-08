@@ -93,9 +93,29 @@ export const METRIC_BOUNDS: Record<
 };
 
 /**
- * Blood-glucose defaults follow the ADA Standards of Care (2024) combined
- * with DGIM/DDG S3 guidelines. Values are in mg/dL — the canonical storage
- * unit. Display conversion to mmol/L happens at render time.
+ * Blood-glucose defaults. Values are mg/dL (canonical storage); display
+ * conversion to mmol/L happens at render time.
+ *
+ * Sources per context:
+ *   FASTING       70–99   ADA 2024 §6 (Glycemic Targets) — 80–130
+ *                         pre-prandial range narrowed to non-diabetic
+ *                         normal 70–99 (ADA Standards of Care 2024).
+ *                         https://diabetesjournals.org/care/article/47/Supplement_1/S111/153957
+ *   POSTPRANDIAL  70–140  WHO/IDF 2-h post-glucose-load <140 mg/dL
+ *                         normal-tolerance threshold.
+ *   RANDOM        70–140  Same threshold as postprandial; clinically
+ *                         less specific.
+ *   BEDTIME       90–150  *No published adult guideline.* ADA 2024
+ *                         publishes pre-prandial and post-prandial
+ *                         only. ISPAD 2022 (pediatric T1D) suggests
+ *                         80–140, which is HealthLog's closest
+ *                         comparator. The slightly higher floor
+ *                         (90 vs 80) reflects practical advice to
+ *                         avoid nocturnal hypoglycaemia and is well
+ *                         within the ADA pre-prandial daytime range.
+ *                         https://onlinelibrary.wiley.com/doi/10.1111/pedi.13455
+ *                         Citation in `messages/*.json` reflects this
+ *                         absence of an adult-specific source.
  */
 const GLUCOSE_DEFAULTS: Record<
   "FASTING" | "POSTPRANDIAL" | "RANDOM" | "BEDTIME",
