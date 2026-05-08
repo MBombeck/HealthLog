@@ -873,6 +873,46 @@
   "settings": {
     "title": "Settings",
     "subtitle": "Profile, Security & Connections",
+    "shell": {
+      "sectionsNav": "Settings sections"
+    },
+    "sections": {
+      "account": {
+        "title": "Account",
+        "description": "Profile, sign-in methods, and account deletion."
+      },
+      "integrations": {
+        "title": "Integrations",
+        "description": "Withings, moodLog, and other connected services."
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Telegram, ntfy, Web Push."
+      },
+      "dashboard": {
+        "title": "Dashboard",
+        "description": "Tile layout, thresholds."
+      },
+      "ai": {
+        "title": "AI Insights",
+        "description": "Provider, model, key."
+      },
+      "api": {
+        "title": "API & Tokens",
+        "description": "Bearer tokens for headless clients."
+      },
+      "advanced": {
+        "title": "Advanced",
+        "description": "Export, import, danger zone."
+      },
+      "about": {
+        "title": "About",
+        "description": "Version, license, links."
+      },
+      "placeholder": {
+        "coming_soon": "Moving here with the next release update."
+      }
+    },
     "sectionsTitle": "Settings",
     "categoryGeneral": "General",
     "categoryNotifications": "Notifications",

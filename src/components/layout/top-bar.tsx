@@ -66,7 +66,7 @@ export function TopBar() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem asChild>
-                <Link href="/settings" className="cursor-pointer">
+                <Link href="/settings/account" className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" />
                   {t("nav.settings")}
                 </Link>

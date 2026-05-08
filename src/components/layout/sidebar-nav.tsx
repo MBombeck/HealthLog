@@ -158,7 +158,10 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
       <div className="border-sidebar-border border-t p-3">
         <div className="flex items-center justify-center">
           <DropdownMenu>
-            <DropdownMenuTrigger aria-label={t("nav.userMenu")} className="hover:bg-accent shrink-0 rounded-md p-1.5 transition-colors focus-visible:ring-ring/50 focus-visible:ring-[3px] focus:outline-none">
+            <DropdownMenuTrigger
+              aria-label={t("nav.userMenu")}
+              className="hover:bg-accent focus-visible:ring-ring/50 shrink-0 rounded-md p-1.5 transition-colors focus:outline-none focus-visible:ring-[3px]"
+            >
               <Avatar className="h-8 w-8">
                 {gravatarUrl && (
                   <AvatarImage src={gravatarUrl} alt={user.username} />
@@ -193,7 +196,10 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
           )}
         </div>
         <DropdownMenu>
-          <DropdownMenuTrigger aria-label={t("nav.userMenu")} className="text-muted-foreground hover:text-foreground hover:bg-accent shrink-0 rounded-md p-1.5 transition-colors focus-visible:ring-ring/50 focus-visible:ring-[3px] focus:outline-none">
+          <DropdownMenuTrigger
+            aria-label={t("nav.userMenu")}
+            className="text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:ring-ring/50 shrink-0 rounded-md p-1.5 transition-colors focus:outline-none focus-visible:ring-[3px]"
+          >
             <MoreVertical className="h-4 w-4" />
           </DropdownMenuTrigger>
           {dropdownContent}
@@ -364,7 +370,9 @@ export function SidebarNav() {
                 <TooltipTrigger asChild>
                   <Link
                     href="/bugreport"
-                    aria-current={pathname === "/bugreport" ? "page" : undefined}
+                    aria-current={
+                      pathname === "/bugreport" ? "page" : undefined
+                    }
                     className={cn(
                       "flex items-center justify-center rounded-lg p-2.5 transition-colors",
                       pathname === "/bugreport"
@@ -382,11 +390,13 @@ export function SidebarNav() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
-                    href="/settings"
-                    aria-current={pathname === "/settings" ? "page" : undefined}
+                    href="/settings/account"
+                    aria-current={
+                      pathname.startsWith("/settings") ? "page" : undefined
+                    }
                     className={cn(
                       "flex items-center justify-center rounded-lg p-2.5 transition-colors",
-                      pathname === "/settings"
+                      pathname.startsWith("/settings")
                         ? "bg-primary/10 text-primary"
                         : "text-foreground hover:bg-accent",
                     )}
@@ -415,11 +425,13 @@ export function SidebarNav() {
                 {t("nav.bugreport")}
               </Link>
               <Link
-                href="/settings"
-                aria-current={pathname === "/settings" ? "page" : undefined}
+                href="/settings/account"
+                aria-current={
+                  pathname.startsWith("/settings") ? "page" : undefined
+                }
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                  pathname === "/settings"
+                  pathname.startsWith("/settings")
                     ? "bg-primary/10 text-primary"
                     : "text-foreground hover:bg-accent",
                 )}

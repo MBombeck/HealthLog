@@ -19,7 +19,12 @@ export type ChecklistItemId = (typeof CHECKLIST_ITEM_IDS)[number];
 export interface ChecklistItem {
   id: ChecklistItemId;
   done: boolean;
-  /** Pre-built href the CTA should jump to. Hash anchors target settings sections. */
+  /**
+   * Pre-built href the CTA should jump to. The settings entries point at
+   * the v1.4 split routes under `/settings/[section]` (introduced by PR
+   * A2-shell), so the CTA lands directly on the right section instead of
+   * relying on a hash anchor on the legacy monolith.
+   */
   href: string;
   /** True if the user explicitly hid this row. */
   dismissed: boolean;
@@ -58,7 +63,7 @@ export function buildChecklist(inputs: ChecklistInputs): ChecklistItem[] {
     {
       id: "profile",
       done: profileDone,
-      href: "/settings#profile",
+      href: "/settings/account",
       dismissed: inputs.dismissedIds.has("profile"),
     },
     {
@@ -76,13 +81,13 @@ export function buildChecklist(inputs: ChecklistInputs): ChecklistItem[] {
     {
       id: "withings",
       done: inputs.withingsConnected,
-      href: "/settings#withings",
+      href: "/settings/integrations",
       dismissed: inputs.dismissedIds.has("withings"),
     },
     {
       id: "notifications",
       done: inputs.notificationsConfigured,
-      href: "/settings#notifications",
+      href: "/settings/notifications",
       dismissed: inputs.dismissedIds.has("notifications"),
     },
   ];

@@ -70,9 +70,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       data: {
         codexAccessTokenEncrypted: encrypted.accessEncrypted,
         codexRefreshTokenEncrypted: encrypted.refreshEncrypted,
-        codexTokenExpiresAt: new Date(
-          Date.now() + tokens.expires_in * 1000,
-        ),
+        codexTokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
         codexConnectedAt: new Date(),
         codexConnectionStatus: "connected",
         insightsCachedAt: null,
@@ -86,12 +84,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
     });
     annotate({ action: { name: "codex.oauth.callback.success" } });
 
-    return NextResponse.redirect(`${appUrl}/settings?codex_connected=true`);
+    return NextResponse.redirect(
+      `${appUrl}/settings/integrations?codex_connected=true`,
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : "unknown";
     annotate({ meta: { codex_token_error: message } });
     return NextResponse.redirect(
-      `${appUrl}/settings?codex_error=token_exchange_failed`,
+      `${appUrl}/settings/integrations?codex_error=token_exchange_failed`,
     );
   }
 });

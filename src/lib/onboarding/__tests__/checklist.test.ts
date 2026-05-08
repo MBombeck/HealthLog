@@ -83,11 +83,11 @@ describe("buildChecklist", () => {
   it("attaches deep-link hrefs", () => {
     const items = buildChecklist(inputs());
     const hrefs = Object.fromEntries(items.map((i) => [i.id, i.href]));
-    expect(hrefs.profile).toBe("/settings#profile");
+    expect(hrefs.profile).toBe("/settings/account");
     expect(hrefs.measurement).toBe("/measurements");
     expect(hrefs.medication).toBe("/medications");
-    expect(hrefs.withings).toBe("/settings#withings");
-    expect(hrefs.notifications).toBe("/settings#notifications");
+    expect(hrefs.withings).toBe("/settings/integrations");
+    expect(hrefs.notifications).toBe("/settings/notifications");
   });
 });
 

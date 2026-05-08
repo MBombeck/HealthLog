@@ -873,6 +873,46 @@
   "settings": {
     "title": "Einstellungen",
     "subtitle": "Profil, Sicherheit & Verbindungen",
+    "shell": {
+      "sectionsNav": "Einstellungs-Bereiche"
+    },
+    "sections": {
+      "account": {
+        "title": "Konto",
+        "description": "Profil, Anmeldemethoden und Konto-Löschung."
+      },
+      "integrations": {
+        "title": "Integrationen",
+        "description": "Withings, moodLog und weitere verbundene Dienste."
+      },
+      "notifications": {
+        "title": "Benachrichtigungen",
+        "description": "Telegram, ntfy, Web Push."
+      },
+      "dashboard": {
+        "title": "Übersicht",
+        "description": "Kachel-Layout, Schwellwerte."
+      },
+      "ai": {
+        "title": "KI-Auswertungen",
+        "description": "Provider, Modell, API-Key."
+      },
+      "api": {
+        "title": "API & Tokens",
+        "description": "Bearer-Tokens für Drittanbieter-Clients."
+      },
+      "advanced": {
+        "title": "Erweitert",
+        "description": "Export, Import, Daten löschen."
+      },
+      "about": {
+        "title": "Über",
+        "description": "Version, Lizenz, Links."
+      },
+      "placeholder": {
+        "coming_soon": "Wird mit dem nächsten Release-Update hierher umziehen."
+      }
+    },
     "sectionsTitle": "Settings",
     "categoryGeneral": "Allgemein",
     "categoryNotifications": "Benachrichtigungen",

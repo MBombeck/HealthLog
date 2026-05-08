@@ -861,7 +861,7 @@ export default function DashboardPage() {
              * exactly the chart-width below. When the active tile count
              * exceeds what fits the viewport, the strip horizontal-scrolls
              * instead of wrapping; the user trims the set in
-             * Settings → Dashboard Layout (`/settings#dashboard-layout`).
+             * Settings → Dashboard (`/settings/dashboard`).
              * Each tile keeps a `min-w-[10rem]` so a single tile still
              * looks substantial on a wide screen, and `snap-x snap-mandatory`
              * makes the scroll feel deliberate rather than arbitrary on

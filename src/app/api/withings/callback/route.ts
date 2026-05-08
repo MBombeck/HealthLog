@@ -30,7 +30,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   ) {
     return NextResponse.redirect(
       new URL(
-        "/settings?withings=error&reason=state",
+        "/settings/integrations?withings=error&reason=state",
         process.env.NEXT_PUBLIC_APP_URL!,
       ),
     );
@@ -41,7 +41,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   if (stateUserId !== user.id) {
     return NextResponse.redirect(
       new URL(
-        "/settings?withings=error&reason=user",
+        "/settings/integrations?withings=error&reason=user",
         process.env.NEXT_PUBLIC_APP_URL!,
       ),
     );
@@ -50,7 +50,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   if (!code) {
     return NextResponse.redirect(
       new URL(
-        "/settings?withings=error&reason=nocode",
+        "/settings/integrations?withings=error&reason=nocode",
         process.env.NEXT_PUBLIC_APP_URL!,
       ),
     );
@@ -61,7 +61,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     if (!creds) {
       return NextResponse.redirect(
         new URL(
-          "/settings?withings=error&reason=nocreds",
+          "/settings/integrations?withings=error&reason=nocreds",
           process.env.NEXT_PUBLIC_APP_URL!,
         ),
       );
@@ -90,7 +90,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
     });
 
     // Subscribe to webhooks in background
-    setupWebhook(user.id).catch((err) => getEvent()?.addWarning("Webhook setup failed: " + err));
+    setupWebhook(user.id).catch((err) =>
+      getEvent()?.addWarning("Webhook setup failed: " + err),
+    );
 
     await auditLog("withings.connect", {
       userId: user.id,
@@ -98,7 +100,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
     });
 
     const response = NextResponse.redirect(
-      new URL("/settings?withings=connected", process.env.NEXT_PUBLIC_APP_URL!),
+      new URL(
+        "/settings/integrations?withings=connected",
+        process.env.NEXT_PUBLIC_APP_URL!,
+      ),
     );
     response.cookies.delete("withings_state");
     return response;
@@ -106,7 +111,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     getEvent()?.setError(err);
     return NextResponse.redirect(
       new URL(
-        "/settings?withings=error&reason=token",
+        "/settings/integrations?withings=error&reason=token",
         process.env.NEXT_PUBLIC_APP_URL!,
       ),
     );

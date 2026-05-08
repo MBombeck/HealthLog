@@ -32,7 +32,12 @@ const CHANNEL_OPTIONS: ReadonlyArray<{
   Icon: typeof MessageCircle;
   titleKey: string;
   hintKey: string;
-  /** Hash on /settings to scroll to. NONE = skip, no hash. */
+  /**
+   * Hash anchor on the notifications settings page to scroll to. NONE = skip,
+   * no hash. The wizard pushes the user to `/settings/notifications#<hash>`
+   * after onboarding finishes — see the v1.4 settings split (PR A2-shell)
+   * for the new route shape.
+   */
   hash: string | null;
 }> = [
   {
@@ -117,7 +122,7 @@ export default function OnboardingPage() {
       toast.success(t("onboarding.v2.doneToast"));
 
       if (opts?.gotoSettingsHash) {
-        router.replace(`/settings#${opts.gotoSettingsHash}`);
+        router.replace(`/settings/notifications#${opts.gotoSettingsHash}`);
       } else {
         router.replace("/");
       }
