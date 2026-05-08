@@ -11,7 +11,15 @@ export default defineConfig({
     environment: "node",
     // Default `pnpm test` keeps unit tests only — integration suite uses
     // testcontainers and runs separately via `pnpm test:integration`.
-    exclude: ["**/node_modules/**", "**/dist/**", "tests/integration/**"],
+    exclude: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "tests/integration/**",
+      // Live agent worktrees create copies of `src/` under
+      // `.claude/worktrees/`; vitest would otherwise pick those copies up
+      // and run their tests twice — possibly against stale snapshots.
+      ".claude/worktrees/**",
+    ],
     coverage: {
       provider: "v8",
       // `include` enumerates the full source tree so the report shows
