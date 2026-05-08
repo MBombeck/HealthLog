@@ -1153,7 +1153,41 @@
     "moodLogSyncResult": "{count} entries synchronized",
     "moodLogSyncFailed": "Sync failed",
     "moodLogSaved": "moodLog connection saved",
-    "moodLogDisconnected": "moodLog disconnected"
+    "moodLogDisconnected": "moodLog disconnected",
+    "about": {
+      "version": "App version",
+      "gitSha": "Build",
+      "builtAt": "Built {time}",
+      "license": "License",
+      "repository": "Source code",
+      "changelog": "Changelog",
+      "docs": "Documentation",
+      "checkUpdates": "Check for updates",
+      "upToDate": "You are up to date",
+      "newerAvailable": "Newer version: {tag}"
+    },
+    "testConnection": {
+      "test": "Test connection",
+      "testing": "Testing…",
+      "ok": "Connected (latency {latency} ms)",
+      "errors": {
+        "credentials_rejected": "Credentials rejected — check your token",
+        "rate_limited": "Rate-limited by the upstream",
+        "timeout": "Request timed out",
+        "upstream_error": "Upstream returned an error",
+        "connection_failed": "Connection failed",
+        "not_configured": "Not configured",
+        "url_not_public": "URL is not a public endpoint",
+        "url_invalid": "URL is invalid",
+        "redirected": "Endpoint redirects — check the URL",
+        "endpoint_not_found": "Endpoint not found at the URL",
+        "credentials_unreadable": "Credentials cannot be decrypted",
+        "upstream_invalid_json": "Upstream sent invalid JSON",
+        "vapid_not_configured": "Web Push not configured (VAPID keys missing)",
+        "rate_limited_self": "Too many test requests",
+        "generic": "Test failed"
+      }
+    }
   },
   "admin": {
     "title": "Administration",

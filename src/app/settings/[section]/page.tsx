@@ -1,9 +1,19 @@
 import { notFound } from "next/navigation";
+import type { JSX } from "react";
 
+import { AccountSection } from "@/components/settings/account-section";
+import { AboutSection } from "@/components/settings/about-section";
+import { AdvancedSection } from "@/components/settings/advanced-section";
+import { AiSection } from "@/components/settings/ai-section";
+import { ApiSection } from "@/components/settings/api-section";
+import { DashboardSection } from "@/components/settings/dashboard-section";
+import { IntegrationsSection } from "@/components/settings/integrations-section";
+import { NotificationsSection } from "@/components/settings/notifications-section";
 import { SectionPlaceholder } from "@/components/settings/section-placeholder";
 import {
   SETTINGS_SECTION_SLUGS,
   isSettingsSectionSlug,
+  type SettingsSectionSlug,
 } from "@/components/settings/section-slugs";
 import { SettingsShell } from "@/components/settings/settings-shell";
 
@@ -22,6 +32,20 @@ export function generateStaticParams() {
   return SETTINGS_SECTION_SLUGS.map((section) => ({ section }));
 }
 
+const SECTION_COMPONENTS: Record<
+  SettingsSectionSlug,
+  () => JSX.Element | null
+> = {
+  account: AccountSection,
+  about: AboutSection,
+  ai: AiSection,
+  integrations: IntegrationsSection,
+  notifications: NotificationsSection,
+  dashboard: DashboardSection,
+  api: ApiSection,
+  advanced: AdvancedSection,
+};
+
 interface PageProps {
   // Next.js 16 made route `params` an async Promise. We `await` it before use.
   params: Promise<{ section: string }>;
@@ -37,9 +61,16 @@ export default async function SettingsSectionPage({ params }: PageProps) {
     notFound();
   }
 
-  return (
-    <SettingsShell active={section}>
-      <SectionPlaceholder slug={section} />
-    </SettingsShell>
+  const SectionComponent = SECTION_COMPONENTS[section];
+  // Defensive fallback: in theory unreachable since `isSettingsSectionSlug`
+  // guards the slug, but a future slug added to `SETTINGS_SECTION_SLUGS`
+  // without a wired component would otherwise crash silently — placeholder
+  // surfaces the gap visually instead.
+  const body = SectionComponent ? (
+    <SectionComponent />
+  ) : (
+    <SectionPlaceholder slug={section} />
   );
+
+  return <SettingsShell active={section}>{body}</SettingsShell>;
 }

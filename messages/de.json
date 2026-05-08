@@ -1153,7 +1153,41 @@
     "moodLogSyncResult": "{count} Einträge synchronisiert",
     "moodLogSyncFailed": "Sync fehlgeschlagen",
     "moodLogSaved": "moodLog-Verbindung gespeichert",
-    "moodLogDisconnected": "moodLog getrennt"
+    "moodLogDisconnected": "moodLog getrennt",
+    "about": {
+      "version": "App-Version",
+      "gitSha": "Build",
+      "builtAt": "Erstellt {time}",
+      "license": "Lizenz",
+      "repository": "Quellcode",
+      "changelog": "Changelog",
+      "docs": "Dokumentation",
+      "checkUpdates": "Auf Updates prüfen",
+      "upToDate": "Du nutzt die aktuelle Version",
+      "newerAvailable": "Neue Version: {tag}"
+    },
+    "testConnection": {
+      "test": "Verbindung testen",
+      "testing": "Teste…",
+      "ok": "Verbunden (Latenz {latency} ms)",
+      "errors": {
+        "credentials_rejected": "Zugangsdaten abgelehnt — Token prüfen",
+        "rate_limited": "Vom Upstream rate-limitiert",
+        "timeout": "Request hat das Zeitlimit überschritten",
+        "upstream_error": "Upstream hat einen Fehler gemeldet",
+        "connection_failed": "Verbindung fehlgeschlagen",
+        "not_configured": "Nicht konfiguriert",
+        "url_not_public": "URL ist kein öffentlicher Endpunkt",
+        "url_invalid": "URL ist ungültig",
+        "redirected": "Endpunkt leitet weiter — URL prüfen",
+        "endpoint_not_found": "Endpunkt unter der URL nicht gefunden",
+        "credentials_unreadable": "Zugangsdaten nicht entschlüsselbar",
+        "upstream_invalid_json": "Upstream-Antwort ist kein JSON",
+        "vapid_not_configured": "Web Push nicht konfiguriert (VAPID-Keys fehlen)",
+        "rate_limited_self": "Zu viele Test-Anfragen",
+        "generic": "Test fehlgeschlagen"
+      }
+    }
   },
   "admin": {
     "title": "Administration",
