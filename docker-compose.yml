@@ -4,10 +4,16 @@ services:
   # For horizontal scaling switch to the web/worker split below
   # (HEALTHLOG_PROCESS_TYPE=web on this service + uncomment app-worker).
   app:
-    image: ghcr.io/mbombeck/healthlog:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
+    # HOTFIX: pinned to the v1.4.0 GHCR multi-arch image (linux/amd64 +
+    # linux/arm64) while a runtime regression introduced in the v1.4.1
+    # source build is investigated. The locally-built image from main
+    # HEAD currently produces a container that boots Next.js + the
+    # background workers but never accepts HTTP on :3000, so the
+    # Docker healthcheck fails and Traefik returns 503. v1.4.0 is the
+    # last release verified healthy on production. Self-hosters who
+    # want to build from source can re-add the `build:` block locally
+    # via a docker-compose.override.yml.
+    image: ghcr.io/mbombeck/healthlog:1.4.0
     container_name: healthlog-app
     ports:
       - "3000:3000"
