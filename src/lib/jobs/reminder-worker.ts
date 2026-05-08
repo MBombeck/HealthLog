@@ -41,6 +41,8 @@ import {
   getPhaseKeyboard,
 } from "@/lib/jobs/reminder-phases";
 import { withBackgroundEvent } from "@/lib/logging/background";
+import { assertSubsystemEnabled } from "@/lib/process-type";
+import { runOffhostBackup } from "@/lib/jobs/offhost-backup";
 import {
   getUserTodayBounds as getUserTodayBoundsUtil,
   getDayOfWeekInTz as getDayOfWeekInTzUtil,
@@ -97,6 +99,12 @@ const IDEMPOTENCY_CLEANUP_QUEUE = "idempotency-cleanup";
 const IDEMPOTENCY_CLEANUP_CRON = "0 3 * * *"; // daily at 03:00 (Europe/Berlin)
 const AUDIT_LOG_CLEANUP_QUEUE = "audit-log-cleanup";
 const AUDIT_LOG_CLEANUP_CRON = "15 3 * * *"; // daily at 03:15 (Europe/Berlin)
+const OFFHOST_BACKUP_QUEUE = "data-backup-offhost";
+// 02:30 Europe/Berlin — runs after audit-log/idempotency cleanups so old
+// rows are gone before they're snapshotted, but before the existing
+// in-DB DATA_BACKUP at 03:00 (Sundays only) so the off-host copy is
+// always at-or-ahead of the local one.
+const OFFHOST_BACKUP_CRON = "30 2 * * *";
 
 interface ReminderCheckPayload {
   triggeredAt: string;
@@ -153,6 +161,10 @@ interface IdempotencyCleanupPayload {
 }
 
 interface AuditLogCleanupPayload {
+  triggeredAt: string;
+}
+
+interface OffhostBackupPayload {
   triggeredAt: string;
 }
 
@@ -903,6 +915,25 @@ async function handleAuditLogCleanup(jobs: Job<AuditLogCleanupPayload>[]) {
   });
 }
 
+async function handleOffhostBackup(jobs: Job<OffhostBackupPayload>[]) {
+  void jobs;
+  await withBackgroundEvent("job.offhost_backup", async (evt) => {
+    const p = getWorkerPrisma();
+    try {
+      const report = await runOffhostBackup(p);
+      evt.addMeta("offhost_backup_uploaded", report.uploaded);
+      evt.addMeta("offhost_backup_failed", report.failed);
+      evt.addMeta("offhost_backup_pruned", report.pruned);
+      evt.addMeta("offhost_backup_total_users", report.totalUsers);
+      evt.addMeta("offhost_backup_endpoint", report.config.endpoint);
+      evt.addMeta("offhost_backup_bucket", report.config.bucket);
+    } catch (err) {
+      // Not configured ⇒ skip silently with a warning, not an error.
+      evt.addWarning(`offhost-backup skipped/failed: ${err}`);
+    }
+  });
+}
+
 async function handleDataBackup(jobs: Job<DataBackupPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.data_backup", async (evt) => {
@@ -1030,6 +1061,10 @@ function workerLog(level: "info" | "error", msg: string, err?: unknown): void {
 }
 
 export async function startReminderWorker() {
+  // v1.4 G3: refuse to boot if the operator marked this container as
+  // web-only via HEALTHLOG_PROCESS_TYPE.
+  assertSubsystemEnabled("worker");
+
   if (!DATABASE_URL) {
     workerLog("error", "CRITICAL: DATABASE_URL is not set, refusing to start");
     return;
@@ -1113,6 +1148,7 @@ export async function startReminderWorker() {
     RATE_LIMIT_CLEANUP_QUEUE,
     IDEMPOTENCY_CLEANUP_QUEUE,
     AUDIT_LOG_CLEANUP_QUEUE,
+    OFFHOST_BACKUP_QUEUE,
   ];
 
   for (const q of allQueues) {
@@ -1134,6 +1170,7 @@ export async function startReminderWorker() {
     [RATE_LIMIT_CLEANUP_QUEUE, RATE_LIMIT_CLEANUP_CRON],
     [IDEMPOTENCY_CLEANUP_QUEUE, IDEMPOTENCY_CLEANUP_CRON],
     [AUDIT_LOG_CLEANUP_QUEUE, AUDIT_LOG_CLEANUP_CRON],
+    [OFFHOST_BACKUP_QUEUE, OFFHOST_BACKUP_CRON],
   ];
 
   for (const [name, cron] of schedules) {
@@ -1210,6 +1247,11 @@ export async function startReminderWorker() {
     AUDIT_LOG_CLEANUP_QUEUE,
     { localConcurrency: 1 },
     handleAuditLogCleanup,
+  );
+  await boss.work<OffhostBackupPayload>(
+    OFFHOST_BACKUP_QUEUE,
+    { localConcurrency: 1 },
+    handleOffhostBackup,
   );
 
   return boss;
