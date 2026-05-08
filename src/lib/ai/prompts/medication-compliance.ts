@@ -19,7 +19,8 @@ const MEDCO_SECTION_DE = `FACHSPEZIFISCH — MEDIKAMENTEN-ADHÄRENZ:
 - Nutze historicalComparison um den Einfluss der Adhärenz auf Blutdruck und Puls zu quantifizieren, sofern die Daten im Snapshot vorhanden sind.
 - Falls Stimmungsdaten verfügbar und Korrelation |r| > 0.4: Prüfe ob niedrige Adhärenz mit schlechterer Stimmung korreliert.
 - Chronotherapie-Hinweis: Falls ein Blutdruck-Medikament vorhanden ist UND Compliance > 90% ABER BP nicht im Zielbereich: "Einnahme-Zeitpunkt mit dem Arzt besprechen — abendliche Einnahme kann bei einigen Patienten die nächtliche Blutdruckkontrolle verbessern."
-- Mood-Adhärenz-Risiko: Falls moodAdherenceRisk = true: "Deine Stimmung war in den letzten Tagen niedrig. Erfahrungsgemäß kann das die Einnahmetreue in den kommenden Tagen beeinflussen. Tipp: Lege die Medikamente abends schon bereit."`;
+- Mood-Adhärenz-Risiko: Falls moodAdherenceRisk = true: "Deine Stimmung war in den letzten Tagen niedrig. Erfahrungsgemäß kann das die Einnahmetreue in den kommenden Tagen beeinflussen. Tipp: Lege die Medikamente abends schon bereit."
+- Inline-Chart: Wenn die summary oder ein finding den Adhärenzverlauf zentriert (z.B. eine Quote über die Zeit), kannst du genau einen Token metric:COMPLIANCE im Text einbetten, um den Adhärenzverlauf darunter einzublenden.`;
 
 const MEDCO_SECTION_EN = `DOMAIN — MEDICATION ADHERENCE:
 - Adherence rating:
@@ -39,7 +40,8 @@ const MEDCO_SECTION_EN = `DOMAIN — MEDICATION ADHERENCE:
 - Use historicalComparison to quantify how adherence affects blood pressure and pulse, where data is available.
 - If mood data is available and the correlation |r| > 0.4: Check whether low adherence aligns with worse mood.
 - Chronotherapy note: If a BP medication exists AND compliance > 90% BUT BP is off target: "Discuss timing with your doctor — for some patients, evening dosing improves nocturnal BP control."
-- Mood-adherence risk: If moodAdherenceRisk = true: "Your mood has been low recently. Experience shows this can affect adherence over the next few days. Tip: prepare your medication the evening before."`;
+- Mood-adherence risk: If moodAdherenceRisk = true: "Your mood has been low recently. Experience shows this can affect adherence over the next few days. Tip: prepare your medication the evening before."
+- Inline chart: When a summary or finding centres on the adherence trajectory (e.g. a rate over time), embed exactly one metric:COMPLIANCE token in the text to inline the adherence chart underneath.`;
 
 export function getMedicationComplianceSystemPrompt(locale: Locale): string {
   const section = locale === "en" ? MEDCO_SECTION_EN : MEDCO_SECTION_DE;

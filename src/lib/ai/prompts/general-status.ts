@@ -16,7 +16,8 @@ const GENERAL_SECTION_DE = `FACHSPEZIFISCH — GESAMTBEWERTUNG:
 - Aktivität: Falls activity-Daten vorhanden, Schrittzahl bewerten (≥ 8.000/Tag — Saint-Maurice et al., JAMA 2020; Mortalitäts-Plateau 8.000–12.000). Hinweis: WHO publiziert Aktivitätszeit (Min/Woche), KEIN Schritt-Soll — bitte keine "WHO ≥ 8.000 Schritte"-Formulierung. Zusammenhang mit Puls- und Gewichtstrend herstellen.
 - Rate-Pressure Product: Falls ratePressureProduct vorhanden, als Indikator für kardiale Belastung in die Risikostratifizierung einbeziehen. > 12.000 = erhöhter myokardialer Sauerstoffbedarf.
 - Body-Composition-Divergenz: Falls bodyCompositionDivergence.flag = true, als Frühzeichen für sarkopenische Adipositas in die Gesamtbewertung aufnehmen.
-- Saisonale Variation: Falls seasonalVariation vorhanden, saisonale Blutdruckschwankungen kontextualisieren und ggf. beruhigend einordnen.`;
+- Saisonale Variation: Falls seasonalVariation vorhanden, saisonale Blutdruckschwankungen kontextualisieren und ggf. beruhigend einordnen.
+- Inline-Chart: Wenn die summary oder ein finding klar auf eine einzelne Metrik fokussiert (z.B. einen kritischen systolischen Trend), kannst du genau einen passenden Token aus der Allowlist im Text einbetten — der erste klar metrik-zentrierte Absatz erhält das Diagramm darunter.`;
 
 const GENERAL_SECTION_EN = `DOMAIN — OVERALL ASSESSMENT:
 - Integrate every available vital parameter into a single coherent picture.
@@ -33,7 +34,8 @@ const GENERAL_SECTION_EN = `DOMAIN — OVERALL ASSESSMENT:
 - Activity: When activity data is present, evaluate step count (≥ 8,000/day — Saint-Maurice et al., JAMA 2020; mortality plateau 8,000–12,000). Note: WHO publishes activity *time* (min/week), NOT a step quota — do not phrase the target as "WHO ≥ 8,000 steps". Tie back to pulse and weight trends.
 - Rate-pressure product: When ratePressureProduct is present, include it as a cardiac-load indicator. > 12,000 = elevated myocardial oxygen demand.
 - Body-composition divergence: If bodyCompositionDivergence.flag = true, treat as an early sign of sarcopenic obesity.
-- Seasonal variation: When seasonalVariation is present, contextualise seasonal BP swings and reassure where appropriate.`;
+- Seasonal variation: When seasonalVariation is present, contextualise seasonal BP swings and reassure where appropriate.
+- Inline chart: When a summary or finding centres on a single metric (e.g. a critical systolic trend), embed exactly one matching token from the allowlist in the text — the first clearly metric-focused paragraph receives the chart underneath.`;
 
 export function getGeneralStatusSystemPrompt(locale: Locale): string {
   const section = locale === "en" ? GENERAL_SECTION_EN : GENERAL_SECTION_DE;

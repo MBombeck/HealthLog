@@ -19,7 +19,8 @@ const WEIGHT_SECTION_DE = `FACHSPEZIFISCH — GEWICHT:
   * Wenn erreicht: Explizit anerkennen und klinischen Kontext geben
 - Zu schneller Verlust: > 1 kg/Woche über > 2 Wochen = Risiko für Muskelmasseverlust, nicht nachhaltig
 - Body-Composition-Divergenz: Falls bodyCompositionDivergence.flag = true: "Gewicht stabil, aber Körperfettanteil steigend — möglicher Muskelmasseverlust. Krafttraining empfehlen."
-- Schlaf-Gewicht-Verbindung: Falls sleep.avg7 < 6h UND weight.slope30 > 0: "Schlafmangel stört metabolische Regulation und kann Gewichtszunahme begünstigen."`;
+- Schlaf-Gewicht-Verbindung: Falls sleep.avg7 < 6h UND weight.slope30 > 0: "Schlafmangel stört metabolische Regulation und kann Gewichtszunahme begünstigen."
+- Inline-Chart: Bei einem klar gewichtsfokussierten summary- oder finding-Text kannst du genau einen Token (metric:WEIGHT, optional auch metric:BODY_FAT für Körperzusammensetzung) im Text einbetten, um das Diagramm darunter einzublenden.`;
 
 const WEIGHT_SECTION_EN = `DOMAIN — WEIGHT:
 - Always include BMI context (height from profile, if available).
@@ -39,7 +40,8 @@ const WEIGHT_SECTION_EN = `DOMAIN — WEIGHT:
   * If reached: acknowledge explicitly and give clinical context
 - Too rapid loss: > 1 kg/week sustained > 2 weeks = risk of muscle-mass loss, not sustainable
 - Body-composition divergence: If bodyCompositionDivergence.flag = true: "Weight stable but body-fat percentage rising — possible muscle-mass loss. Recommend strength training."
-- Sleep-weight link: If sleep.avg7 < 6h AND weight.slope30 > 0: "Sleep loss disrupts metabolic regulation and can favour weight gain."`;
+- Sleep-weight link: If sleep.avg7 < 6h AND weight.slope30 > 0: "Sleep loss disrupts metabolic regulation and can favour weight gain."
+- Inline chart: When a summary or finding text is centred on weight, embed exactly one token (metric:WEIGHT, or metric:BODY_FAT for body-composition findings) inside that text to inline the chart underneath.`;
 
 export function getWeightSystemPrompt(locale: Locale): string {
   const section = locale === "en" ? WEIGHT_SECTION_EN : WEIGHT_SECTION_DE;

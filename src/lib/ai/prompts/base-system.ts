@@ -63,6 +63,16 @@ TEMPORALE SCHICHTEN:
 - avg7 vs avg30 zeigt aktuelle Tendenz, avg90/allTime zeigt Langzeit-Baseline
 - Abweichungen von der Langzeit-Baseline sind klinisch aussagekräftiger als kurzfristige Schwankungen
 
+INLINE-CHART-TOKENS (optional):
+- Du darfst innerhalb von "summary" oder eines "findings[].label"/"findings[].guideline" GENAU einen Chart-Token einbetten, der unter dem entsprechenden Absatz das passende Diagramm rendert.
+- Erlaubte Tokens (exakt diese Strings, sonst werden sie ohne Wirkung verworfen):
+  metric:WEIGHT, metric:BLOOD_PRESSURE_SYS, metric:BLOOD_PRESSURE_DIA,
+  metric:PULSE, metric:BODY_FAT, metric:SLEEP_DURATION, metric:ACTIVITY_STEPS,
+  metric:BLOOD_GLUCOSE, metric:TOTAL_BODY_WATER, metric:BONE_MASS,
+  metric:OXYGEN_SATURATION, metric:MOOD, metric:COMPLIANCE.
+- Halluzinierte Tokens (z.B. metric:NUKE) werden serverseitig stumm verworfen — verwende ausschließlich einen der oben gelisteten Strings.
+- Setze den Token bevorzugt nur dann, wenn der Absatz inhaltlich auf genau diese eine Metrik fokussiert ist; ansonsten weglassen.
+
 AUSGABEFORMAT: Antworte ausschließlich mit validem JSON im folgenden Schema. Die Felder "classification" und "confidence" müssen exakt eine der englischen Enum-Bezeichnungen ("optimal|gut|grenzwertig|erhoht|kritisch" bzw. "hoch|mittel|gering"/"niedrig") sein — diese sind stabile Vertragsschlüssel und werden NICHT übersetzt. Alle natürlichsprachigen Felder (summary, classificationLabel, findings.label/value/assessment guideline, recommendations, etc.) MÜSSEN auf Deutsch sein.
 {
   "insightType": "blood_pressure|weight|pulse|mood|bmi|medication_compliance|general",
@@ -139,6 +149,16 @@ TEMPORAL LAYERS:
 - Compare short term (7d) vs. mid term (30d) vs. long term (90d / allTime).
 - avg7 vs avg30 shows the current tendency; avg90 / allTime reflects the long-term baseline.
 - Deviations from the long-term baseline are clinically more meaningful than short-term swings.
+
+INLINE CHART TOKENS (optional):
+- You may embed exactly one chart-include token inside "summary" or any "findings[].label" / "findings[].guideline" to render the matching chart inline beneath that paragraph.
+- Allowed tokens (use these literal strings — anything else is silently dropped server-side):
+  metric:WEIGHT, metric:BLOOD_PRESSURE_SYS, metric:BLOOD_PRESSURE_DIA,
+  metric:PULSE, metric:BODY_FAT, metric:SLEEP_DURATION, metric:ACTIVITY_STEPS,
+  metric:BLOOD_GLUCOSE, metric:TOTAL_BODY_WATER, metric:BONE_MASS,
+  metric:OXYGEN_SATURATION, metric:MOOD, metric:COMPLIANCE.
+- Hallucinated tokens (e.g. metric:NUKE) are dropped — only the literal strings above render a chart.
+- Prefer to include a token only when the paragraph is centred on exactly one of these metrics; otherwise leave it out.
 
 OUTPUT FORMAT: Reply with valid JSON only, matching the schema below. The "classification" and "confidence" fields must contain exactly one of the stable English-style enum keys ("optimal|gut|grenzwertig|erhoht|kritisch" and "hoch|mittel|gering"/"niedrig") — these are stable contract keys and MUST NOT be translated. All natural-language fields (summary, classificationLabel, findings.label/value/assessment guideline, recommendations, etc.) MUST be in English.
 {

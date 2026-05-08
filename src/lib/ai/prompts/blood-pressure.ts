@@ -27,7 +27,8 @@ const BP_SECTION_DE = `FACHSPEZIFISCH — BLUTDRUCK:
   * Morgen-RR ≥ 165: HR 6.52
 - Rate-Pressure Product: Wenn ratePressureProduct.rpp30 > 12.000: "Erhöhter kardialer Sauerstoffbedarf" mit assessment "warning" bewerten.
 - Saisonale Variation: Falls seasonalVariation vorhanden und delta > 5 mmHg: "Physiologisch normale saisonale Schwankung — kein Grund zur Sorge, ggf. Winter-Dosisanpassung besprechen."
-- Salz-Signal: Akuter Gewichtsanstieg ≥ 1 kg in 3 Tagen + systolischer Anstieg ≥ 5 mmHg = mögliche erhöhte Natriumzufuhr.`;
+- Salz-Signal: Akuter Gewichtsanstieg ≥ 1 kg in 3 Tagen + systolischer Anstieg ≥ 5 mmHg = mögliche erhöhte Natriumzufuhr.
+- Inline-Chart: Wenn die summary oder ein finding-Text klar auf eine einzelne Blutdruck-Komponente zielt, kannst du genau einen Token (metric:BLOOD_PRESSURE_SYS oder metric:BLOOD_PRESSURE_DIA) im Text einbetten, um das Diagramm darunter einzublenden.`;
 
 const BP_SECTION_EN = `DOMAIN — BLOOD PRESSURE:
 - ESH 2023 classification:
@@ -55,7 +56,8 @@ const BP_SECTION_EN = `DOMAIN — BLOOD PRESSURE:
   * Morning BP ≥ 165: HR 6.52
 - Rate-pressure product: If ratePressureProduct.rpp30 > 12,000, label "Elevated cardiac oxygen demand" with assessment "warning".
 - Seasonal variation: If seasonalVariation is present and delta > 5 mmHg: "Physiologically normal seasonal swing — no cause for concern, optionally discuss a winter dose adjustment."
-- Salt signal: Acute weight gain ≥ 1 kg over 3 days plus systolic rise ≥ 5 mmHg = possible elevated sodium intake.`;
+- Salt signal: Acute weight gain ≥ 1 kg over 3 days plus systolic rise ≥ 5 mmHg = possible elevated sodium intake.
+- Inline chart: If the summary or a finding text centres on a single BP component, embed exactly one token (metric:BLOOD_PRESSURE_SYS or metric:BLOOD_PRESSURE_DIA) inside that text to inline the chart beneath it.`;
 
 export function getBloodPressureSystemPrompt(locale: Locale): string {
   const section = locale === "en" ? BP_SECTION_EN : BP_SECTION_DE;

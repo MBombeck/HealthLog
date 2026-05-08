@@ -22,7 +22,8 @@ const PULSE_SECTION_DE = `FACHSPEZIFISCH — PULS/HERZFREQUENZ:
   * slope30 > +0.2 bpm/Tag (≈ +6 bpm/Monat) OHNE Stimmungsabfall: Mögliche Dekonditionierung
   * slope30 > +0.2 bpm/Tag MIT moodVsPulse r > 0.4: Stressbedingte Pulserhöhung
 - Risikoband 80-100 bpm: Technisch "normal", aber erhöhtes CV-Risiko (+6-9% Mortalität pro 10 bpm, Meta-Analyse).
-- Resting HR > 90 bpm: Unabhängiger Mortalitätsprädiktor — als eigenes Finding mit assessment "warning" erfassen.`;
+- Resting HR > 90 bpm: Unabhängiger Mortalitätsprädiktor — als eigenes Finding mit assessment "warning" erfassen.
+- Inline-Chart: Wenn die summary oder ein finding den Ruhepulsverlauf in den Mittelpunkt stellt, kannst du genau einen Token metric:PULSE im Text einbetten, um das Pulsdiagramm darunter einzublenden.`;
 
 const PULSE_SECTION_EN = `DOMAIN — PULSE / HEART RATE:
 - Resting-pulse zones:
@@ -45,7 +46,8 @@ const PULSE_SECTION_EN = `DOMAIN — PULSE / HEART RATE:
   * slope30 > +0.2 bpm/day (≈ +6 bpm/month) WITHOUT mood drop: possible deconditioning
   * slope30 > +0.2 bpm/day WITH moodVsPulse r > 0.4: stress-driven pulse rise
 - Risk band 80-100 bpm: Technically "normal", but elevated CV risk (+6-9% mortality per 10 bpm, meta-analysis).
-- Resting HR > 90 bpm: Independent mortality predictor — capture as its own finding with assessment "warning".`;
+- Resting HR > 90 bpm: Independent mortality predictor — capture as its own finding with assessment "warning".
+- Inline chart: When a summary or finding centres on the resting-pulse trajectory, embed exactly one metric:PULSE token in the text to inline the pulse chart beneath it.`;
 
 export function getPulseSystemPrompt(locale: Locale): string {
   const section = locale === "en" ? PULSE_SECTION_EN : PULSE_SECTION_DE;

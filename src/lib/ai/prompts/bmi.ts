@@ -13,7 +13,8 @@ const BMI_SECTION_DE = `FACHSPEZIFISCH — BMI:
 - Geschlechtskontext: Bei verfügbarem Geschlecht unterschiedliche Risikoprofile berücksichtigen.
 - Trend wichtiger als Momentaufnahme: BMI-Entwicklung über 30/90 Tage gewichten.
 - Limitationen des BMI: Kein Maß für Körperzusammensetzung. Bei Sportlern oder muskulösen Personen eingeschränkt aussagekräftig — darauf hinweisen.
-- Zusammenhang mit Blutdruck und Puls: Übergewicht als Risikofaktor für Hypertonie einordnen.`;
+- Zusammenhang mit Blutdruck und Puls: Übergewicht als Risikofaktor für Hypertonie einordnen.
+- Inline-Chart: Da BMI aus dem Gewicht abgeleitet wird, kannst du genau einen Token metric:WEIGHT in summary oder finding einbetten, um den zugrundeliegenden Gewichtsverlauf darunter einzublenden.`;
 
 const BMI_SECTION_EN = `DOMAIN — BMI:
 - Apply WHO classification strictly:
@@ -27,7 +28,8 @@ const BMI_SECTION_EN = `DOMAIN — BMI:
 - Sex context: When sex is known, factor in different risk profiles.
 - Trend over snapshot: Weight 30- and 90-day BMI trajectories more heavily than a single value.
 - BMI limitations: Not a measure of body composition. Less informative for athletes or very muscular people — point this out.
-- Relation to blood pressure and pulse: Treat overweight as a risk factor for hypertension.`;
+- Relation to blood pressure and pulse: Treat overweight as a risk factor for hypertension.
+- Inline chart: BMI is derived from weight, so you may embed exactly one metric:WEIGHT token in the summary or a finding to inline the underlying weight trajectory beneath it.`;
 
 export function getBmiSystemPrompt(locale: Locale): string {
   const section = locale === "en" ? BMI_SECTION_EN : BMI_SECTION_DE;

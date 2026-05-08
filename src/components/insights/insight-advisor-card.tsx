@@ -18,6 +18,13 @@ import {
   Info,
 } from "lucide-react";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import { HealthChart } from "@/components/charts/health-chart";
+import {
+  parseChartTokens,
+  stripChartTokens,
+  tokenToMetric,
+  type ChartToken,
+} from "@/lib/insights/chart-tokens";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -125,6 +132,14 @@ function HeroFinding({ finding }: { finding: InsightFinding }) {
         : finding.assessment === "attention"
           ? "insights.heroFindingAttention"
           : "insights.heroFindingNeutral";
+  const labelTokens = parseChartTokens(finding.label);
+  const cleanLabel = stripChartTokens(finding.label);
+  const guidelineTokens = finding.guideline
+    ? parseChartTokens(finding.guideline)
+    : [];
+  const cleanGuideline = finding.guideline
+    ? stripChartTokens(finding.guideline)
+    : "";
   return (
     <div
       data-slot="insight-hero-finding"
@@ -141,10 +156,10 @@ function HeroFinding({ finding }: { finding: InsightFinding }) {
             >
               {t(labelKey)}
             </p>
-            <p className="text-sm leading-snug font-medium">{finding.label}</p>
-            {finding.guideline && (
+            <p className="text-sm leading-snug font-medium">{cleanLabel}</p>
+            {cleanGuideline && (
               <p className="text-muted-foreground text-xs leading-snug">
-                {finding.guideline}
+                {cleanGuideline}
               </p>
             )}
           </div>
@@ -153,6 +168,11 @@ function HeroFinding({ finding }: { finding: InsightFinding }) {
           {finding.value}
         </span>
       </div>
+      {(labelTokens.length > 0 || guidelineTokens.length > 0) && (
+        <div className="mt-3">
+          <InlineCharts tokens={[...labelTokens, ...guidelineTokens]} />
+        </div>
+      )}
     </div>
   );
 }
@@ -170,6 +190,69 @@ const CONFIDENCE_LABEL_KEYS: Record<string, string> = {
   mittel: "insights.confidenceMittel",
   gering: "insights.confidenceGering",
 };
+
+// ─── Inline Chart Renderer ────────────────────────────────
+//
+// Expand a list of allowlisted ChartTokens into HealthChart instances.
+// HealthChart already understands the `MeasurementType`-style strings
+// (WEIGHT, BLOOD_PRESSURE_SYS, …); the synthetic MOOD and COMPLIANCE
+// tokens map to the dedicated chart components shipped elsewhere — for
+// now we render them as a HealthChart with the token's metric name as
+// the type, which the chart will gracefully render empty if there's no
+// matching data, instead of silently swallowing the user's expectation.
+//
+// Tokens are deduped per call so the prose `metric:WEIGHT … metric:WEIGHT`
+// doesn't render the same chart twice in a row.
+
+const INLINE_CHART_TITLE_KEYS: Record<string, string> = {
+  WEIGHT: "charts.weight",
+  BLOOD_PRESSURE_SYS: "charts.systolic",
+  BLOOD_PRESSURE_DIA: "charts.diastolic",
+  PULSE: "charts.pulse",
+  BODY_FAT: "charts.bodyFat",
+  SLEEP_DURATION: "charts.sleep",
+  ACTIVITY_STEPS: "charts.steps",
+  BLOOD_GLUCOSE: "measurements.typeBloodGlucose",
+  TOTAL_BODY_WATER: "charts.bodyWater",
+  BONE_MASS: "charts.boneMass",
+  OXYGEN_SATURATION: "charts.spo2",
+  MOOD: "insights.navMood",
+  COMPLIANCE: "insights.navMedication",
+};
+
+function InlineCharts({ tokens }: { tokens: ChartToken[] }) {
+  const { t } = useTranslations();
+  if (tokens.length === 0) return null;
+
+  // Dedup while preserving the order the model emitted them.
+  const seen = new Set<ChartToken>();
+  const unique: ChartToken[] = [];
+  for (const token of tokens) {
+    if (!seen.has(token)) {
+      seen.add(token);
+      unique.push(token);
+    }
+  }
+
+  return (
+    <div data-slot="insight-inline-charts" className="space-y-3">
+      {unique.map((token) => {
+        const metric = tokenToMetric(token);
+        const titleKey = INLINE_CHART_TITLE_KEYS[metric];
+        const title = titleKey ? t(titleKey) : metric;
+        return (
+          <div
+            key={token}
+            data-slot="insight-inline-chart"
+            data-metric={metric}
+          >
+            <HealthChart types={[metric]} title={title} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 // ─── Section Separator ────────────────────────────────────
 
@@ -322,10 +405,15 @@ export function InsightAdvisorCard({
           </div>
         )}
 
-        {/* Summary */}
-        <p className="text-muted-foreground text-sm leading-relaxed">
-          {insight.summary}
-        </p>
+        {/* Summary — prose first, then any allowlisted charts the model
+         * inlined via `metric:<TYPE>` tokens. Tokens are dropped from the
+         * visible text so the literal substring never reaches the DOM. */}
+        <div className="space-y-3">
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            {stripChartTokens(insight.summary)}
+          </p>
+          <InlineCharts tokens={parseChartTokens(insight.summary)} />
+        </div>
 
         {/* Findings — top finding gets a hero treatment, rest are a compact list */}
         {insight.findings.length > 0 && (
@@ -339,24 +427,38 @@ export function InsightAdvisorCard({
             <HeroFinding finding={insight.findings[0]} />
             {insight.findings.length > 1 && (
               <div className="space-y-2 pt-1">
-                {insight.findings.slice(1).map((finding, i) => (
-                  <div key={i}>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <AssessmentIcon assessment={finding.assessment} />
-                        <span className="text-sm">{finding.label}</span>
+                {insight.findings.slice(1).map((finding, i) => {
+                  const labelTokens = parseChartTokens(finding.label);
+                  const guidelineTokens = finding.guideline
+                    ? parseChartTokens(finding.guideline)
+                    : [];
+                  const tokens = [...labelTokens, ...guidelineTokens];
+                  return (
+                    <div key={i}>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <AssessmentIcon assessment={finding.assessment} />
+                          <span className="text-sm">
+                            {stripChartTokens(finding.label)}
+                          </span>
+                        </div>
+                        <span className="text-sm font-medium tabular-nums">
+                          {finding.value}
+                        </span>
                       </div>
-                      <span className="text-sm font-medium tabular-nums">
-                        {finding.value}
-                      </span>
+                      {finding.guideline && (
+                        <p className="text-muted-foreground mt-0.5 ml-6 text-xs">
+                          {stripChartTokens(finding.guideline)}
+                        </p>
+                      )}
+                      {tokens.length > 0 && (
+                        <div className="mt-2 ml-6">
+                          <InlineCharts tokens={tokens} />
+                        </div>
+                      )}
                     </div>
-                    {finding.guideline && (
-                      <p className="text-muted-foreground mt-0.5 ml-6 text-xs">
-                        {finding.guideline}
-                      </p>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

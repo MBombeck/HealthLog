@@ -8,7 +8,8 @@ const MOOD_SECTION_DE = `FACHSPEZIFISCH -- STIMMUNG/WOHLBEFINDEN:
 - Zusammenhange: Stimmung korreliert haufig mit Schlaf, Aktivitat, Blutdruck und Medikamenten-Compliance.
 - Tags: Falls Stimmungs-Tags vorhanden sind, prufe ob bestimmte Tags mit Stimmungslevels korrelieren.
 - Cross-Metrik: Korrelationen zu Gewicht, Blutdruck oder Puls nur erwähnen wenn der jeweilige r-Wert im Snapshot vorhanden und |r| > 0.4 ist. Falls das Feld nicht im Snapshot vorhanden ist, keine Korrelation interpretieren oder erfinden.
-- Erzwinge keine Querverweise wenn kein klares Muster erkennbar ist.`;
+- Erzwinge keine Querverweise wenn kein klares Muster erkennbar ist.
+- Inline-Chart: Wenn die summary oder ein finding klar auf den Stimmungsverlauf zielt, kannst du genau einen Token metric:MOOD im Text einbetten, um das Diagramm darunter einzublenden.`;
 
 const MOOD_SECTION_EN = `DOMAIN — MOOD / WELL-BEING:
 - Mood scale: 1 (very bad) to 5 (very good), daily means.
@@ -17,7 +18,8 @@ const MOOD_SECTION_EN = `DOMAIN — MOOD / WELL-BEING:
 - Associations: Mood often correlates with sleep, activity, blood pressure and medication compliance.
 - Tags: If mood tags are present, check whether specific tags align with mood levels.
 - Cross-metric: Mention correlations to weight, blood pressure or pulse only when the relevant r-value is present in the snapshot and |r| > 0.4. If the field is missing, do not interpret or invent a correlation.
-- Do not force cross-links when no clear pattern is visible.`;
+- Do not force cross-links when no clear pattern is visible.
+- Inline chart: When a summary or finding centres on the mood trajectory, embed exactly one metric:MOOD token inside the text to inline the mood chart underneath.`;
 
 export function getMoodSystemPrompt(locale: Locale): string {
   const section = locale === "en" ? MOOD_SECTION_EN : MOOD_SECTION_DE;
