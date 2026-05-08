@@ -15,6 +15,8 @@ export default defineConfig({
       "**/node_modules/**",
       "**/dist/**",
       "tests/integration/**",
+      // Playwright E2E suite — driven separately via `pnpm e2e`.
+      "e2e/**",
       // Live agent worktrees create copies of `src/` under
       // `.claude/worktrees/`; vitest would otherwise pick those copies up
       // and run their tests twice — possibly against stale snapshots.
