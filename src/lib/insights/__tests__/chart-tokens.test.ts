@@ -86,8 +86,12 @@ describe("ALLOWED_CHART_TOKENS — drift guard", () => {
     }
   });
 
-  it("includes the synthetic mood and compliance tokens", () => {
-    expect(ALLOWED_CHART_TOKENS).toContain("metric:MOOD");
-    expect(ALLOWED_CHART_TOKENS).toContain("metric:COMPLIANCE");
+  it("excludes mood and compliance tokens until dedicated charts ship", () => {
+    // `<HealthChart>` validates `type` against `measurementTypeEnum`, so
+    // emitting `metric:MOOD` or `metric:COMPLIANCE` would render an empty
+    // panel. Keep them out of the allowlist until a real MoodChart /
+    // ComplianceChart is wired into the renderer.
+    expect(ALLOWED_CHART_TOKENS).not.toContain("metric:MOOD");
+    expect(ALLOWED_CHART_TOKENS).not.toContain("metric:COMPLIANCE");
   });
 });

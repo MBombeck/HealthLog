@@ -11,6 +11,14 @@
  * The visible prose is run through stripChartTokens so the literal token
  * string never surfaces in the UI.
  */
+// Allowlist deliberately limited to MeasurementType values that
+// `<HealthChart>` already understands (the type param feeds into
+// `/api/measurements?type=<TYPE>` which Zod-validates against
+// `measurementTypeEnum`).
+//
+// `MOOD` and `COMPLIANCE` are NOT in the enum — they need their own chart
+// components, so emitting them here would render an empty "no data" panel
+// under the model's prose. Excluded until those dedicated charts ship.
 export const ALLOWED_CHART_TOKENS = [
   "metric:WEIGHT",
   "metric:BLOOD_PRESSURE_SYS",
@@ -23,8 +31,6 @@ export const ALLOWED_CHART_TOKENS = [
   "metric:TOTAL_BODY_WATER",
   "metric:BONE_MASS",
   "metric:OXYGEN_SATURATION",
-  "metric:MOOD",
-  "metric:COMPLIANCE",
 ] as const;
 
 export type ChartToken = (typeof ALLOWED_CHART_TOKENS)[number];

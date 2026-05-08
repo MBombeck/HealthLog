@@ -69,7 +69,7 @@ INLINE-CHART-TOKENS (optional):
   metric:WEIGHT, metric:BLOOD_PRESSURE_SYS, metric:BLOOD_PRESSURE_DIA,
   metric:PULSE, metric:BODY_FAT, metric:SLEEP_DURATION, metric:ACTIVITY_STEPS,
   metric:BLOOD_GLUCOSE, metric:TOTAL_BODY_WATER, metric:BONE_MASS,
-  metric:OXYGEN_SATURATION, metric:MOOD, metric:COMPLIANCE.
+  metric:OXYGEN_SATURATION.
 - Halluzinierte Tokens (z.B. metric:NUKE) werden serverseitig stumm verworfen — verwende ausschließlich einen der oben gelisteten Strings.
 - Setze den Token bevorzugt nur dann, wenn der Absatz inhaltlich auf genau diese eine Metrik fokussiert ist; ansonsten weglassen.
 
@@ -156,7 +156,7 @@ INLINE CHART TOKENS (optional):
   metric:WEIGHT, metric:BLOOD_PRESSURE_SYS, metric:BLOOD_PRESSURE_DIA,
   metric:PULSE, metric:BODY_FAT, metric:SLEEP_DURATION, metric:ACTIVITY_STEPS,
   metric:BLOOD_GLUCOSE, metric:TOTAL_BODY_WATER, metric:BONE_MASS,
-  metric:OXYGEN_SATURATION, metric:MOOD, metric:COMPLIANCE.
+  metric:OXYGEN_SATURATION.
 - Hallucinated tokens (e.g. metric:NUKE) are dropped — only the literal strings above render a chart.
 - Prefer to include a token only when the paragraph is centred on exactly one of these metrics; otherwise leave it out.
 
