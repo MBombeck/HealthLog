@@ -6,16 +6,19 @@ Instructions for AI coding agents (OpenAI Codex, Claude Code, Cursor, etc.) work
 
 **HealthLog** — a personal health-tracking web app (weight, blood pressure, pulse, mood, medication compliance) with Withings integration, moodLog.app sync, Dracula-themed UI, mobile-first PWA design.
 
-**Status**: v1.4.0 — UI guidelines + reusable Skeleton/EmptyState
-primitives, medical citations consolidated under
-`src/lib/medical-citations.ts` (BP_DIA hypotension floor, ESH 2023
-alignment, "WHO 8000 steps" hallucination removed, ACE body-fat bands
-corrected), localised medication reminders + dashboard greeting +
-Zod validations, two more N+1 queries closed, Berlin-TZ-aware weekly
-buckets, single-row dashboard tile strip, public `/api/version`
-endpoint, AI provider connection-test honours unsaved selection,
-health-data inputs block password-manager autofill by default. See
-GitHub Releases + CHANGELOG.md for the full feature timeline.
+**Status**: v1.4.0 (released) → v1.4.1 in progress. v1.4.0 shipped
+the UI guidelines + Skeleton/EmptyState primitives, medical-citations
+consolidation, the per-route `/settings/[section]` split, the
+status-first admin grid + aggregator endpoint, five new "Test
+connection" buttons, AI insights with inline charts via allowlisted
+metric tokens, off-host encrypted S3 backup, encryption-key
+versioning + rotation CLI, optional `HEALTHLOG_PROCESS_TYPE` worker /
+web split, and short-lived 24h access tokens with refresh-token
+rotation for native API clients. v1.4.1 follows up with per-section
+admin component extraction (the inner monolith into one file per
+panel), a Postgres testcontainers integration test suite, and a
+Playwright + axe-core E2E foundation. See GitHub Releases +
+CHANGELOG.md for the full feature timeline.
 
 ## Tech Stack
 
@@ -75,7 +78,7 @@ src/
 │   ├── layout.tsx                # Root layout (viewport-fit: cover for PWA)
 │   ├── page.tsx                  # Dashboard (/) with quick entry dropdown
 │   ├── globals.css               # Dracula theme CSS variables
-│   ├── admin/page.tsx            # Admin panel
+│   ├── admin/page.tsx            # Admin shell — 77 LOC, mounts the per-section components from src/components/admin/
 │   ├── auth/login/page.tsx       # Login
 │   ├── auth/register/page.tsx    # Registration
 │   ├── achievements/page.tsx     # Gamification achievements
@@ -85,7 +88,8 @@ src/
 │   ├── medications/page.tsx      # Medications management
 │   ├── notifications/page.tsx    # Notification preferences matrix
 │   ├── onboarding/page.tsx       # 4-step guided onboarding
-│   ├── settings/page.tsx         # All settings (8 top-level sections, ~3150 lines — split tracked for 1.4.0)
+│   ├── settings/page.tsx         # 308-redirects /settings → /settings/account
+│   ├── settings/[section]/page.tsx  # Per-section route shell (account, integrations, notifications, dashboard, ai, api, advanced, about)
 │   ├── mood/page.tsx             # Mood tracking
 │   ├── targets/page.tsx          # Target values dashboard
 │   └── api/                      # 100+ API route files (admin, auth, measurements, medications, mood, insights, integrations, ingest, dashboard, feedback, tokens, notifications, monitoring, …)
@@ -104,7 +108,8 @@ src/
 │   ├── charts/                   # Recharts wrappers, compliance charts
 │   ├── insights/                 # AI insights cards (status, advisor)
 │   ├── gamification/             # Achievement cards, progress
-│   ├── settings/                 # Settings-page section components
+│   ├── settings/                 # Per-route Settings section components (one per /settings/[section])
+│   ├── admin/                    # Per-route Admin section components (system-status, integrations, monitoring, reminders, users, audit, danger-zone, feedback)
 │   └── monitoring/               # Umami, GlitchTip bootstrap
 ├── lib/
 │   ├── db.ts                     # Prisma client singleton
@@ -135,8 +140,8 @@ messages/
 ├── de.json                       # German translations (primary UI language)
 └── en.json                       # English translations
 prisma/
-├── schema.prisma                 # Database schema (25 models)
-└── migrations/                   # Migration files (0001–0024; latest: oxygen_saturation)
+├── schema.prisma                 # Database schema (26 models)
+└── migrations/                   # Migration files (0001–0025; latest: refresh_tokens + user_locale_drift_fix)
 prisma.config.ts                  # Prisma config (DB URL lives here, NOT in schema)
 public/
 ├── sw.js                         # Service worker (Web Push + offline caching)
@@ -183,11 +188,11 @@ These are hard-won lessons. Ignoring them will cause errors:
 - **Zod v4**: Import from `"zod/v4"`, not `"zod"`.
 - **jsPDF**: Client-side only. Import dynamically in browser context. Used with `jspdf-autotable` plugin.
 
-### Settings Page
+### Settings & Admin (per-route layout, v1.4)
 
-- One large file (~3150 lines), 8 top-level sections. Sidebar switches to "settings mode" showing section shortcuts. Splitting into per-section files is tracked for 1.4.0 — until then, ESLint `react-hooks/set-state-in-effect` stays non-blocking because of the long-standing violations in this file.
-- Sections scroll-to with highlight animation (`section-highlight` CSS class).
-- Top-level section IDs: `section-allgemein`, `section-sicherheit`, `section-benachrichtigungen`, `section-personalization`, `section-integration`, `section-api`, `section-export`, `section-danger-zone`. Sub-anchors inside those sections include `profil`, `passwort`, `passkeys`, `telegram`, `ntfy`, `web-push`, `insights`, `dashboard-layout`, `thresholds`, `withings`, `moodlog`, `api-tokens`, `api-endpoints`.
+- **Settings**: 8 routes under `/settings/[section]` — `account`, `integrations`, `notifications`, `dashboard`, `ai`, `api`, `advanced`, `about`. The legacy `/settings` 308-redirects to `/settings/account`. Sidebar deep-links and the `<a href="/settings#anchor">` patterns from 1.3 still resolve via the redirect.
+- **Admin**: `src/app/admin/page.tsx` is now a 77-LOC shell that mounts the per-section components in `src/components/admin/`. Status-card grid lives in `status-card-grid.tsx`. The aggregator endpoint `/api/admin/status-overview` returns the six-card summaries in one batched query.
+- ESLint `react-hooks/set-state-in-effect` is **strict** now (was non-blocking when the settings monolith carried inline-effect state-setters). Use lazy `useState(() => …)` for localStorage reads, TanStack Query for data fetches.
 
 ### Insights Page
 
@@ -225,7 +230,7 @@ These are hard-won lessons. Ignoring them will cause errors:
 
 ## Database Models (Prisma)
 
-25 models: `User`, `Passkey`, `Session`, `AuthChallenge`, `Measurement`, `Medication`, `MedicationSchedule`, `MedicationIntakeEvent`, `ReminderPhaseConfig`, `TelegramReminderMessage`, `TelegramScheduledDeletion`, `ApiToken`, `WithingsConnection`, `MoodEntry`, `AppSettings`, `Feedback`, `AuditLog`, `NotificationChannel`, `NotificationPreference`, `PushSubscription`, `DataBackup`, `UserAchievement`, `RateLimit`, `Device`, `IdempotencyKey`.
+26 models: `User`, `Passkey`, `Session`, `AuthChallenge`, `Measurement`, `Medication`, `MedicationSchedule`, `MedicationIntakeEvent`, `ReminderPhaseConfig`, `TelegramReminderMessage`, `TelegramScheduledDeletion`, `ApiToken`, `RefreshToken`, `WithingsConnection`, `MoodEntry`, `AppSettings`, `Feedback`, `AuditLog`, `NotificationChannel`, `NotificationPreference`, `PushSubscription`, `DataBackup`, `UserAchievement`, `RateLimit`, `Device`, `IdempotencyKey`. (`RefreshToken` added in v1.4.0 alongside the native-client 24h access-token / refresh-token rotation flow.)
 
 ## When Making Changes
 

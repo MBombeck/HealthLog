@@ -63,6 +63,10 @@ Most health apps lock your data behind proprietary clouds, push subscriptions, a
 
 **Internationalization** -- English (default) and German UI with 1500+ translation keys, guarded by a CI integrity test that fails the build on duplicate keys or drift between locales. Numbers, dates, units, and AI prompts all locale-aware via `useFormatters()`. Browser-based detection with per-user override.
 
+**Multi-tenant ready** _(v1.4)_ — Off-host AES-GCM-encrypted weekly backups to any S3-compatible bucket (R2, B2, MinIO, AWS), encryption-key versioning + zero-downtime rotation CLI, optional `HEALTHLOG_PROCESS_TYPE=web|worker|all` so HTTP and pg-boss can scale independently, and short-lived 24h access tokens with refresh-token rotation for native API clients. The browser cookie session is unchanged.
+
+**Test connection buttons** _(v1.4)_ — One-click probes for Withings, moodLog.app, Web Push, Glitchtip, and Umami in addition to the existing AI / Telegram / ntfy tests. Each one rate-limited, sanitised against SSRF redirects, and surfaces a localisable `errorCode` so the UI can render the failure in the user's language.
+
 ---
 
 ## Quick Start
@@ -102,7 +106,7 @@ Open **http://localhost:3000**. The first registered user becomes admin.
 | ------------- | ------------------------------------------------- |
 | Framework     | Next.js 16 (App Router, React Server Components)  |
 | Language      | TypeScript (strict mode)                          |
-| Database      | PostgreSQL 16 + Prisma 7 (25 models)              |
+| Database      | PostgreSQL 16 + Prisma 7 (26 models)              |
 | Job Queue     | pg-boss 12 (reminders, insights, backups)         |
 | UI            | shadcn/ui, Tailwind CSS 4, Radix UI, Lucide Icons |
 | Charts        | Recharts 3                                        |
@@ -275,83 +279,101 @@ All mutations require authentication via session cookie. External ingest uses Be
 <details>
 <summary><strong>Auth and Integrations</strong></summary>
 
-| Method | Endpoint                         | Description                          |
-| ------ | -------------------------------- | ------------------------------------ |
-| `POST` | `/api/auth/register`             | Create account                       |
-| `POST` | `/api/auth/login`                | Password login                       |
-| `POST` | `/api/auth/logout`               | Destroy session                      |
-| `GET`  | `/api/auth/me`                   | Current user profile + Gravatar URL  |
-| `POST` | `/api/auth/password`             | Change password                      |
-| `PATCH`| `/api/auth/profile`              | Update profile fields                |
-| `POST` | `/api/auth/passkey/*`            | WebAuthn flows (4 sub-routes)        |
-| `GET`  | `/api/auth/passkeys`             | List enrolled passkeys               |
-| `GET`  | `/api/auth/codex/authorize`      | ChatGPT (codex) OAuth start          |
-| `GET`  | `/api/withings/connect`          | Initiate Withings OAuth              |
-| `POST` | `/api/withings/sync`             | Trigger manual Withings sync         |
-| `POST` | `/api/withings/webhook`          | Withings notification webhook        |
-| `POST` | `/api/insights/generate`         | Regenerate AI insights               |
-| `GET`  | `/api/insights/comprehensive`    | Aggregated insight payload           |
-| `GET`  | `/api/gamification/achievements` | Achievement progress                 |
-| `GET`  | `/api/health`                    | Docker health check                  |
+| Method  | Endpoint                         | Description                         |
+| ------- | -------------------------------- | ----------------------------------- |
+| `POST`  | `/api/auth/register`             | Create account                      |
+| `POST`  | `/api/auth/login`                | Password login                      |
+| `POST`  | `/api/auth/logout`               | Destroy session                     |
+| `GET`   | `/api/auth/me`                   | Current user profile + Gravatar URL |
+| `POST`  | `/api/auth/password`             | Change password                     |
+| `PATCH` | `/api/auth/profile`              | Update profile fields               |
+| `POST`  | `/api/auth/passkey/*`            | WebAuthn flows (4 sub-routes)       |
+| `GET`   | `/api/auth/passkeys`             | List enrolled passkeys              |
+| `GET`   | `/api/auth/codex/authorize`      | ChatGPT (codex) OAuth start         |
+| `GET`   | `/api/withings/connect`          | Initiate Withings OAuth             |
+| `POST`  | `/api/withings/sync`             | Trigger manual Withings sync        |
+| `POST`  | `/api/withings/webhook`          | Withings notification webhook       |
+| `POST`  | `/api/insights/generate`         | Regenerate AI insights              |
+| `GET`   | `/api/insights/comprehensive`    | Aggregated insight payload          |
+| `GET`   | `/api/gamification/achievements` | Achievement progress                |
+| `GET`   | `/api/health`                    | Docker health check                 |
 
 </details>
 
 <details>
 <summary><strong>Personalization (Thresholds + Dashboard)</strong></summary>
 
-| Method   | Endpoint                  | Description                                   |
-| -------- | ------------------------- | --------------------------------------------- |
-| `GET`    | `/api/user/thresholds`    | Read per-user threshold overrides             |
-| `PUT`    | `/api/user/thresholds`    | Upsert thresholds (rate-limited, audit-logged)|
-| `GET`    | `/api/insights/targets`   | Effective ranges (defaults + overrides merged)|
-| `GET`    | `/api/dashboard/widgets`  | Read dashboard layout                         |
-| `PUT`    | `/api/dashboard/widgets`  | Persist dashboard layout (show/hide/reorder)  |
-| `POST`   | `/api/onboarding/complete`| Mark onboarding finished                      |
+| Method | Endpoint                   | Description                                    |
+| ------ | -------------------------- | ---------------------------------------------- |
+| `GET`  | `/api/user/thresholds`     | Read per-user threshold overrides              |
+| `PUT`  | `/api/user/thresholds`     | Upsert thresholds (rate-limited, audit-logged) |
+| `GET`  | `/api/insights/targets`    | Effective ranges (defaults + overrides merged) |
+| `GET`  | `/api/dashboard/widgets`   | Read dashboard layout                          |
+| `PUT`  | `/api/dashboard/widgets`   | Persist dashboard layout (show/hide/reorder)   |
+| `POST` | `/api/onboarding/complete` | Mark onboarding finished                       |
 
 </details>
 
 <details>
 <summary><strong>Feedback + API Tokens</strong></summary>
 
-| Method   | Endpoint                                | Description                          |
-| -------- | --------------------------------------- | ------------------------------------ |
-| `POST`   | `/api/feedback`                         | Submit in-app feedback               |
-| `GET`    | `/api/bugreport/status`                 | Check published GitHub issue state   |
-| `GET`    | `/api/tokens`                           | List own API tokens                  |
-| `POST`   | `/api/tokens`                           | Mint new API token (Bearer, hashed)  |
-| `DELETE` | `/api/tokens/:id`                       | Revoke API token                     |
+| Method   | Endpoint                | Description                         |
+| -------- | ----------------------- | ----------------------------------- |
+| `POST`   | `/api/feedback`         | Submit in-app feedback              |
+| `GET`    | `/api/bugreport/status` | Check published GitHub issue state  |
+| `GET`    | `/api/tokens`           | List own API tokens                 |
+| `POST`   | `/api/tokens`           | Mint new API token (Bearer, hashed) |
+| `DELETE` | `/api/tokens/:id`       | Revoke API token                    |
 
 </details>
 
 <details>
 <summary><strong>Notifications</strong></summary>
 
-| Method   | Endpoint                          | Description                            |
-| -------- | --------------------------------- | -------------------------------------- |
-| `GET`    | `/api/notifications/preferences`  | Read per-channel × per-event matrix    |
-| `PUT`    | `/api/notifications/preferences`  | Update preferences                     |
-| `GET`    | `/api/notifications/vapid`        | VAPID public key for Web Push          |
-| `POST`   | `/api/notifications/web-push`     | Register Web Push subscription         |
-| `POST`   | `/api/telegram/webhook`           | Telegram bot inline-button callback    |
+| Method | Endpoint                         | Description                         |
+| ------ | -------------------------------- | ----------------------------------- |
+| `GET`  | `/api/notifications/preferences` | Read per-channel × per-event matrix |
+| `PUT`  | `/api/notifications/preferences` | Update preferences                  |
+| `GET`  | `/api/notifications/vapid`       | VAPID public key for Web Push       |
+| `POST` | `/api/notifications/web-push`    | Register Web Push subscription      |
+| `POST` | `/api/telegram/webhook`          | Telegram bot inline-button callback |
 
 </details>
 
 <details>
 <summary><strong>Admin (admin role required)</strong></summary>
 
-| Method   | Endpoint                          | Description                            |
-| -------- | --------------------------------- | -------------------------------------- |
-| `GET`    | `/api/admin/status`               | System + integration status            |
-| `GET`    | `/api/admin/users`                | List users                             |
-| `POST`   | `/api/admin/users/:id/reset-password` | Force password reset               |
-| `GET`    | `/api/admin/feedback`             | All feedback / bug reports             |
-| `POST`   | `/api/admin/feedback/:id/github`  | Escalate feedback to GitHub issue      |
-| `GET`    | `/api/admin/audit-log`            | Audit-log viewer                       |
-| `GET`    | `/api/admin/ai-settings`          | Read shared AI provider config         |
-| `PUT`    | `/api/admin/ai-settings`          | Update shared AI provider config       |
-| `GET`    | `/api/admin/tokens`               | All issued API tokens                  |
-| `POST`   | `/api/admin/notifications/test`   | Send test notification                 |
-| `GET`    | `/api/admin/data`                 | Data backups + counts                  |
+| Method | Endpoint                              | Description                           |
+| ------ | ------------------------------------- | ------------------------------------- |
+| `GET`  | `/api/admin/status`                   | System + integration status           |
+| `GET`  | `/api/admin/users`                    | List users                            |
+| `POST` | `/api/admin/users/:id/reset-password` | Force password reset                  |
+| `GET`  | `/api/admin/feedback`                 | All feedback / bug reports            |
+| `POST` | `/api/admin/feedback/:id/github`      | Escalate feedback to GitHub issue     |
+| `GET`  | `/api/admin/audit-log`                | Audit-log viewer                      |
+| `GET`  | `/api/admin/ai-settings`              | Read shared AI provider config        |
+| `PUT`  | `/api/admin/ai-settings`              | Update shared AI provider config      |
+| `GET`  | `/api/admin/tokens`                   | All issued API tokens                 |
+| `POST` | `/api/admin/notifications/test`       | Send test notification                |
+| `GET`  | `/api/admin/data`                     | Data backups + counts                 |
+| `GET`  | `/api/admin/status-overview`          | Aggregated status for the 6-card grid |
+| `POST` | `/api/admin/backup/test`              | Probe S3-compatible backup target     |
+
+</details>
+
+<details>
+<summary><strong>Public + v1.4 additions</strong></summary>
+
+| Method | Endpoint                           | Description                                     |
+| ------ | ---------------------------------- | ----------------------------------------------- |
+| `GET`  | `/api/version`                     | Public — version + build SHA + license, no auth |
+| `POST` | `/api/integrations/withings/test`  | Probe a saved Withings connection               |
+| `POST` | `/api/integrations/moodlog/test`   | Probe moodLog.app webhook reachability          |
+| `POST` | `/api/notifications/web-push/test` | Send a test Web Push to the current user        |
+| `POST` | `/api/monitoring/glitchtip/test`   | Trigger a Glitchtip ingest probe                |
+| `POST` | `/api/monitoring/umami/test`       | Verify Umami script + website ID resolve        |
+| `POST` | `/api/auth/refresh`                | Native client refresh-token rotation            |
+| `POST` | `/api/auth/refresh/revoke`         | Revoke an issued refresh token                  |
 
 </details>
 
