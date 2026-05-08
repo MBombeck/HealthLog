@@ -207,8 +207,9 @@ function defaultRange(
       // AASM: 7–9h for adults; warning yellow either side.
       return { greenMin: 7, greenMax: 9, orangeMin: 6, orangeMax: 10 };
     case "ACTIVITY_STEPS":
-      // ≥8000 steps/day per Saint-Maurice et al., JAMA 2020 (mortality
-      // plateau 8000–12000 steps). WHO 2020 PA guidelines publish minutes
+      // ≥8000 steps/day per Saint-Maurice et al., JAMA 2020 (continued
+      // dose-response benefit through ~12000 steps/day, not a plateau —
+      // HR 0.49 at 8k vs 4k, HR 0.35 at 12k). WHO 2020 PA guidelines publish minutes
       // per week (150–300 min moderate / 75–150 min vigorous) — *not* a
       // step quota. No upper bound in reality, orange over 25k caps edge
       // detection.

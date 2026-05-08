@@ -36,7 +36,7 @@ docker compose logs -f app    # Tail app logs
 ## Architecture
 
 - **Next.js 16** App Router with TypeScript strict. Pages are RSC by default; `"use client"` only for interactivity.
-- **Prisma 7** ORM with PostgreSQL (25 models). Uses `PrismaPg` adapter from `@prisma/adapter-pg`. Client singleton at `src/lib/db.ts`. Generated client at `src/generated/prisma/client` (note the `/client` suffix). Prisma config in `prisma.config.ts` (not in schema.prisma).
+- **Prisma 7** ORM with PostgreSQL (26 models). Uses `PrismaPg` adapter from `@prisma/adapter-pg`. Client singleton at `src/lib/db.ts`. Generated client at `src/generated/prisma/client` (note the `/client` suffix). Prisma config in `prisma.config.ts` (not in schema.prisma).
 - **shadcn/ui** components (new-york style) in `src/components/ui/`. Add new ones via `pnpm dlx shadcn@latest add <component>`.
 - **Dracula theme** via CSS variables in `globals.css`. Dark mode is default. Use `--dracula-*` tokens for chart colors.
 - **TanStack Query** for client-side data fetching. Provider in `src/components/providers.tsx`.
@@ -68,6 +68,8 @@ docker compose logs -f app    # Tail app logs
 - `src/components/measurements/` — measurement form, list
 - `src/components/mood/` — mood form, mood list
 - `src/components/charts/` — Recharts wrappers
+- `src/components/settings/` — per-route Settings section components (one per `/settings/[section]`)
+- `src/components/admin/` — per-route Admin section components (system-status, integrations, monitoring, users, audit, danger-zone, feedback)
 - `src/lib/logging/` — Wide Events structured logging (types, config, event-builder, context, sampler, transports, background)
 - `src/lib/api-handler.ts` — apiHandler wrapper, requireAuth(), requireAdmin(), HttpError
 - `src/lib/` — server utilities (db, crypto, auth, analytics, export, rate-limit, gravatar)
@@ -81,7 +83,9 @@ docker compose logs -f app    # Tail app logs
 - `src/lib/validations/` — Zod schemas shared between API + client
 - `src/hooks/` — React hooks (`use-auth`)
 - `messages/de.json` + `messages/en.json` — i18n translations
-- `prisma/schema.prisma` — database schema (25 models)
+- `prisma/schema.prisma` — database schema (26 models)
+- `tests/integration/` — Postgres testcontainers integration suite (rate-limit race, idempotency replay, GDPR cascade delete, session lifecycle); `pnpm test:integration`
+- `e2e/` — Playwright + axe-core suite for public smoke checks (version, auth-redirect, login, locale-switch, a11y); `pnpm e2e`
 - `prisma.config.ts` — Prisma config (DB URL here, not in schema)
 - `public/sw.js` — Service worker for Web Push notifications + offline caching
 - `docs/` — long-form audit notes (`docs/audit/`); end-user docs live in the separate site at https://docs.healthlog.dev
@@ -107,6 +111,8 @@ docker compose logs -f app    # Tail app logs
 - **Achievements**: Persistent in `UserAchievement` table. Computed on API call, new unlocks written to DB with stable `unlockedAt` timestamps
 - **Data backup**: pg-boss `data-backup` queue runs weekly (Sundays 03:00), stores JSON in `DataBackup` model
 - **Wide Events / Structured Logging**: `apiHandler()` wraps all API routes. Use `annotate()` from `@/lib/logging/context` for business-action annotations. Use `requireAuth()` / `requireAdmin()` from `@/lib/api-handler` (auto-annotates auth). Background jobs use `withBackgroundEvent()`. External calls tracked via `getEvent()?.addExternalCall()`. No `console.log` in production code — use event annotations instead. Env vars: `LOG_LEVEL`, `LOG_SAMPLE_RATE`, `LOG_SLOW_THRESHOLD_MS`, `LOG_INCLUDE_STACK`, `LOKI_ENDPOINT`, `LOKI_USERNAME`, `LOKI_PASSWORD`
+- **Multi-tenant prep (v1.4)**: `HEALTHLOG_PROCESS_TYPE=web|worker|all` (default `all`) splits HTTP and pg-boss workloads; the proxy refuses HTTP traffic with 503 + `X-HealthLog-Process-Type: worker` in worker mode. `ENCRYPTION_KEYS` is a JSON map of versioned keys (`{"v1": "...", "v2": "..."}`) plus `ENCRYPTION_ACTIVE_KEY_ID` for new writes; rotation via `pnpm tsx scripts/rotate-encryption-key.ts <id>`. `BACKUP_S3_*` env block configures off-host weekly encrypted backups (PutObject + GetObject only — retention is the bucket's lifecycle policy, never the worker).
+- **Native API clients (v1.4)**: `POST /api/auth/login` and `/api/auth/passkey/login-verify` issue a 24h access token (`hlk_<64hex>`) AND a refresh token (`hlr_<64hex>`) when `X-Client-Type: native` or the User-Agent starts with `HealthLog-iOS/`. The browser flow is unchanged. Refresh-token reuse-detection revokes every refresh token for the user. The idempotency replay-cache rejects bodies containing `hlk_` OR `hlr_` so cached responses can never echo a token back.
 
 ## Headless-Client API Patterns
 

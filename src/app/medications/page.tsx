@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
@@ -485,47 +485,58 @@ function ApiEndpointDialog({
   onClose: () => void;
 }) {
   const { t } = useTranslations();
+  const queryClient = useQueryClient();
   type ExampleType = "curl" | "wget" | "fetch" | "powershell";
 
-  const [enabled, setEnabled] = useState(false);
-  const [activeTokenCount, setActiveTokenCount] = useState(0);
-  const [loadingStatus, setLoadingStatus] = useState(false);
+  const apiEndpointKey = ["medication-api-endpoint", medication?.id];
+
+  type ApiEndpointStatus = { enabled: boolean; activeTokenCount: number };
+
+  const {
+    data: status,
+    isFetching: loadingStatus,
+    refetch: refetchStatus,
+    error: statusError,
+  } = useQuery<ApiEndpointStatus>({
+    queryKey: apiEndpointKey,
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/medications/${medication!.id}/api-endpoint`,
+      );
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || t("medications.statusLoadFailed"));
+      }
+      return {
+        enabled: json.data.enabled === true,
+        activeTokenCount: json.data.activeTokenCount ?? 0,
+      };
+    },
+    enabled: !!medication,
+    staleTime: 0,
+    gcTime: 0,
+  });
+
+  const enabled = status?.enabled ?? false;
+  const activeTokenCount = status?.activeTokenCount ?? 0;
+
   const [token, setToken] = useState<string | null>(null);
   const [toggling, setToggling] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [exampleType, setExampleType] = useState<ExampleType>("curl");
 
+  const displayMsg =
+    msg ?? (statusError instanceof Error ? statusError.message : null);
+
   function handleClose() {
-    setEnabled(false);
-    setActiveTokenCount(0);
+    queryClient.removeQueries({ queryKey: apiEndpointKey });
     setToken(null);
     setMsg(null);
     setCopied(null);
     setExampleType("curl");
     onClose();
   }
-
-  const loadStatus = useCallback(async () => {
-    if (!medication) return;
-    setLoadingStatus(true);
-    setMsg(null);
-    try {
-      const res = await fetch(`/api/medications/${medication.id}/api-endpoint`);
-      if (res.ok) {
-        const json = await res.json();
-        setEnabled(json.data.enabled === true);
-        setActiveTokenCount(json.data.activeTokenCount ?? 0);
-      } else {
-        const json = await res.json();
-        setMsg(json.error || t("medications.statusLoadFailed"));
-      }
-    } catch {
-      setMsg(t("medications.statusLoadFailed"));
-    } finally {
-      setLoadingStatus(false);
-    }
-  }, [medication, t]);
 
   async function toggleEndpoint(nextEnabled: boolean) {
     if (!medication) return;
@@ -547,15 +558,16 @@ function ApiEndpointDialog({
         return;
       }
 
-      setEnabled(json.data.enabled === true);
-      if (typeof json.data.activeTokenCount === "number") {
-        setActiveTokenCount(json.data.activeTokenCount);
-      } else if (
-        !json.data.enabled &&
-        typeof json.data.revokedTokenCount === "number"
-      ) {
-        setActiveTokenCount(0);
-      }
+      const nextStatus: ApiEndpointStatus = {
+        enabled: json.data.enabled === true,
+        activeTokenCount:
+          typeof json.data.activeTokenCount === "number"
+            ? json.data.activeTokenCount
+            : !json.data.enabled
+              ? 0
+              : (status?.activeTokenCount ?? 0),
+      };
+      queryClient.setQueryData<ApiEndpointStatus>(apiEndpointKey, nextStatus);
 
       if (json.data.token) {
         setToken(json.data.token);
@@ -578,11 +590,6 @@ function ApiEndpointDialog({
     setCopied(key);
     setTimeout(() => setCopied(null), 2000);
   }
-
-  useEffect(() => {
-    if (!medication) return;
-    void loadStatus();
-  }, [medication, loadStatus]);
 
   const baseUrl =
     typeof window !== "undefined" ? window.location.origin : "https://...";
@@ -756,11 +763,11 @@ function ApiEndpointDialog({
             )}
           </div>
 
-          {msg && (
+          {displayMsg && (
             <p
-              className={`text-sm ${msg === t("medications.apiEndpointActivated") || msg === t("medications.apiEndpointDeactivated") ? "text-dracula-green" : "text-destructive"}`}
+              className={`text-sm ${displayMsg === t("medications.apiEndpointActivated") || displayMsg === t("medications.apiEndpointDeactivated") ? "text-dracula-green" : "text-destructive"}`}
             >
-              {msg}
+              {displayMsg}
             </p>
           )}
 
@@ -780,7 +787,7 @@ function ApiEndpointDialog({
               <DropdownMenuContent align="start">
                 <DropdownMenuItem
                   onClick={() => {
-                    void loadStatus();
+                    void refetchStatus();
                   }}
                   disabled={loadingStatus || toggling}
                 >

@@ -52,9 +52,12 @@ export const CITATIONS = {
   /**
    * Saint-Maurice PF, et al. "Association of daily step count and step
    * intensity with mortality among US adults." JAMA. 2020.
-   * Mortality benefit plateaus 8 000–12 000 steps/day. WHO 2020 PA
-   * guidelines publish minutes per week, NOT a step quota — DO NOT
-   * cite WHO for a step number.
+   * The paper reports continued dose-response benefit (HR 0.49 at 8k
+   * vs 4k, HR 0.35 at 12k vs 4k) — NOT a plateau. The plateau-shaped
+   * finding belongs to Paluch 2022 Lancet Public Health (PMID
+   * 35247352, age-stratified meta-analysis). WHO 2020 PA guidelines
+   * publish minutes per week, NOT a step quota — DO NOT cite WHO
+   * for a step number.
    */
   STEPS_SAINT_MAURICE_2020: {
     id: "steps-saint-maurice-2020",
@@ -62,7 +65,7 @@ export const CITATIONS = {
     year: 2020,
     url: "https://jamanetwork.com/journals/jama/fullarticle/2763292",
     caveat:
-      "U.S. adult cohort, observational; benefit plateaus 8–12k steps/day.",
+      "U.S. adult cohort, observational; benefit accumulates strongly through ~12k steps/day (continued dose-response, not a plateau).",
   },
 
   /**

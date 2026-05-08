@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { WideEvent, LogLevel, EventKind } from "./types";
 import { LOG_LEVEL_PRIORITY } from "./types";
 import { getDeployContext } from "./config";
+import { redactOptional, redactSecrets } from "./redact";
 
 /**
  * Baut ein Wide Event Schritt fuer Schritt auf.
@@ -61,14 +62,14 @@ export class WideEventBuilder {
     if (err instanceof Error) {
       this.event.error = {
         type: err.constructor.name,
-        message: err.message,
-        stack: err.stack,
+        message: redactSecrets(err.message),
+        stack: redactOptional(err.stack),
         code: (err as { statusCode?: number }).statusCode,
       };
     } else {
       this.event.error = {
         type: "Unknown",
-        message: String(err),
+        message: redactSecrets(String(err)),
       };
     }
     return this;
@@ -88,7 +89,8 @@ export class WideEventBuilder {
   }
 
   addDbQuery(durationMs: number): this {
-    if (!this.event.db) this.event.db = { query_count: 0, query_duration_ms: 0 };
+    if (!this.event.db)
+      this.event.db = { query_count: 0, query_duration_ms: 0 };
     this.event.db.query_count++;
     this.event.db.query_duration_ms += durationMs;
     return this;

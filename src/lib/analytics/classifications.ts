@@ -46,7 +46,7 @@ export function classifyBMI(bmi: number): BmiClassification {
   };
 }
 
-// ── BP Classification (ESC/ESH 2018) ────────────────────
+// ── BP Classification (ESH 2023) ────────────────────────
 
 export interface BpClassification {
   category: string;
@@ -244,9 +244,10 @@ export function classifyBodyFat(
 // Cohort source: Saint-Maurice PF, et al. "Association of daily step
 // count and step intensity with mortality among US adults." JAMA. 2020.
 // https://jamanetwork.com/journals/jama/fullarticle/2763292
-// Mortality benefit plateaus 8 000–12 000 steps/day. WHO publishes
-// physical-activity TIME (150–300 min/wk moderate) — NOT a step
-// quota; do not cite "WHO ≥ 8 000 steps".
+// Mortality benefit accumulates strongly through ~12 000 steps/day
+// (HR 0.49 at 8k vs 4k, HR 0.35 at 12k — continued dose-response,
+// not a plateau). WHO publishes physical-activity TIME (150–300
+// min/wk moderate) — NOT a step quota; do not cite "WHO ≥ 8 000 steps".
 
 export interface StepsClassification {
   category: string;
@@ -280,8 +281,8 @@ export function classifySteps(steps: number): StepsClassification {
 
 /**
  * Activity-steps target range. Single source of truth: aligned with
- * `effective-range.ts` (Saint-Maurice JAMA 2020 — mortality plateau
- * 8 000–12 000). The v1.3.3 audit flagged a drift where this helper
+ * `effective-range.ts` (Saint-Maurice JAMA 2020 — continued mortality
+ * dose-response through ~12 000 steps/day). The v1.3.3 audit flagged a drift where this helper
  * returned {7 000, 10 000} while `effective-range.ts` returned
  * {8 000, 15 000}; both surfaces showed different "green" bands to the
  * same user. They now agree.
@@ -319,7 +320,9 @@ export function getSleepDurationRange(): { min: number; max: number } {
 }
 
 /**
- * BP target ranges based on ESC/ESH 2018 guidelines.
+ * BP target ranges based on ESH 2023 guidelines (numerically
+ * unchanged from the joint ESC/ESH 2018 document; the 2023 update
+ * is ESH-only since ESC withdrew from joint authoring).
  */
 export function getBpTargetsByAge(
   age: number,
@@ -329,7 +332,7 @@ export function getBpTargetsByAge(
   if (age < 65) {
     return { sysLow: 120, sysHigh: 129, diaLow: 70, diaHigh: 79 };
   }
-  // 65+ (both 65–79 and ≥80 have the same targets per ESC/ESH)
+  // 65+ (both 65–79 and ≥80 have the same targets per ESH 2023)
   return { sysLow: 130, sysHigh: 139, diaLow: 70, diaHigh: 79 };
 }
 

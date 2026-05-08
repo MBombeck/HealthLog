@@ -1,0 +1,34 @@
+name: Integration tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm db:generate
+
+      - run: pnpm test:integration
+        env:
+          # The integration suite boots a Postgres testcontainer and points
+          # Prisma at it via DATABASE_URL set inside `tests/integration/setup.ts`.
+          # These env vars satisfy code paths that read them at module load.
+          API_TOKEN_HMAC_KEY: integration-tests-do-not-use-in-prod
+          ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000000
+          SESSION_SECRET: integration-tests
