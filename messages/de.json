@@ -800,7 +800,75 @@
     "errorMedication": "Das Medikament „{name}\" konnte nicht angelegt werden. Bitte erneut versuchen oder später unter „Medikamente\" hinzufügen.",
     "errorTargets": "Deine Zielwerte konnten nicht gespeichert werden. Bitte erneut versuchen.",
     "errorGeneric": "Beim Abschluss des Setups ist etwas schiefgelaufen. Bitte erneut versuchen.",
-    "medScheduleHint": "Wir legen ein Standard-Erinnerungsfenster an (08:00–09:00 täglich). Du kannst es jederzeit unter „Medikamente\" anpassen."
+    "medScheduleHint": "Wir legen ein Standard-Erinnerungsfenster an (08:00–09:00 täglich). Du kannst es jederzeit unter „Medikamente\" anpassen.",
+    "v2": {
+      "title": "Willkommen bei HealthLog",
+      "subtitle": "Drei schnelle Schritte. Alles weitere kannst du später in den Einstellungen erledigen.",
+      "stepOf": "Schritt {current} von {total}",
+      "back": "Zurück",
+      "continue": "Weiter",
+      "finish": "Setup abschließen",
+      "skipStep": "Schritt überspringen — du kannst das Setup später in den Einstellungen abschließen.",
+      "step1": {
+        "title": "Über dich",
+        "description": "Wird für Blutdruck-Zielwerte, BMI und passende Erinnerungen genutzt.",
+        "displayNameLabel": "Anzeigename",
+        "displayNameHint": "Erscheint in der Dashboard-Begrüßung und in Berichten.",
+        "languageLabel": "Sprache",
+        "languageHint": "Wird für App, PDFs und Benachrichtigungen verwendet."
+      },
+      "step2": {
+        "title": "Lege deine erste Messung an",
+        "description": "Gewicht, Blutdruck oder Puls — was du gerade zur Hand hast. Schon eine Messung lässt das Dashboard lebendig wirken.",
+        "added": "Top — weitere Messungen kannst du jederzeit über das Dashboard hinzufügen.",
+        "skipHint": "Keine Messung zur Hand? Überspringe und logge eine, wenn du soweit bist."
+      },
+      "step3": {
+        "title": "Wähle einen Benachrichtigungs-Kanal",
+        "description": "Wir senden nur, was du auch willst. Du kannst weitere Kanäle und Events später feinjustieren.",
+        "channelTelegramTitle": "Telegram-Bot",
+        "channelTelegramHint": "Erinnerungen mit Snooze-Buttons direkt in Telegram.",
+        "channelWebPushTitle": "Web Push",
+        "channelWebPushHint": "Native Browser-Benachrichtigungen auf diesem Gerät.",
+        "channelNtfyTitle": "ntfy.sh",
+        "channelNtfyHint": "Open-Source-Push an Handy oder Desktop, ohne Account.",
+        "channelNoneTitle": "Vorerst überspringen",
+        "channelNoneHint": "Ich richte Benachrichtigungen später in den Einstellungen ein.",
+        "openSettings": "In den Einstellungen fortsetzen"
+      },
+      "doneToast": "Alles eingerichtet — willkommen an Bord."
+    }
+  },
+  "gettingStarted": {
+    "title": "Erste Schritte",
+    "subtitle": "Quick Wins, damit du das Beste aus HealthLog herausholst.",
+    "progress": "{done} von {total} erledigt",
+    "dismiss": "Ausblenden",
+    "dismissAll": "Checkliste ausblenden",
+    "dismissTooltip": "Diesen Punkt ausblenden",
+    "restoreHint": "Du kannst die Checkliste in den Einstellungen wiederherstellen.",
+    "items": {
+      "profileTitle": "Profil einrichten",
+      "profileDescription": "Größe, Geburtsdatum und Geschlecht schalten personalisierte Zielwerte frei.",
+      "profileCta": "Profil öffnen",
+      "measurementTitle": "Erste Messung anlegen",
+      "measurementDescription": "Eine Messung reicht, um deine erste Trend-Kachel zu zeichnen.",
+      "measurementCta": "Messung hinzufügen",
+      "medicationTitle": "Medikament hinzufügen",
+      "medicationDescription": "Verfolge Compliance und erhalte Erinnerungen genau dann, wenn du sie brauchst.",
+      "medicationCta": "Medikament hinzufügen",
+      "withingsTitle": "Withings verbinden (optional)",
+      "withingsDescription": "Synchronisiere Gewicht, Blutdruck und Puls automatisch aus deinen Withings-Geräten.",
+      "withingsCta": "Verbinden",
+      "notificationsTitle": "Benachrichtigungen einrichten",
+      "notificationsDescription": "Wähle, wie HealthLog dich erinnert — Telegram, ntfy oder Web Push.",
+      "notificationsCta": "Benachrichtigungen öffnen"
+    }
+  },
+  "trendHints": {
+    "title": "Erster Trend nach 5 Messungen",
+    "remainingOne": "Noch 1 Messung bis zum Trend.",
+    "remainingMany": "Noch {count} Messungen bis zum Trend."
   },
   "settings": {
     "title": "Einstellungen",

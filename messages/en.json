@@ -800,7 +800,75 @@
     "errorMedication": "Could not add the medication \"{name}\". Please try again or add it later in Medications.",
     "errorTargets": "Could not save your target values. Please try again.",
     "errorGeneric": "Something went wrong while finishing setup. Please try again.",
-    "medScheduleHint": "We'll add a default reminder window (08:00–09:00 daily). You can adjust it anytime in Medications."
+    "medScheduleHint": "We'll add a default reminder window (08:00–09:00 daily). You can adjust it anytime in Medications.",
+    "v2": {
+      "title": "Welcome to HealthLog",
+      "subtitle": "Three quick steps. You can finish anything later from Settings.",
+      "stepOf": "Step {current} of {total}",
+      "back": "Back",
+      "continue": "Continue",
+      "finish": "Finish setup",
+      "skipStep": "Skip this step — you can finish setup later from Settings.",
+      "step1": {
+        "title": "About you",
+        "description": "Used for blood-pressure targets, BMI, and the right reminders.",
+        "displayNameLabel": "Display name",
+        "displayNameHint": "Shown on the dashboard greeting and in reports.",
+        "languageLabel": "Language",
+        "languageHint": "We'll use this for the app, PDFs, and notifications."
+      },
+      "step2": {
+        "title": "Log your first measurement",
+        "description": "Weight, blood pressure, or pulse — whatever you have right now. The dashboard comes alive with one entry.",
+        "added": "Got it — you can add more anytime from the dashboard.",
+        "skipHint": "No measurement at hand? Skip and log one when you're ready."
+      },
+      "step3": {
+        "title": "Pick one notification channel",
+        "description": "We'll only send what you ask for. You can add more channels or fine-tune events later.",
+        "channelTelegramTitle": "Telegram bot",
+        "channelTelegramHint": "Reminders with snooze buttons inside Telegram.",
+        "channelWebPushTitle": "Web Push",
+        "channelWebPushHint": "Native browser notifications on this device.",
+        "channelNtfyTitle": "ntfy.sh",
+        "channelNtfyHint": "Open-source push to phone or desktop, no account.",
+        "channelNoneTitle": "Skip for now",
+        "channelNoneHint": "I'll set up notifications later from Settings.",
+        "openSettings": "Continue in Settings"
+      },
+      "doneToast": "You're all set — welcome aboard."
+    }
+  },
+  "gettingStarted": {
+    "title": "Getting started",
+    "subtitle": "Quick wins to get the most out of HealthLog.",
+    "progress": "{done} of {total} done",
+    "dismiss": "Dismiss",
+    "dismissAll": "Hide checklist",
+    "dismissTooltip": "Hide this item",
+    "restoreHint": "You can restore the checklist from Settings.",
+    "items": {
+      "profileTitle": "Set your profile",
+      "profileDescription": "Height, date of birth and gender unlock personalised targets.",
+      "profileCta": "Open profile",
+      "measurementTitle": "Log your first measurement",
+      "measurementDescription": "One reading is enough to draw your first trend tile.",
+      "measurementCta": "Add measurement",
+      "medicationTitle": "Add a medication",
+      "medicationDescription": "Track compliance and get reminders right when you need them.",
+      "medicationCta": "Add medication",
+      "withingsTitle": "Connect Withings (optional)",
+      "withingsDescription": "Auto-sync weight, BP and pulse from your Withings devices.",
+      "withingsCta": "Connect",
+      "notificationsTitle": "Configure notifications",
+      "notificationsDescription": "Choose how HealthLog should remind you — Telegram, ntfy or Web Push.",
+      "notificationsCta": "Open notifications"
+    }
+  },
+  "trendHints": {
+    "title": "First trend after 5 readings",
+    "remainingOne": "1 more reading to go.",
+    "remainingMany": "{count} more readings to go."
   },
   "settings": {
     "title": "Settings",

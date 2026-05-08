@@ -40,6 +40,8 @@ import {
 import { MeasurementForm } from "@/components/measurements/measurement-form";
 import { MoodForm } from "@/components/mood/mood-form";
 import { TrendCard } from "@/components/charts/trend-card";
+import { TrendHint } from "@/components/charts/trend-hint";
+import { GettingStartedChecklist } from "@/components/onboarding/getting-started-checklist";
 
 const HealthChart = dynamic(
   () =>
@@ -381,6 +383,12 @@ export default function DashboardPage() {
         </DropdownMenu>
       </div>
 
+      {/* v1.4: Getting-started checklist for brand-new users.
+       * Self-gates visibility on (onboardingCompletedAt == null
+       * || measurementCount < 5) and disappears once dismissed
+       * or fully complete. See B2 in the v1.4 discovery summary. */}
+      <GettingStartedChecklist />
+
       {/* Quick Entry Dialogs */}
       <Dialog
         open={quickEntryDialog === "measurement"}
@@ -679,12 +687,23 @@ export default function DashboardPage() {
 
         trendCards.sort((a, b) => a.order - b.order);
 
-        type ChartEntry = { id: string; order: number; node: React.ReactNode };
+        type ChartEntry = {
+          id: string;
+          order: number;
+          node: React.ReactNode;
+          /**
+           * Total raw readings for this metric. <5 surfaces a contextual
+           * "First trend after 5 readings" hint underneath the chart;
+           * undefined disables the hint (e.g. medications card).
+           */
+          count?: number;
+        };
         const charts: ChartEntry[] = [];
         if (showWeightCard) {
           charts.push({
             id: "weight-chart",
             order: widgetOrder("weight"),
+            count: w?.count ?? 0,
             node: (
               <HealthChart
                 key="weight-chart"
@@ -724,6 +743,7 @@ export default function DashboardPage() {
           charts.push({
             id: "bp-chart",
             order: widgetOrder("bp"),
+            count: Math.max(sys?.count ?? 0, dia?.count ?? 0),
             node: (
               <HealthChart
                 key="bp-chart"
@@ -741,6 +761,7 @@ export default function DashboardPage() {
           charts.push({
             id: "pulse-chart",
             order: widgetOrder("pulse"),
+            count: p?.count ?? 0,
             node: (
               <HealthChart
                 key="pulse-chart"
@@ -757,6 +778,7 @@ export default function DashboardPage() {
           charts.push({
             id: "bodyFat-chart",
             order: widgetOrder("bodyFat"),
+            count: bf?.count ?? 0,
             node: (
               <HealthChart
                 key="bodyFat-chart"
@@ -773,6 +795,7 @@ export default function DashboardPage() {
           charts.push({
             id: "mood-chart",
             order: widgetOrder("mood"),
+            count: moodSummary?.count ?? 0,
             node: <MoodChart key="mood-chart" />,
           });
         }
@@ -780,6 +803,7 @@ export default function DashboardPage() {
           charts.push({
             id: "sleep-chart",
             order: widgetOrder("sleep"),
+            count: sleepSummary?.count ?? 0,
             node: (
               <HealthChart
                 key="sleep-chart"
@@ -795,6 +819,7 @@ export default function DashboardPage() {
           charts.push({
             id: "steps-chart",
             order: widgetOrder("steps"),
+            count: stepsSummary?.count ?? 0,
             node: (
               <HealthChart
                 key="steps-chart"
@@ -856,7 +881,12 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-            {charts.map((entry) => entry.node)}
+            {charts.map((entry) => (
+              <div key={entry.id} className="space-y-2">
+                {entry.node}
+                {entry.count != null ? <TrendHint count={entry.count} /> : null}
+              </div>
+            ))}
           </>
         );
       })()}

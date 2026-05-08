@@ -4,93 +4,123 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Bell,
+  CheckCircle2,
+  Loader2,
+  MessageCircle,
+  Smartphone,
+} from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/ui/logo";
-import { Loader2, ChevronRight } from "lucide-react";
+import { MeasurementForm } from "@/components/measurements/measurement-form";
 import { useTranslations } from "@/lib/i18n/context";
+import { locales, localeLabels, type Locale } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils";
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 3;
+
+type ChannelChoice = "TELEGRAM" | "WEB_PUSH" | "NTFY" | "NONE";
+
+const CHANNEL_OPTIONS: ReadonlyArray<{
+  id: ChannelChoice;
+  Icon: typeof MessageCircle;
+  titleKey: string;
+  hintKey: string;
+  /** Hash on /settings to scroll to. NONE = skip, no hash. */
+  hash: string | null;
+}> = [
+  {
+    id: "TELEGRAM",
+    Icon: MessageCircle,
+    titleKey: "onboarding.v2.step3.channelTelegramTitle",
+    hintKey: "onboarding.v2.step3.channelTelegramHint",
+    hash: "telegram",
+  },
+  {
+    id: "WEB_PUSH",
+    Icon: Bell,
+    titleKey: "onboarding.v2.step3.channelWebPushTitle",
+    hintKey: "onboarding.v2.step3.channelWebPushHint",
+    hash: "web-push",
+  },
+  {
+    id: "NTFY",
+    Icon: Smartphone,
+    titleKey: "onboarding.v2.step3.channelNtfyTitle",
+    hintKey: "onboarding.v2.step3.channelNtfyHint",
+    hash: "ntfy",
+  },
+  {
+    id: "NONE",
+    Icon: CheckCircle2,
+    titleKey: "onboarding.v2.step3.channelNoneTitle",
+    hintKey: "onboarding.v2.step3.channelNoneHint",
+    hash: null,
+  },
+];
 
 export default function OnboardingPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { t } = useTranslations();
+  const { t, locale, setLocale } = useTranslations();
 
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [saving, setSaving] = useState(false);
 
-  // Step 1: Profile
+  // Step 1 — about you
+  const [displayName, setDisplayName] = useState("");
   const [heightCm, setHeightCm] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState("");
 
-  // Step 2: Medications
-  const [medName, setMedName] = useState("");
-  const [medDose, setMedDose] = useState("");
-  const [meds, setMeds] = useState<Array<{ name: string; dose: string }>>([]);
+  // Step 2 — first measurement is captured by `<MeasurementForm>`
+  // directly; we just track whether the user has already submitted one
+  // so the UI can switch to a "got it" state.
+  const [measurementLogged, setMeasurementLogged] = useState(false);
 
-  // Step 3: Targets
-  const [targetSys, setTargetSys] = useState("");
-  const [targetDia, setTargetDia] = useState("");
-  const [targetWeight, setTargetWeight] = useState("");
+  // Step 3 — preferred notification channel.
+  const [channelChoice, setChannelChoice] = useState<ChannelChoice>("NONE");
 
-  async function finishOnboarding() {
+  function goBack() {
+    setStep((prev) => (prev > 1 ? ((prev - 1) as 1 | 2) : 1));
+  }
+
+  /**
+   * Persist the profile + complete onboarding. Always called once at
+   * the end of the wizard — independent of which steps were skipped —
+   * so `onboardingCompletedAt` is set even if the user skips
+   * everything except the wizard click-through.
+   */
+  async function persistAndExit(opts?: { gotoSettingsHash?: string | null }) {
     setSaving(true);
-
     try {
       const body: Record<string, unknown> = {};
+      if (displayName.trim()) body.displayName = displayName.trim();
       if (heightCm) body.heightCm = parseFloat(heightCm);
       if (dateOfBirth) body.dateOfBirth = dateOfBirth;
       if (gender) body.gender = gender;
 
-      const profileRes = await fetch("/api/onboarding/complete", {
+      const res = await fetch("/api/onboarding/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      if (!profileRes.ok) {
-        throw new Error(t("onboarding.errorProfile"));
-      }
-
-      // Create medications. Server validation requires at least one schedule,
-      // so we attach a sensible default — the user is informed via medScheduleHint
-      // and can refine it in Medications later. Phase 3.5 of the audit replaces
-      // this entire wizard with an empty-state-driven flow.
-      for (const med of meds) {
-        const medRes = await fetch("/api/medications", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: med.name,
-            dose: med.dose,
-            schedules: [{ windowStart: "08:00", windowEnd: "09:00" }],
-          }),
-        });
-        if (!medRes.ok) {
-          throw new Error(t("onboarding.errorMedication", { name: med.name }));
-        }
-      }
-
-      if (targetSys || targetDia || targetWeight) {
-        const targets: Record<string, unknown> = {};
-        if (targetSys) targets.bpSysTarget = parseInt(targetSys);
-        if (targetDia) targets.bpDiaTarget = parseInt(targetDia);
-        if (targetWeight) targets.weightTarget = parseFloat(targetWeight);
-        const targetsRes = await fetch("/api/insights/targets", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(targets),
-        });
-        if (!targetsRes.ok) {
-          throw new Error(t("onboarding.errorTargets"));
-        }
-      }
+      if (!res.ok) throw new Error(t("onboarding.errorProfile"));
 
       await queryClient.invalidateQueries({ queryKey: ["auth"] });
-      router.replace("/");
+      toast.success(t("onboarding.v2.doneToast"));
+
+      if (opts?.gotoSettingsHash) {
+        router.replace(`/settings#${opts.gotoSettingsHash}`);
+      } else {
+        router.replace("/");
+      }
     } catch (err) {
       const message =
         err instanceof Error ? err.message : t("onboarding.errorGeneric");
@@ -99,79 +129,145 @@ export default function OnboardingPage() {
     }
   }
 
-  function addMedication() {
-    if (!medName.trim()) return;
-    setMeds([...meds, { name: medName.trim(), dose: medDose.trim() }]);
-    setMedName("");
-    setMedDose("");
-  }
-
   function nextStep() {
     if (step < TOTAL_STEPS) {
-      setStep(step + 1);
-    } else {
-      finishOnboarding();
+      setStep((step + 1) as 1 | 2 | 3);
     }
   }
 
+  function finish() {
+    const target =
+      channelChoice !== "NONE"
+        ? (CHANNEL_OPTIONS.find((c) => c.id === channelChoice)?.hash ?? null)
+        : null;
+    void persistAndExit({ gotoSettingsHash: target });
+  }
+
   return (
-    <div className="mx-auto w-full max-w-md space-y-6">
+    <div className="mx-auto w-full max-w-md space-y-6 py-6">
       <div className="text-center">
         <Logo className="text-primary mx-auto mb-4" size={48} />
-        <h1 className="text-2xl font-bold tracking-tight">
-          {t("onboarding.welcome")}
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {t("onboarding.v2.title")}
         </h1>
         <p className="text-muted-foreground mt-2 text-sm">
-          {t("onboarding.setupDescription")}
+          {t("onboarding.v2.subtitle")}
         </p>
       </div>
 
-      {/* Progress indicator */}
-      <div className="flex justify-center gap-2">
+      {/* Progress indicator — labelled for screen readers */}
+      <div
+        role="progressbar"
+        aria-valuemin={1}
+        aria-valuemax={TOTAL_STEPS}
+        aria-valuenow={step}
+        aria-label={t("onboarding.v2.stepOf", {
+          current: step,
+          total: TOTAL_STEPS,
+        })}
+        className="flex items-center justify-center gap-2"
+      >
         {Array.from({ length: TOTAL_STEPS }, (_, i) => (
           <div
             key={i}
             className={cn(
-              "h-1.5 w-8 rounded-full transition-colors",
+              "h-1.5 w-10 rounded-full transition-colors duration-150 ease-out motion-reduce:transition-none",
               i + 1 <= step ? "bg-primary" : "bg-muted",
             )}
           />
         ))}
       </div>
+      <p className="text-muted-foreground -mt-3 text-center text-xs">
+        {t("onboarding.v2.stepOf", { current: step, total: TOTAL_STEPS })}
+      </p>
 
-      {/* Step 1: Profile */}
+      {/* ───── Step 1 — about you ───── */}
       {step === 1 && (
-        <div className="bg-card border-border space-y-4 rounded-xl border p-6">
-          <h2 className="text-lg font-semibold">{t("settings.profile")}</h2>
-          <div className="space-y-2">
-            <Label htmlFor="ob-height">{t("settings.height")}</Label>
-            <Input
-              id="ob-height"
-              type="number"
-              value={heightCm}
-              onChange={(e) => setHeightCm(e.target.value)}
-              placeholder="175"
-              min={50}
-              max={300}
-              step={0.1}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="ob-gender">{t("settings.gender")}</Label>
-            <select
-              id="ob-gender"
-              value={gender}
-              onChange={(e) => setGender(e.target.value)}
-              className="border-input bg-background text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
+        <section
+          aria-labelledby="ob-step1-title"
+          className="bg-card border-border space-y-5 rounded-xl border p-6"
+        >
+          <header className="space-y-1">
+            <h2
+              id="ob-step1-title"
+              className="text-lg font-semibold tracking-tight"
             >
-              <option value="">{t("settings.genderNone")}</option>
-              <option value="MALE">{t("settings.genderMale")}</option>
-              <option value="FEMALE">{t("settings.genderFemale")}</option>
-            </select>
+              {t("onboarding.v2.step1.title")}
+            </h2>
+            <p className="text-muted-foreground text-sm">
+              {t("onboarding.v2.step1.description")}
+            </p>
+          </header>
+
+          <div className="space-y-2">
+            <Label htmlFor="ob-display-name">
+              {t("onboarding.v2.step1.displayNameLabel")}
+            </Label>
+            <Input
+              id="ob-display-name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              autoComplete="nickname"
+              placeholder={t("settings.username")}
+              maxLength={50}
+            />
             <p className="text-muted-foreground text-xs">
-              {t("settings.genderHint")}
+              {t("onboarding.v2.step1.displayNameHint")}
             </p>
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="ob-language">
+              {t("onboarding.v2.step1.languageLabel")}
+            </Label>
+            <select
+              id="ob-language"
+              value={locale}
+              onChange={(e) => setLocale(e.target.value as Locale)}
+              className="border-input bg-background text-foreground ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
+            >
+              {locales.map((loc) => (
+                <option key={loc} value={loc}>
+                  {localeLabels[loc as Locale]}
+                </option>
+              ))}
+            </select>
+            <p className="text-muted-foreground text-xs">
+              {t("onboarding.v2.step1.languageHint")}
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="ob-height">{t("settings.height")}</Label>
+              <Input
+                id="ob-height"
+                type="number"
+                inputMode="decimal"
+                value={heightCm}
+                onChange={(e) => setHeightCm(e.target.value)}
+                placeholder="175"
+                min={50}
+                max={300}
+                step={0.1}
+                autoComplete="off"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ob-gender">{t("settings.gender")}</Label>
+              <select
+                id="ob-gender"
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                className="border-input bg-background text-foreground ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
+              >
+                <option value="">{t("settings.genderNone")}</option>
+                <option value="MALE">{t("settings.genderMale")}</option>
+                <option value="FEMALE">{t("settings.genderFemale")}</option>
+              </select>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="ob-dob">{t("settings.dateOfBirth")}</Label>
             <Input
@@ -180,181 +276,165 @@ export default function OnboardingPage() {
               value={dateOfBirth}
               onChange={(e) => setDateOfBirth(e.target.value)}
               max={new Date().toISOString().slice(0, 10)}
+              autoComplete="bday"
             />
             <p className="text-muted-foreground text-xs">
               {t("settings.dateOfBirthHint")}
             </p>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Step 2: Medications */}
+      {/* ───── Step 2 — first measurement ───── */}
       {step === 2 && (
-        <div className="bg-card border-border space-y-4 rounded-xl border p-6">
-          <h2 className="text-lg font-semibold">
-            {t("onboarding.medicationsTitle")}
-          </h2>
-          <p className="text-muted-foreground text-xs">
-            {t("onboarding.medicationsDescription")}
-          </p>
-          <div className="flex gap-2">
-            <Input
-              value={medName}
-              onChange={(e) => setMedName(e.target.value)}
-              placeholder={t("onboarding.medNamePlaceholder")}
-              className="flex-1"
-            />
-            <Input
-              value={medDose}
-              onChange={(e) => setMedDose(e.target.value)}
-              placeholder={t("onboarding.medDosePlaceholder")}
-              className="w-24"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addMedication}
+        <section
+          aria-labelledby="ob-step2-title"
+          className="bg-card border-border space-y-5 rounded-xl border p-6"
+        >
+          <header className="space-y-1">
+            <h2
+              id="ob-step2-title"
+              className="text-lg font-semibold tracking-tight"
             >
-              +
-            </Button>
-          </div>
-          {meds.length > 0 && (
-            <>
-              <ul className="space-y-1 text-sm">
-                {meds.map((m, i) => (
-                  <li
-                    key={i}
-                    className="bg-muted/50 flex items-center justify-between rounded px-3 py-1.5"
-                  >
-                    <span>
-                      {m.name} {m.dose && `(${m.dose})`}
-                    </span>
-                    <button
-                      type="button"
-                      className="text-muted-foreground hover:text-destructive text-xs"
-                      onClick={() => setMeds(meds.filter((_, j) => j !== i))}
-                    >
-                      ✕
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              <p className="text-muted-foreground text-xs">
-                {t("onboarding.medScheduleHint")}
-              </p>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Step 3: Notifications teaser */}
-      {step === 3 && (
-        <div className="bg-card border-border space-y-4 rounded-xl border p-6">
-          <h2 className="text-lg font-semibold">
-            {t("onboarding.notificationsTitle")}
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            {t("onboarding.notificationsDescription")}
-          </p>
-          <div className="bg-muted/50 space-y-2 rounded-lg p-4 text-sm">
-            <p>
-              📱 <strong>Telegram</strong> — {t("onboarding.telegramHint")}
+              {t("onboarding.v2.step2.title")}
+            </h2>
+            <p className="text-muted-foreground text-sm">
+              {t("onboarding.v2.step2.description")}
             </p>
-            <p>
-              🔔 <strong>Web Push</strong> — {t("onboarding.webPushHint")}
-            </p>
-          </div>
-          <p className="text-muted-foreground text-xs">
-            {t("onboarding.notificationsLater")}
-          </p>
-        </div>
-      )}
+          </header>
 
-      {/* Step 4: Targets */}
-      {step === 4 && (
-        <div className="bg-card border-border space-y-4 rounded-xl border p-6">
-          <h2 className="text-lg font-semibold">
-            {t("onboarding.targetsTitle")}
-          </h2>
-          <p className="text-muted-foreground text-xs">
-            {t("onboarding.targetsDescription")}
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="ob-sys">{t("onboarding.targetSys")}</Label>
-              <Input
-                id="ob-sys"
-                type="number"
-                value={targetSys}
-                onChange={(e) => setTargetSys(e.target.value)}
-                placeholder="130"
-              />
+          {measurementLogged ? (
+            <div className="border-primary/40 bg-primary/5 text-foreground flex items-start gap-3 rounded-lg border p-4 text-sm">
+              <CheckCircle2 className="text-primary mt-0.5 size-5 shrink-0" />
+              <p>{t("onboarding.v2.step2.added")}</p>
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="ob-dia">{t("onboarding.targetDia")}</Label>
-              <Input
-                id="ob-dia"
-                type="number"
-                value={targetDia}
-                onChange={(e) => setTargetDia(e.target.value)}
-                placeholder="85"
-              />
-            </div>
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="ob-weight">{t("onboarding.targetWeight")}</Label>
-            <Input
-              id="ob-weight"
-              type="number"
-              value={targetWeight}
-              onChange={(e) => setTargetWeight(e.target.value)}
-              placeholder="75"
-              step={0.1}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Navigation buttons */}
-      <div className="flex gap-3">
-        <Button onClick={nextStep} className="flex-1" disabled={saving}>
-          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {step < TOTAL_STEPS ? (
-            <>
-              {t("common.next")}
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </>
           ) : (
-            t("onboarding.completeSetup")
+            <MeasurementForm onSuccess={() => setMeasurementLogged(true)} />
           )}
-        </Button>
-      </div>
 
-      <div className="text-center">
+          <p className="text-muted-foreground text-xs">
+            {t("onboarding.v2.step2.skipHint")}
+          </p>
+        </section>
+      )}
+
+      {/* ───── Step 3 — pick a channel ───── */}
+      {step === 3 && (
+        <section
+          aria-labelledby="ob-step3-title"
+          className="bg-card border-border space-y-5 rounded-xl border p-6"
+        >
+          <header className="space-y-1">
+            <h2
+              id="ob-step3-title"
+              className="text-lg font-semibold tracking-tight"
+            >
+              {t("onboarding.v2.step3.title")}
+            </h2>
+            <p className="text-muted-foreground text-sm">
+              {t("onboarding.v2.step3.description")}
+            </p>
+          </header>
+
+          <fieldset className="space-y-2">
+            <legend className="sr-only">
+              {t("onboarding.v2.step3.title")}
+            </legend>
+            {CHANNEL_OPTIONS.map((option) => {
+              const checked = channelChoice === option.id;
+              const Icon = option.Icon;
+              return (
+                <label
+                  key={option.id}
+                  className={cn(
+                    "border-border hover:border-primary/50 flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors duration-150 ease-out motion-reduce:transition-none",
+                    checked && "border-primary bg-primary/5",
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="ob-channel"
+                    value={option.id}
+                    checked={checked}
+                    onChange={() => setChannelChoice(option.id)}
+                    className="text-primary focus-visible:ring-ring mt-1 size-4 focus-visible:ring-[3px] focus-visible:outline-none"
+                  />
+                  <span className="flex min-w-0 flex-1 items-start gap-3">
+                    <span
+                      aria-hidden="true"
+                      className="bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-md"
+                    >
+                      <Icon className="size-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium">
+                        {t(option.titleKey)}
+                      </span>
+                      <span className="text-muted-foreground block text-xs">
+                        {t(option.hintKey)}
+                      </span>
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
+          </fieldset>
+        </section>
+      )}
+
+      {/* ───── Navigation row ───── */}
+      <div className="flex items-center gap-3">
+        {step > 1 ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={goBack}
+            disabled={saving}
+          >
+            <ArrowLeft className="mr-1 size-4" />
+            {t("onboarding.v2.back")}
+          </Button>
+        ) : (
+          <span className="flex-1" />
+        )}
+
         {step < TOTAL_STEPS ? (
-          <button
+          <Button
             type="button"
             onClick={nextStep}
+            className="ml-auto"
             disabled={saving}
-            className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-4 transition-colors"
           >
-            {t("onboarding.skip")}
-          </button>
+            {t("onboarding.v2.continue")}
+            <ArrowRight className="ml-1 size-4" />
+          </Button>
         ) : (
-          <button
+          <Button
             type="button"
-            onClick={() => {
-              // Skip targets and finish
-              finishOnboarding();
-            }}
+            onClick={finish}
+            className="ml-auto"
             disabled={saving}
-            className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-4 transition-colors"
           >
-            {t("onboarding.skip")}
-          </button>
+            {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
+            {channelChoice === "NONE"
+              ? t("onboarding.v2.finish")
+              : t("onboarding.v2.step3.openSettings")}
+          </Button>
         )}
       </div>
+
+      {/* Single Skip per step. Step 3's "NONE" choice already covers
+          skipping notifications, so we hide the underline on step 3. */}
+      {step < TOTAL_STEPS ? (
+        <button
+          type="button"
+          onClick={nextStep}
+          disabled={saving}
+          className="text-muted-foreground hover:text-foreground mx-auto block text-sm underline-offset-4 transition-colors duration-150 ease-out hover:underline motion-reduce:transition-none"
+        >
+          {t("onboarding.v2.skipStep")}
+        </button>
+      ) : null}
     </div>
   );
 }

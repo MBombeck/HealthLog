@@ -6,6 +6,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
 const onboardingSchema = z.object({
+  displayName: z.string().trim().min(1).max(50).optional(),
   heightCm: z.number().min(50).max(300).optional(),
   dateOfBirth: z.string().optional(),
   gender: z.enum(["MALE", "FEMALE"]).optional(),
@@ -44,6 +45,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   if (result.data.gender) {
     data.gender = result.data.gender;
+  }
+
+  if (result.data.displayName) {
+    data.displayName = result.data.displayName;
   }
 
   await prisma.user.update({
