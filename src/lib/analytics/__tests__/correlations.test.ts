@@ -142,4 +142,22 @@ describe("weeklyAverages", () => {
     expect(result).toHaveLength(1);
     expect(result[0].value).toBe(75);
   });
+
+  // v3 audit caught a TZ bug: a Sunday-evening Berlin reading (e.g. 22:00
+  // local = 21:00 UTC in summer / 21:00 UTC in winter via DST) bucketed
+  // into next week on UTC servers because `Date.getDay()` was system-local.
+  // The Berlin-TZ-aware implementation puts the same point into THIS week.
+  it("buckets Sunday-evening Berlin into the same ISO week as the preceding Monday", () => {
+    // 2024-08-04 is a Sunday; 22:00 Berlin = 20:00 UTC (CEST). The Monday
+    // of the same Berlin week is 2024-07-29.
+    const sundayEveningBerlin = new Date("2024-08-04T20:00:00.000Z");
+    const mondayMidday = new Date("2024-07-29T11:00:00.000Z");
+    const result = weeklyAverages([
+      { date: mondayMidday, value: 70 },
+      { date: sundayEveningBerlin, value: 90 },
+    ]);
+    expect(result).toHaveLength(1);
+    expect(result[0].value).toBe(80); // (70 + 90) / 2
+    expect(result[0].date.toISOString()).toBe("2024-07-29T00:00:00.000Z");
+  });
 });

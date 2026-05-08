@@ -89,10 +89,17 @@ describe("detectAnomalies", () => {
 });
 
 describe("summarize", () => {
-  it("returns empty summary for empty input", () => {
+  it("returns null stats (not zero) for empty input", () => {
     const summary = summarize([]);
     expect(summary.count).toBe(0);
     expect(summary.latest).toBeNull();
+    // v3 audit fix: previously returned 0/0/0 sentinels which leaked into
+    // chart axes and tile renders as "real" readings.
+    expect(summary.min).toBeNull();
+    expect(summary.max).toBeNull();
+    expect(summary.mean).toBeNull();
+    expect(summary.avg7).toBeNull();
+    expect(summary.avg30).toBeNull();
   });
 
   it("calculates correct summary", () => {
@@ -105,5 +112,23 @@ describe("summarize", () => {
     expect(summary.mean).toBe(75);
     expect(summary.avg7).not.toBeNull();
     expect(summary.slope7).not.toBeNull();
+  });
+
+  // v3 audit caught a divergence: summarize().avg7 used `now` as the
+  // window anchor, while trendSlope() used the last point. A stale
+  // series (no readings for weeks) reported a slope but no average.
+  // Both are now `now`-anchored, so a stale series returns null
+  // consistently across stat fields.
+  it("aligns trendSlope and avg windows on `now`, not on the last point", () => {
+    const stale = [70, 71, 72, 73, 74, 75, 76].map((value, i) => ({
+      // 100 days ago, all consecutive — last point still 100 days old.
+      date: new Date(Date.now() - (100 - i) * 24 * 60 * 60 * 1000),
+      value,
+    }));
+    const summary = summarize(stale);
+    expect(summary.avg7).toBeNull(); // no readings in last 7 days
+    expect(summary.avg30).toBeNull(); // no readings in last 30 days
+    expect(summary.slope7).toBeNull(); // window snaps to `now`, no points
+    expect(summary.slope30).toBeNull(); // same
   });
 });

@@ -20,6 +20,12 @@ export interface CorrelationResult {
 /**
  * Pair two time-series by matching timestamps within a maximum gap.
  * Each point is used at most once (greedy nearest-match).
+ *
+ * NOTE: This is a greedy heuristic, not the bipartite-minimum-weight
+ * optimum. For sparse health data the difference is negligible — well
+ * under 1% in the v1.4 charts auditor's stress sample — but adversarial
+ * inputs (alternating 1ms-apart points) can produce sub-optimal
+ * pairings. If exact pairing matters, swap in a Hungarian-style match.
  */
 export function pairByTimestamp(
   seriesA: DataPoint[],
@@ -99,8 +105,23 @@ export function pearsonCorrelation(
   return { r, strength, n };
 }
 
+const BERLIN_DATE_PARTS = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Berlin",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  weekday: "short",
+});
+
 /**
- * Aggregate data into weekly averages (Monday-based weeks).
+ * Aggregate data into weekly averages, ISO-Monday-based, in Europe/Berlin.
+ *
+ * v3 audit caught a TZ bug here: the previous implementation used
+ * `Date.getDay()` / `Date.getDate()` (system local) so on a UTC server, a
+ * Sunday-evening Berlin reading bucketed into the next week. We now derive
+ * year/month/day/weekday in Berlin via Intl.DateTimeFormat and rebuild the
+ * Monday key from there. The returned `date` for each bucket is the Monday
+ * UTC midnight — sortable, comparable across DST.
  */
 export function weeklyAverages(data: DataPoint[]): DataPoint[] {
   if (data.length === 0) return [];
@@ -109,14 +130,29 @@ export function weeklyAverages(data: DataPoint[]): DataPoint[] {
 
   const weeks = new Map<string, { sum: number; count: number; date: Date }>();
 
+  const WEEKDAY_INDEX: Record<string, number> = {
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+    Sun: 7,
+  };
+
   for (const point of sorted) {
-    // ISO week key: find Monday of that week
-    const d = new Date(point.date);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
-    const monday = new Date(d);
-    monday.setDate(diff);
-    monday.setHours(0, 0, 0, 0);
+    const parts = BERLIN_DATE_PARTS.formatToParts(point.date);
+    const yearStr = parts.find((p) => p.type === "year")?.value ?? "1970";
+    const monthStr = parts.find((p) => p.type === "month")?.value ?? "01";
+    const dayStr = parts.find((p) => p.type === "day")?.value ?? "01";
+    const weekdayStr = parts.find((p) => p.type === "weekday")?.value ?? "Mon";
+
+    const isoWeekday = WEEKDAY_INDEX[weekdayStr] ?? 1;
+    // Days to subtract to land on Monday of the same ISO week in Berlin.
+    const offsetDays = isoWeekday - 1;
+
+    const dayUtc = new Date(`${yearStr}-${monthStr}-${dayStr}T00:00:00.000Z`);
+    const monday = new Date(dayUtc.getTime() - offsetDays * 86_400_000);
     const key = monday.toISOString().slice(0, 10);
 
     const existing = weeks.get(key);

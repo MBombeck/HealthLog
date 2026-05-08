@@ -46,6 +46,12 @@ export interface TrendSlope {
 /**
  * Linear regression slope over the last N days.
  * Uses least squares fit.
+ *
+ * Window is anchored on `Date.now()`, NOT on the most recent point — so a
+ * stale series (no readings for weeks) returns `null` from this function the
+ * same way `summarize().avg7/avg30` returns `null`. The v3 audit caught the
+ * mismatch where `trendSlope` reported a "trend" from old data while the
+ * dashboard tile correctly hid the average.
  */
 export function trendSlope(
   data: DataPoint[],
@@ -54,8 +60,7 @@ export function trendSlope(
   if (data.length < 2) return null;
 
   const sorted = [...data].sort((a, b) => a.date.getTime() - b.date.getTime());
-  const cutoff =
-    sorted[sorted.length - 1].date.getTime() - windowDays * 24 * 60 * 60 * 1000;
+  const cutoff = Date.now() - windowDays * 24 * 60 * 60 * 1000;
   const window = sorted.filter((p) => p.date.getTime() >= cutoff);
 
   if (window.length < 2) return null;
@@ -187,9 +192,12 @@ export function detectAnomalies(data: DataPoint[], threshold = 2.0): Anomaly[] {
 export interface DataSummary {
   count: number;
   latest: number | null;
-  min: number;
-  max: number;
-  mean: number;
+  /** Null when the series is empty (vs the previous 0 sentinel). */
+  min: number | null;
+  /** Null when the series is empty (vs the previous 0 sentinel). */
+  max: number | null;
+  /** Null when the series is empty (vs the previous 0 sentinel). */
+  mean: number | null;
   avg7: number | null;
   avg30: number | null;
   slope7: TrendSlope | null;
@@ -200,12 +208,15 @@ export interface DataSummary {
 
 export function summarize(data: DataPoint[]): DataSummary {
   if (data.length === 0) {
+    // Empty series — return null for stats so callers can render an explicit
+    // "no data" state instead of treating 0/0/0 as a real reading. v3 audit
+    // caught the previous {min:0,max:0,mean:0} producing nonsense chart axes.
     return {
       count: 0,
       latest: null,
-      min: 0,
-      max: 0,
-      mean: 0,
+      min: null,
+      max: null,
+      mean: null,
       avg7: null,
       avg30: null,
       slope7: null,
