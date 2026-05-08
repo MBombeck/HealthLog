@@ -139,23 +139,114 @@
   horizontal-scrolls instead of wrapping; the user trims the set in
   Settings → Dashboard Layout.
 
+### Added — Settings, integrations, and operations
+
+- **Settings page now lives at `/settings/[section]`.** Eight focused
+  routes (`account`, `integrations`, `notifications`, `dashboard`,
+  `ai`, `api`, `advanced`, `about`) replace the single 3,000-line page.
+  Existing `/settings#anchor` links 308-redirect; the side-bar, in-app
+  deep links, and the AI / Withings / Codex callbacks all follow the
+  new structure.
+- **About page** lists the running version, build SHA, license,
+  repository link, CHANGELOG link, docs link, and a "Check for
+  updates" button that pings the public GitHub releases API. Backed by
+  the `/api/version` endpoint shipped earlier in 1.4.0.
+- **Admin console** is built around a status-first card grid (Users,
+  Integrations, Monitoring, Backups, Maintenance, Audit Log) with each
+  area in a focused panel beneath. Per-section extraction of the old
+  inline panels is tracked for v1.4.1 — the v1.4.0 admin page already
+  routes through the new aggregator endpoint and the status-card
+  grid.
+- **Five new "Test connection" buttons in Settings.** Withings,
+  moodLog, Web Push, Glitchtip, and Umami now ship with one-click
+  connection probes — same pattern as the existing AI / Telegram /
+  ntfy tests, with per-button rate limit, sanitised error reporting,
+  redirect-follow SSRF guard, and an `errorCode` in the response
+  envelope so the UI can localise the message.
+- **AI insights can reference any of your charts inline.** When a
+  finding centres on a single metric (e.g. systolic blood pressure),
+  the corresponding chart renders directly under the explanation.
+  Server-side allow-list — only the allowed metric tokens render; any
+  other model emission drops silently.
+- **Off-host backup target.** Daily encrypted JSON dumps to any
+  S3-compatible bucket. Worker-side IAM grant is intentionally
+  PutObject + GetObject only — retention is the bucket's
+  lifecycle-rule job, so a compromised worker cannot wipe the backup
+  history. Restore script + step-by-step doc shipped under
+  `docs/ops/backup-restore.md`, and an admin "Backup target" test
+  button validates the configuration.
+- **Encryption-key versioning.** Rotate the at-rest encryption key
+  without downtime via `pnpm tsx scripts/rotate-encryption-key.ts <id>`.
+  Existing data keeps decrypting under its original key while the new
+  one is rolled out. Walk-through + rollback notes in
+  `docs/ops/encryption-key-rotation.md`.
+- **Worker / web split.** Optional
+  `HEALTHLOG_PROCESS_TYPE=web|worker|all` (default `all` for the
+  single-container setup) lets you scale background jobs and HTTP
+  traffic independently. The proxy refuses HTTP traffic with a 503 +
+  `X-HealthLog-Process-Type: worker` header in worker mode so a
+  misrouted request fails loudly instead of a silent half-served
+  response.
+- **Native API clients now get short-lived 24-hour access tokens with
+  refresh-token rotation.** The browser keeps the existing 90-day
+  Bearer. Reuse-detection (presenting a refresh token a second time)
+  revokes every refresh token for the user — the small cost of a
+  forced re-login on the legitimate device buys defense-in-depth
+  against an undetected stolen-token replay.
+- **Critical-path coverage on Telegram / Withings / moodLog /
+  Glitchtip webhook handlers + the four admin routes lifted to ≥80%
+  line coverage,** plus `src/lib/auth/audit.ts`. ~+100 new tests.
+
+### Fixed — Operational hardening from the v1.4 review pass
+
+- **Container time zone is correct.** Alpine images ship without
+  `tzdata`; the daily backup cron `30 2 * * *` Europe/Berlin was
+  silently falling back to UTC. The runner stage now installs
+  `tzdata` and exports `TZ=Europe/Berlin` so schedules fire at the
+  documented local time.
+- **Compose healthcheck uses `wget --spider /api/version`** — `/api/version`
+  is now in the proxy's public-paths allowlist, so the healthcheck no
+  longer 302-redirects through the auth gate (which was accepting the
+  login page as a 200 success).
+- **Idempotency replay-cache no longer caches refresh tokens.** The
+  guard already blocked the `hlk_` access-token prefix; the new
+  `hlr_` refresh tokens are blocked too.
+- **Logout-on-device revokes the paired access token.** Calling
+  `/api/auth/refresh` with `revoke: true` now flips both the refresh
+  row and the matching `ApiToken` row to revoked, so a leaked access
+  token cannot outlive its refresh-token sibling.
+- **`users.locale` migration drift backfilled.** The column had been
+  on `schema.prisma` since the v1.3 locale-aware reminder work but
+  never landed in the migration history (it must have been applied
+  via `prisma db push` to dev/prod). Any environment built strictly
+  from `prisma/migrations/` (CI testcontainers, brand-new self-host
+  installs) is now consistent. Migration is `ADD COLUMN IF NOT
+  EXISTS`, so it's a clean add on a fresh database and a safe no-op
+  against any environment that was already kept in sync.
+
 ### Notes
 
-- Prisma client was regenerated against the v1.3.3 schema; no schema
-  changes in 1.4.0 itself. Existing migrations 0001–0024 remain
-  authoritative.
 - Largely additive release. Existing API contracts (response
-  envelopes, OpenAPI 3.1 spec) are unchanged. The only client-visible
-  shape change is the new optional fields in `/api/version`, an entirely
-  new public endpoint.
-- Tracked for v1.4.x or later: full settings-page split into
-  `/settings/[section]` routes, admin-page redesign, AI insights
-  rework with severity-coloured key-findings hero, multi-tenant prep
-  (off-host backups, encryption-key versioning, worker/web split,
-  native-Bearer User-Agent gating), and a Postgres-backed integration
-  test suite. The v1.3.3 ecosystem audit deferred these as
-  architectural rewrites; the v1.4 cycle closed every CRIT and HIGH
-  the audit identified except those four.
+  envelopes, OpenAPI 3.1 spec) are unchanged. New endpoints surface
+  optional fields; no breaking changes.
+- New migration `0025_refresh_tokens` adds the rotating refresh-token
+  table; new migration `0025_user_locale_drift_fix` backfills the
+  schema-vs-migrations drift on `users.locale`. Both are
+  forward-compatible — `IF NOT EXISTS` guards make them idempotent on
+  any environment already pushed-to.
+- Operators of the off-host backup feature must configure a bucket
+  lifecycle policy for retention. The worker has no DeleteObject
+  grant by design.
+- Native API clients (iOS, n8n, Health Connect) need to update their
+  login flow: native logins now return both a 24-hour access token
+  and a refresh token. The browser flow is unchanged.
+- **Tracked for v1.4.1:** per-section admin panel extraction (the
+  status-card grid + aggregator already ship in 1.4.0; the inner
+  per-section file split is structural cleanup), the Postgres-backed
+  integration test suite (testcontainers infrastructure ships in this
+  release; the four integration tests themselves need a follow-up
+  pass against the merged schema), and Playwright E2E + axe-core CI
+  gates.
 
 ## [1.3.3] — 2026-05-08
 
