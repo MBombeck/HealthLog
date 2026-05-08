@@ -3,13 +3,23 @@ import { loginPasswordSchema } from "@/lib/validations/auth";
 import { verifyPassword } from "@/lib/auth/password";
 import { createSession } from "@/lib/auth/session";
 import { auditLog } from "@/lib/auth/audit";
-import { apiSuccess, apiError, getClientIp, safeJson } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiError,
+  getClientIp,
+  safeJson,
+} from "@/lib/api-response";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { ensureDbCompatibility } from "@/lib/db-compat";
 import { NextRequest, NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { issueApiToken, isNativeClientRequest } from "@/lib/auth/issue-token";
+import {
+  resolveTokenPolicy,
+  shouldIssueBearerToken,
+} from "@/lib/auth/native-client";
+import { issueAccessAndRefresh } from "@/lib/auth/refresh-token";
 
 export const POST = apiHandler(async (request: NextRequest) => {
   const ip = getClientIp(request) ?? "unknown";
@@ -75,22 +85,64 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   annotate({ action: { name: "auth.login.password" } });
 
-  // Native clients (iOS) additionally receive a long-lived Bearer token in
-  // the response so they don't need to juggle the cookie jar.
-  if (isNativeClientRequest(request.headers)) {
+  // v1.4 G4: Native callers (iOS, n8n, Health-Connect, unrecognised UAs)
+  // get a 24h access token + 60d rotating refresh token. Web UAs keep the
+  // legacy 90d Bearer (issued only when X-Client-Type: native is set —
+  // browser flows continue to use the session cookie).
+  if (
+    shouldIssueBearerToken(request.headers) ||
+    isNativeClientRequest(request.headers)
+  ) {
+    const policy = resolveTokenPolicy(request.headers);
+    const deviceId = request.headers.get("x-device-id");
+
+    if (policy.refreshTokenDays !== null) {
+      const bundle = await issueAccessAndRefresh({
+        userId: user.id,
+        policy,
+        deviceId,
+        userAgent: ua,
+        ipAddress: ip,
+        source: "login.password",
+      });
+      await auditLog("auth.token.autoissue.native", {
+        userId: user.id,
+        ipAddress: ip,
+        details: { source: "login.password", policy: "native" },
+      });
+      annotate({
+        action: { name: "auth.token.autoissue.native" },
+        meta: { token_policy: "native" },
+      });
+      return apiSuccess({
+        user: { id: user.id, username: user.username },
+        token: bundle.accessToken,
+        tokenExpiresAt: bundle.accessTokenExpiresAt.toISOString(),
+        refreshToken: bundle.refreshToken,
+        refreshTokenExpiresAt: bundle.refreshTokenExpiresAt.toISOString(),
+      });
+    }
+
+    // Web policy with explicit X-Client-Type:native (legacy iOS auto-login)
     const issued = await issueApiToken({
       userId: user.id,
-      name: `iOS auto-login ${new Date().toISOString()}`,
+      name: `web auto-login ${new Date().toISOString()}`,
       permissions: ["*"],
-      expiresInDays: 90,
+      expiresInDays: policy.accessTokenDays,
     });
     await auditLog("auth.token.autoissue.native", {
       userId: user.id,
       ipAddress: ip,
-      details: { tokenId: issued.tokenId, source: "login.password" },
+      details: {
+        tokenId: issued.tokenId,
+        source: "login.password",
+        policy: "web",
+      },
     });
-    annotate({ action: { name: "auth.token.autoissue.native" } });
-
+    annotate({
+      action: { name: "auth.token.autoissue.native" },
+      meta: { token_policy: "web" },
+    });
     return apiSuccess({
       user: { id: user.id, username: user.username },
       token: issued.token,

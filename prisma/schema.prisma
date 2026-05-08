@@ -90,6 +90,7 @@ model User {
   medications  Medication[]
   intakeEvents MedicationIntakeEvent[]
   apiTokens   ApiToken[]
+  refreshTokens RefreshToken[]
   auditLogs   AuditLog[]
   withingsConnection WithingsConnection?
   moodEntries  MoodEntry[]
@@ -355,6 +356,40 @@ model ApiToken {
 
   @@index([userId])
   @@map("api_tokens")
+}
+
+// ─── Refresh Tokens (native client short-lived access + rotating refresh) ─
+
+model RefreshToken {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  tokenHash   String    @unique @map("token_hash")
+  /// Optional device fingerprint — links the refresh token to a specific
+  /// `Device` row when the caller advertised one (X-Device-Id header). Used
+  /// to revoke all tokens issued for a stolen/lost device.
+  deviceId    String?   @map("device_id")
+  /// SHA-256 of the access token issued in the same response. When the
+  /// refresh token is rotated we revoke the matching access token via
+  /// `ApiToken.tokenHash`. Null if the access token was issued out-of-band.
+  accessTokenHash String? @map("access_token_hash")
+  expiresAt   DateTime  @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  revokedAt   DateTime? @map("revoked_at")
+  /// When this token was used (one-time-use). Set during rotation; a second
+  /// use of the same token is a hard fail and triggers reuse-detection.
+  usedAt      DateTime? @map("used_at")
+  /// Pointer to the row that replaced this one during rotation. Helps audit
+  /// trail and reuse-detection ("this token was already exchanged into X").
+  replacedById String? @map("replaced_by_id")
+  userAgent   String?  @map("user_agent")
+  ipAddress   String?  @map("ip_address")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
 }
 
 // ─── Withings ──────────────────────────────────────────────

@@ -7,6 +7,7 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     user: { findFirst: vi.fn() },
     apiToken: { create: vi.fn() },
+    refreshToken: { create: vi.fn() },
   },
 }));
 
@@ -23,7 +24,9 @@ vi.mock("@/lib/auth/audit", () => ({
 }));
 
 vi.mock("@/lib/rate-limit", () => ({
-  checkRateLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: 5, reset: 0 }),
+  checkRateLimit: vi
+    .fn()
+    .mockResolvedValue({ allowed: true, remaining: 5, reset: 0 }),
   rateLimitHeaders: vi.fn(() => ({})),
 }));
 
@@ -41,7 +44,11 @@ vi.mock("@/lib/logging/transports", () => ({
 
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: () => null })),
-  cookies: vi.fn(async () => ({ get: () => undefined, set: () => {}, delete: () => {} })),
+  cookies: vi.fn(async () => ({
+    get: () => undefined,
+    set: () => {},
+    delete: () => {},
+  })),
 }));
 
 import { POST } from "../route";
@@ -66,7 +73,10 @@ function makeRequest(headers: Record<string, string> = {}): NextRequest {
       "content-type": "application/json",
       ...headers,
     },
-    body: JSON.stringify({ email: "marc@example.com", password: "supersecret" }),
+    body: JSON.stringify({
+      email: "marc@example.com",
+      password: "supersecret",
+    }),
   });
 }
 
@@ -75,6 +85,9 @@ beforeEach(() => {
   vi.mocked(prisma.user.findFirst).mockResolvedValue(FAKE_USER as never);
   vi.mocked(verifyPassword).mockResolvedValue(true);
   vi.mocked(prisma.apiToken.create).mockResolvedValue({ id: "tok-1" } as never);
+  vi.mocked(prisma.refreshToken.create).mockResolvedValue({
+    id: "rt-1",
+  } as never);
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
     remaining: 5,
