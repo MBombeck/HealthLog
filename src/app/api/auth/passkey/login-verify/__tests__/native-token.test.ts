@@ -29,7 +29,7 @@ vi.mock("@/lib/db-compat", () => ({
 }));
 
 vi.mock("@/lib/auth/hmac", () => ({
-  hashToken: vi.fn(() => "deadbeef"),
+  hashToken: vi.fn((raw: string) => `hashed:${raw}`),
 }));
 
 vi.mock("@/lib/logging/transports", () => ({
@@ -38,7 +38,11 @@ vi.mock("@/lib/logging/transports", () => ({
 
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: () => null })),
-  cookies: vi.fn(async () => ({ get: () => undefined, set: () => {}, delete: () => {} })),
+  cookies: vi.fn(async () => ({
+    get: () => undefined,
+    set: () => {},
+    delete: () => {},
+  })),
 }));
 
 import { POST } from "../route";
@@ -91,6 +95,8 @@ describe("POST /api/auth/passkey/login-verify — native token issuance", () => 
       expect(body.data.token).toMatch(/^hlk_[a-f0-9]{64}$/);
       expect(body.data.tokenExpiresAt).toEqual(expect.any(String));
       expect(prisma.apiToken.create).toHaveBeenCalledTimes(1);
+      const createArgs = vi.mocked(prisma.apiToken.create).mock.calls[0][0];
+      expect(createArgs.data.tokenHash).toBe(`hashed:${body.data.token}`);
     } finally {
       process.env.API_TOKEN_HMAC_KEY = original;
     }

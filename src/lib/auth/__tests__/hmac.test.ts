@@ -1,11 +1,15 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { verifyHmacSignature, hashToken } from "../hmac";
 import { createHmac } from "node:crypto";
 
 const TEST_HMAC_KEY = "test-hmac-key-for-unit-tests";
 
-beforeAll(() => {
-  process.env.API_TOKEN_HMAC_KEY = TEST_HMAC_KEY;
+beforeEach(() => {
+  vi.stubEnv("API_TOKEN_HMAC_KEY", TEST_HMAC_KEY);
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe("verifyHmacSignature", () => {
@@ -75,11 +79,9 @@ describe("hashToken", () => {
   });
 
   it("throws if API_TOKEN_HMAC_KEY is not set", () => {
-    const original = process.env.API_TOKEN_HMAC_KEY;
-    delete process.env.API_TOKEN_HMAC_KEY;
+    vi.stubEnv("API_TOKEN_HMAC_KEY", "");
     expect(() => hashToken("test")).toThrow(
       "API_TOKEN_HMAC_KEY env var must be set",
     );
-    process.env.API_TOKEN_HMAC_KEY = original;
   });
 });

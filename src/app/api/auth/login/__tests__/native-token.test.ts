@@ -23,7 +23,9 @@ vi.mock("@/lib/auth/audit", () => ({
 }));
 
 vi.mock("@/lib/rate-limit", () => ({
-  checkRateLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: 5, reset: 0 }),
+  checkRateLimit: vi
+    .fn()
+    .mockResolvedValue({ allowed: true, remaining: 5, reset: 0 }),
   rateLimitHeaders: vi.fn(() => ({})),
 }));
 
@@ -32,7 +34,7 @@ vi.mock("@/lib/db-compat", () => ({
 }));
 
 vi.mock("@/lib/auth/hmac", () => ({
-  hashToken: vi.fn(() => "deadbeef"),
+  hashToken: vi.fn((raw: string) => `hashed:${raw}`),
 }));
 
 vi.mock("@/lib/logging/transports", () => ({
@@ -41,7 +43,11 @@ vi.mock("@/lib/logging/transports", () => ({
 
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: () => null })),
-  cookies: vi.fn(async () => ({ get: () => undefined, set: () => {}, delete: () => {} })),
+  cookies: vi.fn(async () => ({
+    get: () => undefined,
+    set: () => {},
+    delete: () => {},
+  })),
 }));
 
 import { POST } from "../route";
@@ -66,7 +72,10 @@ function makeRequest(headers: Record<string, string> = {}): NextRequest {
       "content-type": "application/json",
       ...headers,
     },
-    body: JSON.stringify({ email: "marc@example.com", password: "supersecret" }),
+    body: JSON.stringify({
+      email: "marc@example.com",
+      password: "supersecret",
+    }),
   });
 }
 
@@ -100,6 +109,8 @@ describe("POST /api/auth/login — native token issuance", () => {
       expect(body.data.token).toMatch(/^hlk_[a-f0-9]{64}$/);
       expect(body.data.tokenExpiresAt).toEqual(expect.any(String));
       expect(prisma.apiToken.create).toHaveBeenCalledTimes(1);
+      const createArgs = vi.mocked(prisma.apiToken.create).mock.calls[0][0];
+      expect(createArgs.data.tokenHash).toBe(`hashed:${body.data.token}`);
     } finally {
       process.env.API_TOKEN_HMAC_KEY = original;
     }
@@ -126,6 +137,8 @@ describe("POST /api/auth/login — native token issuance", () => {
       const body = (await res.json()) as { data: { token?: string } };
       expect(res.status).toBe(200);
       expect(body.data.token).toMatch(/^hlk_/);
+      const createArgs = vi.mocked(prisma.apiToken.create).mock.calls[0][0];
+      expect(createArgs.data.tokenHash).toBe(`hashed:${body.data.token}`);
     } finally {
       process.env.API_TOKEN_HMAC_KEY = original;
     }
