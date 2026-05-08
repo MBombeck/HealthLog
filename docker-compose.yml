@@ -1,12 +1,10 @@
 services:
+  # Single-container default (HEALTHLOG_PROCESS_TYPE=all). Existing
+  # self-host deployments stay working with `docker compose up`.
+  # For horizontal scaling switch to the web/worker split below
+  # (HEALTHLOG_PROCESS_TYPE=web on this service + uncomment app-worker).
   app:
-    # Pre-built multi-arch images are published to GHCR by
-    # .github/workflows/docker-publish.yml on every push to main and on
-    # tagged releases. Pin to a specific version in production:
-    # e.g. ghcr.io/mbombeck/healthlog:1.2.0
     image: ghcr.io/mbombeck/healthlog:latest
-    # Fallback build context: if the image is not yet in the registry,
-    # or you want to test local changes, run `docker compose up --build`.
     build:
       context: .
       dockerfile: Dockerfile
@@ -14,22 +12,69 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # Plain ${VAR} interpolation only — no ${VAR:?error} validation
-      # syntax. Some hosting platforms (e.g. Coolify) parse compose files
-      # eagerly and store the *fallback error string* as the literal value
-      # when the env var is unset, which then breaks the deployment.
-      # Validation is enforced by docker-entrypoint.sh before the app starts.
       DATABASE_URL: "postgresql://healthlog:${POSTGRES_PASSWORD}@db:5432/healthlog?schema=public"
       NODE_ENV: production
       SESSION_SECRET: "${SESSION_SECRET}"
       ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
+      ENCRYPTION_KEYS: "${ENCRYPTION_KEYS:-}"
+      ENCRYPTION_ACTIVE_KEY_ID: "${ENCRYPTION_ACTIVE_KEY_ID:-}"
       API_TOKEN_HMAC_KEY: "${API_TOKEN_HMAC_KEY}"
       NEXT_PUBLIC_APP_URL: "${NEXT_PUBLIC_APP_URL:-http://localhost:3000}"
       APP_URL: "${APP_URL:-http://localhost:3000}"
+      # all = bundle web + worker in this container (default, single-host)
+      # web = serve HTTP only; pair with a separate app-worker service
+      HEALTHLOG_PROCESS_TYPE: "${HEALTHLOG_PROCESS_TYPE:-all}"
+      BACKUP_ENCRYPTION_KEY: "${BACKUP_ENCRYPTION_KEY:-}"
+      BACKUP_S3_ENDPOINT: "${BACKUP_S3_ENDPOINT:-}"
+      BACKUP_S3_BUCKET: "${BACKUP_S3_BUCKET:-}"
+      BACKUP_S3_ACCESS_KEY: "${BACKUP_S3_ACCESS_KEY:-}"
+      BACKUP_S3_SECRET_KEY: "${BACKUP_S3_SECRET_KEY:-}"
+      BACKUP_S3_REGION: "${BACKUP_S3_REGION:-auto}"
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:3000/api/version >/dev/null || exit 1",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Optional dedicated worker container — uncomment + set
+  # HEALTHLOG_PROCESS_TYPE=web on `app` to split the deployment.
+  # See docs/self-hosting/scaling.md for the full guide.
+  #
+  # app-worker:
+  #   image: ghcr.io/mbombeck/healthlog:latest
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: healthlog-worker
+  #   environment:
+  #     DATABASE_URL: "postgresql://healthlog:${POSTGRES_PASSWORD}@db:5432/healthlog?schema=public"
+  #     NODE_ENV: production
+  #     SESSION_SECRET: "${SESSION_SECRET}"
+  #     ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
+  #     ENCRYPTION_KEYS: "${ENCRYPTION_KEYS:-}"
+  #     ENCRYPTION_ACTIVE_KEY_ID: "${ENCRYPTION_ACTIVE_KEY_ID:-}"
+  #     API_TOKEN_HMAC_KEY: "${API_TOKEN_HMAC_KEY}"
+  #     APP_URL: "${APP_URL:-http://localhost:3000}"
+  #     HEALTHLOG_PROCESS_TYPE: "worker"
+  #     BACKUP_ENCRYPTION_KEY: "${BACKUP_ENCRYPTION_KEY:-}"
+  #     BACKUP_S3_ENDPOINT: "${BACKUP_S3_ENDPOINT:-}"
+  #     BACKUP_S3_BUCKET: "${BACKUP_S3_BUCKET:-}"
+  #     BACKUP_S3_ACCESS_KEY: "${BACKUP_S3_ACCESS_KEY:-}"
+  #     BACKUP_S3_SECRET_KEY: "${BACKUP_S3_SECRET_KEY:-}"
+  #     BACKUP_S3_REGION: "${BACKUP_S3_REGION:-auto}"
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   restart: unless-stopped
 
   db:
     image: postgres:16-alpine
