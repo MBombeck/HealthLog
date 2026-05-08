@@ -1,0 +1,14 @@
+-- 0025_user_locale_drift_fix
+-- The `users.locale` column has been on `prisma/schema.prisma` since the
+-- locale-aware reminder work in v1.3 but never landed in the migration
+-- history (it must have been applied via `prisma db push` to dev / prod
+-- but not committed as a migration). The schema drift is invisible until
+-- a fresh database is built from migrations alone — at which point the
+-- Prisma client tries to read `users.locale` and Postgres reports
+-- `column users.locale does not exist`.
+--
+-- This migration backfills the column with `IF NOT EXISTS` so it is a
+-- safe no-op against any database that was kept in sync via `db push`,
+-- and a clean add against any environment built strictly from this
+-- migrations directory (CI test containers, fresh deploys, etc.).
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "locale" TEXT;
