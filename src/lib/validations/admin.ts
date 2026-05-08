@@ -16,7 +16,7 @@ export const adminSettingsSchema = z
       .string()
       .refine((v) => !v.trim() || /^mailto:.+@.+$/.test(v.trim()), {
         message:
-          "Web Push Subject muss im Format mailto:adresse@example.com sein",
+          "webPushVapidSubject must be in mailto:address@example.com format",
       })
       .optional(),
     webPushVapidPrivateKey: z.string().optional(),
@@ -36,7 +36,7 @@ export const adminSettingsSchema = z
             return false;
           }
         },
-        { message: "Umami Script-URL ist ungültig" },
+        { message: "Umami script URL is invalid" },
       )
       .optional(),
     umamiWebsiteId: z.string().optional(),
@@ -54,7 +54,7 @@ export const adminSettingsSchema = z
             return false;
           }
         },
-        { message: "Glitchtip DSN ist ungültig" },
+        { message: "Glitchtip DSN is invalid" },
       )
       .optional(),
     glitchtipEnvironment: z.string().optional(),
@@ -66,7 +66,7 @@ export const adminSettingsSchema = z
           if (!trimmed) return true;
           return /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(trimmed);
         },
-        { message: "GitHub-Repository muss im Format owner/repo sein" },
+        { message: "GitHub repository must be in owner/repo format" },
       )
       .optional(),
     bugReportToken: z.string().optional(),

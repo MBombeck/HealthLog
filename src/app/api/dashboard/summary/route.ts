@@ -15,6 +15,8 @@ import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { defaultLocale, type Locale } from "@/lib/i18n/config";
 
 const SPARK_DAYS = 7;
 const STREAK_WINDOW_DAYS = 365;
@@ -159,8 +161,8 @@ export const GET = apiHandler(async () => {
     ...measurementTypeEnum.options,
   ] as MeasurementType[];
 
-  const [recentMeasurements, todaysIntakes, streakActivity] =
-    await Promise.all([
+  const [recentMeasurements, todaysIntakes, streakActivity] = await Promise.all(
+    [
       prisma.measurement.findMany({
         where: {
           userId: user.id,
@@ -185,10 +187,12 @@ export const GET = apiHandler(async () => {
         },
         select: { takenAt: true, scheduledFor: true },
       }),
-    ]);
+    ],
+  );
 
   const activityDays = new Set<string>();
-  for (const m of recentMeasurements) activityDays.add(berlinDayKey(m.measuredAt));
+  for (const m of recentMeasurements)
+    activityDays.add(berlinDayKey(m.measuredAt));
   // Pull a wider measurement window for the streak so it isn't capped by
   // SPARK_DAYS — but only if the user has any data at all.
   if (recentMeasurements.length > 0) {
@@ -333,16 +337,19 @@ export const GET = apiHandler(async () => {
   ).length;
 
   const greetingName = user.displayName ?? user.username;
+  const locale: Locale =
+    user.locale === "de" || user.locale === "en" ? user.locale : defaultLocale;
+  const t = getServerTranslator(locale).t;
 
   return apiSuccess({
     greeting: {
-      salutation: `Hi, ${greetingName}`,
+      salutation: t("dashboard.greetingSalutation", { name: greetingName }),
       date: now.toISOString(),
     },
     streak: {
       currentDays: streak.currentDays,
       longest: streak.longest,
-      label: "Tage in Folge",
+      label: t("dashboard.streakLabel"),
     },
     compliance: {
       scheduledToday,

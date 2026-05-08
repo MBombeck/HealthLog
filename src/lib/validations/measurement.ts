@@ -66,7 +66,7 @@ export function validateMeasurementRange(
 ): string | null {
   const range = VALUE_RANGES[type];
   if (range && (value < range.min || value > range.max)) {
-    return `Wert muss zwischen ${range.min} und ${range.max} liegen`;
+    return `Value must be between ${range.min} and ${range.max}`;
   }
   return null;
 }
@@ -104,7 +104,7 @@ export const updateMeasurementSchema = z.object({
     .optional(),
   notes: z
     .string()
-    .max(25, "Kommentar darf maximal 25 Zeichen haben")
+    .max(25, "Note cannot exceed 25 characters")
     .nullable()
     .optional(),
 });

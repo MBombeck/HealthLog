@@ -4,6 +4,9 @@
  * current time relative to the schedule window end.
  */
 
+import { defaultLocale, type Locale } from "@/lib/i18n/config";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+
 export type ReminderPhase = "GREEN" | "YELLOW" | "ORANGE" | "RED";
 export type PhaseMode = "MINUTES" | "PERCENT";
 
@@ -115,8 +118,18 @@ export function determinePhase(
   return null; // Not in any phase yet
 }
 
+function resolveLocale(locale: Locale | string | null | undefined): Locale {
+  return locale === "en" || locale === "de" ? locale : defaultLocale;
+}
+
 /**
- * Get the message template for a phase.
+ * Get the message template for a phase, localised to the recipient
+ * user. Strings live in `messages/{de,en}.json` under
+ * `medicationReminders.phase*`. The reminder worker passes the user's
+ * stored locale; absent / unknown locales fall back to the app default.
+ *
+ * v1.4 marathon — closes the v3 audit "Locale-Mixing" CRIT finding
+ * (German-only Telegram / Web Push templates regardless of user locale).
  */
 export function getPhaseMessage(
   phase: ReminderPhase,
@@ -124,47 +137,79 @@ export function getPhaseMessage(
   doseInfo: string,
   timeWindow: string,
   minutesToEnd: number,
+  locale: Locale | string | null | undefined,
 ): { title: string; message: string } {
-  const minutesPastEnd = -minutesToEnd;
+  const t = getServerTranslator(resolveLocale(locale)).t;
   const absMinutes = Math.abs(minutesToEnd);
+  const minutesPastEnd = Math.max(0, -minutesToEnd);
+
+  const params = (extra: Record<string, string | number>) => ({
+    medName,
+    doseInfo,
+    timeWindow,
+    ...extra,
+  });
 
   switch (phase) {
     case "GREEN":
       return {
-        title: `🟢 Erinnerung: ${medName}`,
-        message: `🟢 Erinnerung:\n<b>${medName}</b> (${doseInfo}, ${timeWindow})\nZeitfenster endet in ${absMinutes} Min.`,
+        title: t("medicationReminders.phaseGreenTitle", { medName }),
+        message: t(
+          "medicationReminders.phaseGreenMessage",
+          params({ minutes: absMinutes }),
+        ),
       };
     case "YELLOW":
       return {
-        title: `🟡 Bald fällig: ${medName}`,
-        message: `🟡 Bald fällig:\n<b>${medName}</b> (${doseInfo}, ${timeWindow})\nNoch ${absMinutes} Min. Zeit.`,
+        title: t("medicationReminders.phaseYellowTitle", { medName }),
+        message: t(
+          "medicationReminders.phaseYellowMessage",
+          params({ minutes: absMinutes }),
+        ),
       };
     case "ORANGE":
       return {
-        title: `🟠 Überfällig: ${medName}`,
-        message: `🟠 Überfällig:\n<b>${medName}</b> (${doseInfo}, ${timeWindow})\nSeit ${minutesPastEnd} Min. überfällig.`,
+        title: t("medicationReminders.phaseOrangeTitle", { medName }),
+        message: t(
+          "medicationReminders.phaseOrangeMessage",
+          params({ minutes: minutesPastEnd }),
+        ),
       };
     case "RED":
       return {
-        title: `🔴 Verpasst: ${medName}`,
-        message: `🔴 Verpasst:\n<b>${medName}</b> (${doseInfo}, ${timeWindow})\nAls verpasst markiert.`,
+        title: t("medicationReminders.phaseRedTitle", { medName }),
+        message: t(
+          "medicationReminders.phaseRedMessage",
+          params({ minutes: 0 }),
+        ),
       };
   }
 }
 
 /**
- * Get the inline keyboard for a phase.
+ * Get the inline keyboard for a phase. Button labels follow the user's
+ * locale; callback_data values are stable English identifiers and must
+ * NOT be translated (the bot dispatcher matches on them).
  */
 export function getPhaseKeyboard(
   phase: ReminderPhase,
   medicationId: string,
+  locale: Locale | string | null | undefined,
 ): { inline_keyboard: { text: string; callback_data: string }[][] } {
+  const t = getServerTranslator(resolveLocale(locale)).t;
+
   if (phase === "RED") {
     return {
       inline_keyboard: [
         [
-          { text: "Genommen", callback_data: `taken:${medicationId}` },
-          { text: "✓ Bestätigen", callback_data: `ack:${medicationId}` },
+          {
+            text: t("medicationReminders.buttonTaken"),
+            callback_data: `taken:${medicationId}`,
+          },
+          {
+            text: t("medicationReminders.buttonConfirm"),
+            callback_data: `ack:${medicationId}`,
+          },
         ],
       ],
     };
@@ -172,11 +217,25 @@ export function getPhaseKeyboard(
 
   return {
     inline_keyboard: [
-      [{ text: "Genommen", callback_data: `taken:${medicationId}` }],
       [
-        { text: "🕐 1h", callback_data: `snooze:${medicationId}:60` },
-        { text: "🕐 3h", callback_data: `snooze:${medicationId}:180` },
-        { text: "⏭ Überspringen", callback_data: `skip:${medicationId}` },
+        {
+          text: t("medicationReminders.buttonTaken"),
+          callback_data: `taken:${medicationId}`,
+        },
+      ],
+      [
+        {
+          text: t("medicationReminders.buttonSnoozeOneHour"),
+          callback_data: `snooze:${medicationId}:60`,
+        },
+        {
+          text: t("medicationReminders.buttonSnoozeThreeHours"),
+          callback_data: `snooze:${medicationId}:180`,
+        },
+        {
+          text: t("medicationReminders.buttonSkip"),
+          callback_data: `skip:${medicationId}`,
+        },
       ],
     ],
   };

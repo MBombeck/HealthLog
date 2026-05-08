@@ -27,18 +27,18 @@ describe("measurement validation", () => {
 
   describe("validateMeasurementRange", () => {
     it("rejects values below the plausible minimum", () => {
-      expect(validateMeasurementRange("WEIGHT", 0.5)).toMatch(/zwischen/);
-      expect(validateMeasurementRange("BONE_MASS", 0.1)).toMatch(/zwischen/);
+      expect(validateMeasurementRange("WEIGHT", 0.5)).toMatch(/between/i);
+      expect(validateMeasurementRange("BONE_MASS", 0.1)).toMatch(/between/i);
       expect(validateMeasurementRange("TOTAL_BODY_WATER", 1)).toMatch(
-        /zwischen/,
+        /between/i,
       );
     });
 
     it("rejects values above the plausible maximum", () => {
-      expect(validateMeasurementRange("WEIGHT", 600)).toMatch(/zwischen/);
-      expect(validateMeasurementRange("BONE_MASS", 12)).toMatch(/zwischen/);
+      expect(validateMeasurementRange("WEIGHT", 600)).toMatch(/between/i);
+      expect(validateMeasurementRange("BONE_MASS", 12)).toMatch(/between/i);
       expect(validateMeasurementRange("TOTAL_BODY_WATER", 200)).toMatch(
-        /zwischen/,
+        /between/i,
       );
     });
 

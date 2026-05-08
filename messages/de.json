@@ -194,6 +194,8 @@
     },
     "welcomeBack": "{greeting}, willkommen zurück.",
     "welcomeBackWithName": "{greeting} {name}, willkommen zurück.",
+    "greetingSalutation": "Hi, {name}",
+    "streakLabel": "Tage in Folge",
     "weight": "Gewicht",
     "bloodPressure": "Blutdruck",
     "bloodPressureSys": "Blutdruck (Sys)",
@@ -1629,5 +1631,20 @@
     "medicationNotFoundExact": "Medikament nicht gefunden. Bitte Namen exakt wie in HealthLog senden.",
     "helpHeader": "<b>Verfügbare Befehle:</b>",
     "helpBody": "/help — Diese Hilfe anzeigen\n/add — Einnahme erfassen\n/start — Bot starten\n\n<b>Textbefehle:</b>\ngenommen &lt;Name&gt; — Einnahme bestätigen\n\n<b>Über die Buttons in Erinnerungen:</b>\n• Genommen — Einnahme bestätigen\n• 🕐 1h / 🕐 3h — Erinnerung verschieben\n• ⏭ Überspringen — Einnahme überspringen\n• ✓ Bestätigen — Verpasste Einnahme bestätigen"
+  },
+  "medicationReminders": {
+    "phaseGreenTitle": "🟢 Erinnerung: {medName}",
+    "phaseGreenMessage": "🟢 Erinnerung:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nZeitfenster endet in {minutes} Min.",
+    "phaseYellowTitle": "🟡 Bald fällig: {medName}",
+    "phaseYellowMessage": "🟡 Bald fällig:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNoch {minutes} Min. Zeit.",
+    "phaseOrangeTitle": "🟠 Überfällig: {medName}",
+    "phaseOrangeMessage": "🟠 Überfällig:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nSeit {minutes} Min. überfällig.",
+    "phaseRedTitle": "🔴 Verpasst: {medName}",
+    "phaseRedMessage": "🔴 Verpasst:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nAls verpasst markiert.",
+    "buttonTaken": "Genommen",
+    "buttonConfirm": "✓ Bestätigen",
+    "buttonSnoozeOneHour": "🕐 1h",
+    "buttonSnoozeThreeHours": "🕐 3h",
+    "buttonSkip": "⏭ Überspringen"
   }
 }

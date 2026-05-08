@@ -194,6 +194,8 @@
     },
     "welcomeBack": "{greeting}, welcome back.",
     "welcomeBackWithName": "{greeting} {name}, welcome back.",
+    "greetingSalutation": "Hi, {name}",
+    "streakLabel": "days in a row",
     "weight": "Weight",
     "bloodPressure": "Blood Pressure",
     "bloodPressureSys": "Blood Pressure (Sys)",
@@ -1629,5 +1631,20 @@
     "medicationNotFoundExact": "Medication not found. Please send the name exactly as in HealthLog.",
     "helpHeader": "<b>Available commands:</b>",
     "helpBody": "/help — show this help\n/add — record an intake\n/start — start the bot\n\n<b>Text commands:</b>\ntaken &lt;name&gt; — confirm an intake\n\n<b>Buttons in reminders:</b>\n• Taken — confirm intake\n• 🕐 1h / 🕐 3h — postpone reminder\n• ⏭ Skip — skip intake\n• ✓ Confirm — confirm a missed intake"
+  },
+  "medicationReminders": {
+    "phaseGreenTitle": "🟢 Reminder: {medName}",
+    "phaseGreenMessage": "🟢 Reminder:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nWindow closes in {minutes} min.",
+    "phaseYellowTitle": "🟡 Due soon: {medName}",
+    "phaseYellowMessage": "🟡 Due soon:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes} min left.",
+    "phaseOrangeTitle": "🟠 Overdue: {medName}",
+    "phaseOrangeMessage": "🟠 Overdue:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nOverdue by {minutes} min.",
+    "phaseRedTitle": "🔴 Missed: {medName}",
+    "phaseRedMessage": "🔴 Missed:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nMarked as missed.",
+    "buttonTaken": "Taken",
+    "buttonConfirm": "✓ Confirm",
+    "buttonSnoozeOneHour": "🕐 1h",
+    "buttonSnoozeThreeHours": "🕐 3h",
+    "buttonSkip": "⏭ Skip"
   }
 }

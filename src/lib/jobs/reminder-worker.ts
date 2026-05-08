@@ -242,213 +242,232 @@ async function cleanupScheduledTelegramDeletions(): Promise<void> {
 async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.medication_reminder", async (evt) => {
-  const prisma = getWorkerPrisma();
-  try {
-    recordReminderCheck();
-    const now = new Date();
+    const prisma = getWorkerPrisma();
+    try {
+      recordReminderCheck();
+      const now = new Date();
 
-    // Clean up expired scheduled Telegram message deletions
-    await cleanupScheduledTelegramDeletions();
+      // Clean up expired scheduled Telegram message deletions
+      await cleanupScheduledTelegramDeletions();
 
-    // Clean up expired snoozes
-    await prisma.medication.updateMany({
-      where: { snoozedUntil: { lt: now } },
-      data: { snoozedUntil: null },
-    });
+      // Clean up expired snoozes
+      await prisma.medication.updateMany({
+        where: { snoozedUntil: { lt: now } },
+        data: { snoozedUntil: null },
+      });
 
-    // Get all active medications with schedules and phase config
-    const medications = await prisma.medication.findMany({
-      where: { active: true },
-      include: {
-        schedules: true,
-        phaseConfig: true,
-        user: {
-          select: {
-            id: true,
-            timezone: true,
+      // Get all active medications with schedules and phase config
+      const medications = await prisma.medication.findMany({
+        where: { active: true },
+        include: {
+          schedules: true,
+          phaseConfig: true,
+          user: {
+            select: {
+              id: true,
+              timezone: true,
+              // Used to localise the reminder title / message / keyboard
+              // labels per user. Null falls back to the app default.
+              locale: true,
+            },
           },
         },
-      },
-    });
-
-    for (const med of medications) {
-      const userTz = med.user.timezone || "Europe/Berlin";
-      const { start: todayStart, end: todayEnd } = getUserTodayBounds(
-        now,
-        userTz,
-      );
-
-      const currentTime = now.toLocaleTimeString("en-GB", {
-        timeZone: userTz,
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
       });
 
-      const todayDow = getDayOfWeekInTz(now, userTz);
-
-      // Get today's date string in user's timezone for message tracking
-      const localDateStr = now.toLocaleDateString("sv-SE", {
-        timeZone: userTz,
-      }); // YYYY-MM-DD format
-
-      // Count existing intake events for this medication today
-      const eventCount = await prisma.medicationIntakeEvent.count({
-        where: {
-          medicationId: med.id,
-          userId: med.user.id,
-          scheduledFor: { gte: todayStart, lte: todayEnd },
-        },
-      });
-
-      // Resolve phase configuration
-      const phaseConfig = med.phaseConfig ?? DEFAULT_PHASE_CONFIG;
-
-      let schedulesProcessed = 0;
-      const sortedSchedules = [...med.schedules].sort((a, b) =>
-        a.windowStart.localeCompare(b.windowStart),
-      );
-
-      for (const schedule of sortedSchedules) {
-        // Check day-of-week / recurrence constraints
-        const recurrence = parseScheduleRecurrence(schedule.daysOfWeek);
-        if (
-          recurrence.daysOfWeek.length > 0 &&
-          !recurrence.daysOfWeek.includes(todayDow)
-        ) {
-          continue;
-        }
-
-        const startMins = parseTimeToMinutes(schedule.windowStart);
-        const endMins = parseTimeToMinutes(schedule.windowEnd);
-        const currentMins = parseTimeToMinutes(currentTime);
-        const windowDuration = endMins - startMins;
-        const minutesToEnd = endMins - currentMins;
-        const minutesFromStart = currentMins - startMins;
-
-        // Skip if enough intake events exist
-        if (eventCount > schedulesProcessed) {
-          schedulesProcessed++;
-          continue;
-        }
-
-        // Skip if medication is snoozed
-        if (med.snoozedUntil && now < med.snoozedUntil) {
-          schedulesProcessed++;
-          continue;
-        }
-
-        // Resolve phase thresholds
-        const thresholds = resolvePhaseThresholds(phaseConfig, windowDuration);
-
-        // Determine current phase
-        const currentPhase = determinePhase(
-          minutesToEnd,
-          minutesFromStart,
-          thresholds,
+      for (const med of medications) {
+        const userTz = med.user.timezone || "Europe/Berlin";
+        const { start: todayStart, end: todayEnd } = getUserTodayBounds(
+          now,
+          userTz,
         );
 
-        if (!currentPhase) {
-          schedulesProcessed++;
-          continue;
-        }
+        const currentTime = now.toLocaleTimeString("en-GB", {
+          timeZone: userTz,
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
 
-        // Check if this phase was already notified today
-        const existingMessage =
-          await prisma.telegramReminderMessage.findUnique({
-            where: {
-              medicationId_scheduleId_date_phase: {
-                medicationId: med.id,
-                scheduleId: schedule.id,
-                date: localDateStr,
-                phase: currentPhase,
-              },
-            },
-          });
+        const todayDow = getDayOfWeekInTz(now, userTz);
 
-        if (existingMessage) {
-          // Already sent for this phase — skip
-          schedulesProcessed++;
-          continue;
-        }
+        // Get today's date string in user's timezone for message tracking
+        const localDateStr = now.toLocaleDateString("sv-SE", {
+          timeZone: userTz,
+        }); // YYYY-MM-DD format
 
-        const doseInfo = schedule.dose ?? med.dose;
-        const timeWindow = `${schedule.windowStart}–${schedule.windowEnd}`;
+        // Count existing intake events for this medication today
+        const eventCount = await prisma.medicationIntakeEvent.count({
+          where: {
+            medicationId: med.id,
+            userId: med.user.id,
+            scheduledFor: { gte: todayStart, lte: todayEnd },
+          },
+        });
 
-        // RED phase: create missed intake event
-        if (currentPhase === "RED") {
-          const [h, m] = schedule.windowStart.split(":").map(Number);
-          const scheduledFor = new Date(
-            todayStart.getTime() + h * 3600000 + m * 60000,
+        // Resolve phase configuration
+        const phaseConfig = med.phaseConfig ?? DEFAULT_PHASE_CONFIG;
+
+        let schedulesProcessed = 0;
+        const sortedSchedules = [...med.schedules].sort((a, b) =>
+          a.windowStart.localeCompare(b.windowStart),
+        );
+
+        for (const schedule of sortedSchedules) {
+          // Check day-of-week / recurrence constraints
+          const recurrence = parseScheduleRecurrence(schedule.daysOfWeek);
+          if (
+            recurrence.daysOfWeek.length > 0 &&
+            !recurrence.daysOfWeek.includes(todayDow)
+          ) {
+            continue;
+          }
+
+          const startMins = parseTimeToMinutes(schedule.windowStart);
+          const endMins = parseTimeToMinutes(schedule.windowEnd);
+          const currentMins = parseTimeToMinutes(currentTime);
+          const windowDuration = endMins - startMins;
+          const minutesToEnd = endMins - currentMins;
+          const minutesFromStart = currentMins - startMins;
+
+          // Skip if enough intake events exist
+          if (eventCount > schedulesProcessed) {
+            schedulesProcessed++;
+            continue;
+          }
+
+          // Skip if medication is snoozed
+          if (med.snoozedUntil && now < med.snoozedUntil) {
+            schedulesProcessed++;
+            continue;
+          }
+
+          // Resolve phase thresholds
+          const thresholds = resolvePhaseThresholds(
+            phaseConfig,
+            windowDuration,
           );
 
-          const existingMissed = await prisma.medicationIntakeEvent.count({
-            where: {
-              medicationId: med.id,
-              userId: med.user.id,
-              scheduledFor,
-              takenAt: null,
-              source: "REMINDER",
-            },
-          });
+          // Determine current phase
+          const currentPhase = determinePhase(
+            minutesToEnd,
+            minutesFromStart,
+            thresholds,
+          );
 
-          if (existingMissed === 0) {
-            await prisma.medicationIntakeEvent.create({
-              data: {
-                userId: med.user.id,
+          if (!currentPhase) {
+            schedulesProcessed++;
+            continue;
+          }
+
+          // Check if this phase was already notified today
+          const existingMessage =
+            await prisma.telegramReminderMessage.findUnique({
+              where: {
+                medicationId_scheduleId_date_phase: {
+                  medicationId: med.id,
+                  scheduleId: schedule.id,
+                  date: localDateStr,
+                  phase: currentPhase,
+                },
+              },
+            });
+
+          if (existingMessage) {
+            // Already sent for this phase — skip
+            schedulesProcessed++;
+            continue;
+          }
+
+          const doseInfo = schedule.dose ?? med.dose;
+          const timeWindow = `${schedule.windowStart}–${schedule.windowEnd}`;
+
+          // RED phase: create missed intake event
+          if (currentPhase === "RED") {
+            const [h, m] = schedule.windowStart.split(":").map(Number);
+            const scheduledFor = new Date(
+              todayStart.getTime() + h * 3600000 + m * 60000,
+            );
+
+            const existingMissed = await prisma.medicationIntakeEvent.count({
+              where: {
                 medicationId: med.id,
+                userId: med.user.id,
                 scheduledFor,
                 takenAt: null,
-                skipped: false,
                 source: "REMINDER",
               },
             });
 
-            evt.addMeta("missed_dose", `${med.name}:${schedule.windowStart}-${schedule.windowEnd}`);
+            if (existingMissed === 0) {
+              await prisma.medicationIntakeEvent.create({
+                data: {
+                  userId: med.user.id,
+                  medicationId: med.id,
+                  scheduledFor,
+                  takenAt: null,
+                  skipped: false,
+                  source: "REMINDER",
+                },
+              });
+
+              evt.addMeta(
+                "missed_dose",
+                `${med.name}:${schedule.windowStart}-${schedule.windowEnd}`,
+              );
+            }
           }
-        }
 
-        // Send notification if enabled
-        if (med.notificationsEnabled) {
-          const { title, message } = getPhaseMessage(
-            currentPhase,
-            med.name,
-            doseInfo,
-            timeWindow,
-            minutesToEnd,
-          );
+          // Send notification if enabled
+          if (med.notificationsEnabled) {
+            const { title, message } = getPhaseMessage(
+              currentPhase,
+              med.name,
+              doseInfo,
+              timeWindow,
+              minutesToEnd,
+              med.user.locale,
+            );
 
-          const keyboard = getPhaseKeyboard(currentPhase, med.id);
+            const keyboard = getPhaseKeyboard(
+              currentPhase,
+              med.id,
+              med.user.locale,
+            );
 
-          evt.addMeta("notification_phase", `${currentPhase}:${med.name}:${schedule.windowStart}-${schedule.windowEnd}`);
+            evt.addMeta(
+              "notification_phase",
+              `${currentPhase}:${med.name}:${schedule.windowStart}-${schedule.windowEnd}`,
+            );
 
-          try {
-            await dispatchNotification({
-              eventType: "MEDICATION_REMINDER",
-              userId: med.user.id,
-              title,
-              message,
-              metadata: {
-                medicationId: med.id,
-                scheduleId: schedule.id,
-                phase: currentPhase,
-                date: localDateStr,
-                replyMarkup: keyboard,
-              },
-            });
-          } catch (notifErr) {
-            evt.addWarning(`Notification dispatch failed for ${currentPhase} phase ${med.name}: ${notifErr}`);
+            try {
+              await dispatchNotification({
+                eventType: "MEDICATION_REMINDER",
+                userId: med.user.id,
+                title,
+                message,
+                metadata: {
+                  medicationId: med.id,
+                  scheduleId: schedule.id,
+                  phase: currentPhase,
+                  date: localDateStr,
+                  replyMarkup: keyboard,
+                },
+              });
+            } catch (notifErr) {
+              evt.addWarning(
+                `Notification dispatch failed for ${currentPhase} phase ${med.name}: ${notifErr}`,
+              );
+            }
           }
-        }
 
-        schedulesProcessed++;
+          schedulesProcessed++;
+        }
       }
+    } catch (err) {
+      evt.setError(err);
+      recordError();
+      throw err;
     }
-  } catch (err) {
-    evt.setError(err);
-    recordError();
-    throw err;
-  }
   });
 }
 
@@ -459,79 +478,87 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
 async function handleWithingsFallbackSync(jobs: Job<WithingsSyncPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.withings_sync", async (evt) => {
-  const prisma = getWorkerPrisma();
-  try {
-    recordWithingsSync();
-    const connections = await prisma.withingsConnection.findMany({
-      select: { userId: true },
-    });
+    const prisma = getWorkerPrisma();
+    try {
+      recordWithingsSync();
+      const connections = await prisma.withingsConnection.findMany({
+        select: { userId: true },
+      });
 
-    if (connections.length === 0) {
-      return;
-    }
-
-    let usersSynced = 0;
-    let measurementsImported = 0;
-
-    for (const connection of connections) {
-      try {
-        const imported = await syncUserMeasurements(connection.userId);
-        usersSynced++;
-        measurementsImported += imported;
-      } catch (err) {
-        evt.addWarning(`Fallback sync failed for user ${connection.userId}: ${err}`);
+      if (connections.length === 0) {
+        return;
       }
-    }
 
-    evt.setBackground({
-      task_name: "job.withings_sync",
-      result: { users_synced: usersSynced, total: connections.length, measurements_imported: measurementsImported },
-    });
-  } catch (err) {
-    evt.setError(err);
-    recordError();
-    throw err;
-  }
+      let usersSynced = 0;
+      let measurementsImported = 0;
+
+      for (const connection of connections) {
+        try {
+          const imported = await syncUserMeasurements(connection.userId);
+          usersSynced++;
+          measurementsImported += imported;
+        } catch (err) {
+          evt.addWarning(
+            `Fallback sync failed for user ${connection.userId}: ${err}`,
+          );
+        }
+      }
+
+      evt.setBackground({
+        task_name: "job.withings_sync",
+        result: {
+          users_synced: usersSynced,
+          total: connections.length,
+          measurements_imported: measurementsImported,
+        },
+      });
+    } catch (err) {
+      evt.setError(err);
+      recordError();
+      throw err;
+    }
   });
 }
 
 async function handleGeneralStatusGenerate(jobs: Job<GeneralStatusPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.insights.general", async (evt) => {
-  const prisma = getWorkerPrisma();
-  try {
-    recordInsightsRun();
-    const users = await prisma.user.findMany({
-      select: { id: true, locale: true },
-    });
+    const prisma = getWorkerPrisma();
+    try {
+      recordInsightsRun();
+      const users = await prisma.user.findMany({
+        select: { id: true, locale: true },
+      });
 
-    if (users.length === 0) return;
+      if (users.length === 0) return;
 
-    let generated = 0;
-    let failed = 0;
+      let generated = 0;
+      let failed = 0;
 
-    for (const user of users) {
-      try {
-        await generateGeneralStatusForUser(user.id, {
-          locale: user.locale ?? "de",
-          force: false,
-        });
-        generated++;
-      } catch (error) {
-        failed++;
-        evt.addWarning(`general-status generation failed for user ${user.id}: ${error}`);
+      for (const user of users) {
+        try {
+          await generateGeneralStatusForUser(user.id, {
+            locale: user.locale ?? "de",
+            force: false,
+          });
+          generated++;
+        } catch (error) {
+          failed++;
+          evt.addWarning(
+            `general-status generation failed for user ${user.id}: ${error}`,
+          );
+        }
       }
-    }
 
-    evt.setBackground({
-      task_name: "job.insights.general",
-      result: { generated, failed, total: users.length },
-    });
-  } catch (err) {
-    evt.setError(err);
-    recordError();
-    throw err;
-  }
+      evt.setBackground({
+        task_name: "job.insights.general",
+        result: { generated, failed, total: users.length },
+      });
+    } catch (err) {
+      evt.setError(err);
+      recordError();
+      throw err;
+    }
   });
 }
 
@@ -540,156 +567,164 @@ async function handleBloodPressureStatusGenerate(
 ) {
   void jobs;
   await withBackgroundEvent("job.insights.blood_pressure", async (evt) => {
-  const prisma = getWorkerPrisma();
-  try {
-    const users = await prisma.user.findMany({
-      select: { id: true, locale: true },
-    });
+    const prisma = getWorkerPrisma();
+    try {
+      const users = await prisma.user.findMany({
+        select: { id: true, locale: true },
+      });
 
-    if (users.length === 0) return;
+      if (users.length === 0) return;
 
-    let generated = 0;
-    let failed = 0;
+      let generated = 0;
+      let failed = 0;
 
-    for (const user of users) {
-      try {
-        await generateBloodPressureStatusForUser(user.id, {
-          locale: user.locale ?? "de",
-          force: false,
-        });
-        generated++;
-      } catch (error) {
-        failed++;
-        evt.addWarning(`blood-pressure-status generation failed for user ${user.id}: ${error}`);
+      for (const user of users) {
+        try {
+          await generateBloodPressureStatusForUser(user.id, {
+            locale: user.locale ?? "de",
+            force: false,
+          });
+          generated++;
+        } catch (error) {
+          failed++;
+          evt.addWarning(
+            `blood-pressure-status generation failed for user ${user.id}: ${error}`,
+          );
+        }
       }
-    }
 
-    evt.setBackground({
-      task_name: "job.insights.blood_pressure",
-      result: { generated, failed, total: users.length },
-    });
-  } catch (err) {
-    evt.setError(err);
-    recordError();
-    throw err;
-  }
+      evt.setBackground({
+        task_name: "job.insights.blood_pressure",
+        result: { generated, failed, total: users.length },
+      });
+    } catch (err) {
+      evt.setError(err);
+      recordError();
+      throw err;
+    }
   });
 }
 
 async function handleWeightStatusGenerate(jobs: Job<WeightStatusPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.insights.weight", async (evt) => {
-  const prisma = getWorkerPrisma();
-  try {
-    const users = await prisma.user.findMany({
-      select: { id: true, locale: true },
-    });
+    const prisma = getWorkerPrisma();
+    try {
+      const users = await prisma.user.findMany({
+        select: { id: true, locale: true },
+      });
 
-    if (users.length === 0) return;
+      if (users.length === 0) return;
 
-    let generated = 0;
-    let failed = 0;
+      let generated = 0;
+      let failed = 0;
 
-    for (const user of users) {
-      try {
-        await generateWeightStatusForUser(user.id, {
-          locale: user.locale ?? "de",
-          force: false,
-        });
-        generated++;
-      } catch (error) {
-        failed++;
-        evt.addWarning(`weight-status generation failed for user ${user.id}: ${error}`);
+      for (const user of users) {
+        try {
+          await generateWeightStatusForUser(user.id, {
+            locale: user.locale ?? "de",
+            force: false,
+          });
+          generated++;
+        } catch (error) {
+          failed++;
+          evt.addWarning(
+            `weight-status generation failed for user ${user.id}: ${error}`,
+          );
+        }
       }
-    }
 
-    evt.setBackground({
-      task_name: "job.insights.weight",
-      result: { generated, failed, total: users.length },
-    });
-  } catch (err) {
-    evt.setError(err);
-    recordError();
-    throw err;
-  }
+      evt.setBackground({
+        task_name: "job.insights.weight",
+        result: { generated, failed, total: users.length },
+      });
+    } catch (err) {
+      evt.setError(err);
+      recordError();
+      throw err;
+    }
   });
 }
 
 async function handlePulseStatusGenerate(jobs: Job<PulseStatusPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.insights.pulse", async (evt) => {
-  const prisma = getWorkerPrisma();
-  try {
-    const users = await prisma.user.findMany({
-      select: { id: true, locale: true },
-    });
+    const prisma = getWorkerPrisma();
+    try {
+      const users = await prisma.user.findMany({
+        select: { id: true, locale: true },
+      });
 
-    if (users.length === 0) return;
+      if (users.length === 0) return;
 
-    let generated = 0;
-    let failed = 0;
+      let generated = 0;
+      let failed = 0;
 
-    for (const user of users) {
-      try {
-        await generatePulseStatusForUser(user.id, {
-          locale: user.locale ?? "de",
-          force: false,
-        });
-        generated++;
-      } catch (error) {
-        failed++;
-        evt.addWarning(`pulse-status generation failed for user ${user.id}: ${error}`);
+      for (const user of users) {
+        try {
+          await generatePulseStatusForUser(user.id, {
+            locale: user.locale ?? "de",
+            force: false,
+          });
+          generated++;
+        } catch (error) {
+          failed++;
+          evt.addWarning(
+            `pulse-status generation failed for user ${user.id}: ${error}`,
+          );
+        }
       }
-    }
 
-    evt.setBackground({
-      task_name: "job.insights.pulse",
-      result: { generated, failed, total: users.length },
-    });
-  } catch (err) {
-    evt.setError(err);
-    recordError();
-    throw err;
-  }
+      evt.setBackground({
+        task_name: "job.insights.pulse",
+        result: { generated, failed, total: users.length },
+      });
+    } catch (err) {
+      evt.setError(err);
+      recordError();
+      throw err;
+    }
   });
 }
 
 async function handleBmiStatusGenerate(jobs: Job<BmiStatusPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.insights.bmi", async (evt) => {
-  const prisma = getWorkerPrisma();
-  try {
-    const users = await prisma.user.findMany({
-      select: { id: true, locale: true },
-    });
+    const prisma = getWorkerPrisma();
+    try {
+      const users = await prisma.user.findMany({
+        select: { id: true, locale: true },
+      });
 
-    if (users.length === 0) return;
+      if (users.length === 0) return;
 
-    let generated = 0;
-    let failed = 0;
+      let generated = 0;
+      let failed = 0;
 
-    for (const user of users) {
-      try {
-        await generateBmiStatusForUser(user.id, {
-          locale: user.locale ?? "de",
-          force: false,
-        });
-        generated++;
-      } catch (error) {
-        failed++;
-        evt.addWarning(`bmi-status generation failed for user ${user.id}: ${error}`);
+      for (const user of users) {
+        try {
+          await generateBmiStatusForUser(user.id, {
+            locale: user.locale ?? "de",
+            force: false,
+          });
+          generated++;
+        } catch (error) {
+          failed++;
+          evt.addWarning(
+            `bmi-status generation failed for user ${user.id}: ${error}`,
+          );
+        }
       }
-    }
 
-    evt.setBackground({
-      task_name: "job.insights.bmi",
-      result: { generated, failed, total: users.length },
-    });
-  } catch (err) {
-    evt.setError(err);
-    recordError();
-    throw err;
-  }
+      evt.setBackground({
+        task_name: "job.insights.bmi",
+        result: { generated, failed, total: users.length },
+      });
+    } catch (err) {
+      evt.setError(err);
+      recordError();
+      throw err;
+    }
   });
 }
 
@@ -697,41 +732,46 @@ async function handleMedicationComplianceStatusGenerate(
   jobs: Job<MedicationComplianceStatusPayload>[],
 ) {
   void jobs;
-  await withBackgroundEvent("job.insights.medication_compliance", async (evt) => {
-  const prisma = getWorkerPrisma();
-  try {
-    const users = await prisma.user.findMany({
-      select: { id: true, locale: true },
-    });
-
-    if (users.length === 0) return;
-
-    let generated = 0;
-    let failed = 0;
-
-    for (const user of users) {
+  await withBackgroundEvent(
+    "job.insights.medication_compliance",
+    async (evt) => {
+      const prisma = getWorkerPrisma();
       try {
-        await generateMedicationComplianceStatusForUser(user.id, {
-          locale: user.locale ?? "de",
-          force: false,
+        const users = await prisma.user.findMany({
+          select: { id: true, locale: true },
         });
-        generated++;
-      } catch (error) {
-        failed++;
-        evt.addWarning(`medication-compliance-status generation failed for user ${user.id}: ${error}`);
-      }
-    }
 
-    evt.setBackground({
-      task_name: "job.insights.medication_compliance",
-      result: { generated, failed, total: users.length },
-    });
-  } catch (err) {
-    evt.setError(err);
-    recordError();
-    throw err;
-  }
-  });
+        if (users.length === 0) return;
+
+        let generated = 0;
+        let failed = 0;
+
+        for (const user of users) {
+          try {
+            await generateMedicationComplianceStatusForUser(user.id, {
+              locale: user.locale ?? "de",
+              force: false,
+            });
+            generated++;
+          } catch (error) {
+            failed++;
+            evt.addWarning(
+              `medication-compliance-status generation failed for user ${user.id}: ${error}`,
+            );
+          }
+        }
+
+        evt.setBackground({
+          task_name: "job.insights.medication_compliance",
+          result: { generated, failed, total: users.length },
+        });
+      } catch (err) {
+        evt.setError(err);
+        recordError();
+        throw err;
+      }
+    },
+  );
 }
 
 /**
@@ -740,28 +780,28 @@ async function handleMedicationComplianceStatusGenerate(
  */
 async function handleTelegramCleanup(jobs: Job<TelegramCleanupPayload>[]) {
   await withBackgroundEvent("job.telegram_cleanup", async (evt) => {
-  const prisma = getWorkerPrisma();
-  let deleted = 0;
-  for (const job of jobs) {
-    try {
-      const { userId, chatId, messageId } = job.data;
-      const user = await prisma.user.findFirst({
-        where: { id: userId, telegramBotToken: { not: null } },
-        select: { telegramBotToken: true },
-      });
-      if (user?.telegramBotToken) {
-        const botToken = decrypt(user.telegramBotToken);
-        await deleteMessage(botToken, chatId, messageId);
-        deleted++;
+    const prisma = getWorkerPrisma();
+    let deleted = 0;
+    for (const job of jobs) {
+      try {
+        const { userId, chatId, messageId } = job.data;
+        const user = await prisma.user.findFirst({
+          where: { id: userId, telegramBotToken: { not: null } },
+          select: { telegramBotToken: true },
+        });
+        if (user?.telegramBotToken) {
+          const botToken = decrypt(user.telegramBotToken);
+          await deleteMessage(botToken, chatId, messageId);
+          deleted++;
+        }
+      } catch (err) {
+        evt.addWarning(`Failed to delete message: ${err}`);
       }
-    } catch (err) {
-      evt.addWarning(`Failed to delete message: ${err}`);
     }
-  }
-  evt.setBackground({
-    task_name: "job.telegram_cleanup",
-    result: { deleted, total: jobs.length },
-  });
+    evt.setBackground({
+      task_name: "job.telegram_cleanup",
+      result: { deleted, total: jobs.length },
+    });
   });
 }
 
@@ -772,53 +812,55 @@ async function handleTelegramCleanup(jobs: Job<TelegramCleanupPayload>[]) {
 async function handleMoodLogSync(jobs: Job<MoodLogSyncPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.moodlog_sync", async (evt) => {
-  const prisma = getWorkerPrisma();
-  try {
-    // Check global toggle
-    const appSettings = await prisma.appSettings.findUnique({
-      where: { id: "singleton" },
-      select: { moodLogGlobal: true },
-    });
-    if (appSettings && !appSettings.moodLogGlobal) {
-      evt.addMeta("skipped", "global_toggle_disabled");
-      return;
-    }
-
-    const users = await prisma.user.findMany({
-      where: { moodLogEnabled: true },
-      select: { id: true },
-    });
-
-    if (users.length === 0) return;
-
-    let synced = 0;
-    let totalImported = 0;
-
-    for (const user of users) {
-      try {
-        const imported = await syncMoodLogEntries(user.id);
-        synced++;
-        totalImported += imported;
-      } catch (err) {
-        evt.addWarning(`Fallback sync failed for user ${user.id}: ${err}`);
+    const prisma = getWorkerPrisma();
+    try {
+      // Check global toggle
+      const appSettings = await prisma.appSettings.findUnique({
+        where: { id: "singleton" },
+        select: { moodLogGlobal: true },
+      });
+      if (appSettings && !appSettings.moodLogGlobal) {
+        evt.addMeta("skipped", "global_toggle_disabled");
+        return;
       }
-    }
 
-    evt.setBackground({
-      task_name: "job.moodlog_sync",
-      result: { synced, total: users.length, entries_imported: totalImported },
-    });
-  } catch (err) {
-    evt.setError(err);
-    recordError();
-    throw err;
-  }
+      const users = await prisma.user.findMany({
+        where: { moodLogEnabled: true },
+        select: { id: true },
+      });
+
+      if (users.length === 0) return;
+
+      let synced = 0;
+      let totalImported = 0;
+
+      for (const user of users) {
+        try {
+          const imported = await syncMoodLogEntries(user.id);
+          synced++;
+          totalImported += imported;
+        } catch (err) {
+          evt.addWarning(`Fallback sync failed for user ${user.id}: ${err}`);
+        }
+      }
+
+      evt.setBackground({
+        task_name: "job.moodlog_sync",
+        result: {
+          synced,
+          total: users.length,
+          entries_imported: totalImported,
+        },
+      });
+    } catch (err) {
+      evt.setError(err);
+      recordError();
+      throw err;
+    }
   });
 }
 
-async function handleRateLimitCleanup(
-  jobs: Job<RateLimitCleanupPayload>[],
-) {
+async function handleRateLimitCleanup(jobs: Job<RateLimitCleanupPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.rate_limit_cleanup", async (evt) => {
     const p = getWorkerPrisma();
@@ -864,107 +906,107 @@ async function handleAuditLogCleanup(jobs: Job<AuditLogCleanupPayload>[]) {
 async function handleDataBackup(jobs: Job<DataBackupPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.data_backup", async (evt) => {
-  const prisma = getWorkerPrisma();
-  try {
-    const users = await prisma.user.findMany({
-      select: { id: true, username: true },
-    });
+    const prisma = getWorkerPrisma();
+    try {
+      const users = await prisma.user.findMany({
+        select: { id: true, username: true },
+      });
 
-    let backed = 0;
-    for (const user of users) {
-      try {
-        const [measurements, medications, intakeEvents, moodEntries] =
-          await Promise.all([
-            prisma.measurement.findMany({
-              where: { userId: user.id },
-              orderBy: { measuredAt: "desc" },
-            }),
-            prisma.medication.findMany({
-              where: { userId: user.id },
-              include: { schedules: true },
-            }),
-            prisma.medicationIntakeEvent.findMany({
-              where: { userId: user.id },
-              include: { medication: { select: { name: true } } },
-              orderBy: { scheduledFor: "desc" },
-            }),
-            prisma.moodEntry.findMany({
-              where: { userId: user.id },
-              orderBy: { moodLoggedAt: "desc" },
-            }),
-          ]);
+      let backed = 0;
+      for (const user of users) {
+        try {
+          const [measurements, medications, intakeEvents, moodEntries] =
+            await Promise.all([
+              prisma.measurement.findMany({
+                where: { userId: user.id },
+                orderBy: { measuredAt: "desc" },
+              }),
+              prisma.medication.findMany({
+                where: { userId: user.id },
+                include: { schedules: true },
+              }),
+              prisma.medicationIntakeEvent.findMany({
+                where: { userId: user.id },
+                include: { medication: { select: { name: true } } },
+                orderBy: { scheduledFor: "desc" },
+              }),
+              prisma.moodEntry.findMany({
+                where: { userId: user.id },
+                orderBy: { moodLoggedAt: "desc" },
+              }),
+            ]);
 
-        const backupJson = JSON.stringify({
-          exportedAt: new Date().toISOString(),
-          userId: user.id,
-          measurements: measurements.map((m) => ({
-            type: m.type,
-            value: m.value,
-            unit: m.unit,
-            measuredAt: m.measuredAt.toISOString(),
-            source: m.source,
-            notes: m.notes,
-          })),
-          medications: medications.map((m) => ({
-            name: m.name,
-            dose: m.dose,
-            active: m.active,
-            schedules: m.schedules.map((s) => ({
-              windowStart: s.windowStart,
-              windowEnd: s.windowEnd,
-              label: s.label,
-              dose: s.dose,
-            })),
-          })),
-          intakeEvents: intakeEvents.map((e) => ({
-            medication: e.medication.name,
-            scheduledFor: e.scheduledFor.toISOString(),
-            takenAt: e.takenAt?.toISOString() ?? null,
-            skipped: e.skipped,
-            source: e.source,
-          })),
-          moodEntries: moodEntries.map((e) => ({
-            date: e.date,
-            mood: e.mood,
-            score: e.score,
-            tags: e.tags,
-            source: e.source,
-            loggedAt: e.moodLoggedAt.toISOString(),
-          })),
-        });
-
-        // Encrypt the backup data (contains sensitive health information)
-        const encryptedBackup = encrypt(backupJson);
-
-        await prisma.dataBackup.upsert({
-          where: {
-            userId_type: { userId: user.id, type: "WEEKLY_AUTO" },
-          },
-          update: {
-            data: encryptedBackup,
-            createdAt: new Date(),
-          },
-          create: {
+          const backupJson = JSON.stringify({
+            exportedAt: new Date().toISOString(),
             userId: user.id,
-            type: "WEEKLY_AUTO",
-            data: encryptedBackup,
-          },
-        });
-        backed++;
-      } catch (err) {
-        evt.addWarning(`Failed for user ${user.id}: ${err}`);
-      }
-    }
+            measurements: measurements.map((m) => ({
+              type: m.type,
+              value: m.value,
+              unit: m.unit,
+              measuredAt: m.measuredAt.toISOString(),
+              source: m.source,
+              notes: m.notes,
+            })),
+            medications: medications.map((m) => ({
+              name: m.name,
+              dose: m.dose,
+              active: m.active,
+              schedules: m.schedules.map((s) => ({
+                windowStart: s.windowStart,
+                windowEnd: s.windowEnd,
+                label: s.label,
+                dose: s.dose,
+              })),
+            })),
+            intakeEvents: intakeEvents.map((e) => ({
+              medication: e.medication.name,
+              scheduledFor: e.scheduledFor.toISOString(),
+              takenAt: e.takenAt?.toISOString() ?? null,
+              skipped: e.skipped,
+              source: e.source,
+            })),
+            moodEntries: moodEntries.map((e) => ({
+              date: e.date,
+              mood: e.mood,
+              score: e.score,
+              tags: e.tags,
+              source: e.source,
+              loggedAt: e.moodLoggedAt.toISOString(),
+            })),
+          });
 
-    evt.setBackground({
-      task_name: "job.data_backup",
-      result: { backed, total: users.length },
-    });
-  } catch (err) {
-    evt.setError(err);
-    recordError();
-    throw err;
-  }
+          // Encrypt the backup data (contains sensitive health information)
+          const encryptedBackup = encrypt(backupJson);
+
+          await prisma.dataBackup.upsert({
+            where: {
+              userId_type: { userId: user.id, type: "WEEKLY_AUTO" },
+            },
+            update: {
+              data: encryptedBackup,
+              createdAt: new Date(),
+            },
+            create: {
+              userId: user.id,
+              type: "WEEKLY_AUTO",
+              data: encryptedBackup,
+            },
+          });
+          backed++;
+        } catch (err) {
+          evt.addWarning(`Failed for user ${user.id}: ${err}`);
+        }
+      }
+
+      evt.setBackground({
+        task_name: "job.data_backup",
+        result: { backed, total: users.length },
+      });
+    } catch (err) {
+      evt.setError(err);
+      recordError();
+      throw err;
+    }
   });
 }
 
@@ -1023,7 +1065,10 @@ export async function startReminderWorker() {
       },
     });
     if (rotated > 0) {
-      workerLog("error", `moodlog-secret-migration: rotated ${rotated} legacy plaintext secret(s)`);
+      workerLog(
+        "error",
+        `moodlog-secret-migration: rotated ${rotated} legacy plaintext secret(s)`,
+      );
     }
   } catch (err) {
     workerLog("error", `moodlog-secret-migration failed: ${err}`);
