@@ -632,7 +632,7 @@ export default function InsightsPage() {
     enabled: isAuthenticated,
     staleTime: 60 * 1000,
   });
-  const w = analytics?.summaries.WEIGHT;
+  const w = analytics?.summaries?.WEIGHT;
   const sys = analytics?.summaries.BLOOD_PRESSURE_SYS;
   const dia = analytics?.summaries.BLOOD_PRESSURE_DIA;
   const p = analytics?.summaries.PULSE;

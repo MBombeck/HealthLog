@@ -130,10 +130,11 @@ export default function MedicationsPage() {
   const byName = (a: Medication, b: Medication) =>
     a.name.localeCompare(b.name, "de", { sensitivity: "base" });
 
-  const activeMeds = (medications?.filter((m) => m.active) ?? []).sort(byName);
-  const inactiveMeds = (medications?.filter((m) => !m.active) ?? []).sort(
-    byName,
-  );
+  // Defensive against stale service-worker responses or any future API
+  // shape change: only filter when we actually have an array.
+  const medsArray = Array.isArray(medications) ? medications : [];
+  const activeMeds = medsArray.filter((m) => m.active).sort(byName);
+  const inactiveMeds = medsArray.filter((m) => !m.active).sort(byName);
 
   return (
     <div className="space-y-5">

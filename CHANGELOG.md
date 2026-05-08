@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.4.2] — 2026-05-08
+
+### Fixed — Production deploy hotfixes
+
+- **Dashboard and Insights pages no longer crash for users without
+  weight data.** `data?.summaries.WEIGHT` only protected the outer
+  object — the optional chain stopped one level too early, so
+  brand-new users (where `summaries` is undefined) hit
+  `TypeError: undefined is not an object (evaluating 'E?.summaries.WEIGHT')`
+  on first load. Now `data?.summaries?.WEIGHT`.
+- **Container healthcheck uses `127.0.0.1` instead of `localhost`.**
+  busybox-`wget` in Alpine resolves `localhost` to IPv6 `::1` first,
+  but Next.js standalone listens on IPv4 `0.0.0.0:3000` only — so the
+  healthcheck always returned ECONNREFUSED, Docker marked the
+  container unhealthy, and Traefik returned 503 from the public URL
+  even though the app was actually running. The Dockerfile-level
+  `HEALTHCHECK` already used 127.0.0.1; the `docker-compose.yml`
+  override was the one that drifted to `localhost`. Fixed.
+
+### Notes
+
+- The 1.4.1 GHCR image never published cleanly (the docker-publish
+  workflow reported success in GH Actions but the
+  `ghcr.io/mbombeck/healthlog:1.4.1` tag returned `manifest unknown`
+  when Coolify tried to pull). The 1.4.2 release supersedes 1.4.1
+  and includes everything 1.4.1 was supposed to ship — the v1.4.1
+  source on `main` was always healthy; only the Coolify deploy
+  surface was broken.
+
 ## [1.4.1] — 2026-05-08
 
 ### Security

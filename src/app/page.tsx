@@ -197,7 +197,7 @@ export default function DashboardPage() {
     enabled: isAuthenticated,
   });
 
-  const w = data?.summaries.WEIGHT;
+  const w = data?.summaries?.WEIGHT;
   const sys = data?.summaries.BLOOD_PRESSURE_SYS;
   const dia = data?.summaries.BLOOD_PRESSURE_DIA;
   const p = data?.summaries.PULSE;
