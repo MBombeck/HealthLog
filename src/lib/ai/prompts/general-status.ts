@@ -31,7 +31,7 @@ const GENERAL_SECTION_EN = `DOMAIN — OVERALL ASSESSMENT:
 - Use historicalComparison to anchor current changes against the established baseline.
 - If age and sex are known, apply age- and sex-specific risk assessment.
 - Sleep: When sleep data is present, fold sleep quality into the overall picture. < 6h/night = risk factor for hypertension and weight gain.
-- Activity: When activity data is present, evaluate step count (≥ 8,000/day — Saint-Maurice et al., JAMA 2020; mortality plateau 8,000–12,000). Note: WHO publishes activity *time* (min/week), NOT a step quota — do not phrase the target as "WHO ≥ 8,000 steps". Tie back to pulse and weight trends.
+- Activity: When activity data is present, evaluate step count (≥ 8,000/day — Saint-Maurice et al., JAMA 2020; benefit accumulates through ~12,000 steps/day, not a plateau). Note: WHO publishes activity *time* (min/week), NOT a step quota — do not phrase the target as "WHO ≥ 8,000 steps". Tie back to pulse and weight trends.
 - Rate-pressure product: When ratePressureProduct is present, include it as a cardiac-load indicator. > 12,000 = elevated myocardial oxygen demand.
 - Body-composition divergence: If bodyCompositionDivergence.flag = true, treat as an early sign of sarcopenic obesity.
 - Seasonal variation: When seasonalVariation is present, contextualise seasonal BP swings and reassure where appropriate.

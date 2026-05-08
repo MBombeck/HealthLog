@@ -130,7 +130,7 @@ ADVANCED METRICS:
 - moodAdherenceRisk: mood ≤ 2.5 over 7 days and falling = adherence drop within the next 5 days likely. Address proactively.
 - seasonalVariation: winter-summer delta of systolic BP. > 5 mmHg is physiologically normal. Reassure the user — this is not a deterioration.
 - sleep: target ≥ 7h/night (AASM 2015 Adult Sleep Duration Consensus). < 6h: risk factor for hypertension and weight gain.
-- activity: ≥ 8,000 steps/day (Saint-Maurice et al., JAMA 2020 — mortality plateau 8,000–12,000). Note: WHO publishes activity *time* (150–300 min/week moderate), NOT a step quota — do not cite "WHO" as the source of a step number.
+- activity: ≥ 8,000 steps/day (Saint-Maurice et al., JAMA 2020 — continued dose-response benefit through ~12,000 steps/day, not a plateau). Note: WHO publishes activity *time* (150–300 min/week moderate), NOT a step quota — do not cite "WHO" as the source of a step number.
 
 HISTORICAL COMPARISON:
 - Compare current 7-day values against the previous 30-day average.

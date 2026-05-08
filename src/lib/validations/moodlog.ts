@@ -1,7 +1,19 @@
 import { z } from "zod/v4";
+import { isPublicUrl } from "@/lib/validations/notifications";
 
 export const moodLogCredentialsSchema = z.object({
-  url: z.string().url().max(500),
+  url: z
+    .string()
+    .url()
+    .max(500)
+    // SSRF guard: stored URL must point at a public host. The sync
+    // worker fetches from this URL with the user's apiKey in the
+    // Authorization header, so a stored RFC1918 / link-local target
+    // would let any user pull cloud-metadata or local-network data
+    // back through their account.
+    .refine((u) => isPublicUrl(u), {
+      message: "URL must point at a public host (no RFC1918 / link-local)",
+    }),
   apiKey: z.string().min(1).max(200),
 });
 

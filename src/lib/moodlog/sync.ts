@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { getEvent } from "@/lib/logging/context";
+import { isPublicUrl } from "@/lib/validations/notifications";
 
 /**
  * Sync mood entries from a user's moodLog instance.
@@ -32,6 +33,18 @@ export async function syncMoodLogEntries(
   const baseUrl = decrypt(user.moodLogUrlEncrypted);
   const apiKey = decrypt(user.moodLogApiKeyEncrypted);
 
+  // SSRF guard at the actual fetch site. The credential write path
+  // is also guarded (moodLogCredentialsSchema), but a row stored
+  // before that guard landed could still point at an internal IP.
+  // Re-checking here means the sync worker refuses internal targets
+  // even on legacy data, and the user's apiKey is never sent there.
+  if (!isPublicUrl(baseUrl)) {
+    getEvent()?.addWarning(
+      `moodLog sync refused for user ${userId}: stored URL points at non-public host`,
+    );
+    return 0;
+  }
+
   // 2. Determine date range
   const now = new Date();
   const to = now.toISOString().slice(0, 10); // YYYY-MM-DD
@@ -61,6 +74,10 @@ export async function syncMoodLogEntries(
     response = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${apiKey}` },
       signal: controller.signal,
+      // SSRF defence-in-depth: do NOT follow redirects. A public
+      // host that 302s to an RFC1918 target would otherwise leak
+      // the apiKey to the internal hop.
+      redirect: "manual",
     });
   } finally {
     clearTimeout(timeout);
@@ -71,8 +88,18 @@ export async function syncMoodLogEntries(
     });
   }
 
+  // Treat any 3xx as failure (manual redirect mode surfaces them).
+  if (response.status >= 300 && response.status < 400) {
+    getEvent()?.addWarning(
+      `moodLog sync refused redirect for user ${userId}: HTTP ${response.status}`,
+    );
+    return 0;
+  }
+
   if (!response.ok) {
-    getEvent()?.addWarning(`Sync failed for user ${userId}: HTTP ${response.status}`);
+    getEvent()?.addWarning(
+      `Sync failed for user ${userId}: HTTP ${response.status}`,
+    );
     return 0;
   }
 
