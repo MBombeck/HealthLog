@@ -14,7 +14,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const rl = await checkRateLimit(`codex-callback:${user.id}`, 10, 60_000);
   if (!rl.allowed) {
     const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
-    return NextResponse.redirect(`${appUrl}/settings?codex_error=rate_limited`);
+    return NextResponse.redirect(`${appUrl}/settings/integrations?codex_error=rate_limited`);
   }
 
   const url = new URL(request.url);
@@ -29,13 +29,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
   if (error) {
     annotate({ meta: { oauth_error: error } });
     return NextResponse.redirect(
-      `${appUrl}/settings?codex_error=${encodeURIComponent(error)}`,
+      `${appUrl}/settings/integrations?codex_error=${encodeURIComponent(error)}`,
     );
   }
 
   if (!code || !state) {
     return NextResponse.redirect(
-      `${appUrl}/settings?codex_error=missing_params`,
+      `${appUrl}/settings/integrations?codex_error=missing_params`,
     );
   }
 
@@ -48,7 +48,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   if (!storedState || !storedVerifier || state !== storedState) {
     return NextResponse.redirect(
-      `${appUrl}/settings?codex_error=invalid_state`,
+      `${appUrl}/settings/integrations?codex_error=invalid_state`,
     );
   }
 
