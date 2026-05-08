@@ -27,7 +27,7 @@ export function getWithingsWebhookCallbackUrl(): string {
 /**
  * Get valid access token for a user, refreshing if expired.
  */
-async function getValidToken(userId: string): Promise<{
+export async function getValidToken(userId: string): Promise<{
   accessToken: string;
   connection: { id: string; withingsUserId: string };
 } | null> {
@@ -45,7 +45,9 @@ async function getValidToken(userId: string): Promise<{
     try {
       const creds = await getUserWithingsCredentials(userId);
       if (!creds) {
-        getEvent()?.addWarning(`No credentials found for user ${userId} during token refresh`);
+        getEvent()?.addWarning(
+          `No credentials found for user ${userId} during token refresh`,
+        );
         return null;
       }
 
@@ -161,6 +163,8 @@ export async function setupWebhook(userId: string): Promise<void> {
     );
     getEvent()?.addMeta("webhook_subscribed", userId);
   } catch (err) {
-    getEvent()?.addWarning(`Webhook subscribe failed for user ${userId}: ${err}`);
+    getEvent()?.addWarning(
+      `Webhook subscribe failed for user ${userId}: ${err}`,
+    );
   }
 }

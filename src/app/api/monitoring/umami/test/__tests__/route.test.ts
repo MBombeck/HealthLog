@@ -70,7 +70,9 @@ describe("POST /api/monitoring/umami/test", () => {
       umamiScriptUrl: "https://analytics.example.com/script.js",
     } as never);
     (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
-      new Response("(function(){var u='Umami';})();", { status: 200 }),
+      new Response("(function(){window.umami=function(){};})();", {
+        status: 200,
+      }),
     );
 
     const response = await POST(emptyRequest() as never);
@@ -83,6 +85,13 @@ describe("POST /api/monitoring/umami/test", () => {
     expect(body.data.ok).toBe(true);
     expect(body.data.hasMarker).toBe(true);
     expect(body.data.statusCode).toBe(200);
+
+    // CRITICAL guard: AppSettings is keyed on `id: "singleton"` everywhere
+    // else in the codebase. A typo here ("default") would silently make the
+    // route return 422 in prod even with valid settings.
+    expect(prisma.appSettings.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "singleton" } }),
+    );
   });
 
   it("rate-limit denial returns 429 with no upstream call", async () => {

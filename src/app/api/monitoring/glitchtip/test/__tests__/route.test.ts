@@ -86,9 +86,42 @@ describe("POST /api/monitoring/glitchtip/test", () => {
     const body = (await response.json()) as ApiSuccessEnvelope<{
       ok: boolean;
       statusCode: number;
+      latencyMs: number;
     }>;
     expect(body.data.ok).toBe(true);
     expect(body.data.statusCode).toBe(200);
+    expect(typeof body.data.latencyMs).toBe("number");
+
+    // CRITICAL guard against the `id: "default"` typo regression.
+    expect(prisma.appSettings.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "singleton" } }),
+    );
+  });
+
+  it("rejects HTTP DSN with 422", async () => {
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValueOnce({
+      glitchtipDsn: "http://abc@glitch.example.com/1",
+    } as never);
+    const response = await POST(emptyRequest() as never);
+    expect(response.status).toBe(422);
+    const body = (await response.json()) as ApiErrorEnvelope & {
+      meta: { errorCode: string };
+    };
+    expect(body.meta.errorCode).toBe("dsn_not_https");
+    expect(sendGlitchtipEvent).not.toHaveBeenCalled();
+  });
+
+  it("rejects DSN pointing at a private host (SSRF guard)", async () => {
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValueOnce({
+      glitchtipDsn: "https://abc@127.0.0.1/1",
+    } as never);
+    const response = await POST(emptyRequest() as never);
+    expect(response.status).toBe(422);
+    const body = (await response.json()) as ApiErrorEnvelope & {
+      meta: { errorCode: string };
+    };
+    expect(body.meta.errorCode).toBe("dsn_host_not_public");
+    expect(sendGlitchtipEvent).not.toHaveBeenCalled();
   });
 
   it("rate-limit denial returns 429 with no upstream call", async () => {

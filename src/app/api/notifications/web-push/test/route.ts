@@ -17,24 +17,43 @@ function hostFromEndpoint(endpoint: string): string {
   }
 }
 
+// Strip any URL from a stringified web-push library error. Push providers (FCM,
+// Mozilla autopush, etc.) embed the full subscription endpoint into 410/404
+// error messages — that endpoint token is the routing secret, so it must never
+// land in our Wide Events.
+function redactPushError(text: string): string {
+  return text.replace(/https?:\/\/\S+/gi, "[endpoint]");
+}
+
 export const POST = apiHandler(async (_request: NextRequest) => {
   const { user } = await requireAuth();
   annotate({ action: { name: "notifications.web-push.test" } });
 
   const rl = await checkRateLimit(`web-push-test:${user.id}`, 5, 60_000);
-  if (!rl.allowed) return apiError("Too many test requests", 429);
+  if (!rl.allowed) {
+    return apiError("Too many test requests", 429, {
+      errorCode: "rate_limited_self",
+    });
+  }
 
-  const subscriptions = await prisma.pushSubscription.findMany({
+  // Spec: only the most-recent subscription receives the test push. A user
+  // with phone + tablet + desktop should not get three buzzes per click.
+  const subscription = await prisma.pushSubscription.findFirst({
     where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
   });
 
-  if (subscriptions.length === 0) {
-    return apiError("No push subscriptions registered", 422);
+  if (!subscription) {
+    return apiError("No push subscriptions registered", 422, {
+      errorCode: "not_configured",
+    });
   }
 
   const config = await getVapidConfig();
   if (!config) {
-    return apiError("VAPID keys not configured", 422);
+    return apiError("VAPID keys not configured", 422, {
+      errorCode: "vapid_not_configured",
+    });
   }
 
   const webpush = await import("web-push");
@@ -42,43 +61,43 @@ export const POST = apiHandler(async (_request: NextRequest) => {
 
   const pushPayload = JSON.stringify({
     title: "HealthLog",
-    body: "Push test",
+    body: "This is a test notification from HealthLog",
     tag: "self-test",
   });
 
-  let sent = 0;
-  let failed = 0;
-  const perEndpoint: Array<{ host: string; status: number | null }> = [];
+  const host = hostFromEndpoint(subscription.endpoint);
+  const start = performance.now();
 
-  for (const sub of subscriptions) {
-    const host = hostFromEndpoint(sub.endpoint);
-    try {
-      const p256dh = decrypt(sub.p256dh);
-      const auth = decrypt(sub.auth);
+  try {
+    const p256dh = decrypt(subscription.p256dh);
+    const auth = decrypt(subscription.auth);
 
-      const result = await webpush.sendNotification(
-        { endpoint: sub.endpoint, keys: { p256dh, auth } },
-        pushPayload,
-      );
-      sent += 1;
-      perEndpoint.push({ host, status: result.statusCode ?? 201 });
-    } catch (err: unknown) {
-      failed += 1;
-      const status = (err as { statusCode?: number }).statusCode ?? null;
-      perEndpoint.push({ host, status });
-      annotate({
-        meta: {
-          web_push_test_error: ((err as Error).message ?? "").slice(0, 200),
-          web_push_test_status: status,
-        },
-      });
-    }
+    const result = await webpush.sendNotification(
+      { endpoint: subscription.endpoint, keys: { p256dh, auth } },
+      pushPayload,
+    );
+    const latencyMs = Math.round(performance.now() - start);
+
+    return apiSuccess({
+      ok: true,
+      sent: 1,
+      latencyMs,
+      perEndpoint: [{ host, status: result.statusCode ?? 201 }],
+    });
+  } catch (err: unknown) {
+    const status = (err as { statusCode?: number }).statusCode ?? null;
+    const message = redactPushError((err as Error).message ?? "").slice(0, 200);
+    annotate({
+      meta: {
+        web_push_test_status: status,
+        web_push_test_host: host,
+        web_push_test_error: message,
+      },
+    });
+    return apiSuccess({
+      ok: false,
+      sent: 0,
+      perEndpoint: [{ host, status }],
+    });
   }
-
-  return apiSuccess({
-    ok: sent > 0,
-    sent,
-    failed,
-    perEndpoint,
-  });
 });

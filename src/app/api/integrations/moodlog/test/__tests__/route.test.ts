@@ -68,11 +68,12 @@ describe("POST /api/integrations/moodlog/test", () => {
   it("happy path returns ok with shape", async () => {
     const lastSyncedAt = new Date("2026-05-01T10:00:00.000Z");
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
-      moodLogUrlEncrypted: "https://example.com/moodlog/feed",
+      moodLogUrlEncrypted: "https://example.com",
+      moodLogApiKeyEncrypted: "ml-key-123",
       moodLogLastSyncedAt: lastSyncedAt,
     } as never);
     (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
-      new Response(null, { status: 200 }),
+      new Response(JSON.stringify({ entries: [] }), { status: 200 }),
     );
 
     const response = await POST(emptyRequest() as never);
@@ -80,11 +81,23 @@ describe("POST /api/integrations/moodlog/test", () => {
     const body = (await response.json()) as ApiSuccessEnvelope<{
       ok: boolean;
       statusCode: number;
+      latencyMs: number;
       lastSyncedAt: string;
     }>;
     expect(body.data.ok).toBe(true);
     expect(body.data.statusCode).toBe(200);
+    expect(typeof body.data.latencyMs).toBe("number");
     expect(body.data.lastSyncedAt).toBe(lastSyncedAt.toISOString());
+
+    // Probe must hit the actual sync endpoint with Bearer auth, not a bare HEAD
+    // against the configured URL.
+    const fetchCall = (global.fetch as unknown as ReturnType<typeof vi.fn>).mock
+      .calls[0];
+    const init = fetchCall[1] as RequestInit;
+    expect(init.method).toBe("GET");
+    const headers = init.headers as Record<string, string>;
+    expect(headers.Authorization).toBe("Bearer ml-key-123");
+    expect(init.redirect).toBe("manual");
   });
 
   it("rate-limit denial returns 429 with no upstream call", async () => {
@@ -101,6 +114,7 @@ describe("POST /api/integrations/moodlog/test", () => {
   it("returns 422 when no moodLog URL configured", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
       moodLogUrlEncrypted: null,
+      moodLogApiKeyEncrypted: null,
       moodLogLastSyncedAt: null,
     } as never);
     const response = await POST(emptyRequest() as never);
@@ -113,6 +127,7 @@ describe("POST /api/integrations/moodlog/test", () => {
   it("rejects SSRF (private IP) with 422", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
       moodLogUrlEncrypted: "http://127.0.0.1/moodlog",
+      moodLogApiKeyEncrypted: "ml-key-123",
       moodLogLastSyncedAt: null,
     } as never);
     const response = await POST(emptyRequest() as never);
@@ -120,16 +135,15 @@ describe("POST /api/integrations/moodlog/test", () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  it("does not leak upstream URL or Bearer token on upstream 401", async () => {
+  it("does not leak upstream URL or Bearer token on upstream rejection", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
-      moodLogUrlEncrypted: "https://example.com/moodlog/feed",
+      moodLogUrlEncrypted: "https://example.com",
+      moodLogApiKeyEncrypted: "sk-secret",
       moodLogLastSyncedAt: null,
     } as never);
     (global.fetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
-      Object.assign(
-        new Error(
-          "Authorization: Bearer sk-secret echoed from https://example.com/moodlog/feed",
-        ),
+      new Error(
+        "Authorization: Bearer sk-secret echoed from https://example.com/api/integrations/health-log/mood",
       ),
     );
     const response = await POST(emptyRequest() as never);

@@ -4,8 +4,22 @@ export function apiSuccess<T>(data: T, status = 200) {
   return NextResponse.json({ data, error: null }, { status });
 }
 
-export function apiError(message: string, status = 400) {
-  return NextResponse.json({ data: null, error: message }, { status });
+/**
+ * `meta` is additive — clients that ignore it see the unchanged
+ * `{ data: null, error: <string> }` envelope. New callers can pass
+ * `{ errorCode: "credentials_rejected" }` so the UI translates the message
+ * via `t("settings.testConnection.errors." + errorCode)` instead of
+ * displaying the server's English fallback.
+ */
+export function apiError(
+  message: string,
+  status = 400,
+  meta?: { errorCode?: string } & Record<string, unknown>,
+) {
+  return NextResponse.json(
+    { data: null, error: message, ...(meta ? { meta } : {}) },
+    { status },
+  );
 }
 
 /**

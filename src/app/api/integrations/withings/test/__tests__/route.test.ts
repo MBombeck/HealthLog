@@ -28,9 +28,14 @@ vi.mock("@/lib/crypto", () => ({
   decrypt: vi.fn((x: string) => x),
 }));
 
+vi.mock("@/lib/withings/sync", () => ({
+  getValidToken: vi.fn(),
+}));
+
 import { POST } from "../route";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getValidToken } from "@/lib/withings/sync";
 
 interface ApiErrorEnvelope {
   data: null;
@@ -50,6 +55,7 @@ beforeEach(() => {
     resetAt: Date.now() + 60_000,
   } as never);
   vi.mocked(prisma.withingsConnection.findUnique).mockReset();
+  vi.mocked(getValidToken).mockReset();
   global.fetch = vi.fn() as never;
 });
 
@@ -67,10 +73,11 @@ function emptyRequest(): Request {
 describe("POST /api/integrations/withings/test", () => {
   it("happy path returns ok with shape", async () => {
     const lastSyncedAt = new Date("2026-05-01T10:00:00.000Z");
-    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValueOnce({
-      userId: "u-1",
+    vi.mocked(getValidToken).mockResolvedValueOnce({
       accessToken: "plain-access",
-      refreshToken: "plain-refresh",
+      connection: { id: "wc-1", withingsUserId: "wu-1" },
+    });
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValueOnce({
       lastSyncedAt,
     } as never);
     (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
@@ -101,7 +108,7 @@ describe("POST /api/integrations/withings/test", () => {
   });
 
   it("returns 422 when no Withings connection exists", async () => {
-    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValueOnce(null);
+    vi.mocked(getValidToken).mockResolvedValueOnce(null);
     const response = await POST(emptyRequest() as never);
     expect(response.status).toBe(422);
     const body = (await response.json()) as ApiErrorEnvelope;
@@ -110,10 +117,11 @@ describe("POST /api/integrations/withings/test", () => {
   });
 
   it("sanitises 401 upstream — does not leak Bearer token or upstream URL", async () => {
-    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValueOnce({
-      userId: "u-1",
+    vi.mocked(getValidToken).mockResolvedValueOnce({
       accessToken: "sk-secret",
-      refreshToken: "plain-refresh",
+      connection: { id: "wc-1", withingsUserId: "wu-1" },
+    });
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValueOnce({
       lastSyncedAt: null,
     } as never);
     (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(

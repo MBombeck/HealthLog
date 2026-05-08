@@ -11,7 +11,7 @@ vi.mock("@/lib/api-handler", () => ({
 vi.mock("@/lib/db", () => ({
   prisma: {
     pushSubscription: {
-      findMany: vi.fn(),
+      findFirst: vi.fn(),
     },
   },
 }));
@@ -68,7 +68,7 @@ beforeEach(() => {
     remaining: 5,
     resetAt: Date.now() + 60_000,
   } as never);
-  vi.mocked(prisma.pushSubscription.findMany).mockReset();
+  vi.mocked(prisma.pushSubscription.findFirst).mockReset();
   sendNotification.mockReset();
   global.fetch = vi.fn() as never;
 });
@@ -85,16 +85,14 @@ function emptyRequest(): Request {
 }
 
 describe("POST /api/notifications/web-push/test", () => {
-  it("happy path returns ok with perEndpoint hosts only", async () => {
-    vi.mocked(prisma.pushSubscription.findMany).mockResolvedValueOnce([
-      {
-        id: "p-1",
-        userId: "u-1",
-        endpoint: "https://fcm.googleapis.com/fcm/send/abc123token",
-        p256dh: "p256",
-        auth: "auth",
-      },
-    ] as never);
+  it("happy path returns ok and sends to one subscription", async () => {
+    vi.mocked(prisma.pushSubscription.findFirst).mockResolvedValueOnce({
+      id: "p-1",
+      userId: "u-1",
+      endpoint: "https://fcm.googleapis.com/fcm/send/abc123token",
+      p256dh: "p256",
+      auth: "auth",
+    } as never);
     sendNotification.mockResolvedValueOnce({ statusCode: 201 });
 
     const response = await POST(emptyRequest() as never);
@@ -102,16 +100,26 @@ describe("POST /api/notifications/web-push/test", () => {
     const body = (await response.json()) as ApiSuccessEnvelope<{
       ok: boolean;
       sent: number;
-      failed: number;
+      latencyMs: number;
       perEndpoint: Array<{ host: string; status: number | null }>;
     }>;
     expect(body.data.ok).toBe(true);
     expect(body.data.sent).toBe(1);
-    expect(body.data.failed).toBe(0);
+    expect(body.data.perEndpoint).toHaveLength(1);
     expect(body.data.perEndpoint[0].host).toBe("fcm.googleapis.com");
-    // never the full URL
+    // never the full endpoint URL (the routing token is the only thing
+    // protecting that subscription from anyone who learns it).
     const text = JSON.stringify(body);
     expect(text).not.toMatch(/abc123token/);
+
+    // Spec: only the most-recent subscription gets the test push, not all.
+    expect(prisma.pushSubscription.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "u-1" },
+        orderBy: { createdAt: "desc" },
+      }),
+    );
+    expect(sendNotification).toHaveBeenCalledTimes(1);
   });
 
   it("rate-limit denial returns 429 with no upstream call", async () => {
@@ -126,7 +134,7 @@ describe("POST /api/notifications/web-push/test", () => {
   });
 
   it("returns 422 when no subscriptions registered", async () => {
-    vi.mocked(prisma.pushSubscription.findMany).mockResolvedValueOnce([]);
+    vi.mocked(prisma.pushSubscription.findFirst).mockResolvedValueOnce(null);
     const response = await POST(emptyRequest() as never);
     expect(response.status).toBe(422);
     const body = (await response.json()) as ApiErrorEnvelope;
@@ -134,16 +142,14 @@ describe("POST /api/notifications/web-push/test", () => {
     expect(sendNotification).not.toHaveBeenCalled();
   });
 
-  it("does not leak Bearer/sk- or full endpoint URL when upstream 401", async () => {
-    vi.mocked(prisma.pushSubscription.findMany).mockResolvedValueOnce([
-      {
-        id: "p-1",
-        userId: "u-1",
-        endpoint: "https://fcm.googleapis.com/fcm/send/abc123token",
-        p256dh: "p256",
-        auth: "auth",
-      },
-    ] as never);
+  it("does not leak Bearer/sk- or full endpoint URL when upstream rejects", async () => {
+    vi.mocked(prisma.pushSubscription.findFirst).mockResolvedValueOnce({
+      id: "p-1",
+      userId: "u-1",
+      endpoint: "https://fcm.googleapis.com/fcm/send/abc123token",
+      p256dh: "p256",
+      auth: "auth",
+    } as never);
     sendNotification.mockRejectedValueOnce(
       Object.assign(
         new Error(
@@ -157,18 +163,13 @@ describe("POST /api/notifications/web-push/test", () => {
     expect(response.status).toBe(200);
     expect(text).not.toMatch(/sk-/);
     expect(text).not.toMatch(/abc123token/);
-    const body = (await response.json
-      .call({ text: async () => text } as never)
-      .catch(() => null)) as never;
-    void body;
-    // Re-parse: the response body text already matches above. Verify shape:
     const parsed = JSON.parse(text) as ApiSuccessEnvelope<{
       ok: boolean;
-      failed: number;
+      sent: number;
       perEndpoint: Array<{ host: string; status: number | null }>;
     }>;
     expect(parsed.data.ok).toBe(false);
-    expect(parsed.data.failed).toBe(1);
+    expect(parsed.data.sent).toBe(0);
     expect(parsed.data.perEndpoint[0].host).toBe("fcm.googleapis.com");
     expect(parsed.data.perEndpoint[0].status).toBe(401);
   });
