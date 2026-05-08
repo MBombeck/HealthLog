@@ -1,6 +1,13 @@
 import { prisma } from "@/lib/db";
 import { resolveProvider } from "@/lib/ai/provider";
-import { getBloodPressureSystemPrompt, getBloodPressureUserPrompt } from "@/lib/ai/prompts/blood-pressure";
+import {
+  getBloodPressureSystemPrompt,
+  getBloodPressureUserPrompt,
+} from "@/lib/ai/prompts/blood-pressure";
+import {
+  formatPreviousContextForPrompt,
+  getPreviousInsightContext,
+} from "@/lib/insights/memory";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import {
   pearsonCorrelation,
@@ -453,7 +460,10 @@ export async function generateBloodPressureStatusForUser(
             latest: dailyMoodSeries.at(-1)?.value ?? null,
             series: dailyMoodSeries.slice(-10),
             moodVsSystolicCorrelation: (() => {
-              const moodVsSysPairs = pairDailySeries(dailyMoodSeries, sysSeries);
+              const moodVsSysPairs = pairDailySeries(
+                dailyMoodSeries,
+                sysSeries,
+              );
               return pearsonCorrelation(moodVsSysPairs);
             })(),
           }
@@ -462,9 +472,25 @@ export async function generateBloodPressureStatusForUser(
 
   const snapshotJson = JSON.stringify(snapshot, null, 2);
 
+  const previousContext = await getPreviousInsightContext(
+    userId,
+    "blood-pressure-status",
+    locale,
+    12,
+  );
+  const previousContextBlock = formatPreviousContextForPrompt(
+    previousContext,
+    locale,
+  );
+
   const result = await provider.generateCompletion({
     systemPrompt: getBloodPressureSystemPrompt(locale),
-    userPrompt: getBloodPressureUserPrompt(snapshotJson, todayKey, locale),
+    userPrompt: getBloodPressureUserPrompt(
+      snapshotJson,
+      todayKey,
+      locale,
+      previousContextBlock,
+    ),
     temperature: 0.3,
     maxTokens: 1000,
   });

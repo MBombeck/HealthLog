@@ -1,9 +1,16 @@
 import { prisma } from "@/lib/db";
 import { resolveProvider } from "@/lib/ai/provider";
-import { getGeneralStatusSystemPrompt, getGeneralStatusUserPrompt } from "@/lib/ai/prompts/general-status";
+import {
+  getGeneralStatusSystemPrompt,
+  getGeneralStatusUserPrompt,
+} from "@/lib/ai/prompts/general-status";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import { getNoKeyGeneralStatusText } from "@/lib/insights/no-key-fallbacks";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
+import {
+  formatPreviousContextForPrompt,
+  getPreviousInsightContext,
+} from "@/lib/insights/memory";
 
 const GENERAL_STATUS_POINTS = 30;
 
@@ -350,9 +357,28 @@ export async function generateGeneralStatusForUser(
 
   const snapshotJson = JSON.stringify(snapshot, null, 2);
 
+  // v1.4: pull the previous cached general-status into the prompt so
+  // the model can compare to the user's last analysis. Falls back
+  // gracefully when there's no history (first-run users).
+  const previousContext = await getPreviousInsightContext(
+    userId,
+    "general-status",
+    locale,
+    12,
+  );
+  const previousContextBlock = formatPreviousContextForPrompt(
+    previousContext,
+    locale,
+  );
+
   const result = await provider.generateCompletion({
     systemPrompt: getGeneralStatusSystemPrompt(locale),
-    userPrompt: getGeneralStatusUserPrompt(snapshotJson, todayKey, locale),
+    userPrompt: getGeneralStatusUserPrompt(
+      snapshotJson,
+      todayKey,
+      locale,
+      previousContextBlock,
+    ),
     temperature: 0.3,
     maxTokens: 1000,
   });

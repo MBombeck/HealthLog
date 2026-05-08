@@ -46,17 +46,26 @@ export function getGeneralStatusUserPrompt(
   snapshotJson: string,
   todayKey: string,
   locale: Locale,
+  previousContextBlock?: string,
 ): string {
+  // v1.4: when the previous-analysis context block is supplied, the
+  // model is instructed to call out improvements / regressions
+  // explicitly. Block already includes the comparison instruction,
+  // so we just inject it ahead of the snapshot.
+  const ctxBlock =
+    previousContextBlock && previousContextBlock.trim().length > 0
+      ? `\n\n${previousContextBlock}\n`
+      : "";
   if (locale === "en") {
     return `Date: ${todayKey} (Europe/Berlin)
 Produce a comprehensive overall assessment across every available health metric.
-Focus on the interplay between parameters and identify the single most important call to action.
+Focus on the interplay between parameters and identify the single most important call to action.${ctxBlock}
 
 ${snapshotJson}`;
   }
   return `Datum: ${todayKey} (Europe/Berlin)
 Erstelle eine umfassende Gesamtbewertung aller verfügbaren Gesundheitsdaten.
-Fokussiere auf das Zusammenspiel der verschiedenen Parameter und identifiziere die wichtigste Handlungsempfehlung.
+Fokussiere auf das Zusammenspiel der verschiedenen Parameter und identifiziere die wichtigste Handlungsempfehlung.${ctxBlock}
 
 ${snapshotJson}`;
 }

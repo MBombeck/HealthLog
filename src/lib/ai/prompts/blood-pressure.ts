@@ -68,19 +68,24 @@ export function getBloodPressureUserPrompt(
   snapshotJson: string,
   todayKey: string,
   locale: Locale,
+  previousContextBlock?: string,
 ): string {
+  const ctxBlock =
+    previousContextBlock && previousContextBlock.trim().length > 0
+      ? `\n\n${previousContextBlock}\n`
+      : "";
   if (locale === "en") {
     return `Date: ${todayKey} (Europe/Berlin)
 Analyse the following blood-pressure data with focus on trends, target attainment and medication effectiveness.
 Account for measurement timing and density when judging confidence.
-Use the precomputed correlations and historicalComparison for a sound temporal assessment.
+Use the precomputed correlations and historicalComparison for a sound temporal assessment.${ctxBlock}
 
 ${snapshotJson}`;
   }
   return `Datum: ${todayKey} (Europe/Berlin)
 Analysiere die folgenden Blutdruck-Daten mit Fokus auf Trends, Zielwerterreichung und Medikamentenwirksamkeit.
 Berücksichtige die Messzeiträume und Datendichte für die Konfidenzeinschätzung.
-Nutze die vorberechneten Korrelationen (correlations) und den historischen Vergleich (historicalComparison) für eine fundierte temporale Analyse.
+Nutze die vorberechneten Korrelationen (correlations) und den historischen Vergleich (historicalComparison) für eine fundierte temporale Analyse.${ctxBlock}
 
 ${snapshotJson}`;
 }
