@@ -1,5 +1,162 @@
 # Changelog
 
+## [1.4.0] — 2026-05-08
+
+### Added — Foundation, safer ranges, and a faster dashboard
+
+- **UI guidelines, design tokens, and shared primitives.** A new
+  `docs/ui-guidelines.md` is the single source of truth for spacing,
+  typography, button hierarchy, dialog-vs-sheet decisions, accessibility
+  baseline (WCAG 2.1 AA), and the autofill / honeypot pattern for
+  health-data forms. Two new shadcn primitives — `<Skeleton>` and
+  `<EmptyState>` — replace the previous mix of spinners and "No data"
+  placeholder strings. Future v1.4.x components reference the doc; the
+  primitives ship with screen-reader-aware semantics and respect
+  `prefers-reduced-motion`.
+- **`/api/version` public endpoint** exposing the build's version,
+  optional Git SHA / build timestamp, license, and canonical links.
+  Wires the future Settings → About surface and a thin "Check for
+  updates" UX. Static-cached so the route adds zero DB load.
+- **`src/lib/medical-citations.ts`** — single source of truth for
+  cited medical guidelines (id, name, year, URL, caveat). Future
+  medical surfaces import these constants instead of duplicating
+  strings in code, prompts, and `messages/*.json`. A new drift-test
+  asserts every entry has a non-empty URL + caveat and that the
+  recurring "WHO ≥ N steps" hallucination cannot reappear as a constant.
+
+### Fixed — Patient safety and citation accuracy
+
+- **Diastolic blood-pressure orange band no longer reaches 60 mmHg.**
+  With the default age-based targets (DBP 70–79), the lower orange
+  wing was computed as `diaLow − 10 = 60`. A reading of 60 mmHg landed
+  in "mildly low" yellow instead of red even though that level is the
+  general-adult hypotension threshold and the J-curve risk floor in
+  ESH 2023 for treated hypertensives. Orange floor is now clamped at
+  65 mmHg, so 60 mmHg lands in red. The user-override path stays
+  intact and remains audit-logged.
+- **BP guideline citations consolidated on ESH 2023.** The codebase
+  had a mix of "ESC/ESH 2018" (analytics) and "ESC/ESH 2023" (AI
+  prompts). The 2023 hypertension document is ESH-only — ESC withdrew
+  from the joint authoring — so neither label was correct. Every site
+  now cites "ESH 2023" with the published source URL. Numbers
+  unchanged.
+- **"WHO ≥ 8 000 steps/day" hallucination fully removed.** WHO
+  publishes activity *time* (150–300 min/wk moderate), not a step
+  quota. The v1.3.3 fix only landed in `effective-range.ts`; four AI
+  prompt strings and the `getStepsRange()` helper carried the old
+  wording forward. Saint-Maurice et al., JAMA 2020 (mortality plateau
+  8 000–12 000) is now cited everywhere and the two surfaces agree on
+  the band. Sleep target moves from "ESC" (no adult sleep guideline)
+  to AASM 2015.
+- **Body-fat ACE bands corrected and three-way drift resolved.** The
+  classifier used `essential = 6 (M) / 14 (F)` as the floor — but
+  that's actually ACE's *Athletes* lower bound. Readings below were
+  mislabelled "Essential" instead of "Below essential" (a danger
+  band). Six-band classifier now mirrors the ACE table, and the three
+  sites that had three different green-band numbers
+  (`value-bands.ts`, `targets/route.ts`, `classifications.ts`) all
+  derive from `getBodyFatTargetRange` (ACE fitness + acceptable bands).
+- **Bedtime-glucose citation softened.** ADA Standards 2024 §6
+  publishes pre-prandial 80–130 and post-prandial <180 — no published
+  adult bedtime target. The 90–150 mg/dL band stays (reasonable adult
+  overnight band) but the inline citation now states the absence
+  explicitly and references ISPAD 2022 (pediatric) as the closest
+  comparator.
+
+### Fixed — Localisation reaches the notification path
+
+- **Medication reminders now follow the user's locale.** Telegram,
+  ntfy, and Web Push reminders previously read "Erinnerung", "Bald
+  fällig", etc. regardless of the user's stored language. Templates
+  for every phase (`green`/`yellow`/`orange`/`red`) and every keyboard
+  button now resolve from `messages/{de,en}.json` per
+  `med.user.locale`. Telegram callback IDs stay stable English
+  identifiers so the dispatcher keeps matching across locale changes.
+- **Dashboard greeting and streak label** are localised server-side.
+  Previously hard-coded `"Hi, ${name}"` and `"Tage in Folge"` — both
+  now i18n-key-resolved.
+- **Mixed-locale Zod validation messages unified to English.** Two
+  measurement-form messages and four admin-validation messages
+  flipped between German and English depending on which schema fired.
+  All consolidated on English (the app is English-first; the German
+  UI maps field labels client-side).
+
+### Fixed — Chart math edge cases
+
+- **`summarize` and `trendSlope` use the same time anchor.** Averages
+  snapped to `Date.now()`; slopes snapped to the latest point in the
+  series. A stale series reported a trend even though the dashboard
+  tile correctly hid the average. Both now anchor on `Date.now()`, so
+  a stale series returns `null` consistently from every windowed stat.
+- **`summarize([])` returns `null` for `min`/`max`/`mean`** instead
+  of zeros that leaked into chart axes and AI feature bundles as
+  fake readings.
+- **`weeklyAverages` is Berlin-timezone aware.** A Sunday-evening
+  Berlin reading bucketed into the next week on the UTC production
+  container because `Date.getDay()` was system-local. ISO-Monday key
+  now resolves via `Intl.DateTimeFormat({ timeZone: "Europe/Berlin" })`.
+- **`pairByTimestamp` JSDoc** documents the greedy nearest-match
+  heuristic and when a Hungarian-style match would matter (sparse
+  health data is well below that bar).
+
+### Fixed — Hidden friction
+
+- **AI provider connection-test honours the unsaved selection.**
+  Changing the AI provider in `/settings`, then clicking "Verbindung
+  testen" without saving first, used to silently run the test against
+  the stored provider — surfacing as a confusing OK / failure unrelated
+  to what the user had on screen. Plaintext keys never persist; the
+  existing SSRF guard, rate limit, and V3 error-leak shielding stay in
+  place.
+- **Health-data inputs no longer autofill the user's account
+  password.** The base `<Input>` primitive defaults to
+  `autoComplete="off"` plus the LastPass / 1Password ignore attributes
+  whenever the caller doesn't pass a semantic value. Auth and profile
+  forms continue to autofill normally because they pass an explicit
+  `autoComplete` (`"username"`, `"email"`, `"current-password"`,
+  `"new-password"`).
+- **Step-range target aligned across two callsites.**
+  `getStepsRange()` returned `{7000, 10000}` while
+  `effective-range.ts` returned `{8000, 15000}`; two surfaces showed
+  different "green" bands to the same user. Both now use
+  `{8000, 15000}`, anchored on Saint-Maurice 2020.
+
+### Performance
+
+- **Two more N+1 queries closed.** `extractFeatures` (used by every
+  AI-insight route) issued one `prisma.medicationIntakeEvent.findMany`
+  per active medication; replaced with a single batched query and an
+  in-memory group. `/api/insights/targets` issued one `findFirst` per
+  measurement type; replaced with a single `distinct: ["type"]` query.
+  Same shape as the v1.3.0 fix to `/api/insights/comprehensive`.
+
+### Changed — Dashboard
+
+- **Tile strip is always one row.** Replaces the wrapping
+  `grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5` layout
+  with a `flex snap-x snap-mandatory overflow-x-auto` strip. When the
+  user enables more tiles than fit the viewport, the strip
+  horizontal-scrolls instead of wrapping; the user trims the set in
+  Settings → Dashboard Layout.
+
+### Notes
+
+- Prisma client was regenerated against the v1.3.3 schema; no schema
+  changes in 1.4.0 itself. Existing migrations 0001–0024 remain
+  authoritative.
+- Largely additive release. Existing API contracts (response
+  envelopes, OpenAPI 3.1 spec) are unchanged. The only client-visible
+  shape change is the new optional fields in `/api/version`, an entirely
+  new public endpoint.
+- Tracked for v1.4.x or later: full settings-page split into
+  `/settings/[section]` routes, admin-page redesign, AI insights
+  rework with severity-coloured key-findings hero, multi-tenant prep
+  (off-host backups, encryption-key versioning, worker/web split,
+  native-Bearer User-Agent gating), and a Postgres-backed integration
+  test suite. The v1.3.3 ecosystem audit deferred these as
+  architectural rewrites; the v1.4 cycle closed every CRIT and HIGH
+  the audit identified except those four.
+
 ## [1.3.3] — 2026-05-08
 
 ### Added

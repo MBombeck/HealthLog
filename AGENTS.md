@@ -6,7 +6,16 @@ Instructions for AI coding agents (OpenAI Codex, Claude Code, Cursor, etc.) work
 
 **HealthLog** — a personal health-tracking web app (weight, blood pressure, pulse, mood, medication compliance) with Withings integration, moodLog.app sync, Dracula-themed UI, mobile-first PWA design.
 
-**Status**: v1.3.3 — Pulse oximetry (SpO₂) as a first-class measurement type, layered on top of v1.3.2 body composition (TBW + Bone Mass). SSRF-hardened outbound fetches (now also covers Web-Push endpoint + Bearer-scope wildcard handling + IP-geolocation HTTPS-only), GHCR multi-arch images (`linux/amd64` + `linux/arm64`) with SLSA provenance + SBOM, pg-boss graceful SIGTERM drain + audit-log retention purge (GDPR Art. 5(1)(e)), blocking TypeScript CI, locale-integrity test guard. moodLog webhook secret now AES-GCM encrypted at rest. See GitHub Releases + CHANGELOG.md for the full feature timeline (v1.0 → v1.3).
+**Status**: v1.4.0 — UI guidelines + reusable Skeleton/EmptyState
+primitives, medical citations consolidated under
+`src/lib/medical-citations.ts` (BP_DIA hypotension floor, ESH 2023
+alignment, "WHO 8000 steps" hallucination removed, ACE body-fat bands
+corrected), localised medication reminders + dashboard greeting +
+Zod validations, two more N+1 queries closed, Berlin-TZ-aware weekly
+buckets, single-row dashboard tile strip, public `/api/version`
+endpoint, AI provider connection-test honours unsaved selection,
+health-data inputs block password-manager autofill by default. See
+GitHub Releases + CHANGELOG.md for the full feature timeline.
 
 ## Tech Stack
 
