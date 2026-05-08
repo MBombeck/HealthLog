@@ -239,7 +239,14 @@ export function classifyBodyFat(
   return { category: "Obese", color: "#ff5555", severity: "danger" };
 }
 
-// ── Activity Steps Classification (WHO) ─────────────────
+// ── Activity Steps Classification ───────────────────────
+//
+// Cohort source: Saint-Maurice PF, et al. "Association of daily step
+// count and step intensity with mortality among US adults." JAMA. 2020.
+// https://jamanetwork.com/journals/jama/fullarticle/2763292
+// Mortality benefit plateaus 8 000–12 000 steps/day. WHO publishes
+// physical-activity TIME (150–300 min/wk moderate) — NOT a step
+// quota; do not cite "WHO ≥ 8 000 steps".
 
 export interface StepsClassification {
   category: string;
@@ -271,8 +278,16 @@ export function classifySteps(steps: number): StepsClassification {
   return { category: "Very active", color: "#50fa7b", severity: "normal" };
 }
 
+/**
+ * Activity-steps target range. Single source of truth: aligned with
+ * `effective-range.ts` (Saint-Maurice JAMA 2020 — mortality plateau
+ * 8 000–12 000). The v1.3.3 audit flagged a drift where this helper
+ * returned {7 000, 10 000} while `effective-range.ts` returned
+ * {8 000, 15 000}; both surfaces showed different "green" bands to the
+ * same user. They now agree.
+ */
 export function getStepsRange(): { min: number; max: number } {
-  return { min: 7000, max: 10000 };
+  return { min: 8000, max: 15000 };
 }
 
 // ── Target Range Helpers ────────────────────────────────
