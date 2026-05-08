@@ -1,5 +1,111 @@
 # Changelog
 
+## [1.4.1] — 2026-05-08
+
+### Security
+
+- **moodLog integration no longer accepts internal-network URLs.** A
+  user could previously save `http://169.254.169.254/` (cloud-metadata)
+  or any RFC1918 address as their moodLog instance; the daily sync
+  worker would then fetch from that target with the user's API key in
+  the Authorization header. The credentials write path now refuses
+  non-public hosts, the sync worker re-checks the URL at the actual
+  fetch site (so legacy rows stored before the guard are also
+  refused), and the fetch is now `redirect: "manual"` so a public
+  host cannot 302 to an internal target with the bearer on the
+  redirect hop.
+- **Error reports never echo bearer tokens, Telegram bot tokens, or
+  query-string secrets.** `WideEventBuilder.setError()` and the
+  Glitchtip incident path now run every error message and stack
+  trace through a central `redactSecrets()` filter that scrubs
+  `Bearer …`, Telegram `bot<digits>:<token>` URLs, and `?secret=`,
+  `?code=`, `?token=`, `?api_key=` query strings. The substitution
+  is generic `[REDACTED]` so partial entropy is never revealed.
+
+### Fixed — Citation accuracy
+
+- **Blood-pressure classification now cites ESH 2023.** The dashboard
+  tile, the doctor-report PDF, and the inline analytics comments
+  used to label the band as "ESC/ESH 2018". The numbers haven't
+  changed (the 2023 ESH update kept the 2018 thresholds), but the
+  joint authoring did — ESC withdrew from the 2023 document, so the
+  correct citation is "ESH 2023" alone.
+- **Steps target source label is `Saint-Maurice JAMA 2020`** instead
+  of `WHO`. Every other surface in the app (AI prompts, inline
+  comments, drift tests) already enforced this attribution; the
+  insights/targets surface was the last "WHO" label in the tree.
+  WHO publishes physical-activity _time_, not a step quota.
+- **Saint-Maurice "mortality plateau 8000–12000" attribution
+  softened.** The original JAMA 2020 paper reports continued
+  dose-response benefit (HR 0.49 at 8k, HR 0.35 at 12k) — not a
+  plateau. The plateau-shaped finding belongs to Paluch 2022
+  _Lancet Public Health_ (PMID 35247352), not Saint-Maurice. The
+  inline comments and AI prompts now say "continued dose-response
+  benefit through ~12,000 steps/day" instead.
+
+### Added — CI safety nets
+
+- **Postgres-backed integration test suite is now executable.** The
+  testcontainers infrastructure shipped in 1.4.0; this release wires
+  the per-test boilerplate through vitest's `globalSetup` so all
+  four files share one container. `pnpm test:integration` runs ten
+  tests (rate-limit race, idempotency replay-attack contract, GDPR
+  Article-17 cascade delete, session create / read / expire) against
+  a real Postgres in under four seconds. CI runs the suite on every
+  PR.
+- **Playwright + axe-core E2E foundation.** A new `pnpm e2e` runs
+  five public-surface specs (version endpoint, proxy auth-redirect,
+  login form autofill hints, DE/EN locale switch, axe-core
+  accessibility gate) against the production build in CI. Authenticated
+  flow specs (quick-entry, doctor-report, settings round-trip,
+  test-buttons, onboarding) ride a follow-up release because they
+  need a seeded test user; the foundation makes adding them a
+  one-PR step.
+
+### Changed — Admin internals
+
+- **Admin page is now per-section components.** The status-card grid
+  shipped in 1.4.0 sat on top of a 2,700-line monolith; that monolith
+  is now 14 focused files in `src/components/admin/` with a 77-line
+  `src/app/admin/page.tsx` shell that mounts them. Every section
+  keeps the same DOM, ids, query keys, and i18n keys — no
+  user-visible change.
+
+### Fixed
+
+- **Final ESLint error is gone.** The medications page's "API
+  endpoint" dialog ran its initial-load fetch through a `useCallback`
+  paired with `useEffect` and triggered the strict
+  `react-hooks/set-state-in-effect` rule. Refactored to TanStack
+  Query — same network calls, no effect, lint count is now zero on
+  `main`.
+
+### Documentation
+
+- **Repo-internal docs synced for v1.4.** README adds the
+  Multi-tenant ready and Test connection buttons feature blocks, the
+  API reference table includes the eleven new v1.4 endpoints, and
+  the model count is corrected to 26 (RefreshToken). AGENTS.md and
+  CLAUDE.md reflect the per-route `/settings/[section]` layout and
+  the per-section admin layout. `docs/api/openapi.yaml` documents
+  the new endpoints (version, refresh, refresh/revoke,
+  status-overview, backup/test, the five test-connection probes).
+  `docs/migration/v1.3-to-v1.4.md` corrects the now-wrong "no
+  migrations" claim and adds full env-var sections for the
+  worker/web split, encryption-key versioning, and off-host backup
+  target.
+
+### Notes
+
+- No database migration in 1.4.1.
+- No environment-variable change required to upgrade.
+- No API contract change — every route added in 1.4.0 is still
+  there; no shapes or status codes flipped.
+- The audit pass that drove this release identified five medium
+  security items and three P0 performance items that warrant
+  deeper architectural work; those are tracked in
+  `docs/ops/v141-followup-issues.md` and ride a future release.
+
 ## [1.4.0] — 2026-05-08
 
 ### Added — Foundation, safer ranges, and a faster dashboard
@@ -41,7 +147,7 @@
   now cites "ESH 2023" with the published source URL. Numbers
   unchanged.
 - **"WHO ≥ 8 000 steps/day" hallucination fully removed.** WHO
-  publishes activity *time* (150–300 min/wk moderate), not a step
+  publishes activity _time_ (150–300 min/wk moderate), not a step
   quota. The v1.3.3 fix only landed in `effective-range.ts`; four AI
   prompt strings and the `getStepsRange()` helper carried the old
   wording forward. Saint-Maurice et al., JAMA 2020 (mortality plateau
@@ -50,7 +156,7 @@
   to AASM 2015.
 - **Body-fat ACE bands corrected and three-way drift resolved.** The
   classifier used `essential = 6 (M) / 14 (F)` as the floor — but
-  that's actually ACE's *Athletes* lower bound. Readings below were
+  that's actually ACE's _Athletes_ lower bound. Readings below were
   mislabelled "Essential" instead of "Below essential" (a danger
   band). Six-band classifier now mirrors the ACE table, and the three
   sites that had three different green-band numbers
@@ -221,7 +327,7 @@
   via `prisma db push` to dev/prod). Any environment built strictly
   from `prisma/migrations/` (CI testcontainers, brand-new self-host
   installs) is now consistent. Migration is `ADD COLUMN IF NOT
-  EXISTS`, so it's a clean add on a fresh database and a safe no-op
+EXISTS`, so it's a clean add on a fresh database and a safe no-op
   against any environment that was already kept in sync.
 
 ### Notes
