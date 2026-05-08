@@ -7,22 +7,9 @@
  * a mocked client could not detect a missing UPSERT or a misplaced
  * window-reset branch.
  */
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
-import {
-  getPrismaClient,
-  startTestDb,
-  stopTestDb,
-  truncateAllTables,
-} from "./setup";
-
-beforeAll(async () => {
-  await startTestDb();
-});
-
-afterAll(async () => {
-  await stopTestDb();
-});
+import { getPrismaClient, truncateAllTables } from "./setup";
 
 beforeEach(async () => {
   await truncateAllTables(getPrismaClient());

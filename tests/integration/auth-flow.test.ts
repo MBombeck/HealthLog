@@ -7,22 +7,9 @@
  * end-to-end flow — particularly the expired-session purge behaviour,
  * which silently deletes the row before returning null.
  */
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  getPrismaClient,
-  startTestDb,
-  stopTestDb,
-  truncateAllTables,
-} from "./setup";
+import { getPrismaClient, truncateAllTables } from "./setup";
 
 // Stateful in-memory cookie jar so `createSession()` (which calls
 // cookies().set) hands the value off to a subsequent `getSession()`
@@ -50,14 +37,6 @@ vi.mock("next/headers", () => ({
 vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
 }));
-
-beforeAll(async () => {
-  await startTestDb();
-});
-
-afterAll(async () => {
-  await stopTestDb();
-});
 
 beforeEach(async () => {
   await truncateAllTables(getPrismaClient());

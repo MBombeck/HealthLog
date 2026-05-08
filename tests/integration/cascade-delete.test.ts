@@ -7,22 +7,9 @@
  * test verifies the actual database FKs match those declarations — a
  * missing CASCADE would leave orphan rows behind, violating GDPR.
  */
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
-import {
-  getPrismaClient,
-  startTestDb,
-  stopTestDb,
-  truncateAllTables,
-} from "./setup";
-
-beforeAll(async () => {
-  await startTestDb();
-});
-
-afterAll(async () => {
-  await stopTestDb();
-});
+import { getPrismaClient, truncateAllTables } from "./setup";
 
 beforeEach(async () => {
   await truncateAllTables(getPrismaClient());

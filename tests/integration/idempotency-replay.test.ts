@@ -7,22 +7,9 @@
  * (`idempotency_keys`) end-to-end against a real Postgres.
  */
 import { NextRequest, NextResponse } from "next/server";
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  getPrismaClient,
-  startTestDb,
-  stopTestDb,
-  truncateAllTables,
-} from "./setup";
+import { getPrismaClient, truncateAllTables } from "./setup";
 
 // `withIdempotency()` calls `getSession()` (cookie-backed) by default and
 // falls back to a Bearer-token lookup. We stub `next/headers` to return
@@ -52,14 +39,6 @@ vi.mock("@/lib/auth/session", () => ({
 vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
 }));
-
-beforeAll(async () => {
-  await startTestDb();
-});
-
-afterAll(async () => {
-  await stopTestDb();
-});
 
 beforeEach(async () => {
   await truncateAllTables(getPrismaClient());

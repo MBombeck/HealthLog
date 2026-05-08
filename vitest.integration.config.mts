@@ -24,6 +24,8 @@ export default defineConfig({
     pool: "forks",
     fileParallelism: false,
     isolate: false,
+    // One container for the whole run; tests truncate between them.
+    globalSetup: ["./tests/integration/global-setup.ts"],
   },
   resolve: {
     alias: {
