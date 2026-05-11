@@ -1,44 +1,65 @@
-# HealthLog v1.4.23 — roadmap
+# HealthLog v1.4.24 — roadmap
 
-Milestone: **v1.4.23 — pre-iOS hygiene + sentinel hardening** (not
-yet kicked off)
-Latest tag at start: v1.4.22 (live in prod, image digest
-`sha256:865154614303…`)
+Milestone: **v1.4.24 — pre-iOS final polish** (not yet kicked off)
+Latest tag at start: v1.4.23 (live in prod)
 
 Carry-over candidates already captured in
-`.planning/v1422-backlog.md`:
+`.planning/v1423-backlog.md`:
 
-- Sentinel parser malformed-enum hardening (Sr-M5, ~30 LOC,
-  highest signal-to-effort ratio of the deferred MEDs).
-- Analytics-route unbounded `findMany` paging.
-- Targets-route 7-pass sparkline coalesce.
-- `<CoachDrawer key={prefill}>` controlled-prop refactor
-  (Sr-HIGH-4) — drop the React-key reset weaponisation before
-  the iOS Coach surface multiplies the pattern's footprint.
-- Per-user prompt-tuning surface (the v1.4.22 settings cog was
-  removed pending this).
-- Schema drift on `medication_schedules.days_of_week` — either
-  deploy the column or drop it from `schema.prisma`. Last call
-  before v1.5 P0.
-- OpenAPI spec drift CI guard — pull forward from v1.5 D.5 if
-  possible. Cheaper than discovering drift via an iOS build
-  break.
-- Pearson p-value normal-approx replacement (Code-MED-03) —
-  30-LOC incomplete-beta or raise df ≥ 20 surfacing gate. Fix
-  before v1.5/v1.6 auto-discovery ships.
-- Coach helpful/unhelpful first-week observation — does the new
-  warm persona land or does the disclosure-open rate stay below
-  ~30%? If low, tone pull-back before iOS multiplies the
-  audience.
+- Pearson incomplete-beta replacement — v1.4.23 W5 H6 raised
+  `MIN_PAIRED_N` from 14 → 20 as a conservative surfacing-gate
+  patch. Land the rigorous incomplete-beta or normal-approx
+  replacement before v1.5/v1.6 auto-correlation discovery ships.
+- OpenAPI drift gate flip from warn-only to hard-fail — generator
+  covers ~880 lines vs the legacy hand-maintained spec's 5 468;
+  complete registry coverage in parallel so the lockstep happens
+  before the iOS DTO codegen is downloading the spec
+  automatically.
+- Settings-cog vs per-message-controls UX consolidation — Design
+  pushback during W6 raised concern that the dual surface
+  duplicates intent. Wait on first-week thumbs data, decide
+  whether per-user prompt prefs drift from per-message ratings.
+- `coach-prefs.test.ts` integration `NextRequest` URL mock
+  regression — pre-existing failure that predates v1.4.23.
+  Investigate the harness's `cookies()` mock interaction with
+  `NextRequest`'s URL parsing.
+- Sec-MED-1 + LOW cluster — intra-batch dedup accounting
+  (Sec-LOW-1), idempotency 422 retry hint in the OpenAPI 422
+  description (Sec-LOW-2), APNs key-file path redaction in
+  wide-event meta (Sec-LOW-3), refresh-token failure audit
+  `userId` extension (Sec-LOW-4).
+- S-05 simplify deferral (Session B) — touched too many call
+  sites for a single reconcile commit.
 
 Reserved next strategic milestones:
 
 - **v1.5** — iOS app + Apple Health integration + per-metric APNs
-  alerts. Strategic plan at
-  `.planning/phase-W5-v1422-product-lead-review.md`.
+  alerts. Refreshed strategic plan with concrete file paths at
+  `.planning/phase-W6-v1423-product-lead-review.md`. P1 is now a
+  ~5-day iOS Swift sprint because every server-side contract
+  landed in v1.4.23.
 - **v1.6+** — Auto-correlation discovery (FDR-controlled), Coach
   full-page route at `/insights/coach`, conversation-driven goal
   setting.
+
+---
+
+## Previous milestone — v1.4.23 (completed 2026-05-11)
+
+| Wave | Goal                                                                                                                                                                                                                                       | State |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----- |
+| 1    | Research — Apple Health type mapping, APNs library decision (`@parse/node-apn`), OpenAPI tooling choice (`zod-openapi` + `yaml@^2`)                                                                                                        | done  |
+| 2    | Apple Health foundation — F1 `MeasurementType` extension + sleep-stage enum + composite dedup index, F2 `APPLE_HEALTH` source + UI badge, F3 `POST /api/measurements/batch` + sleep-stage analytics aggregation                            | done  |
+| 3    | APNs scaffolding — F4 `@parse/node-apn` sender + dispatcher cascade rewire, `Device` columns + paired CHECK constraint, `POST /api/devices` apnsToken acceptance + cross-user-hijack guard                                                 | done  |
+| 4    | OpenAPI generator + Coach metric slot + native-auth hardening + Coolify runbook — F5 `zod-openapi` registry + warn-only CI gate, F6 nine HealthKit categories in strict schema + PROMPT_VERSION 4.23.0, F7 per-device refresh-token replay-detection + device-management endpoints, F8 Coolify runbook + `::notice::` line | done  |
+| 5    | Hygiene (H1-H7) — sentinel parser malformed-enum annotation, analytics chunked-paged aggregate, drawer controlled-prop refactor, per-user prompt prefs surface, `medication_schedules.days_of_week` deploy, Pearson n≥20 gate, Coach feedback observation view | done  |
+| 6    | Multi-agent QA + reconcile — six reviews (code, security, design, senior-dev, simplify, product-lead); 1 CRIT + 9 HIGH + 4 simplify + 3 MED applied; LOWs triaged into v1423-backlog                                                       | done  |
+| 7    | Release v1.4.23 — bump, CHANGELOG, release-merge, tag, GHCR, Coolify deploy, /api/version=1.4.23, smoke, GH release, docs + landing sync, brief                                                                                            | done  |
+
+Milestone completed 2026-05-11 — v1.4.23 LIVE in prod.
+Release brief: `docs/audit/v1423-summary.md`.
+Backlog seeded to `.planning/v1423-backlog.md`. v1.5 strategic plan refresh
+at `.planning/phase-W6-v1423-product-lead-review.md`.
 
 ---
 

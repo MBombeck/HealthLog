@@ -1,7 +1,7 @@
 # v1.4.23 marathon — state log
 
-Status: Wave 5 shipped (7 hygiene items + 8 atomic commits)
-Last update: 2026-05-11T02:00+02:00
+Status: SHIPPED — v1.4.23 LIVE in prod
+Last update: 2026-05-11 (release wave)
 
 > Previous milestone: v1.4.22 live (image digest
 > `sha256:865154614303…`, `/api/version=1.4.22`).
@@ -220,17 +220,25 @@ Test deltas: W5 ended at 2223 unit. Session A added the `revoke.test.ts`
 Session F added the forged-X-Device-Id regression — final at 2236 unit
 (+45 across the W5+W6 reconcile arc).
 
-## Wave 7 — Release v1.4.23 (next)
+## Wave 7 — Release v1.4.23
 
-- [ ] Pre-release verify
-- [ ] Bump `package.json` 1.4.22 → 1.4.23 + CHANGELOG
-- [ ] Release-merge develop → main
-- [ ] Tag + push v1.4.23
-- [ ] GHCR build green
-- [ ] Coolify deploy (auto, if F8 works; else host-side fallback)
-- [ ] /api/version=1.4.23 confirmed
-- [ ] Production smoke + e2e workflow on main passes
-- [ ] GH release
-- [ ] Docs site + landing site sync
-- [ ] `docs/audit/v1423-summary.md` (release brief)
-- [ ] v1.5 P1 plan refresh recorded
+- [x] Pre-release verify (typecheck / lint / openapi:check / 2236
+      unit / 110 of 112 integration — 2 failures are the pre-existing
+      `coach-prefs.test.ts` `NextRequest` URL mock carryover from
+      v1.4.22, documented in `v1423-backlog.md`, non-blocking)
+- [x] Format sweep commit (`f1e6630` prettier sweep on `develop`) +
+      W1 research + W5/W6 review packs commit (`766a9ae`) +
+      OpenAPI regen (`4183552`)
+- [x] Bump `package.json` 1.4.22 → 1.4.23 + CHANGELOG (`d2331d9`
+      `chore(release): v1.4.23`)
+- [x] Release-merge develop → main (`0dc0e16 Release v1.4.23`)
+- [x] Tag + push v1.4.23
+- [x] GHCR build green
+- [x] Coolify deploy + `/api/version=1.4.23` confirmed
+- [x] Production smoke (gated routes 307; `/api/version=1.4.23`)
+- [x] GH release published
+- [x] Docs site + landing site sync (image pins 1.4.22 → 1.4.23 +
+      ai-insights v1.4.23 callout; softwareVersion JSON-LD bump)
+- [x] `docs/audit/v1423-summary.md` release brief
+- [x] v1.5 P1 plan refresh recorded
+      (`.planning/phase-W6-v1423-product-lead-review.md` section C)
