@@ -40,6 +40,22 @@ export class HttpError extends Error {
 // to `force-static` route handlers during dev). We probe defensively
 // and fall back to safe defaults so logging instrumentation never
 // crashes the handler.
+//
+// The catch is narrowed to the V8 private-field TypeError. Any other
+// exception is a real bug in the read callback or in a downstream
+// header parser and must surface — swallowing it here would hide
+// regressions in production instrumentation.
+function isPrivateFieldAccessError(err: unknown): boolean {
+  if (!(err instanceof TypeError)) return false;
+  const msg = err.message ?? "";
+  return (
+    msg.includes("private member") ||
+    msg.includes("private field") ||
+    // Bun / older V8 wording variant
+    msg.includes("private name")
+  );
+}
+
 function safeRequestProp<R>(
   request: unknown,
   read: (req: NextRequest) => R,
@@ -47,10 +63,17 @@ function safeRequestProp<R>(
 ): R {
   try {
     return read(request as NextRequest);
-  } catch {
-    return fallback;
+  } catch (err) {
+    if (isPrivateFieldAccessError(err)) return fallback;
+    throw err;
   }
 }
+
+/** @internal — exposed for unit tests of the narrow-catch contract. */
+export const __testables = {
+  safeRequestProp,
+  isPrivateFieldAccessError,
+};
 
 // Next.js route handlers come in two shapes — `(request)` for static routes
 // and `(request, { params })` for dynamic ones. The variadic generic is the
