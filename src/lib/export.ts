@@ -16,34 +16,63 @@
  */
 import { formatInUserTz } from "./tz/resolver";
 
-interface ExportableRecord {
+export interface ExportableRecord {
   [key: string]: unknown;
 }
 
 /**
  * Convert records to CSV string.
+ *
+ * The first record's keys define the column order (callers should pass
+ * a stable shape — see `buildAuditLogCsvRecords`). When `headerLabels`
+ * is provided, those strings replace the object-key header row so the
+ * exported CSV can carry translated column titles without changing
+ * the record-key contract that drives the columns.
+ *
+ * Escapes RFC 4180 special characters: commas, double quotes, line
+ * breaks (`\n` and `\r`). Values containing any of these are wrapped
+ * in double quotes with embedded quotes doubled (`"` → `""`).
  */
-export function toCSV(records: ExportableRecord[]): string {
+export function toCSV(
+  records: ExportableRecord[],
+  headerLabels?: Record<string, string>,
+): string {
   if (records.length === 0) return "";
 
   const headers = Object.keys(records[0]);
-  const lines = [headers.join(",")];
+  const headerLine = headerLabels
+    ? headers.map((h) => escapeCsvCell(headerLabels[h] ?? h)).join(",")
+    : headers.map(escapeCsvCell).join(",");
+  const lines = [headerLine];
 
   for (const record of records) {
     const values = headers.map((h) => {
       const val = record[h];
       if (val === null || val === undefined) return "";
       const str = val instanceof Date ? val.toISOString() : String(val);
-      // Escape CSV special characters
-      if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-        return `"${str.replace(/"/g, '""')}"`;
-      }
-      return str;
+      return escapeCsvCell(str);
     });
     lines.push(values.join(","));
   }
 
   return lines.join("\n");
+}
+
+/**
+ * RFC 4180 cell escaping. `\r` is treated the same as `\n` so a
+ * Windows-newline value (`\r\n`) inside a single field doesn't break
+ * row alignment when Excel re-imports the CSV.
+ */
+function escapeCsvCell(str: string): string {
+  if (
+    str.includes(",") ||
+    str.includes('"') ||
+    str.includes("\n") ||
+    str.includes("\r")
+  ) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
 }
 
 function formatTimestamp(date: Date, userTz?: string): string {

@@ -380,6 +380,99 @@ export function useAuthProviderLabels(): Record<AuthProvider, string> {
   );
 }
 
+/**
+ * v1.4.25 W8b — Build the CSV record set for the audit-log export.
+ *
+ * Pulled out of the section component so the column order, header
+ * mapping, and provider/outcome derivation are reachable from a
+ * pure unit test without rendering the React tree. Marc's spec pins
+ * the column order at `timestamp → user → IP → location → provider
+ * → outcome` (email is absent from the audit-log API and would
+ * require schema/API changes that are out of scope). `action` and
+ * `details` follow so the export keeps the full triage payload.
+ *
+ * `formatTimestamp` is injected (not imported) so the production
+ * callsite passes the user-tz formatter (`formatInUserTz`) while the
+ * unit test passes a deterministic stub.
+ */
+export interface AuditCsvEntry {
+  createdAt: string;
+  action: string;
+  ipAddress: string | null;
+  location: string | null;
+  details: string | null;
+  user: { id: string; username: string } | null;
+}
+
+export interface AuditCsvLabels {
+  timestamp: string;
+  user: string;
+  ip: string;
+  location: string;
+  provider: string;
+  outcome: string;
+  action: string;
+  details: string;
+  outcomeFailed: string;
+  outcomeSuccess: string;
+  unknownUser: string;
+  providerLabels: Record<AuthProvider, string>;
+}
+
+export interface AuditCsvRecord {
+  timestamp: string;
+  user: string;
+  ip: string;
+  location: string;
+  provider: string;
+  outcome: string;
+  action: string;
+  details: string;
+  // Index signature so the record satisfies the structural
+  // `ExportableRecord` contract used by `toCSV`. Fixed columns above
+  // still drive the order of the emitted CSV.
+  [key: string]: string;
+}
+
+export function buildAuditLogCsvRecords(
+  entries: AuditCsvEntry[],
+  labels: AuditCsvLabels,
+  formatTimestamp: (iso: string) => string,
+): AuditCsvRecord[] {
+  return entries.map((entry) => {
+    const provider = providerForAction(entry.action);
+    const isFailed =
+      entry.action === "auth.login.failed" ||
+      entry.action === "auth.bearer.failure" ||
+      entry.action === "auth.token.refresh.failed";
+    return {
+      timestamp: formatTimestamp(entry.createdAt),
+      user: entry.user?.username ?? labels.unknownUser,
+      ip: entry.ipAddress ?? "",
+      location: entry.location ?? "",
+      provider: labels.providerLabels[provider],
+      outcome: isFailed ? labels.outcomeFailed : labels.outcomeSuccess,
+      action: entry.action,
+      details: entry.details ?? "",
+    };
+  });
+}
+
+export function auditLogCsvHeaderLabels(
+  labels: AuditCsvLabels,
+): Record<keyof AuditCsvRecord, string> {
+  return {
+    timestamp: labels.timestamp,
+    user: labels.user,
+    ip: labels.ip,
+    location: labels.location,
+    provider: labels.provider,
+    outcome: labels.outcome,
+    action: labels.action,
+    details: labels.details,
+  };
+}
+
 export function useSystemStatus() {
   return useQuery({
     queryKey: ["admin", "status"],

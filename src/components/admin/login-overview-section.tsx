@@ -24,8 +24,12 @@ import {
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 import { toCSV } from "@/lib/export";
+import { formatInUserTz, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
+import { useAuth } from "@/hooks/use-auth";
 import {
   type AdminAuditEntry,
+  auditLogCsvHeaderLabels,
+  buildAuditLogCsvRecords,
   iconForAuthProvider,
   providerForAction,
   useAuthActionLabels,
@@ -57,6 +61,12 @@ function rangeToSince(range: DateRangePreset): string | undefined {
 
 export function LoginOverviewSection() {
   const { t } = useTranslations();
+  const { user } = useAuth();
+  // v1.4.25 W7 — every CSV-emitted timestamp uses the admin's display
+  // timezone so the resulting `2026-05-11T11:05:00+02:00` cell stays
+  // legible after Excel/LibreOffice strip the `Z` suffix from the
+  // legacy UTC export.
+  const userTz = user?.timezone ?? DEFAULT_TIMEZONE;
   // v1.5 phase-4b moved this to a dedicated route
   // (`/admin/login-overview`), so the user has already opted into the
   // audit log by visiting the page. Default to expanded; the toggle
@@ -144,16 +154,24 @@ export function LoginOverviewSection() {
 
   function downloadCsv() {
     if (entries.length === 0) return;
-    const records = entries.map((entry) => ({
-      timestamp: entry.createdAt,
-      actor_id: entry.user?.id ?? "",
-      actor_username: entry.user?.username ?? "",
-      action: entry.action,
-      ip_address: entry.ipAddress ?? "",
-      location: entry.location ?? "",
-      details: entry.details ?? "",
-    }));
-    const csv = toCSV(records);
+    const labels = {
+      timestamp: t("admin.timestamp"),
+      user: t("admin.users"),
+      ip: t("admin.ip"),
+      location: t("admin.location"),
+      provider: t("admin.provider"),
+      outcome: t("admin.outcome"),
+      action: t("admin.action"),
+      details: t("admin.auditDetails"),
+      outcomeFailed: t("admin.outcomeFailed"),
+      outcomeSuccess: t("admin.outcomeSuccess"),
+      unknownUser: t("common.unknown"),
+      providerLabels: AUTH_PROVIDER_LABELS,
+    };
+    const records = buildAuditLogCsvRecords(entries, labels, (iso) =>
+      formatInUserTz(new Date(iso), userTz, "iso-with-offset"),
+    );
+    const csv = toCSV(records, auditLogCsvHeaderLabels(labels));
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
