@@ -191,6 +191,3 @@ OUTPUT FORMAT: Reply with valid JSON only, matching the schema below. The "class
 export function getBaseSystemPrompt(locale: Locale): string {
   return locale === "en" ? BASE_SYSTEM_PROMPT_EN : BASE_SYSTEM_PROMPT_DE;
 }
-
-/** @deprecated Use getBaseSystemPrompt(locale) instead. Kept for backwards compatibility. */
-export const BASE_SYSTEM_PROMPT = BASE_SYSTEM_PROMPT_DE;

@@ -102,9 +102,6 @@ export function getInsightsSystemPrompt(locale: Locale): string {
     : INSIGHTS_SYSTEM_PROMPT_DE;
 }
 
-/** @deprecated Use getInsightsSystemPrompt(locale) instead. Kept for backwards compatibility. */
-export const INSIGHTS_SYSTEM_PROMPT = INSIGHTS_SYSTEM_PROMPT_DE;
-
 export interface InsightsOutput {
   changed: string;
   stable: string;
