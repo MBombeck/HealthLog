@@ -43,6 +43,17 @@ export const ALLOWED_CHART_TOKENS = [
   "metric:WALKING_RUNNING_DISTANCE",
   "metric:VO2_MAX",
   "metric:BODY_TEMPERATURE",
+  // v1.4.25 W5d — Withings full coverage. Same posture as v1.4.23 — the
+  // LLM can reference these in prose; dedicated chart components land in
+  // v1.5 when the Insights body-composition + cardiovascular sub-pages
+  // are designed.
+  "metric:FAT_FREE_MASS",
+  "metric:FAT_MASS",
+  "metric:MUSCLE_MASS",
+  "metric:SKIN_TEMPERATURE",
+  "metric:PULSE_WAVE_VELOCITY",
+  "metric:VASCULAR_AGE",
+  "metric:VISCERAL_FAT",
 ] as const;
 
 export type ChartToken = (typeof ALLOWED_CHART_TOKENS)[number];
@@ -105,6 +116,16 @@ const ORPHAN_ENUMS = [
   "VO2_MAX",
   "BODY_TEMPERATURE",
   "SLEEP_DURATION",
+  // v1.4.25 W5d Withings additions. Multi-word upper-snake enum names
+  // never appear in legitimate user-facing prose, so stripping them
+  // unconditionally is safe.
+  "FAT_FREE_MASS",
+  "FAT_MASS",
+  "MUSCLE_MASS",
+  "SKIN_TEMPERATURE",
+  "PULSE_WAVE_VELOCITY",
+  "VASCULAR_AGE",
+  "VISCERAL_FAT",
 ] as const;
 
 // `\b` boundaries keep ordinary English prose untouched — "weight"

@@ -29,6 +29,7 @@ import {
   TrendingUp,
   Thermometer,
   Gauge,
+  Dumbbell,
   type LucideIcon,
 } from "lucide-react";
 
@@ -52,6 +53,14 @@ export const MEASUREMENT_TYPE_LABEL_KEYS: Record<string, string> = {
   WALKING_RUNNING_DISTANCE: "measurements.typeWalkingRunningDistance",
   VO2_MAX: "measurements.typeVo2Max",
   BODY_TEMPERATURE: "measurements.typeBodyTemperature",
+  // ── v1.4.25 W5d Withings full coverage ──
+  FAT_FREE_MASS: "measurements.typeFatFreeMass",
+  FAT_MASS: "measurements.typeFatMass",
+  MUSCLE_MASS: "measurements.typeMuscleMass",
+  SKIN_TEMPERATURE: "measurements.typeSkinTemperature",
+  PULSE_WAVE_VELOCITY: "measurements.typePulseWaveVelocity",
+  VASCULAR_AGE: "measurements.typeVascularAge",
+  VISCERAL_FAT: "measurements.typeVisceralFat",
 };
 
 export const MEASUREMENT_TYPE_ICONS: Record<string, LucideIcon> = {
@@ -74,6 +83,19 @@ export const MEASUREMENT_TYPE_ICONS: Record<string, LucideIcon> = {
   WALKING_RUNNING_DISTANCE: Footprints,
   VO2_MAX: Gauge,
   BODY_TEMPERATURE: Thermometer,
+  // ── v1.4.25 W5d Withings full coverage ──
+  // Body-composition trio: Scale carries the mass-family (FFM is the
+  // weight residual after fat); Droplets carries the fat-family
+  // (BODY_FAT already uses it, so FAT_MASS + VISCERAL_FAT match);
+  // Dumbbell is reserved for muscle so the three rows stay distinct
+  // in the list view.
+  FAT_FREE_MASS: Scale,
+  FAT_MASS: Droplets,
+  MUSCLE_MASS: Dumbbell,
+  SKIN_TEMPERATURE: Thermometer,
+  PULSE_WAVE_VELOCITY: Activity,
+  VASCULAR_AGE: HeartPulse,
+  VISCERAL_FAT: Droplets,
 };
 
 export const MEASUREMENT_TYPE_COLORS: Record<string, string> = {
@@ -96,4 +118,14 @@ export const MEASUREMENT_TYPE_COLORS: Record<string, string> = {
   WALKING_RUNNING_DISTANCE: "bg-chart-2/20 text-chart-2",
   VO2_MAX: "bg-chart-1/20 text-chart-1",
   BODY_TEMPERATURE: "bg-chart-4/20 text-chart-4",
+  // ── v1.4.25 W5d Withings full coverage ──
+  // chart-1 (mass), chart-3 (cardio), chart-4 (fat/temp), chart-5
+  // (pulse-derived) — extend the existing color-family conventions.
+  FAT_FREE_MASS: "bg-chart-1/20 text-chart-1",
+  FAT_MASS: "bg-chart-4/20 text-chart-4",
+  MUSCLE_MASS: "bg-chart-1/20 text-chart-1",
+  SKIN_TEMPERATURE: "bg-chart-4/20 text-chart-4",
+  PULSE_WAVE_VELOCITY: "bg-chart-5/20 text-chart-5",
+  VASCULAR_AGE: "bg-chart-3/20 text-chart-3",
+  VISCERAL_FAT: "bg-chart-4/20 text-chart-4",
 };
