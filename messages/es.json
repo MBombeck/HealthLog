@@ -1487,14 +1487,30 @@
       }
     },
     "baseline": {
-      "title": "Tu primera medición",
-      "body": "Una medición activa el panel. Añádela ahora o regístrala más adelante.",
-      "placeholder": "Entrada inicial próximamente."
+      "title": "Cuéntanos sobre ti",
+      "body": "Cuatro campos opcionales afinan los valores objetivo, el IMC y los recordatorios. Podrás ajustarlo todo más tarde desde Ajustes.",
+      "placeholder": "Entrada inicial próximamente.",
+      "displayNameLabel": "Nombre para mostrar",
+      "displayNamePlaceholder": "¿Cómo debería llamarte HealthLog?",
+      "displayNameHint": "Aparece en el saludo del panel y en los informes.",
+      "heightLabel": "Altura (cm)",
+      "genderLabel": "Sexo",
+      "genderNone": "Prefiero no decirlo",
+      "genderMale": "Hombre",
+      "genderFemale": "Mujer",
+      "dateOfBirthLabel": "Fecha de nacimiento",
+      "dateOfBirthHint": "Se utiliza solo para análisis sensibles a la edad.",
+      "saveCta": "Guardar y continuar"
     },
     "done": {
       "title": "Todo listo",
       "body": "Bienvenido a bordo. Tu panel ya está preparado.",
       "returnCta": "Abrir el panel"
+    },
+    "welcomeBack": {
+      "title": "Bienvenido de nuevo",
+      "body": "Ya completaste la configuración inicial. Para cambiar algo, abre Ajustes — todo lo que configuraste se puede editar desde ahí.",
+      "cta": "Abrir el panel"
     }
   },
   "gettingStarted": {

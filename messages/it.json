@@ -1487,14 +1487,30 @@
       }
     },
     "baseline": {
-      "title": "La tua prima misurazione",
-      "body": "Una sola misurazione accende la dashboard. Aggiungila ora o registrala più tardi.",
-      "placeholder": "Inserimento iniziale in arrivo."
+      "title": "Qualcosa su di te",
+      "body": "Quattro campi facoltativi affinano gli intervalli, l'IMC e i promemoria. Puoi modificarli tutti in qualsiasi momento dalle impostazioni.",
+      "placeholder": "Inserimento iniziale in arrivo.",
+      "displayNameLabel": "Nome visualizzato",
+      "displayNamePlaceholder": "Come deve chiamarti HealthLog?",
+      "displayNameHint": "Compare nel saluto della dashboard e nei report.",
+      "heightLabel": "Altezza (cm)",
+      "genderLabel": "Sesso",
+      "genderNone": "Preferisco non specificare",
+      "genderMale": "Maschile",
+      "genderFemale": "Femminile",
+      "dateOfBirthLabel": "Data di nascita",
+      "dateOfBirthHint": "Usata solo per le analisi che tengono conto dell'età.",
+      "saveCta": "Salva e continua"
     },
     "done": {
       "title": "Tutto pronto",
       "body": "Benvenuto a bordo. La tua dashboard è pronta.",
       "returnCta": "Apri la dashboard"
+    },
+    "welcomeBack": {
+      "title": "Bentornato",
+      "body": "Hai già completato l'onboarding. Per modificare qualcosa apri le impostazioni — tutto ciò che hai configurato è ancora modificabile.",
+      "cta": "Apri la dashboard"
     }
   },
   "gettingStarted": {

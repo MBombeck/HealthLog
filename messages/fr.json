@@ -1487,14 +1487,30 @@
       }
     },
     "baseline": {
-      "title": "Votre première mesure",
-      "body": "Une seule mesure active le tableau de bord. Ajoutez-la maintenant ou plus tard.",
-      "placeholder": "Saisie initiale à venir."
+      "title": "Quelques informations",
+      "body": "Quatre champs facultatifs affinent vos seuils cibles, l'IMC et les rappels. Tout reste modifiable plus tard dans les paramètres.",
+      "placeholder": "Saisie initiale à venir.",
+      "displayNameLabel": "Nom d'affichage",
+      "displayNamePlaceholder": "Comment HealthLog doit-il vous appeler ?",
+      "displayNameHint": "Apparaît dans le message d'accueil du tableau de bord et dans les rapports.",
+      "heightLabel": "Taille (cm)",
+      "genderLabel": "Genre",
+      "genderNone": "Préfère ne pas le préciser",
+      "genderMale": "Homme",
+      "genderFemale": "Femme",
+      "dateOfBirthLabel": "Date de naissance",
+      "dateOfBirthHint": "Utilisée uniquement pour les analyses qui tiennent compte de l'âge.",
+      "saveCta": "Enregistrer et continuer"
     },
     "done": {
       "title": "Tout est prêt",
       "body": "Bienvenue à bord. Votre tableau de bord vous attend.",
       "returnCta": "Ouvrir le tableau de bord"
+    },
+    "welcomeBack": {
+      "title": "Bon retour",
+      "body": "Vous avez déjà terminé la configuration. Pour modifier un élément, ouvrez les paramètres — tout reste éditable.",
+      "cta": "Ouvrir le tableau de bord"
     }
   },
   "gettingStarted": {

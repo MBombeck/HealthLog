@@ -1487,14 +1487,30 @@
       }
     },
     "baseline": {
-      "title": "Twój pierwszy pomiar",
-      "body": "Jeden pomiar uruchamia pulpit. Dodaj go teraz albo zapisz później.",
-      "placeholder": "Wprowadzenie pierwszego wpisu wkrótce."
+      "title": "Kilka słów o Tobie",
+      "body": "Cztery opcjonalne pola doprecyzują wartości docelowe, BMI i przypomnienia. Wszystko możesz później zmienić w ustawieniach.",
+      "placeholder": "Wprowadzenie pierwszego wpisu wkrótce.",
+      "displayNameLabel": "Nazwa wyświetlana",
+      "displayNamePlaceholder": "Jak HealthLog ma się do Ciebie zwracać?",
+      "displayNameHint": "Pojawia się w powitaniu na pulpicie i w raportach.",
+      "heightLabel": "Wzrost (cm)",
+      "genderLabel": "Płeć",
+      "genderNone": "Wolę nie podawać",
+      "genderMale": "Mężczyzna",
+      "genderFemale": "Kobieta",
+      "dateOfBirthLabel": "Data urodzenia",
+      "dateOfBirthHint": "Używana wyłącznie do analiz zależnych od wieku.",
+      "saveCta": "Zapisz i kontynuuj"
     },
     "done": {
       "title": "Wszystko gotowe",
       "body": "Witaj na pokładzie. Pulpit czeka na Ciebie.",
       "returnCta": "Otwórz pulpit"
+    },
+    "welcomeBack": {
+      "title": "Witaj ponownie",
+      "body": "Wstępne kroki masz już za sobą. Aby coś zmienić, otwórz ustawienia — wszystko, co skonfigurowałeś, da się tam edytować.",
+      "cta": "Otwórz pulpit"
     }
   },
   "gettingStarted": {

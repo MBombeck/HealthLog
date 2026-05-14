@@ -1,100 +1,101 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderToStaticMarkup } from "react-dom/server";
 
-// Stub Next.js navigation — we never actually navigate in these tests.
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
-}));
+/**
+ * v1.4.25 W14b-Content — onboarding root redirect tests.
+ *
+ * The v1.4.20 single-file wizard was deleted in this commit; the root
+ * `/onboarding` page is now a server-side redirect into the new
+ * `/onboarding/[step]` flow. These tests cover the three redirect
+ * branches: missing session, mid-flow user, completed user.
+ */
 
-// Stub TanStack Query — the onboarding page only invalidates after
-// finish, which we don't trigger here.
-vi.mock("@tanstack/react-query", () => ({
-  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
-  useQuery: () => ({ data: null, isLoading: false }),
-}));
-
-// Stub the toaster — fires post-finish only.
-vi.mock("sonner", () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}));
-
-// The Logo pulls in an SVG icon set we don't need to assert on.
-vi.mock("@/components/ui/logo", () => ({
-  Logo: () => null,
-}));
-
-// MeasurementForm is independently tested. Stub it so step 2's render
-// doesn't drag the entire form's dependencies into this SSR test.
-vi.mock("@/components/measurements/measurement-form", () => ({
-  MeasurementForm: () => null,
-}));
-
-import { I18nProvider } from "@/lib/i18n/context";
-import OnboardingPage from "../page";
-
-function render(locale: "en" | "de" = "en") {
-  return renderToStaticMarkup(
-    <I18nProvider initialLocale={locale}>
-      <OnboardingPage />
-    </I18nProvider>,
-  );
-}
-
-beforeEach(() => {
-  vi.clearAllMocks();
+const redirectMock = vi.fn((href: string) => {
+  // next/navigation `redirect()` throws a special sentinel inside the
+  // server-component renderer to short-circuit rendering. Mimic that
+  // by throwing an error tagged with the href so each test can
+  // unambiguously assert the redirect target.
+  const err = new Error(`__redirect__:${href}`);
+  (err as Error & { __redirect__: string }).__redirect__ = href;
+  throw err;
 });
 
-describe("<OnboardingPage> v2", () => {
-  it("renders three progress dots, not four", () => {
-    const html = render();
-    // The progress row holds exactly three dots — count `w-10` segments.
-    const dots = html.match(/h-1\.5 w-10 rounded-full/g) ?? [];
-    expect(dots.length).toBe(3);
+vi.mock("next/navigation", () => ({
+  redirect: (href: string) => redirectMock(href),
+}));
+
+const getSessionMock = vi.fn();
+vi.mock("@/lib/auth/session", () => ({
+  getSession: () => getSessionMock(),
+}));
+
+import OnboardingRootPage from "../page";
+
+beforeEach(() => {
+  redirectMock.mockClear();
+  getSessionMock.mockReset();
+});
+
+function makeSession(opts: {
+  onboardingStep?: number | null;
+  onboardingCompletedAt?: Date | null;
+}) {
+  return {
+    session: { id: "sess-1", expiresAt: new Date(Date.now() + 86400000) },
+    user: {
+      id: "user-1",
+      onboardingStep: opts.onboardingStep ?? null,
+      onboardingCompletedAt: opts.onboardingCompletedAt ?? null,
+    },
+  };
+}
+
+async function runRedirect(): Promise<string> {
+  try {
+    await OnboardingRootPage();
+  } catch (e) {
+    const tagged = e as Error & { __redirect__?: string };
+    if (tagged.__redirect__) return tagged.__redirect__;
+    throw e;
+  }
+  throw new Error("expected redirect, none thrown");
+}
+
+describe("<OnboardingRootPage> root redirect", () => {
+  it("redirects to /auth/login when no session", async () => {
+    getSessionMock.mockResolvedValueOnce(null);
+    const href = await runRedirect();
+    expect(href).toBe("/auth/login");
   });
 
-  it("shows the v2 welcome copy and step 1 of 3 indicator", () => {
-    const html = render();
-    expect(html).toContain("Welcome to HealthLog");
-    expect(html).toContain("Step 1 of 3");
-    expect(html).toContain("About you");
+  it("redirects fresh user (onboardingStep null) to /onboarding/0", async () => {
+    getSessionMock.mockResolvedValueOnce(makeSession({}));
+    const href = await runRedirect();
+    expect(href).toBe("/onboarding/0");
   });
 
-  it("renders the German title when locale is de", () => {
-    const html = render("de");
-    expect(html).toContain("Willkommen bei HealthLog");
-    expect(html).toContain("Schritt 1 von 3");
+  it("redirects mid-flow user to /onboarding/<current>", async () => {
+    getSessionMock.mockResolvedValueOnce(makeSession({ onboardingStep: 2 }));
+    const href = await runRedirect();
+    expect(href).toBe("/onboarding/2");
   });
 
-  it("includes a single skip link with the descriptive label", () => {
-    const html = render();
-    const skipMatches =
-      html.match(
-        /Skip this step — you can finish setup later from Settings./g,
-      ) ?? [];
-    // Exactly one skip control on step 1; second skip from the legacy
-    // wizard is gone.
-    expect(skipMatches.length).toBe(1);
+  it("clamps an out-of-range onboardingStep into the 0..4 window", async () => {
+    getSessionMock.mockResolvedValueOnce(makeSession({ onboardingStep: 99 }));
+    const href = await runRedirect();
+    expect(href).toBe("/onboarding/4");
   });
 
-  it("does not show a Back button on step 1 (first step)", () => {
-    const html = render();
-    expect(html).not.toContain(">Back<");
-  });
-
-  it("provides every step-1 form field via accessible labels", () => {
-    const html = render();
-    expect(html).toContain('for="ob-display-name"');
-    expect(html).toContain('for="ob-language"');
-    expect(html).toContain('for="ob-height"');
-    expect(html).toContain('for="ob-gender"');
-    expect(html).toContain('for="ob-dob"');
-  });
-
-  it("step-1 progressbar has correct aria attributes", () => {
-    const html = render();
-    expect(html).toContain('role="progressbar"');
-    expect(html).toContain('aria-valuemin="1"');
-    expect(html).toContain('aria-valuemax="3"');
-    expect(html).toContain('aria-valuenow="1"');
+  it("redirects a completed user to /onboarding/<current>", async () => {
+    getSessionMock.mockResolvedValueOnce(
+      makeSession({
+        onboardingStep: 4,
+        onboardingCompletedAt: new Date("2026-05-01"),
+      }),
+    );
+    const href = await runRedirect();
+    // The step page handles the welcome-back banner at step 0 and the
+    // done-screen at step 4 — the root page just bounces into the
+    // current step regardless of completion state.
+    expect(href).toBe("/onboarding/4");
   });
 });

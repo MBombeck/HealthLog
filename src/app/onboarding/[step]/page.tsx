@@ -1,9 +1,13 @@
 import { redirect, notFound } from "next/navigation";
+import Link from "next/link";
 
 import { OnboardingShell } from "@/components/onboarding/OnboardingShell";
 import { WelcomeCarousel } from "@/components/onboarding/WelcomeCarousel";
 import { GoalsChipPicker } from "@/components/onboarding/GoalsChipPicker";
 import { SourceCardGrid } from "@/components/onboarding/SourceCardGrid";
+import { BaselineForm } from "@/components/onboarding/BaselineForm";
+import { DoneScreen } from "@/components/onboarding/DoneScreen";
+import { Button } from "@/components/ui/button";
 import { getSession } from "@/lib/auth/session";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
@@ -63,25 +67,58 @@ export default async function OnboardingStepPage({ params }: PageProps) {
   }
   const { user } = session;
 
-  if (user.onboardingCompletedAt) {
+  const completed = user.onboardingCompletedAt != null;
+
+  // Completed users hitting any mid-flow step (1, 2, 3) are bounced
+  // back to the dashboard — replaying half the wizard is never useful.
+  // Step 0 stays accessible as the welcome-back surface (banner instead
+  // of carousel) and step 4 stays accessible as the success screen so
+  // a re-landing user has a clean "Open dashboard" exit.
+  if (completed && requested > 0 && requested < 4) {
     redirect("/");
   }
 
   const current = clampCurrentStep(user.onboardingStep);
-  if (requested > current) {
+  if (!completed && requested > current) {
     redirect(`/onboarding/${current}`);
   }
 
   const locale = await resolveServerLocale({ userLocale: user.locale });
   const { t } = getServerTranslator(locale);
 
-  // Welcome (step 0) renders the client-side value-prop carousel.
-  // The carousel owns its own primary CTA (POST /api/onboarding/step
-  // with step:1) so the shell drops `nextHref` to avoid a double CTA.
+  // Welcome (step 0)
+  //   * Fresh user → value-prop carousel.
+  //   * Returning user (onboarding already completed) → welcome-back
+  //     banner with "Open dashboard" CTA. Marc note 2026-05-14: the
+  //     "restart onboarding" affordance lives in Settings → Account in
+  //     v1.4.26; for now the banner is informational only.
   if (requested === 0) {
     return (
       <OnboardingShell step={0} userLocale={user.locale ?? null}>
-        <WelcomeCarousel />
+        {completed ? (
+          <section
+            aria-labelledby="onboarding-welcomeback-title"
+            className="space-y-5"
+          >
+            <h1
+              id="onboarding-welcomeback-title"
+              tabIndex={-1}
+              className="text-2xl font-semibold tracking-tight"
+            >
+              {t("onboarding.welcomeBack.title")}
+            </h1>
+            <p className="text-muted-foreground text-base leading-relaxed">
+              {t("onboarding.welcomeBack.body")}
+            </p>
+            <div className="flex justify-end">
+              <Button asChild size="lg">
+                <Link href="/">{t("onboarding.welcomeBack.cta")}</Link>
+              </Button>
+            </div>
+          </section>
+        ) : (
+          <WelcomeCarousel />
+        )}
       </OnboardingShell>
     );
   }
@@ -111,51 +148,23 @@ export default async function OnboardingStepPage({ params }: PageProps) {
     );
   }
 
-  // Foundation placeholder branches — replaced one step at a time by
-  // the W14b-Content agent. Each step's body resolves to the real i18n
-  // copy already, so the page reads end-to-end even before the per-
-  // step component lands.
-  const bodyTitle = t(`onboarding.${stepKey(requested)}.title`);
-  const bodyText = t(`onboarding.${stepKey(requested)}.body`);
+  // Baseline (step 3) — profile form. PUT /api/auth/profile saves the
+  // four fields, then POST step:4 advances + flips
+  // `onboardingCompletedAt`.
+  if (requested === 3) {
+    return (
+      <OnboardingShell step={3} userLocale={user.locale ?? null}>
+        <BaselineForm />
+      </OnboardingShell>
+    );
+  }
 
-  // Wire shell navigation by step. Step 0 has no Back; the wizard
-  // never lets the user navigate forward past their current step, but
-  // they can advance from the current step's "Next" button — the
-  // POST /api/onboarding/step mutation flips `onboardingStep` and the
-  // Content agent will redirect to the new step on success. The
-  // Foundation scaffold uses plain hrefs so the shell renders end-to-
-  // end immediately; the Content agent will replace the next link
-  // with an action button bound to the API.
-  const backHref = requested > 0 ? `/onboarding/${requested - 1}` : undefined;
-  const skipHref = requested > 0 && requested < 4 ? "/" : undefined;
-  const nextHref =
-    requested < 4 ? `/onboarding/${requested + 1}` : "/";
-
+  // Done (step 4) — success screen + dashboard CTA. Reachable both
+  // after first-completion (POST step:4) and again if a completed
+  // user lands here by URL.
   return (
-    <OnboardingShell
-      step={requested}
-      backHref={backHref}
-      skipHref={skipHref}
-      nextHref={nextHref}
-      userLocale={user.locale ?? null}
-    >
-      <section className="space-y-4" aria-labelledby="onboarding-step-title">
-        <h1
-          id="onboarding-step-title"
-          tabIndex={-1}
-          className="text-2xl font-semibold tracking-tight"
-        >
-          {bodyTitle}
-        </h1>
-        <p className="text-muted-foreground text-base leading-relaxed">
-          {bodyText}
-        </p>
-        <div
-          data-testid="onboarding-step-body"
-          aria-label="Step body placeholder — W14b-Content agent fills in real UI."
-          className="bg-muted/30 min-h-[140px] rounded-lg border border-dashed p-6"
-        />
-      </section>
+    <OnboardingShell step={4} userLocale={user.locale ?? null}>
+      <DoneScreen />
     </OnboardingShell>
   );
 }
@@ -166,19 +175,4 @@ function clampCurrentStep(value: number | null | undefined): Step {
   if (floor <= 0) return 0;
   if (floor >= 4) return 4;
   return floor as Step;
-}
-
-function stepKey(step: Step): "welcome" | "goals" | "source" | "baseline" | "done" {
-  switch (step) {
-    case 0:
-      return "welcome";
-    case 1:
-      return "goals";
-    case 2:
-      return "source";
-    case 3:
-      return "baseline";
-    case 4:
-      return "done";
-  }
 }

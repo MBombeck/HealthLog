@@ -1487,14 +1487,30 @@
       }
     },
     "baseline": {
-      "title": "Your first reading",
-      "body": "One reading turns the dashboard on. Add it now or skip and log later.",
-      "placeholder": "Baseline entry coming soon."
+      "title": "A bit about you",
+      "body": "Four optional fields sharpen target ranges, BMI and reminders. You can adjust any of them later in Settings.",
+      "placeholder": "Baseline entry coming soon.",
+      "displayNameLabel": "Display name",
+      "displayNamePlaceholder": "How should HealthLog address you?",
+      "displayNameHint": "Shown on the dashboard greeting and in reports.",
+      "heightLabel": "Height (cm)",
+      "genderLabel": "Gender",
+      "genderNone": "Prefer not to say",
+      "genderMale": "Male",
+      "genderFemale": "Female",
+      "dateOfBirthLabel": "Date of birth",
+      "dateOfBirthHint": "Used only for age-aware analytics.",
+      "saveCta": "Save and continue"
     },
     "done": {
       "title": "You're all set",
       "body": "Welcome aboard. Your dashboard is ready.",
       "returnCta": "Open dashboard"
+    },
+    "welcomeBack": {
+      "title": "Welcome back",
+      "body": "You've already finished onboarding. To adjust anything, head to Settings — everything you set up is editable from there.",
+      "cta": "Open dashboard"
     }
   },
   "gettingStarted": {

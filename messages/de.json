@@ -1487,14 +1487,30 @@
       }
     },
     "baseline": {
-      "title": "Deine erste Messung",
-      "body": "Eine Messung erweckt das Dashboard zum Leben. Jetzt eintragen oder später nachholen.",
-      "placeholder": "Eingabe der Erstmessung folgt."
+      "title": "Kurz zu dir",
+      "body": "Vier optionale Angaben verbessern Zielwerte, BMI und Erinnerungen. Du kannst alles später in den Einstellungen anpassen.",
+      "placeholder": "Eingabe der Erstmessung folgt.",
+      "displayNameLabel": "Anzeigename",
+      "displayNamePlaceholder": "Wie soll dich HealthLog ansprechen?",
+      "displayNameHint": "Erscheint im Dashboard-Gruß und in Berichten.",
+      "heightLabel": "Größe (cm)",
+      "genderLabel": "Geschlecht",
+      "genderNone": "Keine Angabe",
+      "genderMale": "Männlich",
+      "genderFemale": "Weiblich",
+      "dateOfBirthLabel": "Geburtsdatum",
+      "dateOfBirthHint": "Wird ausschließlich für altersbezogene Auswertungen genutzt.",
+      "saveCta": "Speichern und weiter"
     },
     "done": {
       "title": "Alles bereit",
       "body": "Willkommen an Bord. Dein Dashboard wartet.",
       "returnCta": "Zum Dashboard"
+    },
+    "welcomeBack": {
+      "title": "Willkommen zurück",
+      "body": "Das Onboarding hast du bereits abgeschlossen. Möchtest du etwas anpassen, findest du alles in den Einstellungen.",
+      "cta": "Zum Dashboard"
     }
   },
   "gettingStarted": {
