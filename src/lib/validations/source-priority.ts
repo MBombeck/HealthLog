@@ -34,6 +34,7 @@
  */
 import { z } from "zod/v4";
 
+import { annotate } from "@/lib/logging/context";
 import {
   measurementSourceEnum,
   measurementTypeEnum,
@@ -272,7 +273,24 @@ export function parseSourcePriority(raw: unknown): ResolvedSourcePriority {
   if (raw == null) return buildResolved({}, {}, {});
 
   const parsed = sourcePrioritySchema.safeParse(raw);
-  if (!parsed.success) return buildResolved({}, {}, {});
+  if (!parsed.success) {
+    // v1.4.25 W10 reconcile (Sr-M2) — emit a wide-event tag so a future
+    // schema-tightening regression that silently nukes a user's saved
+    // ladder surfaces in ops dashboards rather than as a "why did my
+    // priorities reset?" user report. `annotate()` is a no-op outside a
+    // request context, so the static settings-page render and tests
+    // remain side-effect-free.
+    annotate({
+      meta: {
+        sourcePriority: {
+          parse: "failed",
+          issueCount: parsed.error.issues.length,
+          firstIssuePath: parsed.error.issues[0]?.path.join(".") ?? null,
+        },
+      },
+    });
+    return buildResolved({}, {}, {});
+  }
 
   // Pull the W5e flat per-metric ladder off the top level. Drop the
   // two W8c container keys so the rest of the object is just the flat
@@ -296,11 +314,29 @@ function buildResolved(
     ...flat,
     ...nested,
   };
-  return {
+  const resolved: ResolvedSourcePriority = {
     ...merged,
     metricPriority: merged,
     deviceTypePriority,
   };
+  // v1.4.25 W10 reconcile (Code-M1) — deep-freeze the resolved blob so
+  // a caller who mutates `resolved.metricPriority.weight = …` after
+  // parseSourcePriority() returns trips at runtime instead of silently
+  // desyncing the two views (the top-level flat keys share their
+  // backing object with `metricPriority` via the spread above, but
+  // anything written through the alias post-freeze raises in strict
+  // mode and surfaces in dev). Freezing the leaves keeps the contract
+  // immutable end-to-end without copying the source ladders.
+  for (const ladder of Object.values(merged)) {
+    Object.freeze(ladder);
+  }
+  for (const ladder of Object.values(deviceTypePriority)) {
+    if (ladder) Object.freeze(ladder);
+  }
+  Object.freeze(merged);
+  Object.freeze(deviceTypePriority);
+  Object.freeze(resolved);
+  return resolved;
 }
 
 /**
