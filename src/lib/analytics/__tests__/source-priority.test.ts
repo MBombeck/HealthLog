@@ -4,6 +4,7 @@ import { pickCanonicalSourceRows } from "../source-priority";
 
 /**
  * v1.4.25 W5e — cross-source canonical-row picker tests.
+ * v1.4.25 W8c — two-axis picker (source + device-type) tests.
  *
  * Coverage focuses on the cumulative-metric use case where two
  * sources record the same day's value and one must win.
@@ -12,7 +13,7 @@ function isoDayKey(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-describe("pickCanonicalSourceRows — cumulative-metric picker", () => {
+describe("pickCanonicalSourceRows — single-axis cumulative-metric picker", () => {
   it("returns empty for empty input", () => {
     const out = pickCanonicalSourceRows([], "steps", null, isoDayKey);
     expect(out.canonicalRows).toEqual([]);
@@ -86,6 +87,7 @@ describe("pickCanonicalSourceRows — cumulative-metric picker", () => {
         value: 82.0,
       },
     ];
+    // W5e flat shape still accepted (back-compat).
     const userPriority = {
       weight: ["MANUAL", "WITHINGS", "APPLE_HEALTH"],
     };
@@ -160,5 +162,252 @@ describe("pickCanonicalSourceRows — cumulative-metric picker", () => {
     // Garbage payload — `parseSourcePriority` returns defaults.
     const out = pickCanonicalSourceRows(rows, "steps", "not-json", isoDayKey);
     expect(out.canonicalRows[0].source).toBe("APPLE_HEALTH");
+  });
+});
+
+describe("pickCanonicalSourceRows — v1.4.25 W8c two-axis device-type picker", () => {
+  it("is a no-op when every row has the same source and no device-type", () => {
+    // The pre-W8c reality: rows arrive without `deviceType` set, so
+    // the second axis can't differentiate anything — every row in the
+    // bucket passes through. Locks in the back-compat invariant.
+    const rows = [
+      {
+        measuredAt: new Date("2026-05-12T08:00:00Z"),
+        source: "WITHINGS" as const,
+        value: 4000,
+      },
+      {
+        measuredAt: new Date("2026-05-12T20:00:00Z"),
+        source: "WITHINGS" as const,
+        value: 2000,
+      },
+    ];
+    const out = pickCanonicalSourceRows(rows, "steps", null, isoDayKey);
+    expect(out.canonicalRows).toHaveLength(2);
+  });
+
+  it("keeps only `watch` rows when same source contributed watch + phone (default device ladder)", () => {
+    // Apple Watch + iPhone both stream steps via HealthKit. Summing
+    // both triple-counts. Default ladder is watch > ring > band >
+    // phone > scale > other > unknown, so watch wins.
+    const rows = [
+      {
+        measuredAt: new Date("2026-05-12T09:00:00Z"),
+        source: "APPLE_HEALTH" as const,
+        deviceType: "watch",
+        type: "ACTIVITY_STEPS" as const,
+        value: 1500,
+      },
+      {
+        measuredAt: new Date("2026-05-12T10:00:00Z"),
+        source: "APPLE_HEALTH" as const,
+        deviceType: "watch",
+        type: "ACTIVITY_STEPS" as const,
+        value: 2400,
+      },
+      {
+        measuredAt: new Date("2026-05-12T09:00:00Z"),
+        source: "APPLE_HEALTH" as const,
+        deviceType: "phone",
+        type: "ACTIVITY_STEPS" as const,
+        value: 4100,
+      },
+    ];
+    const out = pickCanonicalSourceRows(rows, "steps", null, isoDayKey);
+    expect(out.canonicalRows).toHaveLength(2);
+    expect(out.canonicalRows.every((r) => r.deviceType === "watch")).toBe(true);
+    expect(out.pickedByDay.get("2026-05-12")).toBe("APPLE_HEALTH");
+  });
+
+  it("respects a user-level deviceTypePriority default ladder", () => {
+    // User explicitly demoted watch in favour of phone — maybe their
+    // ScanWatch is currently broken and they trust iPhone.
+    const rows = [
+      {
+        measuredAt: new Date("2026-05-12T09:00:00Z"),
+        source: "APPLE_HEALTH" as const,
+        deviceType: "watch",
+        type: "ACTIVITY_STEPS" as const,
+        value: 1500,
+      },
+      {
+        measuredAt: new Date("2026-05-12T09:00:00Z"),
+        source: "APPLE_HEALTH" as const,
+        deviceType: "phone",
+        type: "ACTIVITY_STEPS" as const,
+        value: 4100,
+      },
+    ];
+    const userPriority = {
+      deviceTypePriority: {
+        default: ["phone", "watch"],
+      },
+    };
+    const out = pickCanonicalSourceRows(
+      rows,
+      "steps",
+      userPriority,
+      isoDayKey,
+    );
+    expect(out.canonicalRows).toHaveLength(1);
+    expect(out.canonicalRows[0].deviceType).toBe("phone");
+    expect(out.canonicalRows[0].value).toBe(4100);
+  });
+
+  it("respects a per-MeasurementType deviceTypePriority override", () => {
+    // For ACTIVITY_STEPS the user prefers phone (gym headphones);
+    // every other metric stays default. Verify the override fires.
+    const rows = [
+      {
+        measuredAt: new Date("2026-05-12T09:00:00Z"),
+        source: "APPLE_HEALTH" as const,
+        deviceType: "watch",
+        type: "ACTIVITY_STEPS" as const,
+        value: 1500,
+      },
+      {
+        measuredAt: new Date("2026-05-12T09:00:00Z"),
+        source: "APPLE_HEALTH" as const,
+        deviceType: "phone",
+        type: "ACTIVITY_STEPS" as const,
+        value: 4100,
+      },
+    ];
+    const userPriority = {
+      deviceTypePriority: {
+        default: ["watch", "phone"],
+        // Override: phone wins for steps specifically.
+        ACTIVITY_STEPS: ["phone", "watch"],
+      },
+    };
+    const out = pickCanonicalSourceRows(
+      rows,
+      "steps",
+      userPriority,
+      isoDayKey,
+    );
+    expect(out.canonicalRows).toHaveLength(1);
+    expect(out.canonicalRows[0].deviceType).toBe("phone");
+  });
+
+  it("keeps unknown/legacy NULL rows when no ranked device-type coexists", () => {
+    // A pre-v1.4.25 Withings row has `deviceType: null` →
+    // normalizeDeviceType maps it to "unknown". With no other ranked
+    // device-type in the bucket, the picker must keep the row so
+    // legacy data continues to drive analytics.
+    const rows = [
+      {
+        measuredAt: new Date("2026-05-12T07:00:00Z"),
+        source: "WITHINGS" as const,
+        deviceType: null,
+        type: "WEIGHT" as const,
+        value: 82.4,
+      },
+      {
+        measuredAt: new Date("2026-05-12T19:00:00Z"),
+        source: "WITHINGS" as const,
+        deviceType: null,
+        type: "WEIGHT" as const,
+        value: 82.5,
+      },
+    ];
+    const out = pickCanonicalSourceRows(rows, "weight", null, isoDayKey);
+    expect(out.canonicalRows).toHaveLength(2);
+  });
+
+  it("prefers a known device-type over `unknown` legacy rows", () => {
+    // Mixed bucket — a new `scale`-tagged row coexists with two
+    // legacy NULL rows. The picker must drop the legacy rows in
+    // favour of the well-tagged one.
+    const rows = [
+      {
+        measuredAt: new Date("2026-05-12T07:00:00Z"),
+        source: "WITHINGS" as const,
+        deviceType: null,
+        type: "WEIGHT" as const,
+        value: 82.4,
+      },
+      {
+        measuredAt: new Date("2026-05-12T19:00:00Z"),
+        source: "WITHINGS" as const,
+        deviceType: "scale",
+        type: "WEIGHT" as const,
+        value: 82.5,
+      },
+    ];
+    const out = pickCanonicalSourceRows(rows, "weight", null, isoDayKey);
+    expect(out.canonicalRows).toHaveLength(1);
+    expect(out.canonicalRows[0].deviceType).toBe("scale");
+  });
+
+  it("falls through (keeps every row) when the user ladder doesn't list any present device-type", () => {
+    // User typed `["ring"]` as their custom ladder; bucket has only
+    // `["watch","phone"]`. The picker can't pick anything from the
+    // ladder, so it preserves data rather than silently dropping it.
+    const rows = [
+      {
+        measuredAt: new Date("2026-05-12T09:00:00Z"),
+        source: "APPLE_HEALTH" as const,
+        deviceType: "watch",
+        type: "ACTIVITY_STEPS" as const,
+        value: 1500,
+      },
+      {
+        measuredAt: new Date("2026-05-12T09:00:00Z"),
+        source: "APPLE_HEALTH" as const,
+        deviceType: "phone",
+        type: "ACTIVITY_STEPS" as const,
+        value: 4100,
+      },
+    ];
+    const userPriority = {
+      deviceTypePriority: {
+        default: ["ring"],
+      },
+    };
+    const out = pickCanonicalSourceRows(
+      rows,
+      "steps",
+      userPriority,
+      isoDayKey,
+    );
+    expect(out.canonicalRows).toHaveLength(2);
+  });
+
+  it("two-axis lookup order: per-metric override > metricPriority > flat default", () => {
+    // Full-stack test: nested W8c metricPriority pins WITHINGS first
+    // for weight even though the constant default ladder has WITHINGS
+    // first anyway — verify the W8c shape is consulted. Mixed-source
+    // bucket; the picker must reach the nested key.
+    const rows = [
+      {
+        measuredAt: new Date("2026-05-12T07:00:00Z"),
+        source: "WITHINGS" as const,
+        deviceType: "scale",
+        type: "WEIGHT" as const,
+        value: 82.4,
+      },
+      {
+        measuredAt: new Date("2026-05-12T07:30:00Z"),
+        source: "MANUAL" as const,
+        deviceType: null,
+        type: "WEIGHT" as const,
+        value: 82.0,
+      },
+    ];
+    const userPriority = {
+      // Flat shape says MANUAL wins.
+      weight: ["MANUAL", "WITHINGS"],
+      // Nested W8c shape says WITHINGS wins — should beat the flat shape.
+      metricPriority: { weight: ["WITHINGS", "MANUAL"] },
+    };
+    const out = pickCanonicalSourceRows(
+      rows,
+      "weight",
+      userPriority,
+      isoDayKey,
+    );
+    expect(out.canonicalRows).toHaveLength(1);
+    expect(out.canonicalRows[0].source).toBe("WITHINGS");
   });
 });
