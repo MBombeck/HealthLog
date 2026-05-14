@@ -64,6 +64,61 @@ const ALLOWED_SET = new Set<string>(ALLOWED_CHART_TOKENS);
 const STRIP_TOKEN_REGEX = /metric:[A-Za-z0-9_]+/g;
 const PARSE_TOKEN_REGEX = /metric:[A-Z_]+/g;
 
+// v1.4.25 W5b — capitalised-Metric form. Marc reported the leak
+// pattern `Metric Pressure_Sys` on /insights 2026-05-14: the model
+// emitted the metric reference as a two-word phrase ("Metric" + space
+// + enum-cased identifier) instead of the canonical `metric:<TYPE>`
+// colon form. The colon-form regex above never matched this so the
+// raw enum surfaced in the rendered prose.
+//
+// Match the capitalised "Metric" prefix followed by a space and one
+// of: an upper-snake-case enum (`BLOOD_PRESSURE_SYS`) or a
+// PascalCase-with-underscore form (`Pressure_Sys`). The character
+// class allows mixed-case + digits + underscores so v1.4.23
+// Apple-Health additions (`HEART_RATE_VARIABILITY`,
+// `WALKING_RUNNING_DISTANCE`, etc.) get cleaved cleanly too. Word
+// boundary `\b` on both ends prevents accidental matches inside
+// ordinary prose ("Metricated", "submetric_x").
+const METRIC_WORD_REGEX = /\bMetric\s+[A-Za-z][A-Za-z0-9_]*\b/g;
+
+// v1.4.25 W5b — orphan enum-identifier leaks. The model sometimes
+// drops the bare MeasurementType enum name straight into prose
+// ("Your BLOOD_PRESSURE_SYS is elevated"). This was harmless when
+// the only enums were short capitalised words but leaks badly with
+// the v1.4.23 Apple-Health additions because the resulting prose
+// reads as a database field name. Match the full enum list as a
+// fixed alternation so we never accidentally cleave a real word
+// (e.g. "MOOD") out of legitimate prose unless the model wrote it
+// as the raw enum in upper-snake form.
+const ORPHAN_ENUMS = [
+  "BLOOD_PRESSURE_SYS",
+  "BLOOD_PRESSURE_DIA",
+  "PULSE_BPM",
+  "MOOD_SCORE",
+  "MEDICATION_COMPLIANCE_PCT",
+  // v1.4.23 Apple Health additions — see ALLOWED_CHART_TOKENS above.
+  "HEART_RATE_VARIABILITY",
+  "RESTING_HEART_RATE",
+  "ACTIVE_ENERGY_BURNED",
+  "FLIGHTS_CLIMBED",
+  "WALKING_RUNNING_DISTANCE",
+  "VO2_MAX",
+  "BODY_TEMPERATURE",
+  "SLEEP_DURATION",
+] as const;
+
+// `\b` boundaries keep ordinary English prose untouched — "weight"
+// (lowercase) or "BMI" (no underscore) never match. The fixed list
+// also means we never accidentally strip a single capitalised word
+// like "MOOD" or "WEIGHT" that has legitimate use as an in-prose
+// metric label in display copy. Marc's directive (2026-05-14) is to
+// strip ONLY upper-snake / suffixed enum identifiers, not the
+// canonical user-facing labels.
+const ORPHAN_ENUM_REGEX = new RegExp(
+  `\\b(?:${ORPHAN_ENUMS.join("|")})\\b`,
+  "g",
+);
+
 /**
  * Find every well-formed chart token in `text` and return only those that
  * are in the allowlist. Hallucinated tokens (e.g. `metric:NUKE`) are
@@ -98,6 +153,9 @@ export function stripChartTokens(text: string | null | undefined): string {
   if (typeof text !== "string") return "";
   return text
     .replace(STRIP_TOKEN_REGEX, "")
+    .replace(METRIC_WORD_REGEX, "")
+    .replace(ORPHAN_ENUM_REGEX, "")
+    .replace(/\s+([.,;:!?])/g, "$1")
     .replace(/\s{2,}/g, " ")
     .trim();
 }
