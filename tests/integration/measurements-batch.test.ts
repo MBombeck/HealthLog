@@ -325,6 +325,93 @@ describe("POST /api/measurements/batch (real Postgres)", () => {
     expect(stored.every((r) => r.unit === "minutes")).toBe(true);
   });
 
+  // v1.4.25 W10 reconcile (senior-dev H-1): under contention the
+  // per-entry envelope MUST stay in sync with the aggregate
+  // `inserted` / `duplicate` counts. The previous reconciliation
+  // block was an effective no-op (it looked for rows that were
+  // "marked inserted but missing from the DB" — an impossibility
+  // because the raced row IS in the DB, written by the other
+  // batch). The corrected block downgrades enough "inserted"
+  // statuses to "duplicate" so the per-entry envelope and the
+  // aggregate counts agree, which the iOS sync cursor depends on
+  // to checkpoint correctly.
+  it("keeps per-entry status in sync with aggregate counts under a concurrent-write race", async () => {
+    const { POST } = await import("@/app/api/measurements/batch/route");
+
+    // Two batches with overlapping externalIds posted in parallel.
+    // The composite unique index ensures only one row per
+    // (user, type, source, externalId) lands; `skipDuplicates`
+    // absorbs duplicate-key conflicts. The exact split between
+    // "won the race" and "got absorbed" depends on Postgres's
+    // commit order, so we assert only the invariant the iOS sync
+    // cursor relies on: per-entry envelope sums equal the aggregate
+    // counts for each response.
+    const sharedEntries = () =>
+      Array.from({ length: 6 }, (_, i) => ({
+        hkIdentifier: "HKQuantityTypeIdentifierBodyMass",
+        value: 80 + i * 0.1,
+        unit: "kg",
+        startDate: "2026-05-09T07:30:00.000Z",
+        endDate: "2026-05-09T07:30:00.000Z",
+        externalId: `uuid-race-${i}`,
+      }));
+
+    const [first, second] = await Promise.all([
+      POST(makeRequest({ entries: sharedEntries() })),
+      POST(makeRequest({ entries: sharedEntries() })),
+    ]);
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+
+    const firstJson = (await first.json()) as {
+      data: {
+        processed: number;
+        inserted: number;
+        duplicates: number;
+        entries: Array<{ status: string }>;
+      };
+    };
+    const secondJson = (await second.json()) as typeof firstJson;
+
+    // Invariant 1 — per-entry statuses sum to the aggregate counts.
+    // Before the fix this failed under contention because the
+    // no-op reconciliation left the envelope out of sync.
+    for (const json of [firstJson, secondJson]) {
+      const insertedEntries = json.data.entries.filter(
+        (e) => e.status === "inserted",
+      ).length;
+      const duplicateEntries = json.data.entries.filter(
+        (e) => e.status === "duplicate",
+      ).length;
+      const skippedEntries = json.data.entries.filter(
+        (e) => e.status === "skipped",
+      ).length;
+      expect(insertedEntries).toBe(json.data.inserted);
+      expect(duplicateEntries).toBe(json.data.duplicates);
+      expect(
+        insertedEntries + duplicateEntries + skippedEntries,
+      ).toBe(json.data.processed);
+    }
+
+    // Invariant 2 — aggregate counts are non-negative. The previous
+    // logic could not produce a negative `inserted` count but a
+    // naive "downgrade and also decrement" implementation can.
+    expect(firstJson.data.inserted).toBeGreaterThanOrEqual(0);
+    expect(secondJson.data.inserted).toBeGreaterThanOrEqual(0);
+
+    // Invariant 3 — the DB ends up with at most 6 rows because the
+    // composite unique index enforces single-copy, and the
+    // `inserted` counts across both requests cannot exceed the
+    // number of rows actually present.
+    const stored = await getPrismaClient().measurement.findMany({
+      where: { userId: TEST_USER_ID },
+    });
+    expect(stored.length).toBeLessThanOrEqual(6);
+    expect(firstJson.data.inserted + secondJson.data.inserted).toBe(
+      stored.length,
+    );
+  });
+
   it("rate-limits a user at 60 batches per minute (security H-2)", async () => {
     const { POST } = await import("@/app/api/measurements/batch/route");
 

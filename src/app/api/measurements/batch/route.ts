@@ -267,44 +267,39 @@ async function postBatch(request: NextRequest): Promise<Response> {
         }
       });
 
-      // If `skipDuplicates` quietly absorbed a row (race with another
-      // batch), reconcile the per-entry status so the inserted +
-      // duplicate counts still equal `prepared.length`.
+      // v1.4.25 W10 reconcile (senior-dev H-1): the previous "stored
+      // vs not-stored" check was an effective no-op. Under standard
+      // Postgres semantics, `skipDuplicates` absorbs duplicate-key
+      // conflicts but the row is STILL present in the table (written
+      // by the other batch that won the race). So every row we
+      // attempted is in the DB after the call, and the
+      // `!stored.has(...)` branch never fired — leaving the aggregate
+      // `inserted` / `duplicate` counts inconsistent with the per-
+      // entry statuses under contention.
+      //
+      // Pragmatic fix: trust the `createMany` return count. The DB
+      // round-trip cannot distinguish a row this request wrote from
+      // a row the racing request wrote (the unique index sees both
+      // as the same key), so we cannot identify the SPECIFIC raced
+      // rows. What we CAN do is preserve count integrity for the
+      // iOS sync cursor: `insertedCount` is already the truth (it
+      // came from `createMany.count`); we only need to downgrade
+      // enough per-entry "inserted" statuses to "duplicate" so the
+      // per-entry envelope sums match. Order doesn't matter — the
+      // client checkpoints past both statuses, and the DB state for
+      // either outcome is identical (the row is now stored,
+      // single-copy).
       const racedDuplicates = toInsert.length - insertedCount;
       if (racedDuplicates > 0) {
-        // We can't tell *which* rows raced from the createMany return
-        // value — recheck the DB and downgrade matching `inserted`
-        // rows to `duplicate`. This is a rare path so the extra
-        // round-trip is acceptable.
-        const recheck = await prisma.measurement.findMany({
-          where: {
-            userId: user.id,
-            source: "APPLE_HEALTH",
-            OR: toInsert.map((row) => ({
-              type: row.type,
-              externalId: row.externalId as string,
-            })),
-          },
-          select: { type: true, externalId: true },
-        });
-        const stored = new Set(
-          recheck.map((row) => `${row.type}::${row.externalId}`),
-        );
-        // Anything `prepared` flagged as `inserted` but isn't in
-        // `stored` was never written and was raced by another batch —
-        // surface as duplicate.
         let downgraded = 0;
         for (const p of prepared) {
-          if (
-            results[p.index]?.status === "inserted" &&
-            !stored.has(`${p.row.type}::${p.row.externalId}`)
-          ) {
+          if (downgraded >= racedDuplicates) break;
+          if (results[p.index]?.status === "inserted") {
             results[p.index] = { index: p.index, status: "duplicate" };
             duplicateCount += 1;
             downgraded += 1;
           }
         }
-        insertedCount -= downgraded;
       }
     }
   }
