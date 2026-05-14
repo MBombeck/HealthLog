@@ -360,6 +360,165 @@ components:
         - data
         - error
       type: object
+    GetSourcePriorityResponse:
+      additionalProperties: false
+      properties:
+        data:
+          additionalProperties: false
+          properties:
+            activeEnergy:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            bloodPressure:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            bodyFat:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            bodyTemperature:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            flightsClimbed:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            hrv:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            pulse:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            restingHeartRate:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            sleep:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            spo2:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            steps:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            vo2Max:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            walkingRunningDistance:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            weight:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+          type: object
+        error:
+          type: "null"
+        meta:
+          additionalProperties: false
+          properties:
+            requestId:
+              type: string
+          type: object
+      required:
+        - data
+        - error
+      type: object
     InsightsComprehensiveResponse:
       additionalProperties: false
       description: AI-generated insights bundle. Strict-schema validated server-side; Coach-routed when the insight surface
@@ -712,6 +871,165 @@ components:
         - data
         - error
       type: object
+    PutSourcePriorityResponse:
+      additionalProperties: false
+      properties:
+        data:
+          additionalProperties: false
+          properties:
+            activeEnergy:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            bloodPressure:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            bodyFat:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            bodyTemperature:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            flightsClimbed:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            hrv:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            pulse:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            restingHeartRate:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            sleep:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            spo2:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            steps:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            vo2Max:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            walkingRunningDistance:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+            weight:
+              items:
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                type: string
+              maxItems: 8
+              type: array
+          type: object
+        error:
+          type: "null"
+        meta:
+          additionalProperties: false
+          properties:
+            requestId:
+              type: string
+          type: object
+      required:
+        - data
+        - error
+      type: object
     RefreshResponse:
       additionalProperties: false
       properties:
@@ -903,6 +1221,186 @@ paths:
         "422": *a2
         "429": *a3
       summary: Replace per-user Coach prompt-tuning preferences
+      tags:
+        - Auth
+  /api/auth/me/source-priority:
+    get:
+      description: Returns the per-metric-class source priority used by the analytics aggregator. Missing keys fall back to
+        `DEFAULT_SOURCE_PRIORITY`. Null persisted state resolves to the documented defaults.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetSourcePriorityResponse"
+          description: Resolved priority.
+        "401": *a1
+        "422": *a2
+        "429": *a3
+      summary: Read per-user source priority
+      tags:
+        - Auth
+    put:
+      description: Persists the supplied priority. Body is validated against `SourcePriority`; missing keys read as
+        `DEFAULT_SOURCE_PRIORITY` at the call site.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                activeEnergy:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                bloodPressure:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                bodyFat:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                bodyTemperature:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                flightsClimbed:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                hrv:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                pulse:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                restingHeartRate:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                sleep:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                spo2:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                steps:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                vo2Max:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                walkingRunningDistance:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                weight:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+              type: object
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PutSourcePriorityResponse"
+          description: Saved priority (defaulted) echoed back.
+        "401": *a1
+        "422": *a2
+        "429": *a3
+      summary: Replace per-user source priority
       tags:
         - Auth
   /api/auth/passkey/login-verify:

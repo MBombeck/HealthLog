@@ -127,6 +127,26 @@ model User {
   // model would still see the data the user excluded.
   coachPrefsJson Json? @map("coach_prefs_json")
 
+  // v1.4.25 W5e — per-user, per-metric-class source priority for
+  // cross-source dedup. Shape mirrors
+  // `src/lib/validations/source-priority.ts`:
+  //   { "steps": ["APPLE_HEALTH", "WITHINGS", "MANUAL"],
+  //     "weight": ["WITHINGS", "APPLE_HEALTH", "MANUAL"],
+  //     ... }
+  // Null = use `DEFAULT_SOURCE_PRIORITY`. The cumulative-metric
+  // aggregators (steps, calories, distance, flights climbed, sleep
+  // duration) consult this column to pick ONE source per day when
+  // multiple sources report the same metric for the same day. Point
+  // measurements (weight, BP, pulse, body-fat, body-temp, SpO2, HRV,
+  // RHR, VO2 max) keep every source's row — the priority list only
+  // controls display preference.
+  //
+  // Today (v1.4.25) only WITHINGS + MANUAL exist, so the function
+  // effectively no-ops for every user. The architecture lands now so
+  // v1.5's Apple Health passthrough drops in without extra schema
+  // work.
+  sourcePriorityJson Json? @map("source_priority_json")
+
   // v1.4.25 W6c — Doctor-report section toggles.
   // Shape:
   //   { "bp": boolean,

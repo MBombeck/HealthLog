@@ -35,7 +35,7 @@ function renderShell(props: {
 }
 
 describe("SETTINGS_SECTION_SLUGS", () => {
-  it("declares the ten sections agreed for v1.4.16", () => {
+  it("declares the eleven sections agreed for v1.4.25", () => {
     // Order matters — `generateStaticParams()` and the sidebar derive their
     // ordering from this constant, so a reorder is a behaviour change.
     // v1.4.3 split the dashboard panel: layout stays under `dashboard`,
@@ -44,12 +44,17 @@ describe("SETTINGS_SECTION_SLUGS", () => {
     // v1.4.16 phase B7 added the consolidated `export` section between
     // `api` and `advanced` so every "give me my data out" path lives in
     // one place.
+    // v1.4.25 W5e added `sources` between `thresholds` and `ai` so the
+    // per-metric-class source-priority surface lives next to the other
+    // analytics-shaping controls (thresholds → ranges; sources →
+    // canonical source per metric).
     expect([...SETTINGS_SECTION_SLUGS]).toEqual([
       "account",
       "integrations",
       "notifications",
       "dashboard",
       "thresholds",
+      "sources",
       "ai",
       "api",
       "export",

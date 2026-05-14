@@ -19,8 +19,12 @@ import {
   correlateWeightWeekday,
   type CorrelationResult,
 } from "@/lib/insights/correlations";
-import type { MeasurementType } from "@/generated/prisma/client";
+import type {
+  MeasurementSource,
+  MeasurementType,
+} from "@/generated/prisma/client";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
+import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +50,12 @@ export const GET = apiHandler(async () => {
   // sync history. `summarize()` requires the full series (slope7/30/90,
   // anomalies) so groupBy cannot replace this read; the chunked path is
   // the smallest pagination contract that still satisfies the helper.
+  // v1.4.25 W5e — per-metric-class source priority pulled once. The
+  // aggregator passes the persisted JSON straight through so the
+  // helper's `parseSourcePriority` runs and falls back to defaults
+  // when the column is null or malformed.
+  const sourcePriorityJson = user.sourcePriorityJson;
+
   let totalRowsReadForAggregate = 0;
   const measurementsByType = await Promise.all(
     types.map((type) =>
@@ -61,8 +71,20 @@ export const GET = apiHandler(async () => {
         // = total minutes asleep).
         let datapoints: DataPoint[];
         if (type === "SLEEP_DURATION") {
+          // v1.4.25 W5e — pick ONE source per day before summing the
+          // night's stages. With only WITHINGS + MANUAL today, the
+          // picker passes everything through; once iOS passthrough
+          // lands (v1.5) the picker prevents double-counted nights
+          // (HealthKit forwards Withings' Sleep summary to iOS in
+          // addition to ScanWatch's own stream).
+          const sleepRows = pickCanonicalSourceRows(
+            measurements,
+            "sleep",
+            sourcePriorityJson,
+            (d) => userDayKey(d, userTz),
+          ).canonicalRows;
           const byDay = new Map<string, { total: number; date: Date }>();
-          for (const m of measurements) {
+          for (const m of sleepRows) {
             const key = userDayKey(m.measuredAt, userTz);
             const slot = byDay.get(key) ?? {
               total: 0,
@@ -478,6 +500,10 @@ interface ChunkedRow {
   measuredAt: Date;
   value: number;
   sleepStage: string | null;
+  /** v1.4.25 W5e — needed by `pickCanonicalSourceRows` so the SLEEP /
+   *  cumulative aggregators can pick ONE source per day when more than
+   *  one ingest path contributes to the same metric. */
+  source: MeasurementSource;
 }
 
 async function fetchMeasurementSeriesChunked(
@@ -499,6 +525,7 @@ async function fetchMeasurementSeriesChunked(
         id: true,
         measuredAt: true,
         value: true,
+        source: true,
         ...(options.includeSleepStage ? { sleepStage: true } : {}),
       },
       take: MEASUREMENT_CHUNK_SIZE,
@@ -509,6 +536,7 @@ async function fetchMeasurementSeriesChunked(
       out.push({
         measuredAt: row.measuredAt,
         value: row.value,
+        source: row.source,
         sleepStage:
           "sleepStage" in row
             ? ((row.sleepStage as string | null) ?? null)

@@ -31,6 +31,7 @@ import {
 } from "@/lib/validations/measurement";
 import { loginPasswordSchema } from "@/lib/validations/auth";
 import { coachPrefsSchema } from "@/lib/validations/coach-prefs";
+import { sourcePrioritySchema } from "@/lib/validations/source-priority";
 
 /**
  * Common envelopes — every HealthLog API response wraps payload in
@@ -575,6 +576,52 @@ export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(coachPrefsSchema, "PutCoachPrefsResponse"),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/auth/me/source-priority": {
+    get: {
+      tags: ["Auth"],
+      summary: "Read per-user source priority",
+      description:
+        "Returns the per-metric-class source priority used by the analytics aggregator. Missing keys fall back to `DEFAULT_SOURCE_PRIORITY`. Null persisted state resolves to the documented defaults.",
+      responses: {
+        "200": {
+          description: "Resolved priority.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                sourcePrioritySchema,
+                "GetSourcePriorityResponse",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+    put: {
+      tags: ["Auth"],
+      summary: "Replace per-user source priority",
+      description:
+        "Persists the supplied priority. Body is validated against `SourcePriority`; missing keys read as `DEFAULT_SOURCE_PRIORITY` at the call site.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: sourcePrioritySchema } },
+      },
+      responses: {
+        "200": {
+          description: "Saved priority (defaulted) echoed back.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                sourcePrioritySchema,
+                "PutSourcePriorityResponse",
+              ),
             },
           },
         },
