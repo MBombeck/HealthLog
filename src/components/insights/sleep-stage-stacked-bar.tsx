@@ -244,19 +244,19 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
+                  stroke="var(--border)"
                   opacity={0.3}
                 />
                 <XAxis
                   type="category"
                   dataKey="label"
-                  stroke="hsl(var(--muted-foreground))"
+                  stroke="var(--muted-foreground)"
                   fontSize={10}
                   interval="preserveStartEnd"
                 />
                 <YAxis
                   type="number"
-                  stroke="hsl(var(--muted-foreground))"
+                  stroke="var(--muted-foreground)"
                   fontSize={11}
                   tickFormatter={(v: number) => {
                     // Render the y-axis as hours so 480 min reads as 8h.
