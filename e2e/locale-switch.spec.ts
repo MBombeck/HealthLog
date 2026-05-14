@@ -23,7 +23,7 @@ test.describe("locale switch", () => {
         test.info().project.use.baseURL ?? "http://localhost:3000";
       await context.addCookies([
         {
-          name: "healthlog_locale",
+          name: "healthlog-locale",
           value: locale,
           url: baseURL,
         },
