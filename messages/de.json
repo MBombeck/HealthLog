@@ -1043,6 +1043,7 @@
       "medikamenteEmptyTitle": "Erstes Medikament hinzufügen",
       "medikamenteEmptyDescription": "Adhärenz-Insights brauchen mindestens ein erfasstes Medikament.",
       "medikamenteEmptyAction": "Medikamente öffnen",
+      "therapyTimelineDescription": "Chronologisches GLP-1-Therapieprotokoll — Dosis-Änderungen, Injektionen, Bestand, Nebenwirkungen.",
       "bmiDescription": "BMI aus deinem Gewicht und deiner Größe abgeleitet, mit KI-Einschätzung."
     },
     "sleep": {
@@ -1370,6 +1371,40 @@
       "thresholds": {
         "title": "Persönliche Zielwerte",
         "description": "Eigene Zielbereiche für jede Metrik."
+      },
+      "sources": {
+        "title": "Quellen",
+        "description": "Lege fest, welche Quelle führt, wenn mehrere am selben Tag dieselbe Metrik liefern.",
+        "cardTitle": "Quellen-Priorität pro Metrik",
+        "help": "Wenn mehrere Quellen denselben Wert am selben Tag liefern (z. B. Withings + Apple Health beide 1.200 Schritte), wird die oberste Quelle als kanonisch verwendet. Andere Quellen bleiben gespeichert für die Audit-Spur.",
+        "resetDefaults": "Auf Standard zurücksetzen",
+        "moveUp": "Nach oben",
+        "moveDown": "Nach unten",
+        "saveSuccess": "Quellen-Priorität gespeichert.",
+        "saveError": "Quellen-Priorität konnte nicht gespeichert werden.",
+        "resetSuccess": "Quellen-Priorität zurückgesetzt.",
+        "metrics": {
+          "steps": "Schritte",
+          "activeEnergy": "Aktive Energie",
+          "walkingRunningDistance": "Geh- + Laufdistanz",
+          "flightsClimbed": "Stockwerke",
+          "sleep": "Schlaf",
+          "weight": "Gewicht",
+          "bloodPressure": "Blutdruck",
+          "pulse": "Puls",
+          "bodyFat": "Körperfett",
+          "bodyTemperature": "Körpertemperatur",
+          "spo2": "Sauerstoffsättigung",
+          "hrv": "Herzfrequenz-Variabilität",
+          "restingHeartRate": "Ruhepuls",
+          "vo2Max": "VO2 max"
+        },
+        "sourceLabels": {
+          "WITHINGS": "Withings",
+          "APPLE_HEALTH": "Apple Health",
+          "MANUAL": "Manuelle Eingabe",
+          "IMPORT": "Import"
+        }
       },
       "ai": {
         "title": "KI-Auswertungen",
@@ -2797,6 +2832,23 @@
     },
     "coach": {
       "cta": "Coach fragen"
+    },
+    "edit": {
+      "openLabel": "Zielbereich für {metric} bearbeiten",
+      "title": "Zielbereich bearbeiten — {metric}",
+      "description": "Passt den Zielbereich an, der in Charts, Insights und im Arztbericht verwendet wird. Werte in {unit}.",
+      "derivedHint": "Diese Karte wird aus anderen Metriken abgeleitet. Bearbeite stattdessen die zugrundeliegenden Ziele (z. B. Blutdruck oder Gewicht).",
+      "minLabel": "Min",
+      "maxLabel": "Max",
+      "systolicMin": "Systolisch min",
+      "systolicMax": "Systolisch max",
+      "diastolicMin": "Diastolisch min",
+      "diastolicMax": "Diastolisch max",
+      "boundsHint": "Erlaubter Bereich: {min}–{max} {unit}",
+      "resetToDefault": "Auf Standard zurücksetzen",
+      "saveSuccess": "Zielbereich aktualisiert",
+      "saveError": "Zielbereich konnte nicht gespeichert werden",
+      "resetSuccess": "Zielbereich auf Standard zurückgesetzt"
     },
     "mood": {
       "stability": {

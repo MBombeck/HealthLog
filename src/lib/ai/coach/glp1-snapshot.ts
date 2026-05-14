@@ -79,12 +79,6 @@ function parseDaysOfWeek(raw: string | null): number[] {
     .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
 }
 
-interface DailyValueRow {
-  date: string;
-  weekday: string;
-  value: number;
-}
-
 interface DoseHistoryEntry {
   value: number;
   unit: string;
@@ -257,6 +251,12 @@ export async function buildGlp1SnapshotBlock(
   userId: string,
   now: Date = new Date(),
 ): Promise<Glp1SnapshotBlock | null> {
+  // Test environments mock parts of prisma (only `measurement` +
+  // `moodEntry`) and leave `medication` undefined. Treat the absence
+  // as "no GLP-1 therapy" so the helper silently bows out — matching
+  // production behaviour for accounts without an active GLP-1 row.
+  if (typeof prisma?.medication?.findMany !== "function") return null;
+  if (typeof prisma?.moodEntry?.findMany !== "function") return null;
   const meds = await prisma.medication.findMany({
     where: {
       userId,

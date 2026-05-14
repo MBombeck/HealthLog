@@ -156,7 +156,7 @@ export function Glp1MedicationCard({
   onLogSideEffect,
 }: Glp1MedicationCardProps) {
   const queryClient = useQueryClient();
-  const { t, locale } = useTranslations();
+  const { t } = useTranslations();
   const fmt = useFormatters();
   const [intakeLoading, setIntakeLoading] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);

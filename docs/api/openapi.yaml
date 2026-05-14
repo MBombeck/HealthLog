@@ -300,6 +300,14 @@ components:
         data:
           additionalProperties: false
           properties:
+            defaultWindow:
+              default: allTime
+              enum:
+                - last7days
+                - last30days
+                - last90days
+                - allTime
+              type: string
             excludeMetrics:
               default: []
               items:
@@ -338,6 +346,7 @@ components:
             - verbosity
             - excludeMetrics
             - showEvidenceByDefault
+            - defaultWindow
           type: object
         error:
           type: "null"
@@ -643,6 +652,14 @@ components:
         data:
           additionalProperties: false
           properties:
+            defaultWindow:
+              default: allTime
+              enum:
+                - last7days
+                - last30days
+                - last90days
+                - allTime
+              type: string
             excludeMetrics:
               default: []
               items:
@@ -681,6 +698,7 @@ components:
             - verbosity
             - excludeMetrics
             - showEvidenceByDefault
+            - defaultWindow
           type: object
         error:
           type: "null"
@@ -831,6 +849,14 @@ paths:
           application/json:
             schema:
               properties:
+                defaultWindow:
+                  default: allTime
+                  enum:
+                    - last7days
+                    - last30days
+                    - last90days
+                    - allTime
+                  type: string
                 excludeMetrics:
                   default: []
                   items:

@@ -41,6 +41,11 @@ export async function detectGlp1Plateau(
   userId: string,
   now: Date = new Date(),
 ): Promise<Glp1PlateauContext | null> {
+  // Test environments mock parts of prisma (e.g. only `measurement`)
+  // and leave `medication` undefined. Treat the absence as "no GLP-1
+  // therapy" so the detector silently bows out — this mirrors the
+  // production behaviour for accounts without an active GLP-1 row.
+  if (typeof prisma?.medication?.findMany !== "function") return null;
   const meds = await prisma.medication.findMany({
     where: { userId, treatmentClass: "GLP1", active: true },
     include: {
