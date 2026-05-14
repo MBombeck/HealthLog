@@ -127,6 +127,20 @@ model User {
   // model would still see the data the user excluded.
   coachPrefsJson Json? @map("coach_prefs_json")
 
+  // v1.4.25 W6c — Doctor-report section toggles.
+  // Shape:
+  //   { "bp": boolean,
+  //     "weight": boolean,
+  //     "pulse": boolean,
+  //     "bmi": boolean,
+  //     "mood": boolean,          // privacy-sensitive; default OFF
+  //     "compliance": boolean,
+  //     "sleep": boolean }
+  // Null = documented defaults (every section ON except mood). Mood is
+  // opt-in by default — the API layer drops mood entirely from the
+  // payload when the toggle is off so the data never leaves the DB row.
+  doctorReportPrefsJson Json? @map("doctor_report_prefs_json")
+
   // Relations
   passkeys    Passkey[]
   sessions    Session[]

@@ -1,0 +1,24 @@
+-- v1.4.25 W6c — per-user Doctor-Report section toggles.
+--
+-- The doctor-report dialog used to print every available data type
+-- whether the user wanted it or not. Marc's directive 2026-05-14: users
+-- decide which sections appear in their PDF, and the choice persists so
+-- a follow-up export starts from the same picks.
+--
+-- Shape:
+--   { "bp": boolean,
+--     "weight": boolean,
+--     "pulse": boolean,
+--     "bmi": boolean,
+--     "mood": boolean,          -- privacy-sensitive; default OFF
+--     "compliance": boolean,
+--     "sleep": boolean }
+--
+-- Null = "use defaults": every section ON except mood. The privacy
+-- default for mood is intentional — mental-health data should be opt-in,
+-- not opt-out, even within a single user's own surface.
+--
+-- Forward-only, additive, idempotent. No backfill: a NULL row maps to
+-- the documented defaults at read time.
+ALTER TABLE "users"
+  ADD COLUMN IF NOT EXISTS "doctor_report_prefs_json" JSONB;
