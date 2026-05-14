@@ -1390,6 +1390,14 @@
         "saveSuccess": "Source priority saved.",
         "saveError": "Saving the source priority failed.",
         "resetSuccess": "Source priority reset to defaults.",
+        "perMetricToggle": "Per-metric overrides ({count})",
+        "perMetricHelp": "Metrics you have customised away from the default ladder. Use this list to roll any single metric back to its constant default without touching the rest.",
+        "perMetricEmpty": "No per-metric overrides set — every metric uses the global ladder above.",
+        "resetMetric": "Reset",
+        "deviceTypeToggle": "Device-type priority ({count})",
+        "deviceTypeHelp": "Within a source, which device wins. When an Apple Watch and an iPhone both record steps, the higher-ranked device-type counts as the canonical reading.",
+        "deviceTypeDefault": "Default device-type ladder",
+        "resetDeviceTypes": "Reset device-types",
         "metrics": {
           "steps": "Steps",
           "activeEnergy": "Active energy",
@@ -1411,6 +1419,15 @@
           "APPLE_HEALTH": "Apple Health",
           "MANUAL": "Manual entry",
           "IMPORT": "Import"
+        },
+        "deviceLabels": {
+          "watch": "Watch",
+          "band": "Band",
+          "ring": "Ring",
+          "phone": "Phone",
+          "scale": "Scale",
+          "other": "Other",
+          "unknown": "Unknown"
         }
       },
       "ai": {
@@ -2711,6 +2728,13 @@
     "dateShort": "{month}/{day}/{year}",
     "timeShort": "{hours}:{minutes}",
     "dateTime": "{month}/{day}/{year}, {hours}:{minutes}"
+  },
+  "i18n": {
+    "maintainershipBanner": {
+      "notice": "This translation is AI-maintained and may contain inaccuracies.",
+      "cta": "Help out on GitHub",
+      "dismiss": "Dismiss"
+    }
   },
   "classifications": {
     "bmi": {

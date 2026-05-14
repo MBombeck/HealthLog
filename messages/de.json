@@ -1390,6 +1390,14 @@
         "saveSuccess": "Quellen-Priorität gespeichert.",
         "saveError": "Quellen-Priorität konnte nicht gespeichert werden.",
         "resetSuccess": "Quellen-Priorität zurückgesetzt.",
+        "perMetricToggle": "Pro Metrik anpassen ({count})",
+        "perMetricHelp": "Metriken mit individueller Reihenfolge. Über diese Liste lässt sich eine einzelne Metrik mit einem Klick auf den Standard zurücksetzen, ohne die anderen anzufassen.",
+        "perMetricEmpty": "Keine individuellen Anpassungen — jede Metrik nutzt die globale Reihenfolge oben.",
+        "resetMetric": "Zurücksetzen",
+        "deviceTypeToggle": "Geräte-Typ-Reihenfolge ({count})",
+        "deviceTypeHelp": "Innerhalb einer Quelle entscheidet die Geräte-Typ-Reihenfolge. Wenn Apple Watch und iPhone beide Schritte aufzeichnen, zählt der höher gereihte Geräte-Typ.",
+        "deviceTypeDefault": "Standard-Geräte-Typ-Reihenfolge",
+        "resetDeviceTypes": "Geräte-Typen zurücksetzen",
         "metrics": {
           "steps": "Schritte",
           "activeEnergy": "Aktive Energie",
@@ -1411,6 +1419,15 @@
           "APPLE_HEALTH": "Apple Health",
           "MANUAL": "Manuelle Eingabe",
           "IMPORT": "Import"
+        },
+        "deviceLabels": {
+          "watch": "Uhr",
+          "band": "Fitnessband",
+          "ring": "Ring",
+          "phone": "Smartphone",
+          "scale": "Waage",
+          "other": "Sonstige",
+          "unknown": "Unbekannt"
         }
       },
       "ai": {
@@ -2711,6 +2728,13 @@
     "dateShort": "{day}.{month}.{year}",
     "timeShort": "{hours}:{minutes}",
     "dateTime": "{day}.{month}.{year}, {hours}:{minutes}"
+  },
+  "i18n": {
+    "maintainershipBanner": {
+      "notice": "Diese Übersetzung wird per KI gepflegt und kann ungenau sein.",
+      "cta": "Hilf mit auf GitHub",
+      "dismiss": "Schließen"
+    }
   },
   "classifications": {
     "bmi": {

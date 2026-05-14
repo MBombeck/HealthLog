@@ -15,24 +15,52 @@
  * same daily total. The UI lands now so v1.5's Apple Health passthrough
  * drops onto a known foundation — every user's preferences carry
  * straight into iOS-era analytics without an extra migration step.
+ *
+ * v1.4.25 W8c — two-axis extension. The same screen now hosts three
+ * vertically-stacked sections (Marc no-split directive):
+ *   1. Global default ladder per metric class (existing).
+ *   2. Per-metric override expander — collapsed by default; an
+ *      explicit knob for power users (the global ladder already lives
+ *      above and most users never open this).
+ *   3. Device-type override expander — collapsed by default; one
+ *      global ladder ("watch beats phone beats scale") with optional
+ *      per-metric overrides.
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowDown, ArrowUp, Layers, Loader2, RotateCcw } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  Layers,
+  Loader2,
+  RotateCcw,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import {
+  DEFAULT_DEVICE_TYPE_PRIORITY,
   DEFAULT_SOURCE_PRIORITY,
+  type DeviceType,
+  type DeviceTypePriority,
+  type MetricPriority,
   SOURCE_PRIORITY_METRIC_KEYS,
-  type SourcePriority,
   type SourcePriorityMetricKey,
 } from "@/lib/validations/source-priority";
 
-type ResolvedPriority = Required<SourcePriority>;
+/**
+ * Resolved shape returned by `GET /api/auth/me/source-priority`. Mirrors
+ * `parseSourcePriority()`'s return: every metric ladder is defaulted,
+ * the two-axis containers are present (possibly empty).
+ */
+interface ResolvedPriority extends Required<MetricPriority> {
+  metricPriority: Required<MetricPriority>;
+  deviceTypePriority: DeviceTypePriority;
+}
 
 const METRIC_LABEL_KEYS: Record<SourcePriorityMetricKey, string> = {
   steps: "settings.sections.sources.metrics.steps",
@@ -59,6 +87,16 @@ const SOURCE_LABEL_KEYS: Record<string, string> = {
   IMPORT: "settings.sections.sources.sourceLabels.IMPORT",
 };
 
+const DEVICE_TYPE_LABEL_KEYS: Record<DeviceType, string> = {
+  watch: "settings.sections.sources.deviceLabels.watch",
+  band: "settings.sections.sources.deviceLabels.band",
+  ring: "settings.sections.sources.deviceLabels.ring",
+  phone: "settings.sections.sources.deviceLabels.phone",
+  scale: "settings.sections.sources.deviceLabels.scale",
+  other: "settings.sections.sources.deviceLabels.other",
+  unknown: "settings.sections.sources.deviceLabels.unknown",
+};
+
 export function SourcesSection() {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
@@ -79,21 +117,32 @@ export function SourcesSection() {
   const [draft, setDraft] = useState<ResolvedPriority | null>(null);
   const priority = draft ?? remote ?? null;
 
+  const [showPerMetric, setShowPerMetric] = useState(false);
+  const [showDeviceType, setShowDeviceType] = useState(false);
+
   const saveMutation = useMutation({
     mutationFn: async (next: ResolvedPriority) => {
+      // PUT the W8c-canonical shape: nested `metricPriority` +
+      // `deviceTypePriority` together. The server's
+      // `parseSourcePriority` echoes the resolved shape back so the
+      // optimistic update is just a `setQueryData`.
+      const body = {
+        metricPriority: next.metricPriority,
+        deviceTypePriority: next.deviceTypePriority,
+      };
       const res = await fetch("/api/auth/me/source-priority", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(next),
+        body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error("save failed");
       return (await res.json()).data as ResolvedPriority;
     },
     onSuccess: (saved) => {
       queryClient.setQueryData(queryKeys.sourcePriority(), saved);
-      // The analytics aggregator folds source priority into the
-      // SLEEP_DURATION daily total — flush its cache so the chart
-      // re-paints with the new picker on the next mount.
+      // The analytics aggregator folds source priority into per-day
+      // canonical-row picks — flush its cache so the charts re-paint
+      // with the new picker on the next mount.
       queryClient.invalidateQueries({ queryKey: queryKeys.analytics() });
       setDraft(null);
       toast.success(t("settings.sections.sources.saveSuccess"));
@@ -103,13 +152,13 @@ export function SourcesSection() {
 
   const resetMutation = useMutation({
     mutationFn: async () => {
-      // The PUT validator accepts an empty partial object too, but
-      // sending the full default keeps the round-trip body
-      // representative of "this is what should be active".
+      // Sending the empty W8c shape clears every per-user override; the
+      // server's `parseSourcePriority` then returns the constant
+      // defaults verbatim. Keeps the wire payload tiny.
       const res = await fetch("/api/auth/me/source-priority", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(DEFAULT_SOURCE_PRIORITY),
+        body: JSON.stringify({}),
       });
       if (!res.ok) throw new Error("reset failed");
       return (await res.json()).data as ResolvedPriority;
@@ -128,14 +177,86 @@ export function SourcesSection() {
     delta: -1 | 1,
   ) {
     if (!priority) return;
-    const list = [...(priority[metric] ?? DEFAULT_SOURCE_PRIORITY[metric])];
+    const list = [
+      ...(priority.metricPriority[metric] ?? DEFAULT_SOURCE_PRIORITY[metric]),
+    ];
     const targetIdx = index + delta;
     if (targetIdx < 0 || targetIdx >= list.length) return;
     [list[index], list[targetIdx]] = [list[targetIdx], list[index]];
-    setDraft({ ...priority, [metric]: list });
+    const nextMetric = { ...priority.metricPriority, [metric]: list };
+    setDraft({
+      ...priority,
+      ...nextMetric,
+      metricPriority: nextMetric,
+    });
+  }
+
+  function moveDeviceType(
+    /** `__default__` for the global ladder, MeasurementType-enum string otherwise. */
+    bucket: string,
+    index: number,
+    delta: -1 | 1,
+  ) {
+    if (!priority) return;
+    const current = bucket === "__default__"
+      ? priority.deviceTypePriority.default ?? [...DEFAULT_DEVICE_TYPE_PRIORITY]
+      : priority.deviceTypePriority[bucket] ?? [...DEFAULT_DEVICE_TYPE_PRIORITY];
+    const list = [...current];
+    const targetIdx = index + delta;
+    if (targetIdx < 0 || targetIdx >= list.length) return;
+    [list[index], list[targetIdx]] = [list[targetIdx], list[index]];
+
+    const nextDevicePriority: DeviceTypePriority = { ...priority.deviceTypePriority };
+    if (bucket === "__default__") {
+      nextDevicePriority.default = list;
+    } else {
+      nextDevicePriority[bucket] = list;
+    }
+    setDraft({ ...priority, deviceTypePriority: nextDevicePriority });
+  }
+
+  function resetMetricToDefault(metric: SourcePriorityMetricKey) {
+    if (!priority) return;
+    const nextMetric: Required<MetricPriority> = {
+      ...priority.metricPriority,
+      [metric]: [...DEFAULT_SOURCE_PRIORITY[metric]],
+    };
+    setDraft({
+      ...priority,
+      ...nextMetric,
+      metricPriority: nextMetric,
+    });
+  }
+
+  function resetDeviceTypeAxis() {
+    if (!priority) return;
+    setDraft({ ...priority, deviceTypePriority: {} });
   }
 
   const dirty = draft !== null && priority !== null;
+
+  // The per-metric expander shows every metric whose ladder has been
+  // overridden, plus a hint when none has. Counter lives next to the
+  // expander label so the section "asks" for attention proportional
+  // to its setting.
+  const overriddenMetrics = useMemo(() => {
+    if (!priority) return [] as SourcePriorityMetricKey[];
+    return SOURCE_PRIORITY_METRIC_KEYS.filter((metric) => {
+      const list = priority.metricPriority[metric];
+      const defaultList = DEFAULT_SOURCE_PRIORITY[metric];
+      if (!list || list.length !== defaultList.length) return true;
+      return list.some((s, i) => s !== defaultList[i]);
+    });
+  }, [priority]);
+
+  // Count distinct overrides the user has set on the device-type axis.
+  // `default` counts as one if present; every per-metric override
+  // (`WEIGHT`, `ACTIVITY_STEPS`, …) counts as one more. The number drives
+  // the expander label so the section is self-explanatory at a glance.
+  const deviceTypeOverrideCount = useMemo(() => {
+    if (!priority) return 0;
+    return Object.keys(priority.deviceTypePriority).length;
+  }, [priority]);
 
   return (
     <section
@@ -186,7 +307,9 @@ export function SourcesSection() {
         ) : (
           <div className="space-y-3">
             {SOURCE_PRIORITY_METRIC_KEYS.map((metric) => {
-              const list = priority[metric] ?? DEFAULT_SOURCE_PRIORITY[metric];
+              const list =
+                priority.metricPriority[metric] ??
+                DEFAULT_SOURCE_PRIORITY[metric];
               return (
                 <div
                   key={metric}
@@ -239,6 +362,155 @@ export function SourcesSection() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* ── v1.4.25 W8c — per-metric override expander ──
+            Collapsed by default. The global ladder above already
+            covers every metric; this section lets a power user reset
+            a single metric back to the constant default in one click. */}
+        {priority && (
+          <div className="border-border space-y-2 border-t pt-4">
+            <button
+              type="button"
+              onClick={() => setShowPerMetric((prev) => !prev)}
+              aria-expanded={showPerMetric}
+              className="text-foreground hover:text-primary flex items-center gap-2 text-sm font-medium transition-colors"
+            >
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${
+                  showPerMetric ? "rotate-180" : ""
+                }`}
+              />
+              {t("settings.sections.sources.perMetricToggle", {
+                count: overriddenMetrics.length,
+              })}
+            </button>
+            {showPerMetric && (
+              <div className="bg-background/30 border-border space-y-3 rounded-md border p-3">
+                <p className="text-muted-foreground text-xs">
+                  {t("settings.sections.sources.perMetricHelp")}
+                </p>
+                {overriddenMetrics.length === 0 ? (
+                  <p className="text-muted-foreground text-xs italic">
+                    {t("settings.sections.sources.perMetricEmpty")}
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {overriddenMetrics.map((metric) => (
+                      <li
+                        key={metric}
+                        className="border-border bg-card flex items-center justify-between gap-3 rounded-md border px-3 py-2"
+                      >
+                        <span className="text-sm">
+                          {t(METRIC_LABEL_KEYS[metric])}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => resetMetricToDefault(metric)}
+                          disabled={saveMutation.isPending}
+                        >
+                          {t("settings.sections.sources.resetMetric")}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── v1.4.25 W8c — device-type override expander ──
+            One global ladder ("watch beats phone beats scale"). When
+            multiple device-types stream the same source's metric
+            (Apple Watch + iPhone → APPLE_HEALTH steps), the higher-
+            ranked device-type wins. Collapsed by default. */}
+        {priority && (
+          <div className="border-border space-y-2 border-t pt-4">
+            <button
+              type="button"
+              onClick={() => setShowDeviceType((prev) => !prev)}
+              aria-expanded={showDeviceType}
+              className="text-foreground hover:text-primary flex items-center gap-2 text-sm font-medium transition-colors"
+            >
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${
+                  showDeviceType ? "rotate-180" : ""
+                }`}
+              />
+              {t("settings.sections.sources.deviceTypeToggle", {
+                count: deviceTypeOverrideCount,
+              })}
+            </button>
+            {showDeviceType && (
+              <div className="bg-background/30 border-border space-y-3 rounded-md border p-3">
+                <p className="text-muted-foreground text-xs">
+                  {t("settings.sections.sources.deviceTypeHelp")}
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">
+                    {t("settings.sections.sources.deviceTypeDefault")}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={resetDeviceTypeAxis}
+                    disabled={saveMutation.isPending}
+                  >
+                    <RotateCcw className="mr-1 h-3 w-3" />
+                    {t("settings.sections.sources.resetDeviceTypes")}
+                  </Button>
+                </div>
+                <ul className="space-y-1">
+                  {(
+                    priority.deviceTypePriority.default ??
+                    DEFAULT_DEVICE_TYPE_PRIORITY
+                  ).map((deviceType, index, list) => (
+                    <li
+                      key={`device-default-${deviceType}-${index}`}
+                      className="border-border bg-card flex items-center gap-2 rounded-md border px-2 py-1.5"
+                    >
+                      <span className="text-muted-foreground w-5 text-xs font-medium tabular-nums">
+                        {index + 1}.
+                      </span>
+                      <span className="flex-1 text-sm">
+                        {t(DEVICE_TYPE_LABEL_KEYS[deviceType])}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() =>
+                          moveDeviceType("__default__", index, -1)
+                        }
+                        disabled={index === 0 || saveMutation.isPending}
+                        aria-label={t("settings.sections.sources.moveUp")}
+                      >
+                        <ArrowUp className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => moveDeviceType("__default__", index, 1)}
+                        disabled={
+                          index === list.length - 1 || saveMutation.isPending
+                        }
+                        aria-label={t("settings.sections.sources.moveDown")}
+                      >
+                        <ArrowDown className="h-3.5 w-3.5" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
