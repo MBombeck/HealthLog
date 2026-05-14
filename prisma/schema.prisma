@@ -372,8 +372,15 @@ model Medication {
 model MedicationSchedule {
   id           String  @id @default(cuid())
   medicationId String  @map("medication_id")
-  windowStart  String  // HH:mm format, e.g. "08:00"
-  windowEnd    String  // HH:mm format, e.g. "10:00"
+  /// v1.4.25 W4e — schema-convention fix. Prior to this release the DB
+  /// columns were the camelCase identifiers `"windowStart"` / `"windowEnd"`
+  /// because the original 0001_init migration omitted `@map`. The
+  /// Prisma client surface stays unchanged (`windowStart` /
+  /// `windowEnd`); only the underlying SQL identifier is renamed to
+  /// match the snake_case convention every other column on this model
+  /// already follows.
+  windowStart  String  @map("window_start") // HH:mm format, e.g. "08:00"
+  windowEnd    String  @map("window_end")   // HH:mm format, e.g. "10:00"
   label        String? // e.g. "Morning", "Evening"
   dose         String? // Per-schedule dose override; null = use Medication.dose
   daysOfWeek   String? @map("days_of_week") // Comma-separated day numbers (0=Sun..6=Sat), null = daily
