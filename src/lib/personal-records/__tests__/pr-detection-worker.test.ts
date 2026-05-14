@@ -595,6 +595,44 @@ describe("detectPersonalRecordsForUser — workout slots", () => {
   });
 });
 
+describe("detectPersonalRecordsForUser — zero-duration MIN guard", () => {
+  // Regression for Fix-M / code-M2: the createWorkoutSchema gate now
+  // rejects endedAt <= startedAt, but the PR detector stays defensive
+  // against any historical row (pre-gate) or future code path that
+  // produces a zero-duration workout. A MIN-direction slot (fastest
+  // 5 km) sorts ascending — a zero-second row would always win.
+  it("ignores zero-duration runs when scanning fastest_5km_time", async () => {
+    const runs: FakeWorkoutRow[] = [];
+    // Seed: enough legitimate 5 km finishes to clear the warm-up gate.
+    for (let i = 0; i < PR_DETECTION_WARMUP_THRESHOLD; i++) {
+      runs.push(
+        workout("running", 1800 + i * 30, 5100 + i * 100, i + 2, `5k-${i}`),
+      );
+    }
+    // Poison row: a workout with durationSec === 0 at the same
+    // distance threshold. A MIN-direction selector without the guard
+    // would pick this row as "fastest".
+    runs.push(workout("running", 0, 5200, 1, "zero-poison"));
+
+    const state = {
+      measurements: [],
+      workouts: runs,
+      personalRecords: [] as FakePersonalRecordRow[],
+    };
+    const prisma = makeFakePrisma(state);
+
+    await detectPersonalRecordsForUser(USER, { prisma });
+
+    const pr = state.personalRecords.find(
+      (r) => r.metricSlot === "fastest_5km_time",
+    );
+    expect(pr).toBeDefined();
+    // The PR must come from the seeded set, not the poison row.
+    expect(pr?.value).toBeGreaterThan(0);
+    expect(pr?.value).toBe(1800);
+  });
+});
+
 describe("detectPersonalRecordsForUser — flags + drift guard", () => {
   it("propagates the silent flag onto the result envelope", async () => {
     const state = {

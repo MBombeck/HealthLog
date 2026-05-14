@@ -290,11 +290,26 @@ export async function detectPersonalRecordsForUser(
   for (const slot of WORKOUT_SLOTS) {
     scanned += 1;
 
+    // MIN-direction slots sort ascending — the smallest value wins. A
+    // zero-duration workout would always become "best" before any
+    // legitimate row could compete. The schema gate on
+    // `createWorkoutSchema` rejects endedAt <= startedAt at ingest
+    // time, but the worker stays defensive: any historical row that
+    // pre-dates the gate (or any future code path that bypasses the
+    // schema) must not be allowed to lock in a zero-second PR. The
+    // `durationSec > 0` clause is always present when `slot.field` is
+    // durationSec; MIN-direction slots additionally enforce it
+    // regardless of which field carries the PR value, so a hypothetical
+    // future MIN slot on a distance field still rejects zero-duration
+    // rows on principle.
     const baseWhere = {
       userId,
       sportType: slot.sportType,
       ...(slot.minDistanceM !== undefined
         ? { totalDistanceM: { gte: slot.minDistanceM } }
+        : {}),
+      ...(slot.direction === PersonalRecordDirection.MIN
+        ? { durationSec: { gt: 0 } as { gt: number } }
         : {}),
       [slot.field]: { gt: 0 } as { gt: number },
     } as const;

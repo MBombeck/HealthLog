@@ -190,6 +190,31 @@ describe("createWorkoutSchema", () => {
     ).toThrow(/20000-point cap/);
   });
 
+  it("rejects a workout whose endedAt is before startedAt", () => {
+    // Regression for the W16b ingest gate: a reversed pair produced a
+    // negative `durationSec` that downstream consumers (PR detector,
+    // weekly report) treated as a real zero — a fastest-5km PR of
+    // zero seconds would lock in until manual cleanup. The schema
+    // refuses the row at parse time.
+    expect(() =>
+      createWorkoutSchema.parse({
+        ...minimalRun,
+        startedAt: "2026-05-14T07:15:00.000Z",
+        endedAt: "2026-05-14T06:30:00.000Z",
+      }),
+    ).toThrow(/endedAt must be strictly after startedAt/);
+  });
+
+  it("rejects a zero-duration workout (endedAt === startedAt)", () => {
+    expect(() =>
+      createWorkoutSchema.parse({
+        ...minimalRun,
+        startedAt: "2026-05-14T06:30:00.000Z",
+        endedAt: "2026-05-14T06:30:00.000Z",
+      }),
+    ).toThrow(/endedAt must be strictly after startedAt/);
+  });
+
   it("rejects a route whose sampleTimestamps length mismatches coordinates", () => {
     // Cross-field invariant: per-sample HR / speed must line up against
     // the parallel coordinate index, so a desynced pair silently

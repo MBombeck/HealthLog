@@ -97,6 +97,12 @@ export type WorkoutRouteSamples = z.infer<typeof workoutRouteSamplesSchema>;
  * locked contract and the v1.4.26 XML import worker has the same target.
  *
  * Cross-field invariants enforced via `.superRefine()`:
+ *   - `endedAt` MUST be strictly greater than `startedAt`. A workout
+ *     with `endedAt <= startedAt` produces a non-positive
+ *     `durationSec`, which downstream consumers (PR detector, weekly
+ *     report, dashboards) treat as a "real" zero — locking in a
+ *     fastest-5km time of zero seconds is far worse than refusing the
+ *     ingest at the schema gate.
  *   - When `route.sampleTimestamps` is present, its length MUST equal
  *     `route.geometry.coordinates.length`. A desynced pair silently
  *     degrades downstream analytics (per-sample HR / speed would line
@@ -127,6 +133,13 @@ export const createWorkoutSchema = z
       .optional(),
   })
   .superRefine((value, ctx) => {
+    if (value.endedAt.getTime() <= value.startedAt.getTime()) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["endedAt"],
+        message: "endedAt must be strictly after startedAt",
+      });
+    }
     const samples = value.route?.sampleTimestamps;
     const coords = value.route?.geometry.coordinates;
     if (samples && coords && samples.length !== coords.length) {
