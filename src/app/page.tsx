@@ -957,6 +957,7 @@ export default function DashboardPage() {
                 unit="kg"
                 valueBands={weightBands}
                 compareBaseline={compareBaseline}
+                userTimezone={user?.timezone}
               />
             ),
           });
@@ -1002,6 +1003,7 @@ export default function DashboardPage() {
                 yAxisUnit="Hg"
                 targetZones={bpTargetZones}
                 compareBaseline={compareBaseline}
+                userTimezone={user?.timezone}
               />
             ),
           });
@@ -1021,6 +1023,7 @@ export default function DashboardPage() {
                 unit="bpm"
                 valueBands={pulseBands}
                 compareBaseline={compareBaseline}
+                userTimezone={user?.timezone}
               />
             ),
           });
@@ -1040,6 +1043,7 @@ export default function DashboardPage() {
                 unit="%"
                 valueBands={bodyFatBands}
                 compareBaseline={compareBaseline}
+                userTimezone={user?.timezone}
               />
             ),
           });
@@ -1054,6 +1058,7 @@ export default function DashboardPage() {
                 key="mood-chart"
                 compareBaseline={compareBaseline}
                 chartKey="mood"
+                userTimezone={user?.timezone}
               />
             ),
           });
@@ -1072,6 +1077,7 @@ export default function DashboardPage() {
                 colors={["#8be9fd"]}
                 unit="h"
                 compareBaseline={compareBaseline}
+                userTimezone={user?.timezone}
               />
             ),
           });
@@ -1089,6 +1095,7 @@ export default function DashboardPage() {
                 title={t("dashboard.steps") ?? "Steps"}
                 colors={["#50fa7b"]}
                 compareBaseline={compareBaseline}
+                userTimezone={user?.timezone}
               />
             ),
           });
@@ -1106,6 +1113,7 @@ export default function DashboardPage() {
               <MedicationComplianceChart
                 key="medications"
                 compareBaseline={compareBaseline}
+                userTimezone={user?.timezone}
               />
             ),
           });

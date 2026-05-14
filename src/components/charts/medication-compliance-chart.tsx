@@ -49,6 +49,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { formatDateShort } from "@/lib/format";
+import { makeFormatters } from "@/lib/format-locale";
 import { cn } from "@/lib/utils";
 import { RichChartTooltip, type RichTooltipRow } from "./chart-tooltip";
 import { ChartEmptyState } from "./chart-empty-state";
@@ -86,17 +87,25 @@ type RangeDays = (typeof RANGE_DAYS)[number];
  * intakes are skipped — compliance is undefined when nothing was due.
  *
  * Pure & deterministic so the unit test pins exact rates.
+ *
+ * v1.4.25 W7b — the `dateFormatter` argument lets the chart pass a
+ * tz-aware formatter so a Pacific/Auckland user's X-axis tick label
+ * for "2026-05-15" reads as 15.05. in their tz. Default keeps the
+ * legacy `formatDateShort` so the existing unit test (which calls the
+ * exported helper without arguments) stays byte-identical.
  */
 export function aggregateMedicationCompliance(
   points: DailyCompliancePoint[],
+  dateFormatter: (date: Date) => string = (d) => formatDateShort(d, false),
 ): ChartPoint[] {
   return points
     .filter((p) => p.scheduled > 0)
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((p) => {
       const [y, m, d] = p.date.split("-").map(Number);
-      // Anchor the timestamp at noon UTC of the Berlin day so a tooltip
-      // and tick formatter never disagree across DST boundaries.
+      // Anchor the timestamp at noon UTC of the (server-side) calendar
+      // day so a tooltip and tick formatter never disagree across DST
+      // boundaries.
       const ts = Date.UTC(y, m - 1, d, 12);
       const rate = Math.min(100, Math.round((p.taken / p.scheduled) * 100));
       return {
@@ -106,7 +115,7 @@ export function aggregateMedicationCompliance(
         // tooltip below still derives its label from `timestamp` with
         // `includeYear=true`, so the full date is preserved for the
         // tooltip read.
-        date: formatDateShort(new Date(ts), false),
+        date: dateFormatter(new Date(ts)),
         rate,
         timestamp: ts,
       };
@@ -171,15 +180,28 @@ interface MedicationComplianceChartProps {
    * thinking the toggle is broken.
    */
   compareBaseline?: "none" | "lastMonth" | "lastYear";
+  /**
+   * v1.4.25 W7b — per-user display timezone for x-axis tick + tooltip
+   * date strings. Defaults to "Europe/Berlin" so older callers stay
+   * byte-identical.
+   */
+  userTimezone?: string;
 }
 
 export function MedicationComplianceChart({
   title,
+  userTimezone = "Europe/Berlin",
 }: MedicationComplianceChartProps) {
   const { isAuthenticated } = useAuth();
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const fmt = useFormatters();
   const [days, setDays] = useState<RangeDays>(30);
+  // v1.4.25 W7b — tz-aware date formatter for the x-axis labels and
+  // the tooltip's `dateLabel`. Same pattern as health-chart + mood-chart.
+  const tzFmt = useMemo(
+    () => makeFormatters(locale, userTimezone),
+    [locale, userTimezone],
+  );
 
   // v1.4.18 — three overlay toggles persisted per chart. The 7-day
   // trend chip and the goal/threshold reference lines used to render
@@ -210,8 +232,11 @@ export function MedicationComplianceChart({
   });
 
   const chartData = useMemo(
-    () => (data ? aggregateMedicationCompliance(data) : []),
-    [data],
+    () =>
+      data
+        ? aggregateMedicationCompliance(data, (d) => tzFmt.dateShort(d))
+        : [],
+    [data, tzFmt],
   );
 
   // v1.4.16 A6 — 7-day trend chip. Computed off the *full* range so a
@@ -395,9 +420,7 @@ export function MedicationComplianceChart({
                   };
                   if (!active || !payload?.length) return null;
                   const ts = payload[0]?.payload?.timestamp;
-                  const dateLabel = ts
-                    ? formatDateShort(new Date(ts), true)
-                    : "";
+                  const dateLabel = ts ? tzFmt.date(new Date(ts)) : "";
                   const rate = payload[0]?.value;
                   if (typeof rate !== "number") return null;
                   // Delta vs. the 100 % goal — a positive delta means

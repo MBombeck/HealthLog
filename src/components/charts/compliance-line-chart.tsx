@@ -12,9 +12,10 @@ import {
   ReferenceLine,
 } from "recharts";
 import { Button } from "@/components/ui/button";
-import { formatDateShort } from "@/lib/format";
 import { useViewportWidth } from "@/hooks/use-viewport-width";
 import { chooseTickInterval } from "@/lib/charts/x-axis-density";
+import { useTranslations } from "@/lib/i18n/context";
+import { makeFormatters } from "@/lib/format-locale";
 
 interface DailyData {
   expected: number;
@@ -30,6 +31,12 @@ interface ComplianceLineChartProps {
   rangePoints?: 30 | 90 | 0;
   onRangePointsChange?: (value: 30 | 90 | 0) => void;
   showRangeControls?: boolean;
+  /**
+   * v1.4.25 W7b — per-user display timezone for the X-axis labels.
+   * Defaults to "Europe/Berlin" so older callers keep their previous
+   * rendering bit-for-bit.
+   */
+  userTimezone?: string;
 }
 
 const TIME_RANGES = [
@@ -43,6 +50,7 @@ export function ComplianceLineChart({
   rangePoints,
   onRangePointsChange,
   showRangeControls = true,
+  userTimezone = "Europe/Berlin",
 }: ComplianceLineChartProps) {
   const [internalRangePoints, setInternalRangePoints] = useState<30 | 90 | 0>(
     30,
@@ -50,6 +58,13 @@ export function ComplianceLineChart({
   const activeRangePoints = rangePoints ?? internalRangePoints;
   const setActiveRangePoints = onRangePointsChange ?? setInternalRangePoints;
   const viewportWidth = useViewportWidth();
+  const { locale } = useTranslations();
+  // v1.4.25 W7b — tz-aware date label for the X-axis. Falls back to
+  // legacy Europe/Berlin when the prop is omitted.
+  const tzFmt = useMemo(
+    () => makeFormatters(locale, userTimezone),
+    [locale, userTimezone],
+  );
 
   const chartData = useMemo(() => {
     const points = Object.entries(dailyCompliance)
@@ -58,14 +73,14 @@ export function ComplianceLineChart({
       .map(([dateKey, data]) => {
         const date = new Date(`${dateKey}T12:00:00.000Z`);
         return {
-          date: formatDateShort(date, true),
+          date: tzFmt.date(date),
           rate: Math.min(100, Math.round((data.taken / data.expected) * 100)),
           timestamp: date.getTime(),
         };
       });
 
     return activeRangePoints > 0 ? points.slice(-activeRangePoints) : points;
-  }, [dailyCompliance, activeRangePoints]);
+  }, [dailyCompliance, activeRangePoints, tzFmt]);
 
   return (
     <div>

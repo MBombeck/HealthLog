@@ -18,6 +18,7 @@ import {
   Info,
 } from "lucide-react";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import { useAuth } from "@/hooks/use-auth";
 import { HealthChart } from "@/components/charts/health-chart";
 import { MoodChart } from "@/components/charts/mood-chart";
 import {
@@ -252,6 +253,7 @@ function InlineCharts({
   mini?: boolean;
 }) {
   const { t } = useTranslations();
+  const { user } = useAuth();
   if (tokens.length === 0) return null;
 
   // Dedup while preserving the order the model emitted them.
@@ -279,9 +281,14 @@ function InlineCharts({
             data-mini={mini ? "true" : "false"}
           >
             {kind === "mood" ? (
-              <MoodChart mini={mini} />
+              <MoodChart mini={mini} userTimezone={user?.timezone} />
             ) : (
-              <HealthChart types={[metric]} title={title} mini={mini} />
+              <HealthChart
+                types={[metric]}
+                title={title}
+                mini={mini}
+                userTimezone={user?.timezone}
+              />
             )}
           </div>
         );

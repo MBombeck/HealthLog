@@ -359,10 +359,15 @@ describe("per-user timezone — Pacific/Auckland end-to-end", () => {
     }
 
     const { GET } = await import("@/app/api/dashboard/summary/route");
-    const res = await GET(
+    // The handler is typed `() => Promise<Response>`, but the
+    // `apiHandler` wrapper unconditionally reads `args[0]` as the
+    // Next.js Request — cast through unknown to push the test fixture
+    // through without weakening the runtime type.
+    const handler = GET as unknown as (req: Request) => Promise<Response>;
+    const res = await handler(
       new Request("http://localhost/api/dashboard/summary", {
         method: "GET",
-      }) as Parameters<typeof GET>[0],
+      }),
     );
     expect(res.status).toBe(200);
     const body = (await res.json()) as {

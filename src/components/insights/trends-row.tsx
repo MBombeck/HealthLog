@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useTranslations } from "@/lib/i18n/context";
+import { useAuth } from "@/hooks/use-auth";
 import {
   TrendAnnotation,
   type TrendAnnotationConfidenceBand,
@@ -75,6 +76,8 @@ interface TrendsRowProps {
 
 export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
   const { t } = useTranslations();
+  const { user } = useAuth();
+  const userTimezone = user?.timezone;
   const bpAnnotation = annotations?.bp ?? null;
   const weightAnnotation = annotations?.weight ?? null;
   const moodAnnotation = annotations?.mood ?? null;
@@ -117,6 +120,7 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
             unit="mmHg"
             yAxisUnit="Hg"
             mini
+            userTimezone={userTimezone}
           />
           <TrendAnnotation
             metric="bp"
@@ -135,6 +139,7 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
             colors={["#bd93f9"]}
             unit="kg"
             mini
+            userTimezone={userTimezone}
           />
           <TrendAnnotation
             metric="weight"
@@ -147,7 +152,7 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
           data-metric="mood"
           className="flex h-full min-h-[300px] flex-col gap-2"
         >
-          <MoodChart title={t("charts.mood")} mini />
+          <MoodChart title={t("charts.mood")} mini userTimezone={userTimezone} />
           <TrendAnnotation
             metric="mood"
             annotation={moodAnnotation}

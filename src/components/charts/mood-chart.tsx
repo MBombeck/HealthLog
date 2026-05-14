@@ -17,8 +17,8 @@ import { Loader2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { formatDateShort } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
+import { makeFormatters } from "@/lib/format-locale";
 import type { DataSummary } from "@/lib/analytics/trends";
 import {
   bucketTimeSeries,
@@ -84,6 +84,12 @@ interface MoodChartProps {
    * only surface — the cog stays hidden and overlays are clean.
    */
   chartKey?: ChartOverlayKey;
+  /**
+   * v1.4.25 W7b — per-user display timezone. When passed, the x-axis
+   * tick labels and tooltip date render in the user's tz. Defaults to
+   * "Europe/Berlin" so older mount sites stay byte-identical.
+   */
+  userTimezone?: string;
 }
 
 // --- Constants ---
@@ -275,9 +281,16 @@ export function MoodChart({
   windowOverride,
   compareBaseline = "none",
   chartKey,
+  userTimezone = "Europe/Berlin",
 }: MoodChartProps) {
   const { isAuthenticated } = useAuth();
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
+  // v1.4.25 W7b — tz-aware formatter for x-axis tick labels + tooltip
+  // date strings.
+  const tzFmt = useMemo(
+    () => makeFormatters(locale, userTimezone),
+    [locale, userTimezone],
+  );
   const initialRangePoints = windowOverride
     ? MINI_RANGE_POINTS[windowOverride]
     : 30;
@@ -313,7 +326,7 @@ export function MoodChart({
 
     const allPoints: ChartDataPoint[] = data.entries
       .map((entry) => ({
-        date: formatDateShort(new Date(dayKeyToTimestamp(entry.date))),
+        date: tzFmt.dateShort(new Date(dayKeyToTimestamp(entry.date))),
         timestamp: dayKeyToTimestamp(entry.date),
         pointIndex: 0,
         score: entry.score,
@@ -349,7 +362,7 @@ export function MoodChart({
             })),
             { bucket: bucketType },
           ).points.map((point) => ({
-            date: formatDateShort(new Date(point.timestamp)),
+            date: tzFmt.dateShort(new Date(point.timestamp)),
             timestamp: point.timestamp,
             pointIndex: 0,
             score: point.values.score,
@@ -401,7 +414,7 @@ export function MoodChart({
     }
 
     return enriched;
-  }, [data, rangePoints, showMA, showTrend]);
+  }, [data, rangePoints, showMA, showTrend, tzFmt]);
 
   /**
    * v1.4.16 phase B8 — comparison overlay merged into chartData.
@@ -426,7 +439,7 @@ export function MoodChart({
 
     const shiftedByDay = new Map<string, number>();
     for (const row of shifted) {
-      const dayKey = formatDateShort(new Date(row.timestamp));
+      const dayKey = tzFmt.dateShort(new Date(row.timestamp));
       if (typeof row.score === "number" && Number.isFinite(row.score)) {
         shiftedByDay.set(dayKey, row.score);
       }
@@ -439,7 +452,7 @@ export function MoodChart({
       }
       return point;
     });
-  }, [chartData, effectiveCompareBaseline, data]);
+  }, [chartData, effectiveCompareBaseline, data, tzFmt]);
 
   const hasComparisonData = useMemo(() => {
     if (effectiveCompareBaseline === "none" || !chartDataWithCompare)
@@ -689,11 +702,10 @@ export function MoodChart({
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(value: number) =>
-                    formatDateShort(
+                    tzFmt.date(
                       new Date(
                         chartData[Math.round(value)]?.timestamp ?? Date.now(),
                       ),
-                      true,
                     )
                   }
                   interval={chooseTickInterval(
@@ -741,9 +753,7 @@ export function MoodChart({
                       (typeof rechartsLabel === "number"
                         ? chartData?.[Math.round(rechartsLabel)]?.timestamp
                         : undefined);
-                    const dateLabel = ts
-                      ? formatDateShort(new Date(ts), true)
-                      : "";
+                    const dateLabel = ts ? tzFmt.date(new Date(ts)) : "";
                     const rows: RichTooltipRow[] = [];
                     const hoverPoint = payload[0]?.payload as
                       | ChartDataPoint

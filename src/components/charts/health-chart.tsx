@@ -20,8 +20,8 @@ import { RichChartTooltip, type RichTooltipRow } from "./chart-tooltip";
 import { ChartEmptyState } from "./chart-empty-state";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 import { Button } from "@/components/ui/button";
-import { formatDateShort } from "@/lib/format";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import { makeFormatters } from "@/lib/format-locale";
 import {
   bucketTimeSeries,
   pickBucket,
@@ -138,6 +138,15 @@ interface HealthChartProps {
    * that needs the same behaviour).
    */
   annotations?: Array<{ date: string; label: string; color: string }>;
+  /**
+   * v1.4.25 W7b — per-user display timezone. When passed (mount sites
+   * thread `useAuth().user?.timezone`), x-axis tick labels and the
+   * per-day bucket keys both render in the user's zone instead of the
+   * legacy Europe/Berlin pin. Defaults to "Europe/Berlin" so older
+   * callers that haven't yet adopted the prop keep their previous
+   * behaviour bit-for-bit.
+   */
+  userTimezone?: string;
 }
 
 interface ChartDataPoint {
@@ -191,15 +200,22 @@ function getTypeLabel(
   return key ? t(key) : type;
 }
 
-const BERLIN_DAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
-  timeZone: "Europe/Berlin",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
+/**
+ * Build a `YYYY-MM-DD` day-key formatter pinned to the requested
+ * timezone. Memoised per-tz inside the component so we don't allocate a
+ * new `Intl.DateTimeFormat` on every measurement-row pass.
+ */
+function makeDayKeyFormatter(tz: string): Intl.DateTimeFormat {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
 
-function toBerlinDayKey(value: string): string {
-  const parts = BERLIN_DAY_FORMATTER.formatToParts(new Date(value));
+function toDayKey(value: string, formatter: Intl.DateTimeFormat): string {
+  const parts = formatter.formatToParts(new Date(value));
   const year = parts.find((part) => part.type === "year")?.value;
   const month = parts.find((part) => part.type === "month")?.value;
   const day = parts.find((part) => part.type === "day")?.value;
@@ -367,10 +383,26 @@ export function HealthChart({
   compareBaseline = "none",
   chartKey,
   annotations,
+  userTimezone = "Europe/Berlin",
 }: HealthChartProps) {
   const { isAuthenticated, user } = useAuth();
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const fmt = useFormatters();
+  // v1.4.25 W7b — tz-aware formatter for x-axis tick labels + tooltip
+  // date strings. `useFormatters()` reads the active UI locale only;
+  // this builds a locale + userTz pair so a Pacific/Auckland user reads
+  // their own day on the axis.
+  const tzFmt = useMemo(
+    () => makeFormatters(locale, userTimezone),
+    [locale, userTimezone],
+  );
+  // v1.4.25 W7b — per-row day-key formatter used to bucket measurement
+  // rows by the user's local calendar day. Memoised on userTimezone so
+  // the inner per-row loop reuses a single Intl.DateTimeFormat.
+  const dayKeyFormatter = useMemo(
+    () => makeDayKeyFormatter(userTimezone),
+    [userTimezone],
+  );
   // v1.4.16 B5c: when a windowOverride is supplied, seed the range
   // state from it so the chart pins to that window. Mini mode also
   // hides the range tabs, so the user can't change it.
@@ -407,6 +439,10 @@ export function HealthChart({
       types.join(","),
       valueMode,
       bmiDivisor ?? "no-bmi",
+      // v1.4.25 W7b — bucket keys + tick labels depend on the active
+      // user timezone, so re-key the cache when it changes. Without
+      // this, a tz change inside a session would render stale buckets.
+      userTimezone,
     ],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -451,7 +487,7 @@ export function HealthChart({
               continue;
             }
 
-            const dayKey = toBerlinDayKey(measurement.measuredAt);
+            const dayKey = toDayKey(measurement.measuredAt, dayKeyFormatter);
             const bucket = dailyAggregates.get(dayKey) ?? {
               timestamp: dayKeyToTimestamp(dayKey),
               values: {},
@@ -475,7 +511,7 @@ export function HealthChart({
       const allData: ChartDataPoint[] = Array.from(dailyAggregates.values())
         .map((bucket) => {
           const point: ChartDataPoint = {
-            date: formatDateShort(new Date(bucket.timestamp)),
+            date: tzFmt.dateShort(new Date(bucket.timestamp)),
             timestamp: bucket.timestamp,
           };
 
@@ -525,7 +561,7 @@ export function HealthChart({
           ).points.map<ChartDataPoint>((point) => {
             const date = new Date(point.timestamp);
             const out: ChartDataPoint = {
-              date: formatDateShort(date),
+              date: tzFmt.dateShort(date),
               timestamp: point.timestamp,
             };
             for (const [type, value] of Object.entries(point.values)) {
@@ -590,7 +626,7 @@ export function HealthChart({
     }
 
     return enriched;
-  }, [data, rangePoints, showMA, showTrend, types]);
+  }, [data, rangePoints, showMA, showTrend, types, tzFmt]);
 
   // v1.4.16 phase B8 — comparison overlay.
   //
@@ -624,7 +660,7 @@ export function HealthChart({
     // Index shifted rows by the same day-key the chart already uses.
     const shiftedByDay = new Map<string, Record<string, number>>();
     for (const row of shifted) {
-      const dayKey = formatDateShort(new Date(row.timestamp));
+      const dayKey = tzFmt.dateShort(new Date(row.timestamp));
       const slot = shiftedByDay.get(dayKey) ?? {};
       for (const [type, value] of Object.entries(row.values)) {
         if (typeof value === "number" && Number.isFinite(value)) {
@@ -646,7 +682,7 @@ export function HealthChart({
       }
       return merged;
     });
-  }, [chartData, effectiveCompareBaseline, data, types]);
+  }, [chartData, effectiveCompareBaseline, data, types, tzFmt]);
 
   /**
    * v1.4.16 phase B8 — true when at least one visible day has a prior-
@@ -1101,11 +1137,10 @@ export function HealthChart({
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(value) =>
-                    formatDateShort(
+                    tzFmt.date(
                       new Date(
                         chartData?.[Math.round(value)]?.timestamp ?? Date.now(),
                       ),
-                      true,
                     )
                   }
                   interval={chooseTickInterval(
@@ -1267,9 +1302,7 @@ export function HealthChart({
                       (typeof rechartsLabel === "number"
                         ? chartData?.[Math.round(rechartsLabel)]?.timestamp
                         : undefined);
-                    const dateLabel = ts
-                      ? formatDateShort(new Date(ts), true)
-                      : "";
+                    const dateLabel = ts ? tzFmt.date(new Date(ts)) : "";
                     const rows: RichTooltipRow[] = [];
                     // Build a quick lookup of compare values for this
                     // hover-day so the current-period row can attach
