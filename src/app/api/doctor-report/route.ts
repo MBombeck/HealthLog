@@ -15,6 +15,7 @@ import {
   sanitisePracticeName,
 } from "@/lib/doctor-report-data";
 import { prisma } from "@/lib/db";
+import { doctorReportPrefsSchema } from "@/lib/validations/doctor-report-prefs";
 
 /**
  * Collect data for doctor report PDF generation (client-side).
@@ -51,6 +52,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
     ?.practiceName;
   const practiceName = sanitisePracticeName(rawPracticeName);
 
+  // v1.4.25 W6c — section toggles. Malformed shapes silently fall
+  // through to the documented defaults so a forward-compat client
+  // never lands a 422 on a benign drift.
+  const rawSections = (body as Record<string, unknown> | null)?.sections;
+  const sectionsParsed = doctorReportPrefsSchema.safeParse(rawSections ?? {});
+  const sections = sectionsParsed.success ? sectionsParsed.data : {};
+
   // Persist the most-recent practice name as a user preference so the
   // dialog can pre-fill it next time. We only write when the caller
   // actually supplied a non-empty string — passing `null`/empty does NOT
@@ -67,7 +75,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     }
   }
 
-  const data = await collectDoctorReportData(user.id, range, { practiceName });
+  const data = await collectDoctorReportData(user.id, range, {
+    practiceName,
+    sections,
+  });
 
   await auditLog("doctor-report.generate", {
     userId: user.id,
@@ -77,6 +88,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
       startDate: range.start.toISOString(),
       endDate: range.end.toISOString(),
       practiceNameProvided: practiceName !== null,
+      // v1.4.25 W6c — record which sections were included. The audit
+      // trail proves mood data was never aggregated when the toggle
+      // was off (privacy contract).
+      sections,
     },
   });
 

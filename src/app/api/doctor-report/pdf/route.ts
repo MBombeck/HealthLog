@@ -11,6 +11,11 @@ import {
 } from "@/lib/doctor-report-data";
 import { prisma } from "@/lib/db";
 import { renderDoctorReportPdfBytes } from "@/lib/doctor-report-pdf-core";
+import {
+  DEFAULT_DOCTOR_REPORT_PREFS,
+  doctorReportPrefsSchema,
+  type DoctorReportPrefs,
+} from "@/lib/validations/doctor-report-prefs";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { parseLocaleFromAcceptLanguage } from "@/lib/format-locale";
 import { locales, type Locale } from "@/lib/i18n/config";
@@ -48,6 +53,18 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const rawPracticeName = body?.practiceName;
   const practiceName = sanitisePracticeName(rawPracticeName);
 
+  // v1.4.25 W6c — section toggles. Malformed shapes silently fall back
+  // to documented defaults so a forward-compat client never lands a
+  // 422 on a benign drift.
+  const sectionsParsed = doctorReportPrefsSchema.safeParse(
+    body?.sections ?? {},
+  );
+  const sectionsInput = sectionsParsed.success ? sectionsParsed.data : {};
+  const sections: DoctorReportPrefs = {
+    ...DEFAULT_DOCTOR_REPORT_PREFS,
+    ...sectionsInput,
+  };
+
   if (typeof rawPracticeName === "string" && practiceName !== null) {
     try {
       await prisma.user.update({
@@ -60,7 +77,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   const [data, userTz] = await Promise.all([
-    collectDoctorReportData(user.id, range, { practiceName }),
+    collectDoctorReportData(user.id, range, { practiceName, sections }),
     resolveUserTimezone(user.id),
   ]);
 
@@ -76,6 +93,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
       endDate: range.end.toISOString(),
       locale,
       practiceNameProvided: practiceName !== null,
+      // v1.4.25 W6c — record exactly which sections this report
+      // rendered, so a future privacy review can confirm mood was
+      // never rendered when the user opted out.
+      sections,
     },
   });
 
@@ -111,6 +132,8 @@ interface PdfRequestBody {
   endDate?: unknown;
   locale?: unknown;
   practiceName?: unknown;
+  /** v1.4.25 W6c — per-section visibility toggles. */
+  sections?: unknown;
 }
 
 /**
