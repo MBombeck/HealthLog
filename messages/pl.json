@@ -877,8 +877,12 @@
     "heroFindingNeutral": "Top finding",
     "heroFindingAttention": "Worth attention",
     "heroFindingWarning": "Top alert",
-    "correlationsTitle": "Correlations",
-    "recommendationsTitle": "Recommendations",
+    "correlationsTitle": "Korelacje",
+    "recommendationsTitle": "Rekomendacje",
+    "personalRecord": {
+      "badge": "PR",
+      "tooltip": "Rekord osobisty: {value} {unit} dnia {date}"
+    },
     "recommendation": {
       "source": "Source",
       "viewSource": "Open guideline in a new tab",

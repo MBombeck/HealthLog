@@ -879,6 +879,10 @@
     "heroFindingWarning": "Wichtigster Alarm",
     "correlationsTitle": "Zusammenhänge",
     "recommendationsTitle": "Empfehlungen",
+    "personalRecord": {
+      "badge": "PR",
+      "tooltip": "Persönlicher Rekord: {value} {unit} am {date}"
+    },
     "recommendation": {
       "source": "Quelle",
       "viewSource": "Leitlinie in neuem Tab öffnen",

@@ -879,6 +879,10 @@
     "heroFindingWarning": "Top alert",
     "correlationsTitle": "Correlations",
     "recommendationsTitle": "Recommendations",
+    "personalRecord": {
+      "badge": "PR",
+      "tooltip": "Personal record: {value} {unit} on {date}"
+    },
     "recommendation": {
       "source": "Source",
       "viewSource": "Open guideline in a new tab",
