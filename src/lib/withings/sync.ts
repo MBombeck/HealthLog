@@ -294,15 +294,21 @@ export function extractWithingsStatus(message: string): string | undefined {
  * - 1 — weight + body composition (meastypes 1, 5, 6, 8, 88)
  * - 2 — temperature (meastypes 12, 71, 73)
  * - 4 — pressure family (BP dia 9, BP sys 10, pulse 11, SpO2 54)
+ * - 16 — activity (steps, distance, active energy, floors climbed);
+ *        v1.4.25 W17b webhook-primary trigger for the new
+ *        `syncUserActivity` routine.
+ * - 44 — sleep v2 (per-stage segments + nightly summary); v1.4.25 W17c
+ *        webhook-primary trigger for the new `syncUserSleep` routine.
  *
  * Without 2 and 4, BP and temperature readings flow only through the
  * hourly poll fallback. Adding them removes up to an hour of latency
- * on a freshly-taken BP reading without changing the OAuth scope.
- *
- * Sleep (appli=44) and activity (appli=16) ship alongside the
- * corresponding sync routines in v1.4.26.
+ * on a freshly-taken BP reading without changing the OAuth scope. The
+ * activity + sleep categories require the `user.activity` scope from
+ * W5d; legacy connections that never reconnected sit on `user.metrics`
+ * only and the subscribe call returns 503/293 — `setupWebhook` logs
+ * the failure and keeps the remaining appli subscriptions.
  */
-export const WITHINGS_NOTIFY_APPLIS = [1, 2, 4] as const;
+export const WITHINGS_NOTIFY_APPLIS = [1, 2, 4, 16, 44] as const;
 
 /**
  * Subscribe to every Withings notify category HealthLog ingests. Each

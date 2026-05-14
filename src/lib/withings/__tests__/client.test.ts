@@ -5,6 +5,7 @@ import {
   fetchMeasurements,
   hasActivityScope,
   parseWithingsScope,
+  subscribeWebhook,
 } from "../client";
 import { WITHINGS_NOTIFY_APPLIS } from "../sync";
 
@@ -138,8 +139,11 @@ describe("WITHINGS_OAUTH_SCOPE + scope helpers", () => {
 });
 
 describe("WITHINGS_NOTIFY_APPLIS", () => {
-  it("subscribes to weight + temperature + pressure categories", () => {
-    expect(WITHINGS_NOTIFY_APPLIS).toEqual([1, 2, 4]);
+  it("subscribes to weight + temperature + pressure + activity + sleep categories", () => {
+    // v1.4.25 W17b/c — activity (16) + sleep v2 (44) join the
+    // webhook-primary set so the new sync routines fire in seconds
+    // rather than waiting for the hourly cron fallback.
+    expect(WITHINGS_NOTIFY_APPLIS).toEqual([1, 2, 4, 16, 44]);
   });
 
   it("contains every appli for the meastypes we ingest", () => {
@@ -150,11 +154,67 @@ describe("WITHINGS_NOTIFY_APPLIS", () => {
     //   - 9, 10, 11, 35, 54 → appli=4 (BP + pulse + SpO2)
     //   - 123 → appli=1 (VO2 max is part of the weight category in
     //     Withings' bucketing; verified against the developer guide).
+    //   - steps + distance + active energy + floors → appli=16 (Activity)
+    //   - sleep stage segments → appli=44 (Sleep v2)
     const ingested = Object.keys(MEASURE_TYPE_MAP).map(Number).sort();
     expect(ingested).toContain(12);
     expect(ingested).toContain(71);
     expect(ingested).toContain(35);
     expect(ingested).toContain(123);
+  });
+
+  it("includes 16 (activity) and 44 (sleep v2) — the W17b/c webhook additions", () => {
+    // Explicit guard so a future refactor that re-sorts the array
+    // doesn't silently drop the activity / sleep webhook trigger.
+    expect(WITHINGS_NOTIFY_APPLIS).toContain(16);
+    expect(WITHINGS_NOTIFY_APPLIS).toContain(44);
+  });
+});
+
+describe("subscribeWebhook — appli payload", () => {
+  it("POSTs `appli=16` to Withings notify when called with the activity category", async () => {
+    const fetchMock = vi.fn(async () => ({
+      status: 200,
+      json: async () => ({ status: 0 }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await subscribeWebhook(
+      "token",
+      "https://healthlog.example.com/api/withings/webhook/secret",
+      16,
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const body = String(init.body);
+    expect(body).toContain("action=subscribe");
+    expect(body).toContain("appli=16");
+  });
+
+  it("POSTs `appli=44` to Withings notify when called with the sleep v2 category", async () => {
+    const fetchMock = vi.fn(async () => ({
+      status: 200,
+      json: async () => ({ status: 0 }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await subscribeWebhook(
+      "token",
+      "https://healthlog.example.com/api/withings/webhook/secret",
+      44,
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const body = String(init.body);
+    expect(body).toContain("appli=44");
   });
 });
 
