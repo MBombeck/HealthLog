@@ -41,20 +41,18 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
-      # v1.4.23 W4 F5c — OpenAPI spec drift check.
+      # OpenAPI spec drift gate — hard-fail (flipped from warn-only in v1.4.25).
       #
-      # `continue-on-error: true` is intentional for v1.4.23: the
-      # registry covers only the iOS-touched routes today, and the
-      # legacy hand-maintained spec at docs/api/openapi-v1422-legacy.yaml
-      # carries the rest. Once the registry hits ~95% coverage in
-      # v1.4.24+, flip this to a hard gate by removing
-      # `continue-on-error`.
+      # The Zod registry is the source of truth for the public API contract.
+      # Any route signature change must be reflected in `docs/api/openapi.yaml`
+      # so downstream consumers (notably the v1.5 iOS Swift codegen) stay in
+      # lockstep. If this step fails, run `pnpm openapi:generate` locally and
+      # commit the regenerated spec.
       - name: OpenAPI spec drift check
-        continue-on-error: true
         run: |
           pnpm openapi:generate
           if ! git diff --exit-code docs/api/openapi.yaml; then
-            echo "::warning::OpenAPI spec out of date. Run 'pnpm openapi:generate' locally and commit the changes."
+            echo "::error::OpenAPI drift detected — regenerate the spec via 'pnpm openapi:generate' and commit the result. The Zod registry under src/lib/openapi/ is the source of truth for the public API contract."
             exit 1
           fi
           echo "::notice::OpenAPI spec in sync with Zod source schemas."

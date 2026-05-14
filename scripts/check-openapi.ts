@@ -3,9 +3,9 @@
  * Compare the freshly-generated OpenAPI spec against the committed
  * `docs/api/openapi.yaml`. Exits non-zero on drift.
  *
- * Used by the CI gate in `.github/workflows/security.yml`. v1.4.23 runs
- * the step with `continue-on-error: true` while the registry catches
- * up with the hand-maintained spec; v1.4.24+ flips it to hard-fail.
+ * Used by the CI gate in `.github/workflows/security.yml`. Hard-fails on
+ * drift since v1.4.25 — the Zod registry is the source of truth for the
+ * public API contract that the v1.5 iOS Swift codegen consumes.
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
