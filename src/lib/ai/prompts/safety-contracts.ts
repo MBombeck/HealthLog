@@ -35,7 +35,13 @@ import { z } from "zod";
 
 import type { Locale } from "@/lib/i18n/config";
 
-const SAFETY_CONTRACTS_DIR = __dirname;
+// Turbopack rewrites `__dirname` to a synthetic `/ROOT/...` token at
+// build time, which then fails at runtime when the YAML siblings are
+// looked up. Resolving from `process.cwd()` keeps the path stable
+// across `next build` + `next start` (and the test runner — vitest sets
+// cwd to the repo root). `outputFileTracingIncludes` in `next.config.ts`
+// pulls the YAML files into the standalone runtime image.
+const SAFETY_CONTRACTS_DIR = join(process.cwd(), "src/lib/ai/prompts");
 
 const ContractEnumsSchema = z.object({
   severity: z.array(z.string()).min(1),
