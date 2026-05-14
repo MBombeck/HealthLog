@@ -34,11 +34,40 @@
  */
 import { z } from "zod/v4";
 
-import { annotate } from "@/lib/logging/context";
 import {
   measurementSourceEnum,
   measurementTypeEnum,
 } from "@/lib/validations/measurement";
+
+// v1.4.25 Fix-G — `annotate` from `@/lib/logging/context` was the
+// canonical breadcrumb for a parse failure, but the helper pulls
+// `node:async_hooks` via `AsyncLocalStorage`. Any client component that
+// reaches for a type-only export here (e.g.
+// `src/components/settings/sources-section.tsx` importing
+// `DEFAULT_SOURCE_PRIORITY`) used to drag `node:async_hooks` into the
+// browser bundle and break the Turbopack build. The parser stays in the
+// shared module — splitting it out would ripple through every callsite —
+// so the breadcrumb path now goes through a runtime-resolved callback.
+// The server logging module registers the real `annotate` on first import
+// (via `registerSourcePriorityParseObserver`); the browser leaves it as
+// the no-op default and never traces `node:async_hooks`.
+type ParseFailureObserver = (entry: {
+  meta: Record<string, unknown>;
+}) => void;
+let parseFailureObserver: ParseFailureObserver = () => {};
+
+/**
+ * Server-side opt-in for the parse-failure breadcrumb. Called once from
+ * `@/lib/logging/context` so a buggy schema-tightening that silently
+ * wipes a saved ladder still surfaces in ops dashboards. The client
+ * bundle never imports the logging module, so the observer stays the
+ * no-op default in the browser.
+ */
+export function registerSourcePriorityParseObserver(
+  observer: ParseFailureObserver,
+): void {
+  parseFailureObserver = observer;
+}
 
 /**
  * Device-type tag attached to a `Measurement` row. Mirrors
@@ -280,7 +309,7 @@ export function parseSourcePriority(raw: unknown): ResolvedSourcePriority {
     // priorities reset?" user report. `annotate()` is a no-op outside a
     // request context, so the static settings-page render and tests
     // remain side-effect-free.
-    annotate({
+    parseFailureObserver({
       meta: {
         sourcePriority: {
           parse: "failed",
