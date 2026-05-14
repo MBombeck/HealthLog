@@ -1081,6 +1081,7 @@
       "description": "Stage breakdown and nightly duration, drawn from Apple Health.",
       "headlineTitle": "Average per night",
       "headlineCaption": "Averaged across {count} nights — {suffix}",
+      "headlineCaptionSuffix": "per notte",
       "compositionTitle": "Stage composition",
       "compositionSubtitle": "Last {nights} nights",
       "compositionAriaLabel": "Sleep stage composition over {nights} nights",

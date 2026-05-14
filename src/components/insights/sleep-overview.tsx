@@ -53,19 +53,13 @@ interface SleepAnalyticsResponse {
 function formatHoursMinutes(
   totalMinutes: number,
   locale: string,
-): { primary: string; suffix: string } {
+): { primary: string } {
   const hours = Math.floor(totalMinutes / 60);
   const mins = Math.round(totalMinutes - hours * 60);
   if (locale === "de") {
-    return {
-      primary: `${hours} Std. ${mins} Min.`,
-      suffix: "pro Nacht",
-    };
+    return { primary: `${hours} Std. ${mins} Min.` };
   }
-  return {
-    primary: `${hours}h ${mins}m`,
-    suffix: "per night",
-  };
+  return { primary: `${hours}h ${mins}m` };
 }
 
 export function SleepOverview() {
@@ -106,10 +100,11 @@ export function SleepOverview() {
   }
 
   const averageMinutes = sleepSummary?.avg30 ?? sleepSummary?.avg7 ?? null;
-  const { primary, suffix } =
+  const suffix = t("insights.sleep.headlineCaptionSuffix");
+  const { primary } =
     averageMinutes != null
       ? formatHoursMinutes(averageMinutes, locale)
-      : { primary: "—", suffix: "" };
+      : { primary: "—" };
 
   return (
     <div className="space-y-4">
