@@ -270,7 +270,18 @@
     "layoutChartColumn": "Chart",
     "emptyTitle": "Dein Dashboard ist leer",
     "emptyDescription": "Erfasse den ersten Messwert oder Stimmungseintrag. Kacheln und Charts erscheinen automatisch, sobald Daten vorhanden sind.",
-    "emptyAddMeasurement": "Ersten Messwert erfassen"
+    "emptyAddMeasurement": "Ersten Messwert erfassen",
+    "glp1": {
+      "title": "GLP-1-Therapie",
+      "lastInjection": "Letzte Injektion",
+      "nextInjection": "Nächste Injektion",
+      "weightDelta": "seit Beginn",
+      "inDays": "in {count} Tagen",
+      "empty": {
+        "title": "Kein aktives GLP-1-Medikament",
+        "description": "Lege einen GLP-1-Rezeptoragonisten an (Mounjaro, Ozempic, Wegovy, …), um Dosis, Zeitplan und Gewichtsverlauf hier zu sehen."
+      }
+    }
   },
   "measurements": {
     "title": "Messungen",

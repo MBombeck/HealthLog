@@ -270,7 +270,18 @@
     "layoutChartColumn": "Chart",
     "emptyTitle": "Your dashboard is empty",
     "emptyDescription": "Log your first measurement or mood entry. Tiles and charts appear automatically as data lands.",
-    "emptyAddMeasurement": "Add your first measurement"
+    "emptyAddMeasurement": "Add your first measurement",
+    "glp1": {
+      "title": "GLP-1 therapy",
+      "lastInjection": "Last injection",
+      "nextInjection": "Next injection",
+      "weightDelta": "since start",
+      "inDays": "in {count} days",
+      "empty": {
+        "title": "No active GLP-1 medication",
+        "description": "Add a GLP-1 receptor agonist (Mounjaro, Ozempic, Wegovy, …) to surface dose, schedule, and weight response here."
+      }
+    }
   },
   "measurements": {
     "title": "Measurements",

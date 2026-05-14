@@ -83,6 +83,14 @@ export const queryKeys = {
    * against the same query-key-collision class as `analytics()`.
    */
   dashboardWidgets: () => ["user", "dashboardWidgets"] as const,
+
+  /**
+   * v1.4.25 W6 — dashboard GLP-1 tile data. Self-gating: the route
+   * returns `data: null` when the user has no active GLP-1 medication
+   * so the tile component can suppress itself without a 404 special-
+   * case in the cache.
+   */
+  dashboardGlp1: () => ["dashboard", "glp1"] as const,
 };
 
 /**

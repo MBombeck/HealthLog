@@ -47,6 +47,7 @@ import { TourLauncher } from "@/components/onboarding/tour-launcher";
 import { RecentAchievementsCard } from "@/components/gamification/recent-achievements-card";
 import { InsightsCardPreview } from "@/components/insights/insights-card";
 import { useInsightsAdvisorQuery } from "@/components/insights/use-insights-advisor";
+import { Glp1Tile } from "@/components/dashboard/glp1-tile";
 
 const HealthChart = dynamic(
   () =>
@@ -1223,6 +1224,17 @@ export default function DashboardPage() {
                 insight={advisor.payload?.insights ?? null}
               />
             )}
+            {/* v1.4.25 W6 — GLP-1 status tile. The tile self-gates on
+                `Medication.treatmentClass === "GLP1"` (route returns
+                `data: null` when the user has no active GLP-1 med), so
+                we always mount it and let the tile suppress itself.
+                Slot is below the InsightsCardPreview and above the
+                chart row — high enough that a Mounjaro / Ozempic user
+                sees their dose-response chart without scrolling past
+                BP / pulse, but below the AI preview so the latter
+                stays the "scroll-stop hero" Marc anchored the dashboard
+                around. */}
+            <Glp1Tile />
             {charts.map((entry) => (
               <div key={entry.id} className="space-y-2">
                 {entry.node}
