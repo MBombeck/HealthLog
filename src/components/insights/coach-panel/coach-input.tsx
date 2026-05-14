@@ -1,23 +1,17 @@
 "use client";
 
 import { type FormEvent, type KeyboardEvent, useCallback } from "react";
-import { Loader2, Mic, Send } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
  * v1.4.20 phase B2b — Coach composer.
  *
- * `<textarea>` wrapped in a Dracula-styled card with a send button +
- * mic placeholder. Submit fires on:
+ * `<textarea>` wrapped in a Dracula-styled card with a send button.
+ * Submit fires on:
  *   - Enter (no Shift) → send
  *   - Cmd/Ctrl + Enter → send (parity with the artboard ⌘↵ chip)
  *   - Shift + Enter → newline (default browser behaviour)
@@ -26,13 +20,13 @@ import { useTranslations } from "@/lib/i18n/context";
  * the drawer. `disabled` flips during a streamed reply so we never
  * fire two requests in parallel.
  *
- * Mic is rendered but disabled with a tooltip ("Voice input arrives
- * with the iOS app in v1.5") because the natural shipper of voice is
- * the native client, not the PWA.
- *
  * v1.4.22 B4: the disclaimer ("Coach replies are generated …") moved
  * out of the composer and into the sources rail footer, so the
  * composer stays focused on the input affordance.
+ *
+ * v1.4.25 W5: dropped the non-functional mic icon. The voice-input
+ * affordance ships with the iOS client; surfacing a placeholder in the
+ * web composer drew clicks for an action that did nothing.
  */
 export interface CoachInputProps {
   value: string;
@@ -104,26 +98,6 @@ export function CoachInput({
           )}
         />
         <div className="mt-1.5 flex items-center gap-2">
-          <TooltipProvider delayDuration={200}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  disabled
-                  aria-label={t("insights.coach.voiceComingSoon")}
-                  data-slot="coach-input-mic"
-                  className="size-8"
-                >
-                  <Mic className="size-4" aria-hidden="true" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {t("insights.coach.voiceComingSoon")}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
           <span
             data-slot="coach-input-hint"
             className="text-muted-foreground text-[11px]"

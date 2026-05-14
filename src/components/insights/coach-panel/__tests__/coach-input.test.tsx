@@ -11,16 +11,17 @@ function render(node: React.ReactNode, locale: "en" | "de" = "en") {
 }
 
 describe("<CoachInput>", () => {
-  it("mounts the textarea, mic, and send button slots", () => {
+  it("mounts the textarea + send button slots (mic dropped in W5)", () => {
     // v1.4.22 B4 — the disclaimer moved to the sources rail; the
     // composer no longer renders its own paragraph below the input.
+    // v1.4.25 W5 — the non-functional mic icon was removed.
     const html = render(
       <CoachInput value="" onChange={() => {}} onSubmit={() => {}} />,
     );
     expect(html).toContain('data-slot="coach-input"');
     expect(html).toContain('data-slot="coach-input-textarea"');
-    expect(html).toContain('data-slot="coach-input-mic"');
     expect(html).toContain('data-slot="coach-input-send"');
+    expect(html).not.toContain('data-slot="coach-input-mic"');
     expect(html).not.toContain('data-slot="coach-input-disclaimer"');
     expect(html).not.toContain("Coach replies are generated");
   });
@@ -41,20 +42,16 @@ describe("<CoachInput>", () => {
     expect(html).toContain("Frag mich etwas zu deinen Daten");
   });
 
-  it("disables the mic button with the v1.5 tooltip text", () => {
+  it("no longer renders a mic button (W5 removed the placeholder)", () => {
+    // v1.4.25 W5 — the mic icon used to be rendered + disabled with a
+    // "voice arrives with iOS" tooltip. Marc flagged it as a click-
+    // trap: nothing happened on tap. The composer now drops the icon
+    // entirely; voice input remains a v1.5 iOS feature.
     const html = render(
       <CoachInput value="" onChange={() => {}} onSubmit={() => {}} />,
     );
-    // The button carries both the disabled attribute and the
-    // localised v1.5 voice tooltip on aria-label. Attribute order is
-    // not guaranteed across React versions, so we check for both
-    // independently inside the same tag.
-    const micTag = html.match(/<button[^>]*data-slot="coach-input-mic"[^>]*>/);
-    expect(micTag).not.toBeNull();
-    expect(micTag?.[0]).toContain("disabled");
-    expect(micTag?.[0]).toContain(
-      'aria-label="Voice input arrives with the iOS app in v1.5."',
-    );
+    expect(html).not.toMatch(/data-slot="coach-input-mic"/);
+    expect(html).not.toContain("Voice input arrives with the iOS app");
   });
 
   it("disables the send button when the value is empty", () => {
