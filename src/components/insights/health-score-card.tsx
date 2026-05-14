@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ChevronDown, Minus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
@@ -134,6 +134,16 @@ const COMPONENT_LABEL_KEY: Record<
   compliance: "insights.healthScore.componentCompliance",
 };
 
+// v1.4.25 W8e — provenance row order. Module-scope so the array is
+// allocated once per process rather than on every card render; the
+// downstream `.map()` is non-mutating, so a fresh copy isn't needed.
+const COMPONENT_ORDER: readonly ComponentKey[] = [
+  "bp",
+  "weight",
+  "mood",
+  "compliance",
+];
+
 export function HealthScoreCard({
   score,
   band,
@@ -147,19 +157,22 @@ export function HealthScoreCard({
   // (`title`) so the row layout stays one-line. Dates format via the
   // user's locale to honour the EU comma / dot convention; on bad input
   // we fall through to the raw ISO so the user still sees something.
-  const formatAsOf = (asOf: string | null): string | null => {
-    if (!asOf) return null;
-    try {
-      const parsed = new Date(asOf);
-      if (Number.isNaN(parsed.getTime())) return null;
-      return new Intl.DateTimeFormat(locale, {
+  // The formatter is memoised per locale so the row map below doesn't
+  // build a fresh `Intl.DateTimeFormat` instance per row.
+  const asOfFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
         year: "numeric",
         month: "short",
         day: "2-digit",
-      }).format(parsed);
-    } catch {
-      return null;
-    }
+      }),
+    [locale],
+  );
+  const formatAsOf = (asOf: string | null): string | null => {
+    if (!asOf) return null;
+    const parsed = new Date(asOf);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return asOfFormatter.format(parsed);
   };
   const [expanded, setExpanded] = useState(initiallyExpanded);
   // `useId` keeps the aria-controls/section-id pair unique even when
@@ -179,13 +192,7 @@ export function HealthScoreCard({
   // descending so the biggest contributor sits first. Components with
   // null values sink to the bottom (`weight * 0 === 0`); the tie-break
   // is the alphabetical key order so determinism holds across renders.
-  const COMPONENT_ORDER: readonly ComponentKey[] = [
-    "bp",
-    "weight",
-    "mood",
-    "compliance",
-  ];
-  const provenanceRows = [...COMPONENT_ORDER]
+  const provenanceRows = COMPONENT_ORDER
     .map((key) => {
       const c = components[key];
       const inferredSource: HealthScoreComponentSource =
