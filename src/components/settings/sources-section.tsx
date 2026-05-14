@@ -171,18 +171,37 @@ export function SourcesSection() {
     },
   });
 
+  /**
+   * Shared adjacent-swap for both ladder buckets. Returns a copy of
+   * `list` with `index` and `index+delta` swapped, or `null` when the
+   * target index falls outside the array. The helper deliberately stays
+   * generic (typed via `T`) so both the source ladder (string[]) and
+   * the device-type ladder (DeviceType[]) share one implementation —
+   * the previous moveSource + moveDeviceType pair drifted apart twice
+   * during W8c before they were re-aligned.
+   */
+  function reorderLadder<T>(
+    list: readonly T[],
+    index: number,
+    delta: -1 | 1,
+  ): T[] | null {
+    const targetIdx = index + delta;
+    if (targetIdx < 0 || targetIdx >= list.length) return null;
+    const next = [...list];
+    [next[index], next[targetIdx]] = [next[targetIdx], next[index]];
+    return next;
+  }
+
   function moveSource(
     metric: SourcePriorityMetricKey,
     index: number,
     delta: -1 | 1,
   ) {
     if (!priority) return;
-    const list = [
-      ...(priority.metricPriority[metric] ?? DEFAULT_SOURCE_PRIORITY[metric]),
-    ];
-    const targetIdx = index + delta;
-    if (targetIdx < 0 || targetIdx >= list.length) return;
-    [list[index], list[targetIdx]] = [list[targetIdx], list[index]];
+    const current =
+      priority.metricPriority[metric] ?? DEFAULT_SOURCE_PRIORITY[metric];
+    const list = reorderLadder(current, index, delta);
+    if (!list) return;
     const nextMetric = { ...priority.metricPriority, [metric]: list };
     setDraft({
       ...priority,
@@ -200,12 +219,9 @@ export function SourcesSection() {
     if (!priority) return;
     const key = bucket ?? "default";
     const current =
-      priority.deviceTypePriority[key] ?? [...DEFAULT_DEVICE_TYPE_PRIORITY];
-    const list = [...current];
-    const targetIdx = index + delta;
-    if (targetIdx < 0 || targetIdx >= list.length) return;
-    [list[index], list[targetIdx]] = [list[targetIdx], list[index]];
-
+      priority.deviceTypePriority[key] ?? DEFAULT_DEVICE_TYPE_PRIORITY;
+    const list = reorderLadder(current, index, delta);
+    if (!list) return;
     const nextDevicePriority: DeviceTypePriority = {
       ...priority.deviceTypePriority,
       [key]: list,
