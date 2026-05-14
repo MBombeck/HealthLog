@@ -717,6 +717,28 @@
         "ema": "Fuente EMA",
         "psp4": "Farmacometría revisada por pares"
       }
+    },
+    "researchMode": {
+      "dialog": {
+        "title": "Activar el modo Investigación",
+        "intro": "El modo Investigación añade un gráfico estimado del nivel de fármaco a tu página de GLP-1. Lee el límite a continuación antes de activarlo: el gráfico es una ayuda de aprendizaje, nunca una medición, nunca un consejo médico.",
+        "whatItIsHeader": "Qué es esto",
+        "whatItIs": "Una curva en diente de sierra que simula la superposición de tus dosis registradas a lo largo del tiempo, usando el modelo de Bateman de un compartimento con los parámetros de absorción y semivida publicados en el EPAR de la EMA de cada agonista GLP-1 aprobado. El eje vertical es adimensional y sin etiquetas. La forma, no el número, es lo que muestra el gráfico.",
+        "whatItIsntHeader": "Qué no es",
+        "whatItIsnt": "No es un nivel en sangre. No es una medición. No es una predicción de cómo responde realmente tu cuerpo. No es base para ninguna decisión de dosis, tiempo o escalado. Para cualquier cosa que afecte cómo tomas tu medicación, habla con tu médico prescriptor.",
+        "whyEstimateHeader": "Por qué es una estimación",
+        "whyEstimate": "La farmacocinética poblacional describe al paciente típico. La variación individual es grande: el modelo Schneck/Urva 2024 de tirzepatida reporta aproximadamente un 22 % de variabilidad interindividual en la absorción y aproximadamente un 49 % en el volumen de distribución. Una curva de manual no puede capturar tu peso, tu función renal, tu técnica de inyección ni la precisión de tus horarios. Lee la curva como el ritmo de tu dosificación, no como tu nivel.",
+        "mdrBoundaryHeader": "Límite regulatorio",
+        "mdrBoundary": "HealthLog muestra datos regulatorios públicos y tus propios registros. La aplicación no predice, no diagnostica, no trata y no recomienda ninguna terapia. El Reglamento UE 2017/745 (Medical Device Regulation, MDR) y el documento de orientación MDCG 2021-24 trazan la línea con el software que interpreta datos con fines médicos: este gráfico se queda decididamente del lado educativo de esa línea. Si en algún momento sientes que te empuja hacia una decisión clínica, ciérralo.",
+        "citationsHeader": "Fuentes",
+        "citations": "European Public Assessment Reports de la EMA para Mounjaro, Ozempic, Wegovy, Saxenda, Trulicity, Byetta y Bydureon (Sección 5.2). Schneck K, Urva S. Population pharmacokinetics of the GIP/GLP receptor agonist tirzepatide. CPT Pharmacometrics Syst Pharmacol 2024;13(3):494-503 (DOI 10.1002/psp4.13099).",
+        "versionLine": "Versión del disclaimer: {version}",
+        "acknowledgeCta": "Entiendo — activar",
+        "cancelCta": "Cancelar",
+        "successToast": "Modo Investigación activado. La curva de nivel de fármaco es ahora visible en tu página de GLP-1.",
+        "errorToast": "No se pudo activar el modo Investigación. Inténtalo de nuevo.",
+        "staleVersionToast": "El disclaimer se actualizó desde que cargó esta página. Recarga para leer la versión actual."
+      }
     }
   },
   "charts": {
