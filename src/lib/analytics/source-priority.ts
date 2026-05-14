@@ -34,8 +34,8 @@ import type {
 } from "@/generated/prisma/client";
 
 import {
-  DEFAULT_DEVICE_TYPE_PRIORITY,
   type DeviceType,
+  getDeviceTypeLadder,
   getSourceLadder,
   normalizeDeviceType,
   parseSourcePriority,
@@ -134,22 +134,14 @@ export function pickCanonicalSourceRows<T extends SourcePickerRow>(
 
   // Cache device-type ladders by (MeasurementType | "__default__") so a
   // bucket with mixed-type rows resolves the ladder once per type
-  // rather than once per row.
+  // rather than once per row. Resolution itself lives in
+  // `getDeviceTypeLadder` — the cache is the only extra layer here.
   const ladderCache = new Map<string, readonly DeviceType[]>();
   function resolveLadder(rowType: MeasurementType | null | undefined): readonly DeviceType[] {
     const cacheKey = rowType ?? "__default__";
     let ladder = ladderCache.get(cacheKey);
     if (!ladder) {
-      const override = rowType
-        ? resolved.deviceTypePriority[rowType]
-        : undefined;
-      ladder =
-        override && override.length > 0
-          ? override
-          : resolved.deviceTypePriority.default &&
-              resolved.deviceTypePriority.default.length > 0
-            ? resolved.deviceTypePriority.default
-            : DEFAULT_DEVICE_TYPE_PRIORITY;
+      ladder = getDeviceTypeLadder(resolved, rowType ?? "default");
       ladderCache.set(cacheKey, ladder);
     }
     return ladder;
