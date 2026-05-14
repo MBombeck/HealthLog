@@ -58,13 +58,36 @@ const layoutSchema = z.object({
   // v1.4.18 — per-chart overlay prefs (3 toggles per chart card).
   // Optional so older clients that don't know the field can still PUT;
   // the resolver coerces malformed values away from the layout blob.
+  //
+  // v1.4.25 W6 — switched from `z.record(enum, …)` to `z.partialRecord(…)`
+  // because Zod v4 changed the semantics of `z.record(enum, …)`: it now
+  // requires every enum key to be present (a breaking change from
+  // Zod v3 which behaved like a partial record). With the strict variant
+  // any PUT that carried `chartOverlayPrefs` with fewer than ALL nine
+  // chart keys (i.e. every real-world Save click once a user had touched
+  // a per-chart overlay popover) 422'd with
+  // `expected: object, path: ["chartOverlayPrefs", "<missing-key>"]` and
+  // surfaced as the toast `Layout konnte nicht gespeichert werden`.
+  // Partial-record matches the original intent — overlay prefs are
+  // per-chart opt-in, the resolver fills in defaults for missing keys.
+  //
+  // The inner object also documents `comparisonBaseline` so the
+  // per-chart `<ChartOverlayControls>` popover (which calls
+  // `/api/dashboard/chart-overlay-prefs`) and a full-layout PUT from
+  // Settings → Dashboard can both round-trip the field. Without it Zod
+  // would silently strip the per-chart `comparisonBaseline` on every
+  // Save click in Settings, wiping any per-chart toggle the user had
+  // set via the chart-card popover.
   chartOverlayPrefs: z
-    .record(
+    .partialRecord(
       z.enum(CHART_OVERLAY_KEYS),
       z.object({
         showTrendIndicator: z.boolean(),
         showTrendArrow: z.boolean(),
         showTargetRange: z.boolean(),
+        comparisonBaseline: z
+          .enum(["none", "lastMonth", "lastYear"])
+          .optional(),
       }),
     )
     .optional(),
