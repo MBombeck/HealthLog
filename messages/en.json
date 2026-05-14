@@ -731,6 +731,7 @@
         "trendArrow": "Trend arrow",
         "targetRange": "Target range",
         "comparisonBaseline": "Comparison",
+        "comparisonUnavailable": "No prior-period data yet",
         "tooltip": {
           "openSettings": "Chart overlay settings"
         }

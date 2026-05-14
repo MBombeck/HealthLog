@@ -731,6 +731,7 @@
         "trendArrow": "Trend-Pfeil",
         "targetRange": "Zielbereich",
         "comparisonBaseline": "Vergleich",
+        "comparisonUnavailable": "Kein Vorzeitraum verfügbar",
         "tooltip": {
           "openSettings": "Chart-Overlay-Einstellungen"
         }

@@ -604,6 +604,7 @@ export function MoodChart({
                 <ChartOverlayControls
                   prefs={overlayPrefs.prefs}
                   onChange={overlayPrefs.setPrefs}
+                  hasComparisonData={hasComparisonData}
                 />
               ) : null}
             </div>

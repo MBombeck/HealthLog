@@ -337,10 +337,16 @@ export function MedicationComplianceChart({
             </Button>
           ))}
           {/* v1.4.18 — overlay-controls dropdown next to the range
-              tabs. */}
+              tabs.
+              v1.4.25 W3f — the compliance card never paints a
+              prior-period overlay (the heatmap doesn't support it),
+              so the comparison buttons grey out when a baseline is
+              already selected to signal "this metric has no
+              comparison available". */}
           <ChartOverlayControls
             prefs={overlayPrefs.prefs}
             onChange={overlayPrefs.setPrefs}
+            hasComparisonData={false}
           />
         </div>
       </div>

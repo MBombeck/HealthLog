@@ -4,6 +4,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 
 import {
   ChartOverlayControls,
+  ChartOverlayControlsBody,
   DEFAULT_CHART_OVERLAY_PREFS,
   type ChartOverlayPrefs,
 } from "../chart-overlay-controls";
@@ -94,5 +95,136 @@ describe("<ChartOverlayControls>", () => {
     );
 
     expect(html).toContain('aria-label="Chart-Overlay-Einstellungen"');
+  });
+
+  /**
+   * v1.4.25 W3f — comparison-baseline grey-out when the parent chart
+   * reports `hasComparisonData=false`. The disabled state communicates
+   * "you selected a comparison but there's no prior-period series to
+   * paint" instead of silently hiding the overlay.
+   *
+   * The popover body is portalled by Radix at runtime — it's not in
+   * SSR markup. The tests target the extracted `<ChartOverlayControlsBody>`
+   * so the JSX inside the popover is renderable in `renderToStaticMarkup`.
+   */
+  describe("comparison-baseline grey-out (v1.4.25 W3f)", () => {
+    it("renders comparison buttons in normal state when prior data exists", () => {
+      const prefs: ChartOverlayPrefs = {
+        ...DEFAULT_CHART_OVERLAY_PREFS,
+        comparisonBaseline: "lastMonth",
+      };
+      const html = renderToStaticMarkup(
+        withProvider(
+          <ChartOverlayControlsBody
+            prefs={prefs}
+            onChange={vi.fn()}
+            hasComparisonData
+          />,
+        ),
+      );
+
+      expect(html).not.toContain('data-comparison-disabled="true"');
+      expect(html).not.toContain('data-comparison-greyed="true"');
+      expect(html).not.toContain(
+        'data-slot="chart-overlay-comparison-unavailable-hint"',
+      );
+      // The lastMonth button has no aria-disabled set when data is
+      // available.
+      expect(html).not.toMatch(
+        /data-slot="chart-overlay-comparison-lastMonth"[^>]*aria-disabled="true"/,
+      );
+    });
+
+    it("greys out lastMonth + lastYear when prior period is empty AND a baseline is selected", () => {
+      const prefs: ChartOverlayPrefs = {
+        ...DEFAULT_CHART_OVERLAY_PREFS,
+        comparisonBaseline: "lastMonth",
+      };
+      const html = renderToStaticMarkup(
+        withProvider(
+          <ChartOverlayControlsBody
+            prefs={prefs}
+            onChange={vi.fn()}
+            hasComparisonData={false}
+          />,
+        ),
+      );
+
+      expect(html).toContain('data-comparison-disabled="true"');
+      // The lastMonth + lastYear buttons grey out, "none" does not.
+      expect(html).toMatch(
+        /data-slot="chart-overlay-comparison-lastMonth"[^>]*data-comparison-greyed="true"/,
+      );
+      expect(html).toMatch(
+        /data-slot="chart-overlay-comparison-lastYear"[^>]*data-comparison-greyed="true"/,
+      );
+      // The "none" button stays enabled — it's the escape hatch.
+      expect(html).not.toMatch(
+        /data-slot="chart-overlay-comparison-none"[^>]*data-comparison-greyed="true"/,
+      );
+      // aria-disabled + opacity-50 + tooltip surface.
+      expect(html).toMatch(
+        /data-slot="chart-overlay-comparison-lastMonth"[^>]*aria-disabled="true"/,
+      );
+      expect(html).toContain("opacity-50");
+      expect(html).toContain("No prior-period data yet");
+      // The footer hint paragraph is also rendered so screen readers
+      // hear the explanation.
+      expect(html).toContain(
+        'data-slot="chart-overlay-comparison-unavailable-hint"',
+      );
+    });
+
+    it("keeps all buttons enabled when the baseline is 'none' even with no prior data", () => {
+      // The "none" baseline is the safe default — the grey-out only
+      // triggers once a user has opted in to comparing.
+      const html = renderToStaticMarkup(
+        withProvider(
+          <ChartOverlayControlsBody
+            prefs={DEFAULT_CHART_OVERLAY_PREFS}
+            onChange={vi.fn()}
+            hasComparisonData={false}
+          />,
+        ),
+      );
+
+      expect(html).not.toContain('data-comparison-disabled="true"');
+      expect(html).not.toContain('data-comparison-greyed="true"');
+      expect(html).not.toContain(
+        'data-slot="chart-overlay-comparison-unavailable-hint"',
+      );
+    });
+
+    it("emits the localised tooltip + hint copy under de locale", () => {
+      const prefs: ChartOverlayPrefs = {
+        ...DEFAULT_CHART_OVERLAY_PREFS,
+        comparisonBaseline: "lastYear",
+      };
+      const html = renderToStaticMarkup(
+        <I18nProvider initialLocale="de">
+          <ChartOverlayControlsBody
+            prefs={prefs}
+            onChange={vi.fn()}
+            hasComparisonData={false}
+          />
+        </I18nProvider>,
+      );
+      expect(html).toContain("Kein Vorzeitraum verfügbar");
+    });
+
+    it("defaults hasComparisonData to true when the prop is omitted", () => {
+      // Charts that haven't been updated to thread the flag keep the
+      // pre-W3f behaviour — every button stays enabled.
+      const prefs: ChartOverlayPrefs = {
+        ...DEFAULT_CHART_OVERLAY_PREFS,
+        comparisonBaseline: "lastMonth",
+      };
+      const html = renderToStaticMarkup(
+        withProvider(
+          <ChartOverlayControlsBody prefs={prefs} onChange={vi.fn()} />,
+        ),
+      );
+      expect(html).not.toContain('data-comparison-disabled="true"');
+    });
   });
 });
