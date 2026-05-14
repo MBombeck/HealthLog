@@ -220,20 +220,47 @@ jobs:
       # outage must not retroactively fail the build. Marc still has the
       # manual recipe as fallback.
       #
-      # Required GitHub repository secrets (set by Marc once):
+      # Required GitHub repository secrets (set by the maintainer once):
       #   COOLIFY_WEBHOOK = full deploy URL incl. ?uuid=...&force=false
       #   COOLIFY_TOKEN   = Bearer token from Coolify UI -> Keys & Tokens
       # Both secrets are referenced exclusively here. If either is unset, the
       # step short-circuits to a skip rather than calling Coolify with empty
       # auth.
+      #
+      # v1.4.26 P6-3 — maintainer toggle.
+      # Three releases in a row shipped via the host-side SSH-retag fallback
+      # because the secrets above silently absent + the warn-only skip
+      # below let the workflow stay green. The `vars.COOLIFY_AUTO_DEPLOY`
+      # repository variable now distinguishes the two intended modes:
+      #
+      #   COOLIFY_AUTO_DEPLOY=on  →  if secrets present, deploy; if absent,
+      #                              FAIL the step so the maintainer sees the
+      #                              missing-secret gap on the next release.
+      #   COOLIFY_AUTO_DEPLOY=off →  unconditional skip with a notice. Use
+      #                              this when the host-side SSH recipe is
+      #                              the intended deploy path.
+      #   (unset / any other)     →  warn-and-skip (legacy behaviour).
+      #
+      # Set the variable under repo Settings → Secrets and variables →
+      # Actions → Variables (NOT Secrets — it is intentionally readable).
       - name: Trigger Coolify deploy
         continue-on-error: true
         env:
           COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          COOLIFY_AUTO_DEPLOY: ${{ vars.COOLIFY_AUTO_DEPLOY }}
         run: |
+          mode="${COOLIFY_AUTO_DEPLOY:-}"
+          if [ "$mode" = "off" ]; then
+            echo "::notice::COOLIFY_AUTO_DEPLOY=off — skipping registry deploy hook. Maintainer uses the host-side SSH recipe instead."
+            exit 0
+          fi
           if [ -z "$COOLIFY_WEBHOOK" ] || [ -z "$COOLIFY_TOKEN" ]; then
-            echo "::warning::COOLIFY_WEBHOOK or COOLIFY_TOKEN secret missing — skipping auto-deploy. Configure in repo Settings → Secrets to enable."
+            if [ "$mode" = "on" ]; then
+              echo "::error::COOLIFY_AUTO_DEPLOY=on but COOLIFY_WEBHOOK or COOLIFY_TOKEN secret is missing. Set both under repo Settings → Secrets and variables → Actions, or set COOLIFY_AUTO_DEPLOY=off to silence."
+              exit 1
+            fi
+            echo "::warning::COOLIFY_WEBHOOK or COOLIFY_TOKEN secret missing — skipping auto-deploy. Configure in repo Settings → Secrets to enable, or set the COOLIFY_AUTO_DEPLOY variable to 'off' to silence this warning."
             exit 0
           fi
           # v1.4.22 C3 — force=true tells Coolify to skip its image-cache
