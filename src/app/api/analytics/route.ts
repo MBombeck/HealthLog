@@ -417,7 +417,7 @@ async function computeCorrelationHypotheses(
     const compliancePct = (slot.taken / slot.expected) * 100;
     const meanSys = sysValues.reduce((s, v) => s + v, 0) / sysValues.length;
     bpCompliancePairs.push({
-      date: dateFromBerlinKey(key),
+      date: dateFromDayKey(key),
       systolic: meanSys,
       compliancePct,
     });
@@ -454,7 +454,7 @@ async function computeCorrelationHypotheses(
     const meanPulse =
       pulseValues.reduce((s, v) => s + v, 0) / pulseValues.length;
     moodPulsePairs.push({
-      date: dateFromBerlinKey(key),
+      date: dateFromDayKey(key),
       mood: meanMood,
       restingPulse: meanPulse,
     });
@@ -463,9 +463,17 @@ async function computeCorrelationHypotheses(
 
   // ── Hypothesis 3: Weight × weekday ──────────────────────────
   // 0 = Monday … 6 = Sunday. ISO weekday minus 1.
+  //
+  // v1.4.25 W10 reconcile (Code-H1) — buckets the weekday by the
+  // user's display tz, matching W7's per-user-tz threading that the
+  // BP, mood, sleep, and pulse aggregators above already honour. The
+  // pre-W10 helper was pinned to `Europe/Berlin` and would land a
+  // user-local 23:30 weight reading from `Pacific/Auckland` under
+  // Sunday's bucket instead of Monday's — Pearson on the wrong
+  // weekday column.
   const weightWeekdayPairs: Array<{ weekday: number; weight: number }> = [];
   for (const row of weightRows) {
-    const isoWeekday = berlinIsoWeekday(row.measuredAt); // 1..7, 1=Mon
+    const isoWeekday = isoWeekdayInTz(row.measuredAt, userTz); // 1..7, 1=Mon
     weightWeekdayPairs.push({
       weekday: isoWeekday - 1,
       weight: row.value,
@@ -592,18 +600,34 @@ async function fetchMeasurementSeriesChunked(
 // `src/lib/analytics/berlin-day.ts` so the targets route's sparkline
 // bucketing shares the same Europe/Berlin contract. The
 // `weekday: "short"` formatter still lives here because it's only
-// used by `berlinIsoWeekday()` below.
-const BERLIN_DATE_PARTS = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Europe/Berlin",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  weekday: "short",
-});
+// used by `isoWeekdayInTz()` below.
+//
+// v1.4.25 W10 reconcile (Code-H1) — formatter is now per-tz so the
+// weight-weekday correlator honours the same per-user-tz contract the
+// BP/mood/pulse aggregators above already use. Memoised by tz so the
+// formatter is built once per unique timezone per process (tz strings
+// rarely change at runtime; the cache is bounded by the IANA database
+// to a few hundred entries even in the worst case).
+const WEEKDAY_FORMATTER_CACHE = new Map<string, Intl.DateTimeFormat>();
+function getWeekdayFormatter(timeZone: string): Intl.DateTimeFormat {
+  let formatter = WEEKDAY_FORMATTER_CACHE.get(timeZone);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      weekday: "short",
+    });
+    WEEKDAY_FORMATTER_CACHE.set(timeZone, formatter);
+  }
+  return formatter;
+}
 
-function dateFromBerlinKey(key: string): Date {
+function dateFromDayKey(key: string): Date {
   // Anchor to UTC midnight — the date is a sortable bucket label rather
-  // than a wall-clock timestamp, so DST drift is irrelevant.
+  // than a wall-clock timestamp, so DST drift is irrelevant. The tz
+  // info is already baked into the key (built via `userDayKey` upstream).
   return new Date(`${key}T00:00:00.000Z`);
 }
 
@@ -617,11 +641,12 @@ const ISO_WEEKDAY: Record<string, number> = {
   Sun: 7,
 };
 
-function berlinIsoWeekday(d: Date): number {
-  const parts = BERLIN_DATE_PARTS.formatToParts(d);
+function isoWeekdayInTz(d: Date, timeZone: string): number {
+  const parts = getWeekdayFormatter(timeZone).formatToParts(d);
   const weekday = parts.find((p) => p.type === "weekday")?.value ?? "Mon";
   return ISO_WEEKDAY[weekday] ?? 1;
 }
+
 
 /**
  * v1.4.25 W8e — collapse the persisted `MeasurementSource` enum onto
