@@ -14,7 +14,9 @@ Audit + scoring of the full surface lives in
 | meastype | Withings name | DB enum | DB unit | Source devices |
 |---|---|---|---|---|
 | 1 | Weight | `WEIGHT` | kg | every Body / Body+ / Body Cardio / Body Comp / Body Scan |
+| 5 | Fat Free Mass | `FAT_FREE_MASS` | kg | Body+ / Body Cardio / Body Comp / Body Scan |
 | 6 | Fat Ratio | `BODY_FAT` | % | Body+ family |
+| 8 | Fat Mass Weight | `FAT_MASS` | kg | Body+ / Body Cardio / Body Comp / Body Scan |
 | 9 | Diastolic BP | `BLOOD_PRESSURE_DIA` | mmHg | BPM Connect / Core / Vision |
 | 10 | Systolic BP | `BLOOD_PRESSURE_SYS` | mmHg | BPM Connect / Core / Vision |
 | 11 | Heart Pulse | `PULSE` | bpm | BPM cuffs + scales (standing HR) |
@@ -22,9 +24,14 @@ Audit + scoring of the full surface lives in
 | 35 | SpO2 (alt code) | `OXYGEN_SATURATION` | % | older firmware reports 35 instead of 54 |
 | 54 | SpO2 | `OXYGEN_SATURATION` | % | ScanWatch / BPM Vision |
 | 71 | Body Temperature (core) | `BODY_TEMPERATURE` | celsius | current-gen Thermo |
+| 73 | Skin Temperature | `SKIN_TEMPERATURE` | celsius | ScanWatch dermal sensor. Distinct from `BODY_TEMPERATURE` — surface temps run ~32 °C, core ~37 °C; sharing the bucket would corrupt analytics. |
+| 76 | Muscle Mass | `MUSCLE_MASS` | kg | Body+ / Body Cardio / Body Comp / Body Scan |
 | 77 | Hydration / Water Mass | `TOTAL_BODY_WATER` | kg | Body Comp / Body Scan |
 | 88 | Bone Mass | `BONE_MASS` | kg | Body Comp / Body Scan |
+| 91 | Pulse Wave Velocity | `PULSE_WAVE_VELOCITY` | m/s | Body Cardio / Body Scan exclusive |
 | 123 | VO2 max | `VO2_MAX` | mL/(kg·min) | ScanWatch family |
+| 155 | Vascular Age | `VASCULAR_AGE` | years | Body Scan; composite of PWV + chronological age |
+| 170 | Visceral Fat | `VISCERAL_FAT` | rating | Body Comp / Body Scan; Withings' 1–12 scale (not a percent) |
 
 ### Unit handling
 
@@ -49,25 +56,19 @@ routines in v1.4.26.
 
 ## Deferred — v1.4.26
 
-| meastype | Withings name | Why deferred |
-|---|---|---|
-| 5 | Fat Free Mass | needs new `FAT_FREE_MASS` enum |
-| 8 | Fat Mass Weight | needs new `FAT_MASS` enum |
-| 73 | Skin Temperature | distinct physiology from core; needs `SKIN_TEMPERATURE` enum |
-| 76 | Muscle Mass | needs new `MUSCLE_MASS` enum |
-| 91 | Pulse Wave Velocity | Body Cardio / Body Scan exclusive; new enum |
-| 155 | Vascular Age | new enum, composite-derived years |
-| 170 | Visceral Fat | new enum, rating |
-
-Plus the new sync routines:
+The body-composition expansion (meastypes 5, 8, 73, 76, 91, 155, 170)
+landed in **v1.4.25 W5d** — see migration `0049_withings_full_metrics`.
+Deferred items now:
 
 - **Sleep** (`POST /v2/sleep?action=getsummary`) → `SLEEP_DURATION`,
   `HEART_RATE_VARIABILITY` (sdnn_1), per-stage rows via existing
   `SleepStage` enum.
 - **Activity** (`POST /v2/measure?action=getactivity`) → `ACTIVITY_STEPS`,
   `WALKING_RUNNING_DISTANCE`, `FLIGHTS_CLIMBED`, `ACTIVE_ENERGY_BURNED`.
-  **Requires OAuth scope upgrade** to `users.activity` — every existing
-  Withings connection has to reconnect once.
+  **Requires OAuth scope upgrade** to `user.activity` — every existing
+  Withings connection has to reconnect once. v1.4.25 W5d ships the
+  scope-upgrade plumbing + reconnect banner; the activity sync routine
+  itself lands in v1.4.26.
 
 ## Deferred — v1.5 (with iOS app)
 

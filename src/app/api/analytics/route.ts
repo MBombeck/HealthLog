@@ -278,6 +278,11 @@ export const GET = apiHandler(async () => {
  * `summaries.SLEEP_DURATION` totals without a stage card in that
  * case. Returns the sum-per-stage AND the day count covered so the
  * UI can render an "averaged across N nights" caption truthfully.
+ *
+ * v1.4.25 W3f — also returns a `perNight` array: one entry per
+ * Berlin-tz day inside the window, with minutes-per-stage for the
+ * stacked-bar chart. Days with zero stage-tagged rows are omitted
+ * from `perNight` (the chart treats them as gaps).
  */
 async function computeSleepStageBreakdown(
   userId: string,
@@ -287,6 +292,7 @@ async function computeSleepStageBreakdown(
   nights: number;
   totalMinutes: number;
   stages: Record<string, number>;
+  perNight: Array<{ dayKey: string; stages: Record<string, number> }>;
 } | null> {
   const DAY_MS = 24 * 60 * 60 * 1000;
   const since = new Date(Date.now() - 30 * DAY_MS);
@@ -305,18 +311,32 @@ async function computeSleepStageBreakdown(
   const stages: Record<string, number> = {};
   const dayKeys = new Set<string>();
   let totalMinutes = 0;
+  // v1.4.25 W3f — per-day accumulator. Keyed by Berlin-tz day so the
+  // chart's 7/14/30-day slicer can build a left-aligned series.
+  const perNightMap = new Map<string, Record<string, number>>();
   for (const row of rows) {
     if (!row.sleepStage) continue;
     stages[row.sleepStage] = (stages[row.sleepStage] ?? 0) + row.value;
     totalMinutes += row.value;
-    dayKeys.add(userDayKey(row.measuredAt, userTz));
+    const dayKey = userDayKey(row.measuredAt, userTz);
+    dayKeys.add(dayKey);
+    const nightStages = perNightMap.get(dayKey) ?? {};
+    nightStages[row.sleepStage] = (nightStages[row.sleepStage] ?? 0) + row.value;
+    perNightMap.set(dayKey, nightStages);
   }
+
+  // Sort per-night ascending so the chart consumer can slice the
+  // trailing N entries for the 7d / 14d / 30d toggle.
+  const perNight = Array.from(perNightMap.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([dayKey, stages]) => ({ dayKey, stages }));
 
   return {
     windowDays: 30,
     nights: dayKeys.size,
     totalMinutes,
     stages,
+    perNight,
   };
 }
 

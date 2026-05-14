@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import {
   Bar,
   BarChart,
@@ -12,31 +13,35 @@ import {
   YAxis,
 } from "recharts";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
- * v1.4.25 W4c — sleep-stage composition chart.
+ * v1.4.25 W4c → W3f — sleep-stage composition chart.
  *
- * Renders the trailing 30-day stage distribution as a horizontal
- * stacked bar (REM / Deep / Core / Awake / In-bed / Asleep). The
- * underlying data comes from `/api/analytics`'s `sleepStages` payload
- * (added in v1.4.23 W2) which exposes the per-stage minute totals plus
- * the number of nights covered, so the legend can read "averaged
- * across N nights".
+ * Marc directive 2026-05-14: switch from "30-day average composition"
+ * to a per-night stacked column chart so the user sees nightly stage
+ * variation, not just a rolling average. Apple Health's sleep tab is
+ * the visual reference — one column per night, stacks for REM / Deep /
+ * Core / Awake.
  *
- * Why composition over per-night time series? The current
- * `/api/analytics` aggregate only carries totals; a per-night stacked
- * column chart would need a separate endpoint. The "average night"
- * read is the dominant question users ask of stage data — see
- * Apple Health's own sleep tab, which shows the same composition
- * column above the trend chart. v1.4.26 can add the per-night surface
- * if Marc wants it.
+ * Window toggle: 7 / 14 / 30 days, default 7. The toggle pill above
+ * the chart matches the per-chart cog pattern in the rest of the app.
+ * Backed by `/api/analytics`'s `sleepStages.perNight` field (added in
+ * v1.4.25 W3f); the parent threads the full per-night array and the
+ * chart slices it down to the active window.
  *
  * Accessibility: the Recharts wrapper sets `role="img"` and an
  * `aria-label` derived from the composition so screen readers hear a
  * meaningful summary instead of a forest of `<rect>` elements.
  */
+
+export interface SleepStageNight {
+  /** Berlin-tz day key (YYYY-MM-DD). */
+  dayKey: string;
+  stages: Record<string, number>;
+}
 
 export interface SleepStageBreakdown {
   windowDays: number;
@@ -48,11 +53,21 @@ export interface SleepStageBreakdown {
    * Values are total minutes across the trailing-30 window.
    */
   stages: Record<string, number>;
+  /**
+   * v1.4.25 W3f — per-night breakdown over the trailing 30 days,
+   * sorted ascending. The chart slices the trailing N entries based on
+   * the active window toggle.
+   */
+  perNight?: SleepStageNight[];
 }
 
 export interface SleepStageStackedBarProps {
   breakdown: SleepStageBreakdown;
 }
+
+/** Window toggle values. Default 7. */
+const WINDOW_DAYS = [7, 14, 30] as const;
+type WindowSize = (typeof WINDOW_DAYS)[number];
 
 /**
  * Order on the stack — deepest restorative stages first so a user
@@ -85,23 +100,44 @@ function formatMinutes(total: number, locale: string): string {
   return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
 }
 
+/**
+ * Format a Berlin-tz day key (YYYY-MM-DD) as a short x-axis tick.
+ * 7-day window → "Mon" / "Tue" / …; 14-day → "M 10" / "T 11" / …;
+ * 30-day → "May 10" / "May 11" / …  Recharts handles overflow via
+ * interval=preserveStartEnd so we keep the label space tight without
+ * forced rotation.
+ */
+function formatDayTick(
+  dayKey: string,
+  window: WindowSize,
+  locale: string,
+): string {
+  const [y, m, d] = dayKey.split("-").map(Number);
+  if (!y || !m || !d) return dayKey;
+  const date = new Date(y, m - 1, d);
+  if (window === 7) {
+    return date.toLocaleDateString(locale === "de" ? "de-DE" : "en-US", {
+      weekday: "short",
+    });
+  }
+  if (window === 14) {
+    return `${date.getDate()}.`;
+  }
+  return date.toLocaleDateString(locale === "de" ? "de-DE" : "en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
   const { t, locale } = useTranslations();
-  const total = breakdown.totalMinutes || 1; // avoid divide-by-zero
-  // Build a single-row dataset Recharts can stack on. Each stage is its
-  // own series so the user can hover one stage at a time.
-  const row: Record<string, number | string> = {
-    name: t("insights.sleep.compositionTitle"),
-  };
-  for (const stage of STAGE_ORDER) {
-    row[stage] = breakdown.stages[stage] ?? 0;
-  }
-  const data = [row];
+
+  // v1.4.25 W3f — window toggle (7 / 14 / 30). Default 7d so the user
+  // sees their most recent week with maximal per-bar resolution.
+  const [windowDays, setWindowDays] = useState<WindowSize>(7);
 
   // Pull stage names from i18n once so the legend + tooltip share a
-  // single source of truth. Missing keys fall back to the enum value
-  // — covers `ASLEEP`/`IN_BED` which we always want to show even when
-  // no localization exists yet.
+  // single source of truth.
   const stageLabels: Record<string, string> = {
     DEEP: t("insights.sleep.stages.deep"),
     REM: t("insights.sleep.stages.rem"),
@@ -111,99 +147,195 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
     IN_BED: t("insights.sleep.stages.inBed"),
   };
 
+  // v1.4.25 W3f — per-night dataset. Slice the trailing N nights and
+  // build a Recharts row per night with one numeric key per stage.
+  // Empty perNight (legacy clients during the rollout) falls back to
+  // the aggregate row so the chart still renders something rather
+  // than going blank.
+  const data = useMemo(() => {
+    const perNight = breakdown.perNight ?? [];
+    if (perNight.length === 0) {
+      // Legacy fallback: render the 30-day aggregate as a single row
+      // so the chart degrades gracefully against a pre-W3f payload.
+      const fallbackRow: Record<string, number | string> = {
+        dayKey: "aggregate",
+        label: t("insights.sleep.compositionTitle"),
+      };
+      for (const stage of STAGE_ORDER) {
+        fallbackRow[stage] = breakdown.stages[stage] ?? 0;
+      }
+      return [fallbackRow];
+    }
+    const trailing = perNight.slice(-windowDays);
+    return trailing.map((night) => {
+      const row: Record<string, number | string> = {
+        dayKey: night.dayKey,
+        label: formatDayTick(night.dayKey, windowDays, locale),
+      };
+      for (const stage of STAGE_ORDER) {
+        row[stage] = night.stages[stage] ?? 0;
+      }
+      return row;
+    });
+  }, [breakdown, windowDays, locale, t]);
+
+  // Empty-state guard — no perNight rows AND no aggregate.
+  const hasData =
+    data.length > 0 &&
+    data.some((row) =>
+      STAGE_ORDER.some(
+        (stage) => typeof row[stage] === "number" && (row[stage] as number) > 0,
+      ),
+    );
+
   const ariaLabel = t("insights.sleep.compositionAriaLabel", {
     nights: breakdown.nights,
   });
 
   return (
-    <Card>
+    <Card data-slot="sleep-stage-stacked-bar">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium">
-            {t("insights.sleep.compositionTitle")}
-          </CardTitle>
-          <span className="text-muted-foreground text-xs">
-            {t("insights.sleep.compositionSubtitle", {
-              nights: breakdown.nights,
-            })}
-          </span>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-0.5">
+            <CardTitle className="text-sm font-medium">
+              {t("insights.sleep.compositionTitle")}
+            </CardTitle>
+            <span className="text-muted-foreground text-xs">
+              {t("insights.sleep.compositionSubtitle", {
+                nights: breakdown.nights,
+              })}
+            </span>
+          </div>
+          <div
+            className="flex items-center gap-1 self-end sm:self-auto"
+            data-slot="sleep-stage-window-toggle"
+          >
+            {WINDOW_DAYS.map((w) => (
+              <Button
+                key={w}
+                type="button"
+                variant={windowDays === w ? "default" : "ghost"}
+                size="sm"
+                className="min-h-11 px-2 text-xs sm:px-3"
+                onClick={() => setWindowDays(w)}
+                aria-pressed={windowDays === w}
+                data-slot={`sleep-stage-window-${w}`}
+              >
+                {w}d
+              </Button>
+            ))}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div role="img" aria-label={ariaLabel}>
-          <ResponsiveContainer width="100%" height={120}>
-            <BarChart
-              data={data}
-              layout="vertical"
-              margin={{ top: 8, right: 16, left: 16, bottom: 8 }}
-              stackOffset="expand"
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="hsl(var(--border))"
-                opacity={0.3}
-              />
-              <XAxis
-                type="number"
-                domain={[0, 1]}
-                tickFormatter={(v: number) => `${Math.round(v * 100)}%`}
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={11}
-              />
-              <YAxis type="category" dataKey="name" hide />
-              <Tooltip
-                cursor={{ fill: "transparent" }}
-                content={({ active, payload }) => {
-                  if (!active || !payload || payload.length === 0) return null;
-                  return (
-                    <div className="bg-popover text-popover-foreground rounded-md border p-2 text-xs shadow-md">
-                      {payload.map((entry) => {
-                        const stage = String(entry.dataKey ?? "");
-                        const minutes =
-                          typeof entry.value === "number" ? entry.value : 0;
-                        if (minutes === 0) return null;
-                        const pct = Math.round((minutes / total) * 100);
-                        return (
-                          <div
-                            key={stage}
-                            className="flex items-center justify-between gap-3"
-                          >
-                            <span className="flex items-center gap-1.5">
-                              <span
-                                aria-hidden="true"
-                                className="inline-block h-2 w-2 rounded-sm"
-                                style={{ background: STAGE_COLORS[stage] }}
-                              />
-                              {stageLabels[stage] ?? stage}
-                            </span>
-                            <span className="text-muted-foreground">
-                              {formatMinutes(minutes, locale)} · {pct}%
-                            </span>
+        {!hasData ? (
+          <p
+            className="text-muted-foreground py-8 text-center text-xs"
+            data-slot="sleep-stage-empty"
+          >
+            {t("insights.sleep.stages.unavailable")}
+          </p>
+        ) : (
+          <div role="img" aria-label={ariaLabel}>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={data}
+                margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                  opacity={0.3}
+                />
+                <XAxis
+                  type="category"
+                  dataKey="label"
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={10}
+                  interval="preserveStartEnd"
+                />
+                <YAxis
+                  type="number"
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={11}
+                  tickFormatter={(v: number) => {
+                    // Render the y-axis as hours so 480 min reads as 8h.
+                    if (v <= 0) return "0";
+                    return `${Math.round(v / 60)}h`;
+                  }}
+                />
+                <Tooltip
+                  cursor={{ fill: "transparent" }}
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload || payload.length === 0) return null;
+                    const totalNight = payload.reduce(
+                      (sum, entry) =>
+                        sum +
+                        (typeof entry.value === "number" ? entry.value : 0),
+                      0,
+                    );
+                    return (
+                      <div className="bg-popover text-popover-foreground rounded-md border p-2 text-xs shadow-md">
+                        <div className="border-border mb-1 border-b pb-1 font-medium">
+                          {label}
+                        </div>
+                        {payload.map((entry) => {
+                          const stage = String(entry.dataKey ?? "");
+                          const minutes =
+                            typeof entry.value === "number" ? entry.value : 0;
+                          if (minutes === 0) return null;
+                          const pct =
+                            totalNight > 0
+                              ? Math.round((minutes / totalNight) * 100)
+                              : 0;
+                          return (
+                            <div
+                              key={stage}
+                              className="flex items-center justify-between gap-3"
+                            >
+                              <span className="flex items-center gap-1.5">
+                                <span
+                                  aria-hidden="true"
+                                  className="inline-block h-2 w-2 rounded-sm"
+                                  style={{ background: STAGE_COLORS[stage] }}
+                                />
+                                {stageLabels[stage] ?? stage}
+                              </span>
+                              <span className="text-muted-foreground">
+                                {formatMinutes(minutes, locale)} · {pct}%
+                              </span>
+                            </div>
+                          );
+                        })}
+                        {totalNight > 0 && (
+                          <div className="border-border mt-1 flex items-center justify-between gap-3 border-t pt-1 font-medium">
+                            <span>{t("insights.sleep.headlineTitle")}</span>
+                            <span>{formatMinutes(totalNight, locale)}</span>
                           </div>
-                        );
-                      })}
-                    </div>
-                  );
-                }}
-              />
-              <Legend
-                wrapperStyle={{ fontSize: 11 }}
-                formatter={(value: string) => stageLabels[value] ?? value}
-              />
-              {STAGE_ORDER.map((stage) => (
-                <Bar
-                  key={stage}
-                  dataKey={stage}
-                  stackId="sleep"
-                  fill={STAGE_COLORS[stage]}
-                  isAnimationActive={false}
-                >
-                  <Cell fill={STAGE_COLORS[stage]} />
-                </Bar>
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+                        )}
+                      </div>
+                    );
+                  }}
+                />
+                <Legend
+                  wrapperStyle={{ fontSize: 11 }}
+                  formatter={(value: string) => stageLabels[value] ?? value}
+                />
+                {STAGE_ORDER.map((stage) => (
+                  <Bar
+                    key={stage}
+                    dataKey={stage}
+                    stackId="stages"
+                    fill={STAGE_COLORS[stage]}
+                    isAnimationActive={false}
+                  >
+                    <Cell fill={STAGE_COLORS[stage]} />
+                  </Bar>
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

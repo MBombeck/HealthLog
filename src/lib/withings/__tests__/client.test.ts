@@ -69,6 +69,38 @@ describe("MEASURE_TYPE_MAP", () => {
   it("maps Withings meastype 123 (VO2 max) → VO2_MAX", () => {
     expect(MEASURE_TYPE_MAP[123]).toEqual({ type: "VO2_MAX" });
   });
+
+  // ── v1.4.25 W5d Withings full coverage ──
+  it("maps Withings meastype 5 (fat free mass) → FAT_FREE_MASS", () => {
+    expect(MEASURE_TYPE_MAP[5]).toEqual({ type: "FAT_FREE_MASS" });
+  });
+
+  it("maps Withings meastype 8 (fat mass) → FAT_MASS", () => {
+    expect(MEASURE_TYPE_MAP[8]).toEqual({ type: "FAT_MASS" });
+  });
+
+  it("maps Withings meastype 76 (muscle mass) → MUSCLE_MASS", () => {
+    expect(MEASURE_TYPE_MAP[76]).toEqual({ type: "MUSCLE_MASS" });
+  });
+
+  it("maps Withings meastype 73 (skin temperature) → SKIN_TEMPERATURE (distinct from BODY_TEMPERATURE)", () => {
+    expect(MEASURE_TYPE_MAP[73]).toEqual({ type: "SKIN_TEMPERATURE" });
+    // Sanity guard — sharing the BODY_TEMPERATURE bucket would corrupt
+    // the rollup (surface temps 30–34 °C, core ~37 °C).
+    expect(MEASURE_TYPE_MAP[73].type).not.toBe("BODY_TEMPERATURE");
+  });
+
+  it("maps Withings meastype 91 (pulse wave velocity) → PULSE_WAVE_VELOCITY", () => {
+    expect(MEASURE_TYPE_MAP[91]).toEqual({ type: "PULSE_WAVE_VELOCITY" });
+  });
+
+  it("maps Withings meastype 155 (vascular age) → VASCULAR_AGE", () => {
+    expect(MEASURE_TYPE_MAP[155]).toEqual({ type: "VASCULAR_AGE" });
+  });
+
+  it("maps Withings meastype 170 (visceral fat) → VISCERAL_FAT", () => {
+    expect(MEASURE_TYPE_MAP[170]).toEqual({ type: "VISCERAL_FAT" });
+  });
 });
 
 describe("WITHINGS_NOTIFY_APPLIS", () => {
@@ -164,5 +196,85 @@ describe("fetchMeasurements — temperature (meastype 12)", () => {
     installFetchMock(fakeGetmeasPayload([{ type: 12, value: 36825, unit: -3 }]));
     const out = await fetchMeasurements("token");
     expect(out[0].value).toBe(36.83);
+  });
+});
+
+// ── v1.4.25 W5d Withings full coverage ──
+describe("fetchMeasurements — body composition expansion", () => {
+  it("decodes a Body+ fat-free mass reading into FAT_FREE_MASS kg", async () => {
+    // 65.4 kg of lean body mass. value=65400, unit=-3.
+    installFetchMock(fakeGetmeasPayload([{ type: 5, value: 65400, unit: -3 }]));
+    const out = await fetchMeasurements("token");
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ type: "FAT_FREE_MASS", value: 65.4 });
+  });
+
+  it("decodes a Body+ fat-mass reading into FAT_MASS kg", async () => {
+    // 14.2 kg of fat. value=14200, unit=-3.
+    installFetchMock(fakeGetmeasPayload([{ type: 8, value: 14200, unit: -3 }]));
+    const out = await fetchMeasurements("token");
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ type: "FAT_MASS", value: 14.2 });
+  });
+
+  it("decodes a Body+ muscle-mass reading into MUSCLE_MASS kg", async () => {
+    // 58.7 kg of muscle. value=58700, unit=-3.
+    installFetchMock(fakeGetmeasPayload([{ type: 76, value: 58700, unit: -3 }]));
+    const out = await fetchMeasurements("token");
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ type: "MUSCLE_MASS", value: 58.7 });
+  });
+
+  it("decodes a Body Comp visceral-fat rating into VISCERAL_FAT", async () => {
+    // Withings reports the 1–12 rating directly. value=7, unit=0.
+    installFetchMock(fakeGetmeasPayload([{ type: 170, value: 7, unit: 0 }]));
+    const out = await fetchMeasurements("token");
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ type: "VISCERAL_FAT", value: 7 });
+  });
+});
+
+describe("fetchMeasurements — ScanWatch skin temperature (meastype 73)", () => {
+  it("decodes a ScanWatch skin-temp reading into SKIN_TEMPERATURE °C", async () => {
+    // 32.5 °C surface temp. value=3250, unit=-2.
+    installFetchMock(fakeGetmeasPayload([{ type: 73, value: 3250, unit: -2 }]));
+    const out = await fetchMeasurements("token");
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ type: "SKIN_TEMPERATURE", value: 32.5 });
+  });
+
+  it("co-exists with core BODY_TEMPERATURE (meastype 71) in the same payload", async () => {
+    // A user with a Thermo + ScanWatch could have both readings on the
+    // same day. The rollup MUST keep them in distinct enums so the
+    // dashboard's "body temperature" chart doesn't paint a 32 °C dip.
+    installFetchMock(
+      fakeGetmeasPayload([
+        { type: 73, value: 3210, unit: -2 },
+        { type: 71, value: 3705, unit: -2 },
+      ]),
+    );
+    const out = await fetchMeasurements("token");
+    expect(out).toHaveLength(2);
+    const types = new Set(out.map((r) => r.type));
+    expect(types.has("SKIN_TEMPERATURE")).toBe(true);
+    expect(types.has("BODY_TEMPERATURE")).toBe(true);
+  });
+});
+
+describe("fetchMeasurements — pulse-wave velocity + vascular age", () => {
+  it("decodes a Body Cardio PWV reading into PULSE_WAVE_VELOCITY m/s", async () => {
+    // 7.2 m/s arterial pulse wave velocity. value=72, unit=-1.
+    installFetchMock(fakeGetmeasPayload([{ type: 91, value: 72, unit: -1 }]));
+    const out = await fetchMeasurements("token");
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ type: "PULSE_WAVE_VELOCITY", value: 7.2 });
+  });
+
+  it("decodes a Body Scan vascular-age reading into VASCULAR_AGE years", async () => {
+    // 42 years biological vascular age. value=42, unit=0.
+    installFetchMock(fakeGetmeasPayload([{ type: 155, value: 42, unit: 0 }]));
+    const out = await fetchMeasurements("token");
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ type: "VASCULAR_AGE", value: 42 });
   });
 });

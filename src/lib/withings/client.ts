@@ -145,6 +145,23 @@ export const MEASURE_TYPE_MAP: Record<number, { type: string; factor?: number }>
   // v1.4.25 — VO2 max from the ScanWatch family. Withings reports
   // mL/(kg·min) directly, matching the canonical DB unit.
   123: { type: "VO2_MAX" },
+  // ── v1.4.25 W5d — Withings full coverage ──
+  // Body composition expansion (Body+, Body Cardio, Body Comp, Body
+  // Scan ship these values on every measurement). All canonical kg.
+  5: { type: "FAT_FREE_MASS" }, // Fat-free mass
+  8: { type: "FAT_MASS" }, // Fat mass (kg form of BODY_FAT)
+  76: { type: "MUSCLE_MASS" }, // Muscle mass
+  // Skin temperature (ScanWatch dermal sensor). Distinct from
+  // BODY_TEMPERATURE — surface temps ~32 °C, core ~37 °C. Same °C
+  // unit; the SKIN_TEMPERATURE enum value keeps the rollup honest.
+  73: { type: "SKIN_TEMPERATURE" },
+  // Pulse-wave velocity m/s — Body Cardio / Body Scan exclusive.
+  91: { type: "PULSE_WAVE_VELOCITY" },
+  // Vascular age in years — Body Scan composite of PWV + age.
+  155: { type: "VASCULAR_AGE" },
+  // Visceral fat rating (Withings 1–12 scale). Stored under the
+  // canonical VISCERAL_FAT enum with `rating` as the unit string.
+  170: { type: "VISCERAL_FAT" },
 };
 
 export interface WithingsMeasure {
