@@ -107,4 +107,34 @@ describe("CoachFeedbackSection", () => {
     expect(html).toContain("Failed to load Coach feedback summary");
     expect(html).toContain('role="alert"');
   });
+
+  // v1.4.25 W8 regression — Marc reported a layout shift on
+  // /admin/coach-feedback. Root cause was the title only rendering in the
+  // empty + data branches, so the section grew taller (loading → data)
+  // and snapped down. Lock the heading + outer-card structure across
+  // every render state so the section maintains a constant top-of-card
+  // baseline.
+  it("keeps the section heading rendered across loading / error / empty states", () => {
+    for (const queryState of [
+      { isLoading: true, isError: false, data: null },
+      { isLoading: false, isError: true, data: null },
+      {
+        isLoading: false,
+        isError: false,
+        data: {
+          generatedAt: "2026-05-10T04:00:00Z",
+          windowDays: 30,
+          coachBuckets: [],
+        },
+      },
+    ]) {
+      useQueryMock.mockReturnValue(queryState);
+      const html = render();
+      // Sparkles icon + h2 title rendered in every state ⇒ constant
+      // header height ⇒ no layout shift when the query resolves.
+      expect(html).toContain("Coach Feedback");
+      expect(html).toContain("bg-card");
+      expect(html).toContain("rounded-xl");
+    }
+  });
 });
