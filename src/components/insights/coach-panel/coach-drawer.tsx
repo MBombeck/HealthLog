@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { Plus, Settings, Sparkles } from "lucide-react";
+import { Plus, Settings, Sparkles, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetHeader,
@@ -255,7 +256,13 @@ export function CoachDrawer({
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         side="right"
-        showCloseButton
+        // v1.4.25 W5 — render our own Close button inside the header so
+        // X / cog / new-chat sit on the same baseline with identical
+        // size, color, and hit target. The Sheet's default close-X is
+        // absolutely positioned with `opacity-70` + tiny `rounded-xs`,
+        // which Marc flagged as misaligned with the rest of the header
+        // cluster.
+        showCloseButton={false}
         data-slot="coach-drawer"
         className={cn(
           // Drawer keeps the dashboard context behind it. On laptops
@@ -271,13 +278,16 @@ export function CoachDrawer({
         )}
       >
         {/* Header (full width). Avatar + title + new-chat button +
-            settings cog (v1.4.23 H4 — real per-user prompt-tuning
-            surface, replacing the v1.4.22 B5 dead-button cleanup).
-            pr-12 keeps the buttons clear of the Sheet's close-X on
-            narrower viewports. */}
+            settings cog + close X. v1.4.25 W5 — the three header
+            actions (new chat, settings, close) all use the same
+            `ghost / size-icon / size-9` shape so they share a single
+            visual cluster instead of feeling like three different
+            controls. The close X used to be the Sheet's absolutely
+            positioned default; bringing it inline normalises the row
+            and frees the `pr-*` reservation. */}
         <SheetHeader
           data-slot="coach-drawer-header"
-          className="border-border/70 flex-row items-center gap-3 border-b p-3 pr-12 sm:p-4 sm:pr-14"
+          className="border-border/70 flex-row items-center gap-2 border-b p-3 sm:gap-3 sm:p-4"
         >
           <div
             aria-hidden="true"
@@ -336,18 +346,23 @@ export function CoachDrawer({
               </SelectItem>
             </SelectContent>
           </Select>
+          {/* v1.4.25 W5 — header action cluster. All three buttons
+              share the same `ghost / size-icon / size-9` shape so they
+              visually belong together. 36×36 px hit target meets the
+              WCAG 2.1 AA touch-target minimum on mobile; the icons
+              themselves stay 18 px to match the avatar's optical
+              weight. */}
           <Button
             type="button"
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={handleNewChat}
             data-slot="coach-drawer-new-chat"
-            className="shrink-0 gap-1.5"
+            aria-label={t("insights.coach.newChat")}
+            title={t("insights.coach.newChat")}
+            className="text-muted-foreground hover:text-foreground size-9 shrink-0"
           >
-            <Plus className="size-3.5" aria-hidden="true" />
-            <span className="hidden sm:inline">
-              {t("insights.coach.newChat")}
-            </span>
+            <Plus className="size-4" aria-hidden="true" />
           </Button>
           <Button
             type="button"
@@ -356,10 +371,24 @@ export function CoachDrawer({
             onClick={() => setSettingsOpen(true)}
             data-slot="coach-drawer-settings"
             aria-label={t("insights.coach.settingsAriaLabel")}
-            className="size-8 shrink-0"
+            title={t("insights.coach.settingsAriaLabel")}
+            className="text-muted-foreground hover:text-foreground size-9 shrink-0"
           >
-            <Settings className="size-3.5" aria-hidden="true" />
+            <Settings className="size-4" aria-hidden="true" />
           </Button>
+          <SheetClose asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              data-slot="coach-drawer-close"
+              aria-label={t("common.close")}
+              title={t("common.close")}
+              className="text-muted-foreground hover:text-foreground size-9 shrink-0"
+            >
+              <X className="size-4" aria-hidden="true" />
+            </Button>
+          </SheetClose>
         </SheetHeader>
 
         {/* Body — three columns on lg+, single column on smaller.
