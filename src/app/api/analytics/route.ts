@@ -525,6 +525,18 @@ interface ChunkedRow {
    *  cumulative aggregators can pick ONE source per day when more than
    *  one ingest path contributes to the same metric. */
   source: MeasurementSource;
+  /** v1.4.25 W8c — second axis of the canonical picker. Nullable until
+   *  the iOS app starts shipping HKDevice.model with each sample;
+   *  legacy / Withings rows stay NULL and the picker treats them as
+   *  `unknown`. Carried on every type's read so the cumulative-metric
+   *  path can break Apple-Watch-vs-iPhone ties.
+   */
+  deviceType: string | null;
+  /** v1.4.25 W8c — feeds the per-MeasurementType device-type override
+   *  inside the picker. The picker keys
+   *  `deviceTypePriority[type]` off this so the user's "phone wins for
+   *  steps but watch wins for HR" config is honoured. */
+  type: MeasurementType;
 }
 
 async function fetchMeasurementSeriesChunked(
@@ -547,6 +559,10 @@ async function fetchMeasurementSeriesChunked(
         measuredAt: true,
         value: true,
         source: true,
+        // v1.4.25 W8c — read deviceType so the canonical picker can
+        // honour the per-metric / per-device override. Nullable until
+        // iOS sends it.
+        deviceType: true,
         ...(options.includeSleepStage ? { sleepStage: true } : {}),
       },
       take: MEASUREMENT_CHUNK_SIZE,
@@ -558,6 +574,8 @@ async function fetchMeasurementSeriesChunked(
         measuredAt: row.measuredAt,
         value: row.value,
         source: row.source,
+        deviceType: row.deviceType ?? null,
+        type,
         sleepStage:
           "sleepStage" in row
             ? ((row.sleepStage as string | null) ?? null)
