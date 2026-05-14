@@ -1,5 +1,391 @@
 # Changelog
 
+## [1.4.25] — 2026-05-14
+
+Largest feature delta in the v1.4.x line. Insights expands from one
+page into seven dedicated metric routes; GLP-1 medication tracking
+lands end-to-end from injection picker through dashboard tile, weight-
+chart markers, therapy timeline, plateau detection and doctor-report
+section; cross-source priority becomes a two-axis resolver with a
+per-user Settings surface; per-user timezone threads through ten
+analytics and presentation surfaces; Withings coverage doubles with
+twelve new measurement types and webhook-driven BP/temperature
+ingestion; Health-Score gains a per-component provenance accordion;
+four AI-translated locales (FR / ES / IT / PL) ship behind a
+maintainership banner; the GHCR image is now multi-arch so Apple
+Silicon Macs and arm64 clouds pull native. Migrations 0044–0054 are
+all additive and forward-only. `PROMPT_VERSION` 4.24.0 → 4.25.0 with
+GROUND RULE 9 (Coach refuses GLP-1 dose recommendations).
+
+### Added
+
+- **Insights sub-pages — seven dedicated metric routes with a shared
+  tab strip.** `/insights/blutdruck`, `/insights/gewicht`,
+  `/insights/puls`, `/insights/stimmung`, `/insights/medikamente`,
+  `/insights/bmi` and `/insights/schlaf` each render the metric's
+  full chart, range bands, trend annotations and correlation rows
+  beneath the mother-page hero. Tab strip lifts the metric switcher
+  above each chart for cross-metric scanning; the mother page slims
+  to general status and the Coach hero.
+- **Sleep sub-page with per-night stacked-bar of sleep stages.**
+  `/insights/schlaf` renders awake / REM / core / deep as stacked
+  columns over the last 7 / 14 / 30 nights, sourced from the
+  `sleepStage` column on `Measurement`.
+- **Targets (`/insights/zielwerte`) redesigned — 10-phase rewrite
+  with a conditional Coach-handoff card.** New `<TargetCard>`
+  primitive replaces the v1.4.22 layout. Page-level consistency
+  strip pins meta context above the cards. The Coach-handoff card
+  only renders when an AI provider is configured; rule-based mode
+  hides it cleanly. Mobile-first three-column grid; per-card cog
+  for visibility toggles.
+- **GLP-1 medication tracking — full integration across ten
+  surfaces.** New `Medication.treatmentClass` enum (`GLP1`,
+  `STANDARD`); `MedicationDoseChange` history table; `InjectionSite`
+  enum with eight site values. A new body-map picker proposes the
+  next rotation site based on the last fourteen days of injections.
+  Medication-card grows a `glp1` variant (text-rich, no inline
+  chart per directive — chart lives on the dashboard tile and
+  `/insights/medikamente` therapy timeline). Dashboard tile shows
+  next-injection schedule + week-over-week weight delta. Weight
+  chart gains vertical injection markers. Therapy timeline on the
+  insights sub-page plots titration alongside weight trace. Plateau-
+  detection rule in `/api/insights/briefing` flags four-week stalls
+  with referral framing. Doctor-report PDF carries a dedicated GLP-1
+  section. Migration 0046.
+- **Doctor-report per-section toggles + mood default-off.** New
+  `User.doctorReportPrefsJson` column (Migration 0045) +
+  `PUT /api/auth/me/doctor-report-prefs`. Each section (mood,
+  achievements, GLP-1, etc.) gets a per-user toggle in Settings →
+  Reports. Mood defaults to off (clinical-sensitivity); empty
+  sections hide rather than render a "no data" stub.
+- **Cross-source priority resolution — two-axis architecture.**
+  New `User.sourcePriorityJson` column (Migration 0048) stores a
+  per-user resolver: a single-axis ladder by metric type plus an
+  optional per-device-type override. `pickCanonicalSource()` walks
+  the metric axis first; a per-device override (e.g. "BP from
+  Withings BPM Connect, weight from Withings Body+") wins within
+  that ladder. Defaults: cumulative + sleep + HRV + RHR favour
+  Apple Health → Withings → manual; point measurements favour
+  Withings → Apple Health → manual. The `__default__` sentinel is
+  retired in favour of a null bucket.
+- **Settings → Sources screen for per-user priority configuration.**
+  Drag-and-reorder list per metric, per-device override picker,
+  reset-to-defaults action. Audit-log entry on every write.
+- **Per-user timezone — Option B threaded through ten surfaces.**
+  New `User.timezone` column (defaults to `Europe/Berlin`). The
+  CSV exporter emits ISO-8601 with offset; formatters honour the
+  user's tz; Profile picker covers all IANA zones; admin sets the
+  default for new accounts; signup detects the browser tz; the
+  doctor-report PDF dates use the user's tz; chart x-axes take a
+  `timezone` prop; Coach snapshot timestamps land in the user's
+  tz; `MoodEntry.tz` records local-day grouping for weekday
+  correlation (Migration 0044); the weight-weekday correlator
+  buckets days in the user's tz.
+- **Health Score provenance accordion.** Each of the four scoring
+  components (BP, weight, mood, compliance) gets an inline
+  disclosure listing the canonical source (Withings / Apple
+  Health / manual) and `asOf` timestamp behind the score number.
+  `aria-labelledby` panel pairing for screen readers.
+- **Four additional locales — French, Spanish, Italian, Polish.**
+  AI-initial translation bundles plus `<MaintainershipBanner>` on
+  every page that warns the locale is not actively maintained and
+  links to a GitHub issue for corrections. EN + DE stay maintained;
+  FR / ES / IT / PL ride the EN Coach + insights system prompts
+  via a one-line `REPLY LANGUAGE` footer until native rewrites
+  ship. Locale picker covers all six; signup browser-detect maps
+  `fr|es|it|pl` to the corresponding bundle.
+- **VO2 max dashboard trend tile (opt-in).** Secondary-metric
+  pattern — default-invisible, surfaces only when the user has
+  VO2 max data from Apple Health.
+- **Personal-record schema + listing endpoint.** Migration 0054
+  + `PersonalRecord` table + `PersonalRecordDirection` helper
+  + `GET /api/personal-records` (paginated). Detection worker
+  deferred to v1.4.26; the table is queryable today.
+- **Workout + WorkoutRoute schema (HKWorkout-aligned).**
+  Migration 0053 + Zod boundary in `src/lib/validations/workout.ts`
+  with a twenty-member sport-type union and a `GeoJSON LineString`
+  route column in JSONB. Ingest endpoint scheduled to land
+  alongside the v1.5 iOS client.
+- **Apple Health identifier mapping (server-side).** Ports the
+  identifier table from `k0rventen/apple-health-grafana` and
+  `dogsheep/healthkit-to-sqlite` with MIT and Apache-2.0
+  attribution recorded in source headers and `NOTICE`. Covers
+  the v1.4.25 ingest surface; iOS-18 long-tail mappings (sleep
+  apnea, GAD-7, paddle/row sports, FHIR clinical) carry inline
+  release-window comments.
+- **Audio-exposure and time-in-daylight measurement types.**
+  Migration 0052 adds `ENVIRONMENT_AUDIO_EXPOSURE`,
+  `HEADPHONE_AUDIO_EXPOSURE` and `TIME_IN_DAYLIGHT` to the
+  `MeasurementType` enum. Doctor report mentions them when
+  populated; no dedicated chart yet.
+- **Withings expanded coverage — twelve new measurement types and
+  the BP / temperature webhook subscription.** Migration 0049
+  adds HRV, body temperature, SpO2 v2, VO2 max, fat-free mass,
+  fat mass, muscle mass, skin temperature, pulse-wave velocity,
+  vascular age and visceral fat as `MeasurementType` values.
+  Withings webhook coverage extended to BP and temperature so
+  the latency goes from ~1 h polling to seconds. OAuth scope
+  upgraded to include `user.activity` and an in-app banner
+  prompts existing users to reconnect once.
+- **Admin Login overview — location, provider and CSV polish.**
+  Adds a location column derived from the audit IP; adds a
+  provider column distinguishing passkey, password, API-token
+  and OAuth login paths; the CSV export drops two unused columns
+  and the per-row collapse affordance comes off.
+- **DELETE `/api/measurements/by-external-ids` for iOS deletion
+  sync.** Idempotent batch delete keyed on `(user, source,
+  externalId)` tuples; rate-limited the same way as the batch
+  ingest endpoint.
+- **Multi-arch Docker image.** GHCR publish workflow builds
+  `linux/amd64` on `ubuntu-latest` plus `linux/arm64` on
+  `ubuntu-24.04-arm` and merges the manifest. Apple Silicon
+  Macs and arm64 clouds now pull native; the previously-stale
+  README claim is accurate again.
+- **Repository polish.** README hero rewrite (what / who / try
+  the demo, thirty-second read). Topics expanded 10 → 18.
+  Branch protection v2 with conversation-resolution. GitHub
+  Discussions enabled. Issue template + PR template carry-over
+  from v1.4.20 preserved.
+
+### Changed
+
+- **Insights mother page slimmed; metric depth moved to sub-pages.**
+  `/insights` becomes a navigation hub with hero strip + Daily
+  Briefing + correlations + trends row; per-metric depth lives
+  one click away on the dedicated sub-pages.
+- **Targets page-shell unified with the rest of Insights.**
+  Single consistency strip + Coach handoff + per-card actions
+  rather than the v1.4.22 sparkline-everywhere layout.
+- **AI Coach default-window preference plus chip-order rationalised.**
+  The window picker now persists per-user (last seven / thirty /
+  ninety days); suggested-prompt chips reorder so health-focus
+  chips lead and meta-discovery chips trail. Composer auto-grows
+  on multi-line input. Distinct error UX for daily-limit hit vs
+  provider rate-limit. Microphone affordance retired (was a
+  placeholder).
+- **Dashboard global comparison-overlay default removed.** Per-chart
+  preference from v1.4.22 is the only knob now; the dashboard-level
+  default is gone.
+- **`medication_schedules.*` columns mapped to snake_case via
+  Prisma `@map`.** Migration 0047 — cosmetic rename only,
+  convention parity with the rest of the schema. Resolves the
+  v1.4.24 demo-deploy schema-drift finding.
+- **Top-page padding parity across `AuthShell`, Settings and Admin
+  shells.** Cross-page rhythm matches; the previous one-off
+  paddings on Admin and Settings asymmetric to Insights are gone.
+- **Settings icon + heading convention uniform across all twenty-
+  three sections.** Every section header pairs an icon with a
+  heading; the v1.4.24-era split (icon-only on some, heading-only
+  on others) is gone.
+- **`PROMPT_VERSION` 4.24.0 → 4.25.0** with new GROUND RULE 9
+  in EN + DE forbidding GLP-1 dose recommendations. Coach falls
+  back to a clinical-referral framing on any dose question.
+
+### Fixed
+
+- **Settings save regression on Zod v4 record semantics.**
+  `z.record(z.string(), …)` switched to `z.partialRecord(…)` on
+  the dashboard-prefs schema so optional keys round-trip cleanly
+  through the PUT. The save-then-blank-load bug from v1.4.24 is
+  gone.
+- **Comparison-shift baseline regression.** Comparison overlay
+  was subtracting the wrong-period baseline on several charts;
+  baseline lookups now match the caption window. Three regression
+  guards.
+- **AI prose metric-token leaks** — `metric:<TYPE>` raw tokens
+  surfaced in three places that escaped the v1.4.22 sweep
+  (`<RecommendationCard>` fallback path, briefing keyFinding
+  helper, and Coach in-flight bubble). `stripChartTokens()` regex
+  widened to cover lowercase prose remnants; prompt-side GROUND
+  RULES 8 and 13 reaffirm the constraint. PROMPT_VERSION 4.23.0
+  → 4.24.0 carried the prompt change; 4.25.0 inherits.
+- **Withings BP and temperature webhook latency.** Webhook
+  subscription now covers BP and temperature endpoints, so the
+  earliest a measurement reaches the user drops from ~1 h to
+  seconds.
+- **Dev-server crash on Tailwind v4 `color-mix` parser + Next 16
+  api-handler private-field.** Two unrelated dev-time crashes
+  surfaced together: Tailwind v4 choked on a `color-mix()`
+  invocation in a chart token; Next 16 + Webpack fallback hit a
+  private-field access on a force-static route handler.
+  `color-mix` invocation replaced; api-handler guards the field
+  access. Production unaffected — these surfaced only under the
+  dev compile path.
+- **Insights duplicate `StatusCard`.** The mother page rendered
+  two copies of the BP status card at certain viewports due to
+  a hero-strip ↔ correlation-row overlap. Card hoisted to the
+  single canonical location.
+- **Coach-feedback admin header layout shift.** Sticky-header
+  contract mismatch — the section's `<header>` carried a different
+  top padding than its siblings, so navigating into the section
+  visibly shifted the chrome. Padding parity restored across all
+  admin sections.
+- **Notification-status-card heading icon parity.** Was the one
+  section without an icon next to its heading; aligns with the
+  cross-section convention now.
+- **WCAG 2.5.5 touch-target floor across the top bar, section
+  strips and the injection-site picker.** Several pill chips and
+  the injection-picker dots sat below the 44-px floor; all hit
+  the floor now without changing the visual density at typical
+  rendering sizes.
+- **Sleep-stage chart strokes resolve through Dracula tokens.**
+  The chart was using the legacy `hsl(var(--border))` form which
+  Tailwind v4 rejects; switched to the resolved token.
+- **"Per night" hardcoded German in four locales.** The
+  sleep-page subtitle suffix was hardcoded `pro Nacht` and
+  rendered as raw German across FR / ES / IT / PL. Translated
+  in all six locales; an i18n drift-guard covers the contract.
+- **Cross-page top-padding asymmetry.** AuthShell, Settings,
+  Admin all carry the same top padding now (see Changed).
+- **`berlinIsoWeekday()` timezone hard-code.** The weekday helper
+  hardcoded Europe/Berlin; now takes a `timezone` argument and
+  threads through the weight-weekday correlator.
+- **Batch-ingest race reconciliation under contention.** Two
+  concurrent batches with overlapping `externalId` sets returned
+  inconsistent `inserted` / `duplicate` counts because the
+  reconciliation pass was logically inverted (no-op when the
+  catch fired). Fixed; replay regression test seeds the race.
+- **`requireAuth()` blocks narrow-scope iOS Bearer tokens on
+  unscoped routes.** v1.4.24 closed the inverse hole (Bearer
+  with no scope reaching unscoped handlers); this release closes
+  the over-broad version — a token scoped exclusively to
+  `medication:ingest` could not reach handlers that don't
+  declare a `requiredPermission`. Now declared-scope tokens are
+  allowed through provided the route's declared scope (or wildcard)
+  is in the token's set.
+- **`createMeasurementSchema` dropped `deviceType` on single-entry
+  POST.** The batch route accepted `deviceType` per row; the
+  single-entry POST stripped it on the Zod boundary. Mirror parity
+  restored.
+- **Personal-records endpoint unpaginated.** `GET
+  /api/personal-records` now clamps `?limit` (default twenty-five,
+  maximum two hundred); the unbounded read is gone.
+
+### Security
+
+- **Coach refuses GLP-1 dose recommendations.** New GROUND RULE 9
+  in EN + DE — the Coach surfaces a clinical-referral message on
+  any dose adjustment ask, never a number. PROMPT_VERSION 4.25.0
+  carries the rule.
+- **GLP-1 medication strings sanitised before LLM prompt
+  interpolation.** Patient-safety: a malicious or malformed
+  medication name embedded prompt-injection bait. Sanitiser
+  passes Latin-letter + digit + common punctuation only.
+- **Batch-ingest rate limit (sixty per minute per user default).**
+  `POST /api/measurements/batch` and the new
+  `DELETE /api/measurements/by-external-ids` carry a token-bucket
+  rate limit returning the standard 429 envelope.
+- **Audit-log writes on source-priority and doctor-report-prefs
+  PUTs.** Every change to either preference produces an
+  `AuditLog` row for the user's audit-log surface and the admin
+  cross-section view.
+- **Withings OAuth `user.activity` scope upgrade with explicit
+  user reconnect.** New scope only takes effect after the user
+  re-authorises; the reconnect banner makes the requirement
+  visible.
+- **Source-priority storage is per-user.** No cross-user lookup
+  paths; one user's priority blob never enters another user's
+  resolver.
+
+### Refactor
+
+- **`pickCanonicalSource` becomes a two-axis lookup with single-
+  axis fallback.** Reuses `getDeviceTypeLadder()` so the
+  per-device override can be queried from the canonical-row picker
+  without duplicating ladder logic.
+- **Health-Score `COMPONENT_ORDER` hoisted + `Intl.DateTimeFormat`
+  memoised.** Provenance accordion calls the formatter once per
+  render rather than four times.
+- **`SubPageSlug` type + array derived from `SUB_PAGE_METRIC`
+  record.** Single source of truth for the seven sub-page slugs.
+- **`source-priority` `__default__` sentinel → null bucket.**
+  Settings → Sources stops carrying a fake `__default__` device-
+  type entry; the null bucket reads cleaner at the storage layer.
+- **`apple-health-mapping` sleep branch collapsed.** Three sleep-
+  stage cases shared the same body; collapsed to one.
+- **`HK_QUANTITY_TYPE_TO_MEASUREMENT` removed.** The legacy view
+  was a redundant projection of `APPLE_HEALTH_TYPE_MAP`; all
+  callers go through the canonical map now.
+- **W7e dead-code cleanup pass.** Drops `<InsightsPageHero>`
+  (zero callers since v1.4.20), `<IntakeTimeline>`,
+  `<ComplianceCharts>` wrapper and three orphan `insightsGeneralStatus`
+  query keys from the v1.4.16-era hero. Removes the orphan
+  `/api/insights/general-status` route (superseded by
+  `<InsightAdvisorCard>` since v1.4.16).
+- **Coach `<CoachDrawer key={prefill}>` controlled-prop refactor
+  is fully in place** — the v1.4.24 follow-up of `useResettableValue`
+  is now the only call path; the legacy remount hack code is gone.
+
+### Tests
+
+- 2244 → 2652 passing unit tests (+408). Integration suite
+  140 → 174 (+34). e2e green on the W2 CI fix (coach-prefs URL
+  mock + Pixel-5 selector hardening).
+- New unit suites: GLP-1 plateau-detection text formatter; two-axis
+  source-priority resolution (single-axis fallback, per-device
+  override, mixed-bucket selection); source-priority Settings
+  reducer (reorder, reset, validate); medication-card GLP-1
+  variant + injection-site-picker (RTL); doctor-report prefs
+  PUT contract; personal-records pagination clamp;
+  `berlinIsoWeekday` timezone-aware suite; sleep-stage chart
+  i18n-suffix drift-guard; Health-Score provenance i18n
+  drift-guard; api-handler private-field crash regression.
+- New integration suites: two-axis canonical-source resolution
+  end-to-end; `requireAuth()` narrow-scope on unscoped route;
+  batch-ingest race reconciliation under contention.
+
+### Deferred to v1.4.26
+
+See `.planning/v1426-backlog.md` for the full thirty-plus item
+list with effort estimates and source citations. Headline items:
+
+- OpenAPI drift-gate hard-fail flip (still warn-only after this
+  release; iOS DTO codegen needs hard-fail confidence before
+  the v1.5 iOS sprint starts).
+- Onboarding rebuild promoted from v1.5 (last release where new
+  users see the v1.4.20-era onboarding without sub-pages, GLP-1,
+  six locales).
+- Native FR / ES / IT / PL Coach + insights system prompts
+  (current `REPLY LANGUAGE` footer is interim; native bodies
+  let each safety contract speak in its target voice).
+- Personal-record detection worker (schema shipped this release;
+  sweep-on-insert + nightly cron pending).
+- Workout ingest endpoint (`POST /api/measurements/batch?kind=workout`
+  — schema shipped, endpoint waits on iOS contract finalisation).
+- Withings Activity sync routine (OAuth scope shipped; sync
+  waits on reconnect-banner adoption window).
+- Withings Sleep v2 routine.
+- 414 dead i18n keys cleanup (top namespaces: `settings:114`,
+  `admin:75`, `classifications:69`, `medications:21`).
+- iOS-18 long-tail HK identifier mappings (sleep apnea, GAD-7 /
+  PHQ-9, running form, paddle / row / ski distances, pregnancy /
+  cycle, FHIR clinical).
+- VO2 max chart-row card on `/insights/<metric>` (dashboard tile
+  shipped; chart card queued alongside iOS body-composition page).
+- Withings webhook secret moved from query string to header form.
+- Lazy-loaded locale JSON bundles (all six locales import
+  synchronously at present, ~675 KB to every client).
+
+### Deferred to v1.5
+
+- **iOS Swift app — P1 through P5.** Login + dashboard + widget
+  (P1); Apple Health sync (P2); Coach extended for HRV / sleep /
+  resting HR / steps (P3); per-metric APNs alerts (P4); workouts
+  + GeoJSON routes (P5). All server contracts locked in v1.4.25.
+- **Workout ingest API matching the v1.5 iOS contract.**
+  Schema shipped this release; endpoint signature finalised
+  during the iOS sprint.
+- **Two-Brain Coach refactor.** Statistical findings produced
+  by a deterministic pipeline; LLM owns the narrative layer
+  only. Reduces hallucination surface; unblocks evidence-grounded
+  citations.
+- **HRV anomaly detection against a rolling baseline.**
+- **Mindfulness, dietary-water and symptoms-unification ingest
+  types.**
+- **ECG waveform ingest + FHIR / HKClinicalRecord.**
+- **Pearson incomplete-beta replacement** for the rigorous
+  surfacing-gate (v1.4.23 carryover).
+
 ## [1.4.24] — 2026-05-12
 
 Security + accessibility hardening release. Closes the highest-priority
