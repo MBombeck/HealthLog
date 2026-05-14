@@ -78,11 +78,28 @@ function makeRequest(body: { externalIds: string[] }): NextRequest {
   });
 }
 
+// Hash an externalId into a stable minute offset (0..1023) so two
+// rows seeded with different externalIds land on different
+// `measuredAt` values. The W17b/c unique index now covers
+// (user_id, type, measured_at, source, sleep_stage) with NULLs not
+// distinct, so all-same-instant fixtures collide; spreading by
+// minute keeps the fixture deterministic without sacrificing the
+// "owned by the caller" intent of the test.
+function minuteOffsetFor(externalId: string): number {
+  let h = 0;
+  for (let i = 0; i < externalId.length; i++) {
+    h = (h * 31 + externalId.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h) % 1024;
+}
+
 async function seedMeasurement(opts: {
   userId: string;
   externalId: string;
   value?: number;
 }): Promise<void> {
+  const base = new Date("2026-05-09T07:30:00.000Z").getTime();
+  const measuredAt = new Date(base + minuteOffsetFor(opts.externalId) * 60_000);
   await getPrismaClient().measurement.create({
     data: {
       userId: opts.userId,
@@ -90,7 +107,7 @@ async function seedMeasurement(opts: {
       value: opts.value ?? 80,
       unit: "kg",
       source: "APPLE_HEALTH",
-      measuredAt: new Date("2026-05-09T07:30:00.000Z"),
+      measuredAt,
       externalId: opts.externalId,
     },
   });
