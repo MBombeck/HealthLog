@@ -109,12 +109,48 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   const completing = step === 4;
-  const updated = await prisma.user.update({
-    where: { id: user.id },
+
+  // Conditional update — the WHERE clause re-asserts the
+  // precondition we read above so the write can only land on a row
+  // whose state still matches what we validated. Two parallel tabs
+  // both reading `onboardingStep = 2` and both POSTing `step: 3`
+  // would otherwise both succeed (the read-then-write race); with
+  // this guard exactly one update sees `count = 1`, the second sees
+  // `count = 0` and returns 409. Legacy pre-W14b accounts may have
+  // `onboarding_step IS NULL`, so the `current === 0` branch widens
+  // the match to null OR 0 — the wizard treats both as "not
+  // started". `onboardingCompletedAt: null` also catches a race with
+  // `POST /api/onboarding/complete`.
+  const claimed = await prisma.user.updateMany({
+    where:
+      current === 0
+        ? {
+            id: user.id,
+            onboardingCompletedAt: null,
+            OR: [{ onboardingStep: 0 }, { onboardingStep: null }],
+          }
+        : {
+            id: user.id,
+            onboardingCompletedAt: null,
+            onboardingStep: { in: [current] },
+          },
     data: {
       onboardingStep: step,
       ...(completing ? { onboardingCompletedAt: new Date() } : {}),
     },
+  });
+  if (claimed.count !== 1) {
+    annotate({
+      action: { name: "onboarding.step" },
+      meta: { outcome: "concurrent_write", current, requested: step },
+    });
+    return apiError(
+      "Onboarding step changed concurrently, refresh and retry",
+      409,
+    );
+  }
+  const updated = await prisma.user.findUniqueOrThrow({
+    where: { id: user.id },
     select: {
       onboardingStep: true,
       onboardingCompletedAt: true,
