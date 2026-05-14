@@ -104,4 +104,14 @@ describe("<CoachSettingsSheet>", () => {
     expect(vi.mocked(toast.success)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(toast.success)).toHaveBeenCalledWith("Saved.");
   });
+
+  // v1.4.25 W5 — defaultWindow picker added.
+  it("renders the default-window picker once persisted prefs land", () => {
+    queryState.data = DEFAULT_COACH_PREFS;
+    const html = render(
+      <CoachSettingsSheet open={true} onOpenChange={() => {}} />,
+    );
+    expect(html).toContain('data-slot="coach-prefs-default-window"');
+    expect(html).toContain("Default analysis window");
+  });
 });

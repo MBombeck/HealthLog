@@ -27,6 +27,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { useCoachPrefs } from "@/hooks/use-coach-prefs";
 import {
   DEFAULT_COACH_PREFS,
+  type CoachDefaultWindow,
   type CoachExcludeMetric,
   type CoachPrefs,
   type CoachTone,
@@ -69,6 +70,16 @@ const EXCLUDE_OPTIONS: CoachExcludeMetric[] = [
   "sleep",
   "resting_hr",
   "steps",
+];
+
+// v1.4.25 W5 — picker options for the new `defaultWindow` preference.
+// Mirrors `CoachScopeWindow` so the chat route can fold the selection
+// straight into `scope.window` when the client didn't supply one.
+const DEFAULT_WINDOW_OPTIONS: CoachDefaultWindow[] = [
+  "last7days",
+  "last30days",
+  "last90days",
+  "allTime",
 ];
 
 export function CoachSettingsSheet({
@@ -233,6 +244,46 @@ export function CoachSettingsSheet({
                   <SelectItem value="detailed">
                     {t("insights.coach.settingsVerbosityDetailed")}
                   </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* v1.4.25 W5 — default analysis window. Sets the snapshot
+                scope window the Coach reads when the client doesn't
+                supply a per-conversation override. The drawer header
+                carries a small pill that overrides the picked default
+                for the current chat only. */}
+            <div className="flex flex-col gap-2">
+              <Label
+                htmlFor="coach-prefs-default-window"
+                className="text-xs font-medium"
+              >
+                {t("insights.coach.settingsDefaultWindowLabel")}
+              </Label>
+              <p className="text-muted-foreground text-[11px] leading-relaxed">
+                {t("insights.coach.settingsDefaultWindowHint")}
+              </p>
+              <Select
+                value={draft.defaultWindow}
+                onValueChange={(value) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    defaultWindow: value as CoachDefaultWindow,
+                  }))
+                }
+              >
+                <SelectTrigger
+                  id="coach-prefs-default-window"
+                  data-slot="coach-prefs-default-window"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DEFAULT_WINDOW_OPTIONS.map((w) => (
+                    <SelectItem key={w} value={w}>
+                      {t(`insights.coach.window.${w}`)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

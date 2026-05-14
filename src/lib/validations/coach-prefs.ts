@@ -7,6 +7,12 @@
  * snapshot builder both read this shape — the snapshot must filter on
  * `excludeMetrics` BEFORE landing in the system prompt so the model
  * never sees data the user opted out of.
+ *
+ * v1.4.25 W5 — extended with `defaultWindow`. The picker lives in the
+ * settings sheet; the drawer header carries a per-conversation override
+ * pill so a single chat can narrow the window without flipping the
+ * global default. The chat route folds the saved preference into the
+ * snapshot scope when the client didn't supply a window override.
  */
 import { z } from "zod/v4";
 
@@ -53,6 +59,23 @@ export const coachExcludeMetricEnum = z.enum([
 export type CoachExcludeMetric = z.infer<typeof coachExcludeMetricEnum>;
 
 /**
+ * v1.4.25 W5 — default analysis window the Coach uses when the client
+ * doesn't supply a per-conversation override. Mirrors
+ * `CoachScopeWindow` (`src/lib/ai/coach/types.ts`) so the chat route
+ * can fold the preference into `scope.window` without a translation
+ * layer. The default stays `allTime` to preserve the v1.4.24 behaviour
+ * — every legacy row reads as "no opinion" until the user explicitly
+ * picks a tighter default.
+ */
+export const coachDefaultWindowEnum = z.enum([
+  "last7days",
+  "last30days",
+  "last90days",
+  "allTime",
+]);
+export type CoachDefaultWindow = z.infer<typeof coachDefaultWindowEnum>;
+
+/**
  * Full preferences shape. Defaults are inlined into the schema so a
  * `safeParse({})` call returns the legacy v1.4.22 defaults — saves a
  * sprinkle of `?? defaultX` calls at the call sites.
@@ -62,6 +85,7 @@ export const coachPrefsSchema = z.object({
   verbosity: coachVerbosityEnum.default("default"),
   excludeMetrics: z.array(coachExcludeMetricEnum).max(9).default([]),
   showEvidenceByDefault: z.boolean().default(false),
+  defaultWindow: coachDefaultWindowEnum.default("allTime"),
 });
 
 export type CoachPrefs = z.infer<typeof coachPrefsSchema>;
@@ -77,6 +101,7 @@ export const DEFAULT_COACH_PREFS: CoachPrefs = {
   verbosity: "default",
   excludeMetrics: [],
   showEvidenceByDefault: false,
+  defaultWindow: "allTime",
 };
 
 /**

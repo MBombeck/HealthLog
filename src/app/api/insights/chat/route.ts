@@ -206,12 +206,22 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
   // the new user message. v1.4.23 H4 — fold per-user prefs into the
   // system-prompt prefix; the snapshot builder reads the same prefs
   // separately so excluded metrics never even leave the DB.
+  //
+  // v1.4.25 W5 — `coachPrefs.defaultWindow` is the user's saved
+  // analysis-window preference. Merge it into the snapshot scope when
+  // the client didn't supply a per-conversation override; the override
+  // (header pill / sources rail) always wins. Keep the merge cheap so
+  // we don't accidentally widen narrow per-call scopes.
   const prefsRow = await prisma.user.findUnique({
     where: { id: userId },
     select: { coachPrefsJson: true },
   });
   const coachPrefs = parseCoachPrefs(prefsRow?.coachPrefsJson);
-  const snapshot = await buildCoachSnapshot(userId, scope);
+  const effectiveScope =
+    scope?.window === undefined && coachPrefs.defaultWindow
+      ? { ...(scope ?? {}), window: coachPrefs.defaultWindow }
+      : scope;
+  const snapshot = await buildCoachSnapshot(userId, effectiveScope);
   const systemPrompt = getCoachSystemPrompt(locale, coachPrefs);
   const window = buildHistoryWindow([
     ...priorTurns,

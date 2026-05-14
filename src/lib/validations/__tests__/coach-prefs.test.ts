@@ -21,9 +21,22 @@ describe("coachPrefsSchema", () => {
       verbosity: "brief" as const,
       excludeMetrics: ["bp", "weight"] as const,
       showEvidenceByDefault: true,
+      defaultWindow: "last30days" as const,
     };
     const out = coachPrefsSchema.parse(input);
     expect(out).toEqual(input);
+  });
+
+  // v1.4.25 W5 — defaultWindow added. Missing key → fallback to
+  // "allTime" so the legacy persisted shape stays representative.
+  it("fills in defaultWindow=allTime when the key is missing", () => {
+    const out = coachPrefsSchema.parse({});
+    expect(out.defaultWindow).toBe("allTime");
+  });
+
+  it("rejects unknown defaultWindow values", () => {
+    const result = coachPrefsSchema.safeParse({ defaultWindow: "lifetime" });
+    expect(result.success).toBe(false);
   });
 
   it("rejects unknown tone values", () => {
@@ -82,7 +95,21 @@ describe("parseCoachPrefs", () => {
       verbosity: "default" as const,
       excludeMetrics: ["mood" as const],
       showEvidenceByDefault: true,
+      defaultWindow: "last90days" as const,
     };
     expect(parseCoachPrefs(input)).toEqual(input);
+  });
+
+  it("fills defaultWindow=allTime when older persisted rows are missing it", () => {
+    // Legacy v1.4.23/v1.4.24 persisted shape without `defaultWindow`.
+    // Defaulting is backwards-compatible — the row keeps reading as
+    // "all time" until the user picks a tighter default in the cog.
+    const legacy = {
+      tone: "warm" as const,
+      verbosity: "default" as const,
+      excludeMetrics: [] as const,
+      showEvidenceByDefault: false,
+    };
+    expect(parseCoachPrefs(legacy).defaultWindow).toBe("allTime");
   });
 });

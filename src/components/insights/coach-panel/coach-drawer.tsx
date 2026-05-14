@@ -6,6 +6,13 @@ import { Plus, Settings, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -14,6 +21,7 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
+import { useCoachPrefs } from "@/hooks/use-coach-prefs";
 
 import { CoachDrawerBody } from "./coach-drawer-body";
 import { CoachInput } from "./coach-input";
@@ -153,6 +161,13 @@ export function CoachDrawer({
   // selector). Resets to the all-source last30days default each time
   // the drawer mounts; no conversation-level persistence in this
   // hotfix per the v1.4.20.1 plan.
+  //
+  // v1.4.25 W5 — the scope.window field is now a two-layer override:
+  //   • the user's saved `coachPrefs.defaultWindow` is the base
+  //   • the header pill drops a per-conversation override into
+  //     `windowOverride`; null = "use the saved default"
+  // The override resets to null on drawer close so the next session
+  // starts on the user's saved preference.
   const [scope, setScope] = useState<{
     sources: CoachScopeSource[];
     window: CoachScopeWindow;
@@ -160,15 +175,31 @@ export function CoachDrawer({
     sources: [...DEFAULT_COACH_SCOPE.sources],
     window: DEFAULT_COACH_SCOPE.window,
   }));
+  const [windowOverride, setWindowOverride] =
+    useState<CoachScopeWindow | null>(null);
+
+  // v1.4.25 W5 — load the user's saved Coach prefs so the default
+  // window picks up the cog's saved selection. The hook gates the
+  // fetch on `enabled` so the network call only fires while the
+  // drawer is open. Falls through to the legacy "last30days" default
+  // when the row is missing or the request is in flight.
+  const { data: coachPrefs } = useCoachPrefs({ enabled: open });
+  const savedDefaultWindow: CoachScopeWindow =
+    coachPrefs?.defaultWindow ?? DEFAULT_COACH_SCOPE.window;
+  const effectiveWindow: CoachScopeWindow =
+    windowOverride ?? savedDefaultWindow;
 
   const handleOpenChange = useCallback(
     (next: boolean) => {
       if (!next) {
         // Reset thread + composer on close so the next open starts on
         // the rail's empty hint instead of re-rendering the previous
-        // conversation by accident.
+        // conversation by accident. v1.4.25 W5 — also drop the
+        // per-conversation window override so the next session starts
+        // on the user's saved `coachPrefs.defaultWindow` again.
         setCurrentConversationId(null);
         setInputValue("");
+        setWindowOverride(null);
       }
       onOpenChange(next);
     },
@@ -189,15 +220,21 @@ export function CoachDrawer({
     // Pass the scope only when the user has narrowed it from the
     // defaults — keeps the wire payload minimal and lets the route
     // tell "no opinion" apart from "intentionally narrow".
-    const isDefault =
-      scope.window === DEFAULT_COACH_SCOPE.window &&
+    //
+    // v1.4.25 W5 — `scope.window` now reflects the per-conversation
+    // override (header pill / rail picker) layered on top of the saved
+    // `coachPrefs.defaultWindow`. Send the override only when the user
+    // explicitly diverged from the saved default; otherwise the route
+    // re-applies the saved preference itself.
+    const allSourcesSelected =
       scope.sources.length === DEFAULT_COACH_SCOPE.sources.length &&
       DEFAULT_COACH_SCOPE.sources.every((s) => scope.sources.includes(s));
+    const isDefault = allSourcesSelected && windowOverride === null;
     const scopePayload: CoachScope | undefined = isDefault
       ? undefined
       : {
           sources: scope.sources,
-          window: scope.window,
+          window: effectiveWindow,
         };
     await send.send({
       conversationId: currentConversationId ?? undefined,
@@ -256,6 +293,49 @@ export function CoachDrawer({
               {t("insights.coach.tagline")}
             </SheetDescription>
           </div>
+          {/* v1.4.25 W5 — per-conversation window override. The pill
+              defaults to the user's saved `coachPrefs.defaultWindow`
+              and resets to it on drawer close. Changing the pill flips
+              `windowOverride`; the rail's window picker mirrors the
+              same source-of-truth so the user can drive the override
+              from either surface. */}
+          <Select
+            value={effectiveWindow}
+            onValueChange={(value) => {
+              const next = value as CoachScopeWindow;
+              setWindowOverride(next === savedDefaultWindow ? null : next);
+            }}
+          >
+            <SelectTrigger
+              data-slot="coach-drawer-window-pill"
+              aria-label={t("insights.coach.windowLabel")}
+              size="sm"
+              className={cn(
+                "border-border/60 bg-muted/40 text-foreground h-7 shrink-0 gap-1 rounded-full px-2.5 text-[11px]",
+                "hover:bg-muted/60 focus-visible:ring-ring/40 focus-visible:ring-2",
+                windowOverride !== null &&
+                  "border-dracula-purple/40 bg-dracula-purple/10 text-dracula-purple",
+              )}
+            >
+              <SelectValue
+                placeholder={t(`insights.coach.window.${effectiveWindow}`)}
+              />
+            </SelectTrigger>
+            <SelectContent align="end">
+              <SelectItem value="last7days" className="text-xs">
+                {t("insights.coach.window.last7days")}
+              </SelectItem>
+              <SelectItem value="last30days" className="text-xs">
+                {t("insights.coach.window.last30days")}
+              </SelectItem>
+              <SelectItem value="last90days" className="text-xs">
+                {t("insights.coach.window.last90days")}
+              </SelectItem>
+              <SelectItem value="allTime" className="text-xs">
+                {t("insights.coach.window.allTime")}
+              </SelectItem>
+            </SelectContent>
+          </Select>
           <Button
             type="button"
             variant="ghost"
@@ -297,7 +377,20 @@ export function CoachDrawer({
           }
           sourcesRail={
             sourcesRail ?? (
-              <SourcesRail scope={scope} onScopeChange={setScope} />
+              <SourcesRail
+                // v1.4.25 W5 — overlay the effective window on the rail
+                // so the picker mirrors the per-conversation override
+                // (or the saved default when no override is active).
+                // The rail's own onChange flips `windowOverride` so the
+                // rail picker is just another way to set the override.
+                scope={{ sources: scope.sources, window: effectiveWindow }}
+                onScopeChange={(next) => {
+                  setScope((prev) => ({ ...prev, sources: next.sources }));
+                  setWindowOverride(
+                    next.window === savedDefaultWindow ? null : next.window,
+                  );
+                }}
+              />
             )
           }
           thread={
@@ -374,7 +467,18 @@ export function CoachDrawer({
             </SheetHeader>
             <div className="h-full min-h-0 overflow-y-auto">
               {sourcesRail ?? (
-                <SourcesRail scope={scope} onScopeChange={setScope} />
+                <SourcesRail
+                  scope={{
+                    sources: scope.sources,
+                    window: effectiveWindow,
+                  }}
+                  onScopeChange={(next) => {
+                    setScope((prev) => ({ ...prev, sources: next.sources }));
+                    setWindowOverride(
+                      next.window === savedDefaultWindow ? null : next.window,
+                    );
+                  }}
+                />
               )}
             </div>
           </SheetContent>

@@ -282,6 +282,13 @@ export const dailyBriefingKeyFindingSchema = z.object({
     "distance",
     "vo2_max",
     "body_temp",
+    // ── v1.4.25 W4d GLP-1 additive ──
+    // Findings emitted by the plateau-detection rule when a user has
+    // an active GLP-1 receptor agonist and weight has flattened on a
+    // stable dose for ≥21 days. The finding ALWAYS defers to the
+    // user's clinician (no dose recommendation); the enum value
+    // exists so the UI can pin the right icon + filter.
+    "glp1_plateau",
   ]),
 });
 

@@ -86,6 +86,11 @@ const METRIC_ICON: Record<
   distance: Route,
   vo2_max: Zap,
   body_temp: Thermometer,
+  // ── v1.4.25 W4d GLP-1 additive ──
+  // Plateau finding inherits the Pill icon since it's an
+  // adherence-context observation about the user's GLP-1 therapy.
+  // Non-GLP-1 accounts never see this finding type.
+  glp1_plateau: Pill,
 };
 
 const TONE_BAR_CLASSNAME: Record<DailyBriefingKeyFinding["tone"], string> = {
