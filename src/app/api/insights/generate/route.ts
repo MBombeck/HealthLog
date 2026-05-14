@@ -3,6 +3,10 @@ import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { extractFeatures } from "@/lib/insights/features";
 import {
+  detectGlp1Plateau,
+  buildGlp1PlateauPrompt,
+} from "@/lib/insights/glp1-plateau";
+import {
   buildUserPrompt,
   type ComparisonSnapshot,
 } from "@/lib/insights/prompt";
@@ -266,12 +270,23 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // narrative is default-on whenever the toggle is on per research §7
   // Q4 — the pulldown is the single affordance.
   const comparisonSnapshot = await buildComparisonSnapshotForUser(userId);
-  const userPrompt = buildUserPrompt(
+  // v1.4.25 W4d — GLP-1 plateau detector. Appends a SYSTEM CONTEXT
+  // block to the user prompt when the active GLP-1 medication has been
+  // on a stable dose for ≥21 days with weight delta within ±0.5 kg.
+  // The block instructs the model to emit a glp1_plateau keyFinding
+  // framed observationally (no dose recommendation per GROUND RULE 14).
+  // Returns null when no GLP-1 is active OR no plateau condition;
+  // 99% of users land in the null branch and pay zero token cost.
+  const plateauContext = await detectGlp1Plateau(userId);
+  let userPrompt = buildUserPrompt(
     featuresJson,
     dbUser?.insightsPrivacyMode ?? "aggregated",
     locale,
     comparisonSnapshot ?? undefined,
   );
+  if (plateauContext) {
+    userPrompt += buildGlp1PlateauPrompt(plateauContext, locale);
+  }
 
   let result;
   let workingProviderType: string;
