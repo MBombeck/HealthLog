@@ -427,7 +427,12 @@ function ChatBubble({
                   data-slot="coach-evidence-row"
                   className="leading-relaxed"
                 >
-                  <span className="text-muted-foreground">{kv.label}:</span>{" "}
+                  {/* v1.4.25 W5 — `kv.label` (e.g. "avg7 systolic")
+                      was rendered prefixed to every row, repeating
+                      framing the disclosure heading already gives.
+                      Drop the label and lead with the value; the
+                      window stays as a parenthetical tail so the row
+                      still answers "over what timeframe?". */}
                   <strong className="font-semibold">
                     {kv.value}
                     {kv.unit ? ` ${kv.unit}` : ""}

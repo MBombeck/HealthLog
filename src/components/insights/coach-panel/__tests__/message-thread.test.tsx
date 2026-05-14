@@ -304,10 +304,13 @@ describe("<MessageThread>", () => {
     expect(html).toContain('data-slot="coach-evidence-list"');
     const rows = (html.match(/data-slot="coach-evidence-row"/g) ?? []).length;
     expect(rows).toBe(2);
-    expect(html).toContain("avg7 systolic");
+    // v1.4.25 W5 — per-row source labels were dropped. The values +
+    // units + window framing stay; the redundant `kv.label` prefix
+    // (e.g. "avg7 systolic:") does not appear.
+    expect(html).not.toContain("avg7 systolic");
+    expect(html).not.toContain("avg30 systolic");
     expect(html).toContain("138 mmHg");
     expect(html).toContain("(last7days)");
-    expect(html).toContain("avg30 systolic");
     expect(html).toContain("134 mmHg");
     // Disclosure is collapsed by default (no `open` attribute).
     expect(html).not.toMatch(/<details[^>]*\bopen\b/);
@@ -355,11 +358,11 @@ describe("<MessageThread>", () => {
       ],
     };
     const html = render(<MessageThread conversation={withKeyValues} />);
-    expect(html).toContain("30-day adherence");
-    // No stray empty unit/window markup.
-    expect(html).not.toMatch(
-      /30-day adherence:\s*<\/span>\s*<strong[^>]*>\s*</,
-    );
+    // v1.4.25 W5 — `kv.label` no longer renders; only the value
+    // bubbles up. The row still mounts so the value is visible.
+    expect(html).not.toContain("30-day adherence");
+    expect(html).toContain('data-slot="coach-evidence-row"');
+    expect(html).toMatch(/<strong[^>]*>\s*96\s*<\/strong>/);
   });
 
   it("hides the disclosure entirely when keyValues is empty or absent", () => {
