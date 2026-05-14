@@ -119,6 +119,69 @@ describe("HK_QUANTITY_TYPE_DEFERRED", () => {
     }
   });
 
+  // v1.4.25 W16a — explicit coverage gate for the iOS-17 + iOS-18
+  // long-tail. The brief flagged these as "the iOS app may emit them
+  // when the user has the relevant HealthKit category enabled"; the
+  // deferred set means the batch endpoint treats them as
+  // skipped-but-known rather than unknown-and-dropped.
+  it("covers the iOS-17 + iOS-18 long-tail identifiers", () => {
+    const expectedLongTail = [
+      // Cardiovascular / clinical
+      "HKQuantityTypeIdentifierAtrialFibrillationBurden",
+      "HKQuantityTypeIdentifierPeripheralPerfusionIndex",
+      // Mobility
+      "HKQuantityTypeIdentifierAppleWalkingSteadiness",
+      "HKQuantityTypeIdentifierNumberOfTimesFallen",
+      "HKCategoryTypeIdentifierAppleWalkingSteadinessEvent",
+      // Respiratory / pulmonary
+      "HKQuantityTypeIdentifierForcedExpiratoryVolume1",
+      "HKQuantityTypeIdentifierForcedVitalCapacity",
+      "HKQuantityTypeIdentifierPeakExpiratoryFlowRate",
+      "HKQuantityTypeIdentifierInhalerUsage",
+      // Other quantity identifiers
+      "HKQuantityTypeIdentifierInsulinDelivery",
+      "HKQuantityTypeIdentifierUVExposure",
+      "HKQuantityTypeIdentifierElectrodermalActivity",
+      "HKQuantityTypeIdentifierBloodAlcoholContent",
+      "HKQuantityTypeIdentifierNikeFuel",
+      // Heart-rhythm event flags
+      "HKCategoryTypeIdentifierLowHeartRateEvent",
+      "HKCategoryTypeIdentifierHighHeartRateEvent",
+      "HKCategoryTypeIdentifierIrregularHeartRhythmEvent",
+      "HKCategoryTypeIdentifierLowCardioFitnessEvent",
+      // Audio-exposure events
+      "HKCategoryTypeIdentifierEnvironmentalAudioExposureEvent",
+      "HKCategoryTypeIdentifierHeadphoneAudioExposureEvent",
+      "HKCategoryTypeIdentifierEnvironmentalSoundReduction",
+      // Behavioural / habit
+      "HKCategoryTypeIdentifierHandwashingEvent",
+      "HKCategoryTypeIdentifierToothbrushingEvent",
+      // Reproductive / fertility / pregnancy
+      "HKCategoryTypeIdentifierContraceptive",
+      "HKCategoryTypeIdentifierLactation",
+      "HKCategoryTypeIdentifierPregnancy",
+      "HKCategoryTypeIdentifierPregnancyTestResult",
+      "HKCategoryTypeIdentifierProgesteroneTestResult",
+      "HKCategoryTypeIdentifierSexualActivity",
+      "HKCategoryTypeIdentifierSleepChanges",
+      "HKCategoryTypeIdentifierPersistentIntermenstrualBleeding",
+      "HKCategoryTypeIdentifierProlongedMenstrualPeriods",
+      "HKCategoryTypeIdentifierIrregularMenstrualCycles",
+      "HKCategoryTypeIdentifierInfrequentMenstrualCycles",
+    ];
+    for (const id of expectedLongTail) {
+      expect(
+        HK_QUANTITY_TYPE_DEFERRED.has(id),
+        `${id} should be in the deferred set`,
+      ).toBe(true);
+    }
+  });
+
+  it("does not duplicate any deferred identifier", () => {
+    const ids = Array.from(HK_QUANTITY_TYPE_DEFERRED);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it("converts oxygen saturation from 0..1 fraction to 0..100 percent", () => {
     const mapping =
       APPLE_HEALTH_TYPE_MAP.HKQuantityTypeIdentifierOxygenSaturation;

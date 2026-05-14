@@ -382,6 +382,59 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   // Scored assessments (iOS 18) — v1.5 (PHQ-9 / GAD-7 mapping TBD)
   "HKScoredAssessmentTypeIdentifierGAD7",
   "HKScoredAssessmentTypeIdentifierPHQ9",
+  // ── v1.4.25 W16a — iOS-17 + iOS-18 long-tail closure ──
+  // Cardiovascular / clinical (iOS 16+) — no HealthLog counterpart yet;
+  // clinical decision-support territory, defer behind a stricter user
+  // opt-in than the existing Health-share prompt.
+  "HKQuantityTypeIdentifierAtrialFibrillationBurden",
+  "HKQuantityTypeIdentifierPeripheralPerfusionIndex",
+  // Mobility (iOS 15+) — surface as a wellness signal in v1.5 once the
+  // Insights cardio sub-page has room for a steadiness gauge.
+  "HKQuantityTypeIdentifierAppleWalkingSteadiness",
+  "HKQuantityTypeIdentifierNumberOfTimesFallen",
+  "HKCategoryTypeIdentifierAppleWalkingSteadinessEvent",
+  // Respiratory / pulmonary clinical (iOS 17) — pair with FHIR clinical
+  // bucket; no Measurement enum mapping today.
+  "HKQuantityTypeIdentifierForcedExpiratoryVolume1",
+  "HKQuantityTypeIdentifierForcedVitalCapacity",
+  "HKQuantityTypeIdentifierPeakExpiratoryFlowRate",
+  "HKQuantityTypeIdentifierInhalerUsage",
+  // Other quantity identifiers — explicit hold (privacy / not in scope).
+  "HKQuantityTypeIdentifierInsulinDelivery",
+  "HKQuantityTypeIdentifierUVExposure",
+  "HKQuantityTypeIdentifierElectrodermalActivity",
+  "HKQuantityTypeIdentifierBloodAlcoholContent",
+  "HKQuantityTypeIdentifierNikeFuel", // legacy Nike+iPod fitness points
+  // Heart-rhythm event flags (iOS 9+ but watch-detected; iOS 18
+  // refreshed surfaces) — would land as Measurement annotations rather
+  // than rows; defer until the annotation column lands.
+  "HKCategoryTypeIdentifierLowHeartRateEvent",
+  "HKCategoryTypeIdentifierHighHeartRateEvent",
+  "HKCategoryTypeIdentifierIrregularHeartRhythmEvent",
+  "HKCategoryTypeIdentifierLowCardioFitnessEvent",
+  // Audio-exposure events (iOS 13+) — the continuous AUDIO_EXPOSURE_*
+  // quantity identifiers ARE mapped above; these are the
+  // "loud-event-fired" flags that pair with them. Defer until we
+  // surface event chips in the Insights audio sub-page.
+  "HKCategoryTypeIdentifierEnvironmentalAudioExposureEvent",
+  "HKCategoryTypeIdentifierHeadphoneAudioExposureEvent",
+  "HKCategoryTypeIdentifierEnvironmentalSoundReduction",
+  // Behavioural / habit category-types — not in HealthLog scope yet.
+  "HKCategoryTypeIdentifierHandwashingEvent",
+  "HKCategoryTypeIdentifierToothbrushingEvent",
+  // Reproductive / fertility / pregnancy — explicit privacy hold
+  // (matches the menstrual-flow stance already encoded above).
+  "HKCategoryTypeIdentifierContraceptive",
+  "HKCategoryTypeIdentifierLactation",
+  "HKCategoryTypeIdentifierPregnancy",
+  "HKCategoryTypeIdentifierPregnancyTestResult",
+  "HKCategoryTypeIdentifierProgesteroneTestResult",
+  "HKCategoryTypeIdentifierSexualActivity",
+  "HKCategoryTypeIdentifierSleepChanges",
+  "HKCategoryTypeIdentifierPersistentIntermenstrualBleeding",
+  "HKCategoryTypeIdentifierProlongedMenstrualPeriods",
+  "HKCategoryTypeIdentifierIrregularMenstrualCycles",
+  "HKCategoryTypeIdentifierInfrequentMenstrualCycles",
 ] as const);
 
 /** Input to `mapAppleHealthEntry()`. */
