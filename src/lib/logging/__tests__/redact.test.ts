@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { redactSecrets, redactOptional } from "../redact";
+import { redactSecrets, redactOptional, PATH_SECRET_PATHS } from "../redact";
 
 describe("redactSecrets", () => {
   it("redacts Bearer tokens", () => {
@@ -117,6 +117,77 @@ describe("redactSecrets", () => {
     expect(redactSecrets("Bearer hlk_x bot999:tok ?code=abc123")).toBe(
       "Bearer [REDACTED] bot[REDACTED] ?code=[REDACTED]",
     );
+  });
+
+  // v1.4.25 W21 Fix-J: `WITHINGS_WEBHOOK_SECRET` travels as the trailing
+  // path segment on `/api/withings/webhook/<secret>`. The Wide Event
+  // builder feeds `http.path` and `http.route` through `redactSecrets`,
+  // so the path-segment rule must rewrite the secret to `[REDACTED]`
+  // before stdout / ring-buffer / Loki egress.
+  describe("path-segment secret redaction", () => {
+    it("registers the Withings webhook prefix in PATH_SECRET_PATHS", () => {
+      expect(PATH_SECRET_PATHS.map((entry) => entry.prefix)).toContain(
+        "/api/withings/webhook/",
+      );
+    });
+
+    it("redacts the Withings webhook secret segment", () => {
+      expect(redactSecrets("/api/withings/webhook/test-secret")).toBe(
+        "/api/withings/webhook/[REDACTED]",
+      );
+      expect(
+        redactSecrets(
+          "/api/withings/webhook/abc123_DEADBEEF-cafe.0123456789abcdef",
+        ),
+      ).toBe("/api/withings/webhook/[REDACTED]");
+    });
+
+    it("preserves trailing path segments after the secret", () => {
+      expect(redactSecrets("/api/withings/webhook/test-secret/")).toBe(
+        "/api/withings/webhook/[REDACTED]/",
+      );
+      expect(redactSecrets("/api/withings/webhook/test-secret/verify")).toBe(
+        "/api/withings/webhook/[REDACTED]/verify",
+      );
+    });
+
+    it("preserves query strings after the secret segment", () => {
+      // Note: the existing query-string rule then redacts the
+      // `?secret=…` payload too; both layers compose.
+      expect(
+        redactSecrets("/api/withings/webhook/test-secret?retries=2"),
+      ).toBe("/api/withings/webhook/[REDACTED]?retries=2");
+    });
+
+    it("redacts an absolute URL form (origin + path-segment secret)", () => {
+      expect(
+        redactSecrets(
+          "https://app.healthlog.dev/api/withings/webhook/super-secret",
+        ),
+      ).toBe("https://app.healthlog.dev/api/withings/webhook/[REDACTED]");
+    });
+
+    it("leaves the legacy query-string webhook form alone (no path-segment secret)", () => {
+      // `/api/withings/webhook` (no trailing segment) keeps shape; the
+      // `?secret=` rule scrubs the query payload via the existing rule.
+      expect(redactSecrets("/api/withings/webhook?secret=abc123")).toBe(
+        "/api/withings/webhook?secret=[REDACTED]",
+      );
+      expect(redactSecrets("/api/withings/webhook")).toBe(
+        "/api/withings/webhook",
+      );
+    });
+
+    it("does not over-redact sibling routes that share the prefix root", () => {
+      // Sibling paths (`/api/withings/measure`, `/api/withings/auth`)
+      // must not match the webhook-specific prefix.
+      expect(redactSecrets("/api/withings/measure/123")).toBe(
+        "/api/withings/measure/123",
+      );
+      expect(redactSecrets("/api/withings/auth/callback")).toBe(
+        "/api/withings/auth/callback",
+      );
+    });
   });
 });
 
