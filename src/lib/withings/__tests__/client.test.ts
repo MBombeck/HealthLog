@@ -56,6 +56,20 @@ describe("MEASURE_TYPE_MAP", () => {
   it("maps Withings meastype 12 (legacy Thermo) → BODY_TEMPERATURE", () => {
     expect(MEASURE_TYPE_MAP[12]).toEqual({ type: "BODY_TEMPERATURE" });
   });
+
+  it("maps Withings meastype 71 (current-gen Thermo) → BODY_TEMPERATURE", () => {
+    expect(MEASURE_TYPE_MAP[71]).toEqual({ type: "BODY_TEMPERATURE" });
+  });
+});
+
+describe("fetchMeasurements — body temperature (meastype 71)", () => {
+  it("decodes a current-gen Thermo reading into BODY_TEMPERATURE °C", async () => {
+    // 37.05 °C as Withings exponent encoding: value=3705, unit=-2.
+    installFetchMock(fakeGetmeasPayload([{ type: 71, value: 3705, unit: -2 }]));
+    const out = await fetchMeasurements("token");
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ type: "BODY_TEMPERATURE", value: 37.05 });
+  });
 });
 
 describe("fetchMeasurements — temperature (meastype 12)", () => {

@@ -129,8 +129,12 @@ export const MEASURE_TYPE_MAP: Record<number, { type: string; factor?: number }>
   11: { type: "PULSE" }, // Heart rate
   6: { type: "BODY_FAT" }, // Body fat %
   // v1.4.25 — first-gen Thermo (WBT01) reports temperature as meastype 12;
-  // current-gen ships meastype 71 instead (see below). Both canonical °C.
+  // current-gen Thermo ships meastype 71. Both canonical °C, both into
+  // the BODY_TEMPERATURE bucket. Skin temperature (73, ScanWatch) stays
+  // out until v1.4.26 ships a SKIN_TEMPERATURE enum — surface temps
+  // (~32 °C) and core temps (~37 °C) must not share a rollup.
   12: { type: "BODY_TEMPERATURE" },
+  71: { type: "BODY_TEMPERATURE" },
   77: { type: "TOTAL_BODY_WATER" }, // Hydration / water mass (kg)
   88: { type: "BONE_MASS" }, // Bone mass (kg)
   54: { type: "OXYGEN_SATURATION" }, // SpO2 (% — only ScanWatch / pulse-ox products)
