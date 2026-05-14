@@ -38,7 +38,20 @@ export class WideEventBuilder {
   }
 
   setHttp(http: WideEvent["http"]): this {
-    this.event.http = http;
+    if (http) {
+      // Fix-J (v1.4.25 W21): the Withings webhook ships its shared
+      // secret as a path segment, so `path` and `route` carry the
+      // secret unless we scrub on the way in. `redactSecrets` is the
+      // single egress-redaction surface (see redact.ts for the rules
+      // and the PATH_SECRET_PATHS registry).
+      this.event.http = {
+        ...http,
+        path: redactSecrets(http.path),
+        route: redactSecrets(http.route),
+      };
+    } else {
+      this.event.http = http;
+    }
     return this;
   }
 
