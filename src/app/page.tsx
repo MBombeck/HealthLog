@@ -571,7 +571,7 @@ export default function DashboardPage() {
             node: (
               <TrendCard
                 key="weight"
-                label={t("dashboard.weight")}
+                label={t("dashboard.weightShort")}
                 latest={w?.latest ?? null}
                 unit="kg"
                 avg7={w?.avg7 ?? null}
@@ -616,7 +616,7 @@ export default function DashboardPage() {
             node: (
               <TrendCard
                 key="bp-sys"
-                label={t("dashboard.bloodPressureSys")}
+                label={t("dashboard.bloodPressureSysShort")}
                 latest={sys?.latest ?? null}
                 unit="mmHg"
                 avg7={sys?.avg7 ?? null}
@@ -656,7 +656,7 @@ export default function DashboardPage() {
             node: (
               <TrendCard
                 key="bp-dia"
-                label={t("dashboard.bloodPressureDia")}
+                label={t("dashboard.bloodPressureDiaShort")}
                 latest={dia?.latest ?? null}
                 unit="mmHg"
                 avg7={dia?.avg7 ?? null}
@@ -696,7 +696,7 @@ export default function DashboardPage() {
             node: (
               <TrendCard
                 key="pulse"
-                label={t("dashboard.pulse")}
+                label={t("dashboard.pulseShort")}
                 latest={p?.latest ?? null}
                 unit="bpm"
                 avg7={p?.avg7 ?? null}
@@ -735,7 +735,7 @@ export default function DashboardPage() {
             node: (
               <TrendCard
                 key="bodyFat"
-                label={t("dashboard.bodyFat")}
+                label={t("dashboard.bodyFatShort")}
                 latest={bf?.latest ?? null}
                 unit="%"
                 avg7={bf?.avg7 ?? null}
@@ -757,7 +757,7 @@ export default function DashboardPage() {
             node: (
               <TrendCard
                 key="mood"
-                label={t("dashboard.mood")}
+                label={t("dashboard.moodShort")}
                 latest={moodSummary?.latest ?? null}
                 unit="/ 5"
                 avg7={moodSummary?.avg7 ?? null}
@@ -779,7 +779,7 @@ export default function DashboardPage() {
             node: (
               <TrendCard
                 key="sleep"
-                label={t("dashboard.sleep") ?? "Sleep"}
+                label={t("dashboard.sleepShort") ?? "Sleep"}
                 latest={sleepSummary?.latest ?? null}
                 unit="h"
                 avg7={sleepSummary?.avg7 ?? null}
@@ -801,7 +801,7 @@ export default function DashboardPage() {
             node: (
               <TrendCard
                 key="steps"
-                label={t("dashboard.steps") ?? "Steps"}
+                label={t("dashboard.stepsShort") ?? "Steps"}
                 latest={stepsSummary?.latest ?? null}
                 unit=""
                 avg7={stepsSummary?.avg7 ?? null}
@@ -830,7 +830,7 @@ export default function DashboardPage() {
             node: (
               <TrendCard
                 key="vo2Max"
-                label={t("dashboard.vo2Max") ?? "VO₂ max"}
+                label={t("dashboard.vo2MaxShort") ?? "VO₂ max"}
                 latest={vo2Summary?.latest ?? null}
                 unit={t("dashboard.vo2MaxUnit") ?? "mL/(kg·min)"}
                 avg7={vo2Summary?.avg7 ?? null}
@@ -909,7 +909,7 @@ export default function DashboardPage() {
             node: (
               <TrendCard
                 key="bpInTarget"
-                label={t("dashboard.bpInTarget")}
+                label={t("dashboard.bpInTargetShort")}
                 latest={data?.bpInTargetPct ?? null}
                 unit="%"
                 /* v1.4.18 A1 — wire 7T / 30T sub-values from the new
