@@ -8,6 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Bell, Loader2, Settings, AlertCircle } from "lucide-react";
+import {
+  EVENT_DEFAULT_ENABLED,
+  type EventType,
+} from "@/lib/notifications/types";
 
 interface ChannelInfo {
   id: string;
@@ -115,8 +119,11 @@ export default function NotificationsPage() {
     const pref = data?.preferences?.find(
       (p) => p.channelId === channelId && p.eventType === eventType,
     );
-    // Opt-out model: default is ON when no preference row exists
-    return pref ? pref.enabled : true;
+    if (pref) return pref.enabled;
+    // v1.4.25 W16c — per-event default. Most events stay opt-out
+    // (no row = ON); PERSONAL_RECORD flips to opt-in (no row = OFF)
+    // so a backfill doesn't fire hundreds of pushes on first sync.
+    return EVENT_DEFAULT_ENABLED[eventType as EventType] ?? true;
   }
 
   if (authLoading || isLoading) {

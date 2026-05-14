@@ -583,6 +583,34 @@
     "glp1Inventory": "{pens} Pens übrig · ~{weeks} Wochen Reichweite",
     "glp1InventoryLow": "Niedriger Bestand — bald nachbestellen",
     "glp1LogSideEffect": "Nebenwirkung loggen",
+    "inventory": {
+      "title": "Bestand",
+      "addPen": "Neuen Pen erfassen",
+      "addPenTitle": "Neuen Pen erfassen",
+      "loading": "Bestand wird geladen…",
+      "empty": "Noch keine Pens erfasst. Erfasse den nächsten, um die 30-Tage-Frist zu starten.",
+      "dosesLabel": "Dosen",
+      "printedExpiry": "Verfallsdatum auf der Schachtel: {date}",
+      "purchasedAt": "Gekauft am {date}",
+      "pastTitle": "Frühere Pens ({count})",
+      "markAsInUse": "Als angebrochen markieren",
+      "markAsUsedUp": "Als verbraucht markieren",
+      "delete": "Löschen",
+      "cancel": "Abbrechen",
+      "save": "Speichern",
+      "fieldDosesTotal": "Dosen pro Pen",
+      "fieldDosesTotalHelp": "Anzahl der Dosen, die dieser Pen enthält. Mounjaro-KwikPen = 4, Trulicity Single-Dose = 1, Byetta = 60.",
+      "fieldPrintedExpiry": "Aufgedrucktes Verfallsdatum",
+      "fieldPurchasedAt": "Kaufdatum",
+      "fieldNotes": "Notiz (optional)",
+      "errorDosesTotal": "Dosen pro Pen müssen zwischen 1 und 100 liegen",
+      "state": {
+        "active": "Im Kühlschrank",
+        "inUse": "In Verwendung · {days} Tage übrig",
+        "expired": "Abgelaufen",
+        "usedUp": "Verbraucht"
+      }
+    },
     "injectionSiteBodyOutlineAriaLabel": "Körperumriss",
     "injectionSitePickerAriaLabel": "Injektionsstelle auswählen",
     "siteAbdomenLeft": "Bauch, unten links",
@@ -2792,7 +2820,9 @@
     "eventWithingsSyncFailed": "Withings-Sync-Fehler",
     "eventWithingsSyncFailedDesc": "Meldung bei Fehlern beim automatischen Withings-Datenabgleich.",
     "eventSystemAlert": "System-Hinweise",
-    "eventSystemAlertDesc": "Wichtige Systemnachrichten und administrative Hinweise."
+    "eventSystemAlertDesc": "Wichtige Systemnachrichten und administrative Hinweise.",
+    "eventPersonalRecord": "Persönlicher Rekord",
+    "eventPersonalRecordDesc": "Push bei einem neuen Bestwert für eine erfasste Kennzahl oder ein Training. Standardmäßig aus."
   },
   "format": {
     "dateShort": "{day}.{month}.{year}",

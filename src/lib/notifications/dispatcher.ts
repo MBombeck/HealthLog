@@ -5,7 +5,9 @@ import type {
   TelegramChannelConfig,
   NtfyChannelConfig,
   ChannelType,
+  EventType,
 } from "@/lib/notifications/types";
+import { EVENT_DEFAULT_ENABLED } from "@/lib/notifications/types";
 import { sendViaTelegram } from "@/lib/notifications/senders/telegram";
 import { sendViaNtfy } from "@/lib/notifications/senders/ntfy";
 import { sendViaWebPush } from "@/lib/notifications/senders/web-push";
@@ -113,10 +115,21 @@ export async function dispatchNotification(
     channels.sort((a, b) => channelPriority(a.type) - channelPriority(b.type));
 
     const now = new Date();
+    // v1.4.25 W16c — per-event default policy. Most events stay
+    // opt-out (no row = enabled); PERSONAL_RECORD flips to opt-in
+    // (no row = disabled) so the iOS backfill doesn't saturate the
+    // lock-screen on first launch. The user enables it explicitly
+    // from /settings/notifications once they've seen the badge a few
+    // times and decided they want push.
+    const defaultEnabled =
+      EVENT_DEFAULT_ENABLED[payload.eventType as EventType] ?? true;
     for (const channel of channels) {
-      // Opt-out model: if no preference row exists, default to enabled
       const pref = channel.preferences[0];
-      if (pref && !pref.enabled) continue;
+      if (pref) {
+        if (!pref.enabled) continue;
+      } else if (!defaultEnabled) {
+        continue;
+      }
 
       // Backoff cooldown — skip the channel until `nextRetryAt`. Without
       // this guard, a flapping upstream would burn API quota every

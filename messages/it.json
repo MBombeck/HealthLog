@@ -583,6 +583,34 @@
     "glp1Inventory": "{pens} pens left · ~{weeks} weeks of supply",
     "glp1InventoryLow": "Low stock — refill soon",
     "glp1LogSideEffect": "Log side effect",
+    "inventory": {
+      "title": "Inventario",
+      "addPen": "Aggiungi nuova penna",
+      "addPenTitle": "Registra nuova penna",
+      "loading": "Caricamento inventario…",
+      "empty": "Nessuna penna registrata. Aggiungi la prossima per avviare il conto alla rovescia di 30 giorni.",
+      "dosesLabel": "dosi",
+      "printedExpiry": "Scadenza sulla scatola: {date}",
+      "purchasedAt": "Acquistata il {date}",
+      "pastTitle": "Penne precedenti ({count})",
+      "markAsInUse": "Segna come in uso",
+      "markAsUsedUp": "Segna come esaurita",
+      "delete": "Elimina",
+      "cancel": "Annulla",
+      "save": "Salva",
+      "fieldDosesTotal": "Dosi per penna",
+      "fieldDosesTotalHelp": "Numero di dosi contenute nella penna. KwikPen Mounjaro = 4, Trulicity monodose = 1, Byetta = 60.",
+      "fieldPrintedExpiry": "Data di scadenza stampata",
+      "fieldPurchasedAt": "Data di acquisto",
+      "fieldNotes": "Nota (facoltativo)",
+      "errorDosesTotal": "Le dosi per penna devono essere comprese tra 1 e 100",
+      "state": {
+        "active": "In frigorifero",
+        "inUse": "In uso · {days} giorni rimasti",
+        "expired": "Scaduta",
+        "usedUp": "Esaurita"
+      }
+    },
     "injectionSiteBodyOutlineAriaLabel": "Sagoma del corpo",
     "injectionSitePickerAriaLabel": "Selettore del sito di iniezione",
     "siteAbdomenLeft": "Abdomen, lower left",
@@ -2791,8 +2819,10 @@
     "eventComplianceLowDesc": "Notification when medication compliance drops below a threshold.",
     "eventWithingsSyncFailed": "Withings Sync Failed",
     "eventWithingsSyncFailedDesc": "Alert when the automatic Withings data sync fails.",
-    "eventSystemAlert": "System Alert",
-    "eventSystemAlertDesc": "Important system messages and administrative notices."
+    "eventSystemAlert": "Avviso di sistema",
+    "eventSystemAlertDesc": "Messaggi di sistema importanti e avvisi amministrativi.",
+    "eventPersonalRecord": "Record personale",
+    "eventPersonalRecordDesc": "Notifica quando viene raggiunto un nuovo record per una metrica o un allenamento. Disattivato per impostazione predefinita."
   },
   "format": {
     "dateShort": "{month}/{day}/{year}",

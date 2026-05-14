@@ -583,6 +583,34 @@
     "glp1Inventory": "{pens} pens left · ~{weeks} weeks of supply",
     "glp1InventoryLow": "Low stock — refill soon",
     "glp1LogSideEffect": "Log side effect",
+    "inventory": {
+      "title": "Magazyn",
+      "addPen": "Dodaj nowy wstrzykiwacz",
+      "addPenTitle": "Zarejestruj nowy wstrzykiwacz",
+      "loading": "Ładowanie magazynu…",
+      "empty": "Brak wstrzykiwaczy w magazynie. Dodaj następny, aby uruchomić 30-dniowy licznik.",
+      "dosesLabel": "dawki",
+      "printedExpiry": "Data ważności na opakowaniu: {date}",
+      "purchasedAt": "Zakupiono {date}",
+      "pastTitle": "Wcześniejsze wstrzykiwacze ({count})",
+      "markAsInUse": "Oznacz jako otwarty",
+      "markAsUsedUp": "Oznacz jako zużyty",
+      "delete": "Usuń",
+      "cancel": "Anuluj",
+      "save": "Zapisz",
+      "fieldDosesTotal": "Dawki na wstrzykiwacz",
+      "fieldDosesTotalHelp": "Liczba dawek w jednym wstrzykiwaczu. Mounjaro KwikPen = 4, Trulicity jednodawkowy = 1, Byetta = 60.",
+      "fieldPrintedExpiry": "Nadrukowana data ważności",
+      "fieldPurchasedAt": "Data zakupu",
+      "fieldNotes": "Notatka (opcjonalnie)",
+      "errorDosesTotal": "Liczba dawek na wstrzykiwacz musi mieścić się w zakresie 1–100",
+      "state": {
+        "active": "W lodówce",
+        "inUse": "W użyciu · pozostało {days} dni",
+        "expired": "Wygasł",
+        "usedUp": "Zużyty"
+      }
+    },
     "injectionSiteBodyOutlineAriaLabel": "Sylwetka ciała",
     "injectionSitePickerAriaLabel": "Wybór miejsca iniekcji",
     "siteAbdomenLeft": "Abdomen, lower left",
@@ -2791,8 +2819,10 @@
     "eventComplianceLowDesc": "Notification when medication compliance drops below a threshold.",
     "eventWithingsSyncFailed": "Withings Sync Failed",
     "eventWithingsSyncFailedDesc": "Alert when the automatic Withings data sync fails.",
-    "eventSystemAlert": "System Alert",
-    "eventSystemAlertDesc": "Important system messages and administrative notices."
+    "eventSystemAlert": "Alert systemowy",
+    "eventSystemAlertDesc": "Ważne komunikaty systemowe i powiadomienia administracyjne.",
+    "eventPersonalRecord": "Rekord osobisty",
+    "eventPersonalRecordDesc": "Powiadomienie po osiągnięciu nowego rekordu w metryce lub treningu. Domyślnie wyłączone."
   },
   "format": {
     "dateShort": "{month}/{day}/{year}",

@@ -583,6 +583,34 @@
     "glp1Inventory": "{pens} pens left · ~{weeks} weeks of supply",
     "glp1InventoryLow": "Low stock — refill soon",
     "glp1LogSideEffect": "Log side effect",
+    "inventory": {
+      "title": "Inventory",
+      "addPen": "Add new pen",
+      "addPenTitle": "Register new pen",
+      "loading": "Loading inventory…",
+      "empty": "No pens tracked yet. Add the next one to start the 30-day in-use clock.",
+      "dosesLabel": "doses",
+      "printedExpiry": "Carton expiry {date}",
+      "purchasedAt": "Bought {date}",
+      "pastTitle": "Past pens ({count})",
+      "markAsInUse": "Mark in use",
+      "markAsUsedUp": "Mark used up",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "save": "Save",
+      "fieldDosesTotal": "Doses per pen",
+      "fieldDosesTotalHelp": "Number of doses this pen ships with. Mounjaro KwikPen = 4, Trulicity single-dose = 1, Byetta = 60.",
+      "fieldPrintedExpiry": "Printed expiry date",
+      "fieldPurchasedAt": "Date purchased",
+      "fieldNotes": "Notes (optional)",
+      "errorDosesTotal": "Doses per pen must be between 1 and 100",
+      "state": {
+        "active": "Refrigerated",
+        "inUse": "In use · {days} days left",
+        "expired": "Expired",
+        "usedUp": "Used up"
+      }
+    },
     "injectionSiteBodyOutlineAriaLabel": "Body outline",
     "injectionSitePickerAriaLabel": "Injection site picker",
     "siteAbdomenLeft": "Abdomen, lower left",
@@ -2792,7 +2820,9 @@
     "eventWithingsSyncFailed": "Withings Sync Failed",
     "eventWithingsSyncFailedDesc": "Alert when the automatic Withings data sync fails.",
     "eventSystemAlert": "System Alert",
-    "eventSystemAlertDesc": "Important system messages and administrative notices."
+    "eventSystemAlertDesc": "Important system messages and administrative notices.",
+    "eventPersonalRecord": "Personal Record",
+    "eventPersonalRecordDesc": "Push when an all-time best is reached for a tracked metric or workout. Off by default."
   },
   "format": {
     "dateShort": "{month}/{day}/{year}",

@@ -309,6 +309,80 @@ describe("dispatchNotification — cooldown skip", () => {
   });
 });
 
+describe("dispatchNotification — per-event default policy (v1.4.25 W16c)", () => {
+  it("PERSONAL_RECORD defaults OFF when no preference row exists", async () => {
+    const channel = makeChannel({
+      type: "NTFY",
+      config: JSON.stringify({
+        serverUrl: "https://ntfy.example",
+        topic: "t",
+      }),
+      preferences: [],
+    });
+    vi.mocked(prisma.notificationChannel.findMany).mockResolvedValueOnce([
+      channel,
+    ] as never);
+
+    await dispatchNotification({
+      eventType: "PERSONAL_RECORD",
+      userId: "u-1",
+      title: "PR",
+      message: "Best ever",
+    });
+
+    // No row → opt-in for this event type → sender NOT called.
+    expect(sendViaNtfyMock).not.toHaveBeenCalled();
+  });
+
+  it("PERSONAL_RECORD fires when the user has explicitly opted in", async () => {
+    const channel = makeChannel({
+      type: "NTFY",
+      config: JSON.stringify({
+        serverUrl: "https://ntfy.example",
+        topic: "t",
+      }),
+      preferences: [{ eventType: "PERSONAL_RECORD", enabled: true }],
+    });
+    vi.mocked(prisma.notificationChannel.findMany).mockResolvedValueOnce([
+      channel,
+    ] as never);
+    sendViaNtfyMock.mockResolvedValueOnce({ ok: true });
+
+    await dispatchNotification({
+      eventType: "PERSONAL_RECORD",
+      userId: "u-1",
+      title: "PR",
+      message: "Best ever",
+    });
+
+    expect(sendViaNtfyMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("legacy events (MEDICATION_REMINDER) still default ON when no row exists", async () => {
+    const channel = makeChannel({
+      type: "NTFY",
+      config: JSON.stringify({
+        serverUrl: "https://ntfy.example",
+        topic: "t",
+      }),
+      preferences: [],
+    });
+    vi.mocked(prisma.notificationChannel.findMany).mockResolvedValueOnce([
+      channel,
+    ] as never);
+    sendViaNtfyMock.mockResolvedValueOnce({ ok: true });
+
+    await dispatchNotification({
+      eventType: "MEDICATION_REMINDER",
+      userId: "u-1",
+      title: "Reminder",
+      message: "Take it",
+    });
+
+    expect(sendViaNtfyMock).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("dispatchNotification — Telegram hard reject", () => {
   it("auto-disables on 'chat not found'", async () => {
     const channel = makeChannel({
