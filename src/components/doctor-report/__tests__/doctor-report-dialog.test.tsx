@@ -65,6 +65,36 @@ describe("doctor-report dialog — i18n contract", () => {
         expect(typeof dialog![key]).toBe("string");
       }
     });
+
+    // v1.4.25 W6c — per-section toggle strings.
+    it(`exposes every doctor-report section-toggle key in ${locale}.json`, () => {
+      const messages = loadMessages(locale);
+      const root = messages.doctorReport as Record<string, unknown> | undefined;
+      const sections = root!.sections as Record<string, unknown> | undefined;
+      expect(
+        sections,
+        `doctorReport.sections missing in ${locale}.json`,
+      ).toBeDefined();
+      const sectionKeys = [
+        "title",
+        "bp",
+        "weight",
+        "pulse",
+        "bmi",
+        "mood",
+        "moodSensitive",
+        "compliance",
+        "sleep",
+        "empty",
+      ];
+      for (const key of sectionKeys) {
+        expect(
+          sections![key],
+          `doctorReport.sections.${key} missing in ${locale}.json`,
+        ).toBeTruthy();
+        expect(typeof sections![key]).toBe("string");
+      }
+    });
   }
 
   it("EN dialog uses the expected English title + 90d preset", () => {
