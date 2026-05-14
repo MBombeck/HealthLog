@@ -651,7 +651,35 @@
     "labelPlaceholder": "z.B. Morgens",
     "defaultDose": "Standard",
     "dayDeactivate": "{day} deaktivieren",
-    "dayActivate": "{day} aktivieren"
+    "dayActivate": "{day} aktivieren",
+    "glp1": {
+      "drug": {
+        "tirzepatide": {
+          "name": "Tirzepatid",
+          "class": "GIP-GLP-1-Doppel-Agonist"
+        },
+        "semaglutide": {
+          "name": "Semaglutid",
+          "class": "GLP-1-Rezeptoragonist"
+        },
+        "liraglutide": {
+          "name": "Liraglutid",
+          "class": "GLP-1-Rezeptoragonist"
+        },
+        "dulaglutide": {
+          "name": "Dulaglutid",
+          "class": "GLP-1-Rezeptoragonist"
+        },
+        "exenatide": {
+          "name": "Exenatid",
+          "class": "GLP-1-Rezeptoragonist"
+        }
+      },
+      "source": {
+        "ema": "EMA-Quelle",
+        "psp4": "Peer-Reviewed Pharmakometrik"
+      }
+    }
   },
   "charts": {
     "title": "Verlauf",

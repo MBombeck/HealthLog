@@ -651,7 +651,35 @@
     "labelPlaceholder": "e.g. Morning",
     "defaultDose": "Default",
     "dayDeactivate": "Deactivate {day}",
-    "dayActivate": "Activate {day}"
+    "dayActivate": "Activate {day}",
+    "glp1": {
+      "drug": {
+        "tirzepatide": {
+          "name": "Tirzepatida",
+          "class": "Agonista dual GIP-GLP-1"
+        },
+        "semaglutide": {
+          "name": "Semaglutida",
+          "class": "Agonista del receptor GLP-1"
+        },
+        "liraglutide": {
+          "name": "Liraglutida",
+          "class": "Agonista del receptor GLP-1"
+        },
+        "dulaglutide": {
+          "name": "Dulaglutida",
+          "class": "Agonista del receptor GLP-1"
+        },
+        "exenatide": {
+          "name": "Exenatida",
+          "class": "Agonista del receptor GLP-1"
+        }
+      },
+      "source": {
+        "ema": "Fuente EMA",
+        "psp4": "Farmacometría revisada por pares"
+      }
+    }
   },
   "charts": {
     "title": "Historial",
