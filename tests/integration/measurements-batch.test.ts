@@ -325,6 +325,45 @@ describe("POST /api/measurements/batch (real Postgres)", () => {
     expect(stored.every((r) => r.unit === "minutes")).toBe(true);
   });
 
+  it("rate-limits a user at 60 batches per minute (security H-2)", async () => {
+    const { POST } = await import("@/app/api/measurements/batch/route");
+
+    // Pre-seed the rate-limit counter to the cap so the next call
+    // exercises the over-limit path without 60 round-trips.
+    const cap = 60;
+    const resetAt = new Date(Date.now() + 60 * 1000);
+    await getPrismaClient().$executeRaw`
+      INSERT INTO rate_limits (key, count, reset_at)
+      VALUES (${`measurements:batch:${TEST_USER_ID}`}, ${cap}, ${resetAt})
+    `;
+
+    const body = {
+      entries: [
+        {
+          hkIdentifier: "HKQuantityTypeIdentifierBodyMass",
+          value: 81.4,
+          unit: "kg",
+          startDate: "2026-05-09T07:30:00.000Z",
+          endDate: "2026-05-09T07:30:00.000Z",
+          externalId: "uuid-rate-limit-001",
+        },
+      ],
+    };
+
+    const response = await POST(makeRequest(body));
+    expect(response.status).toBe(429);
+    const json = (await response.json()) as { error: string };
+    expect(json.error).toMatch(/too many/i);
+
+    // The over-limit response must not have written anything to the
+    // measurement table — the iOS client should retry, not assume the
+    // row landed.
+    const stored = await getPrismaClient().measurement.findMany({
+      where: { userId: TEST_USER_ID },
+    });
+    expect(stored).toHaveLength(0);
+  });
+
   it("replays a cached response when the same Idempotency-Key is reused", async () => {
     const { POST } = await import("@/app/api/measurements/batch/route");
 

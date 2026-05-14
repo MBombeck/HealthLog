@@ -35,9 +35,20 @@ import { withIdempotency } from "@/lib/idempotency";
 import { mapAppleHealthEntry } from "@/lib/measurements/apple-health-mapping";
 import { validateMeasurementRange } from "@/lib/validations/measurement";
 import { deviceTypeEnum } from "@/lib/validations/source-priority";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { Prisma } from "@/generated/prisma/client";
 
 const MAX_BATCH_ENTRIES = 500;
+
+// v1.4.25 W10 reconcile (security H-2): cap batch ingest at 60
+// batches per user per minute. Healthy iOS sync drains its
+// HealthKit observer queue in well under one batch per minute (the
+// observer pattern coalesces), so 60/min × 500 entries/batch =
+// 30 000 rows/min headroom — generous for legitimate use, and a
+// hard stop for a leaked wildcard token trying to saturate the
+// write pipeline.
+const BATCH_RATE_LIMIT_MAX = 60;
+const BATCH_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 
 const batchEntrySchema = z.object({
   hkIdentifier: z.string().min(1).max(120),
@@ -83,6 +94,25 @@ export const POST = apiHandler(withIdempotency<[NextRequest]>(postBatch));
 
 async function postBatch(request: NextRequest): Promise<Response> {
   const { user } = await requireAuth();
+
+  // v1.4.25 W10 reconcile (security H-2): per-user rate limit. Without
+  // it, a leaked wildcard iOS token can sustain unbounded writes
+  // (500 rows/batch × N batches/sec) and degrade the database for
+  // every other user on the host. 60 batches/min/user is generous
+  // for healthy iOS sync and tight enough that a misbehaving client
+  // bottoms out within a minute.
+  const rl = await checkRateLimit(
+    `measurements:batch:${user.id}`,
+    BATCH_RATE_LIMIT_MAX,
+    BATCH_RATE_LIMIT_WINDOW_MS,
+  );
+  if (!rl.allowed) {
+    annotate({
+      action: { name: "measurement.batch.ingest" },
+      meta: { outcome: "rate_limited" },
+    });
+    return apiError("Too many batch submissions, try again later", 429);
+  }
 
   const { data: rawBody, error: jsonError } = await safeJson<unknown>(request);
   if (jsonError) return jsonError;
