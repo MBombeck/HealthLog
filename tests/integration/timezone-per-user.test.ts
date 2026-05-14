@@ -112,7 +112,9 @@ describe("per-user timezone — Pacific/Auckland end-to-end", () => {
     const body = await res.text();
 
     // Header row + one data row.
-    expect(body).toContain("type,value,unit,measuredAt,source,notes,glucoseContext");
+    expect(body).toContain(
+      "type,value,unit,measuredAt,source,notes,glucoseContext",
+    );
     // The Auckland offset in May = +12:00 (NZST). The CSV row
     // should carry it verbatim, never the bare Z.
     expect(body).toContain("2026-05-16T00:00:00+12:00");
@@ -197,9 +199,7 @@ describe("per-user timezone — Pacific/Auckland end-to-end", () => {
   it("CSV export with no userTz (legacy callers) emits the Z suffix", async () => {
     // This protects the canonical-backup-on-disk contract — the
     // export library has a backward-compatible no-userTz path.
-    const { formatMeasurementsForExport, toCSV } = await import(
-      "@/lib/export"
-    );
+    const { formatMeasurementsForExport, toCSV } = await import("@/lib/export");
     const csv = toCSV(
       formatMeasurementsForExport([
         {
@@ -253,9 +253,8 @@ describe("per-user timezone — Pacific/Auckland end-to-end", () => {
     // the unset-default path here.
     const prisma = getPrismaClient();
     // Make sure no leftover row pins a default.
-    const { invalidateServerDefaultTimezone } = await import(
-      "@/lib/tz/resolver"
-    );
+    const { invalidateServerDefaultTimezone } =
+      await import("@/lib/tz/resolver");
     invalidateServerDefaultTimezone();
 
     const { POST } = await import("@/app/api/auth/register/route");

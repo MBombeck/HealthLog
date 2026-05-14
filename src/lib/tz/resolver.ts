@@ -111,7 +111,10 @@ export async function resolveServerDefaultTimezone(): Promise<string> {
       where: { id: "singleton" },
       select: { defaultUserTimezone: true },
     });
-    if (settings?.defaultUserTimezone && isValidTimezone(settings.defaultUserTimezone)) {
+    if (
+      settings?.defaultUserTimezone &&
+      isValidTimezone(settings.defaultUserTimezone)
+    ) {
       tz = settings.defaultUserTimezone;
     }
   } catch {

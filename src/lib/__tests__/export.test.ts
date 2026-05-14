@@ -122,7 +122,10 @@ describe("formatMeasurementsForExport", () => {
         notes: null,
       },
     ];
-    const result = formatMeasurementsForExport(measurements, "Pacific/Auckland");
+    const result = formatMeasurementsForExport(
+      measurements,
+      "Pacific/Auckland",
+    );
     expect(result[0].measuredAt).toBe("2026-05-15T21:00:00+12:00");
   });
 
