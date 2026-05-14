@@ -22,6 +22,7 @@ import {
   type CoachExcludeMetric,
 } from "@/lib/validations/coach-prefs";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
+import { buildGlp1SnapshotBlock } from "./glp1-snapshot";
 import type {
   CoachProvenance,
   CoachScope,
@@ -648,6 +649,24 @@ export async function buildCoachSnapshot(
     };
     metrics.add(block.metric);
     counts[block.metric] = rows.length;
+  }
+
+  // ── v1.4.25 W4d — GLP-1 weeklyContext block ──────────────────────
+  //
+  // Only emitted when the user has at least one active GLP-1 medication
+  // (Medication.treatmentClass = GLP1). Web-only generic accounts never
+  // pay the read cost — the helper short-circuits to `null` after a
+  // single indexed Prisma lookup.
+  //
+  // The block names the drug, current dose, titration history, last +
+  // next injection, pen inventory, and recent side-effect tags. The
+  // Coach's GROUND RULE 9 forbids dose prescriptions — this block
+  // exists so the reply can SAY "your Mounjaro 7.5 mg" instead of
+  // "your medication", never to make recommendations.
+  const glp1Block = await buildGlp1SnapshotBlock(userId, now);
+  if (glp1Block) {
+    snapshot.weeklyContext = { glp1: glp1Block };
+    metrics.add("compliance");
   }
 
   if (Object.keys(snapshot).length === 0) {
