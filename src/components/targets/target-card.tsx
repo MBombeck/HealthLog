@@ -202,10 +202,19 @@ function statusGroupForCategory(category: string): "in" | "near" | "out" {
   return "near";
 }
 
+// Use the Tailwind v4 parenthesised CSS-variable shorthand
+// (bg-VAR-PAREN-FORM-/N) instead of the legacy bracketed VAR-form. The
+// bracketed form combined with an opacity modifier emits an escaped
+// class selector that Turbopack's CSS parser rejects with
+// "Unexpected token Delim('.')" because the scanner picks the literal
+// string out of source files (including this comment) and emits a CSS
+// rule for it. The parenthesised shorthand produces a clean selector
+// that parses cleanly. See the Tailwind v4 upgrade guide for the
+// migration from bracket-form to paren-form for CSS-variable values.
 const STATUS_PILL_STYLES: Record<"in" | "near" | "out", string> = {
-  in: "bg-[var(--dracula-green)]/12 text-[var(--dracula-green)] ring-[var(--dracula-green)]/30",
-  near: "bg-[var(--dracula-orange)]/14 text-[var(--dracula-orange)] ring-[var(--dracula-orange)]/30",
-  out: "bg-[var(--dracula-red)]/12 text-[var(--dracula-red)] ring-[var(--dracula-red)]/30",
+  in: "bg-(--dracula-green)/12 text-(--dracula-green) ring-(--dracula-green)/30",
+  near: "bg-(--dracula-orange)/14 text-(--dracula-orange) ring-(--dracula-orange)/30",
+  out: "bg-(--dracula-red)/12 text-(--dracula-red) ring-(--dracula-red)/30",
 };
 
 interface TargetClassification {
@@ -611,11 +620,11 @@ export function TargetCard({
             )}
             {showStreak && (
               <span
-                className="text-foreground inline-flex items-center gap-1.5 rounded-full bg-[var(--dracula-green)]/12 px-2 py-0.5 font-medium ring-1 ring-[var(--dracula-green)]/30"
+                className="text-foreground inline-flex items-center gap-1.5 rounded-full bg-(--dracula-green)/12 px-2 py-0.5 font-medium ring-1 ring-(--dracula-green)/30"
                 data-slot="target-streak"
               >
                 <span
-                  className="size-1.5 rounded-full bg-[var(--dracula-green)]"
+                  className="size-1.5 rounded-full bg-(--dracula-green)"
                   aria-hidden="true"
                 />
                 {t("targets.card.streak", { count: String(target.streakDays) })}

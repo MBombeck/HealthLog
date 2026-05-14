@@ -47,10 +47,16 @@ export interface ConsistencyStripProps {
   className?: string;
 }
 
+// An arbitrary shadow utility with an opacity modifier (a "/20" suffix
+// on the bracketed value) hits the same Turbopack CSS-parser issue as
+// the bracket-form CSS-variable utilities — see the comment in
+// target-card.tsx for the full diagnosis. The shadow's alpha is now
+// encoded inside the value via color-mix so the opacity modifier is
+// no longer needed and the bracketed form parses cleanly.
 const BAND_STYLES: Record<NonNullable<ConsistencyBand>, string> = {
-  in: "bg-[var(--dracula-green)] border-[var(--dracula-green)] shadow-[0_0_0_1px_var(--dracula-green)]/20",
-  near: "bg-[var(--dracula-orange)] border-[var(--dracula-orange)]",
-  out: "bg-[var(--dracula-red)] border-[var(--dracula-red)]",
+  in: "bg-(--dracula-green) border-(--dracula-green) shadow-[0_0_0_1px_color-mix(in_oklab,var(--dracula-green)_20%,transparent)]",
+  near: "bg-(--dracula-orange) border-(--dracula-orange)",
+  out: "bg-(--dracula-red) border-(--dracula-red)",
 };
 
 const BAND_ARIA: Record<NonNullable<ConsistencyBand>, string> = {

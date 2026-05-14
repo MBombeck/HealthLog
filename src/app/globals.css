@@ -2,6 +2,21 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/*
+ * Exclude planning + docs directories from Tailwind v4's content scan.
+ *
+ * v4's scanner walks the entire project root by default and picks any
+ * class-shaped token out of every text file. Planning reports and
+ * design docs often quote literal class-name fragments such as
+ * `bg-[var(...)]/12` as examples, and the bracketed-CSS-variable form
+ * combined with an opacity modifier generates an escaped selector that
+ * Turbopack's CSS parser rejects with `Unexpected token Delim('.')`,
+ * 500-ing every page. Constraining the scan to source code avoids
+ * fixture-style strings poisoning the generated CSS.
+ */
+@source not "../../.planning";
+@source not "../../docs";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
