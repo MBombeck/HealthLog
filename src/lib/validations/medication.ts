@@ -104,6 +104,47 @@ export const updateIntakeEventSchema = z.object({
     .optional(),
 });
 
+/**
+ * v1.4.25 W19b — inventory (pen / vial) CRUD validators.
+ *
+ * The Prisma model carries a 4-state enum
+ * (ACTIVE | IN_USE | EXPIRED | USED_UP); the API surface only lets
+ * the user explicitly transition into IN_USE (mark-as-first-use) or
+ * USED_UP (manual override). EXPIRED is owned by the daily cron and
+ * the intake hook, so the PATCH schema deliberately omits it.
+ */
+export const createInventoryItemSchema = z.object({
+  dosesTotal: z.number().int().min(1).max(100),
+  printedExpiry: z.iso
+    .datetime({ offset: true })
+    .transform((s) => new Date(s))
+    .nullable()
+    .optional(),
+  purchasedAt: z.iso
+    .datetime({ offset: true })
+    .transform((s) => new Date(s))
+    .nullable()
+    .optional(),
+  notes: z.string().max(200).nullable().optional(),
+});
+
+export const updateInventoryItemSchema = z.object({
+  markAsFirstUseAt: z.iso
+    .datetime({ offset: true })
+    .transform((s) => new Date(s))
+    .optional(),
+  markAsUsedUp: z.boolean().optional(),
+  printedExpiry: z.iso
+    .datetime({ offset: true })
+    .transform((s) => new Date(s))
+    .nullable()
+    .optional(),
+  notes: z.string().max(200).nullable().optional(),
+});
+
+export type CreateInventoryItemInput = z.infer<typeof createInventoryItemSchema>;
+export type UpdateInventoryItemInput = z.infer<typeof updateInventoryItemSchema>;
+
 export type CreateMedicationInput = z.infer<typeof createMedicationSchema>;
 export type IntakeInput = z.infer<typeof intakeSchema>;
 export type ListIntakeEventsInput = z.infer<typeof listIntakeEventsSchema>;

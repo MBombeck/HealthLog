@@ -13,6 +13,7 @@ import {
   listIntakeEventsSchema,
 } from "@/lib/validations/medication";
 import { withIdempotency } from "@/lib/idempotency";
+import { consumeOneDose } from "@/lib/medications/inventory/service";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -94,10 +95,45 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
       : []),
   ]);
 
+  // v1.4.25 W19b — pen-inventory dose decrement. Only fires for
+  // non-skipped intakes; a skipped event is not a consumption event.
+  // No-op when the medication has no tracked pens (most non-GLP-1
+  // meds). Failures here must never block the intake write, so
+  // errors are swallowed and logged — the intake is the source of
+  // truth, the inventory is an opt-in companion.
+  let inventoryOutcome: Awaited<ReturnType<typeof consumeOneDose>> = null;
+  if (!skipped) {
+    try {
+      inventoryOutcome = await consumeOneDose({
+        userId: user.id,
+        medicationId: id,
+        intakeAt: event.takenAt ?? event.scheduledFor,
+      });
+    } catch (err) {
+      annotate({
+        action: { name: "medication.inventory.consume_error" },
+        meta: {
+          medication_id: id,
+          message: err instanceof Error ? err.message : String(err),
+        },
+      });
+    }
+  }
+
   await auditLog("medication.intake", {
     userId: user.id,
     ipAddress: getClientIp(request),
-    details: { medicationId: id, eventId: event.id, skipped },
+    details: {
+      medicationId: id,
+      eventId: event.id,
+      skipped,
+      ...(inventoryOutcome
+        ? {
+            inventoryItemId: inventoryOutcome.itemId,
+            inventoryChange: inventoryOutcome.change,
+          }
+        : {}),
+    },
   });
 
   annotate({
@@ -106,7 +142,16 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
       entity_type: "intake_event",
       entity_id: event.id,
     },
-    meta: { medication_id: id, skipped },
+    meta: {
+      medication_id: id,
+      skipped,
+      ...(inventoryOutcome
+        ? {
+            inventory_item_id: inventoryOutcome.itemId,
+            inventory_change: inventoryOutcome.change,
+          }
+        : {}),
+    },
   });
 
   return apiSuccess(event, 201);
