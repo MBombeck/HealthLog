@@ -24,10 +24,14 @@
  * and the same date re-syncing simply updates `value`.
  *
  * Date semantics: Withings reports per-day aggregates with `date` as
- * `YYYY-MM-DD`. We anchor `measuredAt` at the day's 23:59:59 UTC so
- * the row sorts at the end of the day in chronological reads and the
- * Berlin-day analytics aggregator (timezone-aware) buckets it into the
- * correct day even when DST shifts the boundary.
+ * `YYYY-MM-DD`. We anchor `measuredAt` at the day's noon UTC
+ * (12:00:00Z) so the row's instant lands inside the local day for every
+ * user timezone in the [-11, +12] range — a row tagged 2026-05-12 always
+ * day-keys to 2026-05-12 whether the reader sits in Honolulu, Berlin or
+ * Tokyo. Anchoring at 23:59:59Z (the v1.4.25 W17b shape) was wrong for
+ * positive-offset users: a row from `date=2026-05-12` arrived as a
+ * 2026-05-13 reading in Tokyo, off-by-one for every dashboard tile that
+ * reads the row in user-local time.
  */
 import type { MeasurementType } from "@/generated/prisma/client";
 
@@ -95,18 +99,17 @@ const ACTIVITY_FIELD_MAP: ReadonlyArray<{
 ];
 
 /**
- * Anchor a per-day activity row at the day's last second UTC. Berlin-
- * timezone day analytics consume the row through the standard
- * `dayKey()` helper, which buckets it into the right local day even
- * across DST shifts.
+ * Anchor a per-day activity row at noon UTC. Chosen so the instant
+ * always lands inside the local day for users in the [-11, +12] zone
+ * range — anchoring at end-of-day UTC (the v1.4.25 W17b shape) sent
+ * Tokyo readings into the *following* local day, mis-bucketing every
+ * positive-offset user's "today" tile. Noon UTC is the standard
+ * "calendar-day with no clock" representation per RFC 3339 §5.6 and
+ * the JS `Date` analytics layer day-keys it cleanly in every
+ * supported user timezone.
  */
 function activityMeasuredAt(yyyymmdd: string): Date {
-  // The Withings response is always `YYYY-MM-DD` — Date parses the ISO
-  // form with implicit UTC midnight. Add 23h 59m 59s so the row sits
-  // at end-of-day; the analytics layer day-keys it the same way it
-  // does every other end-of-day rollup.
-  const base = new Date(`${yyyymmdd}T23:59:59.000Z`);
-  return base;
+  return new Date(`${yyyymmdd}T12:00:00.000Z`);
 }
 
 /**

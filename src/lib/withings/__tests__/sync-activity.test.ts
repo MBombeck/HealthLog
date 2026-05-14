@@ -166,7 +166,7 @@ describe("syncUserActivity — field mapping + idempotency", () => {
     expect(prisma.measurement.update).toHaveBeenCalledTimes(3);
   });
 
-  it("anchors measuredAt at the day's 23:59:59 UTC end-of-day", async () => {
+  it("anchors measuredAt at noon UTC so the instant lands inside the local day for every supported tz", async () => {
     installFetchMock([{ date: "2026-05-12", steps: 1000 }]);
     vi.mocked(prisma.measurement.findFirst).mockResolvedValue(null);
     vi.mocked(prisma.measurement.create).mockResolvedValue({} as never);
@@ -177,7 +177,28 @@ describe("syncUserActivity — field mapping + idempotency", () => {
       data: { measuredAt: Date };
     };
     const measuredAt = createArg.data.measuredAt;
-    expect(measuredAt.toISOString()).toBe("2026-05-12T23:59:59.000Z");
+    expect(measuredAt.toISOString()).toBe("2026-05-12T12:00:00.000Z");
+
+    // Regression: anchoring at noon UTC keeps the row inside the
+    // calendar day every user reads it in. Bucketing the same instant
+    // via `Intl.DateTimeFormat` across the canonical Withings user
+    // span — Honolulu (UTC-10), Los Angeles (UTC-7/-8), Berlin
+    // (UTC+1/+2) and Tokyo (UTC+9) — must all return "2026-05-12".
+    // Anchoring at end-of-day UTC (the v1.4.25 W17b shape) shifted
+    // Tokyo by +1 day; anchoring at midnight UTC would shift LA by -1.
+    // Noon UTC is the only choice that holds across the practical
+    // [-11, +12) range.
+    const bucket = (tz: string) =>
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: tz,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(measuredAt);
+    expect(bucket("Pacific/Honolulu")).toBe("2026-05-12");
+    expect(bucket("America/Los_Angeles")).toBe("2026-05-12");
+    expect(bucket("Europe/Berlin")).toBe("2026-05-12");
+    expect(bucket("Asia/Tokyo")).toBe("2026-05-12");
   });
 
   it("skips missing fields without writing zero rows or throwing", async () => {
