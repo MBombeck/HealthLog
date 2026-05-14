@@ -142,6 +142,9 @@ export const MEASURE_TYPE_MAP: Record<number, { type: string; factor?: number }>
   // SpO2 under meastype 35 instead of 54. Both target OXYGEN_SATURATION
   // in percent; the exponent decode handles 0.97 vs 97 transparently.
   35: { type: "OXYGEN_SATURATION" },
+  // v1.4.25 — VO2 max from the ScanWatch family. Withings reports
+  // mL/(kg·min) directly, matching the canonical DB unit.
+  123: { type: "VO2_MAX" },
 };
 
 export interface WithingsMeasure {

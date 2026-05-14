@@ -64,6 +64,20 @@ describe("MEASURE_TYPE_MAP", () => {
   it("maps Withings meastype 35 (legacy SpO2) → OXYGEN_SATURATION", () => {
     expect(MEASURE_TYPE_MAP[35]).toEqual({ type: "OXYGEN_SATURATION" });
   });
+
+  it("maps Withings meastype 123 (VO2 max) → VO2_MAX", () => {
+    expect(MEASURE_TYPE_MAP[123]).toEqual({ type: "VO2_MAX" });
+  });
+});
+
+describe("fetchMeasurements — VO2 max (meastype 123)", () => {
+  it("decodes a ScanWatch VO2 max reading into VO2_MAX mL/(kg·min)", async () => {
+    // 42.5 mL/(kg·min) as Withings exponent encoding: value=425, unit=-1.
+    installFetchMock(fakeGetmeasPayload([{ type: 123, value: 425, unit: -1 }]));
+    const out = await fetchMeasurements("token");
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ type: "VO2_MAX", value: 42.5 });
+  });
 });
 
 describe("fetchMeasurements — SpO2 alt code (meastype 35)", () => {
