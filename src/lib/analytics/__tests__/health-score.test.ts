@@ -280,6 +280,20 @@ describe("computeHealthScore — determinism", () => {
     const b = computeHealthScore(input);
     expect(b).toEqual(a);
   });
+
+  // v1.4.25 Fix-G — the legacy fallback used to be `new Date()`, which
+  // made `asOf` drift by a millisecond between consecutive calls and
+  // turned the determinism guard above into a flake on loaded runners.
+  // The synthesised window-end now derives from input dates, not wall
+  // clock, so the entire result is byte-identical across calls.
+  it("derives a deterministic asOf for present components when attribution is omitted", () => {
+    const a = computeHealthScore(input);
+    const b = computeHealthScore(input);
+    expect(b.components.bp.asOf).toBe(a.components.bp.asOf);
+    expect(b.components.weight.asOf).toBe(a.components.weight.asOf);
+    expect(b.components.mood.asOf).toBe(a.components.mood.asOf);
+    expect(b.components.compliance.asOf).toBe(a.components.compliance.asOf);
+  });
 });
 
 describe("computeHealthScore — delta vs previous week", () => {

@@ -283,7 +283,7 @@ export function computeHealthScore(
   const complianceValue = complianceRate(input.medicationCompliance30);
 
   const attribution = input.attribution ?? {};
-  const windowEndAt = attribution.windowEndAt ?? new Date().toISOString();
+  const windowEndAt = attribution.windowEndAt ?? deriveWindowEndAt(input);
   const components = redistribute(
     {
       bp: bpValue,
@@ -408,6 +408,32 @@ function redistribute(
     mood: detailFor("mood"),
     compliance: detailFor("compliance"),
   };
+}
+
+/**
+ * v1.4.25 Fix-G — when the caller doesn't supply `attribution.windowEndAt`
+ * we synthesise it deterministically from the input data so
+ * `computeHealthScore` stays pure (same input → same output). The route
+ * always supplies its own `windowEndAt`; this fallback exists so unit
+ * tests and ad-hoc callers don't pull `new Date()` into the result.
+ *
+ * Strategy: take the most recent date across the weight and mood series.
+ * If neither has any entries (e.g. compliance-only input), fall back to
+ * the Unix epoch so the value is stable and obviously synthetic — the
+ * UI never renders this string when attribution is provided.
+ */
+function deriveWindowEndAt(input: HealthScoreInput): string {
+  let latest = -Infinity;
+  for (const p of input.weightSeriesLast30d) {
+    const t = new Date(p.date).getTime();
+    if (Number.isFinite(t) && t > latest) latest = t;
+  }
+  for (const p of input.moodEntriesLast30d) {
+    const t = new Date(p.date).getTime();
+    if (Number.isFinite(t) && t > latest) latest = t;
+  }
+  if (latest === -Infinity) return new Date(0).toISOString();
+  return new Date(latest).toISOString();
 }
 
 /**
