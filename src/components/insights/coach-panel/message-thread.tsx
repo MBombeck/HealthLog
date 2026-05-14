@@ -170,9 +170,7 @@ export function MessageThread({
     if (!optimisticUser) return false;
     // Suppress if the persisted history already contains the same
     // user content as the last user message — the twin has landed.
-    const lastUser = [...messages]
-      .reverse()
-      .find((m) => m.role === "user");
+    const lastUser = [...messages].reverse().find((m) => m.role === "user");
     if (lastUser && lastUser.content === optimisticUser.content) return false;
     return true;
   })();
@@ -373,9 +371,7 @@ function ChatBubble({
   // user understands daily-cap (resets at UTC midnight) vs. transient
   // provider load (retry in ~5 min). Codes that have no dedicated
   // translation fall back to the generic provider-unavailable copy.
-  const errorKey = errorCode
-    ? errorCodeToI18nKey(errorCode)
-    : null;
+  const errorKey = errorCode ? errorCodeToI18nKey(errorCode) : null;
   const errorMessage = errorKey ? t(errorKey, {}) : null;
   // When a translated message comes back unchanged (i.e. key missing)
   // we fall back to a generic provider error string so the bubble

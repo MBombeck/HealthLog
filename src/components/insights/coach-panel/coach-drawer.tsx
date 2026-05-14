@@ -176,8 +176,9 @@ export function CoachDrawer({
     sources: [...DEFAULT_COACH_SCOPE.sources],
     window: DEFAULT_COACH_SCOPE.window,
   }));
-  const [windowOverride, setWindowOverride] =
-    useState<CoachScopeWindow | null>(null);
+  const [windowOverride, setWindowOverride] = useState<CoachScopeWindow | null>(
+    null,
+  );
 
   // v1.4.25 W5 — load the user's saved Coach prefs so the default
   // window picks up the cog's saved selection. The hook gates the
