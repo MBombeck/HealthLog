@@ -462,7 +462,7 @@ export function TargetCard({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span
-                        className="text-foreground text-2xl leading-none font-semibold capitalize cursor-help sm:text-3xl"
+                        className="text-foreground cursor-help text-2xl leading-none font-semibold capitalize sm:text-3xl"
                         data-slot="target-headline-value"
                         data-mood-stability={moodStabilityValue}
                       >

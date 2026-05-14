@@ -399,14 +399,8 @@ export const GET = apiHandler(async () => {
    */
   function buildBpPairsByDay(): Map<string, DayBand | null> {
     if (!bpRange) return new Map();
-    const sysByDay = new Map<
-      string,
-      Array<{ date: Date; value: number }>
-    >();
-    const diaByDay = new Map<
-      string,
-      Array<{ date: Date; value: number }>
-    >();
+    const sysByDay = new Map<string, Array<{ date: Date; value: number }>>();
+    const diaByDay = new Map<string, Array<{ date: Date; value: number }>>();
     for (const m of recentMeasurements) {
       if (m.type === "BLOOD_PRESSURE_SYS") {
         const k = berlinDayKey(m.measuredAt);
