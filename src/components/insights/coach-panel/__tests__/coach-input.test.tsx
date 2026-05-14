@@ -121,10 +121,57 @@ describe("<CoachInput>", () => {
     expect(handler).toHaveBeenCalledWith("typed");
   });
 
-  it("renders the textarea with rows=2 to match the artboard", () => {
+  it("renders the textarea at rows=1 initial state (W5 auto-grow baseline)", () => {
+    // v1.4.25 W5 — Claude-web-style auto-grow. SSR baseline is a
+    // single-line textarea; the client-side `useEffect` measures
+    // `scrollHeight` and grows the height up to ~6 lines. The static
+    // markup must show `rows="1"` so the initial paint matches the
+    // disclaimer text height on the left side of the row.
     const html = render(
       <CoachInput value="" onChange={() => {}} onSubmit={() => {}} />,
     );
-    expect(html).toMatch(/data-slot="coach-input-textarea"[^>]*rows="2"/);
+    expect(html).toMatch(/data-slot="coach-input-textarea"[^>]*rows="1"/);
+    // The textarea caps growth via the `max-h-[9.5rem]` class so the
+    // composer never pushes the rest of the drawer off-screen.
+    expect(html).toMatch(
+      /data-slot="coach-input-textarea"[^>]*class="[^"]*max-h-\[9\.5rem\]/,
+    );
+  });
+});
+
+// v1.4.25 W5 — `computeAutoGrowHeight` is the pure helper backing the
+// textarea's auto-grow effect. Pin its math so the textarea never
+// collapses below a single line or grows past the 6-line ceiling.
+import { computeAutoGrowHeight } from "../coach-input";
+
+describe("computeAutoGrowHeight", () => {
+  it("clamps to the single-line minimum when scrollHeight is empty", () => {
+    const out = computeAutoGrowHeight({
+      lineHeight: 20,
+      scrollHeight: 0,
+      maxLines: 6,
+      paddingY: 10,
+    });
+    expect(out).toBe(20 + 10);
+  });
+
+  it("returns the natural scrollHeight when below the cap", () => {
+    const out = computeAutoGrowHeight({
+      lineHeight: 20,
+      scrollHeight: 60,
+      maxLines: 6,
+      paddingY: 10,
+    });
+    expect(out).toBe(60);
+  });
+
+  it("caps at maxLines × lineHeight + paddingY", () => {
+    const out = computeAutoGrowHeight({
+      lineHeight: 20,
+      scrollHeight: 999,
+      maxLines: 6,
+      paddingY: 10,
+    });
+    expect(out).toBe(20 * 6 + 10);
   });
 });
