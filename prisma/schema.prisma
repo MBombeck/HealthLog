@@ -255,6 +255,14 @@ enum MeasurementType {
   WALKING_RUNNING_DISTANCE // metres — HealthKit `distanceWalkingRunning`; SI metres in DB, UI converts per locale.
   VO2_MAX // mL/(kg·min) — HealthKit `vo2Max`; one sample every few days at most.
   BODY_TEMPERATURE // celsius — HealthKit `bodyTemperature`; iOS DTO already encodes this enum value.
+  // ── v1.4.25 W5d Withings full coverage ──
+  FAT_FREE_MASS // kg — Withings meastype 5 (Body+, Body Cardio, Body Comp, Body Scan). Algorithmically = weight − fat mass.
+  FAT_MASS // kg — Withings meastype 8. Mass form of BODY_FAT (kg, not %).
+  MUSCLE_MASS // kg — Withings meastype 76. Body+ family.
+  SKIN_TEMPERATURE // celsius — Withings meastype 73 (ScanWatch dermal reading). DISTINCT from BODY_TEMPERATURE — surface temps run ~32 °C, core ~37 °C; sharing a bucket would corrupt analytics.
+  PULSE_WAVE_VELOCITY // m/s — Withings meastype 91 (Body Cardio / Body Scan). Indicator of arterial stiffness.
+  VASCULAR_AGE // years — Withings meastype 155 (Body Scan). Composite of PWV + age.
+  VISCERAL_FAT // rating — Withings meastype 170 (Body Comp / Body Scan). Withings' rating scale (1–12); not directly comparable to a percent.
 
   @@map("measurement_type")
 }

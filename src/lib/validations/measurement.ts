@@ -20,6 +20,14 @@ export const measurementTypeEnum = z.enum([
   "WALKING_RUNNING_DISTANCE",
   "VO2_MAX",
   "BODY_TEMPERATURE",
+  // ── v1.4.25 W5d Withings full coverage ──
+  "FAT_FREE_MASS",
+  "FAT_MASS",
+  "MUSCLE_MASS",
+  "SKIN_TEMPERATURE",
+  "PULSE_WAVE_VELOCITY",
+  "VASCULAR_AGE",
+  "VISCERAL_FAT",
 ]);
 
 export const glucoseContextEnum = z.enum([
@@ -68,6 +76,18 @@ const unitMap: Record<string, string> = {
   WALKING_RUNNING_DISTANCE: "m",
   VO2_MAX: "mL/(kg·min)",
   BODY_TEMPERATURE: "celsius",
+  // ── v1.4.25 W5d Withings full coverage ──
+  FAT_FREE_MASS: "kg",
+  FAT_MASS: "kg",
+  MUSCLE_MASS: "kg",
+  // Distinct from BODY_TEMPERATURE — surface temps run ~32 °C; sharing
+  // the bucket would corrupt analytics. Same canonical unit (°C).
+  SKIN_TEMPERATURE: "celsius",
+  PULSE_WAVE_VELOCITY: "m/s",
+  VASCULAR_AGE: "years",
+  // Withings reports visceral fat as a 1–12 rating, not a percent. The
+  // string mirrors what Withings prints in Health Mate.
+  VISCERAL_FAT: "rating",
 };
 
 export function getUnitForType(type: string): string {
@@ -114,6 +134,27 @@ const VALUE_RANGES: Record<string, { min: number; max: number }> = {
   VO2_MAX: { min: 5, max: 100 },
   // Body temperature °C — survivable lows ~28; severe hyperthermia ~45.
   BODY_TEMPERATURE: { min: 28, max: 45 },
+  // ── v1.4.25 W5d Withings full coverage ──
+  // Fat-free mass kg — adult plausibility, ~30 kg (small adult) to 120 kg
+  // (large lean athlete). Same bounds as weight minus a fat-mass floor.
+  FAT_FREE_MASS: { min: 10, max: 250 },
+  // Fat mass kg — pairs with FAT_FREE_MASS so totals reconcile to weight.
+  FAT_MASS: { min: 0, max: 250 },
+  // Muscle mass kg — sub-component of fat-free mass; widest sensible bound.
+  MUSCLE_MASS: { min: 5, max: 200 },
+  // Skin temperature °C — surface temps run cooler than core. ScanWatch's
+  // dermal sensor reports a relative offset that lands in the 25–40 °C
+  // band; treat anything outside as a sensor glitch.
+  SKIN_TEMPERATURE: { min: 20, max: 45 },
+  // Pulse-wave velocity m/s — clinical ranges sit ~4–15 m/s. Higher
+  // numbers indicate stiffer arteries (cardiovascular risk).
+  PULSE_WAVE_VELOCITY: { min: 1, max: 30 },
+  // Vascular age in years — Withings derives this from PWV + chronological
+  // age; the value is a "biological age" not a chronological one. Hard cap
+  // at 130 because that's the human longevity record.
+  VASCULAR_AGE: { min: 10, max: 130 },
+  // Visceral fat rating 1–12 (Withings' own scale; not a percent).
+  VISCERAL_FAT: { min: 0, max: 30 },
 };
 
 export function validateMeasurementRange(
