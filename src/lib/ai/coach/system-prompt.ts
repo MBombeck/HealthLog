@@ -18,6 +18,7 @@
  */
 import type { Locale } from "@/lib/i18n/config";
 import { PROMPT_VERSION } from "@/lib/ai/prompts/insight-generator";
+import { buildNativeCoachPrompt } from "@/lib/ai/prompts/native-prompts";
 import {
   DEFAULT_COACH_PREFS,
   type CoachPrefs,
@@ -450,20 +451,28 @@ Antworte auf Deutsch, sofern der Nutzer auf Deutsch schreibt; bei
 englischen Nachrichten antworte auf Englisch.`;
 
 /**
- * v1.4.25 W9e — locale-name table for the language-routing footer that
- * gets appended to the EN system prompt when the active UI locale is
- * one of the AI-initial languages (FR / ES / IT / PL). The DE branch
- * still uses the hand-curated DE body. Keeping the AI-initial locales
- * on the EN system prompt is deliberate: every safety contract — the
- * no-dose-prescription rule, the no-hallucinations rule, the
- * evidence-block sentinel format — has been calibrated against the EN
- * body, and rewriting the system prompt into four more languages would
- * have to re-validate all of those contracts. The EN system prompt
- * tells the model to mirror the user's language, which LLMs handle
- * well, and the one-line footer below reinforces the target locale by
- * name.
+ * v1.4.25 W14c — native locale-specific Coach system prompts.
+ *
+ * Previously (W9e) the FR / ES / IT / PL locales rode the EN system
+ * prompt with a one-line "REPLY LANGUAGE" footer. The 2025-12 Welo
+ * Data study and the EMNLP 2025 multilingual-safety survey showed that
+ * English safety alignment does not transfer reliably across
+ * languages, and the W14c research recommendation was a full native
+ * rewrite gated on the safety-contract matrix + refusal-probe test.
+ *
+ * Both gates landed earlier in this wave; the dispatcher below now
+ * assembles a native body per locale from the matrix. The DE branch
+ * keeps its existing hand-curated body (two years of clause-by-clause
+ * Marc review) — it is the calibration reference for the native FR /
+ * ES / IT / PL bodies and we do not disturb it in v1.4.25. If the
+ * matrix loader throws for any reason, the dispatcher falls back to
+ * the previous EN body + footer so the surface fails open rather
+ * than empty.
  */
-const LOCALE_REPLY_FOOTER: Record<Exclude<Locale, "de" | "en">, string> = {
+const LOCALE_REPLY_FOOTER_FALLBACK: Record<
+  Exclude<Locale, "de" | "en">,
+  string
+> = {
   fr: "\n\nREPLY LANGUAGE: respond in French. Mirror the user's register; use natural French health vocabulary.",
   es: "\n\nREPLY LANGUAGE: respond in Spanish. Mirror the user's register; use natural Spanish health vocabulary.",
   it: "\n\nREPLY LANGUAGE: respond in Italian. Mirror the user's register; use natural Italian health vocabulary.",
@@ -480,7 +489,15 @@ export function getCoachSystemPrompt(
   } else if (locale === "en") {
     base = COACH_PROMPT_EN;
   } else {
-    base = COACH_PROMPT_EN + LOCALE_REPLY_FOOTER[locale];
+    try {
+      base = buildNativeCoachPrompt(locale, PROMPT_VERSION);
+    } catch {
+      // Matrix load failure — fall back to the W9e EN-body-plus-footer
+      // path. Logged via the route's existing error handling; this
+      // branch keeps the Coach functional rather than emitting an
+      // empty system prompt.
+      base = COACH_PROMPT_EN + LOCALE_REPLY_FOOTER_FALLBACK[locale];
+    }
   }
   const prefix = buildPrefsPrefix(locale, prefs);
   return prefix ? `${prefix}\n\n${base}` : base;

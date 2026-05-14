@@ -25,6 +25,10 @@ import {
   selectReferencesForMetrics,
   type MedicalReferenceMetric,
 } from "../medical-references";
+import {
+  buildNativeInsightsPrompt,
+  buildOutOfScopeRefusal,
+} from "./native-prompts";
 
 /** Stable identifier for the active system prompt revision. */
 export const PROMPT_VERSION = "4.25.0" as const;
@@ -688,23 +692,24 @@ sourceWindow und sourceMetric bleiben exakt in der englischen
 Kleinschreibung — ebenfalls stabile Vertragsschlüssel.`;
 
 /**
- * v1.4.25 W9e — language-routing footer for the AI-initial locales
- * (FR / ES / IT / PL). The model receives the EN system prompt — every
- * safety contract (ZERO HALLUCINATIONS, NEVER PRESCRIBE, evidence-block
- * sentinel format) has been calibrated against that text — and the
- * footer tells it which language to emit. The DE branch still uses the
- * hand-curated DE body verbatim. Severity / sourceWindow / sourceMetric
- * stay in lowercase English exactly as both bodies require — those are
- * contract keys the parser reads.
+ * v1.4.25 W14c — native locale-specific Insights system prompts.
+ *
+ * Replaces the W9e REPLY-LANGUAGE-footer plumbing. For FR / ES / IT /
+ * PL the prompt body is assembled from the safety-contract matrix in
+ * the user's language; severity / sourceWindow / sourceMetric / topic
+ * enum values stay in lowercase EN per the matrix's contract_enums
+ * pin. DE keeps the hand-curated body (two-year calibration
+ * reference). On any matrix-load failure the dispatcher falls back to
+ * the W9e EN-body-plus-footer path so the surface stays functional.
  */
-const INSIGHTS_LOCALE_REPLY_FOOTER: Record<
+const INSIGHTS_LOCALE_REPLY_FOOTER_FALLBACK: Record<
   Exclude<Locale, "de" | "en">,
   string
 > = {
-  fr: "\n\nREPLY LANGUAGE: render all user-facing strings (summary, recommendations[].text, warnings[].message, dailyBriefing.paragraph + keyFindings, trendAnnotations.*, weeklyReport.summary + bullets, storyboardAnnotations[].label + detail) in French. Use natural French health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
-  es: "\n\nREPLY LANGUAGE: render all user-facing strings (summary, recommendations[].text, warnings[].message, dailyBriefing.paragraph + keyFindings, trendAnnotations.*, weeklyReport.summary + bullets, storyboardAnnotations[].label + detail) in Spanish (peninsular preferred). Use natural Spanish health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
-  it: "\n\nREPLY LANGUAGE: render all user-facing strings (summary, recommendations[].text, warnings[].message, dailyBriefing.paragraph + keyFindings, trendAnnotations.*, weeklyReport.summary + bullets, storyboardAnnotations[].label + detail) in Italian. Use natural Italian health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
-  pl: "\n\nREPLY LANGUAGE: render all user-facing strings (summary, recommendations[].text, warnings[].message, dailyBriefing.paragraph + keyFindings, trendAnnotations.*, weeklyReport.summary + bullets, storyboardAnnotations[].label + detail) in Polish. Use natural Polish health vocabulary with formal Pan/Pani register for medical-adjacent topics. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
+  fr: "\n\nREPLY LANGUAGE: render all user-facing strings in French. Use natural French health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
+  es: "\n\nREPLY LANGUAGE: render all user-facing strings in Spanish (peninsular preferred). Use natural Spanish health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
+  it: "\n\nREPLY LANGUAGE: render all user-facing strings in Italian. Use natural Italian health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
+  pl: "\n\nREPLY LANGUAGE: render all user-facing strings in Polish. Use natural Polish health vocabulary with formal Pan/Pani register for medical-adjacent topics. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
 };
 
 /**
@@ -715,7 +720,11 @@ const INSIGHTS_LOCALE_REPLY_FOOTER: Record<
 export function getStrictInsightsSystemPrompt(locale: Locale): string {
   if (locale === "de") return SYSTEM_PROMPT_DE;
   if (locale === "en") return SYSTEM_PROMPT_EN;
-  return SYSTEM_PROMPT_EN + INSIGHTS_LOCALE_REPLY_FOOTER[locale];
+  try {
+    return buildNativeInsightsPrompt(locale, PROMPT_VERSION);
+  } catch {
+    return SYSTEM_PROMPT_EN + INSIGHTS_LOCALE_REPLY_FOOTER_FALLBACK[locale];
+  }
 }
 
 /**
@@ -810,3 +819,15 @@ export const OUT_OF_SCOPE_REFUSAL_DE = {
   citations: [] as never[],
   warnings: [] as never[],
 };
+
+/**
+ * v1.4.25 W14c — native out-of-scope refusal payloads. Lazy-built
+ * from the safety-contract matrix so the summary copy stays in sync
+ * with the prompt body that taught the model to emit it. The EN /
+ * DE constants above remain authoritative for their locales — these
+ * helpers cover the AI-initial locales.
+ */
+export const OUT_OF_SCOPE_REFUSAL_FR = buildOutOfScopeRefusal("fr");
+export const OUT_OF_SCOPE_REFUSAL_ES = buildOutOfScopeRefusal("es");
+export const OUT_OF_SCOPE_REFUSAL_IT = buildOutOfScopeRefusal("it");
+export const OUT_OF_SCOPE_REFUSAL_PL = buildOutOfScopeRefusal("pl");
