@@ -34,8 +34,12 @@ import { useTranslations } from "@/lib/i18n/context";
  */
 
 const STORAGE_PREFIX = "healthlog-i18n-banner-dismissed:";
+// v1.4.26 P6-8 — `.github/ISSUE_TEMPLATE/translation.yml` now exists.
+// GitHub matches the `?template=` query against the filename; the old
+// `.md` filename never resolved (the form file was missing), so the
+// link landed users on a blank issue body.
 const GITHUB_ISSUE_URL =
-  "https://github.com/MBombeck/HealthLog/issues/new?template=translation.md";
+  "https://github.com/MBombeck/HealthLog/issues/new?template=translation.yml";
 
 function storageKey(locale: Locale): string {
   return `${STORAGE_PREFIX}${locale}`;

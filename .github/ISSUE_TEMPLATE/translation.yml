@@ -1,0 +1,81 @@
+name: Translation feedback
+description: Report a wording, grammar, or register problem in HealthLog's AI-initial locales (FR / ES / IT / PL).
+title: "[Translation] "
+labels: ["i18n", "translation-feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        HealthLog ships German and English as maintainer-curated translations. French, Spanish, Italian, and Polish ship as **AI-initial translations** — the prose passes the locale-integrity test (full key parity, no empty values) but has not been hand-reviewed for register or regional vocabulary.
+
+        This template captures concrete fixes you would like to see. Phrasing nuance, regional vocabulary (e.g. "Tú" vs "Usted"), gendered forms, and domain-specific health terms are all in scope. The maintainer applies fixes during the regular release cycle.
+
+        For wholly new locale requests (e.g. "please add Portuguese"), open a [Discussion](https://github.com/MBombeck/HealthLog/discussions) instead.
+  - type: dropdown
+    id: locale
+    attributes:
+      label: Locale
+      options:
+        - French (fr)
+        - Spanish (es)
+        - Italian (it)
+        - Polish (pl)
+        - Other (specify under "Surface")
+    validations:
+      required: true
+  - type: textarea
+    id: surface
+    attributes:
+      label: Where you saw it
+      description: |
+        Page / component / dialog name. Include the route (e.g. `/insights`, `/settings/notifications`) and, if possible, the i18n key from the rendered DOM (open DevTools, look for the visible string).
+      placeholder: |
+        Route: /insights/blood-pressure
+        Component: blood-pressure trend card header
+        Key (if known): insights.bp.trendCard.title
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current wording
+      description: Paste the exact phrase as it appears in the app today.
+    validations:
+      required: true
+  - type: textarea
+    id: suggested
+    attributes:
+      label: Suggested wording
+      description: |
+        How should it read instead? Include reasoning if the change is more than a typo — register (formal vs. informal), regional vocabulary, medical terminology, or grammar.
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of issue
+      options:
+        - Grammar / spelling
+        - Wrong word (translation error)
+        - Awkward / unnatural phrasing
+        - Wrong register (too formal / too casual)
+        - Medical terminology
+        - Regional vocabulary
+        - Untranslated string (English fall-through)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, links to related issues, related strings on the same page, etc.
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Pre-flight checks
+      options:
+        - label: I confirmed this is not a duplicate of an existing translation issue.
+          required: true
+        - label: My suggestion respects the maintainer's editorial voice (professional, neutral, plain prose — no marketing-speak).
+          required: true
