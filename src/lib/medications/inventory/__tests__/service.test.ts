@@ -6,6 +6,7 @@ vi.mock("@/lib/db", () => ({
       findFirst: vi.fn(),
       findMany: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
   },
 }));
@@ -122,36 +123,48 @@ describe("consumeOneDose", () => {
 });
 
 describe("expireStaleInUseItems", () => {
-  it("transitions IN_USE rows whose 30-day window has lapsed to EXPIRED", async () => {
-    const firstUseAgo = new Date(NOW.getTime() - 31 * MS_PER_DAY);
-    vi.mocked(prisma.medicationInventoryItem.findMany).mockResolvedValue([
-      {
-        id: "inv-stale",
-        state: "IN_USE",
-        dosesTotal: 4,
-        dosesRemaining: 2,
-        firstUseAt: firstUseAgo,
-        printedExpiry: null,
-      },
-    ] as never);
-    vi.mocked(prisma.medicationInventoryItem.update).mockResolvedValue({} as never);
+  it("transitions IN_USE rows whose deadline has lapsed via a single updateMany", async () => {
+    // The selector `state = IN_USE AND expiresAt < now` already proves
+    // the row must transition to EXPIRED (IN_USE implies dosesRemaining
+    // > 0, and the expiresAt filter proves the deadline lapsed). Using
+    // `updateMany` collapses N row round-trips into one.
+    vi.mocked(prisma.medicationInventoryItem.updateMany).mockResolvedValue({
+      count: 3,
+    } as never);
 
     const count = await expireStaleInUseItems({ nowMs: NOW.getTime() });
-    expect(count).toBe(1);
-    expect(prisma.medicationInventoryItem.update).toHaveBeenCalledWith({
-      where: { id: "inv-stale" },
+    expect(count).toBe(3);
+    expect(prisma.medicationInventoryItem.updateMany).toHaveBeenCalledTimes(1);
+    expect(prisma.medicationInventoryItem.updateMany).toHaveBeenCalledWith({
+      where: {
+        state: "IN_USE",
+        expiresAt: { lt: new Date(NOW.getTime()) },
+      },
+      data: { state: "EXPIRED" },
+    });
+    expect(prisma.medicationInventoryItem.update).not.toHaveBeenCalled();
+    expect(prisma.medicationInventoryItem.findMany).not.toHaveBeenCalled();
+  });
+
+  it("scopes to a single user when userId is given", async () => {
+    vi.mocked(prisma.medicationInventoryItem.updateMany).mockResolvedValue({
+      count: 0,
+    } as never);
+
+    await expireStaleInUseItems({ userId: "user-1", nowMs: NOW.getTime() });
+    expect(prisma.medicationInventoryItem.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({ userId: "user-1" }),
       data: { state: "EXPIRED" },
     });
   });
 
-  it("scopes to a single user when userId is given", async () => {
-    vi.mocked(prisma.medicationInventoryItem.findMany).mockResolvedValue([] as never);
+  it("returns 0 when no rows match", async () => {
+    vi.mocked(prisma.medicationInventoryItem.updateMany).mockResolvedValue({
+      count: 0,
+    } as never);
 
-    await expireStaleInUseItems({ userId: "user-1", nowMs: NOW.getTime() });
-    expect(prisma.medicationInventoryItem.findMany).toHaveBeenCalledWith({
-      where: expect.objectContaining({ userId: "user-1" }),
-      select: expect.anything(),
-    });
+    const count = await expireStaleInUseItems({ nowMs: NOW.getTime() });
+    expect(count).toBe(0);
   });
 });
 

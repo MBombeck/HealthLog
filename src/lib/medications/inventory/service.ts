@@ -9,7 +9,6 @@
 import { prisma } from "@/lib/db";
 import {
   computeExpiresAt,
-  computeInventoryState,
   decrementDose,
   type DecrementOutcome,
 } from "./state-machine";
@@ -108,35 +107,25 @@ export async function expireStaleInUseItems(input: {
   const { userId, nowMs } = input;
   const now = new Date(nowMs);
 
-  // Candidates: IN_USE rows whose expiresAt has lapsed. EXPIRED rows
-  // are already terminal; USED_UP rows are off-window by definition.
-  const candidates = await prisma.medicationInventoryItem.findMany({
+  // Candidates: IN_USE rows whose `expiresAt` has lapsed. The
+  // selector + state-machine semantics line up here — every row that
+  // matches `state = IN_USE AND expiresAt < now` is also a row that
+  // `computeInventoryState` would classify EXPIRED (clause 2 or 3),
+  // because IN_USE implies `dosesRemaining > 0` (decrementDose flips
+  // an empty pen to USED_UP) and the `expiresAt` filter already
+  // proves the printed-expiry-or-window deadline has lapsed. EXPIRED
+  // rows are already terminal; USED_UP rows are off-window by
+  // definition. Use a single `updateMany` instead of one update per
+  // row — the daily cron sweep ran N round-trips for nothing.
+  const result = await prisma.medicationInventoryItem.updateMany({
     where: {
       state: "IN_USE",
       expiresAt: { lt: now },
       ...(userId ? { userId } : {}),
     },
-    select: {
-      id: true,
-      state: true,
-      dosesTotal: true,
-      dosesRemaining: true,
-      firstUseAt: true,
-      printedExpiry: true,
-    },
+    data: { state: "EXPIRED" },
   });
-
-  let transitions = 0;
-  for (const row of candidates) {
-    const nextState = computeInventoryState(row, nowMs);
-    if (nextState === row.state) continue;
-    await prisma.medicationInventoryItem.update({
-      where: { id: row.id },
-      data: { state: nextState },
-    });
-    transitions += 1;
-  }
-  return transitions;
+  return result.count;
 }
 
 /**
