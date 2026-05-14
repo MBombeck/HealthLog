@@ -89,7 +89,17 @@ export function HealthScoreCard({
       className={cn(
         "bg-card/65 rounded-xl border px-4 py-4 shadow-sm backdrop-blur-sm",
         BAND_BORDER_CLASS[band],
-        "w-full lg:w-[220px] lg:shrink-0",
+        // v1.4.25 W3 — Marc reported the German "Einnahmetreue" label
+        // overlapping the band-coloured component-value pill at the
+        // right of each row. The original `w-[220px]` left only ~64px
+        // for the label column after the bar + value chip ate the
+        // rest, which fits "Mood" / "BP" but truncates the longer
+        // German strings. Bumped to `w-[260px]` so the card sits
+        // ~18 % wider on `lg+` without disturbing the title block's
+        // visual centre of gravity; the label column is widened in
+        // step with this so the breathing room actually lands on the
+        // text.
+        "w-full lg:w-[260px] lg:shrink-0",
       )}
     >
       <div className="flex flex-col gap-3">
@@ -189,7 +199,11 @@ export function HealthScoreCard({
               data-component={key}
               className="flex items-center gap-2 text-[11px]"
             >
-              <span className="text-muted-foreground w-16 shrink-0">
+              {/* v1.4.25 W3 — widened label column from w-16 (64px) to
+                  w-24 (96px) so the longest German label
+                  ("Einnahmetreue" — 13 chars at 11px) sits inside the
+                  column without spilling into the bar/value chip. */}
+              <span className="text-muted-foreground w-24 shrink-0 truncate">
                 {label}
               </span>
               <div
