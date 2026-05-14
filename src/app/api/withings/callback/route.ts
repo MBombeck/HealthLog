@@ -3,7 +3,7 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
-import { exchangeCode } from "@/lib/withings/client";
+import { exchangeCode, WITHINGS_OAUTH_SCOPE } from "@/lib/withings/client";
 import { getUserWithingsCredentials } from "@/lib/withings/credentials";
 import { setupWebhook } from "@/lib/withings/sync";
 import { markReconnected } from "@/lib/integrations/status";
@@ -72,7 +72,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
 
-    // Upsert connection (user may be reconnecting)
+    // v1.4.25 W5d — persist the OAuth scope we requested. The token
+    // response doesn't echo the granted scopes back as a top-level
+    // field, but Withings honours the scope param verbatim — there's
+    // no scope downgrade unless the user explicitly revokes one in
+    // their Health Mate account, which would fail the token exchange
+    // entirely. Storing the requested set is therefore a safe
+    // representation of what the connection holds.
     await prisma.withingsConnection.upsert({
       where: { userId: user.id },
       update: {
@@ -80,6 +86,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
         accessToken: encrypt(tokens.access_token),
         refreshToken: encrypt(tokens.refresh_token),
         tokenExpiresAt: expiresAt,
+        scope: WITHINGS_OAUTH_SCOPE,
       },
       create: {
         userId: user.id,
@@ -87,6 +94,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
         accessToken: encrypt(tokens.access_token),
         refreshToken: encrypt(tokens.refresh_token),
         tokenExpiresAt: expiresAt,
+        scope: WITHINGS_OAUTH_SCOPE,
       },
     });
 

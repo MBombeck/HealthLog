@@ -4,7 +4,7 @@ import { annotate, getEvent } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { getUserWithingsCredentials } from "@/lib/withings/credentials";
-import { refreshAccessToken } from "@/lib/withings/client";
+import { hasActivityScope, refreshAccessToken } from "@/lib/withings/client";
 import { isWithingsRefreshReauthFailure } from "@/lib/withings/sync";
 import { markReauthRequired } from "@/lib/integrations/status";
 
@@ -37,6 +37,7 @@ export const GET = apiHandler(async () => {
       lastSyncedAt: true,
       tokenExpiresAt: true,
       createdAt: true,
+      scope: true,
     },
   });
 
@@ -95,5 +96,12 @@ export const GET = apiHandler(async () => {
     tokenExpired,
     tokenRefreshFailed,
     tokenExpiresAt,
+    // v1.4.25 W5d — `scope` is the comma-separated OAuth scope string
+    // returned during the auth flow; `hasActivityScope` is the
+    // pre-computed convenience flag the Settings reconnect banner
+    // reads. Null `scope` means a legacy v1.4.24 connection that's
+    // never re-authed since v1.4.25 — it counts as "missing activity".
+    scope: connection.scope,
+    hasActivityScope: hasActivityScope(connection.scope),
   });
 });

@@ -649,6 +649,14 @@ model WithingsConnection {
   refreshToken   String   @map("refresh_token") // encrypted at app level
   tokenExpiresAt DateTime @map("token_expires_at")
   lastSyncedAt   DateTime? @map("last_synced_at")
+  /// v1.4.25 W5d — comma-separated OAuth scope string returned by the
+  /// Withings authorisation flow. Legacy v1.4.24- connections sit on
+  /// `user.metrics` only; v1.4.25 starts requesting
+  /// `user.metrics,user.activity` for new + reconnecting users so the
+  /// activity / sleep endpoints unlock. Null = legacy connection that
+  /// has never re-authed since v1.4.25 — the UI surfaces a banner
+  /// inviting them to reconnect.
+  scope          String?  @map("scope")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 

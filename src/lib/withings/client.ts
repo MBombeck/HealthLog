@@ -23,6 +23,48 @@ function getRedirectUri(): string {
 }
 
 /**
+ * v1.4.25 W5d — Withings OAuth scope set HealthLog requests.
+ *
+ *   - `user.metrics`  : every meastype the Measure / Heart-list /
+ *                       Sleep endpoints expose (weight, BP, pulse,
+ *                       SpO2, body comp, temperature, VO2 max, …)
+ *   - `user.activity` : steps / active energy / distance / floors —
+ *                       served by `POST /v2/measure?action=getactivity`.
+ *                       The sync routine itself lands in v1.4.26; the
+ *                       scope is requested now so existing users
+ *                       reconnect once instead of twice.
+ *
+ * v1.4.24-and-earlier connections requested `user.metrics` only — the
+ * Settings → Integrations card surfaces a reconnect banner for those
+ * users (see `WithingsConnection.scope IS NULL` or scope without
+ * `user.activity`).
+ */
+export const WITHINGS_OAUTH_SCOPE = "user.metrics,user.activity" as const;
+
+/**
+ * Parse the persisted scope string into a Set for membership checks.
+ * Legacy NULL → empty set (treated as "no scopes yet") so the
+ * reconnect-banner conditional reads as truthy.
+ */
+export function parseWithingsScope(scope: string | null): Set<string> {
+  if (!scope) return new Set();
+  return new Set(
+    scope
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+}
+
+/**
+ * Returns true when the connection holds `user.activity` — the
+ * minimum scope required by the Activity / Sleep endpoints.
+ */
+export function hasActivityScope(scope: string | null): boolean {
+  return parseWithingsScope(scope).has("user.activity");
+}
+
+/**
  * Generate Withings OAuth authorization URL.
  */
 export function getAuthorizationUrl(
@@ -33,7 +75,7 @@ export function getAuthorizationUrl(
     response_type: "code",
     client_id: creds.clientId,
     redirect_uri: getRedirectUri(),
-    scope: "user.metrics",
+    scope: WITHINGS_OAUTH_SCOPE,
     state,
   });
   return `${WITHINGS_OAUTH_URL}?${params}`;

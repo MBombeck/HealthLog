@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MEASURE_TYPE_MAP, fetchMeasurements } from "../client";
+import {
+  MEASURE_TYPE_MAP,
+  WITHINGS_OAUTH_SCOPE,
+  fetchMeasurements,
+  hasActivityScope,
+  parseWithingsScope,
+} from "../client";
 import { WITHINGS_NOTIFY_APPLIS } from "../sync";
 
 /**
@@ -100,6 +106,34 @@ describe("MEASURE_TYPE_MAP", () => {
 
   it("maps Withings meastype 170 (visceral fat) → VISCERAL_FAT", () => {
     expect(MEASURE_TYPE_MAP[170]).toEqual({ type: "VISCERAL_FAT" });
+  });
+});
+
+describe("WITHINGS_OAUTH_SCOPE + scope helpers", () => {
+  it("requests user.metrics + user.activity (v1.4.25 default)", () => {
+    expect(WITHINGS_OAUTH_SCOPE).toBe("user.metrics,user.activity");
+  });
+
+  it("parses a comma-separated scope string into a Set", () => {
+    expect(parseWithingsScope("user.metrics,user.activity")).toEqual(
+      new Set(["user.metrics", "user.activity"]),
+    );
+  });
+
+  it("treats null/empty scope as empty set (legacy connection)", () => {
+    expect(parseWithingsScope(null).size).toBe(0);
+    expect(parseWithingsScope("").size).toBe(0);
+  });
+
+  it("hasActivityScope returns false for legacy v1.4.24 connections", () => {
+    expect(hasActivityScope(null)).toBe(false);
+    expect(hasActivityScope("user.metrics")).toBe(false);
+  });
+
+  it("hasActivityScope returns true once user.activity is granted", () => {
+    expect(hasActivityScope("user.metrics,user.activity")).toBe(true);
+    expect(hasActivityScope("user.activity")).toBe(true);
+    expect(hasActivityScope(" user.activity , user.metrics ")).toBe(true);
   });
 });
 

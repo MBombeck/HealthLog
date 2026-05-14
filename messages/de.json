@@ -322,6 +322,13 @@
     "typeWalkingRunningDistance": "Geh- und Laufstrecke",
     "typeVo2Max": "VO₂max",
     "typeBodyTemperature": "Körpertemperatur",
+    "typeFatFreeMass": "Fettfreie Masse",
+    "typeFatMass": "Fettmasse",
+    "typeMuscleMass": "Muskelmasse",
+    "typeSkinTemperature": "Hauttemperatur",
+    "typePulseWaveVelocity": "Pulswellengeschwindigkeit",
+    "typeVascularAge": "Gefäßalter",
+    "typeVisceralFat": "Viszerales Fett",
     "glucoseContext": "Kontext",
     "glucoseContextFasting": "Nüchtern (≥8 h ohne Nahrung)",
     "glucoseContextPostprandial": "Postprandial (2 h nach dem Essen)",
@@ -1718,6 +1725,17 @@
     "withingsDisconnectDescription": "Die Verbindung zu Withings wird getrennt. Bereits synchronisierte Daten bleiben erhalten.",
     "withingsConnect": "Mit Withings verbinden",
     "withingsNoCredentials": "Bitte zuerst die API-Zugangsdaten oben eingeben, um Withings zu verbinden.",
+    "integrations": {
+      "withings": {
+        "reconnect": {
+          "banner": {
+            "title": "Aktivitäts-Sync verfügbar",
+            "body": "Deine Withings-Verbindung wurde autorisiert, bevor der Aktivitäts-Sync hinzugefügt wurde. Verbinde einmal neu, um Schritte, aktive Energie, Geh- und Laufdistanz sowie Stockwerke aus deinen Withings-Geräten zu übernehmen.",
+            "action": "Withings neu verbinden"
+          }
+        }
+      }
+    },
     "integrationStatus": {
       "stateConnected": "Verbunden",
       "stateError": "Fehler",

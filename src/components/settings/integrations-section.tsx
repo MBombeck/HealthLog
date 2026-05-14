@@ -230,6 +230,12 @@ function WithingsCard({
         lastSyncedAt?: string | null;
         connectedAt?: string;
         tokenExpired?: boolean;
+        // v1.4.25 W5d — reconnect banner conditional. `null` =
+        // legacy v1.4.24 connection without `user.activity`; the
+        // user needs to re-auth before steps / active energy /
+        // distance / floors ingest unlocks.
+        scope?: string | null;
+        hasActivityScope?: boolean;
       };
     },
     enabled: isAuthenticated,
@@ -352,6 +358,38 @@ function WithingsCard({
 
       <div className="mt-4 space-y-4">
         {errorMessage && <IntegrationErrorMessage message={errorMessage} />}
+        {/* v1.4.25 W5d — Withings activity-scope reconnect banner.
+            Only paints when (a) the user has an active Withings
+            connection (so the credentials are already saved + a token
+            exists) AND (b) the persisted scope is missing
+            `user.activity`. Reconnecting takes the user through the
+            standard /api/withings/connect → Withings → callback flow;
+            the callback persists the upgraded scope and the banner
+            vanishes on the next status poll. */}
+        {status?.connected && status?.hasActivityScope === false && (
+          <a
+            href="/api/withings/connect"
+            data-testid="withings-reconnect-banner"
+            className="border-warning/30 bg-warning/10 text-warning-foreground hover:bg-warning/20 block rounded-md border px-3 py-2 text-sm transition-colors"
+          >
+            <span className="font-medium">
+              {t(
+                "settings.integrations.withings.reconnect.banner.title",
+              )}
+            </span>
+            <span className="text-muted-foreground block text-xs">
+              {t(
+                "settings.integrations.withings.reconnect.banner.body",
+              )}
+            </span>
+            <span className="text-primary mt-1 inline-block text-xs font-medium">
+              {t(
+                "settings.integrations.withings.reconnect.banner.action",
+              )}
+              {" →"}
+            </span>
+          </a>
+        )}
         <div className="space-y-3">
           <h3 className="text-sm font-medium">
             {t("settings.withingsCredentials")}

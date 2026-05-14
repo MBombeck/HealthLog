@@ -322,6 +322,13 @@
     "typeWalkingRunningDistance": "Walking + running distance",
     "typeVo2Max": "VO₂ max",
     "typeBodyTemperature": "Body temperature",
+    "typeFatFreeMass": "Fat-free mass",
+    "typeFatMass": "Fat mass",
+    "typeMuscleMass": "Muscle mass",
+    "typeSkinTemperature": "Skin temperature",
+    "typePulseWaveVelocity": "Pulse-wave velocity",
+    "typeVascularAge": "Vascular age",
+    "typeVisceralFat": "Visceral fat",
     "glucoseContext": "Context",
     "glucoseContextFasting": "Fasting (≥8h without food)",
     "glucoseContextPostprandial": "Post-meal (2h after eating)",
@@ -1718,6 +1725,17 @@
     "withingsDisconnectDescription": "The connection to Withings will be disconnected. Previously synced data will be preserved.",
     "withingsConnect": "Connect with Withings",
     "withingsNoCredentials": "Please enter your API credentials above to connect Withings.",
+    "integrations": {
+      "withings": {
+        "reconnect": {
+          "banner": {
+            "title": "Activity sync available",
+            "body": "Your Withings connection was authorised before activity sync was added. Reconnect once to enable steps, active energy, walking + running distance, and floors-climbed ingest from your Withings devices.",
+            "action": "Reconnect Withings"
+          }
+        }
+      }
+    },
     "integrationStatus": {
       "stateConnected": "Connected",
       "stateError": "Error",
