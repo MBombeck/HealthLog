@@ -3,7 +3,6 @@ import {
   APPLE_HEALTH_SLEEP_STAGE_MAP,
   APPLE_HEALTH_TYPE_MAP,
   HK_QUANTITY_TYPE_DEFERRED,
-  HK_QUANTITY_TYPE_TO_MEASUREMENT,
   mapAppleHealthEntry,
 } from "../apple-health-mapping";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
@@ -107,20 +106,6 @@ describe("APPLE_HEALTH_TYPE_MAP", () => {
       const mapping = APPLE_HEALTH_TYPE_MAP[id];
       expect(mapping, `${id} mapping missing`).toBeDefined();
       expect(mapping!.convertToDbUnit(42)).toBe(42);
-    }
-  });
-});
-
-describe("HK_QUANTITY_TYPE_TO_MEASUREMENT", () => {
-  it("mirrors APPLE_HEALTH_TYPE_MAP key-for-key", () => {
-    expect(Object.keys(HK_QUANTITY_TYPE_TO_MEASUREMENT).sort()).toEqual(
-      Object.keys(APPLE_HEALTH_TYPE_MAP).sort(),
-    );
-  });
-
-  it("agrees with APPLE_HEALTH_TYPE_MAP on the measurement type per key", () => {
-    for (const [k, t] of Object.entries(HK_QUANTITY_TYPE_TO_MEASUREMENT)) {
-      expect(APPLE_HEALTH_TYPE_MAP[k]?.measurementType).toBe(t);
     }
   });
 });

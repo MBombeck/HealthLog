@@ -288,22 +288,6 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
 };
 
 /**
- * Compact `HKQuantityTypeIdentifier* → MeasurementType` view of the
- * same data carried by `APPLE_HEALTH_TYPE_MAP`. Exists so the iOS
- * Swift session and the v1.4.26 XML-import worker can do a cheap
- * lookup without instantiating the full `AppleHealthMapping` record
- * — useful when all the caller wants is the canonical enum value
- * for routing / filtering. Always stays a strict subset of the keys
- * in the table above.
- */
-export const HK_QUANTITY_TYPE_TO_MEASUREMENT: Record<
-  string,
-  import("@/generated/prisma/client").MeasurementType
-> = Object.fromEntries(
-  Object.entries(APPLE_HEALTH_TYPE_MAP).map(([k, v]) => [k, v.measurementType]),
-);
-
-/**
  * HK identifiers the iOS app may emit that HealthLog deliberately does
  * NOT map yet. Listing them here means the batch route can log a
  * "deferred, not unknown" signal and the iOS DTO can decide upstream
