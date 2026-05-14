@@ -11,6 +11,10 @@ import { annotate } from "@/lib/logging/context";
 import { encrypt } from "@/lib/crypto";
 import { adminSettingsSchema } from "@/lib/validations/admin";
 import { NextRequest } from "next/server";
+import {
+  invalidateServerDefaultTimezone,
+  isValidTimezone,
+} from "@/lib/tz/resolver";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +54,10 @@ export const GET = apiHandler(async () => {
     reminderLateMinutes: settings?.reminderLateMinutes ?? 120,
     reminderMissedMinutes: settings?.reminderMissedMinutes ?? 240,
     moodLogGlobal: settings?.moodLogGlobal ?? true,
+    // v1.4.25 W7 — null means "fall back to Europe/Berlin in the
+    // resolver"; surfacing the raw value lets the admin UI render
+    // an empty picker placeholder until they opt in.
+    defaultUserTimezone: settings?.defaultUserTimezone ?? null,
   });
 });
 
@@ -186,6 +194,26 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     auditDetails.reminderMissedMinutes = data.reminderMissedMinutes;
   }
 
+  // v1.4.25 W7 — server-default timezone for new signups.
+  // Empty string clears the override (resolver falls back to
+  // Europe/Berlin); a non-empty string must pass Intl validation
+  // upstream of the column write.
+  let didTouchTimezone = false;
+  if (data.defaultUserTimezone !== undefined) {
+    const trimmed = data.defaultUserTimezone.trim();
+    if (trimmed === "") {
+      updates.defaultUserTimezone = null;
+      auditDetails.defaultUserTimezone = null;
+      didTouchTimezone = true;
+    } else if (isValidTimezone(trimmed)) {
+      updates.defaultUserTimezone = trimmed;
+      auditDetails.defaultUserTimezone = trimmed;
+      didTouchTimezone = true;
+    } else {
+      return apiError("Not a valid IANA timezone.", 422);
+    }
+  }
+
   if (Object.keys(updates).length === 0) {
     return apiError("No valid fields", 422);
   }
@@ -195,6 +223,10 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     update: updates,
     create: { id: "singleton", ...updates },
   });
+
+  if (didTouchTimezone) {
+    invalidateServerDefaultTimezone();
+  }
 
   await auditLog("admin.settings.update", {
     userId: user.id,
@@ -230,5 +262,6 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     reminderLateMinutes: settings.reminderLateMinutes,
     reminderMissedMinutes: settings.reminderMissedMinutes,
     moodLogGlobal: settings.moodLogGlobal,
+    defaultUserTimezone: settings.defaultUserTimezone,
   });
 });

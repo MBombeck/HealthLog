@@ -283,43 +283,9 @@ function classifyRangeValue(
   return "red";
 }
 
-function getOverallHealthStatus(states: Array<HealthBandState | null>): {
-  level: "good" | "watch" | "critical";
-  className: string;
-} {
-  const valid = states.filter(
-    (state): state is HealthBandState => state !== null,
-  );
-
-  if (valid.length === 0) {
-    return {
-      level: "watch",
-      className: "border-yellow-500/30 bg-yellow-500/15 text-yellow-300",
-    };
-  }
-
-  const greenCount = valid.filter((state) => state === "green").length;
-  const redCount = valid.filter((state) => state === "red").length;
-
-  if (redCount >= 2 || redCount / valid.length >= 0.5) {
-    return {
-      level: "critical",
-      className: "border-red-500/30 bg-red-500/15 text-red-300",
-    };
-  }
-
-  if (redCount === 0 && greenCount / valid.length >= 0.6) {
-    return {
-      level: "good",
-      className: "border-green-500/30 bg-green-500/15 text-green-300",
-    };
-  }
-
-  return {
-    level: "watch",
-    className: "border-yellow-500/30 bg-yellow-500/15 text-yellow-300",
-  };
-}
+// v1.4.25 W3 — `getOverallHealthStatus` + its caller `overallStatus`
+// were the badge feed for the now-removed "Allgemeiner
+// Gesundheitszustand" section. Dropped along with the section.
 
 function getBloodPressureSectionStatus(input: {
   sysAvg30: number | null | undefined;
@@ -732,13 +698,6 @@ export default function InsightsPage() {
     orangeMin: pulseTarget.orangeMin,
     orangeMax: pulseTarget.orangeMax,
   };
-  const overallStatus = getOverallHealthStatus([
-    classifyRangeValue(w?.avg30, weightRange),
-    classifyRangeValue(sys?.avg30, bpSysRange),
-    classifyRangeValue(dia?.avg30, bpDiaRange),
-    classifyRangeValue(p?.avg30, pulseDisplayRange),
-    classifyRangeValue(bmiAvg30, bmiRange),
-  ]);
   const bpMedications =
     data?.medications?.filter(
       (medication) => medication.category === "BLOOD_PRESSURE",

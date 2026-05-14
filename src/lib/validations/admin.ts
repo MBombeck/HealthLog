@@ -75,5 +75,10 @@ export const adminSettingsSchema = z
     reminderLateMinutes: z.number().int().min(15).max(480).optional(),
     reminderMissedMinutes: z.number().int().min(30).max(720).optional(),
     moodLogGlobal: z.boolean().optional(),
+    // v1.4.25 W7 — server-wide default timezone for new signups
+    // that don't carry a browser-detected zone. The route validates
+    // against Intl.supportedValuesOf at runtime; this schema just
+    // guards the shape + length.
+    defaultUserTimezone: z.string().max(64).optional(),
   })
   .strict();

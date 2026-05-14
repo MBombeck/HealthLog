@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { chooseTickInterval, resolveTargetTickCount } from "../x-axis-density";
 
-describe("resolveTargetTickCount", () => {
+describe("resolveTargetTickCount (v1.4.19 legacy cap helper)", () => {
   it("caps Galaxy Fold compact (≤360px) at 4 ticks", () => {
     expect(resolveTargetTickCount(280)).toBe(4);
     expect(resolveTargetTickCount(360)).toBe(4);
@@ -32,58 +32,78 @@ describe("resolveTargetTickCount", () => {
   });
 });
 
-describe("chooseTickInterval", () => {
-  it("returns 0 when point count fits in target", () => {
-    // Pixel 5 (393) → max 6 ticks. 7 points still fits because
-    // preserveStartEnd doesn't multiply our cap.
-    expect(chooseTickInterval(0, 393)).toBe(0);
-    expect(chooseTickInterval(3, 393)).toBe(0);
-    expect(chooseTickInterval(6, 393)).toBe(0);
+describe("chooseTickInterval (v1.4.25 W3b day-aware policy)", () => {
+  // v1.4.25 W3b tunes the policy to calendar-aware buckets so the
+  // medication-compliance chart on /insights doesn't paint every-5th-day
+  // labels. The policy reads off two viewport classes (mobile <640px,
+  // desktop ≥640px) and four data-span buckets keyed on point count.
+
+  describe("mobile (<640px viewport)", () => {
+    it("renders every tick for 1-7 daily points (7d compliance window)", () => {
+      expect(chooseTickInterval(7, 393)).toBe(0);
+    });
+
+    it("steps to every 7th day at 8-31 daily points (30d window)", () => {
+      // 30d window on Pixel 5 was the original bug — pre-W3b it produced
+      // interval 4 (every-5th-day labels). The new policy snaps to a
+      // calendar-week rhythm so labels land on the same weekday across
+      // the chart.
+      expect(chooseTickInterval(30, 393)).toBe(6);
+    });
+
+    it("steps to every 14th day at 32-90 daily points (90d window)", () => {
+      expect(chooseTickInterval(90, 393)).toBe(13);
+    });
+
+    it("steps to ~monthly at 90+ daily points (365d window)", () => {
+      expect(chooseTickInterval(180, 393)).toBe(29);
+      expect(chooseTickInterval(365, 393)).toBe(29);
+    });
   });
 
-  it("medication chart 30-day window on Pixel 5 → ≤6 visible ticks", () => {
-    // 30 daily points capped to 6 visible → interval = ceil(30/6)-1 = 4
-    // Recharts then shows the first, last, and every 5th in between.
-    const interval = chooseTickInterval(30, 393);
-    expect(interval).toBe(4);
-    // Sanity: stepping every 5th index from 0 over 30 lands on
-    // 0, 5, 10, 15, 20, 25, 29 → 6 + endpoints (preserveStartEnd
-    // keeps the right edge).
-    const stepped = Math.ceil(30 / (interval + 1));
-    expect(stepped).toBeLessThanOrEqual(6);
+  describe("desktop (≥640px viewport)", () => {
+    it("renders every tick for 1-14 daily points", () => {
+      expect(chooseTickInterval(14, 1280)).toBe(0);
+    });
+
+    it("steps to every 7th day at 15-60 daily points (30d window)", () => {
+      // Desktop has more pixel budget so 30 daily ticks could fit, but
+      // the calendar-week rhythm is the readability win — and it keeps
+      // mobile / desktop labels visually aligned for cross-device users.
+      expect(chooseTickInterval(30, 1280)).toBe(6);
+    });
+
+    it("steps to every 14th day at 60-180 daily points", () => {
+      expect(chooseTickInterval(90, 1280)).toBe(13);
+      expect(chooseTickInterval(180, 1280)).toBe(13);
+    });
+
+    it("steps to ~monthly at 180+ daily points", () => {
+      expect(chooseTickInterval(365, 1280)).toBe(29);
+    });
   });
 
-  it("90-day window on Pixel 5 → ≤6 visible ticks", () => {
-    const interval = chooseTickInterval(90, 393);
-    expect(Math.ceil(90 / (interval + 1))).toBeLessThanOrEqual(6);
-  });
+  describe("edge cases", () => {
+    it("returns 0 for invalid point count", () => {
+      expect(chooseTickInterval(0, 393)).toBe(0);
+      expect(chooseTickInterval(-1, 393)).toBe(0);
+      expect(chooseTickInterval(Number.NaN, 393)).toBe(0);
+    });
 
-  it("365-day window on Pixel 5 still ≤6 ticks", () => {
-    const interval = chooseTickInterval(365, 393);
-    expect(Math.ceil(365 / (interval + 1))).toBeLessThanOrEqual(6);
-  });
+    it("falls back to desktop policy for invalid viewport", () => {
+      // 30 points at any reasonable viewport sits in the "every 7th
+      // day" bucket; an invalid viewport defaults to the desktop
+      // policy which lands the same way.
+      expect(chooseTickInterval(30, 0)).toBe(6);
+      expect(chooseTickInterval(30, Number.NaN)).toBe(6);
+    });
 
-  it("Galaxy Fold compact (280px) caps at 4 visible ticks", () => {
-    const interval = chooseTickInterval(30, 280);
-    expect(Math.ceil(30 / (interval + 1))).toBeLessThanOrEqual(4);
-  });
-
-  it("desktop 1280px shows up to 10 ticks", () => {
-    const interval = chooseTickInterval(30, 1280);
-    expect(Math.ceil(30 / (interval + 1))).toBeLessThanOrEqual(10);
-  });
-
-  it("returns 0 for invalid point count", () => {
-    expect(chooseTickInterval(0, 393)).toBe(0);
-    expect(chooseTickInterval(-1, 393)).toBe(0);
-    expect(chooseTickInterval(Number.NaN, 393)).toBe(0);
-  });
-
-  it("never returns a negative interval", () => {
-    for (const n of [1, 2, 3, 4, 5, 6, 100]) {
-      for (const w of [200, 300, 393, 768, 1280, 1920]) {
-        expect(chooseTickInterval(n, w)).toBeGreaterThanOrEqual(0);
+    it("never returns a negative interval", () => {
+      for (const n of [1, 2, 3, 4, 5, 6, 100, 365]) {
+        for (const w of [200, 300, 393, 768, 1280, 1920]) {
+          expect(chooseTickInterval(n, w)).toBeGreaterThanOrEqual(0);
+        }
       }
-    }
+    });
   });
 });

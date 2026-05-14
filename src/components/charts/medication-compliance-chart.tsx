@@ -100,7 +100,13 @@ export function aggregateMedicationCompliance(
       const ts = Date.UTC(y, m - 1, d, 12);
       const rate = Math.min(100, Math.round((p.taken / p.scheduled) * 100));
       return {
-        date: formatDateShort(new Date(ts), true),
+        // v1.4.25 W3b — short-form day label ("10.05." / "10. May") so
+        // the X-axis ticks read cleanly on mobile even when the tick
+        // density helper steps to every-7th or every-14th day. The
+        // tooltip below still derives its label from `timestamp` with
+        // `includeYear=true`, so the full date is preserved for the
+        // tooltip read.
+        date: formatDateShort(new Date(ts), false),
         rate,
         timestamp: ts,
       };

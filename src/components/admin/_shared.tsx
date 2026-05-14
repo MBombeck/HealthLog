@@ -81,6 +81,9 @@ export interface AdminSettings {
   bugReportEnabled: boolean;
   reminderLateMinutes: number;
   reminderMissedMinutes: number;
+  // v1.4.25 W7 — null means "fall back to Europe/Berlin in the resolver".
+  defaultUserTimezone: string | null;
+  moodLogGlobal?: boolean;
 }
 
 export interface AdminAuditEntry {

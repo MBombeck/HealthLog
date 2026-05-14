@@ -1,5 +1,5 @@
 /**
- * v1.4.19 A2 — universal X-axis tick-density helper.
+ * Universal X-axis tick-density helper.
  *
  * Charts on /dashboard and /insights all pre-v1.4.19 used Recharts'
  * default tick rendering with `interval="preserveStartEnd"`. That left
@@ -14,29 +14,126 @@
  * the rule across every chart so the X-axis reads the same way no
  * matter the metric.
  *
- * Strategy: cap visible ticks based on the viewport width.
+ * v1.4.19 A2 shipped a viewport-bucket policy ("≤360px → 4 ticks max",
+ * "≤480px → 6", etc.) that worked for daily-bucketed BP charts but
+ * still left the medication-compliance chart unreadable: at 30 daily
+ * points on a Pixel 5 the cap-at-6 algorithm produced every-5th-day
+ * labels ("01.05", "06.05", "11.05", …), which looked clean on the
+ * tick axis but read as random sample dates with no calendar rhythm.
  *
- *   ≤ 360px  (Galaxy Fold compact)   → 4 ticks max
- *   ≤ 480px  (Pixel 5, iPhone 12)    → 6 ticks max
- *   ≤ 768px  (small tablet)          → 8 ticks max
- *   > 768px  (desktop)               → 10 ticks max
+ * v1.4.25 W3b tunes the policy to day-aware buckets keyed on the data
+ * span + viewport width:
+ *
+ *   Mobile  (< 640px viewport):
+ *     1-7   points → render every tick (no skip)
+ *     8-31  points → every 7th day      (interval 6)
+ *     32-90 points → every 14th day     (interval 13)
+ *     90+   points → ~monthly           (interval 29)
+ *   Desktop (≥ 640px viewport):
+ *     1-14   points → render every tick
+ *     15-60  points → every 7th day
+ *     60-180 points → every 14th day
+ *     180+   points → ~monthly
+ *
+ * The 640px breakpoint matches Tailwind's `sm` so a single touch-vs-
+ * desktop rule covers every device. The day-aware steps (7 / 14 / 30)
+ * align tick labels with calendar week / fortnight / month rhythms so
+ * the user's eye lands on "every Monday" instead of "every 5th day
+ * from the leftmost data point".
  *
  * The Recharts `interval` prop expects a 0-based skip count: 0 = render
- * every tick, 1 = render every other, 2 = every third, etc. For N data
- * points and a target of `target` visible ticks, the interval is
- * `Math.ceil(N / target) - 1`.
+ * every tick, 1 = render every other, 2 = every third, etc. So
+ * "every 7th day" → interval 6, "every 14th" → 13, "monthly" → 29.
  *
  * `interval="preserveStartEnd"` forces the first and last tick to be
- * rendered regardless of the modulo skip. We keep that behaviour because
- * the leftmost / rightmost dates are the most important context the
- * chart provides; losing them in the skip pattern would feel buggy.
+ * rendered regardless of the modulo skip. Every caller in the codebase
+ * pairs this helper with `preserveStartEnd` (or accepts that Recharts
+ * keeps both endpoints by default in non-numeric XAxis configurations)
+ * so the leftmost / rightmost dates are never sacrificed to the skip
+ * pattern.
  */
 
-/** Sensible defaults for the four ranges Pixel 5 / iPhone / iPad / desktop. */
+/** Viewport-width breakpoint between the mobile + desktop policies. */
+const MOBILE_DESKTOP_BREAKPOINT_PX = 640;
+
+interface TickBucket {
+  /** Inclusive lower bound on the data-point count. */
+  minPoints: number;
+  /** Recharts `interval` value: 0 = every tick, 6 = every 7th, etc. */
+  interval: number;
+}
+
+/** v1.4.25 W3b policy: mobile (`< 640px`) — calendar-week buckets. */
+const MOBILE_BUCKETS: ReadonlyArray<TickBucket> = [
+  { minPoints: 0, interval: 0 }, // 1-7 days   → every tick
+  { minPoints: 8, interval: 6 }, // 8-31 days  → every 7th day
+  { minPoints: 32, interval: 13 }, // 32-90 days → every 14th day
+  { minPoints: 91, interval: 29 }, // 90+ days   → monthly
+];
+
+/** v1.4.25 W3b policy: desktop (`≥ 640px`) — calendar-fortnight buckets. */
+const DESKTOP_BUCKETS: ReadonlyArray<TickBucket> = [
+  { minPoints: 0, interval: 0 }, // 1-14 days   → every tick
+  { minPoints: 15, interval: 6 }, // 15-60 days  → every 7th day
+  { minPoints: 61, interval: 13 }, // 60-180 days → every 14th day
+  { minPoints: 181, interval: 29 }, // 180+ days   → monthly
+];
+
+function resolveBucket(
+  pointCount: number,
+  viewportWidth: number,
+): TickBucket {
+  const buckets =
+    viewportWidth < MOBILE_DESKTOP_BREAKPOINT_PX
+      ? MOBILE_BUCKETS
+      : DESKTOP_BUCKETS;
+  let resolved = buckets[0];
+  for (const bucket of buckets) {
+    if (pointCount >= bucket.minPoints) resolved = bucket;
+  }
+  return resolved;
+}
+
+/**
+ * Compute the Recharts `interval` skip count for a chart with
+ * `pointCount` data points rendered at `viewportWidth`.
+ *
+ * Returns 0 when the chart has fewer points than the bucket's "render
+ * every tick" threshold, and a positive integer otherwise.
+ *
+ * Examples (mobile <640px viewport):
+ *   - 7  daily points  → 0   (every tick)
+ *   - 30 daily points  → 6   (every 7th day)
+ *   - 90 daily points  → 13  (every 14th day)
+ *   - 365 daily points → 29  (monthly)
+ *
+ * Examples (desktop ≥640px viewport):
+ *   - 30 daily points  → 6   (every 7th day)
+ *   - 180 daily points → 13  (every 14th day)
+ */
+export function chooseTickInterval(
+  pointCount: number,
+  viewportWidth: number,
+): number {
+  if (!Number.isFinite(pointCount) || pointCount <= 0) return 0;
+  const safeViewport = Number.isFinite(viewportWidth) && viewportWidth > 0
+    ? viewportWidth
+    : 1280;
+  const bucket = resolveBucket(pointCount, safeViewport);
+  return Math.max(0, bucket.interval);
+}
+
+/**
+ * v1.4.19 A2 legacy helper — kept for the existing test suite + any
+ * external consumer. Maps the viewport to a sensible "max ticks" cap.
+ *
+ * Note that `chooseTickInterval` no longer routes through this; the
+ * day-aware policy above replaced the cap-based algorithm. The shape
+ * stays for backwards compatibility (a few tests assert specific cap
+ * values per viewport).
+ */
 const VIEWPORT_BUCKETS: ReadonlyArray<{
-  /** Inclusive upper bound on viewport width in CSS pixels. */
   maxWidth: number;
-  /** Maximum number of x-axis ticks to render at this width. */
   maxTicks: number;
 }> = [
   { maxWidth: 360, maxTicks: 4 },
@@ -45,11 +142,6 @@ const VIEWPORT_BUCKETS: ReadonlyArray<{
   { maxWidth: Number.POSITIVE_INFINITY, maxTicks: 10 },
 ];
 
-/**
- * Resolve the target number of visible ticks for a given viewport
- * width. Pure & deterministic so unit tests can pin exact values for
- * each device size.
- */
 export function resolveTargetTickCount(viewportWidth: number): number {
   if (!Number.isFinite(viewportWidth) || viewportWidth <= 0) {
     return VIEWPORT_BUCKETS[VIEWPORT_BUCKETS.length - 1].maxTicks;
@@ -58,32 +150,6 @@ export function resolveTargetTickCount(viewportWidth: number): number {
     if (viewportWidth <= bucket.maxWidth) return bucket.maxTicks;
   }
   return VIEWPORT_BUCKETS[VIEWPORT_BUCKETS.length - 1].maxTicks;
-}
-
-/**
- * Compute the Recharts `interval` skip count for a chart with
- * `pointCount` data points rendered at `viewportWidth`.
- *
- * Returns 0 when the chart has fewer points than the target tick
- * count (no skipping needed) and a positive integer otherwise.
- *
- * Examples (Pixel 5, viewportWidth 393, maxTicks 6):
- *   - 7  points → 0   (fits in 6 slots after preserveStartEnd kicks in)
- *   - 30 points → 5   (every 6th tick → 5 visible labels + endpoints)
- *   - 90 points → 16  (every 17th tick → ~5 visible labels)
- *   - 365 points → 64 (every 65th tick → ~5 visible labels)
- */
-export function chooseTickInterval(
-  pointCount: number,
-  viewportWidth: number,
-): number {
-  if (!Number.isFinite(pointCount) || pointCount <= 0) return 0;
-  const target = resolveTargetTickCount(viewportWidth);
-  if (pointCount <= target) return 0;
-  // `Math.ceil(N/target) - 1` is the skip count that produces at most
-  // `target` evenly-spaced labels. Subtract one because Recharts interval
-  // 0 means "render every tick", 1 means "render every other", etc.
-  return Math.max(0, Math.ceil(pointCount / target) - 1);
 }
 
 /**

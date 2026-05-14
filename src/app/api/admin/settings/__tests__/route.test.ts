@@ -434,4 +434,75 @@ describe("PUT /api/admin/settings", () => {
     const res = await PUT(r);
     expect(res.status).toBe(415);
   });
+
+  // v1.4.25 W7 — server-default timezone.
+  it("persists a valid defaultUserTimezone", async () => {
+    vi.mocked(prisma.appSettings.upsert).mockResolvedValue({
+      id: "singleton",
+      registrationEnabled: true,
+      defaultLocale: "de",
+      telegramGlobal: true,
+      ntfyGlobal: true,
+      webPushGlobal: true,
+      webPushVapidPublicKey: null,
+      webPushVapidSubject: null,
+      webPushVapidPrivateKeyEncrypted: null,
+      apiGlobal: true,
+      umamiEnabled: false,
+      umamiScriptUrl: null,
+      umamiWebsiteId: null,
+      glitchtipEnabled: false,
+      glitchtipDsn: null,
+      glitchtipEnvironment: null,
+      githubIssueRepo: null,
+      githubIssueTokenEncrypted: null,
+      bugReportEnabled: true,
+      reminderLateMinutes: 120,
+      reminderMissedMinutes: 240,
+      moodLogGlobal: true,
+      defaultUserTimezone: "Pacific/Auckland",
+    } as never);
+    const res = await PUT(jsonReq({ defaultUserTimezone: "Pacific/Auckland" }));
+    expect(res.status).toBe(200);
+    const args = vi.mocked(prisma.appSettings.upsert).mock.calls[0]?.[0];
+    expect(args?.update).toEqual({ defaultUserTimezone: "Pacific/Auckland" });
+  });
+
+  it("clears the server-default timezone when given empty string", async () => {
+    vi.mocked(prisma.appSettings.upsert).mockResolvedValue({
+      id: "singleton",
+      registrationEnabled: true,
+      defaultLocale: "de",
+      telegramGlobal: true,
+      ntfyGlobal: true,
+      webPushGlobal: true,
+      webPushVapidPublicKey: null,
+      webPushVapidSubject: null,
+      webPushVapidPrivateKeyEncrypted: null,
+      apiGlobal: true,
+      umamiEnabled: false,
+      umamiScriptUrl: null,
+      umamiWebsiteId: null,
+      glitchtipEnabled: false,
+      glitchtipDsn: null,
+      glitchtipEnvironment: null,
+      githubIssueRepo: null,
+      githubIssueTokenEncrypted: null,
+      bugReportEnabled: true,
+      reminderLateMinutes: 120,
+      reminderMissedMinutes: 240,
+      moodLogGlobal: true,
+      defaultUserTimezone: null,
+    } as never);
+    const res = await PUT(jsonReq({ defaultUserTimezone: "" }));
+    expect(res.status).toBe(200);
+    const args = vi.mocked(prisma.appSettings.upsert).mock.calls[0]?.[0];
+    expect(args?.update).toEqual({ defaultUserTimezone: null });
+  });
+
+  it("returns 422 for an invalid IANA zone in defaultUserTimezone", async () => {
+    const res = await PUT(jsonReq({ defaultUserTimezone: "Mars/Olympus" }));
+    expect(res.status).toBe(422);
+    expect(prisma.appSettings.upsert).not.toHaveBeenCalled();
+  });
 });
