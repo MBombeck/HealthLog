@@ -258,7 +258,7 @@ The runtime is **Coolify** on a self-hosted server. The deploy config lives:
 
 For iOS purposes: the public URL is the production HealthLog instance; the API base URL is configurable in the app's Settings (the iOS app supports self-hosted operators, not just Marc's instance).
 
-Detail in `19-deploy-runtime.md`.
+Detail in `02-server-architecture.md` § Coolify deploy + § Stack at a glance.
 
 ## Planning artifacts — `.planning/`
 
@@ -278,6 +278,6 @@ When investigating a feature: search `.planning/` first — a report explains "w
 | "What does endpoint X return?" | `03-api-contracts.md` |
 | "What does the DB look like?" | `04-data-model.md` |
 | "How do I run the dev server?" | `CONTRIBUTING.md` (root) |
-| "What's the deploy story?" | `19-deploy-runtime.md` |
+| "What's the deploy story?" | `02-server-architecture.md` § Coolify |
 
 Otherwise: continue to `02-server-architecture.md`.

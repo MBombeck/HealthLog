@@ -2,7 +2,7 @@
 file: 14-coach-mental-model.md
 purpose: Mental model of the HealthLog Coach AI for the iOS-native client.
 when_to_read: Before designing a Coach UI in Swift — to confirm the server owns prompts, refusals, safety contracts, and the streaming contract.
-prerequisites: 03-system-overview.md, 04-data-model.md, 08-locked-contracts.md
+prerequisites: 02-server-architecture.md, 04-data-model.md, 08-locked-contracts.md
 estimated_tokens: ~5200
 version_anchor: v1.4.25 / sha 49f71c92
 ---

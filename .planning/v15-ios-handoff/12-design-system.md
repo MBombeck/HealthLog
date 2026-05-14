@@ -2,7 +2,7 @@
 file: 12-design-system.md
 purpose: Visual language reference — tokens, components, mobile-first rules, accessibility floors — so the iOS native build mirrors the web look without re-deriving it.
 when_to_read: Before laying out any iOS screen, picking colours, or sizing touch targets. Re-read when porting a specific web surface (dashboard tile, chart band, range bar) to UIKit/SwiftUI.
-prerequisites: 10-architecture.md (stack), 11-web-ui-tour.md (per-page composition)
+prerequisites: 02-server-architecture.md (stack), 11-web-ui-tour.md (per-page composition)
 estimated_tokens: 5200
 version_anchor: v1.4.25 / sha 49f71c92
 ---

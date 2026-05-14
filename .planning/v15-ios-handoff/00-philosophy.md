@@ -181,7 +181,7 @@ AI / insights / chart work runs through a research agent first. The agent benchm
 | --- | --- |
 | "Just call one endpoint" | `03-api-contracts.md` |
 | "Understand the data shape" | `04-data-model.md` |
-| "Wire the Coach drawer" | `10-coach-pipeline.md` |
-| "Build a chart" | `06-ui-conventions.md` |
+| "Wire the Coach drawer" | `14-coach-mental-model.md` |
+| "Build a chart" | `12-design-system.md` |
 
 Otherwise: continue to `01-repo-tour.md`.

@@ -1053,5 +1053,5 @@ Reports the deployed semver + git sha.
 | --- | --- |
 | "How do I refresh tokens?" | `05-auth-flows.md` |
 | "What's in the DB tables I touch?" | `04-data-model.md` |
-| "Why does the Coach refuse this prompt?" | `13-medical-content.md` |
-| "How does PR detection actually work?" | `17-personal-records.md` |
+| "Why does the Coach refuse this prompt?" | `08-locked-contracts.md` § 1 (GROUND RULES) + `14-coach-mental-model.md` § Refusal |
+| "How does PR detection actually work?" | `07-server-responsibilities.md` § Domain 4 |

@@ -2,7 +2,7 @@
 file: 11-web-ui-tour.md
 purpose: Page-by-page walkthrough of the HealthLog web UI so the iOS native build can mirror layout, data dependencies, and user actions screen-for-screen (or make conscious deviations where the iOS HIG demands it).
 when_to_read: Before building any iOS screen. Re-read the matching section every time you port a new surface.
-prerequisites: 10-architecture.md, 12-design-system.md, 13-state-management.md
+prerequisites: 02-server-architecture.md, 12-design-system.md, 13-state-management.md
 estimated_tokens: 7900
 version_anchor: v1.4.25 / sha 49f71c92
 ---

@@ -2,7 +2,7 @@
 file: 19-i18n-system.md
 purpose: How the 6-locale translator works, key naming conventions, maintainership policy, and the runtime parity probe — so iOS can mirror the same locale shape and contribute keys without breaking the gate.
 when_to_read: Before adding any user-facing string to web or iOS, before adding a new key, when porting a screen that needs localisation.
-prerequisites: 10-architecture.md
+prerequisites: 02-server-architecture.md, 00-philosophy.md (Rule 4 — six locales)
 estimated_tokens: 3100
 version_anchor: v1.4.25 / sha 49f71c92
 ---

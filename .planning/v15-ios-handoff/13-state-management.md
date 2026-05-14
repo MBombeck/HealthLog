@@ -2,7 +2,7 @@
 file: 13-state-management.md
 purpose: TanStack Query conventions on the web side plus the iOS data-layer mirror so the native app reuses the same cache contracts without poisoning state.
 when_to_read: Before wiring any iOS network call, designing an iOS data store, or porting a mutation. Re-read when a screen looks "stale" or a cache invalidation isn't propagating.
-prerequisites: 10-architecture.md, 12-design-system.md
+prerequisites: 02-server-architecture.md, 12-design-system.md
 estimated_tokens: 4400
 version_anchor: v1.4.25 / sha 49f71c92
 ---

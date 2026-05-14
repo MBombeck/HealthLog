@@ -469,6 +469,6 @@ BEFORE shipping.
 ## 12. What is NOT in this file
 
 - **API envelope details (`{ data, error, meta }`)** → `17-error-handling.md`
-- **Coach snapshot construction** → `12-ai-coach.md` (Agent D)
+- **Coach snapshot construction** → `14-coach-mental-model.md`
 - **Glossary terms (MDR, MDCG, OneCompartment PK, etc.)** → `20-glossary.md`
 - **Schema columns** → `04-data-model.md`

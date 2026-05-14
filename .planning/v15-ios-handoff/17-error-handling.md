@@ -335,5 +335,5 @@ function send(req):
 ## 10. What is NOT in this file
 
 - **Auth flows + token lifetimes** → `05-auth-flows.md`
-- **Coach refusal copy and parsing** → `08-locked-contracts.md` §1, `12-ai-coach.md`
+- **Coach refusal copy and parsing** → `08-locked-contracts.md` §1, `14-coach-mental-model.md` § Refusal
 - **Glossary (Wide Event, GlitchTip, pg-boss, DLQ)** → `20-glossary.md`

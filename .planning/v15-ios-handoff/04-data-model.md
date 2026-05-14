@@ -2,7 +2,7 @@
 file: 04-data-model.md
 purpose: Prisma schema reference for the v1.5 iOS client — enums, models, migrations 0051-0060, relations.
 when_to_read: Before generating any DTO; before touching any ingest path; whenever an API field shape is unclear.
-prerequisites: 02-architecture.md (skim), 03-tech-stack.md (Prisma section).
+prerequisites: 02-server-architecture.md (skim), 02-server-architecture.md § Database (Prisma section).
 estimated_tokens: 6800
 version_anchor: v1.4.25 / sha 49f71c92
 ---
@@ -585,5 +585,5 @@ the full batch contract.
 - **Auth + token flows** → `05-auth-flows.md`
 - **Error envelopes, idempotency** → `17-error-handling.md`
 - **Locked contracts (GROUND RULES, batch shapes, refusal probes)** → `08-locked-contracts.md`
-- **AI Coach prompt + snapshot construction** → `12-ai-coach.md` (Agent D)
+- **AI Coach prompt + snapshot construction** → `14-coach-mental-model.md`
 - **OpenAPI 3.1 spec on disk** → `docs/api/openapi.yaml` (regenerated via `pnpm openapi:generate`)

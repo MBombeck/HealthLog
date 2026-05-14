@@ -51,7 +51,7 @@ releases, docs site, or user-facing copy. UI surfaces it as
 **Briefing** — Daily summary the user reads first thing. Distinct
 from **Insight** (long-form chart-anchored analysis) and **Coach**
 (conversational Q&A). All three live behind the Insights surface but
-serve different needs. See `12-ai-coach.md` (Agent D).
+serve different needs. See `14-coach-mental-model.md`.
 
 ---
 
@@ -61,7 +61,7 @@ serve different needs. See `12-ai-coach.md` (Agent D).
 drawer (`/coach` route + drawer surface). Reads a snapshot of the
 user's data, replies in warm conservative prose. Refuses GLP-1 dose
 prescriptions (GROUND RULE 9) and drug-level estimates (GROUND RULE
-15). See `08-locked-contracts.md` §1, `12-ai-coach.md`.
+15). See `08-locked-contracts.md` §1, `14-coach-mental-model.md`.
 
 **Coach-Snapshot** — The structured JSON the Coach reads as its
 single source of evidence. Built fresh per turn by
@@ -78,7 +78,7 @@ prompt change. See `08-locked-contracts.md` §9.2.
 
 **Codex** — ChatGPT OAuth provider (Marc's ChatGPT subscription).
 Stored on `User.codexAccessTokenEncrypted` etc. Web-only path; iOS
-does not participate. See `12-ai-coach.md` (Agent D).
+does not participate. See `14-coach-mental-model.md`.
 
 **Coolify** — Self-host deployment platform HealthLog runs on. Multi-
 arch Docker image builds at GHCR. iOS team interacts with Coolify only
@@ -314,7 +314,7 @@ See `04-data-model.md` §4.2, Migration 0053.
 | --- | --- | --- |
 | GROUND RULES 1-15 | `08-locked-contracts.md` §1 | `src/lib/ai/prompts/safety-contracts.ts` |
 | Refusal-probe matrix | `08-locked-contracts.md` §7 | `src/lib/ai/prompts/safety-contracts.*.yaml` |
-| Coach-Snapshot | `12-ai-coach.md` (Agent D) | `src/lib/ai/coach/snapshot.ts` |
+| Coach-Snapshot | `14-coach-mental-model.md` | `src/lib/ai/coach/snapshot.ts` |
 | Measurement model | `04-data-model.md` §4.1 | `prisma/schema.prisma:363` |
 | Source-priority two-axis | `08-locked-contracts.md` §4 | `src/lib/validations/source-priority.ts` |
 | Bearer + refresh flow | `05-auth-flows.md` §3 | `src/lib/auth/refresh-token.ts` |
@@ -329,6 +329,6 @@ See `04-data-model.md` §4.2, Migration 0053.
 
 ## What is NOT in this file
 
-- **Architecture overview** → `02-architecture.md` (Agent A)
-- **UI primitives, design tokens** → `09-ui-state.md` (Agent C)
-- **AI provider chain, model selection** → `12-ai-coach.md` (Agent D)
+- **Architecture overview** → `02-server-architecture.md`
+- **UI primitives, design tokens** → `12-design-system.md` + `11-web-ui-tour.md`
+- **AI provider chain, model selection** → `14-coach-mental-model.md` § Provider routing

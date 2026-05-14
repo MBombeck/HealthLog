@@ -2,7 +2,7 @@
 file: 07-server-responsibilities.md
 purpose: Exhaustive list of what the server already handles — so iOS doesn't reinvent any of it.
 when_to_read: Right after 06-ios-responsibilities.md, before any iOS feature design. The inverse of that doc.
-prerequisites: 03-system-overview.md, 04-data-model.md
+prerequisites: 02-server-architecture.md, 04-data-model.md
 estimated_tokens: ~4500
 version_anchor: v1.4.25 / sha 49f71c92
 ---

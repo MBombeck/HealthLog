@@ -370,7 +370,7 @@ req.setValue(idempotencyKey.uuidString, forHTTPHeaderField: "Idempotency-Key")  
 
 - **Error envelopes, rate-limit response shape** → `17-error-handling.md`
 - **Cookie names + their UX purpose** → web docs (web devs, not iOS)
-- **Codex / ChatGPT OAuth** → `12-ai-coach.md` (Agent D) — iOS does not participate
+- **Codex / ChatGPT OAuth** → `14-coach-mental-model.md` § Provider routing — iOS does not participate
 
 **Cookies the iOS app may observe but never sets**:
 

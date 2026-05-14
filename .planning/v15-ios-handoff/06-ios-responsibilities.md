@@ -2,7 +2,7 @@
 file: 06-ios-responsibilities.md
 purpose: Exhaustive list of what the native iOS app owns — everything the server cannot or will not do for the client.
 when_to_read: First, before any iOS implementation. Defines the boundary so iOS Claude doesn't accidentally reinvent server features (see 07-server-responsibilities.md for the inverse).
-prerequisites: 03-system-overview.md, 04-data-model.md, 05-auth-flows.md
+prerequisites: 02-server-architecture.md, 04-data-model.md, 05-auth-flows.md
 estimated_tokens: ~4500
 version_anchor: v1.4.25 / sha 49f71c92
 ---

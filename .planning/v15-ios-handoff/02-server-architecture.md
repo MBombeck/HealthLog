@@ -242,7 +242,7 @@ The `provenance` SSE frame carries the enriched envelope:
 
 `keyValues` is the parsed `---KEYVALUES---` block — load-bearing numbers the Coach drew on. iOS surfaces these in the collapsible "What is this based on?" disclosure under the assistant bubble.
 
-Detail in `10-coach-pipeline.md`.
+Detail in `14-coach-mental-model.md`.
 
 ## Insights module
 
@@ -273,7 +273,7 @@ Each per-status writer:
 
 The per-status cards (`/api/insights/cards`) compose the cached blobs into the iOS-friendly `InsightCard` DTO with `severity ∈ { alert, caution, info, good }`.
 
-Detail in `11-insights-pipeline.md`.
+Detail in `15-insights-architecture.md`.
 
 ## Health Score
 
@@ -290,7 +290,7 @@ Total 0–100. Each component carries an `asOf` timestamp and a canonical source
 
 Computation: `src/lib/analytics/health-score.ts` → `computeHealthScore(input)`. The input is built in `src/app/api/analytics/route.ts` (see lines ~698-720 for the canonical builder) by pulling the same last-30-day metric set the dashboard tiles consume — single source of truth for the displayed numbers vs the score.
 
-Detail in `16-health-score.md`.
+Detail in `16-health-score-logic.md`.
 
 ## Source priority — two-axis resolver (Since v1.4.25)
 
@@ -424,7 +424,7 @@ Webhook subscription channels (Since v1.4.25):
 
 OAuth scope upgrade banner: when `WithingsConnection.scope` is null (legacy v1.4.24 connection) or doesn't include `user.activity`, the Settings → Integrations card surfaces a reconnect banner. iOS surfaces the same banner; on tap, opens the Withings OAuth URL in `SFSafariViewController`.
 
-Detail in `15-withings-bridge.md`.
+Detail in `02-server-architecture.md` § Withings integration above + `08-locked-contracts.md` § 8 (webhook path-segment secret).
 
 ## Apple Health bridge
 
@@ -457,7 +457,7 @@ State machine guards:
 - Already-completed user → 409
 - Concurrent advance (read-then-write race) → 409 via `updateMany` with conditional WHERE
 
-Detail in `18-onboarding.md`.
+Detail in `02-server-architecture.md` § Onboarding wizard above + `.planning/research/w14b-onboarding-rebuild.md` for the design rationale.
 
 ## Personal Records (Since v1.4.25)
 
@@ -471,7 +471,7 @@ Detail in `18-onboarding.md`.
 | Push opt-in | Per-user toggle (default off) |
 | Trend tile badge | Renders when record landed in last 30 days; WCAG-AA contrast |
 
-Detail in `17-personal-records.md`.
+Detail in `07-server-responsibilities.md` § Domain 4 (PR detection) + `.planning/research/w16c-pr-detection.md` for the design rationale.
 
 ## Per-user timezone (Since v1.4.25)
 
@@ -504,8 +504,8 @@ iOS reads `user.timezone` from `/api/auth/me` and uses it as the canonical displ
 | If your task is… | …skip the rest and read… |
 | --- | --- |
 | "How do I call endpoint X?" | `03-api-contracts.md` |
-| "How does the Coach really work?" | `10-coach-pipeline.md` |
-| "How do I wire the AI providers?" | `12-ai-providers.md` |
-| "How does Withings sync?" | `15-withings-bridge.md` |
+| "How does the Coach really work?" | `14-coach-mental-model.md` |
+| "How do I wire the AI providers?" | `14-coach-mental-model.md` § Provider routing |
+| "How does Withings sync?" | `02-server-architecture.md` § Withings integration |
 
 Otherwise: continue to `03-api-contracts.md`.

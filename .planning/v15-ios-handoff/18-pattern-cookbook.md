@@ -2,7 +2,7 @@
 file: 18-pattern-cookbook.md
 purpose: Recipe book for the 8 cross-cutting "how do I add X without breaking Y" tasks that recur across every release. Each recipe is a step-by-step + drift-defence checklist so iOS-Claude can extend the contract surface safely.
 when_to_read: Before adding a route, migration, chart, Coach probe, locale key, CHANGELOG entry, shared helper, or any change that risks tripping the OpenAPI hard-flip gate.
-prerequisites: 10-architecture.md, 12-design-system.md, 13-state-management.md, 19-i18n-system.md
+prerequisites: 02-server-architecture.md, 12-design-system.md, 13-state-management.md, 19-i18n-system.md
 estimated_tokens: 6800
 version_anchor: v1.4.25 / sha 49f71c92
 ---
