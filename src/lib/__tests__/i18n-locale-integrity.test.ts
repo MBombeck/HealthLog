@@ -1,10 +1,24 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = join(__dirname, "../../..");
-const EN_PATH = join(ROOT, "messages/en.json");
-const DE_PATH = join(ROOT, "messages/de.json");
+const MESSAGES_DIR = join(ROOT, "messages");
+const EN_PATH = join(MESSAGES_DIR, "en.json");
+const DE_PATH = join(MESSAGES_DIR, "de.json");
+
+// Auto-discover every messages/<locale>.json. Source-of-truth is EN —
+// new locales added in v1.4.25 (fr/es/it/pl) and beyond get covered
+// automatically by the parity, no-empty-values, and no-TODO tests
+// without having to extend this file each time.
+function discoverLocales(): Array<{ locale: string; path: string }> {
+  return readdirSync(MESSAGES_DIR)
+    .filter((f) => f.endsWith(".json"))
+    .map((f) => ({ locale: f.replace(/\.json$/, ""), path: join(MESSAGES_DIR, f) }));
+}
+
+const ALL_LOCALES = discoverLocales();
+const NON_EN_LOCALES = ALL_LOCALES.filter((l) => l.locale !== "en");
 
 // JSON.parse silently keeps the last value when an object has duplicate keys,
 // which lets shadowed keys hide bugs. Walk the source manually to surface them.
@@ -148,70 +162,64 @@ function findDuplicateKeys(
 }
 
 describe("i18n locale file integrity", () => {
-  it("messages/en.json has no duplicate keys", () => {
-    const dups = findDuplicateKeys(readFileSync(EN_PATH, "utf8"));
-    expect(
-      dups,
-      `Duplicate keys silently shadow earlier definitions:\n` +
-        dups
-          .map(
-            (d) =>
-              `  ${d.path} at line ${d.line} (first defined at line ${d.firstLine})`,
-          )
-          .join("\n"),
-    ).toEqual([]);
-  });
+  it.each(ALL_LOCALES)(
+    "messages/$locale.json has no duplicate keys",
+    ({ path }) => {
+      const dups = findDuplicateKeys(readFileSync(path, "utf8"));
+      expect(
+        dups,
+        `Duplicate keys silently shadow earlier definitions:\n` +
+          dups
+            .map(
+              (d) =>
+                `  ${d.path} at line ${d.line} (first defined at line ${d.firstLine})`,
+            )
+            .join("\n"),
+      ).toEqual([]);
+    },
+  );
 
-  it("messages/de.json has no duplicate keys", () => {
-    const dups = findDuplicateKeys(readFileSync(DE_PATH, "utf8"));
-    expect(
-      dups,
-      `Duplicate keys silently shadow earlier definitions:\n` +
-        dups
-          .map(
-            (d) =>
-              `  ${d.path} at line ${d.line} (first defined at line ${d.firstLine})`,
-          )
-          .join("\n"),
-    ).toEqual([]);
-  });
-
-  it("en and de share the same key shape (locale parity)", () => {
-    const en = JSON.parse(readFileSync(EN_PATH, "utf8")) as Record<
-      string,
-      unknown
-    >;
-    const de = JSON.parse(readFileSync(DE_PATH, "utf8")) as Record<
-      string,
-      unknown
-    >;
-
-    function flatten(obj: unknown, prefix: string, out: string[]) {
-      if (obj == null || typeof obj !== "object") return;
-      for (const [k, v] of Object.entries(obj)) {
-        const key = prefix ? `${prefix}.${k}` : k;
-        if (typeof v === "string") out.push(key);
-        else if (typeof v === "object") flatten(v, key, out);
-      }
+  function flatten(obj: unknown, prefix: string, out: string[]) {
+    if (obj == null || typeof obj !== "object") return;
+    for (const [k, v] of Object.entries(obj)) {
+      const key = prefix ? `${prefix}.${k}` : k;
+      if (typeof v === "string") out.push(key);
+      else if (typeof v === "object") flatten(v, key, out);
     }
+  }
 
-    const enKeys = new Set<string>();
-    const deKeys = new Set<string>();
-    const enArr: string[] = [];
-    const deArr: string[] = [];
-    flatten(en, "", enArr);
-    flatten(de, "", deArr);
-    enArr.forEach((k) => enKeys.add(k));
-    deArr.forEach((k) => deKeys.add(k));
+  it.each(NON_EN_LOCALES)(
+    "en and $locale share the same key shape (locale parity)",
+    ({ locale, path }) => {
+      const en = JSON.parse(readFileSync(EN_PATH, "utf8")) as Record<
+        string,
+        unknown
+      >;
+      const other = JSON.parse(readFileSync(path, "utf8")) as Record<
+        string,
+        unknown
+      >;
 
-    const onlyInEn = [...enKeys].filter((k) => !deKeys.has(k)).sort();
-    const onlyInDe = [...deKeys].filter((k) => !enKeys.has(k)).sort();
+      const enKeys = new Set<string>();
+      const otherKeys = new Set<string>();
+      const enArr: string[] = [];
+      const otherArr: string[] = [];
+      flatten(en, "", enArr);
+      flatten(other, "", otherArr);
+      enArr.forEach((k) => enKeys.add(k));
+      otherArr.forEach((k) => otherKeys.add(k));
 
-    expect(
-      { onlyInEn, onlyInDe },
-      "Locale files drifted apart — every key must exist in both locales.",
-    ).toEqual({ onlyInEn: [], onlyInDe: [] });
-  });
+      const onlyInEn = [...enKeys].filter((k) => !otherKeys.has(k)).sort();
+      const onlyInOther = [...otherKeys]
+        .filter((k) => !enKeys.has(k))
+        .sort();
+
+      expect(
+        { onlyInEn, onlyInOther },
+        `Locale files drifted apart — every key in en.json must exist in ${locale}.json and vice versa.`,
+      ).toEqual({ onlyInEn: [], onlyInOther: [] });
+    },
+  );
 
   // Flat helper used by the value-quality checks below.
   function flattenValues(
@@ -249,10 +257,7 @@ describe("i18n locale file integrity", () => {
     "targets.status.fitness",
   ]);
 
-  it.each([
-    ["en", EN_PATH],
-    ["de", DE_PATH],
-  ])("%s locale has no empty values", (_locale, path) => {
+  it.each(ALL_LOCALES)("$locale locale has no empty values", ({ path }) => {
     const data = JSON.parse(readFileSync(path, "utf8")) as Record<
       string,
       unknown
@@ -307,10 +312,9 @@ describe("i18n locale file integrity", () => {
     ).toEqual([]);
   });
 
-  it.each([
-    ["en", EN_PATH],
-    ["de", DE_PATH],
-  ])("%s locale has no TODO/FIXME placeholders in values", (_locale, path) => {
+  it.each(ALL_LOCALES)(
+    "$locale locale has no TODO/FIXME placeholders in values",
+    ({ path }) => {
     const data = JSON.parse(readFileSync(path, "utf8")) as Record<
       string,
       unknown
