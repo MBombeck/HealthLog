@@ -404,7 +404,12 @@ export async function buildCoachSnapshot(
   if (wantsBp && features.bloodPressure) {
     const sysRows = byType("BLOOD_PRESSURE_SYS");
     const diaRows = byType("BLOOD_PRESSURE_DIA");
-    const recentDaily = buildDailyBpRows(sysRows, diaRows, recentCutoff, userTz);
+    const recentDaily = buildDailyBpRows(
+      sysRows,
+      diaRows,
+      recentCutoff,
+      userTz,
+    );
     const olderSys = sysRows.filter((r) => r.measuredAt < recentCutoff);
     const olderDia = diaRows.filter((r) => r.measuredAt < recentCutoff);
     snapshot.bloodPressure = {

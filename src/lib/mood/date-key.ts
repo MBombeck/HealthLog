@@ -52,6 +52,8 @@ export function moodDateKey(date: Date, tz: string): string {
  * non-null `tz` column takes precedence; legacy rows fall back to
  * Europe/Berlin.
  */
-export function effectiveMoodTz(row: { tz: string | null | undefined }): string {
+export function effectiveMoodTz(row: {
+  tz: string | null | undefined;
+}): string {
   return row.tz && row.tz.length > 0 ? row.tz : DEFAULT_TIMEZONE;
 }

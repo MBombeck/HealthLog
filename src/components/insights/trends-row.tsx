@@ -152,7 +152,11 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
           data-metric="mood"
           className="flex h-full min-h-[300px] flex-col gap-2"
         >
-          <MoodChart title={t("charts.mood")} mini userTimezone={userTimezone} />
+          <MoodChart
+            title={t("charts.mood")}
+            mini
+            userTimezone={userTimezone}
+          />
           <TrendAnnotation
             metric="mood"
             annotation={moodAnnotation}

@@ -47,7 +47,10 @@ describe("moodDateKey", () => {
       "2026-05-15",
     );
     expect(
-      moodDateKey(new Date("2026-05-14T22:00:00Z"), undefined as unknown as string),
+      moodDateKey(
+        new Date("2026-05-14T22:00:00Z"),
+        undefined as unknown as string,
+      ),
     ).toBe("2026-05-15");
   });
 });
@@ -73,10 +76,7 @@ describe("effectiveMoodTz", () => {
 describe("read-path interpretation of legacy vs new rows", () => {
   // Build a row's day-key the way the route writes it: write the
   // instant `moodLoggedAt`, anchored to the row's resolved tz.
-  function bucketFor(row: {
-    moodLoggedAt: Date;
-    tz: string | null;
-  }): string {
+  function bucketFor(row: { moodLoggedAt: Date; tz: string | null }): string {
     return moodDateKey(row.moodLoggedAt, effectiveMoodTz(row));
   }
 
