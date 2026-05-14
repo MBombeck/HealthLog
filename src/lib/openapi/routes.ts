@@ -31,7 +31,10 @@ import {
 } from "@/lib/validations/measurement";
 import { loginPasswordSchema } from "@/lib/validations/auth";
 import { coachPrefsSchema } from "@/lib/validations/coach-prefs";
-import { sourcePrioritySchema } from "@/lib/validations/source-priority";
+import {
+  deviceTypeEnum,
+  sourcePrioritySchema,
+} from "@/lib/validations/source-priority";
 
 /**
  * Common envelopes — every HealthLog API response wraps payload in
@@ -238,6 +241,15 @@ const batchEntrySchema = z
       .max(120)
       .describe("HKSample.uuid string — the dedup key."),
     externalSourceVersion: z.string().min(1).max(120).optional(),
+    // v1.4.25 W8c — optional device-type tag fed into the canonical
+    // source picker's second axis. NULL is treated as `unknown`;
+    // legacy iOS builds that don't ship the field continue to work.
+    deviceType: deviceTypeEnum
+      .nullable()
+      .optional()
+      .describe(
+        "Device class mapped from `HKDevice.model`. Used by the analytics aggregator to break ties when the same source contributed multiple devices for the same day. Omit (or send null) on legacy clients — the server treats it as `unknown` and the picker falls through.",
+      ),
   })
   .meta({ id: "AppleHealthBatchEntry" });
 
@@ -466,7 +478,7 @@ export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Measurements"],
       summary: "Apple Health batch ingest",
       description:
-        "Up to 500 HealthKit entries per call. Idempotent via the `Idempotency-Key` header (replay window 24h). Per-entry status lets the iOS client advance its sync cursor accurately.",
+        "Up to 500 HealthKit entries per call. Idempotent via the `Idempotency-Key` header (replay window 24h). Per-entry status lets the iOS client advance its sync cursor accurately. v1.4.25 W8c adds an optional `deviceType` per entry — feed it from `HKDevice.model` so the cross-source canonical picker can break Apple-Watch-vs-iPhone ties; null/absent stays backward-compatible with v1.4.23 clients.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: batchPayloadSchema } },

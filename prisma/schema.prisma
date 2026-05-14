@@ -327,6 +327,17 @@ model Measurement {
   // only for `type = SLEEP_DURATION`. Mirrors the glucoseContext
   // pattern. A single night produces ~5 rows (one per stage).
   sleepStage SleepStage? @map("sleep_stage")
+  // v1.4.25 W8c — device-type tag for the cross-source canonical
+  // picker. Stored as a free-text string (kept simple — Prisma enum
+  // would require coordinated client + server bumps every time we
+  // gain a new device class). The canonical values are documented in
+  // `deviceTypeEnum` (src/lib/validations/source-priority.ts):
+  // `watch | band | ring | phone | scale | other | unknown`. Legacy
+  // rows + every pre-W8c Measurement stays NULL; the picker treats
+  // NULL as `unknown`. Unique constraints intentionally do not
+  // include `deviceType` so two ingest paths from the same source
+  // still dedup on (type, source, externalId).
+  deviceType String? @map("device_type")
   createdAt  DateTime          @default(now()) @map("created_at")
   updatedAt  DateTime          @updatedAt @map("updated_at")
 

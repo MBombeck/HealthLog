@@ -1,0 +1,13 @@
+-- v1.4.25 W8c — nullable device_type column on measurements.
+--
+-- Two-axis source-priority picker (src/lib/analytics/source-priority.ts)
+-- reads this column to break ties when more than one device contributes
+-- the same source's metric (e.g. Apple Watch + iPhone both stream
+-- HealthKit steps via APPLE_HEALTH). NULL columns map to "unknown" in
+-- the picker, so legacy rows continue to work without a backfill.
+--
+-- Canonical values documented in src/lib/validations/source-priority.ts
+-- under `deviceTypeEnum`: watch | band | ring | phone | scale | other |
+-- unknown. Stored as free text to avoid coordinated enum bumps across
+-- the iOS client and server every time a new device class arrives.
+ALTER TABLE "measurements" ADD COLUMN "device_type" TEXT;

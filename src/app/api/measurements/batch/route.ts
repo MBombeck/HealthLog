@@ -34,6 +34,7 @@ import {
 import { withIdempotency } from "@/lib/idempotency";
 import { mapAppleHealthEntry } from "@/lib/measurements/apple-health-mapping";
 import { validateMeasurementRange } from "@/lib/validations/measurement";
+import { deviceTypeEnum } from "@/lib/validations/source-priority";
 import { Prisma } from "@/generated/prisma/client";
 
 const MAX_BATCH_ENTRIES = 500;
@@ -47,6 +48,14 @@ const batchEntrySchema = z.object({
   sleepStage: z.number().int().min(0).max(20).optional(),
   externalId: z.string().min(1).max(120),
   externalSourceVersion: z.string().min(1).max(120).optional(),
+  // v1.4.25 W8c — optional device-type tag. The iOS client maps the
+  // `HKDevice.model` of each sample to one of the canonical device
+  // classes (watch | band | ring | phone | scale | other | unknown).
+  // Backward-compatible: every pre-W8c iOS build skips the field and
+  // the row is stored with `deviceType = null`; the canonical picker
+  // treats null as `unknown` and only uses it as a tiebreaker when a
+  // ranked device-type coexists in the same daily bucket.
+  deviceType: deviceTypeEnum.nullable().optional(),
 });
 
 const batchPayloadSchema = z.object({
@@ -156,6 +165,11 @@ async function postBatch(request: NextRequest): Promise<Response> {
         externalId: entry.externalId,
         externalSourceVersion: entry.externalSourceVersion ?? null,
         sleepStage: mapped.sleepStage ?? null,
+        // v1.4.25 W8c — pass the iOS-supplied device-type through to
+        // the row. Stays null for pre-W8c iOS builds; the canonical
+        // picker treats null as `unknown` so legacy ingest keeps
+        // working without a server-side default.
+        deviceType: entry.deviceType ?? null,
       },
     });
   }
