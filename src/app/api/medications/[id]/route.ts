@@ -71,8 +71,16 @@ export const PUT = apiHandler(
       return apiError(parsed.error.issues[0].message, 422);
     }
 
-    const { name, dose, category, active, notificationsEnabled, schedules } =
-      parsed.data;
+    const {
+      name,
+      dose,
+      category,
+      treatmentClass,
+      dosesPerUnit,
+      active,
+      notificationsEnabled,
+      schedules,
+    } = parsed.data;
 
     const pausedAtPatch =
       active === undefined
@@ -93,6 +101,8 @@ export const PUT = apiHandler(
     const baseUpdateData = {
       ...(name !== undefined && { name }),
       ...(dose !== undefined && { dose }),
+      ...(treatmentClass !== undefined && { treatmentClass }),
+      ...(dosesPerUnit !== undefined && { dosesPerUnit }),
       ...(active !== undefined && { active }),
       ...(notificationsEnabled !== undefined && { notificationsEnabled }),
       ...(schedules && {

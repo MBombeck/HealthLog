@@ -83,6 +83,11 @@ export const GET = apiHandler(async () => {
   return apiSuccess(
     medications.map((m) => ({
       ...m,
+      // v1.4.25 W4d — `category` is the existing clinical taxonomy
+      // (BLOOD_PRESSURE / VITAMIN / ...) from the side-table; the
+      // Prisma model has its own `treatmentClass` (GENERIC | GLP1) that
+      // spreads through `...m` and unlocks the GLP-1 surfaces. Two
+      // orthogonal concepts, both exposed.
       category: categoryMap[m.id] ?? "OTHER",
       lastTakenAt: lastTakenAtByMedicationId[m.id] ?? null,
       todayEventCount: todayEventCountByMedId[m.id] ?? 0,
@@ -101,13 +106,18 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError(parsed.error.issues[0].message, 422);
   }
 
-  const { name, dose, category, schedules } = parsed.data;
+  const { name, dose, category, treatmentClass, dosesPerUnit, schedules } =
+    parsed.data;
 
   const medication = await prisma.medication.create({
     data: {
       userId: user.id,
       name,
       dose,
+      // v1.4.25 W4d — treatmentClass + dosesPerUnit are optional in the
+      // wire schema; Prisma fills the default GENERIC when omitted.
+      ...(treatmentClass !== undefined && { treatmentClass }),
+      ...(dosesPerUnit !== undefined && { dosesPerUnit }),
       schedules: {
         create: schedules.map((s) => ({
           windowStart: s.windowStart,

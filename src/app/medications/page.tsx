@@ -56,6 +56,10 @@ interface Medication {
   name: string;
   dose: string;
   category: string;
+  /** v1.4.25 W4d — Prisma treatment class (GENERIC | GLP1). */
+  treatmentClass?: string;
+  /** v1.4.25 W4d — doses per pen/vial for inventory math. */
+  dosesPerUnit?: number | null;
   active: boolean;
   notificationsEnabled: boolean;
   pausedAt: string | null;
@@ -253,6 +257,12 @@ export default function MedicationsPage() {
                     name: editingMed.name,
                     dose: editingMed.dose,
                     category: editingMed.category,
+                    // v1.4.25 W4d — pass through the Prisma treatment-class
+                    // discriminator and the optional dosesPerUnit so the
+                    // form preselects the GLP-1 surfaces correctly when
+                    // editing an existing GLP-1 row.
+                    treatmentClass: editingMed.treatmentClass,
+                    dosesPerUnit: editingMed.dosesPerUnit ?? null,
                     active: editingMed.active,
                     notificationsEnabled: editingMed.notificationsEnabled,
                     schedules: editingMed.schedules.map((s) => ({

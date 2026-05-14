@@ -168,6 +168,10 @@ interface MedicationFormProps {
     name: string;
     dose: string;
     category: string;
+    /** v1.4.25 W4d — Prisma treatment class. Defaults to GENERIC. */
+    treatmentClass?: string;
+    /** v1.4.25 W4d — only relevant for inventory-tracked meds. */
+    dosesPerUnit?: number | null;
     active: boolean;
     notificationsEnabled?: boolean;
     schedules: Array<{
@@ -257,6 +261,16 @@ export function MedicationForm({
   const [doseUnit, setDoseUnit] = useState(initialDose.unit);
 
   const [category, setCategory] = useState(initial?.category ?? "OTHER");
+  // v1.4.25 W4d — treatment class. GLP1 unlocks the weekly-cadence
+  // preset below and the GLP-1 medication-card variant on the medications
+  // page. The default GENERIC keeps every existing medication rendering
+  // exactly as before.
+  const [treatmentClass, setTreatmentClass] = useState(
+    initial?.treatmentClass ?? "GENERIC",
+  );
+  const [dosesPerUnit, setDosesPerUnit] = useState<string>(
+    initial?.dosesPerUnit ? String(initial.dosesPerUnit) : "",
+  );
   const [active, setActive] = useState(initial?.active ?? true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(
     initial?.notificationsEnabled ?? true,
@@ -341,10 +355,56 @@ export function MedicationForm({
     setDoseAmount("");
     setDoseUnit("");
     setCategory("OTHER");
+    setTreatmentClass("GENERIC");
+    setDosesPerUnit("");
     setActive(true);
     setNotificationsEnabled(true);
     setSchedules([{ ...DEFAULT_SCHEDULE }]);
     setError(null);
+  }
+
+  /**
+   * v1.4.25 W4d — "Once weekly on …" preset. Marc directive
+   * 2026-05-14: GLP-1 receptor agonists are weekly meds, and the
+   * existing form buries that behind two advanced toggles. The preset
+   * collapses the picker to a single weekday button row that writes
+   * MedicationSchedule.daysOfWeek correctly and remembers the choice
+   * locally so the next weekly med starts on the same weekday.
+   *
+   * Persisted to localStorage as a one-row preference so the convenience
+   * survives across sessions — non-invasive (key is namespaced) and
+   * web-only (the iOS surface uses its own picker).
+   */
+  function applyWeeklyPreset(weekday: number) {
+    try {
+      localStorage.setItem("medication-form:last-weekly-weekday", String(weekday));
+    } catch {
+      /* private mode — silent */
+    }
+    setSchedules((prev) =>
+      sortSchedules(
+        prev.map((s, i) =>
+          i === 0
+            ? {
+                ...s,
+                daysOfWeek: [weekday],
+                intervalWeeks: 1,
+                showAdvanced: true,
+              }
+            : s,
+        ),
+      ),
+    );
+  }
+
+  function readLastWeeklyWeekday(): number {
+    try {
+      const raw = localStorage.getItem("medication-form:last-weekly-weekday");
+      const n = raw === null ? NaN : Number(raw);
+      return Number.isInteger(n) && n >= 0 && n <= 6 ? n : 3; // Wednesday default
+    } catch {
+      return 3;
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -363,6 +423,12 @@ export function MedicationForm({
           name,
           dose,
           category,
+          treatmentClass,
+          ...(dosesPerUnit
+            ? { dosesPerUnit: Number(dosesPerUnit) }
+            : isEdit
+              ? { dosesPerUnit: null }
+              : {}),
           ...(isEdit
             ? {
                 active,
@@ -504,6 +570,33 @@ export function MedicationForm({
         </Select>
       </div>
 
+      {/* v1.4.25 W4d — treatment-class selector. Surfaces the GLP-1
+          option without crowding the existing clinical-category
+          dropdown (those are orthogonal taxonomies). GENERIC keeps the
+          form rendering exactly as v1.4.24; GLP1 opens the
+          weekly-cadence preset + pen-inventory inputs below. */}
+      <div className="space-y-1.5">
+        <Label htmlFor="med-treatment-class">
+          {t("medications.formTreatmentClass")}
+        </Label>
+        <Select value={treatmentClass} onValueChange={setTreatmentClass}>
+          <SelectTrigger id="med-treatment-class" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="GENERIC">
+              {t("medications.treatmentClassGeneric")}
+            </SelectItem>
+            <SelectItem value="GLP1">
+              {t("medications.treatmentClassGlp1")}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-muted-foreground text-xs leading-4">
+          {t("medications.formTreatmentClassHelp")}
+        </p>
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="med-dose-amount">{t("medications.formDose")}</Label>
@@ -536,6 +629,75 @@ export function MedicationForm({
           <option key={u} value={u} />
         ))}
       </datalist>
+
+      {treatmentClass === "GLP1" && (
+        <>
+          {/* v1.4.25 W4d — once-weekly preset. One tap on a weekday
+              writes daysOfWeek=[N] + intervalWeeks=1 into the first
+              schedule and reveals the advanced section so the user can
+              still tune the window. Persists the last pick across
+              sessions for convenience. */}
+          <div className="border-border/70 bg-card/60 space-y-2.5 rounded-xl border p-3.5">
+            <div className="space-y-1">
+              <Label className="text-sm leading-none">
+                {t("medications.glp1WeeklyPresetTitle")}
+              </Label>
+              <p className="text-muted-foreground text-xs leading-4">
+                {t("medications.glp1WeeklyPresetHelp")}
+              </p>
+            </div>
+            <div className="flex w-full gap-1">
+              {getDayLabelsShort(t).map((label, dayIndex) => {
+                const isSelected =
+                  schedules[0]?.daysOfWeek.length === 1 &&
+                  schedules[0]?.daysOfWeek[0] === dayIndex;
+                return (
+                  <button
+                    key={dayIndex}
+                    type="button"
+                    onClick={() => applyWeeklyPreset(dayIndex)}
+                    className={`h-9 flex-1 rounded-md border text-xs font-medium transition-colors ${
+                      isSelected
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border/70 bg-muted text-foreground/75 hover:bg-accent hover:text-foreground"
+                    }`}
+                    aria-pressed={isSelected}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            {!schedules.some((s) => s.daysOfWeek.length === 1) && (
+              <button
+                type="button"
+                onClick={() => applyWeeklyPreset(readLastWeeklyWeekday())}
+                className="text-primary text-xs underline-offset-2 hover:underline"
+              >
+                {t("medications.glp1WeeklyPresetSuggest")}
+              </button>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="med-doses-per-unit">
+              {t("medications.glp1DosesPerUnit")}
+            </Label>
+            <Input
+              id="med-doses-per-unit"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={100}
+              value={dosesPerUnit}
+              onChange={(e) => setDosesPerUnit(e.target.value)}
+              placeholder={t("medications.glp1DosesPerUnitPlaceholder")}
+            />
+            <p className="text-muted-foreground text-xs leading-4">
+              {t("medications.glp1DosesPerUnitHelp")}
+            </p>
+          </div>
+        </>
+      )}
 
       <div className="space-y-2">
         <div className="flex h-8 items-center justify-between">
