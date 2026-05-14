@@ -34,25 +34,12 @@ import {
   listSideEffectsSchema,
 } from "@/lib/medications/side-effects/validators";
 import { categoryForEntry } from "@/lib/medications/side-effects/taxonomy";
+import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
 const POST_RATE_LIMIT = 30;
 const POST_WINDOW_MS = 60_000;
-
-async function assertMedicationOwnership(
-  medicationId: string,
-  userId: string,
-) {
-  const med = await prisma.medication.findUnique({
-    where: { id: medicationId },
-    select: { id: true, userId: true },
-  });
-  if (!med || med.userId !== userId) {
-    return apiError("Medication not found", 404);
-  }
-  return null;
-}
 
 export const GET = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
@@ -117,11 +104,9 @@ export const POST = apiHandler(
       POST_WINDOW_MS,
     );
     if (!rl.allowed) {
-      const response = apiError("Too many requests", 429);
-      for (const [k, v] of Object.entries(rateLimitHeaders(rl))) {
-        response.headers.set(k, v);
-      }
-      return response;
+      return apiError("Too many requests", 429, {
+        headers: rateLimitHeaders(rl),
+      });
     }
 
     const { data: body, error: jsonError } = await safeJson(request);
@@ -132,24 +117,20 @@ export const POST = apiHandler(
       return apiError(parsed.error.issues[0].message, 422);
     }
 
-    const { category, entry, severity, occurredAt, notes } = parsed.data;
+    const { entry, severity, occurredAt, notes } = parsed.data;
 
-    // Authoritative category derivation. The client-supplied category
-    // is sanity-checked, never trusted — a NAUSEA row tagged as
-    // INJECTION_SITE would poison the Coach aggregator.
-    const expectedCategory = categoryForEntry(entry);
-    if (expectedCategory !== category) {
-      return apiError(
-        `Entry ${entry} belongs to category ${expectedCategory}, not ${category}`,
-        422,
-      );
-    }
+    // v1.4.25 W21 Fix-N (code-M6) — category is derived server-side
+    // from the entry via the authoritative taxonomy mapping. The wire
+    // schema no longer accepts `category`; older clients that still
+    // send it now have it ignored by Zod's strict drop, and the row
+    // lands with the correct (entry-derived) category every time.
+    const category = categoryForEntry(entry);
 
     const created = await prisma.medicationSideEffect.create({
       data: {
         userId: user.id,
         medicationId: id,
-        category: expectedCategory,
+        category,
         entry,
         severity,
         occurredAt: occurredAt ?? new Date(),

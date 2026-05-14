@@ -182,9 +182,20 @@ describe("POST /api/medications/[id]/side-effects", () => {
     expect(res.status).toBe(422);
   });
 
-  it("returns 422 when entry / category mismatch", async () => {
+  it("derives category server-side and ignores any client-supplied category (v1.4.25 W21 Fix-N / code-M6)", async () => {
+    // Client maliciously sends category=INJECTION_SITE for a
+    // NAUSEA entry. The server now derives the canonical category
+    // from `entry`, so the row lands with category="GI" regardless
+    // of the client claim. Backwards-compatible with older clients
+    // that still send `category`.
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.medication.findUnique).mockResolvedValue(MED_OK as never);
+    vi.mocked(prisma.medicationSideEffect.create).mockResolvedValue({
+      id: "se-new",
+      entry: "NAUSEA",
+      category: "GI",
+      severity: 2,
+    } as never);
     const res = await POST(
       jsonReq("http://localhost/api/medications/med-1/side-effects", {
         category: "INJECTION_SITE",
@@ -193,7 +204,10 @@ describe("POST /api/medications/[id]/side-effects", () => {
       }),
       { params: Promise.resolve({ id: "med-1" }) },
     );
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(201);
+    const callArgs = vi.mocked(prisma.medicationSideEffect.create).mock
+      .calls[0][0] as { data: { category: string } };
+    expect(callArgs.data.category).toBe("GI");
   });
 
   it("creates a row with the server-derived category", async () => {

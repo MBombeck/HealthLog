@@ -25,7 +25,12 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiError, apiSuccess } from "@/lib/api-response";
-import { findDrugByBrand, GLP1_DRUGS, type Glp1DrugId } from "@/lib/medications/glp1-knowledge";
+import {
+  findDrugByBrand,
+  findDrugIdByBrand,
+} from "@/lib/medications/glp1-knowledge";
+import { parseDoseMgOrNull } from "@/lib/medications/dose-string";
+import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import {
   escalationDue,
   findCurrentStep,
@@ -41,13 +46,19 @@ export const GET = apiHandler(
     const { user } = await requireAuth();
     const { id } = await params;
 
+    // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper so
+    // the 404 leak shape stays consistent across every medication
+    // sub-route.
+    const guard = await assertMedicationOwnership(id, user.id);
+    if (guard) return guard;
+
     const med = await prisma.medication.findUnique({
       where: { id },
       include: {
         doseChanges: { orderBy: { effectiveFrom: "asc" } },
       },
     });
-    if (!med || med.userId !== user.id) {
+    if (!med) {
       return apiError("Medication not found", 404);
     }
     if (med.treatmentClass !== "GLP1") {
@@ -61,19 +72,11 @@ export const GET = apiHandler(
     // Resolve the GLP-1 drug record from the medication name. Same
     // path the DrugLevelChart uses; null when the medication name
     // doesn't map to a catalog brand (e.g. user typed a generic
-    // INN instead of a brand).
+    // INN instead of a brand). v1.4.25 W21 Fix-N — both lookups go
+    // through the shared helpers in glp1-knowledge.
     const record = findDrugByBrand(med.name);
-    if (!record) {
-      return apiError("Medication not found", 404);
-    }
-    let drugId: Glp1DrugId | null = null;
-    for (const [id, r] of Object.entries(GLP1_DRUGS)) {
-      if (r === record) {
-        drugId = id as Glp1DrugId;
-        break;
-      }
-    }
-    if (!drugId) {
+    const drugId = findDrugIdByBrand(med.name);
+    if (!record || !drugId) {
       return apiError("Medication not found", 404);
     }
 
@@ -88,7 +91,7 @@ export const GET = apiHandler(
         : null;
     const latestDoseMg = latestChange
       ? latestChange.doseValue
-      : parseDoseString(med.dose);
+      : parseDoseMgOrNull(med.dose);
 
     const currentStep = findCurrentStep(drugId, latestDoseMg);
     const next = nextStep(drugId, currentStep);
@@ -131,16 +134,3 @@ export const GET = apiHandler(
   },
 );
 
-/**
- * Parse the legacy free-text `medication.dose` ("0.5 mg", "5 mg",
- * "0.25") into a numeric mg value. Returns null when the string
- * doesn't carry a parseable number — the helper above treats null
- * as "no current step" rather than 0.
- */
-function parseDoseString(dose: string): number | null {
-  const match = dose.match(/[-+]?\d*\.?\d+/);
-  if (!match) return null;
-  const n = Number(match[0]);
-  if (!Number.isFinite(n)) return null;
-  return n;
-}

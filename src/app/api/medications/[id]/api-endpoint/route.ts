@@ -6,6 +6,7 @@ import { auditLog } from "@/lib/auth/audit";
 import { hashToken } from "@/lib/auth/hmac";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
+import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -22,10 +23,9 @@ export const GET = apiHandler(
     }
 
     const { id } = await params;
-    const medication = await prisma.medication.findUnique({ where: { id } });
-    if (!medication || medication.userId !== user.id) {
-      return apiError("Medication not found", 404);
-    }
+    // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper.
+    const guard = await assertMedicationOwnership(id, user.id);
+    if (guard) return guard;
 
     const scope = medicationScope(id);
     const now = new Date();
@@ -63,8 +63,12 @@ export const PUT = apiHandler(
     }
 
     const { id } = await params;
+    // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper.
+    const guard = await assertMedicationOwnership(id, user.id);
+    if (guard) return guard;
+
     const medication = await prisma.medication.findUnique({ where: { id } });
-    if (!medication || medication.userId !== user.id) {
+    if (!medication) {
       return apiError("Medication not found", 404);
     }
 

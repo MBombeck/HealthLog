@@ -26,6 +26,7 @@ import {
   computeNextDose,
 } from "@/lib/medications/scheduling/cadence";
 import { complianceChips } from "@/lib/medications/scheduling/compliance";
+import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -39,11 +40,15 @@ export const GET = apiHandler(
     const { user } = await requireAuth();
     const { id } = await params;
 
+    // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper.
+    const guard = await assertMedicationOwnership(id, user.id);
+    if (guard) return guard;
+
     const med = await prisma.medication.findUnique({
       where: { id },
       include: { schedules: true },
     });
-    if (!med || med.userId !== user.id) {
+    if (!med) {
       return apiError("Medication not found", 404);
     }
 

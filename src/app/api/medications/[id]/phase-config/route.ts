@@ -3,6 +3,7 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
 import { phaseConfigSchema } from "@/lib/validations/phase-config";
+import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -12,13 +13,9 @@ export const GET = apiHandler(
     const { user } = await requireAuth();
 
     const { id } = await params;
-    const medication = await prisma.medication.findUnique({
-      where: { id },
-      select: { userId: true },
-    });
-    if (!medication || medication.userId !== user.id) {
-      return apiError("Medication not found", 404);
-    }
+    // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper.
+    const guard = await assertMedicationOwnership(id, user.id);
+    if (guard) return guard;
 
     const config = await prisma.reminderPhaseConfig.findUnique({
       where: { medicationId: id },
@@ -53,13 +50,9 @@ export const PUT = apiHandler(
     const { user } = await requireAuth();
 
     const { id } = await params;
-    const medication = await prisma.medication.findUnique({
-      where: { id },
-      select: { userId: true },
-    });
-    if (!medication || medication.userId !== user.id) {
-      return apiError("Medication not found", 404);
-    }
+    // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper.
+    const guard = await assertMedicationOwnership(id, user.id);
+    if (guard) return guard;
 
     const { data: body, error: jsonError } = await safeJson(request);
 
@@ -95,13 +88,9 @@ export const DELETE = apiHandler(
     const { user } = await requireAuth();
 
     const { id } = await params;
-    const medication = await prisma.medication.findUnique({
-      where: { id },
-      select: { userId: true },
-    });
-    if (!medication || medication.userId !== user.id) {
-      return apiError("Medication not found", 404);
-    }
+    // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper.
+    const guard = await assertMedicationOwnership(id, user.id);
+    if (guard) return guard;
 
     await prisma.reminderPhaseConfig.deleteMany({
       where: { medicationId: id },

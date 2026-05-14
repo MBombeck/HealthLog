@@ -14,6 +14,7 @@ import {
 } from "@/lib/validations/medication";
 import { withIdempotency } from "@/lib/idempotency";
 import { consumeOneDose } from "@/lib/medications/inventory/service";
+import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -26,10 +27,9 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
   const { user } = await requireAuth();
 
   const { id } = await params;
-  const medication = await prisma.medication.findUnique({ where: { id } });
-  if (!medication || medication.userId !== user.id) {
-    return apiError("Medication not found", 404);
-  }
+  // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper.
+  const guard = await assertMedicationOwnership(id, user.id);
+  if (guard) return guard;
 
   const { data: body, error: jsonError } = await safeJson(request);
 
@@ -162,10 +162,9 @@ export const GET = apiHandler(
     const { user } = await requireAuth();
 
     const { id } = await params;
-    const medication = await prisma.medication.findUnique({ where: { id } });
-    if (!medication || medication.userId !== user.id) {
-      return apiError("Medication not found", 404);
-    }
+    // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper.
+    const guard = await assertMedicationOwnership(id, user.id);
+    if (guard) return guard;
 
     const searchParams = Object.fromEntries(request.nextUrl.searchParams);
     const parsed = listIntakeEventsSchema.safeParse(searchParams);

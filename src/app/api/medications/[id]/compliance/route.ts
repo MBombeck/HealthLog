@@ -7,6 +7,7 @@ import {
   classifyIntakeTiming,
 } from "@/lib/analytics/compliance";
 import type { DailyComplianceEntry } from "@/lib/analytics/compliance";
+import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -15,12 +16,16 @@ export const GET = apiHandler(
     const { user } = await requireAuth();
 
     const { id } = await params;
+    // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper.
+    const guard = await assertMedicationOwnership(id, user.id);
+    if (guard) return guard;
+
     const medication = await prisma.medication.findUnique({
       where: { id },
       include: { schedules: true },
     });
 
-    if (!medication || medication.userId !== user.id) {
+    if (!medication) {
       return apiError("Medication not found", 404);
     }
 

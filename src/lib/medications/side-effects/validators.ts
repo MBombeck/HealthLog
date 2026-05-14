@@ -49,8 +49,16 @@ export const SIDE_EFFECT_ENTRY_VALUES = [
 
 export const SIDE_EFFECT_NOTES_MAX = 280;
 
+/**
+ * v1.4.25 W21 Fix-N (code-M6) — `category` was dropped from the wire
+ * schema. The route now derives the canonical category from `entry`
+ * via `categoryForEntry`. Older clients that still send `category` see
+ * it silently ignored (Zod strips unknown fields by default), and the
+ * row lands with the correct mapping regardless. No iOS DTO consumes
+ * the old shape, so this is backwards-compatible without a versioned
+ * envelope.
+ */
 export const createSideEffectSchema = z.object({
-  category: z.enum(SIDE_EFFECT_CATEGORY_VALUES),
   entry: z.enum(SIDE_EFFECT_ENTRY_VALUES),
   severity: z.number().int().min(1).max(5),
   occurredAt: z.iso

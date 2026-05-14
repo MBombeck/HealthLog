@@ -28,25 +28,12 @@ import {
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { createInventoryItemSchema } from "@/lib/validations/medication";
 import { buildCreateInventoryInput } from "@/lib/medications/inventory/service";
+import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
 const POST_RATE_LIMIT = 30;
 const POST_WINDOW_MS = 60_000;
-
-async function assertMedicationOwnership(
-  medicationId: string,
-  userId: string,
-) {
-  const med = await prisma.medication.findUnique({
-    where: { id: medicationId },
-    select: { id: true, userId: true },
-  });
-  if (!med || med.userId !== userId) {
-    return apiError("Medication not found", 404);
-  }
-  return null;
-}
 
 export const GET = apiHandler(
   async (_request: NextRequest, { params }: RouteParams) => {
@@ -86,11 +73,9 @@ export const POST = apiHandler(
       POST_WINDOW_MS,
     );
     if (!rl.allowed) {
-      const response = apiError("Too many requests", 429);
-      for (const [k, v] of Object.entries(rateLimitHeaders(rl))) {
-        response.headers.set(k, v);
-      }
-      return response;
+      return apiError("Too many requests", 429, {
+        headers: rateLimitHeaders(rl),
+      });
     }
 
     const { data: body, error: jsonError } = await safeJson(request);

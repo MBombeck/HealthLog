@@ -10,15 +10,33 @@ export function apiSuccess<T>(data: T, status = 200) {
  * `{ errorCode: "credentials_rejected" }` so the UI translates the message
  * via `t("settings.testConnection.errors." + errorCode)` instead of
  * displaying the server's English fallback.
+ *
+ * v1.4.25 W21 Fix-N — the third argument may also carry a `headers`
+ * record (e.g. `{ headers: rateLimitHeaders(rl) }`) so 429 responses
+ * can attach the `X-RateLimit-*` triple in the same call. The `headers`
+ * key is *not* echoed into the JSON body — it is consumed by the
+ * NextResponse constructor and stripped from the meta envelope.
  */
 export function apiError(
   message: string,
   status = 400,
-  meta?: { errorCode?: string } & Record<string, unknown>,
+  meta?: {
+    errorCode?: string;
+    headers?: Record<string, string>;
+  } & Record<string, unknown>,
 ) {
+  const { headers, ...rest } = meta ?? {};
+  const metaKeys = Object.keys(rest);
   return NextResponse.json(
-    { data: null, error: message, ...(meta ? { meta } : {}) },
-    { status },
+    {
+      data: null,
+      error: message,
+      ...(metaKeys.length > 0 ? { meta: rest } : {}),
+    },
+    {
+      status,
+      ...(headers ? { headers } : {}),
+    },
   );
 }
 
