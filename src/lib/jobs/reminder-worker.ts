@@ -40,6 +40,12 @@ import {
   type PrDetectionPayload,
 } from "@/lib/jobs/pr-detection";
 import { detectPersonalRecordsForUser } from "@/lib/personal-records/pr-detection-worker";
+import {
+  MEDICATION_INVENTORY_EXPIRE_QUEUE,
+  MEDICATION_INVENTORY_EXPIRE_CRON,
+  type MedicationInventoryExpirePayload,
+} from "@/lib/jobs/medication-inventory-expire";
+import { expireStaleInUseItems } from "@/lib/medications/inventory/service";
 import { rotateLegacyMoodLogSecrets } from "@/lib/moodlog-secret";
 import { deleteMessage } from "@/lib/telegram";
 import { decrypt, encrypt } from "@/lib/crypto";
@@ -1171,6 +1177,29 @@ async function handlePrDetection(
   }
 }
 
+/**
+ * v1.4.25 W19b — daily expire-stale pass for `MedicationInventoryItem`
+ * rows. Flips IN_USE pens whose 30-day window has lapsed to EXPIRED
+ * via the pure state-machine evaluator.
+ */
+async function handleMedicationInventoryExpire(
+  jobs: Job<MedicationInventoryExpirePayload>[],
+) {
+  void jobs;
+  await withBackgroundEvent("job.medication_inventory_expire", async (evt) => {
+    try {
+      const count = await expireStaleInUseItems({ nowMs: Date.now() });
+      evt.addMeta("inventory_expired_count", count);
+    } catch (err) {
+      evt.addWarning(
+        `medication-inventory-expire failed: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  });
+}
+
 async function handleOffhostBackup(jobs: Job<OffhostBackupPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.offhost_backup", async (evt) => {
@@ -1421,6 +1450,7 @@ export async function startReminderWorker() {
     HOST_METRIC_QUEUE,
     FEEDBACK_AGGREGATOR_QUEUE,
     PR_DETECTION_QUEUE,
+    MEDICATION_INVENTORY_EXPIRE_QUEUE,
   ];
 
   for (const q of allQueues) {
@@ -1453,6 +1483,11 @@ export async function startReminderWorker() {
     // every user; per-user push-suppression cannot apply on the cron
     // path (the silent flag is set by the ingest hooks).
     [PR_DETECTION_QUEUE, PR_DETECTION_FALLBACK_CRON],
+    // v1.4.25 W19b — daily expire-stale pass for the per-pen inventory
+    // entities. Flips IN_USE rows whose 30-day clock has blown to
+    // EXPIRED at 03:30 Europe/Berlin (in the existing 02:xx–03:xx
+    // maintenance window, right after idempotency-cleanup).
+    [MEDICATION_INVENTORY_EXPIRE_QUEUE, MEDICATION_INVENTORY_EXPIRE_CRON],
   ];
 
   for (const [name, cron] of schedules) {
@@ -1559,6 +1594,11 @@ export async function startReminderWorker() {
     PR_DETECTION_QUEUE,
     { localConcurrency: PR_DETECTION_CONCURRENCY },
     handlePrDetection,
+  );
+  await boss.work<MedicationInventoryExpirePayload>(
+    MEDICATION_INVENTORY_EXPIRE_QUEUE,
+    { localConcurrency: 1 },
+    handleMedicationInventoryExpire,
   );
 
   return boss;
