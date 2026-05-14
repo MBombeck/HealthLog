@@ -211,11 +211,18 @@ test.describe("charts — mobile-viewport regression", () => {
     await firstChartCard.waitFor({ state: "visible", timeout: 10_000 });
     await firstChartCard.scrollIntoViewIfNeeded();
     // After scroll, give the chart a beat to lay out under the new
-    // measured size before counting ticks.
+    // measured size before counting ticks. The chart card on Pixel-5
+    // is taller than the 851-px viewport, so `scrollIntoViewIfNeeded`
+    // brings the card's TOP into view but the bottom-anchored x-axis
+    // labels can remain below the fold — and `waitFor({state:"visible"})`
+    // would then time out even though Recharts has already painted the
+    // <text> ticks into the DOM. The subsequent `evaluate` only needs
+    // them attached, not visually on-screen, so `state: "attached"` is
+    // both sufficient and stable against viewport overflow.
     await page
       .locator(".recharts-xAxis .recharts-cartesian-axis-tick text")
       .first()
-      .waitFor({ state: "visible", timeout: 10_000 });
+      .waitFor({ state: "attached", timeout: 10_000 });
 
     // Recharts lays its visible tick labels under
     // `.recharts-xAxis .recharts-cartesian-axis-tick`. Count the ones

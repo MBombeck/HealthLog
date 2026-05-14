@@ -120,11 +120,18 @@ test.describe("chart overlay controls", () => {
     await expect(targetRangeToggle).toBeVisible({ timeout: 5_000 });
 
     // Toggle target-range on. Radix Switch is a button[role=switch].
-    // Force the click — `scrollIntoViewIfNeeded()` on the portalled
-    // dropdown content is a no-op (the Radix portal sits at the body
-    // root, outside the page scroll container) so we bypass Playwright's
-    // viewport check directly.
-    await targetRangeToggle.click({ force: true });
+    // The Radix dropdown content portals to the body root and can land
+    // below the viewport on a 393×851 Pixel 5 (or near the bottom edge
+    // on the 1280×720 desktop profile). Playwright's `click({force:true})`
+    // still computes the element's bbox against the viewport and refuses
+    // to dispatch the click when it falls outside, so neither
+    // `scrollIntoViewIfNeeded()` on the portalled content nor `force`
+    // can rescue the action.  `dispatchEvent('click')` synthesises a DOM
+    // click on the element without any viewport / actionability check,
+    // which is exactly the semantic we want for an off-screen portalled
+    // Radix Switch — and it still fires the onCheckedChange handler that
+    // the surface listens for.
+    await targetRangeToggle.dispatchEvent("click");
 
     // The PUT fires once for the toggle change.
     await expect.poll(() => putRequestCount).toBeGreaterThan(0);
