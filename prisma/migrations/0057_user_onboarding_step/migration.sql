@@ -1,0 +1,26 @@
+-- v1.4.25 W14b — onboarding wizard resume-state.
+--
+-- Adds `onboarding_step` to the `users` table so the rebuilt multi-step
+-- wizard at `/onboarding/[step]` can resume the user at the highest
+-- step they reached. Without this column, closing the tab mid-flow
+-- wipes progress and forces users back to step 0.
+--
+-- Step encoding (mirrors `src/components/onboarding/OnboardingShell.tsx`
+-- and `src/app/onboarding/[step]/page.tsx`):
+--   0 = welcome    (carousel / value-prop intro)
+--   1 = goals      ("what do you want to track?")
+--   2 = source     ("connect a source" — Withings / Apple Health / manual)
+--   3 = baseline   (first measurement / sync confirmation)
+--   4 = done       (success screen; same write that flips
+--                   `onboarding_completed_at` from NULL to NOW())
+--
+-- Default 0 keeps the column non-null in practice for every new user,
+-- while existing pre-W14b rows stay NULL (because the `DEFAULT 0`
+-- only applies to *new* inserts on PostgreSQL — existing rows are not
+-- backfilled). Wizard mount code treats NULL as 0.
+--
+-- The `IF NOT EXISTS` guards make the migration idempotent — if the
+-- column landed via a prior dev-DB hand-edit, the migration still
+-- runs cleanly to completion.
+ALTER TABLE "users"
+  ADD COLUMN IF NOT EXISTS "onboarding_step" INTEGER DEFAULT 0;
