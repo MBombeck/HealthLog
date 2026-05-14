@@ -159,6 +159,28 @@ model User {
   // work.
   sourcePriorityJson Json? @map("source_priority_json")
 
+  // v1.4.25 W19c — Research Mode acknowledgment for the opt-in GLP-1
+  // PK research-view chart. The chart is hidden behind a per-user
+  // flag that is set to `true` only after the user has dismissed an
+  // undismissable MDR-disclaimer dialog. The `researchModeAcknowledged*`
+  // pair records exactly *which version* of the disclaimer copy the
+  // user has read; when the disclaimer copy changes (e.g. EMA guidance
+  // update, new drug added), the Settings surface re-prompts the user
+  // and refuses to surface the chart until the new version is
+  // acknowledged. Keeping the version on the user row (instead of an
+  // append-only audit table) is intentional — the Coach refusal layer
+  // and the chart-render guard both need a cheap synchronous read.
+  //
+  // `researchModeEnabled = false` is the safe default — the chart
+  // never renders without an explicit opt-in. The DELETE branch of
+  // the API endpoint sets all three columns back to NULL/false so a
+  // user who turns Research Mode off must re-acknowledge the
+  // disclaimer if they ever turn it back on, even if the version
+  // hasn't changed in the interim.
+  researchModeEnabled              Boolean   @default(false) @map("research_mode_enabled")
+  researchModeAcknowledgedAt       DateTime? @map("research_mode_acknowledged_at")
+  researchModeAcknowledgedVersion  String?   @map("research_mode_acknowledged_version")
+
   // v1.4.25 W6c — Doctor-report section toggles.
   // Shape:
   //   { "bp": boolean,
