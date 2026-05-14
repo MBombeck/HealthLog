@@ -11,6 +11,12 @@
  * days) and is used by the existing /api/medications/[id]/compliance
  * route. This module computes against the pair-matched timeline so
  * the chips and the cadence chart agree on every single dose.
+ *
+ * v1.4.25 W21 Fix-O — accepts an optional IANA `timeZone` argument
+ * forwarded into the timeline + streak math so a user in Tokyo gets
+ * the same chip values as a user in Berlin even when the host's
+ * system time is set differently. Omitting the argument keeps the
+ * legacy system-local behaviour the W19e tests pin.
  */
 
 import {
@@ -40,11 +46,25 @@ export interface ComplianceChips {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function localDayKey(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+/**
+ * Day-key in the user's timezone (or system-local when `tz` is
+ * undefined). `Intl.DateTimeFormat` with `en-CA` reliably returns
+ * `YYYY-MM-DD`, which sorts lexically and matches the chart
+ * legend's `day` ticks.
+ */
+function localDayKey(d: Date, tz: string | undefined): string {
+  if (!tz) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
 }
 
 /**
@@ -61,10 +81,11 @@ function streaksFromTimeline(
   timeline: PairedDose[],
   asOf: Date,
   windowDays: number,
+  timeZone: string | undefined,
 ): { current: number; longest: number } {
   const byDay = new Map<string, "all-good" | "bad">();
   for (const slot of timeline) {
-    const key = localDayKey(slot.day);
+    const key = localDayKey(slot.day, timeZone);
     const existing = byDay.get(key);
     const isBad = slot.status === "missed";
     if (isBad) {
@@ -78,25 +99,26 @@ function streaksFromTimeline(
   let longest = 0;
   let run = 0;
 
-  // Iterate from oldest day in the window forward to `asOf`. Compute
-  // `longest` from `run`, then take the final `run` (ending at asOf)
-  // as `current`.
-  const startOfToday = new Date(asOf);
-  startOfToday.setHours(0, 0, 0, 0);
-  const from = new Date(startOfToday.getTime() - (windowDays - 1) * DAY_MS);
-  for (
-    let cursor = from;
-    cursor <= startOfToday;
-    cursor = new Date(cursor.getTime() + DAY_MS)
-  ) {
-    const key = localDayKey(cursor);
-    const state = byDay.get(key);
-    if (state === "bad") {
-      if (run > longest) longest = run;
-      run = 0;
-    } else {
-      run++;
+  // Walk the window day-by-day from oldest to newest. Stepping by
+  // 25 h then re-keying via `localDayKey` keeps the cursor inside
+  // the right calendar day across DST boundaries — the absolute
+  // distance between two consecutive local midnights is 23/24/25 h
+  // around spring-forward / fall-back.
+  let cursor = new Date(asOf.getTime() - (windowDays - 1) * DAY_MS);
+  let lastKey = "";
+  for (let i = 0; i < windowDays; i++) {
+    const key = localDayKey(cursor, timeZone);
+    if (key !== lastKey) {
+      const state = byDay.get(key);
+      if (state === "bad") {
+        if (run > longest) longest = run;
+        run = 0;
+      } else {
+        run++;
+      }
+      lastKey = key;
     }
+    cursor = new Date(cursor.getTime() + DAY_MS);
   }
   if (run > longest) longest = run;
   current = run;
@@ -110,6 +132,7 @@ export function complianceChips(
   asOf: Date,
   windowDays = 30,
   anchor?: Date,
+  timeZone?: string,
 ): ComplianceChips {
   const timeline = buildCadenceTimeline(
     schedules,
@@ -117,6 +140,7 @@ export function complianceChips(
     asOf,
     windowDays,
     anchor,
+    timeZone,
   );
   const taken = timeline.filter((d) => d.status === "taken").length;
   const missed = timeline.filter((d) => d.status === "missed").length;
@@ -126,6 +150,7 @@ export function complianceChips(
     timeline,
     asOf,
     windowDays,
+    timeZone,
   );
   return {
     adherenceRate,

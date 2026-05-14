@@ -26,6 +26,7 @@ import {
   computeNextDose,
 } from "@/lib/medications/scheduling/cadence";
 import { complianceChips } from "@/lib/medications/scheduling/compliance";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -76,12 +77,21 @@ export const GET = apiHandler(
     // chart disagree on the bi-weekly grid.
     const anchor = med.createdAt;
 
+    // v1.4.25 W21 Fix-O — resolve the user's IANA zone so the cadence
+    // helpers compute every local-day boundary, window-time application,
+    // and streak day-key in the user's clock instead of the host's
+    // system time. A Tokyo user reading the same medication gets the
+    // same chip values as a Berlin user — the host-relative day flip
+    // was a sneaky bug at the 08:00-Berlin / 16:00-Tokyo intersection.
+    const userTz = await resolveUserTimezone(user.id);
+
     const timeline = buildCadenceTimeline(
       med.schedules,
       events,
       asOf,
       windowDays,
       anchor,
+      userTz,
     );
     const chips = complianceChips(
       med.schedules,
@@ -89,8 +99,9 @@ export const GET = apiHandler(
       asOf,
       windowDays,
       anchor,
+      userTz,
     );
-    const next = computeNextDose(med.schedules, asOf, 14, anchor);
+    const next = computeNextDose(med.schedules, asOf, 14, anchor, userTz);
 
     annotate({
       action: {

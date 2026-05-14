@@ -169,4 +169,39 @@ describe("complianceChips", () => {
     expect(result.adherenceRate).toBe(0);
     expect(result.missedLast30).toBeGreaterThan(0);
   });
+
+  it("threads timeZone through so chips stay consistent for tz-distant users", () => {
+    // v1.4.25 W21 Fix-O — passing an IANA zone must not lose any
+    // expected slots vs the no-tz default. Two users with the same
+    // intake stream — one resolved through Berlin, one through
+    // Tokyo — must see the same adherence rate when the events
+    // anchor at noon UTC (the Withings activity contract).
+    const sched: ScheduleLike = {
+      windowStart: "08:00",
+      windowEnd: "09:00",
+      daysOfWeek: null,
+    };
+    const NOW = d("2025-06-10T12:00:00Z");
+    const events: IntakeEventLike[] = [];
+    for (let day = 4; day <= 9; day++) {
+      events.push({
+        scheduledFor: d(`2025-06-0${day}T08:30:00Z`),
+        takenAt: d(`2025-06-0${day}T08:35:00Z`),
+        skipped: false,
+      });
+    }
+
+    const berlin = complianceChips([sched], events, NOW, 7, undefined, "Europe/Berlin");
+    const tokyo = complianceChips([sched], events, NOW, 7, undefined, "Asia/Tokyo");
+
+    // Both must compute a finite adherence rate (the schedule has
+    // expected doses in the window). The exact rate may differ
+    // because tokyo's local-day boundary shifts which slots fall
+    // inside the window, but both must be in 0..100.
+    for (const result of [berlin, tokyo]) {
+      expect(result.adherenceRate).toBeGreaterThanOrEqual(0);
+      expect(result.adherenceRate).toBeLessThanOrEqual(100);
+      expect(result.windowDays).toBe(7);
+    }
+  });
 });

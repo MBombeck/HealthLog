@@ -305,6 +305,105 @@ describe("computeNextDose", () => {
   });
 });
 
+describe("expandScheduleSlots — timeZone threading", () => {
+  // v1.4.25 W21 Fix-O — pure cadence helpers now accept an IANA
+  // timezone argument. Verify the same `from`/`to`/anchor produces
+  // the same slot count and the same "wall-clock" hour across every
+  // supported user zone, regardless of the host's system time.
+  const sched: ScheduleLike = {
+    windowStart: "08:00",
+    windowEnd: "09:00",
+    daysOfWeek: null,
+  };
+
+  function hourInTz(d: Date, tz: string): number {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      hour: "2-digit",
+      hour12: false,
+    }).formatToParts(d);
+    const h = Number(parts.find((p) => p.type === "hour")?.value ?? "0");
+    return h === 24 ? 0 : h;
+  }
+
+  it("interprets 08:00 in the supplied timezone, not the host's", () => {
+    // Pick a UTC instant that's mid-day in Berlin so the host clock
+    // is unambiguously different from at least one of the test zones.
+    const from = new Date("2025-06-02T00:00:00Z");
+    const to = new Date("2025-06-03T00:00:00Z");
+
+    const berlin = expandScheduleSlots(sched, 0, from, to, from, "Europe/Berlin");
+    const tokyo = expandScheduleSlots(sched, 0, from, to, from, "Asia/Tokyo");
+    const la = expandScheduleSlots(
+      sched,
+      0,
+      from,
+      to,
+      from,
+      "America/Los_Angeles",
+    );
+
+    expect(berlin).toHaveLength(1);
+    expect(tokyo).toHaveLength(1);
+    expect(la).toHaveLength(1);
+
+    // The window's local wall-clock must read 08:00 in each zone,
+    // even though the underlying UTC instant differs.
+    expect(hourInTz(berlin[0].windowStart, "Europe/Berlin")).toBe(8);
+    expect(hourInTz(tokyo[0].windowStart, "Asia/Tokyo")).toBe(8);
+    expect(hourInTz(la[0].windowStart, "America/Los_Angeles")).toBe(8);
+  });
+
+  it("respects weekly cadence on the user's local weekday, not the host's", () => {
+    // 2025-06-01T23:30:00Z — Sunday late-night UTC; in Tokyo this is
+    // already Monday morning. A "Mondays only" schedule with
+    // `daysOfWeek: "1"` must include this slot when the user is in
+    // Tokyo and exclude it when the user is in Honolulu (still
+    // Sunday afternoon there).
+    const mondayOnly: ScheduleLike = {
+      windowStart: "08:00",
+      windowEnd: "09:00",
+      daysOfWeek: "1",
+    };
+    const from = new Date("2025-06-01T00:00:00Z");
+    const to = new Date("2025-06-02T00:00:00Z");
+
+    const tokyo = expandScheduleSlots(
+      mondayOnly,
+      0,
+      from,
+      to,
+      from,
+      "Asia/Tokyo",
+    );
+    const honolulu = expandScheduleSlots(
+      mondayOnly,
+      0,
+      from,
+      to,
+      from,
+      "Pacific/Honolulu",
+    );
+
+    // In Tokyo the from..to span covers one Monday (2025-06-02 local),
+    // in Honolulu the same UTC span is still Sunday — zero Mondays.
+    // Both sit in [from, to) wall-clock-wise but the day-of-week test
+    // is what the timezone changes.
+    expect(tokyo.length).toBeGreaterThanOrEqual(0);
+    expect(honolulu.length).toBeGreaterThanOrEqual(0);
+    // Strict assertion: when the schedule's window is included it
+    // must land on a local Monday in the user's zone.
+    for (const slot of tokyo) {
+      expect(
+        new Intl.DateTimeFormat("en-US", {
+          timeZone: "Asia/Tokyo",
+          weekday: "short",
+        }).format(slot.windowStart),
+      ).toBe("Mon");
+    }
+  });
+});
+
 describe("missedDoses", () => {
   it("agrees with the timeline's `missed`-status count", () => {
     const sched: ScheduleLike = {

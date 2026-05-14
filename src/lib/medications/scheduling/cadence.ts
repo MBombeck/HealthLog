@@ -15,6 +15,16 @@
  * the detail page renders a 30-day mini-chart; the same math feeds
  * the API JSON that drives the Compliance chips. Sharing one pure
  * module keeps the two surfaces from drifting.
+ *
+ * v1.4.25 W21 Fix-O — the local-day boundary helpers accept an
+ * optional IANA `timeZone` argument (`Europe/Berlin`, `Asia/Tokyo`,
+ * …). When supplied, every day/week boundary and every `HH:mm`
+ * window-application is interpreted in the user's zone via
+ * `Intl.DateTimeFormat` rather than the host's system time. The
+ * cadence route resolves the zone through `resolveUserTimezone()`
+ * and threads it through every helper. Omitting the argument falls
+ * back to system-local — the legacy single-tz behaviour the v1.4.25
+ * W19e tests pin.
  */
 
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
@@ -68,26 +78,136 @@ const WEEK_MS = 7 * DAY_MS;
  */
 const PAIR_RADIUS_MS = 12 * 60 * 60 * 1000;
 
-/** Build a Date for "HH:mm" applied to the local-day boundary of `day`. */
-function applyTime(day: Date, hhmm: string): Date {
+interface WallClockParts {
+  year: number;
+  month: number; // 1-12
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+  weekday: number; // 0 = Sunday
+}
+
+const WEEKDAY_MAP: Record<string, number> = {
+  Sun: 0,
+  Mon: 1,
+  Tue: 2,
+  Wed: 3,
+  Thu: 4,
+  Fri: 5,
+  Sat: 6,
+};
+
+/**
+ * Compute the wall-clock parts of `date` interpreted in the user's
+ * timezone. When `tz` is omitted, falls back to the system-local
+ * representation so the legacy single-tz callers keep their existing
+ * shape (the v1.4.25 W19e callers were system-local by construction).
+ */
+function wallClockInTz(date: Date, tz: string | undefined): WallClockParts {
+  if (!tz) {
+    return {
+      year: date.getFullYear(),
+      month: date.getMonth() + 1,
+      day: date.getDate(),
+      hour: date.getHours(),
+      minute: date.getMinutes(),
+      second: date.getSeconds(),
+      weekday: date.getDay(),
+    };
+  }
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    weekday: "short",
+  }).formatToParts(date);
+  const get = (type: Intl.DateTimeFormatPartTypes): string =>
+    parts.find((p) => p.type === type)?.value ?? "0";
+  let hour = Number(get("hour"));
+  if (hour === 24) hour = 0;
+  return {
+    year: Number(get("year")),
+    month: Number(get("month")),
+    day: Number(get("day")),
+    hour,
+    minute: Number(get("minute")),
+    second: Number(get("second")),
+    weekday: WEEKDAY_MAP[get("weekday")] ?? 0,
+  };
+}
+
+/**
+ * Compute the UTC offset (in minutes) of `tz` at the given instant.
+ * Positive east of UTC. Honours DST because Intl does.
+ */
+function tzOffsetMinutes(date: Date, tz: string): number {
+  const parts = wallClockInTz(date, tz);
+  const asIfUtc = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second,
+  );
+  return Math.round((asIfUtc - date.getTime()) / 60000);
+}
+
+/**
+ * Build a Date instant for `YYYY-MM-DD HH:mm:ss` interpreted in the
+ * supplied timezone. Used to materialise the local-day midnight and
+ * the local window start/end while keeping the returned Date pointed
+ * at the corresponding UTC instant.
+ */
+function instantInTz(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  tz: string | undefined,
+): Date {
+  if (!tz) {
+    const d = new Date(year, month - 1, day, hour, minute, 0, 0);
+    return d;
+  }
+  // First-pass guess: treat the wall clock as UTC, then correct by the
+  // zone's offset at that approximate instant. Two passes converge for
+  // every IANA zone (the second pass adjusts across a DST transition).
+  let guess = new Date(Date.UTC(year, month - 1, day, hour, minute, 0, 0));
+  for (let i = 0; i < 2; i++) {
+    const offsetMin = tzOffsetMinutes(guess, tz);
+    guess = new Date(
+      Date.UTC(year, month - 1, day, hour, minute, 0, 0) - offsetMin * 60_000,
+    );
+  }
+  return guess;
+}
+
+/** Build a Date for "HH:mm" applied to the user-local day boundary of `day`. */
+function applyTime(day: Date, hhmm: string, tz: string | undefined): Date {
   const [h, m] = hhmm.split(":").map(Number);
-  const d = new Date(day);
-  d.setHours(h, m, 0, 0);
-  return d;
+  const parts = wallClockInTz(day, tz);
+  return instantInTz(parts.year, parts.month, parts.day, h, m, tz);
 }
 
-/** Snap a Date down to the local midnight. */
-function startOfLocalDay(d: Date): Date {
-  const r = new Date(d);
-  r.setHours(0, 0, 0, 0);
-  return r;
+/** Snap a Date down to the user-local midnight. */
+function startOfLocalDay(d: Date, tz: string | undefined): Date {
+  const parts = wallClockInTz(d, tz);
+  return instantInTz(parts.year, parts.month, parts.day, 0, 0, tz);
 }
 
-/** Snap a Date down to the Sunday-rooted local week. */
-function startOfLocalWeek(d: Date): Date {
-  const r = startOfLocalDay(d);
-  r.setDate(r.getDate() - r.getDay());
-  return r;
+/** Snap a Date down to the Sunday-rooted user-local week. */
+function startOfLocalWeek(d: Date, tz: string | undefined): Date {
+  const midnight = startOfLocalDay(d, tz);
+  const weekday = wallClockInTz(midnight, tz).weekday;
+  return new Date(midnight.getTime() - weekday * DAY_MS);
 }
 
 /**
@@ -109,20 +229,28 @@ export function expandScheduleSlots(
   from: Date,
   to: Date,
   anchor: Date = from,
+  timeZone?: string,
 ): ExpectedDose[] {
   if (to <= from) return [];
 
   const recurrence = parseScheduleRecurrence(schedule.daysOfWeek);
   const slots: ExpectedDose[] = [];
-  const anchorWeekStart = startOfLocalWeek(anchor).getTime();
+  const anchorWeekStart = startOfLocalWeek(anchor, timeZone).getTime();
 
-  const cursor = startOfLocalDay(from);
-  const end = startOfLocalDay(to);
+  const cursor = startOfLocalDay(from, timeZone);
+  const end = startOfLocalDay(to, timeZone);
   // Iterate one extra day so an overnight window starting on `end - 1`
   // still emits — but the slot is only retained when `windowStart < to`.
-  for (let day = cursor; day <= end; day = new Date(day.getTime() + DAY_MS)) {
+  // Step by adding 25h then snapping back to local midnight so DST
+  // spring-forward / fall-back days still advance by exactly one
+  // calendar day.
+  for (
+    let day = cursor;
+    day.getTime() <= end.getTime();
+    day = startOfLocalDay(new Date(day.getTime() + 25 * 60 * 60 * 1000), timeZone)
+  ) {
     // Day-of-week constraint
-    const dow = day.getDay();
+    const dow = wallClockInTz(day, timeZone).weekday;
     if (
       recurrence.daysOfWeek.length > 0 &&
       !recurrence.daysOfWeek.includes(dow)
@@ -132,7 +260,7 @@ export function expandScheduleSlots(
 
     // Multi-week interval constraint
     if (recurrence.intervalWeeks > 1) {
-      const thisWeekStart = startOfLocalWeek(day).getTime();
+      const thisWeekStart = startOfLocalWeek(day, timeZone).getTime();
       const weeksFromAnchor = Math.round(
         (thisWeekStart - anchorWeekStart) / WEEK_MS,
       );
@@ -141,8 +269,8 @@ export function expandScheduleSlots(
       }
     }
 
-    const wStart = applyTime(day, schedule.windowStart);
-    let wEnd = applyTime(day, schedule.windowEnd);
+    const wStart = applyTime(day, schedule.windowStart, timeZone);
+    let wEnd = applyTime(day, schedule.windowEnd, timeZone);
     // Overnight window: windowEnd <= windowStart means next day.
     if (wEnd <= wStart) {
       wEnd = new Date(wEnd.getTime() + DAY_MS);
@@ -238,11 +366,14 @@ export function computeNextDose(
   asOf: Date,
   lookaheadDays = 14,
   anchor?: Date,
+  timeZone?: string,
 ): ExpectedDose | null {
   const to = new Date(asOf.getTime() + lookaheadDays * DAY_MS);
   const slots: ExpectedDose[] = [];
   for (let i = 0; i < schedules.length; i++) {
-    slots.push(...expandScheduleSlots(schedules[i], i, asOf, to, anchor ?? asOf));
+    slots.push(
+      ...expandScheduleSlots(schedules[i], i, asOf, to, anchor ?? asOf, timeZone),
+    );
   }
   if (slots.length === 0) return null;
   return slots.sort(
@@ -261,12 +392,20 @@ export function buildCadenceTimeline(
   asOf: Date,
   windowDays = 30,
   anchor?: Date,
+  timeZone?: string,
 ): PairedDose[] {
   const from = new Date(asOf.getTime() - windowDays * DAY_MS);
   const slots: ExpectedDose[] = [];
   for (let i = 0; i < schedules.length; i++) {
     slots.push(
-      ...expandScheduleSlots(schedules[i], i, from, asOf, anchor ?? from),
+      ...expandScheduleSlots(
+        schedules[i],
+        i,
+        from,
+        asOf,
+        anchor ?? from,
+        timeZone,
+      ),
     );
   }
   return pairDoses(slots, events, asOf);
@@ -286,6 +425,7 @@ export function missedDoses(
   asOf: Date,
   windowDays = 30,
   anchor?: Date,
+  timeZone?: string,
 ): number {
   const timeline = buildCadenceTimeline(
     schedules,
@@ -293,6 +433,7 @@ export function missedDoses(
     asOf,
     windowDays,
     anchor,
+    timeZone,
   );
   return timeline.filter((d) => d.status === "missed").length;
 }
