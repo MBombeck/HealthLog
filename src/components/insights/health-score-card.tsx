@@ -385,6 +385,7 @@ export function HealthScoreCard({
         <div className="-mt-1 border-t pt-2">
           <button
             type="button"
+            id={`${panelId}-toggle`}
             data-slot="health-score-card-provenance-toggle"
             aria-expanded={expanded}
             aria-controls={panelId}
@@ -408,6 +409,7 @@ export function HealthScoreCard({
           {expanded && (
             <section
               id={panelId}
+              aria-labelledby={`${panelId}-toggle`}
               data-slot="health-score-card-provenance-panel"
               className="mt-2 space-y-1.5"
             >

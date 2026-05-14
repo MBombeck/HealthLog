@@ -116,9 +116,13 @@ describe("<HealthScoreCard> — provenance accordion (W8e)", () => {
     );
     expect(controlsMatch).not.toBeNull();
     const id = controlsMatch![1];
-    expect(html).toContain(
-      `id="${id}" data-slot="health-score-card-provenance-panel"`,
+    // The panel section must carry the same id; we don't pin the exact
+    // attribute order because additional ARIA attributes (e.g.
+    // `aria-labelledby`) may sit between `id` and `data-slot`.
+    const panelMatch = html.match(
+      new RegExp(`<section[^>]*\\bid="${id}"[^>]*data-slot="health-score-card-provenance-panel"`),
     );
+    expect(panelMatch).not.toBeNull();
   });
 
   it("sorts rows by effective weight descending (null components sink to bottom)", () => {
