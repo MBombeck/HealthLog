@@ -381,8 +381,11 @@ export function HealthScoreCard({
 
         {/* v1.4.25 W8e — tap-to-expand provenance accordion.
             Kept inside the card so the visual "owner" of the
-            breakdown remains the score tile (concept-cohesion). */}
-        <div className="-mt-1 border-t pt-2">
+            breakdown remains the score tile (concept-cohesion).
+            No top border here — the components list above already
+            owns the divider stride; a second border would read
+            visually heavy. */}
+        <div className="-mt-1">
           <button
             type="button"
             id={`${panelId}-toggle`}
