@@ -366,4 +366,52 @@ describe("i18n locale file integrity", () => {
       expect(actual, `DE label for ${key}`).toBe(expectedDe);
     }
   });
+
+  /**
+   * v1.4.25 W8e — Health-Score provenance accordion drift-guard.
+   *
+   * Mirrors the `measurement-list-meta` enum-coverage pattern: every
+   * i18n key the accordion renders must resolve in every shipped
+   * locale. If a future copy-paste regression drops a key or a new
+   * source token appears in the analytics layer without a matching
+   * locale entry, this test fails fast.
+   *
+   * The expected key set is hand-pinned (not extracted from the
+   * accordion component) so the test catches both directions —
+   * a missing locale value AND an accidentally dropped accordion
+   * call-site.
+   */
+  it("Health-Score provenance keys resolve in every locale", () => {
+    const PROVENANCE_KEYS = [
+      "insights.healthScore.provenance.toggle",
+      "insights.healthScore.provenance.weightLabel",
+      "insights.healthScore.provenance.mixedBanner",
+      "insights.healthScore.provenance.footnote",
+      "insights.healthScore.provenance.asOfLabel",
+      "insights.healthScore.provenance.provisional",
+      "insights.healthScore.provenance.provisionalBadge",
+      "insights.healthScore.provenance.sourceAria",
+      "insights.healthScore.provenance.sources.manual",
+      "insights.healthScore.provenance.sources.withings",
+      "insights.healthScore.provenance.sources.appleHealth",
+      "insights.healthScore.provenance.sources.mixed",
+      "insights.healthScore.provenance.sources.none",
+    ] as const;
+
+    for (const { locale, path } of ALL_LOCALES) {
+      const data = JSON.parse(readFileSync(path, "utf8")) as Record<
+        string,
+        unknown
+      >;
+      const flat: [string, string][] = [];
+      flattenValues(data, "", flat);
+      const byKey = new Map(flat);
+      for (const key of PROVENANCE_KEYS) {
+        expect(
+          byKey.get(key),
+          `${locale} locale missing or empty: ${key}`,
+        ).toBeTruthy();
+      }
+    }
+  });
 });
