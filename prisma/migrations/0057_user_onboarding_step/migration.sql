@@ -14,10 +14,12 @@
 --   4 = done       (success screen; same write that flips
 --                   `onboarding_completed_at` from NULL to NOW())
 --
--- Default 0 keeps the column non-null in practice for every new user,
--- while existing pre-W14b rows stay NULL (because the `DEFAULT 0`
--- only applies to *new* inserts on PostgreSQL — existing rows are not
--- backfilled). Wizard mount code treats NULL as 0.
+-- Existing rows are backfilled to 0 by PostgreSQL's fast-path
+-- `ADD COLUMN ... DEFAULT` (PG11+), which materialises the default
+-- without rewriting the table — every pre-W14b user lands at step 0
+-- in O(1) time. The column ships nullable purely so the DDL stays
+-- additive on every replica; Migration 0060 follows up by flipping
+-- it to NOT NULL once the deploy has rolled.
 --
 -- The `IF NOT EXISTS` guards make the migration idempotent — if the
 -- column landed via a prior dev-DB hand-edit, the migration still
