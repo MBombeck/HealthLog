@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -27,6 +27,10 @@ import { GLP1_DRUGS } from "@/lib/medications/glp1-knowledge";
  * a percent without a regulatory rationale fails the test before
  * it reaches production. The clinical reading layer (Coach,
  * inventory countdown, titration card) can trust the catalog.
+ *
+ * `.planning/` is untracked by design (local-only research artefacts),
+ * so the soft-pin block self-skips on CI where the file is absent. The
+ * hard pins always run and are the real production guarantee.
  */
 
 const RESEARCH_PATH = join(
@@ -34,7 +38,8 @@ const RESEARCH_PATH = join(
   "../../../../.planning/research/glp1-feature-inspiration.md",
 );
 
-const RESEARCH_TEXT = readFileSync(RESEARCH_PATH, "utf8");
+const RESEARCH_AVAILABLE = existsSync(RESEARCH_PATH);
+const RESEARCH_TEXT = RESEARCH_AVAILABLE ? readFileSync(RESEARCH_PATH, "utf8") : "";
 
 /** Hard pins — these are the exact values the research file cites
  *  against EMA EPAR / psp4.13099. If you change the TS module, you
@@ -155,7 +160,10 @@ describe("glp1-knowledge drift guard", () => {
     }
   });
 
-  describe("research-file citation presence", () => {
+  // Local-only soft pins: the research markdown lives under `.planning/`
+  // which is untracked, so the block is a no-op on CI. Marc's local
+  // working copy keeps the file and the assertions run there.
+  describe.skipIf(!RESEARCH_AVAILABLE)("research-file citation presence", () => {
     it("references the EMA Mounjaro EPAR for tirzepatide", () => {
       expect(RESEARCH_TEXT).toMatch(/mounjaro-epar-product-information/);
     });
@@ -195,7 +203,7 @@ describe("glp1-knowledge drift guard", () => {
     });
   });
 
-  describe("research-file presence checks for module values", () => {
+  describe.skipIf(!RESEARCH_AVAILABLE)("research-file presence checks for module values", () => {
     it("agrees with the research file on tirzepatide half-life ≈ 5 days", () => {
       // Research file's §1.1 + §2.6 both say "≈ 5 days" / "5.4 days"
       // for tirzepatide. TS module pins 5.0. The numbers reconcile
