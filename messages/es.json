@@ -709,6 +709,25 @@
         }
       }
     },
+    "titration": {
+      "section": "Escalado de titulación",
+      "loading": "Cargando datos de titulación",
+      "loadFailed": "No se pudieron cargar los datos de titulación.",
+      "drugLadderHeader": "Escalado estándar (referencia EMA)",
+      "typicalWeeksOnStep": "≥ {weeks} sem. típico",
+      "youAreHere": "Estás aquí",
+      "nextStepCaption": "Siguiente escalón (típico): {dose} mg tras ~{weeks} semanas en el escalón actual.",
+      "ceilingMessage": "Estás en el último escalón estándar.",
+      "escalationDueHint": "Llevas {weeks} semanas en este escalón; el esquema suele avanzar tras ~{typical} semanas.",
+      "currentStepDwell": "En este escalón desde hace {weeks} semanas",
+      "weeksUnit": "sem.",
+      "doseUnitMg": "mg",
+      "emptyState": "Aún no hay historial de dosis. Registra una dosis para ver tu posición en el escalado.",
+      "nonStandardDose": "La dosis actual está fuera de los escalones estándar.",
+      "disclaimer": "Valores de referencia EMA. Consulta a tu médico antes de cambiar la dosis.",
+      "emaSourceCta": "Fuente EMA",
+      "stepLabel": "Escalón {n}"
+    },
     "injectionSiteBodyOutlineAriaLabel": "Silueta del cuerpo",
     "injectionSitePickerAriaLabel": "Selector de sitio de inyección",
     "siteAbdomenLeft": "Abdomen, lower left",

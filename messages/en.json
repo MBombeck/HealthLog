@@ -709,6 +709,25 @@
         }
       }
     },
+    "titration": {
+      "section": "Titration ladder",
+      "loading": "Loading titration data",
+      "loadFailed": "Titration data failed to load.",
+      "drugLadderHeader": "Standard ladder (EMA reference)",
+      "typicalWeeksOnStep": "≥ {weeks} wks typical",
+      "youAreHere": "You are here",
+      "nextStepCaption": "Next step (typical): {dose} mg after ~{weeks} weeks on the current step.",
+      "ceilingMessage": "You are at the top of the standard ladder.",
+      "escalationDueHint": "You've been on this step for {weeks} weeks; the ladder typically steps up around {typical} weeks.",
+      "currentStepDwell": "On this step for {weeks} weeks",
+      "weeksUnit": "wks",
+      "doseUnitMg": "mg",
+      "emptyState": "No dose history yet. Log a dose to see where you are on the ladder.",
+      "nonStandardDose": "Current dose is outside the standard ladder buckets.",
+      "disclaimer": "EMA reference values. Talk to your doctor before changing doses.",
+      "emaSourceCta": "EMA source",
+      "stepLabel": "Step {n}"
+    },
     "injectionSiteBodyOutlineAriaLabel": "Body outline",
     "injectionSitePickerAriaLabel": "Injection site picker",
     "siteAbdomenLeft": "Abdomen, lower left",

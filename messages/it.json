@@ -709,6 +709,25 @@
         }
       }
     },
+    "titration": {
+      "section": "Scala di titolazione",
+      "loading": "Caricamento dati di titolazione",
+      "loadFailed": "Impossibile caricare i dati di titolazione.",
+      "drugLadderHeader": "Scala standard (riferimento EMA)",
+      "typicalWeeksOnStep": "≥ {weeks} sett. tipico",
+      "youAreHere": "Sei qui",
+      "nextStepCaption": "Prossimo gradino (tipico): {dose} mg dopo ~{weeks} settimane al gradino attuale.",
+      "ceilingMessage": "Sei al gradino più alto della scala standard.",
+      "escalationDueHint": "Sei su questo gradino da {weeks} settimane; lo schema prevede un avanzamento tipico dopo ~{typical} settimane.",
+      "currentStepDwell": "Su questo gradino da {weeks} settimane",
+      "weeksUnit": "sett.",
+      "doseUnitMg": "mg",
+      "emptyState": "Nessuna cronologia delle dosi. Registra una dose per vedere la tua posizione sulla scala.",
+      "nonStandardDose": "La dose attuale è fuori dai gradini standard.",
+      "disclaimer": "Valori di riferimento EMA. Consulta il tuo medico prima di cambiare la dose.",
+      "emaSourceCta": "Fonte EMA",
+      "stepLabel": "Gradino {n}"
+    },
     "injectionSiteBodyOutlineAriaLabel": "Sagoma del corpo",
     "injectionSitePickerAriaLabel": "Selettore del sito di iniezione",
     "siteAbdomenLeft": "Abdomen, lower left",

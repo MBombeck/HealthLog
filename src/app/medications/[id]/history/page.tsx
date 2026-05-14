@@ -9,6 +9,7 @@ import { IntakeHistoryList } from "@/components/medications/intake-history-list"
 import { DrugLevelChart } from "@/components/medications/DrugLevelChart";
 import { SideEffectsSection } from "@/components/medications/SideEffectsSection";
 import { SchedulingSection } from "@/components/medications/SchedulingSection";
+import { TitrationSection } from "@/components/medications/TitrationSection";
 import { ArrowLeft, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "@/lib/i18n/context";
@@ -121,6 +122,16 @@ export default function IntakeHistoryPage({
           medicationId={id}
           reminderEnabled={medication.notificationsEnabled ?? true}
         />
+      )}
+
+      {/* v1.4.25 W19f — GLP-1 titration-ladder display. Read-only EMA
+          reference visual showing the standard dose-escalation schedule
+          with the user's current step highlighted. Sits between
+          SchedulingSection and IntakeHistoryList so the user lands on
+          cycle context (chart) -> side effects -> cadence/adherence ->
+          titration position -> per-dose timeline. */}
+      {medication?.treatmentClass === "GLP1" && (
+        <TitrationSection medicationId={id} />
       )}
 
       <IntakeHistoryList

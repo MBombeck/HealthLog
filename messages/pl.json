@@ -709,6 +709,25 @@
         }
       }
     },
+    "titration": {
+      "section": "Schemat titracji",
+      "loading": "Wczytywanie danych titracji",
+      "loadFailed": "Nie udało się wczytać danych titracji.",
+      "drugLadderHeader": "Standardowy schemat (referencja EMA)",
+      "typicalWeeksOnStep": "≥ {weeks} tyg. typowo",
+      "youAreHere": "Jesteś tutaj",
+      "nextStepCaption": "Następny stopień (typowo): {dose} mg po ~{weeks} tygodniach na obecnym stopniu.",
+      "ceilingMessage": "Jesteś na najwyższym stopniu schematu standardowego.",
+      "escalationDueHint": "Jesteś na tym stopniu od {weeks} tygodni; schemat zwykle przewiduje przejście wyżej po ~{typical} tygodniach.",
+      "currentStepDwell": "Na tym stopniu od {weeks} tygodni",
+      "weeksUnit": "tyg.",
+      "doseUnitMg": "mg",
+      "emptyState": "Brak historii dawek. Zarejestruj dawkę, aby zobaczyć swoją pozycję w schemacie.",
+      "nonStandardDose": "Aktualna dawka jest poza standardowymi stopniami schematu.",
+      "disclaimer": "Wartości referencyjne EMA. Skonsultuj się z lekarzem przed zmianą dawki.",
+      "emaSourceCta": "Źródło EMA",
+      "stepLabel": "Stopień {n}"
+    },
     "injectionSiteBodyOutlineAriaLabel": "Sylwetka ciała",
     "injectionSitePickerAriaLabel": "Wybór miejsca iniekcji",
     "siteAbdomenLeft": "Abdomen, lower left",

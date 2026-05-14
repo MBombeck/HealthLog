@@ -709,6 +709,25 @@
         }
       }
     },
+    "titration": {
+      "section": "Paliers de titration",
+      "loading": "Chargement des données de titration",
+      "loadFailed": "Échec du chargement des données de titration.",
+      "drugLadderHeader": "Paliers standard (référence EMA)",
+      "typicalWeeksOnStep": "≥ {weeks} sem. typique",
+      "youAreHere": "Vous êtes ici",
+      "nextStepCaption": "Palier suivant (typique) : {dose} mg après ~{weeks} semaines au palier actuel.",
+      "ceilingMessage": "Vous êtes au sommet du palier standard.",
+      "escalationDueHint": "Vous êtes à ce palier depuis {weeks} semaines ; le schéma prévoit une progression typique après ~{typical} semaines.",
+      "currentStepDwell": "À ce palier depuis {weeks} semaines",
+      "weeksUnit": "sem.",
+      "doseUnitMg": "mg",
+      "emptyState": "Aucun historique de dose. Enregistrez une dose pour voir votre position dans le schéma.",
+      "nonStandardDose": "La dose actuelle est en dehors des paliers standard.",
+      "disclaimer": "Valeurs de référence EMA. Consultez votre médecin avant toute modification de dose.",
+      "emaSourceCta": "Source EMA",
+      "stepLabel": "Palier {n}"
+    },
     "injectionSiteBodyOutlineAriaLabel": "Silhouette du corps",
     "injectionSitePickerAriaLabel": "Sélecteur de site d'injection",
     "siteAbdomenLeft": "Abdomen, lower left",
