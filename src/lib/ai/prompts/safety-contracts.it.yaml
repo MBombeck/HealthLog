@@ -273,10 +273,10 @@ medical_terminology:
     locale: "titolazione"
 
 defer_to_clinician_phrases:
-  - "ne parli col suo medico"
-  - "da vedere col suo medico"
-  - "conversazione per il suo medico prescrittore"
-  - "da portare alla prossima visita"
+  - "medico"
+  - "prescrittore"
+  - "visita"
+  - "clinico"
 
 out_of_scope_refusal:
   summary: "Posso solo riassumere le metriche di salute del suo diario. I dati inviati non contenevano misurazioni analizzabili."

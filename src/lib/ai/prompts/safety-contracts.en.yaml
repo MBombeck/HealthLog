@@ -330,10 +330,10 @@ medical_terminology:
 # that the prompt body contains at least one allow-listed defer phrase
 # in the active locale.
 defer_to_clinician_phrases:
-  - "walk through with your doctor"
-  - "conversation for your prescribing doctor"
-  - "talk it over with your doctor"
-  - "bring it up with your doctor"
+  - "your doctor"
+  - "prescribing"
+  - "appointment"
+  - "clinician"
 
 # Out-of-scope refusal payload (mirrors OUT_OF_SCOPE_REFUSAL_EN in
 # insight-generator.ts). The summary string carries the user-facing

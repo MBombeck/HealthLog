@@ -275,10 +275,10 @@ medical_terminology:
     locale: "titracja"
 
 defer_to_clinician_phrases:
-  - "porozmawiać z lekarzem"
-  - "omówić z lekarzem prowadzącym"
-  - "rozmowa dla lekarza prowadzącego"
-  - "zabrać na wizytę"
+  - "lekarz"
+  - "lekarza"
+  - "prowadzący"
+  - "wizyt"
 
 out_of_scope_refusal:
   summary: "Mogę jedynie podsumować metryki zdrowotne z Pana/Pani dziennika. Przesłane dane nie zawierały pomiarów, które mógłbym przeanalizować."

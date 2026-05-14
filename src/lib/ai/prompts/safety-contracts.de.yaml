@@ -268,10 +268,10 @@ medical_terminology:
     locale: "Titration"
 
 defer_to_clinician_phrases:
-  - "mit deinem Arzt durchgehen"
-  - "Gespräch mit deiner behandelnden Ärztin"
-  - "mit deinem Arzt besprechen"
-  - "deinem Arzt mitnehmen"
+  - "Ärztin"
+  - "Arzt"
+  - "Termin"
+  - "behandelnde"
 
 out_of_scope_refusal:
   summary: "Ich kann nur die Gesundheitsmetriken in deinem Log zusammenfassen. Die übergebenen Daten enthielten keine analysierbaren Messwerte."

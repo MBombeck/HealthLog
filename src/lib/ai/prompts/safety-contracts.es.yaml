@@ -270,10 +270,10 @@ medical_terminology:
     locale: "titulación"
 
 defer_to_clinician_phrases:
-  - "hablar con su médico"
-  - "consulte con su médico"
-  - "conversación para su médico prescriptor"
-  - "comentarlo en la próxima visita"
+  - "médico"
+  - "prescriptor"
+  - "consulta"
+  - "clínico"
 
 out_of_scope_refusal:
   summary: "Solo puedo resumir las métricas de salud de su diario. Los datos enviados no contenían mediciones que pueda analizar."

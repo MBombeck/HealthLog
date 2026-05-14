@@ -273,10 +273,10 @@ medical_terminology:
     locale: "titration"
 
 defer_to_clinician_phrases:
-  - "à voir avec votre médecin"
-  - "parlez-en à votre médecin"
-  - "conversation pour votre médecin prescripteur"
-  - "à aborder lors de votre rendez-vous"
+  - "médecin"
+  - "prescripteur"
+  - "rendez-vous"
+  - "clinicien"
 
 out_of_scope_refusal:
   summary: "Je ne peux résumer que les métriques de santé de votre journal. Les données soumises ne contenaient pas de mesures analysables."
