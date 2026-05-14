@@ -1453,8 +1453,17 @@
     },
     "goals": {
       "title": "Que souhaitez-vous suivre ?",
-      "body": "Choisissez les indicateurs qui comptent pour vous. Le tableau de bord et les rappels suivront.",
-      "placeholder": "Sélection des objectifs à venir."
+      "body": "Sélectionnez les domaines qui comptent pour vous. Le tableau de bord et les rappels s'y adapteront.",
+      "helpHint": "Un à trois axes prioritaires fonctionnent généralement le mieux, mais vous pourrez en ajouter plus tard.",
+      "placeholder": "Sélection des objectifs à venir.",
+      "options": {
+        "weightManagement": "Gestion du poids",
+        "bpTracking": "Tension artérielle",
+        "glucoseTracking": "Glycémie",
+        "sleepImprovement": "Mieux dormir",
+        "medicationCompliance": "Médicaments",
+        "generalWellness": "Bien-être général"
+      }
     },
     "source": {
       "title": "Connecter une source",

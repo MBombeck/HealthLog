@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 
 import { OnboardingShell } from "@/components/onboarding/OnboardingShell";
 import { WelcomeCarousel } from "@/components/onboarding/WelcomeCarousel";
+import { GoalsChipPicker } from "@/components/onboarding/GoalsChipPicker";
 import { getSession } from "@/lib/auth/session";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
@@ -80,6 +81,19 @@ export default async function OnboardingStepPage({ params }: PageProps) {
     return (
       <OnboardingShell step={0} userLocale={user.locale ?? null}>
         <WelcomeCarousel />
+      </OnboardingShell>
+    );
+  }
+
+  // Goals (step 1) — multi-select chip grid. Component owns its own
+  // Back/Skip/Next row so the shell drops every footer href to avoid
+  // duplicate controls. The user id is threaded as a prop so the
+  // client hydration reads localStorage synchronously in its state
+  // initializer (avoids the setState-in-effect anti-pattern).
+  if (requested === 1) {
+    return (
+      <OnboardingShell step={1} userLocale={user.locale ?? null}>
+        <GoalsChipPicker userId={user.id} />
       </OnboardingShell>
     );
   }

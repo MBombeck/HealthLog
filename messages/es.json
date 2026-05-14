@@ -1453,8 +1453,17 @@
     },
     "goals": {
       "title": "¿Qué te gustaría registrar?",
-      "body": "Elige las métricas que te interesan. El panel y los recordatorios se ajustarán a tu elección.",
-      "placeholder": "Selección de objetivos próximamente."
+      "body": "Elige las áreas que te interesan. El panel y los recordatorios se ajustarán a tu elección.",
+      "helpHint": "Una a tres prioridades suelen funcionar mejor — siempre podrás añadir más más adelante.",
+      "placeholder": "Selección de objetivos próximamente.",
+      "options": {
+        "weightManagement": "Control del peso",
+        "bpTracking": "Presión arterial",
+        "glucoseTracking": "Glucosa",
+        "sleepImprovement": "Mejor sueño",
+        "medicationCompliance": "Medicamentos",
+        "generalWellness": "Bienestar general"
+      }
     },
     "source": {
       "title": "Conectar una fuente",

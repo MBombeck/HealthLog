@@ -1453,8 +1453,17 @@
     },
     "goals": {
       "title": "Co chcesz śledzić?",
-      "body": "Wybierz wskaźniki, które są dla Ciebie ważne. Pulpit i przypomnienia dostosują się do Twojego wyboru.",
-      "placeholder": "Wybór celów wkrótce."
+      "body": "Wybierz obszary, które są dla Ciebie ważne. Pulpit i przypomnienia dostosują się do Twojego wyboru.",
+      "helpHint": "Od jednego do trzech priorytetów zwykle sprawdza się najlepiej — możesz dodać kolejne w dowolnej chwili.",
+      "placeholder": "Wybór celów wkrótce.",
+      "options": {
+        "weightManagement": "Kontrola wagi",
+        "bpTracking": "Ciśnienie",
+        "glucoseTracking": "Glukoza",
+        "sleepImprovement": "Lepszy sen",
+        "medicationCompliance": "Leki",
+        "generalWellness": "Ogólna forma"
+      }
     },
     "source": {
       "title": "Połącz źródło",

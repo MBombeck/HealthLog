@@ -1453,8 +1453,17 @@
     },
     "goals": {
       "title": "What would you like to track?",
-      "body": "Pick the metrics you care about. Your dashboard and the default reminders follow your choice.",
-      "placeholder": "Goal selection coming soon."
+      "body": "Pick the areas you care about. Your dashboard and the default reminders follow your choice.",
+      "helpHint": "One to three priorities tend to work best — you can always add more later.",
+      "placeholder": "Goal selection coming soon.",
+      "options": {
+        "weightManagement": "Weight management",
+        "bpTracking": "Blood pressure",
+        "glucoseTracking": "Glucose",
+        "sleepImprovement": "Better sleep",
+        "medicationCompliance": "Medications",
+        "generalWellness": "General wellness"
+      }
     },
     "source": {
       "title": "Connect a source",

@@ -1453,8 +1453,17 @@
     },
     "goals": {
       "title": "Cosa vuoi monitorare?",
-      "body": "Scegli le metriche che ti interessano. Dashboard e promemoria si adatteranno alle tue scelte.",
-      "placeholder": "Selezione degli obiettivi in arrivo."
+      "body": "Scegli gli ambiti che ti interessano. Dashboard e promemoria si adatteranno alle tue scelte.",
+      "helpHint": "Da una a tre priorità funzionano di solito meglio — potrai aggiungerne altre in qualsiasi momento.",
+      "placeholder": "Selezione degli obiettivi in arrivo.",
+      "options": {
+        "weightManagement": "Gestione del peso",
+        "bpTracking": "Pressione arteriosa",
+        "glucoseTracking": "Glicemia",
+        "sleepImprovement": "Sonno migliore",
+        "medicationCompliance": "Farmaci",
+        "generalWellness": "Benessere generale"
+      }
     },
     "source": {
       "title": "Connetti una sorgente",

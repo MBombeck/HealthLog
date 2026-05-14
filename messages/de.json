@@ -1453,8 +1453,17 @@
     },
     "goals": {
       "title": "Was möchtest du erfassen?",
-      "body": "Wähle die Werte, die dir wichtig sind. Dashboard und Erinnerungen richten sich danach.",
-      "placeholder": "Auswahl der Ziele folgt."
+      "body": "Wähle die Bereiche, die dir wichtig sind. Dashboard und Erinnerungen richten sich danach.",
+      "helpHint": "Ein bis drei Schwerpunkte funktionieren erfahrungsgemäß am besten – mehr geht aber jederzeit.",
+      "placeholder": "Auswahl der Ziele folgt.",
+      "options": {
+        "weightManagement": "Gewicht im Griff",
+        "bpTracking": "Blutdruck",
+        "glucoseTracking": "Blutzucker",
+        "sleepImprovement": "Besser schlafen",
+        "medicationCompliance": "Medikamente",
+        "generalWellness": "Allgemeine Form"
+      }
     },
     "source": {
       "title": "Quelle verbinden",
