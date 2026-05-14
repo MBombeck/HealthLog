@@ -163,11 +163,14 @@ export function pearson(input: {
   // the boundary on near-perfect correlations.
   const clamped = Math.max(-1, Math.min(1, r));
 
-  // Two-sided p-value via t-distribution. t = r * sqrt(n-2) / sqrt(1-r^2).
-  // For n >= 20 (v1.4.23 H6 raise) the normal approximation is
-  // conservative enough for a surfacing decision; we use it directly
-  // to avoid pulling in an incomplete-beta implementation. The
-  // rigorous incomplete-beta swap is a v1.4.24 candidate.
+  // Two-sided p-value via Student's t. t = r * sqrt(n-2) / sqrt(1-r^2).
+  // v1.4.26 P6-1 — replaced the normal-approx fallback with a rigorous
+  // regularised-incomplete-beta evaluation so the surface decision is
+  // exact at every df the corpus produces, not just for df >= 18. The
+  // auto-discovery work planned for v1.5/v1.6 widens the metric pair
+  // grid past the three pre-defined cards here; the exact p-value
+  // pre-empts a class of false positives that the normal-approx
+  // overstated at low df.
   const tStat =
     Math.abs(clamped) >= 1
       ? Number.POSITIVE_INFINITY
@@ -209,24 +212,117 @@ function roundTo(value: number, digits: number): number {
 
 /**
  * Two-sided p-value for a t-statistic with `df` degrees of freedom.
- * Uses the standard-normal approximation for df >= 12, which is
- * accurate to within ~0.005 over the surfacing range and avoids a
- * bespoke incomplete-beta implementation.
+ *
+ * v1.4.26 P6-1 — exact Student's-t survival via the regularised
+ * incomplete beta. The two-sided p of |t| with df is
+ *   p = I_{x}(df/2, 1/2)        where x = df / (df + t^2).
+ * `regularizedIncompleteBeta` below evaluates `I_x(a, b)` with the
+ * Lentz continued-fraction recurrence (Numerical Recipes §6.4); the
+ * symmetric-tail identity I_x(a,b) = 1 - I_{1-x}(b,a) keeps the
+ * recurrence in its convergent half-plane. The previous normal
+ * approximation overstated significance at df < 18; this routine is
+ * accurate to ~1e-12 across the surfacing range so the v1.4.23 H6
+ * gate is no longer load-bearing for correctness — only for sample
+ * adequacy.
  */
 function twoSidedPFromT(absT: number, df: number): number {
   if (!Number.isFinite(absT)) return 0;
   if (df <= 0) return 1;
-  // For very small df the normal approx overstates significance; clamp
-  // to a conservative "not significant" so a tiny n never sneaks past
-  // the p < 0.05 gate. v1.4.23 H6 raised the surfacing gate to
-  // n >= 20 (df >= 18); the conservative correction below stays as
-  // defence-in-depth in case a caller passes a tighter `minPairs`.
-  if (df < 12) {
-    // Crude correction — multiply absT down so p inflates. Keeps the
-    // test-suite synthetic data realistic without overfitting.
-    return 2 * (1 - normalCdf(absT * 0.85));
+  if (absT === 0) return 1;
+  const x = df / (df + absT * absT);
+  return regularizedIncompleteBeta(x, df / 2, 0.5);
+}
+
+/**
+ * Regularised incomplete beta function I_x(a, b).
+ *
+ * Continued-fraction evaluation of B_x(a, b) via the modified Lentz
+ * recurrence; the prefactor `front` = x^a (1-x)^b / (a B(a, b)) is
+ * computed in log-space to avoid intermediate overflow. The recursion
+ * converges fast for x < (a+1)/(a+b+2); the symmetric-tail identity
+ * I_x(a,b) = 1 - I_{1-x}(b,a) handles the other half-plane.
+ *
+ * Source: Press, Teukolsky, Vetterling, Flannery — Numerical Recipes
+ * in C, 2nd ed., §6.4 "Incomplete Beta Function".
+ */
+function regularizedIncompleteBeta(x: number, a: number, b: number): number {
+  if (x <= 0) return 0;
+  if (x >= 1) return 1;
+  // bt = exp(lnΓ(a+b) - lnΓ(a) - lnΓ(b) + a ln x + b ln(1-x))
+  // = x^a · (1-x)^b / B(a,b)
+  const bt = Math.exp(
+    lnGamma(a + b) - lnGamma(a) - lnGamma(b)
+      + a * Math.log(x) + b * Math.log(1 - x),
+  );
+  if (x < (a + 1) / (a + b + 2)) {
+    return (bt * betaContinuedFraction(x, a, b)) / a;
   }
-  return 2 * (1 - normalCdf(absT));
+  // Symmetric-tail branch: pass swapped args + 1-x. Same `bt` prefactor.
+  return 1 - (bt * betaContinuedFraction(1 - x, b, a)) / b;
+}
+
+/**
+ * Modified Lentz continued-fraction sum for B_x(a, b). Returns the
+ * raw CF value; the caller multiplies by the `front` factor and
+ * divides by `a` to recover I_x(a, b). Cap at 200 iterations — the
+ * recurrence converges in <50 across the t-distribution surface; the
+ * cap is defence-in-depth.
+ */
+function betaContinuedFraction(x: number, a: number, b: number): number {
+  const maxIter = 200;
+  const epsilon = 3e-16;
+  const fpMin = 1e-300;
+  const qab = a + b;
+  const qap = a + 1;
+  const qam = a - 1;
+  let c = 1;
+  let d = 1 - (qab * x) / qap;
+  if (Math.abs(d) < fpMin) d = fpMin;
+  d = 1 / d;
+  let h = d;
+  for (let m = 1; m <= maxIter; m++) {
+    const m2 = 2 * m;
+    // Even step.
+    let aa = (m * (b - m) * x) / ((qam + m2) * (a + m2));
+    d = 1 + aa * d;
+    if (Math.abs(d) < fpMin) d = fpMin;
+    c = 1 + aa / c;
+    if (Math.abs(c) < fpMin) c = fpMin;
+    d = 1 / d;
+    h *= d * c;
+    // Odd step.
+    aa = -((a + m) * (qab + m) * x) / ((a + m2) * (qap + m2));
+    d = 1 + aa * d;
+    if (Math.abs(d) < fpMin) d = fpMin;
+    c = 1 + aa / c;
+    if (Math.abs(c) < fpMin) c = fpMin;
+    d = 1 / d;
+    const del = d * c;
+    h *= del;
+    if (Math.abs(del - 1) < epsilon) return h;
+  }
+  return h;
+}
+
+/**
+ * ln(Γ(x)) via Lanczos g=7 coefficients. Accurate to ~1e-15 for
+ * x > 0.5; we only call it with arguments >= 0.5 (a >= 0.5, b = 0.5
+ * fixed) so the reflection formula is unnecessary.
+ */
+function lnGamma(x: number): number {
+  const c = [
+    676.5203681218851, -1259.1392167224028, 771.32342877765313,
+    -176.61502916214059, 12.507343278686905, -0.13857109526572012,
+    9.9843695780195716e-6, 1.5056327351493116e-7,
+  ];
+  let y = x;
+  let tmp = x + 7.5;
+  tmp -= (x + 0.5) * Math.log(tmp);
+  let ser = 0.99999999999980993;
+  for (let j = 0; j < c.length; j++) {
+    ser += c[j] / ++y;
+  }
+  return -tmp + Math.log((2.5066282746310005 * ser) / x);
 }
 
 function normalCdf(x: number): number {

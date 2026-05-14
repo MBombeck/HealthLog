@@ -106,6 +106,13 @@ function formatMinutes(total: number, locale: string): string {
  * 30-day → "May 10" / "May 11" / …  Recharts handles overflow via
  * interval=preserveStartEnd so we keep the label space tight without
  * forced rotation.
+ *
+ * The constructed Date is anchored to UTC so the rendered tick is
+ * stable regardless of the SSR server's local timezone — without the
+ * anchor a user in Asia/Tokyo viewing a server rendered in
+ * Europe/Berlin could see the weekday tick shift by one. We pair the
+ * UTC anchor with `timeZone: "UTC"` on the locale formatter so both
+ * sides of the conversion agree.
  */
 function formatDayTick(
   dayKey: string,
@@ -114,16 +121,18 @@ function formatDayTick(
 ): string {
   const [y, m, d] = dayKey.split("-").map(Number);
   if (!y || !m || !d) return dayKey;
-  const date = new Date(y, m - 1, d);
+  const date = new Date(Date.UTC(y, m - 1, d));
   if (window === 7) {
     return date.toLocaleDateString(locale === "de" ? "de-DE" : "en-US", {
+      timeZone: "UTC",
       weekday: "short",
     });
   }
   if (window === 14) {
-    return `${date.getDate()}.`;
+    return `${date.getUTCDate()}.`;
   }
   return date.toLocaleDateString(locale === "de" ? "de-DE" : "en-US", {
+    timeZone: "UTC",
     month: "short",
     day: "numeric",
   });
