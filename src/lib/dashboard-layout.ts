@@ -34,6 +34,12 @@ export const DASHBOARD_WIDGET_IDS = [
   // a `visible` (chart-row) surface; tileVisible is forced false because
   // there's no tile-strip representation for it.
   "insightsPreview",
+  // v1.4.25 W8d — VO2 max trend tile (opt-in, secondary-metric pattern).
+  // Self-gates on having any VO2_MAX sample; default-invisible so
+  // existing dashboards stay unchanged until the user enables it in
+  // Settings → Dashboard. Only the tile-strip surface; chart row
+  // lands alongside the iOS-app body-composition sub-page in v1.5.
+  "vo2Max",
 ] as const;
 
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number];
@@ -217,6 +223,11 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayout = {
     // so it stays pinned above charts even if the user reorders other
     // widgets; only the boolean visibility flag is consumed.
     { id: "insightsPreview", visible: true, tileVisible: false, order: 14 },
+    // v1.4.25 W8d — VO2 max trend tile. Default-invisible on both
+    // surfaces; opt-in via Settings → Dashboard. Only the tile-strip
+    // representation today (`visible` stays false so the chart-row
+    // gate never fires; the chart card lands in v1.5).
+    { id: "vo2Max", visible: false, tileVisible: false, order: 15 },
   ],
 };
 

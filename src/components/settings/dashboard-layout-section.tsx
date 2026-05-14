@@ -48,6 +48,8 @@ const WIDGET_LABEL_KEYS: Record<DashboardWidgetId, string> = {
   // for the polished `<InsightsCardPreview>` (top severity-ordered AI
   // recommendations + ring confidence meter + "View all" CTA).
   insightsPreview: "dashboard.insightsPreview",
+  // v1.4.25 W8d — VO2 max secondary-metric tile (opt-in).
+  vo2Max: "dashboard.vo2Max",
 };
 
 export function DashboardLayoutSection({ id }: { id: string }) {

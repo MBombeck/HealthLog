@@ -7,6 +7,7 @@ import {
   Activity,
   Droplet,
   Footprints,
+  Gauge,
   Heart,
   Moon,
   Percent,
@@ -251,6 +252,10 @@ export default function DashboardPage() {
   const bf = data?.summaries?.BODY_FAT;
   const sleepSummary = data?.summaries?.SLEEP_DURATION;
   const stepsSummary = data?.summaries?.ACTIVITY_STEPS;
+  // v1.4.25 W8d — VO2 max secondary-metric tile. /api/analytics
+  // auto-populates this summary because the route iterates over the
+  // full measurementTypeEnum.options list; no backend change needed.
+  const vo2Summary = data?.summaries?.VO2_MAX;
   const moodSummary = moodData?.summary;
 
   // Resolve full dashboard layout — controls visibility + order of every widget
@@ -307,6 +312,7 @@ export default function DashboardPage() {
   const hasMood = (moodSummary?.count ?? 0) > 0;
   const hasSleep = (sleepSummary?.count ?? 0) > 0;
   const hasSteps = (stepsSummary?.count ?? 0) > 0;
+  const hasVo2 = (vo2Summary?.count ?? 0) > 0;
   const hasBpInTarget = data?.bpInTargetPct != null;
 
   // Tile (strip) gates — controlled by the new `tileVisible` flag.
@@ -317,6 +323,7 @@ export default function DashboardPage() {
   const showMoodTile = isTileVisible("mood") && hasMood;
   const showSleepTile = isTileVisible("sleep") && hasSleep;
   const showStepsTile = isTileVisible("steps") && hasSteps;
+  const showVo2Tile = isTileVisible("vo2Max") && hasVo2;
   const showBpInTargetTile = isTileVisible("bpInTarget") && hasBpInTarget;
 
   // Chart (lower row) gates — controlled by the legacy `visible` flag.
@@ -805,6 +812,35 @@ export default function DashboardPage() {
                 directionSentiment="up-good"
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(stepsSummary)}
+              />
+            ),
+          });
+        }
+        // v1.4.25 W8d — VO2 max trend tile. Self-gates on the
+        // `vo2Max` widget being enabled (Settings → Dashboard) AND
+        // the analytics summary carrying at least one sample. Higher
+        // VO2 max is better, so the directionSentiment is up-good and
+        // an upward 30-day slope renders the green arrow. Unit
+        // matches the canonical DB unit in
+        // src/lib/validations/measurement.ts.
+        if (showVo2Tile) {
+          trendCards.push({
+            id: "vo2Max",
+            order: widgetOrder("vo2Max"),
+            node: (
+              <TrendCard
+                key="vo2Max"
+                label={t("dashboard.vo2Max") ?? "VO₂ max"}
+                latest={vo2Summary?.latest ?? null}
+                unit={t("dashboard.vo2MaxUnit") ?? "mL/(kg·min)"}
+                avg7={vo2Summary?.avg7 ?? null}
+                avg30={vo2Summary?.avg30 ?? null}
+                slope30={vo2Summary?.slope30 ?? null}
+                trend7Delta={summaryToTrend7Delta(vo2Summary)}
+                icon={Gauge}
+                directionSentiment="up-good"
+                compareBaseline={compareBaseline}
+                compareDelta={tileCompareDelta(vo2Summary)}
               />
             ),
           });

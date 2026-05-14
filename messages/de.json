@@ -247,6 +247,8 @@
     "bodyFat": "Körperfett",
     "sleep": "Schlaf",
     "steps": "Schritte",
+    "vo2Max": "VO₂ max",
+    "vo2MaxUnit": "mL/(kg·min)",
     "bpInTarget": "BD im Zielbereich",
     "days30Short": "30T",
     "medications": "Medikamente",

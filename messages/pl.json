@@ -247,6 +247,8 @@
     "bodyFat": "Tkanka tłuszczowa",
     "sleep": "Sen",
     "steps": "Kroki",
+    "vo2Max": "VO₂ max",
+    "vo2MaxUnit": "mL/(kg·min)",
     "bpInTarget": "BP in Target",
     "days30Short": "30d",
     "medications": "Leki",

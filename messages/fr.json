@@ -247,6 +247,8 @@
     "bodyFat": "Masse grasse",
     "sleep": "Sommeil",
     "steps": "Pas",
+    "vo2Max": "VO₂ max",
+    "vo2MaxUnit": "mL/(kg·min)",
     "bpInTarget": "BP in Target",
     "days30Short": "30d",
     "medications": "Médicaments",
