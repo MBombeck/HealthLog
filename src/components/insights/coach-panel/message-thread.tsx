@@ -63,6 +63,38 @@ function isPinnedToBottom(el: HTMLElement, slack = 64): boolean {
   return el.scrollHeight - el.scrollTop - el.clientHeight <= slack;
 }
 
+/**
+ * v1.4.25 W5 — map server-emitted error codes to specific Coach i18n
+ * keys. The chat route distinguishes the daily user-quota
+ * (`coach.budget.exceeded`, returned as a JSON 429) from the provider
+ * rate-limit (`coach.provider.rate_limited`, streamed as an SSE error
+ * frame). Both used to surface as the generic provider-unavailable
+ * copy; we now route each to its dedicated translation so the user
+ * understands whether the limit is on their side (reset at UTC
+ * midnight) or transient on the provider side (retry in ~5 min).
+ *
+ * Exported so the resolver can be pinned by unit tests without
+ * standing up the whole thread renderer.
+ */
+export function errorCodeToI18nKey(code: string): string {
+  switch (code) {
+    case "coach.budget.exceeded":
+      return "insights.coach.dailyLimitBody";
+    case "coach.provider.rate_limited":
+      return "insights.coach.providerRateLimitBody";
+    case "coach.provider.unavailable":
+    case "coach.provider.empty":
+    case "coach.provider.none":
+    case "coach.network":
+    case "coach.stream":
+      return "insights.coach.errorProvider";
+    default:
+      // Forward-compat: try `insights.coach.<code>` for codes that
+      // ship their own translation (e.g. legacy `errorProvider`).
+      return `insights.coach.${code}`;
+  }
+}
+
 export function MessageThread({
   conversation,
   streaming,
@@ -336,12 +368,20 @@ function ChatBubble({
     );
   }
 
-  const errorMessage = errorCode ? t(`insights.coach.${errorCode}`, {}) : null;
-  // When a translated message comes back unchanged (i.e. key missing) we
-  // fall back to a generic provider error string so the bubble doesn't
-  // surface raw `coach.http.503` text to the user.
+  // v1.4.25 W5 — map server-emitted error codes to specific Coach
+  // i18n keys. Distinct user-quota and provider-rate-limit copy so the
+  // user understands daily-cap (resets at UTC midnight) vs. transient
+  // provider load (retry in ~5 min). Codes that have no dedicated
+  // translation fall back to the generic provider-unavailable copy.
+  const errorKey = errorCode
+    ? errorCodeToI18nKey(errorCode)
+    : null;
+  const errorMessage = errorKey ? t(errorKey, {}) : null;
+  // When a translated message comes back unchanged (i.e. key missing)
+  // we fall back to a generic provider error string so the bubble
+  // doesn't surface raw `coach.http.503` text to the user.
   const safeError =
-    errorMessage && errorMessage !== `insights.coach.${errorCode}`
+    errorMessage && errorMessage !== errorKey
       ? errorMessage
       : errorCode
         ? t("insights.coach.errorProvider")

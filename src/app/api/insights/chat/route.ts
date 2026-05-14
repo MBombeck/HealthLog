@@ -275,7 +275,19 @@ Reply now as the assistant, in ${locale === "de" ? "German" : "English"}.`;
           firstStatus: err.attempts[0]?.httpStatus ?? null,
         },
       });
-      return streamProviderError({ code: "coach.provider.unavailable" });
+      // v1.4.25 W5 — distinguish provider rate-limit (every attempt
+      // landed on 429) from generic unavailability. The drawer's
+      // error-decoder surfaces the rate-limit copy with a warning
+      // toast instead of the generic provider-down message, so the
+      // user understands the limit is transient.
+      const allRateLimited =
+        err.attempts.length > 0 &&
+        err.attempts.every((a) => a.httpStatus === 429);
+      return streamProviderError({
+        code: allRateLimited
+          ? "coach.provider.rate_limited"
+          : "coach.provider.unavailable",
+      });
     }
     throw err;
   }

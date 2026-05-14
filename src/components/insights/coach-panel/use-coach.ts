@@ -377,13 +377,33 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
         .toLowerCase()
         .startsWith("text/event-stream");
       if (!response.ok && !isEventStream) {
+        // v1.4.25 W5 — for JSON errors the apiHandler envelope carries
+        // a structured `error` code (e.g. `coach.budget.exceeded`).
+        // Surface the structured code directly so the drawer can show
+        // the right copy + toast variant; fall back to the generic
+        // `coach.http.<status>` only when parsing the envelope fails.
+        let structured: string | null = null;
+        try {
+          const envelope = (await response.clone().json()) as {
+            error?: unknown;
+          };
+          if (typeof envelope?.error === "string") {
+            structured = envelope.error;
+          }
+        } catch {
+          // body was not JSON; fall through to the http-status fallback
+        }
         setStreaming({
           content: "",
           metricSource: null,
           inProgress: false,
           messageId: null,
-          errorCode: `coach.http.${response.status}`,
+          errorCode: structured ?? `coach.http.${response.status}`,
         });
+        // Drop the optimistic user bubble on the error path too so
+        // the next refetch — which still has the persisted user
+        // message — doesn't render the same bubble twice.
+        setOptimisticUser(null);
         return;
       }
 

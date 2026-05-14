@@ -434,6 +434,42 @@ describe("<MessageThread>", () => {
     expect(userIdx).toBeLessThan(assistantIdx);
   });
 
+  // v1.4.25 W5 — distinct daily-limit vs provider-rate-limit copy.
+  it("surfaces the daily-limit copy for coach.budget.exceeded", () => {
+    const html = render(
+      <MessageThread
+        conversation={null}
+        streaming={{
+          content: "",
+          metricSource: null,
+          inProgress: false,
+          messageId: null,
+          errorCode: "coach.budget.exceeded",
+        }}
+      />,
+    );
+    expect(html).toContain("Daily limit reached; resets at 00:00 UTC.");
+    expect(html).not.toContain("could not reach an AI provider");
+  });
+
+  it("surfaces the provider rate-limit copy for coach.provider.rate_limited", () => {
+    const html = render(
+      <MessageThread
+        conversation={null}
+        streaming={{
+          content: "",
+          metricSource: null,
+          inProgress: false,
+          messageId: null,
+          errorCode: "coach.provider.rate_limited",
+        }}
+      />,
+    );
+    expect(html).toContain(
+      "Provider temporarily rate-limited; retry in ~5 min.",
+    );
+  });
+
   it("suppresses the optimistic user bubble once its persisted twin lands", () => {
     // baseConversation already carries a user message "Why was BP
     // higher on Monday?". Passing the same content as the optimistic
@@ -460,5 +496,45 @@ describe("<MessageThread>", () => {
     const userBubbles = (html.match(/data-slot="coach-bubble-user"/g) ?? [])
       .length;
     expect(userBubbles).toBe(1);
+  });
+});
+
+// v1.4.25 W5 — pin the error-code → i18n-key resolver so future code
+// changes can't silently demote the daily-limit / rate-limit copy
+// back to the generic provider-unavailable fallback.
+import { errorCodeToI18nKey } from "../message-thread";
+
+describe("errorCodeToI18nKey", () => {
+  it("maps daily-budget exceedance to the dedicated key", () => {
+    expect(errorCodeToI18nKey("coach.budget.exceeded")).toBe(
+      "insights.coach.dailyLimitBody",
+    );
+  });
+
+  it("maps provider rate-limit to the dedicated key", () => {
+    expect(errorCodeToI18nKey("coach.provider.rate_limited")).toBe(
+      "insights.coach.providerRateLimitBody",
+    );
+  });
+
+  it("maps every other provider failure to the generic copy", () => {
+    for (const code of [
+      "coach.provider.unavailable",
+      "coach.provider.empty",
+      "coach.provider.none",
+      "coach.network",
+      "coach.stream",
+    ]) {
+      expect(errorCodeToI18nKey(code)).toBe("insights.coach.errorProvider");
+    }
+  });
+
+  it("forward-compats unknown codes with the namespaced key", () => {
+    expect(errorCodeToI18nKey("errorProvider")).toBe(
+      "insights.coach.errorProvider",
+    );
+    expect(errorCodeToI18nKey("brand-new-code")).toBe(
+      "insights.coach.brand-new-code",
+    );
   });
 });
