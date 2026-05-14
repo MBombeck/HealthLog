@@ -360,7 +360,16 @@ model Measurement {
 
   // Original measuredAt-based dedup — kept for legacy Withings ingest
   // and the manual UI's "no duplicate at the same wall-clock" guard.
-  @@unique([userId, type, measuredAt, source])
+  //
+  // v1.4.25 W17b/c — `sleepStage` is the fifth axis so per-stage sleep
+  // segments from a single night (one row per stage, same measuredAt)
+  // can co-exist. Migration 0055 recreated the index with
+  // `NULLS NOT DISTINCT` so non-sleep rows (sleepStage IS NULL) still
+  // collide on the first four columns — same effective dedup as before
+  // for every meastype other than SLEEP_DURATION. Future regenerations
+  // must preserve the NULLS NOT DISTINCT clause (Prisma 7 still emits
+  // NULLS DISTINCT by default).
+  @@unique([userId, type, measuredAt, source, sleepStage])
   // v1.4.23 — Apple Health batch dedup key. NULL externalId is distinct
   // (Postgres semantics) so manual entries don't collide here.
   @@unique([userId, type, source, externalId])

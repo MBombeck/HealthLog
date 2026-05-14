@@ -196,28 +196,43 @@ export async function syncUserMeasurements(
   let imported = 0;
 
   for (const m of measures) {
-    // Upsert to avoid duplicates (unique on userId+type+measuredAt+source)
     const measType = m.type as MeasurementType;
     try {
-      await prisma.measurement.upsert({
+      // v1.4.25 W17b/c — Migration 0055 added `sleepStage` to the
+      // composite unique with `NULLS NOT DISTINCT`, so a non-sleep
+      // upsert keyed on (userId, type, measuredAt, source) with
+      // sleepStage IS NULL is still safe. But Prisma's typed compound
+      // input requires a non-null `sleepStage`, so we model the
+      // idempotent write as a `findFirst` + `create`/`update`. The
+      // unique index still serializes concurrent inserts, so the worst
+      // case is a Prisma P2002 we catch and ignore.
+      const existing = await prisma.measurement.findFirst({
         where: {
-          userId_type_measuredAt_source: {
+          userId,
+          type: measType,
+          measuredAt: m.measuredAt,
+          source: "WITHINGS",
+          sleepStage: null,
+        },
+        select: { id: true },
+      });
+      if (existing) {
+        await prisma.measurement.update({
+          where: { id: existing.id },
+          data: { value: m.value },
+        });
+      } else {
+        await prisma.measurement.create({
+          data: {
             userId,
             type: measType,
+            value: m.value,
+            unit: getUnitForType(m.type),
             measuredAt: m.measuredAt,
             source: "WITHINGS",
           },
-        },
-        update: { value: m.value },
-        create: {
-          userId,
-          type: measType,
-          value: m.value,
-          unit: getUnitForType(m.type),
-          measuredAt: m.measuredAt,
-          source: "WITHINGS",
-        },
-      });
+        });
+      }
       imported++;
     } catch (err) {
       getEvent()?.addWarning(`Failed to upsert measure: ${err}`);
