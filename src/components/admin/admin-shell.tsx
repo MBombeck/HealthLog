@@ -151,8 +151,13 @@ export function AdminShell({ active, children }: AdminShellProps) {
   const { t } = useTranslations();
   const activeSlug = deriveActiveSlug(pathname, active);
 
+  // v1.4.25 W8 — AuthShell wraps the page in `px-4 py-6 md:px-6`
+  // already, so this inner shell only carries the wider max-width.
+  // Previously the duplicate `px-4 py-6 md:px-6 md:py-8` here was
+  // producing visibly more top/bottom whitespace on Settings/Admin
+  // pages than on Dashboard/Insights/Measurements.
   return (
-    <div className="mx-auto w-full max-w-screen-xl px-4 py-6 md:px-6 md:py-8">
+    <div className="mx-auto w-full max-w-screen-xl">
       {/* Mobile section strip — horizontal scroll, hidden on md+.
           `no-scrollbar` (defined in `globals.css`) suppresses the
           painted scrollbar at the top of every admin page; the
