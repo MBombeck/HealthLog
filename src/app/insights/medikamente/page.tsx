@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { ComplianceHeatmap } from "@/components/charts/compliance-heatmap";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
+import { TherapyTimeline } from "@/components/insights/therapy-timeline";
 
 /**
  * v1.4.25 W4 — `/insights/medikamente`.
@@ -214,6 +215,11 @@ export default function InsightsMedikamentePage() {
         updatedAt={status?.updatedAt ?? null}
         loading={isStatusLoading}
       />
+
+      {/* v1.4.25 W4d — GLP-1 therapy timeline. Self-hides for users
+          without an active GLP-1 medication, so the page collapses
+          back to the compliance grid for everyone else. */}
+      <TherapyTimeline />
     </SubPageShell>
   );
 }

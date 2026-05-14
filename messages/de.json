@@ -560,6 +560,15 @@
     "siteThighRight": "Rechter Oberschenkel",
     "siteUpperArmLeft": "Linker Oberarm",
     "siteUpperArmRight": "Rechter Oberarm",
+    "sideEffectTagsLabel": "Häufige GLP-1-Nebenwirkungen",
+    "sideEffectTagsHelp": "Tippe einen Chip, um ihn zu den Mood-Tags hinzuzufügen.",
+    "sideEffectTagNausea": "Übelkeit",
+    "sideEffectTagConstipation": "Verstopfung",
+    "sideEffectTagDiarrhea": "Durchfall",
+    "sideEffectTagFatigue": "Müdigkeit",
+    "sideEffectTagAppetiteLoss": "Appetitlosigkeit",
+    "sideEffectTagHeartburn": "Sodbrennen",
+    "sideEffectTagHeadache": "Kopfschmerzen",
     "newSchedule": "Neues Zeitfenster",
     "removeSchedule": "Zeitfenster entfernen",
     "advancedEditing": "Erweiterte Bearbeitung",
@@ -878,6 +887,14 @@
       "emptyDescription": "Erstelle das heutige Briefing, um eine Zusammenfassung deiner Trends zu bekommen.",
       "emptyAction": "Briefing erstellen",
       "loadingLabel": "Briefing wird zusammengestellt"
+    },
+    "therapyTimeline": {
+      "title": "GLP-1-Therapieverlauf",
+      "description": "Chronologische Liste: Dosis-Änderungen, Injektionen, Bestand und Nebenwirkungstage.",
+      "empty": "Keine GLP-1-Ereignisse in den letzten 90 Tagen.",
+      "doseTo": "Dosis auf",
+      "pens": "Pens",
+      "sideEffects": "Nebenwirkungen"
     },
     "trendsRow": {
       "title": "Trends",
