@@ -161,9 +161,7 @@ function translateStatus(
  * middle, which paints the pill in the neutral amber tone rather than
  * lighting up a false-positive green/red.
  */
-function statusGroupForCategory(
-  category: string,
-): "in" | "near" | "out" {
+function statusGroupForCategory(category: string): "in" | "near" | "out" {
   const greenCategories = new Set([
     "Normal",
     "Optimal",
@@ -370,11 +368,12 @@ export function TargetCard({
     target.consistency7d != null &&
     target.consistency7d.length > 0;
 
-  const showLastMet =
-    target.lastMetGoalAt != null && !target.insufficientData;
+  const showLastMet = target.lastMetGoalAt != null && !target.insufficientData;
 
   const showStreak =
-    target.streakDays != null && target.streakDays >= 3 && !target.insufficientData;
+    target.streakDays != null &&
+    target.streakDays >= 3 &&
+    !target.insufficientData;
 
   // Coach prefill is built from the live state of the card; the helper
   // file owns the per-metric template + locale resolution.
@@ -409,7 +408,7 @@ export function TargetCard({
               aria-hidden="true"
             />
             <h3
-              className="text-muted-foreground text-[0.6875rem] font-medium uppercase tracking-[0.08em]"
+              className="text-muted-foreground text-[0.6875rem] font-medium tracking-[0.08em] uppercase"
               data-slot="target-card-title"
             >
               {titleLabel}
@@ -456,7 +455,7 @@ export function TargetCard({
             <div className="flex items-baseline gap-2">
               {moodStabilityValue && moodStabilityCopy ? (
                 <span
-                  className="text-foreground text-2xl font-semibold leading-none sm:text-3xl"
+                  className="text-foreground text-2xl leading-none font-semibold sm:text-3xl"
                   data-slot="target-headline-value"
                   data-mood-stability={moodStabilityValue}
                 >
@@ -464,7 +463,7 @@ export function TargetCard({
                 </span>
               ) : isBp && bpDiastolic?.current != null ? (
                 <span
-                  className="text-foreground flex items-baseline gap-1 text-2xl font-semibold leading-none sm:text-3xl"
+                  className="text-foreground flex items-baseline gap-1 text-2xl leading-none font-semibold sm:text-3xl"
                   data-slot="target-headline-value"
                 >
                   <span>{Math.round(target.current)}</span>
@@ -473,7 +472,7 @@ export function TargetCard({
                 </span>
               ) : (
                 <span
-                  className="text-foreground text-2xl font-semibold leading-none sm:text-3xl"
+                  className="text-foreground text-2xl leading-none font-semibold sm:text-3xl"
                   data-slot="target-headline-value"
                 >
                   {target.type === "BODY_FAT"

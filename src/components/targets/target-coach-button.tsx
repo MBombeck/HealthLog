@@ -4,10 +4,7 @@ import { Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
-import type {
-  CoachScope,
-  CoachScopeSource,
-} from "@/lib/ai/coach/types";
+import type { CoachScope, CoachScopeSource } from "@/lib/ai/coach/types";
 
 /**
  * v1.4.25 W3e — per-card "Ask Coach about this" CTA.

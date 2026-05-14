@@ -122,9 +122,7 @@ export function ConsistencyStrip({
               data-band={band ?? "none"}
               className={cn(
                 "size-2.5 rounded-full border transition-colors",
-                band
-                  ? BAND_STYLES[band]
-                  : "border-border bg-transparent",
+                band ? BAND_STYLES[band] : "border-border bg-transparent",
               )}
             />
           );

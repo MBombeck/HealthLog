@@ -67,7 +67,7 @@ export function TargetsSummaryHeader({
       <div className="flex items-center gap-2">
         {allMet && (
           <CheckCircle2
-            className="text-[var(--dracula-green)] size-4 shrink-0"
+            className="size-4 shrink-0 text-[var(--dracula-green)]"
             aria-hidden="true"
           />
         )}

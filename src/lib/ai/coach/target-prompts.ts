@@ -58,8 +58,7 @@ const TEMPLATES_EN: Record<string, Template> = {
   MOOD_SCORE: (i) =>
     `My latest mood score is ${fmt(i.current)} / 5 and my target is ${i.range ? `${i.range.min}+ / 5` : "3.5+ / 5"}. How does my mood compare to recent weeks and what could I try?`,
   MOOD_STABILITY: (i) => {
-    const label =
-      i.current != null ? moodStabilityLabel(i.current) : "stable";
+    const label = i.current != null ? moodStabilityLabel(i.current) : "stable";
     const verbal =
       label === "stable"
         ? "stable"
@@ -86,8 +85,7 @@ const TEMPLATES_DE: Record<string, Template> = {
   MOOD_SCORE: (i) =>
     `Mein letzter Stimmungs-Wert ist ${fmt(i.current)} / 5, mein Ziel liegt bei ${i.range ? `${i.range.min}+ / 5` : "3,5+ / 5"}. Wie ist meine Stimmung im Vergleich zu den letzten Wochen, und was könnte ich ausprobieren?`,
   MOOD_STABILITY: (i) => {
-    const label =
-      i.current != null ? moodStabilityLabel(i.current) : "stable";
+    const label = i.current != null ? moodStabilityLabel(i.current) : "stable";
     const verbal =
       label === "stable"
         ? "stabil"

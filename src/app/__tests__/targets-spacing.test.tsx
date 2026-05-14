@@ -14,18 +14,48 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/targets",
 }));
 
-vi.mock("@tanstack/react-query", () => ({
-  useQuery: () => ({
-    data: {
-      targets: [],
-      bpDiastolic: { current: null, average30: null, range: null },
-      profile: { heightCm: null, age: null, gender: null, glucoseUnit: null },
+vi.mock("@tanstack/react-query", () => {
+  const noopClient = {
+    invalidateQueries: vi.fn(),
+    setQueryData: vi.fn(),
+    getQueryData: vi.fn(),
+    refetchQueries: vi.fn(),
+  };
+  return {
+    useQuery: ({ queryKey }: { queryKey: unknown[] }) => {
+      if (Array.isArray(queryKey) && queryKey[1] === "provider-chain") {
+        return {
+          data: null,
+          isLoading: false,
+          isError: false,
+          refetch: vi.fn(),
+        };
+      }
+      return {
+        data: {
+          targets: [],
+          bpDiastolic: { current: null, average30: null, range: null },
+          profile: {
+            heightCm: null,
+            age: null,
+            gender: null,
+            glucoseUnit: null,
+          },
+        },
+        isLoading: false,
+        isError: false,
+        refetch: vi.fn(),
+      };
     },
-    isLoading: false,
-    isError: false,
-    refetch: vi.fn(),
-  }),
-}));
+    useQueryClient: () => noopClient,
+    useMutation: () => ({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn(),
+      isPending: false,
+      reset: vi.fn(),
+    }),
+  };
+});
 
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({

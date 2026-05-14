@@ -82,14 +82,44 @@ const sampleData = {
   profile: { heightCm: 180, age: 35, gender: "MALE", glucoseUnit: null },
 };
 
-vi.mock("@tanstack/react-query", () => ({
-  useQuery: () => ({
-    data: sampleData,
-    isLoading: false,
-    isError: false,
-    refetch: vi.fn(),
-  }),
-}));
+vi.mock("@tanstack/react-query", () => {
+  const noopClient = {
+    invalidateQueries: vi.fn(),
+    setQueryData: vi.fn(),
+    getQueryData: vi.fn(),
+    refetchQueries: vi.fn(),
+  };
+  return {
+    useQuery: ({ queryKey }: { queryKey: unknown[] }) => {
+      // v1.4.25 W3e — the targets page now also queries
+      // ["insights", "provider-chain"] to gate the per-card Coach
+      // CTA. Return null for that query (no AI provider configured)
+      // so the CTA hides and the existing test cases keep asserting
+      // the unchanged visual surface.
+      if (Array.isArray(queryKey) && queryKey[1] === "provider-chain") {
+        return {
+          data: null,
+          isLoading: false,
+          isError: false,
+          refetch: vi.fn(),
+        };
+      }
+      return {
+        data: sampleData,
+        isLoading: false,
+        isError: false,
+        refetch: vi.fn(),
+      };
+    },
+    useQueryClient: () => noopClient,
+    useMutation: () => ({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn(),
+      isPending: false,
+      reset: vi.fn(),
+    }),
+  };
+});
 
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({
