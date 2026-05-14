@@ -20,16 +20,43 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-push:
-    name: Build & push image
-    runs-on: ubuntu-latest
-    # 25 min wall clock — a healthy amd64-only build finishes inside 12 min.
-    # The qemu-arm64 path that was hanging at 47 min on `[linux/amd64 runner
-    # 2/14]` is gone; see commit message for v1.4.16 C5 rationale below.
+  # ── Stage 1 ────────────────────────────────────────────────────────
+  # Build each architecture on its own native GitHub-hosted runner so
+  # Next.js's static-page workers run on real silicon instead of QEMU
+  # user-mode emulation. The v1.4.16 C5 attempt at
+  # `platforms: linux/amd64,linux/arm64` on a single amd64 runner
+  # deterministically SIGILL-crashed Next 15's static export under
+  # qemu-arm64 (`Next.js build worker exited with code: null and signal:
+  # SIGILL`); v8's optimising tier emits instructions qemu cannot
+  # reliably translate. ubuntu-24.04-arm is a standard GitHub-hosted
+  # arm64 runner, free for public repositories, and native — no qemu in
+  # the loop.
+  #
+  # Each platform pushes its layer set by digest only (`outputs: push-by-digest=true`).
+  # The `merge` job below stitches the two digests into a multi-arch
+  # manifest in a third step, so consumers see a single tag that
+  # auto-selects on `docker pull` per local platform.
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
+    # 25 min wall clock — native amd64 build finished inside 12 min
+    # at v1.4.24; the native arm64 path is comparable. The qemu-arm64
+    # hang at 47 min on `[linux/amd64 runner 2/14]` is what motivated
+    # this matrix in the first place.
     timeout-minutes: 25
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            cache_scope: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            cache_scope: arm64
 
     steps:
       - name: Checkout
@@ -42,6 +69,94 @@ jobs:
       # Image is built but not pushed in that case.
       - name: Log in to GitHub Container Registry
         if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute image labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          labels: |
+            org.opencontainers.image.title=HealthLog
+            org.opencontainers.image.description=Self-hosted health-tracking PWA
+            org.opencontainers.image.licenses=AGPL-3.0-only
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+
+      # Per-ref + per-platform gha cache scope. Tag builds warm-start
+      # off main's last good layer set for the same platform; tag and
+      # main builds at the same SHA do not contend on writes, and
+      # amd64 / arm64 caches stay isolated from each other (a stale
+      # arm64 layer never poisons an amd64 build).
+      - name: Build & push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: |
+            type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=${{ github.event_name != 'pull_request' }}
+          cache-from: |
+            type=gha,scope=build-${{ matrix.cache_scope }}-${{ github.ref_name }}
+            type=gha,scope=build-${{ matrix.cache_scope }}-main
+          cache-to: type=gha,mode=max,scope=build-${{ matrix.cache_scope }}-${{ github.ref_name }}
+          provenance: true
+          sbom: true
+
+      # Persist the per-platform digest so the `merge` job can stitch
+      # both into a single multi-arch manifest. One artifact per
+      # platform avoids upload races.
+      - name: Export digest
+        if: github.event_name != 'pull_request'
+        run: |
+          mkdir -p /tmp/digests
+          digest='${{ steps.build.outputs.digest }}'
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ matrix.cache_scope }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # ── Stage 2 ────────────────────────────────────────────────────────
+  # Stitch the per-platform digests into a single multi-arch manifest
+  # under all the tags `docker/metadata-action` would normally apply.
+  # `docker buildx imagetools create` is a manifest-only operation —
+  # no layers are re-uploaded, the existing per-platform digests are
+  # referenced in place. This is the same end state as the
+  # single-buildx `platforms:` path would produce, just assembled in
+  # the registry instead of on one cross-emulated runner.
+  merge:
+    name: Merge multi-arch manifest
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    needs: [build]
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Download digest artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digest-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -66,44 +181,16 @@ jobs:
             org.opencontainers.image.licenses=AGPL-3.0-only
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
-      # v1.4.16 C5 — drop linux/arm64 from the multi-arch build.
-      #
-      # Root cause of the main-branch hang since v1.4.14: the qemu-arm64
-      # path (`docker/setup-qemu-action` + `tonistiigi/binfmt`) was
-      # SIGILL-crashing Next.js's static-page-generation workers
-      # (`Next.js build worker exited with code: null and signal: SIGILL`
-      # at 64-66/86 pages). V8's optimising tier emits CPU instructions
-      # that qemu's user-mode emulation cannot reliably translate under
-      # heavy load, and Node 22 + Alpine 3.21 hit it deterministically.
-      # Tag-builds appeared to "work" only because they happened to
-      # finish their static pages before the crash window; main-branch
-      # builds rarely got that lucky.
-      #
-      # Marc's prod target is x86_64 only (Coolify on apps-01, all other
-      # self-hosted instances we know of); the arm64 image was a
-      # courtesy build for OSS users, not production. v1.5 will re-add
-      # arm64 via a matrix that uses the GitHub-hosted `ubuntu-24.04-arm`
-      # runner (free for public repos, native arm64, no qemu) — see
-      # `docs/audit/v1416-auto-deploy-fix.md` for the broader CI plan.
-      #
-      # Per-ref gha cache scope (kept from v1.4.15 C3): tag + main
-      # builds at the same SHA do not contend on writes; tag warm-starts
-      # off main's last good build for layer reuse.
-      - name: Build & push image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: |
-            type=gha,scope=build-${{ github.ref_name }}
-            type=gha,scope=build-main
-          cache-to: type=gha,mode=max,scope=build-${{ github.ref_name }}
-          provenance: true
-          sbom: true
+      - name: Create multi-arch manifest
+        working-directory: /tmp/digests
+        run: |
+          # shellcheck disable=SC2046,SC2086
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
+
+      - name: Inspect published manifest
+        run: |
+          docker buildx imagetools inspect '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}'
 
       # Phase C2 (v1.4.15): trigger Coolify deploy automatically once GHCR has
       # the new image. Removes the manual SSH + force-pull recipe documented
@@ -122,7 +209,6 @@ jobs:
       # step short-circuits to a skip rather than calling Coolify with empty
       # auth.
       - name: Trigger Coolify deploy
-        if: github.event_name != 'pull_request'
         continue-on-error: true
         env:
           COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
