@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   AlertCircle,
   Activity,
@@ -10,12 +11,14 @@ import {
   Moon,
   Percent,
   Scale,
+  Settings2,
   Smile,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Tooltip,
@@ -29,6 +32,7 @@ import { moodStabilityLabel } from "@/lib/targets/mood-stability-label";
 import { ConsistencyStrip } from "./consistency-strip";
 import { RangeBar } from "./range-bar";
 import { TargetCoachButton } from "./target-coach-button";
+import { TargetEditSheet } from "./target-edit-sheet";
 import { buildTargetPrompt } from "@/lib/ai/coach/target-prompts";
 import { coachScopeForTarget } from "@/lib/ai/coach/target-scope";
 import type { CoachScope } from "@/lib/ai/coach/types";
@@ -331,6 +335,12 @@ export function TargetCard({
 }: TargetCardProps) {
   const { t, locale } = useTranslations();
 
+  // v1.4.25 W3f — per-card edit affordance. Cog top-right of every
+  // card opens the edit dialog; the dialog handles the read-only path
+  // for derived metrics (BMI, MOOD_*, MEDICATION_COMPLIANCE,
+  // BLOOD_PRESSURE_IN_TARGET) by showing an explanatory caption.
+  const [editOpen, setEditOpen] = useState(false);
+
   const Icon = TYPE_ICONS[target.type] ?? Activity;
   const iconColor = TYPE_COLORS[target.type] ?? "text-primary";
   const isBp = target.type === "BLOOD_PRESSURE";
@@ -397,10 +407,14 @@ export function TargetCard({
       className="flex h-full flex-col"
     >
       <CardHeader className="gap-2 pb-3 sm:gap-3">
-        {/* Row 1: icon + label (left) ⋯ status pill (right on sm+,
-            stacked on mobile). Stacking on mobile keeps the headline
-            number visible at sub-380px viewports where an inline pill
-            would push the value below the fold. */}
+        {/* Row 1: icon + label (left) ⋯ status pill + edit-cog (right
+            on sm+, stacked on mobile). Stacking on mobile keeps the
+            headline number visible at sub-380px viewports where an
+            inline pill would push the value below the fold.
+
+            v1.4.25 W3f — the per-card cog renders on EVERY card
+            (consistency rule across Dashboard → Insights → Zielwerte),
+            with no insufficient-data gate. */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <Icon
@@ -414,38 +428,54 @@ export function TargetCard({
               {titleLabel}
             </h3>
           </div>
-          {statusLabel ? (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span
-                    data-slot="target-status-pill"
-                    data-status={statusGroup}
-                    className={cn(
-                      "inline-flex items-center self-start rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 sm:self-auto",
-                      statusPillStyle,
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            {statusLabel ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span
+                      data-slot="target-status-pill"
+                      data-status={statusGroup}
+                      className={cn(
+                        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1",
+                        statusPillStyle,
+                      )}
+                    >
+                      {statusLabel}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {target.range && (
+                      <p className="text-xs">
+                        {t("targets.targetRangeValue", {
+                          min: String(target.range.min),
+                          max: String(target.range.max),
+                          unit: target.unit,
+                        })}
+                      </p>
                     )}
-                  >
-                    {statusLabel}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {target.range && (
                     <p className="text-xs">
-                      {t("targets.targetRangeValue", {
-                        min: String(target.range.min),
-                        max: String(target.range.max),
-                        unit: target.unit,
-                      })}
+                      {t("targets.sourceLabel", { source: target.source })}
                     </p>
-                  )}
-                  <p className="text-xs">
-                    {t("targets.sourceLabel", { source: target.source })}
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ) : null}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : null}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground -mr-2 min-h-11 min-w-11 px-0"
+              onClick={() => setEditOpen(true)}
+              aria-label={t("targets.edit.openLabel", {
+                metric: titleLabel,
+              })}
+              data-slot="target-edit-cog"
+              data-target-type={target.type}
+            >
+              <Settings2 className="h-3.5 w-3.5" aria-hidden="true" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="flex h-full flex-col gap-4">
@@ -650,6 +680,19 @@ export function TargetCard({
           )}
         </div>
       </CardContent>
+      {/* v1.4.25 W3f — edit dialog mounted alongside the card. The
+          dialog is portalled by Radix so it isn't constrained by the
+          card's overflow / z-index. Only one card's dialog ever opens
+          at a time (each card owns its own boolean state). */}
+      <TargetEditSheet
+        targetType={target.type}
+        targetLabel={titleLabel}
+        unit={target.unit}
+        initialRange={target.range}
+        initialDiastolicRange={bpDiastolic?.range ?? null}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
     </Card>
   );
 }

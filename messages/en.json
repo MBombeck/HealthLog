@@ -1372,6 +1372,40 @@
         "title": "Personal thresholds",
         "description": "Override target ranges for every metric."
       },
+      "sources": {
+        "title": "Sources",
+        "description": "Pick which ingest source wins when more than one records the same metric for the same day.",
+        "cardTitle": "Source priority by metric",
+        "help": "When more than one source delivers the same value on the same day (e.g. Withings and Apple Health both report 1,200 steps), the top source counts as the canonical reading. Other sources stay stored for the audit trail.",
+        "resetDefaults": "Reset to defaults",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "saveSuccess": "Source priority saved.",
+        "saveError": "Saving the source priority failed.",
+        "resetSuccess": "Source priority reset to defaults.",
+        "metrics": {
+          "steps": "Steps",
+          "activeEnergy": "Active energy",
+          "walkingRunningDistance": "Walking + running distance",
+          "flightsClimbed": "Flights climbed",
+          "sleep": "Sleep",
+          "weight": "Weight",
+          "bloodPressure": "Blood pressure",
+          "pulse": "Pulse",
+          "bodyFat": "Body fat",
+          "bodyTemperature": "Body temperature",
+          "spo2": "Oxygen saturation",
+          "hrv": "Heart-rate variability",
+          "restingHeartRate": "Resting heart rate",
+          "vo2Max": "VO2 max"
+        },
+        "sourceLabels": {
+          "WITHINGS": "Withings",
+          "APPLE_HEALTH": "Apple Health",
+          "MANUAL": "Manual entry",
+          "IMPORT": "Import"
+        }
+      },
       "ai": {
         "title": "AI Insights",
         "description": "Provider, model, key."
@@ -2798,6 +2832,23 @@
     },
     "coach": {
       "cta": "Ask Coach"
+    },
+    "edit": {
+      "openLabel": "Edit target range for {metric}",
+      "title": "Edit target range — {metric}",
+      "description": "Adjust the in-range band used across charts, insights and the doctor report. Values are in {unit}.",
+      "derivedHint": "This card is derived from other metrics. Edit the underlying targets (e.g. blood pressure or weight) instead.",
+      "minLabel": "Min",
+      "maxLabel": "Max",
+      "systolicMin": "Systolic min",
+      "systolicMax": "Systolic max",
+      "diastolicMin": "Diastolic min",
+      "diastolicMax": "Diastolic max",
+      "boundsHint": "Allowed range: {min}–{max} {unit}",
+      "resetToDefault": "Reset to default",
+      "saveSuccess": "Target range updated",
+      "saveError": "Could not save the target range",
+      "resetSuccess": "Target range reset to default"
     },
     "mood": {
       "stability": {

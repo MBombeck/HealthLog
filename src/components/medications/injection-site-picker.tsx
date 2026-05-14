@@ -60,9 +60,21 @@ export function InjectionSitePicker({
         aria-label="Body outline"
       >
         {/* Head */}
-        <circle cx="60" cy="22" r="14" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <circle
+          cx="60"
+          cy="22"
+          r="14"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
         {/* Neck */}
-        <path d="M 56 36 L 56 46 L 64 46 L 64 36" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <path
+          d="M 56 36 L 56 46 L 64 46 L 64 36"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
         {/* Torso */}
         <path
           d="M 40 50 Q 30 60 28 80 L 32 175 Q 40 185 60 185 Q 80 185 88 175 L 92 80 Q 90 60 80 50 Z"
@@ -71,15 +83,53 @@ export function InjectionSitePicker({
           strokeWidth="1.5"
         />
         {/* Arms */}
-        <path d="M 32 60 L 16 110 L 14 150" fill="none" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M 88 60 L 104 110 L 106 150" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <path
+          d="M 32 60 L 16 110 L 14 150"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <path
+          d="M 88 60 L 104 110 L 106 150"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
         {/* Thighs */}
-        <path d="M 36 185 L 30 270" fill="none" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M 50 185 L 50 270" fill="none" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M 70 185 L 70 270" fill="none" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M 84 185 L 90 270" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <path
+          d="M 36 185 L 30 270"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <path
+          d="M 50 185 L 50 270"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <path
+          d="M 70 185 L 70 270"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <path
+          d="M 84 185 L 90 270"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
         {/* Belt line */}
-        <line x1="32" y1="155" x2="88" y2="155" stroke="currentColor" strokeWidth="0.8" strokeDasharray="2 3" />
+        <line
+          x1="32"
+          y1="155"
+          x2="88"
+          y2="155"
+          stroke="currentColor"
+          strokeWidth="0.8"
+          strokeDasharray="2 3"
+        />
         {/* Navel reference */}
         <circle cx="60" cy="130" r="1.5" fill="currentColor" />
 
@@ -130,7 +180,7 @@ export function InjectionSitePicker({
                     onChange(site);
                   }
                 }}
-                className="cursor-pointer focus:outline-none focus-visible:stroke-2 focus-visible:stroke-current"
+                className="cursor-pointer focus:outline-none focus-visible:stroke-current focus-visible:stroke-2"
               />
             </g>
           );

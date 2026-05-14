@@ -136,13 +136,18 @@ export const POST = apiHandler(
       return apiError("Medication not found", 404);
     }
 
-    const body = (await request.json().catch(() => null)) as Glp1PostBody | null;
+    const body = (await request
+      .json()
+      .catch(() => null)) as Glp1PostBody | null;
     if (!body) return apiError("Invalid body", 400);
 
     if (body.doseChange) {
       const { effectiveFrom, doseValue, doseUnit, note } = body.doseChange;
       if (!effectiveFrom || typeof doseValue !== "number" || !doseUnit) {
-        return apiError("doseChange.effectiveFrom + doseValue + doseUnit required", 422);
+        return apiError(
+          "doseChange.effectiveFrom + doseValue + doseUnit required",
+          422,
+        );
       }
       const created = await prisma.medicationDoseChange.create({
         data: {

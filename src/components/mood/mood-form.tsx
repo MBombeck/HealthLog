@@ -25,6 +25,24 @@ const MOOD_LEVELS = [
   { value: "LAUSIG", score: 1, labelKey: "mood.levelLausig" },
 ] as const;
 
+/**
+ * v1.4.25 W4d — curated GLP-1 side-effect chip strip. Tapping a chip
+ * appends the localised tag string to the existing free-text tag input
+ * (comma-separated). The list is intentionally short — these are the
+ * symptoms clinicians most often ask about at GLP-1 follow-up visits
+ * (cf. PMC GLP-1 adverse-effects review). Generic mood entries that
+ * never touch the chips keep their tag input byte-identical to v1.4.24.
+ */
+const GLP1_SIDE_EFFECT_KEYS = [
+  "medications.sideEffectTagNausea",
+  "medications.sideEffectTagConstipation",
+  "medications.sideEffectTagDiarrhea",
+  "medications.sideEffectTagFatigue",
+  "medications.sideEffectTagAppetiteLoss",
+  "medications.sideEffectTagHeartburn",
+  "medications.sideEffectTagHeadache",
+] as const;
+
 interface MoodFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -159,6 +177,53 @@ export function MoodForm({ onSuccess, onCancel }: MoodFormProps) {
           onChange={(e) => setTagsInput(e.target.value)}
           placeholder={t("mood.tagsPlaceholder")}
         />
+        {/* v1.4.25 W4d — GLP-1 side-effect quick-tags. Tapping a chip
+            appends the localised label to the free-text tag list.
+            Always visible for now (cheap UX; the Coach side-effect
+            aggregator filters on the canonical English tag set so the
+            German labels still register correctly). */}
+        <div className="space-y-1.5 pt-1">
+          <p className="text-muted-foreground text-xs">
+            {t("medications.sideEffectTagsHelp")}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {GLP1_SIDE_EFFECT_KEYS.map((key) => {
+              const label = t(key);
+              const tags = tagsInput
+                .split(",")
+                .map((p) => p.trim().toLowerCase());
+              const isActive = tags.includes(label.toLowerCase());
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => {
+                    if (isActive) {
+                      const next = tagsInput
+                        .split(",")
+                        .map((p) => p.trim())
+                        .filter((p) => p.toLowerCase() !== label.toLowerCase());
+                      setTagsInput(next.join(", "));
+                    } else {
+                      const next = tagsInput.trim()
+                        ? `${tagsInput.replace(/[,\s]+$/, "")}, ${label}`
+                        : label;
+                      setTagsInput(next);
+                    }
+                  }}
+                  className={`min-h-8 rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                    isActive
+                      ? "border-primary bg-primary/15 text-primary"
+                      : "border-border/70 bg-muted text-foreground/75 hover:bg-accent hover:text-foreground"
+                  }`}
+                  aria-pressed={isActive}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {error && (

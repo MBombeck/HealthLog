@@ -377,7 +377,10 @@ export function MedicationForm({
    */
   function applyWeeklyPreset(weekday: number) {
     try {
-      localStorage.setItem("medication-form:last-weekly-weekday", String(weekday));
+      localStorage.setItem(
+        "medication-form:last-weekly-weekday",
+        String(weekday),
+      );
     } catch {
       /* private mode — silent */
     }

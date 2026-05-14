@@ -53,7 +53,9 @@ describe("injection-sites", () => {
 
   describe("describeInjectionSite()", () => {
     it("returns the right i18n key per site", () => {
-      expect(describeInjectionSite("ABDOMEN_LEFT")).toBe("medications.siteAbdomenLeft");
+      expect(describeInjectionSite("ABDOMEN_LEFT")).toBe(
+        "medications.siteAbdomenLeft",
+      );
       expect(describeInjectionSite("UPPER_ARM_RIGHT")).toBe(
         "medications.siteUpperArmRight",
       );

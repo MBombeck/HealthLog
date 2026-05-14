@@ -473,7 +473,11 @@ export function buildDoctorReportPdfDocument(
 
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    if (data.glp1.weightDeltaKg !== null && data.glp1.weightStartKg !== null && data.glp1.weightEndKg !== null) {
+    if (
+      data.glp1.weightDeltaKg !== null &&
+      data.glp1.weightStartKg !== null &&
+      data.glp1.weightEndKg !== null
+    ) {
       doc.text(
         t("doctorReport.glp1WeightSummary", {
           start: num(data.glp1.weightStartKg, 1),
@@ -572,7 +576,9 @@ export function buildDoctorReportPdfDocument(
       const seRows = data.glp1.sideEffects.map((s) => [s.tag, String(s.count)]);
       autoTable(doc, {
         startY: y,
-        head: [[t("doctorReport.colGlp1SideEffect"), t("doctorReport.colCount")]],
+        head: [
+          [t("doctorReport.colGlp1SideEffect"), t("doctorReport.colCount")],
+        ],
         body: seRows,
         theme: "grid",
         styles: {

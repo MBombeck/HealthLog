@@ -120,4 +120,61 @@ describe("<TargetCard>", () => {
     expect(html).toContain("stable");
     expect(html).not.toMatch(/>0\.6</);
   });
+
+  /**
+   * v1.4.25 W3f — per-card edit cog. The cog must render on EVERY
+   * card regardless of insufficient-data state so the user always has
+   * an entry point to adjust the target range.
+   */
+  describe("per-card edit cog (v1.4.25 W3f)", () => {
+    it("renders the edit cog with an aria-label for the rich-data card", () => {
+      const html = render({
+        target: fullDataTarget,
+        aiEnabled: true,
+        onAskCoach: vi.fn(),
+      });
+      expect(html).toContain('data-slot="target-edit-cog"');
+      expect(html).toContain('data-target-type="WEIGHT"');
+      expect(html).toContain("Edit target range for Weight");
+    });
+
+    it("STILL renders the cog when the target is in insufficient-data mode", () => {
+      // Consistency rule: target-config UI must always be reachable,
+      // even when the consistency strip is hidden.
+      const html = render({
+        target: sparseTarget,
+        aiEnabled: true,
+        onAskCoach: vi.fn(),
+      });
+      expect(html).toContain('data-slot="target-edit-cog"');
+      expect(html).toContain('data-target-type="PULSE"');
+    });
+
+    it("renders the cog when the AI provider is disabled (gate is independent)", () => {
+      // The Coach CTA depends on aiEnabled; the edit cog does not.
+      const html = render({
+        target: fullDataTarget,
+        aiEnabled: false,
+        onAskCoach: vi.fn(),
+      });
+      expect(html).toContain('data-slot="target-edit-cog"');
+      expect(html).not.toContain('data-slot="target-coach-cta"');
+    });
+
+    it("renders the cog button with adequate touch target (min-h-11 + min-w-11)", () => {
+      // Mobile-first: tap target ≥ 44 px so the cog isn't an
+      // accessibility hazard on smaller phones.
+      const html = render({
+        target: fullDataTarget,
+        aiEnabled: true,
+        onAskCoach: vi.fn(),
+      });
+      expect(html).toMatch(
+        /data-slot="target-edit-cog"[^>]*class="[^"]*min-h-11[^"]*"/,
+      );
+      expect(html).toMatch(
+        /data-slot="target-edit-cog"[^>]*class="[^"]*min-w-11[^"]*"/,
+      );
+    });
+  });
 });

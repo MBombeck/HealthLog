@@ -216,7 +216,9 @@ export function Glp1MedicationCard({
   const lastSite =
     recentInjections.find((i) => i.injectionSite)?.injectionSite ?? null;
   const recommendedNextSite = nextInjectionSite(
-    recentInjections.map((r) => r.injectionSite).filter(Boolean) as InjectionSiteKey[],
+    recentInjections
+      .map((r) => r.injectionSite)
+      .filter(Boolean) as InjectionSiteKey[],
   );
 
   const inventory = details?.inventory ?? null;
@@ -225,8 +227,10 @@ export function Glp1MedicationCard({
     if (!medication.lastTakenAt) return null;
     const d = new Date(medication.lastTakenAt);
     const days = diffDays(d, now);
-    if (days === 0) return `${t("medications.today")}, ${formatTime(medication.lastTakenAt)}`;
-    if (days === -1) return `${t("medications.yesterday")}, ${formatTime(medication.lastTakenAt)}`;
+    if (days === 0)
+      return `${t("medications.today")}, ${formatTime(medication.lastTakenAt)}`;
+    if (days === -1)
+      return `${t("medications.yesterday")}, ${formatTime(medication.lastTakenAt)}`;
     return formatDateTime(medication.lastTakenAt);
   }
 
@@ -318,20 +322,22 @@ export function Glp1MedicationCard({
         {/* Rotation hint — only when we have a last + recommended site
             different from it. The picker on the dashboard tile owns
             mode-switching; the card just nudges. */}
-        {lastSite && recommendedNextSite && recommendedNextSite !== lastSite && (
-          <div className="border-border/60 bg-muted/40 rounded-md border px-3 py-2 text-xs">
-            <p className="text-muted-foreground">
-              {t("medications.glp1RotationLast", {
-                site: t(`medications.site${siteSuffix(lastSite)}`),
-              })}
-            </p>
-            <p className="text-foreground/90 font-medium">
-              {t("medications.glp1RotationSuggested", {
-                site: t(`medications.site${siteSuffix(recommendedNextSite)}`),
-              })}
-            </p>
-          </div>
-        )}
+        {lastSite &&
+          recommendedNextSite &&
+          recommendedNextSite !== lastSite && (
+            <div className="border-border/60 bg-muted/40 rounded-md border px-3 py-2 text-xs">
+              <p className="text-muted-foreground">
+                {t("medications.glp1RotationLast", {
+                  site: t(`medications.site${siteSuffix(lastSite)}`),
+                })}
+              </p>
+              <p className="text-foreground/90 font-medium">
+                {t("medications.glp1RotationSuggested", {
+                  site: t(`medications.site${siteSuffix(recommendedNextSite)}`),
+                })}
+              </p>
+            </div>
+          )}
 
         {/* Inventory line — only when dosesPerUnit + at least one
             inventory event recorded. Low-stock gets a warning badge. */}
@@ -357,7 +363,9 @@ export function Glp1MedicationCard({
         <details
           className="border-border/60 rounded-md border text-xs"
           open={showHistory}
-          onToggle={(e) => setShowHistory((e.target as HTMLDetailsElement).open)}
+          onToggle={(e) =>
+            setShowHistory((e.target as HTMLDetailsElement).open)
+          }
         >
           <summary className="text-foreground/85 flex cursor-pointer list-none items-center justify-between px-3 py-2 font-medium">
             <span>{t("medications.glp1DoseHistory")}</span>

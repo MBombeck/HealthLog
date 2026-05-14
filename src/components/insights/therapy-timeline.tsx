@@ -5,7 +5,10 @@ import { ArrowDown, ArrowUp, Pill, Syringe } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
-import { describeInjectionSite, type InjectionSiteKey } from "@/lib/medications/injection-sites";
+import {
+  describeInjectionSite,
+  type InjectionSiteKey,
+} from "@/lib/medications/injection-sites";
 
 /**
  * v1.4.25 W4d — therapy-timeline view for /insights/medikamente.
@@ -142,11 +145,16 @@ function renderEntryLine(
   const drug = entry.medicationName ?? "";
   switch (entry.kind) {
     case "dose-change": {
-      const arrow = entry.doseDelta === "up" ? <ArrowUp className="inline h-3 w-3" /> : entry.doseDelta === "down" ? <ArrowDown className="inline h-3 w-3" /> : null;
+      const arrow =
+        entry.doseDelta === "up" ? (
+          <ArrowUp className="inline h-3 w-3" />
+        ) : entry.doseDelta === "down" ? (
+          <ArrowDown className="inline h-3 w-3" />
+        ) : null;
       return (
         <span>
           <strong>{drug}</strong> {t("insights.therapyTimeline.doseTo")}{" "}
-          <span className="tabular-nums font-medium">
+          <span className="font-medium tabular-nums">
             {entry.doseValue} {entry.doseUnit}
           </span>
           {arrow && <> {arrow}</>}
@@ -170,14 +178,16 @@ function renderEntryLine(
       return (
         <span>
           <strong>{drug}</strong> · {sign}
-          {entry.inventoryDelta} {t("insights.therapyTimeline.pens")} ({entry.reason})
+          {entry.inventoryDelta} {t("insights.therapyTimeline.pens")} (
+          {entry.reason})
         </span>
       );
     }
     case "side-effect": {
       return (
         <span>
-          {t("insights.therapyTimeline.sideEffects")}: {(entry.tags ?? []).join(", ")}
+          {t("insights.therapyTimeline.sideEffects")}:{" "}
+          {(entry.tags ?? []).join(", ")}
         </span>
       );
     }

@@ -330,7 +330,12 @@ export async function buildGlp1SnapshotBlock(
     const dows = sched ? parseDaysOfWeek(sched.daysOfWeek) : [];
     const schedule: ScheduleEntry | null = sched
       ? {
-          cadence: dows.length === 1 ? "weekly" : dows.length === 0 ? "daily" : "custom",
+          cadence:
+            dows.length === 1
+              ? "weekly"
+              : dows.length === 0
+                ? "daily"
+                : "custom",
           daysOfWeek: dows,
           windowStart: sched.windowStart,
           windowEnd: sched.windowEnd,
