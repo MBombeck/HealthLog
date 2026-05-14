@@ -621,10 +621,32 @@ export function MoodChart({
                 data={chartDataWithCompare ?? chartData}
                 margin={{ top: 10, right: 8, bottom: 8, left: 8 }}
               >
+                {/* v1.4.25 W3 — the mood chart's YAxis is pinned to
+                    five mood-score ticks ([1,2,3,4,5]), which Recharts
+                    syncs with CartesianGrid by default. That left the
+                    mini variant painting five horizontal lines while
+                    the BP / Weight / Pulse minis painted six (their
+                    auto-generated YAxis ticks land on six bands in
+                    typical health ranges). The explicit coordinates
+                    generator below produces six evenly-spaced lines
+                    so the trends row reads as a single rhythm. */}
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="hsl(var(--border))"
                   opacity={0.5}
+                  horizontalCoordinatesGenerator={({ offset }) => {
+                    // `offset` carries the chart's plot-area metrics.
+                    // Six evenly-spaced y-coordinates inside the plot
+                    // area (top + 4 intermediate + bottom) match the
+                    // density of the BP/Weight/Pulse minis.
+                    const top = offset.top ?? 0;
+                    const height = offset.height ?? 0;
+                    if (height <= 0) return [];
+                    const lines = 6;
+                    return Array.from({ length: lines }, (_, i) =>
+                      Math.round(top + (height * i) / (lines - 1)),
+                    );
+                  }}
                 />
                 {showBands &&
                   VALUE_BANDS.map((band) => (

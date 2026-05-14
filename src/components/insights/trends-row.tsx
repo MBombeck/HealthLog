@@ -98,13 +98,17 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
           three cards on visibly different baselines. Each card is now
           a flex column with `min-h-[300px]` so the chart anchors to
           the top and the annotation grows downward into a shared
-          minimum height. The grid + min-h together preserve the visual
-          rhythm even on a row where only one annotation is multi-line. */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          minimum height.
+          v1.4.25 W3 — strengthen the equal-height contract with
+          `md:auto-rows-fr` + `md:items-stretch` on the grid and
+          `h-full` on each card so the tallest annotation still pins
+          every row member to a single baseline. The `min-h-[300px]`
+          floor stays in place for the single-column mobile view. */}
+      <div className="grid grid-cols-1 gap-4 md:auto-rows-fr md:grid-cols-3 md:items-stretch">
         <div
           data-slot="trends-row-card"
           data-metric="bp"
-          className="flex min-h-[300px] flex-col gap-2"
+          className="flex h-full min-h-[300px] flex-col gap-2"
         >
           <HealthChart
             types={["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"]}
@@ -123,7 +127,7 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
         <div
           data-slot="trends-row-card"
           data-metric="weight"
-          className="flex min-h-[300px] flex-col gap-2"
+          className="flex h-full min-h-[300px] flex-col gap-2"
         >
           <HealthChart
             types={["WEIGHT"]}
@@ -141,7 +145,7 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
         <div
           data-slot="trends-row-card"
           data-metric="mood"
-          className="flex min-h-[300px] flex-col gap-2"
+          className="flex h-full min-h-[300px] flex-col gap-2"
         >
           <MoodChart title={t("charts.mood")} mini />
           <TrendAnnotation
