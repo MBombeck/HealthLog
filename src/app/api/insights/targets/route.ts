@@ -14,7 +14,6 @@ import {
 import { calculateCompliance } from "@/lib/analytics/compliance";
 import { pairByTimestamp } from "@/lib/analytics/correlations";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
-import { berlinDayKey } from "@/lib/analytics/berlin-day";
 import {
   classifyPulseByTarget,
   getPersonalizedPulseTarget,
@@ -57,19 +56,6 @@ interface TargetItem {
   range: { min: number; max: number } | null;
   classification: { category: string; color: string } | null;
   source: string;
-  /**
-   * v1.4.22 C1 — sparkline support on the Zielwerte page. `points30d`
-   * is the last 30 days of values (chronological, oldest → newest) for
-   * the target's primary metric, rounded to one decimal. Derived metrics
-   * (BMI, BP-in-target, mood stability, glucose-by-context) skip the
-   * field when the page already renders a richer status surface.
-   * `deltaVsLastMonth` is the signed difference between the current
-   * 30-day average and the prior 30-day average (current − prior),
-   * null when either window has fewer than 3 points to keep the
-   * comparison honest.
-   */
-  points30d?: number[] | null;
-  deltaVsLastMonth?: number | null;
   details?: {
     medications?: Array<{
       name: string;
@@ -112,28 +98,17 @@ export const GET = apiHandler(async () => {
   ];
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  // v1.4.22 C1 — second 30-day window (days 31–60) so each target card
-  // can render a "Δ vs. last month" caption alongside its sparkline.
-  // We fetch 60 days in one query to keep the route round-trip count
-  // identical to the previous version.
-  const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
 
-  // Fetch all measurements in the last 60 days + the latest for each type
-  const windowedMeasurements = await prisma.measurement.findMany({
+  // Fetch all measurements in the last 30 days + the latest for each type
+  const recentMeasurements = await prisma.measurement.findMany({
     where: {
       userId,
       type: { in: types },
-      measuredAt: { gte: sixtyDaysAgo },
+      measuredAt: { gte: thirtyDaysAgo },
     },
     orderBy: { measuredAt: "desc" },
     select: { type: true, value: true, measuredAt: true },
   });
-  const recentMeasurements = windowedMeasurements.filter(
-    (m) => m.measuredAt >= thirtyDaysAgo,
-  );
-  const priorMeasurements = windowedMeasurements.filter(
-    (m) => m.measuredAt < thirtyDaysAgo,
-  );
 
   // Also get the absolute latest measurement per type (even if older than 30 days).
   // Single grouped query replaces the previous N×findFirst loop — DISTINCT ON
@@ -188,50 +163,6 @@ export const GET = apiHandler(async () => {
     return "stable";
   }
 
-  /**
-   * v1.4.22 C1 — sparkline + delta helpers. The sparkline collapses
-   * the last 30 days of values for a measurement type into a daily
-   * mean series (chronological, oldest → newest). The delta is the
-   * signed difference between the current 30-day window's average
-   * and the prior 30-day window's average. Both helpers skip the
-   * computation when there are fewer than 3 points in a window so
-   * the comparison stays honest on cold-start accounts.
-   */
-  function sparklinePoints(type: MeasurementType): number[] | null {
-    const data = recentMeasurements
-      .filter((m) => m.type === type)
-      .sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime());
-    if (data.length < 3) return null;
-
-    // v1.4.22 W5 reconcile (Code-MED-3) — bucket by Berlin calendar
-    // day, not UTC. A 23:30-Berlin reading on Tuesday otherwise
-    // lands in Wednesday's UTC bucket and the sparkline drifts a
-    // day on cross-DST boundaries. Aligns with `berlinDayKey()`
-    // already used by the dashboard analytics route.
-    const byDay = new Map<string, { sum: number; count: number }>();
-    for (const m of data) {
-      const day = berlinDayKey(m.measuredAt);
-      const bucket = byDay.get(day) ?? { sum: 0, count: 0 };
-      bucket.sum += m.value;
-      bucket.count += 1;
-      byDay.set(day, bucket);
-    }
-    return Array.from(byDay.values()).map(
-      (b) => Math.round((b.sum / b.count) * 10) / 10,
-    );
-  }
-
-  function deltaVsLastMonth(type: MeasurementType): number | null {
-    const recentOfType = recentMeasurements.filter((m) => m.type === type);
-    const priorOfType = priorMeasurements.filter((m) => m.type === type);
-    if (recentOfType.length < 3 || priorOfType.length < 3) return null;
-    const recentAvg =
-      recentOfType.reduce((s, m) => s + m.value, 0) / recentOfType.length;
-    const priorAvg =
-      priorOfType.reduce((s, m) => s + m.value, 0) / priorOfType.length;
-    return Math.round((recentAvg - priorAvg) * 10) / 10;
-  }
-
   // Build target items
   const targets: TargetItem[] = [];
 
@@ -254,8 +185,6 @@ export const GET = apiHandler(async () => {
     range: weightRange,
     classification: weightClassification,
     source: "WHO BMI",
-    points30d: sparklinePoints("WEIGHT"),
-    deltaVsLastMonth: deltaVsLastMonth("WEIGHT"),
   });
 
   // 2. Blood Pressure (sys/dia combined)
@@ -281,8 +210,6 @@ export const GET = apiHandler(async () => {
     range: bpRange ? { min: bpRange.sysLow, max: bpRange.sysHigh } : null,
     classification: bpClassification,
     source: "ESH 2023",
-    points30d: sparklinePoints("BLOOD_PRESSURE_SYS"),
-    deltaVsLastMonth: deltaVsLastMonth("BLOOD_PRESSURE_SYS"),
     // Extra fields for diastolic
   } as TargetItem);
 
@@ -349,8 +276,6 @@ export const GET = apiHandler(async () => {
     range: { min: pulseTarget.greenMin, max: pulseTarget.greenMax },
     classification: pulseClassification,
     source: pulseTarget.source,
-    points30d: sparklinePoints("PULSE"),
-    deltaVsLastMonth: deltaVsLastMonth("PULSE"),
   });
 
   // 4. Sleep Duration
@@ -370,8 +295,6 @@ export const GET = apiHandler(async () => {
     range: sleepRange,
     classification: sleepClassification,
     source: "AASM/SRS",
-    points30d: sparklinePoints("SLEEP_DURATION"),
-    deltaVsLastMonth: deltaVsLastMonth("SLEEP_DURATION"),
   });
 
   // 5. BMI (derived from weight + height)
@@ -395,19 +318,6 @@ export const GET = apiHandler(async () => {
       bmiClassification = { category: cls.category, color: cls.color };
     }
 
-    // BMI sparkline / delta derive from the weight series \u2014 divide each
-    // point by height\u00B2 so the y-axis matches the BMI range bar above.
-    const weightPoints = sparklinePoints("WEIGHT");
-    const bmiPoints =
-      weightPoints != null
-        ? weightPoints.map((v) => Math.round((v / heightSq) * 10) / 10)
-        : null;
-    const weightDelta = deltaVsLastMonth("WEIGHT");
-    const bmiDelta =
-      weightDelta != null
-        ? Math.round((weightDelta / heightSq) * 10) / 10
-        : null;
-
     targets.push({
       type: "BMI",
       label: "BMI",
@@ -418,8 +328,6 @@ export const GET = apiHandler(async () => {
       range: { min: 18.5, max: 24.9 },
       classification: bmiClassification,
       source: "WHO",
-      points30d: bmiPoints,
-      deltaVsLastMonth: bmiDelta,
     });
   }
 
@@ -445,8 +353,6 @@ export const GET = apiHandler(async () => {
     range: bodyFatRange,
     classification: bodyFatClassification,
     source: "ACE",
-    points30d: sparklinePoints("BODY_FAT"),
-    deltaVsLastMonth: deltaVsLastMonth("BODY_FAT"),
   });
 
   // 7. Activity Steps
@@ -465,8 +371,6 @@ export const GET = apiHandler(async () => {
     unit: "steps",
     range: stepsRange,
     classification: stepsClassification,
-    points30d: sparklinePoints("ACTIVITY_STEPS"),
-    deltaVsLastMonth: deltaVsLastMonth("ACTIVITY_STEPS"),
     // WHO publishes activity *time* (150–300 min/wk moderate),
     // not a step quota. The closest peer-reviewed dose-response
     // for the 8 000–15 000 band is Saint-Maurice JAMA 2020. The

@@ -38,13 +38,6 @@ interface TargetData {
   range: { min: number; max: number } | null;
   classification: { category: string; color: string } | null;
   source: string;
-  /**
-   * v1.4.22 C1 — sparkline + vs.-last-month delta. Optional; the API
-   * skips both when a window has fewer than 3 readings so the comparison
-   * stays honest on a fresh account.
-   */
-  points30d?: number[] | null;
-  deltaVsLastMonth?: number | null;
   details?: {
     medications?: Array<{
       name: string;
@@ -246,60 +239,6 @@ function getTargetSourceLink(target: TargetData): string | null {
   }
 
   return null;
-}
-
-/**
- * v1.4.22 C1 — tiny inline sparkline. Each target card paints the last
- * 30 days of values beneath the range bar so the page reads as a
- * "current state + recent journey" surface rather than a static
- * reference card. The SVG is dependency-free and renders in <1ms; we
- * deliberately avoid pulling Recharts in here because every card on
- * the page would mount its own ResponsiveContainer.
- *
- * The path stays in the dracula-purple token so the colour reads as a
- * neutral trace, not a status signal — the range bar above already
- * carries the green/yellow/red semantics and a second status colour
- * on the sparkline would compete for the user's eye.
- */
-function Sparkline({
-  points,
-  className,
-}: {
-  points: number[];
-  className?: string;
-}) {
-  if (points.length < 2) return null;
-  const min = Math.min(...points);
-  const max = Math.max(...points);
-  const span = Math.max(max - min, 0.0001);
-  const w = 100;
-  const h = 24;
-  const stepX = w / (points.length - 1);
-  const path = points
-    .map((value, i) => {
-      const x = i * stepX;
-      const y = h - ((value - min) / span) * h;
-      return `${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
-    })
-    .join(" ");
-  return (
-    <svg
-      viewBox={`0 0 ${w} ${h}`}
-      preserveAspectRatio="none"
-      className={`h-6 w-full ${className ?? ""}`}
-      aria-hidden="true"
-      data-slot="target-sparkline"
-    >
-      <path
-        d={path}
-        fill="none"
-        stroke="var(--dracula-purple)"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
 }
 
 function TrendIcon({ trend }: { trend: "up" | "down" | "stable" | null }) {
@@ -565,31 +504,6 @@ function TargetCard({
               max={bpDiastolic.range.max}
               unit="mmHg"
             />
-          </div>
-        )}
-
-        {/* v1.4.22 C1 — sparkline + Δ-vs-last-month caption. The
-            sparkline collapses to a thinner trace on mobile via the
-            shared 24px height, and the delta caption sits on its own
-            line so it stays scannable next to the range bar above. */}
-        {target.points30d && target.points30d.length >= 2 && (
-          <div className="space-y-1" data-slot="target-trend">
-            <Sparkline points={target.points30d} />
-            {target.deltaVsLastMonth != null && (
-              <p
-                className="text-muted-foreground text-xs"
-                data-slot="target-delta"
-              >
-                {Math.abs(target.deltaVsLastMonth) < 0.05
-                  ? t("targets.deltaVsLastMonthFlat", { unit: target.unit })
-                  : t("targets.deltaVsLastMonth", {
-                      delta:
-                        (target.deltaVsLastMonth > 0 ? "+" : "−") +
-                        Math.abs(target.deltaVsLastMonth).toFixed(1),
-                      unit: target.unit,
-                    })}
-              </p>
-            )}
           </div>
         )}
 
