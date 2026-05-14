@@ -27,6 +27,7 @@ import {
   Droplet,
 } from "lucide-react";
 import { convertGlucose, resolveGlucoseUnit } from "@/lib/glucose";
+import { TargetsSummaryHeader } from "@/components/targets/targets-summary-header";
 
 interface TargetData {
   type: string;
@@ -697,6 +698,17 @@ export default function TargetsPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* v1.4.25 W3e — page-level summary line. Renders nothing when
+          the API hasn't shipped pageSummary yet (older clients during
+          rollout / mocked test fixtures that pre-date this addition). */}
+      {data.pageSummary && (
+        <TargetsSummaryHeader
+          targetsMetThisWeek={data.pageSummary.targetsMetThisWeek}
+          totalTargets={data.pageSummary.totalTargets}
+          streakHighlight={data.pageSummary.streakHighlight}
+        />
       )}
 
       {/* Target cards grid */}
