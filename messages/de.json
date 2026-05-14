@@ -1468,7 +1468,23 @@
     "source": {
       "title": "Quelle verbinden",
       "body": "Werte automatisch übernehmen oder weiter manuell eintragen – deine Entscheidung.",
-      "placeholder": "Quellenauswahl folgt."
+      "placeholder": "Quellenauswahl folgt.",
+      "recommended": "Empfohlen",
+      "manual": {
+        "title": "Manuelle Eingabe",
+        "body": "Werte direkt erfassen, wann es dir passt. Funktioniert auf jedem Gerät, kein Konto bei Dritten nötig."
+      },
+      "withings": {
+        "title": "Withings",
+        "body": "Waagen, Blutdruckmesser und Tracker von Withings synchronisieren automatisch.",
+        "cta": "Withings verbinden"
+      },
+      "appleHealth": {
+        "title": "Apple Health",
+        "body": "iPhone- und Apple-Watch-Daten werden über die HealthLog-iOS-App eingelesen.",
+        "badge": "Mit v1.5 (iOS)",
+        "disabledHint": "Verfügbar, sobald die iOS-App ausgeliefert ist."
+      }
     },
     "baseline": {
       "title": "Deine erste Messung",

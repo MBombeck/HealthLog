@@ -1468,7 +1468,23 @@
     "source": {
       "title": "Connect a source",
       "body": "Bring in measurements automatically, or stay on manual entry — your call.",
-      "placeholder": "Source picker coming soon."
+      "placeholder": "Source picker coming soon.",
+      "recommended": "Recommended",
+      "manual": {
+        "title": "Manual entry",
+        "body": "Log readings yourself, whenever it fits. Works on any device, no third-party account required."
+      },
+      "withings": {
+        "title": "Withings",
+        "body": "Scales, blood-pressure cuffs and trackers from Withings sync automatically.",
+        "cta": "Connect Withings"
+      },
+      "appleHealth": {
+        "title": "Apple Health",
+        "body": "iPhone and Apple Watch data flow in via the HealthLog iOS app.",
+        "badge": "Coming with v1.5 (iOS)",
+        "disabledHint": "Available once the iOS app ships."
+      }
     },
     "baseline": {
       "title": "Your first reading",

@@ -1468,7 +1468,23 @@
     "source": {
       "title": "Connetti una sorgente",
       "body": "Importa le misurazioni in automatico oppure resta sull'inserimento manuale, decidi tu.",
-      "placeholder": "Selettore di sorgente in arrivo."
+      "placeholder": "Selettore di sorgente in arrivo.",
+      "recommended": "Consigliato",
+      "manual": {
+        "title": "Inserimento manuale",
+        "body": "Registra tu stesso le misurazioni, quando ti è comodo. Funziona su qualsiasi dispositivo, senza account di terzi."
+      },
+      "withings": {
+        "title": "Withings",
+        "body": "Bilance, misuratori di pressione e tracker Withings si sincronizzano automaticamente.",
+        "cta": "Connetti Withings"
+      },
+      "appleHealth": {
+        "title": "Apple Health",
+        "body": "I dati di iPhone e Apple Watch arrivano tramite l'app HealthLog per iOS.",
+        "badge": "Con la v1.5 (iOS)",
+        "disabledHint": "Disponibile al rilascio dell'app iOS."
+      }
     },
     "baseline": {
       "title": "La tua prima misurazione",

@@ -1468,7 +1468,23 @@
     "source": {
       "title": "Połącz źródło",
       "body": "Pobieraj pomiary automatycznie lub zostań przy wpisywaniu ręcznym — Twój wybór.",
-      "placeholder": "Wybór źródła wkrótce."
+      "placeholder": "Wybór źródła wkrótce.",
+      "recommended": "Polecane",
+      "manual": {
+        "title": "Wpis ręczny",
+        "body": "Rejestruj pomiary samodzielnie, kiedy Ci pasuje. Działa na każdym urządzeniu, bez konta u podmiotu trzeciego."
+      },
+      "withings": {
+        "title": "Withings",
+        "body": "Wagi, ciśnieniomierze i trackery Withings synchronizują się automatycznie.",
+        "cta": "Połącz Withings"
+      },
+      "appleHealth": {
+        "title": "Apple Health",
+        "body": "Dane z iPhone'a i Apple Watch trafiają tu poprzez aplikację HealthLog na iOS.",
+        "badge": "Wraz z v1.5 (iOS)",
+        "disabledHint": "Dostępne po wydaniu aplikacji iOS."
+      }
     },
     "baseline": {
       "title": "Twój pierwszy pomiar",

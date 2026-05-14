@@ -1468,7 +1468,23 @@
     "source": {
       "title": "Connecter une source",
       "body": "Importez les mesures automatiquement ou conservez la saisie manuelle, c'est vous qui décidez.",
-      "placeholder": "Sélection de la source à venir."
+      "placeholder": "Sélection de la source à venir.",
+      "recommended": "Recommandé",
+      "manual": {
+        "title": "Saisie manuelle",
+        "body": "Enregistrez vos mesures vous-même, quand cela vous convient. Fonctionne sur tout appareil, aucun compte tiers requis."
+      },
+      "withings": {
+        "title": "Withings",
+        "body": "Balances, tensiomètres et trackers Withings se synchronisent automatiquement.",
+        "cta": "Connecter Withings"
+      },
+      "appleHealth": {
+        "title": "Apple Health",
+        "body": "Les données de l'iPhone et de l'Apple Watch arrivent via l'application iOS HealthLog.",
+        "badge": "Avec la v1.5 (iOS)",
+        "disabledHint": "Disponible dès la sortie de l'application iOS."
+      }
     },
     "baseline": {
       "title": "Votre première mesure",

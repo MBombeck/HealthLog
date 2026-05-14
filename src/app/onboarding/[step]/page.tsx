@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { OnboardingShell } from "@/components/onboarding/OnboardingShell";
 import { WelcomeCarousel } from "@/components/onboarding/WelcomeCarousel";
 import { GoalsChipPicker } from "@/components/onboarding/GoalsChipPicker";
+import { SourceCardGrid } from "@/components/onboarding/SourceCardGrid";
 import { getSession } from "@/lib/auth/session";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
@@ -94,6 +95,18 @@ export default async function OnboardingStepPage({ params }: PageProps) {
     return (
       <OnboardingShell step={1} userLocale={user.locale ?? null}>
         <GoalsChipPicker userId={user.id} />
+      </OnboardingShell>
+    );
+  }
+
+  // Source (step 2) — four-card grid. Manual is the implicit default;
+  // Withings opens OAuth in a new tab; Apple Health is rendered as a
+  // "coming with v1.5" announce card; Garmin is omitted per the
+  // W14b-Content brief (not on the roadmap yet).
+  if (requested === 2) {
+    return (
+      <OnboardingShell step={2} userLocale={user.locale ?? null}>
+        <SourceCardGrid />
       </OnboardingShell>
     );
   }
