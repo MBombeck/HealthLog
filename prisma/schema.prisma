@@ -190,6 +190,11 @@ model User {
   // (1:1), not User — the User → WorkoutRoute path is two hops by
   // design.
   workouts             Workout[]
+  // v1.4.25 W8d — personal records (schema only; detection worker
+  // lands in a later release). The GET /api/personal-records route
+  // ships with v1.4.25 so the iOS app can build its query path
+  // against a stable contract.
+  personalRecords      PersonalRecord[]
 
   @@map("users")
 }
@@ -442,6 +447,52 @@ model WorkoutRoute {
   workout Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
 
   @@map("workout_routes")
+}
+
+// ─── Personal records (v1.4.25 W8d — schema only) ──────────
+//
+// MAX vs MIN direction is stored on the row so the future detection
+// worker doesn't have to re-resolve a per-metric lookup at query time.
+// Some metric types deliberately have no PR (blood pressure, glucose,
+// raw weight without a goal direction); those never produce rows.
+// See src/lib/personal-records/pr-direction.ts for the lookup table.
+enum PersonalRecordDirection {
+  MAX // higher is the record (steps, VO2 max, HRV, distance, daylight)
+  MIN // lower is the record (resting HR, body fat, audio exposure)
+
+  @@map("personal_record_direction")
+}
+
+model PersonalRecord {
+  id         String                  @id @default(cuid())
+  userId     String                  @map("user_id")
+  metricType MeasurementType         @map("metric_type")
+  /// Per-sport-type bucket for workout-driven PRs (e.g.
+  /// "running_5km_time"). NULL for plain measurement-driven PRs
+  /// where the metric type alone is the dimension.
+  metricSlot String?                 @map("metric_slot")
+  direction  PersonalRecordDirection
+  value      Float
+  unit       String
+  achievedAt DateTime                @map("achieved_at")
+  /// FK to the Measurement row that achieved the record. SET NULL
+  /// on delete so the historical fact survives even if the
+  /// underlying measurement is later removed.
+  sourceMeasurementId String?         @map("source_measurement_id")
+  source     MeasurementSource       @default(MANUAL)
+  externalId String?                 @map("external_id")
+  createdAt  DateTime                @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Idempotency guard for the detection worker — re-running it on
+  /// the same (user, metric, slot, achievedAt) triple is a no-op.
+  @@unique([userId, metricType, metricSlot, achievedAt])
+  /// Hot read pattern — "current PR for this metric":
+  /// ORDER BY value DESC LIMIT 1 (MAX direction) /
+  /// ASC LIMIT 1 (MIN direction). Index covers both.
+  @@index([userId, metricType, value])
+  @@map("personal_records")
 }
 
 // ─── Medications ───────────────────────────────────────────
