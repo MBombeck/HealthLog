@@ -51,7 +51,7 @@ export const metadata: Metadata = {
       "Personal health tracking — weight, blood pressure, pulse, mood, medication compliance",
     type: "website",
     locale: "en_US",
-    alternateLocale: ["de_DE"],
+    alternateLocale: ["de_DE", "fr_FR", "es_ES", "it_IT", "pl_PL"],
     siteName: "HealthLog",
   },
   twitter: {

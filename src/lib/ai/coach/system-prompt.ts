@@ -449,11 +449,39 @@ SPRACHE
 Antworte auf Deutsch, sofern der Nutzer auf Deutsch schreibt; bei
 englischen Nachrichten antworte auf Englisch.`;
 
+/**
+ * v1.4.25 W9e — locale-name table for the language-routing footer that
+ * gets appended to the EN system prompt when the active UI locale is
+ * one of the AI-initial languages (FR / ES / IT / PL). The DE branch
+ * still uses the hand-curated DE body. Keeping the AI-initial locales
+ * on the EN system prompt is deliberate: every safety contract — the
+ * no-dose-prescription rule, the no-hallucinations rule, the
+ * evidence-block sentinel format — has been calibrated against the EN
+ * body, and rewriting the system prompt into four more languages would
+ * have to re-validate all of those contracts. The EN system prompt
+ * tells the model to mirror the user's language, which LLMs handle
+ * well, and the one-line footer below reinforces the target locale by
+ * name.
+ */
+const LOCALE_REPLY_FOOTER: Record<Exclude<Locale, "de" | "en">, string> = {
+  fr: "\n\nREPLY LANGUAGE: respond in French. Mirror the user's register; use natural French health vocabulary.",
+  es: "\n\nREPLY LANGUAGE: respond in Spanish. Mirror the user's register; use natural Spanish health vocabulary.",
+  it: "\n\nREPLY LANGUAGE: respond in Italian. Mirror the user's register; use natural Italian health vocabulary.",
+  pl: "\n\nREPLY LANGUAGE: respond in Polish. Mirror the user's register (formal Pan/Pani for medical-adjacent topics); use natural Polish health vocabulary.",
+};
+
 export function getCoachSystemPrompt(
   locale: Locale,
   prefs: CoachPrefs = DEFAULT_COACH_PREFS,
 ): string {
-  const base = locale === "en" ? COACH_PROMPT_EN : COACH_PROMPT_DE;
+  let base: string;
+  if (locale === "de") {
+    base = COACH_PROMPT_DE;
+  } else if (locale === "en") {
+    base = COACH_PROMPT_EN;
+  } else {
+    base = COACH_PROMPT_EN + LOCALE_REPLY_FOOTER[locale];
+  }
   const prefix = buildPrefsPrefix(locale, prefs);
   return prefix ? `${prefix}\n\n${base}` : base;
 }

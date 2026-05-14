@@ -1,10 +1,18 @@
 import deMessages from "../../../messages/de.json";
 import enMessages from "../../../messages/en.json";
+import frMessages from "../../../messages/fr.json";
+import esMessages from "../../../messages/es.json";
+import itMessages from "../../../messages/it.json";
+import plMessages from "../../../messages/pl.json";
 import { defaultLocale, type Locale } from "./config";
 
 const allMessages: Record<Locale, Record<string, unknown>> = {
   de: deMessages,
   en: enMessages,
+  fr: frMessages,
+  es: esMessages,
+  it: itMessages,
+  pl: plMessages,
 };
 
 function resolveKey(

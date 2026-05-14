@@ -1,4 +1,5 @@
 import { moodStabilityLabel } from "@/lib/targets/mood-stability-label";
+import type { Locale } from "@/lib/i18n/config";
 
 /**
  * v1.4.25 W3e — per-target Coach prompt builder.
@@ -28,7 +29,12 @@ import { moodStabilityLabel } from "@/lib/targets/mood-stability-label";
  */
 export interface TargetPromptInput {
   type: string;
-  locale: "en" | "de";
+  /**
+   * v1.4.25 W9e — accepts every shipped locale. Templates exist for
+   * DE and EN today; non-DE locales fall through to the EN body until
+   * proper FR/ES/IT/PL pre-fills land.
+   */
+  locale: Locale;
   current: number | null;
   range: { min: number; max: number } | null;
   unit: string;

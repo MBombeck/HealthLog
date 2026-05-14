@@ -32,6 +32,10 @@ export const DISPLAY_TIMEZONE = "Europe/Berlin";
 export const INTL_LOCALE_MAP: Record<Locale, string> = {
   de: "de-DE",
   en: "en-US",
+  fr: "fr-FR",
+  es: "es-ES",
+  it: "it-IT",
+  pl: "pl-PL",
 };
 
 export function resolveIntlLocale(locale: Locale): string {
@@ -147,5 +151,9 @@ export function parseLocaleFromAcceptLanguage(header: string | null): Locale {
   if (!header) return "en";
   const primary = header.split(",")[0]?.trim().toLowerCase() ?? "";
   if (primary.startsWith("de")) return "de";
+  if (primary.startsWith("fr")) return "fr";
+  if (primary.startsWith("es")) return "es";
+  if (primary.startsWith("it")) return "it";
+  if (primary.startsWith("pl")) return "pl";
   return "en";
 }

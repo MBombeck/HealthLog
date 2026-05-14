@@ -688,12 +688,34 @@ sourceWindow und sourceMetric bleiben exakt in der englischen
 Kleinschreibung — ebenfalls stabile Vertragsschlüssel.`;
 
 /**
+ * v1.4.25 W9e — language-routing footer for the AI-initial locales
+ * (FR / ES / IT / PL). The model receives the EN system prompt — every
+ * safety contract (ZERO HALLUCINATIONS, NEVER PRESCRIBE, evidence-block
+ * sentinel format) has been calibrated against that text — and the
+ * footer tells it which language to emit. The DE branch still uses the
+ * hand-curated DE body verbatim. Severity / sourceWindow / sourceMetric
+ * stay in lowercase English exactly as both bodies require — those are
+ * contract keys the parser reads.
+ */
+const INSIGHTS_LOCALE_REPLY_FOOTER: Record<
+  Exclude<Locale, "de" | "en">,
+  string
+> = {
+  fr: "\n\nREPLY LANGUAGE: render all user-facing strings (summary, recommendations[].text, warnings[].message, dailyBriefing.paragraph + keyFindings, trendAnnotations.*, weeklyReport.summary + bullets, storyboardAnnotations[].label + detail) in French. Use natural French health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
+  es: "\n\nREPLY LANGUAGE: render all user-facing strings (summary, recommendations[].text, warnings[].message, dailyBriefing.paragraph + keyFindings, trendAnnotations.*, weeklyReport.summary + bullets, storyboardAnnotations[].label + detail) in Spanish (peninsular preferred). Use natural Spanish health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
+  it: "\n\nREPLY LANGUAGE: render all user-facing strings (summary, recommendations[].text, warnings[].message, dailyBriefing.paragraph + keyFindings, trendAnnotations.*, weeklyReport.summary + bullets, storyboardAnnotations[].label + detail) in Italian. Use natural Italian health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
+  pl: "\n\nREPLY LANGUAGE: render all user-facing strings (summary, recommendations[].text, warnings[].message, dailyBriefing.paragraph + keyFindings, trendAnnotations.*, weeklyReport.summary + bullets, storyboardAnnotations[].label + detail) in Polish. Use natural Polish health vocabulary with formal Pan/Pani register for medical-adjacent topics. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
+};
+
+/**
  * Returns the active scope-hardened system prompt for a given locale.
  * Use this in place of the legacy `getInsightsSystemPrompt` once the
  * route migrates to `generateInsight()` (planned v1.4.16).
  */
 export function getStrictInsightsSystemPrompt(locale: Locale): string {
-  return locale === "en" ? SYSTEM_PROMPT_EN : SYSTEM_PROMPT_DE;
+  if (locale === "de") return SYSTEM_PROMPT_DE;
+  if (locale === "en") return SYSTEM_PROMPT_EN;
+  return SYSTEM_PROMPT_EN + INSIGHTS_LOCALE_REPLY_FOOTER[locale];
 }
 
 /**
@@ -719,7 +741,12 @@ export function buildSystemPromptWithReferences(
   const refs = selectReferencesForMetrics(metrics);
   if (refs.length === 0) return base;
 
-  if (locale === "en") {
+  // v1.4.25 W9e — AI-initial locales (FR/ES/IT/PL) ride the EN sources
+  // block. The "title" field is the EN title; the model is told to
+  // surface the citation id, not to translate the source title, so this
+  // is safe — citation labels in the UI use the contract id (lowercase,
+  // matched against the curated bundle) and not the prompt's title.
+  if (locale !== "de") {
     const sourcesBlock = refs
       .map(
         (r) =>

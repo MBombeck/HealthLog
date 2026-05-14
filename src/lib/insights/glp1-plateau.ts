@@ -16,6 +16,7 @@
  *   - or there are fewer than two weight readings to compare.
  */
 import { prisma } from "@/lib/db";
+import type { Locale } from "@/lib/i18n/config";
 
 const PLATEAU_WINDOW_DAYS = 21;
 const PLATEAU_THRESHOLD_KG = 0.5;
@@ -111,8 +112,11 @@ export async function detectGlp1Plateau(
  */
 export function buildGlp1PlateauPrompt(
   ctx: Glp1PlateauContext,
-  locale: "en" | "de",
+  locale: Locale,
 ): string {
+  // The plateau prompt ships DE + EN bodies. Non-DE locales fall
+  // through to the EN body, mirroring the same fallback chain the
+  // JSON message bundles use until a proper FR/ES/IT/PL revision lands.
   if (locale === "de") {
     return `
 

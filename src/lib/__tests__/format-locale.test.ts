@@ -24,10 +24,21 @@ describe("parseLocaleFromAcceptLanguage", () => {
     expect(parseLocaleFromAcceptLanguage("de-CH")).toBe("de");
   });
 
-  it("returns en for English or unknown locales", () => {
+  it("returns en for English or unrecognised locales", () => {
     expect(parseLocaleFromAcceptLanguage("en-US,en;q=0.9")).toBe("en");
-    expect(parseLocaleFromAcceptLanguage("fr-FR,fr;q=0.9")).toBe("en");
+    expect(parseLocaleFromAcceptLanguage("ja-JP")).toBe("en");
     expect(parseLocaleFromAcceptLanguage("*")).toBe("en");
+  });
+
+  // v1.4.25 W9e — the four AI-initial locales added in this release.
+  // Each maps via the same primary-tag prefix match the DE branch uses.
+  it("returns the matching tag for FR / ES / IT / PL", () => {
+    expect(parseLocaleFromAcceptLanguage("fr-FR,fr;q=0.9")).toBe("fr");
+    expect(parseLocaleFromAcceptLanguage("es-ES")).toBe("es");
+    expect(parseLocaleFromAcceptLanguage("es-MX")).toBe("es");
+    expect(parseLocaleFromAcceptLanguage("it-IT")).toBe("it");
+    expect(parseLocaleFromAcceptLanguage("pl-PL")).toBe("pl");
+    expect(parseLocaleFromAcceptLanguage("pl")).toBe("pl");
   });
 });
 

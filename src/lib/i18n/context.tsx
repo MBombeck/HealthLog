@@ -14,10 +14,18 @@ import { makeFormatters, type Formatters } from "../format-locale";
 
 import deMessages from "../../../messages/de.json";
 import enMessages from "../../../messages/en.json";
+import frMessages from "../../../messages/fr.json";
+import esMessages from "../../../messages/es.json";
+import itMessages from "../../../messages/it.json";
+import plMessages from "../../../messages/pl.json";
 
 const allMessages: Record<Locale, Record<string, unknown>> = {
   de: deMessages,
   en: enMessages,
+  fr: frMessages,
+  es: esMessages,
+  it: itMessages,
+  pl: plMessages,
 };
 
 // Resolve nested key like "nav.dashboard" from a message object

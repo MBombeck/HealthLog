@@ -49,6 +49,7 @@ import {
 import { formatTimeWindowRange } from "@/lib/time-window-format";
 import { toast } from "sonner";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import type { Locale } from "@/lib/i18n/config";
 import { invalidateKeys, medicationDependentKeys } from "@/lib/query-keys";
 import { PhaseConfigDialog } from "@/components/medications/phase-config-dialog";
 
@@ -131,7 +132,7 @@ function formatNextWindowSummary(
   schedule: Schedule,
   t: TranslateFn,
   formatShortDate: (date: Date) => string,
-  locale: "de" | "en",
+  locale: Locale,
 ): string {
   const isSimpleDaily =
     schedule.daysOfWeek.length === 0 && schedule.intervalWeeks === 1;

@@ -1,11 +1,21 @@
-export type InsightLocale = "de" | "en";
+import type { Locale } from "@/lib/i18n/config";
+
+/**
+ * v1.4.25 W9e — these no-key fallbacks ship DE + EN bodies only. The
+ * type accepts every shipped locale (fr/es/it/pl too) and routes
+ * non-DE locales through the EN body, mirroring the same fallback
+ * chain the JSON message bundles use. When DE/EN-only fallbacks get
+ * replaced with proper FR/ES/IT/PL bodies, expand `getLocalizedText`
+ * to read the matching argument.
+ */
+export type InsightLocale = Locale;
 
 function getLocalizedText(
   locale: InsightLocale,
   de: string,
   en: string,
 ): string {
-  return locale === "en" ? en : de;
+  return locale === "de" ? de : en;
 }
 
 export function getNoKeyGeneralStatusText(locale: InsightLocale): string {

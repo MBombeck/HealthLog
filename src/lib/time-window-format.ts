@@ -6,6 +6,8 @@ export function formatTimeWindowPart(value: string): string {
   return `${hh}:${mm}`;
 }
 
+import type { Locale } from "@/lib/i18n/config";
+
 /**
  * Render a daily intake time window like "08:00 bis 12:00 Uhr" / "08:00 – 12:00".
  *
@@ -16,16 +18,20 @@ export function formatTimeWindowPart(value: string): string {
  * separator + suffix are picked. When no locale is provided we keep the
  * legacy German output for backwards compatibility with any consumer we may
  * have missed.
+ *
+ * v1.4.25 W9e — locales other than DE render with the language-neutral
+ * "08:00 – 12:00" form (the same as EN) until a locale-specific suffix
+ * ships. The DE branch keeps its trailing "Uhr" suffix verbatim.
  */
 export function formatTimeWindowRange(
   start: string,
   end: string,
-  locale?: "de" | "en",
+  locale?: Locale,
 ): string {
   const s = formatTimeWindowPart(start);
   const e = formatTimeWindowPart(end);
-  if (locale === "en") {
-    return `${s} – ${e}`;
+  if (locale === undefined || locale === "de") {
+    return `${s} bis ${e} Uhr`;
   }
-  return `${s} bis ${e} Uhr`;
+  return `${s} – ${e}`;
 }

@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { AchievementUnlockNotifier } from "@/components/gamification/achievement-unlock-notifier";
+import { MaintainershipBanner } from "@/components/i18n/maintainership-banner";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { BottomNav } from "./bottom-nav";
@@ -61,12 +62,15 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
   // Public pages (login, register) — render without any nav
   if (isPublicPage) {
     return (
-      <main
-        id="main-content"
-        className="flex h-dvh items-center justify-center px-4"
-      >
-        {children}
-      </main>
+      <div className="flex h-dvh flex-col">
+        <MaintainershipBanner />
+        <main
+          id="main-content"
+          className="flex flex-1 items-center justify-center px-4"
+        >
+          {children}
+        </main>
+      </div>
     );
   }
 
@@ -87,8 +91,11 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
         {showUnlockNotifier && user?.id ? (
           <AchievementUnlockNotifier userId={user.id} />
         ) : null}
-        <div className="flex min-h-dvh items-center justify-center px-4 py-8">
-          {children}
+        <div className="flex min-h-dvh flex-col">
+          <MaintainershipBanner />
+          <div className="flex flex-1 items-center justify-center px-4 py-8">
+            {children}
+          </div>
         </div>
       </>
     );
@@ -117,6 +124,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       <div className="flex h-dvh flex-col md:flex-row">
         <SidebarNav />
         <div className="flex min-h-0 flex-1 flex-col">
+          <MaintainershipBanner />
           <TopBar />
           <main
             id="main-content"
