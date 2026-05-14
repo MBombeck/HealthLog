@@ -198,28 +198,67 @@ describe("requireAuth — Bearer token path", () => {
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
 
-  it("rejects a scoped Bearer token when the route did not declare a scope", async () => {
+  // v1.4.25 W10 reconcile (code-review H2): a route that does NOT declare
+  // a scope is content with any authenticated token. The previous policy
+  // 403'd every narrow-scope token here and broke `/api/measurements/by-
+  // external-ids`, `/api/personal-records`, `/api/medications/[id]/glp1`,
+  // and `/api/dashboard/glp1` — all four were called without a scope.
+  it("accepts a narrow-scope Bearer token when the route did not declare a scope", async () => {
     vi.mocked(getSession).mockResolvedValue(null);
     setBearerHeader(`Bearer ${RAW_TOKEN}`);
 
     vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
-      id: "token-5",
+      id: "token-5a",
       userId: "user-1",
       permissions: ["medication:ingest"],
       revoked: false,
       expiresAt: null,
     } as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(FAKE_USER as never);
 
-    await expect(requireAuth()).rejects.toMatchObject({
-      statusCode: 403,
-    });
+    const ctx = await requireAuth();
+    expect(ctx.user.id).toBe("user-1");
+    expect(ctx.session.id).toBe("token-5a");
     expect(auditLog).toHaveBeenCalledWith(
-      "auth.bearer.failure",
-      expect.objectContaining({
-        details: expect.objectContaining({ reason: "scope_required" }),
-      }),
+      "auth.bearer.success",
+      expect.objectContaining({ userId: "user-1" }),
     );
-    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("accepts a wildcard Bearer token when the route did not declare a scope", async () => {
+    vi.mocked(getSession).mockResolvedValue(null);
+    setBearerHeader(`Bearer ${RAW_TOKEN}`);
+
+    vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+      id: "token-5b",
+      userId: "user-1",
+      permissions: ["*"],
+      revoked: false,
+      expiresAt: null,
+    } as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(FAKE_USER as never);
+
+    const ctx = await requireAuth();
+    expect(ctx.user.id).toBe("user-1");
+    expect(ctx.session.id).toBe("token-5b");
+  });
+
+  it("accepts a narrow-scope Bearer token when the route's required scope matches", async () => {
+    vi.mocked(getSession).mockResolvedValue(null);
+    setBearerHeader(`Bearer ${RAW_TOKEN}`);
+
+    vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+      id: "token-5c",
+      userId: "user-1",
+      permissions: ["medication:ingest"],
+      revoked: false,
+      expiresAt: null,
+    } as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(FAKE_USER as never);
+
+    const ctx = await requireAuth("medication:ingest");
+    expect(ctx.user.id).toBe("user-1");
+    expect(ctx.session.id).toBe("token-5c");
   });
 
   it("returns 401 when neither cookie nor Bearer is present", async () => {

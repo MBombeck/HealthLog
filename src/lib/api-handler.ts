@@ -255,28 +255,27 @@ async function authenticateBearer(
     throw new HttpError(401, "Token expired");
   }
 
-  // Audit V3 NEW-V3-1 fix: `["*"]` is a real wildcard — it grants the
-  // session-equivalent scope (the iOS app receives this on login). Without
-  // the wildcard branch, EVERY future requireAuth("scope:name") call would
-  // 403 every iOS-issued token because string-literal `.includes("*"...)`
-  // never matches.  Worse: today many sensitive routes call requireAuth()
-  // *without* a requiredPermission, so a leaked iOS token can act as a
-  // full-scope token (account delete, settings wipe). Once those routes
-  // adopt requireAuth("scope:name"), the wildcard handling here keeps
-  // the iOS app working while narrower-scoped tokens (e.g. ["medication:
-  // ingest"]) get correctly 403'd.
+  // `["*"]` is the wildcard scope: granted to the iOS app on login so it
+  // can call any authenticated route. Narrow scopes (e.g.
+  // `["medication:ingest"]`) gate specific routes.
+  //
+  // Authorisation contract:
+  //   - Route declares no `requiredPermission`: any valid token passes
+  //     (both wildcard and narrow-scope). The route does not gate on
+  //     scope, so authentication alone is sufficient.
+  //   - Route declares a `requiredPermission`: wildcard tokens pass;
+  //     narrow-scope tokens must list the required permission.
+  //
+  // v1.4.25 W10 reconcile (code-review H2): the previous "no
+  // requiredPermission ⇒ wildcard only" rule misread the contract.
+  // Routes without a declared scope (`/api/measurements/by-external-ids`,
+  // `/api/personal-records`, `/api/medications/[id]/glp1`,
+  // `/api/dashboard/glp1`) 403'd every narrow-scope token even though
+  // those routes did not intend to restrict by scope at all. Allowing
+  // any authenticated token through when the route does not declare a
+  // scope unblocks the v1.5 iOS endpoints while keeping the scoped-
+  // route gating below intact.
   const hasWildcardPermission = apiToken.permissions.includes("*");
-
-  if (!requiredPermission && !hasWildcardPermission) {
-    auditLog("auth.bearer.failure", {
-      userId: apiToken.userId,
-      details: {
-        reason: "scope_required",
-        tokenId: apiToken.id,
-      },
-    }).catch(() => {});
-    throw new HttpError(403, "Insufficient permissions");
-  }
 
   if (
     requiredPermission &&
