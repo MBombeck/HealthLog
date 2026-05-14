@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { IntakeHistoryList } from "@/components/medications/intake-history-list";
 import { DrugLevelChart } from "@/components/medications/DrugLevelChart";
+import { SideEffectsSection } from "@/components/medications/SideEffectsSection";
 import { ArrowLeft, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "@/lib/i18n/context";
@@ -96,6 +97,16 @@ export default function IntakeHistoryPage({
             dose: medication.dose,
           }}
         />
+      )}
+
+      {/* v1.4.25 W19d — GLP-1 side-effect logbook. Sits between the
+          drug-level chart and the intake history so the user lands on
+          the cycle context (where am I in the curve), then on the
+          symptom record, then on the dose-by-dose timeline. Mounted
+          only for GLP-1 medications; future waves (W19e reminders,
+          W19f titration ladder) hang off this same surface. */}
+      {medication?.treatmentClass === "GLP1" && (
+        <SideEffectsSection medicationId={id} />
       )}
 
       <IntakeHistoryList
