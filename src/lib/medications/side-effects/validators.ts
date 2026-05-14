@@ -15,37 +15,30 @@
 
 import { z } from "zod/v4";
 
-export const SIDE_EFFECT_CATEGORY_VALUES = [
-  "GI",
-  "METABOLIC",
-  "INJECTION_SITE",
-  "COGNITIVE",
-  "GLP1_SPECIFIC",
-] as const;
+import {
+  MedicationSideEffectCategory,
+  MedicationSideEffectEntry,
+} from "@/generated/prisma/client";
 
-export const SIDE_EFFECT_ENTRY_VALUES = [
-  "NAUSEA",
-  "VOMITING",
-  "DIARRHEA",
-  "CONSTIPATION",
-  "ABDOMINAL_PAIN",
-  "HYPOGLYCEMIA_SYMPTOMS",
-  "DEHYDRATION",
-  "ANOREXIA",
-  "ELECTROLYTE_FATIGUE",
-  "INJECTION_REDNESS",
-  "INJECTION_SWELLING",
-  "INJECTION_BRUISING",
-  "INJECTION_INDURATION",
-  "BRAIN_FOG",
-  "DIZZINESS",
-  "LOW_MOOD",
-  "LOW_ENERGY",
-  "EARLY_SATIETY",
-  "GASTROPARESIS_LIKE",
-  "DYSGEUSIA",
-  "GALLBLADDER_DISCOMFORT",
-] as const;
+/**
+ * v1.4.25 W21 Fix-N (simp-M1) — these arrays used to restate the
+ * Prisma enum keys verbatim, which meant adding a new entry required
+ * three separate edits (schema, taxonomy map, validator array) that
+ * could silently drift. The arrays are now derived from the Prisma
+ * enum constant at module load. The drift-guard test
+ * (`__tests__/drift-guard.test.ts`) asserts the three sources (Prisma
+ * enum, taxonomy map, validator arrays) cover the same keys.
+ *
+ * Zod accepts the `nativeEnum` shape from the Prisma client const so
+ * the schema stays expressed in the same TypeScript-narrowable form.
+ */
+export const SIDE_EFFECT_CATEGORY_VALUES = Object.values(
+  MedicationSideEffectCategory,
+) as readonly MedicationSideEffectCategory[];
+
+export const SIDE_EFFECT_ENTRY_VALUES = Object.values(
+  MedicationSideEffectEntry,
+) as readonly MedicationSideEffectEntry[];
 
 export const SIDE_EFFECT_NOTES_MAX = 280;
 
@@ -59,7 +52,7 @@ export const SIDE_EFFECT_NOTES_MAX = 280;
  * envelope.
  */
 export const createSideEffectSchema = z.object({
-  entry: z.enum(SIDE_EFFECT_ENTRY_VALUES),
+  entry: z.nativeEnum(MedicationSideEffectEntry),
   severity: z.number().int().min(1).max(5),
   occurredAt: z.iso
     .datetime({ offset: true })
