@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   CheckCircle2,
-  ChevronDown,
   Download,
   Loader2,
   MapPin,
@@ -67,11 +66,14 @@ export function LoginOverviewSection() {
   // legible after Excel/LibreOffice strip the `Z` suffix from the
   // legacy UTC export.
   const userTz = user?.timezone ?? DEFAULT_TIMEZONE;
-  // v1.5 phase-4b moved this to a dedicated route
-  // (`/admin/login-overview`), so the user has already opted into the
-  // audit log by visiting the page. Default to expanded; the toggle
-  // stays as an escape hatch.
-  const [expanded, setExpanded] = useState(true);
+
+  // v1.4.25 W8b — the section used to wrap its body in a
+  // collapse/expand toggle. Since v1.5 phase-4b moved this to a
+  // dedicated `/admin/login-overview` route (the only thing on the
+  // page), the toggle was pure clutter: visiting the page already
+  // signals intent to see the audit log. The toggle is gone; content
+  // always renders. The `settings.collapse` / `settings.expand`
+  // i18n keys are retained centrally for any future surface.
 
   // Quick-filter pill (kept from the v1.4.x UI for one-tap "show failed").
   const [filter, setFilter] = useState<"all" | "failed">("all");
@@ -133,7 +135,6 @@ export function LoginOverviewSection() {
       if (!res.ok) throw new Error("Failed");
       return (await res.json()).data as AuditLogResponse;
     },
-    enabled: expanded,
   });
 
   // Distinct actions for the dropdown — populated lazily.
@@ -144,7 +145,6 @@ export function LoginOverviewSection() {
       if (!res.ok) throw new Error("Failed");
       return (await res.json()).data as { actions: string[] };
     },
-    enabled: expanded,
     staleTime: 5 * 60_000,
   });
 
@@ -193,213 +193,195 @@ export function LoginOverviewSection() {
 
   return (
     <div className="bg-card border-border rounded-xl border p-6">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <ScrollText className="text-primary h-5 w-5" />
-          <div className="text-lg font-semibold">
-            {t("admin.loginOverview")}
-          </div>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setExpanded((prev) => !prev)}
-          aria-expanded={expanded}
-        >
-          {expanded ? t("settings.collapse") : t("settings.expand")}
-          <ChevronDown
-            className={`ml-1 h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`}
-          />
-        </Button>
+      <div className="flex items-center gap-2">
+        <ScrollText className="text-primary h-5 w-5" />
+        <div className="text-lg font-semibold">{t("admin.loginOverview")}</div>
       </div>
 
-      {expanded && (
-        <div className="mt-4 space-y-3">
-          {/* Quick-filter pills. Failed-only is the most common
+      <div className="mt-4 space-y-3">
+        {/* Quick-filter pills. Failed-only is the most common
               admin "is something wrong" question — keep the one-tap shortcut. */}
-          <div className="flex gap-1">
-            <Button
-              variant={filter === "all" ? "default" : "ghost"}
-              size="sm"
-              className="min-h-11 min-w-11 px-3 text-xs"
-              onClick={resetPageOnFilterChange(() => setFilter("all"))}
-            >
-              {t("admin.allAuthEvents")}
-            </Button>
-            <Button
-              variant={filter === "failed" ? "default" : "ghost"}
-              size="sm"
-              className="min-h-11 min-w-11 px-3 text-xs"
-              onClick={resetPageOnFilterChange(() => setFilter("failed"))}
-            >
-              {t("admin.failedOnly")}
-            </Button>
-          </div>
+        <div className="flex gap-1">
+          <Button
+            variant={filter === "all" ? "default" : "ghost"}
+            size="sm"
+            className="min-h-11 min-w-11 px-3 text-xs"
+            onClick={resetPageOnFilterChange(() => setFilter("all"))}
+          >
+            {t("admin.allAuthEvents")}
+          </Button>
+          <Button
+            variant={filter === "failed" ? "default" : "ghost"}
+            size="sm"
+            className="min-h-11 min-w-11 px-3 text-xs"
+            onClick={resetPageOnFilterChange(() => setFilter("failed"))}
+          >
+            {t("admin.failedOnly")}
+          </Button>
+        </div>
 
-          {/* Detailed filter row */}
-          <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
-            <Input
-              type="search"
-              placeholder={t("admin.section.auditLog.filterActor")}
-              value={actor}
-              onChange={(e) => {
-                setPage(1);
-                setActor(e.target.value);
-              }}
-              aria-label={t("admin.section.auditLog.filterActor")}
-            />
+        {/* Detailed filter row */}
+        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
+          <Input
+            type="search"
+            placeholder={t("admin.section.auditLog.filterActor")}
+            value={actor}
+            onChange={(e) => {
+              setPage(1);
+              setActor(e.target.value);
+            }}
+            aria-label={t("admin.section.auditLog.filterActor")}
+          />
+          <Select
+            value={actionFilter || "__all__"}
+            onValueChange={(v) => {
+              setPage(1);
+              setActionFilter(v === "__all__" ? "" : v);
+            }}
+          >
+            <SelectTrigger
+              aria-label={t("admin.section.auditLog.filterAction")}
+            >
+              <SelectValue
+                placeholder={t("admin.section.auditLog.filterAction")}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">
+                {t("admin.section.auditLog.filterActionAll")}
+              </SelectItem>
+              {(actionsData?.actions ?? [])
+                .filter((a) => a.startsWith("auth."))
+                .map((a) => (
+                  <SelectItem key={a} value={a}>
+                    {AUTH_ACTION_LABELS[a] ?? a}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          <Input
+            type="search"
+            placeholder={t("admin.section.auditLog.filterTarget")}
+            value={target}
+            onChange={(e) => {
+              setPage(1);
+              setTarget(e.target.value);
+            }}
+            aria-label={t("admin.section.auditLog.filterTarget")}
+          />
+          <Select
+            value={range}
+            onValueChange={(v) => {
+              setPage(1);
+              setRange(v as DateRangePreset);
+            }}
+          >
+            <SelectTrigger aria-label={t("admin.section.auditLog.filterDate")}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="24h">
+                {t("admin.section.auditLog.range24h")}
+              </SelectItem>
+              <SelectItem value="7d">
+                {t("admin.section.auditLog.range7d")}
+              </SelectItem>
+              <SelectItem value="30d">
+                {t("admin.section.auditLog.range30d")}
+              </SelectItem>
+              <SelectItem value="all">
+                {t("admin.section.auditLog.rangeAll")}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Toolbar row: per-page + export */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground">
+              {t("admin.section.auditLog.perPage")}
+            </span>
             <Select
-              value={actionFilter || "__all__"}
+              value={String(perPage)}
               onValueChange={(v) => {
                 setPage(1);
-                setActionFilter(v === "__all__" ? "" : v);
+                setPerPage(Number(v) as PerPageValue);
               }}
             >
-              <SelectTrigger
-                aria-label={t("admin.section.auditLog.filterAction")}
-              >
-                <SelectValue
-                  placeholder={t("admin.section.auditLog.filterAction")}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">
-                  {t("admin.section.auditLog.filterActionAll")}
-                </SelectItem>
-                {(actionsData?.actions ?? [])
-                  .filter((a) => a.startsWith("auth."))
-                  .map((a) => (
-                    <SelectItem key={a} value={a}>
-                      {AUTH_ACTION_LABELS[a] ?? a}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-            <Input
-              type="search"
-              placeholder={t("admin.section.auditLog.filterTarget")}
-              value={target}
-              onChange={(e) => {
-                setPage(1);
-                setTarget(e.target.value);
-              }}
-              aria-label={t("admin.section.auditLog.filterTarget")}
-            />
-            <Select
-              value={range}
-              onValueChange={(v) => {
-                setPage(1);
-                setRange(v as DateRangePreset);
-              }}
-            >
-              <SelectTrigger
-                aria-label={t("admin.section.auditLog.filterDate")}
-              >
+              <SelectTrigger className="h-8 w-20">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="24h">
-                  {t("admin.section.auditLog.range24h")}
-                </SelectItem>
-                <SelectItem value="7d">
-                  {t("admin.section.auditLog.range7d")}
-                </SelectItem>
-                <SelectItem value="30d">
-                  {t("admin.section.auditLog.range30d")}
-                </SelectItem>
-                <SelectItem value="all">
-                  {t("admin.section.auditLog.rangeAll")}
-                </SelectItem>
+                {PER_PAGE_OPTIONS.map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={downloadCsv}
+            disabled={entries.length === 0}
+          >
+            <Download className="mr-1 h-3.5 w-3.5" />
+            {t("admin.section.auditLog.export")}
+          </Button>
+        </div>
 
-          {/* Toolbar row: per-page + export */}
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground">
-                {t("admin.section.auditLog.perPage")}
-              </span>
-              <Select
-                value={String(perPage)}
-                onValueChange={(v) => {
-                  setPage(1);
-                  setPerPage(Number(v) as PerPageValue);
-                }}
-              >
-                <SelectTrigger className="h-8 w-20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PER_PAGE_OPTIONS.map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {n}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={downloadCsv}
-              disabled={entries.length === 0}
-            >
-              <Download className="mr-1 h-3.5 w-3.5" />
-              {t("admin.section.auditLog.export")}
-            </Button>
+        {isLoading ? (
+          <div className="flex justify-center py-4">
+            <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
           </div>
-
-          {isLoading ? (
-            <div className="flex justify-center py-4">
-              <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
-            </div>
-          ) : !entries.length ? (
-            <EmptyState
-              icon={<ScrollText className="size-6" />}
-              title={
-                filter === "failed"
-                  ? t("admin.loginEmptyFailedTitle")
-                  : t("admin.section.auditLog.empty")
-              }
-              description={
-                filter === "failed"
-                  ? t("admin.loginEmptyFailedDescription")
-                  : t("admin.loginEmptyDescription")
-              }
-              action={
-                filter === "failed" ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={resetPageOnFilterChange(() => setFilter("all"))}
-                  >
-                    {t("admin.loginEmptyResetFilter")}
-                  </Button>
-                ) : undefined
-              }
-            />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-muted-foreground border-b text-xs">
-                    <th className="px-3 py-2 text-left font-medium">
-                      {t("admin.status")}
-                    </th>
-                    <th className="px-3 py-2 text-left font-medium">
-                      {t("admin.users")}
-                    </th>
-                    <th className="px-3 py-2 text-left font-medium">
-                      {t("admin.action")}
-                    </th>
-                    <th className="px-3 py-2 text-left font-medium">
-                      {t("admin.provider")}
-                    </th>
-                    <th className="px-3 py-2 text-left font-medium">
-                      {t("admin.ip")}
-                    </th>
-                    {/*
+        ) : !entries.length ? (
+          <EmptyState
+            icon={<ScrollText className="size-6" />}
+            title={
+              filter === "failed"
+                ? t("admin.loginEmptyFailedTitle")
+                : t("admin.section.auditLog.empty")
+            }
+            description={
+              filter === "failed"
+                ? t("admin.loginEmptyFailedDescription")
+                : t("admin.loginEmptyDescription")
+            }
+            action={
+              filter === "failed" ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetPageOnFilterChange(() => setFilter("all"))}
+                >
+                  {t("admin.loginEmptyResetFilter")}
+                </Button>
+              ) : undefined
+            }
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-muted-foreground border-b text-xs">
+                  <th className="px-3 py-2 text-left font-medium">
+                    {t("admin.status")}
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium">
+                    {t("admin.users")}
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium">
+                    {t("admin.action")}
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium">
+                    {t("admin.provider")}
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium">
+                    {t("admin.ip")}
+                  </th>
+                  {/*
                       v1.4.25 W8b — Standort column. Previously rendered
                       `text-right`, which on wide audit tables let the
                       `Berlin, DE` label drift to the table edge and
@@ -408,103 +390,102 @@ export function LoginOverviewSection() {
                       consistency) makes Standort a first-class column
                       that admins actually notice.
                     */}
-                    <th className="px-3 py-2 text-left font-medium">
-                      <span className="inline-flex items-center gap-1">
-                        <MapPin className="h-3 w-3" aria-hidden="true" />
-                        {t("admin.location")}
-                      </span>
-                    </th>
-                    <th className="px-3 py-2 text-right font-medium">
-                      {t("admin.timestamp")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-border divide-y">
-                  {entries.map((entry, i) => {
-                    const isFailed = entry.action === "auth.login.failed";
-                    const provider = providerForAction(entry.action);
-                    const ProviderIcon = iconForAuthProvider(provider);
-                    return (
-                      <tr
-                        key={entry.id}
-                        className={i % 2 === 0 ? "bg-muted/30" : ""}
+                  <th className="px-3 py-2 text-left font-medium">
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="h-3 w-3" aria-hidden="true" />
+                      {t("admin.location")}
+                    </span>
+                  </th>
+                  <th className="px-3 py-2 text-right font-medium">
+                    {t("admin.timestamp")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-border divide-y">
+                {entries.map((entry, i) => {
+                  const isFailed = entry.action === "auth.login.failed";
+                  const provider = providerForAction(entry.action);
+                  const ProviderIcon = iconForAuthProvider(provider);
+                  return (
+                    <tr
+                      key={entry.id}
+                      className={i % 2 === 0 ? "bg-muted/30" : ""}
+                    >
+                      <td className="px-3 py-2">
+                        {isFailed ? (
+                          <XCircle className="text-destructive h-4 w-4" />
+                        ) : (
+                          <CheckCircle2 className="text-dracula-green h-4 w-4" />
+                        )}
+                      </td>
+                      <td
+                        className={`px-3 py-2 font-medium ${isFailed ? "text-destructive" : ""}`}
                       >
-                        <td className="px-3 py-2">
-                          {isFailed ? (
-                            <XCircle className="text-destructive h-4 w-4" />
-                          ) : (
-                            <CheckCircle2 className="text-dracula-green h-4 w-4" />
-                          )}
-                        </td>
-                        <td
-                          className={`px-3 py-2 font-medium ${isFailed ? "text-destructive" : ""}`}
-                        >
-                          {entry.user?.username ?? t("common.unknown")}
-                        </td>
-                        <td
-                          className={`px-3 py-2 text-xs ${isFailed ? "text-destructive" : "text-muted-foreground"}`}
-                        >
-                          {AUTH_ACTION_LABELS[entry.action] ?? entry.action}
-                        </td>
-                        <td className="text-muted-foreground px-3 py-2 text-xs">
-                          <span className="inline-flex items-center gap-1.5">
-                            <ProviderIcon
-                              className="h-3.5 w-3.5"
-                              aria-hidden="true"
-                            />
-                            {AUTH_PROVIDER_LABELS[provider]}
-                          </span>
-                        </td>
-                        <td className="text-muted-foreground px-3 py-2 font-mono text-xs">
-                          {entry.ipAddress ?? "—"}
-                        </td>
-                        <td className="text-muted-foreground px-3 py-2 text-xs">
-                          {entry.location ?? "—"}
-                        </td>
-                        <td className="text-muted-foreground px-3 py-2 text-right text-xs whitespace-nowrap">
-                          {formatDateTime(entry.createdAt)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              <div className="text-muted-foreground mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        {entry.user?.username ?? t("common.unknown")}
+                      </td>
+                      <td
+                        className={`px-3 py-2 text-xs ${isFailed ? "text-destructive" : "text-muted-foreground"}`}
+                      >
+                        {AUTH_ACTION_LABELS[entry.action] ?? entry.action}
+                      </td>
+                      <td className="text-muted-foreground px-3 py-2 text-xs">
+                        <span className="inline-flex items-center gap-1.5">
+                          <ProviderIcon
+                            className="h-3.5 w-3.5"
+                            aria-hidden="true"
+                          />
+                          {AUTH_PROVIDER_LABELS[provider]}
+                        </span>
+                      </td>
+                      <td className="text-muted-foreground px-3 py-2 font-mono text-xs">
+                        {entry.ipAddress ?? "—"}
+                      </td>
+                      <td className="text-muted-foreground px-3 py-2 text-xs">
+                        {entry.location ?? "—"}
+                      </td>
+                      <td className="text-muted-foreground px-3 py-2 text-right text-xs whitespace-nowrap">
+                        {formatDateTime(entry.createdAt)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <div className="text-muted-foreground mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span>
+                {t("admin.showingEntries", {
+                  count: entries.length,
+                  total,
+                })}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  {t("admin.section.auditLog.prev")}
+                </Button>
                 <span>
-                  {t("admin.showingEntries", {
-                    count: entries.length,
-                    total,
+                  {t("admin.section.auditLog.pageOf", {
+                    page,
+                    total: lastPage,
                   })}
                 </span>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  >
-                    {t("admin.section.auditLog.prev")}
-                  </Button>
-                  <span>
-                    {t("admin.section.auditLog.pageOf", {
-                      page,
-                      total: lastPage,
-                    })}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page >= lastPage}
-                    onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
-                  >
-                    {t("admin.section.auditLog.next")}
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= lastPage}
+                  onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
+                >
+                  {t("admin.section.auditLog.next")}
+                </Button>
               </div>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
