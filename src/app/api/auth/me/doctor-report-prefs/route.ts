@@ -17,8 +17,9 @@
  * layer when `mood = false` — the data never leaves the DB.
  */
 import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
-import { apiSuccess } from "@/lib/api-response";
+import { apiSuccess, getClientIp } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
+import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import {
   doctorReportPrefsSchema,
@@ -78,6 +79,20 @@ export const PUT = apiHandler(async (req: Request) => {
     // typed return surface. Shape is identical to the validated input.
     data: {
       doctorReportPrefsJson: merged as unknown as Record<string, boolean>,
+    },
+  });
+
+  // v1.4.25 W10 reconcile (security M-3): record the previous + new
+  // pref shape in the audit log. Doctor-Report pref toggles
+  // (especially `mood: true`) widen the PDF surface; without an
+  // audit trail a silent compromise (or unintended client write)
+  // is invisible. Mirrors the timezone-route audit pattern.
+  await auditLog("user.doctor-report-prefs.update", {
+    userId: user.id,
+    ipAddress: getClientIp(req),
+    details: {
+      previous: current?.doctorReportPrefsJson ?? null,
+      next: merged,
     },
   });
 

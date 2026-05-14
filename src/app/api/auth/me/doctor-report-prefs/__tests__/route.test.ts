@@ -33,6 +33,7 @@ vi.mock("next/headers", () => ({
 import { GET, PUT } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+import { auditLog } from "@/lib/auth/audit";
 import { DEFAULT_DOCTOR_REPORT_PREFS } from "@/lib/validations/doctor-report-prefs";
 
 const SESSION_OK = {
@@ -153,5 +154,38 @@ describe("PUT /api/auth/me/doctor-report-prefs", () => {
     );
     expect(res.status).toBe(401);
     expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  // ── Case 5 — audit trail (v1.4.25 W10 reconcile security M-3) ──────
+  it("writes an audit-log entry with the previous and new pref shape", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const current = {
+      bp: true,
+      weight: true,
+      pulse: true,
+      bmi: true,
+      mood: false,
+      compliance: true,
+      sleep: true,
+    };
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      doctorReportPrefsJson: current,
+    } as never);
+    vi.mocked(prisma.user.update).mockResolvedValue({} as never);
+
+    const res = await (PUT as (r: Request) => Promise<Response>)(
+      mkPut({ mood: true }),
+    );
+    expect(res.status).toBe(200);
+    expect(auditLog).toHaveBeenCalledWith(
+      "user.doctor-report-prefs.update",
+      expect.objectContaining({
+        userId: "user-1",
+        details: expect.objectContaining({
+          previous: current,
+          next: expect.objectContaining({ mood: true }),
+        }),
+      }),
+    );
   });
 });

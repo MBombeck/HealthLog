@@ -16,8 +16,9 @@
  * the read path is cheap (one column) — no caching layer to flush.
  */
 import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
-import { apiSuccess } from "@/lib/api-response";
+import { apiSuccess, getClientIp } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
+import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import {
   parseSourcePriority,
@@ -55,6 +56,17 @@ export const PUT = apiHandler(async (req: Request) => {
     throw new HttpError(422, "source-priority.body.invalid_shape");
   }
 
+  // v1.4.25 W10 reconcile (security M-3): capture the previous shape
+  // before overwriting so the audit-log entry records the actual
+  // delta. Source-priority drives every aggregator's source pick,
+  // so a silent compromise (or accidental client write) was
+  // previously invisible — mirroring the timezone-route audit
+  // pattern closes the gap.
+  const before = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { sourcePriorityJson: true },
+  });
+
   // Persist the partial form — missing keys read as defaults via
   // `parseSourcePriority`. Storing only the user-edited subset keeps
   // the Json blob narrow and future-proofs the shape: when a new
@@ -63,6 +75,15 @@ export const PUT = apiHandler(async (req: Request) => {
   await prisma.user.update({
     where: { id: user.id },
     data: { sourcePriorityJson: parsed.data },
+  });
+
+  await auditLog("user.source-priority.update", {
+    userId: user.id,
+    ipAddress: getClientIp(req),
+    details: {
+      previous: before?.sourcePriorityJson ?? null,
+      next: parsed.data,
+    },
   });
 
   annotate({
