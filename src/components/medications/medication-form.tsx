@@ -849,7 +849,7 @@ export function MedicationForm({
                         onClick={() =>
                           updateSchedule(i, "intervalWeeks", weeks)
                         }
-                        className={`h-8 rounded-md border text-xs font-medium transition-colors ${
+                        className={`min-h-11 rounded-md border text-xs font-medium transition-colors ${
                           s.intervalWeeks === weeks
                             ? "border-primary bg-primary text-primary-foreground"
                             : "border-border/70 bg-muted text-foreground/70 hover:bg-accent hover:text-foreground"

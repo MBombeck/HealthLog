@@ -120,7 +120,7 @@ export default function MedicationsPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="space-y-5">
+      <div className="space-y-6">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">
             {t("medications.title")}
@@ -143,7 +143,7 @@ export default function MedicationsPage() {
   const inactiveMeds = medsArray.filter((m) => !m.active).sort(byName);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">
@@ -195,7 +195,7 @@ export default function MedicationsPage() {
           }
         />
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-6">
           {/* Active medications */}
           {activeMeds.length > 0 && (
             <div className="space-y-3.5">

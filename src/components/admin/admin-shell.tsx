@@ -170,7 +170,10 @@ export function AdminShell({ active, children }: AdminShellProps) {
               href="/admin"
               aria-current={activeSlug === null ? "page" : undefined}
               className={cn(
-                "flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+                // v1.4.25 W8 — chip strip is the primary mobile-admin
+                // navigation surface. Pad to WCAG 2.5.5 44 px so the
+                // chips can be tapped without zoom on a Pixel-5.
+                "flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
                 activeSlug === null
                   ? "border-primary/40 bg-primary/10 text-primary"
                   : "border-border text-foreground hover:bg-accent",
@@ -189,7 +192,10 @@ export function AdminShell({ active, children }: AdminShellProps) {
                   href={`/admin/${section.slug}`}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+                    // v1.4.25 W8 — chip strip is the primary mobile-admin
+                // navigation surface. Pad to WCAG 2.5.5 44 px so the
+                // chips can be tapped without zoom on a Pixel-5.
+                "flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
                     isActive
                       ? "border-primary/40 bg-primary/10 text-primary"
                       : "border-border text-foreground hover:bg-accent",

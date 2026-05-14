@@ -61,7 +61,9 @@ export function TopBar() {
           <DropdownMenu>
             <DropdownMenuTrigger
               aria-label={t("nav.userMenu")}
-              className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-colors focus:outline-none"
+              // v1.4.25 W8 — hit the WCAG 2.5.5 44 px touch-target floor on
+              // mobile. The text-only py-1.5 was previously ~30 px tall.
+              className="text-muted-foreground hover:text-foreground flex min-h-11 min-w-11 items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-colors focus:outline-none"
             >
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">{user.username}</span>
@@ -128,7 +130,8 @@ export function TopBar() {
         ) : (
           <Link
             href="/auth/login"
-            className="text-muted-foreground hover:text-foreground flex items-center gap-2 text-sm transition-colors"
+            // v1.4.25 W8 — match the WCAG 2.5.5 44 px touch-target floor.
+            className="text-muted-foreground hover:text-foreground flex min-h-11 min-w-11 items-center gap-2 rounded-md px-2 text-sm transition-colors"
           >
             <LogIn className="h-4 w-4" />
             <span className="hidden sm:inline">{t("nav.login")}</span>
