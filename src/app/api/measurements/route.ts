@@ -96,6 +96,10 @@ async function postMeasurement(request: NextRequest) {
             notes: m.notes ?? null,
             glucoseContext:
               (m.glucoseContext as GlucoseContext | undefined) ?? null,
+            // v1.4.25 W10 reconcile (code-review M4): mirror the
+            // single-entry path so the multi-entry batch persists
+            // `deviceType` instead of silently dropping it.
+            deviceType: m.deviceType ?? null,
           },
         }),
       ),
@@ -127,7 +131,7 @@ async function postMeasurement(request: NextRequest) {
     return apiError(parsed.error.issues[0].message, 422);
   }
 
-  const { type, value, measuredAt, notes, source, glucoseContext } =
+  const { type, value, measuredAt, notes, source, glucoseContext, deviceType } =
     parsed.data;
 
   // Handle unique constraint violation
@@ -143,6 +147,11 @@ async function postMeasurement(request: NextRequest) {
         measuredAt,
         notes: notes ?? null,
         glucoseContext: (glucoseContext as GlucoseContext | undefined) ?? null,
+        // v1.4.25 W10 reconcile (code-review M4): the deviceType column
+        // already accepts client metadata from the batch route. Mirror
+        // the behaviour here so single-entry POST persists the tag
+        // instead of silently dropping it.
+        deviceType: deviceType ?? null,
       },
     });
   } catch (err) {

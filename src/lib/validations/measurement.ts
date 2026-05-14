@@ -205,6 +205,14 @@ export const createMeasurementSchema = z
     // Only applies when type === BLOOD_GLUCOSE. Mirrored by a CHECK
     // constraint in Postgres (see migration 0021).
     glucoseContext: glucoseContextEnum.optional(),
+    // v1.4.25 W10 reconcile (code-review M4): the single-entry POST
+    // dropped `deviceType` silently because the column existed on
+    // `Measurement` and was accepted by the batch route, but never
+    // declared in this schema. iOS clients that POST one row at a
+    // time (and dashboards that backfill manual rows with device
+    // metadata) now persist the tag instead of seeing it disappear.
+    // Accepts `null` so a client can explicitly clear the column.
+    deviceType: z.string().min(1).max(32).nullable().optional(),
   })
   .refine((data) => validateMeasurementRange(data.type, data.value) === null, {
     message: "Value out of plausible range",

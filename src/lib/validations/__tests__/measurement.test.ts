@@ -130,5 +130,47 @@ describe("measurement validation", () => {
       });
       expect(parsed.success).toBe(false);
     });
+
+    // v1.4.25 W10 reconcile (code-review M4): `deviceType` was a
+    // batch-only field; the single-entry schema silently dropped it.
+    // Now it parses through so the column is populated whether the
+    // client posts one row or many.
+    it("accepts an optional deviceType tag and surfaces it on the parsed value", () => {
+      const parsed = createMeasurementSchema.safeParse({
+        ...validBase,
+        type: "WEIGHT",
+        value: 82,
+        deviceType: "scale",
+      });
+      expect(parsed.success).toBe(true);
+      if (parsed.success) {
+        expect(parsed.data.deviceType).toBe("scale");
+      }
+    });
+
+    it("accepts a null deviceType so a client can explicitly clear the column", () => {
+      const parsed = createMeasurementSchema.safeParse({
+        ...validBase,
+        type: "WEIGHT",
+        value: 82,
+        deviceType: null,
+      });
+      expect(parsed.success).toBe(true);
+      if (parsed.success) {
+        expect(parsed.data.deviceType).toBeNull();
+      }
+    });
+
+    it("treats a missing deviceType as undefined (back-compat with pre-W10 clients)", () => {
+      const parsed = createMeasurementSchema.safeParse({
+        ...validBase,
+        type: "WEIGHT",
+        value: 82,
+      });
+      expect(parsed.success).toBe(true);
+      if (parsed.success) {
+        expect(parsed.data.deviceType).toBeUndefined();
+      }
+    });
   });
 });
