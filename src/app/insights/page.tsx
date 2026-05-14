@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,6 +42,7 @@ import {
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
 import { InsightAdvisorCard } from "@/components/insights/insight-advisor-card";
 import { HeroStrip } from "@/components/insights/hero-strip";
+import { InsightsTabStrip } from "@/components/insights/insights-tab-strip";
 import { DailyBriefing } from "@/components/insights/daily-briefing";
 import { CoachDrawer } from "@/components/insights/coach-panel/coach-drawer";
 import { TrendsRow } from "@/components/insights/trends-row";
@@ -930,21 +930,21 @@ export default function InsightsPage() {
 
   return (
     <div className="space-y-8">
-      {/* v1.4.22 A5 — section tabs lift above the hero strip so the
-          user sees the metric-tab nav before scrolling. The nav itself
-          remains a sticky scroll-anchored strip — clicking a tab
-          scrolls to the matching section, scrolling highlights the
-          active tab. Hero + Daily Briefing always render below the
-          nav; the metric tabs control which sub-sections are visible
-          in the user's viewport. */}
-      <InsightsSectionNav />
+      {/* v1.4.25 W3 — section tabs + regenerate affordance live in the
+          dedicated `<InsightsTabStrip>` component. The strip is sticky
+          so the user can re-run the analysis without scrolling back to
+          the hero band. The hero strip no longer carries its own
+          regenerate button — the icon-only RefreshCw on this strip is
+          the canonical page-level affordance. */}
+      <InsightsTabStrip
+        onRegenerate={advisor.regenerate}
+        regenerating={advisor.isRegenerating}
+      />
 
       <HeroStrip
         briefing={briefingPayload}
         updatedAt={heroStripUpdatedAt}
         userName={heroGreetingName}
-        onRegenerate={advisor.regenerate}
-        regenerating={advisor.isRegenerating}
         onAskCoach={(prefill?: string) => {
           // The action-row button passes no prefill (drawer opens blank);
           // the Health Score panel passes a score-aware question. Both
@@ -1659,117 +1659,8 @@ function MedicationComplianceCalendar({
 }
 
 // ── Section Navigation ───────────────────────────────────────────────────────
-
-// v1.4.25 W3 — "section-general" pill dropped alongside the
-// `<InsightStatusCard>` it scrolled to. The general status was
-// superseded by the always-on `<InsightAdvisorCard>` block above the
-// per-metric sections, so the pill had nothing to scroll to once the
-// status mount was removed.
-const SECTION_IDS = [
-  "section-bp",
-  "section-weight",
-  "section-pulse",
-  "section-mood",
-  "section-meds",
-  "section-bmi",
-] as const;
-
-const SECTION_LABEL_KEYS: Record<(typeof SECTION_IDS)[number], string> = {
-  "section-bp": "insights.navBloodPressure",
-  "section-weight": "insights.navWeight",
-  "section-pulse": "insights.navPulse",
-  "section-mood": "insights.navMood",
-  "section-meds": "insights.navMedication",
-  "section-bmi": "insights.navBmi",
-};
-
-function InsightsSectionNav() {
-  const { t } = useTranslations();
-  const [activeId, setActiveId] = useState<string>(SECTION_IDS[0]);
-  const observerRef = useRef<IntersectionObserver | null>(null);
-
-  useEffect(() => {
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        // v1.4.22 W5 reconcile (Code-MED-4) — pick the entry with the
-        // highest intersectionRatio in the band rather than the
-        // observer-supplied last entry. Three sections briefly
-        // visible during a fast scroll otherwise made the active
-        // pill jump to whichever one came last in the batch.
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        const top = visible[0];
-        if (top) {
-          setActiveId((current) =>
-            current === top.target.id ? current : top.target.id,
-          );
-        }
-      },
-      { rootMargin: "-30% 0px -60% 0px" },
-    );
-
-    for (const id of SECTION_IDS) {
-      const el = document.getElementById(id);
-      if (el) observerRef.current.observe(el);
-    }
-
-    return () => observerRef.current?.disconnect();
-  }, []);
-
-  function scrollTo(id: string) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    // v1.4.22 W5 reconcile (Design-H1) — gate smooth scrolling behind
-    // `prefers-reduced-motion`; honour the user's OS-level pref.
-    const prefersReducedMotion =
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    el.scrollIntoView({
-      behavior: prefersReducedMotion ? "auto" : "smooth",
-    });
-  }
-
-  return (
-    // v1.4.22 W5 reconcile (Design-H1, Design-H3) — accessibility +
-    // sticky-strip polish. Notable changes:
-    //   - aria-label so screen-reader landmark traversal hears the
-    //     rail's purpose ("Skip to section" / "Zu Abschnitt springen").
-    //   - bg-background/95 instead of /80 to kill the hero-glow bleed
-    //     during scroll.
-    //   - Drop the `-mx-4 / md:-mx-6` negative margin; the parent
-    //     container handles horizontal padding so 280px (Galaxy Fold)
-    //     doesn't get a ghost scrollbar.
-    //   - Hide the inner overflow's scrollbar so the sticky strip
-    //     reads as a single bar.
-    <nav
-      aria-label={t("insights.navAriaLabel")}
-      className={cn(
-        "bg-background/95 sticky top-0 z-30 overflow-x-auto border-b py-2 backdrop-blur",
-        "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-      )}
-    >
-      <div className="flex gap-2">
-        {SECTION_IDS.map((id) => {
-          const isActive = activeId === id;
-          return (
-            <button
-              key={id}
-              onClick={() => scrollTo(id)}
-              aria-current={isActive ? "location" : undefined}
-              className={cn(
-                "shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
-                isActive
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {t(SECTION_LABEL_KEYS[id])}
-            </button>
-          );
-        })}
-      </div>
-    </nav>
-  );
-}
+// v1.4.25 W3 — the legacy inline `InsightsSectionNav` was promoted to a
+// dedicated component at `src/components/insights/insights-tab-strip.tsx`
+// so the regenerate affordance could share the sticky strip with the
+// metric pills. The page just mounts `<InsightsTabStrip>` near the top
+// of the layout.

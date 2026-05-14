@@ -143,32 +143,12 @@ describe("<HeroStrip>", () => {
     expect(coachTag?.[0]).not.toContain('title="Coming soon"');
   });
 
-  it("renders the regenerate button when onRegenerate is supplied", () => {
-    const html = render(
-      <HeroStrip briefing={null} now={morningLocal} onRegenerate={() => {}} />,
-    );
-    expect(html).toMatch(/data-slot="insights-hero-strip-action-rerun"/);
-    expect(html).toContain("Re-run analysis");
-  });
-
-  it("hides the regenerate button when no handler is supplied", () => {
+  // v1.4.25 W3 — the regenerate button moved from the hero action row
+  // to the dedicated `<InsightsTabStrip>` component. The hero strip no
+  // longer renders the rerun slot under any prop combination.
+  it("does NOT render a regenerate button in the hero action row", () => {
     const html = render(<HeroStrip briefing={null} now={morningLocal} />);
     expect(html).not.toContain('data-slot="insights-hero-strip-action-rerun"');
-  });
-
-  it("disables the regenerate button while regenerating", () => {
-    const html = render(
-      <HeroStrip
-        briefing={null}
-        now={morningLocal}
-        onRegenerate={() => {}}
-        regenerating
-      />,
-    );
-    expect(html).toMatch(
-      /data-slot="insights-hero-strip-action-rerun"[^>]*disabled/,
-    );
-    expect(html).toContain("Regenerating");
   });
 
   // ── Suggested prompts strip ────────────────────────────────────────

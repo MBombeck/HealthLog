@@ -761,6 +761,8 @@
     "heroPersonalBaseline": "Basierend auf deinen letzten 90 Tagen",
     "heroRegenerate": "Neu generieren",
     "heroRegenerating": "Wird generiert",
+    "regenerateAnalysis": "Analyse neu starten",
+    "regenerateSuccess": "Analyse wurde neu erstellt",
     "heroFallbackSubtitle": "Täglicher Blick auf deine Trends — direkt aus den Zahlen, die du protokollierst.",
     "heroGreetingMorning": "Guten Morgen",
     "heroGreetingAfternoon": "Guten Tag",

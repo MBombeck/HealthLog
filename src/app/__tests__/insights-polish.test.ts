@@ -107,13 +107,20 @@ describe("v1.4.19 A3 — /insights polish", () => {
     expect(advisorBlock?.[0]).not.toContain("onRegenerate");
   });
 
-  it("hero strip is the always-visible page-level refresh affordance", () => {
+  it("tab strip owns the always-visible page-level refresh affordance (v1.4.25 W3)", () => {
     const src = load(INSIGHTS_PATH);
-    // The hero owns the page-level regenerate button (mounted via
-    // `onRegenerate={advisor.regenerate}` on `<HeroStrip>`).
+    // v1.4.25 W3 — the regenerate handler moved from `<HeroStrip>` to
+    // `<InsightsTabStrip>` (icon-only RefreshCw on the sticky tab
+    // strip). The hero strip no longer takes an `onRegenerate` prop.
+    // We isolate the `<HeroStrip ... />` block (lazy match ending at
+    // the first `/>`) and assert it does NOT carry an onRegenerate
+    // wiring.
     expect(src).toMatch(
-      /<HeroStrip[\s\S]*?onRegenerate=\{advisor\.regenerate\}/,
+      /<InsightsTabStrip[\s\S]*?onRegenerate=\{advisor\.regenerate\}[\s\S]*?\/>/,
     );
+    const heroBlock = src.match(/<HeroStrip[\s\S]*?\/>/);
+    expect(heroBlock).not.toBeNull();
+    expect(heroBlock?.[0]).not.toContain("onRegenerate");
   });
 
   it("does NOT render the duplicate <TrendCard> tile strip on /insights", () => {

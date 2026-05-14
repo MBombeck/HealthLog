@@ -2,14 +2,7 @@
 
 import Link from "next/link";
 import { toast } from "sonner";
-import {
-  Download,
-  FileText,
-  Loader2,
-  RefreshCw,
-  Share2,
-  Sparkles,
-} from "lucide-react";
+import { Download, FileText, Share2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
 import { formatRelativeTime } from "@/lib/i18n/relative-time";
@@ -31,9 +24,11 @@ import type { DailyBriefing as DailyBriefingPayload } from "@/lib/ai/schema";
  *     "Guten Morgen, …") + a narrative subtitle (the briefing
  *     paragraph when one is cached, else a fallback)
  *   - personal-baseline + "Generated <relative-time>" meta row
- *   - 3-button action row: "Generate weekly report" (disabled, B4),
- *     "Ask the coach" (disabled, B2), "Re-run analysis" (wired to
- *     the existing regenerate handler from v1.4.16 D-reconcile)
+ *   - action row: "Generate weekly report" + "Ask the coach"
+ *     (v1.4.25 W3 dropped the third "Re-run analysis" button — the
+ *     regenerate affordance moved to `<InsightsTabStrip>` so the user
+ *     can re-run the analysis from any scroll position without
+ *     returning to the hero band).
  *   - <SuggestedPrompts> chip strip below the action band
  *   - Dracula gradient + soft purple glow via the new `.hero-gradient`
  *     + `.glow-purple` utilities in `globals.css`
@@ -42,8 +37,7 @@ import type { DailyBriefing as DailyBriefingPayload } from "@/lib/ai/schema";
  * wrap. Right-side Health Score panel is *not* part of B1 — that
  * lands in B5; for B1 the right side just keeps its meta band.
  *
- * Pure presentational — the page owns the briefing data + the
- * regenerate handler.
+ * Pure presentational — the page owns the briefing data.
  */
 
 interface HeroStripProps {
@@ -57,10 +51,6 @@ interface HeroStripProps {
    * morning, undefined".
    */
   userName?: string | null;
-  /** Click handler for the regenerate button — wired to the advisor query. */
-  onRegenerate?: () => void;
-  /** Disables the regenerate button + flips its icon to a spinner. */
-  regenerating?: boolean;
   /**
    * Click handler for the suggested prompts. The Coach drawer (B2b)
    * routes a chip click into the drawer's input; the parent owns the
@@ -141,8 +131,6 @@ export function HeroStrip({
   briefing,
   updatedAt,
   userName,
-  onRegenerate,
-  regenerating = false,
   onPickPrompt,
   onAskCoach,
   weeklyReportReady,
@@ -291,28 +279,13 @@ export function HeroStrip({
               <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
               <span>{t("insights.heroActionAskCoach")}</span>
             </Button>
-            {onRegenerate && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={onRegenerate}
-                disabled={regenerating}
-                data-slot="insights-hero-strip-action-rerun"
-                className="gap-1.5"
-              >
-                {regenerating ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3.5 w-3.5" />
-                )}
-                <span>
-                  {regenerating
-                    ? t("insights.heroRegenerating")
-                    : t("insights.heroActionRerun")}
-                </span>
-              </Button>
-            )}
+            {/*
+             * v1.4.25 W3 — the regenerate button moved to the new
+             * `<InsightsTabStrip>` (icon-only RefreshCw, sticky next
+             * to the pill nav) so the user can re-run the analysis
+             * without scrolling back to the hero band. The hero's
+             * action row is now Weekly-report + Ask-the-Coach only.
+             */}
           </div>
 
           <div
