@@ -10,6 +10,7 @@ import { calculateCompliance } from "@/lib/analytics/compliance";
 import {
   computeHealthScore,
   defaultWeightTargetFromHeight,
+  type ContributingSource,
   type HealthScoreInput,
   type HealthScoreResult,
 } from "@/lib/analytics/health-score";
@@ -662,7 +663,7 @@ function isoWeekdayInTz(d: Date, timeZone: string): number {
  */
 function mapMeasurementSourceToLabel(
   source: MeasurementSource,
-): "manual" | "withings" | "appleHealth" | null {
+): ContributingSource | null {
   switch (source) {
     case "MANUAL":
     case "IMPORT":
@@ -684,8 +685,8 @@ function mapMeasurementSourceToLabel(
  */
 function uniqueComponentSources(
   rows: ReadonlyArray<MeasurementSource>,
-): ReadonlyArray<"manual" | "withings" | "appleHealth"> {
-  const seen = new Set<"manual" | "withings" | "appleHealth">();
+): ReadonlyArray<ContributingSource> {
+  const seen = new Set<ContributingSource>();
   for (const src of rows) {
     const label = mapMeasurementSourceToLabel(src);
     if (label) seen.add(label);

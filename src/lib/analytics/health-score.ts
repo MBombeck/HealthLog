@@ -42,12 +42,16 @@ export type HealthScoreBand = "green" | "yellow" | "red";
  * `MeasurementSource` enum so the i18n keys (`provenance.sources.*`)
  * stay locale-stable even if the storage enum grows.
  */
-export type HealthScoreComponentSource =
-  | "manual"
-  | "withings"
-  | "appleHealth"
-  | "mixed"
-  | "none";
+/**
+ * Source tokens that can contribute to a component before the
+ * `resolveSourceLabel` aggregation kicks in. Exported here so the
+ * analytics route, the health-score helper, and the React card all
+ * read the same union — the literal `"manual" | "withings" |
+ * "appleHealth"` was previously spelled at four call sites.
+ */
+export type ContributingSource = "manual" | "withings" | "appleHealth";
+
+export type HealthScoreComponentSource = ContributingSource | "mixed" | "none";
 
 /**
  * v1.4.25 W8e — per-component source attribution as it arrives from the
@@ -59,16 +63,16 @@ export type HealthScoreComponentSource =
  */
 export interface HealthScoreSourceAttribution {
   /** Sources that contributed to the BP-in-target rate. */
-  bpSources?: ReadonlyArray<"manual" | "withings" | "appleHealth">;
+  bpSources?: ReadonlyArray<ContributingSource>;
   asOfBp?: string | null;
   /** Sources that contributed to the weight series. */
-  weightSources?: ReadonlyArray<"manual" | "withings" | "appleHealth">;
+  weightSources?: ReadonlyArray<ContributingSource>;
   asOfWeight?: string | null;
   /** Sources that contributed to the mood entries. */
-  moodSources?: ReadonlyArray<"manual" | "withings" | "appleHealth">;
+  moodSources?: ReadonlyArray<ContributingSource>;
   asOfMood?: string | null;
   /** Sources that contributed to medication compliance. */
-  complianceSources?: ReadonlyArray<"manual" | "withings" | "appleHealth">;
+  complianceSources?: ReadonlyArray<ContributingSource>;
   asOfCompliance?: string | null;
   /** Wall-clock anchor for the as-of-window-end fallback. */
   windowEndAt?: string;
@@ -340,7 +344,7 @@ export function computeHealthScore(
  */
 function resolveSourceLabel(
   hasValue: boolean,
-  sources: ReadonlyArray<"manual" | "withings" | "appleHealth"> | null,
+  sources: ReadonlyArray<ContributingSource> | null,
 ): HealthScoreComponentSource {
   if (!hasValue) return "none";
   if (!sources || sources.length === 0) return "manual";
@@ -369,7 +373,7 @@ function redistribute(
   attribution: Record<
     keyof typeof BASE_WEIGHTS,
     {
-      sources: ReadonlyArray<"manual" | "withings" | "appleHealth"> | null;
+      sources: ReadonlyArray<ContributingSource> | null;
       asOf: string | null;
     }
   >,
