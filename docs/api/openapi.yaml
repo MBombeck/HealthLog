@@ -35,6 +35,21 @@ components:
       type: object
     AppleHealthBatchEntry:
       properties:
+        deviceType:
+          anyOf:
+            - enum:
+                - watch
+                - band
+                - ring
+                - phone
+                - scale
+                - other
+                - unknown
+              type: string
+            - type: "null"
+          description: Device class mapped from `HKDevice.model`. Used by the analytics aggregator to break ties when the same
+            source contributed multiple devices for the same day. Omit (or send null) on legacy clients — the server
+            treats it as `unknown` and the picker falls through.
         endDate:
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -210,8 +225,7 @@ components:
         - error
       type: object
     DeviceRegisterRequest:
-      description:
-        Native device registration. Re-registering an APNs token belonging to another user returns 409
+      description: Native device registration. Re-registering an APNs token belonging to another user returns 409
         (cross-user-hijack guard).
       properties:
         apnsEnvironment:
@@ -407,6 +421,35 @@ components:
                 type: string
               maxItems: 8
               type: array
+            deviceTypePriority:
+              additionalProperties:
+                items:
+                  enum:
+                    - watch
+                    - band
+                    - ring
+                    - phone
+                    - scale
+                    - other
+                    - unknown
+                  type: string
+                maxItems: 8
+                type: array
+              properties:
+                default:
+                  items:
+                    enum:
+                      - watch
+                      - band
+                      - ring
+                      - phone
+                      - scale
+                      - other
+                      - unknown
+                    type: string
+                  maxItems: 8
+                  type: array
+              type: object
             flightsClimbed:
               items:
                 enum:
@@ -427,6 +470,150 @@ components:
                 type: string
               maxItems: 8
               type: array
+            metricPriority:
+              additionalProperties: false
+              properties:
+                activeEnergy:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                bloodPressure:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                bodyFat:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                bodyTemperature:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                flightsClimbed:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                hrv:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                pulse:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                restingHeartRate:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                sleep:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                spo2:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                steps:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                vo2Max:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                walkingRunningDistance:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                weight:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+              type: object
             pulse:
               items:
                 enum:
@@ -522,8 +709,7 @@ components:
       type: object
     InsightsComprehensiveResponse:
       additionalProperties: false
-      description:
-        AI-generated insights bundle. Strict-schema validated server-side; Coach-routed when the insight surface
+      description: AI-generated insights bundle. Strict-schema validated server-side; Coach-routed when the insight surface
         needs day-level grounding.
       properties:
         citations:
@@ -700,6 +886,9 @@ components:
             - PULSE_WAVE_VELOCITY
             - VASCULAR_AGE
             - VISCERAL_FAT
+            - AUDIO_EXPOSURE_ENV
+            - AUDIO_EXPOSURE_HEADPHONE
+            - TIME_IN_DAYLIGHT
           type: string
         unit:
           type: string
@@ -714,8 +903,7 @@ components:
         - source
       type: object
     MeasurementsDeleteByExternalIdsRequest:
-      description:
-        iOS deletion-sync. Up to 500 externalIds per call; matching rows owned by other users are silently skipped
+      description: iOS deletion-sync. Up to 500 externalIds per call; matching rows owned by other users are silently skipped
         (cross-user 404 guard).
       properties:
         externalIds:
@@ -927,6 +1115,35 @@ components:
                 type: string
               maxItems: 8
               type: array
+            deviceTypePriority:
+              additionalProperties:
+                items:
+                  enum:
+                    - watch
+                    - band
+                    - ring
+                    - phone
+                    - scale
+                    - other
+                    - unknown
+                  type: string
+                maxItems: 8
+                type: array
+              properties:
+                default:
+                  items:
+                    enum:
+                      - watch
+                      - band
+                      - ring
+                      - phone
+                      - scale
+                      - other
+                      - unknown
+                    type: string
+                  maxItems: 8
+                  type: array
+              type: object
             flightsClimbed:
               items:
                 enum:
@@ -947,6 +1164,150 @@ components:
                 type: string
               maxItems: 8
               type: array
+            metricPriority:
+              additionalProperties: false
+              properties:
+                activeEnergy:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                bloodPressure:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                bodyFat:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                bodyTemperature:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                flightsClimbed:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                hrv:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                pulse:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                restingHeartRate:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                sleep:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                spo2:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                steps:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                vo2Max:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                walkingRunningDistance:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+                weight:
+                  items:
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                    type: string
+                  maxItems: 8
+                  type: array
+              type: object
             pulse:
               items:
                 enum:
@@ -1106,8 +1467,7 @@ openapi: 3.1.0
 paths:
   /api/auth/login:
     post:
-      description:
-        "Browser callers receive a session cookie. Native callers (X-Client-Type: native or HealthLog-iOS UA
+      description: "Browser callers receive a session cookie. Native callers (X-Client-Type: native or HealthLog-iOS UA
         prefix) additionally receive a paired access + refresh token."
       requestBody:
         content:
@@ -1155,8 +1515,7 @@ paths:
         - Auth
   /api/auth/me/coach-prefs:
     get:
-      description:
-        Returns the persisted preferences with defaults filled in. Null persisted state resolves to the legacy
+      description: Returns the persisted preferences with defaults filled in. Null persisted state resolves to the legacy
         v1.4.22 defaults.
       responses:
         "200":
@@ -1172,8 +1531,7 @@ paths:
       tags:
         - Auth
     put:
-      description:
-        Persists the supplied prefs. Body is validated against `CoachPrefs`; missing keys fall back to the
+      description: Persists the supplied prefs. Body is validated against `CoachPrefs`; missing keys fall back to the
         documented defaults.
       requestBody:
         content:
@@ -1238,8 +1596,7 @@ paths:
         - Auth
   /api/auth/me/source-priority:
     get:
-      description:
-        Returns the per-metric-class source priority used by the analytics aggregator. Missing keys fall back to
+      description: Returns the per-metric-class source priority used by the analytics aggregator. Missing keys fall back to
         `DEFAULT_SOURCE_PRIORITY`. Null persisted state resolves to the documented defaults.
       responses:
         "200":
@@ -1255,8 +1612,7 @@ paths:
       tags:
         - Auth
     put:
-      description:
-        Persists the supplied priority. Body is validated against `SourcePriority`; missing keys read as
+      description: Persists the supplied priority. Body is validated against `SourcePriority`; missing keys read as
         `DEFAULT_SOURCE_PRIORITY` at the call site.
       requestBody:
         content:
@@ -1303,6 +1659,35 @@ paths:
                     type: string
                   maxItems: 8
                   type: array
+                deviceTypePriority:
+                  additionalProperties:
+                    items:
+                      enum:
+                        - watch
+                        - band
+                        - ring
+                        - phone
+                        - scale
+                        - other
+                        - unknown
+                      type: string
+                    maxItems: 8
+                    type: array
+                  properties:
+                    default:
+                      items:
+                        enum:
+                          - watch
+                          - band
+                          - ring
+                          - phone
+                          - scale
+                          - other
+                          - unknown
+                        type: string
+                      maxItems: 8
+                      type: array
+                  type: object
                 flightsClimbed:
                   items:
                     enum:
@@ -1323,6 +1708,149 @@ paths:
                     type: string
                   maxItems: 8
                   type: array
+                metricPriority:
+                  properties:
+                    activeEnergy:
+                      items:
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                        type: string
+                      maxItems: 8
+                      type: array
+                    bloodPressure:
+                      items:
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                        type: string
+                      maxItems: 8
+                      type: array
+                    bodyFat:
+                      items:
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                        type: string
+                      maxItems: 8
+                      type: array
+                    bodyTemperature:
+                      items:
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                        type: string
+                      maxItems: 8
+                      type: array
+                    flightsClimbed:
+                      items:
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                        type: string
+                      maxItems: 8
+                      type: array
+                    hrv:
+                      items:
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                        type: string
+                      maxItems: 8
+                      type: array
+                    pulse:
+                      items:
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                        type: string
+                      maxItems: 8
+                      type: array
+                    restingHeartRate:
+                      items:
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                        type: string
+                      maxItems: 8
+                      type: array
+                    sleep:
+                      items:
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                        type: string
+                      maxItems: 8
+                      type: array
+                    spo2:
+                      items:
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                        type: string
+                      maxItems: 8
+                      type: array
+                    steps:
+                      items:
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                        type: string
+                      maxItems: 8
+                      type: array
+                    vo2Max:
+                      items:
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                        type: string
+                      maxItems: 8
+                      type: array
+                    walkingRunningDistance:
+                      items:
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                        type: string
+                      maxItems: 8
+                      type: array
+                    weight:
+                      items:
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                        type: string
+                      maxItems: 8
+                      type: array
+                  type: object
                 pulse:
                   items:
                     enum:
@@ -1441,8 +1969,7 @@ paths:
         - Auth
   /api/auth/refresh:
     post:
-      description:
-        Reuse of a consumed refresh token revokes every refresh token still active for the originating device
+      description: Reuse of a consumed refresh token revokes every refresh token still active for the originating device
         (per-device blast radius from v1.4.23). Legacy tokens issued before v1.4.23 with a null deviceId fall back to
         revoke-all-for-user.
       requestBody:
@@ -1466,8 +1993,7 @@ paths:
         - Auth
   /api/devices:
     post:
-      description:
-        Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other returns
+      description: Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other returns
         422. Cross-user re-registration of either identifier returns 409.
       requestBody:
         content:
@@ -1496,8 +2022,7 @@ paths:
         - Devices
   /api/insights/chat/messages/{id}/feedback:
     post:
-      description:
-        Persists a helpful/unhelpful rating for a single Coach reply. Reuses the v1.4.16 RecommendationFeedback
+      description: Persists a helpful/unhelpful rating for a single Coach reply. Reuses the v1.4.16 RecommendationFeedback
         table via the polymorphic `targetType` column. The aggregator buckets ratings by (promptVersion, tone,
         verbosity).
       requestBody:
@@ -1533,8 +2058,7 @@ paths:
         - Insights
   /api/insights/comprehensive:
     get:
-      description:
-        Full Insights surface — daily briefing, recommendations with rationale, optional weekly report + storyboard
+      description: Full Insights surface — daily briefing, recommendations with rationale, optional weekly report + storyboard
         annotations. Strict-schema validated server-side.
       responses:
         "200":
@@ -1582,6 +2106,9 @@ paths:
               - PULSE_WAVE_VELOCITY
               - VASCULAR_AGE
               - VISCERAL_FAT
+              - AUDIO_EXPOSURE_ENV
+              - AUDIO_EXPOSURE_HEADPHONE
+              - TIME_IN_DAYLIGHT
             type: string
         - in: query
           name: from
@@ -1647,6 +2174,12 @@ paths:
           application/json:
             schema:
               properties:
+                deviceType:
+                  anyOf:
+                    - maxLength: 32
+                      minLength: 1
+                      type: string
+                    - type: "null"
                 glucoseContext:
                   enum:
                     - FASTING
@@ -1696,6 +2229,9 @@ paths:
                     - PULSE_WAVE_VELOCITY
                     - VASCULAR_AGE
                     - VISCERAL_FAT
+                    - AUDIO_EXPOSURE_ENV
+                    - AUDIO_EXPOSURE_HEADPHONE
+                    - TIME_IN_DAYLIGHT
                   type: string
                 value:
                   type: number
@@ -1720,9 +2256,10 @@ paths:
         - Measurements
   /api/measurements/batch:
     post:
-      description:
-        Up to 500 HealthKit entries per call. Idempotent via the `Idempotency-Key` header (replay window 24h).
-        Per-entry status lets the iOS client advance its sync cursor accurately.
+      description: Up to 500 HealthKit entries per call. Idempotent via the `Idempotency-Key` header (replay window 24h).
+        Per-entry status lets the iOS client advance its sync cursor accurately. v1.4.25 W8c adds an optional
+        `deviceType` per entry — feed it from `HKDevice.model` so the cross-source canonical picker can break
+        Apple-Watch-vs-iPhone ties; null/absent stays backward-compatible with v1.4.23 clients.
       requestBody:
         content:
           application/json:
@@ -1744,8 +2281,7 @@ paths:
         - Measurements
   /api/measurements/by-external-ids:
     delete:
-      description:
-        Removes the user's measurement rows whose externalId is in the request list. Rows owned by another user are
+      description: Removes the user's measurement rows whose externalId is in the request list. Rows owned by another user are
         silently skipped (cross-user 404 guard). Up to 500 externalIds per call.
       requestBody:
         content:
