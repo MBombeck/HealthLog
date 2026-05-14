@@ -267,6 +267,22 @@ const batchResponse = z
   })
   .meta({ id: "AppleHealthBatchResponse" });
 
+const deleteByExternalIdsRequest = z
+  .object({
+    externalIds: z.array(z.string().min(1).max(120)).min(0).max(500),
+  })
+  .meta({
+    id: "MeasurementsDeleteByExternalIdsRequest",
+    description:
+      "iOS deletion-sync. Up to 500 externalIds per call; matching rows owned by other users are silently skipped (cross-user 404 guard).",
+  });
+
+const deleteByExternalIdsResponse = z
+  .object({
+    deletedCount: z.number().int().nonnegative(),
+  })
+  .meta({ id: "MeasurementsDeleteByExternalIdsResult" });
+
 const measurementResource = z
   .object({
     id: z.string(),
@@ -460,6 +476,34 @@ export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(batchResponse, "BatchMeasurementsResponse"),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/measurements/by-external-ids": {
+    delete: {
+      tags: ["Measurements"],
+      summary: "Delete measurements by external ID (iOS deletion-sync)",
+      description:
+        "Removes the user's measurement rows whose externalId is in the request list. Rows owned by another user are silently skipped (cross-user 404 guard). Up to 500 externalIds per call.",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: deleteByExternalIdsRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Delete batch processed.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                deleteByExternalIdsResponse,
+                "MeasurementsDeleteByExternalIdsResponse",
+              ),
             },
           },
         },

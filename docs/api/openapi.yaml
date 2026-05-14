@@ -538,6 +538,49 @@ components:
         - measuredAt
         - source
       type: object
+    MeasurementsDeleteByExternalIdsRequest:
+      description:
+        iOS deletion-sync. Up to 500 externalIds per call; matching rows owned by other users are silently skipped
+        (cross-user 404 guard).
+      properties:
+        externalIds:
+          items:
+            maxLength: 120
+            minLength: 1
+            type: string
+          maxItems: 500
+          minItems: 0
+          type: array
+      required:
+        - externalIds
+      type: object
+    MeasurementsDeleteByExternalIdsResponse:
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/MeasurementsDeleteByExternalIdsResult"
+        error:
+          type: "null"
+        meta:
+          additionalProperties: false
+          properties:
+            requestId:
+              type: string
+          type: object
+      required:
+        - data
+        - error
+      type: object
+    MeasurementsDeleteByExternalIdsResult:
+      additionalProperties: false
+      properties:
+        deletedCount:
+          maximum: 9007199254740991
+          minimum: 0
+          type: integer
+      required:
+        - deletedCount
+      type: object
     PasskeyLoginVerifyRequest:
       description: Passkey assertion verification. Same native-client token issuance as the password path.
       properties:
@@ -1150,6 +1193,30 @@ paths:
         "422": *a2
         "429": *a3
       summary: Apple Health batch ingest
+      tags:
+        - Measurements
+  /api/measurements/by-external-ids:
+    delete:
+      description:
+        Removes the user's measurement rows whose externalId is in the request list. Rows owned by another user are
+        silently skipped (cross-user 404 guard). Up to 500 externalIds per call.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeasurementsDeleteByExternalIdsRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeasurementsDeleteByExternalIdsResponse"
+          description: Delete batch processed.
+        "401": *a1
+        "422": *a2
+        "429": *a3
+      summary: Delete measurements by external ID (iOS deletion-sync)
       tags:
         - Measurements
 servers:
