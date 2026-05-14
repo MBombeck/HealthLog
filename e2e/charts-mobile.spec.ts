@@ -214,33 +214,46 @@ test.describe("charts — mobile-viewport regression", () => {
     // measured size before counting ticks. The chart card on Pixel-5
     // is taller than the 851-px viewport, so `scrollIntoViewIfNeeded`
     // brings the card's TOP into view but the bottom-anchored x-axis
-    // labels can remain below the fold — and `waitFor({state:"visible"})`
-    // would then time out even though Recharts has already painted the
-    // <text> ticks into the DOM. The subsequent `evaluate` only needs
-    // them attached, not visually on-screen, so `state: "attached"` is
-    // both sufficient and stable against viewport overflow.
+    // labels can remain below the fold — `state: "attached"` is
+    // sufficient and stable against viewport overflow.
+    //
+    // Recharts 3.x DOM shift (v1.4.25): tick labels are no longer
+    // nested inside `.recharts-xAxis`. They render in a separate
+    // ZIndexLayer container `.recharts-xAxis-tick-labels` that sits
+    // as a sibling of the axis-line layer. Each label is a
+    // `.recharts-cartesian-axis-tick-label` <g> wrapping a
+    // <text class="recharts-text recharts-cartesian-axis-tick-value">.
+    // Wait on the label container's text node so the assertion is
+    // class-position-independent.
     await page
-      .locator(".recharts-xAxis .recharts-cartesian-axis-tick text")
+      .locator(".recharts-xAxis-tick-labels text")
       .first()
       .waitFor({ state: "attached", timeout: 10_000 });
 
-    // Recharts lays its visible tick labels under
-    // `.recharts-xAxis .recharts-cartesian-axis-tick`. Count the ones
-    // that actually have rendered text (the helper also produces minor
-    // structural ticks without text labels, which we don't care about
-    // for legibility).
+    // Count rendered x-axis tick labels per wrapper. We scope to
+    // `.recharts-wrapper` so each chart is counted once, and read
+    // labels from `.recharts-xAxis-tick-labels` — the new (3.x)
+    // sibling container that holds the visible tick text. Empty
+    // structural ticks live in `.recharts-xAxis-tick-lines` and
+    // never carry text, so the labels-container is the right axis
+    // for legibility.
     const tickCounts = await page.evaluate(() => {
-      const charts = Array.from(document.querySelectorAll(".recharts-xAxis"));
-      return charts.map((axis) => {
-        const ticks = Array.from(
-          axis.querySelectorAll(".recharts-cartesian-axis-tick"),
-        );
-        const visibleTicks = ticks.filter(
-          (t) =>
-            (t.querySelector("text")?.textContent?.trim() ?? "").length > 0,
-        );
-        return visibleTicks.length;
-      });
+      const wrappers = Array.from(
+        document.querySelectorAll(".recharts-wrapper"),
+      );
+      return wrappers
+        .map((wrapper) => {
+          const labels = Array.from(
+            wrapper.querySelectorAll(
+              ".recharts-xAxis-tick-labels .recharts-cartesian-axis-tick-label",
+            ),
+          );
+          const visibleLabels = labels.filter(
+            (l) => (l.textContent?.trim() ?? "").length > 0,
+          );
+          return visibleLabels.length;
+        })
+        .filter((n) => n > 0);
     });
 
     expect(tickCounts.length, "no recharts axes detected").toBeGreaterThan(0);
