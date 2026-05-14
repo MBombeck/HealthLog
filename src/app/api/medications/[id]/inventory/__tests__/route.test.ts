@@ -268,6 +268,42 @@ describe("PATCH /api/medications/[id]/inventory/[itemId]", () => {
     });
   });
 
+  it("flips ACTIVE → EXPIRED when markAsFirstUseAt is more than 30 days back-dated", async () => {
+    // Regression for the W19b state-machine bypass: composing the next
+    // state by hand sent ACTIVE → IN_USE on any first-use stamp, but a
+    // back-dated stamp whose 30-day window already lapsed must land at
+    // EXPIRED. Re-running `computeInventoryState` after the composed
+    // view closes the gap.
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.medicationInventoryItem.findUnique).mockResolvedValue(
+      existingActive as never,
+    );
+    vi.mocked(prisma.medicationInventoryItem.update).mockResolvedValue({
+      ...existingActive,
+      state: "EXPIRED",
+    } as never);
+
+    // 45 days in the past — well past the 30-day in-use window.
+    const backdated = new Date(
+      Date.now() - 45 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const res = await PATCH(
+      jsonReq(
+        "http://localhost/api/medications/med-1/inventory/inv-1",
+        { markAsFirstUseAt: backdated },
+        "PATCH",
+      ),
+      { params: Promise.resolve({ id: "med-1", itemId: "inv-1" }) },
+    );
+    expect(res.status).toBe(200);
+    const updateCall = vi.mocked(prisma.medicationInventoryItem.update).mock
+      .calls[0][0];
+    expect(updateCall.data).toMatchObject({
+      state: "EXPIRED",
+      firstUseAt: new Date(backdated),
+    });
+  });
+
   it("rejects 404 when the item belongs to another user", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.medicationInventoryItem.findUnique).mockResolvedValue({

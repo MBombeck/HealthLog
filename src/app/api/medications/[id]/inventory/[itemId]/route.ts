@@ -26,7 +26,10 @@ import {
   safeJson,
 } from "@/lib/api-response";
 import { updateInventoryItemSchema } from "@/lib/validations/medication";
-import { computeExpiresAt } from "@/lib/medications/inventory/state-machine";
+import {
+  computeExpiresAt,
+  computeInventoryState,
+} from "@/lib/medications/inventory/state-machine";
 
 type RouteParams = { params: Promise<{ id: string; itemId: string }> };
 
@@ -87,6 +90,27 @@ export const PATCH = apiHandler(
     }
 
     const nextExpiresAt = computeExpiresAt(nextFirstUseAt, nextPrintedExpiry);
+
+    // Re-run the canonical state machine over the composed next-row
+    // view. The clause-by-clause updates above set the state ad-hoc
+    // (`ACTIVE → IN_USE` on first use, `* → USED_UP` on mark-as-used),
+    // but a back-dated `markAsFirstUseAt` whose 30-day window already
+    // elapsed should land at EXPIRED, not IN_USE. The state machine is
+    // pure and idempotent — running it once more with the composed view
+    // collapses every edge case onto the same decision tree the intake
+    // hook and the daily expire cron already share. USED_UP is terminal
+    // (dosesRemaining === 0 ⇒ USED_UP wins at clause 1), so the manual
+    // override remains sticky.
+    nextState = computeInventoryState(
+      {
+        state: nextState,
+        dosesTotal: existing.dosesTotal,
+        dosesRemaining: nextDosesRemaining,
+        firstUseAt: nextFirstUseAt,
+        printedExpiry: nextPrintedExpiry,
+      },
+      Date.now(),
+    );
 
     const updated = await prisma.medicationInventoryItem.update({
       where: { id: itemId },
