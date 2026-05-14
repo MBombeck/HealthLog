@@ -137,10 +137,7 @@ interface DeltaDisplay {
  *   - delta ≈ 0 → flat (muted minus). Within ±0.1 kg counts as flat
  *     so the caption doesn't flicker on rounding noise.
  */
-function useDeltaDisplay(): (
-  deltaKg: number,
-  suffix: string,
-) => DeltaDisplay {
+function useDeltaDisplay(): (deltaKg: number, suffix: string) => DeltaDisplay {
   const fmt = useFormatters();
   return useMemo(() => {
     return (deltaKg: number, suffix: string) => {
@@ -279,7 +276,11 @@ export function Glp1Tile() {
             >
               {dateWithWeekday(med.nextInjection.date)}
               <span className="text-muted-foreground ml-1">
-                ({t("dashboard.glp1.inDays", { count: med.nextInjection.daysAway })})
+                (
+                {t("dashboard.glp1.inDays", {
+                  count: med.nextInjection.daysAway,
+                })}
+                )
               </span>
             </dd>
           </div>

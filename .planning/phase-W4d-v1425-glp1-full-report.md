@@ -10,33 +10,33 @@ von unserer View, harmonisch einlistet."
 
 ## Per-phase commit map
 
-| Phase | Commit | Scope |
-|---|---|---|
-| 1 — Schema additions | `cbcc059` | Migration 0046, MedicationCategory + MedicationDoseChange + InjectionSite enums, MedicationInventoryEvent table, `Medication.treatmentClass` / `Medication.dosesPerUnit`, `MedicationIntakeEvent.injectionSite`. |
-| 2a — Coach snapshot block | `2bd2902` | `buildGlp1SnapshotBlock()` + `weeklyContext.glp1` injected into `buildCoachSnapshot()`. |
-| 2b — Coach GROUND RULE 9 + insight GROUND RULE 14 | `330be96` (folded under another agent's commit) | EN + DE rules forbidding dose prescription; PROMPT_VERSION bump 4.24.0 → 4.25.0; `glp1_plateau` keyFinding enum value. |
-| 3 — Form weekly preset | `94cc7f5` | Treatment-class dropdown, "Once weekly on …" preset with localStorage memory, dosesPerUnit input, wire-schema extensions in zod. |
-| 4 — GLP-1 card variant | `b8a1c18` | `Glp1MedicationCard` + dispatcher in /medications, `injection-sites.ts` recommender, `/api/medications/[id]/glp1` details endpoint. |
-| 5 — Body-map picker | `6750d09` | `injection-site-picker.tsx` with SVG outline + 22px hit-targets + dashed-ring recommended-next annotation. Unit tests cover rotation algorithm. |
-| 6 — Pen/vial inventory | folded into Phase 1 + 4 | `MedicationInventoryEvent` table + dosesPerUnit + low-stock signal in glp1 details endpoint. |
-| 7 — MoodEntry side-effect tags | `52a9682` + `ddabe17` | Chip strip on mood-form with toggle behaviour; EN + DE labels under `medications.sideEffectTag*`. No schema change (tags column is free-text). |
-| 8 — Therapy timeline | `2c7c3cc` | `TherapyTimeline` mounted on /insights/medikamente; `/api/insights/glp1-timeline` aggregates dose changes + injections + inventory + side-effect days. |
-| 9 — Plateau detection | `6148a17` | `detectGlp1Plateau()` + `buildGlp1PlateauPrompt()` wired into the insight-generator user prompt. GROUND RULE 14 keeps the safety contract. |
-| 10 — Doctor-report PDF | `f45adb2` | New "GLP-1 therapy" section on the PDF (weight curve, titration table, side-effects). Aggregator gains optional `glp1` block; PDF renderer skips it when null. |
-| Hygiene | `a68dbdc` + `[style commit]` | Test-environment prisma-tolerance guards on `buildGlp1SnapshotBlock()` + `detectGlp1Plateau()`; DE locale parity for `therapyTimelineDescription`; OpenAPI regeneration; prettier across touched files. |
+| Phase                                             | Commit                                          | Scope                                                                                                                                                                                                            |
+| ------------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 — Schema additions                              | `cbcc059`                                       | Migration 0046, MedicationCategory + MedicationDoseChange + InjectionSite enums, MedicationInventoryEvent table, `Medication.treatmentClass` / `Medication.dosesPerUnit`, `MedicationIntakeEvent.injectionSite`. |
+| 2a — Coach snapshot block                         | `2bd2902`                                       | `buildGlp1SnapshotBlock()` + `weeklyContext.glp1` injected into `buildCoachSnapshot()`.                                                                                                                          |
+| 2b — Coach GROUND RULE 9 + insight GROUND RULE 14 | `330be96` (folded under another agent's commit) | EN + DE rules forbidding dose prescription; PROMPT_VERSION bump 4.24.0 → 4.25.0; `glp1_plateau` keyFinding enum value.                                                                                           |
+| 3 — Form weekly preset                            | `94cc7f5`                                       | Treatment-class dropdown, "Once weekly on …" preset with localStorage memory, dosesPerUnit input, wire-schema extensions in zod.                                                                                 |
+| 4 — GLP-1 card variant                            | `b8a1c18`                                       | `Glp1MedicationCard` + dispatcher in /medications, `injection-sites.ts` recommender, `/api/medications/[id]/glp1` details endpoint.                                                                              |
+| 5 — Body-map picker                               | `6750d09`                                       | `injection-site-picker.tsx` with SVG outline + 22px hit-targets + dashed-ring recommended-next annotation. Unit tests cover rotation algorithm.                                                                  |
+| 6 — Pen/vial inventory                            | folded into Phase 1 + 4                         | `MedicationInventoryEvent` table + dosesPerUnit + low-stock signal in glp1 details endpoint.                                                                                                                     |
+| 7 — MoodEntry side-effect tags                    | `52a9682` + `ddabe17`                           | Chip strip on mood-form with toggle behaviour; EN + DE labels under `medications.sideEffectTag*`. No schema change (tags column is free-text).                                                                   |
+| 8 — Therapy timeline                              | `2c7c3cc`                                       | `TherapyTimeline` mounted on /insights/medikamente; `/api/insights/glp1-timeline` aggregates dose changes + injections + inventory + side-effect days.                                                           |
+| 9 — Plateau detection                             | `6148a17`                                       | `detectGlp1Plateau()` + `buildGlp1PlateauPrompt()` wired into the insight-generator user prompt. GROUND RULE 14 keeps the safety contract.                                                                       |
+| 10 — Doctor-report PDF                            | `f45adb2`                                       | New "GLP-1 therapy" section on the PDF (weight curve, titration table, side-effects). Aggregator gains optional `glp1` block; PDF renderer skips it when null.                                                   |
+| Hygiene                                           | `a68dbdc` + `[style commit]`                    | Test-environment prisma-tolerance guards on `buildGlp1SnapshotBlock()` + `detectGlp1Plateau()`; DE locale parity for `therapyTimelineDescription`; OpenAPI regeneration; prettier across touched files.          |
 
 ---
 
 ## Verification
 
-| Gate | Status |
-|---|---|
-| `pnpm typecheck` | One pre-existing error in `doctor-report-prefs/route.ts` (parallel agent's code, NOT mine). My files: clean. |
-| `pnpm lint` | One pre-existing error in `targets/target-edit-sheet.tsx` (parallel agent's untracked file, NOT mine). My files: clean. |
-| `pnpm test` (unit) | 2482 passed / 1 skipped / 0 failed. |
+| Gate                    | Status                                                                                                                                                                                                                                                                     |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm typecheck`        | One pre-existing error in `doctor-report-prefs/route.ts` (parallel agent's code, NOT mine). My files: clean.                                                                                                                                                               |
+| `pnpm lint`             | One pre-existing error in `targets/target-edit-sheet.tsx` (parallel agent's untracked file, NOT mine). My files: clean.                                                                                                                                                    |
+| `pnpm test` (unit)      | 2482 passed / 1 skipped / 0 failed.                                                                                                                                                                                                                                        |
 | `pnpm test:integration` | 132 passed / 2 failed — both failures pre-existing (coach-prefs.test.ts asserts shape predating another agent's `defaultWindow` addition; measurements-batch-delete.test.ts hits a unique-constraint conflict from stale test DB state). Neither failure touches W4d code. |
-| `pnpm openapi:check` | In sync. Regenerated to pick up `/api/medications/[id]/glp1` + `/api/insights/glp1-timeline`. |
-| `pnpm format:check` | All W4d files prettier-clean. Pre-existing warnings in other agents' files. |
+| `pnpm openapi:check`    | In sync. Regenerated to pick up `/api/medications/[id]/glp1` + `/api/insights/glp1-timeline`.                                                                                                                                                                              |
+| `pnpm format:check`     | All W4d files prettier-clean. Pre-existing warnings in other agents' files.                                                                                                                                                                                                |
 
 ---
 
@@ -116,6 +116,7 @@ The final state is correct; the journey was bumpy.
 ## Files touched
 
 **New:**
+
 - `prisma/migrations/0046_glp1_dose_history/migration.sql`
 - `src/lib/ai/coach/glp1-snapshot.ts`
 - `src/lib/insights/glp1-plateau.ts`
@@ -129,6 +130,7 @@ The final state is correct; the journey was bumpy.
 - `src/app/api/insights/glp1-timeline/route.ts`
 
 **Extended:**
+
 - `prisma/schema.prisma` (3 new models / 1 enum / 2 columns / 1 index)
 - `src/lib/ai/coach/snapshot.ts` (weeklyContext.glp1)
 - `src/lib/ai/coach/system-prompt.ts` (GROUND RULE 9 EN + DE)

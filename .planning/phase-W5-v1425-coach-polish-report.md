@@ -7,16 +7,16 @@ the v1.4.25 follow-up brief.
 
 ## Commits
 
-| Sha | Subject |
-| --- | --- |
-| `1895fd3` | `fix(coach): suggested-prompt chips show user message before thinking placeholder` |
-| `4c9c068` | `style(coach): drop redundant per-row source labels in evidence disclosure` |
+| Sha       | Subject                                                                               |
+| --------- | ------------------------------------------------------------------------------------- |
+| `1895fd3` | `fix(coach): suggested-prompt chips show user message before thinking placeholder`    |
+| `4c9c068` | `style(coach): drop redundant per-row source labels in evidence disclosure`           |
 | `330be96` | `feat(coach): default analysis window as user preference + per-conversation override` |
-| `81b1d79` | `style(coach): unify X / cog / new-chat header buttons — same size + alignment` |
-| `70fe5a5` | `refactor(coach): drop non-functional mic icon from composer` |
-| `c7eb226` | `feat(coach): composer textarea auto-grows from 1 to 6 lines, Claude-web pattern` |
-| `b50ebcc` | `feat(coach): distinct daily-limit vs provider-rate-limit error UX` |
-| `36bf960` | `style(coach): prettier formatting on W5 surfaces` |
+| `81b1d79` | `style(coach): unify X / cog / new-chat header buttons — same size + alignment`       |
+| `70fe5a5` | `refactor(coach): drop non-functional mic icon from composer`                         |
+| `c7eb226` | `feat(coach): composer textarea auto-grows from 1 to 6 lines, Claude-web pattern`     |
+| `b50ebcc` | `feat(coach): distinct daily-limit vs provider-rate-limit error UX`                   |
+| `36bf960` | `style(coach): prettier formatting on W5 surfaces`                                    |
 
 ## Per-commit summary
 
@@ -124,13 +124,13 @@ Tests: 4 new for the resolver + 2 for the rendered copy.
 
 ## Verification
 
-| Check | Result |
-| --- | --- |
-| `pnpm typecheck` | exit 0 |
-| `pnpm lint` | 2 pre-existing warnings (unused-vars), 0 new |
-| `pnpm vitest run src/components/insights/coach-panel src/lib/validations/__tests__/coach-prefs.test.ts` | 98 / 98 green |
-| `pnpm prettier --check` (W5 surfaces) | clean |
-| Full `pnpm test` | 11 fails in `snapshot.test.ts` + `snapshot-new-metrics.test.ts` — **not W5**; root cause is the parallel W4d GLP-1 work touching `snapshot.ts` (`buildGlp1SnapshotBlock` not stubbed in the snapshot tests). Handed back to W4d / W7b. |
+| Check                                                                                                   | Result                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm typecheck`                                                                                        | exit 0                                                                                                                                                                                                                                 |
+| `pnpm lint`                                                                                             | 2 pre-existing warnings (unused-vars), 0 new                                                                                                                                                                                           |
+| `pnpm vitest run src/components/insights/coach-panel src/lib/validations/__tests__/coach-prefs.test.ts` | 98 / 98 green                                                                                                                                                                                                                          |
+| `pnpm prettier --check` (W5 surfaces)                                                                   | clean                                                                                                                                                                                                                                  |
+| Full `pnpm test`                                                                                        | 11 fails in `snapshot.test.ts` + `snapshot-new-metrics.test.ts` — **not W5**; root cause is the parallel W4d GLP-1 work touching `snapshot.ts` (`buildGlp1SnapshotBlock` not stubbed in the snapshot tests). Handed back to W4d / W7b. |
 
 ## Conflicts with parallel agents
 

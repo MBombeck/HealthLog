@@ -83,9 +83,11 @@ async function seedUser(): Promise<{ userId: string }> {
   return { userId: user.id };
 }
 
-function buildClientPayload(overrides: Partial<{
-  chartOverlayPrefs: Record<string, unknown>;
-}>) {
+function buildClientPayload(
+  overrides: Partial<{
+    chartOverlayPrefs: Record<string, unknown>;
+  }>,
+) {
   return {
     version: 1,
     widgets: DEFAULT_DASHBOARD_LAYOUT.widgets.map((w) => ({

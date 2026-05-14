@@ -21,6 +21,7 @@ which is why this never manifested outside the test suite.
 ### What changed
 
 File: `tests/integration/coach-prefs.test.ts`
+
 - Line 73–75: `(GET as () => Promise<Response>)()` →
   `(GET as (r: Request) => Promise<Response>)(new Request("http://localhost/api/auth/me/coach-prefs"))`
 - Line 111–114: same change for the round-trip GET call inside the PUT
@@ -71,6 +72,7 @@ container.
 #### What changed
 
 File: `e2e/chart-overlay-controls.spec.ts` line 127 →
+
 ```ts
 await targetRangeToggle.dispatchEvent("click");
 ```
@@ -101,6 +103,7 @@ by the captured page-snapshot artifact showing `04/13/2026` and
 #### What changed
 
 File: `e2e/charts-mobile.spec.ts` line 218 →
+
 ```ts
 .waitFor({ state: "attached", timeout: 10_000 });
 ```
@@ -112,10 +115,11 @@ which only needs them attached to the DOM, not visually on-screen.
 ### Verification (e2e)
 
 Local verification of the e2e specs was not possible in this session:
+
 - The repo's local box runs Node 25, while CI runs Node 22. `pnpm build`
   hits a Next.js 16 prerender bug on Node 25
   (`Cannot read private member #state from an object whose class did
-  not declare it` on `/api/version`).
+not declare it` on `/api/version`).
 - The Turbopack dev server (`pnpm dev`) does start and bind port 3000,
   but the first compile of `/api/version` did not finish within
   200 seconds; subsequent requests on `127.0.0.1:3000` continued to

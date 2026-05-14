@@ -63,7 +63,9 @@ describe("GET /api/auth/me/doctor-report-prefs", () => {
       new Request("http://localhost/api/auth/me/doctor-report-prefs"),
     );
     expect(res.status).toBe(200);
-    const env = (await res.json()) as { data: typeof DEFAULT_DOCTOR_REPORT_PREFS };
+    const env = (await res.json()) as {
+      data: typeof DEFAULT_DOCTOR_REPORT_PREFS;
+    };
     expect(env.data).toEqual(DEFAULT_DOCTOR_REPORT_PREFS);
     expect(env.data.mood).toBe(false); // privacy default per Marc
   });

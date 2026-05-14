@@ -14,7 +14,10 @@ const DE_PATH = join(MESSAGES_DIR, "de.json");
 function discoverLocales(): Array<{ locale: string; path: string }> {
   return readdirSync(MESSAGES_DIR)
     .filter((f) => f.endsWith(".json"))
-    .map((f) => ({ locale: f.replace(/\.json$/, ""), path: join(MESSAGES_DIR, f) }));
+    .map((f) => ({
+      locale: f.replace(/\.json$/, ""),
+      path: join(MESSAGES_DIR, f),
+    }));
 }
 
 const ALL_LOCALES = discoverLocales();
@@ -210,9 +213,7 @@ describe("i18n locale file integrity", () => {
       otherArr.forEach((k) => otherKeys.add(k));
 
       const onlyInEn = [...enKeys].filter((k) => !otherKeys.has(k)).sort();
-      const onlyInOther = [...otherKeys]
-        .filter((k) => !enKeys.has(k))
-        .sort();
+      const onlyInOther = [...otherKeys].filter((k) => !enKeys.has(k)).sort();
 
       expect(
         { onlyInEn, onlyInOther },
@@ -315,22 +316,23 @@ describe("i18n locale file integrity", () => {
   it.each(ALL_LOCALES)(
     "$locale locale has no TODO/FIXME placeholders in values",
     ({ path }) => {
-    const data = JSON.parse(readFileSync(path, "utf8")) as Record<
-      string,
-      unknown
-    >;
-    const flat: [string, string][] = [];
-    flattenValues(data, "", flat);
-    const todoRe = /\b(TODO|FIXME|XXX|TBD)\b/;
-    const todos = flat
-      .filter(([, v]) => todoRe.test(v))
-      .map(([k, v]) => `${k} = ${JSON.stringify(v)}`);
-    expect(
-      todos,
-      `Found TODO/FIXME/XXX/TBD placeholders in translation values:\n` +
-        todos.map((s) => `  ${s}`).join("\n"),
-    ).toEqual([]);
-  });
+      const data = JSON.parse(readFileSync(path, "utf8")) as Record<
+        string,
+        unknown
+      >;
+      const flat: [string, string][] = [];
+      flattenValues(data, "", flat);
+      const todoRe = /\b(TODO|FIXME|XXX|TBD)\b/;
+      const todos = flat
+        .filter(([, v]) => todoRe.test(v))
+        .map(([k, v]) => `${k} = ${JSON.stringify(v)}`);
+      expect(
+        todos,
+        `Found TODO/FIXME/XXX/TBD placeholders in translation values:\n` +
+          todos.map((s) => `  ${s}`).join("\n"),
+      ).toEqual([]);
+    },
+  );
 
   /**
    * v1.4.22 A6 — DE locale must not leak English nouns for the

@@ -146,7 +146,10 @@ function TargetEditSheetBody({
   // Seed input strings from override → initialRange → default bound.
   // We use strings so the user can type a partial number (e.g. "12") without
   // the input snapping back to a parsed value.
-  const seedRange = (m: ThresholdMetric | null, fallback: CurrentRange | null) => {
+  const seedRange = (
+    m: ThresholdMetric | null,
+    fallback: CurrentRange | null,
+  ) => {
     if (m && thresholdsData?.overrides?.[m]) {
       return thresholdsData.overrides[m]!;
     }
@@ -158,10 +161,7 @@ function TargetEditSheetBody({
     return { min: 0, max: 100 };
   };
 
-  const primary = seedRange(
-    isBp ? "BLOOD_PRESSURE_SYS" : metric,
-    initialRange,
-  );
+  const primary = seedRange(isBp ? "BLOOD_PRESSURE_SYS" : metric, initialRange);
   const secondary = isBp
     ? seedRange("BLOOD_PRESSURE_DIA", initialDiastolicRange ?? null)
     : null;
@@ -190,7 +190,9 @@ function TargetEditSheetBody({
   const dialogContentId = useId();
 
   const updateMutation = useMutation({
-    mutationFn: async (payload: Partial<Record<ThresholdMetric, CurrentRange>>) => {
+    mutationFn: async (
+      payload: Partial<Record<ThresholdMetric, CurrentRange>>,
+    ) => {
       const res = await fetch("/api/user/thresholds", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -210,7 +212,9 @@ function TargetEditSheetBody({
       onOpenChange(false);
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : t("targets.edit.saveError")),
+      toast.error(
+        err instanceof Error ? err.message : t("targets.edit.saveError"),
+      ),
   });
 
   const resetMutation = useMutation({
@@ -291,7 +295,7 @@ function TargetEditSheetBody({
   const hasOverride = isBp
     ? Boolean(
         thresholdsData?.overrides?.BLOOD_PRESSURE_SYS ||
-          thresholdsData?.overrides?.BLOOD_PRESSURE_DIA,
+        thresholdsData?.overrides?.BLOOD_PRESSURE_DIA,
       )
     : metric
       ? Boolean(thresholdsData?.overrides?.[metric])
@@ -314,146 +318,146 @@ function TargetEditSheetBody({
       }}
       aria-describedby={dialogContentId}
     >
-        <DialogHeader>
-          <DialogTitle>
-            {t("targets.edit.title", { metric: targetLabel })}
-          </DialogTitle>
-          <DialogDescription id={dialogContentId}>
-            {isDerivedMetric
-              ? t("targets.edit.derivedHint")
-              : t("targets.edit.description", { unit })}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogHeader>
+        <DialogTitle>
+          {t("targets.edit.title", { metric: targetLabel })}
+        </DialogTitle>
+        <DialogDescription id={dialogContentId}>
+          {isDerivedMetric
+            ? t("targets.edit.derivedHint")
+            : t("targets.edit.description", { unit })}
+        </DialogDescription>
+      </DialogHeader>
 
-        {!isDerivedMetric && primaryBounds && (
-          <div className="space-y-4">
+      {!isDerivedMetric && primaryBounds && (
+        <div className="space-y-4">
+          <div
+            className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+            data-slot="target-edit-primary-row"
+          >
+            <div className="space-y-1">
+              <Label htmlFor="target-edit-min" className="text-xs">
+                {isBp
+                  ? t("targets.edit.systolicMin")
+                  : t("targets.edit.minLabel")}
+              </Label>
+              <Input
+                id="target-edit-min"
+                ref={firstInputRef}
+                type="number"
+                step={targetType === "ACTIVITY_STEPS" ? 100 : 0.1}
+                min={primaryBounds.min}
+                max={primaryBounds.max}
+                value={displayMin}
+                onChange={(e) => setMinStr(e.target.value)}
+                disabled={busy}
+                data-slot="target-edit-min-input"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="target-edit-max" className="text-xs">
+                {isBp
+                  ? t("targets.edit.systolicMax")
+                  : t("targets.edit.maxLabel")}
+              </Label>
+              <Input
+                id="target-edit-max"
+                type="number"
+                step={targetType === "ACTIVITY_STEPS" ? 100 : 0.1}
+                min={primaryBounds.min}
+                max={primaryBounds.max}
+                value={displayMax}
+                onChange={(e) => setMaxStr(e.target.value)}
+                disabled={busy}
+                data-slot="target-edit-max-input"
+              />
+            </div>
+          </div>
+
+          {isBp && secondaryBounds && (
             <div
               className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-              data-slot="target-edit-primary-row"
+              data-slot="target-edit-secondary-row"
             >
               <div className="space-y-1">
-                <Label htmlFor="target-edit-min" className="text-xs">
-                  {isBp
-                    ? t("targets.edit.systolicMin")
-                    : t("targets.edit.minLabel")}
+                <Label htmlFor="target-edit-dia-min" className="text-xs">
+                  {t("targets.edit.diastolicMin")}
                 </Label>
                 <Input
-                  id="target-edit-min"
-                  ref={firstInputRef}
+                  id="target-edit-dia-min"
                   type="number"
-                  step={targetType === "ACTIVITY_STEPS" ? 100 : 0.1}
-                  min={primaryBounds.min}
-                  max={primaryBounds.max}
-                  value={displayMin}
-                  onChange={(e) => setMinStr(e.target.value)}
+                  step={0.1}
+                  min={secondaryBounds.min}
+                  max={secondaryBounds.max}
+                  value={displayDiaMin}
+                  onChange={(e) => setDiaMinStr(e.target.value)}
                   disabled={busy}
-                  data-slot="target-edit-min-input"
+                  data-slot="target-edit-dia-min-input"
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="target-edit-max" className="text-xs">
-                  {isBp
-                    ? t("targets.edit.systolicMax")
-                    : t("targets.edit.maxLabel")}
+                <Label htmlFor="target-edit-dia-max" className="text-xs">
+                  {t("targets.edit.diastolicMax")}
                 </Label>
                 <Input
-                  id="target-edit-max"
+                  id="target-edit-dia-max"
                   type="number"
-                  step={targetType === "ACTIVITY_STEPS" ? 100 : 0.1}
-                  min={primaryBounds.min}
-                  max={primaryBounds.max}
-                  value={displayMax}
-                  onChange={(e) => setMaxStr(e.target.value)}
+                  step={0.1}
+                  min={secondaryBounds.min}
+                  max={secondaryBounds.max}
+                  value={displayDiaMax}
+                  onChange={(e) => setDiaMaxStr(e.target.value)}
                   disabled={busy}
-                  data-slot="target-edit-max-input"
+                  data-slot="target-edit-dia-max-input"
                 />
               </div>
             </div>
-
-            {isBp && secondaryBounds && (
-              <div
-                className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-                data-slot="target-edit-secondary-row"
-              >
-                <div className="space-y-1">
-                  <Label htmlFor="target-edit-dia-min" className="text-xs">
-                    {t("targets.edit.diastolicMin")}
-                  </Label>
-                  <Input
-                    id="target-edit-dia-min"
-                    type="number"
-                    step={0.1}
-                    min={secondaryBounds.min}
-                    max={secondaryBounds.max}
-                    value={displayDiaMin}
-                    onChange={(e) => setDiaMinStr(e.target.value)}
-                    disabled={busy}
-                    data-slot="target-edit-dia-min-input"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="target-edit-dia-max" className="text-xs">
-                    {t("targets.edit.diastolicMax")}
-                  </Label>
-                  <Input
-                    id="target-edit-dia-max"
-                    type="number"
-                    step={0.1}
-                    min={secondaryBounds.min}
-                    max={secondaryBounds.max}
-                    value={displayDiaMax}
-                    onChange={(e) => setDiaMaxStr(e.target.value)}
-                    disabled={busy}
-                    data-slot="target-edit-dia-max-input"
-                  />
-                </div>
-              </div>
-            )}
-
-            <p className="text-muted-foreground text-xs">
-              {t("targets.edit.boundsHint", {
-                min: String(primaryBounds.min),
-                max: String(primaryBounds.max),
-                unit: primaryBounds.unit,
-              })}
-            </p>
-          </div>
-        )}
-
-        <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-          {hasOverride ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => resetMutation.mutate()}
-              disabled={busy}
-              data-slot="target-edit-reset"
-            >
-              <RotateCcw className="mr-2 h-3.5 w-3.5" />
-              {t("targets.edit.resetToDefault")}
-            </Button>
-          ) : (
-            <span aria-hidden="true" />
           )}
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              disabled={busy}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={!canSave}
-              data-slot="target-edit-save"
-            >
-              {t("common.save")}
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
+
+          <p className="text-muted-foreground text-xs">
+            {t("targets.edit.boundsHint", {
+              min: String(primaryBounds.min),
+              max: String(primaryBounds.max),
+              unit: primaryBounds.unit,
+            })}
+          </p>
+        </div>
+      )}
+
+      <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        {hasOverride ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => resetMutation.mutate()}
+            disabled={busy}
+            data-slot="target-edit-reset"
+          >
+            <RotateCcw className="mr-2 h-3.5 w-3.5" />
+            {t("targets.edit.resetToDefault")}
+          </Button>
+        ) : (
+          <span aria-hidden="true" />
+        )}
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={busy}
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={!canSave}
+            data-slot="target-edit-save"
+          >
+            {t("common.save")}
+          </Button>
+        </div>
+      </DialogFooter>
+    </DialogContent>
   );
 }

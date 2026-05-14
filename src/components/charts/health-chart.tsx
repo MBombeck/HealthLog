@@ -337,9 +337,7 @@ export interface ResolvedVerticalMarker {
 }
 
 export function resolveVerticalMarkerPositions(
-  markers:
-    | Array<{ date: string; label?: string; color?: string }>
-    | undefined,
+  markers: Array<{ date: string; label?: string; color?: string }> | undefined,
   chartData: Array<{ date: string }> | undefined,
 ): ResolvedVerticalMarker[] {
   if (!markers || !chartData || chartData.length === 0) return [];

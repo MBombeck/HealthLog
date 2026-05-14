@@ -227,7 +227,7 @@ describe("toCSV(records, headerLabels) — audit-log integration", () => {
       "Zeitpunkt,Benutzer,IP,Standort,Anbieter,Ergebnis,Aktion,Details",
     );
     expect(lines[1]).toBe(
-      "2026-05-11T09:05:00+00:00,marc,203.0.113.7,\"Berlin, DE\",Passkey,Erfolgreich,auth.login.passkey,",
+      '2026-05-11T09:05:00+00:00,marc,203.0.113.7,"Berlin, DE",Passkey,Erfolgreich,auth.login.passkey,',
     );
   });
 

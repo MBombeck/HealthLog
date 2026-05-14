@@ -102,9 +102,7 @@ export function InsightsCardPreview({
                 key={id ?? index}
                 className={`bg-card/40 flex items-start justify-between gap-2 rounded-md border-l-2 px-3 py-2 ${borderClass}`}
               >
-                <p className="text-sm leading-snug">
-                  {stripChartTokens(text)}
-                </p>
+                <p className="text-sm leading-snug">{stripChartTokens(text)}</p>
                 {typeof confidence === "number" && (
                   <span className="shrink-0">
                     <ConfidenceMeter value={confidence} variant="ring" />

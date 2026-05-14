@@ -126,7 +126,10 @@ function defaultStartIso(): string {
   return formatLocalDate(d);
 }
 
-function rangeIsoFromLocal(startDate: string, endDate: string): {
+function rangeIsoFromLocal(
+  startDate: string,
+  endDate: string,
+): {
   startIso: string;
   endIso: string;
 } {
@@ -341,8 +344,7 @@ export function DoctorReportDialog({
       // aren't (so the server never tries to render an empty section).
       const sections: DoctorReportPrefs = { ...DEFAULT_DOCTOR_REPORT_PREFS };
       for (const key of SECTION_ORDER) {
-        sections[key] =
-          (availability?.[key] ?? false) && prefs[key] === true;
+        sections[key] = (availability?.[key] ?? false) && prefs[key] === true;
       }
 
       // Fire-and-forget persistence so the user doesn't wait on it.
@@ -530,7 +532,7 @@ function SectionToggles({
         className="border-border bg-muted/30 space-y-2 rounded-lg border p-3"
         data-testid="doctor-report-sections-loading"
       >
-        <p className="text-xs font-medium tracking-wide uppercase text-muted-foreground">
+        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
           {t("doctorReport.sections.title")}
         </p>
         <div className="space-y-2">
@@ -550,7 +552,7 @@ function SectionToggles({
         className="border-border bg-muted/30 rounded-lg border p-3"
         data-testid="doctor-report-sections-empty"
       >
-        <p className="text-xs font-medium tracking-wide uppercase text-muted-foreground">
+        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
           {t("doctorReport.sections.title")}
         </p>
         <p className="text-muted-foreground mt-1.5 text-xs leading-relaxed">
@@ -566,7 +568,7 @@ function SectionToggles({
       data-testid="doctor-report-sections"
     >
       <div className="flex items-baseline justify-between gap-2">
-        <p className="text-xs font-medium tracking-wide uppercase text-muted-foreground">
+        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
           {t("doctorReport.sections.title")}
         </p>
         {availabilityLoading && (
@@ -583,7 +585,7 @@ function SectionToggles({
                 className="hover:bg-muted/50 -mx-2 flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1.5 transition-colors"
               >
                 <span className="flex flex-col">
-                  <span className="text-sm font-medium leading-tight">
+                  <span className="text-sm leading-tight font-medium">
                     {t(SECTION_LABEL_KEYS[key])}
                   </span>
                   {key === "mood" && (

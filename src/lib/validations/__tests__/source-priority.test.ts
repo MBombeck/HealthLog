@@ -122,7 +122,9 @@ describe("DEFAULT_SOURCE_PRIORITY", () => {
   });
 
   it("validates against the Zod schema (no drift between defaults and validator)", () => {
-    expect(() => sourcePrioritySchema.parse(DEFAULT_SOURCE_PRIORITY)).not.toThrow();
+    expect(() =>
+      sourcePrioritySchema.parse(DEFAULT_SOURCE_PRIORITY),
+    ).not.toThrow();
   });
 });
 

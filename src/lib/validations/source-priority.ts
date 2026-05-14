@@ -76,7 +76,8 @@ export const SOURCE_PRIORITY_METRIC_KEYS = [
   "vo2Max",
 ] as const;
 
-export type SourcePriorityMetricKey = (typeof SOURCE_PRIORITY_METRIC_KEYS)[number];
+export type SourcePriorityMetricKey =
+  (typeof SOURCE_PRIORITY_METRIC_KEYS)[number];
 
 /**
  * Marc-directive 2026-05-14 defaults:

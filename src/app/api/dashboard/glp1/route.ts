@@ -128,8 +128,7 @@ export const GET = apiHandler(async () => {
   const injectionDatesByMed = new Map<string, Set<string>>();
   for (const ev of intakeRows) {
     if (!ev.takenAt) continue;
-    const set =
-      injectionDatesByMed.get(ev.medicationId) ?? new Set<string>();
+    const set = injectionDatesByMed.get(ev.medicationId) ?? new Set<string>();
     set.add(isoDate(ev.takenAt));
     injectionDatesByMed.set(ev.medicationId, set);
   }

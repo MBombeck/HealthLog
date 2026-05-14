@@ -119,9 +119,9 @@ describe("stripChartTokens — v1.4.25 W5b capitalised + orphan-enum leaks", () 
   });
 
   it("strips orphan enum mentions — MEDICATION_COMPLIANCE_PCT", () => {
-    expect(
-      stripChartTokens("MEDICATION_COMPLIANCE_PCT held above 90."),
-    ).toBe("held above 90.");
+    expect(stripChartTokens("MEDICATION_COMPLIANCE_PCT held above 90.")).toBe(
+      "held above 90.",
+    );
   });
 
   it("strips v1.4.23 Apple Health additions — HEART_RATE_VARIABILITY", () => {
@@ -144,13 +144,13 @@ describe("stripChartTokens — v1.4.25 W5b capitalised + orphan-enum leaks", () 
 
   it("strips v1.4.23 Apple Health additions — FLIGHTS_CLIMBED, WALKING_RUNNING_DISTANCE, VO2_MAX, BODY_TEMPERATURE, SLEEP_DURATION", () => {
     expect(stripChartTokens("FLIGHTS_CLIMBED at 5/day.")).toBe("at 5/day.");
-    expect(
-      stripChartTokens("WALKING_RUNNING_DISTANCE averaged 4 km."),
-    ).toBe("averaged 4 km.");
+    expect(stripChartTokens("WALKING_RUNNING_DISTANCE averaged 4 km.")).toBe(
+      "averaged 4 km.",
+    );
     expect(stripChartTokens("VO2_MAX has crept up.")).toBe("has crept up.");
-    expect(
-      stripChartTokens("BODY_TEMPERATURE sat at 36.8 most days."),
-    ).toBe("sat at 36.8 most days.");
+    expect(stripChartTokens("BODY_TEMPERATURE sat at 36.8 most days.")).toBe(
+      "sat at 36.8 most days.",
+    );
     expect(stripChartTokens("SLEEP_DURATION averaged 7.4h.")).toBe(
       "averaged 7.4h.",
     );
@@ -172,9 +172,9 @@ describe("stripChartTokens — v1.4.25 W5b capitalised + orphan-enum leaks", () 
     // touched — it's a perfectly legitimate English word inside copy
     // like "Each metric in the snapshot ...". Marc's directive
     // explicitly targets the leak patterns, not legitimate prose.
-    expect(
-      stripChartTokens("Each metric tells part of the story."),
-    ).toBe("Each metric tells part of the story.");
+    expect(stripChartTokens("Each metric tells part of the story.")).toBe(
+      "Each metric tells part of the story.",
+    );
   });
 
   it("does not strip the canonical Metrik token in German prose", () => {

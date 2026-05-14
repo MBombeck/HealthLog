@@ -12,13 +12,13 @@ those.
 
 ## Per-surface commit SHAs
 
-| Surface | SHA       | Summary                                                 |
-| ------- | --------- | ------------------------------------------------------- |
-| 1       | `35f068a` | `berlinDayKey()` callers honour user `displayTimezone`  |
-| 2       | `eeaa563` | Chart x-axis ticks render in user `displayTimezone`     |
-| 3       | `7d878c1` | Coach snapshot anchors yesterday/this-week to user tz   |
-| 4       | `989243a` | `MoodEntry.tz` column for per-row tz attribution        |
-| —       | `2bdfdc2` | Prettier across W7b surfaces                            |
+| Surface | SHA       | Summary                                                |
+| ------- | --------- | ------------------------------------------------------ |
+| 1       | `35f068a` | `berlinDayKey()` callers honour user `displayTimezone` |
+| 2       | `eeaa563` | Chart x-axis ticks render in user `displayTimezone`    |
+| 3       | `7d878c1` | Coach snapshot anchors yesterday/this-week to user tz  |
+| 4       | `989243a` | `MoodEntry.tz` column for per-row tz attribution       |
+| —       | `2bdfdc2` | Prettier across W7b surfaces                           |
 
 ## Surface 1 — `berlinDayKey()` 5 callers
 
@@ -122,10 +122,10 @@ would land on the Berlin day. +8 unit tests.
 
 ## Test deltas
 
-| Suite                                                       | Before | After | Delta |
-| ----------------------------------------------------------- | ------ | ----- | ----- |
-| Unit total                                                  | 2367   | 2375  | +8    |
-| Integration: `tests/integration/timezone-per-user.test.ts`  | 7      | 10    | +3    |
+| Suite                                                      | Before | After | Delta |
+| ---------------------------------------------------------- | ------ | ----- | ----- |
+| Unit total                                                 | 2367   | 2375  | +8    |
+| Integration: `tests/integration/timezone-per-user.test.ts` | 7      | 10    | +3    |
 
 Unit `+8` is `src/lib/mood/__tests__/date-key.test.ts` (Surface 4).
 Integration `+3` is two assertions added in Surface 1 and one in
@@ -133,13 +133,13 @@ Surface 3.
 
 ## CI gates
 
-| Gate                                       | Result                          |
-| ------------------------------------------ | ------------------------------- |
-| `pnpm typecheck`                           | clean                           |
-| `pnpm lint`                                | clean                           |
-| `pnpm test` (unit)                         | 2375 passed, 1 skipped          |
-| `pnpm test:integration` (timezone file)    | 10 passed                       |
-| `pnpm format:check` (W7b files)            | clean after `pnpm format` run   |
+| Gate                                    | Result                        |
+| --------------------------------------- | ----------------------------- |
+| `pnpm typecheck`                        | clean                         |
+| `pnpm lint`                             | clean                         |
+| `pnpm test` (unit)                      | 2375 passed, 1 skipped        |
+| `pnpm test:integration` (timezone file) | 10 passed                     |
+| `pnpm format:check` (W7b files)         | clean after `pnpm format` run |
 
 A single unrelated integration test from a concurrent agent's branch
 (`tests/integration/measurements-batch-delete.test.ts`, introduced in

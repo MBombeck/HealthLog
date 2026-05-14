@@ -373,19 +373,13 @@ function WithingsCard({
             className="border-warning/30 bg-warning/10 text-warning-foreground hover:bg-warning/20 block rounded-md border px-3 py-2 text-sm transition-colors"
           >
             <span className="font-medium">
-              {t(
-                "settings.integrations.withings.reconnect.banner.title",
-              )}
+              {t("settings.integrations.withings.reconnect.banner.title")}
             </span>
             <span className="text-muted-foreground block text-xs">
-              {t(
-                "settings.integrations.withings.reconnect.banner.body",
-              )}
+              {t("settings.integrations.withings.reconnect.banner.body")}
             </span>
             <span className="text-primary mt-1 inline-block text-xs font-medium">
-              {t(
-                "settings.integrations.withings.reconnect.banner.action",
-              )}
+              {t("settings.integrations.withings.reconnect.banner.action")}
               {" →"}
             </span>
           </a>

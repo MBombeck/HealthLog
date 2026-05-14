@@ -186,8 +186,7 @@ export function SourcesSection() {
         ) : (
           <div className="space-y-3">
             {SOURCE_PRIORITY_METRIC_KEYS.map((metric) => {
-              const list =
-                priority[metric] ?? DEFAULT_SOURCE_PRIORITY[metric];
+              const list = priority[metric] ?? DEFAULT_SOURCE_PRIORITY[metric];
               return (
                 <div
                   key={metric}

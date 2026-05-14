@@ -27,12 +27,12 @@ no push, no version bump.
 
 ## Per-win commit SHAs
 
-| Win | SHA | Subject |
-|---:|-----|---------|
-| 1 | `d74aa20`† | feat(targets): per-card edit cog opens target-config sheet |
-| 2 | `7b6b916` | style(charts): grey out comparison-overlay toggle when no prior-period data exists |
-| 3 | `edae569` | chore(insights): drop orphaned /api/insights/general-status — superseded by InsightAdvisorCard since v1.4.16 |
-| 4 | `7846d68` | feat(insights): sleep-stages chart renders per-night stacked bars (7/14/30d toggle) |
+| Win | SHA        | Subject                                                                                                      |
+| --: | ---------- | ------------------------------------------------------------------------------------------------------------ |
+|   1 | `d74aa20`† | feat(targets): per-card edit cog opens target-config sheet                                                   |
+|   2 | `7b6b916`  | style(charts): grey out comparison-overlay toggle when no prior-period data exists                           |
+|   3 | `edae569`  | chore(insights): drop orphaned /api/insights/general-status — superseded by InsightAdvisorCard since v1.4.16 |
+|   4 | `7846d68`  | feat(insights): sleep-stages chart renders per-night stacked bars (7/14/30d toggle)                          |
 
 † **Win 1 commit-message collision.** While I was staging Win 1, a
 parallel agent (W4d GLP-1) staged + committed before my `git commit`
@@ -104,7 +104,7 @@ here so the v1.4.25 changelog can attribute the work correctly.
 
 - `src/app/api/analytics/route.ts` —
   `computeSleepStageBreakdown()` now returns a `perNight: Array<{
-  dayKey, stages }>` field alongside the existing 30-day aggregate.
+dayKey, stages }>` field alongside the existing 30-day aggregate.
   Sorted ascending by Berlin-tz day key; empty days drop out.
 - `src/components/insights/sleep-stage-stacked-bar.tsx` — rewritten.
   Per-night BarChart with `stackId="stages"`, vertical layout
@@ -150,12 +150,12 @@ here so the v1.4.25 changelog can attribute the work correctly.
 
 ## Verification
 
-| Command | Result |
-|---------|--------|
-| `pnpm typecheck` | clean (exit 0) |
-| `pnpm lint` | clean (exit 0) — no new errors |
-| `pnpm vitest run src/components/charts/__tests__/chart-overlay-controls.test.tsx src/components/targets/ src/components/insights/__tests__/sleep-stage-stacked-bar.test.tsx` | 8 files, 45 tests, 0 failures |
-| `pnpm vitest run` (full suite) | 285 files, 2507 tests passing, 6 PRE-EXISTING failures unrelated to my work (Withings new measurement-type enum coverage from a parallel agent — `FAT_MASS`, `MUSCLE_MASS`, `VISCERAL_FAT`, `VASCULAR_AGE`, `SKIN_TEMPERATURE`, `PULSE_WAVE_VELOCITY`, `FAT_FREE_MASS` add 7 enum members; existing tests pinning 18-member shape need updating in a separate phase) |
+| Command                                                                                                                                                                      | Result                                                                                                                                                                                                                                                                                                                                                               |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm typecheck`                                                                                                                                                             | clean (exit 0)                                                                                                                                                                                                                                                                                                                                                       |
+| `pnpm lint`                                                                                                                                                                  | clean (exit 0) — no new errors                                                                                                                                                                                                                                                                                                                                       |
+| `pnpm vitest run src/components/charts/__tests__/chart-overlay-controls.test.tsx src/components/targets/ src/components/insights/__tests__/sleep-stage-stacked-bar.test.tsx` | 8 files, 45 tests, 0 failures                                                                                                                                                                                                                                                                                                                                        |
+| `pnpm vitest run` (full suite)                                                                                                                                               | 285 files, 2507 tests passing, 6 PRE-EXISTING failures unrelated to my work (Withings new measurement-type enum coverage from a parallel agent — `FAT_MASS`, `MUSCLE_MASS`, `VISCERAL_FAT`, `VASCULAR_AGE`, `SKIN_TEMPERATURE`, `PULSE_WAVE_VELOCITY`, `FAT_FREE_MASS` add 7 enum members; existing tests pinning 18-member shape need updating in a separate phase) |
 
 Manual viewport audit deferred to the v1.4.25 verification phase
 where Playwright is runnable.
@@ -163,7 +163,8 @@ where Playwright is runnable.
 ## Conflict awareness — what happened with parallel agents
 
 The prompt warned about parallel agent activity on:
-- W4d (GLP-1 full): src/components/medications/*, snapshot, schema, prompts
+
+- W4d (GLP-1 full): src/components/medications/\*, snapshot, schema, prompts
 - W6 (Dashboard fixes + GLP-1 tile): chart-settings-cog, weight chart
 - W9 (Repo + dependabot): README, .github
 
@@ -188,7 +189,7 @@ i18n parity verified: all four wins append new keys, no restructure.
 
 - **Win 1**: per-card cog renders for EVERY card per Marc directive,
   but the underlying threshold-edit doesn't exist for derived
-  metrics (BMI / MOOD_* / MEDICATION_COMPLIANCE /
+  metrics (BMI / MOOD\_\* / MEDICATION_COMPLIANCE /
   BLOOD_PRESSURE_IN_TARGET). The dialog handles this by showing an
   explanatory caption ("This card is derived from other metrics.
   Edit the underlying targets instead.") — the Save button is

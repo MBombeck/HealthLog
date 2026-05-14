@@ -245,7 +245,7 @@ documented in the checklist as a 1-hour Marc action.
 **Applied** to `main`:
 
 ```yaml
-required_status_checks: null         # deliberately deferred to W10
+required_status_checks: null # deliberately deferred to W10
 enforce_admins: false
 required_pull_request_reviews: null
 restrictions: null
@@ -253,7 +253,7 @@ required_linear_history: false
 allow_force_pushes: false
 allow_deletions: false
 block_creations: false
-required_conversation_resolution: true   # NEW in v2
+required_conversation_resolution: true # NEW in v2
 lock_branch: false
 allow_fork_syncing: false
 ```
@@ -317,16 +317,16 @@ true
 
 ## Deferred to v1.4.26 / awaiting Marc
 
-| Item | Reason |
-| --- | --- |
-| Merge PRs #163 / #164 / #166 | gh token lacks `workflow` scope; UI merge or re-auth |
-| Rebase + dual-bump react+react-dom (#155) | Wait for next Dependabot sweep |
-| Upload social-preview OG image | UI-only action; needs Marc to capture + upload |
-| Hero / 3-screenshot strip in README | Needs scrubbed `demo.healthlog.dev` screenshots |
-| `.github/FUNDING.yml` | Awaiting Marc approval on funding pitch |
-| Pinned issues + good-first-issue seed | Post-v1.5 action |
+| Item                                            | Reason                                               |
+| ----------------------------------------------- | ---------------------------------------------------- |
+| Merge PRs #163 / #164 / #166                    | gh token lacks `workflow` scope; UI merge or re-auth |
+| Rebase + dual-bump react+react-dom (#155)       | Wait for next Dependabot sweep                       |
+| Upload social-preview OG image                  | UI-only action; needs Marc to capture + upload       |
+| Hero / 3-screenshot strip in README             | Needs scrubbed `demo.healthlog.dev` screenshots      |
+| `.github/FUNDING.yml`                           | Awaiting Marc approval on funding pitch              |
+| Pinned issues + good-first-issue seed           | Post-v1.5 action                                     |
 | Add `required_status_checks` to main protection | W10 owns the prerequisite e2e + integration green-up |
-| Star-history + "as featured in" README badges | Post awesome-selfhosted PR acceptance |
+| Star-history + "as featured in" README badges   | Post awesome-selfhosted PR acceptance                |
 
 ---
 

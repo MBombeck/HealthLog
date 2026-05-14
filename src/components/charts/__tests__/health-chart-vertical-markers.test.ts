@@ -32,14 +32,11 @@ describe("resolveVerticalMarkerPositions", () => {
 
   it("returns empty when chartData is undefined or empty", () => {
     expect(
-      resolveVerticalMarkerPositions(
-        [{ date: "2026-04-15" }],
-        undefined,
-      ),
+      resolveVerticalMarkerPositions([{ date: "2026-04-15" }], undefined),
     ).toEqual([]);
-    expect(resolveVerticalMarkerPositions([{ date: "2026-04-15" }], [])).toEqual(
-      [],
-    );
+    expect(
+      resolveVerticalMarkerPositions([{ date: "2026-04-15" }], []),
+    ).toEqual([]);
   });
 
   it("pins a single in-window marker to its exact day-key", () => {
@@ -55,11 +52,7 @@ describe("resolveVerticalMarkerPositions", () => {
 
   it("pins multiple markers in input order with the correct pointIndex", () => {
     const positions = resolveVerticalMarkerPositions(
-      [
-        { date: "2026-04-15" },
-        { date: "2026-04-22" },
-        { date: "2026-04-19" },
-      ],
+      [{ date: "2026-04-15" }, { date: "2026-04-22" }, { date: "2026-04-19" }],
       dailyChartData,
     );
     expect(positions.map((p) => p.pointIndex)).toEqual([0, 7, 4]);

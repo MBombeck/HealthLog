@@ -6,14 +6,14 @@ v1.4.23 is the foundation release v1.4.x hasn't shipped before: the user-visible
 
 ## Live state
 
-| Field              | Value                                                                                 |
-| ------------------ | ------------------------------------------------------------------------------------- |
-| URL                | `https://healthlog.bombeck.io`                                                        |
-| `/api/version`     | `1.4.23`                                                                              |
-| Image digest       | `sha256:b20c25a49b1835aa66c03a4670c27a3ba0ea9414dab3ee4a45f5cd35d4f353d1`             |
-| Version transition | 2026-05-11T06:40:49Z (host-side retag fallback)                                       |
-| GH release         | https://github.com/MBombeck/HealthLog/releases/tag/v1.4.23                            |
-| Branch model       | `develop` → `main` release-merge model, fourth tag through it (v1.4.20 onwards)       |
+| Field              | Value                                                                           |
+| ------------------ | ------------------------------------------------------------------------------- |
+| URL                | `https://healthlog.bombeck.io`                                                  |
+| `/api/version`     | `1.4.23`                                                                        |
+| Image digest       | `sha256:b20c25a49b1835aa66c03a4670c27a3ba0ea9414dab3ee4a45f5cd35d4f353d1`       |
+| Version transition | 2026-05-11T06:40:49Z (host-side retag fallback)                                 |
+| GH release         | https://github.com/MBombeck/HealthLog/releases/tag/v1.4.23                      |
+| Branch model       | `develop` → `main` release-merge model, fourth tag through it (v1.4.20 onwards) |
 
 ## Smoke (no session)
 

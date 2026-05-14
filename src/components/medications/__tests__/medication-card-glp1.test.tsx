@@ -87,7 +87,9 @@ const defaultMed = {
 
 function makeClient(): QueryClient {
   return new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0, staleTime: Infinity } },
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0, staleTime: Infinity },
+    },
   });
 }
 
@@ -296,7 +298,10 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     seedGlp1Details(client, med7p5.id, {
       recentIntakes: [
         { takenAt: "2026-05-08T08:00:00Z", injectionSite: "ABDOMEN_LEFT" },
-        { takenAt: "2026-05-01T08:00:00Z", injectionSite: "ABDOMEN_UPPER_LEFT" },
+        {
+          takenAt: "2026-05-01T08:00:00Z",
+          injectionSite: "ABDOMEN_UPPER_LEFT",
+        },
       ],
     });
 

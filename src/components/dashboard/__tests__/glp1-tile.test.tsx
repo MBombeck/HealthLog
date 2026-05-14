@@ -274,7 +274,12 @@ describe("<Glp1Tile>", () => {
             name: "Mounjaro",
             genericName: "tirzepatide",
             medicationId: "med-1",
-            currentDose: { value: 7.5, unit: "mg", since: "2026-04-01", weeksOnDose: 6 },
+            currentDose: {
+              value: 7.5,
+              unit: "mg",
+              since: "2026-04-01",
+              weeksOnDose: 6,
+            },
             doseHistory: [],
             lastInjection: { date: "2026-05-10", site: null, weeksAgo: 0 },
             nextInjection: { date: "2026-05-17", daysAway: 3 },

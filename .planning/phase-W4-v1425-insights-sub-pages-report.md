@@ -98,6 +98,7 @@ is out of W4 scope.
 ## Manual verification (not run locally)
 
 Manual smoke notes to verify after deploy:
+
 - `/insights` mother page renders (Hero + Briefing + Trends + Advisor +
   Coach drawer).
 - Each of `/insights/{blutdruck,gewicht,puls,stimmung,medikamente,bmi,schlaf}`

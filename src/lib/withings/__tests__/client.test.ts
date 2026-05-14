@@ -227,7 +227,9 @@ describe("fetchMeasurements — temperature (meastype 12)", () => {
 
   it("rounds to two decimals (Withings sometimes ships fractional exponents)", async () => {
     // 36.825 → stored as 36.83 once `parseFloat(value.toFixed(2))` runs.
-    installFetchMock(fakeGetmeasPayload([{ type: 12, value: 36825, unit: -3 }]));
+    installFetchMock(
+      fakeGetmeasPayload([{ type: 12, value: 36825, unit: -3 }]),
+    );
     const out = await fetchMeasurements("token");
     expect(out[0].value).toBe(36.83);
   });
@@ -253,7 +255,9 @@ describe("fetchMeasurements — body composition expansion", () => {
 
   it("decodes a Body+ muscle-mass reading into MUSCLE_MASS kg", async () => {
     // 58.7 kg of muscle. value=58700, unit=-3.
-    installFetchMock(fakeGetmeasPayload([{ type: 76, value: 58700, unit: -3 }]));
+    installFetchMock(
+      fakeGetmeasPayload([{ type: 76, value: 58700, unit: -3 }]),
+    );
     const out = await fetchMeasurements("token");
     expect(out).toHaveLength(1);
     expect(out[0]).toMatchObject({ type: "MUSCLE_MASS", value: 58.7 });

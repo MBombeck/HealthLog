@@ -164,7 +164,10 @@ export async function refreshAccessToken(
 // Withings measure type mapping. The single source of truth is
 // `src/lib/withings/mapping.md` — keep both in sync when adding entries.
 // https://developer.withings.com/api-reference#tag/measure/operation/measure-getmeas
-export const MEASURE_TYPE_MAP: Record<number, { type: string; factor?: number }> = {
+export const MEASURE_TYPE_MAP: Record<
+  number,
+  { type: string; factor?: number }
+> = {
   1: { type: "WEIGHT" }, // Weight (kg)
   9: { type: "BLOOD_PRESSURE_DIA" }, // Diastolic BP
   10: { type: "BLOOD_PRESSURE_SYS" }, // Systolic BP

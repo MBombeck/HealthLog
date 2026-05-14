@@ -31,17 +31,17 @@ problem Marc flagged), and replaced them with a calmer page:
 
 ## Per-phase commit SHAs
 
-| Phase | SHA | Subject |
-|------:|-----|---------|
-| 1 | `86a52da` | refactor(targets): remove v1.4.22 per-card sparkline + delta caption |
-| 2 | `f3c9e2d` | feat(targets-api): add daysInRange7d + lastMetGoalAt + streakDays + pageSummary |
-| 3 | `97583cf` | refactor(targets): extract TargetCard + RangeBar + ConsistencyStrip + TargetCoachButton |
-| 4 | `96c5e79` | feat(targets): page-level summary header |
-| 5 | `f2b9f84` | feat(targets): card layout with status pill + consistency + coach handoff |
-| 6 | `9acee2b` | feat(targets): MOOD_STABILITY headline switches from σ to verbal label |
-| 7 | `f223b4f` | feat(targets): mobile-first responsive grid + card reflow |
-| 8 | `ec4fb98` | feat(targets): mount CoachDrawer on /targets with per-card scope prefill |
-| 9 | `8e4a808` | i18n(targets): add EN + DE strings for redesigned card primitives |
+| Phase | SHA       | Subject                                                                                 |
+| ----: | --------- | --------------------------------------------------------------------------------------- |
+|     1 | `86a52da` | refactor(targets): remove v1.4.22 per-card sparkline + delta caption                    |
+|     2 | `f3c9e2d` | feat(targets-api): add daysInRange7d + lastMetGoalAt + streakDays + pageSummary         |
+|     3 | `97583cf` | refactor(targets): extract TargetCard + RangeBar + ConsistencyStrip + TargetCoachButton |
+|     4 | `96c5e79` | feat(targets): page-level summary header                                                |
+|     5 | `f2b9f84` | feat(targets): card layout with status pill + consistency + coach handoff               |
+|     6 | `9acee2b` | feat(targets): MOOD_STABILITY headline switches from σ to verbal label                  |
+|     7 | `f223b4f` | feat(targets): mobile-first responsive grid + card reflow                               |
+|     8 | `ec4fb98` | feat(targets): mount CoachDrawer on /targets with per-card scope prefill                |
+|     9 | `8e4a808` | i18n(targets): add EN + DE strings for redesigned card primitives                       |
 
 All commits include neither `Co-Authored-By: Claude` nor any other
 co-author trailer (per Marc directive 2026-05-14).
@@ -133,9 +133,9 @@ co-author trailer (per Marc directive 2026-05-14).
    are correctly composed. The redesigned status pill uses a
    raw `<span>` rather than `<Badge variant=…>` because the
    v1.4.22 inline-style colour hack (`backgroundColor:
-   '#xxxxxx20'`) is the wrong tool for the new ring + bg
+'#xxxxxx20'`) is the wrong tool for the new ring + bg
    composition; the design-token approach (`bg-[var(...)]/12
-   ring-1 ring-[var(...)]/30`) reads as native shadcn
+ring-1 ring-[var(...)]/30`) reads as native shadcn
    styling. Card composition unchanged (CardHeader +
    CardContent + flex-col h-full pattern).
 
@@ -155,6 +155,7 @@ Reviewer verification path:
    `aiProviderChain` AND no admin fallback applies.
 
 2. **Client query** — `src/app/targets/page.tsx`:
+
    ```ts
    const { data: chainStatus } = useQuery({
      queryKey: ["insights", "provider-chain"],
@@ -167,6 +168,7 @@ Reviewer verification path:
    });
    const aiEnabled = chainStatus?.activeProvider != null;
    ```
+
    The query key is shared with Settings → AI section so the
    cache is warm.
 
@@ -190,22 +192,22 @@ Reviewer verification path:
 
 ## Verification
 
-| Command | Result |
-|---------|--------|
-| `pnpm typecheck` | clean (exit 0) |
-| `pnpm lint` | clean (exit 0) |
-| `pnpm test` | 270 files, 2325 tests, 0 failures |
+| Command             | Result                                                                                                                               |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm typecheck`    | clean (exit 0)                                                                                                                       |
+| `pnpm lint`         | clean (exit 0)                                                                                                                       |
+| `pnpm test`         | 270 files, 2325 tests, 0 failures                                                                                                    |
 | `pnpm format:check` | clean for all W3e-touched files; pre-existing warnings in `.planning/*.md` and `docs/audit/v1423-summary.md` are NOT from this phase |
 
 Manual viewport audit (verified by Tailwind class inspection +
 the `targets-responsive.test.tsx` suite):
 
 | Width | Cards/row | Card footer reflow | Coach CTA width |
-|------:|----------:|-------------------|-----------------|
-| 375  | 1 | stacked | full-width |
-| 640  | 2 | horizontal | auto |
-| 1024 | 3 | horizontal | auto |
-| 1440 | 3 | horizontal | auto |
+| ----: | --------: | ------------------ | --------------- |
+|   375 |         1 | stacked            | full-width      |
+|   640 |         2 | horizontal         | auto            |
+|  1024 |         3 | horizontal         | auto            |
+|  1440 |         3 | horizontal         | auto            |
 
 Playwright sweep deferred to a follow-up commit (the playwright-skill
 needs a running dev server which this agent does not have

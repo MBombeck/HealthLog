@@ -267,7 +267,8 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
                 <Tooltip
                   cursor={{ fill: "transparent" }}
                   content={({ active, payload, label }) => {
-                    if (!active || !payload || payload.length === 0) return null;
+                    if (!active || !payload || payload.length === 0)
+                      return null;
                     const totalNight = payload.reduce(
                       (sum, entry) =>
                         sum +

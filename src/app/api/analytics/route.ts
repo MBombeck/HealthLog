@@ -321,7 +321,8 @@ async function computeSleepStageBreakdown(
     const dayKey = userDayKey(row.measuredAt, userTz);
     dayKeys.add(dayKey);
     const nightStages = perNightMap.get(dayKey) ?? {};
-    nightStages[row.sleepStage] = (nightStages[row.sleepStage] ?? 0) + row.value;
+    nightStages[row.sleepStage] =
+      (nightStages[row.sleepStage] ?? 0) + row.value;
     perNightMap.set(dayKey, nightStages);
   }
 

@@ -11,27 +11,27 @@ Audit + scoring of the full surface lives in
 
 ## Ingested today (v1.4.25)
 
-| meastype | Withings name | DB enum | DB unit | Source devices |
-|---|---|---|---|---|
-| 1 | Weight | `WEIGHT` | kg | every Body / Body+ / Body Cardio / Body Comp / Body Scan |
-| 5 | Fat Free Mass | `FAT_FREE_MASS` | kg | Body+ / Body Cardio / Body Comp / Body Scan |
-| 6 | Fat Ratio | `BODY_FAT` | % | Body+ family |
-| 8 | Fat Mass Weight | `FAT_MASS` | kg | Body+ / Body Cardio / Body Comp / Body Scan |
-| 9 | Diastolic BP | `BLOOD_PRESSURE_DIA` | mmHg | BPM Connect / Core / Vision |
-| 10 | Systolic BP | `BLOOD_PRESSURE_SYS` | mmHg | BPM Connect / Core / Vision |
-| 11 | Heart Pulse | `PULSE` | bpm | BPM cuffs + scales (standing HR) |
-| 12 | Temperature (legacy Thermo) | `BODY_TEMPERATURE` | celsius | first-gen Thermo (WBT01) |
-| 35 | SpO2 (alt code) | `OXYGEN_SATURATION` | % | older firmware reports 35 instead of 54 |
-| 54 | SpO2 | `OXYGEN_SATURATION` | % | ScanWatch / BPM Vision |
-| 71 | Body Temperature (core) | `BODY_TEMPERATURE` | celsius | current-gen Thermo |
-| 73 | Skin Temperature | `SKIN_TEMPERATURE` | celsius | ScanWatch dermal sensor. Distinct from `BODY_TEMPERATURE` — surface temps run ~32 °C, core ~37 °C; sharing the bucket would corrupt analytics. |
-| 76 | Muscle Mass | `MUSCLE_MASS` | kg | Body+ / Body Cardio / Body Comp / Body Scan |
-| 77 | Hydration / Water Mass | `TOTAL_BODY_WATER` | kg | Body Comp / Body Scan |
-| 88 | Bone Mass | `BONE_MASS` | kg | Body Comp / Body Scan |
-| 91 | Pulse Wave Velocity | `PULSE_WAVE_VELOCITY` | m/s | Body Cardio / Body Scan exclusive |
-| 123 | VO2 max | `VO2_MAX` | mL/(kg·min) | ScanWatch family |
-| 155 | Vascular Age | `VASCULAR_AGE` | years | Body Scan; composite of PWV + chronological age |
-| 170 | Visceral Fat | `VISCERAL_FAT` | rating | Body Comp / Body Scan; Withings' 1–12 scale (not a percent) |
+| meastype | Withings name               | DB enum               | DB unit     | Source devices                                                                                                                                 |
+| -------- | --------------------------- | --------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1        | Weight                      | `WEIGHT`              | kg          | every Body / Body+ / Body Cardio / Body Comp / Body Scan                                                                                       |
+| 5        | Fat Free Mass               | `FAT_FREE_MASS`       | kg          | Body+ / Body Cardio / Body Comp / Body Scan                                                                                                    |
+| 6        | Fat Ratio                   | `BODY_FAT`            | %           | Body+ family                                                                                                                                   |
+| 8        | Fat Mass Weight             | `FAT_MASS`            | kg          | Body+ / Body Cardio / Body Comp / Body Scan                                                                                                    |
+| 9        | Diastolic BP                | `BLOOD_PRESSURE_DIA`  | mmHg        | BPM Connect / Core / Vision                                                                                                                    |
+| 10       | Systolic BP                 | `BLOOD_PRESSURE_SYS`  | mmHg        | BPM Connect / Core / Vision                                                                                                                    |
+| 11       | Heart Pulse                 | `PULSE`               | bpm         | BPM cuffs + scales (standing HR)                                                                                                               |
+| 12       | Temperature (legacy Thermo) | `BODY_TEMPERATURE`    | celsius     | first-gen Thermo (WBT01)                                                                                                                       |
+| 35       | SpO2 (alt code)             | `OXYGEN_SATURATION`   | %           | older firmware reports 35 instead of 54                                                                                                        |
+| 54       | SpO2                        | `OXYGEN_SATURATION`   | %           | ScanWatch / BPM Vision                                                                                                                         |
+| 71       | Body Temperature (core)     | `BODY_TEMPERATURE`    | celsius     | current-gen Thermo                                                                                                                             |
+| 73       | Skin Temperature            | `SKIN_TEMPERATURE`    | celsius     | ScanWatch dermal sensor. Distinct from `BODY_TEMPERATURE` — surface temps run ~32 °C, core ~37 °C; sharing the bucket would corrupt analytics. |
+| 76       | Muscle Mass                 | `MUSCLE_MASS`         | kg          | Body+ / Body Cardio / Body Comp / Body Scan                                                                                                    |
+| 77       | Hydration / Water Mass      | `TOTAL_BODY_WATER`    | kg          | Body Comp / Body Scan                                                                                                                          |
+| 88       | Bone Mass                   | `BONE_MASS`           | kg          | Body Comp / Body Scan                                                                                                                          |
+| 91       | Pulse Wave Velocity         | `PULSE_WAVE_VELOCITY` | m/s         | Body Cardio / Body Scan exclusive                                                                                                              |
+| 123      | VO2 max                     | `VO2_MAX`             | mL/(kg·min) | ScanWatch family                                                                                                                               |
+| 155      | Vascular Age                | `VASCULAR_AGE`        | years       | Body Scan; composite of PWV + chronological age                                                                                                |
+| 170      | Visceral Fat                | `VISCERAL_FAT`        | rating      | Body Comp / Body Scan; Withings' 1–12 scale (not a percent)                                                                                    |
 
 ### Unit handling
 

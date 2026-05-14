@@ -1,9 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Cpu, Fingerprint, Globe, KeyRound } from "lucide-react";
-import {
-  iconForAuthProvider,
-  providerForAction,
-} from "../_shared";
+import { iconForAuthProvider, providerForAction } from "../_shared";
 
 /**
  * v1.4.25 W8b — Provider column for the admin Login-Übersicht.

@@ -23,8 +23,16 @@ describe("pickCanonicalSourceRows — cumulative-metric picker", () => {
     // v1.4.25 reality: only WITHINGS rows exist; the picker is a
     // pass-through and the daily total matches the pre-W5e behaviour.
     const rows = [
-      { measuredAt: new Date("2026-05-12T08:00:00Z"), source: "WITHINGS" as const, value: 4000 },
-      { measuredAt: new Date("2026-05-12T20:00:00Z"), source: "WITHINGS" as const, value: 2000 },
+      {
+        measuredAt: new Date("2026-05-12T08:00:00Z"),
+        source: "WITHINGS" as const,
+        value: 4000,
+      },
+      {
+        measuredAt: new Date("2026-05-12T20:00:00Z"),
+        source: "WITHINGS" as const,
+        value: 2000,
+      },
     ];
     const out = pickCanonicalSourceRows(rows, "steps", null, isoDayKey);
     expect(out.canonicalRows).toHaveLength(2);
@@ -37,9 +45,21 @@ describe("pickCanonicalSourceRows — cumulative-metric picker", () => {
     const rows = [
       // Same day, both sources reported — naïvely summing would
       // double-count (8500 instead of 5500 or 5000).
-      { measuredAt: new Date("2026-05-12T09:00:00Z"), source: "WITHINGS" as const, value: 3000 },
-      { measuredAt: new Date("2026-05-12T18:00:00Z"), source: "WITHINGS" as const, value: 2000 },
-      { measuredAt: new Date("2026-05-12T09:00:00Z"), source: "APPLE_HEALTH" as const, value: 5500 },
+      {
+        measuredAt: new Date("2026-05-12T09:00:00Z"),
+        source: "WITHINGS" as const,
+        value: 3000,
+      },
+      {
+        measuredAt: new Date("2026-05-12T18:00:00Z"),
+        source: "WITHINGS" as const,
+        value: 2000,
+      },
+      {
+        measuredAt: new Date("2026-05-12T09:00:00Z"),
+        source: "APPLE_HEALTH" as const,
+        value: 5500,
+      },
     ];
     const out = pickCanonicalSourceRows(rows, "steps", null, isoDayKey);
     expect(out.canonicalRows).toHaveLength(1);
@@ -50,14 +70,31 @@ describe("pickCanonicalSourceRows — cumulative-metric picker", () => {
 
   it("respects a user override (MANUAL > WITHINGS > APPLE_HEALTH for weight)", () => {
     const rows = [
-      { measuredAt: new Date("2026-05-12T07:00:00Z"), source: "WITHINGS" as const, value: 82.4 },
-      { measuredAt: new Date("2026-05-12T07:30:00Z"), source: "APPLE_HEALTH" as const, value: 82.3 },
-      { measuredAt: new Date("2026-05-12T08:00:00Z"), source: "MANUAL" as const, value: 82.0 },
+      {
+        measuredAt: new Date("2026-05-12T07:00:00Z"),
+        source: "WITHINGS" as const,
+        value: 82.4,
+      },
+      {
+        measuredAt: new Date("2026-05-12T07:30:00Z"),
+        source: "APPLE_HEALTH" as const,
+        value: 82.3,
+      },
+      {
+        measuredAt: new Date("2026-05-12T08:00:00Z"),
+        source: "MANUAL" as const,
+        value: 82.0,
+      },
     ];
     const userPriority = {
       weight: ["MANUAL", "WITHINGS", "APPLE_HEALTH"],
     };
-    const out = pickCanonicalSourceRows(rows, "weight", userPriority, isoDayKey);
+    const out = pickCanonicalSourceRows(
+      rows,
+      "weight",
+      userPriority,
+      isoDayKey,
+    );
     expect(out.canonicalRows).toHaveLength(1);
     expect(out.canonicalRows[0].source).toBe("MANUAL");
     expect(out.canonicalRows[0].value).toBe(82.0);
@@ -66,10 +103,22 @@ describe("pickCanonicalSourceRows — cumulative-metric picker", () => {
   it("picks per-day independently — different sources on different days", () => {
     const rows = [
       // 2026-05-12 — only Withings reported.
-      { measuredAt: new Date("2026-05-12T09:00:00Z"), source: "WITHINGS" as const, value: 5500 },
+      {
+        measuredAt: new Date("2026-05-12T09:00:00Z"),
+        source: "WITHINGS" as const,
+        value: 5500,
+      },
       // 2026-05-13 — both reported.
-      { measuredAt: new Date("2026-05-13T09:00:00Z"), source: "WITHINGS" as const, value: 3000 },
-      { measuredAt: new Date("2026-05-13T09:00:00Z"), source: "APPLE_HEALTH" as const, value: 4800 },
+      {
+        measuredAt: new Date("2026-05-13T09:00:00Z"),
+        source: "WITHINGS" as const,
+        value: 3000,
+      },
+      {
+        measuredAt: new Date("2026-05-13T09:00:00Z"),
+        source: "APPLE_HEALTH" as const,
+        value: 4800,
+      },
     ];
     const out = pickCanonicalSourceRows(rows, "steps", null, isoDayKey);
     expect(out.canonicalRows).toHaveLength(2);
@@ -84,7 +133,11 @@ describe("pickCanonicalSourceRows — cumulative-metric picker", () => {
     // fallback, every IMPORT row would silently drop from the
     // aggregation and the daily total would read zero.
     const rows = [
-      { measuredAt: new Date("2026-05-12T09:00:00Z"), source: "IMPORT" as const, value: 6000 },
+      {
+        measuredAt: new Date("2026-05-12T09:00:00Z"),
+        source: "IMPORT" as const,
+        value: 6000,
+      },
     ];
     const out = pickCanonicalSourceRows(rows, "steps", null, isoDayKey);
     expect(out.canonicalRows).toHaveLength(1);
@@ -93,8 +146,16 @@ describe("pickCanonicalSourceRows — cumulative-metric picker", () => {
 
   it("handles a malformed priority Json blob by falling back to defaults", () => {
     const rows = [
-      { measuredAt: new Date("2026-05-12T09:00:00Z"), source: "WITHINGS" as const, value: 3000 },
-      { measuredAt: new Date("2026-05-12T09:00:00Z"), source: "APPLE_HEALTH" as const, value: 5500 },
+      {
+        measuredAt: new Date("2026-05-12T09:00:00Z"),
+        source: "WITHINGS" as const,
+        value: 3000,
+      },
+      {
+        measuredAt: new Date("2026-05-12T09:00:00Z"),
+        source: "APPLE_HEALTH" as const,
+        value: 5500,
+      },
     ];
     // Garbage payload — `parseSourcePriority` returns defaults.
     const out = pickCanonicalSourceRows(rows, "steps", "not-json", isoDayKey);

@@ -5,19 +5,19 @@ Status: shipped on `develop`. Not pushed. Not tagged. No
 
 ## Per-phase commit SHAs
 
-| Phase | SHA       | Summary                                             |
-| ----- | --------- | --------------------------------------------------- |
+| Phase | SHA       | Summary                                               |
+| ----- | --------- | ----------------------------------------------------- |
 | 1     | `7a27390` | Schema additions (migration `0043_per_user_timezone`) |
-| 2     | `9e551b7` | Resolver helper + 29-case unit test                |
-| 3.1   | `96076db` | CSV/JSON export — user-tz offset                    |
-| 3.2   | `3c60852` | `makeFormatters` takes user-tz override            |
-| 3.3   | `ce6d6be` | Doctor-report PDF timestamps                       |
-| 3.4   | `beb61b7` | OpenAPI doc — date-time contract paragraph         |
+| 2     | `9e551b7` | Resolver helper + 29-case unit test                   |
+| 3.1   | `96076db` | CSV/JSON export — user-tz offset                      |
+| 3.2   | `3c60852` | `makeFormatters` takes user-tz override               |
+| 3.3   | `ce6d6be` | Doctor-report PDF timestamps                          |
+| 3.4   | `beb61b7` | OpenAPI doc — date-time contract paragraph            |
 | 4     | `65ce9fd` | Profile timezone picker + `PUT /api/auth/me/timezone` |
-| 5     | `26568c1` | Admin server-default timezone setting              |
-| 6     | `46f2cfb` | Signup captures browser-detected timezone          |
-| 7     | `78186ba` | Integration test — Pacific/Auckland end-to-end     |
-| 8a    | `a0dffbd` | Prettier on W7 files                                |
+| 5     | `26568c1` | Admin server-default timezone setting                 |
+| 6     | `46f2cfb` | Signup captures browser-detected timezone             |
+| 7     | `78186ba` | Integration test — Pacific/Auckland end-to-end        |
+| 8a    | `a0dffbd` | Prettier on W7 files                                  |
 
 ## Schema deltas
 
@@ -69,18 +69,18 @@ EDT, and Berlin-vs-Auckland midnight day-key roll-over.
 
 ## Surfaces touched (proposal §3 inventory)
 
-| #   | Surface              | Status                | File / Line                                                                                 |
-| --- | -------------------- | --------------------- | ------------------------------------------------------------------------------------------- |
-| 1   | CSV / JSON export    | DONE                  | `src/lib/export.ts:11–125` + `src/app/api/export/{route,measurements,medications,mood}/route.ts` |
-| 2   | Reminder cron        | ALREADY DONE          | `src/lib/jobs/reminder-worker.ts:308` was already user-tz-aware (`med.user.timezone`)       |
-| 3   | "Today" buckets      | DEFERRED (see notes)  | `src/app/api/dashboard/summary/route.ts:130`, `src/app/api/analytics/route.ts:330`          |
-| 4   | `MoodEntry.date`     | DOCUMENTED — leave    | `src/app/api/mood-entries/route.ts:20` — strategy (a) (read-time interpret) noted          |
-| 5   | Withings sync        | NOT APPLICABLE        | `src/lib/withings/sync.ts` stores `measuredAt` as UTC instants, no day-bucket at write     |
-| 6   | Chart x-axis labels  | DEFERRED              | `src/components/charts/health-chart.tsx:194` — needs userTz prop threading                 |
-| 7   | Notification body    | ALREADY DONE          | reminder-worker reads `userTz` from `med.user.timezone` at line 308 already                 |
-| 8   | PDF doctor report    | DONE                  | `src/lib/doctor-report-pdf-core.ts:21–32` + `src/app/api/doctor-report/pdf/route.ts:63–64` |
-| 9   | AI Coach context     | DEFERRED              | `src/lib/ai/coach/snapshot.ts:78–86` buckets by UTC; rewrite is structurally large         |
-| 10  | OpenAPI / iOS DTO    | DONE                  | `src/lib/openapi/registry.ts:37–43` description block + `docs/api/openapi.yaml` regenerated |
+| #   | Surface             | Status               | File / Line                                                                                      |
+| --- | ------------------- | -------------------- | ------------------------------------------------------------------------------------------------ |
+| 1   | CSV / JSON export   | DONE                 | `src/lib/export.ts:11–125` + `src/app/api/export/{route,measurements,medications,mood}/route.ts` |
+| 2   | Reminder cron       | ALREADY DONE         | `src/lib/jobs/reminder-worker.ts:308` was already user-tz-aware (`med.user.timezone`)            |
+| 3   | "Today" buckets     | DEFERRED (see notes) | `src/app/api/dashboard/summary/route.ts:130`, `src/app/api/analytics/route.ts:330`               |
+| 4   | `MoodEntry.date`    | DOCUMENTED — leave   | `src/app/api/mood-entries/route.ts:20` — strategy (a) (read-time interpret) noted                |
+| 5   | Withings sync       | NOT APPLICABLE       | `src/lib/withings/sync.ts` stores `measuredAt` as UTC instants, no day-bucket at write           |
+| 6   | Chart x-axis labels | DEFERRED             | `src/components/charts/health-chart.tsx:194` — needs userTz prop threading                       |
+| 7   | Notification body   | ALREADY DONE         | reminder-worker reads `userTz` from `med.user.timezone` at line 308 already                      |
+| 8   | PDF doctor report   | DONE                 | `src/lib/doctor-report-pdf-core.ts:21–32` + `src/app/api/doctor-report/pdf/route.ts:63–64`       |
+| 9   | AI Coach context    | DEFERRED             | `src/lib/ai/coach/snapshot.ts:78–86` buckets by UTC; rewrite is structurally large               |
+| 10  | OpenAPI / iOS DTO   | DONE                 | `src/lib/openapi/registry.ts:37–43` description block + `docs/api/openapi.yaml` regenerated      |
 
 ### Deferred surfaces — why and what next
 
@@ -128,14 +128,14 @@ acceptable forever.
 
 ## Test deltas
 
-| Suite                              | Before | After | Delta |
-| ---------------------------------- | ------ | ----- | ----- |
-| `src/lib/tz/__tests__/`            | n/a    | 29    | +29   |
-| `src/lib/__tests__/export.test.ts` | 9      | 14    | +5    |
-| `src/lib/__tests__/format-locale.test.ts` | 9      | 12    | +3    |
-| `src/app/api/auth/me/timezone/__tests__/` | n/a    | 6     | +6    |
-| `src/app/api/admin/settings/__tests__/`   | 16     | 19    | +3    |
-| Integration: `tests/integration/timezone-per-user.test.ts` | n/a | 7 | +7 |
+| Suite                                                      | Before | After | Delta |
+| ---------------------------------------------------------- | ------ | ----- | ----- |
+| `src/lib/tz/__tests__/`                                    | n/a    | 29    | +29   |
+| `src/lib/__tests__/export.test.ts`                         | 9      | 14    | +5    |
+| `src/lib/__tests__/format-locale.test.ts`                  | 9      | 12    | +3    |
+| `src/app/api/auth/me/timezone/__tests__/`                  | n/a    | 6     | +6    |
+| `src/app/api/admin/settings/__tests__/`                    | 16     | 19    | +3    |
+| Integration: `tests/integration/timezone-per-user.test.ts` | n/a    | 7     | +7    |
 
 **Unit total: +46.** Suite ran clean at 2292 / 2292.
 
@@ -147,14 +147,14 @@ invalid.
 
 ## CI gates
 
-| Gate                       | Result |
-| -------------------------- | ------ |
-| `pnpm typecheck`           | clean  |
-| `pnpm lint`                | clean  |
-| `pnpm test` (unit)         | 2292 passed |
-| `pnpm test:integration` (new file) | 7 passed |
-| `pnpm openapi:check`       | in sync |
-| `pnpm format:check` (W7 files) | clean (7 pre-existing planning-doc warnings from other agents remain) |
+| Gate                               | Result                                                                |
+| ---------------------------------- | --------------------------------------------------------------------- |
+| `pnpm typecheck`                   | clean                                                                 |
+| `pnpm lint`                        | clean                                                                 |
+| `pnpm test` (unit)                 | 2292 passed                                                           |
+| `pnpm test:integration` (new file) | 7 passed                                                              |
+| `pnpm openapi:check`               | in sync                                                               |
+| `pnpm format:check` (W7 files)     | clean (7 pre-existing planning-doc warnings from other agents remain) |
 
 ## Files touched
 
@@ -244,6 +244,7 @@ tests/integration/timezone-per-user.test.ts          # NEW (~280 LOC)
 ## How a Warsaw user (the issue #167 trigger) experiences the fix
 
 Before W7:
+
 ```
 $ curl -H "Cookie: …" /api/export/measurements
 type,value,unit,measuredAt,source,notes,glucoseContext
@@ -254,6 +255,7 @@ WEIGHT,80,kg,2026-05-15T09:00:00.000Z,MANUAL,,
 ```
 
 After W7 (Warsaw user with `User.timezone = "Europe/Warsaw"`):
+
 ```
 $ curl -H "Cookie: …" /api/export/measurements
 type,value,unit,measuredAt,source,notes,glucoseContext
