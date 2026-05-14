@@ -97,8 +97,11 @@ export function TherapyTimeline({ limit }: TherapyTimelineProps) {
       </CardHeader>
       <CardContent>
         <ol className="border-border/60 relative space-y-3 border-l pl-4">
-          {data.entries.map((entry, idx) => (
-            <li key={idx} className="relative">
+          {data.entries.map((entry) => (
+            <li
+              key={`${entry.kind}-${entry.date}-${entry.medicationName ?? ""}`}
+              className="relative"
+            >
               <span
                 className="border-background absolute top-1 -left-[18px] h-3 w-3 rounded-full border-2"
                 aria-hidden="true"
@@ -147,9 +150,9 @@ function renderEntryLine(
     case "dose-change": {
       const arrow =
         entry.doseDelta === "up" ? (
-          <ArrowUp className="inline h-3 w-3" />
+          <ArrowUp className="inline h-3 w-3" aria-hidden="true" />
         ) : entry.doseDelta === "down" ? (
-          <ArrowDown className="inline h-3 w-3" />
+          <ArrowDown className="inline h-3 w-3" aria-hidden="true" />
         ) : null;
       return (
         <span>
@@ -167,7 +170,10 @@ function renderEntryLine(
         : "";
       return (
         <span>
-          <Pill className="text-dracula-cyan mr-1 inline h-3 w-3" />
+          <Pill
+            className="text-dracula-cyan mr-1 inline h-3 w-3"
+            aria-hidden="true"
+          />
           <strong>{drug}</strong>
           {site}
         </span>

@@ -874,7 +874,7 @@
       "progressAria": "Health Score progress",
       "deltaVsLastWeek": "{delta} vs last week",
       "deltaUnavailable": "No history yet — check back next week.",
-      "componentBp": "BP",
+      "componentBp": "TA",
       "componentWeight": "Poids",
       "componentMood": "Humeur",
       "componentCompliance": "Meds",

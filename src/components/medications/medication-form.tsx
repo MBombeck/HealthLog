@@ -712,7 +712,7 @@ export function MedicationForm({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-8"
+            className="min-h-11"
             onClick={addSchedule}
           >
             <Plus className="mr-1 h-3.5 w-3.5" />
@@ -741,7 +741,7 @@ export function MedicationForm({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7"
+                    className="h-11 w-11"
                     aria-label={t("common.moreOptions")}
                   >
                     <MoreVertical className="h-4 w-4" />
@@ -778,7 +778,7 @@ export function MedicationForm({
                   pattern="[0-2][0-9]:[0-5][0-9]"
                   placeholder="08:00"
                   value={s.windowStart}
-                  className="h-8 text-xs md:text-xs"
+                  className="h-11 text-xs md:text-xs"
                   onChange={(e) =>
                     updateSchedule(i, "windowStart", e.target.value)
                   }
@@ -796,7 +796,7 @@ export function MedicationForm({
                   pattern="[0-2][0-9]:[0-5][0-9]"
                   placeholder="09:00"
                   value={s.windowEnd}
-                  className="h-8 text-xs md:text-xs"
+                  className="h-11 text-xs md:text-xs"
                   onChange={(e) =>
                     updateSchedule(i, "windowEnd", e.target.value)
                   }
@@ -810,7 +810,7 @@ export function MedicationForm({
                 </Label>
                 <Input
                   value={s.label}
-                  className="h-8 text-xs md:text-xs"
+                  className="h-11 text-xs md:text-xs"
                   onChange={(e) => updateSchedule(i, "label", e.target.value)}
                   placeholder={t("medications.labelPlaceholder")}
                   maxLength={50}
@@ -822,7 +822,7 @@ export function MedicationForm({
                 </Label>
                 <Input
                   value={s.dose}
-                  className="h-8 text-xs md:text-xs"
+                  className="h-11 text-xs md:text-xs"
                   onChange={(e) => updateSchedule(i, "dose", e.target.value)}
                   placeholder={dose || t("medications.defaultDose")}
                   maxLength={50}

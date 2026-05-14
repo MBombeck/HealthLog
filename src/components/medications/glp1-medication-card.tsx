@@ -11,7 +11,7 @@ import {
   Loader2,
   Pencil,
   SkipForward,
-  Smile,
+  Stethoscope,
   Syringe,
 } from "lucide-react";
 
@@ -426,7 +426,7 @@ export function Glp1MedicationCard({
             </div>
             {streak > 0 && (
               <div className="flex items-center gap-4 text-xs">
-                <span className="flex items-center gap-1 font-medium text-orange-400">
+                <span className="text-dracula-orange flex items-center gap-1 font-medium">
                   <Flame className="h-3.5 w-3.5" />
                   {streak} {t("medications.dayStreak")}
                 </span>
@@ -471,7 +471,7 @@ export function Glp1MedicationCard({
                 className="min-h-11"
                 onClick={() => onLogSideEffect(medication)}
               >
-                <Smile className="mr-1 h-4 w-4" />
+                <Stethoscope className="mr-1 h-4 w-4" />
                 {t("medications.glp1LogSideEffect")}
               </Button>
             )}
