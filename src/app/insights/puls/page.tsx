@@ -1,0 +1,114 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import dynamic from "next/dynamic";
+import { Heart } from "lucide-react";
+
+import { useAuth } from "@/hooks/use-auth";
+import { useTranslations } from "@/lib/i18n/context";
+import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
+import { InsightStatusCard } from "@/components/insights/insight-status-card";
+import { SubPageShell } from "@/components/insights/sub-page-shell";
+import {
+  getAgeFromDateOfBirth,
+  getPersonalizedPulseTarget,
+} from "@/lib/analytics/pulse-targets";
+
+/**
+ * v1.4.25 W4 — `/insights/puls`.
+ *
+ * Routed Pulse sub-page. Renders the pulse chart with the personalized
+ * Karvonen-derived target band plus the per-section AI assessment.
+ * Note: `chartKey="pulse"` so the chart-cog can override the
+ * comparison-overlay independently from the dashboard pulse card; the
+ * MeasurementType filter is `PULSE` (the same field used elsewhere
+ * in the codebase).
+ */
+const HealthChart = dynamic(
+  () =>
+    import("@/components/charts/health-chart").then((mod) => ({
+      default: mod.HealthChart,
+    })),
+  { ssr: false },
+);
+
+interface PulseStatusData {
+  hasProvider: boolean;
+  text: string | null;
+  cached: boolean;
+  updatedAt: string | null;
+}
+
+export default function InsightsPulsPage() {
+  const { isAuthenticated, user } = useAuth();
+  const { t, locale } = useTranslations();
+  const { compareBaseline } = useInsightsLayoutPrefs(isAuthenticated);
+
+  const { data: status, isLoading: isStatusLoading } = useQuery({
+    queryKey: ["insights", "pulse-status", locale],
+    queryFn: async () => {
+      const res = await fetch(`/api/insights/pulse-status?locale=${locale}`);
+      if (!res.ok) throw new Error("Failed");
+      const json = await res.json();
+      return json.data as PulseStatusData;
+    },
+    enabled: isAuthenticated,
+    staleTime: 60 * 1000,
+  });
+
+  const pulseAge = getAgeFromDateOfBirth(user?.dateOfBirth ?? null);
+  const pulseTarget = getPersonalizedPulseTarget(
+    pulseAge,
+    (user?.gender as "MALE" | "FEMALE" | null | undefined) ?? null,
+  );
+  const pulseBands = [
+    { min: 30, max: pulseTarget.orangeMin, color: "#ff5555", opacity: 0.16 },
+    {
+      min: pulseTarget.orangeMin,
+      max: pulseTarget.greenMin,
+      color: "#ffb86c",
+      opacity: 0.18,
+    },
+    {
+      min: pulseTarget.greenMin,
+      max: pulseTarget.greenMax,
+      color: "#50fa7b",
+      opacity: 0.2,
+    },
+    {
+      min: pulseTarget.greenMax,
+      max: pulseTarget.orangeMax,
+      color: "#ffb86c",
+      opacity: 0.18,
+    },
+    { min: pulseTarget.orangeMax, max: 220, color: "#ff5555", opacity: 0.16 },
+  ].filter((band) => band.max > band.min);
+
+  return (
+    <SubPageShell
+      title={t("insights.pulseSectionTitle")}
+      description={t("insights.subPage.pulsDescription")}
+    >
+      <HealthChart
+        chartKey="pulse"
+        types={["PULSE"]}
+        title={t("charts.pulse")}
+        colors={["#50fa7b"]}
+        unit="bpm"
+        valueBands={pulseBands}
+        compareBaseline={compareBaseline}
+        userTimezone={user?.timezone}
+      />
+
+      <InsightStatusCard
+        title={t("insights.assessmentTitle")}
+        icon={<Heart className="h-5 w-5" />}
+        text={status?.text ?? null}
+        hasProvider={status?.hasProvider ?? false}
+        cached={status?.cached ?? false}
+        updatedAt={status?.updatedAt ?? null}
+        loading={isStatusLoading}
+      />
+    </SubPageShell>
+  );
+}

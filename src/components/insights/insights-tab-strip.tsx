@@ -1,141 +1,104 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
+import {
+  INSIGHTS_OVERVIEW_PATH,
+  SUB_PAGE_SLUGS,
+  type SubPageSlug,
+} from "@/lib/insights/sub-page-metric";
 
 /**
- * v1.4.25 W3 — dedicated tab strip for `/insights`.
+ * v1.4.25 W4 — routed tab strip for `/insights`.
  *
- * Extracted from the inline `<InsightsSectionNav>` that lived inside
- * `src/app/insights/page.tsx` so the regenerate affordance can sit on
- * the same row as the metric pills. Up to v1.4.24 the regenerate
- * button lived inside the hero band's action row, which scrolled away
- * the moment the user started reading the per-metric cards. Marc's
- * directive (2026-05-14): the affordance has to stay reachable while
- * the user is deep in a section.
+ * Behaviour evolved from the v1.4.25 W3 scroll-anchor version: each pill
+ * is now a `<Link>` to a routed sub-page (`/insights/blutdruck` …),
+ * `usePathname()` decides the active pill, and the strip is mounted in
+ * `src/app/insights/layout.tsx` so it persists across navigation
+ * without re-rendering. The CoachDrawer is NOT mounted in this layout —
+ * the drawer lives in the mother page's body only (Marc directive
+ * 2026-05-11).
  *
- * Behaviour:
- *   - Six pills (BP / Weight / Pulse / Mood / Meds / BMI), each
- *     scroll-anchored to the matching `<section id="section-{slug}">`
- *     in the page. IntersectionObserver tracks which section is in
- *     the active band so the matching pill highlights.
- *   - Right slot: a 44×44 icon-only `<RefreshCw>` button. Clicking it
- *     fires the `onRegenerate` handler the page hands down and pops a
- *     sonner toast with `t("insights.regenerateSuccess")` once the
- *     advisor query confirms. While the regenerate is in-flight the
- *     icon swaps to a spinner and the button is disabled.
+ * Pills:
+ *   - "Overview" (the mother page) is the first pill and matches when
+ *     `pathname === "/insights"` exactly.
+ *   - The seven metric slugs each map to their own sub-route.
  *
  * Accessibility:
- *   - `<nav aria-label>` mirrors the legacy nav's label so screen-reader
- *     landmark traversal stays familiar ("Skip to section").
- *   - Pill `aria-current="location"` flips with the scroll-anchor.
- *   - The regenerate button has `aria-label={t("insights.regenerateAnalysis")}`
- *     so the icon-only affordance is announced. Tooltip via `title`
- *     mirrors the aria-label for sighted users.
- *   - `prefers-reduced-motion` gates the smooth-scroll on pill clicks.
- *
- * Layout: sticky `top-0` strip with `backdrop-blur` and `bg-background/95`
- * — same surface treatment as the original `<InsightsSectionNav>` so
- * the visual rhythm of the page is unchanged.
+ *   - `<nav aria-label>` mirrors the legacy label.
+ *   - Active pill gets `aria-current="page"`.
+ *   - The regenerate button has an `aria-label` so the icon-only
+ *     affordance is announced. The button only renders when
+ *     `onRegenerate` is wired — sub-pages don't carry the regenerate
+ *     handler today (the mother page owns the advisor query and
+ *     forwards the trigger via the layout slot).
+ *   - `prefers-reduced-motion` honoured at the global level (no
+ *     scroll-into-view here — Next.js routing handles focus + scroll).
  */
 
 export interface InsightsTabStripProps {
   /**
-   * Handler the page passes from `useInsightsAdvisorQuery().regenerate`.
-   * When supplied, the right-side icon button is enabled; when omitted,
-   * the button hides so the strip stays clean on surfaces that don't
-   * own the advisor query (e.g. a future preview).
+   * Optional regenerate handler. Only the mother page passes this;
+   * sub-pages render the strip without the right-slot button.
+   * Wiring the strip in `layout.tsx` means we'd need a layout-level
+   * advisor query — for v1.4.25 we keep the strip stateless and the
+   * regenerate affordance on the mother page only.
    */
   onRegenerate?: () => void;
   /** Spinner state — disables the button and swaps the icon. */
   regenerating?: boolean;
 }
 
-const SECTION_IDS = [
-  "section-bp",
-  "section-weight",
-  "section-pulse",
-  "section-mood",
-  "section-meds",
-  "section-bmi",
-] as const;
+interface TabEntry {
+  /** Pathname this pill links to. */
+  href: string;
+  /** Translation key for the pill label. */
+  labelKey: string;
+}
 
-const SECTION_LABEL_KEYS: Record<(typeof SECTION_IDS)[number], string> = {
-  "section-bp": "insights.navBloodPressure",
-  "section-weight": "insights.navWeight",
-  "section-pulse": "insights.navPulse",
-  "section-mood": "insights.navMood",
-  "section-meds": "insights.navMedication",
-  "section-bmi": "insights.navBmi",
-};
+function buildTabs(): TabEntry[] {
+  const subPages: Record<SubPageSlug, string> = {
+    blutdruck: "insights.navBloodPressure",
+    gewicht: "insights.navWeight",
+    puls: "insights.navPulse",
+    stimmung: "insights.navMood",
+    medikamente: "insights.navMedication",
+    bmi: "insights.navBmi",
+    schlaf: "insights.navSleep",
+  };
+  return [
+    { href: INSIGHTS_OVERVIEW_PATH, labelKey: "insights.navOverview" },
+    ...SUB_PAGE_SLUGS.map((slug) => ({
+      href: `${INSIGHTS_OVERVIEW_PATH}/${slug}`,
+      labelKey: subPages[slug],
+    })),
+  ];
+}
 
 export function InsightsTabStrip({
   onRegenerate,
   regenerating = false,
 }: InsightsTabStripProps) {
   const { t } = useTranslations();
-  const [activeId, setActiveId] = useState<string>(SECTION_IDS[0]);
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  // Track which regenerate call we've already toasted so the success
-  // toast only fires on the rising edge (true → false). Without this
-  // the toast pops every render where `regenerating` is false.
+  const pathname = usePathname();
+  const tabs = buildTabs();
+
+  // Fire success toast on the falling edge of `regenerating`. Same
+  // rising-edge ref guard as the W3 implementation so the toast fires
+  // exactly once per regenerate cycle.
   const lastRegeneratingRef = useRef<boolean>(regenerating);
-
   useEffect(() => {
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        // v1.4.22 W5 reconcile (Code-MED-4) — pick the entry with the
-        // highest intersectionRatio in the band rather than the
-        // observer-supplied last entry. Three sections briefly
-        // visible during a fast scroll otherwise made the active
-        // pill jump to whichever one came last in the batch.
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        const top = visible[0];
-        if (top) {
-          setActiveId((current) =>
-            current === top.target.id ? current : top.target.id,
-          );
-        }
-      },
-      { rootMargin: "-30% 0px -60% 0px" },
-    );
-
-    for (const id of SECTION_IDS) {
-      const el = document.getElementById(id);
-      if (el) observerRef.current.observe(el);
-    }
-
-    return () => observerRef.current?.disconnect();
-  }, []);
-
-  useEffect(() => {
-    // Fire the success toast on the falling edge of `regenerating`
-    // (rising-edge guard via the ref). Skips the toast on first
-    // mount when the parent passes a "false" regenerating value.
     if (lastRegeneratingRef.current && !regenerating) {
       toast.success(t("insights.regenerateSuccess"));
     }
     lastRegeneratingRef.current = regenerating;
   }, [regenerating, t]);
-
-  function scrollTo(id: string) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    // v1.4.22 W5 reconcile (Design-H1) — gate smooth scrolling behind
-    // `prefers-reduced-motion`; honour the user's OS-level pref.
-    const prefersReducedMotion =
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    el.scrollIntoView({
-      behavior: prefersReducedMotion ? "auto" : "smooth",
-    });
-  }
 
   const regenerateLabel = t("insights.regenerateAnalysis");
 
@@ -150,13 +113,20 @@ export function InsightsTabStrip({
     >
       <div className="flex items-center gap-2">
         <div className="flex min-w-0 flex-1 [scrollbar-width:none] gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
-          {SECTION_IDS.map((id) => {
-            const isActive = activeId === id;
+          {tabs.map((tab) => {
+            // The overview pill matches the mother page exactly; the
+            // sub-page pills match a prefix so future nested routes
+            // (e.g. `/insights/schlaf/2026-05-11`) still highlight the
+            // parent tab.
+            const isActive =
+              tab.href === INSIGHTS_OVERVIEW_PATH
+                ? pathname === INSIGHTS_OVERVIEW_PATH
+                : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
             return (
-              <button
-                key={id}
-                onClick={() => scrollTo(id)}
-                aria-current={isActive ? "location" : undefined}
+              <Link
+                key={tab.href}
+                href={tab.href}
+                aria-current={isActive ? "page" : undefined}
                 data-slot="insights-tab-strip-pill"
                 data-active={isActive ? "true" : undefined}
                 className={cn(
@@ -167,8 +137,8 @@ export function InsightsTabStrip({
                     : "border-border text-muted-foreground hover:text-foreground",
                 )}
               >
-                {t(SECTION_LABEL_KEYS[id])}
-              </button>
+                {t(tab.labelKey)}
+              </Link>
             );
           })}
         </div>
