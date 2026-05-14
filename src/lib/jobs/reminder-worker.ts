@@ -33,6 +33,13 @@ import { cleanupExpiredIdempotencyKeys } from "@/lib/jobs/idempotency-cleanup";
 import { cleanupOldAuditLogs } from "@/lib/jobs/audit-log-cleanup";
 import { runHostMetricTick } from "@/lib/jobs/host-metric-sampler";
 import { aggregateRecommendationFeedback } from "@/lib/jobs/feedback-aggregator";
+import {
+  PR_DETECTION_QUEUE,
+  PR_DETECTION_CONCURRENCY,
+  PR_DETECTION_FALLBACK_CRON,
+  type PrDetectionPayload,
+} from "@/lib/jobs/pr-detection";
+import { detectPersonalRecordsForUser } from "@/lib/personal-records/pr-detection-worker";
 import { rotateLegacyMoodLogSecrets } from "@/lib/moodlog-secret";
 import { deleteMessage } from "@/lib/telegram";
 import { decrypt, encrypt } from "@/lib/crypto";
@@ -1125,6 +1132,45 @@ async function handleFeedbackAggregator(
   });
 }
 
+async function handlePrDetection(
+  jobs: Job<PrDetectionPayload | { userId?: undefined }>[],
+) {
+  for (const job of jobs) {
+    await withBackgroundEvent("job.pr_detection", async (evt) => {
+      const p = getWorkerPrisma();
+      // The cron-fired job carries an empty payload — iterate all
+      // users in that case. The push-suppression flag is irrelevant
+      // for the cron path (the dispatcher's per-user opt-in handles
+      // the loud/quiet decision once the row is written).
+      const payloadUserId = (job.data as PrDetectionPayload | undefined)?.userId;
+      const silent = (job.data as PrDetectionPayload | undefined)?.silent ?? false;
+      const userIds: string[] = payloadUserId
+        ? [payloadUserId]
+        : (await p.user.findMany({ select: { id: true } })).map((u) => u.id);
+
+      let insertedTotal = 0;
+      let tiesTotal = 0;
+      for (const userId of userIds) {
+        try {
+          const result = await detectPersonalRecordsForUser(userId, {
+            silent,
+            prisma: p,
+          });
+          insertedTotal += result.inserted;
+          tiesTotal += result.ties;
+        } catch (err) {
+          evt.addWarning(`pr-detection failed for user ${userId}: ${err}`);
+        }
+      }
+      evt.addMeta("pr_detection_users", userIds.length);
+      evt.addMeta("pr_detection_inserted", insertedTotal);
+      evt.addMeta("pr_detection_ties", tiesTotal);
+      evt.addMeta("pr_detection_silent", silent);
+      evt.addMeta("pr_detection_mode", payloadUserId ? "ingest" : "cron");
+    });
+  }
+}
+
 async function handleOffhostBackup(jobs: Job<OffhostBackupPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.offhost_backup", async (evt) => {
@@ -1374,6 +1420,7 @@ export async function startReminderWorker() {
     OFFHOST_BACKUP_QUEUE,
     HOST_METRIC_QUEUE,
     FEEDBACK_AGGREGATOR_QUEUE,
+    PR_DETECTION_QUEUE,
   ];
 
   for (const q of allQueues) {
@@ -1400,6 +1447,12 @@ export async function startReminderWorker() {
     [OFFHOST_BACKUP_QUEUE, OFFHOST_BACKUP_CRON],
     [HOST_METRIC_QUEUE, HOST_METRIC_CRON],
     [FEEDBACK_AGGREGATOR_QUEUE, FEEDBACK_AGGREGATOR_CRON],
+    // Fallback rescan every 30 minutes — protects against ingest paths
+    // that ship measurements without enqueueing a per-user job. The
+    // cron payload deliberately omits a `userId` so the handler iterates
+    // every user; per-user push-suppression cannot apply on the cron
+    // path (the silent flag is set by the ingest hooks).
+    [PR_DETECTION_QUEUE, PR_DETECTION_FALLBACK_CRON],
   ];
 
   for (const [name, cron] of schedules) {
@@ -1501,6 +1554,11 @@ export async function startReminderWorker() {
     FEEDBACK_AGGREGATOR_QUEUE,
     { localConcurrency: 1 },
     handleFeedbackAggregator,
+  );
+  await boss.work<PrDetectionPayload>(
+    PR_DETECTION_QUEUE,
+    { localConcurrency: PR_DETECTION_CONCURRENCY },
+    handlePrDetection,
   );
 
   return boss;
