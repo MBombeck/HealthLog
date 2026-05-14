@@ -19,6 +19,7 @@ import { auditLog } from "@/lib/auth/audit";
 import { apiError, getClientIp } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { toCSV, formatMoodEntriesForExport } from "@/lib/export";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { NextRequest, NextResponse } from "next/server";
 
 export const GET = apiHandler(async (request: NextRequest) => {
@@ -50,12 +51,15 @@ export const GET = apiHandler(async (request: NextRequest) => {
     if (until) where.moodLoggedAt.lte = until;
   }
 
-  const entries = await prisma.moodEntry.findMany({
-    where,
-    orderBy: { moodLoggedAt: "desc" },
-  });
+  const [entries, userTz] = await Promise.all([
+    prisma.moodEntry.findMany({
+      where,
+      orderBy: { moodLoggedAt: "desc" },
+    }),
+    resolveUserTimezone(user.id),
+  ]);
 
-  const csv = toCSV(formatMoodEntriesForExport(entries));
+  const csv = toCSV(formatMoodEntriesForExport(entries, userTz));
 
   await auditLog("user.export.mood", {
     userId: user.id,

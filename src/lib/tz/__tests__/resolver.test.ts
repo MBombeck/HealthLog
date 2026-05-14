@@ -144,13 +144,15 @@ describe("resolveUserTimezone", () => {
   });
 
   it("caches per-userId so two users do not collide", async () => {
-    vi.mocked(prisma.user.findUnique).mockImplementation(async (args) => {
-      const where = (args as { where: { id: string } }).where;
-      if (where.id === "user-1") {
-        return { timezone: "Pacific/Auckland" } as never;
-      }
-      return { timezone: "America/New_York" } as never;
-    });
+    // Two distinct findUnique calls; we use mockResolvedValueOnce
+    // queued ahead of time. The cache hit on the third call
+    // bypasses the mock altogether.
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+      timezone: "Pacific/Auckland",
+    } as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+      timezone: "America/New_York",
+    } as never);
 
     expect(await resolveUserTimezone("user-1")).toBe("Pacific/Auckland");
     expect(await resolveUserTimezone("user-2")).toBe("America/New_York");

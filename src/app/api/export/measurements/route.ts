@@ -23,6 +23,7 @@ import { auditLog } from "@/lib/auth/audit";
 import { apiError, getClientIp } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { toCSV, formatMeasurementsForExport } from "@/lib/export";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { NextRequest, NextResponse } from "next/server";
 
 export const GET = apiHandler(async (request: NextRequest) => {
@@ -37,12 +38,15 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const { since, until } = parseRange(request.url);
   const where = buildWhere(user.id, { since, until });
 
-  const measurements = await prisma.measurement.findMany({
-    where,
-    orderBy: { measuredAt: "desc" },
-  });
+  const [measurements, userTz] = await Promise.all([
+    prisma.measurement.findMany({
+      where,
+      orderBy: { measuredAt: "desc" },
+    }),
+    resolveUserTimezone(user.id),
+  ]);
 
-  const csv = toCSV(formatMeasurementsForExport(measurements));
+  const csv = toCSV(formatMeasurementsForExport(measurements, userTz));
 
   await auditLog("user.export.measurements", {
     userId: user.id,

@@ -1,6 +1,20 @@
 /**
  * Export utilities — CSV, JSON, and ZIP generation.
+ *
+ * v1.4.25 W7 — per-user timezone. Timestamps were emitted with
+ * `.toISOString()` (UTC `Z` suffix), which Excel / LibreOffice
+ * silently render in the viewer's local zone — issue #167. The
+ * helpers now accept a `userTz` argument and write
+ * `2026-05-11T11:05:00+02:00` instead, so the offset survives the
+ * round-trip and the on-screen value is unambiguous regardless of
+ * the spreadsheet's locale defaults.
+ *
+ * Backward compatibility: `userTz` is optional; when omitted the
+ * helpers fall back to `.toISOString()` so callers that don't yet
+ * thread a user context (admin tools, the backup-on-disk shape) keep
+ * the old contract. Production routes always pass `userTz`.
  */
+import { formatInUserTz } from "./tz/resolver";
 
 interface ExportableRecord {
   [key: string]: unknown;
@@ -32,8 +46,18 @@ export function toCSV(records: ExportableRecord[]): string {
   return lines.join("\n");
 }
 
+function formatTimestamp(date: Date, userTz?: string): string {
+  if (userTz) return formatInUserTz(date, userTz, "iso-with-offset");
+  return date.toISOString();
+}
+
 /**
  * Format measurements for export.
+ *
+ * `userTz` (optional) — when provided, `measuredAt` is emitted as
+ * ISO-8601 with the user's UTC offset (e.g. `+02:00` in Berlin in
+ * May) instead of the bare `Z` suffix. See module-level docstring
+ * for the rationale (issue #167).
  */
 export function formatMeasurementsForExport(
   measurements: Array<{
@@ -45,12 +69,13 @@ export function formatMeasurementsForExport(
     notes: string | null;
     glucoseContext?: string | null;
   }>,
+  userTz?: string,
 ): ExportableRecord[] {
   return measurements.map((m) => ({
     type: m.type,
     value: m.value,
     unit: m.unit,
-    measuredAt: m.measuredAt.toISOString(),
+    measuredAt: formatTimestamp(m.measuredAt, userTz),
     source: m.source,
     notes: m.notes ?? "",
     glucoseContext: m.glucoseContext ?? "",
@@ -88,6 +113,8 @@ export function formatMedicationsForExport(
 
 /**
  * Format intake events for export.
+ *
+ * `userTz` (optional) — see `formatMeasurementsForExport`.
  */
 export function formatIntakeEventsForExport(
   events: Array<{
@@ -97,11 +124,12 @@ export function formatIntakeEventsForExport(
     skipped: boolean;
     source: string;
   }>,
+  userTz?: string,
 ): ExportableRecord[] {
   return events.map((e) => ({
     medication: e.medication.name,
-    scheduledFor: e.scheduledFor.toISOString(),
-    takenAt: e.takenAt?.toISOString() ?? "",
+    scheduledFor: formatTimestamp(e.scheduledFor, userTz),
+    takenAt: e.takenAt ? formatTimestamp(e.takenAt, userTz) : "",
     skipped: e.skipped,
     source: e.source,
   }));
@@ -109,6 +137,15 @@ export function formatIntakeEventsForExport(
 
 /**
  * Format mood entries for export.
+ *
+ * `userTz` (optional) — see `formatMeasurementsForExport`. The
+ * `date` column is a Berlin-anchored `YYYY-MM-DD` string in the
+ * stored data (`MoodEntry.date`); the migration risk discussed in
+ * §6.3 of the timezone proposal applies to that column specifically.
+ * We do NOT rewrite the `date` column here — the read-side
+ * interpretation lives where the field is consumed, not in the
+ * export. Only `loggedAt` (the timestamptz) carries the user-tz
+ * offset.
  */
 export function formatMoodEntriesForExport(
   entries: Array<{
@@ -119,6 +156,7 @@ export function formatMoodEntriesForExport(
     source: string;
     moodLoggedAt: Date;
   }>,
+  userTz?: string,
 ): ExportableRecord[] {
   return entries.map((e) => ({
     date: e.date,
@@ -126,6 +164,6 @@ export function formatMoodEntriesForExport(
     score: e.score,
     tags: e.tags ?? "",
     source: e.source,
-    loggedAt: e.moodLoggedAt.toISOString(),
+    loggedAt: formatTimestamp(e.moodLoggedAt, userTz),
   }));
 }

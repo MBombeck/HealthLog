@@ -11,6 +11,7 @@ import {
   formatIntakeEventsForExport,
   formatMoodEntriesForExport,
 } from "@/lib/export";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -48,6 +49,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
 
   const userId = user.id;
+  const userTz = await resolveUserTimezone(userId);
 
   const data: Record<string, unknown> = {};
 
@@ -58,8 +60,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
     });
     data.measurements =
       format === "csv"
-        ? toCSV(formatMeasurementsForExport(measurements))
-        : formatMeasurementsForExport(measurements);
+        ? toCSV(formatMeasurementsForExport(measurements, userTz))
+        : formatMeasurementsForExport(measurements, userTz);
   }
 
   if (type === "medications" || type === "all") {
@@ -82,8 +84,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
     });
     data.intakeEvents =
       format === "csv"
-        ? toCSV(formatIntakeEventsForExport(events))
-        : formatIntakeEventsForExport(events);
+        ? toCSV(formatIntakeEventsForExport(events, userTz))
+        : formatIntakeEventsForExport(events, userTz);
   }
 
   if (type === "mood" || type === "all") {
@@ -93,8 +95,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
     });
     data.moodEntries =
       format === "csv"
-        ? toCSV(formatMoodEntriesForExport(moodEntries))
-        : formatMoodEntriesForExport(moodEntries);
+        ? toCSV(formatMoodEntriesForExport(moodEntries, userTz))
+        : formatMoodEntriesForExport(moodEntries, userTz);
   }
 
   await auditLog("export.download", {

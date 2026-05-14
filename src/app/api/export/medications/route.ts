@@ -24,6 +24,7 @@ import {
   formatMedicationsForExport,
   formatIntakeEventsForExport,
 } from "@/lib/export";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { NextRequest, NextResponse } from "next/server";
 
 export const GET = apiHandler(async (request: NextRequest) => {
@@ -48,23 +49,26 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // without a matching migration); a wildcard `include: { schedules: true }`
   // would 500 on the missing column. Pin the columns instead — the export
   // shape doesn't need every future field anyway.
-  const medications = await prisma.medication.findMany({
-    where: { userId: user.id },
-    select: {
-      name: true,
-      dose: true,
-      active: true,
-      schedules: {
-        select: {
-          windowStart: true,
-          windowEnd: true,
-          label: true,
-          dose: true,
+  const [medications, userTz] = await Promise.all([
+    prisma.medication.findMany({
+      where: { userId: user.id },
+      select: {
+        name: true,
+        dose: true,
+        active: true,
+        schedules: {
+          select: {
+            windowStart: true,
+            windowEnd: true,
+            label: true,
+            dose: true,
+          },
         },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+    }),
+    resolveUserTimezone(user.id),
+  ]);
 
   const sections: string[] = [
     "# Medications",
@@ -91,7 +95,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     });
     intakeCount = events.length;
     sections.push("# Intake history");
-    sections.push(toCSV(formatIntakeEventsForExport(events)));
+    sections.push(toCSV(formatIntakeEventsForExport(events, userTz)));
   }
 
   const body = sections.join("\n\n");
