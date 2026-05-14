@@ -181,10 +181,7 @@ export function WelcomeCarousel() {
               data-slide-index={idx}
               role="group"
               aria-roledescription="slide"
-              aria-label={t("onboarding.welcome.slideOf", {
-                current: idx + 1,
-                total: SLIDES.length,
-              })}
+              aria-labelledby={`onboarding-welcome-slide-${slide.id}-title`}
               className={cn(
                 "bg-card border-border flex w-full shrink-0 snap-start flex-col items-center gap-4",
                 "rounded-xl border p-6 text-center sm:p-8",
@@ -196,7 +193,10 @@ export function WelcomeCarousel() {
               >
                 <slide.Icon className="size-8" />
               </span>
-              <h2 className="text-lg font-semibold tracking-tight">
+              <h2
+                id={`onboarding-welcome-slide-${slide.id}-title`}
+                className="text-lg font-semibold tracking-tight"
+              >
                 {t(slide.titleKey)}
               </h2>
               <p className="text-muted-foreground text-sm leading-relaxed">
@@ -206,9 +206,11 @@ export function WelcomeCarousel() {
           ))}
         </div>
 
-        {/* Live region announces slide changes to AT users — matches the
-            tour's pattern (tour.tsx:374) so the focus contract is
-            consistent across the onboarding surface. */}
+        {/* Single live region announces slide changes to AT users —
+            slides themselves carry `aria-label="slide N of total"` so a
+            second sr-only mirror would double-announce on every move.
+            The carousel-level region wins because it's tied to the
+            chevron + dot pager via `aria-controls`. */}
         <p id={liveRegionId} aria-live="polite" className="sr-only">
           {t("onboarding.welcome.slideOf", {
             current: active + 1,
@@ -221,11 +223,12 @@ export function WelcomeCarousel() {
         <Button
           type="button"
           variant="ghost"
-          size="icon-sm"
+          size="icon"
           onClick={() => scrollToSlide(Math.max(0, active - 1))}
           disabled={active === 0}
           aria-label={t("onboarding.welcome.prevSlide")}
           aria-controls={liveRegionId}
+          className="min-h-11 min-w-11"
         >
           <ChevronLeft className="size-4" />
         </Button>
@@ -233,7 +236,7 @@ export function WelcomeCarousel() {
         <div
           role="tablist"
           aria-label={t("onboarding.welcome.carouselLabel")}
-          className="flex items-center gap-2"
+          className="flex items-center"
         >
           {SLIDES.map((slide, idx) => (
             <button
@@ -245,24 +248,32 @@ export function WelcomeCarousel() {
                 index: idx + 1,
               })}
               onClick={() => scrollToSlide(idx)}
-              className={cn(
-                "size-2.5 rounded-full transition-colors duration-150 ease-out motion-reduce:transition-none",
-                active === idx ? "bg-primary" : "bg-muted hover:bg-muted-foreground/30",
-              )}
-            />
+              className="inline-flex size-11 items-center justify-center"
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "size-2.5 rounded-full transition-colors duration-150 ease-out motion-reduce:transition-none",
+                  active === idx
+                    ? "bg-primary"
+                    : "bg-muted hover:bg-muted-foreground/30",
+                )}
+              />
+            </button>
           ))}
         </div>
 
         <Button
           type="button"
           variant="ghost"
-          size="icon-sm"
+          size="icon"
           onClick={() =>
             scrollToSlide(Math.min(SLIDES.length - 1, active + 1))
           }
           disabled={active === SLIDES.length - 1}
           aria-label={t("onboarding.welcome.nextSlide")}
           aria-controls={liveRegionId}
+          className="min-h-11 min-w-11"
         >
           <ChevronRight className="size-4" />
         </Button>
@@ -274,6 +285,7 @@ export function WelcomeCarousel() {
           size="lg"
           onClick={handleGetStarted}
           disabled={advancing}
+          className="min-h-11"
         >
           {t("onboarding.welcome.cta")}
         </Button>

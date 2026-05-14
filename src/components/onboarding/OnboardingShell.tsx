@@ -135,7 +135,7 @@ export async function OnboardingShell({
 
       <footer className="mt-8 flex items-center justify-between gap-2">
         {backHref ? (
-          <Button asChild variant="ghost" size="sm">
+          <Button asChild variant="ghost" className="min-h-11 min-w-11">
             <Link href={backHref}>{t("onboarding.shell.back")}</Link>
           </Button>
         ) : (
@@ -144,12 +144,12 @@ export async function OnboardingShell({
 
         <div className="flex items-center gap-2">
           {skipHref ? (
-            <Button asChild variant="ghost" size="sm">
+            <Button asChild variant="ghost" className="min-h-11 min-w-11">
               <Link href={skipHref}>{t("onboarding.shell.skip")}</Link>
             </Button>
           ) : null}
           {nextHref ? (
-            <Button asChild size="sm">
+            <Button asChild className="min-h-11 min-w-11">
               <Link href={nextHref}>{primaryLabel}</Link>
             </Button>
           ) : null}

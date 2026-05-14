@@ -197,16 +197,16 @@ export function BaselineForm() {
       </fieldset>
 
       <div className="flex items-center justify-between gap-2 pt-2">
-        <Button asChild variant="ghost" size="sm">
+        <Button asChild variant="ghost" className="min-h-11 min-w-11">
           <Link href="/onboarding/2">{t("onboarding.shell.back")}</Link>
         </Button>
         <div className="flex items-center gap-2">
           <Button
             type="button"
             variant="ghost"
-            size="sm"
             onClick={() => advance({ saveProfile: false })}
             disabled={saving}
+            className="min-h-11 min-w-11"
           >
             {t("onboarding.shell.skip")}
           </Button>
@@ -214,6 +214,7 @@ export function BaselineForm() {
             type="button"
             onClick={() => advance({ saveProfile: true })}
             disabled={saving}
+            className="min-h-11 min-w-11"
           >
             {saving ? <Loader2 className="size-4 animate-spin" /> : null}
             {t("onboarding.baseline.saveCta")}

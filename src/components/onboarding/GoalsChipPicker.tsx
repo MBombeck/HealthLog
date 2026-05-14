@@ -249,20 +249,25 @@ export function GoalsChipPicker({ userId }: GoalsChipPickerProps) {
       </fieldset>
 
       <div className="flex items-center justify-between gap-2 pt-2">
-        <Button asChild variant="ghost" size="sm">
+        <Button asChild variant="ghost" className="min-h-11 min-w-11">
           <Link href="/onboarding/0">{t("onboarding.shell.back")}</Link>
         </Button>
         <div className="flex items-center gap-2">
           <Button
             type="button"
             variant="ghost"
-            size="sm"
             onClick={advance}
             disabled={advancing}
+            className="min-h-11 min-w-11"
           >
             {t("onboarding.shell.skip")}
           </Button>
-          <Button type="button" onClick={advance} disabled={advancing}>
+          <Button
+            type="button"
+            onClick={advance}
+            disabled={advancing}
+            className="min-h-11 min-w-11"
+          >
             {t("onboarding.shell.next")}
           </Button>
         </div>
