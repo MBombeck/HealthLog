@@ -195,7 +195,7 @@ describe("POST /api/measurements/batch (real Postgres)", () => {
     expect(stored).toHaveLength(2);
   });
 
-  it("returns 422 with coach.batch.too_large when entries exceed the cap", async () => {
+  it("returns 422 with measurement.batch.too_large when entries exceed the cap", async () => {
     const { POST } = await import("@/app/api/measurements/batch/route");
 
     const entries: BatchEntryFixture[] = [];
@@ -217,7 +217,7 @@ describe("POST /api/measurements/batch (real Postgres)", () => {
       meta?: { errorCode?: string };
     };
     expect(json.error).toMatch(/500/);
-    expect(json.meta?.errorCode).toBe("coach.batch.too_large");
+    expect(json.meta?.errorCode).toBe("measurement.batch.too_large");
   });
 
   it("flags unmappable identifiers and out-of-range values as skipped", async () => {

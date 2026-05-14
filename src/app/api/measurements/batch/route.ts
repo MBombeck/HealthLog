@@ -137,7 +137,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
     (rawBody as { entries: unknown[] }).entries.length > MAX_BATCH_ENTRIES
   ) {
     return apiError(`Batch exceeds the ${MAX_BATCH_ENTRIES}-entry limit`, 422, {
-      errorCode: "coach.batch.too_large",
+      errorCode: "measurement.batch.too_large",
     });
   }
 
