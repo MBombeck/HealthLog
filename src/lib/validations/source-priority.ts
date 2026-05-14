@@ -13,45 +13,147 @@
  *
  * Persisted as `User.sourcePriorityJson` (nullable Jsonb). Null = use
  * `DEFAULT_SOURCE_PRIORITY` verbatim.
+ *
+ * v1.4.25 W8c — two-axis extension. The original (W5e) shape carried a
+ * per-metric ladder at the top level (e.g. `weight: ["WITHINGS", …]`).
+ * W8c adds two optional containers ON TOP of that:
+ *   - `metricPriority`     — the per-metric ladder, identical in shape
+ *                            to the top-level keys but nested. The
+ *                            nested form is canonical going forward;
+ *                            the flat form is kept as a backward-compat
+ *                            shim (no migration / no UI for it).
+ *   - `deviceTypePriority` — within a source, which device wins. Keyed
+ *                            by metric type with an optional `default`
+ *                            ladder that covers metrics where the user
+ *                            hasn't set a per-metric override.
+ *
+ * Both new keys are optional; existing rows with the flat shape keep
+ * working unchanged. `parseSourcePriority()` merges everything onto
+ * `DEFAULT_SOURCE_PRIORITY` plus an empty two-axis state so the call
+ * site never has to think about which keys exist.
  */
 import { z } from "zod/v4";
 
-import { measurementSourceEnum } from "@/lib/validations/measurement";
+import {
+  measurementSourceEnum,
+  measurementTypeEnum,
+} from "@/lib/validations/measurement";
 
 /**
- * Per-metric-class priority list. First wins when multiple sources have
- * data for the same day on a cumulative metric. For point measurements
- * the list controls "display preference" but every source's row stays
- * in the DB.
+ * Device-type tag attached to a `Measurement` row. Mirrors
+ * open-wearables (`watch | band | ring | phone | scale | other`) plus
+ * an explicit `unknown` slot for legacy rows where the iOS app or
+ * Withings webhook never told us which device produced the sample.
+ *
+ * Stored on `Measurement.deviceType` (nullable). NULL is treated as
+ * `unknown` by `pickCanonicalSource()` — it falls through to the
+ * source-only axis when no device-type override applies.
+ */
+export const deviceTypeEnum = z.enum([
+  "watch",
+  "band",
+  "ring",
+  "phone",
+  "scale",
+  "other",
+  "unknown",
+]);
+
+export type DeviceType = z.infer<typeof deviceTypeEnum>;
+
+/**
+ * Per-metric source ladder. Same shape as the v1.4.25 W5e top-level
+ * keys; lifted into a nested object so the schema has room for the new
+ * `deviceTypePriority` sibling without clobbering the metric keys.
  *
  * The 8-entry cap is a sanity bound (we have 4 sources today, the cap
  * leaves headroom without inviting a megabyte-blob payload).
  */
-export const sourcePrioritySchema = z
+const metricSourceLadder = z.array(measurementSourceEnum).max(8);
+
+const metricPriorityObjectSchema = z
   .object({
     // ── Cumulative metrics — sum-per-day; pick ONE source per day. ──
-    steps: z.array(measurementSourceEnum).max(8),
-    activeEnergy: z.array(measurementSourceEnum).max(8),
-    walkingRunningDistance: z.array(measurementSourceEnum).max(8),
-    flightsClimbed: z.array(measurementSourceEnum).max(8),
+    steps: metricSourceLadder,
+    activeEnergy: metricSourceLadder,
+    walkingRunningDistance: metricSourceLadder,
+    flightsClimbed: metricSourceLadder,
     // ── Sleep — pick best-resolution source per night. ──
-    sleep: z.array(measurementSourceEnum).max(8),
+    sleep: metricSourceLadder,
     // ── Point measurements — all sources kept; this controls
     //    "display preference" when multiple sources happen to capture
     //    the same metric on the same day.
-    weight: z.array(measurementSourceEnum).max(8),
-    bloodPressure: z.array(measurementSourceEnum).max(8),
-    pulse: z.array(measurementSourceEnum).max(8),
-    bodyFat: z.array(measurementSourceEnum).max(8),
-    bodyTemperature: z.array(measurementSourceEnum).max(8),
-    spo2: z.array(measurementSourceEnum).max(8),
-    hrv: z.array(measurementSourceEnum).max(8),
-    restingHeartRate: z.array(measurementSourceEnum).max(8),
-    vo2Max: z.array(measurementSourceEnum).max(8),
+    weight: metricSourceLadder,
+    bloodPressure: metricSourceLadder,
+    pulse: metricSourceLadder,
+    bodyFat: metricSourceLadder,
+    bodyTemperature: metricSourceLadder,
+    spo2: metricSourceLadder,
+    hrv: metricSourceLadder,
+    restingHeartRate: metricSourceLadder,
+    vo2Max: metricSourceLadder,
+  })
+  .partial();
+
+/**
+ * v1.4.25 W8c — device-type ladder per metric class. Walked by
+ * `pickCanonicalSource()` AFTER the source axis has narrowed the
+ * candidate row down to the winning source.
+ *
+ * Two-level lookup:
+ *   - `deviceTypePriority[metric]` — per-metric override (wins).
+ *   - `deviceTypePriority.default` — global fallback (used when the
+ *                                    metric has no per-key entry).
+ *
+ * Cap mirrors the source ladder (8 entries) and is generous; the enum
+ * itself has 7 slots.
+ */
+const deviceTypeLadder = z.array(deviceTypeEnum).max(8);
+
+const deviceTypePrioritySchema = z
+  .object({
+    // Global fallback applied when no per-metric override exists.
+    default: deviceTypeLadder,
+    // Per-metric overrides — keyed by MeasurementType enum value so
+    // iOS-emitted device-type tags survive a future per-metric tweak
+    // without schema churn.
+  })
+  .catchall(deviceTypeLadder)
+  // `partial()` so callers can supply only `default`, only an override,
+  // or omit the key entirely.
+  .partial();
+
+/**
+ * Top-level schema. Flat metric keys (W5e shape) sit alongside the new
+ * `metricPriority` + `deviceTypePriority` containers. The flat shape is
+ * a backward-compat alias — when both exist, `metricPriority` wins.
+ */
+export const sourcePrioritySchema = z
+  .object({
+    // ── v1.4.25 W5e flat shape (backward-compat) ──
+    steps: metricSourceLadder,
+    activeEnergy: metricSourceLadder,
+    walkingRunningDistance: metricSourceLadder,
+    flightsClimbed: metricSourceLadder,
+    sleep: metricSourceLadder,
+    weight: metricSourceLadder,
+    bloodPressure: metricSourceLadder,
+    pulse: metricSourceLadder,
+    bodyFat: metricSourceLadder,
+    bodyTemperature: metricSourceLadder,
+    spo2: metricSourceLadder,
+    hrv: metricSourceLadder,
+    restingHeartRate: metricSourceLadder,
+    vo2Max: metricSourceLadder,
+    // ── v1.4.25 W8c additions ──
+    metricPriority: metricPriorityObjectSchema,
+    deviceTypePriority: deviceTypePrioritySchema,
   })
   .partial();
 
 export type SourcePriority = z.infer<typeof sourcePrioritySchema>;
+export type MetricPriority = z.infer<typeof metricPriorityObjectSchema>;
+export type DeviceTypePriority = z.infer<typeof deviceTypePrioritySchema>;
 
 /**
  * Metric-class keys carried by `SourcePriority`. Listed once here so
@@ -94,7 +196,7 @@ export type SourcePriorityMetricKey =
  *     pulse-ox, Thermo). Apple Health is second-hand (HealthKit
  *     receives the same reading via Withings' Health Mate iOS app).
  */
-export const DEFAULT_SOURCE_PRIORITY: Required<SourcePriority> = {
+export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
   steps: ["APPLE_HEALTH", "WITHINGS", "MANUAL"],
   activeEnergy: ["APPLE_HEALTH", "WITHINGS", "MANUAL"],
   walkingRunningDistance: ["APPLE_HEALTH", "WITHINGS", "MANUAL"],
@@ -112,21 +214,139 @@ export const DEFAULT_SOURCE_PRIORITY: Required<SourcePriority> = {
 };
 
 /**
+ * v1.4.25 W8c — default device-type ladder. Open-wearables' research
+ * recommendation: watch first (highest fidelity for cumulative + HR
+ * metrics), then ring/band (wrist-adjacent), then phone (fallback
+ * cumulative when wearables are off-wrist), then scale (only writes
+ * weight/body comp anyway), then catch-all `other` / `unknown`.
+ *
+ * Note: the picker treats a row with `deviceType = null` as `unknown`
+ * — legacy Withings rows (pre-v1.4.25 W8c) fall to the bottom of the
+ * ladder but never get filtered out, because the source-axis pick
+ * already narrowed to one source.
+ */
+export const DEFAULT_DEVICE_TYPE_PRIORITY: readonly DeviceType[] = [
+  "watch",
+  "ring",
+  "band",
+  "phone",
+  "scale",
+  "other",
+  "unknown",
+];
+
+/**
+ * Fully-resolved shape returned by `parseSourcePriority`. The flat
+ * per-metric ladder is always populated (defaulted); the two-axis
+ * containers default to empty objects so call sites can read
+ * `resolved.metricPriority.weight` etc. without an `undefined` guard.
+ */
+export interface ResolvedSourcePriority extends Required<MetricPriority> {
+  /**
+   * Canonical per-metric ladder. Merged from `metricPriority` (W8c
+   * nested shape) over the flat top-level keys (W5e shape) over
+   * `DEFAULT_SOURCE_PRIORITY`. Always populated for every metric.
+   */
+  metricPriority: Required<MetricPriority>;
+  /**
+   * Per-metric device-type override + a global fallback ladder. Both
+   * keys default to the empty state (no overrides) so the picker uses
+   * `DEFAULT_DEVICE_TYPE_PRIORITY` as the implicit fallback.
+   */
+  deviceTypePriority: DeviceTypePriority;
+}
+
+/**
  * Resolve the persisted Json blob into a fully-defaulted priority map.
  * Missing keys fall back to `DEFAULT_SOURCE_PRIORITY` — the UI never
- * has to think about which keys exist, and a future schema additions
- * (a new metric class) carry their default automatically until the
+ * has to think about which keys exist, and a future schema addition
+ * (a new metric class) carries its default automatically until the
  * user edits the field.
+ *
+ * Merge order (high → low):
+ *   1. `raw.metricPriority` (W8c nested shape; canonical going forward)
+ *   2. `raw` top-level flat keys (W5e backward-compat)
+ *   3. `DEFAULT_SOURCE_PRIORITY`
  */
-export function parseSourcePriority(raw: unknown): Required<SourcePriority> {
-  if (raw == null) return DEFAULT_SOURCE_PRIORITY;
+export function parseSourcePriority(raw: unknown): ResolvedSourcePriority {
+  if (raw == null) return buildResolved({}, {}, {});
+
   const parsed = sourcePrioritySchema.safeParse(raw);
-  if (!parsed.success) return DEFAULT_SOURCE_PRIORITY;
-  // Merge the parsed partial onto defaults so missing keys read as
-  // defaults — same intuition as `Object.assign({}, defaults, parsed)`
-  // but typed.
-  return {
+  if (!parsed.success) return buildResolved({}, {}, {});
+
+  // Pull the W5e flat per-metric ladder off the top level. Drop the
+  // two W8c container keys so the rest of the object is just the flat
+  // metric ladder we can spread without TS complaining.
+  const {
+    metricPriority: nested,
+    deviceTypePriority,
+    ...flatMetricLadder
+  } = parsed.data;
+  return buildResolved(flatMetricLadder, nested ?? {}, deviceTypePriority ?? {});
+}
+
+function buildResolved(
+  flat: Partial<MetricPriority>,
+  nested: Partial<MetricPriority>,
+  deviceTypePriority: DeviceTypePriority,
+): ResolvedSourcePriority {
+  // Merge: defaults < flat (W5e) < nested (W8c).
+  const merged: Required<MetricPriority> = {
     ...DEFAULT_SOURCE_PRIORITY,
-    ...parsed.data,
+    ...flat,
+    ...nested,
   };
+  return {
+    ...merged,
+    metricPriority: merged,
+    deviceTypePriority,
+  };
+}
+
+/**
+ * v1.4.25 W8c — runtime device-type checker for ingest paths. Returns
+ * a `DeviceType` for any input the iOS app or Withings webhook might
+ * supply; falls back to `"unknown"` when the value isn't part of the
+ * canonical enum. Keeps the picker on the happy path even when a
+ * legacy row has `deviceType = null` or a typoed value.
+ */
+export function normalizeDeviceType(raw: unknown): DeviceType {
+  const parsed = deviceTypeEnum.safeParse(raw);
+  return parsed.success ? parsed.data : "unknown";
+}
+
+/**
+ * Convenience: walk the metric-key list and return the source ladder
+ * for one metric. Centralised so the picker, the UI, and tests share
+ * one path; future axis additions slot in here.
+ */
+export function getSourceLadder(
+  resolved: ResolvedSourcePriority,
+  metricKey: SourcePriorityMetricKey,
+): readonly z.infer<typeof measurementSourceEnum>[] {
+  return resolved.metricPriority[metricKey];
+}
+
+/**
+ * v1.4.25 W8c — resolve the device-type ladder for a given metric.
+ * Lookup order:
+ *   1. `deviceTypePriority[metricType]` — per-metric override.
+ *   2. `deviceTypePriority.default`     — global fallback the user set.
+ *   3. `DEFAULT_DEVICE_TYPE_PRIORITY`   — the constant ladder.
+ *
+ * The metric key is a `MeasurementType` enum value (e.g. `"WEIGHT"`),
+ * not the `SourcePriorityMetricKey` (e.g. `"weight"`), because the
+ * iOS-emitted `deviceType` field on `Measurement` is tagged per
+ * `MeasurementType` row, not per `SourcePriorityMetricKey` aggregation
+ * bucket. The Settings UI translates between the two.
+ */
+export function getDeviceTypeLadder(
+  resolved: ResolvedSourcePriority,
+  metricType: z.infer<typeof measurementTypeEnum> | string,
+): readonly DeviceType[] {
+  const override = resolved.deviceTypePriority[metricType];
+  if (override && override.length > 0) return override;
+  const fallback = resolved.deviceTypePriority.default;
+  if (fallback && fallback.length > 0) return fallback;
+  return DEFAULT_DEVICE_TYPE_PRIORITY;
 }
