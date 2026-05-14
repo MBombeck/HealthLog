@@ -621,6 +621,17 @@ model AppSettings {
   // Null = aggregator hasn't run yet OR there's no feedback in the window.
   adminAiInsightsFeedbackSummary Json? @map("admin_ai_insights_feedback_summary")
 
+  // v1.4.25 W7 — server-wide default timezone for new accounts that
+  // don't carry a browser-detected zone in the registration payload.
+  // The resolver in `src/lib/tz/resolver.ts` falls back to
+  // "Europe/Berlin" when this column is NULL, so existing instances
+  // keep behaving identically to v1.4.24 without an admin touching
+  // anything. Validated against `Intl.supportedValuesOf('timeZone')`
+  // at the admin write path. Length cap matches IANA's longest
+  // canonical zone identifier ("America/Argentina/ComodRivadavia" at
+  // 32 chars) plus headroom.
+  defaultUserTimezone String? @map("default_user_timezone") @db.VarChar(64)
+
   @@map("app_settings")
 }
 
