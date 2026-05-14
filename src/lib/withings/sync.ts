@@ -19,14 +19,32 @@ import {
   recordSyncSuccess,
 } from "@/lib/integrations/status";
 
+/**
+ * Build the callback URL handed to Withings at `Notify.subscribe` time.
+ *
+ * v1.4.25 W17a moved the shared secret from `?secret=…` (query
+ * parameter, captured by every reverse-proxy access log) to a path
+ * segment (`/api/withings/webhook/<secret>`). Withings has no
+ * mechanism for setting custom HTTP headers on outgoing notifications
+ * and never signs the body, so the callback URL is the only
+ * authenticity surface a subscriber controls — the path-segment form
+ * is the largest practical shift away from the loggable query string.
+ *
+ * When `WITHINGS_WEBHOOK_SECRET` is unset (dev / new install before
+ * provisioning) we fall back to the bare legacy URL so subscribe
+ * doesn't 500 — the route handler will then reject every inbound
+ * delivery with 401 anyway.
+ */
 export function getWithingsWebhookCallbackUrl(): string {
   const baseUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/withings/webhook`;
   const secret = process.env.WITHINGS_WEBHOOK_SECRET;
   if (!secret) return baseUrl;
-
-  const url = new URL(baseUrl);
-  url.searchParams.set("secret", secret);
-  return url.toString();
+  // Path-segment form. Withings preserves the full callback URL on
+  // every notification, so once a subscription is created with this
+  // URL every delivery carries the secret in the path rather than the
+  // query string. Encode for safety even though we expect a strong
+  // random secret.
+  return `${baseUrl}/${encodeURIComponent(secret)}`;
 }
 
 /**
