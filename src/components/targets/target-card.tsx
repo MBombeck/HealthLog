@@ -454,13 +454,31 @@ export function TargetCard({
           <div className="flex flex-col gap-1">
             <div className="flex items-baseline gap-2">
               {moodStabilityValue && moodStabilityCopy ? (
-                <span
-                  className="text-foreground text-2xl leading-none font-semibold sm:text-3xl"
-                  data-slot="target-headline-value"
-                  data-mood-stability={moodStabilityValue}
-                >
-                  {moodStabilityCopy}
-                </span>
+                // v1.4.25 W3e — verbal label is the headline; the raw σ
+                // moves into a tooltip so power users keep the precise
+                // number one hover away without forcing every visitor
+                // to read "0.42 σ" and decode it.
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        className="text-foreground text-2xl leading-none font-semibold capitalize cursor-help sm:text-3xl"
+                        data-slot="target-headline-value"
+                        data-mood-stability={moodStabilityValue}
+                      >
+                        {moodStabilityCopy}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">
+                        σ ={" "}
+                        {target.current != null
+                          ? target.current.toFixed(2)
+                          : "—"}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               ) : isBp && bpDiastolic?.current != null ? (
                 <span
                   className="text-foreground flex items-baseline gap-1 text-2xl leading-none font-semibold sm:text-3xl"
