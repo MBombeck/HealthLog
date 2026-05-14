@@ -184,6 +184,12 @@ model User {
   integrationStatuses  IntegrationStatus[]
   coachConversations   CoachConversation[]
   coachUsage           CoachUsage[]
+  // v1.4.25 W8d — workout passthrough (Apple HKWorkout / Withings
+  // getworkouts / future Strava). Schema lands now so the v1.5 iOS
+  // session can build against a stable DTO. Routes hang off Workout
+  // (1:1), not User — the User → WorkoutRoute path is two hops by
+  // design.
+  workouts             Workout[]
 
   @@map("users")
 }
@@ -356,6 +362,86 @@ model Measurement {
   @@index([userId, type, measuredAt])
   @@index([externalId])
   @@map("measurements")
+}
+
+// ─── Workouts (v1.4.25 W8d) ────────────────────────────────
+//
+// HKWorkout-aligned typed columns for the analytics hot path + an
+// open `metadata Json?` blob for the source-specific tail (HK
+// metadata, Withings hr_zone_0..3, device bundle id). `sportType` is
+// a TEXT column rather than a Postgres enum so adding a new sport is
+// a Zod-only change — Apple alone carries 70+ HKWorkoutActivityType
+// values and the long tail will only grow.
+model Workout {
+  id                    String            @id @default(cuid())
+  userId                String            @map("user_id")
+  /// Canonical sport string. See WorkoutSportType union in
+  /// src/lib/validations/workout.ts when that ships. Free-text at the
+  /// DB layer so a new sport is one Zod refinement away.
+  sportType             String            @map("sport_type")
+  startedAt             DateTime          @map("started_at")
+  endedAt               DateTime          @map("ended_at")
+  /// Denormalised seconds count — query convenience for the
+  /// "longest run / cycle" PR detector + the Coach evidence chips.
+  durationSec           Int               @map("duration_sec")
+  /// Apple `totalEnergyBurned` / Withings `calories`. NULL when the
+  /// source did not report it.
+  totalEnergyKcal       Float?            @map("total_energy_kcal")
+  /// Apple `totalDistance` / Withings `distance`. Metres.
+  totalDistanceM        Float?            @map("total_distance_m")
+  /// Apple computes the average post-hoc; Withings reports it
+  /// directly as `hr_average`.
+  avgHeartRate          Int?              @map("avg_heart_rate")
+  maxHeartRate          Int?              @map("max_heart_rate")
+  minHeartRate          Int?              @map("min_heart_rate")
+  stepCount             Int?              @map("step_count")
+  elevationM            Float?            @map("elevation_m")
+  /// Withings `pause_duration`. Apple does not report this directly
+  /// — derived from HKWorkoutEvent markers in the metadata blob.
+  pauseDurationSec      Int?              @map("pause_duration_sec")
+  source                MeasurementSource @default(MANUAL)
+  /// HK `HKWorkout.uuid` or Withings workout id. NULL for manual
+  /// entries (Postgres NULL-distinct semantics keep them unique).
+  externalId            String?           @map("external_id")
+  externalSourceVersion String?           @map("external_source_version")
+  /// HKWorkoutEvent markers, Withings hr_zone_0..3, device bundle id.
+  /// JSON only — never duck-typed at runtime; consumers run their
+  /// own Zod schema against the slice they care about.
+  metadata              Json?
+  createdAt             DateTime          @default(now()) @map("created_at")
+  updatedAt             DateTime          @updatedAt @map("updated_at")
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  route WorkoutRoute?
+
+  /// Ingest dedup. NULL externalId is distinct so two manual
+  /// entries on the same day never collide here.
+  @@unique([userId, source, externalId])
+  /// Dashboard "recent workouts" query path.
+  @@index([userId, startedAt])
+  /// "Show me my last 10 runs" — per-sport history.
+  @@index([userId, sportType, startedAt])
+  @@map("workouts")
+}
+
+model WorkoutRoute {
+  id        String   @id @default(cuid())
+  workoutId String   @unique @map("workout_id")
+  /// GeoJSON LineString — `{ "type": "LineString", coordinates:
+  /// [[lon, lat, alt?], ...] }`. JSONB rather than PostGIS so the
+  /// Coolify Postgres template stays extension-free (same decision
+  /// v1.4.20 made for correlations); GPX import + Leaflet / MapLibre
+  /// consume GeoJSON natively.
+  geometry  Json
+  /// Optional per-sample timestamps (ISO strings) and speeds —
+  /// parallel array to `geometry.coordinates`. NULL when the source
+  /// only ships static GPX (e.g. Withings).
+  sampleTimestamps Json? @map("sample_timestamps")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  workout Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+
+  @@map("workout_routes")
 }
 
 // ─── Medications ───────────────────────────────────────────
