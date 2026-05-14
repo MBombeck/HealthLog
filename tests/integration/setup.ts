@@ -67,6 +67,8 @@ export async function truncateAllTables(client: PrismaClient): Promise<void> {
     "user_achievements",
     "users",
     "withings_connections",
+    "workout_routes",
+    "workouts",
   ];
 
   const quoted = tables.map((t) => `"${t}"`).join(", ");
