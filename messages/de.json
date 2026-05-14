@@ -573,6 +573,8 @@
     "glp1Inventory": "{pens} Pens übrig · ~{weeks} Wochen Reichweite",
     "glp1InventoryLow": "Niedriger Bestand — bald nachbestellen",
     "glp1LogSideEffect": "Nebenwirkung loggen",
+    "injectionSiteBodyOutlineAriaLabel": "Körperumriss",
+    "injectionSitePickerAriaLabel": "Injektionsstelle auswählen",
     "siteAbdomenLeft": "Bauch, unten links",
     "siteAbdomenRight": "Bauch, unten rechts",
     "siteAbdomenUpperLeft": "Bauch, oben links",

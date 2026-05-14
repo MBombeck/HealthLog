@@ -68,7 +68,11 @@ export function SubPageShell({
             tabIndex={-1}
             className={cn(
               "text-xl font-semibold sm:text-2xl",
-              "focus-visible:outline-none",
+              // a11y: sighted-keyboard users (e.g. "Skip to content")
+              // need a visible focus indicator on the programmatic
+              // `headingRef.focus()` call below. Match the focus ring
+              // vocabulary used on insights pills + Coach affordances.
+              "rounded-sm focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
             )}
           >
             {title}

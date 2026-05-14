@@ -130,7 +130,10 @@ export function InsightsTabStrip({
                 data-slot="insights-tab-strip-pill"
                 data-active={isActive ? "true" : undefined}
                 className={cn(
-                  "shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  // 44px touch-target floor (W8.3) — pills are primary
+                  // navigation; the regenerate icon-button to the right
+                  // already meets the same minimum.
+                  "inline-flex min-h-11 shrink-0 items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                   "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
                   isActive
                     ? "border-primary bg-primary/10 text-primary"
@@ -151,11 +154,10 @@ export function InsightsTabStrip({
             title={regenerateLabel}
             data-slot="insights-tab-strip-regenerate"
             className={cn(
-              // 44×44 touch target — Marc directive 2026-05-14. The
-              // pill row above sits 28px tall; the button breaks the
-              // band height intentionally so the touch target meets
-              // the WCAG 2.5.5 minimum without forcing the pills to
-              // grow.
+              // 44×44 touch target — same WCAG 2.5.5 floor the pill row
+              // now honours via `min-h-11`. The button stays circular so
+              // its visual weight matches the existing top-bar icon
+              // buttons.
               "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full",
               "text-muted-foreground hover:text-foreground hover:bg-accent",
               "transition-colors",

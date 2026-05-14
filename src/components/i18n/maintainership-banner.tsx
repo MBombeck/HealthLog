@@ -109,7 +109,9 @@ export function MaintainershipBanner() {
         type="button"
         onClick={handleDismiss}
         aria-label={t("i18n.maintainershipBanner.dismiss")}
-        className="hover:text-foreground -mr-1 -mt-0.5 shrink-0 rounded-sm p-1 transition-colors"
+        // 44×44 touch-target floor (WCAG 2.5.5). The icon stays small —
+        // the surrounding hit area is what the user actually taps.
+        className="hover:text-foreground focus-visible:ring-ring/50 -mr-2 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
       >
         <X className="h-3.5 w-3.5" aria-hidden />
       </button>

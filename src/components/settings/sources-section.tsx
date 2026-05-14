@@ -336,7 +336,7 @@ export function SourcesSection() {
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7"
+                          className="h-11 w-11"
                           onClick={() => moveSource(metric, index, -1)}
                           disabled={index === 0 || saveMutation.isPending}
                           aria-label={t("settings.sections.sources.moveUp")}
@@ -347,7 +347,7 @@ export function SourcesSection() {
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7"
+                          className="h-11 w-11"
                           onClick={() => moveSource(metric, index, 1)}
                           disabled={
                             index === list.length - 1 || saveMutation.isPending
@@ -375,6 +375,7 @@ export function SourcesSection() {
               type="button"
               onClick={() => setShowPerMetric((prev) => !prev)}
               aria-expanded={showPerMetric}
+              aria-controls="sources-per-metric-panel"
               className="text-foreground hover:text-primary flex items-center gap-2 text-sm font-medium transition-colors"
             >
               <ChevronDown
@@ -387,7 +388,11 @@ export function SourcesSection() {
               })}
             </button>
             {showPerMetric && (
-              <div className="bg-background/30 border-border space-y-3 rounded-md border p-3">
+              <div
+                id="sources-per-metric-panel"
+                role="region"
+                className="bg-background/30 border-border space-y-3 rounded-md border p-3"
+              >
                 <p className="text-muted-foreground text-xs">
                   {t("settings.sections.sources.perMetricHelp")}
                 </p>
@@ -434,6 +439,7 @@ export function SourcesSection() {
               type="button"
               onClick={() => setShowDeviceType((prev) => !prev)}
               aria-expanded={showDeviceType}
+              aria-controls="sources-device-type-panel"
               className="text-foreground hover:text-primary flex items-center gap-2 text-sm font-medium transition-colors"
             >
               <ChevronDown
@@ -446,7 +452,11 @@ export function SourcesSection() {
               })}
             </button>
             {showDeviceType && (
-              <div className="bg-background/30 border-border space-y-3 rounded-md border p-3">
+              <div
+                id="sources-device-type-panel"
+                role="region"
+                className="bg-background/30 border-border space-y-3 rounded-md border p-3"
+              >
                 <p className="text-muted-foreground text-xs">
                   {t("settings.sections.sources.deviceTypeHelp")}
                 </p>
@@ -484,7 +494,7 @@ export function SourcesSection() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7"
+                        className="h-11 w-11"
                         onClick={() =>
                           moveDeviceType("__default__", index, -1)
                         }
@@ -497,7 +507,7 @@ export function SourcesSection() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7"
+                        className="h-11 w-11"
                         onClick={() => moveDeviceType("__default__", index, 1)}
                         disabled={
                           index === list.length - 1 || saveMutation.isPending

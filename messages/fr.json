@@ -573,6 +573,8 @@
     "glp1Inventory": "{pens} pens left · ~{weeks} weeks of supply",
     "glp1InventoryLow": "Low stock — refill soon",
     "glp1LogSideEffect": "Log side effect",
+    "injectionSiteBodyOutlineAriaLabel": "Silhouette du corps",
+    "injectionSitePickerAriaLabel": "Sélecteur de site d'injection",
     "siteAbdomenLeft": "Abdomen, lower left",
     "siteAbdomenRight": "Abdomen, lower right",
     "siteAbdomenUpperLeft": "Abdomen, upper left",

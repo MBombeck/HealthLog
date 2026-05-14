@@ -51,13 +51,13 @@ export function InjectionSitePicker({
     <div
       className={`flex flex-col items-center gap-3 ${className ?? ""}`}
       role="group"
-      aria-label={t("medications.glp1WeeklyPresetTitle")}
+      aria-label={t("medications.injectionSitePickerAriaLabel")}
     >
       <svg
         viewBox="0 0 120 300"
         className="text-foreground/40 h-[320px] w-auto max-w-full"
         role="img"
-        aria-label="Body outline"
+        aria-label={t("medications.injectionSiteBodyOutlineAriaLabel")}
       >
         {/* Head */}
         <circle
@@ -162,12 +162,17 @@ export function InjectionSitePicker({
                 }
                 strokeWidth="1.5"
               />
-              {/* Invisible 22px hit-target for touch — meets WCAG 2.5.5
-                  without crowding the visible 12px dot. */}
+              {/* Invisible 24-unit hit-target for touch. The SVG renders
+                  at ≈1.07× scale (320px box / 300-unit viewBox height),
+                  so r=12 gives ≈25.6 CSS px diameter — clearing the
+                  WCAG 2.5.8 Level AA 24×24 floor. Going larger would
+                  overlap the abdomen-left / abdomen-right pair at
+                  Δx=24 units; the picker stays interactive without
+                  spacing collisions. */}
               <circle
                 cx={coord.x}
                 cy={coord.y}
-                r="11"
+                r="12"
                 fill="transparent"
                 role="button"
                 tabIndex={0}
