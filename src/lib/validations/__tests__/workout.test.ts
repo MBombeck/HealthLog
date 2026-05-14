@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  createBatchWorkoutSchema,
   createWorkoutSchema,
   geoJsonLineStringSchema,
+  MAX_ROUTE_POINTS,
+  MAX_WORKOUTS_PER_BATCH,
   workoutRouteSamplesSchema,
   workoutSportTypeEnum,
   type CreateWorkoutInput,
@@ -166,5 +169,108 @@ describe("createWorkoutSchema", () => {
     expect(() =>
       createWorkoutSchema.parse({ ...minimalRun, maxHeartRate: 5 }),
     ).toThrow();
+  });
+
+  it("rejects a route geometry that exceeds the per-route point cap", () => {
+    // One past the cap — schema MUST reject. The cap exists so a single
+    // pathological workout can't blow the 5 MB request-body ceiling on
+    // its own; a desync between the schema cap and the route route's
+    // expected-size accounting would silently degrade ingest.
+    const coords: [number, number][] = [];
+    for (let i = 0; i < MAX_ROUTE_POINTS + 1; i++) {
+      coords.push([11 + i * 1e-6, 49 + i * 1e-6]);
+    }
+    expect(() =>
+      createWorkoutSchema.parse({
+        ...minimalRun,
+        route: {
+          geometry: { type: "LineString", coordinates: coords },
+        },
+      }),
+    ).toThrow(/20000-point cap/);
+  });
+
+  it("rejects a route whose sampleTimestamps length mismatches coordinates", () => {
+    // Cross-field invariant: per-sample HR / speed must line up against
+    // the parallel coordinate index, so a desynced pair silently
+    // poisons downstream analytics. Hard-fail at parse time so the iOS
+    // mapper surfaces the problem immediately.
+    expect(() =>
+      createWorkoutSchema.parse({
+        ...minimalRun,
+        route: {
+          geometry: {
+            type: "LineString",
+            coordinates: [
+              [11.077, 49.452],
+              [11.078, 49.453],
+              [11.079, 49.454],
+            ],
+          },
+          sampleTimestamps: [
+            { t: "2026-05-14T06:30:00.000Z" },
+            { t: "2026-05-14T06:30:05.000Z" },
+            // missing third entry — desync the parser MUST catch
+          ],
+        },
+      }),
+    ).toThrow(/sampleTimestamps length must match/);
+  });
+
+  it("accepts a route when sampleTimestamps length equals coordinates length", () => {
+    const parsed = createWorkoutSchema.parse({
+      ...minimalRun,
+      route: {
+        geometry: {
+          type: "LineString",
+          coordinates: [
+            [11.077, 49.452],
+            [11.078, 49.453],
+          ],
+        },
+        sampleTimestamps: [
+          { t: "2026-05-14T06:30:00.000Z", speedMs: 3.2, hr: 142 },
+          { t: "2026-05-14T06:30:05.000Z", speedMs: 3.3, hr: 144 },
+        ],
+      },
+    });
+    expect(parsed.route?.sampleTimestamps).toHaveLength(2);
+  });
+});
+
+describe("createBatchWorkoutSchema", () => {
+  const minimalRun = (id: string) => ({
+    sportType: "running",
+    startedAt: "2026-05-14T06:30:00.000Z",
+    endedAt: "2026-05-14T07:15:00.000Z",
+    externalId: id,
+  });
+
+  it("accepts a single-workout batch", () => {
+    const parsed = createBatchWorkoutSchema.parse({
+      workouts: [minimalRun("hk-uuid-001")],
+    });
+    expect(parsed.workouts).toHaveLength(1);
+  });
+
+  it("accepts a batch at the cap (100 workouts)", () => {
+    const workouts = Array.from(
+      { length: MAX_WORKOUTS_PER_BATCH },
+      (_, i) => minimalRun(`hk-uuid-${i}`),
+    );
+    const parsed = createBatchWorkoutSchema.parse({ workouts });
+    expect(parsed.workouts).toHaveLength(MAX_WORKOUTS_PER_BATCH);
+  });
+
+  it("rejects a batch above the cap", () => {
+    const workouts = Array.from(
+      { length: MAX_WORKOUTS_PER_BATCH + 1 },
+      (_, i) => minimalRun(`hk-uuid-${i}`),
+    );
+    expect(() => createBatchWorkoutSchema.parse({ workouts })).toThrow();
+  });
+
+  it("rejects an empty batch", () => {
+    expect(() => createBatchWorkoutSchema.parse({ workouts: [] })).toThrow();
   });
 });
