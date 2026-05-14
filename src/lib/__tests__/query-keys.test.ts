@@ -16,9 +16,9 @@ describe("queryKeys factory", () => {
   });
 
   it("includes locale in insights status keys", () => {
-    expect(queryKeys.insightsGeneralStatus("en")).toEqual([
+    expect(queryKeys.insightsBpStatus("en")).toEqual([
       "insights",
-      "general-status",
+      "blood-pressure-status",
       "en",
     ]);
   });

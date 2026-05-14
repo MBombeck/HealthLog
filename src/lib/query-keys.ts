@@ -30,8 +30,6 @@ export const queryKeys = {
    * a second LLM round-trip.
    */
   insightsAdvisor: () => ["insights", "advisor"] as const,
-  insightsGeneralStatus: (locale: string) =>
-    ["insights", "general-status", locale] as const,
   insightsBpStatus: (locale: string) =>
     ["insights", "blood-pressure-status", locale] as const,
   insightsWeightStatus: (locale: string) =>
