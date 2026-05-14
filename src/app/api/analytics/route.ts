@@ -624,6 +624,51 @@ function berlinIsoWeekday(d: Date): number {
 }
 
 /**
+ * v1.4.25 W8e — collapse the persisted `MeasurementSource` enum onto
+ * the camelCase token set the health-score analytics layer consumes.
+ *
+ * - `MANUAL` and `IMPORT` (CSV import — still user-supplied data) both
+ *   surface as `"manual"`.
+ * - `WITHINGS` and `APPLE_HEALTH` ride one-to-one.
+ *
+ * Returns `null` for source values that don't fall into the three
+ * exposed buckets — defence-in-depth in case the enum grows before the
+ * client is taught about it.
+ */
+function mapMeasurementSourceToLabel(
+  source: MeasurementSource,
+): "manual" | "withings" | "appleHealth" | null {
+  switch (source) {
+    case "MANUAL":
+    case "IMPORT":
+      return "manual";
+    case "WITHINGS":
+      return "withings";
+    case "APPLE_HEALTH":
+      return "appleHealth";
+    default:
+      return null;
+  }
+}
+
+/**
+ * v1.4.25 W8e — deduplicate the contributing-source list for a single
+ * component. Returns the empty array when nothing in the input maps
+ * onto a known label so downstream `resolveSourceLabel` falls through
+ * to `none` (matches the empty-state branch).
+ */
+function uniqueComponentSources(
+  rows: ReadonlyArray<MeasurementSource>,
+): ReadonlyArray<"manual" | "withings" | "appleHealth"> {
+  const seen = new Set<"manual" | "withings" | "appleHealth">();
+  for (const src of rows) {
+    const label = mapMeasurementSourceToLabel(src);
+    if (label) seen.add(label);
+  }
+  return Array.from(seen);
+}
+
+/**
  * Build the Health Score input from the user's last-30-day weight,
  * mood, and medication-compliance data, plus the already-computed
  * `bpInTargetPct` headline. Re-runs the same compute against a
@@ -645,38 +690,58 @@ async function computeUserHealthScore(
   const prevSince30d = new Date(now.getTime() - 37 * DAY_MS);
   const prevUntil = new Date(now.getTime() - 7 * DAY_MS);
 
-  const [weightRows, moodRows, medications] = await Promise.all([
-    prisma.measurement.findMany({
-      where: {
-        userId,
-        type: "WEIGHT",
-        measuredAt: { gte: prevSince30d, lte: now },
-      },
-      select: { value: true, measuredAt: true },
-      orderBy: { measuredAt: "asc" },
-    }),
-    prisma.moodEntry.findMany({
-      where: {
-        userId,
-        moodLoggedAt: { gte: prevSince30d, lte: now },
-      },
-      select: { score: true, moodLoggedAt: true },
-      orderBy: { moodLoggedAt: "asc" },
-    }),
-    prisma.medication.findMany({
-      where: { userId, active: true },
-      select: {
-        id: true,
-        createdAt: true,
-        schedules: {
-          select: {
-            windowStart: true,
-            windowEnd: true,
+  // v1.4.25 W8e — read the `source` column alongside the value so the
+  // health-score provenance accordion knows which ingest path drove
+  // each component. The weight + BP reads already paid the row cost;
+  // adding the column to the SELECT is free in Postgres terms (no extra
+  // round-trip, no extra plan node) and the alternative — a second
+  // aggregate just for the source pill — would burn another findMany.
+  const [weightRows, bpSysRowsForSource, moodRows, medications] =
+    await Promise.all([
+      prisma.measurement.findMany({
+        where: {
+          userId,
+          type: "WEIGHT",
+          measuredAt: { gte: prevSince30d, lte: now },
+        },
+        select: { value: true, measuredAt: true, source: true },
+        orderBy: { measuredAt: "asc" },
+      }),
+      // BP source attribution rides on the systolic-readings row set —
+      // diastolic rows always carry the same `source` because both
+      // halves of a pair are persisted in the same write. Pull only the
+      // trailing 30 days to keep the call bounded for power users.
+      prisma.measurement.findMany({
+        where: {
+          userId,
+          type: "BLOOD_PRESSURE_SYS",
+          measuredAt: { gte: since30d, lte: now },
+        },
+        select: { measuredAt: true, source: true },
+        orderBy: { measuredAt: "asc" },
+      }),
+      prisma.moodEntry.findMany({
+        where: {
+          userId,
+          moodLoggedAt: { gte: prevSince30d, lte: now },
+        },
+        select: { score: true, moodLoggedAt: true },
+        orderBy: { moodLoggedAt: "asc" },
+      }),
+      prisma.medication.findMany({
+        where: { userId, active: true },
+        select: {
+          id: true,
+          createdAt: true,
+          schedules: {
+            select: {
+              windowStart: true,
+              windowEnd: true,
+            },
           },
         },
-      },
-    }),
-  ]);
+      }),
+    ]);
 
   // Compliance30 per active medication, then again for the prior-week
   // snapshot. The compliance helper anchors on `Date.now()` internally;
@@ -769,12 +834,62 @@ async function computeUserHealthScore(
     return null;
   }
 
+  // v1.4.25 W8e — build per-component source attribution from the rows
+  // we already hold in memory. `mapMeasurementSourceToLabel` collapses
+  // the persisted `MeasurementSource` enum onto the camelCase token list
+  // the analytics helper consumes; `IMPORT` rides under `manual`
+  // because the v1.4.20 CSV importer ingests user-supplied data — it's
+  // not a wearable stream.
+  const windowEndAt = now.toISOString();
+
+  const weightSourcesIn30d = uniqueComponentSources(
+    weightRows
+      .filter((r) => r.measuredAt >= since30d)
+      .map((r) => r.source),
+  );
+  const latestWeightInWindow = weightRows
+    .filter((r) => r.measuredAt >= since30d)
+    .at(-1);
+
+  const bpSourceTokens = uniqueComponentSources(
+    bpSysRowsForSource.map((r) => r.source),
+  );
+  const latestBpInWindow = bpSysRowsForSource.at(-1);
+
+  // Mood doesn't yet have a non-manual ingest (v1.5 will introduce
+  // Apple Health mood) so the source list is always `["manual"]` when
+  // there are entries in window. Keep the lookup explicit so the
+  // v1.5 ingest path slot just drops in.
+  const moodSourceTokens = moodSeriesLast30d.length > 0
+    ? (["manual"] as const)
+    : [];
+  const latestMoodInWindow = moodRows
+    .filter((r) => r.moodLoggedAt >= since30d)
+    .at(-1);
+
+  // Medication compliance always derives from logged intake events —
+  // user-driven manual logging today.
+  const complianceSourceTokens = medicationCompliance30.length > 0
+    ? (["manual"] as const)
+    : [];
+
   const current: HealthScoreInput = {
     bpInTargetRate: input.bpInTargetPct,
     weightSeriesLast30d,
     weightTargetKg: fallbackTarget,
     moodEntriesLast30d: moodSeriesLast30d,
     medicationCompliance30,
+    attribution: {
+      bpSources: bpSourceTokens,
+      asOfBp: latestBpInWindow?.measuredAt.toISOString() ?? null,
+      weightSources: weightSourcesIn30d,
+      asOfWeight: latestWeightInWindow?.measuredAt.toISOString() ?? null,
+      moodSources: moodSourceTokens,
+      asOfMood: latestMoodInWindow?.moodLoggedAt.toISOString() ?? null,
+      complianceSources: complianceSourceTokens,
+      asOfCompliance: complianceSourceTokens.length > 0 ? windowEndAt : null,
+      windowEndAt,
+    },
   };
   // The all-time `bpInTargetPct` is a slow-moving aggregate and would
   // need a full historical re-pair to "rewind" by a week. We pass the

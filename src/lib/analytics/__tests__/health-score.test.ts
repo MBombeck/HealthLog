@@ -313,3 +313,135 @@ describe("computeHealthScore — delta vs previous week", () => {
     expect(result.delta!).toBeLessThan(0);
   });
 });
+
+// ── v1.4.25 W8e — per-component source attribution ──────────────────
+
+describe("computeHealthScore — source attribution", () => {
+  const WINDOW_END = "2026-05-14T12:00:00.000Z";
+  const BP_LATEST = "2026-05-14T08:00:00.000Z";
+  const WEIGHT_LATEST = "2026-05-13T18:00:00.000Z";
+  const MOOD_LATEST = "2026-05-14T07:30:00.000Z";
+
+  function baseInputWithAttribution(
+    attribution: HealthScoreInput["attribution"],
+  ): HealthScoreInput {
+    return {
+      bpInTargetRate: 90,
+      weightSeriesLast30d: weightSeries([80, 80, 80]),
+      weightTargetKg: 80,
+      moodEntriesLast30d: moodEntries([5, 4, 5, 4, 5]),
+      medicationCompliance30: [95, 100],
+      attribution,
+    };
+  }
+
+  it("collapses a single-source component to that source label", () => {
+    const result = computeHealthScore(
+      baseInputWithAttribution({
+        bpSources: ["withings"],
+        asOfBp: BP_LATEST,
+        weightSources: ["withings"],
+        asOfWeight: WEIGHT_LATEST,
+        moodSources: ["manual"],
+        asOfMood: MOOD_LATEST,
+        complianceSources: ["manual"],
+        asOfCompliance: WINDOW_END,
+        windowEndAt: WINDOW_END,
+      }),
+    );
+
+    expect(result.components.bp.source).toBe("withings");
+    expect(result.components.bp.asOf).toBe(BP_LATEST);
+    expect(result.components.weight.source).toBe("withings");
+    expect(result.components.weight.asOf).toBe(WEIGHT_LATEST);
+    expect(result.components.mood.source).toBe("manual");
+    expect(result.components.mood.asOf).toBe(MOOD_LATEST);
+    expect(result.components.compliance.source).toBe("manual");
+  });
+
+  it("marks a component `mixed` when multiple sources contribute", () => {
+    const result = computeHealthScore(
+      baseInputWithAttribution({
+        bpSources: ["withings", "manual"],
+        asOfBp: BP_LATEST,
+        weightSources: ["withings", "appleHealth"],
+        asOfWeight: WEIGHT_LATEST,
+        moodSources: ["manual"],
+        asOfMood: MOOD_LATEST,
+        complianceSources: ["manual"],
+        asOfCompliance: WINDOW_END,
+        windowEndAt: WINDOW_END,
+      }),
+    );
+
+    expect(result.components.bp.source).toBe("mixed");
+    expect(result.components.weight.source).toBe("mixed");
+    // Single-source components still resolve to their token.
+    expect(result.components.mood.source).toBe("manual");
+  });
+
+  it("falls through to `none` + window-end asOf when a component has no value", () => {
+    const input: HealthScoreInput = {
+      bpInTargetRate: null,
+      weightSeriesLast30d: [],
+      weightTargetKg: null,
+      // <5 mood entries → moodStability returns null.
+      moodEntriesLast30d: moodEntries([4, 4]),
+      medicationCompliance30: [],
+      attribution: {
+        bpSources: [],
+        asOfBp: null,
+        weightSources: [],
+        asOfWeight: null,
+        moodSources: [],
+        asOfMood: null,
+        complianceSources: [],
+        asOfCompliance: null,
+        windowEndAt: WINDOW_END,
+      },
+    };
+    const result = computeHealthScore(input);
+    expect(result.components.bp.source).toBe("none");
+    expect(result.components.bp.asOf).toBe(WINDOW_END);
+    expect(result.components.weight.source).toBe("none");
+    expect(result.components.mood.source).toBe("none");
+    expect(result.components.compliance.source).toBe("none");
+  });
+
+  it("backward-compat: omitted attribution defaults present components to `manual`", () => {
+    const result = computeHealthScore({
+      bpInTargetRate: 80,
+      weightSeriesLast30d: weightSeries([80, 80, 80]),
+      weightTargetKg: 80,
+      moodEntriesLast30d: moodEntries([5, 5, 5, 5, 5]),
+      medicationCompliance30: [100],
+    });
+    // No `attribution` supplied — the legacy contract had no source
+    // field, so the helper defaults present components to "manual".
+    expect(result.components.bp.source).toBe("manual");
+    expect(result.components.weight.source).toBe("manual");
+    expect(result.components.mood.source).toBe("manual");
+    expect(result.components.compliance.source).toBe("manual");
+    // The asOf falls back to a wall-clock ISO string — just verify the
+    // type/shape, not the exact value.
+    expect(typeof result.components.bp.asOf).toBe("string");
+  });
+
+  it("falls back to window-end asOf when a present component has no asOf supplied", () => {
+    const result = computeHealthScore({
+      bpInTargetRate: 90,
+      weightSeriesLast30d: weightSeries([80, 80, 80]),
+      weightTargetKg: 80,
+      moodEntriesLast30d: moodEntries([5, 5, 5, 5, 5]),
+      medicationCompliance30: [100],
+      attribution: {
+        bpSources: ["withings"],
+        asOfBp: null,
+        windowEndAt: WINDOW_END,
+      },
+    });
+    expect(result.components.bp.source).toBe("withings");
+    // No asOf supplied → fall back to window end.
+    expect(result.components.bp.asOf).toBe(WINDOW_END);
+  });
+});
