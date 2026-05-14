@@ -617,29 +617,34 @@ export function TargetCard({
           </div>
         )}
 
-        {/* Row 6: footer — Coach CTA on the left (gated), source link
-            on the right (when available). Margin-top:auto pins the
-            footer to the card bottom so the grid rows align. */}
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-1">
-          <TargetCoachButton
-            prefill={coachPrefill}
-            sources={coachSources}
-            onAskCoach={onAskCoach}
-            aiEnabled={aiEnabled}
-            className="-ml-2"
-          />
+        {/* Row 6: footer. Mobile-first reflow:
+              - default (<640px): stack vertically; the Coach CTA
+                spans full width so the touch target is generous, the
+                source link sits beneath it right-aligned.
+              - sm+ (≥640px): horizontal row, Coach left + source right.
+            `mt-auto` pins to card bottom so grid cells align. */}
+        <div className="mt-auto flex flex-col items-stretch gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          {aiEnabled && (
+            <TargetCoachButton
+              prefill={coachPrefill}
+              sources={coachSources}
+              onAskCoach={onAskCoach}
+              aiEnabled={aiEnabled}
+              className="w-full justify-center sm:-ml-2 sm:w-auto sm:justify-start"
+            />
+          )}
           {sourceLink ? (
             <a
               href={sourceLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-muted-foreground hover:text-foreground ml-auto inline-flex items-center gap-1 text-xs"
+              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 self-end text-xs sm:ml-auto sm:self-auto"
             >
               <span>{target.source}</span>
               <ExternalLink className="size-3" aria-hidden="true" />
             </a>
           ) : (
-            <span className="text-muted-foreground ml-auto text-xs">
+            <span className="text-muted-foreground self-end text-xs sm:ml-auto sm:self-auto">
               {target.source}
             </span>
           )}
