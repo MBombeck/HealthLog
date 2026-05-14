@@ -1421,6 +1421,37 @@
           "body": "Die Achievements-Seite trackt tägliche Logging-Streaks, Blutdruck-Meilensteine und Konsistenz-Abzeichen. Ein kleiner Anreiz, dranzubleiben."
         }
       }
+    },
+    "shell": {
+      "back": "Zurück",
+      "skip": "Überspringen",
+      "next": "Weiter",
+      "step1of4": "Schritt 1 von 4",
+      "step2of4": "Schritt 2 von 4",
+      "step3of4": "Schritt 3 von 4",
+      "step4of4": "Schritt 4 von 4",
+      "welcomeTitle": "Willkommen bei HealthLog",
+      "welcomeBody": "Vier kurze Schritte zum Einstieg. Jeden Schritt kannst du später in den Einstellungen wiederholen."
+    },
+    "goals": {
+      "title": "Was möchtest du erfassen?",
+      "body": "Wähle die Werte, die dir wichtig sind. Dashboard und Erinnerungen richten sich danach.",
+      "placeholder": "Auswahl der Ziele folgt."
+    },
+    "source": {
+      "title": "Quelle verbinden",
+      "body": "Werte automatisch übernehmen oder weiter manuell eintragen – deine Entscheidung.",
+      "placeholder": "Quellenauswahl folgt."
+    },
+    "baseline": {
+      "title": "Deine erste Messung",
+      "body": "Eine Messung erweckt das Dashboard zum Leben. Jetzt eintragen oder später nachholen.",
+      "placeholder": "Eingabe der Erstmessung folgt."
+    },
+    "done": {
+      "title": "Alles bereit",
+      "body": "Willkommen an Bord. Dein Dashboard wartet.",
+      "returnCta": "Zum Dashboard"
     }
   },
   "gettingStarted": {

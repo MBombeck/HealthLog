@@ -1421,6 +1421,37 @@
           "body": "The Achievements page tracks daily logging streaks, blood-pressure milestones and consistency badges. A small nudge to keep going."
         }
       }
+    },
+    "shell": {
+      "back": "Retour",
+      "skip": "Ignorer",
+      "next": "Continuer",
+      "step1of4": "Étape 1 sur 4",
+      "step2of4": "Étape 2 sur 4",
+      "step3of4": "Étape 3 sur 4",
+      "step4of4": "Étape 4 sur 4",
+      "welcomeTitle": "Bienvenue sur HealthLog",
+      "welcomeBody": "Configurez l'essentiel en quatre courtes étapes. Vous pourrez revenir sur chacune depuis les paramètres."
+    },
+    "goals": {
+      "title": "Que souhaitez-vous suivre ?",
+      "body": "Choisissez les indicateurs qui comptent pour vous. Le tableau de bord et les rappels suivront.",
+      "placeholder": "Sélection des objectifs à venir."
+    },
+    "source": {
+      "title": "Connecter une source",
+      "body": "Importez les mesures automatiquement ou conservez la saisie manuelle, c'est vous qui décidez.",
+      "placeholder": "Sélection de la source à venir."
+    },
+    "baseline": {
+      "title": "Votre première mesure",
+      "body": "Une seule mesure active le tableau de bord. Ajoutez-la maintenant ou plus tard.",
+      "placeholder": "Saisie initiale à venir."
+    },
+    "done": {
+      "title": "Tout est prêt",
+      "body": "Bienvenue à bord. Votre tableau de bord vous attend.",
+      "returnCta": "Ouvrir le tableau de bord"
     }
   },
   "gettingStarted": {

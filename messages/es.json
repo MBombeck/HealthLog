@@ -1421,6 +1421,37 @@
           "body": "The Achievements page tracks daily logging streaks, blood-pressure milestones and consistency badges. A small nudge to keep going."
         }
       }
+    },
+    "shell": {
+      "back": "Atrás",
+      "skip": "Omitir",
+      "next": "Continuar",
+      "step1of4": "Paso 1 de 4",
+      "step2of4": "Paso 2 de 4",
+      "step3of4": "Paso 3 de 4",
+      "step4of4": "Paso 4 de 4",
+      "welcomeTitle": "Te damos la bienvenida a HealthLog",
+      "welcomeBody": "Configura lo esencial en cuatro pasos cortos. Puedes revisar cualquiera más tarde desde Ajustes."
+    },
+    "goals": {
+      "title": "¿Qué te gustaría registrar?",
+      "body": "Elige las métricas que te interesan. El panel y los recordatorios se ajustarán a tu elección.",
+      "placeholder": "Selección de objetivos próximamente."
+    },
+    "source": {
+      "title": "Conectar una fuente",
+      "body": "Importa las mediciones automáticamente o sigue con la entrada manual, tú decides.",
+      "placeholder": "Selector de fuente próximamente."
+    },
+    "baseline": {
+      "title": "Tu primera medición",
+      "body": "Una medición activa el panel. Añádela ahora o regístrala más adelante.",
+      "placeholder": "Entrada inicial próximamente."
+    },
+    "done": {
+      "title": "Todo listo",
+      "body": "Bienvenido a bordo. Tu panel ya está preparado.",
+      "returnCta": "Abrir el panel"
     }
   },
   "gettingStarted": {

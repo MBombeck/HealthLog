@@ -1421,6 +1421,37 @@
           "body": "The Achievements page tracks daily logging streaks, blood-pressure milestones and consistency badges. A small nudge to keep going."
         }
       }
+    },
+    "shell": {
+      "back": "Back",
+      "skip": "Skip",
+      "next": "Continue",
+      "step1of4": "Step 1 of 4",
+      "step2of4": "Step 2 of 4",
+      "step3of4": "Step 3 of 4",
+      "step4of4": "Step 4 of 4",
+      "welcomeTitle": "Welcome to HealthLog",
+      "welcomeBody": "Set up the basics in four short steps. You can revisit any of them later from Settings."
+    },
+    "goals": {
+      "title": "What would you like to track?",
+      "body": "Pick the metrics you care about. Your dashboard and the default reminders follow your choice.",
+      "placeholder": "Goal selection coming soon."
+    },
+    "source": {
+      "title": "Connect a source",
+      "body": "Bring in measurements automatically, or stay on manual entry — your call.",
+      "placeholder": "Source picker coming soon."
+    },
+    "baseline": {
+      "title": "Your first reading",
+      "body": "One reading turns the dashboard on. Add it now or skip and log later.",
+      "placeholder": "Baseline entry coming soon."
+    },
+    "done": {
+      "title": "You're all set",
+      "body": "Welcome aboard. Your dashboard is ready.",
+      "returnCta": "Open dashboard"
     }
   },
   "gettingStarted": {
