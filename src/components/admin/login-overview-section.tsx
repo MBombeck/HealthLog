@@ -24,7 +24,13 @@ import {
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 import { toCSV } from "@/lib/export";
-import { type AdminAuditEntry, useAuthActionLabels } from "./_shared";
+import {
+  type AdminAuditEntry,
+  iconForAuthProvider,
+  providerForAction,
+  useAuthActionLabels,
+  useAuthProviderLabels,
+} from "./_shared";
 
 type DateRangePreset = "all" | "24h" | "7d" | "30d";
 type PerPageValue = 25 | 50 | 100;
@@ -69,6 +75,7 @@ export function LoginOverviewSection() {
   const [perPage, setPerPage] = useState<PerPageValue>(50);
 
   const AUTH_ACTION_LABELS = useAuthActionLabels();
+  const AUTH_PROVIDER_LABELS = useAuthProviderLabels();
 
   // Build the query string once so it's reused by the data-query key, the
   // export download, and the next-/prev- buttons.
@@ -369,6 +376,9 @@ export function LoginOverviewSection() {
                       {t("admin.action")}
                     </th>
                     <th className="px-3 py-2 text-left font-medium">
+                      {t("admin.provider")}
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium">
                       {t("admin.ip")}
                     </th>
                     {/*
@@ -394,6 +404,8 @@ export function LoginOverviewSection() {
                 <tbody className="divide-border divide-y">
                   {entries.map((entry, i) => {
                     const isFailed = entry.action === "auth.login.failed";
+                    const provider = providerForAction(entry.action);
+                    const ProviderIcon = iconForAuthProvider(provider);
                     return (
                       <tr
                         key={entry.id}
@@ -415,6 +427,15 @@ export function LoginOverviewSection() {
                           className={`px-3 py-2 text-xs ${isFailed ? "text-destructive" : "text-muted-foreground"}`}
                         >
                           {AUTH_ACTION_LABELS[entry.action] ?? entry.action}
+                        </td>
+                        <td className="text-muted-foreground px-3 py-2 text-xs">
+                          <span className="inline-flex items-center gap-1.5">
+                            <ProviderIcon
+                              className="h-3.5 w-3.5"
+                              aria-hidden="true"
+                            />
+                            {AUTH_PROVIDER_LABELS[provider]}
+                          </span>
                         </td>
                         <td className="text-muted-foreground px-3 py-2 font-mono text-xs">
                           {entry.ipAddress ?? "—"}

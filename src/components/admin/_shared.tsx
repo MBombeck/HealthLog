@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Cpu, Fingerprint, Globe, KeyRound } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useTranslations } from "@/lib/i18n/context";
 import { PasswordInput as SettingsPasswordInput } from "@/components/settings/password-input";
@@ -283,6 +284,96 @@ export function useAuthActionLabels(): Record<string, string> {
       "auth.token.autoissue.native": t("admin.authTokenAutoissueNative"),
       "auth.token.refresh": t("admin.authTokenRefresh"),
       "auth.token.revoke": t("admin.authTokenRevoke"),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [locale],
+  );
+}
+
+/**
+ * v1.4.25 W8b — Provider column for the Login-Übersicht.
+ *
+ * The audit log doesn't have a dedicated `provider` field; the action
+ * name itself encodes how the login happened (`auth.login.passkey`,
+ * `auth.bearer.success`, …). We derive a coarse provider tag from
+ * the action so admins can see at a glance whether each row is a
+ * password, passkey, API token, or OAuth (Withings) event.
+ *
+ * Keep the mapping exhaustive — every `auth.*` action that lands in
+ * the audit table must resolve to one of `password | passkey |
+ * api_token | withings | unknown`. New actions are wired here once,
+ * mirroring the convention established by `useAuthActionLabels`.
+ */
+export type AuthProvider =
+  | "password"
+  | "passkey"
+  | "api_token"
+  | "withings"
+  | "unknown";
+
+export function providerForAction(action: string): AuthProvider {
+  if (
+    action === "auth.login.passkey" ||
+    action === "auth.passkey.register" ||
+    action === "auth.passkey.delete"
+  ) {
+    return "passkey";
+  }
+  if (
+    action === "auth.login.password" ||
+    action === "auth.password.change" ||
+    // Failed sign-ins go through the password endpoint — the passkey
+    // flow has its own `auth.login.failed` row but `details.reason`
+    // disambiguates further; for the column tag, "password" is the
+    // truthful summary of how the credential was offered.
+    action === "auth.login.failed"
+  ) {
+    return "password";
+  }
+  if (
+    action === "auth.bearer.success" ||
+    action === "auth.bearer.failure" ||
+    action === "auth.token.autoissue.native" ||
+    action === "auth.token.refresh" ||
+    action === "auth.token.refresh.failed" ||
+    action === "auth.token.refresh.revoke" ||
+    action === "auth.token.revoke"
+  ) {
+    return "api_token";
+  }
+  if (action.startsWith("auth.withings")) {
+    return "withings";
+  }
+  return "unknown";
+}
+
+const AUTH_PROVIDER_ICONS = {
+  password: KeyRound,
+  passkey: Fingerprint,
+  api_token: Cpu,
+  withings: Globe,
+  unknown: Globe,
+} as const;
+
+export function iconForAuthProvider(
+  provider: AuthProvider,
+): React.ComponentType<{ className?: string }> {
+  return AUTH_PROVIDER_ICONS[provider];
+}
+
+/**
+ * i18n label map for the Provider column. Keys match `AuthProvider`
+ * so callers can index directly: `labels[providerForAction(action)]`.
+ */
+export function useAuthProviderLabels(): Record<AuthProvider, string> {
+  const { t, locale } = useTranslations();
+  return useMemo(
+    () => ({
+      password: t("admin.providerPassword"),
+      passkey: t("admin.providerPasskey"),
+      api_token: t("admin.providerApiToken"),
+      withings: t("admin.providerWithings"),
+      unknown: t("admin.providerUnknown"),
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [locale],
