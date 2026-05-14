@@ -138,6 +138,10 @@ export const MEASURE_TYPE_MAP: Record<number, { type: string; factor?: number }>
   77: { type: "TOTAL_BODY_WATER" }, // Hydration / water mass (kg)
   88: { type: "BONE_MASS" }, // Bone mass (kg)
   54: { type: "OXYGEN_SATURATION" }, // SpO2 (% — only ScanWatch / pulse-ox products)
+  // v1.4.25 — older Withings firmware (and some SDK examples) report
+  // SpO2 under meastype 35 instead of 54. Both target OXYGEN_SATURATION
+  // in percent; the exponent decode handles 0.97 vs 97 transparently.
+  35: { type: "OXYGEN_SATURATION" },
 };
 
 export interface WithingsMeasure {

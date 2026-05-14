@@ -60,6 +60,35 @@ describe("MEASURE_TYPE_MAP", () => {
   it("maps Withings meastype 71 (current-gen Thermo) → BODY_TEMPERATURE", () => {
     expect(MEASURE_TYPE_MAP[71]).toEqual({ type: "BODY_TEMPERATURE" });
   });
+
+  it("maps Withings meastype 35 (legacy SpO2) → OXYGEN_SATURATION", () => {
+    expect(MEASURE_TYPE_MAP[35]).toEqual({ type: "OXYGEN_SATURATION" });
+  });
+});
+
+describe("fetchMeasurements — SpO2 alt code (meastype 35)", () => {
+  it("decodes a legacy-firmware SpO2 reading into OXYGEN_SATURATION %", async () => {
+    // 97% as Withings exponent encoding: value=97, unit=0.
+    installFetchMock(fakeGetmeasPayload([{ type: 35, value: 97, unit: 0 }]));
+    const out = await fetchMeasurements("token");
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ type: "OXYGEN_SATURATION", value: 97 });
+  });
+
+  it("co-exists with meastype 54 in the same payload (mixed firmware)", async () => {
+    installFetchMock(
+      fakeGetmeasPayload([
+        { type: 35, value: 96, unit: 0 },
+        { type: 54, value: 98, unit: 0 },
+      ]),
+    );
+    const out = await fetchMeasurements("token");
+    expect(out).toHaveLength(2);
+    expect(out.map((r) => r.type)).toEqual([
+      "OXYGEN_SATURATION",
+      "OXYGEN_SATURATION",
+    ]);
+  });
 });
 
 describe("fetchMeasurements — body temperature (meastype 71)", () => {
