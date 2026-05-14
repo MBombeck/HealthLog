@@ -149,7 +149,7 @@ export function InsightsTabStrip({
       )}
     >
       <div className="flex items-center gap-2">
-        <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex min-w-0 flex-1 [scrollbar-width:none] gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
           {SECTION_IDS.map((id) => {
             const isActive = activeId === id;
             return (

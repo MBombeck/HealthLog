@@ -79,10 +79,7 @@ const DESKTOP_BUCKETS: ReadonlyArray<TickBucket> = [
   { minPoints: 181, interval: 29 }, // 180+ days   → monthly
 ];
 
-function resolveBucket(
-  pointCount: number,
-  viewportWidth: number,
-): TickBucket {
+function resolveBucket(pointCount: number, viewportWidth: number): TickBucket {
   const buckets =
     viewportWidth < MOBILE_DESKTOP_BREAKPOINT_PX
       ? MOBILE_BUCKETS
@@ -116,9 +113,8 @@ export function chooseTickInterval(
   viewportWidth: number,
 ): number {
   if (!Number.isFinite(pointCount) || pointCount <= 0) return 0;
-  const safeViewport = Number.isFinite(viewportWidth) && viewportWidth > 0
-    ? viewportWidth
-    : 1280;
+  const safeViewport =
+    Number.isFinite(viewportWidth) && viewportWidth > 0 ? viewportWidth : 1280;
   const bucket = resolveBucket(pointCount, safeViewport);
   return Math.max(0, bucket.interval);
 }
