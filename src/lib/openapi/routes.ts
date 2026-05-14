@@ -35,6 +35,7 @@ import {
   deviceTypeEnum,
   sourcePrioritySchema,
 } from "@/lib/validations/source-priority";
+import { createBatchWorkoutSchema } from "@/lib/validations/workout";
 
 /**
  * Common envelopes — every HealthLog API response wraps payload in
@@ -103,6 +104,12 @@ coachPrefsSchema.meta({
   id: "CoachPrefs",
   description:
     "Per-user Coach prompt-tuning preferences (v1.4.23 H4). All fields default to the legacy v1.4.22 behaviour when omitted.",
+});
+
+createBatchWorkoutSchema.meta({
+  id: "CreateBatchWorkoutRequest",
+  description:
+    "v1.4.25 W16b — typed workout batch ingest. Each entry is an HKWorkout-aligned record with an optional nested GeoJSON LineString route. Up to 100 workouts per call; nested route geometry capped at 20 000 points. Withings server-to-server callers pass source: WITHINGS and ship no route (Withings reports aggregates only).",
 });
 
 const coachMessageFeedbackBody = z
@@ -279,6 +286,34 @@ const batchResponse = z
     entries: z.array(batchEntryResult),
   })
   .meta({ id: "AppleHealthBatchResponse" });
+
+// v1.4.25 W16b — typed workout batch ingest response envelope. Mirrors
+// the measurements batch shape but reports the `workouts` count rather
+// than the entries count, and the `skipped` field is reserved (the
+// Zod schema rejects malformed entries with a 400 before the per-entry
+// pass, so today's responses always carry an empty array).
+const workoutBatchEntryResult = z
+  .object({
+    index: z.number().int().nonnegative(),
+    status: z.enum(["inserted", "duplicate", "skipped"]),
+    reason: z.string().optional(),
+  })
+  .meta({ id: "WorkoutBatchEntryResult" });
+
+const workoutBatchResponse = z
+  .object({
+    processed: z.number().int().nonnegative(),
+    inserted: z.number().int().nonnegative(),
+    duplicates: z.number().int().nonnegative(),
+    skipped: z.array(
+      z.object({
+        index: z.number().int().nonnegative(),
+        reason: z.string(),
+      }),
+    ),
+    entries: z.array(workoutBatchEntryResult),
+  })
+  .meta({ id: "WorkoutBatchResponse" });
 
 const deleteByExternalIdsRequest = z
   .object({
@@ -519,6 +554,41 @@ export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               ),
             },
           },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/workouts/batch": {
+    post: {
+      tags: ["Measurements"],
+      summary: "Typed workout batch ingest (v1.4.25 W16b)",
+      description:
+        "Server-side ingest endpoint for HKWorkout records (iOS) and Withings activity rows (server-to-server). Up to 100 workouts per call; nested route geometry (GeoJSON LineString) is capped at 20 000 points and stored in a 1:1 `WorkoutRoute` row keyed by `workoutId`. Idempotent via the `Idempotency-Key` header (replay window 24h). Per-entry status (`inserted | duplicate | skipped`) lets the iOS sync cursor checkpoint accurately. The request body ceiling is 5 MB enforced at the HTTP layer — clients above the ceiling receive a 413 with `workout.batch.payload_too_large`.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: createBatchWorkoutSchema } },
+      },
+      responses: {
+        "200": {
+          description: "Batch processed.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                workoutBatchResponse,
+                "BatchWorkoutsResponse",
+              ),
+            },
+          },
+        },
+        "400": {
+          description:
+            "Batch validation failed (over-cap, schema reject, or oversized route).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "413": {
+          description: "Request body exceeds the 5 MB ceiling.",
+          content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
       },

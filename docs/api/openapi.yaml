@@ -164,6 +164,23 @@ components:
         - data
         - error
       type: object
+    BatchWorkoutsResponse:
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/WorkoutBatchResponse"
+        error:
+          type: "null"
+        meta:
+          additionalProperties: false
+          properties:
+            requestId:
+              type: string
+          type: object
+      required:
+        - data
+        - error
+      type: object
     CoachMessageFeedbackRequest:
       description: Per-message helpful/unhelpful feedback (v1.4.23 H7). Optional `reason` is free-form prose, capped at 200 chars.
       properties:
@@ -1431,6 +1448,66 @@ components:
       required:
         - refreshToken
       type: object
+    WorkoutBatchEntryResult:
+      additionalProperties: false
+      properties:
+        index:
+          maximum: 9007199254740991
+          minimum: 0
+          type: integer
+        reason:
+          type: string
+        status:
+          enum:
+            - inserted
+            - duplicate
+            - skipped
+          type: string
+      required:
+        - index
+        - status
+      type: object
+    WorkoutBatchResponse:
+      additionalProperties: false
+      properties:
+        duplicates:
+          maximum: 9007199254740991
+          minimum: 0
+          type: integer
+        entries:
+          items:
+            $ref: "#/components/schemas/WorkoutBatchEntryResult"
+          type: array
+        inserted:
+          maximum: 9007199254740991
+          minimum: 0
+          type: integer
+        processed:
+          maximum: 9007199254740991
+          minimum: 0
+          type: integer
+        skipped:
+          items:
+            additionalProperties: false
+            properties:
+              index:
+                maximum: 9007199254740991
+                minimum: 0
+                type: integer
+              reason:
+                type: string
+            required:
+              - index
+              - reason
+            type: object
+          type: array
+      required:
+        - processed
+        - inserted
+        - duplicates
+        - skipped
+        - entries
+      type: object
   securitySchemes:
     bearerAuth:
       bearerFormat: hlk_<64hex>
@@ -2300,6 +2377,189 @@ paths:
         "422": *a2
         "429": *a3
       summary: Delete measurements by external ID (iOS deletion-sync)
+      tags:
+        - Measurements
+  /api/workouts/batch:
+    post:
+      description: Server-side ingest endpoint for HKWorkout records (iOS) and Withings activity rows (server-to-server). Up
+        to 100 workouts per call; nested route geometry (GeoJSON LineString) is capped at 20 000 points and stored in a
+        1:1 `WorkoutRoute` row keyed by `workoutId`. Idempotent via the `Idempotency-Key` header (replay window 24h).
+        Per-entry status (`inserted | duplicate | skipped`) lets the iOS sync cursor checkpoint accurately. The request
+        body ceiling is 5 MB enforced at the HTTP layer — clients above the ceiling receive a 413 with
+        `workout.batch.payload_too_large`.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                workouts:
+                  items:
+                    properties:
+                      avgHeartRate:
+                        maximum: 300
+                        minimum: 20
+                        type: integer
+                      elevationM:
+                        maximum: 10000
+                        minimum: -500
+                        type: number
+                      endedAt:
+                        format: date-time
+                        pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                        type: string
+                      externalId:
+                        maxLength: 128
+                        type: string
+                      externalSourceVersion:
+                        maxLength: 64
+                        type: string
+                      maxHeartRate:
+                        maximum: 300
+                        minimum: 20
+                        type: integer
+                      metadata:
+                        additionalProperties: {}
+                        propertyNames:
+                          type: string
+                        type: object
+                      minHeartRate:
+                        maximum: 300
+                        minimum: 20
+                        type: integer
+                      pauseDurationSec:
+                        maximum: 86400
+                        minimum: 0
+                        type: integer
+                      route:
+                        properties:
+                          geometry:
+                            properties:
+                              coordinates:
+                                items:
+                                  items:
+                                    type: number
+                                  prefixItems:
+                                    - maximum: 180
+                                      minimum: -180
+                                      type: number
+                                    - maximum: 90
+                                      minimum: -90
+                                      type: number
+                                  type: array
+                                maxItems: 20000
+                                minItems: 2
+                                type: array
+                              type:
+                                const: LineString
+                                type: string
+                            required:
+                              - type
+                              - coordinates
+                            type: object
+                          sampleTimestamps:
+                            items:
+                              properties:
+                                hr:
+                                  maximum: 300
+                                  minimum: 20
+                                  type: integer
+                                speedMs:
+                                  maximum: 50
+                                  minimum: 0
+                                  type: number
+                                t:
+                                  format: date-time
+                                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                                  type: string
+                              required:
+                                - t
+                              type: object
+                            type: array
+                        required:
+                          - geometry
+                        type: object
+                      source:
+                        default: MANUAL
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                        type: string
+                      sportType:
+                        enum:
+                          - walking
+                          - running
+                          - cycling
+                          - hiking
+                          - swimming
+                          - rowing
+                          - elliptical
+                          - stairClimber
+                          - yoga
+                          - mindAndBody
+                          - strength
+                          - hiit
+                          - dance
+                          - golf
+                          - tennis
+                          - basketball
+                          - soccer
+                          - crossTraining
+                          - mixedCardio
+                          - other
+                        type: string
+                      startedAt:
+                        format: date-time
+                        pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                        type: string
+                      stepCount:
+                        maximum: 200000
+                        minimum: 0
+                        type: integer
+                      totalDistanceM:
+                        maximum: 1000000
+                        minimum: 0
+                        type: number
+                      totalEnergyKcal:
+                        maximum: 50000
+                        minimum: 0
+                        type: number
+                    required:
+                      - sportType
+                      - startedAt
+                      - endedAt
+                    type: object
+                  maxItems: 100
+                  minItems: 1
+                  type: array
+              required:
+                - workouts
+              type: object
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchWorkoutsResponse"
+          description: Batch processed.
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: Batch validation failed (over-cap, schema reject, or oversized route).
+        "401": *a1
+        "413":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: Request body exceeds the 5 MB ceiling.
+        "422": *a2
+        "429": *a3
+      summary: Typed workout batch ingest (v1.4.25 W16b)
       tags:
         - Measurements
 servers:
