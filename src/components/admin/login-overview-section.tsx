@@ -7,6 +7,7 @@ import {
   ChevronDown,
   Download,
   Loader2,
+  MapPin,
   ScrollText,
   XCircle,
 } from "lucide-react";
@@ -367,11 +368,23 @@ export function LoginOverviewSection() {
                     <th className="px-3 py-2 text-left font-medium">
                       {t("admin.action")}
                     </th>
-                    <th className="px-3 py-2 text-right font-medium">
+                    <th className="px-3 py-2 text-left font-medium">
                       {t("admin.ip")}
                     </th>
-                    <th className="px-3 py-2 text-right font-medium">
-                      {t("admin.location")}
+                    {/*
+                      v1.4.25 W8b — Standort column. Previously rendered
+                      `text-right`, which on wide audit tables let the
+                      `Berlin, DE` label drift to the table edge and
+                      blend into the timestamp gutter. Left-aligning it
+                      (and dropping the `text-right` from IP for
+                      consistency) makes Standort a first-class column
+                      that admins actually notice.
+                    */}
+                    <th className="px-3 py-2 text-left font-medium">
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="h-3 w-3" aria-hidden="true" />
+                        {t("admin.location")}
+                      </span>
                     </th>
                     <th className="px-3 py-2 text-right font-medium">
                       {t("admin.timestamp")}
@@ -403,10 +416,10 @@ export function LoginOverviewSection() {
                         >
                           {AUTH_ACTION_LABELS[entry.action] ?? entry.action}
                         </td>
-                        <td className="text-muted-foreground px-3 py-2 text-right font-mono text-xs">
+                        <td className="text-muted-foreground px-3 py-2 font-mono text-xs">
                           {entry.ipAddress ?? "—"}
                         </td>
-                        <td className="text-muted-foreground px-3 py-2 text-right text-xs">
+                        <td className="text-muted-foreground px-3 py-2 text-xs">
                           {entry.location ?? "—"}
                         </td>
                         <td className="text-muted-foreground px-3 py-2 text-right text-xs whitespace-nowrap">
