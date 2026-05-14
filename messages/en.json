@@ -250,6 +250,16 @@
     "vo2Max": "VO₂ max",
     "vo2MaxUnit": "mL/(kg·min)",
     "bpInTarget": "BP in Target",
+    "weightShort": "Weight",
+    "bloodPressureSysShort": "BP (Sys)",
+    "bloodPressureDiaShort": "BP (Dia)",
+    "pulseShort": "Pulse",
+    "bodyFatShort": "Body Fat",
+    "moodShort": "Mood",
+    "sleepShort": "Sleep",
+    "stepsShort": "Steps",
+    "vo2MaxShort": "VO₂ max",
+    "bpInTargetShort": "BP in Target",
     "days30Short": "30d",
     "medications": "Medications",
     "insightsPreview": "AI Insights preview",
@@ -2791,8 +2801,8 @@
   },
   "i18n": {
     "maintainershipBanner": {
-      "notice": "This translation is AI-maintained and may contain inaccuracies.",
-      "cta": "Help out on GitHub",
+      "notice": "This locale is AI-drafted including the Coach's safety-critical instructions. Automated validation runs in CI; please report any AI Coach regressions on GitHub.",
+      "cta": "Report on GitHub",
       "dismiss": "Dismiss"
     }
   },

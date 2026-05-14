@@ -82,4 +82,45 @@ describe("<MaintainershipBanner>", () => {
     expect(cfg.isMaintainedLocale("it")).toBe(false);
     expect(cfg.isMaintainedLocale("pl")).toBe(false);
   });
+
+  // v1.4.25 W14c — banner copy upgraded to acknowledge that the
+  // FR/ES/IT/PL Coach prompts are AI-drafted including safety-critical
+  // instructions. Pin the new wording so a copy regression cannot
+  // quietly soften the disclosure.
+  it("EN banner copy names safety-critical AI-drafted Coach content", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const en = JSON.parse(
+      readFileSync(join(process.cwd(), "messages", "en.json"), "utf8"),
+    ) as { i18n: { maintainershipBanner: { notice: string } } };
+    const notice = en.i18n.maintainershipBanner.notice;
+    expect(notice).toMatch(/AI-drafted/);
+    expect(notice).toMatch(/safety-critical/);
+    expect(notice).toMatch(/GitHub/);
+    expect(notice).toMatch(/Coach/);
+  });
+
+  it("every AI-initial locale's banner notice acknowledges the AI-drafted Coach content", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const aiDraftPatterns: Record<string, RegExp> = {
+      fr: /rédigée par IA/,
+      es: /redactado por IA/,
+      it: /redatta tramite IA/,
+      pl: /opracowana przez AI/,
+    };
+    for (const [locale, pattern] of Object.entries(aiDraftPatterns)) {
+      const data = JSON.parse(
+        readFileSync(
+          join(process.cwd(), "messages", `${locale}.json`),
+          "utf8",
+        ),
+      ) as { i18n: { maintainershipBanner: { notice: string } } };
+      const notice = data.i18n.maintainershipBanner.notice;
+      expect(notice, `${locale} banner notice`).toMatch(pattern);
+      expect(notice, `${locale} banner notice mentions Coach`).toMatch(
+        /Coach/,
+      );
+    }
+  });
 });

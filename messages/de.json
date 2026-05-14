@@ -250,6 +250,16 @@
     "vo2Max": "VO₂ max",
     "vo2MaxUnit": "mL/(kg·min)",
     "bpInTarget": "BD im Zielbereich",
+    "weightShort": "Gewicht",
+    "bloodPressureSysShort": "BD (Sys)",
+    "bloodPressureDiaShort": "BD (Dia)",
+    "pulseShort": "Puls",
+    "bodyFatShort": "KF",
+    "moodShort": "Stimmung",
+    "sleepShort": "Schlaf",
+    "stepsShort": "Schritte",
+    "vo2MaxShort": "VO₂ max",
+    "bpInTargetShort": "BD-Ziel",
     "days30Short": "30T",
     "medications": "Medikamente",
     "insightsPreview": "KI-Insights-Vorschau",
@@ -2791,8 +2801,8 @@
   },
   "i18n": {
     "maintainershipBanner": {
-      "notice": "Diese Übersetzung wird per KI gepflegt und kann ungenau sein.",
-      "cta": "Hilf mit auf GitHub",
+      "notice": "Diese Sprachversion ist KI-entworfen, inklusive der sicherheitskritischen Coach-Anweisungen. Automatisierte Validierung läuft in CI; KI-Coach-Regressionen bitte auf GitHub melden.",
+      "cta": "Auf GitHub melden",
       "dismiss": "Schließen"
     }
   },
