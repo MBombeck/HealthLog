@@ -7,16 +7,46 @@
  * rotation data), and the running pen-inventory math. The base
  * /api/medications/[id] GET is unchanged so v1.4.24 consumers keep
  * working untouched.
+ *
+ * v1.4.25 W21 Fix-K — POST hardened with Zod parse, audit-log, 30/min
+ * rate-limit, finite-number guard on `doseValue`, length cap on `note`,
+ * and sane bounds on `effectiveFrom`. Mirrors the sibling
+ * `/inventory` + `/side-effects` route shape.
  */
 
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiError, apiSuccess } from "@/lib/api-response";
+import { auditLog } from "@/lib/auth/audit";
+import { annotate } from "@/lib/logging/context";
+import {
+  apiError,
+  apiSuccess,
+  getClientIp,
+  safeJson,
+} from "@/lib/api-response";
+import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { glp1PostBodySchema } from "@/lib/validations/medication";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
 const LOW_STOCK_DOSE_THRESHOLD = 4;
+const POST_RATE_LIMIT = 30;
+const POST_WINDOW_MS = 60_000;
+
+async function assertMedicationOwnership(
+  medicationId: string,
+  userId: string,
+) {
+  const med = await prisma.medication.findUnique({
+    where: { id: medicationId },
+    select: { id: true, userId: true },
+  });
+  if (!med || med.userId !== userId) {
+    return apiError("Medication not found", 404);
+  }
+  return null;
+}
 
 export const GET = apiHandler(
   async (_request: NextRequest, { params }: RouteParams) => {
@@ -88,90 +118,118 @@ export const GET = apiHandler(
   },
 );
 
-const doseChangeSchema = {
-  effectiveFrom: "string",
-  doseValue: "number",
-  doseUnit: "string",
-  note: "string?",
-} as const;
-
-const inventorySchema = {
-  delta: "number",
-  reason: "string",
-} as const;
-
-void doseChangeSchema;
-void inventorySchema;
-
-interface DoseChangeBody {
-  effectiveFrom?: string;
-  doseValue?: number;
-  doseUnit?: string;
-  note?: string | null;
-}
-
-interface InventoryBody {
-  delta?: number;
-  reason?: string;
-}
-
-interface Glp1PostBody {
-  doseChange?: DoseChangeBody;
-  inventory?: InventoryBody;
-}
-
 /**
  * POST creates a new dose change OR inventory event (the body picks
  * one — caller specifies which). Convenience endpoint so the
  * medication-card disclosure can write rows without dispatching to
  * /api/medications/[id]/dose-change + /api/medications/[id]/inventory
  * separately for the v1.4.25 cut.
+ *
+ * Validation: `glp1PostBodySchema` (XOR of `doseChange` / `inventory`),
+ * with finite-number guards on `doseValue` + `delta`, bounded `note`
+ * + `reason`, and a ±5-year window on `effectiveFrom`.
+ * Rate-limit: 30/min/user (same as sibling POST routes).
+ * Audit: `medication.glp1.update` for every successful mutation.
  */
 export const POST = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
     const { user } = await requireAuth();
     const { id } = await params;
-    const medication = await prisma.medication.findUnique({ where: { id } });
-    if (!medication || medication.userId !== user.id) {
-      return apiError("Medication not found", 404);
+
+    const guard = await assertMedicationOwnership(id, user.id);
+    if (guard) return guard;
+
+    // Per-user POST rate-limit — matches the 30/min sibling routes
+    // (inventory, side-effects). Generous for a hand-driven session,
+    // tight enough to cut off the spam case.
+    const rl = await checkRateLimit(
+      `medication-glp1:post:${user.id}`,
+      POST_RATE_LIMIT,
+      POST_WINDOW_MS,
+    );
+    if (!rl.allowed) {
+      const response = apiError("Too many requests", 429);
+      for (const [k, v] of Object.entries(rateLimitHeaders(rl))) {
+        response.headers.set(k, v);
+      }
+      return response;
     }
 
-    const body = (await request
-      .json()
-      .catch(() => null)) as Glp1PostBody | null;
-    if (!body) return apiError("Invalid body", 400);
+    const { data: body, error: jsonError } = await safeJson(request);
+    if (jsonError) return jsonError;
 
-    if (body.doseChange) {
-      const { effectiveFrom, doseValue, doseUnit, note } = body.doseChange;
-      if (!effectiveFrom || typeof doseValue !== "number" || !doseUnit) {
-        return apiError(
-          "doseChange.effectiveFrom + doseValue + doseUnit required",
-          422,
-        );
-      }
+    const parsed = glp1PostBodySchema.safeParse(body);
+    if (!parsed.success) {
+      return apiError(parsed.error.issues[0].message, 422);
+    }
+
+    const ip = getClientIp(request);
+
+    if (parsed.data.doseChange) {
+      const { effectiveFrom, doseValue, doseUnit, note } =
+        parsed.data.doseChange;
       const created = await prisma.medicationDoseChange.create({
         data: {
           medicationId: id,
-          effectiveFrom: new Date(effectiveFrom),
+          effectiveFrom,
           doseValue,
           doseUnit,
           note: note ?? null,
         },
       });
+
+      await auditLog("medication.glp1.update", {
+        userId: user.id,
+        ipAddress: ip,
+        details: {
+          medicationId: id,
+          kind: "doseChange",
+          doseChangeId: created.id,
+          doseValue,
+          doseUnit,
+        },
+      });
+
+      annotate({
+        action: {
+          name: "medication.glp1.doseChange.create",
+          entity_type: "medication_dose_change",
+          entity_id: created.id,
+        },
+        meta: { medication_id: id, doseValue, doseUnit },
+      });
+
       return apiSuccess({ doseChange: created }, 201);
     }
 
-    if (body.inventory) {
-      const { delta, reason } = body.inventory;
-      if (typeof delta !== "number" || !reason) {
-        return apiError("inventory.delta + reason required", 422);
-      }
-      const created = await prisma.medicationInventoryEvent.create({
-        data: { medicationId: id, delta, reason },
-      });
-      return apiSuccess({ inventory: created }, 201);
-    }
+    // The schema's XOR refinement guarantees `inventory` is present
+    // when `doseChange` is not, so the non-null assertion is safe.
+    const { delta, reason } = parsed.data.inventory!;
+    const created = await prisma.medicationInventoryEvent.create({
+      data: { medicationId: id, delta, reason },
+    });
 
-    return apiError("Body must carry doseChange or inventory", 422);
+    await auditLog("medication.glp1.update", {
+      userId: user.id,
+      ipAddress: ip,
+      details: {
+        medicationId: id,
+        kind: "inventory",
+        inventoryEventId: created.id,
+        delta,
+        reason,
+      },
+    });
+
+    annotate({
+      action: {
+        name: "medication.glp1.inventory.create",
+        entity_type: "medication_inventory_event",
+        entity_id: created.id,
+      },
+      meta: { medication_id: id, delta },
+    });
+
+    return apiSuccess({ inventory: created }, 201);
   },
 );

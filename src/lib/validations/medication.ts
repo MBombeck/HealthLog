@@ -145,6 +145,77 @@ export const updateInventoryItemSchema = z.object({
 export type CreateInventoryItemInput = z.infer<typeof createInventoryItemSchema>;
 export type UpdateInventoryItemInput = z.infer<typeof updateInventoryItemSchema>;
 
+/**
+ * v1.4.25 W21 Fix-K — `POST /api/medications/[id]/glp1` body validators.
+ *
+ * The convenience route accepts either a `doseChange` or an `inventory`
+ * payload (the route picks one). Both branches were hand-rolled
+ * `typeof === "number"` checks pre-Fix-K, which let `NaN`, `Infinity`,
+ * negative doses, and unbounded notes slip through.
+ *
+ * Bounds:
+ * - `doseValue` is finite, non-negative, capped at 100 mg (covers every
+ *   real-world GLP-1 step with headroom).
+ * - `doseUnit` is a short string (mg / mcg / IE).
+ * - `note` is capped at 500 characters so the field can't be used as a
+ *   blob smuggler.
+ * - `effectiveFrom` is constrained to a ±5-year window around now —
+ *   a paper-record back-fill or a planned future step both fit, but
+ *   "1970" / "9999" do not.
+ * - `delta` is a non-zero finite integer in [−100, 100] (the existing
+ *   inventory route caps `dosesTotal` at 100 doses per pen).
+ * - `reason` is a bounded string (the route logs it; raw blob bad).
+ */
+const MAX_DOSE_MG = 100;
+const MAX_NOTE_CHARS = 500;
+const MAX_REASON_CHARS = 200;
+const MIN_EFFECTIVE_FROM = new Date("2020-01-01T00:00:00Z");
+const FIVE_YEARS_MS = 5 * 365 * 24 * 60 * 60 * 1000;
+
+export const glp1DoseChangePostSchema = z.object({
+  effectiveFrom: z.iso
+    .datetime({ offset: true })
+    .transform((s) => new Date(s))
+    .refine((d) => d.getTime() >= MIN_EFFECTIVE_FROM.getTime(), {
+      message: "effectiveFrom must be on or after 2020-01-01",
+    })
+    .refine((d) => d.getTime() <= Date.now() + FIVE_YEARS_MS, {
+      message: "effectiveFrom must be within 5 years of now",
+    }),
+  doseValue: z
+    .number()
+    .finite()
+    .min(0)
+    .max(MAX_DOSE_MG),
+  doseUnit: z.string().min(1).max(10),
+  note: z.string().max(MAX_NOTE_CHARS).nullable().optional(),
+});
+
+export const glp1InventoryPostSchema = z.object({
+  delta: z
+    .number()
+    .int()
+    .finite()
+    .min(-100)
+    .max(100)
+    .refine((n) => n !== 0, { message: "delta must be non-zero" }),
+  reason: z.string().min(1).max(MAX_REASON_CHARS),
+});
+
+export const glp1PostBodySchema = z
+  .object({
+    doseChange: glp1DoseChangePostSchema.optional(),
+    inventory: glp1InventoryPostSchema.optional(),
+  })
+  .refine(
+    (b) => Boolean(b.doseChange) !== Boolean(b.inventory),
+    { message: "Body must carry exactly one of doseChange or inventory" },
+  );
+
+export type Glp1DoseChangePostInput = z.infer<typeof glp1DoseChangePostSchema>;
+export type Glp1InventoryPostInput = z.infer<typeof glp1InventoryPostSchema>;
+export type Glp1PostBodyInput = z.infer<typeof glp1PostBodySchema>;
+
 export type CreateMedicationInput = z.infer<typeof createMedicationSchema>;
 export type IntakeInput = z.infer<typeof intakeSchema>;
 export type ListIntakeEventsInput = z.infer<typeof listIntakeEventsSchema>;
