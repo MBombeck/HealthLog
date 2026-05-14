@@ -1015,6 +1015,7 @@ export default function InsightsPage() {
         </div>
 
         <HealthChart
+          chartKey="bp"
           types={["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"]}
           title={t("charts.bloodPressure")}
           colors={["#ff79c6", "#8be9fd"]}
@@ -1227,6 +1228,7 @@ export default function InsightsPage() {
         </div>
 
         <HealthChart
+          chartKey="weight"
           types={["WEIGHT"]}
           title={t("charts.weight")}
           colors={["#bd93f9"]}
@@ -1397,6 +1399,7 @@ export default function InsightsPage() {
         </div>
 
         <HealthChart
+          chartKey="pulse"
           types={["PULSE"]}
           title={t("charts.pulse")}
           colors={["#50fa7b"]}
@@ -1431,7 +1434,7 @@ export default function InsightsPage() {
             </Badge>
           </div>
 
-          <MoodChart compareBaseline={compareBaseline} />
+          <MoodChart chartKey="mood" compareBaseline={compareBaseline} />
 
           <InsightStatusCard
             title={t("insights.assessmentTitle")}
@@ -1562,6 +1565,7 @@ export default function InsightsPage() {
 
         {user?.heightCm ? (
           <HealthChart
+            chartKey="bmi"
             types={["WEIGHT"]}
             title={t("targets.bmi")}
             colors={["#f1fa8c"]}

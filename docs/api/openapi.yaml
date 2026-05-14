@@ -210,8 +210,7 @@ components:
         - error
       type: object
     DeviceRegisterRequest:
-      description:
-        Native device registration. Re-registering an APNs token belonging to another user returns 409
+      description: Native device registration. Re-registering an APNs token belonging to another user returns 409
         (cross-user-hijack guard).
       properties:
         apnsEnvironment:
@@ -354,8 +353,7 @@ components:
       type: object
     InsightsComprehensiveResponse:
       additionalProperties: false
-      description:
-        AI-generated insights bundle. Strict-schema validated server-side; Coach-routed when the insight surface
+      description: AI-generated insights bundle. Strict-schema validated server-side; Coach-routed when the insight surface
         needs day-level grounding.
       properties:
         citations:
@@ -699,7 +697,18 @@ info:
   contact:
     name: HealthLog
     url: https://healthlog.dev
-  description: Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
+  description: >-
+    Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
+
+
+    ## Date-time contract
+
+
+    Every field marked `format: date-time` is an ISO-8601 instant. The schema pattern accepts both `Z` (UTC) and
+    `±HH:MM` (offset) suffixes; clients must accept either. Server responses since v1.4.25 emit timestamps with the
+    requesting user's display-timezone offset when a user context exists (exports, doctor-report PDF).
+    Background-job-authored payloads (backups, admin tools) emit `Z`. Native iOS clients should always parse via a
+    Foundation ISO-8601 formatter with the `withInternetDateTime` + `withTimeZone` options enabled.
   license:
     name: AGPL-3.0
     url: https://github.com/MBombeck/HealthLog/blob/main/LICENSE
@@ -709,8 +718,7 @@ openapi: 3.1.0
 paths:
   /api/auth/login:
     post:
-      description:
-        "Browser callers receive a session cookie. Native callers (X-Client-Type: native or HealthLog-iOS UA
+      description: "Browser callers receive a session cookie. Native callers (X-Client-Type: native or HealthLog-iOS UA
         prefix) additionally receive a paired access + refresh token."
       requestBody:
         content:
@@ -758,8 +766,7 @@ paths:
         - Auth
   /api/auth/me/coach-prefs:
     get:
-      description:
-        Returns the persisted preferences with defaults filled in. Null persisted state resolves to the legacy
+      description: Returns the persisted preferences with defaults filled in. Null persisted state resolves to the legacy
         v1.4.22 defaults.
       responses:
         "200":
@@ -775,8 +782,7 @@ paths:
       tags:
         - Auth
     put:
-      description:
-        Persists the supplied prefs. Body is validated against `CoachPrefs`; missing keys fall back to the
+      description: Persists the supplied prefs. Body is validated against `CoachPrefs`; missing keys fall back to the
         documented defaults.
       requestBody:
         content:
@@ -854,8 +860,7 @@ paths:
         - Auth
   /api/auth/refresh:
     post:
-      description:
-        Reuse of a consumed refresh token revokes every refresh token still active for the originating device
+      description: Reuse of a consumed refresh token revokes every refresh token still active for the originating device
         (per-device blast radius from v1.4.23). Legacy tokens issued before v1.4.23 with a null deviceId fall back to
         revoke-all-for-user.
       requestBody:
@@ -879,8 +884,7 @@ paths:
         - Auth
   /api/devices:
     post:
-      description:
-        Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other returns
+      description: Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other returns
         422. Cross-user re-registration of either identifier returns 409.
       requestBody:
         content:
@@ -909,8 +913,7 @@ paths:
         - Devices
   /api/insights/chat/messages/{id}/feedback:
     post:
-      description:
-        Persists a helpful/unhelpful rating for a single Coach reply. Reuses the v1.4.16 RecommendationFeedback
+      description: Persists a helpful/unhelpful rating for a single Coach reply. Reuses the v1.4.16 RecommendationFeedback
         table via the polymorphic `targetType` column. The aggregator buckets ratings by (promptVersion, tone,
         verbosity).
       requestBody:
@@ -946,8 +949,7 @@ paths:
         - Insights
   /api/insights/comprehensive:
     get:
-      description:
-        Full Insights surface — daily briefing, recommendations with rationale, optional weekly report + storyboard
+      description: Full Insights surface — daily briefing, recommendations with rationale, optional weekly report + storyboard
         annotations. Strict-schema validated server-side.
       responses:
         "200":
@@ -1119,8 +1121,7 @@ paths:
         - Measurements
   /api/measurements/batch:
     post:
-      description:
-        Up to 500 HealthKit entries per call. Idempotent via the `Idempotency-Key` header (replay window 24h).
+      description: Up to 500 HealthKit entries per call. Idempotent via the `Idempotency-Key` header (replay window 24h).
         Per-entry status lets the iOS client advance its sync cursor accurately.
       requestBody:
         content:

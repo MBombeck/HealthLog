@@ -35,7 +35,11 @@ export const openApiBase: Pick<
     title: "HealthLog API",
     version: "1.4.23",
     description:
-      "Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.",
+      "Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.\n\n" +
+      "## Date-time contract\n\n" +
+      "Every field marked `format: date-time` is an ISO-8601 instant. The schema pattern accepts both `Z` (UTC) and `±HH:MM` (offset) suffixes; clients must accept either. " +
+      "Server responses since v1.4.25 emit timestamps with the requesting user's display-timezone offset when a user context exists (exports, doctor-report PDF). Background-job-authored payloads (backups, admin tools) emit `Z`. " +
+      "Native iOS clients should always parse via a Foundation ISO-8601 formatter with the `withInternetDateTime` + `withTimeZone` options enabled.",
     license: {
       name: "AGPL-3.0",
       url: "https://github.com/MBombeck/HealthLog/blob/main/LICENSE",
