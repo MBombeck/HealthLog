@@ -2,9 +2,34 @@ import { describe, expect, it } from "vitest";
 import {
   APPLE_HEALTH_SLEEP_STAGE_MAP,
   APPLE_HEALTH_TYPE_MAP,
+  HK_QUANTITY_TYPE_DEFERRED,
+  HK_QUANTITY_TYPE_TO_MEASUREMENT,
   mapAppleHealthEntry,
 } from "../apple-health-mapping";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
+import type { MeasurementType } from "@/generated/prisma/client";
+
+/**
+ * MeasurementType values that Apple HealthKit has no native counterpart
+ * for. Listing them here means the exhaustiveness check below is a tight
+ * fence — additions to the canonical enum that genuinely don't have an HK
+ * twin (e.g. Withings-only metrics) stay out of the mapping table without
+ * silently failing the assertion.
+ */
+const MEASUREMENT_TYPES_WITHOUT_HK_COUNTERPART = new Set<MeasurementType>([
+  // Withings-only metrics (no HK identifier ships any of these as a
+  // first-class quantity — Apple delegates body-composition tail to
+  // third-party devices via the BodyMass/BodyFat pair).
+  "TOTAL_BODY_WATER",
+  "BONE_MASS",
+  "FAT_FREE_MASS",
+  "FAT_MASS",
+  "MUSCLE_MASS",
+  "SKIN_TEMPERATURE",
+  "PULSE_WAVE_VELOCITY",
+  "VASCULAR_AGE",
+  "VISCERAL_FAT",
+]);
 
 describe("APPLE_HEALTH_TYPE_MAP", () => {
   it("only references measurement types that exist in the canonical enum", () => {
@@ -35,6 +60,78 @@ describe("APPLE_HEALTH_TYPE_MAP", () => {
         "HKQuantityTypeIdentifierVO2Max",
       ].sort(),
     );
+    // Audio exposure + time-in-daylight are environment / lifestyle
+    // metrics — Apple does not gate them behind an explicit consent
+    // screen beyond the bulk "Health share" prompt, so the mapping
+    // entries stay non-sensitive.
+    const newEntries = [
+      "HKQuantityTypeIdentifierEnvironmentalAudioExposure",
+      "HKQuantityTypeIdentifierHeadphoneAudioExposure",
+      "HKQuantityTypeIdentifierTimeInDaylight",
+    ];
+    for (const id of newEntries) {
+      expect(APPLE_HEALTH_TYPE_MAP[id]?.isPrivacySensitive).toBeUndefined();
+    }
+  });
+
+  it("covers every MeasurementType that has a HealthKit counterpart", () => {
+    const mappedTypes = new Set(
+      Object.values(APPLE_HEALTH_TYPE_MAP).map((m) => m.measurementType),
+    );
+    const expectedTypes = measurementTypeEnum.options.filter(
+      (t) => !MEASUREMENT_TYPES_WITHOUT_HK_COUNTERPART.has(t),
+    );
+    for (const type of expectedTypes) {
+      expect(
+        mappedTypes.has(type),
+        `MeasurementType ${type} has no HealthKit mapping entry`,
+      ).toBe(true);
+    }
+  });
+
+  it("does not double-book a deferred identifier as a mapped one", () => {
+    for (const deferred of HK_QUANTITY_TYPE_DEFERRED) {
+      expect(
+        APPLE_HEALTH_TYPE_MAP[deferred],
+        `${deferred} is both deferred and mapped — pick one`,
+      ).toBeUndefined();
+    }
+  });
+
+  it("emits an identity-conversion entry for the three v1.4.25 W8d additions", () => {
+    for (const id of [
+      "HKQuantityTypeIdentifierEnvironmentalAudioExposure",
+      "HKQuantityTypeIdentifierHeadphoneAudioExposure",
+      "HKQuantityTypeIdentifierTimeInDaylight",
+    ]) {
+      const mapping = APPLE_HEALTH_TYPE_MAP[id];
+      expect(mapping, `${id} mapping missing`).toBeDefined();
+      expect(mapping!.convertToDbUnit(42)).toBe(42);
+    }
+  });
+});
+
+describe("HK_QUANTITY_TYPE_TO_MEASUREMENT", () => {
+  it("mirrors APPLE_HEALTH_TYPE_MAP key-for-key", () => {
+    expect(Object.keys(HK_QUANTITY_TYPE_TO_MEASUREMENT).sort()).toEqual(
+      Object.keys(APPLE_HEALTH_TYPE_MAP).sort(),
+    );
+  });
+
+  it("agrees with APPLE_HEALTH_TYPE_MAP on the measurement type per key", () => {
+    for (const [k, t] of Object.entries(HK_QUANTITY_TYPE_TO_MEASUREMENT)) {
+      expect(APPLE_HEALTH_TYPE_MAP[k]?.measurementType).toBe(t);
+    }
+  });
+});
+
+describe("HK_QUANTITY_TYPE_DEFERRED", () => {
+  it("contains only valid HealthKit identifier strings", () => {
+    for (const id of HK_QUANTITY_TYPE_DEFERRED) {
+      expect(id).toMatch(
+        /^HK(Quantity|Category|Clinical|Series|Data|Scored|Electrocardiogram)/,
+      );
+    }
   });
 
   it("converts oxygen saturation from 0..1 fraction to 0..100 percent", () => {

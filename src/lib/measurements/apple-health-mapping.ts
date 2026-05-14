@@ -11,6 +11,17 @@
  * `APPLE_HEALTH_TYPE_MAP`. The unit-conversion helper, the canonical
  * DB unit, and the aggregation hint all live alongside the identifier
  * so future analytics work has a single discoverable surface.
+ *
+ * Identifier mappings derived from open-source reference projects:
+ *   - k0rventen/apple-health-grafana (MIT) — `ingester/ingester.py`
+ *     ROUTE_AND_FORMAT type map cross-checked against Apple's
+ *     `HKQuantityTypeIdentifier` index.
+ *   - dogsheep/healthkit-to-sqlite (Apache-2.0) —
+ *     `healthkit_to_sqlite/utils.py` workout/sample identifier list.
+ * Only the lookup data (HKQuantityTypeIdentifier* string → HealthLog
+ * MeasurementType) was ported; no upstream code is incorporated. The
+ * unit, conversion, and aggregation columns are HealthLog-specific
+ * decisions checked against Apple's HKUnit documentation.
  */
 import type { MeasurementType, SleepStage } from "@/generated/prisma/client";
 
@@ -237,7 +248,157 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     isPrivacySensitive: true,
     sleepStageMap: APPLE_HEALTH_SLEEP_STAGE_MAP,
   },
+
+  // ── v1.4.25 W8d Apple Health server-prep ────────────────────
+  // Environmental audio exposure — Watch + iPhone microphone, sampled
+  // every ~30 s while the Watch is worn. Apple's HK identifier is
+  // `HKQuantityTypeIdentifierEnvironmentalAudioExposure` despite the
+  // categorical name; the value is a continuous dBA SPL number.
+  HKQuantityTypeIdentifierEnvironmentalAudioExposure: {
+    hkIdentifier: "HKQuantityTypeIdentifierEnvironmentalAudioExposure",
+    measurementType: "AUDIO_EXPOSURE_ENV",
+    hkUnit: "dBASPL",
+    dbUnit: "dBA",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  // Headphone audio exposure — AirPods + supported Beats earbuds.
+  // Apple's "Reduce Loud Sounds" warning triggers at 80 dBA average
+  // over 7 days; we keep the canonical unit as plain dBA so the
+  // analytics layer doesn't have to thread a separate weighting flag.
+  HKQuantityTypeIdentifierHeadphoneAudioExposure: {
+    hkIdentifier: "HKQuantityTypeIdentifierHeadphoneAudioExposure",
+    measurementType: "AUDIO_EXPOSURE_HEADPHONE",
+    hkUnit: "dBASPL",
+    dbUnit: "dBA",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  // Time in daylight — iOS 17+ Health app metric, derived from Watch
+  // ambient-light + GPS. One sample per day in practice; the DB unit
+  // is minutes (Apple ships `min` directly).
+  HKQuantityTypeIdentifierTimeInDaylight: {
+    hkIdentifier: "HKQuantityTypeIdentifierTimeInDaylight",
+    measurementType: "TIME_IN_DAYLIGHT",
+    hkUnit: "min",
+    dbUnit: "minutes",
+    convertToDbUnit: (v) => v,
+    aggregation: "sum",
+  },
 };
+
+/**
+ * Compact `HKQuantityTypeIdentifier* → MeasurementType` view of the
+ * same data carried by `APPLE_HEALTH_TYPE_MAP`. Exists so the iOS
+ * Swift session and the v1.4.26 XML-import worker can do a cheap
+ * lookup without instantiating the full `AppleHealthMapping` record
+ * — useful when all the caller wants is the canonical enum value
+ * for routing / filtering. Always stays a strict subset of the keys
+ * in the table above.
+ */
+export const HK_QUANTITY_TYPE_TO_MEASUREMENT: Record<
+  string,
+  import("@/generated/prisma/client").MeasurementType
+> = Object.fromEntries(
+  Object.entries(APPLE_HEALTH_TYPE_MAP).map(([k, v]) => [k, v.measurementType]),
+);
+
+/**
+ * HK identifiers the iOS app may emit that HealthLog deliberately does
+ * NOT map yet. Listing them here means the batch route can log a
+ * "deferred, not unknown" signal and the iOS DTO can decide upstream
+ * to skip the request altogether — both better than silently dropping
+ * the row inside `mapAppleHealthEntry()`.
+ *
+ * Each entry is paired with the planned-shipment release in
+ * `apple-health-ecosystem-scan.md` §7 (v1.5 baseline; later releases
+ * carry the long-tail). Refresh this set when a mapping moves out of
+ * defer status above so the test in
+ * `__tests__/apple-health-mapping.test.ts` flags double-bookings.
+ */
+export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
+  // Body composition / vitals — v1.5
+  "HKQuantityTypeIdentifierBodyMassIndex", // computed from weight + height — never stored
+  "HKQuantityTypeIdentifierHeight", // already on User.heightCm
+  "HKQuantityTypeIdentifierLeanBodyMass",
+  "HKQuantityTypeIdentifierRespiratoryRate",
+  "HKQuantityTypeIdentifierWalkingHeartRateAverage",
+  "HKQuantityTypeIdentifierHeartRateRecoveryOneMinute",
+  "HKQuantityTypeIdentifierAppleSleepingWristTemperature",
+  "HKQuantityTypeIdentifierBasalEnergyBurned",
+  "HKQuantityTypeIdentifierAppleExerciseTime", // implied by Workout rows
+  "HKQuantityTypeIdentifierAppleStandTime", // implied by Workout rows
+  "HKCategoryTypeIdentifierAppleStandHour", // implied by Workout rows
+  // Running / walking form — v1.5+
+  "HKQuantityTypeIdentifierWalkingSpeed",
+  "HKQuantityTypeIdentifierWalkingStepLength",
+  "HKQuantityTypeIdentifierWalkingAsymmetryPercentage",
+  "HKQuantityTypeIdentifierWalkingDoubleSupportPercentage",
+  "HKQuantityTypeIdentifierStairAscentSpeed",
+  "HKQuantityTypeIdentifierStairDescentSpeed",
+  "HKQuantityTypeIdentifierSixMinuteWalkTestDistance",
+  "HKQuantityTypeIdentifierRunningSpeed",
+  "HKQuantityTypeIdentifierRunningPower",
+  "HKQuantityTypeIdentifierRunningStrideLength",
+  "HKQuantityTypeIdentifierRunningGroundContactTime",
+  "HKQuantityTypeIdentifierRunningVerticalOscillation",
+  // Cycling (iOS 17) — v1.5
+  "HKQuantityTypeIdentifierCyclingCadence",
+  "HKQuantityTypeIdentifierCyclingFunctionalThresholdPower",
+  "HKQuantityTypeIdentifierCyclingPower",
+  "HKQuantityTypeIdentifierCyclingSpeed",
+  "HKQuantityTypeIdentifierDistanceCycling",
+  // Sport-specific distances + speeds (iOS 18) — v1.5+
+  "HKQuantityTypeIdentifierDistanceCrossCountrySkiing",
+  "HKQuantityTypeIdentifierCrossCountrySkiingSpeed",
+  "HKQuantityTypeIdentifierDistancePaddleSports",
+  "HKQuantityTypeIdentifierPaddleSportsSpeed",
+  "HKQuantityTypeIdentifierDistanceRowing",
+  "HKQuantityTypeIdentifierRowingSpeed",
+  "HKQuantityTypeIdentifierDistanceSkatingSports",
+  "HKQuantityTypeIdentifierDistanceSwimming",
+  "HKQuantityTypeIdentifierSwimmingStrokeCount",
+  // Workout-effort scores (iOS 18) — v1.5+
+  "HKQuantityTypeIdentifierEstimatedWorkoutEffortScore",
+  "HKQuantityTypeIdentifierWorkoutEffortScore",
+  "HKQuantityTypeIdentifierPhysicalEffort",
+  // Sleep apnea + breathing (iOS 18) — v1.5+
+  "HKQuantityTypeIdentifierAppleSleepingBreathingDisturbances",
+  "HKCategoryTypeIdentifierSleepApneaEvent",
+  // Nutrition — Marc directive, indefinite hold
+  "HKQuantityTypeIdentifierDietaryWater",
+  "HKQuantityTypeIdentifierDietaryCaffeine",
+  "HKQuantityTypeIdentifierDietaryEnergyConsumed",
+  "HKQuantityTypeIdentifierDietaryCarbohydrates",
+  "HKQuantityTypeIdentifierDietaryProtein",
+  "HKQuantityTypeIdentifierDietaryFatTotal",
+  "HKQuantityTypeIdentifierDietarySugar",
+  "HKQuantityTypeIdentifierDietaryFiber",
+  "HKQuantityTypeIdentifierDietarySodium",
+  // Mental-state / mindfulness — v1.5 (route to existing mood model)
+  "HKCategoryTypeIdentifierMindfulSession",
+  "HKDataTypeIdentifierStateOfMind",
+  // Pregnancy / cycle — explicit hold (privacy stance)
+  "HKCategoryTypeIdentifierBleedingAfterPregnancy",
+  "HKCategoryTypeIdentifierBleedingDuringPregnancy",
+  "HKCategoryTypeIdentifierMenstrualFlow",
+  "HKCategoryTypeIdentifierIntermenstrualBleeding",
+  "HKCategoryTypeIdentifierCervicalMucusQuality",
+  "HKCategoryTypeIdentifierOvulationTestResult",
+  // Clinical (FHIR) — v1.6+
+  "HKClinicalTypeIdentifierAllergyRecord",
+  "HKClinicalTypeIdentifierConditionRecord",
+  "HKClinicalTypeIdentifierImmunizationRecord",
+  "HKClinicalTypeIdentifierLabResultRecord",
+  "HKClinicalTypeIdentifierMedicationRecord",
+  "HKClinicalTypeIdentifierProcedureRecord",
+  "HKClinicalTypeIdentifierVitalSignRecord",
+  // ECG / waveforms — defer
+  "HKElectrocardiogramType",
+  // Scored assessments (iOS 18) — v1.5 (PHQ-9 / GAD-7 mapping TBD)
+  "HKScoredAssessmentTypeIdentifierGAD7",
+  "HKScoredAssessmentTypeIdentifierPHQ9",
+] as const);
 
 /** Input to `mapAppleHealthEntry()`. */
 export interface AppleHealthEntryInput {
