@@ -27,6 +27,7 @@ import {
   nextInjectionSite,
   type InjectionSiteKey,
 } from "@/lib/medications/injection-sites";
+import { InventorySection } from "@/components/medications/inventory-section";
 
 /**
  * v1.4.25 W4d — GLP-1 medication card variant.
@@ -401,6 +402,14 @@ export function Glp1MedicationCard({
               ))}
           </div>
         </details>
+
+        {/* v1.4.25 W19b — per-pen / per-vial inventory disclosure.
+            Lazy-loads the inventory list on open; otherwise stays
+            collapsed so the card height matches generic cards. */}
+        <InventorySection
+          medicationId={medication.id}
+          defaultDosesPerUnit={medication.dosesPerUnit ?? null}
+        />
 
         {/* Compliance bars — identical to the generic card so the page
             grid stays harmonious. */}
