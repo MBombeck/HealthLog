@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import {
@@ -161,6 +161,7 @@ export function Glp1MedicationCard({
   const fmt = useFormatters();
   const [intakeLoading, setIntakeLoading] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const doseHistoryId = useId();
 
   const { data: compliance } = useQuery({
     queryKey: ["medications", medication.id, "compliance"],
@@ -368,7 +369,11 @@ export function Glp1MedicationCard({
             setShowHistory((e.target as HTMLDetailsElement).open)
           }
         >
-          <summary className="text-foreground/85 flex cursor-pointer list-none items-center justify-between px-3 py-2 font-medium">
+          <summary
+            className="text-foreground/85 flex cursor-pointer list-none items-center justify-between px-3 py-2 font-medium"
+            aria-controls={doseHistoryId}
+            aria-expanded={showHistory}
+          >
             <span>{t("medications.glp1DoseHistory")}</span>
             <ChevronDown
               className={`h-3.5 w-3.5 transition-transform ${
@@ -376,7 +381,10 @@ export function Glp1MedicationCard({
               }`}
             />
           </summary>
-          <div className="border-border/60 space-y-1.5 border-t px-3 py-2">
+          <div
+            id={doseHistoryId}
+            className="border-border/60 space-y-1.5 border-t px-3 py-2"
+          >
             {doseChanges.length === 0 && (
               <p className="text-muted-foreground">
                 {t("medications.glp1DoseHistoryEmpty")}
