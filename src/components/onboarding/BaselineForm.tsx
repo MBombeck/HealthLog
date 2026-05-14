@@ -11,7 +11,15 @@ import { Button } from "@/components/ui/button";
 import { DateInput } from "@/components/ui/date-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useTranslations } from "@/lib/i18n/context";
+import { readError } from "@/lib/api/read-error";
 
 /**
  * v1.4.25 W14b-Content — onboarding step 3 (baseline).
@@ -166,16 +174,32 @@ export function BaselineForm() {
             <Label htmlFor="ob-baseline-gender">
               {t("onboarding.baseline.genderLabel")}
             </Label>
-            <select
-              id="ob-baseline-gender"
-              value={form.gender}
-              onChange={(e) => patch("gender", e.target.value)}
-              className="border-input bg-background text-foreground ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
+            <Select
+              // The design system's Radix Select uses an empty-string
+              // sentinel to mean "no selection"; map back and forth so
+              // the form state ("") and the Select's value (undefined-
+              // adjacent) stay aligned. v1.4.25 W21 Fix-N (design-M1).
+              value={form.gender === "" ? undefined : form.gender}
+              onValueChange={(next) => patch("gender", next)}
             >
-              <option value="">{t("onboarding.baseline.genderNone")}</option>
-              <option value="MALE">{t("onboarding.baseline.genderMale")}</option>
-              <option value="FEMALE">{t("onboarding.baseline.genderFemale")}</option>
-            </select>
+              <SelectTrigger
+                id="ob-baseline-gender"
+                className="w-full"
+                data-slot="onboarding-baseline-gender"
+              >
+                <SelectValue
+                  placeholder={t("onboarding.baseline.genderNone")}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MALE">
+                  {t("onboarding.baseline.genderMale")}
+                </SelectItem>
+                <SelectItem value="FEMALE">
+                  {t("onboarding.baseline.genderFemale")}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -225,14 +249,3 @@ export function BaselineForm() {
   );
 }
 
-async function readError(res: Response): Promise<string> {
-  try {
-    const json = (await res.json()) as { error?: string };
-    if (typeof json.error === "string" && json.error.length > 0) {
-      return json.error;
-    }
-  } catch {
-    /* fall through */
-  }
-  return `Request failed (${res.status})`;
-}

@@ -20,6 +20,10 @@ import { Switch } from "@/components/ui/switch";
 import { ResearchModeAcknowledgmentDialog } from "@/components/medications/ResearchModeAcknowledgmentDialog";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
+import {
+  type ResearchModeStatus,
+  researchModeGateState,
+} from "@/lib/medications/research-mode-types";
 
 /**
  * Settings → Advanced.
@@ -67,11 +71,27 @@ export function AdvancedSection() {
   );
 }
 
-interface ResearchModeStatus {
-  enabled: boolean;
-  acknowledgedAt: string | null;
-  acknowledgedVersion: string | null;
-  currentDisclaimerVersion: string;
+/**
+ * v1.4.25 W21 Fix-N (simp-H3) — pull the nested ternary that decided
+ * the toggle's caption out of the JSX. The four-way ladder (loading /
+ * enabled-open / enabled-stale / disabled) is dense to read inline,
+ * and the surface stays open to a fifth state ("never queried") when
+ * we wire the offline shell in v1.4.26.
+ */
+function researchModeStatusLabel(
+  status: ResearchModeStatus | null | undefined,
+  isLoading: boolean,
+  t: (key: string, params?: Record<string, string | number>) => string,
+): string {
+  if (isLoading) return t("common.loading");
+  const gate = researchModeGateState(status);
+  if (gate === "off") return t("settings.researchMode.disabledStatus");
+  if (gate === "stale") return t("settings.researchMode.enabledStaleStatus");
+  return t("settings.researchMode.acknowledgedOn", {
+    date: status?.acknowledgedAt
+      ? formatDateTime(status.acknowledgedAt)
+      : "—",
+  });
 }
 
 function ResearchModeCard() {
@@ -92,10 +112,8 @@ function ResearchModeCard() {
     staleTime: 60 * 1000,
   });
 
-  const versionsAligned =
-    !!status &&
-    status.acknowledgedVersion === status.currentDisclaimerVersion;
-  const showRePrompt = !!status?.enabled && !versionsAligned;
+  const gateState = researchModeGateState(status);
+  const showRePrompt = gateState === "stale";
   // The Switch's `checked` mirrors the server flag exactly — even when
   // the version is stale we keep the toggle "on" so the user sees that
   // their previous choice is preserved; the banner above the toggle
@@ -178,17 +196,7 @@ function ResearchModeCard() {
             className="text-muted-foreground text-xs"
             data-slot="settings-research-mode-status"
           >
-            {isLoading
-              ? t("common.loading")
-              : status?.enabled
-                ? versionsAligned
-                  ? t("settings.researchMode.acknowledgedOn", {
-                      date: status.acknowledgedAt
-                        ? formatDateTime(status.acknowledgedAt)
-                        : "—",
-                    })
-                  : t("settings.researchMode.enabledStaleStatus")
-                : t("settings.researchMode.disabledStatus")}
+            {researchModeStatusLabel(status, isLoading, t)}
           </p>
         </div>
         <Switch

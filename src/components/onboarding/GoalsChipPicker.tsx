@@ -17,6 +17,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
+import { readError } from "@/lib/api/read-error";
 import { cn } from "@/lib/utils";
 
 /**
@@ -230,14 +231,3 @@ export function GoalsChipPicker({ userId: _userId }: GoalsChipPickerProps) {
   );
 }
 
-async function readError(res: Response): Promise<string> {
-  try {
-    const json = (await res.json()) as { error?: string };
-    if (typeof json.error === "string" && json.error.length > 0) {
-      return json.error;
-    }
-  } catch {
-    /* fall through */
-  }
-  return `Request failed (${res.status})`;
-}
