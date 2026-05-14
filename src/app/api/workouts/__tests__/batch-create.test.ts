@@ -49,6 +49,10 @@ vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn(),
 }));
 
+vi.mock("@/lib/jobs/pr-detection", () => ({
+  enqueuePrDetection: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: () => null })),
   cookies: vi.fn(async () => ({
@@ -62,6 +66,7 @@ import { POST } from "../batch/route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { enqueuePrDetection } from "@/lib/jobs/pr-detection";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -347,5 +352,50 @@ describe("POST /api/workouts/batch — nested route attachment", () => {
     const call = vi.mocked(prisma.workoutRoute.createMany).mock.calls[0]?.[0];
     const rows = (call as { data: Array<{ workoutId: string }> }).data;
     expect(rows[0]?.workoutId).toBe("wkt-fresh-id");
+  });
+});
+
+describe("POST /api/workouts/batch — PR detection enqueue (v1.4.25 W16c)", () => {
+  it("enqueues PR detection after a successful batch with silent=false", async () => {
+    vi.mocked(prisma.workout.createMany).mockResolvedValue({ count: 1 });
+    const res = await POST(
+      makeRequest({ workouts: [validWorkout("uuid-small")] }),
+    );
+    expect(res.status).toBe(200);
+    expect(enqueuePrDetection).toHaveBeenCalledTimes(1);
+    expect(enqueuePrDetection).toHaveBeenCalledWith("user-1", {
+      silent: false,
+    });
+  });
+
+  it("propagates silent=true when the batch exceeds the historical threshold", async () => {
+    const big = Array.from({ length: 51 }, (_, i) =>
+      validWorkout(`uuid-${i}`),
+    );
+    vi.mocked(prisma.workout.createMany).mockResolvedValue({ count: 51 });
+    const res = await POST(makeRequest({ workouts: big }));
+    expect(res.status).toBe(200);
+    expect(enqueuePrDetection).toHaveBeenCalledWith("user-1", {
+      silent: true,
+    });
+  });
+
+  it("still enqueues for an all-duplicate batch (cursor cleanup path)", async () => {
+    // Pre-flight dedup matches all incoming entries, so insertedCount
+    // stays 0 but duplicateCount becomes 1. The hook fires anyway —
+    // the detector is cheap and a duplicate batch can still reveal a
+    // PR if the row was written by another path between dispatches.
+    vi.mocked(prisma.workout.findMany).mockResolvedValue([
+      { source: "APPLE_HEALTH", externalId: "uuid-dup" } as never,
+    ]);
+    vi.mocked(prisma.workout.createMany).mockResolvedValue({ count: 0 });
+    const res = await POST(
+      makeRequest({ workouts: [validWorkout("uuid-dup")] }),
+    );
+    expect(res.status).toBe(200);
+    expect(enqueuePrDetection).toHaveBeenCalledTimes(1);
+    expect(enqueuePrDetection).toHaveBeenCalledWith("user-1", {
+      silent: false,
+    });
   });
 });

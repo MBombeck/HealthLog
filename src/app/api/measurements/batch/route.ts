@@ -36,7 +36,15 @@ import { mapAppleHealthEntry } from "@/lib/measurements/apple-health-mapping";
 import { validateMeasurementRange } from "@/lib/validations/measurement";
 import { deviceTypeEnum } from "@/lib/validations/source-priority";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { enqueuePrDetection } from "@/lib/jobs/pr-detection";
 import { Prisma } from "@/generated/prisma/client";
+
+// v1.4.25 W16c — historical-backfill threshold for PR push
+// suppression. A batch larger than this fires the detection job with
+// `silent: true` so a multi-year Apple Health backfill writes records
+// without spamming the user with hundreds of pushes. Tuned generously
+// — a healthy daily-sync batch is typically well under 50 entries.
+const PR_DETECTION_SILENT_THRESHOLD = 50;
 
 const MAX_BATCH_ENTRIES = 500;
 
@@ -318,6 +326,35 @@ async function postBatch(request: NextRequest): Promise<Response> {
       skipped: skipped.length,
     },
   });
+
+  // v1.4.25 W16c — kick off PR detection for this user. We always
+  // enqueue when at least one row was written (or the batch had any
+  // measurements to consider) so a single off-day reading still gets
+  // evaluated; the warm-up gate inside the detector decides whether
+  // it's a record. Suppress push notifications for historical
+  // backfills above the silent threshold.
+  if (insertedCount > 0 || duplicateCount > 0) {
+    const silent = entries.length > PR_DETECTION_SILENT_THRESHOLD;
+    try {
+      await enqueuePrDetection(user.id, { silent });
+      await auditLog("personal_records.detection_enqueued", {
+        userId: user.id,
+        details: {
+          source: "measurement.batch",
+          batchSize: entries.length,
+          silent,
+        },
+      });
+    } catch (err) {
+      // Enqueue failure is non-fatal — the 30-minute fallback cron
+      // picks the user up in the next slot. Log so the operator
+      // notices repeated failures in Wide-Event traffic.
+      annotate({
+        action: { name: "personal_records.detection_enqueue_failed" },
+        meta: { error: err instanceof Error ? err.message : String(err) },
+      });
+    }
+  }
 
   annotate({
     action: { name: "measurement.batch.ingest" },

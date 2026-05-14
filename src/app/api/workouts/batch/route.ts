@@ -62,11 +62,19 @@ import {
 } from "@/lib/api-response";
 import { withIdempotency } from "@/lib/idempotency";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { enqueuePrDetection } from "@/lib/jobs/pr-detection";
 import {
   createBatchWorkoutSchema,
   MAX_WORKOUTS_PER_BATCH,
 } from "@/lib/validations/workout";
 import { Prisma } from "@/generated/prisma/client";
+
+// v1.4.25 W16c — push-suppression threshold for workout PRs. A batch
+// larger than this fires the detection job with `silent: true` so a
+// multi-year HKWorkout backfill doesn't spam the user with hundreds of
+// pushes. Matches the measurements-batch threshold so behaviour stays
+// uniform across both ingest paths.
+const PR_DETECTION_SILENT_THRESHOLD = 50;
 
 // v1.4.25 W10 reconcile (security H-2 parity): cap batch ingest at 60
 // batches per user per minute. Healthy iOS sync drains its HealthKit
@@ -448,6 +456,32 @@ async function postBatch(request: NextRequest): Promise<Response> {
       skipped: skipped.length,
     },
   });
+
+  // v1.4.25 W16c — kick off PR detection for this user. Suppress push
+  // notifications for historical-backfill batches so a multi-year
+  // HKWorkout import doesn't fire hundreds of pushes during initial
+  // sync. The detector also scans Measurement history on the same
+  // pass, so a workout-only batch still surfaces measurement-side PRs
+  // the user may have racked up since the last detection.
+  if (insertedCount > 0 || duplicateCount > 0) {
+    const silent = workouts.length > PR_DETECTION_SILENT_THRESHOLD;
+    try {
+      await enqueuePrDetection(user.id, { silent });
+      await auditLog("personal_records.detection_enqueued", {
+        userId: user.id,
+        details: {
+          source: "workout.batch",
+          batchSize: workouts.length,
+          silent,
+        },
+      });
+    } catch (err) {
+      annotate({
+        action: { name: "personal_records.detection_enqueue_failed" },
+        meta: { error: err instanceof Error ? err.message : String(err) },
+      });
+    }
+  }
 
   annotate({
     action: { name: "workout.batch.ingest" },
