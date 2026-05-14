@@ -65,7 +65,8 @@ function categoriseApiStatus(apiStatus: number): CategorisedError {
   }
 }
 
-export const POST = apiHandler(async (_request: NextRequest) => {
+export const POST = apiHandler(async (request: NextRequest) => {
+  void request;
   const { user } = await requireAuth();
   annotate({ action: { name: "integrations.withings.test" } });
 

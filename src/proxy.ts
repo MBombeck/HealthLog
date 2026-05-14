@@ -90,6 +90,15 @@ const LEGACY_ADMIN_ANCHORS: Record<string, string> = {
   "/admin/section-danger-zone": "/admin/danger-zone",
 };
 
+function generateNonce(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary);
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -178,9 +187,7 @@ export function proxy(request: NextRequest) {
   // 128 bits of random, base64-encoded. randomUUID().toString() only carries
   // ~122 bits and has a predictable structure that base64-encodes to a
   // partially guessable pattern.
-  const nonce = Buffer.from(
-    crypto.getRandomValues(new Uint8Array(16)),
-  ).toString("base64");
+  const nonce = generateNonce();
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("x-request-id", requestId);

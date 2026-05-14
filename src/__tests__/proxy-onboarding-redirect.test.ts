@@ -128,4 +128,27 @@ describe("proxy.ts onboarding redirect (v1.4.22 C4)", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("location")).toBeNull();
   });
+
+  it("generates CSP nonces without relying on Node Buffer", () => {
+    const originalBuffer = (
+      globalThis as typeof globalThis & { Buffer?: Buffer }
+    ).Buffer;
+    Object.defineProperty(globalThis, "Buffer", {
+      value: undefined,
+      configurable: true,
+    });
+
+    try {
+      const res = proxy(makeRequest("/", { healthlog_session: "sess-1" }));
+      expect(res.status).toBe(200);
+      expect(res.headers.get("Content-Security-Policy")).toMatch(
+        /nonce-'?[A-Za-z0-9+/]{22}==/,
+      );
+    } finally {
+      Object.defineProperty(globalThis, "Buffer", {
+        value: originalBuffer,
+        configurable: true,
+      });
+    }
+  });
 });

@@ -308,10 +308,9 @@ async function computeCorrelationHypotheses(userId: string): Promise<{
   // HealthKit pulse samples) cannot allocate an unbounded buffer. The
   // helper still returns the full filtered series the Pearson runners
   // need; we just bound the per-page Prisma round-trip.
-  const [sysRows, diaRows, pulseRows, weightRows, moodRows, intakeRows] =
+  const [sysRows, pulseRows, weightRows, moodRows, intakeRows] =
     await Promise.all([
       fetchMeasurementSeriesChunked(userId, "BLOOD_PRESSURE_SYS", { since }),
-      fetchMeasurementSeriesChunked(userId, "BLOOD_PRESSURE_DIA", { since }),
       fetchMeasurementSeriesChunked(userId, "PULSE", { since }),
       fetchMeasurementSeriesChunked(userId, "WEIGHT", { since }),
       prisma.moodEntry.findMany({

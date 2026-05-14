@@ -60,7 +60,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (appSettings?.githubIssueTokenEncrypted) {
     try {
       configuredToken = decrypt(appSettings.githubIssueTokenEncrypted);
-    } catch (err) {
+    } catch {
       getEvent()?.addWarning("Failed to decrypt GitHub issue token");
     }
   }

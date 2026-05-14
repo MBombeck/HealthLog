@@ -6,6 +6,10 @@ import { getPublicMonitoringSettings } from "@/lib/monitoring-settings";
 
 export const dynamic = "force-dynamic";
 
+function redact(text: string): string {
+  return text.replace(/https?:\/\/\S+/gi, "[url]");
+}
+
 function resolveUmamiSendUrls(scriptUrl: string | null): string[] {
   if (!scriptUrl) return [];
   try {
@@ -112,6 +116,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
     break;
   }
 
-  getEvent()?.addWarning("Umami test event rejected: " + lastStatus);
+  getEvent()?.addWarning(
+    `Umami test event rejected: ${lastStatus}${lastDetails ? ` ${redact(lastDetails)}` : ""}`,
+  );
   return apiError(`Umami test event rejected (HTTP ${lastStatus})`, 502);
 });

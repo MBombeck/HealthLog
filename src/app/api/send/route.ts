@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
+import { apiError, getClientIp } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { getPublicMonitoringSettings } from "@/lib/monitoring-settings";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +69,10 @@ function resolveUmamiSendUrls(scriptUrl: string | null): string[] {
 
 export const POST = apiHandler(async (request: NextRequest) => {
   annotate({ action: { name: "umami.proxy" } });
+
+  const ip = getClientIp(request) ?? "unknown";
+  const rl = await checkRateLimit(`umami-proxy:${ip}`, 120, 60 * 1000);
+  if (!rl.allowed) return apiError("Rate limit exceeded", 429);
 
   const settings = await getPublicMonitoringSettings();
   if (!settings.umamiEnabled) {

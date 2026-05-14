@@ -289,6 +289,8 @@ export function MoodChart({
   const showMA = !mini && overlayPrefs.prefs.showTrendIndicator;
   const showTrend = !mini && overlayPrefs.prefs.showTrendArrow;
   const showBands = !mini && overlayPrefs.prefs.showTargetRange;
+  const effectiveCompareBaseline =
+    !mini && chartKey ? overlayPrefs.prefs.comparisonBaseline : compareBaseline;
 
   // v1.4.19 A2 — viewport-aware tick density helper.
   const viewportWidth = useViewportWidth();
@@ -411,7 +413,7 @@ export function MoodChart({
    * below renders the dimmed dashed overlay.
    */
   const chartDataWithCompare = useMemo<ChartDataPoint[] | undefined>(() => {
-    if (!chartData || compareBaseline === "none") return chartData;
+    if (!chartData || effectiveCompareBaseline === "none") return chartData;
     if (!data?.entries?.length) return chartData;
 
     const shifted = shiftDailySeriesForward(
@@ -419,7 +421,7 @@ export function MoodChart({
         timestamp: dayKeyToTimestamp(entry.date),
         score: entry.score,
       })),
-      compareBaseline,
+      effectiveCompareBaseline,
     );
 
     const shiftedByDay = new Map<string, number>();
@@ -437,16 +439,17 @@ export function MoodChart({
       }
       return point;
     });
-  }, [chartData, compareBaseline, data]);
+  }, [chartData, effectiveCompareBaseline, data]);
 
   const hasComparisonData = useMemo(() => {
-    if (compareBaseline === "none" || !chartDataWithCompare) return false;
+    if (effectiveCompareBaseline === "none" || !chartDataWithCompare)
+      return false;
     return chartDataWithCompare.some((point) =>
       typeof point.scoreCompare === "number"
         ? Number.isFinite(point.scoreCompare)
         : false,
     );
-  }, [chartDataWithCompare, compareBaseline]);
+  }, [chartDataWithCompare, effectiveCompareBaseline]);
 
   // Mirror the activeBucket calculation from health-chart so the chip
   // in the header reflects the *same* aggregation chartData used.
@@ -533,30 +536,34 @@ export function MoodChart({
             )}
             {/* v1.4.16 phase B8 — comparison caption (mood).
                 v1.4.19 A2 — hidden on mobile to free up the title row. */}
-            {!mini && compareBaseline !== "none" && hasComparisonData && (
-              <span
-                className="text-dracula-purple bg-dracula-purple/10 hidden rounded-md border border-current/30 px-1.5 py-0.5 text-[10px] font-medium tracking-wide uppercase sm:inline-flex"
-                data-slot="chart-compare-caption"
-              >
-                {t(
-                  compareBaseline === "lastMonth"
-                    ? "comparison.captionLastMonth"
-                    : "comparison.captionLastYear",
-                )}
-              </span>
-            )}
-            {!mini && compareBaseline !== "none" && !hasComparisonData && (
-              <span
-                className="text-muted-foreground bg-muted/40 hidden rounded-md px-1.5 py-0.5 text-[10px] font-medium tracking-wide sm:inline-flex"
-                data-slot="chart-compare-unavailable"
-              >
-                {t(
-                  compareBaseline === "lastMonth"
-                    ? "comparison.unavailable.lastMonth"
-                    : "comparison.unavailable.lastYear",
-                )}
-              </span>
-            )}
+            {!mini &&
+              effectiveCompareBaseline !== "none" &&
+              hasComparisonData && (
+                <span
+                  className="text-dracula-purple bg-dracula-purple/10 hidden rounded-md border border-current/30 px-1.5 py-0.5 text-[10px] font-medium tracking-wide uppercase sm:inline-flex"
+                  data-slot="chart-compare-caption"
+                >
+                  {t(
+                    effectiveCompareBaseline === "lastMonth"
+                      ? "comparison.captionLastMonth"
+                      : "comparison.captionLastYear",
+                  )}
+                </span>
+              )}
+            {!mini &&
+              effectiveCompareBaseline !== "none" &&
+              !hasComparisonData && (
+                <span
+                  className="text-muted-foreground bg-muted/40 hidden rounded-md px-1.5 py-0.5 text-[10px] font-medium tracking-wide sm:inline-flex"
+                  data-slot="chart-compare-unavailable"
+                >
+                  {t(
+                    effectiveCompareBaseline === "lastMonth"
+                      ? "comparison.unavailable.lastMonth"
+                      : "comparison.unavailable.lastYear",
+                  )}
+                </span>
+              )}
           </div>
           {!mini && (
             <div
@@ -733,11 +740,11 @@ export function MoodChart({
                         continue;
                       let delta: string | undefined;
                       const compareValue =
-                        compareBaseline !== "none" && hoverPoint
+                        effectiveCompareBaseline !== "none" && hoverPoint
                           ? hoverPoint.scoreCompare
                           : undefined;
                       if (
-                        compareBaseline !== "none" &&
+                        effectiveCompareBaseline !== "none" &&
                         typeof compareValue === "number" &&
                         Number.isFinite(compareValue)
                       ) {
@@ -750,7 +757,7 @@ export function MoodChart({
                             1,
                           )}`;
                           delta = t(
-                            compareBaseline === "lastMonth"
+                            effectiveCompareBaseline === "lastMonth"
                               ? "comparison.deltaVs.lastMonth"
                               : "comparison.deltaVs.lastYear",
                           ).replace("{delta}", formatted);
@@ -777,7 +784,7 @@ export function MoodChart({
                         delta,
                       });
                       if (
-                        compareBaseline !== "none" &&
+                        effectiveCompareBaseline !== "none" &&
                         typeof compareValue === "number" &&
                         Number.isFinite(compareValue)
                       ) {
@@ -838,7 +845,7 @@ export function MoodChart({
                     uses; mood is a single metric so we only render
                     one overlay line. Suppressed when there's no prior
                     data via hasComparisonData. */}
-                {compareBaseline !== "none" && hasComparisonData && (
+                {effectiveCompareBaseline !== "none" && hasComparisonData && (
                   <Line
                     type="monotone"
                     dataKey="scoreCompare"

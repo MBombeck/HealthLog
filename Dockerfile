@@ -55,13 +55,13 @@ COPY --from=builder /app/src/generated ./src/generated
 RUN mkdir -p /opt/pg-boss && \
     cd /opt/pg-boss && \
     npm init -y && \
-    npm install --omit=dev pg-boss@12 @prisma/adapter-pg@7 pg@8
+    npm install --omit=dev pg-boss@12.18 @prisma/adapter-pg@7.8 pg@8.20
 
 # Install Prisma CLI + engines for runtime migrations (isolated from Next standalone tree)
 RUN mkdir -p /opt/prisma-cli && \
     cd /opt/prisma-cli && \
     npm init -y && \
-    npm install --omit=dev prisma@7.4.0 @prisma/engines@7.4.0
+    npm install --omit=dev prisma@7.8 @prisma/engines@7.8
 
 # Entrypoint script (runs migrations, then starts app)
 COPY docker-entrypoint.sh ./

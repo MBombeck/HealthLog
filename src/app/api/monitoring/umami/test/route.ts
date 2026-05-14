@@ -15,7 +15,8 @@ function redact(text: string): string {
   return text.replace(/https?:\/\/\S+/gi, "[url]");
 }
 
-export const POST = apiHandler(async (_request: NextRequest) => {
+export const POST = apiHandler(async (request: NextRequest) => {
+  void request;
   const { user } = await requireAdmin();
   annotate({ action: { name: "monitoring.umami.test" } });
 

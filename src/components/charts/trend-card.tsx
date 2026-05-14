@@ -210,21 +210,21 @@ export function TrendCard({
   };
 
   return (
-    <div className="bg-card border-border flex h-full w-full flex-col rounded-xl border p-4 md:p-6">
-      <div className="flex items-center justify-between">
-        <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+    <div className="bg-card border-border flex h-full w-full min-w-0 flex-col rounded-xl border p-4 md:p-6">
+      <div className="flex min-w-0 items-start justify-between gap-2">
+        <span className="text-muted-foreground min-w-0 text-xs leading-snug font-medium tracking-wide break-words uppercase">
           {label}
         </span>
-        <Icon className="text-muted-foreground h-4 w-4" />
+        <Icon className="text-muted-foreground h-4 w-4 shrink-0" />
       </div>
-      <div className="mt-2 flex items-baseline gap-2">
-        <span className="text-3xl font-bold tracking-tight tabular-nums">
+      <div className="mt-2 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span className="min-w-0 text-3xl leading-none font-bold tracking-tight [overflow-wrap:anywhere] tabular-nums">
           {latest !== null ? renderPair(latest, secondary?.latest) : "—"}
         </span>
-        <span className="text-muted-foreground text-sm tabular-nums">
+        <span className="text-muted-foreground text-sm [overflow-wrap:anywhere] tabular-nums">
           {unit}
         </span>
-        {slope30 && <TrendIcon className={`h-4 w-4 ${trendColor}`} />}
+        {slope30 && <TrendIcon className={`h-4 w-4 shrink-0 ${trendColor}`} />}
       </div>
       {/* v1.4.16 phase B8 — comparison delta callout. Sits on its own
           line below the latest value so the tile stays scannable on
@@ -246,7 +246,7 @@ export function TrendCard({
         >
           <span
             className={cn(
-              "text-xs font-medium tabular-nums",
+              "inline-block max-w-full text-xs leading-snug font-medium [overflow-wrap:anywhere] tabular-nums",
               comparisonDeltaColor,
             )}
             data-slot="tile-compare-delta"
@@ -266,14 +266,17 @@ export function TrendCard({
         </div>
       )}
       <TooltipProvider>
-        <div className="text-muted-foreground mt-auto flex gap-3 pt-1 text-xs">
-          <span>
+        <div className="text-muted-foreground mt-auto flex min-w-0 flex-wrap gap-x-3 gap-y-1 pt-1 text-xs leading-snug">
+          <span className="max-w-full min-w-0 [overflow-wrap:anywhere]">
             {t(avg7LabelKey)}:{" "}
             {avg7Hint ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span
-                    className={cn("font-medium tabular-nums", avg7ColorClass)}
+                    className={cn(
+                      "font-medium [overflow-wrap:anywhere] tabular-nums",
+                      avg7ColorClass,
+                    )}
                   >
                     {avg7 !== null ? renderPair(avg7, secondary?.avg7) : "—"}
                   </span>
@@ -283,13 +286,21 @@ export function TrendCard({
                 </TooltipContent>
               </Tooltip>
             ) : (
-              <span className={cn("font-medium tabular-nums", avg7ColorClass)}>
+              <span
+                className={cn(
+                  "font-medium [overflow-wrap:anywhere] tabular-nums",
+                  avg7ColorClass,
+                )}
+              >
                 {avg7 !== null ? renderPair(avg7, secondary?.avg7) : "—"}
               </span>
             )}
             {trend7Delta != null && (
               <span
-                className={cn("ml-1 font-medium tabular-nums", deltaColor)}
+                className={cn(
+                  "ml-1 font-medium [overflow-wrap:anywhere] tabular-nums",
+                  deltaColor,
+                )}
                 data-slot="trend7-delta"
                 aria-label={`7-day trend ${formatDelta(trend7Delta)}`}
               >
@@ -297,13 +308,16 @@ export function TrendCard({
               </span>
             )}
           </span>
-          <span>
+          <span className="max-w-full min-w-0 [overflow-wrap:anywhere]">
             {t("charts.avg30dShort")}:{" "}
             {avg30Hint ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span
-                    className={cn("font-medium tabular-nums", avg30ColorClass)}
+                    className={cn(
+                      "font-medium [overflow-wrap:anywhere] tabular-nums",
+                      avg30ColorClass,
+                    )}
                   >
                     {avg30 !== null ? renderPair(avg30, secondary?.avg30) : "—"}
                   </span>
@@ -313,7 +327,12 @@ export function TrendCard({
                 </TooltipContent>
               </Tooltip>
             ) : (
-              <span className={cn("font-medium tabular-nums", avg30ColorClass)}>
+              <span
+                className={cn(
+                  "font-medium [overflow-wrap:anywhere] tabular-nums",
+                  avg30ColorClass,
+                )}
+              >
                 {avg30 !== null ? renderPair(avg30, secondary?.avg30) : "—"}
               </span>
             )}
@@ -328,10 +347,16 @@ export function TrendCard({
               combined secondary row below so the tile keeps the same
               vertical density as every other trend card. */}
           {avgAllTime !== undefined && (
-            <span data-slot="trend-card-all-time" className="hidden sm:inline">
+            <span
+              data-slot="trend-card-all-time"
+              className="hidden max-w-full min-w-0 [overflow-wrap:anywhere] sm:inline"
+            >
               {t(avgAllTimeLabelKey)}:{" "}
               <span
-                className={cn("font-medium tabular-nums", avgAllTimeColorClass)}
+                className={cn(
+                  "font-medium [overflow-wrap:anywhere] tabular-nums",
+                  avgAllTimeColorClass,
+                )}
               >
                 {avgAllTime !== null ? formatValue(avgAllTime) : "—"}
               </span>
@@ -346,12 +371,15 @@ export function TrendCard({
         {avgAllTime !== undefined && (
           <div
             data-slot="trend-card-secondary-mobile"
-            className="text-muted-foreground mt-1 text-xs sm:hidden"
+            className="text-muted-foreground mt-1 min-w-0 text-xs leading-snug [overflow-wrap:anywhere] sm:hidden"
           >
             <span>
               {t(avgAllTimeLabelKey)}:{" "}
               <span
-                className={cn("font-medium tabular-nums", avgAllTimeColorClass)}
+                className={cn(
+                  "font-medium [overflow-wrap:anywhere] tabular-nums",
+                  avgAllTimeColorClass,
+                )}
               >
                 {avgAllTime !== null ? formatValue(avgAllTime) : "—"}
               </span>
@@ -361,7 +389,7 @@ export function TrendCard({
                 <span aria-hidden="true"> · </span>
                 <span
                   className={cn(
-                    "font-medium tabular-nums",
+                    "font-medium [overflow-wrap:anywhere] tabular-nums",
                     comparisonDeltaColor,
                   )}
                   data-slot="tile-compare-delta-mobile"

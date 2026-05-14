@@ -112,9 +112,13 @@ export function isComparisonBaseline(
 export const CHART_OVERLAY_KEYS = [
   "bp",
   "weight",
+  "bmi",
   "pulse",
+  "bodyFat",
   "mood",
   "medications",
+  "sleep",
+  "steps",
 ] as const;
 export type ChartOverlayKey = (typeof CHART_OVERLAY_KEYS)[number];
 
@@ -122,12 +126,14 @@ export interface ChartOverlayPrefs {
   showTrendIndicator: boolean;
   showTrendArrow: boolean;
   showTargetRange: boolean;
+  comparisonBaseline: ComparisonBaseline;
 }
 
 export const DEFAULT_CHART_OVERLAY_PREFS: ChartOverlayPrefs = {
   showTrendIndicator: false,
   showTrendArrow: false,
   showTargetRange: false,
+  comparisonBaseline: "none",
 };
 
 export type ChartOverlayPrefsMap = Partial<
@@ -145,6 +151,9 @@ function coerceChartOverlayPrefs(value: unknown): ChartOverlayPrefs {
     showTrendIndicator: candidate.showTrendIndicator === true,
     showTrendArrow: candidate.showTrendArrow === true,
     showTargetRange: candidate.showTargetRange === true,
+    comparisonBaseline: isComparisonBaseline(candidate.comparisonBaseline)
+      ? candidate.comparisonBaseline
+      : "none",
   };
 }
 

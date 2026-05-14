@@ -71,7 +71,7 @@ export const GET = apiHandler(async () => {
   let categoryMap: Record<string, string> = {};
   try {
     categoryMap = await getMedicationCategories(medications.map((m) => m.id));
-  } catch (error) {
+  } catch {
     getEvent()?.addWarning("Medication categories could not be loaded");
   }
 

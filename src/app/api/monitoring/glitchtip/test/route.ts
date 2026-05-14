@@ -11,7 +11,8 @@ export const dynamic = "force-dynamic";
 
 const TIMEOUT_MS = 5_000;
 
-export const POST = apiHandler(async (_request: NextRequest) => {
+export const POST = apiHandler(async (request: NextRequest) => {
+  void request;
   const { user } = await requireAdmin();
   annotate({ action: { name: "monitoring.glitchtip.test" } });
 

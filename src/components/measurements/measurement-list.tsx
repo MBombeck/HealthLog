@@ -459,7 +459,7 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-10 w-10"
                             onClick={() => startEdit(m)}
                             aria-label={t("common.edit")}
                           >
@@ -536,6 +536,7 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <DeleteButton
+                        className="h-10 w-10"
                         onConfirm={() => deleteMutation.mutate(m.id)}
                       />
                     </div>
@@ -774,7 +775,13 @@ function SortableHead({
   );
 }
 
-function DeleteButton({ onConfirm }: { onConfirm: () => void }) {
+function DeleteButton({
+  onConfirm,
+  className = "h-8 w-8",
+}: {
+  onConfirm: () => void;
+  className?: string;
+}) {
   const { t } = useTranslations();
   return (
     <AlertDialog>
@@ -782,7 +789,7 @@ function DeleteButton({ onConfirm }: { onConfirm: () => void }) {
         <Button
           variant="ghost"
           size="icon"
-          className="text-destructive h-8 w-8"
+          className={`text-destructive ${className}`}
           aria-label={t("common.delete")}
         >
           <Trash2 className="h-3.5 w-3.5" />

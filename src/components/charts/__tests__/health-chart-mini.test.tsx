@@ -105,6 +105,18 @@ describe("<HealthChart mini>", () => {
     expect(html).toContain("chart-overlay-controls-trigger");
   });
 
+  it("renders the overlay-controls trigger for BMI charts", () => {
+    const html = render(
+      <HealthChart
+        types={["WEIGHT"]}
+        title="BMI"
+        chartKey="bmi"
+        valueMode="bmi"
+      />,
+    );
+    expect(html).toContain("chart-overlay-controls-trigger");
+  });
+
   it("accepts windowOverride and applies the matching range-points", () => {
     const html = render(
       <HealthChart

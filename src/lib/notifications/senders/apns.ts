@@ -151,7 +151,7 @@ export function loadApnsConfig(): ApnsConfig | null {
     signingKey = inlineKey.replace(/\\n/g, "\n");
   } else {
     try {
-      signingKey = readFileSync(keyFile, "utf8");
+      signingKey = readFileSync(/* turbopackIgnore: true */ keyFile, "utf8");
     } catch (err) {
       const message = err instanceof Error ? err.message : "read_failed";
       getEvent()?.addWarning(`APNs key file read failed: ${message}`);

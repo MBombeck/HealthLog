@@ -6,13 +6,13 @@ six-review brief into shippable develop-branch state.
 
 ## Per-session SHA chain
 
-| Session | Scope | Commit SHAs |
-| --- | --- | --- |
-| A | CRITICAL + HIGH 1-3 | `5486507`, `13977bc`, `d5202e5`, `a2dfc5e` |
-| B | HIGH 4 + simplify (S-02 → S-04) + HIGH 6 | `3ee6dab`, `dfffe6b`, `d25e50e` |
-| D | HIGH 5 (analytics chunked aggregate landed in W5; D session re-confirmed against the W6 senior-dev brief) | `deadc73` |
-| E | HIGH 7 (Coach feedback referencing `coach_messages`, plaintext column drop) | `650f150` |
-| F | MED cluster (Sec-MED-2 Coolify scrub, Sr-MED-5 isCurrent device-id, SLEEP_DURATION migration verification note) + planning record | `1a46bfe` (MED) + this commit (planning) |
+| Session | Scope                                                                                                                             | Commit SHAs                                |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| A       | CRITICAL + HIGH 1-3                                                                                                               | `5486507`, `13977bc`, `d5202e5`, `a2dfc5e` |
+| B       | HIGH 4 + simplify (S-02 → S-04) + HIGH 6                                                                                          | `3ee6dab`, `dfffe6b`, `d25e50e`            |
+| D       | HIGH 5 (analytics chunked aggregate landed in W5; D session re-confirmed against the W6 senior-dev brief)                         | `deadc73`                                  |
+| E       | HIGH 7 (Coach feedback referencing `coach_messages`, plaintext column drop)                                                       | `650f150`                                  |
+| F       | MED cluster (Sec-MED-2 Coolify scrub, Sr-MED-5 isCurrent device-id, SLEEP_DURATION migration verification note) + planning record | `1a46bfe` (MED) + this commit (planning)   |
 
 ## Counts
 
@@ -28,14 +28,14 @@ six-review brief into shippable develop-branch state.
 
 ## Test count delta
 
-| Snapshot | Unit count |
-| --- | --- |
-| W5 close (commit `72829b1`) | 2223 |
-| Session A close (CRIT + HIGH 1-3 added device + revoke tests) | 2227 |
-| Session B close (HIGH 4 + simplify + HIGH 6) | ~2229 |
-| Session D close (HIGH 5 reconfirm) | ~2229 |
-| Session E close (HIGH 7 + coach-feedback updates) | 2235 |
-| Session F close (forged X-Device-Id regression) | **2236** |
+| Snapshot                                                      | Unit count |
+| ------------------------------------------------------------- | ---------- |
+| W5 close (commit `72829b1`)                                   | 2223       |
+| Session A close (CRIT + HIGH 1-3 added device + revoke tests) | 2227       |
+| Session B close (HIGH 4 + simplify + HIGH 6)                  | ~2229      |
+| Session D close (HIGH 5 reconfirm)                            | ~2229      |
+| Session E close (HIGH 7 + coach-feedback updates)             | 2235       |
+| Session F close (forged X-Device-Id regression)               | **2236**   |
 
 Net delta over the W6 reconcile arc: **+13 unit tests**.
 

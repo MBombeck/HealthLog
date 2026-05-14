@@ -70,7 +70,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (jsonError) return jsonError;
   const parsed = importSchema.safeParse(body);
   if (!parsed.success) {
-    return apiSuccess({ error: parsed.error.issues[0].message }, 422);
+    return apiError(
+      parsed.error.issues[0]?.message ?? "Invalid import payload",
+      422,
+    );
   }
 
   const userId = user.id;

@@ -172,7 +172,7 @@ export function CoachDrawer({
       }
       onOpenChange(next);
     },
-    [onOpenChange],
+    [onOpenChange, setInputValue],
   );
 
   const { data: conversation } = useCoachConversation(currentConversationId);

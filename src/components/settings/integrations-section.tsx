@@ -664,8 +664,9 @@ function MoodLogCard({
 
         <form onSubmit={handleSave} className="space-y-3">
           <div>
-            <Label>{t("settings.moodLogUrl")}</Label>
+            <Label htmlFor="moodlog-url">{t("settings.moodLogUrl")}</Label>
             <Input
+              id="moodlog-url"
               type="url"
               placeholder={t("settings.moodLogUrlPlaceholder")}
               value={url}
@@ -673,8 +674,11 @@ function MoodLogCard({
             />
           </div>
           <div>
-            <Label>{t("settings.moodLogApiKey")}</Label>
+            <Label htmlFor="moodlog-api-key">
+              {t("settings.moodLogApiKey")}
+            </Label>
             <PasswordInput
+              id="moodlog-api-key"
               placeholder={
                 status?.configured
                   ? t("settings.withingsCredentialsSavedPlaceholder")
@@ -705,9 +709,12 @@ function MoodLogCard({
           <div className="space-y-3 border-t pt-3">
             {status.webhookSecret && (
               <div>
-                <Label>{t("settings.moodLogWebhookSecret")}</Label>
+                <Label htmlFor="moodlog-webhook-secret">
+                  {t("settings.moodLogWebhookSecret")}
+                </Label>
                 <div className="flex gap-2">
                   <Input
+                    id="moodlog-webhook-secret"
                     value={status.webhookSecret}
                     readOnly
                     className="font-mono text-xs"

@@ -14,6 +14,7 @@ export default defineConfig({
     exclude: [
       "**/node_modules/**",
       "**/dist/**",
+      "**/.next/**",
       "tests/integration/**",
       // Playwright E2E suite — driven separately via `pnpm e2e`.
       "e2e/**",

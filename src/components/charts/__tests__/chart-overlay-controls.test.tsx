@@ -52,6 +52,7 @@ describe("<ChartOverlayControls>", () => {
       showTrendIndicator: false,
       showTrendArrow: false,
       showTargetRange: false,
+      comparisonBaseline: "none",
     });
   });
 
@@ -78,6 +79,7 @@ describe("<ChartOverlayControls>", () => {
       showTrendIndicator: false,
       showTrendArrow: false,
       showTargetRange: true,
+      comparisonBaseline: "none",
     });
   });
 

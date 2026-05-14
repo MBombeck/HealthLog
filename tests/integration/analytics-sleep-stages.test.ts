@@ -100,7 +100,10 @@ describe("GET /api/analytics — sleep-stage aggregation", () => {
     // route should surface a single Measurement-summary datapoint
     // (~480 minutes total) plus a per-stage breakdown.
     const baseDate = new Date("2026-05-09T01:00:00.000Z");
-    const stages: Array<{ stage: "IN_BED" | "CORE" | "DEEP" | "REM"; min: number }> = [
+    const stages: Array<{
+      stage: "IN_BED" | "CORE" | "DEEP" | "REM";
+      min: number;
+    }> = [
       { stage: "IN_BED", min: 480 },
       { stage: "CORE", min: 220 },
       { stage: "DEEP", min: 90 },
@@ -128,9 +131,9 @@ describe("GET /api/analytics — sleep-stage aggregation", () => {
     // the inner handler ignores its arguments. Cast through `unknown`
     // because `apiHandler`'s narrowed type signature is the inner
     // handler's `()`, not the wrapper's `(NextRequest)`.
-    const response = await (GET as unknown as (req: Request) => Promise<Response>)(
-      new Request("http://localhost/api/analytics"),
-    );
+    const response = await (
+      GET as unknown as (req: Request) => Promise<Response>
+    )(new Request("http://localhost/api/analytics"));
     expect(response.status).toBe(200);
     const envelope = (await response.json()) as AnalyticsEnvelope;
 
@@ -173,9 +176,9 @@ describe("GET /api/analytics — sleep-stage aggregation", () => {
     // the inner handler ignores its arguments. Cast through `unknown`
     // because `apiHandler`'s narrowed type signature is the inner
     // handler's `()`, not the wrapper's `(NextRequest)`.
-    const response = await (GET as unknown as (req: Request) => Promise<Response>)(
-      new Request("http://localhost/api/analytics"),
-    );
+    const response = await (
+      GET as unknown as (req: Request) => Promise<Response>
+    )(new Request("http://localhost/api/analytics"));
     expect(response.status).toBe(200);
     const envelope = (await response.json()) as AnalyticsEnvelope;
 

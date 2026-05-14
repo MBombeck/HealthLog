@@ -25,7 +25,8 @@ function redactPushError(text: string): string {
   return text.replace(/https?:\/\/\S+/gi, "[endpoint]");
 }
 
-export const POST = apiHandler(async (_request: NextRequest) => {
+export const POST = apiHandler(async (request: NextRequest) => {
+  void request;
   const { user } = await requireAuth();
   annotate({ action: { name: "notifications.web-push.test" } });
 

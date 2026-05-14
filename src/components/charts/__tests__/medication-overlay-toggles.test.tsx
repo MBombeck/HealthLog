@@ -47,6 +47,7 @@ const mockPrefs = vi.hoisted(() => ({
     showTrendIndicator: false,
     showTrendArrow: false,
     showTargetRange: false,
+    comparisonBaseline: "none",
   },
 }));
 
@@ -75,6 +76,7 @@ describe("MedicationComplianceChart overlay toggles", () => {
       showTrendIndicator: false,
       showTrendArrow: false,
       showTargetRange: false,
+      comparisonBaseline: "none",
     };
     const html = await renderChart();
     expect(html).not.toContain("medication-trend-chip");
@@ -85,6 +87,7 @@ describe("MedicationComplianceChart overlay toggles", () => {
       showTrendIndicator: true,
       showTrendArrow: false,
       showTargetRange: false,
+      comparisonBaseline: "none",
     };
     const html = await renderChart();
     expect(html).toContain("medication-trend-chip");

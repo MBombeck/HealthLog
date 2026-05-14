@@ -216,9 +216,10 @@ MEDs, all LOWs, S-05 simplify, pre-existing `coach-prefs.test.ts` mock
 issue, sandbox `git commit` no-op).
 
 Test deltas: W5 ended at 2223 unit. Session A added the `revoke.test.ts`
-+ `apns-dispatch` device tests landing at 2227. Session E ended at 2235.
-Session F added the forged-X-Device-Id regression — final at 2236 unit
-(+45 across the W5+W6 reconcile arc).
+
+- `apns-dispatch` device tests landing at 2227. Session E ended at 2235.
+  Session F added the forged-X-Device-Id regression — final at 2236 unit
+  (+45 across the W5+W6 reconcile arc).
 
 ## Wave 7 — Release v1.4.23
 

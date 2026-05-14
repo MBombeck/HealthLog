@@ -12,7 +12,7 @@ without re-reading the full review pack.
   the settings cog) duplicates intent. Defer to v1.4.24 once W5 H7
   surfaces enough thumbs data to know whether per-user prompt prefs
   drift from per-message ratings. Source: `phase-W6-v1423-design-review.md`
-  + `phase-W6-v1423-product-lead-review.md`.
+  - `phase-W6-v1423-product-lead-review.md`.
 
 ## Statistics
 

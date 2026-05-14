@@ -384,6 +384,21 @@ of the strategic content there is the v1.4.20 plan (Insights redesign
   commits (A4, A5, A6 in v1.4.19). v1.4.20 should require one
   worktree per parallel agent.
 
+## From issue triage
+
+- **Per-user timezone (Option B in the proposal).** Issue #167
+  surfaced that the entire app is hardcoded to `Europe/Berlin` — UI
+  display, analytics buckets, reminder cron, Withings sync mapping,
+  PDF report, Coach context, ten distinct symptoms in total. The
+  full design space, migration strategy, schema changes, DST and
+  date-string risks (`MoodEntry.date` freeze vs `MedicationSchedule`
+  re-anchor — they need different contracts), test parametrisation
+  plan and product-call questions are written up in
+  `.planning/feature-user-timezone.md`. Sized L: 1–2 weeks elapsed.
+  Independent from the v1.4.25 quick fix (ISO-8601-with-offset CSV
+  export) which closes #167 on its own without touching this scope.
+  Triggering issue: GitHub #167.
+
 ## Process / meta
 
 - **Cross-agent commit-message drift** — reduced materially in

@@ -62,7 +62,7 @@ export const GET = apiHandler(async () => {
 
         channels.push(created);
       }
-    } catch (err) {
+    } catch {
       getEvent()?.addWarning("Legacy Telegram migration failed");
     }
   }

@@ -54,9 +54,21 @@ export function NotificationsSection() {
 
       <NotificationStatusCard />
 
-      {showTelegram && <TelegramCard isAuthenticated={isAuthenticated} />}
-      {showNtfy && <NtfyCard isAuthenticated={isAuthenticated} />}
-      {showWebPush && <WebPushCard />}
+      {showTelegram && (
+        <div id="telegram">
+          <TelegramCard isAuthenticated={isAuthenticated} />
+        </div>
+      )}
+      {showNtfy && (
+        <div id="ntfy">
+          <NtfyCard isAuthenticated={isAuthenticated} />
+        </div>
+      )}
+      {showWebPush && (
+        <div id="web-push">
+          <WebPushCard />
+        </div>
+      )}
     </section>
   );
 }

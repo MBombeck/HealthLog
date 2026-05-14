@@ -81,7 +81,7 @@ describe("requireAuth — Bearer token path", () => {
     vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
       id: "token-1",
       userId: "user-1",
-      permissions: ["medication:ingest"],
+      permissions: ["*"],
       revoked: false,
       expiresAt,
     } as never);
@@ -193,6 +193,30 @@ describe("requireAuth — Bearer token path", () => {
           reason: "insufficient_permissions",
           required: "medication:ingest",
         }),
+      }),
+    );
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("rejects a scoped Bearer token when the route did not declare a scope", async () => {
+    vi.mocked(getSession).mockResolvedValue(null);
+    setBearerHeader(`Bearer ${RAW_TOKEN}`);
+
+    vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+      id: "token-5",
+      userId: "user-1",
+      permissions: ["medication:ingest"],
+      revoked: false,
+      expiresAt: null,
+    } as never);
+
+    await expect(requireAuth()).rejects.toMatchObject({
+      statusCode: 403,
+    });
+    expect(auditLog).toHaveBeenCalledWith(
+      "auth.bearer.failure",
+      expect.objectContaining({
+        details: expect.objectContaining({ reason: "scope_required" }),
       }),
     );
     expect(prisma.user.findUnique).not.toHaveBeenCalled();

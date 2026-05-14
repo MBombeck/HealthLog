@@ -665,6 +665,7 @@
         "trendIndicator": "7-Tage-Trend",
         "trendArrow": "Trend-Pfeil",
         "targetRange": "Zielbereich",
+        "comparisonBaseline": "Vergleich",
         "tooltip": {
           "openSettings": "Chart-Overlay-Einstellungen"
         }
@@ -2492,6 +2493,7 @@
     "title": "Benachrichtigungen",
     "eventColumn": "Ereignis",
     "subtitle": "Wähle aus, welche Benachrichtigungen du über welchen Kanal erhalten möchtest.",
+    "loadError": "Benachrichtigungseinstellungen konnten nicht geladen werden.",
     "noChannels": "Konfiguriere zuerst einen Benachrichtigungskanal in den Einstellungen.",
     "goToSettings": "Zu den Einstellungen",
     "channelDisabled": "Deaktiviert",

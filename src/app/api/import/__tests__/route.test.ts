@@ -85,4 +85,25 @@ describe("POST /api/import — rate-limit guard", () => {
 
     expect(response.status).toBeLessThan(400);
   });
+
+  it("returns the standard apiError envelope for invalid payloads", async () => {
+    vi.mocked(checkRateLimit).mockResolvedValue({
+      allowed: true,
+      remaining: 4,
+      resetAt: new Date(Date.now() + 1000),
+    } as never);
+
+    const response = await POST(
+      new NextRequest("http://localhost/api/import", {
+        method: "POST",
+        body: JSON.stringify({ measurements: "not-an-array" }),
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    expect(response.status).toBe(422);
+    const body = (await response.json()) as ApiErrorEnvelope;
+    expect(body.data).toBeNull();
+    expect(body.error).toBeTruthy();
+  });
 });

@@ -28,7 +28,6 @@ function main(): void {
     lineWidth: 120,
   });
   writeFileSync(SPEC_PATH, yaml, "utf8");
-  // eslint-disable-next-line no-console
   console.log(`Wrote ${SPEC_PATH} (${yaml.length} bytes)`);
 }
 

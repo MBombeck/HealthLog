@@ -967,6 +967,7 @@ export default function DashboardPage() {
               node: (
                 <HealthChart
                   key="bmi-chart"
+                  chartKey="bmi"
                   types={["WEIGHT"]}
                   title={t("targets.bmi")}
                   colors={["#f1fa8c"]}
@@ -1032,6 +1033,7 @@ export default function DashboardPage() {
             node: (
               <HealthChart
                 key="bodyFat-chart"
+                chartKey="bodyFat"
                 types={["BODY_FAT"]}
                 title={t("dashboard.bodyFat")}
                 colors={["#ffb86c"]}
@@ -1064,6 +1066,7 @@ export default function DashboardPage() {
             node: (
               <HealthChart
                 key="sleep-chart"
+                chartKey="sleep"
                 types={["SLEEP_DURATION"]}
                 title={t("dashboard.sleep") ?? "Sleep"}
                 colors={["#8be9fd"]}
@@ -1081,6 +1084,7 @@ export default function DashboardPage() {
             node: (
               <HealthChart
                 key="steps-chart"
+                chartKey="steps"
                 types={["ACTIVITY_STEPS"]}
                 title={t("dashboard.steps") ?? "Steps"}
                 colors={["#50fa7b"]}
@@ -1186,13 +1190,13 @@ export default function DashboardPage() {
                 // scrolling — the maintainer tested both and prefers the v1.3-era
                 // wrap behaviour over the one-row scroll for the symmetry
                 // it preserves.
-                className="grid auto-rows-fr [grid-template-columns:repeat(auto-fit,minmax(9rem,1fr))] gap-3 pb-2"
+                className="grid auto-rows-fr [grid-template-columns:repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-3 pb-2"
                 data-slot="dashboard-tile-strip"
                 data-tour-id="dashboard-tile-strip"
                 data-tile-count={trendCards.length}
               >
                 {trendCards.map((entry) => (
-                  <div key={entry.id} className="flex">
+                  <div key={entry.id} className="flex min-w-0">
                     {entry.node}
                   </div>
                 ))}

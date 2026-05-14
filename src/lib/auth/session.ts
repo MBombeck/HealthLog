@@ -111,7 +111,9 @@ export async function getSession(): Promise<{
 
   if (!session || session.expiresAt < new Date()) {
     if (session) {
-      await prisma.session.delete({ where: { id: sessionId } });
+      await prisma.session
+        .deleteMany({ where: { id: sessionId } })
+        .catch(() => {});
     }
     cookieStore.delete(SESSION_COOKIE);
     cookieStore.delete(ONBOARDING_COOKIE);

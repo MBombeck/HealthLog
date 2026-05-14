@@ -14,7 +14,11 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
-import { type ChartOverlayPrefs } from "@/lib/dashboard-layout";
+import {
+  COMPARISON_BASELINES,
+  type ChartOverlayPrefs,
+  type ComparisonBaseline,
+} from "@/lib/dashboard-layout";
 
 /**
  * v1.4.18 — per-chart overlay-controls popover.
@@ -78,8 +82,15 @@ export function ChartOverlayControls({
   const trendArrowId = useId();
   const targetRangeId = useId();
 
-  const setKey = (key: keyof ChartOverlayPrefs, value: boolean): void => {
+  const setToggle = (
+    key: "showTrendIndicator" | "showTrendArrow" | "showTargetRange",
+    value: boolean,
+  ): void => {
     onChange({ ...prefs, [key]: value });
+  };
+
+  const setComparisonBaseline = (value: ComparisonBaseline): void => {
+    onChange({ ...prefs, comparisonBaseline: value });
   };
 
   return (
@@ -118,7 +129,7 @@ export function ChartOverlayControls({
               id={trendIndicatorId}
               checked={prefs.showTrendIndicator}
               onCheckedChange={(value) =>
-                setKey("showTrendIndicator", Boolean(value))
+                setToggle("showTrendIndicator", Boolean(value))
               }
               data-slot="chart-overlay-toggle-trend-indicator"
             />
@@ -134,7 +145,7 @@ export function ChartOverlayControls({
               id={trendArrowId}
               checked={prefs.showTrendArrow}
               onCheckedChange={(value) =>
-                setKey("showTrendArrow", Boolean(value))
+                setToggle("showTrendArrow", Boolean(value))
               }
               data-slot="chart-overlay-toggle-trend-arrow"
             />
@@ -150,10 +161,37 @@ export function ChartOverlayControls({
               id={targetRangeId}
               checked={prefs.showTargetRange}
               onCheckedChange={(value) =>
-                setKey("showTargetRange", Boolean(value))
+                setToggle("showTargetRange", Boolean(value))
               }
               data-slot="chart-overlay-toggle-target-range"
             />
+          </div>
+        </div>
+        <DropdownMenuSeparator />
+        <div className="flex flex-col gap-1.5 pt-1">
+          <Label className="text-muted-foreground text-xs font-medium">
+            {t("chart.overlay.controls.comparisonBaseline")}
+          </Label>
+          <div
+            className="grid grid-cols-3 gap-1"
+            data-slot="chart-overlay-comparison-baseline"
+          >
+            {COMPARISON_BASELINES.map((value) => (
+              <Button
+                key={value}
+                type="button"
+                variant={
+                  prefs.comparisonBaseline === value ? "default" : "outline"
+                }
+                size="sm"
+                className="h-9 px-1 text-[11px]"
+                onClick={() => setComparisonBaseline(value)}
+                aria-pressed={prefs.comparisonBaseline === value}
+                data-slot={`chart-overlay-comparison-${value}`}
+              >
+                {t(`comparison.baseline.${value}`)}
+              </Button>
+            ))}
           </div>
         </div>
       </DropdownMenuContent>

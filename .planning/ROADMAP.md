@@ -37,7 +37,10 @@ Reserved next strategic milestones:
   alerts. Refreshed strategic plan with concrete file paths at
   `.planning/phase-W6-v1423-product-lead-review.md`. P1 is now a
   ~5-day iOS Swift sprint because every server-side contract
-  landed in v1.4.23.
+  landed in v1.4.23. Per-user timezone foundation
+  (`.planning/feature-user-timezone.md`, issue #167) is now scoped
+  into v1.4.25 — Marc directive 2026-05-14, packs the iOS-launch
+  prep into the v1.4.25 polish window instead of slipping it.
 - **v1.6+** — Auto-correlation discovery (FDR-controlled), Coach
   full-page route at `/insights/coach`, conversation-driven goal
   setting.

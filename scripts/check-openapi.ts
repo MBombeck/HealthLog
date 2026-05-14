@@ -22,11 +22,9 @@ function main(): void {
   });
   const committed = readFileSync(SPEC_PATH, "utf8");
   if (generated === committed) {
-    // eslint-disable-next-line no-console
     console.log("OpenAPI spec in sync with source schemas.");
     return;
   }
-  // eslint-disable-next-line no-console
   console.error(
     "OpenAPI spec drift detected. Run `pnpm openapi:generate` and commit the result.",
   );
@@ -37,7 +35,6 @@ function main(): void {
   const max = Math.max(genLines.length, onDiskLines.length);
   for (let i = 0; i < max; i++) {
     if (genLines[i] !== onDiskLines[i]) {
-      // eslint-disable-next-line no-console
       console.error(
         `Line ${i + 1}:\n  generated: ${JSON.stringify(genLines[i] ?? "")}\n  committed: ${JSON.stringify(onDiskLines[i] ?? "")}`,
       );
@@ -46,7 +43,6 @@ function main(): void {
       let shown = 1;
       for (let j = i + 1; j < max && shown < 5; j++) {
         if (genLines[j] !== onDiskLines[j]) {
-          // eslint-disable-next-line no-console
           console.error(
             `Line ${j + 1}:\n  generated: ${JSON.stringify(genLines[j] ?? "")}\n  committed: ${JSON.stringify(onDiskLines[j] ?? "")}`,
           );

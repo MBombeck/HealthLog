@@ -388,6 +388,9 @@ export function HealthChart({
   const showMA = overlayPrefs.prefs.showTrendIndicator;
   const showTrend = overlayPrefs.prefs.showTrendArrow;
   const showBands = overlayPrefs.prefs.showTargetRange;
+  const effectiveCompareBaseline = chartKey
+    ? overlayPrefs.prefs.comparisonBaseline
+    : compareBaseline;
 
   // v1.4.19 A2 — viewport-aware tick density. Recharts' default is one
   // tick per data point; the helper caps that at 4-10 visible labels
@@ -605,7 +608,7 @@ export function HealthChart({
   // "Comparison unavailable — no data from last month yet" via the
   // hasComparisonData flag below).
   const chartDataWithCompare = useMemo(() => {
-    if (!chartData || compareBaseline === "none") return chartData;
+    if (!chartData || effectiveCompareBaseline === "none") return chartData;
     if (!data?.length) return chartData;
 
     const shifted = shiftDailySeriesForward(
@@ -615,7 +618,7 @@ export function HealthChart({
           types.map((type) => [type, row[type] as number | undefined]),
         ),
       })),
-      compareBaseline,
+      effectiveCompareBaseline,
     );
 
     // Index shifted rows by the same day-key the chart already uses.
@@ -643,7 +646,7 @@ export function HealthChart({
       }
       return merged;
     });
-  }, [chartData, compareBaseline, data, types]);
+  }, [chartData, effectiveCompareBaseline, data, types]);
 
   /**
    * v1.4.16 phase B8 — true when at least one visible day has a prior-
@@ -654,7 +657,8 @@ export function HealthChart({
    * when they can clearly see SOME dimmed history.
    */
   const hasComparisonData = useMemo(() => {
-    if (compareBaseline === "none" || !chartDataWithCompare) return false;
+    if (effectiveCompareBaseline === "none" || !chartDataWithCompare)
+      return false;
     return chartDataWithCompare.some((point) =>
       types.some(
         (type) =>
@@ -662,7 +666,7 @@ export function HealthChart({
           Number.isFinite(point[`${type}_compare`] as number),
       ),
     );
-  }, [chartDataWithCompare, compareBaseline, types]);
+  }, [chartDataWithCompare, effectiveCompareBaseline, types]);
 
   const activeBucket: ChartBucketType = useMemo(() => {
     if (!data?.length) return "day";
@@ -684,7 +688,7 @@ export function HealthChart({
     // v1.4.16 phase B8 — extend the y-domain to fit the prior-period
     // overlay. Without this the dimmed line can clip outside the
     // visible range when last-month / last-year had a different scale.
-    if (compareBaseline !== "none") {
+    if (effectiveCompareBaseline !== "none") {
       keys.push(...types.map((type) => `${type}_compare`));
     }
 
@@ -707,7 +711,13 @@ export function HealthChart({
     const paddingBottom = Math.max(span * 0.08, 0.5);
     const paddingTop = Math.max(span * 0.16, 1);
     return [min - paddingBottom, max + paddingTop];
-  }, [chartDataWithCompare, compareBaseline, showMA, showTrend, types]);
+  }, [
+    chartDataWithCompare,
+    effectiveCompareBaseline,
+    showMA,
+    showTrend,
+    types,
+  ]);
 
   const visibleBands = useMemo(() => {
     if (!showBands || !valueBands?.length || !yDomain) return [];
@@ -959,25 +969,25 @@ export function HealthChart({
                 neutral muted styling so it doesn't read as an error.
 
                 v1.4.19 A2 — hidden on mobile to free up the title row. */}
-            {compareBaseline !== "none" && hasComparisonData && (
+            {effectiveCompareBaseline !== "none" && hasComparisonData && (
               <span
                 className="text-dracula-purple bg-dracula-purple/10 hidden rounded-md border border-current/30 px-1.5 py-0.5 text-[10px] font-medium tracking-wide uppercase sm:inline-flex"
                 data-slot="chart-compare-caption"
               >
                 {t(
-                  compareBaseline === "lastMonth"
+                  effectiveCompareBaseline === "lastMonth"
                     ? "comparison.captionLastMonth"
                     : "comparison.captionLastYear",
                 )}
               </span>
             )}
-            {compareBaseline !== "none" && !hasComparisonData && (
+            {effectiveCompareBaseline !== "none" && !hasComparisonData && (
               <span
                 className="text-muted-foreground bg-muted/40 hidden rounded-md px-1.5 py-0.5 text-[10px] font-medium tracking-wide sm:inline-flex"
                 data-slot="chart-compare-unavailable"
               >
                 {t(
-                  compareBaseline === "lastMonth"
+                  effectiveCompareBaseline === "lastMonth"
                     ? "comparison.unavailable.lastMonth"
                     : "comparison.unavailable.lastYear",
                 )}
@@ -1291,13 +1301,13 @@ export function HealthChart({
                       // have a prior value for this day. Otherwise fall
                       // back to the existing baseline-delta path.
                       const compareValue =
-                        compareBaseline !== "none" && hoverPoint
+                        effectiveCompareBaseline !== "none" && hoverPoint
                           ? (hoverPoint[`${dataKey}_compare`] as
                               | number
                               | undefined)
                           : undefined;
                       if (
-                        compareBaseline !== "none" &&
+                        effectiveCompareBaseline !== "none" &&
                         typeof compareValue === "number" &&
                         Number.isFinite(compareValue)
                       ) {
@@ -1311,7 +1321,7 @@ export function HealthChart({
                             1,
                           )}${unit ? ` ${unit}` : ""}`;
                           delta = t(
-                            compareBaseline === "lastMonth"
+                            effectiveCompareBaseline === "lastMonth"
                               ? "comparison.deltaVs.lastMonth"
                               : "comparison.deltaVs.lastYear",
                           ).replace("{delta}", formatted);
@@ -1345,7 +1355,7 @@ export function HealthChart({
                       // numbers (current AND last-month / last-year)
                       // alongside the delta.
                       if (
-                        compareBaseline !== "none" &&
+                        effectiveCompareBaseline !== "none" &&
                         typeof compareValue === "number" &&
                         Number.isFinite(compareValue)
                       ) {
@@ -1428,7 +1438,7 @@ export function HealthChart({
                     stroke opacity (45%) and a thinner stroke (1.25)
                     so the user reads the current line first and the
                     overlay as orientation. */}
-                {compareBaseline !== "none" &&
+                {effectiveCompareBaseline !== "none" &&
                   hasComparisonData &&
                   types.map((type, i) => (
                     <Line
@@ -1436,7 +1446,7 @@ export function HealthChart({
                       type="monotone"
                       dataKey={`${type}_compare`}
                       name={`${getTypeLabel(type, valueMode, t)} (${t(
-                        compareBaseline === "lastMonth"
+                        effectiveCompareBaseline === "lastMonth"
                           ? "comparison.captionLastMonth"
                           : "comparison.captionLastYear",
                       )})`}

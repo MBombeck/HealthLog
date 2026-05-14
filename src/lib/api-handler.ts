@@ -222,9 +222,22 @@ async function authenticateBearer(
   // adopt requireAuth("scope:name"), the wildcard handling here keeps
   // the iOS app working while narrower-scoped tokens (e.g. ["medication:
   // ingest"]) get correctly 403'd.
+  const hasWildcardPermission = apiToken.permissions.includes("*");
+
+  if (!requiredPermission && !hasWildcardPermission) {
+    auditLog("auth.bearer.failure", {
+      userId: apiToken.userId,
+      details: {
+        reason: "scope_required",
+        tokenId: apiToken.id,
+      },
+    }).catch(() => {});
+    throw new HttpError(403, "Insufficient permissions");
+  }
+
   if (
     requiredPermission &&
-    !apiToken.permissions.includes("*") &&
+    !hasWildcardPermission &&
     !apiToken.permissions.includes(requiredPermission)
   ) {
     auditLog("auth.bearer.failure", {

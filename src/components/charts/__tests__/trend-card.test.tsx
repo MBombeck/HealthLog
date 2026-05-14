@@ -122,3 +122,29 @@ describe("<TrendCard> directionSentiment", () => {
     expect(html).not.toContain("text-dracula-orange");
   });
 });
+
+describe("<TrendCard> responsive layout", () => {
+  it("keeps long BP target tile content wrappable inside the card", () => {
+    const html = render(
+      <TrendCard
+        label="BP in target"
+        latest={50}
+        unit="%"
+        avg7={100}
+        avg30={50}
+        avgAllTime={11}
+        slope30={RISING}
+        trend7Delta={50}
+        icon={Activity}
+        directionSentiment="up-good"
+        compareBaseline="lastMonth"
+        compareDelta={36}
+      />,
+    );
+
+    expect(html).toContain("min-w-0");
+    expect(html).toContain("[overflow-wrap:anywhere]");
+    expect(html).toContain('data-slot="tile-compare-delta"');
+    expect(html).toContain('data-slot="trend-card-all-time"');
+  });
+});

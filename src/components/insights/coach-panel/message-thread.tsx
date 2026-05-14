@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   Bot,
@@ -69,7 +69,10 @@ export function MessageThread({
   const { data: coachPrefs } = useCoachPrefs();
   const evidenceDefaultOpen = coachPrefs?.showEvidenceByDefault ?? false;
 
-  const messages: CoachMessageDTO[] = conversation?.messages ?? [];
+  const messages: CoachMessageDTO[] = useMemo(
+    () => conversation?.messages ?? [],
+    [conversation?.messages],
+  );
   // v1.4.20.1 — once the SSE stream emits `done`, the route's
   // invalidate-then-refetch pulls the persisted assistant message into
   // `conversation.messages`. The streaming bubble was still rendering

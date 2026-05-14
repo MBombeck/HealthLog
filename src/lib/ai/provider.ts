@@ -1,4 +1,4 @@
-import type { AIProvider, CompletionParams, CompletionResult } from "./types";
+import type { AIProvider, CompletionResult } from "./types";
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { CodexClient } from "./codex-client";
@@ -19,9 +19,7 @@ const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
 class NoProvider implements AIProvider {
   readonly type = "none" as const;
 
-  async generateCompletion(
-    _params: CompletionParams,
-  ): Promise<CompletionResult> {
+  async generateCompletion(): Promise<CompletionResult> {
     throw new Error(
       "No AI provider configured. Connect ChatGPT or set an API key in settings.",
     );

@@ -45,7 +45,7 @@ export default function NotificationsPage() {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["notifications", "preferences"],
     queryFn: async () => {
       const res = await fetch("/api/notifications/preferences");
@@ -144,6 +144,27 @@ export default function NotificationsPage() {
   const eventTypes = data?.eventTypes ?? [];
   const activeChannels = channels.filter((ch) => ch.globallyEnabled);
 
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {t("notifications.title")}
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            {t("notifications.subtitle")}
+          </p>
+        </div>
+        <div
+          role="alert"
+          className="border-destructive/40 bg-destructive/10 text-destructive rounded-lg border p-4 text-sm"
+        >
+          {t("notifications.loadError")}
+        </div>
+      </div>
+    );
+  }
+
   // No channels configured
   if (activeChannels.length === 0) {
     return (
@@ -236,9 +257,11 @@ export default function NotificationsPage() {
                   {activeChannels.map((ch) => {
                     const enabled = isEnabled(ch.id, eventType);
                     const disabled = !ch.enabled;
+                    const switchLabel = `${t(nameKey)} - ${ch.label}`;
                     return (
                       <td key={ch.id} className="px-4 py-3 text-center">
                         <Switch
+                          aria-label={switchLabel}
                           checked={enabled && !disabled}
                           disabled={disabled || toggleMutation.isPending}
                           onCheckedChange={(checked: boolean) =>
@@ -279,12 +302,14 @@ export default function NotificationsPage() {
                 {activeChannels.map((ch) => {
                   const enabled = isEnabled(ch.id, eventType);
                   const disabled = !ch.enabled;
+                  const switchId = `notification-${eventType}-${ch.id}`;
                   return (
                     <div
                       key={ch.id}
                       className="flex items-center justify-between"
                     >
                       <Label
+                        htmlFor={switchId}
                         className={`text-sm ${disabled ? "text-muted-foreground/70" : ""}`}
                       >
                         {ch.label}
@@ -295,6 +320,7 @@ export default function NotificationsPage() {
                         )}
                       </Label>
                       <Switch
+                        id={switchId}
                         checked={enabled && !disabled}
                         disabled={disabled || toggleMutation.isPending}
                         onCheckedChange={(checked: boolean) =>

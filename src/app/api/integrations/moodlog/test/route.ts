@@ -48,7 +48,8 @@ function redact(text: string): string {
     .replace(/https?:\/\/\S+/gi, "[url]");
 }
 
-export const POST = apiHandler(async (_request: NextRequest) => {
+export const POST = apiHandler(async (request: NextRequest) => {
+  void request;
   const { user } = await requireAuth();
   annotate({ action: { name: "integrations.moodlog.test" } });
 

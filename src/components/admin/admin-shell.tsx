@@ -165,6 +165,21 @@ export function AdminShell({ active, children }: AdminShellProps) {
         className="no-scrollbar -mx-4 mb-4 overflow-x-auto px-4 md:hidden"
       >
         <ul className="flex min-w-max gap-2">
+          <li>
+            <Link
+              href="/admin"
+              aria-current={activeSlug === null ? "page" : undefined}
+              className={cn(
+                "flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+                activeSlug === null
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border text-foreground hover:bg-accent",
+              )}
+            >
+              <ScrollText className="h-4 w-4" aria-hidden="true" />
+              {t("admin.shell.overview")}
+            </Link>
+          </li>
           {ADMIN_SECTIONS.map((section) => {
             const isActive = section.slug === activeSlug;
             const Icon = section.icon;

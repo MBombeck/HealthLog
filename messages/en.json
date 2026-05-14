@@ -665,6 +665,7 @@
         "trendIndicator": "7-day trend",
         "trendArrow": "Trend arrow",
         "targetRange": "Target range",
+        "comparisonBaseline": "Comparison",
         "tooltip": {
           "openSettings": "Chart overlay settings"
         }
@@ -2492,6 +2493,7 @@
     "title": "Notifications",
     "eventColumn": "Event",
     "subtitle": "Choose which notifications you want to receive through which channel.",
+    "loadError": "Notification preferences could not be loaded.",
     "noChannels": "Configure a notification channel in Settings first.",
     "goToSettings": "Go to Settings",
     "channelDisabled": "Disabled",

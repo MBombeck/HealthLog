@@ -35,6 +35,9 @@ const prefsSchema = z.object({
     showTrendIndicator: z.boolean(),
     showTrendArrow: z.boolean(),
     showTargetRange: z.boolean(),
+    comparisonBaseline: z
+      .enum(["none", "lastMonth", "lastYear"])
+      .default("none"),
   }),
 });
 

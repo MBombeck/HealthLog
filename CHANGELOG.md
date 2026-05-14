@@ -1,5 +1,130 @@
 # Changelog
 
+## [1.4.24] — 2026-05-12
+
+Security + accessibility hardening release. Closes the highest-priority
+findings from a focused security audit of the v1.4.23 release: a Bearer
+token that omits a scope no longer authenticates routes which never
+declared one, the public Umami proxy is rate-limited, the proxy nonce
+is Edge-runtime portable, a session-expiry delete race can no longer
+500 a parallel request, the import-validation envelope now matches the
+standard error contract, and the runtime Docker image installs Prisma
+7.8 alongside pinned worker dependencies. Accessibility passes on the
+notifications surface, admin shell, chart overlays and notification
+settings deep-link anchors round out the user-facing work.
+
+### Security
+
+- **Bearer auth is fail-closed when a route declares no scope.**
+  `requireAuth()` previously let any non-revoked, non-expired API token
+  through whenever a handler omitted the `requiredPermission` argument.
+  A narrowly-scoped token (e.g. `["medication:ingest"]`) could therefore
+  reach every handler that called `requireAuth()` bare — including
+  account-sensitive routes such as `/api/auth/profile`,
+  `/api/auth/password`, `/api/withings/credentials`,
+  `/api/settings/data`, `/api/export/full-backup` and `/api/tokens`.
+  The Bearer path now throws `HttpError(403)` with audit reason
+  `scope_required` unless the token carries the `["*"]` wildcard
+  (the iOS app login token), preserving the existing session-cookie
+  path and the explicit-scope path (`/api/ingest/medications`). The
+  admin surface is unaffected — `requireAdmin()` was already
+  cookie-only.
+- **Public Umami analytics proxy now rate-limits by client IP.**
+  `POST /api/send` forwards browser analytics events to the configured
+  Umami origin. The SSRF allow-list and 64 KB body cap were already in
+  place, but the endpoint itself was unbounded. Added a 120-events-per-
+  minute-per-IP gate using the existing `checkRateLimit` infrastructure;
+  abuse returns the standard `429` envelope without invoking the
+  upstream fetch.
+- **Edge-runtime portable nonce generation in the proxy.** The proxy
+  previously assembled the CSP nonce via `Buffer.from(...)`, which is
+  not guaranteed in the Edge runtime. Switched to
+  `btoa(String.fromCharCode(...new Uint8Array(16)))`. Same 128 bits of
+  entropy, Node-and-Edge compatible without a runtime declaration.
+- **Session-expiry delete race no longer 500s a parallel request.**
+  `getSession()` reaped expired session rows with `prisma.session
+.delete()`; two requests arriving at the same expired session would
+  race and the loser would surface a 500. Replaced with `deleteMany` +
+  a catch-all guard, matching the discipline already used in
+  `destroySession()`.
+
+### Fixed
+
+- **`POST /api/import` returns the standard `{ data: null, error }`
+  envelope on validation failure.** The handler previously returned
+  the validation message inside `apiSuccess(...)` with status 422,
+  which clients could not distinguish from a successful import.
+- **Runtime Docker image pins Prisma 7.8 + worker dependencies.** The
+  multi-stage image was installing `prisma@7.4.0`, `@prisma/engines
+@7.4.0`, unpinned `pg-boss@12`, `@prisma/adapter-pg@7` and `pg@8`
+  into the worker prefix while the app code shipped Prisma 7.8 from
+  the lockfile. Pinned to `prisma@7.8`, `@prisma/engines@7.8`,
+  `pg-boss@12.18`, `@prisma/adapter-pg@7.8` and `pg@8.20` so
+  migration engine and generated client cannot drift across a deploy.
+- **Notifications page surfaces a load error instead of a silent
+  "no channels" empty state.** `useQuery` failures now render an
+  alert with `role="alert"` and `notifications.loadError` copy
+  (EN/DE), so a transient 500 on `/api/notifications/preferences`
+  stops looking like a misconfiguration.
+
+### Accessibility
+
+- **Notification-preference switches carry accessible names.** Each
+  switch in the per-event table now exposes an `aria-label` combining
+  event-type label and channel label; the mobile per-event layout pairs
+  each `<Switch>` with its `<Label>` via `htmlFor`/`id` so screen
+  readers announce the channel a toggle controls.
+- **Mobile admin navigation surfaces an Overview link.** The mobile
+  admin section pill-rail prepended an Overview chip pointing at
+  `/admin`, matching the desktop sidebar root and unblocking users
+  who land on a sub-section without a path back.
+- **Notification settings deep-link anchors land on the right card.**
+  Onboarding and admin-driven deep links into `#telegram`, `#ntfy`
+  and `#web-push` now resolve to the corresponding cards in
+  `NotificationsSection` instead of falling back to top-of-page.
+- **Chart-overlay comparison-baseline toggles expose `aria-pressed`.**
+  The new per-chart comparison-baseline selector renders three
+  pill buttons (none / last month / last year) with the correct
+  pressed-state semantics for assistive tech.
+
+### Changed
+
+- **Per-chart `comparisonBaseline` overlay preference.** The
+  comparison overlay is now configurable per chart from the existing
+  overlay-controls popover instead of being a single global toggle.
+  `ChartOverlayPrefs` adds a `comparisonBaseline: "none" | "lastMonth"
+| "lastYear"` field (defaults to `"none"`); a per-chart selection
+  overrides the dashboard-level default for that chart only.
+  `ChartOverlayKey` is extended with `bmi`, `bodyFat`, `sleep` and
+  `steps`, mirroring the chart surfaces already on the dashboard.
+- **Trend-card layout tolerates long labels and long values.**
+  `TrendCard` switches to `min-w-0` + `flex-wrap` containers and
+  `[overflow-wrap:anywhere]` text utilities so locale labels
+  ("Letzter Wert" / "Resting Heart Rate") and large tabular numbers
+  no longer push the tile off-axis on narrow viewports.
+- **Lint-clean Coach drawer + message thread.** The `useCallback`
+  dependency on the drawer's reset closure now includes the stable
+  `setInputValue` setter, and the message thread memoises the
+  derived `messages` array. Both removed the only two warning-level
+  hook lints carried over from v1.4.23.
+
+### Tests
+
+- New unit test in `require-auth-bearer.test.ts` proves that a Bearer
+  token with permissions `["medication:ingest"]` is rejected (403
+  with audit reason `scope_required`) when the route did not declare
+  a scope; the existing success case was updated to use the wildcard
+  scope so the new fail-closed branch does not collide with it.
+- New unit suite under `src/lib/auth/__tests__/session.test.ts`
+  covers the expired-session delete-race path: a rejected `deleteMany`
+  must still resolve `getSession()` to `null` and clear both the
+  session and onboarding cookies.
+- New unit suite under `src/app/api/send/__tests__/route.test.ts`
+  covers the rate-limited Umami proxy: a 429 short-circuits the
+  upstream fetch and a 200 still proxies under quota.
+- Extended import-route test asserts the new `apiError` envelope:
+  `data === null` and a populated `error` for invalid payloads.
+
 ## [1.4.23] — 2026-05-11
 
 ### Added
@@ -41,15 +166,15 @@
 - **OpenAPI 3.1 generator + drift CI gate.** `pnpm openapi:generate`
   reads Zod v4 `.meta()` annotations on the existing validation
   schemas and emits a byte-stable `docs/api/openapi.yaml` (`zod-openapi`
-  + `yaml@^2` with `sortMapEntries: true`). The eight iOS-critical
-  routes are registered now: `auth/login`, passkey verify,
-  `auth/refresh`, `measurements` GET + POST + batch, `devices` POST,
-  and the comprehensive insights bundle. A new `pnpm openapi:check`
-  CI step diffs generated vs committed; warn-only for v1.4.23 so a
-  registry oversight on a non-iOS route doesn't red-bar a PR, flips
-  to hard-fail in v1.4.24. The legacy hand-maintained spec is
-  preserved at `docs/api/openapi-v1422-legacy.yaml` so iOS DTO
-  reference doesn't disappear during the incremental migration.
+  - `yaml@^2` with `sortMapEntries: true`). The eight iOS-critical
+    routes are registered now: `auth/login`, passkey verify,
+    `auth/refresh`, `measurements` GET + POST + batch, `devices` POST,
+    and the comprehensive insights bundle. A new `pnpm openapi:check`
+    CI step diffs generated vs committed; warn-only for v1.4.23 so a
+    registry oversight on a non-iOS route doesn't red-bar a PR, flips
+    to hard-fail in v1.4.24. The legacy hand-maintained spec is
+    preserved at `docs/api/openapi-v1422-legacy.yaml` so iOS DTO
+    reference doesn't disappear during the incremental migration.
 - **Device-management endpoints for native + web settings.**
   `GET /api/auth/me/devices` lists active devices with label, last-
   seen timestamp, channels (`web_push` / `apns`), and an `isCurrent`
@@ -77,7 +202,7 @@
   endpoint `POST /api/insights/chat/messages/:id/feedback`. A new
   admin section `/admin/coach-feedback` renders helpful-rate buckets
   by (promptVersion, tone, verbosity) and gets a sidebar entry
-  + EN/DE i18n bundle.
+  - EN/DE i18n bundle.
 
 ### Changed
 
@@ -117,7 +242,7 @@
   steps, active energy, flights, distance, VO2 max, body temp) as
   silent when the snapshot doesn't carry them. No apologetic openers
   about missing data. `aiInsightResponseSchema.dailyBriefing
-  .keyFindings[].sourceMetric` and `trendAnnotations` enums extend
+.keyFindings[].sourceMetric` and `trendAnnotations` enums extend
   to admit the nine additive HealthKit categories.
 - **`medication_schedules.days_of_week` column deployed.** Migration
   `0039_medication_schedule_days_of_week` adds the nullable column
@@ -135,7 +260,7 @@
 - **Partial unique index enforces `apns_token` global uniqueness.**
   App-layer guard catches the cross-user-hijack case; the DB-layer
   partial unique index (`CREATE UNIQUE INDEX … WHERE apns_token IS
-  NOT NULL`) is the defence-in-depth backstop.
+NOT NULL`) is the defence-in-depth backstop.
 - **Apple Health source badge renders on mobile measurement card.**
   Desktop list rendered the chip; the mobile card variant fell back
   to source-less prose. Both surfaces now share the same renderer.
@@ -162,8 +287,8 @@
   APNs-token layer (409 + dedicated audit reason). Send-side payload
   redacts the resolved user + device IDs before logging.
 - **Coolify webhook URL scrubbed from the deploy runbook.** Webhook
-  + token live in GH secrets; the runbook references the secret
-  names rather than the raw URL.
+  - token live in GH secrets; the runbook references the secret
+    names rather than the raw URL.
 - **Coach prose encryption-at-rest restored.** The plaintext
   `content` column on `recommendation_feedback` was dropped after
   the feedback rows migrated to a `coach_messages` FK. Cypher text

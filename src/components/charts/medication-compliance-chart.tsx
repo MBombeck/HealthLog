@@ -169,7 +169,6 @@ interface MedicationComplianceChartProps {
 
 export function MedicationComplianceChart({
   title,
-  compareBaseline = "none",
 }: MedicationComplianceChartProps) {
   const { isAuthenticated } = useAuth();
   const { t } = useTranslations();
@@ -182,6 +181,7 @@ export function MedicationComplianceChart({
   const overlayPrefs = useChartOverlayPrefs("medications");
   const showTrendChip = overlayPrefs.prefs.showTrendIndicator;
   const showTargetRange = overlayPrefs.prefs.showTargetRange;
+  const effectiveCompareBaseline = overlayPrefs.prefs.comparisonBaseline;
 
   // v1.4.19 A2 — universal tick-density helper. Pre-fix the medication
   // chart drew ONE tick per day, so a 30-day Pixel-5 window painted 30
@@ -320,11 +320,11 @@ export function MedicationComplianceChart({
           v1.4.17 when the underlying intake-event window comparison
           ships). Without this caption the user toggles Vormonat and
           this card just stays static, which reads as a bug. */}
-      {compareBaseline !== "none" && (
+      {effectiveCompareBaseline !== "none" && (
         <p
           className="text-muted-foreground -mt-2 mb-3 text-xs"
           data-slot="medication-comparison-na"
-          data-compare-baseline={compareBaseline}
+          data-compare-baseline={effectiveCompareBaseline}
         >
           {t("comparison.notAvailableForCompliance")}
         </p>

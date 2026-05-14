@@ -238,18 +238,16 @@ describe("POST /api/insights/generate — rate limit (v1.4.16 A7.1)", () => {
     makeWorkingProvider();
     // Simulate 10 successful checkRateLimit responses, then one denial.
     let callCount = 0;
-    vi.mocked(checkRateLimit).mockImplementation(
-      async (_key, limit, _windowMs) => {
-        callCount += 1;
-        // The route must pass `10` as the limit when the env var is unset.
-        expect(limit).toBe(10);
-        return {
-          allowed: callCount <= 10,
-          remaining: Math.max(0, 10 - callCount),
-          resetAt: Date.now() + 3600_000,
-        };
-      },
-    );
+    vi.mocked(checkRateLimit).mockImplementation(async (_key, limit) => {
+      callCount += 1;
+      // The route must pass `10` as the limit when the env var is unset.
+      expect(limit).toBe(10);
+      return {
+        allowed: callCount <= 10,
+        remaining: Math.max(0, 10 - callCount),
+        resetAt: Date.now() + 3600_000,
+      };
+    });
 
     for (let i = 0; i < 10; i += 1) {
       const res = await POST(jsonRequest({ force: true }) as never);

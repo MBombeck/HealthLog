@@ -244,11 +244,25 @@ describe("resolveDashboardLayout() — chartOverlayPrefs (v1.4.18)", () => {
           showTrendIndicator: true,
           showTrendArrow: false,
           showTargetRange: true,
+          comparisonBaseline: "lastMonth",
         },
         weight: {
           showTrendIndicator: false,
           showTrendArrow: true,
           showTargetRange: false,
+          comparisonBaseline: "none",
+        },
+        bmi: {
+          showTrendIndicator: true,
+          showTrendArrow: true,
+          showTargetRange: true,
+          comparisonBaseline: "lastYear",
+        },
+        bodyFat: {
+          showTrendIndicator: false,
+          showTrendArrow: false,
+          showTargetRange: true,
+          comparisonBaseline: "none",
         },
       },
     };
@@ -259,11 +273,25 @@ describe("resolveDashboardLayout() — chartOverlayPrefs (v1.4.18)", () => {
         showTrendIndicator: true,
         showTrendArrow: false,
         showTargetRange: true,
+        comparisonBaseline: "lastMonth",
       },
       weight: {
         showTrendIndicator: false,
         showTrendArrow: true,
         showTargetRange: false,
+        comparisonBaseline: "none",
+      },
+      bmi: {
+        showTrendIndicator: true,
+        showTrendArrow: true,
+        showTargetRange: true,
+        comparisonBaseline: "lastYear",
+      },
+      bodyFat: {
+        showTrendIndicator: false,
+        showTrendArrow: false,
+        showTargetRange: true,
+        comparisonBaseline: "none",
       },
     });
   });
@@ -277,6 +305,7 @@ describe("resolveDashboardLayout() — chartOverlayPrefs (v1.4.18)", () => {
           showTrendIndicator: "yes",
           showTrendArrow: 1,
           showTargetRange: null,
+          comparisonBaseline: "nextWeek",
         },
       },
     };
@@ -285,6 +314,7 @@ describe("resolveDashboardLayout() — chartOverlayPrefs (v1.4.18)", () => {
       showTrendIndicator: false,
       showTrendArrow: false,
       showTargetRange: false,
+      comparisonBaseline: "none",
     });
   });
 
@@ -297,11 +327,13 @@ describe("resolveDashboardLayout() — chartOverlayPrefs (v1.4.18)", () => {
           showTrendIndicator: true,
           showTrendArrow: false,
           showTargetRange: false,
+          comparisonBaseline: "none",
         },
         not_a_real_chart: {
           showTrendIndicator: true,
           showTrendArrow: true,
           showTargetRange: true,
+          comparisonBaseline: "lastMonth",
         },
       },
     };

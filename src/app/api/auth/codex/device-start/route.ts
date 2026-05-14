@@ -22,7 +22,8 @@ import { apiSuccess } from "@/lib/api-response";
  * persisted server-side via an encrypted httpOnly cookie scoped to a
  * 15-minute lifetime — the same window Hydra gives the code.
  */
-export const POST = apiHandler(async (_request: NextRequest) => {
+export const POST = apiHandler(async (request: NextRequest) => {
+  void request;
   const { user } = await requireAuth();
 
   const rl = await checkRateLimit(`codex-device-start:${user.id}`, 5, 60_000);
