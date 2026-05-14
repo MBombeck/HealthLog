@@ -8,13 +8,14 @@ import { Loader2, BellRing, BellOff, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
 
 /**
  * v1.4.25 W19e — GLP-1 cadence + compliance section.
  *
  * Sits between `<SideEffectsSection>` (W19d) and `<IntakeHistoryList>`
- * on the medication detail page. Same chrome as the W19d section so
- * the three Wave-4b panels read as one visual group.
+ * on the medication detail page. Same chrome as the W19d / W19f
+ * sections, composed via the shared `<MedicationDetailSection>` wrapper.
  *
  * Three sub-sections, top-to-bottom:
  *
@@ -27,6 +28,9 @@ import { useFormatters, useTranslations } from "@/lib/i18n/context";
  *   2. Cadence visualisation — a 30-day track showing one cell per
  *      expected dose, status-coloured (taken / skipped / missed /
  *      upcoming). The legend below the track names each status.
+ *      v1.4.25 W21 Fix-N — each cell is wrapped in a 44×44 px button
+ *      to meet the WCAG 2.5.5 / Apple HIG tap-target rule; the
+ *      visible cell remains the 12 px square the design system pins.
  *
  *   3. Compliance chips — four monochrome chips: adherence rate %,
  *      current streak, longest streak, missed last 30. Marc-memory:
@@ -108,182 +112,183 @@ export function SchedulingSection({
     return `${data.chips.adherenceRate}%`;
   }, [data, t]);
 
+  const headerExtras = (
+    <div className="flex items-center gap-2">
+      <Badge
+        variant={reminderEnabled ? "secondary" : "outline"}
+        className="gap-1 text-[10px]"
+      >
+        {reminderEnabled ? (
+          <BellRing className="h-3 w-3" />
+        ) : (
+          <BellOff className="h-3 w-3" />
+        )}
+        {t(
+          reminderEnabled
+            ? "medications.scheduling.reminders.on"
+            : "medications.scheduling.reminders.off",
+        )}
+      </Badge>
+      <Button
+        size="sm"
+        variant="outline"
+        asChild
+        aria-label={t("medications.scheduling.editCta")}
+      >
+        <Link href="/medications">
+          <Pencil className="mr-1.5 h-3.5 w-3.5" />
+          {t("medications.scheduling.editCta")}
+        </Link>
+      </Button>
+    </div>
+  );
+
   return (
-    <section
-      className="border-border/60 rounded-md border"
-      aria-labelledby="scheduling-heading"
+    <MedicationDetailSection
+      titleId="scheduling-heading"
+      title={t("medications.scheduling.section")}
+      headerExtras={headerExtras}
     >
-      <header className="flex items-center justify-between px-3 py-2.5">
-        <h2
-          id="scheduling-heading"
-          className="text-foreground/85 text-sm font-medium"
-        >
-          {t("medications.scheduling.section")}
-        </h2>
-        <div className="flex items-center gap-2">
-          <Badge
-            variant={reminderEnabled ? "secondary" : "outline"}
-            className="gap-1 text-[10px]"
-          >
-            {reminderEnabled ? (
-              <BellRing className="h-3 w-3" />
-            ) : (
-              <BellOff className="h-3 w-3" />
-            )}
-            {t(
-              reminderEnabled
-                ? "medications.scheduling.reminders.on"
-                : "medications.scheduling.reminders.off",
-            )}
-          </Badge>
-          <Button
-            size="sm"
-            variant="outline"
-            asChild
-            aria-label={t("medications.scheduling.editCta")}
-          >
-            <Link href="/medications">
-              <Pencil className="mr-1.5 h-3.5 w-3.5" />
-              {t("medications.scheduling.editCta")}
-            </Link>
-          </Button>
+      {isLoading && (
+        <div className="text-muted-foreground flex items-center gap-2">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <span>{t("medications.scheduling.loading")}</span>
         </div>
-      </header>
+      )}
 
-      <div className="border-border/60 border-t px-3 py-3 text-xs">
-        {isLoading && (
-          <div className="text-muted-foreground flex items-center gap-2">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            <span>{t("medications.scheduling.loading")}</span>
-          </div>
-        )}
+      {!!error && !isLoading && (
+        <p className="text-destructive">
+          {t("medications.scheduling.loadFailed")}
+        </p>
+      )}
 
-        {!!error && !isLoading && (
-          <p className="text-destructive">
-            {t("medications.scheduling.loadFailed")}
-          </p>
-        )}
-
-        {data && !isLoading && (
-          <div className="space-y-4">
-            {/* Next-dose chip */}
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-muted-foreground">
-                {data.next ? (
-                  <>
-                    {t("medications.scheduling.cadenceViz.nextDoseLabel")}{" "}
-                    <span className="text-foreground font-medium">
-                      {fmt.dateShort(new Date(data.next.windowStart))}
-                    </span>
-                  </>
-                ) : (
-                  t("medications.scheduling.cadenceViz.noNextDose")
-                )}
-              </p>
-            </div>
-
-            {/* 30-day timeline */}
-            <div className="space-y-1.5">
-              <p className="text-muted-foreground text-[11px] uppercase tracking-wide">
-                {t("medications.scheduling.cadenceViz.title")}
-              </p>
-              {data.timeline.length === 0 ? (
-                <p className="text-muted-foreground py-1">
-                  {t("medications.scheduling.cadenceViz.emptyState")}
-                </p>
-              ) : (
+      {data && !isLoading && (
+        <div className="space-y-4">
+          {/* Next-dose chip */}
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-muted-foreground">
+              {data.next ? (
                 <>
-                  <div
-                    className="flex flex-wrap gap-1"
-                    role="img"
-                    aria-label={t(
-                      "medications.scheduling.cadenceViz.ariaTimeline",
-                    )}
-                  >
-                    {data.timeline.map((slot, i) => (
-                      <span
-                        key={`${slot.windowStart}-${i}`}
-                        className={`h-3 w-3 rounded-sm ${STATUS_STYLES[slot.status]}`}
-                        title={`${fmt.dateShort(new Date(slot.windowStart))} — ${t(
-                          `medications.scheduling.cadenceViz.status.${slot.status}`,
-                        )}`}
-                      />
-                    ))}
-                  </div>
-                  <div className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 pt-1 text-[10px]">
-                    {(["taken", "skipped", "missed", "upcoming"] as const).map(
-                      (s) => (
-                        <span key={s} className="inline-flex items-center gap-1">
-                          <span
-                            className={`h-2.5 w-2.5 rounded-sm ${STATUS_STYLES[s]}`}
-                          />
-                          <span>
-                            {t(
-                              `medications.scheduling.cadenceViz.status.${s}`,
-                            )}
-                          </span>
-                        </span>
-                      ),
-                    )}
-                  </div>
+                  {t("medications.scheduling.cadenceViz.nextDoseLabel")}{" "}
+                  <span className="text-foreground font-medium">
+                    {fmt.dateShort(new Date(data.next.windowStart))}
+                  </span>
                 </>
+              ) : (
+                t("medications.scheduling.cadenceViz.noNextDose")
               )}
-            </div>
+            </p>
+          </div>
 
-            {/* Compliance chips */}
-            <div className="space-y-1.5">
-              <p className="text-muted-foreground text-[11px] uppercase tracking-wide">
-                {t("medications.scheduling.compliance.title")}
+          {/* 30-day timeline */}
+          <div className="space-y-1.5">
+            <p className="text-muted-foreground text-[11px] uppercase tracking-wide">
+              {t("medications.scheduling.cadenceViz.title")}
+            </p>
+            {data.timeline.length === 0 ? (
+              <p className="text-muted-foreground py-1">
+                {t("medications.scheduling.cadenceViz.emptyState")}
               </p>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <ComplianceChip
-                  label={t(
-                    "medications.scheduling.compliance.adherenceRate",
+            ) : (
+              <>
+                <div
+                  className="flex flex-wrap gap-1"
+                  role="img"
+                  aria-label={t(
+                    "medications.scheduling.cadenceViz.ariaTimeline",
                   )}
-                  value={adherenceLabel ?? "—"}
-                  tooltip={t(
-                    "medications.scheduling.compliance.chips.adherenceTooltip",
+                  data-slot="cadence-timeline"
+                >
+                  {data.timeline.map((slot, i) => {
+                    const slotLabel = `${fmt.dateShort(new Date(slot.windowStart))} — ${t(
+                      `medications.scheduling.cadenceViz.status.${slot.status}`,
+                    )}`;
+                    return (
+                      <button
+                        type="button"
+                        key={`${slot.windowStart}-${i}`}
+                        title={slotLabel}
+                        aria-label={slotLabel}
+                        data-slot="cadence-timeline-cell"
+                        data-status={slot.status}
+                        // 44×44 tap target per WCAG 2.5.5; the visible
+                        // cell stays the 12 px square the design system
+                        // pins inside, centered with flex.
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-sm focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-2"
+                      >
+                        <span
+                          className={`h-3 w-3 rounded-sm ${STATUS_STYLES[slot.status]}`}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 pt-1 text-[10px]">
+                  {(["taken", "skipped", "missed", "upcoming"] as const).map(
+                    (s) => (
+                      <span key={s} className="inline-flex items-center gap-1">
+                        <span
+                          className={`h-2.5 w-2.5 rounded-sm ${STATUS_STYLES[s]}`}
+                        />
+                        <span>
+                          {t(
+                            `medications.scheduling.cadenceViz.status.${s}`,
+                          )}
+                        </span>
+                      </span>
+                    ),
                   )}
-                />
-                <ComplianceChip
-                  label={t(
-                    "medications.scheduling.compliance.currentStreak",
-                  )}
-                  value={`${data.chips.currentStreak} ${t(
-                    "medications.scheduling.compliance.unit.days",
-                  )}`}
-                  tooltip={t(
-                    "medications.scheduling.compliance.chips.streakTooltip",
-                  )}
-                />
-                <ComplianceChip
-                  label={t(
-                    "medications.scheduling.compliance.longestStreak",
-                  )}
-                  value={`${data.chips.longestStreak} ${t(
-                    "medications.scheduling.compliance.unit.days",
-                  )}`}
-                  tooltip={t(
-                    "medications.scheduling.compliance.chips.longestTooltip",
-                  )}
-                />
-                <ComplianceChip
-                  label={t(
-                    "medications.scheduling.compliance.missedLast30",
-                  )}
-                  value={`${data.chips.missedLast30} ${t(
-                    "medications.scheduling.compliance.unit.doses",
-                  )}`}
-                  tooltip={t(
-                    "medications.scheduling.compliance.chips.missedTooltip",
-                  )}
-                />
-              </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Compliance chips */}
+          <div className="space-y-1.5">
+            <p className="text-muted-foreground text-[11px] uppercase tracking-wide">
+              {t("medications.scheduling.compliance.title")}
+            </p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <ComplianceChip
+                label={t("medications.scheduling.compliance.adherenceRate")}
+                value={adherenceLabel ?? "—"}
+                tooltip={t(
+                  "medications.scheduling.compliance.chips.adherenceTooltip",
+                )}
+              />
+              <ComplianceChip
+                label={t("medications.scheduling.compliance.currentStreak")}
+                value={`${data.chips.currentStreak} ${t(
+                  "medications.scheduling.compliance.unit.days",
+                )}`}
+                tooltip={t(
+                  "medications.scheduling.compliance.chips.streakTooltip",
+                )}
+              />
+              <ComplianceChip
+                label={t("medications.scheduling.compliance.longestStreak")}
+                value={`${data.chips.longestStreak} ${t(
+                  "medications.scheduling.compliance.unit.days",
+                )}`}
+                tooltip={t(
+                  "medications.scheduling.compliance.chips.longestTooltip",
+                )}
+              />
+              <ComplianceChip
+                label={t("medications.scheduling.compliance.missedLast30")}
+                value={`${data.chips.missedLast30} ${t(
+                  "medications.scheduling.compliance.unit.doses",
+                )}`}
+                tooltip={t(
+                  "medications.scheduling.compliance.chips.missedTooltip",
+                )}
+              />
             </div>
           </div>
-        )}
-      </div>
-    </section>
+        </div>
+      )}
+    </MedicationDetailSection>
   );
 }
 

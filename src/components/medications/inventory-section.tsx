@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Loader2, Plus, Trash2 } from "lucide-react";
 
@@ -16,6 +16,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import type { MedicationInventoryState } from "@/generated/prisma/client";
+import {
+  DEFAULT_IN_USE_WINDOW_DAYS,
+  daysRemainingInUse,
+} from "@/lib/medications/inventory/state-machine";
 
 /**
  * v1.4.25 W19b — Inventory disclosure for the GLP-1 medication card.
@@ -30,13 +35,19 @@ import { useFormatters, useTranslations } from "@/lib/i18n/context";
  *
  * The UI deliberately reuses existing primitives — Card, Dialog,
  * Input, Badge, Button — no new shadcn block.
+ *
+ * v1.4.25 W21 Fix-N
+ *   - The local `InventoryState` string-union has been dropped in
+ *     favour of the canonical `MedicationInventoryState` enum from
+ *     the Prisma client.
+ *   - The reimplemented client-side `daysRemainingInUse` has been
+ *     replaced by the widened pure helper from the inventory
+ *     state-machine module; one rule for the deadline math.
  */
-
-type InventoryState = "ACTIVE" | "IN_USE" | "EXPIRED" | "USED_UP";
 
 interface InventoryItem {
   id: string;
-  state: InventoryState;
+  state: MedicationInventoryState;
   dosesTotal: number;
   dosesRemaining: number;
   firstUseAt: string | null;
@@ -53,21 +64,6 @@ interface InventorySectionProps {
    *  with the knowledge-layer value (e.g. 4 for a Mounjaro KwikPen). */
   defaultDosesPerUnit: number | null;
 }
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-function daysRemainingInUse(
-  firstUseAt: string | null,
-  windowDays: number,
-): number | null {
-  if (!firstUseAt) return null;
-  const deadline = new Date(firstUseAt).getTime() + windowDays * MS_PER_DAY;
-  const ms = deadline - Date.now();
-  if (ms <= 0) return 0;
-  return Math.floor(ms / MS_PER_DAY);
-}
-
-const IN_USE_WINDOW_DAYS = 30;
 
 export function InventorySection({
   medicationId,
@@ -211,12 +207,22 @@ export function InventorySection({
     (i) => i.state === "EXPIRED" || i.state === "USED_UP",
   );
 
+  // Snapshot "now" once per render. The disclosure is opt-in (the
+  // user clicks to expand), so re-rendering on focus events should
+  // not cause the "days remaining" labels to flicker between values.
+  // eslint-disable-next-line react-hooks/purity -- intentional one-shot snapshot
+  const nowMs = useMemo(() => Date.now(), []);
+
   function stateLabel(item: InventoryItem): string {
     if (item.state === "ACTIVE") {
       return t("medications.inventory.state.active");
     }
     if (item.state === "IN_USE") {
-      const d = daysRemainingInUse(item.firstUseAt, IN_USE_WINDOW_DAYS);
+      const d = daysRemainingInUse(
+        { firstUseAt: item.firstUseAt },
+        nowMs,
+        DEFAULT_IN_USE_WINDOW_DAYS,
+      );
       return t("medications.inventory.state.inUse", { days: d ?? 0 });
     }
     if (item.state === "EXPIRED") {
@@ -226,7 +232,7 @@ export function InventorySection({
   }
 
   function badgeVariant(
-    state: InventoryState,
+    state: MedicationInventoryState,
   ): "default" | "outline" | "secondary" | "destructive" {
     if (state === "EXPIRED") return "destructive";
     if (state === "USED_UP") return "secondary";

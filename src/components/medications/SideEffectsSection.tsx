@@ -14,6 +14,13 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type {
   MedicationSideEffectCategory,
@@ -26,6 +33,7 @@ import {
   entriesByCategory,
   severityLikertLabel,
 } from "@/lib/medications/side-effects/taxonomy";
+import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
 
 /**
  * v1.4.25 W19d — GLP-1 side-effect section for the medication detail
@@ -39,6 +47,12 @@ import {
  *   - Below the header: timeline of the last 30 days, newest first,
  *     each row showing category badge + entry label + severity chip +
  *     timestamp + delete button + collapsed notes.
+ *
+ * v1.4.25 W21 Fix-N — wraps the shared `<MedicationDetailSection>` so
+ * the three Wave-4b sections share one chrome contract, and swaps the
+ * native `<select>` for the shadcn-radix `<Select>` so the picker
+ * matches the rest of the form library (focus rings, keyboard nav,
+ * theme tokens).
  *
  * Component-tests cover: empty state, category → entry filtering,
  * submit-and-refetch flow, severity-label translation lookup.
@@ -122,11 +136,14 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
 
   const createMutation = useMutation({
     mutationFn: async (payload: {
-      category: MedicationSideEffectCategory;
       entry: MedicationSideEffectEntry;
       severity: number;
       notes: string | null;
     }) => {
+      // v1.4.25 W21 Fix-N (code-M6) — drop client-side `category`
+      // from the wire payload. The server derives it from the entry
+      // via `categoryForEntry`. Backwards-compatible with older
+      // clients during the cut window (route accepts both shapes).
       const res = await fetch(
         `/api/medications/${medicationId}/side-effects`,
         {
@@ -188,9 +205,11 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
       setFormError(t("medications.sideEffects.errorSeverity"));
       return;
     }
+    // Sanity-check the entry still belongs to the picked category;
+    // the server derives the category authoritatively from `entry`.
+    void categoryForEntry(entry);
     createMutation.mutate(
       {
-        category: categoryForEntry(entry),
         entry,
         severity,
         notes: notes.trim() ? notes.trim().slice(0, NOTES_MAX) : null,
@@ -207,113 +226,109 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
     );
   }
 
+  const headerExtras = (
+    <>
+      {items.length > 0 && (
+        <span className="text-muted-foreground mr-2 font-normal">
+          ({items.length})
+        </span>
+      )}
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => {
+          resetForm();
+          setOpen(true);
+        }}
+      >
+        <Plus className="mr-1.5 h-3.5 w-3.5" />
+        {t("medications.sideEffects.addCta")}
+      </Button>
+    </>
+  );
+
   return (
-    <section
-      className="border-border/60 rounded-md border"
-      aria-labelledby="side-effects-heading"
+    <MedicationDetailSection
+      titleId="side-effects-heading"
+      title={t("medications.sideEffects.section")}
+      headerExtras={headerExtras}
+      bodyPaddingY="py-2.5"
     >
-      <header className="flex items-center justify-between px-3 py-2.5">
-        <h2
-          id="side-effects-heading"
-          className="text-foreground/85 text-sm font-medium"
-        >
-          {t("medications.sideEffects.section")}
-          {items.length > 0 && (
-            <span className="text-muted-foreground ml-1.5 font-normal">
-              ({items.length})
-            </span>
-          )}
-        </h2>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            resetForm();
-            setOpen(true);
-          }}
-        >
-          <Plus className="mr-1.5 h-3.5 w-3.5" />
-          {t("medications.sideEffects.addCta")}
-        </Button>
-      </header>
+      {isLoading && (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <span>{t("medications.sideEffects.loading")}</span>
+        </div>
+      )}
 
-      <div className="border-border/60 border-t px-3 py-2.5 text-xs">
-        {isLoading && (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            <span>{t("medications.sideEffects.loading")}</span>
-          </div>
-        )}
+      {!isLoading && items.length === 0 && (
+        <p className="text-muted-foreground py-1">
+          {t("medications.sideEffects.emptyState")}
+        </p>
+      )}
 
-        {!isLoading && items.length === 0 && (
-          <p className="text-muted-foreground py-1">
-            {t("medications.sideEffects.emptyState")}
+      {!isLoading && items.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-muted-foreground text-[11px] uppercase tracking-wide">
+            {t("medications.sideEffects.recentTitle")}
           </p>
-        )}
-
-        {!isLoading && items.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-muted-foreground text-[11px] uppercase tracking-wide">
-              {t("medications.sideEffects.recentTitle")}
-            </p>
-            <ul className="space-y-1.5">
-              {items.map((row) => (
-                <li
-                  key={row.id}
-                  className="bg-muted/30 flex items-start justify-between gap-2 rounded-md px-2.5 py-2"
-                >
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge variant="outline" className="text-[10px]">
-                        {t(
-                          `medications.sideEffects.categories.${categoryI18nKey(row.category)}`,
-                        )}
-                      </Badge>
-                      <span className="text-foreground font-medium">
-                        {t(
-                          `medications.sideEffects.entries.${entryI18nKey(row.entry)}`,
-                        )}
-                      </span>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {t(
-                          `medications.sideEffects.severity.${severityLikertLabel(row.severity as 1 | 2 | 3 | 4 | 5)}`,
-                        )}
-                      </Badge>
-                    </div>
-                    <p className="text-muted-foreground text-[11px]">
-                      {fmt.dateShort(new Date(row.occurredAt))}
-                    </p>
-                    {row.notes && (
-                      <p className="text-foreground/80 whitespace-pre-wrap break-words">
-                        {row.notes}
-                      </p>
-                    )}
+          <ul className="space-y-1.5">
+            {items.map((row) => (
+              <li
+                key={row.id}
+                className="bg-muted/30 flex items-start justify-between gap-2 rounded-md px-2.5 py-2"
+              >
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge variant="outline" className="text-[10px]">
+                      {t(
+                        `medications.sideEffects.categories.${categoryI18nKey(row.category)}`,
+                      )}
+                    </Badge>
+                    <span className="text-foreground font-medium">
+                      {t(
+                        `medications.sideEffects.entries.${entryI18nKey(row.entry)}`,
+                      )}
+                    </span>
+                    <Badge variant="secondary" className="text-[10px]">
+                      {t(
+                        `medications.sideEffects.severity.${severityLikertLabel(row.severity as 1 | 2 | 3 | 4 | 5)}`,
+                      )}
+                    </Badge>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-destructive h-7 w-7 shrink-0"
-                    aria-label={t("medications.sideEffects.deleteCta")}
-                    onClick={() => {
-                      if (
-                        typeof window === "undefined" ||
-                        window.confirm(
-                          t("medications.sideEffects.deleteConfirm"),
-                        )
-                      ) {
-                        deleteMutation.mutate(row.id);
-                      }
-                    }}
-                    disabled={deleteMutation.isPending}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
+                  <p className="text-muted-foreground text-[11px]">
+                    {fmt.dateShort(new Date(row.occurredAt))}
+                  </p>
+                  {row.notes && (
+                    <p className="text-foreground/80 whitespace-pre-wrap break-words">
+                      {row.notes}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-destructive h-7 w-7 shrink-0"
+                  aria-label={t("medications.sideEffects.deleteCta")}
+                  onClick={() => {
+                    if (
+                      typeof window === "undefined" ||
+                      window.confirm(
+                        t("medications.sideEffects.deleteConfirm"),
+                      )
+                    ) {
+                      deleteMutation.mutate(row.id);
+                    }
+                  }}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">
@@ -330,26 +345,32 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
               <Label htmlFor="side-effect-category">
                 {t("medications.sideEffects.categoryLabel")}
               </Label>
-              <select
-                id="side-effect-category"
+              <Select
                 value={category}
-                onChange={(e) => {
-                  const next = e.target.value as MedicationSideEffectCategory;
-                  setCategory(next);
+                onValueChange={(next) => {
+                  setCategory(next as MedicationSideEffectCategory);
                   // Reset entry — the previously-selected entry probably
                   // doesn't belong to the new category.
                   setEntry(null);
                 }}
-                className="border-input bg-background text-foreground w-full rounded-md border px-2 py-1.5 text-sm"
               >
-                {SIDE_EFFECT_CATEGORY_ORDER.map((c) => (
-                  <option key={c} value={c}>
-                    {t(
-                      `medications.sideEffects.categories.${categoryI18nKey(c)}`,
-                    )}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger
+                  id="side-effect-category"
+                  className="w-full"
+                  data-slot="side-effect-category-trigger"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SIDE_EFFECT_CATEGORY_ORDER.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {t(
+                        `medications.sideEffects.categories.${categoryI18nKey(c)}`,
+                      )}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
@@ -460,6 +481,6 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
           </form>
         </DialogContent>
       </Dialog>
-    </section>
+    </MedicationDetailSection>
   );
 }

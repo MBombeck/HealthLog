@@ -224,4 +224,32 @@ describe("daysRemainingInUse", () => {
     });
     expect(daysRemainingInUse(item, NOW_MS)).toBe(0);
   });
+
+  describe("thin-shape overload (v1.4.25 W21 Fix-N)", () => {
+    // The medication-detail card calls this with just `{ firstUseAt }`
+    // because it has already filtered the list to state === "IN_USE"
+    // before reaching the helper. The thin overload skips the
+    // state-machine gate.
+    it("accepts a thin `{ firstUseAt: Date }` shape", () => {
+      const firstUseAt = new Date(NOW_MS - 5 * MS_PER_DAY);
+      expect(daysRemainingInUse({ firstUseAt }, NOW_MS)).toBe(25);
+    });
+
+    it("accepts a thin `{ firstUseAt: string }` ISO shape", () => {
+      const firstUseAt = new Date(NOW_MS - 10 * MS_PER_DAY).toISOString();
+      expect(daysRemainingInUse({ firstUseAt }, NOW_MS)).toBe(20);
+    });
+
+    it("returns null when the thin firstUseAt is null", () => {
+      expect(daysRemainingInUse({ firstUseAt: null }, NOW_MS)).toBeNull();
+    });
+
+    it("skips the state-machine gate for the thin form", () => {
+      // 31 days past the window — the full-view path would return
+      // null here (state ≠ IN_USE). The thin form returns 0 because
+      // the caller has already gated on IN_USE.
+      const firstUseAt = new Date(NOW_MS - 31 * MS_PER_DAY);
+      expect(daysRemainingInUse({ firstUseAt }, NOW_MS)).toBe(0);
+    });
+  });
 });

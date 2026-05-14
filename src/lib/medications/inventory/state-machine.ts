@@ -207,17 +207,36 @@ export function decrementDose(
  * in-use deadline (the EXPIRED transition is still correct via
  * `computeInventoryState`, but the day-count chip shows the
  * 30-day-clock number).
+ *
+ * v1.4.25 W21 Fix-N — widened to accept either the full
+ * `InventoryItemView` (server-side path: state-machine-gated, returns
+ * null for non-IN_USE) OR a thin `{ firstUseAt }` shape (client-side
+ * path: caller already knows state is IN_USE so the gate is a no-op).
+ * The widening collapses the reimplementation the inventory-section
+ * client previously carried.
  */
 export function daysRemainingInUse(
-  item: InventoryItemView,
+  item: InventoryItemView | { firstUseAt: Date | string | null },
   nowMs: number,
   inUseWindowDays: number = DEFAULT_IN_USE_WINDOW_DAYS,
 ): number | null {
-  if (!item.firstUseAt) return null;
-  const state = computeInventoryState(item, nowMs, inUseWindowDays);
-  if (state !== "IN_USE") return null;
-  const deadlineMs =
-    item.firstUseAt.getTime() + inUseWindowDays * MS_PER_DAY;
+  const firstUseRaw = item.firstUseAt;
+  if (!firstUseRaw) return null;
+  const firstUseAt =
+    firstUseRaw instanceof Date ? firstUseRaw : new Date(firstUseRaw);
+  // Only the full view triggers the state-machine gate; thin callers
+  // (the inventory disclosure UI on the medication card) supply just
+  // `firstUseAt` and have already filtered on state === "IN_USE" before
+  // reaching here. The gate is silently skipped for the thin form.
+  if ("state" in item && "dosesRemaining" in item) {
+    const state = computeInventoryState(
+      { ...item, firstUseAt },
+      nowMs,
+      inUseWindowDays,
+    );
+    if (state !== "IN_USE") return null;
+  }
+  const deadlineMs = firstUseAt.getTime() + inUseWindowDays * MS_PER_DAY;
   const remainingMs = deadlineMs - nowMs;
   if (remainingMs <= 0) return 0;
   return Math.floor(remainingMs / MS_PER_DAY);

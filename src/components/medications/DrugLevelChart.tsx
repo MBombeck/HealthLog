@@ -55,11 +55,11 @@ import {
   type DoseEvent,
 } from "@/lib/medications/glp1-pk";
 import {
-  GLP1_DRUGS,
-  findDrugByBrand,
+  findDrugIdByBrand,
   type Glp1DrugId,
-  type Glp1DrugRecord,
 } from "@/lib/medications/glp1-knowledge";
+import { parseDoseMg } from "@/lib/medications/dose-string";
+import type { ResearchModeStatus } from "@/lib/medications/research-mode-types";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 
 const CHART_COLOR = "var(--dracula-purple)";
@@ -71,13 +71,6 @@ const HOURS_PER_DAY = 24;
 const WINDOW_HOURS_BEFORE = 21 * HOURS_PER_DAY;
 const WINDOW_HOURS_AFTER = 0;
 const SAMPLE_STEP_HOURS = 6;
-
-interface ResearchModeStatus {
-  enabled: boolean;
-  acknowledgedAt: string | null;
-  acknowledgedVersion: string | null;
-  currentDisclaimerVersion: string;
-}
 
 interface IntakeEvent {
   id: string;
@@ -124,20 +117,13 @@ export interface DrugLevelChartProps {
 export function DrugLevelChart({ medication, asOf }: DrugLevelChartProps) {
   const { t } = useTranslations();
 
-  const drugRecord = useMemo<Glp1DrugRecord | null>(
-    () => findDrugByBrand(medication.name),
+  // Resolve the catalog key via the shared helper. v1.4.25 W21 Fix-N
+  // hoisted `findDrugIdByBrand` so this chart and the titration route
+  // share one implementation.
+  const drugId: Glp1DrugId | null = useMemo(
+    () => findDrugIdByBrand(medication.name),
     [medication.name],
   );
-  // The catalog keys records by Glp1DrugId; findDrugByBrand returns the
-  // record value, not the key. Reverse-lookup so we can pass the id to
-  // the PK helper + the i18n key below.
-  const drugId: Glp1DrugId | null = useMemo(() => {
-    if (!drugRecord) return null;
-    for (const [id, record] of Object.entries(GLP1_DRUGS)) {
-      if (record === drugRecord) return id as Glp1DrugId;
-    }
-    return null;
-  }, [drugRecord]);
 
   const { data: researchMode, isLoading: rmLoading } =
     useQuery<ResearchModeStatus | null>({
@@ -514,17 +500,13 @@ function ChartBody({
  * ──────────────────────────────────────────────────────────────── */
 
 /**
- * Parse a dose string like "7.5 mg" → 7.5. Returns NaN when the
- * string doesn't carry a recognisable number (e.g. "as needed").
- *
- * Exported for the unit test.
+ * Re-export the shared parser so the component-test file
+ * (which historically imported `parseDoseMg` from this surface)
+ * keeps working without coupling to the helper module path. v1.4.25
+ * W21 Fix-N — single implementation now lives in
+ * `src/lib/medications/dose-string.ts`.
  */
-export function parseDoseMg(input: string): number {
-  if (!input) return Number.NaN;
-  const match = input.match(/([0-9]+(?:[.,][0-9]+)?)/);
-  if (!match) return Number.NaN;
-  return Number.parseFloat(match[1].replace(",", "."));
-}
+export { parseDoseMg };
 
 /**
  * Resolve the dose in mg that applied at `takenAt` by walking the
