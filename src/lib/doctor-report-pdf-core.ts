@@ -26,6 +26,14 @@ export interface DoctorReportRenderOptions {
    * tests; defaults to `new Date()`.
    */
   now?: Date;
+  /**
+   * v1.4.25 W7 — per-user display timezone. When omitted the report
+   * renders timestamps in Europe/Berlin (legacy contract). Server
+   * callers pass `resolveUserTimezone(user.id)`; client callers pass
+   * the value from auth context so a US user's PDF carries
+   * Eastern-time rows even when generated in the browser.
+   */
+  userTz?: string;
 }
 
 /**
@@ -137,8 +145,8 @@ export function buildDoctorReportPdfDocument(
   data: DoctorReportData,
   options: DoctorReportRenderOptions,
 ): jsPDF {
-  const { t, locale, now = new Date() } = options;
-  const formatters = makeFormatters(locale);
+  const { t, locale, now = new Date(), userTz } = options;
+  const formatters = makeFormatters(locale, userTz);
   const num = (value: number, decimals = 1) =>
     formatters.number(value, decimals);
   const fmtDate = (iso: string) => formatters.date(iso);

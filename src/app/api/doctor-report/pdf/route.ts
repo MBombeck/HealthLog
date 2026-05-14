@@ -14,6 +14,7 @@ import { renderDoctorReportPdfBytes } from "@/lib/doctor-report-pdf-core";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { parseLocaleFromAcceptLanguage } from "@/lib/format-locale";
 import { locales, type Locale } from "@/lib/i18n/config";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 
 /**
  * Server-rendered PDF doctor report.
@@ -58,10 +59,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
     }
   }
 
-  const data = await collectDoctorReportData(user.id, range, { practiceName });
+  const [data, userTz] = await Promise.all([
+    collectDoctorReportData(user.id, range, { practiceName }),
+    resolveUserTimezone(user.id),
+  ]);
 
   const { t } = getServerTranslator(locale);
-  const pdfBytes = renderDoctorReportPdfBytes(data, { t, locale });
+  const pdfBytes = renderDoctorReportPdfBytes(data, { t, locale, userTz });
 
   await auditLog("doctor-report.pdf.generate", {
     userId: user.id,
