@@ -189,13 +189,6 @@ interface AnalyticsData {
   } | null;
 }
 
-interface GeneralStatusData {
-  hasProvider: boolean;
-  text: string | null;
-  cached: boolean;
-  updatedAt: string | null;
-}
-
 interface BloodPressureStatusData {
   hasProvider: boolean;
   text: string | null;
@@ -594,18 +587,6 @@ export default function InsightsPage() {
     enabled: isAuthenticated,
   });
 
-  const { data: generalStatus, isLoading: isGeneralStatusLoading } = useQuery({
-    queryKey: ["insights", "general-status", locale],
-    queryFn: async () => {
-      const res = await fetch(`/api/insights/general-status?locale=${locale}`);
-      if (!res.ok) throw new Error("Failed");
-      const json = await res.json();
-      return json.data as GeneralStatusData;
-    },
-    enabled: isAuthenticated,
-    staleTime: 60 * 1000,
-  });
-
   const { data: bloodPressureStatus, isLoading: isBloodPressureStatusLoading } =
     useQuery({
       queryKey: ["insights", "blood-pressure-status", locale],
@@ -882,7 +863,6 @@ export default function InsightsPage() {
   // expand every card. Falls back to null when no section has shipped a
   // payload yet (the hero just hides the caption).
   const heroUpdatedAt = freshestUpdatedAt([
-    generalStatus?.updatedAt,
     bloodPressureStatus?.updatedAt,
     weightStatus?.updatedAt,
     pulseStatus?.updatedAt,
@@ -1017,29 +997,6 @@ export default function InsightsPage() {
         cachedAt={advisor.payload?.cachedAt ?? null}
         legacyPayload={advisor.payload?.legacyPayload ?? false}
       />
-
-      <section id="section-general" className="scroll-mt-16 space-y-2">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold">
-            {t("insights.generalStatusTitle")}
-          </h2>
-          <Badge
-            className={`border text-xs ${overallStatus.className}`}
-            variant="outline"
-          >
-            {t(`insights.generalStatusBadge.${overallStatus.level}`)}
-          </Badge>
-        </div>
-        <InsightStatusCard
-          title={t("insights.generalStatusTitle")}
-          icon={<Activity className="h-5 w-5" />}
-          text={generalStatus?.text ?? null}
-          hasProvider={generalStatus?.hasProvider ?? false}
-          cached={generalStatus?.cached ?? false}
-          updatedAt={generalStatus?.updatedAt ?? null}
-          loading={isGeneralStatusLoading}
-        />
-      </section>
 
       {/* Section 3: Blood pressure */}
       <section id="section-bp" className="scroll-mt-16 space-y-4">
@@ -1703,8 +1660,12 @@ function MedicationComplianceCalendar({
 
 // ── Section Navigation ───────────────────────────────────────────────────────
 
+// v1.4.25 W3 — "section-general" pill dropped alongside the
+// `<InsightStatusCard>` it scrolled to. The general status was
+// superseded by the always-on `<InsightAdvisorCard>` block above the
+// per-metric sections, so the pill had nothing to scroll to once the
+// status mount was removed.
 const SECTION_IDS = [
-  "section-general",
   "section-bp",
   "section-weight",
   "section-pulse",
@@ -1714,7 +1675,6 @@ const SECTION_IDS = [
 ] as const;
 
 const SECTION_LABEL_KEYS: Record<(typeof SECTION_IDS)[number], string> = {
-  "section-general": "insights.navGeneral",
   "section-bp": "insights.navBloodPressure",
   "section-weight": "insights.navWeight",
   "section-pulse": "insights.navPulse",
