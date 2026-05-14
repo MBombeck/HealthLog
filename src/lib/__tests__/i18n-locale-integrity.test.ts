@@ -241,10 +241,6 @@ describe("i18n locale file integrity", () => {
   // See `docs/audit/v1415-i18n-coverage.md` §Legitimate EN==DE==key cases.
   const PLACEHOLDER_ALLOWLIST = new Set<string>([
     "settings.ntfy",
-    "classifications.bp.Optimal",
-    "classifications.bp.Normal",
-    "classifications.pulse.Normal",
-    "classifications.bodyFat.Fitness",
     // v1.4.19 phase A7 — "BMI" is the same acronym in EN and DE,
     // and the medical / fitness "Optimal", "Fitness", "Normal"
     // categories are technical terms that German clinics also use
