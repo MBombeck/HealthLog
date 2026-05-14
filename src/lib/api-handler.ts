@@ -32,6 +32,26 @@ export class HttpError extends Error {
  * No CSRF check — HealthLog does not use CSRF tokens.
  * Auth annotation happens in routes via requireAuth().
  */
+// Read a property from a request-like value without invoking native
+// private-field getters (NextRequest.method / .url / .headers access
+// `this.#state` and crash with `Cannot read private member #state from
+// an object whose class did not declare it` when the request is a
+// Proxy or a synthetic placeholder — Next 16 passes such placeholders
+// to `force-static` route handlers during dev). We probe defensively
+// and fall back to safe defaults so logging instrumentation never
+// crashes the handler.
+function safeRequestProp<R>(
+  request: unknown,
+  read: (req: NextRequest) => R,
+  fallback: R,
+): R {
+  try {
+    return read(request as NextRequest);
+  } catch {
+    return fallback;
+  }
+}
+
 // Next.js route handlers come in two shapes — `(request)` for static routes
 // and `(request, { params })` for dynamic ones. The variadic generic is the
 // only signature TS accepts that covers both at the call site. The `any[]`
@@ -44,23 +64,46 @@ export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const wrapped = async (...args: any[]): Promise<Response> => {
     const request = args[0] as NextRequest;
-    const url = new URL(request.url);
+    const requestUrl = safeRequestProp(request, (r) => r.url, "");
+    const url = (() => {
+      try {
+        return new URL(requestUrl);
+      } catch {
+        // No usable URL (e.g. force-static placeholder) — fall back to
+        // a synthetic origin so the rest of the pipeline can still
+        // attach a pathname.
+        return new URL("http://localhost/");
+      }
+    })();
 
     const evt = new WideEventBuilder("http");
 
     // Propagate x-request-id if present
-    const incomingRequestId = request.headers.get("x-request-id");
+    const incomingRequestId = safeRequestProp(
+      request,
+      (r) => r.headers.get("x-request-id"),
+      null,
+    );
     if (incomingRequestId) evt.setRequestId(incomingRequestId);
 
     evt.setHttp({
-      method: request.method,
+      method: safeRequestProp(request, (r) => r.method, "GET"),
       path: url.pathname,
       route: url.pathname,
       status: 200,
-      user_agent: request.headers.get("user-agent") ?? undefined,
+      user_agent:
+        safeRequestProp(
+          request,
+          (r) => r.headers.get("user-agent"),
+          null,
+        ) ?? undefined,
       ip:
-        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-        request.headers.get("x-real-ip") ||
+        safeRequestProp(
+          request,
+          (r) => r.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
+          null,
+        ) ||
+        safeRequestProp(request, (r) => r.headers.get("x-real-ip"), null) ||
         undefined,
     });
 
@@ -349,9 +392,10 @@ async function reportToGlitchtip(
   // GlitchTip. Withings legacy callbacks ship `?secret=…` (see C-3) and
   // OAuth callbacks ship `?code=…&state=…`; if any of those error we
   // don't want their secrets in someone's incident UI.
-  let scrubbedUrl = request.url;
+  const rawUrl = safeRequestProp(request, (r) => r.url, "");
+  let scrubbedUrl = rawUrl;
   try {
-    const u = new URL(request.url);
+    const u = new URL(rawUrl);
     u.search = "";
     scrubbedUrl = u.toString();
   } catch {
