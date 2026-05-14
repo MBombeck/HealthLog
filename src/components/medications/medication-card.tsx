@@ -35,6 +35,14 @@ interface Medication {
   name: string;
   dose: string;
   category: string;
+  /**
+   * v1.4.25 W4d — Prisma treatment-class discriminator. When set to
+   * "GLP1" the parent should render the {@link Glp1MedicationCard}
+   * variant instead of this generic card. The field is optional for
+   * backwards compatibility with mocks.
+   */
+  treatmentClass?: string;
+  dosesPerUnit?: number | null;
   active: boolean;
   notificationsEnabled: boolean;
   pausedAt: string | null;

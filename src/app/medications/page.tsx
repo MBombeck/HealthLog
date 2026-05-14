@@ -8,6 +8,7 @@ import { invalidateKeys, medicationDependentKeys } from "@/lib/query-keys";
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import { MedicationForm } from "@/components/medications/medication-form";
 import { MedicationCard } from "@/components/medications/medication-card";
+import { Glp1MedicationCard } from "@/components/medications/glp1-medication-card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Switch } from "@/components/ui/switch";
@@ -199,13 +200,21 @@ export default function MedicationsPage() {
           {activeMeds.length > 0 && (
             <div className="space-y-3.5">
               <div className="grid gap-4 sm:grid-cols-2">
-                {activeMeds.map((med) => (
-                  <MedicationCard
-                    key={med.id}
-                    medication={med}
-                    onEdit={openEdit}
-                  />
-                ))}
+                {activeMeds.map((med) =>
+                  med.treatmentClass === "GLP1" ? (
+                    <Glp1MedicationCard
+                      key={med.id}
+                      medication={med}
+                      onEdit={openEdit}
+                    />
+                  ) : (
+                    <MedicationCard
+                      key={med.id}
+                      medication={med}
+                      onEdit={openEdit}
+                    />
+                  ),
+                )}
               </div>
             </div>
           )}
@@ -217,13 +226,21 @@ export default function MedicationsPage() {
                 {t("common.inactive")} ({inactiveMeds.length})
               </h2>
               <div className="grid gap-4 sm:grid-cols-2">
-                {inactiveMeds.map((med) => (
-                  <MedicationCard
-                    key={med.id}
-                    medication={med}
-                    onEdit={openEdit}
-                  />
-                ))}
+                {inactiveMeds.map((med) =>
+                  med.treatmentClass === "GLP1" ? (
+                    <Glp1MedicationCard
+                      key={med.id}
+                      medication={med}
+                      onEdit={openEdit}
+                    />
+                  ) : (
+                    <MedicationCard
+                      key={med.id}
+                      medication={med}
+                      onEdit={openEdit}
+                    />
+                  ),
+                )}
               </div>
             </div>
           )}
