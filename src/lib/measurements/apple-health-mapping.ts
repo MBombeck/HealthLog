@@ -438,23 +438,19 @@ export function mapAppleHealthEntry(
 
   const value = mapping.convertToDbUnit(input.value);
 
-  if (mapping.sleepStageMap !== undefined) {
-    if (input.sleepStage === undefined) return null;
-    const stage = mapping.sleepStageMap[input.sleepStage];
-    if (!stage) return null;
-    return {
-      type: mapping.measurementType,
-      value,
-      unit: mapping.dbUnit,
-      takenAt,
-      sleepStage: stage,
-    };
-  }
-
-  return {
+  const out: AppleHealthEntryOutput = {
     type: mapping.measurementType,
     value,
     unit: mapping.dbUnit,
     takenAt,
   };
+
+  if (mapping.sleepStageMap) {
+    if (input.sleepStage === undefined) return null;
+    const stage = mapping.sleepStageMap[input.sleepStage];
+    if (!stage) return null;
+    out.sleepStage = stage;
+  }
+
+  return out;
 }
