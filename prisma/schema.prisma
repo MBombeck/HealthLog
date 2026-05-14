@@ -98,7 +98,7 @@ model User {
   //   4 = done (triggers `onboardingCompletedAt` flip on the same
   //             round-trip — the column stays at 4 for completed users)
   // Null = legacy pre-W14b user; the wizard treats null as 0 on mount.
-  onboardingStep          Int?      @default(0) @map("onboarding_step")
+  onboardingStep          Int       @default(0) @map("onboarding_step")
   // v1.4.15 Phase B5: tracks whether the user has finished (or
   // explicitly dismissed) the spotlight tour that overlays the
   // dashboard on first arrival. Distinct from the wizard at

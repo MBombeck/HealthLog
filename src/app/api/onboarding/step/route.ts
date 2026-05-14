@@ -96,7 +96,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Onboarding already completed", 409);
   }
 
-  const current = fresh.onboardingStep ?? 0;
+  const current = fresh.onboardingStep;
   if (step !== current + 1) {
     annotate({
       action: { name: "onboarding.step" },
@@ -116,24 +116,17 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // both reading `onboardingStep = 2` and both POSTing `step: 3`
   // would otherwise both succeed (the read-then-write race); with
   // this guard exactly one update sees `count = 1`, the second sees
-  // `count = 0` and returns 409. Legacy pre-W14b accounts may have
-  // `onboarding_step IS NULL`, so the `current === 0` branch widens
-  // the match to null OR 0 — the wizard treats both as "not
-  // started". `onboardingCompletedAt: null` also catches a race with
-  // `POST /api/onboarding/complete`.
+  // `count = 0` and returns 409. `onboardingCompletedAt: null` also
+  // catches a race with `POST /api/onboarding/complete`. Migration
+  // 0060 (v1.4.25 W21) backfilled NULL → 0 and flipped the column
+  // to NOT NULL, so the legacy null branch this code carried before
+  // is dropped — every row now matches the strict-equality form.
   const claimed = await prisma.user.updateMany({
-    where:
-      current === 0
-        ? {
-            id: user.id,
-            onboardingCompletedAt: null,
-            OR: [{ onboardingStep: 0 }, { onboardingStep: null }],
-          }
-        : {
-            id: user.id,
-            onboardingCompletedAt: null,
-            onboardingStep: { in: [current] },
-          },
+    where: {
+      id: user.id,
+      onboardingCompletedAt: null,
+      onboardingStep: { in: [current] },
+    },
     data: {
       onboardingStep: step,
       ...(completing ? { onboardingCompletedAt: new Date() } : {}),

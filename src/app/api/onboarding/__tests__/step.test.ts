@@ -208,18 +208,19 @@ describe("POST /api/onboarding/step — concurrent write race", () => {
       id: "user-1",
       onboardingCompletedAt: null,
     });
-    // Either the literal { onboardingStep: 2 } form (current > 0) or
-    // the legacy null-OR-zero form when current === 0. Here current
-    // is 2 so we expect the strict-equality form.
+    // Strict-equality precondition — Migration 0060 dropped the
+    // legacy nullable path so every advance uses `{ in: [current] }`.
     expect(whereArg.onboardingStep).toEqual({ in: [2] });
   });
 
-  it("widens the precondition to null OR 0 when the row is a legacy pre-W14b user", async () => {
-    // Legacy accounts may have `onboarding_step IS NULL`. The
-    // conditional update must still claim them on step 1.
+  it("advances a step-0 row to step 1 using the strict-equality precondition", async () => {
+    // Migration 0060 (v1.4.25 W21 Fix-O) backfilled NULL → 0 and
+    // flipped `onboarding_step` to NOT NULL, so the conditional
+    // update always uses the strict-equality form — there is no
+    // legacy null branch left for the route to widen.
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      onboardingStep: null,
+      onboardingStep: 0,
       onboardingCompletedAt: null,
     } as never);
     vi.mocked(prisma.user.updateMany).mockResolvedValue({ count: 1 } as never);
@@ -232,12 +233,7 @@ describe("POST /api/onboarding/step — concurrent write race", () => {
     expect(res.status).toBe(200);
     const whereArg = vi.mocked(prisma.user.updateMany).mock.calls[0][0]
       .where as Record<string, unknown>;
-    expect(whereArg.OR).toEqual(
-      expect.arrayContaining([
-        { onboardingStep: 0 },
-        { onboardingStep: null },
-      ]),
-    );
+    expect(whereArg.onboardingStep).toEqual({ in: [0] });
   });
 });
 
