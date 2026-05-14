@@ -105,6 +105,8 @@ interface ExportCardShellProps {
   children?: React.ReactNode;
   /** Footer slot — typically the "Download" button + status text. */
   footer: React.ReactNode;
+  /** Extra grid-position classes applied to the outer card div. */
+  outerClassName?: string;
 }
 
 function ExportCardShell({
@@ -115,11 +117,12 @@ function ExportCardShell({
   format,
   children,
   footer,
+  outerClassName,
 }: ExportCardShellProps) {
   return (
     <div
       data-testid={testId}
-      className="bg-card border-border flex h-full flex-col rounded-xl border p-5"
+      className={`bg-card border-border flex h-full flex-col rounded-xl border p-5${outerClassName ? ` ${outerClassName}` : ""}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -208,6 +211,7 @@ function DoctorReportCard() {
       title={t("settings.sections.export.cards.doctorReport.title")}
       description={t("settings.sections.export.cards.doctorReport.description")}
       format="PDF"
+      outerClassName="md:col-span-2"
       footer={
         <Button
           data-testid="export-action-doctor-report"
