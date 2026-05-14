@@ -455,6 +455,147 @@ export function buildDoctorReportPdfDocument(
         .finalY + 8;
   }
 
+  // v1.4.25 W4d — GLP-1 therapy section. Only renders when the data
+  // aggregator emitted a non-null `glp1` block (user has at least one
+  // active GLP-1 medication and the compliance toggle is on). Lists
+  // current drug + dose, full titration history, weight curve over
+  // the report window, side-effect frequency, and compliance %.
+  if (data.glp1) {
+    if (y > 220) {
+      doc.addPage();
+      y = margin;
+    }
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text(t("doctorReport.glp1Title"), margin, y);
+    y += 6;
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    if (data.glp1.weightDeltaKg !== null && data.glp1.weightStartKg !== null && data.glp1.weightEndKg !== null) {
+      doc.text(
+        t("doctorReport.glp1WeightSummary", {
+          start: num(data.glp1.weightStartKg, 1),
+          end: num(data.glp1.weightEndKg, 1),
+          delta: num(data.glp1.weightDeltaKg, 1),
+        }),
+        margin,
+        y,
+      );
+      y += 6;
+    }
+
+    for (const med of data.glp1.medications) {
+      if (y > 240) {
+        doc.addPage();
+        y = margin;
+      }
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text(med.name, margin, y);
+      y += 5;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      if (med.currentDose) {
+        doc.text(
+          t("doctorReport.glp1CurrentDose", {
+            value: num(med.currentDose.value, 2),
+            unit: med.currentDose.unit,
+            since: new Date(med.currentDose.since).toLocaleDateString(locale),
+          }),
+          margin,
+          y,
+        );
+        y += 5;
+      }
+      if (med.compliance.total > 0) {
+        const rate = (med.compliance.taken / med.compliance.total) * 100;
+        doc.text(
+          t("doctorReport.glp1Compliance", {
+            taken: med.compliance.taken,
+            total: med.compliance.total,
+            rate: num(rate, 1),
+          }),
+          margin,
+          y,
+        );
+        y += 5;
+      }
+      if (med.doseHistory.length > 0) {
+        const historyRows = med.doseHistory.map((dc) => [
+          new Date(dc.effectiveFrom).toLocaleDateString(locale),
+          `${num(dc.value, 2)} ${dc.unit}`,
+          dc.note ?? "",
+        ]);
+        autoTable(doc, {
+          startY: y,
+          head: [
+            [
+              t("doctorReport.colGlp1Date"),
+              t("doctorReport.colGlp1Dose"),
+              t("doctorReport.colGlp1Note"),
+            ],
+          ],
+          body: historyRows,
+          theme: "grid",
+          styles: {
+            fontSize: 9,
+            cellPadding: 3,
+            textColor: [30, 30, 30],
+            lineColor: [200, 200, 200],
+            lineWidth: 0.3,
+          },
+          headStyles: {
+            fillColor: [245, 245, 245],
+            textColor: [30, 30, 30],
+            fontStyle: "bold",
+          },
+          alternateRowStyles: { fillColor: [252, 252, 252] },
+          margin: { left: margin, right: margin },
+        });
+        y =
+          (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
+            .finalY + 6;
+      }
+    }
+
+    if (data.glp1.sideEffects.length > 0) {
+      if (y > 240) {
+        doc.addPage();
+        y = margin;
+      }
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text(t("doctorReport.glp1SideEffectsTitle"), margin, y);
+      y += 5;
+      const seRows = data.glp1.sideEffects.map((s) => [s.tag, String(s.count)]);
+      autoTable(doc, {
+        startY: y,
+        head: [[t("doctorReport.colGlp1SideEffect"), t("doctorReport.colCount")]],
+        body: seRows,
+        theme: "grid",
+        styles: {
+          fontSize: 9,
+          cellPadding: 3,
+          textColor: [30, 30, 30],
+          lineColor: [200, 200, 200],
+          lineWidth: 0.3,
+        },
+        headStyles: {
+          fillColor: [245, 245, 245],
+          textColor: [30, 30, 30],
+          fontStyle: "bold",
+        },
+        alternateRowStyles: { fillColor: [252, 252, 252] },
+        margin: { left: margin, right: margin },
+      });
+      y =
+        (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
+          .finalY + 8;
+    }
+  }
+
   if (data.mood) {
     if (y > 240) {
       doc.addPage();
