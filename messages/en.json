@@ -667,6 +667,48 @@
         "gallbladderDiscomfort": "Gallbladder discomfort"
       }
     },
+    "scheduling": {
+      "section": "Schedule",
+      "loading": "Loading schedule data",
+      "loadFailed": "Schedule data failed to load.",
+      "editCta": "Edit",
+      "reminders": {
+        "on": "Reminders on",
+        "off": "Reminders off"
+      },
+      "cadenceViz": {
+        "title": "Last 30 days",
+        "ariaTimeline": "Dose timeline for the last 30 days",
+        "emptyState": "No doses scheduled in this window.",
+        "nextDoseLabel": "Next dose:",
+        "noNextDose": "No upcoming dose scheduled.",
+        "status": {
+          "taken": "Taken",
+          "skipped": "Skipped",
+          "missed": "Missed",
+          "upcoming": "Upcoming"
+        }
+      },
+      "compliance": {
+        "title": "Adherence",
+        "noData": "No data",
+        "adherenceRate": "Adherence",
+        "currentStreak": "Current streak",
+        "longestStreak": "Longest streak",
+        "missedLast30": "Missed (30 d.)",
+        "unit": {
+          "days": "d.",
+          "doses": "doses",
+          "percent": "%"
+        },
+        "chips": {
+          "adherenceTooltip": "Share of doses taken across the last 30 days (skipped doses are excluded from the denominator).",
+          "streakTooltip": "Consecutive days up to today on which every scheduled dose was taken or deliberately skipped.",
+          "longestTooltip": "Longest unbroken streak within the 30-day window.",
+          "missedTooltip": "Count of doses missed in the last 30 days."
+        }
+      }
+    },
     "injectionSiteBodyOutlineAriaLabel": "Body outline",
     "injectionSitePickerAriaLabel": "Injection site picker",
     "siteAbdomenLeft": "Abdomen, lower left",

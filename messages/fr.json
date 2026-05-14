@@ -667,6 +667,48 @@
         "gallbladderDiscomfort": "Inconfort de la vésicule biliaire"
       }
     },
+    "scheduling": {
+      "section": "Calendrier",
+      "loading": "Chargement des données du calendrier",
+      "loadFailed": "Échec du chargement des données du calendrier.",
+      "editCta": "Modifier",
+      "reminders": {
+        "on": "Rappels activés",
+        "off": "Rappels désactivés"
+      },
+      "cadenceViz": {
+        "title": "30 derniers jours",
+        "ariaTimeline": "Chronologie des doses des 30 derniers jours",
+        "emptyState": "Aucune dose prévue sur cette période.",
+        "nextDoseLabel": "Prochaine dose :",
+        "noNextDose": "Aucune dose à venir programmée.",
+        "status": {
+          "taken": "Prise",
+          "skipped": "Sautée",
+          "missed": "Manquée",
+          "upcoming": "À venir"
+        }
+      },
+      "compliance": {
+        "title": "Observance",
+        "noData": "Aucune donnée",
+        "adherenceRate": "Observance",
+        "currentStreak": "Série en cours",
+        "longestStreak": "Série la plus longue",
+        "missedLast30": "Manquées (30 j.)",
+        "unit": {
+          "days": "j.",
+          "doses": "doses",
+          "percent": "%"
+        },
+        "chips": {
+          "adherenceTooltip": "Part des doses prises sur les 30 derniers jours (les doses sautées sont exclues du dénominateur).",
+          "streakTooltip": "Jours consécutifs jusqu'à aujourd'hui où chaque dose prévue a été prise ou volontairement sautée.",
+          "longestTooltip": "Série continue la plus longue sur la fenêtre de 30 jours.",
+          "missedTooltip": "Nombre de doses manquées au cours des 30 derniers jours."
+        }
+      }
+    },
     "injectionSiteBodyOutlineAriaLabel": "Silhouette du corps",
     "injectionSitePickerAriaLabel": "Sélecteur de site d'injection",
     "siteAbdomenLeft": "Abdomen, lower left",

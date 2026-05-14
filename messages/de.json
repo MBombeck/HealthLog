@@ -667,6 +667,48 @@
         "gallbladderDiscomfort": "Gallenblasen-Beschwerden"
       }
     },
+    "scheduling": {
+      "section": "Zeitplan",
+      "loading": "Lade Zeitplan-Daten",
+      "loadFailed": "Zeitplan-Daten konnten nicht geladen werden.",
+      "editCta": "Bearbeiten",
+      "reminders": {
+        "on": "Erinnerungen an",
+        "off": "Erinnerungen aus"
+      },
+      "cadenceViz": {
+        "title": "Letzte 30 Tage",
+        "ariaTimeline": "Dosis-Zeitstrahl der letzten 30 Tage",
+        "emptyState": "Im Zeitfenster sind keine Dosen geplant.",
+        "nextDoseLabel": "Nächste Dosis:",
+        "noNextDose": "Keine kommende Dosis geplant.",
+        "status": {
+          "taken": "Genommen",
+          "skipped": "Ausgelassen",
+          "missed": "Verpasst",
+          "upcoming": "Geplant"
+        }
+      },
+      "compliance": {
+        "title": "Adhärenz",
+        "noData": "Keine Daten",
+        "adherenceRate": "Adhärenz",
+        "currentStreak": "Aktuelle Serie",
+        "longestStreak": "Längste Serie",
+        "missedLast30": "Verpasst (30 T.)",
+        "unit": {
+          "days": "T.",
+          "doses": "Dosen",
+          "percent": "%"
+        },
+        "chips": {
+          "adherenceTooltip": "Anteil genommener Dosen im 30-Tage-Fenster (ausgelassene Dosen werden ausgenommen).",
+          "streakTooltip": "Aufeinanderfolgende Tage bis heute, an denen alle geplanten Dosen genommen oder bewusst ausgelassen wurden.",
+          "longestTooltip": "Längste durchgehende Serie im 30-Tage-Fenster.",
+          "missedTooltip": "Anzahl verpasster Dosen in den letzten 30 Tagen."
+        }
+      }
+    },
     "injectionSiteBodyOutlineAriaLabel": "Körperumriss",
     "injectionSitePickerAriaLabel": "Injektionsstelle auswählen",
     "siteAbdomenLeft": "Bauch, unten links",

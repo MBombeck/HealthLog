@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { IntakeHistoryList } from "@/components/medications/intake-history-list";
 import { DrugLevelChart } from "@/components/medications/DrugLevelChart";
 import { SideEffectsSection } from "@/components/medications/SideEffectsSection";
+import { SchedulingSection } from "@/components/medications/SchedulingSection";
 import { ArrowLeft, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "@/lib/i18n/context";
@@ -40,6 +41,7 @@ export default function IntakeHistoryPage({
         name: string;
         dose: string;
         treatmentClass?: string;
+        notificationsEnabled?: boolean;
       };
     },
     enabled: isAuthenticated,
@@ -107,6 +109,18 @@ export default function IntakeHistoryPage({
           W19f titration ladder) hang off this same surface. */}
       {medication?.treatmentClass === "GLP1" && (
         <SideEffectsSection medicationId={id} />
+      )}
+
+      {/* v1.4.25 W19e — GLP-1 cadence visualisation + compliance chips.
+          Sits between the side-effect logbook and the intake history so
+          the user lands on cycle context (drug-level), then symptom
+          record, then schedule cadence + adherence, then the
+          dose-by-dose timeline. */}
+      {medication?.treatmentClass === "GLP1" && (
+        <SchedulingSection
+          medicationId={id}
+          reminderEnabled={medication.notificationsEnabled ?? true}
+        />
       )}
 
       <IntakeHistoryList

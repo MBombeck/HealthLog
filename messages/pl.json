@@ -667,6 +667,48 @@
         "gallbladderDiscomfort": "Dolegliwości pęcherzyka żółciowego"
       }
     },
+    "scheduling": {
+      "section": "Harmonogram",
+      "loading": "Wczytywanie danych harmonogramu",
+      "loadFailed": "Nie udało się wczytać danych harmonogramu.",
+      "editCta": "Edytuj",
+      "reminders": {
+        "on": "Przypomnienia włączone",
+        "off": "Przypomnienia wyłączone"
+      },
+      "cadenceViz": {
+        "title": "Ostatnie 30 dni",
+        "ariaTimeline": "Oś czasu dawek z ostatnich 30 dni",
+        "emptyState": "Brak zaplanowanych dawek w tym oknie.",
+        "nextDoseLabel": "Następna dawka:",
+        "noNextDose": "Brak zaplanowanej nadchodzącej dawki.",
+        "status": {
+          "taken": "Przyjęta",
+          "skipped": "Pominięta",
+          "missed": "Niepodjęta",
+          "upcoming": "Nadchodząca"
+        }
+      },
+      "compliance": {
+        "title": "Adherencja",
+        "noData": "Brak danych",
+        "adherenceRate": "Adherencja",
+        "currentStreak": "Bieżąca seria",
+        "longestStreak": "Najdłuższa seria",
+        "missedLast30": "Pominięte (30 d.)",
+        "unit": {
+          "days": "d.",
+          "doses": "dawek",
+          "percent": "%"
+        },
+        "chips": {
+          "adherenceTooltip": "Udział dawek przyjętych w ostatnich 30 dniach (pominięte dawki są wyłączone z mianownika).",
+          "streakTooltip": "Kolejne dni do dziś, w których każda zaplanowana dawka została przyjęta lub świadomie pominięta.",
+          "longestTooltip": "Najdłuższa nieprzerwana seria w 30-dniowym oknie.",
+          "missedTooltip": "Liczba dawek pominiętych w ostatnich 30 dniach."
+        }
+      }
+    },
     "injectionSiteBodyOutlineAriaLabel": "Sylwetka ciała",
     "injectionSitePickerAriaLabel": "Wybór miejsca iniekcji",
     "siteAbdomenLeft": "Abdomen, lower left",

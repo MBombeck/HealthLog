@@ -667,6 +667,48 @@
         "gallbladderDiscomfort": "Molestia en la vesícula biliar"
       }
     },
+    "scheduling": {
+      "section": "Programa",
+      "loading": "Cargando datos del programa",
+      "loadFailed": "No se han podido cargar los datos del programa.",
+      "editCta": "Editar",
+      "reminders": {
+        "on": "Recordatorios activos",
+        "off": "Recordatorios desactivados"
+      },
+      "cadenceViz": {
+        "title": "Últimos 30 días",
+        "ariaTimeline": "Línea temporal de dosis de los últimos 30 días",
+        "emptyState": "No hay dosis programadas en este intervalo.",
+        "nextDoseLabel": "Próxima dosis:",
+        "noNextDose": "No hay ninguna dosis próxima programada.",
+        "status": {
+          "taken": "Tomada",
+          "skipped": "Omitida",
+          "missed": "Olvidada",
+          "upcoming": "Pendiente"
+        }
+      },
+      "compliance": {
+        "title": "Adherencia",
+        "noData": "Sin datos",
+        "adherenceRate": "Adherencia",
+        "currentStreak": "Racha actual",
+        "longestStreak": "Racha más larga",
+        "missedLast30": "Olvidadas (30 d.)",
+        "unit": {
+          "days": "d.",
+          "doses": "dosis",
+          "percent": "%"
+        },
+        "chips": {
+          "adherenceTooltip": "Proporción de dosis tomadas en los últimos 30 días (las dosis omitidas se excluyen del denominador).",
+          "streakTooltip": "Días consecutivos hasta hoy en los que se ha tomado o se ha omitido deliberadamente cada dosis programada.",
+          "longestTooltip": "Racha continua más larga dentro de la ventana de 30 días.",
+          "missedTooltip": "Número de dosis olvidadas en los últimos 30 días."
+        }
+      }
+    },
     "injectionSiteBodyOutlineAriaLabel": "Silueta del cuerpo",
     "injectionSitePickerAriaLabel": "Selector de sitio de inyección",
     "siteAbdomenLeft": "Abdomen, lower left",

@@ -667,6 +667,48 @@
         "gallbladderDiscomfort": "Fastidio alla cistifellea"
       }
     },
+    "scheduling": {
+      "section": "Programma",
+      "loading": "Caricamento dei dati del programma",
+      "loadFailed": "Impossibile caricare i dati del programma.",
+      "editCta": "Modifica",
+      "reminders": {
+        "on": "Promemoria attivi",
+        "off": "Promemoria disattivati"
+      },
+      "cadenceViz": {
+        "title": "Ultimi 30 giorni",
+        "ariaTimeline": "Cronologia delle dosi degli ultimi 30 giorni",
+        "emptyState": "Nessuna dose programmata in questo intervallo.",
+        "nextDoseLabel": "Prossima dose:",
+        "noNextDose": "Nessuna dose programmata in arrivo.",
+        "status": {
+          "taken": "Assunta",
+          "skipped": "Saltata",
+          "missed": "Mancata",
+          "upcoming": "In arrivo"
+        }
+      },
+      "compliance": {
+        "title": "Aderenza",
+        "noData": "Nessun dato",
+        "adherenceRate": "Aderenza",
+        "currentStreak": "Serie attuale",
+        "longestStreak": "Serie più lunga",
+        "missedLast30": "Mancate (30 g.)",
+        "unit": {
+          "days": "g.",
+          "doses": "dosi",
+          "percent": "%"
+        },
+        "chips": {
+          "adherenceTooltip": "Quota di dosi assunte negli ultimi 30 giorni (le dosi saltate sono escluse dal denominatore).",
+          "streakTooltip": "Giorni consecutivi fino a oggi in cui ogni dose programmata è stata assunta o deliberatamente saltata.",
+          "longestTooltip": "Serie continua più lunga nella finestra di 30 giorni.",
+          "missedTooltip": "Numero di dosi mancate negli ultimi 30 giorni."
+        }
+      }
+    },
     "injectionSiteBodyOutlineAriaLabel": "Sagoma del corpo",
     "injectionSitePickerAriaLabel": "Selettore del sito di iniezione",
     "siteAbdomenLeft": "Abdomen, lower left",
