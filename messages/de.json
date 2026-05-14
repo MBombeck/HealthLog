@@ -878,7 +878,24 @@
       "componentCompliance": "Einnahmetreue",
       "disclaimer": "Orientierungshilfe — keine ärztliche Bewertung.",
       "askCoach": "Coach fragen",
-      "coachPrompt": "Warum ist mein Gesundheitsscore {score} von 100?"
+      "coachPrompt": "Warum ist mein Gesundheitsscore {score} von 100?",
+      "provenance": {
+        "toggle": "Zusammensetzung",
+        "weightLabel": "Anteil",
+        "mixedBanner": "Einige Komponenten kombinieren mehrere Quellen. Die Aufschlüsselung zeigt den aktuellsten Wert je Komponente.",
+        "footnote": "Anteile sind nach verfügbaren Daten neu skaliert.",
+        "asOfLabel": "Stand {date}",
+        "provisional": "Vorläufig — nur {count} von {total} Datenpunkten verfügbar",
+        "provisionalBadge": "Vorläufig",
+        "sourceAria": "Quelle: {source}",
+        "sources": {
+          "manual": "Manuell",
+          "withings": "Withings",
+          "appleHealth": "Apple Health",
+          "mixed": "Gemischt",
+          "none": "Keine Daten"
+        }
+      }
     },
     "report": {
       "eyebrow": "Wochenbericht",

@@ -60,10 +60,33 @@ interface AnalyticsData {
     score: number;
     band: "green" | "yellow" | "red";
     components: {
-      bp: { value: number | null; weight: number };
-      weight: { value: number | null; weight: number };
-      mood: { value: number | null; weight: number };
-      compliance: { value: number | null; weight: number };
+      // v1.4.25 W8e — the optional `source`/`asOf` slots feed the
+      // provenance accordion. Older clients reading this payload
+      // happily ignore the extras (additive contract).
+      bp: {
+        value: number | null;
+        weight: number;
+        source?: "manual" | "withings" | "appleHealth" | "mixed" | "none";
+        asOf?: string;
+      };
+      weight: {
+        value: number | null;
+        weight: number;
+        source?: "manual" | "withings" | "appleHealth" | "mixed" | "none";
+        asOf?: string;
+      };
+      mood: {
+        value: number | null;
+        weight: number;
+        source?: "manual" | "withings" | "appleHealth" | "mixed" | "none";
+        asOf?: string;
+      };
+      compliance: {
+        value: number | null;
+        weight: number;
+        source?: "manual" | "withings" | "appleHealth" | "mixed" | "none";
+        asOf?: string;
+      };
     };
     delta: number | null;
   } | null;

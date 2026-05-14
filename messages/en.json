@@ -878,7 +878,24 @@
       "componentCompliance": "Meds",
       "disclaimer": "Indicative — not a clinical assessment.",
       "askCoach": "Ask the Coach",
-      "coachPrompt": "Why is my health score {score} out of 100?"
+      "coachPrompt": "Why is my health score {score} out of 100?",
+      "provenance": {
+        "toggle": "Driven by",
+        "weightLabel": "share",
+        "mixedBanner": "Some components blend multiple sources. The breakdown shows the most recent value per component.",
+        "footnote": "Weights are rescaled to the data that's actually available.",
+        "asOfLabel": "as of {date}",
+        "provisional": "Provisional — only {count} of {total} inputs available",
+        "provisionalBadge": "Provisional",
+        "sourceAria": "Source: {source}",
+        "sources": {
+          "manual": "Manual",
+          "withings": "Withings",
+          "appleHealth": "Apple Health",
+          "mixed": "Mixed",
+          "none": "No data"
+        }
+      }
     },
     "report": {
       "eyebrow": "Weekly report",

@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Minus, Sparkles } from "lucide-react";
+import { useId, useState } from "react";
+import { ArrowDown, ArrowUp, ChevronDown, Minus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,12 @@ import { cn } from "@/lib/utils";
  *     ("Why is my health score X out of 100?") so the user can drill
  *     into the explanation without retyping the question
  *
+ * v1.4.25 W8e — collapsible "Driven by" provenance accordion appended
+ * below the component sub-bars. Each row shows the value bar, the
+ * effective weight share, and a source pill so the user can see which
+ * ingest path produced each pillar. A "mixed source" banner fires when
+ * at least one component blends entries from more than one source.
+ *
  * Pure presentational — the parent owns the analytics query + the
  * drawer state. The same `onAskCoach` handler is shared with the hero
  * strip's main "Ask the coach" button (different prefill string).
@@ -25,18 +32,79 @@ import { cn } from "@/lib/utils";
 
 export type HealthScoreBand = "green" | "yellow" | "red";
 
+/**
+ * v1.4.25 W8e — per-component source attribution. Mirrors the analytics
+ * `HealthScoreComponentSource` type (intentional duplication so the
+ * client doesn't pull a heavy analytics import for one string union).
+ */
+export type HealthScoreComponentSource =
+  | "manual"
+  | "withings"
+  | "appleHealth"
+  | "mixed"
+  | "none";
+
+export interface HealthScoreCardComponent {
+  value: number | null;
+  weight: number;
+  /**
+   * v1.4.25 W8e — optional source label. When omitted the row falls
+   * back to `manual` for present values / `none` for null values.
+   */
+  source?: HealthScoreComponentSource;
+  /**
+   * v1.4.25 W8e — optional ISO timestamp of the freshest contributing
+   * measurement. The provenance accordion surfaces it under "as of
+   * {date}" on each row.
+   */
+  asOf?: string;
+}
+
 export interface HealthScoreCardProps {
   score: number;
   band: HealthScoreBand;
   components: {
-    bp: { value: number | null; weight: number };
-    weight: { value: number | null; weight: number };
-    mood: { value: number | null; weight: number };
-    compliance: { value: number | null; weight: number };
+    bp: HealthScoreCardComponent;
+    weight: HealthScoreCardComponent;
+    mood: HealthScoreCardComponent;
+    compliance: HealthScoreCardComponent;
   };
   delta: number | null;
   onAskCoach?: (prefill: string) => void;
+  /**
+   * v1.4.25 W8e — opens the provenance accordion on first render.
+   * The SSR tests use it to exercise the expanded markup without a
+   * `useEffect` round-trip; in production the user-driven toggle
+   * starts collapsed.
+   */
+  initiallyExpanded?: boolean;
 }
+
+type ComponentKey = keyof HealthScoreCardProps["components"];
+
+const SOURCE_LABEL_KEY: Record<HealthScoreComponentSource, string> = {
+  manual: "insights.healthScore.provenance.sources.manual",
+  withings: "insights.healthScore.provenance.sources.withings",
+  appleHealth: "insights.healthScore.provenance.sources.appleHealth",
+  mixed: "insights.healthScore.provenance.sources.mixed",
+  none: "insights.healthScore.provenance.sources.none",
+};
+
+/**
+ * Per-source pill colour vocabulary — mirrors the Coach provenance
+ * `<SourceChips>` accent for `withings` (dracula-cyan) so the user
+ * reads "same provenance grammar across surfaces". Manual rides on
+ * dracula-purple, Apple Health on dracula-pink, mixed on dracula-yellow.
+ * `none` is a muted slate so the empty-state row reads as dimmed
+ * without losing the pill affordance entirely.
+ */
+const SOURCE_PILL_CLASS: Record<HealthScoreComponentSource, string> = {
+  manual: "border-dracula-purple/30 text-dracula-purple/90",
+  withings: "border-dracula-cyan/30 text-dracula-cyan/90",
+  appleHealth: "border-dracula-pink/30 text-dracula-pink/90",
+  mixed: "border-dracula-yellow/30 text-dracula-yellow/90",
+  none: "border-muted-foreground/30 text-muted-foreground",
+};
 
 const BAND_NUMBER_CLASS: Record<HealthScoreBand, string> = {
   green: "text-dracula-green",
@@ -72,15 +140,79 @@ export function HealthScoreCard({
   components,
   delta,
   onAskCoach,
+  initiallyExpanded = false,
 }: HealthScoreCardProps) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
+  // The asOf timestamps render under the source pill as a tooltip
+  // (`title`) so the row layout stays one-line. Dates format via the
+  // user's locale to honour the EU comma / dot convention; on bad input
+  // we fall through to the raw ISO so the user still sees something.
+  const formatAsOf = (asOf: string | null): string | null => {
+    if (!asOf) return null;
+    try {
+      const parsed = new Date(asOf);
+      if (Number.isNaN(parsed.getTime())) return null;
+      return new Intl.DateTimeFormat(locale, {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+      }).format(parsed);
+    } catch {
+      return null;
+    }
+  };
+  const [expanded, setExpanded] = useState(initiallyExpanded);
+  // `useId` keeps the aria-controls/section-id pair unique even when
+  // the card is mounted twice on the same page (lg+ hero strip vs
+  // smaller stacked previews in tests).
+  const panelId = useId();
+
   const componentEntries = (
-    Object.keys(components) as Array<keyof HealthScoreCardProps["components"]>
+    Object.keys(components) as Array<ComponentKey>
   ).map((key) => ({
     key,
     label: t(COMPONENT_LABEL_KEY[key]),
     value: components[key].value,
   }));
+
+  // v1.4.25 W8e — sort the provenance rows by effective weight
+  // descending so the biggest contributor sits first. Components with
+  // null values sink to the bottom (`weight * 0 === 0`); the tie-break
+  // is the alphabetical key order so determinism holds across renders.
+  const COMPONENT_ORDER: readonly ComponentKey[] = [
+    "bp",
+    "weight",
+    "mood",
+    "compliance",
+  ];
+  const provenanceRows = [...COMPONENT_ORDER]
+    .map((key) => {
+      const c = components[key];
+      const inferredSource: HealthScoreComponentSource =
+        c.source ?? (c.value === null ? "none" : "manual");
+      return {
+        key,
+        label: t(COMPONENT_LABEL_KEY[key]),
+        value: c.value,
+        weight: c.weight,
+        source: inferredSource,
+        asOf: c.asOf ?? null,
+        effective: c.weight * (c.value !== null ? 1 : 0),
+      };
+    })
+    .sort(
+      (a, b) =>
+        b.effective - a.effective || a.key.localeCompare(b.key),
+    );
+
+  const presentCount = provenanceRows.filter((r) => r.value !== null).length;
+  const totalCount = provenanceRows.length;
+  const hasMixed = provenanceRows.some((r) => r.source === "mixed");
+  // v1.4.25 W8e — "provisional" when less than half of the configured
+  // inputs have data. Subtle badge above the headline number; copy is
+  // localised via `provenance.provisional`.
+  const isProvisional =
+    totalCount > 0 && presentCount > 0 && presentCount < totalCount / 2;
 
   return (
     <div
@@ -104,12 +236,26 @@ export function HealthScoreCard({
     >
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
-          <p
-            data-slot="health-score-card-label"
-            className="text-muted-foreground text-[10px] font-semibold tracking-[0.18em] uppercase"
-          >
-            {t("insights.healthScore.label")}
-          </p>
+          <div className="flex min-w-0 items-center gap-2">
+            <p
+              data-slot="health-score-card-label"
+              className="text-muted-foreground text-[10px] font-semibold tracking-[0.18em] uppercase"
+            >
+              {t("insights.healthScore.label")}
+            </p>
+            {isProvisional && (
+              <span
+                data-slot="health-score-card-provisional-badge"
+                className="border-muted-foreground/30 text-muted-foreground inline-flex items-center rounded-full border px-1.5 py-0.5 text-[9px] font-medium tracking-wide uppercase"
+                title={t("insights.healthScore.provenance.provisional", {
+                  count: presentCount,
+                  total: totalCount,
+                })}
+              >
+                {t("insights.healthScore.provenance.provisionalBadge")}
+              </span>
+            )}
+          </div>
           {delta !== null && delta > 0 && (
             <span
               data-slot="health-score-card-delta-chip"
@@ -232,6 +378,148 @@ export function HealthScoreCard({
             </li>
           ))}
         </ul>
+
+        {/* v1.4.25 W8e — tap-to-expand provenance accordion.
+            Kept inside the card so the visual "owner" of the
+            breakdown remains the score tile (concept-cohesion). */}
+        <div className="-mt-1 border-t pt-2">
+          <button
+            type="button"
+            data-slot="health-score-card-provenance-toggle"
+            aria-expanded={expanded}
+            aria-controls={panelId}
+            onClick={() => setExpanded((v) => !v)}
+            className={cn(
+              "text-muted-foreground hover:text-foreground",
+              "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:outline-none",
+              "flex w-full items-center justify-between gap-1 rounded text-[11px]",
+            )}
+          >
+            <span>{t("insights.healthScore.provenance.toggle")}</span>
+            <ChevronDown
+              className={cn(
+                "h-3 w-3 transition-transform",
+                expanded && "rotate-180",
+              )}
+              aria-hidden="true"
+            />
+          </button>
+
+          {expanded && (
+            <section
+              id={panelId}
+              data-slot="health-score-card-provenance-panel"
+              className="mt-2 space-y-1.5"
+            >
+              {hasMixed && (
+                <p
+                  data-slot="health-score-card-provenance-mixed-banner"
+                  role="status"
+                  className="border-dracula-yellow/30 text-dracula-yellow/90 bg-dracula-yellow/5 rounded border px-2 py-1 text-[10px] leading-snug"
+                >
+                  {t("insights.healthScore.provenance.mixedBanner")}
+                </p>
+              )}
+              <ul
+                data-slot="health-score-card-provenance-rows"
+                className="space-y-1.5"
+              >
+                {provenanceRows.map((row) => {
+                  const sourceLabel = t(SOURCE_LABEL_KEY[row.source]);
+                  const isEmpty = row.source === "none" || row.value === null;
+                  const asOfFormatted = formatAsOf(row.asOf);
+                  const asOfLine = asOfFormatted
+                    ? t("insights.healthScore.provenance.asOfLabel", {
+                        date: asOfFormatted,
+                      })
+                    : null;
+                  return (
+                    <li
+                      key={row.key}
+                      data-slot="health-score-card-provenance-row"
+                      data-component={row.key}
+                      data-source={row.source}
+                      className={cn(
+                        "flex items-center gap-2 text-[11px]",
+                        isEmpty && "opacity-50",
+                      )}
+                    >
+                      <span className="text-muted-foreground w-20 shrink-0 truncate">
+                        {row.label}
+                      </span>
+                      {/* value bar — same vocabulary as the existing
+                          sub-bar row so the two stride lines align */}
+                      <div
+                        className="bg-muted/50 h-1 flex-1 overflow-hidden rounded-full"
+                        aria-hidden="true"
+                      >
+                        <div
+                          className={cn(
+                            "h-full",
+                            isEmpty ? "bg-muted" : BAND_PROGRESS_CLASS[band],
+                          )}
+                          style={{
+                            width: isEmpty
+                              ? "0%"
+                              : `${Math.max(0, Math.min(100, row.value ?? 0))}%`,
+                          }}
+                        />
+                      </div>
+                      <span
+                        data-slot="health-score-card-provenance-value"
+                        className="text-foreground w-8 shrink-0 text-right tabular-nums"
+                      >
+                        {row.value === null ? "—" : Math.round(row.value)}
+                      </span>
+                      {/* weight share — second, narrower bar tinted
+                          dracula-cyan to read "provenance grammar"
+                          alongside the Coach <SourceChips> accent */}
+                      <div
+                        className="bg-muted/40 h-1 w-10 shrink-0 overflow-hidden rounded-full"
+                        aria-hidden="true"
+                      >
+                        <div
+                          className={cn(
+                            "h-full",
+                            isEmpty
+                              ? "bg-muted"
+                              : "bg-dracula-cyan/60",
+                          )}
+                          style={{
+                            width: isEmpty
+                              ? "0%"
+                              : `${Math.max(0, Math.min(100, row.weight * 100))}%`,
+                          }}
+                        />
+                      </div>
+                      <span
+                        data-slot="health-score-card-provenance-pill"
+                        aria-label={t(
+                          "insights.healthScore.provenance.sourceAria",
+                          { source: sourceLabel },
+                        )}
+                        title={asOfLine ?? undefined}
+                        data-as-of={row.asOf ?? undefined}
+                        className={cn(
+                          "inline-flex items-center rounded-full border bg-transparent px-1.5 py-0.5 text-[10px] leading-none",
+                          SOURCE_PILL_CLASS[row.source],
+                        )}
+                      >
+                        {sourceLabel}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p
+                data-slot="health-score-card-provenance-footnote"
+                className="text-muted-foreground text-[10px] leading-snug"
+              >
+                {t("insights.healthScore.provenance.footnote")}
+              </p>
+            </section>
+          )}
+        </div>
 
         <p
           data-slot="health-score-card-disclaimer"

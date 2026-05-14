@@ -878,7 +878,24 @@
       "componentCompliance": "Meds",
       "disclaimer": "Indicative — not a clinical assessment.",
       "askCoach": "Ask the Coach",
-      "coachPrompt": "Why is my health score {score} out of 100?"
+      "coachPrompt": "Why is my health score {score} out of 100?",
+      "provenance": {
+        "toggle": "Compuesto por",
+        "weightLabel": "peso",
+        "mixedBanner": "Algunos componentes combinan varias fuentes. El desglose muestra el valor más reciente por componente.",
+        "footnote": "Los pesos se reescalan según los datos realmente disponibles.",
+        "asOfLabel": "a fecha de {date}",
+        "provisional": "Provisional — sólo {count} de {total} entradas disponibles",
+        "provisionalBadge": "Provisional",
+        "sourceAria": "Fuente: {source}",
+        "sources": {
+          "manual": "Manual",
+          "withings": "Withings",
+          "appleHealth": "Apple Health",
+          "mixed": "Mixto",
+          "none": "Sin datos"
+        }
+      }
     },
     "report": {
       "eyebrow": "Weekly report",
