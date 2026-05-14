@@ -226,6 +226,11 @@ ground_rules:
       one-sentence detail, an optional delta, a sourceWindow
       ("7d" | "30d" | "90d" | "1y") and a sourceMetric. Findings MUST
       be derived from snapshot numbers. Five is the hard cap.
+    must_contain:
+      - "dailyBriefing"
+      - "keyFindings"
+      - "sourceWindow"
+      - "sourceMetric"
 
   ground_rule_14_apple_health_silent_absence:
     parser_critical: false

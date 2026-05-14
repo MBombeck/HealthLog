@@ -174,6 +174,11 @@ ground_rules:
       de una sola frase, un delta opcional, un sourceWindow ("7d" |
       "30d" | "90d" | "1y") y un sourceMetric. Los findings DEBEN
       derivarse de números del snapshot. Cinco es el límite estricto.
+    must_contain:
+      - "dailyBriefing"
+      - "keyFindings"
+      - "sourceWindow"
+      - "sourceMetric"
 
   ground_rule_14_apple_health_silent_absence:
     parser_critical: false

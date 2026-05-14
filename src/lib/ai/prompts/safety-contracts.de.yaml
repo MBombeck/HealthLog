@@ -173,6 +173,11 @@ ground_rules:
       sourceWindow ("7d" | "30d" | "90d" | "1y") und ein sourceMetric.
       Findings MÜSSEN aus Zahlen im Snapshot abgeleitet sein. Fünf ist
       die harte Obergrenze.
+    must_contain:
+      - "dailyBriefing"
+      - "keyFindings"
+      - "sourceWindow"
+      - "sourceMetric"
 
   ground_rule_14_apple_health_silent_absence:
     parser_critical: false

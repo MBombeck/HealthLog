@@ -180,6 +180,11 @@ ground_rules:
       detail, opcjonalny delta-string, sourceWindow ("7d" | "30d" |
       "90d" | "1y") i sourceMetric. Findings MUSZĄ być wyprowadzone
       z liczb w snapshocie. Pięć to twarda górna granica.
+    must_contain:
+      - "dailyBriefing"
+      - "keyFindings"
+      - "sourceWindow"
+      - "sourceMetric"
 
   ground_rule_14_apple_health_silent_absence:
     parser_critical: false
