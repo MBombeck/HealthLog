@@ -374,6 +374,135 @@ describe("pickCanonicalSourceRows — v1.4.25 W8c two-axis device-type picker", 
     expect(out.canonicalRows).toHaveLength(2);
   });
 
+  it("resolves the device-type ladder per row when the bucket carries mixed MeasurementTypes", () => {
+    // v1.4.25 W10 reconcile (Sr-H2) — when a caller batches more than
+    // one MeasurementType through a single picker call (Coach evidence
+    // rollup, doctor-PDF section, correlations engine), each row-type
+    // must resolve against its OWN ladder. The pre-W10 picker pinned
+    // the ladder to `pickedRows[0].type` for the whole bucket, so a
+    // bucket with WEIGHT-prefers-scale + ACTIVITY_STEPS-prefers-watch
+    // rows would test the ACTIVITY_STEPS rows against the WEIGHT
+    // ladder. Verify each type's winner survives independently.
+    const rows = [
+      {
+        measuredAt: new Date("2026-05-12T07:00:00Z"),
+        source: "APPLE_HEALTH" as const,
+        deviceType: "scale",
+        type: "WEIGHT" as const,
+        value: 82.4,
+      },
+      {
+        measuredAt: new Date("2026-05-12T07:05:00Z"),
+        source: "APPLE_HEALTH" as const,
+        deviceType: "watch",
+        type: "WEIGHT" as const,
+        value: 82.5,
+      },
+      {
+        measuredAt: new Date("2026-05-12T07:30:00Z"),
+        source: "APPLE_HEALTH" as const,
+        deviceType: "watch",
+        type: "ACTIVITY_STEPS" as const,
+        value: 1500,
+      },
+      {
+        measuredAt: new Date("2026-05-12T07:35:00Z"),
+        source: "APPLE_HEALTH" as const,
+        deviceType: "phone",
+        type: "ACTIVITY_STEPS" as const,
+        value: 4100,
+      },
+    ];
+    const userPriority = {
+      deviceTypePriority: {
+        // Per-type override: scale wins for WEIGHT (not watch — that's
+        // the bucket's first row, which the pre-W10 picker would have
+        // used to resolve the ladder for every row).
+        WEIGHT: ["scale", "watch"],
+        // ACTIVITY_STEPS keeps watch on top so its winner stays watch
+        // and the bucket survives the per-row ladder walk with both
+        // types' canonical rows preserved.
+        ACTIVITY_STEPS: ["watch", "phone"],
+      },
+    };
+    const out = pickCanonicalSourceRows(
+      rows,
+      "steps",
+      userPriority,
+      isoDayKey,
+    );
+    // Expect: WEIGHT's scale row + ACTIVITY_STEPS' watch row. Both
+    // types' losers (WEIGHT's watch row, ACTIVITY_STEPS' phone row)
+    // are dropped against their OWN ladder, not the bucket's first
+    // row's ladder.
+    expect(out.canonicalRows).toHaveLength(2);
+    const byType = new Map(
+      out.canonicalRows.map((r) => [r.type, r.deviceType]),
+    );
+    expect(byType.get("WEIGHT")).toBe("scale");
+    expect(byType.get("ACTIVITY_STEPS")).toBe("watch");
+  });
+
+  it("falls through per row-type when a custom ladder doesn't enumerate that type's present device-types", () => {
+    // Mixed-type bucket where ONE row-type's user ladder doesn't
+    // include any present device-type. Per-type fall-through: keep
+    // every row of that type, drop the other type's losers normally.
+    const rows = [
+      // WEIGHT — user's ladder says `ring` wins, but only `scale`
+      // present → fall through, keep both WEIGHT rows.
+      {
+        measuredAt: new Date("2026-05-12T07:00:00Z"),
+        source: "APPLE_HEALTH" as const,
+        deviceType: "scale",
+        type: "WEIGHT" as const,
+        value: 82.4,
+      },
+      {
+        measuredAt: new Date("2026-05-12T07:05:00Z"),
+        source: "APPLE_HEALTH" as const,
+        deviceType: "scale",
+        type: "WEIGHT" as const,
+        value: 82.5,
+      },
+      // ACTIVITY_STEPS — normal default ladder, watch wins over phone.
+      {
+        measuredAt: new Date("2026-05-12T07:30:00Z"),
+        source: "APPLE_HEALTH" as const,
+        deviceType: "watch",
+        type: "ACTIVITY_STEPS" as const,
+        value: 1500,
+      },
+      {
+        measuredAt: new Date("2026-05-12T07:35:00Z"),
+        source: "APPLE_HEALTH" as const,
+        deviceType: "phone",
+        type: "ACTIVITY_STEPS" as const,
+        value: 4100,
+      },
+    ];
+    const userPriority = {
+      deviceTypePriority: {
+        WEIGHT: ["ring"],
+      },
+    };
+    const out = pickCanonicalSourceRows(
+      rows,
+      "steps",
+      userPriority,
+      isoDayKey,
+    );
+    // 2 WEIGHT rows kept (per-type fall-through) + 1 ACTIVITY_STEPS
+    // watch row (phone dropped against default ladder).
+    expect(out.canonicalRows).toHaveLength(3);
+    const weightRows = out.canonicalRows.filter((r) => r.type === "WEIGHT");
+    const stepRows = out.canonicalRows.filter(
+      (r) => r.type === "ACTIVITY_STEPS",
+    );
+    expect(weightRows).toHaveLength(2);
+    expect(stepRows).toHaveLength(1);
+    expect(stepRows[0].deviceType).toBe("watch");
+  });
+
   it("two-axis lookup order: per-metric override > metricPriority > flat default", () => {
     // Full-stack test: nested W8c metricPriority pins WITHINGS first
     // for weight even though the constant default ladder has WITHINGS

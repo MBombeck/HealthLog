@@ -90,6 +90,12 @@ export interface SourcePickerRow {
  * paths (timezone-aware) and tests (deterministic ISO date) can share
  * code without dragging a TZ runtime into the helper.
  *
+ * Determinism precondition: input rows MUST be in a deterministic
+ * order (typically `ORDER BY measuredAt ASC, id ASC` from the caller's
+ * Prisma read). The picker's bucket map preserves insertion order, so
+ * the output's stability — including tie-breaking on first-seen
+ * device-type — depends on the caller honouring this contract.
+ *
  * @returns the filtered row list (subset of input) plus the
  *          per-day picked source — useful for debug overlays / audit
  *          logging downstream.
@@ -194,36 +200,69 @@ export function pickCanonicalSourceRows<T extends SourcePickerRow>(
       continue;
     }
 
-    // Resolve the ladder from the first row's type — buckets are
-    // typically same-type so this only resolves once per bucket. If
-    // the bucket carries mixed types, `resolveLadder` is cached and
-    // walked per row inside the device-type walk below.
-    const sampleLadder = resolveLadder(pickedRows[0].type);
-    const presentDeviceTypes = new Set<DeviceType>();
-    for (const row of pickedRows)
-      presentDeviceTypes.add(normalizeDeviceType(row.deviceType));
-
-    let pickedDeviceType: DeviceType | undefined;
-    for (const dt of sampleLadder) {
-      if (presentDeviceTypes.has(dt)) {
-        pickedDeviceType = dt;
-        break;
-      }
+    // Per-row ladder resolution. Single-type buckets (today's only
+    // call site — `SLEEP_DURATION` aggregation in `/api/analytics`)
+    // hit the `ladderCache` once and walk an O(rows) loop. Mixed-type
+    // buckets (future Coach evidence rollup, doctor-PDF section,
+    // correlations engine) resolve their per-row ladders from the
+    // cache and pick the winning device-type independently per type
+    // — every MeasurementType in the bucket keeps its own winner so
+    // a callsite that batches WEIGHT + BODY_FAT through one picker
+    // call doesn't drop one type's rows against the wrong ladder.
+    //
+    // Group present device-types per row-type so each type's winning
+    // device-type is resolved against the right ladder.
+    const presentByType = new Map<
+      MeasurementType | "__default__",
+      Set<DeviceType>
+    >();
+    for (const row of pickedRows) {
+      const typeKey = (row.type ?? "__default__") as
+        | MeasurementType
+        | "__default__";
+      const set = presentByType.get(typeKey) ?? new Set<DeviceType>();
+      set.add(normalizeDeviceType(row.deviceType));
+      presentByType.set(typeKey, set);
     }
-    // Edge case: the user's custom ladder doesn't enumerate the
-    // device-types we have in the bucket (e.g. user typed
-    // `["watch","phone"]`, the bucket has `["scale"]` rows). Fall
-    // through to keep every row — same intent as the source-axis
-    // fallback. The `DEFAULT_DEVICE_TYPE_PRIORITY` constant covers
-    // every enum slot so this only fires when the user typed a custom
-    // ladder that's missing one of the present types.
-    if (!pickedDeviceType) {
-      canonicalRows.push(...pickedRows);
-      continue;
+
+    // Pick the winning device-type per row-type. `__default__` covers
+    // legacy rows that arrive without a `type` field — they fall back
+    // to the user-default ladder so the picker never silently drops
+    // them.
+    const winningDeviceTypeByRowType = new Map<
+      MeasurementType | "__default__",
+      DeviceType | "__fallback__"
+    >();
+    for (const [typeKey, presentSet] of presentByType) {
+      const ladder = resolveLadder(
+        typeKey === "__default__" ? null : (typeKey as MeasurementType),
+      );
+      let winner: DeviceType | undefined;
+      for (const dt of ladder) {
+        if (presentSet.has(dt)) {
+          winner = dt;
+          break;
+        }
+      }
+      // Edge case: the user's custom ladder for THIS row-type doesn't
+      // enumerate any device-type in the bucket. Fall through to keep
+      // every row of that type — same intent as the source-axis
+      // fallback (never silently drop data when the picker has no
+      // ladder signal to filter on).
+      winningDeviceTypeByRowType.set(typeKey, winner ?? "__fallback__");
     }
 
     for (const row of pickedRows) {
-      if (normalizeDeviceType(row.deviceType) === pickedDeviceType) {
+      const typeKey = (row.type ?? "__default__") as
+        | MeasurementType
+        | "__default__";
+      const winner = winningDeviceTypeByRowType.get(typeKey);
+      if (winner === "__fallback__") {
+        // Per-type fallback: keep every row of this type.
+        canonicalRows.push(row);
+        continue;
+      }
+      if (normalizeDeviceType(row.deviceType) === winner) {
         canonicalRows.push(row);
       }
     }
