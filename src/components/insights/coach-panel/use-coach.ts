@@ -202,6 +202,37 @@ export interface CoachStreamingMessage {
   errorCode: string | null;
 }
 
+/**
+ * v1.4.25 W5 — optimistic user bubble surfaced by the send hook so the
+ * thread paints the user's message immediately, before the assistant's
+ * "Thinking…" placeholder. The server persists the user message before
+ * the stream starts (see `appendMessage` in
+ * `src/app/api/insights/chat/route.ts`), but the persisted twin only
+ * lands client-side after the SSE `done` frame triggers a
+ * `queryClient.invalidateQueries`. The earlier render order was
+ * "Thinking…" → user message → assistant reply, which Marc flagged in
+ * the W5 polish brief; surfacing this optimistic bubble flips the
+ * order to user → "Thinking…" → assistant reply.
+ *
+ * The bubble holds the message text + the (parent-supplied)
+ * conversationId so the thread renderer can match it against the
+ * persisted history and suppress the twin during the same 150ms grace
+ * window that already guards the assistant streaming bubble (see
+ * `message-thread.tsx`).
+ */
+export interface CoachOptimisticUserMessage {
+  /** Local-only id so React keys stay stable across renders. */
+  localId: string;
+  /** The user's message text — exactly what was sent to the server. */
+  content: string;
+  /**
+   * Conversation id at the time the send fired. Null when the user is
+   * creating a brand-new conversation; the server assigns the id and
+   * emits it on the `done` frame.
+   */
+  conversationId: string | null;
+}
+
 const EMPTY_STREAMING: CoachStreamingMessage = {
   content: "",
   metricSource: null,
@@ -248,6 +279,13 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
   const queryClient = useQueryClient();
   const [streaming, setStreaming] =
     useState<CoachStreamingMessage>(EMPTY_STREAMING);
+  // v1.4.25 W5 — optimistic user bubble. Mounts the user's message in
+  // the thread immediately so the chronological render order matches
+  // the user's mental model (send → my message → coach "Thinking…" →
+  // reply). Cleared once the persisted twin lands via the invalidate-
+  // refetch the SSE `done` frame triggers.
+  const [optimisticUser, setOptimisticUser] =
+    useState<CoachOptimisticUserMessage | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   // Stash `opts` in a ref so callers can pass an inline-literal object
@@ -260,6 +298,7 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
 
   const reset = useCallback(() => {
     setStreaming(EMPTY_STREAMING);
+    setOptimisticUser(null);
   }, []);
 
   const send = useCallback(
@@ -269,6 +308,17 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
       const controller = new AbortController();
       abortRef.current = controller;
 
+      // v1.4.25 W5 — surface the user's message in the thread BEFORE
+      // the "Thinking…" placeholder paints. Without this the send hook
+      // only exposed the streaming assistant bubble, so the first
+      // thing the user saw was the placeholder followed by their own
+      // message landing on the next refetch — Marc flagged the
+      // order as confusing on the suggested-prompt chips.
+      setOptimisticUser({
+        localId: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        content: params.message,
+        conversationId: params.conversationId ?? null,
+      });
       setStreaming({
         content: "",
         metricSource: null,
@@ -413,6 +463,11 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.list() });
         optsRef.current.onDone?.(resolvedConversationId);
       }
+      // v1.4.25 W5 — drop the optimistic user bubble; the persisted
+      // twin is on its way via the invalidate-refetch above. Drop on
+      // error too so the user message isn't doubled when the next
+      // refetch sees the server-persisted row.
+      setOptimisticUser(null);
     },
     [queryClient],
   );
@@ -427,6 +482,7 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
     send,
     cancel,
     reset,
+    optimisticUser,
   };
 }
 

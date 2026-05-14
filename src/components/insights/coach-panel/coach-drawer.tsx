@@ -304,6 +304,7 @@ export function CoachDrawer({
             <MessageThread
               conversation={conversation ?? null}
               streaming={send.streaming}
+              optimisticUser={send.optimisticUser}
             />
           }
           composer={

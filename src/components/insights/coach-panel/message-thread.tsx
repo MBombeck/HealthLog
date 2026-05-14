@@ -20,6 +20,7 @@ import { useCoachPrefs } from "@/hooks/use-coach-prefs";
 import { SourceChips } from "./source-chips";
 import type {
   CoachConversationDetailDTO,
+  CoachOptimisticUserMessage,
   CoachStreamingMessage,
 } from "./use-coach";
 import type { CoachMessageDTO } from "@/lib/ai/coach/types";
@@ -45,6 +46,15 @@ export interface MessageThreadProps {
   conversation: CoachConversationDetailDTO | null;
   /** Optional in-flight bubble from `useSendCoachMessage()`. */
   streaming?: CoachStreamingMessage;
+  /**
+   * v1.4.25 W5 — optimistic user message surfaced by the send hook so
+   * the user sees their own bubble before the "Thinking…" placeholder.
+   * Cleared by the hook once the SSE `done` frame fires (the persisted
+   * twin lands via the invalidate-refetch). When the persisted twin is
+   * already in `conversation.messages` we suppress the optimistic copy
+   * so the user never sees the same bubble twice.
+   */
+  optimisticUser?: CoachOptimisticUserMessage | null;
   /** Empty-state copy when no conversation is loaded yet. */
   emptyHint?: string;
 }
@@ -56,6 +66,7 @@ function isPinnedToBottom(el: HTMLElement, slack = 64): boolean {
 export function MessageThread({
   conversation,
   streaming,
+  optimisticUser,
   emptyHint,
 }: MessageThreadProps) {
   const { t } = useTranslations();
@@ -117,6 +128,23 @@ export function MessageThread({
     !streamingPersisted &&
     (!!streaming?.inProgress || !!streaming?.content || !!streaming?.errorCode);
 
+  // v1.4.25 W5 — render the optimistic user bubble only when the
+  // persisted twin hasn't landed yet. We match on (role=user, content
+  // equality, no later persisted user message). The server is the
+  // source of truth — once the persisted user message lands (via the
+  // invalidate-refetch the SSE `done` frame triggers), the optimistic
+  // copy is dropped so the user never sees their bubble twice.
+  const optimisticActive = (() => {
+    if (!optimisticUser) return false;
+    // Suppress if the persisted history already contains the same
+    // user content as the last user message — the twin has landed.
+    const lastUser = [...messages]
+      .reverse()
+      .find((m) => m.role === "user");
+    if (lastUser && lastUser.content === optimisticUser.content) return false;
+    return true;
+  })();
+
   // Track scroll position so we don't yank the viewport when the user
   // is browsing earlier turns.
   useEffect(() => {
@@ -130,16 +158,18 @@ export function MessageThread({
   }, []);
 
   // Auto-scroll on new messages OR streaming-content growth, but only
-  // when the user was already at the bottom.
+  // when the user was already at the bottom. v1.4.25 W5 — the
+  // optimistic user bubble counts as a new message; scroll on its
+  // localId so the user sees their own bubble land at the bottom.
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
     if (wasPinnedRef.current) {
       el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }
-  }, [messages.length, streaming?.content]);
+  }, [messages.length, streaming?.content, optimisticUser?.localId]);
 
-  if (messages.length === 0 && !streamingActive) {
+  if (messages.length === 0 && !streamingActive && !optimisticActive) {
     return (
       <div
         data-slot="coach-message-thread"
@@ -184,6 +214,18 @@ export function MessageThread({
           />
         );
       })}
+      {/* v1.4.25 W5 — optimistic user bubble surfaces between the
+          persisted history and the streaming assistant placeholder so
+          the visible order matches the user's mental model. The
+          send-hook drops it as soon as the SSE `done` frame fires +
+          the invalidate-refetch lands the persisted twin. */}
+      {optimisticActive && optimisticUser && (
+        <ChatBubble
+          key={optimisticUser.localId}
+          role="user"
+          content={optimisticUser.content}
+        />
+      )}
       {streamingActive && streaming && (
         // role=log + aria-live=polite so screen-reader users hear the
         // assistant prose announce as tokens land. aria-relevant=text

@@ -400,4 +400,62 @@ describe("<MessageThread>", () => {
     expect(html).toContain('data-slot="coach-bubble-user-avatar"');
     expect(html).toMatch(/data-slot="coach-bubble-user-avatar"[^>]*>TE</);
   });
+
+  // v1.4.25 W5 — optimistic user bubble appears before the "Thinking…"
+  // placeholder so the visible order matches the user's mental model.
+  it("renders the optimistic user bubble before the streaming Thinking placeholder", () => {
+    const html = render(
+      <MessageThread
+        conversation={null}
+        optimisticUser={{
+          localId: "local-1",
+          content: "Wie ist mein Blutdruck letzte Woche?",
+          conversationId: null,
+        }}
+        streaming={{
+          content: "",
+          metricSource: null,
+          inProgress: true,
+          messageId: null,
+          errorCode: null,
+        }}
+      />,
+    );
+    expect(html).toContain("Wie ist mein Blutdruck letzte Woche?");
+    expect(html).toContain("Thinking");
+    // The user bubble appears before the assistant bubble in the DOM.
+    const userIdx = html.indexOf('data-slot="coach-bubble-user"');
+    const assistantIdx = html.indexOf('data-slot="coach-bubble-assistant"');
+    expect(userIdx).toBeGreaterThan(-1);
+    expect(assistantIdx).toBeGreaterThan(-1);
+    expect(userIdx).toBeLessThan(assistantIdx);
+  });
+
+  it("suppresses the optimistic user bubble once its persisted twin lands", () => {
+    // baseConversation already carries a user message "Why was BP
+    // higher on Monday?". Passing the same content as the optimistic
+    // bubble simulates the post-`done` invalidate-refetch landing the
+    // persisted user message — the optimistic copy must drop so the
+    // user never sees their bubble twice.
+    const html = render(
+      <MessageThread
+        conversation={baseConversation}
+        optimisticUser={{
+          localId: "local-2",
+          content: "Why was BP higher on Monday?",
+          conversationId: "conv-1",
+        }}
+        streaming={{
+          content: "",
+          metricSource: null,
+          inProgress: false,
+          messageId: null,
+          errorCode: null,
+        }}
+      />,
+    );
+    const userBubbles = (html.match(/data-slot="coach-bubble-user"/g) ?? [])
+      .length;
+    expect(userBubbles).toBe(1);
+  });
 });
