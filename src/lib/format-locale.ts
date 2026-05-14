@@ -7,14 +7,21 @@
  *
  * Call via the `useFormatters()` client hook. For server-only code paths
  * (jobs, API routes, PDF generation) pass the locale explicitly through
- * `makeFormatters(locale)`.
+ * `makeFormatters(locale)`. The optional second argument carries the
+ * per-user timezone (v1.4.25 W7) — when omitted the formatter falls back
+ * to `DISPLAY_TIMEZONE` so legacy callers keep rendering in Europe/Berlin.
  *
- * Timezone is fixed to Europe/Berlin for display (user expectation). UTC is
- * preserved in the database.
+ * UTC is always preserved in the database.
  */
 
 import type { Locale } from "./i18n/config";
 
+/**
+ * Fallback timezone for surfaces that are not yet user-scoped (admin
+ * tables, audit log viewer, anything without a resolved user). User-
+ * scoped surfaces should call `makeFormatters(locale, userTz)` with
+ * the value from `resolveUserTimezone()`.
+ */
 export const DISPLAY_TIMEZONE = "Europe/Berlin";
 
 /**
@@ -58,9 +65,9 @@ export interface Formatters {
   monthShort: (value: DateInput) => string;
 }
 
-export function makeFormatters(locale: Locale): Formatters {
+export function makeFormatters(locale: Locale, userTz?: string): Formatters {
   const intlLocale = resolveIntlLocale(locale);
-  const tz = DISPLAY_TIMEZONE;
+  const tz = userTz && userTz.length > 0 ? userTz : DISPLAY_TIMEZONE;
 
   return {
     number: (value, fractionDigits) =>

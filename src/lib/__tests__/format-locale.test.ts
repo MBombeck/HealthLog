@@ -61,4 +61,25 @@ describe("makeFormatters", () => {
     expect(deFmt.time(sample)).toBe("16:30");
     expect(enFmt.time(sample)).toBe("16:30");
   });
+
+  // v1.4.25 W7 — formatters accept a per-user timezone override.
+  it("renders time in the user's tz when userTz is passed", () => {
+    const tokyo = makeFormatters("en", "Asia/Tokyo");
+    // 14:30 UTC = 23:30 Tokyo
+    expect(tokyo.time(sample)).toBe("23:30");
+  });
+
+  it("renders time in Europe/Berlin when userTz is empty", () => {
+    const fallback = makeFormatters("en", "");
+    expect(fallback.time(sample)).toBe("16:30");
+  });
+
+  it("renders date in the user's tz when userTz is passed", () => {
+    // 23:30 UTC on May 10 = 01:30 May 11 Tokyo
+    const lateUtc = new Date("2026-05-10T23:30:00Z");
+    const tokyo = makeFormatters("en", "Asia/Tokyo");
+    expect(tokyo.date(lateUtc)).toMatch(/2026/);
+    // The narrow check: day-of-month should be 11, not 10.
+    expect(tokyo.date(lateUtc)).toMatch(/11/);
+  });
 });
