@@ -195,6 +195,10 @@ model User {
   // ships with v1.4.25 so the iOS app can build its query path
   // against a stable contract.
   personalRecords      PersonalRecord[]
+  // v1.4.25 W19b — per-pen / per-vial inventory entities, the
+  // companion to the running-sum MedicationInventoryEvent ledger.
+  // Carries the EMA §6.3 30-day in-use clock per opened pen.
+  inventoryItems       MedicationInventoryItem[]
 
   @@map("users")
 }
@@ -560,6 +564,10 @@ model Medication {
   telegramMessages TelegramReminderMessage[]
   doseChanges      MedicationDoseChange[]
   inventoryEvents  MedicationInventoryEvent[]
+  /// v1.4.25 W19b — per-pen / per-vial entities (state machine +
+  /// 30-day in-use clock). Complements the running-sum
+  /// MedicationInventoryEvent ledger.
+  inventoryItems   MedicationInventoryItem[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -702,6 +710,57 @@ model MedicationInventoryEvent {
 
   @@index([medicationId, occurredAt])
   @@map("medication_inventory_events")
+}
+
+/// v1.4.25 W19b — per-pen / per-vial inventory entity. The EMA EPAR
+/// §6.3 30-day in-use clock lives here as `firstUseAt` + `expiresAt`;
+/// the state machine (see `src/lib/medications/inventory/state-machine.ts`)
+/// transitions ACTIVE → IN_USE → EXPIRED | USED_UP based on first-use,
+/// printed expiry, and dose depletion.
+///
+/// Coexists with `MedicationInventoryEvent`: that ledger is the
+/// running-sum consumption stream; this model is the entity-level
+/// view that the UI tile renders ("Pen #2 of 3 — 12 days left").
+enum MedicationInventoryState {
+  ACTIVE
+  IN_USE
+  EXPIRED
+  USED_UP
+
+  @@map("medication_inventory_state")
+}
+
+model MedicationInventoryItem {
+  id              String                   @id @default(cuid())
+  userId          String                   @map("user_id")
+  medicationId    String                   @map("medication_id")
+  state           MedicationInventoryState @default(ACTIVE)
+  /// Doses the pen / vial shipped with. Mounjaro KwikPen = 4,
+  /// Trulicity single-dose = 1, Byetta = 60.
+  dosesTotal      Int                      @map("doses_total")
+  /// Remaining doses; decremented by the intake hook.
+  dosesRemaining  Int                      @map("doses_remaining")
+  /// NULL until the pen is first opened. Sets the 30-day in-use
+  /// clock per EMA EPAR §6.3.
+  firstUseAt      DateTime?                @map("first_use_at")
+  /// Persisted = MIN(firstUseAt + 30 days, printedExpiry). Persisting
+  /// rather than deriving keeps the daily "expire-stale" cron a
+  /// single indexed scan.
+  expiresAt       DateTime?                @map("expires_at")
+  /// The carton-printed expiry date the user enters at creation.
+  printedExpiry   DateTime?                @map("printed_expiry")
+  purchasedAt     DateTime?                @map("purchased_at")
+  /// Free-text note, application-layer max 200 chars.
+  notes           String?
+  createdAt       DateTime                 @default(now()) @map("created_at")
+  updatedAt       DateTime                 @updatedAt @map("updated_at")
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, medicationId, state])
+  @@index([userId, expiresAt])
+  @@map("medication_inventory_items")
 }
 
 model ReminderPhaseConfig {
