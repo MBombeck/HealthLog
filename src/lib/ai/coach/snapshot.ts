@@ -21,6 +21,7 @@ import {
   parseCoachPrefs,
   type CoachExcludeMetric,
 } from "@/lib/validations/coach-prefs";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import type {
   CoachProvenance,
   CoachScope,
@@ -75,30 +76,57 @@ function windowToDays(window: CoachScopeWindow): number {
   }
 }
 
-/** UTC YYYY-MM-DD key — the same partition the dashboard uses. */
-function utcDayKey(date: Date): string {
-  return date.toISOString().slice(0, 10);
+/**
+ * YYYY-MM-DD day key anchored to the user's display timezone. The
+ * prompt asks the Coach "did you read at 23:50 last night?" — that
+ * "last night" answer has to use the user's clock, not UTC. Up to
+ * v1.4.24 the day-key was UTC, so a 23:50 Pacific/Auckland reading
+ * landed in the next UTC day's bucket and the Coach couldn't pair it
+ * with the user's mental model.
+ */
+function tzDayKey(date: Date, tz: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
 }
 
-/** 0..6 → "Sun".."Sat" using UTC weekday so display is timezone-stable. */
-function utcWeekday(date: Date): string {
-  return WEEKDAY_KEYS[date.getUTCDay()];
+/**
+ * 0..6 → "Sun".."Sat" using the user's tz so "last Monday" in the
+ * prompt agrees with the calendar the user is looking at.
+ */
+function tzWeekday(date: Date, tz: string): string {
+  const wk = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    weekday: "short",
+  }).format(date);
+  // Normalise "Mon" / "Mon," — modern engines drop the comma but
+  // older ones may include it.
+  const canon = wk.slice(0, 3) as (typeof WEEKDAY_KEYS)[number];
+  return WEEKDAY_KEYS.includes(canon) ? canon : WEEKDAY_KEYS[date.getUTCDay()];
 }
 
-/** ISO week key like 2026-W19 — used for the weekly-bucket section. */
-function isoWeekKey(date: Date): string {
-  // Copy date and align to Thursday of the same ISO week so the
-  // year-week pair matches the standard ISO 8601 calendar.
-  const copy = new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-  );
-  const dayNum = copy.getUTCDay() || 7;
-  copy.setUTCDate(copy.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(copy.getUTCFullYear(), 0, 1));
+/**
+ * ISO week key like 2026-W19. We derive the week from the user-tz
+ * day-key so a Sunday-evening reading in Auckland (which is already
+ * Monday UTC) labels under the Auckland week.
+ */
+function isoWeekKey(date: Date, tz: string): string {
+  // Resolve the wall-clock date in the user's tz, then compute the ISO
+  // week from that calendar date. The Thursday-alignment math is the
+  // standard ISO 8601 algorithm.
+  const dayKey = tzDayKey(date, tz);
+  const [y, m, d] = dayKey.split("-").map(Number);
+  const localMidnight = new Date(Date.UTC(y, m - 1, d));
+  const dayNum = localMidnight.getUTCDay() || 7;
+  localMidnight.setUTCDate(localMidnight.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(localMidnight.getUTCFullYear(), 0, 1));
   const weekNo = Math.ceil(
-    ((copy.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
+    ((localMidnight.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
   );
-  return `${copy.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+  return `${localMidnight.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
 }
 
 interface DailyValueRow {
@@ -122,17 +150,18 @@ interface WeeklyBucket {
 
 /**
  * Group raw measurements (one per row, possibly several per day) into
- * one entry per UTC day. Multiple readings on the same day are folded
- * into the daily mean — clinically the morning reading is what the
- * Coach is usually asked about, but the snapshot stays pre-clinical
+ * one entry per user-tz day. Multiple readings on the same day are
+ * folded into the daily mean — clinically the morning reading is what
+ * the Coach is usually asked about, but the snapshot stays pre-clinical
  * and takes the straight mean to avoid presenting a fabricated number.
  */
 function dailyMeans<T extends { measuredAt: Date; value: number }>(
   rows: T[],
+  tz: string,
 ): Map<string, { date: Date; values: number[] }> {
   const grouped = new Map<string, { date: Date; values: number[] }>();
   for (const r of rows) {
-    const key = utcDayKey(r.measuredAt);
+    const key = tzDayKey(r.measuredAt, tz);
     const existing = grouped.get(key);
     if (existing) {
       existing.values.push(r.value);
@@ -145,10 +174,11 @@ function dailyMeans<T extends { measuredAt: Date; value: number }>(
 
 function bucketWeekly(
   rows: Array<{ measuredAt: Date; value: number }>,
+  tz: string,
 ): WeeklyBucket[] {
   const grouped = new Map<string, number[]>();
   for (const r of rows) {
-    const key = isoWeekKey(r.measuredAt);
+    const key = isoWeekKey(r.measuredAt, tz);
     const list = grouped.get(key);
     if (list) {
       list.push(r.value);
@@ -170,15 +200,16 @@ function bucketWeekly(
 function buildDailyValueRows(
   rows: Array<{ measuredAt: Date; value: number }>,
   recentCutoff: Date,
+  tz: string,
 ): DailyValueRow[] {
   const recent = rows.filter((r) => r.measuredAt >= recentCutoff);
-  const grouped = dailyMeans(recent);
+  const grouped = dailyMeans(recent, tz);
   return Array.from(grouped.entries())
     .map(([date, info]) => {
       const mean = info.values.reduce((s, v) => s + v, 0) / info.values.length;
       return {
         date,
-        weekday: utcWeekday(info.date),
+        weekday: tzWeekday(info.date, tz),
         value: Math.round(mean * 10) / 10,
       };
     })
@@ -194,11 +225,12 @@ function buildDailyBpRows(
   sysRows: Array<{ measuredAt: Date; value: number }>,
   diaRows: Array<{ measuredAt: Date; value: number }>,
   recentCutoff: Date,
+  tz: string,
 ): DailyBpRow[] {
   const sysRecent = sysRows.filter((r) => r.measuredAt >= recentCutoff);
   const diaRecent = diaRows.filter((r) => r.measuredAt >= recentCutoff);
-  const sysByDay = dailyMeans(sysRecent);
-  const diaByDay = dailyMeans(diaRecent);
+  const sysByDay = dailyMeans(sysRecent, tz);
+  const diaByDay = dailyMeans(diaRecent, tz);
   const out: DailyBpRow[] = [];
   for (const [day, info] of sysByDay) {
     const dia = diaByDay.get(day);
@@ -207,7 +239,7 @@ function buildDailyBpRows(
     const diaMean = dia.values.reduce((s, v) => s + v, 0) / dia.values.length;
     out.push({
       date: day,
-      weekday: utcWeekday(info.date),
+      weekday: tzWeekday(info.date, tz),
       sys: Math.round(sysMean),
       dia: Math.round(diaMean),
     });
@@ -248,6 +280,11 @@ function resolveScope(scope?: CoachScope): {
  *   - timeline.weekly: ISO-week buckets covering the rest of the
  *     window so the Coach can still cite older weeks without ballooning
  *     the prompt
+ *
+ * v1.4.25 W7b — every day-key + weekday label is now anchored to the
+ * user's display timezone (read from `User.timezone`). Falls back to
+ * Europe/Berlin when the column is missing so the legacy snapshot
+ * stays byte-identical for the only path the v1.4.24 suite tested.
  */
 export async function buildCoachSnapshot(
   userId: string,
@@ -260,11 +297,17 @@ export async function buildCoachSnapshot(
   // of. The filter intersects with the resolved scope (the explicit
   // `scope` argument from the request body still wins for the
   // _maximum_ set; prefs only narrow further).
+  //
+  // v1.4.25 W7b — the same prefs read also returns the user's
+  // displayTimezone so the day-key and weekday labels below match the
+  // calendar the user is looking at. Reading both columns in one
+  // query keeps the snapshot's read budget the same as before.
   const prefsRow = await prisma.user.findUnique({
     where: { id: userId },
-    select: { coachPrefsJson: true },
+    select: { coachPrefsJson: true, timezone: true },
   });
   const prefs = parseCoachPrefs(prefsRow?.coachPrefsJson);
+  const userTz = prefsRow?.timezone ?? DEFAULT_TIMEZONE;
   const excluded = new Set<CoachExcludeMetric>(prefs.excludeMetrics);
   const sources = new Set<CoachScopeSource>();
   for (const src of scopedSources) {
@@ -361,15 +404,15 @@ export async function buildCoachSnapshot(
   if (wantsBp && features.bloodPressure) {
     const sysRows = byType("BLOOD_PRESSURE_SYS");
     const diaRows = byType("BLOOD_PRESSURE_DIA");
-    const recentDaily = buildDailyBpRows(sysRows, diaRows, recentCutoff);
+    const recentDaily = buildDailyBpRows(sysRows, diaRows, recentCutoff, userTz);
     const olderSys = sysRows.filter((r) => r.measuredAt < recentCutoff);
     const olderDia = diaRows.filter((r) => r.measuredAt < recentCutoff);
     snapshot.bloodPressure = {
       aggregate: features.bloodPressure,
       timeline: {
         recent: recentDaily,
-        weeklySys: bucketWeekly(olderSys),
-        weeklyDia: bucketWeekly(olderDia),
+        weeklySys: bucketWeekly(olderSys, userTz),
+        weeklyDia: bucketWeekly(olderDia, userTz),
       },
     };
     metrics.add("bp");
@@ -382,8 +425,11 @@ export async function buildCoachSnapshot(
     snapshot.weight = {
       aggregate: features.weight,
       timeline: {
-        recent: buildDailyValueRows(rows, recentCutoff),
-        weekly: bucketWeekly(rows.filter((r) => r.measuredAt < recentCutoff)),
+        recent: buildDailyValueRows(rows, recentCutoff, userTz),
+        weekly: bucketWeekly(
+          rows.filter((r) => r.measuredAt < recentCutoff),
+          userTz,
+        ),
       },
     };
     metrics.add("weight");
@@ -396,8 +442,11 @@ export async function buildCoachSnapshot(
     snapshot.pulse = {
       aggregate: features.pulse,
       timeline: {
-        recent: buildDailyValueRows(rows, recentCutoff),
-        weekly: bucketWeekly(rows.filter((r) => r.measuredAt < recentCutoff)),
+        recent: buildDailyValueRows(rows, recentCutoff, userTz),
+        weekly: bucketWeekly(
+          rows.filter((r) => r.measuredAt < recentCutoff),
+          userTz,
+        ),
       },
     };
     metrics.add("pulse");
@@ -421,9 +470,10 @@ export async function buildCoachSnapshot(
     snapshot.mood = {
       aggregate: features.mood,
       timeline: {
-        recent: buildDailyValueRows(normalised, recentCutoff),
+        recent: buildDailyValueRows(normalised, recentCutoff, userTz),
         weekly: bucketWeekly(
           normalised.filter((r) => r.measuredAt < recentCutoff),
+          userTz,
         ),
       },
     };
@@ -454,7 +504,7 @@ export async function buildCoachSnapshot(
         { date: Date; total: number; taken: number }
       >();
       for (const r of recent) {
-        const key = utcDayKey(r.scheduledFor);
+        const key = tzDayKey(r.scheduledFor, userTz);
         const e = recentByDay.get(key) ?? {
           date: r.scheduledFor,
           total: 0,
@@ -467,7 +517,7 @@ export async function buildCoachSnapshot(
       const recentRows = Array.from(recentByDay.entries())
         .map(([date, info]) => ({
           date,
-          weekday: utcWeekday(info.date),
+          weekday: tzWeekday(info.date, userTz),
           rate: Math.round((info.taken / info.total) * 100) / 100,
           taken: info.taken,
           total: info.total,
@@ -475,7 +525,7 @@ export async function buildCoachSnapshot(
         .sort((a, b) => a.date.localeCompare(b.date));
       const olderByWeek = new Map<string, { taken: number; total: number }>();
       for (const r of olderRows) {
-        const key = isoWeekKey(r.scheduledFor);
+        const key = isoWeekKey(r.scheduledFor, userTz);
         const e = olderByWeek.get(key) ?? { taken: 0, total: 0 };
         e.total += 1;
         if (r.takenAt && !r.skipped) e.taken += 1;
@@ -584,8 +634,11 @@ export async function buildCoachSnapshot(
     if (rows.length === 0) continue;
     snapshot[block.snapshotKey] = {
       timeline: {
-        recent: buildDailyValueRows(rows, recentCutoff),
-        weekly: bucketWeekly(rows.filter((r) => r.measuredAt < recentCutoff)),
+        recent: buildDailyValueRows(rows, recentCutoff, userTz),
+        weekly: bucketWeekly(
+          rows.filter((r) => r.measuredAt < recentCutoff),
+          userTz,
+        ),
       },
     };
     metrics.add(block.metric);

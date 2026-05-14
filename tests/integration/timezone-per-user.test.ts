@@ -376,4 +376,48 @@ describe("per-user timezone — Pacific/Auckland end-to-end", () => {
     // The longest streak across the 3 seeded days is 3.
     expect(body.data.streak.longest).toBeGreaterThanOrEqual(3);
   });
+
+  it("coach snapshot anchors timeline.recent to the user's tz", async () => {
+    // v1.4.25 W7b — surface 3. A 23:50 NZST reading on May 14 (=
+    // 11:50 UTC May 14, well into the Auckland evening) must appear
+    // in the snapshot under the May 14 Auckland day, not the
+    // (incidentally-equal) UTC day. The boundary case is 13:00 UTC
+    // May 14 = 01:00 NZST May 15, where the snapshot must pin the
+    // reading to May 15 (the user's "today") even though UTC
+    // (and Berlin) would call it May 14.
+    const prisma = getPrismaClient();
+    const me = await seedAucklandUser();
+
+    // Boundary instant: 13:00 UTC May 14 → 01:00 NZST May 15.
+    await prisma.measurement.create({
+      data: {
+        userId: me.id,
+        type: "WEIGHT",
+        value: 80,
+        unit: "kg",
+        measuredAt: new Date("2026-05-14T13:00:00.000Z"),
+        source: "MANUAL",
+      },
+    });
+
+    const { buildCoachSnapshot } = await import("@/lib/ai/coach/snapshot");
+    const out = await buildCoachSnapshot(me.id, {
+      window: "last30days",
+      sources: ["weight"],
+    });
+    const parsed = JSON.parse(out.snapshotJson) as {
+      weight?: {
+        timeline?: {
+          recent?: Array<{ date: string; weekday: string; value: number }>;
+        };
+      };
+    };
+    const recent = parsed.weight?.timeline?.recent ?? [];
+    expect(recent.length).toBeGreaterThanOrEqual(1);
+    // Auckland day for 13:00 UTC May 14 is May 15.
+    expect(recent.some((r) => r.date === "2026-05-15")).toBe(true);
+    // The same UTC instant in Berlin would land on May 14 — verify
+    // we did NOT bucket to that.
+    expect(recent.some((r) => r.date === "2026-05-14")).toBe(false);
+  });
 });
