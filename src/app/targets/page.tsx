@@ -38,6 +38,18 @@ interface TargetData {
   range: { min: number; max: number } | null;
   classification: { category: string; color: string } | null;
   source: string;
+  // v1.4.25 W3e — consistency strip + recency + streak. Optional on the
+  // client so the i18n / spacing tests that only pre-populate
+  // classification + range still type-check; the runtime route always
+  // sets these.
+  daysInRange7d?: number;
+  daysLogged7d?: number;
+  daysInRange30d?: number;
+  daysLogged30d?: number;
+  lastMetGoalAt?: string | null;
+  streakDays?: number;
+  insufficientData?: boolean;
+  consistency7d?: ReadonlyArray<"in" | "near" | "out" | null>;
   details?: {
     medications?: Array<{
       name: string;
@@ -53,8 +65,15 @@ interface BpDiastolic {
   range: { min: number; max: number } | null;
 }
 
+interface TargetPageSummary {
+  targetsMetThisWeek: number;
+  totalTargets: number;
+  streakHighlight: { metric: string; days: number } | null;
+}
+
 interface TargetsResponse {
   targets: TargetData[];
+  pageSummary?: TargetPageSummary;
   bpDiastolic: BpDiastolic;
   profile: {
     heightCm: number | null;
