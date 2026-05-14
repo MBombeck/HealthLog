@@ -2627,6 +2627,49 @@
     "moodStability": "Mood stability",
     "steps": "steps",
     "average30d": "30-day average:",
+    "consistency": {
+      "ariaLabel": "Last 7 days, in-range status per day",
+      "daysInRange": "{count} of {total} in range",
+      "daysLogged": "{count} of {total} logged",
+      "dotInRange": "in range",
+      "dotNearRange": "near range",
+      "dotOutOfRange": "out of range",
+      "dotNotLogged": "not logged",
+      "insufficientData": "Not enough data yet — keep logging.",
+      "relativeDay": {
+        "today": "today",
+        "yesterday": "yesterday",
+        "twoDaysAgo": "2 days ago",
+        "threeDaysAgo": "3 days ago",
+        "fourDaysAgo": "4 days ago",
+        "fiveDaysAgo": "5 days ago",
+        "sixDaysAgo": "6 days ago"
+      }
+    },
+    "card": {
+      "lastMet": "Last met goal: {when}",
+      "streak": "{count}-day streak"
+    },
+    "relativeDay": {
+      "today": "today",
+      "yesterday": "yesterday",
+      "daysAgo": "{count} days ago"
+    },
+    "summary": {
+      "weekTitle": "{met} of {total} targets met this week",
+      "weekTitleAll": "All {total} targets met this week",
+      "streakHighlight": "{count}-day streak: {metric}"
+    },
+    "coach": {
+      "cta": "Ask Coach"
+    },
+    "mood": {
+      "stability": {
+        "stable": "stable",
+        "variable": "variable",
+        "highlyVariable": "highly variable"
+      }
+    },
     "currentValue": "Current: {value} {unit}",
     "targetRangeValue": "Target: {min}–{max} {unit}",
     "sourceLabel": "Source: {source}",

@@ -2627,6 +2627,49 @@
     "moodStability": "Stimmungsstabilität",
     "steps": "Schritte",
     "average30d": "30-Tage-Schnitt:",
+    "consistency": {
+      "ariaLabel": "Letzte 7 Tage, im-Zielbereich-Status pro Tag",
+      "daysInRange": "{count} von {total} im Bereich",
+      "daysLogged": "{count} von {total} erfasst",
+      "dotInRange": "im Bereich",
+      "dotNearRange": "nahe am Bereich",
+      "dotOutOfRange": "außerhalb",
+      "dotNotLogged": "nicht erfasst",
+      "insufficientData": "Noch zu wenige Daten — bitte weiter erfassen.",
+      "relativeDay": {
+        "today": "heute",
+        "yesterday": "gestern",
+        "twoDaysAgo": "vor 2 Tagen",
+        "threeDaysAgo": "vor 3 Tagen",
+        "fourDaysAgo": "vor 4 Tagen",
+        "fiveDaysAgo": "vor 5 Tagen",
+        "sixDaysAgo": "vor 6 Tagen"
+      }
+    },
+    "card": {
+      "lastMet": "Zuletzt im Ziel: {when}",
+      "streak": "{count} Tage in Folge"
+    },
+    "relativeDay": {
+      "today": "heute",
+      "yesterday": "gestern",
+      "daysAgo": "vor {count} Tagen"
+    },
+    "summary": {
+      "weekTitle": "{met} von {total} Zielwerten diese Woche erreicht",
+      "weekTitleAll": "Alle {total} Zielwerte diese Woche erreicht",
+      "streakHighlight": "{count} Tage in Folge: {metric}"
+    },
+    "coach": {
+      "cta": "Coach fragen"
+    },
+    "mood": {
+      "stability": {
+        "stable": "stabil",
+        "variable": "schwankend",
+        "highlyVariable": "sehr schwankend"
+      }
+    },
     "currentValue": "Aktuell: {value} {unit}",
     "targetRangeValue": "Zielbereich: {min}–{max} {unit}",
     "sourceLabel": "Quelle: {source}",
