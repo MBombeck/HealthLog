@@ -3,6 +3,7 @@ import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { getWorkerStatus } from "@/lib/jobs/worker-status";
+import { getLegacyFormTotal } from "@/app/api/withings/webhook/route";
 import { readFileSync } from "node:fs";
 
 // Build timestamp (set at build time via next.config)
@@ -88,6 +89,12 @@ export const GET = apiHandler(async () => {
         : null,
       webPush: webPushConfigured ? { configured: true } : null,
       bugReport: bugReportConfigured ? { configured: true } : null,
+    },
+    // v1.4.25 W21 Fix-K — in-memory counters that the release-gate can
+    // read to confirm "legacy form usage trending toward zero" before
+    // the v1.4.27 cut of the legacy Withings webhook route.
+    counters: {
+      withingsWebhookLegacyFormTotal: getLegacyFormTotal(),
     },
   });
 });

@@ -45,7 +45,13 @@ vi.mock("@/lib/logging/context", () => ({
   })),
 }));
 
-import { POST, GET, HEAD } from "../route";
+import {
+  POST,
+  GET,
+  HEAD,
+  getLegacyFormTotal,
+  __resetLegacyFormTotalForTests,
+} from "../route";
 import { prisma } from "@/lib/db";
 import { syncUserMeasurements } from "@/lib/withings/sync";
 import { syncUserActivity } from "@/lib/withings/sync-activity";
@@ -167,7 +173,8 @@ describe("POST /api/withings/webhook", () => {
     expect(syncUserMeasurements).toHaveBeenCalledWith("user-42");
   });
 
-  it("legacy ?secret=… query path still authorises and emits a Wide Event warning", async () => {
+  it("legacy ?secret=… query path still authorises and emits a Wide Event warning with the migration URL (Fix-K sec-M2)", async () => {
+    __resetLegacyFormTotalForTests();
     const addWarning = vi.fn();
     vi.mocked(getEvent).mockReturnValue({
       setAuth: vi.fn(),
@@ -186,6 +193,30 @@ describe("POST /api/withings/webhook", () => {
     expect(addWarning).toHaveBeenCalledWith(
       expect.stringMatching(/legacy URL query/i),
     );
+    // Fix-K sec-M2: warning text now spells out the migration URL so
+    // anyone watching the access log knows what to re-subscribe to.
+    expect(addWarning).toHaveBeenCalledWith(
+      expect.stringContaining("/api/withings/webhook/[token]"),
+    );
+    // Fix-K sec-M2: in-memory counter increments on every legacy
+    // ?secret=… call so the release-gate can watch usage trend to zero.
+    expect(getLegacyFormTotal()).toBe(1);
+  });
+
+  it("counter stays at zero when the secret arrives via the header (Fix-K sec-M2)", async () => {
+    __resetLegacyFormTotalForTests();
+    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValueOnce({
+      userId: "user-h",
+      withingsUserId: "wu-h",
+    } as never);
+
+    await POST(
+      jsonRequest(
+        { userid: "wu-h" },
+        { "x-withings-webhook-secret": "test-secret" },
+      ),
+    );
+    expect(getLegacyFormTotal()).toBe(0);
   });
 
   it("accepts form-encoded payloads (Withings legacy delivery format)", async () => {
