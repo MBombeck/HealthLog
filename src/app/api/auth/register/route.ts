@@ -15,6 +15,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
+import {
+  isValidTimezone,
+  resolveServerDefaultTimezone,
+} from "@/lib/tz/resolver";
 
 export const POST = apiHandler(async (request: NextRequest) => {
   const ip = getClientIp(request) ?? "unknown";
@@ -59,7 +63,21 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError(parsed.error.issues[0].message, 422);
   }
 
-  const { email, username, password } = parsed.data;
+  const { email, username, password, timezone: timezoneInput } = parsed.data;
+
+  // v1.4.25 W7 — accept a browser-detected timezone from the
+  // registration form. Validate against the runtime IANA list; on
+  // any invalid value (or absence), fall back to the admin-
+  // configured server default. The `User.timezone` column has a
+  // hard-coded "Europe/Berlin" default at the schema layer, so the
+  // worst-case chain still produces a usable string.
+  let timezone: string;
+  const trimmedTimezone = timezoneInput?.trim() ?? "";
+  if (trimmedTimezone && isValidTimezone(trimmedTimezone)) {
+    timezone = trimmedTimezone;
+  } else {
+    timezone = await resolveServerDefaultTimezone();
+  }
 
   // Check if email or username already taken (unified message to prevent enumeration)
   const [existingEmail, existingUsername] = await Promise.all([
@@ -91,6 +109,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       username,
       passwordHash,
       role,
+      timezone,
     },
   });
 
@@ -104,7 +123,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   await auditLog("auth.register", {
     userId: user.id,
     ipAddress: ip,
-    details: { method: "password" },
+    details: { method: "password", timezone },
   });
 
   annotate({ action: { name: "auth.register" } });

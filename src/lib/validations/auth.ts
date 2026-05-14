@@ -16,6 +16,16 @@ export const registerSchema = z.object({
       PASSWORD_MIN_LENGTH,
       `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
     ),
+  /**
+   * v1.4.25 W7 — browser-detected timezone. The signup form pulls
+   * `Intl.DateTimeFormat().resolvedOptions().timeZone` and sends it
+   * along; the server validates against the runtime IANA list and
+   * falls back to the admin-configured server default
+   * (`AppSettings.defaultUserTimezone`) when the value is invalid
+   * or missing. Optional so legacy clients that predate v1.4.25
+   * keep working.
+   */
+  timezone: z.string().max(64).optional(),
 });
 
 export const loginPasswordSchema = z.object({

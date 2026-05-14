@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordStrength } from "@/components/ui/password-strength";
 import { useTranslations } from "@/lib/i18n/context";
+import { detectBrowserTimezone } from "@/lib/tz/resolver";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -28,10 +29,16 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
+      // v1.4.25 W7 — ship the browser-detected timezone with the
+      // signup payload. Server validates against the IANA list and
+      // falls back to the admin server-default if the value is
+      // bogus, so a tampered or proxied request can never poison
+      // the user's stored zone.
+      const timezone = detectBrowserTimezone();
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, username, password }),
+        body: JSON.stringify({ email, username, password, timezone }),
       });
 
       const json = await res.json();
