@@ -378,24 +378,46 @@ describe("per-user timezone — Pacific/Auckland end-to-end", () => {
   });
 
   it("coach snapshot anchors timeline.recent to the user's tz", async () => {
-    // v1.4.25 W7b — surface 3. A 23:50 NZST reading on May 14 (=
-    // 11:50 UTC May 14, well into the Auckland evening) must appear
-    // in the snapshot under the May 14 Auckland day, not the
-    // (incidentally-equal) UTC day. The boundary case is 13:00 UTC
-    // May 14 = 01:00 NZST May 15, where the snapshot must pin the
-    // reading to May 15 (the user's "today") even though UTC
-    // (and Berlin) would call it May 14.
+    // v1.4.25 W7b — surface 3. A reading at HH:13:00 UTC sits at
+    // 01:00 NZST on the *next* Auckland day (NZST = UTC+12 in May).
+    // The snapshot must pin the reading to the Auckland day, not the
+    // (incidentally-equal) UTC day a Berlin user would see.
+    //
+    // The instant must stay inside the snapshot's 14-day `recent`
+    // window across every CI run, so we anchor it to "today − 2d at
+    // 13:00 UTC" rather than a hard-coded May-2026 calendar date.
+    // The − 2d cushion keeps the reading clear of `Date.now()` clock
+    // jitter and the late-evening DST cutover in late September
+    // (Auckland flips NZST → NZDT, which shifts the day-key for
+    // 13:00 UTC by an extra hour but never crosses the date line).
     const prisma = getPrismaClient();
     const me = await seedAucklandUser();
 
-    // Boundary instant: 13:00 UTC May 14 → 01:00 NZST May 15.
+    const anchor = new Date();
+    anchor.setUTCDate(anchor.getUTCDate() - 2);
+    anchor.setUTCHours(13, 0, 0, 0);
+
+    const dayKey = (tz: string) =>
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: tz,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(anchor);
+    const aucklandDay = dayKey("Pacific/Auckland");
+    const berlinDay = dayKey("Europe/Berlin");
+    // Sanity check: 13:00 UTC means Auckland is on a different
+    // calendar day than Berlin. Without this, the test couldn't
+    // assert the tz divergence we care about.
+    expect(aucklandDay).not.toBe(berlinDay);
+
     await prisma.measurement.create({
       data: {
         userId: me.id,
         type: "WEIGHT",
         value: 80,
         unit: "kg",
-        measuredAt: new Date("2026-05-14T13:00:00.000Z"),
+        measuredAt: anchor,
         source: "MANUAL",
       },
     });
@@ -414,10 +436,8 @@ describe("per-user timezone — Pacific/Auckland end-to-end", () => {
     };
     const recent = parsed.weight?.timeline?.recent ?? [];
     expect(recent.length).toBeGreaterThanOrEqual(1);
-    // Auckland day for 13:00 UTC May 14 is May 15.
-    expect(recent.some((r) => r.date === "2026-05-15")).toBe(true);
-    // The same UTC instant in Berlin would land on May 14 — verify
-    // we did NOT bucket to that.
-    expect(recent.some((r) => r.date === "2026-05-14")).toBe(false);
+    // Bucket lands on the Auckland day, not the Berlin day.
+    expect(recent.some((r) => r.date === aucklandDay)).toBe(true);
+    expect(recent.some((r) => r.date === berlinDay)).toBe(false);
   });
 });
