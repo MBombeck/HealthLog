@@ -1582,6 +1582,18 @@
   "settings": {
     "title": "Einstellungen",
     "subtitle": "Profil, Sicherheit & Verbindungen",
+    "researchMode": {
+      "sectionTitle": "Forschungsmodus",
+      "subtitle": "Optionale Anzeige einer geschätzten GLP-1-Wirkstoffkurve auf Basis der von der EMA veröffentlichten Populations-Pharmakokinetik. Nur zur Anschauung — niemals eine Messung oder ein medizinischer Rat.",
+      "toggleLabel": "Geschätzte Wirkstoffkurve anzeigen",
+      "disabledStatus": "Deaktiviert. Die Wirkstoffkurve ist ausgeblendet.",
+      "enabledStaleStatus": "Der Disclaimer wurde aktualisiert. Bestätige unten erneut, um die Kurve wieder anzuzeigen.",
+      "acknowledgedOn": "Bestätigt am {date}.",
+      "rePromptTitle": "Disclaimer aktualisiert",
+      "rePromptBody": "Der Disclaimer des Forschungsmodus wurde seit deiner letzten Bestätigung aktualisiert. Lies ihn erneut und bestätige, damit die Kurve sichtbar bleibt.",
+      "rePromptCta": "Disclaimer erneut bestätigen",
+      "disableError": "Forschungsmodus konnte nicht deaktiviert werden. Bitte erneut versuchen."
+    },
     "shell": {
       "sectionsNav": "Einstellungs-Bereiche"
     },
@@ -1667,7 +1679,7 @@
       },
       "advanced": {
         "title": "Erweitert",
-        "description": "Account-weiter Notausgang — unwiderruflich alle Gesundheitsdaten löschen, Account bleibt erhalten."
+        "description": "Opt-in-Schalter für den Forschungsmodus sowie der Notausgang zum unwiderruflichen Löschen aller Gesundheitsdaten."
       },
       "export": {
         "title": "Export",

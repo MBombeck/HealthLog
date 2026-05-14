@@ -1582,6 +1582,18 @@
   "settings": {
     "title": "Ustawienia",
     "subtitle": "Profile, Security & Connections",
+    "researchMode": {
+      "sectionTitle": "Tryb Badawczy",
+      "subtitle": "Opcjonalne wyświetlanie szacowanej krzywej poziomu leku GLP-1, wyprowadzonej z farmakokinetyki populacyjnej opublikowanej przez EMA. Tylko do odczytu — nigdy pomiar ani porada medyczna.",
+      "toggleLabel": "Pokaż szacowaną krzywą poziomu leku",
+      "disabledStatus": "Wyłączone. Krzywa jest ukryta.",
+      "enabledStaleStatus": "Disclaimer został zaktualizowany. Potwierdź ponownie poniżej, aby przywrócić krzywą.",
+      "acknowledgedOn": "Potwierdzono {date}.",
+      "rePromptTitle": "Zaktualizowano disclaimer",
+      "rePromptBody": "Disclaimer trybu Badawczego został zaktualizowany od czasu twojego ostatniego potwierdzenia. Przeczytaj go ponownie i potwierdź, aby krzywa pozostała widoczna.",
+      "rePromptCta": "Potwierdź ponownie disclaimer",
+      "disableError": "Nie udało się wyłączyć trybu Badawczego. Spróbuj ponownie."
+    },
     "shell": {
       "sectionsNav": "Settings sections"
     },
@@ -1666,8 +1678,8 @@
         "description": "Bearer tokens for your own scripts and apps — log measurements or medication intake from anywhere."
       },
       "advanced": {
-        "title": "Advanced",
-        "description": "Account-wide danger zone — irreversibly wipe every health record while keeping your account."
+        "title": "Zaawansowane",
+        "description": "Opt-in przełącznika trybu Badawczego oraz strefa zagrożenia umożliwiająca nieodwracalne wymazanie wszystkich danych zdrowotnych."
       },
       "export": {
         "title": "Eksportuj",

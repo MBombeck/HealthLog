@@ -1582,6 +1582,18 @@
   "settings": {
     "title": "Paramètres",
     "subtitle": "Profile, Security & Connections",
+    "researchMode": {
+      "sectionTitle": "Mode Recherche",
+      "subtitle": "Affichage optionnel d'une courbe de niveau estimé de médicament GLP-1, dérivée de la pharmacocinétique de population publiée par l'EMA. Lecture seule — jamais une mesure ni un conseil médical.",
+      "toggleLabel": "Afficher la courbe estimée du niveau de médicament",
+      "disabledStatus": "Désactivé. La courbe est masquée.",
+      "enabledStaleStatus": "Le disclaimer a été mis à jour. Reconfirmez ci-dessous pour réafficher la courbe.",
+      "acknowledgedOn": "Confirmé le {date}.",
+      "rePromptTitle": "Disclaimer mis à jour",
+      "rePromptBody": "Le disclaimer du mode Recherche a été mis à jour depuis votre dernière confirmation. Relisez-le et reconfirmez pour garder la courbe visible.",
+      "rePromptCta": "Reconfirmer le disclaimer",
+      "disableError": "Impossible de désactiver le mode Recherche. Veuillez réessayer."
+    },
     "shell": {
       "sectionsNav": "Settings sections"
     },
@@ -1666,8 +1678,8 @@
         "description": "Bearer tokens for your own scripts and apps — log measurements or medication intake from anywhere."
       },
       "advanced": {
-        "title": "Advanced",
-        "description": "Account-wide danger zone — irreversibly wipe every health record while keeping your account."
+        "title": "Avancé",
+        "description": "Bouton opt-in du mode Recherche et zone dangereuse pour effacer irrévocablement toutes les données de santé."
       },
       "export": {
         "title": "Exporter",

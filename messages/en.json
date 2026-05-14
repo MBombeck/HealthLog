@@ -1582,6 +1582,18 @@
   "settings": {
     "title": "Settings",
     "subtitle": "Profile, Security & Connections",
+    "researchMode": {
+      "sectionTitle": "Research Mode",
+      "subtitle": "Opt-in display of an estimated GLP-1 drug-level curve, derived from EMA-published population pharmacokinetics. Reading-only — never a measurement or medical advice.",
+      "toggleLabel": "Show the estimated drug-level chart",
+      "disabledStatus": "Disabled. The drug-level chart is hidden.",
+      "enabledStaleStatus": "The disclaimer was updated. Re-acknowledge below to bring the chart back.",
+      "acknowledgedOn": "Acknowledged on {date}.",
+      "rePromptTitle": "Disclaimer updated",
+      "rePromptBody": "The Research Mode disclaimer was updated since you last acknowledged it. Re-read and re-confirm to keep the chart visible.",
+      "rePromptCta": "Re-acknowledge disclaimer",
+      "disableError": "Could not disable Research Mode. Please try again."
+    },
     "shell": {
       "sectionsNav": "Settings sections"
     },
@@ -1667,7 +1679,7 @@
       },
       "advanced": {
         "title": "Advanced",
-        "description": "Account-wide danger zone — irreversibly wipe every health record while keeping your account."
+        "description": "Opt-in Research Mode toggle plus the account-wide danger zone for wiping every health record."
       },
       "export": {
         "title": "Export",

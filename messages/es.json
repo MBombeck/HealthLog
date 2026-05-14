@@ -1582,6 +1582,18 @@
   "settings": {
     "title": "Ajustes",
     "subtitle": "Profile, Security & Connections",
+    "researchMode": {
+      "sectionTitle": "Modo Investigación",
+      "subtitle": "Visualización opcional de una curva estimada del nivel de fármaco GLP-1, derivada de la farmacocinética poblacional publicada por la EMA. Solo lectura: nunca una medición ni un consejo médico.",
+      "toggleLabel": "Mostrar la curva estimada del nivel de fármaco",
+      "disabledStatus": "Desactivado. La curva está oculta.",
+      "enabledStaleStatus": "El disclaimer se actualizó. Reconfirma debajo para volver a mostrar la curva.",
+      "acknowledgedOn": "Confirmado el {date}.",
+      "rePromptTitle": "Disclaimer actualizado",
+      "rePromptBody": "El disclaimer del modo Investigación se actualizó desde tu última confirmación. Relelo y reconfirma para mantener la curva visible.",
+      "rePromptCta": "Reconfirmar disclaimer",
+      "disableError": "No se pudo desactivar el modo Investigación. Inténtalo de nuevo."
+    },
     "shell": {
       "sectionsNav": "Settings sections"
     },
@@ -1666,8 +1678,8 @@
         "description": "Bearer tokens for your own scripts and apps — log measurements or medication intake from anywhere."
       },
       "advanced": {
-        "title": "Advanced",
-        "description": "Account-wide danger zone — irreversibly wipe every health record while keeping your account."
+        "title": "Avanzado",
+        "description": "Activador opt-in del modo Investigación y zona de peligro para borrar irrevocablemente todos los registros de salud."
       },
       "export": {
         "title": "Exportar",

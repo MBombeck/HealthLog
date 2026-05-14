@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, BookOpenCheck, Loader2, Trash2 } from "lucide-react";
 
 import {
   AlertDialog,
@@ -16,6 +16,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { ResearchModeAcknowledgmentDialog } from "@/components/medications/ResearchModeAcknowledgmentDialog";
+import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
@@ -26,6 +29,17 @@ import { useTranslations } from "@/lib/i18n/context";
  * What stays here is the irreversible danger-zone — the "wipe all my
  * data" surface that should never live next to a single-click export
  * button.
+ *
+ * v1.4.25 W19c-Frontend adds the Research Mode toggle on this page.
+ * Research Mode and the data-reset are both opt-in / version-gated
+ * controls; they share a semantic shelf even though they touch
+ * different parts of the user record. Toggle ON opens the
+ * acknowledgment dialog (the user reads + confirms before the server
+ * stamps the version). Toggle OFF fires DELETE directly. A separate
+ * amber banner above the toggle catches the version-mismatch case
+ * (server bumped the disclaimer while the user was still
+ * acknowledged) and surfaces a Re-acknowledge CTA that re-opens the
+ * dialog.
  */
 export function AdvancedSection() {
   const { t } = useTranslations();
@@ -47,8 +61,163 @@ export function AdvancedSection() {
         </p>
       </header>
 
+      <ResearchModeCard />
       <DataResetCard />
     </section>
+  );
+}
+
+interface ResearchModeStatus {
+  enabled: boolean;
+  acknowledgedAt: string | null;
+  acknowledgedVersion: string | null;
+  currentDisclaimerVersion: string;
+}
+
+function ResearchModeCard() {
+  const { t } = useTranslations();
+  const queryClient = useQueryClient();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [toggleBusy, setToggleBusy] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const { data: status, isLoading } = useQuery<ResearchModeStatus | null>({
+    queryKey: ["research-mode"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/me/research-mode");
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json.data as ResearchModeStatus;
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const versionsAligned =
+    !!status &&
+    status.acknowledgedVersion === status.currentDisclaimerVersion;
+  const showRePrompt = !!status?.enabled && !versionsAligned;
+  // The Switch's `checked` mirrors the server flag exactly — even when
+  // the version is stale we keep the toggle "on" so the user sees that
+  // their previous choice is preserved; the banner above the toggle
+  // explains why the chart isn't painting.
+  const switchChecked = !!status?.enabled;
+
+  async function handleToggle(next: boolean) {
+    if (toggleBusy) return;
+    setErrorMessage(null);
+    if (next) {
+      // Toggle ON → open the acknowledgment dialog. The dialog owns
+      // the POST; on success it invalidates the `research-mode` query
+      // and the toggle reflects the new state.
+      setDialogOpen(true);
+      return;
+    }
+    // Toggle OFF → fire DELETE directly.
+    setToggleBusy(true);
+    try {
+      const res = await fetch("/api/auth/me/research-mode", {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        setErrorMessage(t("settings.researchMode.disableError"));
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: ["research-mode"] });
+    } catch {
+      setErrorMessage(t("settings.researchMode.disableError"));
+    } finally {
+      setToggleBusy(false);
+    }
+  }
+
+  return (
+    <div
+      className="bg-card border-border rounded-xl border p-6"
+      data-slot="settings-research-mode-card"
+    >
+      <div className="flex items-center gap-2">
+        <BookOpenCheck className="text-dracula-purple h-5 w-5" />
+        <h2 className="text-lg font-semibold">
+          {t("settings.researchMode.sectionTitle")}
+        </h2>
+      </div>
+      <p className="text-muted-foreground mt-1 text-xs">
+        {t("settings.researchMode.subtitle")}
+      </p>
+
+      {showRePrompt && (
+        <div
+          role="alert"
+          data-slot="settings-research-mode-reprompt"
+          className="border-warning/40 bg-warning/10 mt-4 rounded-md border-l-4 px-3 py-2 text-sm"
+        >
+          <p className="text-foreground font-medium">
+            {t("settings.researchMode.rePromptTitle")}
+          </p>
+          <p className="text-muted-foreground mt-1 text-xs">
+            {t("settings.researchMode.rePromptBody")}
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-2"
+            onClick={() => setDialogOpen(true)}
+            data-slot="settings-research-mode-reprompt-cta"
+          >
+            {t("settings.researchMode.rePromptCta")}
+          </Button>
+        </div>
+      )}
+
+      <div className="mt-4 flex items-start justify-between gap-3">
+        <div className="space-y-0.5">
+          <p className="text-sm font-medium">
+            {t("settings.researchMode.toggleLabel")}
+          </p>
+          <p
+            className="text-muted-foreground text-xs"
+            data-slot="settings-research-mode-status"
+          >
+            {isLoading
+              ? t("common.loading")
+              : status?.enabled
+                ? versionsAligned
+                  ? t("settings.researchMode.acknowledgedOn", {
+                      date: status.acknowledgedAt
+                        ? formatDateTime(status.acknowledgedAt)
+                        : "—",
+                    })
+                  : t("settings.researchMode.enabledStaleStatus")
+                : t("settings.researchMode.disabledStatus")}
+          </p>
+        </div>
+        <Switch
+          checked={switchChecked}
+          disabled={isLoading || toggleBusy}
+          onCheckedChange={(next) => {
+            void handleToggle(next);
+          }}
+          aria-label={t("settings.researchMode.toggleLabel")}
+          data-slot="settings-research-mode-toggle"
+        />
+      </div>
+
+      {errorMessage && (
+        <p
+          role="alert"
+          className="text-destructive mt-3 text-sm"
+          data-slot="settings-research-mode-error"
+        >
+          {errorMessage}
+        </p>
+      )}
+
+      <ResearchModeAcknowledgmentDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        currentDisclaimerVersion={status?.currentDisclaimerVersion ?? null}
+      />
+    </div>
   );
 }
 
