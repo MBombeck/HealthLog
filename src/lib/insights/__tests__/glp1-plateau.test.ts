@@ -1,8 +1,176 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 
-import { buildGlp1PlateauPrompt } from "@/lib/insights/glp1-plateau";
+vi.mock("@/lib/db", () => ({
+  prisma: {
+    medication: { findMany: vi.fn() },
+    measurement: { findMany: vi.fn() },
+  },
+}));
+
+import { prisma } from "@/lib/db";
+import {
+  buildGlp1PlateauPrompt,
+  detectGlp1Plateau,
+} from "@/lib/insights/glp1-plateau";
+
+const dayMs = 24 * 60 * 60 * 1000;
+
+beforeEach(() => {
+  vi.resetAllMocks();
+});
+
+/**
+ * Helper for an active-GLP-1 medication row with one current dose.
+ * `effectiveFrom` is computed as `daysAgo` before `now`.
+ */
+function makeMed(
+  daysAgo: number,
+  now: Date,
+  overrides: { name?: string; doseValue?: number; doseUnit?: string } = {},
+) {
+  return {
+    name: overrides.name ?? "Mounjaro",
+    doseChanges: [
+      {
+        doseValue: overrides.doseValue ?? 7.5,
+        doseUnit: overrides.doseUnit ?? "mg",
+        effectiveFrom: new Date(now.getTime() - daysAgo * dayMs),
+      },
+    ],
+  };
+}
 
 describe("glp1-plateau", () => {
+  describe("detectGlp1Plateau()", () => {
+    it("returns null when no active GLP-1 medication exists", async () => {
+      vi.mocked(prisma.medication.findMany).mockResolvedValue([] as never);
+      const result = await detectGlp1Plateau("user-1");
+      expect(result).toBeNull();
+      expect(prisma.measurement.findMany).not.toHaveBeenCalled();
+    });
+
+    it("returns null when the current dose has been in place < 21 days", async () => {
+      const now = new Date("2026-05-14T00:00:00Z");
+      vi.mocked(prisma.medication.findMany).mockResolvedValue([
+        makeMed(14, now),
+      ] as never);
+      const result = await detectGlp1Plateau("user-1", now);
+      expect(result).toBeNull();
+      expect(prisma.measurement.findMany).not.toHaveBeenCalled();
+    });
+
+    it("returns null when fewer than two weight readings exist in window", async () => {
+      const now = new Date("2026-05-14T00:00:00Z");
+      vi.mocked(prisma.medication.findMany).mockResolvedValue([
+        makeMed(30, now),
+      ] as never);
+      vi.mocked(prisma.measurement.findMany).mockResolvedValue([
+        { value: 90, measuredAt: new Date(now.getTime() - 10 * dayMs) },
+      ] as never);
+      const result = await detectGlp1Plateau("user-1", now);
+      expect(result).toBeNull();
+    });
+
+    it("returns null when weight dropped by more than the threshold (still responding)", async () => {
+      const now = new Date("2026-05-14T00:00:00Z");
+      vi.mocked(prisma.medication.findMany).mockResolvedValue([
+        makeMed(30, now),
+      ] as never);
+      // first=92, last=88 → delta=-4 → loss exceeds 0.5 kg threshold.
+      vi.mocked(prisma.measurement.findMany).mockResolvedValue([
+        { value: 92, measuredAt: new Date(now.getTime() - 20 * dayMs) },
+        { value: 88, measuredAt: new Date(now.getTime() - 1 * dayMs) },
+      ] as never);
+      const result = await detectGlp1Plateau("user-1", now);
+      expect(result).toBeNull();
+    });
+
+    it("returns a plateau context when weight loss stays within the threshold", async () => {
+      const now = new Date("2026-05-14T00:00:00Z");
+      vi.mocked(prisma.medication.findMany).mockResolvedValue([
+        makeMed(30, now),
+      ] as never);
+      // first=90.0, last=89.8 → delta=-0.2 kg, within ±0.5 kg.
+      vi.mocked(prisma.measurement.findMany).mockResolvedValue([
+        { value: 90.0, measuredAt: new Date(now.getTime() - 20 * dayMs) },
+        { value: 89.9, measuredAt: new Date(now.getTime() - 10 * dayMs) },
+        { value: 89.8, measuredAt: new Date(now.getTime() - 1 * dayMs) },
+      ] as never);
+      const result = await detectGlp1Plateau("user-1", now);
+      expect(result).not.toBeNull();
+      expect(result?.drug).toBe("Mounjaro");
+      expect(result?.doseValue).toBe(7.5);
+      expect(result?.doseUnit).toBe("mg");
+      expect(result?.daysOnDose).toBe(30);
+      expect(result?.readingsCount).toBe(3);
+      // Rounded to 0.1 kg precision by the helper.
+      expect(result?.weightDeltaKg).toBeCloseTo(-0.2, 5);
+    });
+
+    it("returns a plateau context when weight stays flat", async () => {
+      const now = new Date("2026-05-14T00:00:00Z");
+      vi.mocked(prisma.medication.findMany).mockResolvedValue([
+        makeMed(28, now),
+      ] as never);
+      vi.mocked(prisma.measurement.findMany).mockResolvedValue([
+        { value: 90.0, measuredAt: new Date(now.getTime() - 20 * dayMs) },
+        { value: 90.0, measuredAt: new Date(now.getTime() - 1 * dayMs) },
+      ] as never);
+      const result = await detectGlp1Plateau("user-1", now);
+      expect(result?.weightDeltaKg).toBe(0);
+      expect(result?.daysOnDose).toBe(28);
+    });
+
+    it("returns a plateau context when weight has crept up", async () => {
+      const now = new Date("2026-05-14T00:00:00Z");
+      vi.mocked(prisma.medication.findMany).mockResolvedValue([
+        makeMed(35, now),
+      ] as never);
+      vi.mocked(prisma.measurement.findMany).mockResolvedValue([
+        { value: 89.5, measuredAt: new Date(now.getTime() - 18 * dayMs) },
+        { value: 90.2, measuredAt: new Date(now.getTime() - 2 * dayMs) },
+      ] as never);
+      const result = await detectGlp1Plateau("user-1", now);
+      expect(result?.weightDeltaKg).toBeCloseTo(0.7, 5);
+    });
+
+    it("picks the first GLP-1 medication when multiple exist", async () => {
+      const now = new Date("2026-05-14T00:00:00Z");
+      vi.mocked(prisma.medication.findMany).mockResolvedValue([
+        makeMed(30, now, { name: "Mounjaro" }),
+        makeMed(60, now, { name: "Ozempic" }),
+      ] as never);
+      vi.mocked(prisma.measurement.findMany).mockResolvedValue([
+        { value: 90.0, measuredAt: new Date(now.getTime() - 20 * dayMs) },
+        { value: 89.8, measuredAt: new Date(now.getTime() - 1 * dayMs) },
+      ] as never);
+      const result = await detectGlp1Plateau("user-1", now);
+      expect(result?.drug).toBe("Mounjaro");
+    });
+
+    it("returns null when the medication carries no doseChanges", async () => {
+      const now = new Date("2026-05-14T00:00:00Z");
+      vi.mocked(prisma.medication.findMany).mockResolvedValue([
+        { name: "Mounjaro", doseChanges: [] },
+      ] as never);
+      const result = await detectGlp1Plateau("user-1", now);
+      expect(result).toBeNull();
+    });
+
+    it("emits the first word of the drug name as the display token", async () => {
+      const now = new Date("2026-05-14T00:00:00Z");
+      vi.mocked(prisma.medication.findMany).mockResolvedValue([
+        makeMed(30, now, { name: "Mounjaro KwikPen" }),
+      ] as never);
+      vi.mocked(prisma.measurement.findMany).mockResolvedValue([
+        { value: 90, measuredAt: new Date(now.getTime() - 18 * dayMs) },
+        { value: 90, measuredAt: new Date(now.getTime() - 1 * dayMs) },
+      ] as never);
+      const result = await detectGlp1Plateau("user-1", now);
+      expect(result?.drug).toBe("Mounjaro");
+    });
+  });
+
   describe("buildGlp1PlateauPrompt()", () => {
     it("renders the EN block with the named drug and dose", () => {
       const prompt = buildGlp1PlateauPrompt(
