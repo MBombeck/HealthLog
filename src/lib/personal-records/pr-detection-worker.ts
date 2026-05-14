@@ -240,8 +240,23 @@ export async function detectPersonalRecordsForUser(
     const outcome = compareToCurrentBest(best.value, currentPR?.value, direction);
     if (outcome === "no-improvement") continue;
 
-    // ON CONFLICT DO NOTHING via `skipDuplicates`. Re-running the
-    // same job is a guaranteed no-op once the row exists.
+    // Application-level idempotency. The DB unique index covers the
+    // workout case (`metric_slot` non-null) but Postgres' default
+    // NULLS-DISTINCT semantics mean `(userId, metric, NULL, ts)`
+    // doesn't dedup at the index level — a second handler invocation
+    // would otherwise write a second row at the same achievedAt. The
+    // explicit pre-flight findFirst keeps both code paths safe.
+    const existing = await prisma.personalRecord.findFirst({
+      where: {
+        userId,
+        metricType,
+        metricSlot: null,
+        achievedAt: best.measuredAt,
+      },
+      select: { id: true },
+    });
+    if (existing) continue;
+
     const result = await prisma.personalRecord.createMany({
       data: [
         {

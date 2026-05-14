@@ -76,6 +76,7 @@ interface FakeWhere {
   sportType?: string;
   totalDistanceM?: { gte: number };
   durationSec?: { gt: number } | { gte: number };
+  achievedAt?: Date;
 }
 
 function makeFakePrisma(state: {
@@ -120,6 +121,11 @@ function makeFakePrisma(state: {
     if (
       where.metricSlot !== undefined &&
       row.metricSlot !== where.metricSlot
+    )
+      return false;
+    if (
+      where.achievedAt !== undefined &&
+      row.achievedAt.getTime() !== where.achievedAt.getTime()
     )
       return false;
     return true;
