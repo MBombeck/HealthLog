@@ -5,7 +5,7 @@ import { apiSuccess } from "@/lib/api-response";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import { computeBpInTargetWindows } from "@/lib/analytics/bp-in-target";
-import { berlinDayKey } from "@/lib/analytics/berlin-day";
+import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import { calculateCompliance } from "@/lib/analytics/compliance";
 import {
   computeHealthScore,
@@ -27,6 +27,14 @@ export const dynamic = "force-dynamic";
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
   annotate({ action: { name: "analytics.get" } });
+
+  // v1.4.25 W7b — every day-bucket call inside this route now honours
+  // the user's display timezone. The legacy `berlinDayKey()` import
+  // remains for sleep-stage and correlation paths that share their
+  // helper signature with non-tz-aware code (`computeSleepStageBreakdown`
+  // is called with a userId only); the per-call sites below all pass
+  // `userTz` through `userDayKey()`.
+  const userTz = user.timezone ?? DEFAULT_TIMEZONE;
 
   // Derived from canonical enum so a new measurement type is auto-summarised
   // by /api/analytics (V3 audit: enum drift cousins).
@@ -55,7 +63,7 @@ export const GET = apiHandler(async () => {
         if (type === "SLEEP_DURATION") {
           const byDay = new Map<string, { total: number; date: Date }>();
           for (const m of measurements) {
-            const key = berlinDayKey(m.measuredAt);
+            const key = userDayKey(m.measuredAt, userTz);
             const slot = byDay.get(key) ?? {
               total: 0,
               date: m.measuredAt,
@@ -104,7 +112,7 @@ export const GET = apiHandler(async () => {
   // included when the user has stage-tagged rows in window; null
   // otherwise so the UI can render a plain total without the
   // breakdown card painting empty.
-  const sleepStages = await computeSleepStageBreakdown(user.id);
+  const sleepStages = await computeSleepStageBreakdown(user.id, userTz);
 
   // BMI calculation
   let bmi: number | null = null;
@@ -202,7 +210,7 @@ export const GET = apiHandler(async () => {
   // floor from 14 → 20). Each runner gates on n >= 20 + p < 0.05;
   // below the bar the result.status === "insufficient" and the UI
   // paints an EmptyState.
-  const correlations = await computeCorrelationHypotheses(user.id);
+  const correlations = await computeCorrelationHypotheses(user.id, userTz);
 
   // v1.4.20 phase B5 — Personal Health Score. Server-deterministic
   // composite of BP-in-target % + weight-trend alignment + mood
@@ -249,7 +257,10 @@ export const GET = apiHandler(async () => {
  * case. Returns the sum-per-stage AND the day count covered so the
  * UI can render an "averaged across N nights" caption truthfully.
  */
-async function computeSleepStageBreakdown(userId: string): Promise<{
+async function computeSleepStageBreakdown(
+  userId: string,
+  userTz: string,
+): Promise<{
   windowDays: number;
   nights: number;
   totalMinutes: number;
@@ -276,7 +287,7 @@ async function computeSleepStageBreakdown(userId: string): Promise<{
     if (!row.sleepStage) continue;
     stages[row.sleepStage] = (stages[row.sleepStage] ?? 0) + row.value;
     totalMinutes += row.value;
-    dayKeys.add(berlinDayKey(row.measuredAt));
+    dayKeys.add(userDayKey(row.measuredAt, userTz));
   }
 
   return {
@@ -295,7 +306,10 @@ async function computeSleepStageBreakdown(userId: string): Promise<{
  * because the user-facing "based on N paired readings · last 30 days"
  * source-chip has to remain truthful.
  */
-async function computeCorrelationHypotheses(userId: string): Promise<{
+async function computeCorrelationHypotheses(
+  userId: string,
+  userTz: string,
+): Promise<{
   bpCompliance: CorrelationResult;
   moodPulse: CorrelationResult;
   weightWeekday: CorrelationResult;
@@ -324,10 +338,10 @@ async function computeCorrelationHypotheses(userId: string): Promise<{
     ]);
 
   // ── Hypothesis 1: BP × medication compliance ────────────────
-  // Aggregate by Berlin-day key so DST + UTC boundary issues don't split
-  // a day's readings. The day's "compliance %" is taken / expected for
-  // that calendar day across all medications.
-  const dayKey = (d: Date): string => berlinDayKey(d);
+  // Aggregate by the user's display-tz day key so DST + UTC boundary
+  // issues don't split a day's readings. The day's "compliance %" is
+  // taken / expected for that calendar day across all medications.
+  const dayKey = (d: Date): string => userDayKey(d, userTz);
 
   const dailySys = new Map<string, number[]>();
   for (const row of sysRows) {
@@ -373,14 +387,14 @@ async function computeCorrelationHypotheses(userId: string): Promise<{
   // resting-pulse field, so we accept the noise rather than skip.
   const dailyMood = new Map<string, number[]>();
   for (const row of moodRows) {
-    const key = berlinDayKey(row.moodLoggedAt);
+    const key = userDayKey(row.moodLoggedAt, userTz);
     const list = dailyMood.get(key) ?? [];
     list.push(row.score);
     dailyMood.set(key, list);
   }
   const dailyPulse = new Map<string, number[]>();
   for (const row of pulseRows) {
-    const key = berlinDayKey(row.measuredAt);
+    const key = userDayKey(row.measuredAt, userTz);
     const list = dailyPulse.get(key) ?? [];
     list.push(row.value);
     dailyPulse.set(key, list);

@@ -14,7 +14,7 @@ import {
 import { calculateCompliance } from "@/lib/analytics/compliance";
 import { pairByTimestamp } from "@/lib/analytics/correlations";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
-import { berlinDayKey } from "@/lib/analytics/berlin-day";
+import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import {
   classifyPulseByTarget,
   getPersonalizedPulseTarget,
@@ -109,6 +109,15 @@ export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
 
   const userId = user.id;
+
+  // v1.4.25 W7b — every per-day bucket key in this route resolves
+  // against the user's display timezone so a Pacific/Auckland user gets
+  // their Auckland-day streaks, their Auckland-day "last met goal" date,
+  // and their Auckland-day consistency strip. Falls back to
+  // Europe/Berlin when the column is somehow missing (defensive — the
+  // schema's NOT NULL default normally pins it).
+  const userTz = user.timezone ?? DEFAULT_TIMEZONE;
+  const dayKey = (d: Date): string => userDayKey(d, userTz);
 
   // Fetch user profile
   const dbUser = await prisma.user.findUnique({
@@ -212,7 +221,7 @@ export const GET = apiHandler(async () => {
   const last7DayKeys: string[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-    last7DayKeys.push(berlinDayKey(d));
+    last7DayKeys.push(dayKey(d));
   }
 
   type DayBand = "in" | "near" | "out";
@@ -267,7 +276,7 @@ export const GET = apiHandler(async () => {
 
     const byDay = new Map<string, { sum: number; count: number }>();
     for (const ev of events) {
-      const day = berlinDayKey(ev.measuredAt);
+      const day = dayKey(ev.measuredAt);
       const bucket = byDay.get(day) ?? { sum: 0, count: 0 };
       bucket.sum += ev.value;
       bucket.count += 1;
@@ -281,7 +290,7 @@ export const GET = apiHandler(async () => {
     let daysLogged30d = 0;
     for (let i = 29; i >= 0; i--) {
       const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-      const key = berlinDayKey(d);
+      const key = dayKey(d);
       const bucket = byDay.get(key);
       if (!bucket) continue;
       daysLogged30d += 1;
@@ -293,7 +302,7 @@ export const GET = apiHandler(async () => {
     let lastMetGoalAt: string | null = null;
     for (let i = 0; i < 30; i++) {
       const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-      const key = berlinDayKey(d);
+      const key = dayKey(d);
       const bucket = byDay.get(key);
       if (!bucket) continue;
       const mean = bucket.sum / bucket.count;
@@ -309,7 +318,7 @@ export const GET = apiHandler(async () => {
     let streakDays = 0;
     for (let i = 0; i < 365; i++) {
       const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-      const key = berlinDayKey(d);
+      const key = dayKey(d);
       const bucket = byDay.get(key);
       if (!bucket) break;
       const mean = bucket.sum / bucket.count;
@@ -343,7 +352,7 @@ export const GET = apiHandler(async () => {
   } {
     const byDay = new Map<string, { sum: number; count: number }>();
     for (const ev of events) {
-      const day = berlinDayKey(ev.measuredAt);
+      const day = dayKey(ev.measuredAt);
       const bucket = byDay.get(day) ?? { sum: 0, count: 0 };
       bucket.sum += ev.value;
       bucket.count += 1;
@@ -403,12 +412,12 @@ export const GET = apiHandler(async () => {
     const diaByDay = new Map<string, Array<{ date: Date; value: number }>>();
     for (const m of recentMeasurements) {
       if (m.type === "BLOOD_PRESSURE_SYS") {
-        const k = berlinDayKey(m.measuredAt);
+        const k = dayKey(m.measuredAt);
         const arr = sysByDay.get(k) ?? [];
         arr.push({ date: m.measuredAt, value: m.value });
         sysByDay.set(k, arr);
       } else if (m.type === "BLOOD_PRESSURE_DIA") {
-        const k = berlinDayKey(m.measuredAt);
+        const k = dayKey(m.measuredAt);
         const arr = diaByDay.get(k) ?? [];
         arr.push({ date: m.measuredAt, value: m.value });
         diaByDay.set(k, arr);
@@ -476,7 +485,7 @@ export const GET = apiHandler(async () => {
     let daysLogged30d = 0;
     for (let i = 29; i >= 0; i--) {
       const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-      const key = berlinDayKey(d);
+      const key = dayKey(d);
       const band = dayBandByKey.get(key);
       if (!band) continue;
       daysLogged30d += 1;
@@ -486,7 +495,7 @@ export const GET = apiHandler(async () => {
     let lastMetGoalAt: string | null = null;
     for (let i = 0; i < 30; i++) {
       const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-      const key = berlinDayKey(d);
+      const key = dayKey(d);
       if (dayBandByKey.get(key) === "in") {
         lastMetGoalAt = key;
         break;
@@ -496,7 +505,7 @@ export const GET = apiHandler(async () => {
     let streakDays = 0;
     for (let i = 0; i < 365; i++) {
       const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-      const key = berlinDayKey(d);
+      const key = dayKey(d);
       const band = dayBandByKey.get(key);
       if (band === undefined || band === null) break;
       if (band !== "in") break;
@@ -898,7 +907,7 @@ export const GET = apiHandler(async () => {
       { taken: number; expected: number }
     >();
     for (const event of intakeEvents) {
-      const key = berlinDayKey(event.scheduledFor);
+      const key = dayKey(event.scheduledFor);
       const cur = dayCountsByKey.get(key) ?? { taken: 0, expected: 0 };
       cur.expected += 1;
       if (event.takenAt && !event.skipped) cur.taken += 1;

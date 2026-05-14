@@ -17,6 +17,7 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { defaultLocale, type Locale } from "@/lib/i18n/config";
+import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 
 const SPARK_DAYS = 7;
 const STREAK_WINDOW_DAYS = 365;
@@ -81,24 +82,18 @@ function trendOf(values: number[]): MetricCard["trend"] {
   return delta > 0 ? "up" : "down";
 }
 
-function startOfDayBerlin(date: Date): Date {
-  // Compute midnight in Europe/Berlin → UTC ms.
-  const berlin = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Europe/Berlin",
+function startOfDayInTz(date: Date, tz: string): Date {
+  // Compute midnight in the user's tz → UTC ms.
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   }).formatToParts(date);
-  const y = berlin.find((p) => p.type === "year")?.value ?? "1970";
-  const m = berlin.find((p) => p.type === "month")?.value ?? "01";
-  const d = berlin.find((p) => p.type === "day")?.value ?? "01";
+  const y = parts.find((p) => p.type === "year")?.value ?? "1970";
+  const m = parts.find((p) => p.type === "month")?.value ?? "01";
+  const d = parts.find((p) => p.type === "day")?.value ?? "01";
   return new Date(`${y}-${m}-${d}T00:00:00.000Z`);
-}
-
-function berlinDayKey(date: Date): string {
-  return new Intl.DateTimeFormat("sv-SE", {
-    timeZone: "Europe/Berlin",
-  }).format(date);
 }
 
 interface StreakInfo {
@@ -107,9 +102,15 @@ interface StreakInfo {
 }
 
 /** Compute the current logging-day streak (days where any measurement or
- *  intake event was recorded, in Berlin time) plus the longest streak in
- *  the last `STREAK_WINDOW_DAYS` days. */
-function computeStreak(activityDays: Set<string>): StreakInfo {
+ *  intake event was recorded, in the user's display timezone) plus the
+ *  longest streak in the last `STREAK_WINDOW_DAYS` days.
+ *
+ *  v1.4.25 W7b — `userTz` parameterises the "today" pivot so a Pacific/
+ *  Auckland user gets their Auckland-day streak rather than the Berlin
+ *  one. The activity-day Set entries are already produced in the same
+ *  zone by the caller (via `userDayKey`), so the cursor walk only needs
+ *  the same zone here to align. */
+function computeStreak(activityDays: Set<string>, userTz: string): StreakInfo {
   if (activityDays.size === 0) return { currentDays: 0, longest: 0 };
 
   const sorted = [...activityDays].sort();
@@ -126,15 +127,15 @@ function computeStreak(activityDays: Set<string>): StreakInfo {
     }
   }
 
-  // Current streak: walk back from today (Berlin).
-  const todayKey = berlinDayKey(new Date());
+  // Current streak: walk back from today (user's tz).
+  const todayKey = userDayKey(new Date(), userTz);
   let currentDays = 0;
   let cursor = new Date(`${todayKey}T00:00:00.000Z`);
   // Allow yesterday's last day to count if today not yet logged.
-  if (!activityDays.has(berlinDayKey(cursor))) {
+  if (!activityDays.has(userDayKey(cursor, userTz))) {
     cursor = new Date(cursor.getTime() - 86_400_000);
   }
-  while (activityDays.has(berlinDayKey(cursor))) {
+  while (activityDays.has(userDayKey(cursor, userTz))) {
     currentDays += 1;
     cursor = new Date(cursor.getTime() - 86_400_000);
   }
@@ -146,12 +147,18 @@ export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
   annotate({ action: { name: "dashboard.summary" } });
 
+  // v1.4.25 W7b — anchor every day-bucket call to the user's display
+  // timezone. Falls back to Europe/Berlin when the column is somehow
+  // missing (defensive — the schema's NOT NULL default normally pins
+  // it).
+  const userTz = user.timezone ?? DEFAULT_TIMEZONE;
+
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - SPARK_DAYS * 86_400_000);
   const streakWindowStart = new Date(
     now.getTime() - STREAK_WINDOW_DAYS * 86_400_000,
   );
-  const todayStart = startOfDayBerlin(now);
+  const todayStart = startOfDayInTz(now, userTz);
   const todayEnd = new Date(todayStart.getTime() + 86_400_000);
 
   // Derived from canonical enum so a new measurement type is auto-included
@@ -192,7 +199,7 @@ export const GET = apiHandler(async () => {
 
   const activityDays = new Set<string>();
   for (const m of recentMeasurements)
-    activityDays.add(berlinDayKey(m.measuredAt));
+    activityDays.add(userDayKey(m.measuredAt, userTz));
   // Pull a wider measurement window for the streak so it isn't capped by
   // SPARK_DAYS — but only if the user has any data at all.
   if (recentMeasurements.length > 0) {
@@ -203,13 +210,13 @@ export const GET = apiHandler(async () => {
       },
       select: { measuredAt: true },
     });
-    for (const m of wider) activityDays.add(berlinDayKey(m.measuredAt));
+    for (const m of wider) activityDays.add(userDayKey(m.measuredAt, userTz));
   }
   for (const e of streakActivity) {
-    activityDays.add(berlinDayKey(e.takenAt ?? e.scheduledFor));
+    activityDays.add(userDayKey(e.takenAt ?? e.scheduledFor, userTz));
   }
 
-  const streak = computeStreak(activityDays);
+  const streak = computeStreak(activityDays, userTz);
 
   // Per-type latest + sparkline.
   const byType = new Map<MeasurementType, { value: number; at: Date }[]>();

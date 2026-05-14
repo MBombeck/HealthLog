@@ -23,6 +23,7 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
+import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 
 const querySchema = z.object({
   scope: z.enum(["today", "compliance"]),
@@ -42,9 +43,9 @@ const updateSchema = z.object({
     .optional(),
 });
 
-function startOfDayBerlin(date: Date): Date {
+function startOfDayInTz(date: Date, tz: string): Date {
   const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Europe/Berlin",
+    timeZone: tz,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -53,12 +54,6 @@ function startOfDayBerlin(date: Date): Date {
   const m = parts.find((p) => p.type === "month")?.value ?? "01";
   const d = parts.find((p) => p.type === "day")?.value ?? "01";
   return new Date(`${y}-${m}-${d}T00:00:00.000Z`);
-}
-
-function berlinDayKey(date: Date): string {
-  return new Intl.DateTimeFormat("sv-SE", {
-    timeZone: "Europe/Berlin",
-  }).format(date);
 }
 
 export const GET = apiHandler(async (request: NextRequest) => {
@@ -73,8 +68,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   const { scope, days } = parsed.data;
 
+  // v1.4.25 W7b — anchor "today" and per-day compliance buckets to the
+  // user's display timezone so a 23:30 reading in Pacific/Auckland lands
+  // in today's bucket rather than yesterday's Berlin one.
+  const userTz = user.timezone ?? DEFAULT_TIMEZONE;
+
   if (scope === "today") {
-    const todayStart = startOfDayBerlin(new Date());
+    const todayStart = startOfDayInTz(new Date(), userTz);
     const todayEnd = new Date(todayStart.getTime() + 86_400_000);
     const events = await prisma.medicationIntakeEvent.findMany({
       where: {
@@ -119,10 +119,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const buckets = new Map<string, { scheduled: number; taken: number }>();
   for (let i = 0; i < days; i++) {
     const d = new Date(Date.now() - i * 86_400_000);
-    buckets.set(berlinDayKey(d), { scheduled: 0, taken: 0 });
+    buckets.set(userDayKey(d, userTz), { scheduled: 0, taken: 0 });
   }
   for (const e of events) {
-    const key = berlinDayKey(e.scheduledFor);
+    const key = userDayKey(e.scheduledFor, userTz);
     const bucket = buckets.get(key);
     if (!bucket) continue;
     bucket.scheduled += 1;
