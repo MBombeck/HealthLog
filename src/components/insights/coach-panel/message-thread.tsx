@@ -13,6 +13,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
+import { stripChartTokens } from "@/lib/insights/chart-tokens";
 import { useAuth } from "@/hooks/use-auth";
 import { useCoachPrefs } from "@/hooks/use-coach-prefs";
 
@@ -330,7 +331,17 @@ function ChatBubble({
             inProgress && "animate-pulse motion-reduce:animate-none",
           )}
         >
-          {content || (inProgress ? t("insights.coach.thinking") : "")}
+          {/* v1.4.25 W5b — strip stray Metric/enum leak tokens from
+              the assistant prose before it lands in the bubble. The
+              raw `content` is the streamed Coach reply (or the
+              persisted twin after `done` fires); both paths are AI-
+              authored so they share the same leak surface as the
+              insight prose elsewhere. */}
+          {content
+            ? stripChartTokens(content)
+            : inProgress
+              ? t("insights.coach.thinking")
+              : ""}
         </div>
         {safeError && (
           <p className="text-dracula-orange/90 text-xs">{safeError}</p>

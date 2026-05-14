@@ -208,15 +208,15 @@ function RationaleCard({
       <div className="space-y-1.5">
         <RationaleRow
           label={t("insights.recommendation.rationaleWindow")}
-          value={rationale.dataWindow}
+          value={stripChartTokens(rationale.dataWindow)}
         />
         <RationaleRow
           label={t("insights.recommendation.rationaleComparedTo")}
-          value={rationale.comparedTo}
+          value={stripChartTokens(rationale.comparedTo)}
         />
         <RationaleRow
           label={t("insights.recommendation.rationaleDeviation")}
-          value={rationale.deviation}
+          value={stripChartTokens(rationale.deviation)}
         />
       </div>
 

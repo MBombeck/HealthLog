@@ -5,6 +5,7 @@ import { Sparkles, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
+import { stripChartTokens } from "@/lib/insights/chart-tokens";
 import type { InsightResult } from "@/lib/ai/types";
 import { sortRecommendationsBySeverity } from "./recommendations-grid";
 import { ConfidenceMeter } from "./confidence-meter";
@@ -101,7 +102,9 @@ export function InsightsCardPreview({
                 key={id ?? index}
                 className={`bg-card/40 flex items-start justify-between gap-2 rounded-md border-l-2 px-3 py-2 ${borderClass}`}
               >
-                <p className="text-sm leading-snug">{text}</p>
+                <p className="text-sm leading-snug">
+                  {stripChartTokens(text)}
+                </p>
                 {typeof confidence === "number" && (
                   <span className="shrink-0">
                     <ConfidenceMeter value={confidence} variant="ring" />

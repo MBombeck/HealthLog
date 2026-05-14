@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { useInsightsAdvisorQuery } from "@/components/insights/use-insights-advisor";
+import { stripChartTokens } from "@/lib/insights/chart-tokens";
 import { weekISOToRange } from "@/lib/insights/week-iso";
 import type { WeeklyReport } from "@/lib/ai/schema";
 import { useAuth } from "@/hooks/use-auth";
@@ -189,7 +190,9 @@ export function WeeklyReportPresentation({
             title={t("insights.report.sectionSummary")}
             accent="text-dracula-purple"
           >
-            <p className="text-sm leading-relaxed">{report.summary}</p>
+            <p className="text-sm leading-relaxed">
+              {stripChartTokens(report.summary)}
+            </p>
           </Section>
 
           {/* Going well */}
@@ -200,7 +203,7 @@ export function WeeklyReportPresentation({
               accent="text-dracula-green"
               icon={<CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />}
             >
-              <BulletList items={report.goingWell} />
+              <BulletList items={report.goingWell.map(stripChartTokens)} />
             </Section>
           )}
 
@@ -212,7 +215,7 @@ export function WeeklyReportPresentation({
               accent="text-dracula-orange"
               icon={<Eye className="h-3.5 w-3.5" aria-hidden="true" />}
             >
-              <BulletList items={report.worthWatching} />
+              <BulletList items={report.worthWatching.map(stripChartTokens)} />
             </Section>
           )}
 
@@ -224,7 +227,7 @@ export function WeeklyReportPresentation({
               accent="text-dracula-cyan"
               icon={<Lightbulb className="h-3.5 w-3.5" aria-hidden="true" />}
             >
-              <BulletList items={report.tips} />
+              <BulletList items={report.tips.map(stripChartTokens)} />
             </Section>
           )}
 
@@ -236,7 +239,7 @@ export function WeeklyReportPresentation({
               accent="text-muted-foreground"
             >
               <p className="text-muted-foreground text-sm leading-relaxed">
-                {report.dataQualityNotes}
+                {stripChartTokens(report.dataQualityNotes)}
               </p>
             </Section>
           )}

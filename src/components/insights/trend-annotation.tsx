@@ -3,6 +3,7 @@
 import { Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useTranslations } from "@/lib/i18n/context";
+import { stripChartTokens } from "@/lib/insights/chart-tokens";
 import { cn } from "@/lib/utils";
 import { CONFIDENCE_BADGE_CLASS } from "./confidence-badge";
 
@@ -73,7 +74,9 @@ export function TrendAnnotation({
         aria-hidden="true"
       />
       <div className="min-w-0 flex-1 space-y-1">
-        <p className="text-foreground text-xs leading-snug">{annotation}</p>
+        <p className="text-foreground text-xs leading-snug">
+          {stripChartTokens(annotation)}
+        </p>
         {confidence ? (
           <Badge
             data-slot="trend-annotation-confidence"
