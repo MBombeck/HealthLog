@@ -99,26 +99,30 @@ export function RangeBar({
   return (
     <div className="space-y-1.5" data-slot="target-range-bar">
       <div className="bg-muted/50 relative h-3 w-full overflow-hidden rounded-full">
-        {/* Red background (full bar) */}
-        <div className="absolute inset-0 rounded-full bg-red-500/8" />
-        {/* Yellow zones */}
+        {/* Red background (full bar) — Dracula `--dracula-red` so the
+            chart palette stays aligned with PR-badge, alerts, and the
+            marker dot itself. Raw Tailwind palettes drift from the
+            theme over time and never get dark-mode tuned. */}
+        <div className="bg-dracula-red/10 absolute inset-0 rounded-full" />
+        {/* Orange (caution) side zones — `--dracula-orange` matches the
+            marker's out-of-band tint. */}
         <div
-          className="absolute top-0 h-full bg-yellow-500/12"
+          className="bg-dracula-orange/15 absolute top-0 h-full"
           style={{
             left: `${yellowLeftStart}%`,
             width: `${greenStart - yellowLeftStart}%`,
           }}
         />
         <div
-          className="absolute top-0 h-full bg-yellow-500/12"
+          className="bg-dracula-orange/15 absolute top-0 h-full"
           style={{
             left: `${greenEnd}%`,
             width: `${yellowRightEnd - greenEnd}%`,
           }}
         />
-        {/* Green zone */}
+        {/* In-band green zone — `--dracula-green`. */}
         <div
-          className="absolute top-0 h-full bg-green-500/20"
+          className="bg-dracula-green/20 absolute top-0 h-full"
           style={{
             left: `${greenStart}%`,
             width: `${greenEnd - greenStart}%`,

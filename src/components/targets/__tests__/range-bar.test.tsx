@@ -20,7 +20,7 @@ function render(props: Parameters<typeof RangeBar>[0]) {
 }
 
 describe("<RangeBar>", () => {
-  it("renders the bar slot + green/yellow/red zones", () => {
+  it("renders the bar slot + green/orange/red zones with Dracula tokens", () => {
     const html = render({
       value: 72,
       min: 60,
@@ -28,8 +28,14 @@ describe("<RangeBar>", () => {
       unit: "bpm",
     });
     expect(html).toContain('data-slot="target-range-bar"');
-    expect(html).toContain("bg-green-500/20");
-    expect(html).toContain("bg-yellow-500/12");
+    expect(html).toContain("bg-dracula-green/20");
+    expect(html).toContain("bg-dracula-orange/15");
+    expect(html).toContain("bg-dracula-red/10");
+    // Pin the absence of the legacy raw Tailwind palette so the swap
+    // doesn't silently regress on future merges.
+    expect(html).not.toContain("bg-green-500/20");
+    expect(html).not.toContain("bg-yellow-500/12");
+    expect(html).not.toContain("bg-red-500/8");
   });
 
   it("paints the marker with the green token when the value is in range", () => {
