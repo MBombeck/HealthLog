@@ -211,20 +211,52 @@ export function TrendCard({
 
   return (
     <div className="bg-card border-border flex h-full w-full min-w-0 flex-col rounded-xl border p-4 md:p-6">
-      <div className="flex min-w-0 items-start justify-between gap-2">
-        <span className="text-muted-foreground min-w-0 text-xs leading-snug font-medium tracking-wide break-words uppercase">
+      {/* v1.4.25 W20a — single-line discipline + deterministic height for
+          the heading row so the value row below sits at the same baseline
+          across every tile. The label is locale-abbreviated upstream (see
+          `dashboard.*Short` keys) so `truncate` is a layout safeguard
+          rather than the primary defence against wraps. `h-5` matches
+          `text-xs leading-5` ≈ 20 px; identical across every tile. */}
+      <div className="flex h-5 min-w-0 items-center justify-between gap-2">
+        <span
+          className="text-muted-foreground min-w-0 flex-1 truncate text-xs leading-5 font-medium tracking-wide whitespace-nowrap uppercase"
+          data-slot="trend-card-label"
+        >
           {label}
         </span>
         <Icon className="text-muted-foreground h-4 w-4 shrink-0" />
       </div>
-      <div className="mt-2 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-        <span className="min-w-0 text-3xl leading-none font-bold tracking-tight [overflow-wrap:anywhere] tabular-nums">
+      {/* v1.4.25 W20a — baseline-aligned value row. The headline value,
+          unit, and trend arrow share a single flex line with
+          `items-baseline` so the digits line up at the same y-coordinate
+          across every tile in the strip (Weight 80 kg vs. BP 122 mmHg used
+          to land at different heights when one tile had a one-line heading
+          and another had a two-line wrap). The arrow slot is always
+          present — when there is no slope yet, a muted "—" placeholder
+          renders so the value row keeps a deterministic width. Marc's
+          ask: "rechts neben der Zahl … der Pfeil [ist], wie gerade der
+          Trend ist". */}
+      <div
+        className="mt-2 flex min-w-0 items-baseline gap-x-1.5"
+        data-slot="trend-card-value-row"
+      >
+        <span className="min-w-0 truncate text-3xl leading-none font-bold tracking-tight tabular-nums">
           {latest !== null ? renderPair(latest, secondary?.latest) : "—"}
         </span>
-        <span className="text-muted-foreground text-sm [overflow-wrap:anywhere] tabular-nums">
+        <span className="text-muted-foreground shrink-0 text-sm tabular-nums">
           {unit}
         </span>
-        {slope30 && <TrendIcon className={`h-4 w-4 shrink-0 ${trendColor}`} />}
+        <span
+          className="ml-auto inline-flex h-4 w-4 shrink-0 items-center justify-center"
+          data-slot="trend-card-arrow"
+          aria-hidden="true"
+        >
+          {slope30 ? (
+            <TrendIcon className={`h-4 w-4 ${trendColor}`} />
+          ) : (
+            <span className="text-muted-foreground text-xs opacity-30">—</span>
+          )}
+        </span>
       </div>
       {/* v1.4.16 phase B8 — comparison delta callout. Sits on its own
           line below the latest value so the tile stays scannable on
