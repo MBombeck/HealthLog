@@ -19,8 +19,14 @@ import {
  *      so the model emits the additive enum values directly.
  */
 describe("PROMPT_VERSION (v1.4.23 Apple Health ratchet)", () => {
-  it("matches the 4.23.x train", () => {
-    expect(PROMPT_VERSION).toMatch(/^4\.23\.\d+$/);
+  it("matches the 4.23+ train", () => {
+    // v1.4.25 W5b ratchet to 4.24.0 — GROUND RULE 13 bans internal
+    // metric enum identifiers from prose. The pin loosens to accept
+    // any 4.{>=23}.x revision so future additive ratchets don't
+    // force a hostile test rewrite each time the rules grow.
+    const [, minor] = PROMPT_VERSION.split(".").map(Number);
+    expect(PROMPT_VERSION).toMatch(/^4\.\d+\.\d+$/);
+    expect(minor).toBeGreaterThanOrEqual(23);
   });
 });
 
@@ -75,5 +81,51 @@ describe("getStrictInsightsSystemPrompt — DE", () => {
     expect(prompt).toMatch(
       /hrv \| sleep \| resting_hr \| steps \| active_energy/,
     );
+  });
+});
+
+/**
+ * v1.4.25 W5b — pin GROUND RULE 13 (no internal metric identifiers
+ * in prose). Marc saw the "Metric Pressure_Sys" leak on the
+ * Einschätzungen surface 2026-05-14; the stripper covers the leak at
+ * render time, GROUND RULE 13 closes the loop at generation time so
+ * the cleaned-up prose was the only version emitted in the first
+ * place.
+ */
+describe("getStrictInsightsSystemPrompt — GROUND RULE 13 (no enum names in prose)", () => {
+  it("EN prompt carries the rule and enumerates the banned identifiers", () => {
+    const prompt = getStrictInsightsSystemPrompt("en");
+    expect(prompt).toMatch(/13\. v1\.4\.25/);
+    expect(prompt).toMatch(/Internal metric identifiers/);
+    // The banned-list is enumerated verbatim so the model has no
+    // ambiguity about which strings are off-limits in prose.
+    expect(prompt).toMatch(/"Pressure_Sys"/);
+    expect(prompt).toMatch(/"BLOOD_PRESSURE_SYS"/);
+    expect(prompt).toMatch(/"PULSE_BPM"/);
+    expect(prompt).toMatch(/"MOOD_SCORE"/);
+    expect(prompt).toMatch(/"MEDICATION_COMPLIANCE_PCT"/);
+    // Apple Health additions also banned in prose (the surface
+    // ships in v1.5 but the model can mention them on iOS-connected
+    // snapshots today).
+    expect(prompt).toMatch(/"HEART_RATE_VARIABILITY"/);
+    expect(prompt).toMatch(/"SLEEP_DURATION"/);
+    // The carve-out for contract identifiers must remain in place
+    // so the parser keeps working.
+    expect(prompt).toMatch(/metricSource\.type/);
+    expect(prompt).toMatch(/applies ONLY to prose/);
+  });
+
+  it("DE prompt carries the rule with the same banned list", () => {
+    const prompt = getStrictInsightsSystemPrompt("de");
+    expect(prompt).toMatch(/13\. v1\.4\.25/);
+    expect(prompt).toMatch(/Interne Metrik-Identifier/);
+    expect(prompt).toMatch(/"Pressure_Sys"/);
+    expect(prompt).toMatch(/"BLOOD_PRESSURE_SYS"/);
+    expect(prompt).toMatch(/"PULSE_BPM"/);
+    expect(prompt).toMatch(/"MOOD_SCORE"/);
+    expect(prompt).toMatch(/"MEDICATION_COMPLIANCE_PCT"/);
+    expect(prompt).toMatch(/"HEART_RATE_VARIABILITY"/);
+    expect(prompt).toMatch(/"SLEEP_DURATION"/);
+    expect(prompt).toMatch(/AUSSCHLIEßLICH für Fließtext/);
   });
 });

@@ -16,11 +16,15 @@ import { getCoachSystemPrompt } from "../system-prompt";
  *      the prompt body (per the W1b research output).
  */
 describe("PROMPT_VERSION (v1.4.23 Coach + Apple Health extension)", () => {
-  it("matches the 4.23.x train", () => {
+  it("matches the 4.23+ train", () => {
     // v1.4.23 ratcheted the prompt to add GROUND RULE 12 (Apple Health
-    // optional categories). Future patches stay on 4.23.x until a
-    // behavioural change ships.
-    expect(PROMPT_VERSION).toMatch(/^4\.23\.\d+$/);
+    // optional categories). v1.4.25 W5b ratcheted again to add GROUND
+    // RULE 13 (no internal metric identifiers in prose). The pin
+    // loosens to accept any 4.{>=23}.x revision so future additive
+    // ratchets don't force a hostile test rewrite each time.
+    const [, minor] = PROMPT_VERSION.split(".").map(Number);
+    expect(PROMPT_VERSION).toMatch(/^4\.\d+\.\d+$/);
+    expect(minor).toBeGreaterThanOrEqual(23);
   });
 });
 
@@ -50,6 +54,10 @@ describe("getCoachSystemPrompt — EN", () => {
     expect(prompt).toMatch(/5\. Motivational-interviewing micro-moves\./);
     expect(prompt).toMatch(/6\. Redirect off-topic input gracefully\./);
     expect(prompt).toMatch(/7\. Ground every number in the SNAPSHOT\./);
+    // v1.4.25 W5b — GROUND RULE 8 added on the Coach side: bans the
+    // raw enum identifiers from the user-facing reply text and from
+    // the evidence-block labels.
+    expect(prompt).toMatch(/8\. Internal metric identifiers/);
   });
 
   it("preserves the v1.4.21 DAY-LEVEL READINGS section verbatim", () => {
@@ -115,6 +123,8 @@ describe("getCoachSystemPrompt — DE", () => {
     );
     expect(prompt).toMatch(/6\. Off-topic-Eingaben elegant umlenken\./);
     expect(prompt).toMatch(/7\. Verankere jede Zahl im SNAPSHOT\./);
+    // v1.4.25 W5b — GROUND RULE 8 on the German Coach side.
+    expect(prompt).toMatch(/8\. Interne Metrik-Identifier/);
   });
 
   it("preserves the TAGES-LEVEL-MESSWERTE section verbatim", () => {
