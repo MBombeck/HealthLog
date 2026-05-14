@@ -27,6 +27,7 @@ fddb9754 chore(i18n): drop 380 dead translation keys flagged in W10 runtime prob
 41c7425b chore(ai): drop dead BASE_SYSTEM_PROMPT and INSIGHTS_SYSTEM_PROMPT constants
 61d156e7 fix(api-handler): narrow safeRequestProp catch + harden @source path resolution
 76dea94b chore: Cat-C typo and naming polish from W10 dead-code probe
+fcda115  fix(api-handler): widen safeRequestProp narrow-catch to tolerate undefined requests
 ```
 
 ## Commit 1 — Dead i18n key cleanup (`fddb9754`)
@@ -162,14 +163,26 @@ hidden the bug.
 
 The catch is now narrowed to the V8 private-field `TypeError` that
 Next 16 raises when the request is a synthetic placeholder on
-`force-static` handlers. Three message-shape variants are recognised:
+`force-static` handlers, plus the `Cannot read properties of
+undefined/null` shape that surfaces when unit tests invoke the
+wrapper with no request argument. Message-shape variants recognised:
 
 - `Cannot read private member #state …` (current V8)
 - `Cannot read private field #x …` (alternative V8 wording)
 - `Cannot read private name #y …` (Bun / older V8)
+- `Cannot read properties of undefined/null …` (modern V8)
+- `Cannot read property 'X' of undefined/null` (older V8)
 
 Every other `Error` rethrows. A new `__testables` export exposes the
-helpers for the unit-test surface.
+helpers (`safeRequestProp`, `isTolerableRequestProbeError`) for the
+unit-test surface.
+
+The follow-up commit `fcda115` widened the classifier to the
+`undefined/null` shape after the initial narrow-catch broke vitest
+suites that invoke handlers as `GET()` with no args. The widened
+form still rethrows generic TypeErrors (e.g. `undefined is not a
+function`, `Cannot read properties of {} (reading 'parse')`), so
+real bugs still surface.
 
 ### `@source` path resolution
 
@@ -191,9 +204,11 @@ explicit `not` exclusions.
 
 ### New tests
 
-`src/lib/__tests__/api-handler-safe-request-prop.test.ts` — 9 tests:
+`src/lib/__tests__/api-handler-safe-request-prop.test.ts` — 11 tests:
 
-- `isPrivateFieldAccessError`: the three message wordings classify
+- `isTolerableRequestProbeError`: the three private-field message
+  wordings classify match; the `Cannot read properties of
+  undefined/null` shapes (both modern and older V8 forms) classify
   match; generic TypeErrors, RangeErrors, bare Errors, and non-Error
   values classify non-match.
 - `safeRequestProp`: returns the read result on a normal request,
@@ -207,8 +222,9 @@ explicit `not` exclusions.
 | --- | --- |
 | `pnpm typecheck` | ✓ clean |
 | `pnpm lint` | ✓ clean |
-| `pnpm vitest run src/lib/__tests__/api-handler-safe-request-prop.test.ts` | ✓ 9 / 9 |
+| `pnpm vitest run src/lib/__tests__/api-handler-safe-request-prop.test.ts` | ✓ 11 / 11 |
 | `pnpm vitest run src/lib/__tests__/require-auth-bearer.test.ts` | ✓ 10 / 10 (regression unaffected) |
+| `pnpm vitest run` (full unit) | ✓ 3 751 passed, 1 skipped |
 
 ## Commit 4 — Cat-C typo polish (`76dea94b`)
 
