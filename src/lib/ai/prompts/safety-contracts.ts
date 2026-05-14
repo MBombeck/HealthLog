@@ -101,10 +101,27 @@ const GroundRulesSchema = z.object({
   ground_rule_12_no_causal_claims: GroundRuleBodySchema,
   ground_rule_13_dailybriefing_schema: GroundRuleBodySchema,
   ground_rule_14_apple_health_silent_absence: GroundRuleBodySchema,
+  ground_rule_15_drug_level_refusal: GroundRuleBodySchema,
 });
 
 const OutOfScopeRefusalSchema = z.object({
   summary: z.string().min(1),
+});
+
+/**
+ * v1.4.25 W19c — drug-level refusal contract. Sits alongside the
+ * ground-rule matrix and drives the adversarial drug-level probe suite.
+ * Trigger phrases are NOT prompt copy — they are the test surface the
+ * probe runner sweeps against the ground-rule-15 body. Expected /
+ * forbidden keywords are what the probe asserts (or rejects) when a
+ * real LLM is wired in; today the structural probe asserts that for
+ * every trigger phrase the assembled prompt carries the rule body and
+ * at least one expected refusal keyword from the locale's allow-list.
+ */
+const DrugLevelRefusalSchema = z.object({
+  trigger_phrases: z.array(z.string().min(1)).min(10),
+  expected_refusal_keywords: z.array(z.string().min(1)).min(3),
+  forbidden_phrases: z.array(z.string().min(1)).min(3),
 });
 
 export const SafetyContractMatrixSchema = z.object({
@@ -115,6 +132,7 @@ export const SafetyContractMatrixSchema = z.object({
   medical_terminology: MedicalTerminologySchema,
   defer_to_clinician_phrases: z.array(z.string()).min(1),
   out_of_scope_refusal: OutOfScopeRefusalSchema,
+  drug_level_refusal: DrugLevelRefusalSchema,
   reply_language_directive: z.string().min(1),
 });
 
@@ -137,6 +155,7 @@ export const GROUND_RULE_KEYS: readonly GroundRuleKey[] = [
   "ground_rule_12_no_causal_claims",
   "ground_rule_13_dailybriefing_schema",
   "ground_rule_14_apple_health_silent_absence",
+  "ground_rule_15_drug_level_refusal",
 ] as const;
 
 const ALL_LOCALES = ["en", "de", "fr", "es", "it", "pl"] as const;

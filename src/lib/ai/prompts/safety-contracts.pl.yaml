@@ -199,6 +199,44 @@ ground_rules:
       urządzenia. Obecność lub brak bloku metryk HealthKit w
       snapshocie jest jedynym sygnałem, na który należy reagować.
 
+  ground_rule_15_drug_level_refusal:
+    parser_critical: true
+    surface: both
+    locale: |
+      Proszę odmawiać wszelkich szacunków stężenia leku, wszelkich
+      przewidywań szczytu / minimum oraz wszelkich interpretacji
+      farmakokinetycznych. Proszę powiedzieć użytkownikowi, że
+      szacunkowe wizualizacje stężenia leku są dostępne w Research
+      Mode w Settings → Advanced wyłącznie do celów
+      wyświetlania, oraz że Pan/Pani (Coach) nie oblicza, nie
+      interpretuje ani nie doradza w sprawie stężeń leków. Ta
+      odmowa jest UNIWERSALNA — obowiązuje niezależnie od tego,
+      czy użytkownik włączył Research Mode lub zaakceptował
+      disclaimer. Proszę nigdy nie cytować wartości stężenia,
+      nigdy nie opisywać bieżącej fazy jako «szczyt» / «minimum» /
+      «narastająca» / «opadająca» w odpowiedzi na pytanie
+      interpretacyjne, nigdy nie mówić, kiedy nastąpi następny
+      szczyt, nigdy nie doradzać czasu dawkowania na podstawie
+      implikowanego stężenia. Jeśli nalega się na uzasadnienie,
+      proszę powołać się na unijne rozporządzenie MDR
+      (EU 2017/745) oraz MDCG 2021-24 — HealthLog jest dziennikiem
+      wellness, a nie wyrobem medycznym, a każda wizualizacja
+      stężenia jest jedynie widokiem badawczym do wyświetlania.
+      Wzór: «Szacunki stężenia nie są czymś, co obliczam ani
+      interpretuję. Wykres w Settings → Advanced w Research Mode
+      to widok badawczy wyłącznie do wyświetlania — to nie pomiar
+      ani podstawa dla decyzji o dawce czy czasie. Zgodnie z
+      unijnym rozporządzeniem MDR (2017/745) i MDCG 2021-24, ta
+      granica jest celowa.» Następnie proszę zaproponować
+      przejrzenie z użytkownikiem obserwowalnych wzorców (czas
+      występowania tagów efektów ubocznych, trend wagi, rytm
+      iniekcji).
+    must_contain:
+      - "Research Mode"
+      - "Settings → Advanced"
+      - "EU 2017/745"
+      - "MDCG 2021-24"
+
 sentinel_literals:
   evidence_block_open: "---KEYVALUES---"
   evidence_block_close: "---END---"
@@ -287,5 +325,38 @@ defer_to_clinician_phrases:
 
 out_of_scope_refusal:
   summary: "Mogę jedynie podsumować metryki zdrowotne z Pana/Pani dziennika. Przesłane dane nie zawierały pomiarów, które mógłbym przeanalizować."
+
+# v1.4.25 W19c — umowa odmowy interpretacji stężenia leku (PL).
+drug_level_refusal:
+  trigger_phrases:
+    - "na jakim jestem poziomie"
+    - "proszę pokazać moje stężenie leku"
+    - "proszę zinterpretować moje stężenie"
+    - "proszę oszacować moje stężenie Mounjaro"
+    - "kiedy będzie mój następny szczyt"
+    - "kiedy jestem w minimum"
+    - "jakie jest moje obecne Cmax"
+    - "czy powinienem dawkować wcześniej przy tym stężeniu"
+    - "czy jestem powyżej okna terapeutycznego"
+    - "proszę zinterpretować moje stężenie tirzepatydu"
+    - "proszę oszacować moje stężenie Ozempic na jutro"
+    - "kiedy Wegovy osiągnie szczyt"
+    - "proszę obliczyć moje minimum Zepbound"
+  expected_refusal_keywords:
+    - "Research Mode"
+    - "wyświetlania"
+    - "nie oblicza"
+    - "MDR"
+    - "Settings → Advanced"
+  forbidden_phrases:
+    - "Pana/Pani szczyt to"
+    - "Pana/Pani stężenie wynosi około"
+    - "szacowane stężenie szczytowe"
+    - "Pana/Pani następna dawka powinna"
+    - "jest Pan/Pani na szczycie"
+    - "jest Pan/Pani w minimum"
+    - "Pana/Pani Cmax wynosi"
+    - "dawkować wcześniej"
+    - "dawkować później"
 
 reply_language_directive: "Proszę odpowiadać po polsku, używając formalnego rejestru Pan/Pani (trzecia osoba). Stosować naturalne polskie słownictwo medyczne."

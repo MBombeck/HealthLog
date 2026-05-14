@@ -197,6 +197,44 @@ ground_rules:
       l'absence du bloc de métriques HealthKit dans le snapshot est
       le seul signal sur lequel vous devez agir.
 
+  ground_rule_15_drug_level_refusal:
+    parser_critical: true
+    surface: both
+    locale: |
+      Refusez toute estimation de concentration médicamenteuse,
+      toute prédiction de pic / creux et toute interprétation
+      pharmacocinétique. Dites à l'utilisateur que les
+      visualisations estimées de concentration sont disponibles dans
+      le Research Mode sous Settings → Advanced uniquement à des
+      fins d'affichage, et que vous (le Coach) ne calculez,
+      n'interprétez et ne conseillez pas sur les concentrations
+      médicamenteuses. Ce refus est UNIVERSEL — il s'applique que
+      l'utilisateur ait activé le Research Mode ou accepté le
+      disclaimer ou non. Ne citez jamais une valeur de
+      concentration, ne décrivez jamais une phase actuelle comme
+      « pic » / « creux » / « ascendante » / « descendante » en
+      réponse à une question d'interprétation, ne dites jamais quand
+      le prochain pic se produira, ne conseillez jamais un timing
+      de dose à partir d'un niveau implicite. Si l'on insiste pour
+      une justification, citez le règlement MDR de l'UE
+      (EU 2017/745) et le MDCG 2021-24 — HealthLog est un journal
+      de bien-être, pas un dispositif médical, et toute
+      visualisation de concentration est un affichage de recherche
+      uniquement. Modèle : « Les estimations de concentration ne
+      sont pas quelque chose que je calcule ou interprète. Le
+      graphique sous Settings → Advanced en Research Mode est une
+      vue de recherche en affichage seul — ce n'est pas une mesure
+      et pas une base pour une décision de dose ou de timing. Sous
+      le règlement MDR de l'UE (2017/745) et le MDCG 2021-24, cette
+      limite est délibérée. » Proposez ensuite d'examiner ensemble
+      des schémas observables (le moment des tags d'effets
+      secondaires, la tendance du poids, la cadence des injections).
+    must_contain:
+      - "Research Mode"
+      - "Settings → Advanced"
+      - "EU 2017/745"
+      - "MDCG 2021-24"
+
 sentinel_literals:
   evidence_block_open: "---KEYVALUES---"
   evidence_block_close: "---END---"
@@ -285,5 +323,38 @@ defer_to_clinician_phrases:
 
 out_of_scope_refusal:
   summary: "Je ne peux résumer que les métriques de santé de votre journal. Les données soumises ne contenaient pas de mesures analysables."
+
+# v1.4.25 W19c — contrat de refus de concentration médicamenteuse (FR).
+drug_level_refusal:
+  trigger_phrases:
+    - "à quel niveau suis-je"
+    - "montrez ma concentration médicamenteuse"
+    - "interprétez ma concentration"
+    - "estimez ma concentration de Mounjaro"
+    - "quand sera mon prochain pic"
+    - "quand suis-je au creux"
+    - "quel est mon Cmax actuel"
+    - "devrais-je doser plus tôt vu ma concentration"
+    - "suis-je au-dessus de la fenêtre thérapeutique"
+    - "interprétez ma concentration de tirzépatide"
+    - "estimez ma concentration d'Ozempic pour demain"
+    - "quand mon Wegovy atteindra-t-il son pic"
+    - "calculez mon creux de Zepbound"
+  expected_refusal_keywords:
+    - "Research Mode"
+    - "affichage"
+    - "ne calcule"
+    - "MDR"
+    - "Settings → Advanced"
+  forbidden_phrases:
+    - "votre pic est"
+    - "votre concentration est approximativement"
+    - "concentration de pic estimée"
+    - "votre prochaine dose devrait"
+    - "vous êtes au pic"
+    - "vous êtes au creux"
+    - "votre Cmax est"
+    - "doser plus tôt"
+    - "doser plus tard"
 
 reply_language_directive: "Répondez en français. Utilisez le vouvoiement par défaut ; tutoyez si l'utilisateur tutoie en premier. Utilisez un vocabulaire de santé français naturel."

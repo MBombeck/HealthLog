@@ -253,8 +253,8 @@ COACH: To jest poza tym, w czym mogę pomóc — może zamiast tego rzucimy okie
 
 /**
  * Coach ground-rule key order — same numbering as the EN body
- * (1 prose-first through 9 dose-refusal). The matrix has 14 rules
- * but only the coach-flagged ones surface here.
+ * (1 prose-first through 10 drug-level refusal). The matrix has 15
+ * rules but only the coach-flagged ones surface here.
  */
 const COACH_GROUND_RULE_ORDER: GroundRuleKey[] = [
   // 1: prose-first / zero hallucination
@@ -275,6 +275,8 @@ const COACH_GROUND_RULE_ORDER: GroundRuleKey[] = [
   "ground_rule_8_no_internal_identifiers",
   // 9: GLP-1 dose refusal
   "ground_rule_9_glp1_dose_refusal",
+  // 10: drug-level refusal (v1.4.25 W19c)
+  "ground_rule_15_drug_level_refusal",
 ];
 
 function renderGroundRules(
