@@ -191,3 +191,70 @@ Random `t()` keys verified for placeholder integrity:
 - `medications.nextIntakeAt` → `{time}` preserved.
 - `format.dateShort` → `{day}` / `{month}` / `{year}` preserved
   (positional ordering kept as EN until the v1.4.26 polish above).
+
+## W9f hot-fixes
+
+Two release-blockers raised against the W9e wave were resolved before
+tagging v1.4.25.
+
+### Fix 1 — `parseLocaleFromAcceptLanguage` regression (no-op)
+
+The W7d dev-server-repair agent flagged that
+`src/lib/__tests__/format-locale.test.ts:29` was failing because the
+W9e expansion of `parseLocaleFromAcceptLanguage()` had added FR/ES/IT/
+PL prefix matches without updating the existing
+`"returns en for English or unrecognised locales"` case. Re-running
+the test on the current `develop` tree shows all 13 cases green —
+W9e itself had already extended the suite with a dedicated `"returns
+the matching tag for FR / ES / IT / PL"` block (lines 35-42) that
+exercises every new prefix, and the legacy `ja-JP` / `*` / `en-US`
+assertions in the prior block continue to hold against the same
+fall-through. The flagged failure was real at the moment W7d ran but
+was already closed by the W9e test additions. No code or test change
+needed for Fix 1.
+
+### Fix 2 — missing `comparison.toggleHint` key
+
+`comparison.toggleHint` is rendered as helper copy under the
+comparison-baseline `<Select>` on `/settings/dashboard`
+(`src/components/settings/dashboard-layout-section.tsx:239`) but the
+key had been removed in `5cb4a1d feat(doctor-report): per-section toggle
+UI + persistence` and was not restored in any locale catalog —
+so the raw key surfaced at runtime as helper text.
+
+Restored in all six locales under the existing `comparison.*`
+namespace:
+
+- **en**: "Show the same period from last year alongside today's chart."
+- **de**: "Vergleicht den aktuellen Zeitraum mit dem Vorjahreszeitraum."
+- **fr**: "Affiche la même période l'année dernière à côté du graphique actuel."
+- **es**: "Muestra el mismo período del año pasado junto al gráfico actual."
+- **it**: "Mostra lo stesso periodo dell'anno scorso accanto al grafico attuale."
+- **pl**: "Pokazuje ten sam okres z poprzedniego roku obok obecnego wykresu." (formal register)
+
+The locale-integrity test (auto-discovers every
+`messages/<locale>.json` and enforces parity + no-empty + no-TODO +
+no-placeholder) runs green across all six locales after the
+restoration.
+
+### Commit
+
+```
+6a7da4b fix(i18n): backfill audio-exposure + time-in-daylight + comparison hint keys
+```
+
+Fix 2 was bundled into the W8d.1 follow-up commit that landed
+concurrently — the same diff window restored the missing
+`comparison.toggleHint` key across all six locales alongside the
+Apple-Health audio-exposure / time-in-daylight enum extensions, so the
+locale-integrity drift-guard test cleared in a single commit.
+
+### Quality gates
+
+- `pnpm typecheck` clean
+- `pnpm lint` clean
+- `pnpm test src/lib/__tests__/format-locale.test.ts` — 13 / 13 green
+- `pnpm test src/lib/__tests__/i18n-locale-integrity.test.ts` — 25 / 25 green
+- `pnpm test src/lib/i18n/__tests__/fallback-chain.test.tsx` — 2 / 2 green (1 skipped)
+- Full `pnpm test` — 2583 passed (1 skipped) across 290 files, above
+  the post-W9e baseline of 2577.
