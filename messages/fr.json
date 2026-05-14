@@ -738,6 +738,19 @@
         "successToast": "Mode Recherche activé. La courbe de niveau de médicament est maintenant visible sur votre page GLP-1.",
         "errorToast": "Impossible d'activer le mode Recherche. Veuillez réessayer.",
         "staleVersionToast": "Le disclaimer a été mis à jour depuis le chargement de cette page. Rechargez pour lire la version actuelle."
+      },
+      "chart": {
+        "title": "Niveau de médicament estimé",
+        "axisLabel": "Niveau estimé (relatif)",
+        "emptyState": "Aucune prise enregistrée.",
+        "emptyStateCta": "Enregistrez une dose pour voir la courbe estimée prendre forme.",
+        "estimateNote": "Estimation éducative à partir de la pharmacocinétique de population publiée par l'EMA. Pas une mesure.",
+        "gatedTitle": "Mode Recherche désactivé",
+        "gatedBody": "Activez le mode Recherche dans les paramètres pour voir la courbe estimée du niveau de médicament. La courbe est en opt-in parce que c'est un outil d'apprentissage, pas une mesure clinique.",
+        "gatedStaleTitle": "Le disclaimer doit être reconfirmé",
+        "gatedStaleBody": "Le disclaimer du mode Recherche a été mis à jour depuis votre dernière confirmation. Relisez-le dans les paramètres et confirmez à nouveau pour réafficher la courbe.",
+        "gatedCta": "Ouvrir le mode Recherche dans les paramètres",
+        "unknownDrug": "{name} n'est pas dans le catalogue GLP-1 approuvé par l'EMA, donc HealthLog ne peut pas tracer de courbe de pharmacocinétique de population."
       }
     }
   },

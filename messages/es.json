@@ -738,6 +738,19 @@
         "successToast": "Modo Investigación activado. La curva de nivel de fármaco es ahora visible en tu página de GLP-1.",
         "errorToast": "No se pudo activar el modo Investigación. Inténtalo de nuevo.",
         "staleVersionToast": "El disclaimer se actualizó desde que cargó esta página. Recarga para leer la versión actual."
+      },
+      "chart": {
+        "title": "Nivel de fármaco estimado",
+        "axisLabel": "Nivel estimado (relativo)",
+        "emptyState": "Sin tomas registradas todavía.",
+        "emptyStateCta": "Registra una dosis para ver la curva estimada cobrar forma.",
+        "estimateNote": "Estimación educativa a partir de la farmacocinética poblacional publicada por la EMA. No es una medición.",
+        "gatedTitle": "Modo Investigación desactivado",
+        "gatedBody": "Activa el modo Investigación en los ajustes para ver la curva estimada del nivel de fármaco. La curva es de inclusión voluntaria porque es una ayuda de aprendizaje, no una medición clínica.",
+        "gatedStaleTitle": "El disclaimer requiere reconfirmación",
+        "gatedStaleBody": "El disclaimer del modo Investigación se actualizó desde tu última confirmación. Relelo en los ajustes y confirma de nuevo para volver a ver la curva.",
+        "gatedCta": "Abrir el modo Investigación en los ajustes",
+        "unknownDrug": "{name} no está en el catálogo de GLP-1 aprobado por la EMA, por lo que HealthLog no puede trazar una curva de farmacocinética poblacional."
       }
     }
   },

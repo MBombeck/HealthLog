@@ -738,6 +738,19 @@
         "successToast": "Forschungsmodus aktiviert. Die Wirkstoff-Verlaufskurve ist jetzt auf deiner GLP-1-Medikamentenseite sichtbar.",
         "errorToast": "Forschungsmodus konnte nicht aktiviert werden. Bitte erneut versuchen.",
         "staleVersionToast": "Der Disclaimer wurde aktualisiert, seit diese Seite geladen wurde. Lade die Seite neu, um die aktuelle Fassung zu lesen."
+      },
+      "chart": {
+        "title": "Geschätzter Wirkstoffverlauf",
+        "axisLabel": "Geschätzter Spiegel (relativ)",
+        "emptyState": "Noch keine Einnahmen erfasst.",
+        "emptyStateCta": "Trage eine Dosis ein, damit die geschätzte Verlaufskurve Gestalt annimmt.",
+        "estimateNote": "Edukative Schätzung aus EMA-publizierter Populations-Pharmakokinetik. Keine Messung.",
+        "gatedTitle": "Forschungsmodus ist aus",
+        "gatedBody": "Aktiviere den Forschungsmodus in den Einstellungen, um die geschätzte Wirkstoffkurve zu sehen. Die Kurve ist opt-in, weil sie eine Lernhilfe und keine klinische Messung ist.",
+        "gatedStaleTitle": "Disclaimer muss neu bestätigt werden",
+        "gatedStaleBody": "Der Disclaimer des Forschungsmodus wurde seit deiner letzten Bestätigung aktualisiert. Lies ihn in den Einstellungen erneut und bestätige, um die Kurve wieder einzublenden.",
+        "gatedCta": "Forschungsmodus in den Einstellungen öffnen",
+        "unknownDrug": "{name} ist nicht im EMA-zugelassenen GLP-1-Katalog enthalten. HealthLog kann dafür keine Populations-Pharmakokinetik-Kurve erzeugen."
       }
     }
   },

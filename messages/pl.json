@@ -738,6 +738,19 @@
         "successToast": "Tryb Badawczy włączony. Krzywa poziomu leku jest teraz widoczna na twojej stronie GLP-1.",
         "errorToast": "Nie udało się włączyć trybu Badawczego. Spróbuj ponownie.",
         "staleVersionToast": "Disclaimer został zaktualizowany od czasu wczytania tej strony. Odśwież, aby przeczytać aktualną wersję."
+      },
+      "chart": {
+        "title": "Szacowany poziom leku",
+        "axisLabel": "Szacowany poziom (względny)",
+        "emptyState": "Brak zarejestrowanych przyjęć.",
+        "emptyStateCta": "Zarejestruj dawkę, aby zobaczyć kształtującą się krzywą szacunkową.",
+        "estimateNote": "Edukacyjne oszacowanie z opublikowanej przez EMA farmakokinetyki populacyjnej. To nie jest pomiar.",
+        "gatedTitle": "Tryb Badawczy wyłączony",
+        "gatedBody": "Włącz tryb Badawczy w Ustawieniach, aby zobaczyć szacowaną krzywą poziomu leku. Krzywa jest opt-in, ponieważ to pomoc edukacyjna, a nie pomiar kliniczny.",
+        "gatedStaleTitle": "Disclaimer wymaga ponownego potwierdzenia",
+        "gatedStaleBody": "Disclaimer trybu Badawczego został zaktualizowany od czasu twojego ostatniego potwierdzenia. Przeczytaj go ponownie w Ustawieniach i potwierdź, aby krzywa znów się pojawiła.",
+        "gatedCta": "Otwórz tryb Badawczy w Ustawieniach",
+        "unknownDrug": "{name} nie znajduje się w katalogu GLP-1 zatwierdzonym przez EMA, więc HealthLog nie może wyrysować krzywej farmakokinetyki populacyjnej."
       }
     }
   },

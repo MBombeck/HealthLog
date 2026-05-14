@@ -738,6 +738,19 @@
         "successToast": "Research Mode enabled. The drug-level chart is now visible on your GLP-1 medication page.",
         "errorToast": "Could not enable Research Mode. Please try again.",
         "staleVersionToast": "The disclaimer was updated since this page loaded. Reload to read the current version."
+      },
+      "chart": {
+        "title": "Estimated drug level",
+        "axisLabel": "Estimated level (relative)",
+        "emptyState": "No intake events yet.",
+        "emptyStateCta": "Log a dose to see the estimated level take shape.",
+        "estimateNote": "Educational estimate from EMA-published population pharmacokinetics. Not a measurement.",
+        "gatedTitle": "Research Mode is off",
+        "gatedBody": "Turn on Research Mode in Settings to see the estimated drug-level curve. The curve is opt-in because it is a learning aid, not a clinical measurement.",
+        "gatedStaleTitle": "Disclaimer needs re-acknowledgment",
+        "gatedStaleBody": "The Research Mode disclaimer was updated since you last acknowledged it. Re-read and confirm in Settings to bring the chart back.",
+        "gatedCta": "Open Research Mode in Settings",
+        "unknownDrug": "{name} is not in the EMA-approved GLP-1 catalog, so HealthLog cannot render a population-PK curve for it."
       }
     }
   },

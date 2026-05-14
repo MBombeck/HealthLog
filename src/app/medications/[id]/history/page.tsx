@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { IntakeHistoryList } from "@/components/medications/intake-history-list";
+import { DrugLevelChart } from "@/components/medications/DrugLevelChart";
 import { ArrowLeft, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "@/lib/i18n/context";
@@ -33,7 +34,12 @@ export default function IntakeHistoryPage({
       const res = await fetch(`/api/medications/${id}`);
       if (!res.ok) throw new Error("Failed to fetch");
       const json = await res.json();
-      return json.data as { id: string; name: string; dose: string };
+      return json.data as {
+        id: string;
+        name: string;
+        dose: string;
+        treatmentClass?: string;
+      };
     },
     enabled: isAuthenticated,
   });
@@ -76,6 +82,21 @@ export default function IntakeHistoryPage({
           {t("medications.newIntake")}
         </Button>
       </div>
+
+      {/* v1.4.25 W19c-Frontend — Research-mode-gated drug-level chart.
+          Renders only for GLP-1 medications; the component itself
+          gates further on Research Mode + version-aligned
+          acknowledgment, so this page can mount it unconditionally
+          for any GLP-1 row and trust the chart's internal logic. */}
+      {medication?.treatmentClass === "GLP1" && (
+        <DrugLevelChart
+          medication={{
+            id: medication.id,
+            name: medication.name,
+            dose: medication.dose,
+          }}
+        />
+      )}
 
       <IntakeHistoryList
         medicationId={id}

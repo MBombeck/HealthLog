@@ -738,6 +738,19 @@
         "successToast": "Modalità Ricerca attivata. La curva del livello del farmaco è ora visibile sulla tua pagina GLP-1.",
         "errorToast": "Impossibile attivare la modalità Ricerca. Riprova.",
         "staleVersionToast": "Il disclaimer è stato aggiornato dal caricamento di questa pagina. Ricarica per leggere la versione attuale."
+      },
+      "chart": {
+        "title": "Livello stimato del farmaco",
+        "axisLabel": "Livello stimato (relativo)",
+        "emptyState": "Nessuna assunzione registrata.",
+        "emptyStateCta": "Registra una dose per vedere prendere forma la curva stimata.",
+        "estimateNote": "Stima educativa dalla farmacocinetica di popolazione pubblicata dall'EMA. Non è una misura.",
+        "gatedTitle": "Modalità Ricerca disattivata",
+        "gatedBody": "Attiva la modalità Ricerca nelle impostazioni per vedere la curva stimata del livello del farmaco. La curva è opt-in perché è uno strumento di apprendimento, non una misura clinica.",
+        "gatedStaleTitle": "Il disclaimer richiede una nuova conferma",
+        "gatedStaleBody": "Il disclaimer della modalità Ricerca è stato aggiornato dall'ultima tua conferma. Rileggilo nelle impostazioni e conferma di nuovo per rivedere la curva.",
+        "gatedCta": "Apri la modalità Ricerca nelle impostazioni",
+        "unknownDrug": "{name} non è nel catalogo GLP-1 approvato dall'EMA, quindi HealthLog non può tracciare una curva di farmacocinetica di popolazione."
       }
     }
   },
