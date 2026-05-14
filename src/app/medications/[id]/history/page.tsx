@@ -66,7 +66,7 @@ export default function IntakeHistoryPage({
       >
         <Link href="/medications">
           <ArrowLeft className="h-4 w-4" />
-          Zurück
+          {t("medications.back")}
         </Link>
       </Button>
 

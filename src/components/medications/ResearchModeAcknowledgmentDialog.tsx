@@ -134,7 +134,7 @@ export function ResearchModeAcknowledgmentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         data-slot="research-mode-acknowledgment-dialog"
-        className="max-h-[90vh] overflow-y-auto sm:max-w-xl"
+        className="flex max-h-[90vh] flex-col sm:max-w-xl"
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -146,7 +146,12 @@ export function ResearchModeAcknowledgmentDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 text-sm">
+        {/* Only the body scrolls; header + footer stay pinned so the
+            Acknowledge / Cancel CTAs are always reachable without
+            scrolling on small viewports (the previous markup scrolled
+            the entire DialogContent, pushing the footer below the
+            fold on iPhone-class heights). */}
+        <div className="-mr-2 flex-1 space-y-4 overflow-y-auto pr-2 text-sm">
           <section
             aria-labelledby="research-mode-what-it-is"
             data-slot="research-mode-what-it-is"

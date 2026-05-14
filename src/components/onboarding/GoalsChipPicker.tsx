@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -23,15 +23,14 @@ import { cn } from "@/lib/utils";
  * v1.4.25 W14b-Content — onboarding step 1 (goals).
  *
  * Multi-select chip picker for the metrics the user wants to track.
- * The goal slugs match a stable enum (used by the eventual
- * `User.onboardingGoals` column in v1.4.26 — for now we hold the
- * selection in client state and bundle it into the final-step submit).
- *
- * Persistence — per the W14b-Content brief — happens in localStorage
- * scoped by `user.id` (mirrors the family-shared-device pattern from
- * `tour-launcher.tsx:59–65`). The Welcome carousel doesn't write here,
- * so a user who closes the tab on step 1 sees their previous choice
- * pre-selected when they resume.
+ * The goal slugs match a stable enum that v1.4.26 will land on the
+ * `User` row (`User.onboardingGoals`). Until that column ships the
+ * picker holds selection in component state only — there's no
+ * persistence layer to drop into. The earlier localStorage block
+ * had no consumer (no other surface reads the same key) and the
+ * single-step wizard makes pre-selection on resume unnecessary, so
+ * leaning on component state until the column lands keeps the code
+ * surface honest.
  *
  * CTAs:
  *   - Back   → `/onboarding/0`
@@ -41,8 +40,6 @@ import { cn } from "@/lib/utils";
  * Both Skip and Next call POST `/api/onboarding/step` with `{ step: 2 }`
  * and `router.push("/onboarding/2")`.
  */
-
-export const ONBOARDING_GOALS_STORAGE_PREFIX = "healthlog.onboarding.goals";
 
 export type OnboardingGoalSlug =
   | "weight-management"
@@ -91,52 +88,23 @@ const GOAL_OPTIONS: ReadonlyArray<GoalOption> = [
   },
 ];
 
-export function goalsStorageKey(userId: string): string {
-  return `${ONBOARDING_GOALS_STORAGE_PREFIX}:${userId}`;
-}
-
-function readGoalsFromStorage(
-  storageKey: string,
-): Set<OnboardingGoalSlug> {
-  if (typeof window === "undefined") return new Set();
-  try {
-    const raw = window.localStorage.getItem(storageKey);
-    if (!raw) return new Set();
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return new Set();
-    const allowed = new Set<string>(GOAL_OPTIONS.map((o) => o.slug));
-    const out = new Set<OnboardingGoalSlug>();
-    for (const v of parsed) {
-      if (typeof v === "string" && allowed.has(v)) {
-        out.add(v as OnboardingGoalSlug);
-      }
-    }
-    return out;
-  } catch {
-    /* corrupt entry — ignore */
-    return new Set();
-  }
-}
-
 export interface GoalsChipPickerProps {
   /**
    * The current user's id. Threaded in from the server step page
-   * (`getSession().user.id`) so the localStorage hydration can run
-   * synchronously in the state initializer and avoid the
-   * `react-hooks/set-state-in-effect` cascading-render anti-pattern.
+   * (`getSession().user.id`) so the v1.4.26 column write can reuse
+   * the same call site without a prop reshuffle.
    */
   userId: string;
 }
 
-export function GoalsChipPicker({ userId }: GoalsChipPickerProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function GoalsChipPicker({ userId: _userId }: GoalsChipPickerProps) {
   const { t } = useTranslations();
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const storageKey = goalsStorageKey(userId);
-
-  const [selected, setSelected] = useState<Set<OnboardingGoalSlug>>(() =>
-    readGoalsFromStorage(storageKey),
+  const [selected, setSelected] = useState<Set<OnboardingGoalSlug>>(
+    () => new Set(),
   );
   const [advancing, setAdvancing] = useState(false);
 
@@ -148,20 +116,6 @@ export function GoalsChipPicker({ userId }: GoalsChipPickerProps) {
       return next;
     });
   }, []);
-
-  // Persist on every change. localStorage is cheap and the goal set is
-  // tiny — no need for a debounced effect here.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(
-        storageKey,
-        JSON.stringify(Array.from(selected)),
-      );
-    } catch {
-      /* quota or disabled — best-effort */
-    }
-  }, [storageKey, selected]);
 
   async function advance() {
     if (advancing) return;
