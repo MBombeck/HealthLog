@@ -21,6 +21,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
+  Bell,
   CheckCircle2,
   Clock,
   Loader2,
@@ -123,9 +124,12 @@ export function NotificationStatusCard() {
         className="bg-card border-border rounded-xl border p-6"
         data-testid="notification-status-empty"
       >
-        <h2 className="text-lg font-semibold">
-          {t("settings.notificationStatus.title")}
-        </h2>
+        <div className="flex items-center gap-2">
+          <Bell className="text-primary h-5 w-5" />
+          <h2 className="text-lg font-semibold">
+            {t("settings.notificationStatus.title")}
+          </h2>
+        </div>
         <p className="text-muted-foreground mt-1 text-sm">
           {t("settings.notificationStatus.emptyDescription")}
         </p>
@@ -136,9 +140,12 @@ export function NotificationStatusCard() {
   return (
     <div className="bg-card border-border rounded-xl border p-6">
       <header className="mb-4">
-        <h2 className="text-lg font-semibold">
-          {t("settings.notificationStatus.title")}
-        </h2>
+        <div className="flex items-center gap-2">
+          <Bell className="text-primary h-5 w-5" />
+          <h2 className="text-lg font-semibold">
+            {t("settings.notificationStatus.title")}
+          </h2>
+        </div>
         <p className="text-muted-foreground text-xs">
           {t("settings.notificationStatus.description")}
         </p>
