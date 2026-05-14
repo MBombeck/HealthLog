@@ -317,11 +317,37 @@ model Measurement {
 
 // ─── Medications ───────────────────────────────────────────
 
+/// Treatment-class discriminator (v1.4.25 W4d). GLP1 turns on the
+/// specialist surfaces — body-map injection-site picker, weekly-cadence
+/// preset, titration history, GLP-1-aware Coach context, plateau
+/// detection. GENERIC keeps existing meds rendering exactly as before.
+/// Future categories (INSULIN, BIOLOGIC, FERTILITY, ...) drop into this
+/// enum without churning the side-table `medication_categories` that
+/// holds the clinical taxonomy (BLOOD_PRESSURE / VITAMIN / ...).
+enum MedicationCategory {
+  GENERIC
+  GLP1
+
+  @@map("medication_category")
+}
+
 model Medication {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
   name      String
   dose      String   // e.g. "10mg"
+  /// v1.4.25 W4d — treatment-class discriminator. GENERIC for the
+  /// vast majority of meds; GLP1 unlocks injection-site rotation,
+  /// dose-titration history, pen inventory, plateau detection, and
+  /// the Coach's GLP-1-aware reply mode. Field name is intentionally
+  /// not `category` to avoid clashing with the existing
+  /// `medication_categories` side-table (clinical taxonomy) that the
+  /// UI continues to read.
+  treatmentClass MedicationCategory @default(GENERIC) @map("treatment_class")
+  /// Doses per pen/vial — only meaningful for inventory-tracked meds
+  /// (Mounjaro KwikPen = 4, Ozempic 0.25/0.5 mg = 4, Wegovy single-dose
+  /// pen = 1). NULL = inventory tracking off.
+  dosesPerUnit Int? @map("doses_per_unit")
   active    Boolean  @default(true)
   notificationsEnabled Boolean @default(true) @map("notifications_enabled")
   pausedAt     DateTime? @map("paused_at")
@@ -329,14 +355,17 @@ model Medication {
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  schedules    MedicationSchedule[]
-  intakeEvents MedicationIntakeEvent[]
-  phaseConfig        ReminderPhaseConfig?
-  telegramMessages   TelegramReminderMessage[]
+  schedules        MedicationSchedule[]
+  intakeEvents     MedicationIntakeEvent[]
+  phaseConfig      ReminderPhaseConfig?
+  telegramMessages TelegramReminderMessage[]
+  doseChanges      MedicationDoseChange[]
+  inventoryEvents  MedicationInventoryEvent[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([treatmentClass])
   @@map("medications")
 }
 
@@ -380,6 +409,26 @@ enum PhaseMode {
   @@map("phase_mode")
 }
 
+/// v1.4.25 W4d — eight self-injection zones for GLP-1 receptor
+/// agonists. Front-of-body view used by the picker.
+/// - Abdomen quadrants avoid a 2-inch radius around the navel per
+///   Eli Lilly's Mounjaro IFU + Novo Nordisk's Ozempic/Wegovy PI.
+/// - Thighs cover the anterior / outer surface; user-injectable.
+/// - Upper arms typically require assistance per the same PIs; the
+///   picker surfaces them but flags the constraint via i18n.
+enum InjectionSite {
+  ABDOMEN_LEFT
+  ABDOMEN_RIGHT
+  ABDOMEN_UPPER_LEFT
+  ABDOMEN_UPPER_RIGHT
+  THIGH_LEFT
+  THIGH_RIGHT
+  UPPER_ARM_LEFT
+  UPPER_ARM_RIGHT
+
+  @@map("injection_site")
+}
+
 model MedicationIntakeEvent {
   id             String       @id @default(cuid())
   userId         String       @map("user_id")
@@ -390,12 +439,63 @@ model MedicationIntakeEvent {
   source         IntakeSource @default(WEB)
   idempotencyKey String?      @unique @map("idempotency_key")
   createdAt      DateTime     @default(now()) @map("created_at")
+  /// v1.4.25 W4d — only populated for GLP-1 intake events (the picker
+  /// is the only surface that writes this column). Existing rows stay
+  /// NULL forever and the read paths treat NULL as "no site recorded".
+  injectionSite  InjectionSite? @map("injection_site")
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
 
   @@index([userId, medicationId, scheduledFor])
   @@map("medication_intake_events")
+}
+
+/// v1.4.25 W4d — titration history for any medication, optimised for
+/// GLP-1 (Mounjaro 2.5 → 5 → 7.5 → 10 → 12.5 → 15 mg with min 4-week
+/// steps per Eli Lilly's PI). Append-only; current dose = latest row
+/// by effectiveFrom. The Medication.dose string field is the
+/// convenience pointer for legacy reads; this table is the history of
+/// record.
+model MedicationDoseChange {
+  id            String   @id @default(cuid())
+  medicationId  String   @map("medication_id")
+  /// When this dose started. Stored UTC; the UI renders in the user's
+  /// timezone via the existing display helpers.
+  effectiveFrom DateTime @map("effective_from")
+  /// Numeric value — easier titration math (does this user step up by
+  /// 2.5 mg every 4 weeks?). Pair with doseUnit for display.
+  doseValue     Float    @map("dose_value")
+  /// Free-text unit ("mg", "µg", "IE", etc.). Flexible because GLP-1
+  /// is "mg" but the column is reused for future categories.
+  doseUnit      String   @map("dose_unit")
+  /// User-entered titration note ("stepped up after 4 weeks on 5 mg,
+  /// tolerated 7.5 mg with mild nausea day 2").
+  note          String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  @@index([medicationId, effectiveFrom])
+  @@map("medication_dose_changes")
+}
+
+/// v1.4.25 W4d — append-only inventory ledger. Positive delta when
+/// stock arrives ("purchased"), negative when consumed ("consumed",
+/// fired automatically on intake-event creation for meds with
+/// Medication.dosesPerUnit set), or marked out of usable stock
+/// ("expired", "damaged"). Current inventory is the running sum.
+model MedicationInventoryEvent {
+  id           String   @id @default(cuid())
+  medicationId String   @map("medication_id")
+  delta        Int      // positive = added, negative = consumed/lost
+  reason       String   // "purchased" / "consumed" / "expired" / "damaged"
+  occurredAt   DateTime @default(now()) @map("occurred_at")
+
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  @@index([medicationId, occurredAt])
+  @@map("medication_inventory_events")
 }
 
 model ReminderPhaseConfig {
