@@ -4,6 +4,7 @@ import {
   GLP1_DRUG_IDS,
   GLP1_DRUGS,
   findDrugByBrand,
+  findDrugIdByBrand,
   routeForBrand,
   type Glp1DrugId,
 } from "@/lib/medications/glp1-knowledge";
@@ -241,6 +242,41 @@ describe("glp1-knowledge catalog", () => {
 
     it("trims whitespace", () => {
       expect(findDrugByBrand("  Wegovy  ")?.inn).toBe("Semaglutide");
+    });
+  });
+
+  describe("findDrugIdByBrand", () => {
+    it("returns the drug id for a known brand", () => {
+      expect(findDrugIdByBrand("Mounjaro")).toBe("tirzepatide");
+      expect(findDrugIdByBrand("Ozempic")).toBe("semaglutide");
+      expect(findDrugIdByBrand("Saxenda")).toBe("liraglutide");
+    });
+
+    it("is case-insensitive on the brand argument", () => {
+      expect(findDrugIdByBrand("mounjaro")).toBe("tirzepatide");
+      expect(findDrugIdByBrand("OZEMPIC")).toBe("semaglutide");
+    });
+
+    it("returns null for an unknown brand", () => {
+      expect(findDrugIdByBrand("BogusName")).toBeNull();
+    });
+
+    it("returns null for empty input", () => {
+      expect(findDrugIdByBrand("")).toBeNull();
+      expect(findDrugIdByBrand("   ")).toBeNull();
+    });
+
+    it("trims surrounding whitespace before matching", () => {
+      expect(findDrugIdByBrand("  Wegovy  ")).toBe("semaglutide");
+    });
+
+    it("preserves the (id ↔ record) round-trip with findDrugByBrand", () => {
+      for (const id of GLP1_DRUG_IDS) {
+        const record = GLP1_DRUGS[id];
+        const [firstBrand] = record.brands;
+        expect(findDrugIdByBrand(firstBrand)).toBe(id);
+        expect(findDrugByBrand(firstBrand)).toBe(record);
+      }
     });
   });
 

@@ -581,6 +581,22 @@ export function findDrugByBrand(brand: string): Glp1DrugRecord | null {
 }
 
 /**
+ * Lookup helper — given an arbitrary brand string, find the drug ID
+ * (catalog key) that lists it. Combines `findDrugByBrand` with the
+ * `GLP1_DRUGS` reverse-lookup pattern previously hand-rolled in the
+ * DrugLevelChart and the titration route. Returns null when the brand
+ * is unknown.
+ */
+export function findDrugIdByBrand(brand: string): Glp1DrugId | null {
+  const record = findDrugByBrand(brand);
+  if (!record) return null;
+  for (const [id, candidate] of Object.entries(GLP1_DRUGS)) {
+    if (candidate === record) return id as Glp1DrugId;
+  }
+  return null;
+}
+
+/**
  * The catalog's drug-ids in stable order. Useful for iteration in
  * tests and UI surfaces that need a deterministic display order.
  */
