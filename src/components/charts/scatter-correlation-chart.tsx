@@ -86,7 +86,7 @@ export function ScatterCorrelationChart<T extends Record<string, number>>({
     <div className="touch-pan-y" style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
         <ScatterChart margin={{ top: 10, right: 20, bottom: 36, left: 12 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis
             dataKey={xAxis.dataKey}
             type="number"
@@ -125,8 +125,8 @@ export function ScatterCorrelationChart<T extends Record<string, number>>({
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: "hsl(var(--card))",
-              border: "1px solid hsl(var(--border))",
+              backgroundColor: "var(--card)",
+              border: "1px solid var(--border)",
               borderRadius: "0.5rem",
               fontSize: "0.75rem",
             }}

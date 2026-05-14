@@ -646,7 +646,7 @@ export function MoodChart({
                     so the trends row reads as a single rhythm. */}
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
+                  stroke="var(--border)"
                   opacity={0.5}
                   horizontalCoordinatesGenerator={({ offset }) => {
                     // `offset` carries the chart's plot-area metrics.
