@@ -1,10 +1,10 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { Scale } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
+import { useInsightStatus } from "@/hooks/use-insight-status";
 import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
@@ -28,29 +28,13 @@ const HealthChart = dynamic(
   { ssr: false },
 );
 
-interface WeightStatusData {
-  hasProvider: boolean;
-  text: string | null;
-  cached: boolean;
-  updatedAt: string | null;
-}
-
 export default function InsightsGewichtPage() {
   const { isAuthenticated, user } = useAuth();
-  const { t, locale } = useTranslations();
+  const { t } = useTranslations();
   const { compareBaseline } = useInsightsLayoutPrefs(isAuthenticated);
 
-  const { data: status, isLoading: isStatusLoading } = useQuery({
-    queryKey: ["insights", "weight-status", locale],
-    queryFn: async () => {
-      const res = await fetch(`/api/insights/weight-status?locale=${locale}`);
-      if (!res.ok) throw new Error("Failed");
-      const json = await res.json();
-      return json.data as WeightStatusData;
-    },
-    enabled: isAuthenticated,
-    staleTime: 60 * 1000,
-  });
+  const { data: status, isLoading: isStatusLoading } =
+    useInsightStatus("weight");
 
   const weightBands = user?.heightCm
     ? buildWeightBandsFromHeight(user.heightCm, {

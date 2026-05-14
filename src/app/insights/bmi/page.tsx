@@ -1,11 +1,11 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Ruler } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
+import { useInsightStatus } from "@/hooks/use-insight-status";
 import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
 import { Button } from "@/components/ui/button";
@@ -30,13 +30,6 @@ const HealthChart = dynamic(
   { ssr: false },
 );
 
-interface BmiStatusData {
-  hasProvider: boolean;
-  text: string | null;
-  cached: boolean;
-  updatedAt: string | null;
-}
-
 const BMI_BANDS = [
   { min: 0, max: 17, color: "#ff5555", opacity: 0.16 },
   { min: 17, max: 18.5, color: "#ffb86c", opacity: 0.18 },
@@ -47,20 +40,10 @@ const BMI_BANDS = [
 
 export default function InsightsBmiPage() {
   const { isAuthenticated, user } = useAuth();
-  const { t, locale } = useTranslations();
+  const { t } = useTranslations();
   const { compareBaseline } = useInsightsLayoutPrefs(isAuthenticated);
 
-  const { data: status, isLoading: isStatusLoading } = useQuery({
-    queryKey: ["insights", "bmi-status", locale],
-    queryFn: async () => {
-      const res = await fetch(`/api/insights/bmi-status?locale=${locale}`);
-      if (!res.ok) throw new Error("Failed");
-      const json = await res.json();
-      return json.data as BmiStatusData;
-    },
-    enabled: isAuthenticated,
-    staleTime: 60 * 1000,
-  });
+  const { data: status, isLoading: isStatusLoading } = useInsightStatus("bmi");
 
   if (!user?.heightCm) {
     return (

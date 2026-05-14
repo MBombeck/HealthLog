@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { Heart } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
+import { useInsightStatus } from "@/hooks/use-insight-status";
 import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
@@ -34,33 +35,17 @@ const HealthChart = dynamic(
   { ssr: false },
 );
 
-interface PulseStatusData {
-  hasProvider: boolean;
-  text: string | null;
-  cached: boolean;
-  updatedAt: string | null;
-}
-
 interface AnalyticsData {
   summaries: Record<string, DataSummary>;
 }
 
 export default function InsightsPulsPage() {
   const { isAuthenticated, user } = useAuth();
-  const { t, locale } = useTranslations();
+  const { t } = useTranslations();
   const { compareBaseline } = useInsightsLayoutPrefs(isAuthenticated);
 
-  const { data: status, isLoading: isStatusLoading } = useQuery({
-    queryKey: ["insights", "pulse-status", locale],
-    queryFn: async () => {
-      const res = await fetch(`/api/insights/pulse-status?locale=${locale}`);
-      if (!res.ok) throw new Error("Failed");
-      const json = await res.json();
-      return json.data as PulseStatusData;
-    },
-    enabled: isAuthenticated,
-    staleTime: 60 * 1000,
-  });
+  const { data: status, isLoading: isStatusLoading } =
+    useInsightStatus("pulse");
 
   // v1.4.25 W16a — VO2 max chart-row consumes the same `/api/analytics`
   // bundle the mother page reads. Sharing the cache key keeps the

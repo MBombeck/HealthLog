@@ -1,10 +1,10 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { HeartPulse } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
+import { useInsightStatus } from "@/hooks/use-insight-status";
 import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
@@ -31,31 +31,13 @@ const HealthChart = dynamic(
   { ssr: false },
 );
 
-interface BloodPressureStatusData {
-  hasProvider: boolean;
-  text: string | null;
-  cached: boolean;
-  updatedAt: string | null;
-}
-
 export default function InsightsBlutdruckPage() {
   const { isAuthenticated, user } = useAuth();
-  const { t, locale } = useTranslations();
+  const { t } = useTranslations();
   const { compareBaseline } = useInsightsLayoutPrefs(isAuthenticated);
 
-  const { data: status, isLoading: isStatusLoading } = useQuery({
-    queryKey: ["insights", "blood-pressure-status", locale],
-    queryFn: async () => {
-      const res = await fetch(
-        `/api/insights/blood-pressure-status?locale=${locale}`,
-      );
-      if (!res.ok) throw new Error("Failed");
-      const json = await res.json();
-      return json.data as BloodPressureStatusData;
-    },
-    enabled: isAuthenticated,
-    staleTime: 60 * 1000,
-  });
+  const { data: status, isLoading: isStatusLoading } =
+    useInsightStatus("blood-pressure");
 
   const bpTargets =
     user?.dateOfBirth != null ? getBpTargets(new Date(user.dateOfBirth)) : null;

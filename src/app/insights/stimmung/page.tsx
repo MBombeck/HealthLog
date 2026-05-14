@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Smile } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
+import { useInsightStatus } from "@/hooks/use-insight-status";
 import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
 import { Button } from "@/components/ui/button";
@@ -31,33 +32,16 @@ const MoodChart = dynamic(
   { ssr: false },
 );
 
-interface MoodStatusData {
-  hasProvider: boolean;
-  text: string | null;
-  cached: boolean;
-  updatedAt: string | null;
-}
-
 interface ComprehensiveMoodData {
   moodSummary: { count: number } | null;
 }
 
 export default function InsightsStimmungPage() {
   const { isAuthenticated, user } = useAuth();
-  const { t, locale } = useTranslations();
+  const { t } = useTranslations();
   const { compareBaseline } = useInsightsLayoutPrefs(isAuthenticated);
 
-  const { data: status, isLoading: isStatusLoading } = useQuery({
-    queryKey: ["insights", "mood-status", locale],
-    queryFn: async () => {
-      const res = await fetch(`/api/insights/mood-status?locale=${locale}`);
-      if (!res.ok) throw new Error("Failed");
-      const json = await res.json();
-      return json.data as MoodStatusData;
-    },
-    enabled: isAuthenticated,
-    staleTime: 60 * 1000,
-  });
+  const { data: status, isLoading: isStatusLoading } = useInsightStatus("mood");
 
   // Reuse the mother-page comprehensive query — TanStack Query
   // dedups so this is a free cache read for the common case.
