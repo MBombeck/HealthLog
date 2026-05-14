@@ -1,14 +1,28 @@
 "use client";
 
 /**
- * Doctor-report export dialog (v1.4.15 phase B6).
+ * Doctor-report export dialog (v1.4.15 phase B6 + v1.4.25 W6c).
  *
- * Wraps the trigger button so the user picks a reporting period and
- * (optionally) a practice / clinic name before the PDF is generated.
+ * Wraps the trigger button so the user picks:
+ *   1. Reporting period (date range, with three presets).
+ *   2. Practice / clinic name (optional, persisted between exports).
+ *   3. Which data sections appear in the PDF (per-user persisted toggles).
+ *
+ * Hide-when-empty (Marc 2026-05-14): a section's toggle is only shown
+ * when the selected date range actually has data for it — checking a box
+ * for an empty section would produce a silently-empty PDF page. The
+ * availability probe runs on every range change via
+ * `/api/doctor-report/availability`.
+ *
+ * Privacy default: mood is OFF by default per Marc — mental-health data
+ * is opt-in even within a single user's own surface. The API layer
+ * filters mood out of the report payload server-side when the toggle is
+ * off, so the data never leaves the DB row.
  *
  * Defaults:
  *   - end   = today
  *   - start = today − 90 days
+ *   - sections = persisted prefs OR documented defaults
  *
  * Validation runs in the client so the dialog can show inline errors
  * without bouncing through the server. The server still re-validates via
@@ -16,7 +30,7 @@
  * messages are UX, not security.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -31,16 +45,53 @@ import {
 import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  DEFAULT_DOCTOR_REPORT_PREFS,
+  type DoctorReportPrefs,
+} from "@/lib/validations/doctor-report-prefs";
 import { useTranslations } from "@/lib/i18n/context";
 
 const ONE_DAY_MS = 86_400_000;
 const MAX_RANGE_DAYS = 730;
 const PRACTICE_NAME_MAX_LENGTH = 120;
 
+/**
+ * Order in which section toggles render. Matches the order the sections
+ * appear in the generated PDF so the dialog's mental model lines up with
+ * the printed artefact. `mood` is intentionally last because its
+ * privacy-sensitive footnote needs prime visual placement.
+ */
+const SECTION_ORDER: ReadonlyArray<keyof DoctorReportPrefs> = [
+  "bp",
+  "weight",
+  "pulse",
+  "bmi",
+  "compliance",
+  "sleep",
+  "mood",
+] as const;
+
+interface SectionAvailability {
+  bp: boolean;
+  weight: boolean;
+  pulse: boolean;
+  bmi: boolean;
+  mood: boolean;
+  compliance: boolean;
+  sleep: boolean;
+}
+
 export interface DoctorReportSubmitPayload {
   startDate: string;
   endDate: string;
   practiceName: string | null;
+  /**
+   * Per-section toggles. The caller forwards this to
+   * `/api/doctor-report` so the aggregator drops disabled sections
+   * (mood specifically is filtered at the data layer for privacy).
+   */
+  sections: DoctorReportPrefs;
 }
 
 interface DoctorReportDialogProps {
@@ -75,6 +126,19 @@ function defaultStartIso(): string {
   return formatLocalDate(d);
 }
 
+function rangeIsoFromLocal(startDate: string, endDate: string): {
+  startIso: string;
+  endIso: string;
+} {
+  // Send dates as ISO timestamps anchored to the local day's start/end
+  // so an inclusive range `[YYYY-MM-DD, YYYY-MM-DD]` captures everything
+  // logged on each boundary day.
+  return {
+    startIso: new Date(`${startDate}T00:00:00`).toISOString(),
+    endIso: new Date(`${endDate}T23:59:59.999`).toISOString(),
+  };
+}
+
 export function DoctorReportDialog({
   open,
   onOpenChange,
@@ -87,6 +151,22 @@ export function DoctorReportDialog({
   const [practiceName, setPracticeName] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Per-user section preferences. Loaded lazily when the dialog opens —
+  // skips a roundtrip on every render of the export card.
+  const [prefs, setPrefs] = useState<DoctorReportPrefs>(
+    DEFAULT_DOCTOR_REPORT_PREFS,
+  );
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
+
+  // Section availability for the currently-selected range. `null` =
+  // "we haven't probed yet" so the section group renders a skeleton row
+  // rather than flashing an empty state.
+  const [availability, setAvailability] = useState<SectionAvailability | null>(
+    null,
+  );
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const availabilityRequestId = useRef(0);
 
   // Reset on open: re-anchor dates + practice-name to defaults each time
   // the dialog appears so a follow-up export doesn't reuse the previous
@@ -105,6 +185,74 @@ export function DoctorReportDialog({
   } else if (!open && lastOpen) {
     setLastOpen(false);
   }
+
+  // Load persisted section prefs when the dialog opens for the first
+  // time. Best-effort: a failure falls back to documented defaults so
+  // the dialog stays usable even if the preferences endpoint is down.
+  useEffect(() => {
+    if (!open || prefsLoaded) return;
+    let cancelled = false;
+    fetch("/api/auth/me/doctor-report-prefs", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (cancelled) return;
+        const incoming = json?.data;
+        if (incoming && typeof incoming === "object") {
+          setPrefs({ ...DEFAULT_DOCTOR_REPORT_PREFS, ...incoming });
+        }
+        setPrefsLoaded(true);
+      })
+      .catch(() => {
+        if (!cancelled) setPrefsLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, prefsLoaded]);
+
+  // Re-probe availability whenever the range changes. setState calls
+  // live inside the promise handlers (microtask-deferred), satisfying
+  // the strict `react-hooks/set-state-in-effect` rule while keeping the
+  // loading indicator promptly visible. A generation counter prevents
+  // a slow earlier response from stomping on a faster later response
+  // (classic stale-write race).
+  useEffect(() => {
+    if (!open) return;
+    if (!startDate || !endDate) return;
+    const { startIso, endIso } = rangeIsoFromLocal(startDate, endDate);
+    const requestId = ++availabilityRequestId.current;
+    let cancelled = false;
+
+    Promise.resolve()
+      .then(() => {
+        if (cancelled) return null;
+        setAvailabilityLoading(true);
+        return fetch("/api/doctor-report/availability", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ startDate: startIso, endDate: endIso }),
+        });
+      })
+      .then(async (res) => {
+        if (cancelled || !res || !res.ok) return;
+        const json = (await res.json()) as { data: SectionAvailability };
+        if (requestId !== availabilityRequestId.current) return;
+        setAvailability(json.data);
+      })
+      .catch(() => {
+        // Best-effort — keep the previous availability snapshot.
+      })
+      .finally(() => {
+        if (!cancelled && requestId === availabilityRequestId.current) {
+          setAvailabilityLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, startDate, endDate]);
 
   const validation = useMemo(() => {
     if (!startDate || !endDate) {
@@ -146,6 +294,36 @@ export function DoctorReportDialog({
     setError(null);
   }
 
+  // Sections that have data in the current range. Drives both the
+  // rendered checkbox list AND the canonical payload — toggles for
+  // empty sections are stripped before submission so the server doesn't
+  // see a "yes, render this empty thing" instruction.
+  const activeSections = useMemo<Array<keyof DoctorReportPrefs>>(() => {
+    if (!availability) return [];
+    return SECTION_ORDER.filter((key) => availability[key]);
+  }, [availability]);
+
+  function toggleSection(key: keyof DoctorReportPrefs, value: boolean) {
+    setPrefs((current) => ({ ...current, [key]: value }));
+  }
+
+  async function persistPrefs(next: DoctorReportPrefs) {
+    // Best-effort PUT — a network blip mustn't block PDF generation. The
+    // current dialog still submits with the chosen `next` value either
+    // way, so the user gets the PDF they asked for even if persistence
+    // failed (they'll just see the defaults next time).
+    try {
+      await fetch("/api/auth/me/doctor-report-prefs", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(next),
+      });
+    } catch {
+      // ignore
+    }
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!validation.ok) {
@@ -155,12 +333,21 @@ export function DoctorReportDialog({
     setSubmitting(true);
     setError(null);
     try {
-      // Send dates as ISO timestamps anchored to the local day's
-      // start/end so an inclusive range `[YYYY-MM-DD, YYYY-MM-DD]`
-      // captures everything logged on each boundary day.
-      const startIso = new Date(`${startDate}T00:00:00`).toISOString();
-      const endIso = new Date(`${endDate}T23:59:59.999`).toISOString();
+      const { startIso, endIso } = rangeIsoFromLocal(startDate, endDate);
       const trimmedPractice = practiceName.trim();
+
+      // Compose the section payload: keep the persisted prefs for keys
+      // that ARE available in the range; force `false` for keys that
+      // aren't (so the server never tries to render an empty section).
+      const sections: DoctorReportPrefs = { ...DEFAULT_DOCTOR_REPORT_PREFS };
+      for (const key of SECTION_ORDER) {
+        sections[key] =
+          (availability?.[key] ?? false) && prefs[key] === true;
+      }
+
+      // Fire-and-forget persistence so the user doesn't wait on it.
+      void persistPrefs(prefs);
+
       await onSubmit({
         startDate: startIso,
         endDate: endIso,
@@ -168,6 +355,7 @@ export function DoctorReportDialog({
           trimmedPractice.length > 0
             ? trimmedPractice.slice(0, PRACTICE_NAME_MAX_LENGTH)
             : null,
+        sections,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
@@ -263,6 +451,15 @@ export function DoctorReportDialog({
             />
           </div>
 
+          {/* ── Section toggles ──────────────────────────────────────── */}
+          <SectionToggles
+            activeSections={activeSections}
+            availability={availability}
+            availabilityLoading={availabilityLoading}
+            prefs={prefs}
+            onToggle={toggleSection}
+          />
+
           {error && (
             <p
               role="alert"
@@ -292,5 +489,121 @@ export function DoctorReportDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ────────────────────────────── Subviews ──────────────────────────────
+
+interface SectionTogglesProps {
+  activeSections: Array<keyof DoctorReportPrefs>;
+  availability: SectionAvailability | null;
+  availabilityLoading: boolean;
+  prefs: DoctorReportPrefs;
+  onToggle: (key: keyof DoctorReportPrefs, value: boolean) => void;
+}
+
+const SECTION_LABEL_KEYS: Record<keyof DoctorReportPrefs, string> = {
+  bp: "doctorReport.sections.bp",
+  weight: "doctorReport.sections.weight",
+  pulse: "doctorReport.sections.pulse",
+  bmi: "doctorReport.sections.bmi",
+  mood: "doctorReport.sections.mood",
+  compliance: "doctorReport.sections.compliance",
+  sleep: "doctorReport.sections.sleep",
+};
+
+function SectionToggles({
+  activeSections,
+  availability,
+  availabilityLoading,
+  prefs,
+  onToggle,
+}: SectionTogglesProps) {
+  const { t } = useTranslations();
+
+  // First open: show a quiet skeleton row instead of the full toggle
+  // list. Keeps the dialog from "flashing" between empty and populated
+  // states while the probe is in-flight.
+  if (availability === null && availabilityLoading) {
+    return (
+      <div
+        className="border-border bg-muted/30 space-y-2 rounded-lg border p-3"
+        data-testid="doctor-report-sections-loading"
+      >
+        <p className="text-xs font-medium tracking-wide uppercase text-muted-foreground">
+          {t("doctorReport.sections.title")}
+        </p>
+        <div className="space-y-2">
+          <div className="bg-muted h-9 animate-pulse rounded-md" />
+          <div className="bg-muted h-9 animate-pulse rounded-md" />
+        </div>
+      </div>
+    );
+  }
+
+  // No data in the selected range — render an empty-state hint so the
+  // user understands why the toggle list is missing. The PDF still
+  // generates (cover + period + an empty body) so they get something.
+  if (availability && activeSections.length === 0) {
+    return (
+      <div
+        className="border-border bg-muted/30 rounded-lg border p-3"
+        data-testid="doctor-report-sections-empty"
+      >
+        <p className="text-xs font-medium tracking-wide uppercase text-muted-foreground">
+          {t("doctorReport.sections.title")}
+        </p>
+        <p className="text-muted-foreground mt-1.5 text-xs leading-relaxed">
+          {t("doctorReport.sections.empty")}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="border-border bg-muted/30 space-y-3 rounded-lg border p-3"
+      data-testid="doctor-report-sections"
+    >
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-xs font-medium tracking-wide uppercase text-muted-foreground">
+          {t("doctorReport.sections.title")}
+        </p>
+        {availabilityLoading && (
+          <Loader2 className="text-muted-foreground h-3 w-3 animate-spin" />
+        )}
+      </div>
+      <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+        {activeSections.map((key) => {
+          const id = `dr-section-${key}`;
+          return (
+            <li key={key} className="min-h-11">
+              <label
+                htmlFor={id}
+                className="hover:bg-muted/50 -mx-2 flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1.5 transition-colors"
+              >
+                <span className="flex flex-col">
+                  <span className="text-sm font-medium leading-tight">
+                    {t(SECTION_LABEL_KEYS[key])}
+                  </span>
+                  {key === "mood" && (
+                    <span className="text-muted-foreground text-[11px] leading-tight">
+                      {t("doctorReport.sections.moodSensitive")}
+                    </span>
+                  )}
+                </span>
+                <Switch
+                  id={id}
+                  data-testid={`doctor-report-section-${key}`}
+                  size="sm"
+                  checked={prefs[key]}
+                  onCheckedChange={(checked) => onToggle(key, checked)}
+                />
+              </label>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

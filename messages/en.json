@@ -137,6 +137,18 @@
       "errorEndBeforeStart": "End date must be on or after the start date.",
       "errorRangeTooLong": "The reporting period cannot exceed 2 years.",
       "errorInvalidDate": "Please select a valid start and end date."
+    },
+    "sections": {
+      "title": "Choose sections",
+      "bp": "Blood pressure",
+      "weight": "Weight",
+      "pulse": "Resting pulse",
+      "bmi": "Body Mass Index (BMI)",
+      "mood": "Mood",
+      "moodSensitive": "Sensitive — off by default.",
+      "compliance": "Medication compliance",
+      "sleep": "Sleep duration",
+      "empty": "No data was recorded in this date range yet. The report will still include the cover page."
     }
   },
   "errorBoundary": {
@@ -674,7 +686,6 @@
   },
   "comparison": {
     "toggleLabel": "Compare to",
-    "toggleHint": "Adds a dimmed prior-period overlay to every chart and a delta callout to every tile.",
     "baseline": {
       "none": "None",
       "lastMonth": "Last month",
@@ -920,12 +931,18 @@
       "settingsExcludeHint": "The Coach will not see data for selected metrics.",
       "settingsEvidenceLabel": "Show evidence by default",
       "settingsEvidenceHint": "Open the disclosure under every reply automatically.",
+      "settingsDefaultWindowLabel": "Default analysis window",
+      "settingsDefaultWindowHint": "The Coach reads this much history per chat unless you override it from the drawer header.",
       "settingsSave": "Save",
       "settingsSaved": "Saved.",
       "settingsCancel": "Cancel",
       "feedbackHelpful": "Helpful",
       "feedbackUnhelpful": "Not quite",
-      "feedbackThanks": "Thanks for the signal."
+      "feedbackThanks": "Thanks for the signal.",
+      "dailyLimitTitle": "Daily limit reached",
+      "dailyLimitBody": "Daily limit reached; resets at 00:00 UTC.",
+      "providerRateLimitTitle": "Provider rate-limited",
+      "providerRateLimitBody": "Provider temporarily rate-limited; retry in ~5 min."
     },
     "viewAll": "View all",
     "previewEmpty": "No recommendations yet.",

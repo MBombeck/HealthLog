@@ -137,6 +137,18 @@
       "errorEndBeforeStart": "Das Ende-Datum darf nicht vor dem Start liegen.",
       "errorRangeTooLong": "Der Auswertungszeitraum darf maximal 2 Jahre umfassen.",
       "errorInvalidDate": "Bitte wähle ein gültiges Start- und Ende-Datum."
+    },
+    "sections": {
+      "title": "Inhalte auswählen",
+      "bp": "Blutdruck",
+      "weight": "Gewicht",
+      "pulse": "Ruhepuls",
+      "bmi": "Body-Mass-Index (BMI)",
+      "mood": "Stimmung",
+      "moodSensitive": "Sensibel — standardmäßig aus.",
+      "compliance": "Medikamenten-Compliance",
+      "sleep": "Schlafdauer",
+      "empty": "Für den gewählten Zeitraum liegen noch keine Daten vor. Der Bericht enthält dennoch das Deckblatt."
     }
   },
   "errorBoundary": {
@@ -674,7 +686,6 @@
   },
   "comparison": {
     "toggleLabel": "Vergleichen mit",
-    "toggleHint": "Blendet eine gedimmte Vorperioden-Linie in jedem Chart ein und zeigt ein Delta-Callout auf jeder Kachel.",
     "baseline": {
       "none": "Aus",
       "lastMonth": "Vormonat",
@@ -920,12 +931,18 @@
       "settingsExcludeHint": "Der Coach sieht keine Daten der ausgewählten Metriken.",
       "settingsEvidenceLabel": "Belege standardmäßig zeigen",
       "settingsEvidenceHint": "Die Belege-Box unter jeder Antwort automatisch öffnen.",
+      "settingsDefaultWindowLabel": "Standard-Analysezeitraum",
+      "settingsDefaultWindowHint": "Der Coach liest pro Chat diesen Zeitraum, sofern du im Drawer-Kopf nichts anderes auswählst.",
       "settingsSave": "Speichern",
       "settingsSaved": "Gespeichert.",
       "settingsCancel": "Abbrechen",
       "feedbackHelpful": "Hilfreich",
       "feedbackUnhelpful": "Nicht ganz",
-      "feedbackThanks": "Danke für das Signal."
+      "feedbackThanks": "Danke für das Signal.",
+      "dailyLimitTitle": "Heute-Limit erreicht",
+      "dailyLimitBody": "Heute-Limit erreicht; Reset um 00:00 UTC.",
+      "providerRateLimitTitle": "Provider rate-limited",
+      "providerRateLimitBody": "Provider ist temporär überlastet; Reset in ~5 min."
     },
     "viewAll": "Alle ansehen",
     "previewEmpty": "Noch keine Empfehlungen.",

@@ -183,6 +183,10 @@ function DoctorReportCard() {
           startDate: payload.startDate,
           endDate: payload.endDate,
           practiceName: payload.practiceName,
+          // v1.4.25 W6c — per-section toggles. The aggregator drops
+          // disabled sections (mood is filtered server-side so the
+          // data never leaves the DB row).
+          sections: payload.sections,
         }),
       });
       if (!res.ok) {
