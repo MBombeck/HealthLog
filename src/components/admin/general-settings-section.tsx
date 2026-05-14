@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { Settings } from "lucide-react";
 import { useTranslations } from "@/lib/i18n/context";
 import { SettingsToggle, useAdminSettings, useUpdateSettings } from "./_shared";
-import { listSupportedTimezones } from "@/lib/tz/resolver";
+import { listSupportedTimezones } from "@/lib/tz/format";
 
 const NATIVE_SELECT_CLASS =
   "border-input bg-background text-foreground ring-offset-background focus-visible:ring-ring flex h-9 rounded-md border px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-none";

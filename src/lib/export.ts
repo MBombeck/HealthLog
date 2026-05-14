@@ -14,7 +14,7 @@
  * thread a user context (admin tools, the backup-on-disk shape) keep
  * the old contract. Production routes always pass `userTz`.
  */
-import { formatInUserTz } from "./tz/resolver";
+import { formatInUserTz } from "./tz/format";
 
 export interface ExportableRecord {
   [key: string]: unknown;

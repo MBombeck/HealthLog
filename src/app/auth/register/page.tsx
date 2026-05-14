@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordStrength } from "@/components/ui/password-strength";
 import { useTranslations } from "@/lib/i18n/context";
-import { detectBrowserTimezone } from "@/lib/tz/resolver";
+import { detectBrowserTimezone } from "@/lib/tz/format";
 
 export default function RegisterPage() {
   const router = useRouter();

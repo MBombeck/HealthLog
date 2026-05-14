@@ -23,7 +23,7 @@ import {
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 import { toCSV } from "@/lib/export";
-import { formatInUserTz, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
+import { formatInUserTz, DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { useAuth } from "@/hooks/use-auth";
 import {
   type AdminAuditEntry,

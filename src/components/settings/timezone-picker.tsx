@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import {
   detectBrowserTimezone,
   listSupportedTimezones,
-} from "@/lib/tz/resolver";
+} from "@/lib/tz/format";
 import { useTranslations } from "@/lib/i18n/context";
 
 const NATIVE_SELECT_CLASS =
