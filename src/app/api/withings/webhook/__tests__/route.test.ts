@@ -17,6 +17,21 @@ vi.mock("@/lib/withings/sync", () => ({
   syncUserMeasurements: vi.fn(),
 }));
 
+// v1.4.25 W17b/c — activity / sleep paths dispatch through pg-boss.
+// Mock the boss-instance accessor to return a fake boss for the
+// appli=16 / 44 tests and `null` otherwise.
+vi.mock("@/lib/jobs/boss-instance", () => ({
+  getGlobalBoss: vi.fn(),
+}));
+
+vi.mock("@/lib/withings/sync-activity", () => ({
+  syncUserActivity: vi.fn(),
+}));
+
+vi.mock("@/lib/withings/sync-sleep", () => ({
+  syncUserSleep: vi.fn(),
+}));
+
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn(),
   rateLimitHeaders: vi.fn(() => ({})),
@@ -33,8 +48,11 @@ vi.mock("@/lib/logging/context", () => ({
 import { POST, GET, HEAD } from "../route";
 import { prisma } from "@/lib/db";
 import { syncUserMeasurements } from "@/lib/withings/sync";
+import { syncUserActivity } from "@/lib/withings/sync-activity";
+import { syncUserSleep } from "@/lib/withings/sync-sleep";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getEvent } from "@/lib/logging/context";
+import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 
 const ORIGINAL_SECRET = process.env.WITHINGS_WEBHOOK_SECRET;
 
@@ -51,6 +69,11 @@ beforeEach(() => {
     addWarning: vi.fn(),
   } as never);
   vi.mocked(syncUserMeasurements).mockResolvedValue(undefined as never);
+  // Default: pg-boss not available → activity / sleep paths fall back
+  // to inline sync. Individual tests override with a fake boss.
+  vi.mocked(getGlobalBoss).mockReturnValue(null);
+  vi.mocked(syncUserActivity).mockResolvedValue(0 as never);
+  vi.mocked(syncUserSleep).mockResolvedValue(0 as never);
 });
 
 afterEach(() => {
@@ -221,6 +244,120 @@ describe("POST /api/withings/webhook", () => {
     expect(res.status).toBe(429);
     expect(syncUserMeasurements).not.toHaveBeenCalled();
     expect(prisma.withingsConnection.findFirst).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/withings/webhook — appli dispatch (W17b/c)", () => {
+  it("appli=16 enqueues onto withings-activity-sync (not the measure path)", async () => {
+    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValueOnce({
+      userId: "user-act",
+      withingsUserId: "wu-act",
+    } as never);
+    const send = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(getGlobalBoss).mockReturnValue({ send } as never);
+
+    const res = await POST(
+      formRequest(
+        { userid: "wu-act", appli: "16" },
+        { "x-withings-webhook-secret": "test-secret" },
+      ),
+    );
+    expect(res.status).toBe(200);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send.mock.calls[0][0]).toBe("withings-activity-sync");
+    expect(send.mock.calls[0][1]).toMatchObject({ userId: "user-act" });
+    // Critical: appli=16 must NOT trigger the measure path.
+    expect(syncUserMeasurements).not.toHaveBeenCalled();
+  });
+
+  it("appli=44 enqueues onto withings-sleep-sync (not the measure path)", async () => {
+    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValueOnce({
+      userId: "user-sleep",
+      withingsUserId: "wu-sleep",
+    } as never);
+    const send = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(getGlobalBoss).mockReturnValue({ send } as never);
+
+    const res = await POST(
+      formRequest(
+        { userid: "wu-sleep", appli: "44" },
+        { "x-withings-webhook-secret": "test-secret" },
+      ),
+    );
+    expect(res.status).toBe(200);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send.mock.calls[0][0]).toBe("withings-sleep-sync");
+    expect(send.mock.calls[0][1]).toMatchObject({ userId: "user-sleep" });
+    expect(syncUserMeasurements).not.toHaveBeenCalled();
+  });
+
+  it("appli=16 falls back to inline activity sync when pg-boss is unavailable", async () => {
+    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValueOnce({
+      userId: "user-act-inline",
+      withingsUserId: "wu-act-inline",
+    } as never);
+    // Default beforeEach already sets `getGlobalBoss → null`.
+
+    const res = await POST(
+      formRequest(
+        { userid: "wu-act-inline", appli: "16" },
+        { "x-withings-webhook-secret": "test-secret" },
+      ),
+    );
+    expect(res.status).toBe(200);
+    expect(syncUserActivity).toHaveBeenCalledWith("user-act-inline");
+    expect(syncUserMeasurements).not.toHaveBeenCalled();
+  });
+
+  it("appli=44 falls back to inline sleep sync when pg-boss is unavailable", async () => {
+    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValueOnce({
+      userId: "user-sleep-inline",
+      withingsUserId: "wu-sleep-inline",
+    } as never);
+
+    const res = await POST(
+      formRequest(
+        { userid: "wu-sleep-inline", appli: "44" },
+        { "x-withings-webhook-secret": "test-secret" },
+      ),
+    );
+    expect(res.status).toBe(200);
+    expect(syncUserSleep).toHaveBeenCalledWith("user-sleep-inline");
+    expect(syncUserMeasurements).not.toHaveBeenCalled();
+  });
+
+  it("appli=4 (BP) keeps the legacy measure path", async () => {
+    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValueOnce({
+      userId: "user-bp",
+      withingsUserId: "wu-bp",
+    } as never);
+
+    const res = await POST(
+      formRequest(
+        { userid: "wu-bp", appli: "4" },
+        { "x-withings-webhook-secret": "test-secret" },
+      ),
+    );
+    expect(res.status).toBe(200);
+    expect(syncUserMeasurements).toHaveBeenCalledWith("user-bp");
+    expect(syncUserActivity).not.toHaveBeenCalled();
+    expect(syncUserSleep).not.toHaveBeenCalled();
+  });
+
+  it("a missing appli falls back to the measure path (legacy Withings subscriptions)", async () => {
+    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValueOnce({
+      userId: "user-legacy",
+      withingsUserId: "wu-legacy",
+    } as never);
+
+    const res = await POST(
+      formRequest(
+        { userid: "wu-legacy" },
+        { "x-withings-webhook-secret": "test-secret" },
+      ),
+    );
+    expect(res.status).toBe(200);
+    expect(syncUserMeasurements).toHaveBeenCalledWith("user-legacy");
   });
 });
 

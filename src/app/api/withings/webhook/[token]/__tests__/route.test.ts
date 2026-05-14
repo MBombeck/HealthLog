@@ -17,6 +17,19 @@ vi.mock("@/lib/withings/sync", () => ({
   syncUserMeasurements: vi.fn(),
 }));
 
+// v1.4.25 W17b/c — activity / sleep paths dispatch through pg-boss.
+vi.mock("@/lib/jobs/boss-instance", () => ({
+  getGlobalBoss: vi.fn(),
+}));
+
+vi.mock("@/lib/withings/sync-activity", () => ({
+  syncUserActivity: vi.fn(),
+}));
+
+vi.mock("@/lib/withings/sync-sleep", () => ({
+  syncUserSleep: vi.fn(),
+}));
+
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn(),
   rateLimitHeaders: vi.fn(() => ({})),
