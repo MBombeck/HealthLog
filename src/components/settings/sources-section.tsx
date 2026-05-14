@@ -192,26 +192,24 @@ export function SourcesSection() {
   }
 
   function moveDeviceType(
-    /** `__default__` for the global ladder, MeasurementType-enum string otherwise. */
-    bucket: string,
+    /** `null` for the global ladder, MeasurementType-enum string otherwise. */
+    bucket: string | null,
     index: number,
     delta: -1 | 1,
   ) {
     if (!priority) return;
-    const current = bucket === "__default__"
-      ? priority.deviceTypePriority.default ?? [...DEFAULT_DEVICE_TYPE_PRIORITY]
-      : priority.deviceTypePriority[bucket] ?? [...DEFAULT_DEVICE_TYPE_PRIORITY];
+    const key = bucket ?? "default";
+    const current =
+      priority.deviceTypePriority[key] ?? [...DEFAULT_DEVICE_TYPE_PRIORITY];
     const list = [...current];
     const targetIdx = index + delta;
     if (targetIdx < 0 || targetIdx >= list.length) return;
     [list[index], list[targetIdx]] = [list[targetIdx], list[index]];
 
-    const nextDevicePriority: DeviceTypePriority = { ...priority.deviceTypePriority };
-    if (bucket === "__default__") {
-      nextDevicePriority.default = list;
-    } else {
-      nextDevicePriority[bucket] = list;
-    }
+    const nextDevicePriority: DeviceTypePriority = {
+      ...priority.deviceTypePriority,
+      [key]: list,
+    };
     setDraft({ ...priority, deviceTypePriority: nextDevicePriority });
   }
 
@@ -496,7 +494,7 @@ export function SourcesSection() {
                         size="icon"
                         className="h-11 w-11"
                         onClick={() =>
-                          moveDeviceType("__default__", index, -1)
+                          moveDeviceType(null, index, -1)
                         }
                         disabled={index === 0 || saveMutation.isPending}
                         aria-label={t("settings.sections.sources.moveUp")}
@@ -508,7 +506,7 @@ export function SourcesSection() {
                         variant="ghost"
                         size="icon"
                         className="h-11 w-11"
-                        onClick={() => moveDeviceType("__default__", index, 1)}
+                        onClick={() => moveDeviceType(null, index, 1)}
                         disabled={
                           index === list.length - 1 || saveMutation.isPending
                         }
