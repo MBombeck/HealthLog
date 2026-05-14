@@ -19,26 +19,12 @@
  * only (we don't fetch a height series; the user's height lives on the
  * profile).
  */
-export type SubPageSlug =
-  | "blutdruck"
-  | "gewicht"
-  | "puls"
-  | "stimmung"
-  | "medikamente"
-  | "bmi"
-  | "schlaf";
-
-export const SUB_PAGE_SLUGS = [
-  "blutdruck",
-  "gewicht",
-  "puls",
-  "stimmung",
-  "medikamente",
-  "bmi",
-  "schlaf",
-] as const satisfies readonly SubPageSlug[];
-
-export const SUB_PAGE_METRIC: Record<SubPageSlug, string[]> = {
+/**
+ * Single source of truth for the routed insights sub-pages. The slug
+ * enum, the slug array, and the per-slug metric list all derive from
+ * the keys of this record — adding a sub-page is a one-place change.
+ */
+export const SUB_PAGE_METRIC = {
   blutdruck: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA", "PULSE"],
   gewicht: ["WEIGHT"],
   puls: ["PULSE"],
@@ -48,7 +34,11 @@ export const SUB_PAGE_METRIC: Record<SubPageSlug, string[]> = {
   // BMI is derived from WEIGHT + profile height (no separate series).
   bmi: ["WEIGHT"],
   schlaf: ["SLEEP_DURATION"],
-};
+} as const satisfies Record<string, readonly string[]>;
+
+export type SubPageSlug = keyof typeof SUB_PAGE_METRIC;
+
+export const SUB_PAGE_SLUGS = Object.keys(SUB_PAGE_METRIC) as SubPageSlug[];
 
 /**
  * Mother-page route. Kept here as a named constant so call sites
