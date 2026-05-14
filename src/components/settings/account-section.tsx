@@ -43,6 +43,7 @@ import { formatDate } from "@/lib/format";
 import { locales, localeLabels, type Locale } from "@/lib/i18n/config";
 import { useTranslations } from "@/lib/i18n/context";
 import { describePasskeyError } from "@/lib/passkey-errors";
+import { TimezonePicker } from "@/components/settings/timezone-picker";
 
 interface PasskeyInfo {
   id: string;
@@ -71,6 +72,7 @@ export function AccountSection() {
   const [heightCm, setHeightCm] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState<string>("");
+  const [timezone, setTimezone] = useState<string>("Europe/Berlin");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [saveMsgType, setSaveMsgType] = useState<"success" | "error" | null>(
@@ -132,6 +134,7 @@ export function AccountSection() {
         : "",
     );
     setGender(user.gender ?? "");
+    setTimezone(user.timezone || "Europe/Berlin");
   }
 
   async function handleSaveProfile(e: React.FormEvent) {
@@ -140,23 +143,48 @@ export function AccountSection() {
     setSaveMsg(null);
     setSaveMsgType(null);
 
-    const res = await fetch("/api/auth/profile", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: email.trim() || null,
-        heightCm: heightCm ? parseFloat(heightCm) : null,
-        dateOfBirth: dateOfBirth || null,
-        gender: gender || null,
+    // The timezone is owned by a dedicated route (v1.4.25 W7) so the
+    // resolver cache can be invalidated without piping the flag
+    // through the bigger profile patch path. Run the two PUTs in
+    // parallel — they're independent.
+    const [profileRes, tzRes] = await Promise.all([
+      fetch("/api/auth/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim() || null,
+          heightCm: heightCm ? parseFloat(heightCm) : null,
+          dateOfBirth: dateOfBirth || null,
+          gender: gender || null,
+        }),
       }),
-    });
+      user && timezone && timezone !== user.timezone
+        ? fetch("/api/auth/me/timezone", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ timezone }),
+          })
+        : Promise.resolve({ ok: true } as Response),
+    ]);
 
-    if (res.ok) {
+    if (profileRes.ok && tzRes.ok) {
       setSaveMsg(t("settings.profileSaved"));
       setSaveMsgType("success");
       await refetch();
+    } else if (!tzRes.ok) {
+      // The dedicated tz endpoint owns the IANA validation error
+      // text. Surface its message verbatim so the user sees
+      // "Not a valid IANA timezone." instead of the generic save
+      // failure copy.
+      try {
+        const json = (await (tzRes as Response).json()) as { error?: string };
+        setSaveMsg(json.error || t("settings.timezoneInvalid"));
+      } catch {
+        setSaveMsg(t("settings.timezoneInvalid"));
+      }
+      setSaveMsgType("error");
     } else {
-      const json = await res.json();
+      const json = await profileRes.json();
       setSaveMsg(json.error || t("settings.savingError"));
       setSaveMsgType("error");
     }
@@ -395,6 +423,8 @@ export function AccountSection() {
               </p>
             </div>
           </div>
+
+          <TimezonePicker value={timezone} onChange={setTimezone} />
 
           <div className="space-y-2">
             <Label htmlFor="language-select">{t("settings.language")}</Label>
