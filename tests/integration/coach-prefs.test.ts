@@ -70,7 +70,9 @@ describe("GET /api/auth/me/coach-prefs", () => {
     await seedSession("coach-prefs-defaults");
 
     const { GET } = await import("@/app/api/auth/me/coach-prefs/route");
-    const res = await (GET as () => Promise<Response>)();
+    const res = await (GET as (r: Request) => Promise<Response>)(
+      new Request("http://localhost/api/auth/me/coach-prefs"),
+    );
     expect(res.status).toBe(200);
     const env = (await res.json()) as { data: typeof DEFAULT_COACH_PREFS };
     expect(env.data).toEqual(DEFAULT_COACH_PREFS);
@@ -108,7 +110,9 @@ describe("PUT /api/auth/me/coach-prefs", () => {
     expect(row?.coachPrefsJson).toEqual(body);
 
     // GET reads the saved values back.
-    const getRes = await (GET as () => Promise<Response>)();
+    const getRes = await (GET as (r: Request) => Promise<Response>)(
+      new Request("http://localhost/api/auth/me/coach-prefs"),
+    );
     expect(getRes.status).toBe(200);
     const getEnv = (await getRes.json()) as { data: typeof body };
     expect(getEnv.data).toEqual(body);
