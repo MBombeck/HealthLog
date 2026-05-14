@@ -1330,7 +1330,6 @@
     "loadError": "Could not load thresholds"
   },
   "onboarding": {
-    "welcome": "Welcome to HealthLog!",
     "setupDescription": "Set up your profile to get started. You can change this later in Settings.",
     "completeSetup": "Complete setup",
     "skip": "Skip",
@@ -1429,9 +1428,28 @@
       "step1of4": "Step 1 of 4",
       "step2of4": "Step 2 of 4",
       "step3of4": "Step 3 of 4",
-      "step4of4": "Step 4 of 4",
-      "welcomeTitle": "Welcome to HealthLog",
-      "welcomeBody": "Set up the basics in four short steps. You can revisit any of them later from Settings."
+      "step4of4": "Step 4 of 4"
+    },
+    "welcome": {
+      "title": "Welcome to HealthLog",
+      "carouselLabel": "Welcome — three slides",
+      "slideOf": "Slide {current} of {total}",
+      "gotoSlide": "Go to slide {index}",
+      "prevSlide": "Previous slide",
+      "nextSlide": "Next slide",
+      "slide1": {
+        "title": "Your health data, owned by you",
+        "body": "HealthLog stores every reading on your own infrastructure. No ads, no third-party sharing, no account lock-in."
+      },
+      "slide2": {
+        "title": "One view across every source",
+        "body": "Apple Health, Withings and manual entries merge into a single consistent history — with per-metric source priority you control."
+      },
+      "slide3": {
+        "title": "Coach and Insights with substance",
+        "body": "Evidence-grounded analysis built strictly from your numbers, every claim citable. Bring-your-own-key, no training on your data."
+      },
+      "cta": "Get started"
     },
     "goals": {
       "title": "What would you like to track?",

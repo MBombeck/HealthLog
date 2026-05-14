@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 
 import { OnboardingShell } from "@/components/onboarding/OnboardingShell";
+import { WelcomeCarousel } from "@/components/onboarding/WelcomeCarousel";
 import { getSession } from "@/lib/auth/session";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
@@ -72,22 +73,23 @@ export default async function OnboardingStepPage({ params }: PageProps) {
   const locale = await resolveServerLocale({ userLocale: user.locale });
   const { t } = getServerTranslator(locale);
 
-  // Foundation scaffold body — placeholder per-step copy. The Content
-  // agent replaces each branch's body with the real carousel /
-  // goal-chips / source-cards / baseline-form / done-screen UI.
-  //
-  // Welcome copy lives under `onboarding.shell.welcome{Title,Body}`
-  // because the carousel is part of the chrome; every other step
-  // owns its own namespace (`onboarding.goals.*`, `.source.*`,
-  // `.baseline.*`, `.done.*`).
-  const bodyTitle =
-    requested === 0
-      ? t("onboarding.shell.welcomeTitle")
-      : t(`onboarding.${stepKey(requested)}.title`);
-  const bodyText =
-    requested === 0
-      ? t("onboarding.shell.welcomeBody")
-      : t(`onboarding.${stepKey(requested)}.body`);
+  // Welcome (step 0) renders the client-side value-prop carousel.
+  // The carousel owns its own primary CTA (POST /api/onboarding/step
+  // with step:1) so the shell drops `nextHref` to avoid a double CTA.
+  if (requested === 0) {
+    return (
+      <OnboardingShell step={0} userLocale={user.locale ?? null}>
+        <WelcomeCarousel />
+      </OnboardingShell>
+    );
+  }
+
+  // Foundation placeholder branches — replaced one step at a time by
+  // the W14b-Content agent. Each step's body resolves to the real i18n
+  // copy already, so the page reads end-to-end even before the per-
+  // step component lands.
+  const bodyTitle = t(`onboarding.${stepKey(requested)}.title`);
+  const bodyText = t(`onboarding.${stepKey(requested)}.body`);
 
   // Wire shell navigation by step. Step 0 has no Back; the wizard
   // never lets the user navigate forward past their current step, but

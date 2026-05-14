@@ -1330,7 +1330,6 @@
     "loadError": "Could not load thresholds"
   },
   "onboarding": {
-    "welcome": "Welcome to HealthLog!",
     "setupDescription": "Set up your profile to get started. You can change this later in Settings.",
     "completeSetup": "Complete setup",
     "skip": "Pomiń",
@@ -1429,9 +1428,28 @@
       "step1of4": "Krok 1 z 4",
       "step2of4": "Krok 2 z 4",
       "step3of4": "Krok 3 z 4",
-      "step4of4": "Krok 4 z 4",
-      "welcomeTitle": "Witaj w HealthLog",
-      "welcomeBody": "Skonfiguruj podstawy w czterech krótkich krokach. Każdy z nich możesz później powtórzyć z poziomu ustawień."
+      "step4of4": "Krok 4 z 4"
+    },
+    "welcome": {
+      "title": "Witaj w HealthLog",
+      "carouselLabel": "Powitanie — trzy slajdy",
+      "slideOf": "Slajd {current} z {total}",
+      "gotoSlide": "Przejdź do slajdu {index}",
+      "prevSlide": "Poprzedni slajd",
+      "nextSlide": "Następny slajd",
+      "slide1": {
+        "title": "Twoje dane zdrowotne należą do Ciebie",
+        "body": "HealthLog przechowuje każdy pomiar na Twojej infrastrukturze. Bez reklam, bez udostępniania osobom trzecim, bez przywiązywania do konta."
+      },
+      "slide2": {
+        "title": "Jeden widok dla wszystkich źródeł",
+        "body": "Apple Health, Withings i wpisy ręczne łączą się w spójną historię — z priorytetem źródła dla każdej metryki, który ustalasz sam."
+      },
+      "slide3": {
+        "title": "Coach i Insights z treścią",
+        "body": "Analiza oparta wyłącznie na Twoich liczbach, każde stwierdzenie jest weryfikowalne. Bring-your-own-key: Twoje dane nie służą do trenowania."
+      },
+      "cta": "Zaczynamy"
     },
     "goals": {
       "title": "Co chcesz śledzić?",

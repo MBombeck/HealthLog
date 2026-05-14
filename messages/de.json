@@ -1330,7 +1330,6 @@
     "loadError": "Zielwerte konnten nicht geladen werden"
   },
   "onboarding": {
-    "welcome": "Willkommen bei HealthLog!",
     "setupDescription": "Richte dein Profil ein, um loszulegen. Du kannst das auch später in den Einstellungen ändern.",
     "completeSetup": "Einrichtung abschließen",
     "skip": "Überspringen",
@@ -1429,9 +1428,28 @@
       "step1of4": "Schritt 1 von 4",
       "step2of4": "Schritt 2 von 4",
       "step3of4": "Schritt 3 von 4",
-      "step4of4": "Schritt 4 von 4",
-      "welcomeTitle": "Willkommen bei HealthLog",
-      "welcomeBody": "Vier kurze Schritte zum Einstieg. Jeden Schritt kannst du später in den Einstellungen wiederholen."
+      "step4of4": "Schritt 4 von 4"
+    },
+    "welcome": {
+      "title": "Willkommen bei HealthLog",
+      "carouselLabel": "Willkommen – drei Folien",
+      "slideOf": "Folie {current} von {total}",
+      "gotoSlide": "Zu Folie {index} wechseln",
+      "prevSlide": "Vorherige Folie",
+      "nextSlide": "Nächste Folie",
+      "slide1": {
+        "title": "Deine Gesundheitsdaten gehören dir",
+        "body": "HealthLog speichert deine Messwerte auf deiner Infrastruktur. Keine Werbung, keine Drittnutzung, kein Account-Zwang."
+      },
+      "slide2": {
+        "title": "Eine Ansicht für jede Quelle",
+        "body": "Apple Health, Withings und manuelle Einträge laufen in einem konsistenten Verlauf zusammen – inklusive Quellenpriorität pro Metrik."
+      },
+      "slide3": {
+        "title": "Coach und Insights mit Substanz",
+        "body": "Die KI-Auswertung stützt sich ausschließlich auf deine Werte und nennt jede Aussage mit Beleg. Bring-your-own-Key, keine Trainingsdaten."
+      },
+      "cta": "Loslegen"
     },
     "goals": {
       "title": "Was möchtest du erfassen?",

@@ -1330,7 +1330,6 @@
     "loadError": "Could not load thresholds"
   },
   "onboarding": {
-    "welcome": "Welcome to HealthLog!",
     "setupDescription": "Set up your profile to get started. You can change this later in Settings.",
     "completeSetup": "Complete setup",
     "skip": "Salta",
@@ -1429,9 +1428,28 @@
       "step1of4": "Passo 1 di 4",
       "step2of4": "Passo 2 di 4",
       "step3of4": "Passo 3 di 4",
-      "step4of4": "Passo 4 di 4",
-      "welcomeTitle": "Benvenuto su HealthLog",
-      "welcomeBody": "Imposta l'essenziale in quattro brevi passi. Puoi rivederli tutti più tardi dalle impostazioni."
+      "step4of4": "Passo 4 di 4"
+    },
+    "welcome": {
+      "title": "Benvenuto su HealthLog",
+      "carouselLabel": "Benvenuto — tre slide",
+      "slideOf": "Slide {current} di {total}",
+      "gotoSlide": "Vai alla slide {index}",
+      "prevSlide": "Slide precedente",
+      "nextSlide": "Slide successiva",
+      "slide1": {
+        "title": "I tuoi dati di salute, di tua proprietà",
+        "body": "HealthLog conserva ogni misurazione sulla tua infrastruttura. Niente pubblicità, nessuna condivisione con terzi, nessun vincolo di account."
+      },
+      "slide2": {
+        "title": "Un'unica vista per ogni sorgente",
+        "body": "Apple Health, Withings e gli inserimenti manuali confluiscono in una cronologia coerente, con priorità di sorgente per metrica decisa da te."
+      },
+      "slide3": {
+        "title": "Coach e Insights con sostanza",
+        "body": "Un'analisi basata solo sui tuoi dati, con ogni affermazione tracciabile. Bring-your-own-key: nessun addestramento sui tuoi dati."
+      },
+      "cta": "Iniziamo"
     },
     "goals": {
       "title": "Cosa vuoi monitorare?",

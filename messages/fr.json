@@ -1330,7 +1330,6 @@
     "loadError": "Could not load thresholds"
   },
   "onboarding": {
-    "welcome": "Welcome to HealthLog!",
     "setupDescription": "Set up your profile to get started. You can change this later in Settings.",
     "completeSetup": "Complete setup",
     "skip": "Ignorer",
@@ -1429,9 +1428,28 @@
       "step1of4": "Étape 1 sur 4",
       "step2of4": "Étape 2 sur 4",
       "step3of4": "Étape 3 sur 4",
-      "step4of4": "Étape 4 sur 4",
-      "welcomeTitle": "Bienvenue sur HealthLog",
-      "welcomeBody": "Configurez l'essentiel en quatre courtes étapes. Vous pourrez revenir sur chacune depuis les paramètres."
+      "step4of4": "Étape 4 sur 4"
+    },
+    "welcome": {
+      "title": "Bienvenue sur HealthLog",
+      "carouselLabel": "Bienvenue — trois diapositives",
+      "slideOf": "Diapositive {current} sur {total}",
+      "gotoSlide": "Aller à la diapositive {index}",
+      "prevSlide": "Diapositive précédente",
+      "nextSlide": "Diapositive suivante",
+      "slide1": {
+        "title": "Vos données de santé vous appartiennent",
+        "body": "HealthLog conserve chaque mesure sur votre propre infrastructure. Sans publicité, sans partage à des tiers, sans dépendance à un compte."
+      },
+      "slide2": {
+        "title": "Une seule vue pour toutes vos sources",
+        "body": "Apple Health, Withings et la saisie manuelle se rejoignent dans un historique cohérent, avec une priorité de source par métrique que vous contrôlez."
+      },
+      "slide3": {
+        "title": "Un coach et des insights pertinents",
+        "body": "Une analyse fondée sur vos chiffres, chaque conclusion étant traçable. Apportez votre propre clé, aucun entraînement sur vos données."
+      },
+      "cta": "Commencer"
     },
     "goals": {
       "title": "Que souhaitez-vous suivre ?",
