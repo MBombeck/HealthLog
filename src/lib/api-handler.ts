@@ -41,18 +41,32 @@ export class HttpError extends Error {
 // and fall back to safe defaults so logging instrumentation never
 // crashes the handler.
 //
-// The catch is narrowed to the V8 private-field TypeError. Any other
+// The catch is narrowed to two well-known shapes: the V8 private-field
+// TypeError, and the `Cannot read properties of undefined/null` shape
+// raised when the wrapper is invoked without a request (vitest tests
+// frequently invoke handlers as `GET()` with no args, mirroring the
+// shape Next.js exercises for the static-export pass). Any other
 // exception is a real bug in the read callback or in a downstream
-// header parser and must surface — swallowing it here would hide
+// header parser and must surface — swallowing it would hide
 // regressions in production instrumentation.
-function isPrivateFieldAccessError(err: unknown): boolean {
+function isTolerableRequestProbeError(err: unknown): boolean {
   if (!(err instanceof TypeError)) return false;
   const msg = err.message ?? "";
   return (
+    // V8 — current
     msg.includes("private member") ||
+    // V8 — alternative
     msg.includes("private field") ||
-    // Bun / older V8 wording variant
-    msg.includes("private name")
+    // Bun / older V8
+    msg.includes("private name") ||
+    // No request handed in at all (vitest direct-invoke or
+    // force-static placeholder reduced to undefined / null).
+    // Covers both modern `Cannot read properties of undefined
+    // (reading 'X')` and the older `Cannot read property 'X' of
+    // undefined` wordings.
+    /Cannot read propert(?:y|ies)\b.*\bof (?:undefined|null)\b/.test(
+      msg,
+    )
   );
 }
 
@@ -64,7 +78,7 @@ function safeRequestProp<R>(
   try {
     return read(request as NextRequest);
   } catch (err) {
-    if (isPrivateFieldAccessError(err)) return fallback;
+    if (isTolerableRequestProbeError(err)) return fallback;
     throw err;
   }
 }
@@ -72,7 +86,7 @@ function safeRequestProp<R>(
 /** @internal — exposed for unit tests of the narrow-catch contract. */
 export const __testables = {
   safeRequestProp,
-  isPrivateFieldAccessError,
+  isTolerableRequestProbeError,
 };
 
 // Next.js route handlers come in two shapes — `(request)` for static routes

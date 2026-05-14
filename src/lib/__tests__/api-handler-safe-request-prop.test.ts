@@ -33,47 +33,69 @@ vi.mock("next/headers", () => ({
 
 import { __testables } from "@/lib/api-handler";
 
-const { safeRequestProp, isPrivateFieldAccessError } = __testables;
+const { safeRequestProp, isTolerableRequestProbeError } = __testables;
 
-describe("isPrivateFieldAccessError — narrow-catch classifier", () => {
+describe("isTolerableRequestProbeError — narrow-catch classifier", () => {
   it("returns true for the V8 private-field TypeError", () => {
     const err = new TypeError(
       "Cannot read private member #state from an object whose class did not declare it",
     );
-    expect(isPrivateFieldAccessError(err)).toBe(true);
+    expect(isTolerableRequestProbeError(err)).toBe(true);
   });
 
   it("returns true for the alternative 'private field' wording", () => {
     const err = new TypeError(
       "Cannot read private field #foo from object that was not created from its class",
     );
-    expect(isPrivateFieldAccessError(err)).toBe(true);
+    expect(isTolerableRequestProbeError(err)).toBe(true);
   });
 
   it("returns true for the Bun / older-V8 'private name' wording", () => {
     const err = new TypeError("Cannot read private name #bar from object");
-    expect(isPrivateFieldAccessError(err)).toBe(true);
+    expect(isTolerableRequestProbeError(err)).toBe(true);
+  });
+
+  it("returns true when the request handed in is undefined or null", () => {
+    expect(
+      isTolerableRequestProbeError(
+        new TypeError("Cannot read properties of undefined (reading 'url')"),
+      ),
+    ).toBe(true);
+    expect(
+      isTolerableRequestProbeError(
+        new TypeError("Cannot read properties of null (reading 'method')"),
+      ),
+    ).toBe(true);
+    expect(
+      isTolerableRequestProbeError(
+        new TypeError("Cannot read property 'headers' of undefined"),
+      ),
+    ).toBe(true);
   });
 
   it("returns false for any other TypeError (real bug, must surface)", () => {
     expect(
-      isPrivateFieldAccessError(new TypeError("undefined is not a function")),
+      isTolerableRequestProbeError(
+        new TypeError("undefined is not a function"),
+      ),
     ).toBe(false);
     expect(
-      isPrivateFieldAccessError(new TypeError("Cannot read properties of null")),
+      isTolerableRequestProbeError(
+        new TypeError("Cannot read properties of {} (reading 'parse')"),
+      ),
     ).toBe(false);
   });
 
   it("returns false for non-TypeError exceptions", () => {
-    expect(isPrivateFieldAccessError(new Error("private member #x"))).toBe(
+    expect(isTolerableRequestProbeError(new Error("private member #x"))).toBe(
       false,
     );
-    expect(isPrivateFieldAccessError(new RangeError("private member"))).toBe(
-      false,
-    );
-    expect(isPrivateFieldAccessError("private member string")).toBe(false);
-    expect(isPrivateFieldAccessError(null)).toBe(false);
-    expect(isPrivateFieldAccessError(undefined)).toBe(false);
+    expect(
+      isTolerableRequestProbeError(new RangeError("private member")),
+    ).toBe(false);
+    expect(isTolerableRequestProbeError("private member string")).toBe(false);
+    expect(isTolerableRequestProbeError(null)).toBe(false);
+    expect(isTolerableRequestProbeError(undefined)).toBe(false);
   });
 });
 
