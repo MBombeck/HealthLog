@@ -119,14 +119,18 @@ export async function refreshAccessToken(
   return json.body as WithingsTokenResponse;
 }
 
-// Withings measure type mapping
+// Withings measure type mapping. The single source of truth is
+// `src/lib/withings/mapping.md` — keep both in sync when adding entries.
 // https://developer.withings.com/api-reference#tag/measure/operation/measure-getmeas
-const MEASURE_TYPE_MAP: Record<number, { type: string; factor?: number }> = {
+export const MEASURE_TYPE_MAP: Record<number, { type: string; factor?: number }> = {
   1: { type: "WEIGHT" }, // Weight (kg)
   9: { type: "BLOOD_PRESSURE_DIA" }, // Diastolic BP
   10: { type: "BLOOD_PRESSURE_SYS" }, // Systolic BP
   11: { type: "PULSE" }, // Heart rate
   6: { type: "BODY_FAT" }, // Body fat %
+  // v1.4.25 — first-gen Thermo (WBT01) reports temperature as meastype 12;
+  // current-gen ships meastype 71 instead (see below). Both canonical °C.
+  12: { type: "BODY_TEMPERATURE" },
   77: { type: "TOTAL_BODY_WATER" }, // Hydration / water mass (kg)
   88: { type: "BONE_MASS" }, // Bone mass (kg)
   54: { type: "OXYGEN_SATURATION" }, // SpO2 (% — only ScanWatch / pulse-ox products)
