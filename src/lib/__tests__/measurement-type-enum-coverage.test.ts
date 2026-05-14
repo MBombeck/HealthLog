@@ -42,10 +42,14 @@ const EXPECTED_TYPES = [
   "PULSE_WAVE_VELOCITY",
   "VASCULAR_AGE",
   "VISCERAL_FAT",
+  // ── v1.4.25 W8d Apple Health server-prep ──
+  "AUDIO_EXPOSURE_ENV",
+  "AUDIO_EXPOSURE_HEADPHONE",
+  "TIME_IN_DAYLIGHT",
 ] as const;
 
 describe("measurementTypeEnum coverage", () => {
-  it("exposes the 25 canonical measurement types", () => {
+  it("exposes the 28 canonical measurement types", () => {
     expect([...measurementTypeEnum.options].sort()).toEqual(
       [...EXPECTED_TYPES].sort(),
     );
@@ -85,6 +89,13 @@ describe("measurementTypeEnum coverage", () => {
     "PULSE_WAVE_VELOCITY",
     "VASCULAR_AGE",
     "VISCERAL_FAT",
+    // v1.4.25 W8d Apple Health additions held under the same v1.5 gate.
+    // Audio exposure and time-in-daylight are lifestyle / environment
+    // metrics; reference ranges + clinical layout land alongside the
+    // first iOS-app sync, not the v1.4.25 PDF.
+    "AUDIO_EXPOSURE_ENV",
+    "AUDIO_EXPOSURE_HEADPHONE",
+    "TIME_IN_DAYLIGHT",
   ]);
 
   it("doctor-report PDF vital types cover the canonical enum minus documented exclusions", () => {

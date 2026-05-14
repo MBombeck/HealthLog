@@ -263,6 +263,10 @@ enum MeasurementType {
   PULSE_WAVE_VELOCITY // m/s — Withings meastype 91 (Body Cardio / Body Scan). Indicator of arterial stiffness.
   VASCULAR_AGE // years — Withings meastype 155 (Body Scan). Composite of PWV + age.
   VISCERAL_FAT // rating — Withings meastype 170 (Body Comp / Body Scan). Withings' rating scale (1–12); not directly comparable to a percent.
+  // ── v1.4.25 W8d Apple Health server-prep ──
+  AUDIO_EXPOSURE_ENV // dBA — HealthKit `environmentalAudioExposure`; ambient noise sample (e.g. concert, traffic). Watch + iPhone microphone.
+  AUDIO_EXPOSURE_HEADPHONE // dBA — HealthKit `headphoneAudioExposure`; AirPods listening-volume sampling.
+  TIME_IN_DAYLIGHT // minutes — HealthKit `timeInDaylight` (iOS 17+). Sun-exposure daily rollup; mood + sleep correlate.
 
   @@map("measurement_type")
 }

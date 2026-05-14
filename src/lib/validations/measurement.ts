@@ -28,6 +28,10 @@ export const measurementTypeEnum = z.enum([
   "PULSE_WAVE_VELOCITY",
   "VASCULAR_AGE",
   "VISCERAL_FAT",
+  // ── v1.4.25 W8d Apple Health server-prep ──
+  "AUDIO_EXPOSURE_ENV",
+  "AUDIO_EXPOSURE_HEADPHONE",
+  "TIME_IN_DAYLIGHT",
 ]);
 
 export const glucoseContextEnum = z.enum([
@@ -88,6 +92,17 @@ const unitMap: Record<string, string> = {
   // Withings reports visceral fat as a 1–12 rating, not a percent. The
   // string mirrors what Withings prints in Health Mate.
   VISCERAL_FAT: "rating",
+  // ── v1.4.25 W8d Apple Health server-prep ──
+  // Sound-pressure level — A-weighted decibels (dBA). HealthKit reports
+  // both audio-exposure metrics in dBASPL; we store the unweighted "dBA"
+  // label because the A-weighting is implicit (every HealthKit audio
+  // sample carries it). 30 dBA = quiet bedroom; 140 dBA = pain threshold.
+  AUDIO_EXPOSURE_ENV: "dBA",
+  AUDIO_EXPOSURE_HEADPHONE: "dBA",
+  // Daily-rollup pattern (one sample = one day's outdoor-light minutes).
+  // 0–1440 covers the 24-hour day; in practice indoor users sit near 0
+  // and outdoor athletes accumulate a few hours.
+  TIME_IN_DAYLIGHT: "minutes",
 };
 
 export function getUnitForType(type: string): string {
@@ -155,6 +170,18 @@ const VALUE_RANGES: Record<string, { min: number; max: number }> = {
   VASCULAR_AGE: { min: 10, max: 130 },
   // Visceral fat rating 1–12 (Withings' own scale; not a percent).
   VISCERAL_FAT: { min: 0, max: 30 },
+  // ── v1.4.25 W8d Apple Health server-prep ──
+  // Audio exposure dBA — Apple's "loud audio" warning sits at 80 dBA;
+  // concerts run 100–115 dBA; 140 dBA is the pain threshold. The floor
+  // of 30 dBA covers a quiet bedroom; anything below is silence and
+  // almost certainly a sensor artefact.
+  AUDIO_EXPOSURE_ENV: { min: 30, max: 140 },
+  // Headphone audio caps slightly below the open-air upper edge because
+  // sealed-driver listening physically cannot reach a concert PA's SPL.
+  AUDIO_EXPOSURE_HEADPHONE: { min: 30, max: 140 },
+  // Time in daylight (minutes/day) — full 24-hour window. Outdoor work
+  // tops the range; sedentary indoor days sit near 0.
+  TIME_IN_DAYLIGHT: { min: 0, max: 1440 },
 };
 
 export function validateMeasurementRange(

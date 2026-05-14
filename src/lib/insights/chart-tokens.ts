@@ -54,6 +54,12 @@ export const ALLOWED_CHART_TOKENS = [
   "metric:PULSE_WAVE_VELOCITY",
   "metric:VASCULAR_AGE",
   "metric:VISCERAL_FAT",
+  // v1.4.25 W8d — Apple Health server-prep. Same posture as v1.4.23 /
+  // W5d: the LLM can reference these in prose; the corresponding
+  // dedicated chart components land alongside the iOS-app sync.
+  "metric:AUDIO_EXPOSURE_ENV",
+  "metric:AUDIO_EXPOSURE_HEADPHONE",
+  "metric:TIME_IN_DAYLIGHT",
 ] as const;
 
 export type ChartToken = (typeof ALLOWED_CHART_TOKENS)[number];
@@ -126,6 +132,11 @@ const ORPHAN_ENUMS = [
   "PULSE_WAVE_VELOCITY",
   "VASCULAR_AGE",
   "VISCERAL_FAT",
+  // v1.4.25 W8d Apple Health server-prep — multi-word upper-snake
+  // names that should never surface verbatim in user-facing prose.
+  "AUDIO_EXPOSURE_ENV",
+  "AUDIO_EXPOSURE_HEADPHONE",
+  "TIME_IN_DAYLIGHT",
 ] as const;
 
 // `\b` boundaries keep ordinary English prose untouched — "weight"
