@@ -5,7 +5,10 @@ import { apiSuccess, apiError } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { decrypt } from "@/lib/crypto";
 import { unsubscribeWebhook } from "@/lib/withings/client";
-import { getWithingsWebhookCallbackUrl } from "@/lib/withings/sync";
+import {
+  WITHINGS_NOTIFY_APPLIS,
+  getWithingsWebhookCallbackUrl,
+} from "@/lib/withings/sync";
 import { markDisconnected } from "@/lib/integrations/status";
 
 /**
@@ -23,13 +26,21 @@ export const POST = apiHandler(async () => {
     return apiError("No Withings connection", 404);
   }
 
-  // Try to unsubscribe webhook (best-effort)
+  // Best-effort unsubscribe across every appli category we subscribed
+  // to in setupWebhook. A token-expired failure on one category should
+  // not stop us from cleaning up the others.
   try {
     const accessToken = decrypt(connection.accessToken);
     const callbackUrl = getWithingsWebhookCallbackUrl();
-    await unsubscribeWebhook(accessToken, callbackUrl);
+    for (const appli of WITHINGS_NOTIFY_APPLIS) {
+      try {
+        await unsubscribeWebhook(accessToken, callbackUrl, appli);
+      } catch {
+        // Ignore — token might be expired or the appli was never subscribed.
+      }
+    }
   } catch {
-    // Ignore — token might be expired
+    // Ignore — token might be undecryptable.
   }
 
   await prisma.withingsConnection.delete({

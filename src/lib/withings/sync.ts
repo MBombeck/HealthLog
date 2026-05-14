@@ -255,21 +255,41 @@ export function extractWithingsStatus(message: string): string | undefined {
 }
 
 /**
- * Subscribe to Withings webhook for a user.
+ * Withings notify appli categories HealthLog cares about today. Each
+ * category requires its own subscribe call.
+ *
+ * - 1 — weight + body composition (meastypes 1, 5, 6, 8, 88)
+ * - 2 — temperature (meastypes 12, 71, 73)
+ * - 4 — pressure family (BP dia 9, BP sys 10, pulse 11, SpO2 54)
+ *
+ * Without 2 and 4, BP and temperature readings flow only through the
+ * hourly poll fallback. Adding them removes up to an hour of latency
+ * on a freshly-taken BP reading without changing the OAuth scope.
+ *
+ * Sleep (appli=44) and activity (appli=16) ship alongside the
+ * corresponding sync routines in v1.4.26.
+ */
+export const WITHINGS_NOTIFY_APPLIS = [1, 2, 4] as const;
+
+/**
+ * Subscribe to every Withings notify category HealthLog ingests. Each
+ * appli is its own subscribe call upstream; a failure on one category
+ * is logged and we continue with the rest, because losing one webhook
+ * is strictly better than rolling back all three.
  */
 export async function setupWebhook(userId: string): Promise<void> {
   const tokenInfo = await getValidToken(userId);
   if (!tokenInfo) return;
 
-  try {
-    await subscribeWebhook(
-      tokenInfo.accessToken,
-      getWithingsWebhookCallbackUrl(),
-    );
-    getEvent()?.addMeta("webhook_subscribed", userId);
-  } catch (err) {
-    getEvent()?.addWarning(
-      `Webhook subscribe failed for user ${userId}: ${err}`,
-    );
+  const callbackUrl = getWithingsWebhookCallbackUrl();
+  for (const appli of WITHINGS_NOTIFY_APPLIS) {
+    try {
+      await subscribeWebhook(tokenInfo.accessToken, callbackUrl, appli);
+      getEvent()?.addMeta(`webhook_subscribed_${appli}`, userId);
+    } catch (err) {
+      getEvent()?.addWarning(
+        `Webhook subscribe (appli=${appli}) failed for user ${userId}: ${err}`,
+      );
+    }
   }
 }

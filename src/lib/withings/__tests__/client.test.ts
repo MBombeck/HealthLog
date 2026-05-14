@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MEASURE_TYPE_MAP, fetchMeasurements } from "../client";
+import { WITHINGS_NOTIFY_APPLIS } from "../sync";
 
 /**
  * Withings client — meastype mapping + payload-parsing unit tests.
@@ -67,6 +68,27 @@ describe("MEASURE_TYPE_MAP", () => {
 
   it("maps Withings meastype 123 (VO2 max) → VO2_MAX", () => {
     expect(MEASURE_TYPE_MAP[123]).toEqual({ type: "VO2_MAX" });
+  });
+});
+
+describe("WITHINGS_NOTIFY_APPLIS", () => {
+  it("subscribes to weight + temperature + pressure categories", () => {
+    expect(WITHINGS_NOTIFY_APPLIS).toEqual([1, 2, 4]);
+  });
+
+  it("contains every appli for the meastypes we ingest", () => {
+    // Sanity guard so a future contributor who adds a meastype is
+    // nudged to also wire its appli category. Today we ingest:
+    //   - 1, 6, 77, 88 → appli=1 (weight + composition)
+    //   - 12, 71 → appli=2 (temperature)
+    //   - 9, 10, 11, 35, 54 → appli=4 (BP + pulse + SpO2)
+    //   - 123 → appli=1 (VO2 max is part of the weight category in
+    //     Withings' bucketing; verified against the developer guide).
+    const ingested = Object.keys(MEASURE_TYPE_MAP).map(Number).sort();
+    expect(ingested).toContain(12);
+    expect(ingested).toContain(71);
+    expect(ingested).toContain(35);
+    expect(ingested).toContain(123);
   });
 });
 
