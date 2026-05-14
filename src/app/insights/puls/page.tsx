@@ -9,6 +9,8 @@ import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
+import { Vo2MaxChartRow } from "@/components/insights/vo2-max-chart-row";
+import type { DataSummary } from "@/lib/analytics/trends";
 import {
   getAgeFromDateOfBirth,
   getPersonalizedPulseTarget,
@@ -39,6 +41,10 @@ interface PulseStatusData {
   updatedAt: string | null;
 }
 
+interface AnalyticsData {
+  summaries: Record<string, DataSummary>;
+}
+
 export default function InsightsPulsPage() {
   const { isAuthenticated, user } = useAuth();
   const { t, locale } = useTranslations();
@@ -55,6 +61,23 @@ export default function InsightsPulsPage() {
     enabled: isAuthenticated,
     staleTime: 60 * 1000,
   });
+
+  // v1.4.25 W16a — VO2 max chart-row consumes the same `/api/analytics`
+  // bundle the mother page reads. Sharing the cache key keeps the
+  // payload single-fetch on tab navigation (React-Query unwraps from
+  // the same key).
+  const { data: analytics } = useQuery({
+    queryKey: ["analytics"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics");
+      if (!res.ok) throw new Error("Failed");
+      const json = await res.json();
+      return json.data as AnalyticsData;
+    },
+    enabled: isAuthenticated,
+    staleTime: 60 * 1000,
+  });
+  const vo2Summary = analytics?.summaries?.VO2_MAX ?? null;
 
   const pulseAge = getAgeFromDateOfBirth(user?.dateOfBirth ?? null);
   const pulseTarget = getPersonalizedPulseTarget(
@@ -108,6 +131,18 @@ export default function InsightsPulsPage() {
         cached={status?.cached ?? false}
         updatedAt={status?.updatedAt ?? null}
         loading={isStatusLoading}
+      />
+
+      {/* v1.4.25 W16a — VO2 max sits on the cardio sub-page because it
+          is a cardio-fitness metric (Apple's Health app surfaces it
+          under "Heart"). The chart-row stays mounted even at zero
+          samples so a brand-new account sees the "no data yet" hint
+          rather than a missing surface — same pattern the dashboard
+          tile uses (opt-in via Settings → Dashboard). */}
+      <Vo2MaxChartRow
+        summary={vo2Summary}
+        compareBaseline={compareBaseline}
+        userTimezone={user?.timezone}
       />
     </SubPageShell>
   );

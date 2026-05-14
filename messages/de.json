@@ -942,6 +942,12 @@
       "title": "Trends",
       "subtitle": "Die letzten 30 Tage auf einen Blick"
     },
+    "vo2Max": {
+      "statLatest": "Aktuell",
+      "statMin": "Min",
+      "statMax": "Max",
+      "empty": "Noch keine VO₂-Max-Daten — synchronisiere Apple Health, um diese Ansicht zu füllen."
+    },
     "trendAnnotation": {
       "emptyBp": "Mehr Daten nötig, um diesen Trend zu kommentieren.",
       "emptyWeight": "Mehr Daten nötig, um diesen Trend zu kommentieren.",
