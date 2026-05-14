@@ -329,6 +329,9 @@
     "typePulseWaveVelocity": "Pulse-wave velocity",
     "typeVascularAge": "Vascular age",
     "typeVisceralFat": "Visceral fat",
+    "typeAudioExposureEnv": "Audio Exposure (Environment)",
+    "typeAudioExposureHeadphone": "Audio Exposure (Headphones)",
+    "typeTimeInDaylight": "Time in Daylight",
     "glucoseContext": "Context",
     "glucoseContextFasting": "Fasting (≥8h without food)",
     "glucoseContextPostprandial": "Post-meal (2h after eating)",
@@ -756,6 +759,7 @@
   },
   "comparison": {
     "toggleLabel": "Compare to",
+    "toggleHint": "Mostra lo stesso periodo dell'anno scorso accanto al grafico attuale.",
     "baseline": {
       "none": "None",
       "lastMonth": "Last month",

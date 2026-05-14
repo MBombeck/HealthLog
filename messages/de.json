@@ -329,6 +329,9 @@
     "typePulseWaveVelocity": "Pulswellengeschwindigkeit",
     "typeVascularAge": "Gefäßalter",
     "typeVisceralFat": "Viszerales Fett",
+    "typeAudioExposureEnv": "Lärmbelastung (Umgebung)",
+    "typeAudioExposureHeadphone": "Lärmbelastung (Kopfhörer)",
+    "typeTimeInDaylight": "Zeit im Tageslicht",
     "glucoseContext": "Kontext",
     "glucoseContextFasting": "Nüchtern (≥8 h ohne Nahrung)",
     "glucoseContextPostprandial": "Postprandial (2 h nach dem Essen)",
@@ -756,6 +759,7 @@
   },
   "comparison": {
     "toggleLabel": "Vergleichen mit",
+    "toggleHint": "Vergleicht den aktuellen Zeitraum mit dem Vorjahreszeitraum.",
     "baseline": {
       "none": "Aus",
       "lastMonth": "Vormonat",
