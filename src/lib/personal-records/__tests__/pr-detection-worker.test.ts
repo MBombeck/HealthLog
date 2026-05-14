@@ -700,3 +700,59 @@ describe("compareToCurrentBest — pure helper", () => {
     );
   });
 });
+
+describe("detectPersonalRecordsForUser — null-slot dup regression", () => {
+  // Regression for Fix-O / senior-M3 + L2: the personal_records unique
+  // index is `(userId, metricType, metricSlot, achievedAt)` with NULLS
+  // NOT DISTINCT. Measurement-type PRs (ACTIVITY_STEPS, RESTING_HEART_RATE,
+  // …) have `metricSlot = NULL`. Two back-to-back invocations on the
+  // exact same input — same userId, same metricType, null slot, same
+  // achievedAt — must coalesce to a single row. A future refactor that
+  // forgets to compare NULL slot values via the NULLS-NOT-DISTINCT
+  // semantics would silently double-insert; this test pins the
+  // contract so the regression surfaces immediately.
+  it("does not double-insert on back-to-back invocations with a NULL slot and the same achievedAt", async () => {
+    const samples: FakeMeasurementRow[] = [];
+    for (let i = 0; i < PR_DETECTION_WARMUP_THRESHOLD; i++) {
+      samples.push(
+        measurement("ACTIVITY_STEPS", 4000 + i * 250, i + 2, `seed-${i}`),
+      );
+    }
+    // The candidate row that drives the PR write — pinned to a
+    // specific UTC instant so both invocations see the same achievedAt.
+    samples.push({
+      id: "m-best",
+      type: "ACTIVITY_STEPS",
+      value: 19000,
+      unit: "x",
+      measuredAt: new Date(Date.UTC(2026, 4, 13, 8, 30, 0)),
+      source: "APPLE_HEALTH",
+      externalId: null,
+      userId: USER,
+    });
+
+    const state = {
+      measurements: samples,
+      workouts: [],
+      personalRecords: [] as FakePersonalRecordRow[],
+    };
+    const prisma = makeFakePrisma(state);
+
+    await detectPersonalRecordsForUser(USER, { prisma });
+    const stepRowsAfterFirst = state.personalRecords.filter(
+      (r) => r.metricType === "ACTIVITY_STEPS" && r.metricSlot === null,
+    );
+    expect(stepRowsAfterFirst).toHaveLength(1);
+
+    // Second invocation — same state, no new measurement rows. The
+    // dedup index must coalesce; the row count must stay at 1.
+    await detectPersonalRecordsForUser(USER, { prisma });
+    const stepRowsAfterSecond = state.personalRecords.filter(
+      (r) => r.metricType === "ACTIVITY_STEPS" && r.metricSlot === null,
+    );
+    expect(stepRowsAfterSecond).toHaveLength(1);
+    expect(stepRowsAfterSecond[0].achievedAt.getTime()).toBe(
+      stepRowsAfterFirst[0].achievedAt.getTime(),
+    );
+  });
+});
