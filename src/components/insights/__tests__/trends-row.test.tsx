@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { I18nProvider } from "@/lib/i18n/context";
 
 /**
@@ -10,6 +11,12 @@ import { I18nProvider } from "@/lib/i18n/context";
  * snapshots show the loading skeleton — that's still enough to verify
  * the row's layout chrome (3-up grid wrapper + per-metric annotation
  * slots).
+ *
+ * v1.4.25 W7 added a `useAuth()` call inside `<TrendsRow>` to plumb
+ * `userTimezone` through to the dynamically-imported chart components,
+ * so the test wraps every render in a TanStack-Query provider — the
+ * stub charts never trigger an actual fetch but `useAuth` requires a
+ * client to mount.
  */
 
 vi.mock("next/dynamic", () => ({
@@ -25,8 +32,13 @@ vi.mock("next/dynamic", () => ({
 import { TrendsRow } from "../trends-row";
 
 function render(node: React.ReactNode, locale: "en" | "de" = "en") {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
   return renderToStaticMarkup(
-    <I18nProvider initialLocale={locale}>{node}</I18nProvider>,
+    <QueryClientProvider client={queryClient}>
+      <I18nProvider initialLocale={locale}>{node}</I18nProvider>
+    </QueryClientProvider>,
   );
 }
 

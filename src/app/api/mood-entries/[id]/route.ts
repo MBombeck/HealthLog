@@ -13,14 +13,9 @@ import {
 import { NextRequest } from "next/server";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
+import { moodDateKey, DEFAULT_TIMEZONE } from "@/lib/mood/date-key";
 
 type RouteParams = { params: Promise<{ id: string }> };
-
-function toBerlinDate(date: Date): string {
-  return new Intl.DateTimeFormat("sv-SE", {
-    timeZone: "Europe/Berlin",
-  }).format(date);
-}
 
 function parseTags(tags: string | null): string[] {
   if (!tags) return [];
@@ -80,8 +75,15 @@ export const PUT = apiHandler(
       updateData.score = getScoreForMood(data.mood);
     }
     if (data.moodLoggedAt !== undefined) {
+      // v1.4.25 W7b — re-anchor the row's `date` to the user's current
+      // displayTimezone. Also refresh the `tz` column so the row's
+      // attribution stays consistent with the new `date`. Legacy rows
+      // promoted via this PUT therefore migrate to per-row tz without
+      // a separate backfill.
+      const tz = user.timezone ?? DEFAULT_TIMEZONE;
       updateData.moodLoggedAt = data.moodLoggedAt;
-      updateData.date = toBerlinDate(data.moodLoggedAt);
+      updateData.date = moodDateKey(data.moodLoggedAt, tz);
+      updateData.tz = tz;
     }
     if (data.tags !== undefined) {
       updateData.tags = data.tags ? JSON.stringify(data.tags) : null;

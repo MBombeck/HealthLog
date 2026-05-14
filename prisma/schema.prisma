@@ -513,12 +513,18 @@ model WithingsConnection {
 model MoodEntry {
   id           String   @id @default(cuid())
   userId       String   @map("user_id")
-  date         String   // YYYY-MM-DD
+  date         String   // YYYY-MM-DD — anchored to `tz` when not null, else legacy Europe/Berlin
   mood         String   // SUPER_GUT, GUT, OKAY, SCHLECHT, LAUSIG
   score        Int      // 1-5
   tags         String?  // JSON array of tag keys
   source       String   @default("MOODLOG") // WEB, TELEGRAM, DAYLIO
   moodLoggedAt DateTime @map("mood_logged_at")
+  /// v1.4.25 W7b — per-row IANA timezone that the `date` string is
+  /// anchored to. Nullable for backward compatibility: legacy rows
+  /// (`tz IS NULL`) were written under the Europe/Berlin assumption
+  /// and read-paths interpret them as such. New rows always carry the
+  /// user's `displayTimezone` at write time.
+  tz           String?
   syncedAt     DateTime @default(now()) @map("synced_at")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")

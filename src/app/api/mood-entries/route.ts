@@ -16,12 +16,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { withIdempotency } from "@/lib/idempotency";
-
-function toBerlinDate(date: Date): string {
-  return new Intl.DateTimeFormat("sv-SE", {
-    timeZone: "Europe/Berlin",
-  }).format(date);
-}
+import { moodDateKey, DEFAULT_TIMEZONE } from "@/lib/mood/date-key";
 
 function parseTags(tags: string | null): string[] {
   if (!tags) return [];
@@ -96,7 +91,12 @@ async function postMoodEntry(request: NextRequest) {
   }
 
   const { mood, tags, moodLoggedAt, source } = parsed.data;
-  const date = toBerlinDate(moodLoggedAt);
+  // v1.4.25 W7b (Decision A) — anchor the `date` string to the user's
+  // current displayTimezone and store the resolved zone on the row.
+  // Legacy rows with `tz IS NULL` continue to read as Europe/Berlin
+  // (see `src/lib/mood/date-key.ts`).
+  const tz = user.timezone ?? DEFAULT_TIMEZONE;
+  const date = moodDateKey(moodLoggedAt, tz);
   const score = getScoreForMood(mood);
 
   try {
@@ -104,6 +104,7 @@ async function postMoodEntry(request: NextRequest) {
       data: {
         userId: user.id,
         date,
+        tz,
         mood,
         score,
         tags: tags ? JSON.stringify(tags) : null,
