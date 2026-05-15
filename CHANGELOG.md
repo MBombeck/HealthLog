@@ -1,5 +1,454 @@
 # Changelog
 
+## [1.4.27] — 2026-05-15
+
+Mobile capability + maintainer-finding cleanup. The headline is a new
+`<ResponsiveSheet>` primitive that switches between a bottom-sheet on
+narrow viewports and a centred dialog on desktop; every primary form
+entry mounts through it with sticky-pinned Save / Cancel above the soft
+keyboard. Tap targets across `Button`, `Input`, `Select`,
+`DropdownMenu` and the new shared `PasswordInput` lift to the WCAG
+2.5.5 floor, and `inputMode` / `enterKeyHint` / `autoComplete` /
+`aria-invalid` / `aria-describedby` are wired across every form. The
+Coach drawer mount moves up to the `/insights` layout so every
+sub-page can launch the panel, and flips to a bottom-sheet branch on
+narrow viewports. The dashboard GLP-1 tile gains a two-tab pane with a
+range strip; the seven insights sub-pages gate on metric data
+availability with empty-state CTAs that route into a self-opening
+measurement form. Login overview surfaces an offline-resolved carrier
+chip via bundled MaxMind GeoLite2-City + GeoLite2-ASN MMDBs. A new
+`<NativeSelect>` primitive replaces five raw selects across settings
+and admin. 26 of the 27 maintainer findings landed; the weekly-report
+dead-click ask defers to v1.4.28 pending a screenshot. Migration 0061
+is additive, `IF NOT EXISTS`-guarded, and forward-only.
+
+### Added
+
+- **`<ResponsiveSheet>` primitive.** New surface at
+  `src/components/ui/responsive-sheet.tsx` plus a typed `useIsMobile`
+  hook at `src/hooks/use-is-mobile.ts`. Renders a Radix `<Sheet>` with
+  a `side="bottom"` branch below `md` (768 px), a centred `<Dialog>`
+  branch on `md+`, and a `data-variant="dialog" | "sheet"` hook for
+  tests and downstream styling. The Sheet branch sticky-pins the
+  footer slot at the bottom edge with a backdrop-blur background; the
+  Dialog branch flows the footer normally. SSR-safe — seeded from
+  `useSyncExternalStore` so the first client render reads
+  `window.matchMedia` synchronously rather than waiting an effect
+  tick.
+- **`<NativeSelect>` primitive** at `src/components/ui/native-select.tsx`,
+  consumed by `account-section.tsx`, `timezone-picker.tsx`,
+  `general-settings-section.tsx` and the five remaining raw selects on
+  `ai-section.tsx`.
+- **`<CoachLaunchProvider>` and `LayoutCoachMount` for `/insights`.**
+  The drawer mount moves up to `src/app/insights/layout.tsx` so every
+  routed sub-page can call `useCoachLaunch()` and open the panel.
+  Each of the seven sub-pages mounts a `<CoachLaunchButton>` — sticky
+  FAB on `<lg`, inline action on `lg+`. `askCoach(prefill, scope)`
+  accepts a reserved `scope` argument for per-metric Coach narrowing
+  (parameter is wired through the context but the sources rail does
+  not yet pre-narrow; consumed in v1.4.28).
+- **Dashboard GLP-1 tile — two-tab pane plus range strip.** The tile
+  pairs a Weight tab with a new Drug-Level tab (default Drug-Level)
+  driven by `<DrugLevelChart>` in its `compact` mode. A
+  7-day / 30-day / 90-day / all-time radiogroup picks the chart range.
+  Schedule dates promote to a header pill row; the previous green seam
+  is gone.
+- **Insights sub-page availability gating.** New helper
+  `src/lib/insights/metric-availability.ts` exposes `hasMetricData()`
+  as a single decision point. `<InsightsTabStrip>`,
+  `<InsightsLayoutShell>` and the seven sub-page routes gate the tab
+  pill, the layout mount and the sub-page body on whether the
+  underlying metric has data; missing metrics drop cleanly rather than
+  rendering an empty chart.
+- **Insights empty-state CTAs.** Each sub-page renders the shared
+  `<EmptyState>` with a metric-specific title, description and CTA.
+  BP / weight / pulse / BMI route into `/measurements?add=<TYPE>`,
+  which auto-opens the `<ResponsiveSheet>` add-form with `defaultType`
+  set and `router.replace`s the query so the back button returns to a
+  clean URL. Mood / medication / sleep route to their dedicated pages.
+  Every empty-state offers a Coach launch as a secondary path.
+- **Offline geo-IP + ASN-to-carrier lookups.** New
+  `scripts/fetch-geolite2.sh` downloads `GeoLite2-City.mmdb` +
+  `GeoLite2-ASN.mmdb` into `assets/geolite2/` at build time using the
+  `MAXMIND_LICENSE_KEY` repo secret. The runtime resolver in
+  `src/lib/geo.ts` reads `GEOLITE2_DIR` (defaults to
+  `/opt/geolite2`) and silently skips the offline tier when the files
+  are absent so local-dev workflows without the license key continue
+  to fall back to `ipwho.is`. The MMDB files are not vendored in git;
+  `.gitignore` excludes `assets/geolite2/*.mmdb`. The fetch script
+  prints the SHA256 of each MMDB to stderr after download. The
+  GHCR build step fails fast with an `::error::` line when the secret
+  is unset.
+- **`AuditLog.asn` + `AuditLog.carrier` columns.** Migration `0061`
+  adds two additive, `IF NOT EXISTS`-guarded columns to `AuditLog`,
+  plus a `geo-backfill` pg-boss job that re-resolves carrier on
+  historical rows. The admin login overview surfaces the carrier as
+  a chip under the auth-provider column, with a case-insensitive
+  short-label heuristic that collapses verbose org strings
+  (e.g. `Telefonica O2 Deutschland` → `O2`).
+- **`/about` page.** New public route at `src/app/about/page.tsx`
+  carrying the MaxMind GeoLite2 CC BY-SA 4.0 attribution alongside the
+  existing project credits. Joins `proxy.ts` and `auth-shell.tsx`
+  `PUBLIC_PATHS` so the page reaches an unauthenticated visitor with
+  its own edge-to-edge header and footer (same shape as `/privacy`).
+- **Coach polish — info-icon popover for the composer hint.** The
+  verbose hint span at the bottom of the composer collapses to an
+  `Info` icon wrapped in a new shadcn `<Popover>` (mirroring the
+  existing `<Tooltip>` shape). The trigger carries an `aria-label`
+  with the same hint copy so screen readers still announce it on
+  focus; the popover body shows the long-form hint on tap or hover.
+- **Soft-keyboard re-pin on the message thread.**
+  `src/components/insights/coach-panel/message-thread.tsx` adds a
+  `window.visualViewport.resize` listener with the same `wasPinned`
+  guard as the existing message-arrival effect. When the soft
+  keyboard slides in, the thread re-pins to the bottom so the tail
+  stays visible.
+- **`parkIntegrationAtReauth` helper.** New
+  `src/lib/integrations/status.ts` export that flips an integration
+  row to `state=error_reauth` without incrementing
+  `consecutiveFailures`, without calling `recordSyncFailure`, and
+  without entering the 3-strike admin-alert ladder. Writes one
+  idempotent `integrations.reauth_required` audit row. Replaces the
+  scope-skip branch in `withings/sync-activity.ts` and
+  `withings/sync-sleep.ts`; the defence-in-depth 403 catch block
+  stays on `recordSyncFailure`.
+- **`dispatchLocalisedNotification` helper.** New
+  `src/lib/notifications/dispatch-localised.ts` resolves the
+  recipient's `User.locale`, calls
+  `getServerTranslator(locale).t(titleKey, params)` /
+  `.t(messageKey, params)`, and delegates to the base
+  `dispatchNotification` with composed strings. Wired into the deploy
+  webhook, the admin "test notification" button, the user "test
+  Telegram" button, and the admin reminder-check diagnostic. Nine
+  new notification keys land in all six locale bundles.
+- **Locale-native date format ordering for FR / ES / IT / PL.** A new
+  `format.*` namespace documents `dateShort`, `timeShort`, and
+  `dateTime` per locale — FR / ES / IT use `{day}/{month}/{year}`
+  slashes, PL uses `{day}.{month}.{year}` dots, DE keeps dots, EN
+  keeps slashes. The keys are forward-looking; runtime formatting
+  still routes through `Intl.DateTimeFormat` via
+  `src/lib/format-locale.ts`, but downstream surfaces that render
+  outside a React context (PDF, CSV, email) can read the ordering
+  hint without spinning up `Intl`.
+- **`coachScopeWindowSchema.lastYear`.** The Coach snapshot window
+  enum gains a `lastYear` value (365 days) between `last90days` and
+  `allTime`. `<SourceChips>` surfaces the year-in-review chip when
+  the resolved scope window matches.
+- **Workouts read route.** New `GET /api/workouts` paginated route
+  that runs every fetch through `pickCanonicalWorkout()` with
+  `DEFAULT_WORKOUT_SOURCE_PRIORITY` and the 5-min cluster window.
+  Pagination corrects against canonical dedup — the route pulls the
+  full filtered set, dedupes once, then slices, so `meta.total`
+  reports the deduped count rather than the per-window
+  `canonical.length`.
+- **iOS handoff addendum.** New
+  `.planning/v15-ios-handoff/22-standalone-and-server-pairing.md`
+  documents the standalone-then-pair pattern for the iOS native
+  client. Sibling of the existing `22-offline-first-architecture.md`;
+  same research input, neutral framing per the v1.4.27 convention
+  directive.
+
+### Changed
+
+- **Tap-target floor lifted across the primitives.** `Button` default
+  `h-9 → h-10`, `lg` `h-10 → h-11`, `icon` `size-9 → size-10`,
+  `icon-lg` `size-10 → size-11`; `Input` `h-9 → h-10`; `Select`
+  trigger `h-9 → h-10`; `DropdownMenuItem` gains `min-h-11 py-2`.
+  `Dialog` close-X grew from 24 px to `min-h-9 min-w-9` (36 px,
+  WCAG 2.5.8) — intentional compromise so the close affordance does
+  not crowd a dialog header.
+- **`PasswordInput` lifted to the shared UI layer.** Moved from
+  `src/components/settings/password-input.tsx` to
+  `src/components/ui/password-input.tsx`; the toggle button grew to a
+  44 px hit area, the input gets `pr-12` so user input never collides
+  with the toggle. Five settings + admin consumers re-import.
+- **Coach drawer mount move.** The drawer no longer mounts inline on
+  `/insights/page.tsx`; the layout owns it. Sub-pages call
+  `useCoachLaunch()` to open the panel.
+- **Coach drawer bottom-sheet on `<sm`.** The drawer reads
+  `useIsMobile("sm")` and switches `side="right"` → `side="bottom"`
+  below 640 px. The window-pill `<Select>` in the header hides on
+  phone viewports — the sources-rail picker covers the same override.
+  `<SheetTitle>` pins `min-w-0 truncate` so long titles always clip.
+- **Coach evidence disclosure.** The `<details>` block on each Coach
+  reply is now controlled via `useState` with an accurate
+  `aria-expanded` driven from that state. The `showEvidenceByDefault`
+  Coach pref retires from the settings sheet (the persisted field
+  stays on the Zod schema for backward compatibility; v1.5 can drop
+  it via a forward-compat migration).
+- **Coach sources-rail toggle.** Swapped from a raw
+  `<input type="checkbox">` to the new shadcn `<Checkbox>` primitive
+  at `src/components/ui/checkbox.tsx`. Keyboard contract (Space
+  toggles, Tab moves), focus ring, touch-friendly hit target. The
+  existing `data-slot="coach-sources-checkbox"` marker is preserved.
+- **Coach settings-sheet close affordance.** Retired the primitive's
+  absolutely-positioned close-X (`showCloseButton={false}`) in favour
+  of an inline `<SheetClose>` in the header, matching the coach-drawer
+  pattern and clearing 44 px.
+- **Coach rail-tray triggers.** The history and sources triggers lift
+  out of the absolute overlay into a sub-header strip
+  (`xl:hidden` / `lg:hidden`); both buttons sit at `min-h-11`. The
+  per-row delete on `history-rail.tsx` drops the
+  `opacity-0 group-hover:opacity-100` reveal and is always visible at
+  `size-11`.
+- **Token-leak hardening at insight-status producers and consumer.**
+  `normalizeSummaryText` on the seven `*-status.ts` helpers
+  (`pulse`, `weight`, `bmi`, `mood`, `blood-pressure`,
+  `medication-compliance`, `general`) now calls `stripChartTokens()`
+  before whitespace collapse; `<InsightStatusCard>` wraps `text` with
+  the same call at the render site as defence-in-depth for cached
+  rows. The colon-form, capitalised-Metric and orphan-enum tokens
+  are now scrubbed at both layers.
+- **Settings — date-of-birth paired with language in one grid row.**
+  `account-section.tsx` collapses the v1.4.19 split. The
+  `TimezonePicker` inner gap lifts to `gap-3` so the select and the
+  detect button breathe at the same rhythm as the rest of the form.
+- **Settings + admin shells reserve a minimum main-column height.**
+  Both shells pick up
+  `<main className="min-h-[calc(100dvh-12rem)] min-w-0">` so short
+  sub-pages no longer trigger a click-to-shift as the layout
+  collapses inwards.
+- **Thresholds + Sources skeleton rows replace the single spinner.**
+  The two settings sections render a row-shaped placeholder list
+  while loading; the skeletons map over the same metric ordering as
+  the live UI so the layout stays put across the loading-to-loaded
+  transition.
+- **Heading weight + card cadence + label-input gap.** Standardised
+  to `font-semibold` across every divergent `<h2>` / `<h3>` in
+  settings and admin sections; card-internal vertical rhythm pins to
+  `space-y-4`; the password-change dialog at `account-section.tsx`
+  lifts `space-y-1.5 → space-y-2` across its three label-input pairs.
+- **Health Score column rebalanced.** The hero strip splits to a
+  tablet-friendly `md:flex-row`; the Health Score card pins a
+  `basis-` width so the column does not stretch past its content.
+  The L2 disclaimer text bumps from `text-[10px]` to `text-[11px]`
+  to clear the 12 px mobile floor concern. The retired inline
+  ask-Coach button drops; the `onAskCoach` prop stays for backward
+  compatibility (destructure-and-ignore).
+- **Daily Briefing trim.** The duplicate paragraph slot drops; the
+  card renders a single insight line and the matching insights
+  sub-page link.
+- **`/api/version` carrier surface.** The login overview CSV adopts
+  carrier as a column and the per-row chip surfaces under the
+  provider cell. Empty carrier renders as no chip rather than a
+  placeholder label.
+- **CoachLaunch `scope` parameter.** Reserved on the
+  `useCoachLaunch().askCoach(prefill, scope)` signature for v1.4.28's
+  per-metric narrowing; currently a no-op on the sources rail.
+- **CSV / pagination chrome out of the admin scroll wrappers.**
+  `login-overview-section.tsx` and `app-log-preview-section.tsx` now
+  render the pagination controls and the summary line as siblings of
+  the `overflow-x-auto` table wrapper. The CSV export button was
+  already in the toolbar row above the table.
+- **`measurement-list.tsx` filter row stacks on `<sm`.** The
+  measurement-type filter `SelectTrigger` widens to `w-full sm:w-48`
+  and stacks above the controls below the small breakpoint.
+- **Chart-height as a CSS variable.** `HealthChart`, `MoodChart` and
+  `MedicationComplianceChart` expose `--chart-height` /
+  `--chart-height-md` so the height shifts on `md+` without a
+  re-render. `MoodChart` 280 → 240 to match the rest of the trend
+  strip; a shared `CHART_HEIGHT_PX` constant lives at
+  `src/components/charts/constants.ts`.
+- **Compliance heatmap tap-pin + cell floor.** The heatmap tooltip
+  pins on tap on touch surfaces (previously hover-only); each cell
+  pins a 14 px floor; the heatmap overflows the parent on `<sm`
+  rather than crushing to one row.
+- **Withings sync — scope-skip path silences the admin alert.**
+  Calls to `recordSyncFailure` in `sync-activity.ts` and
+  `sync-sleep.ts` swap to `parkIntegrationAtReauth` on the
+  deliberate scope-skip branch; the defence-in-depth 403 catch path
+  keeps the loud `recordSyncFailure`. The false-positive 3-strike
+  admin Telegram for re-auth scope deltas is gone.
+- **i18n bundles — 154 dead keys retired.** A repository-wide scan
+  retires keys that no surface reads (the legacy insights status
+  trio, the `aiInsights` / `generate*` / `noApiKey` set retired with
+  the briefing rebuild, the `onboarding.v2.*` stub set, ten dead
+  medication keys, four dead chart keys, the `insightsPreview` /
+  `bloodPressureDia` / `bloodPressureSys` dashboard keys, two dead
+  notification keys, two dead admin-provider labels). 228 new
+  strings land across the same 38 unique paths for the GLP-1 tile,
+  the admin carrier chip, the insights empty states and the
+  notifications dispatcher.
+- **Shared mood label module.** New `src/lib/mood/labels.ts` exposes
+  `MOOD_ENUM_VALUES`, `MOOD_SCORE_BY_ENUM`, `MOOD_ENUM_BY_SCORE`,
+  `MOOD_LABEL_KEYS`, and `moodLabelKeyForScore()`. `mood-list.tsx`
+  and `mood-chart.tsx` import the canonical key map from this
+  module; the five inline `t("charts.moodLabel${n}")` calls retire
+  in favour of the canonical `mood.level*` set.
+- **Shared `allMessages` + `resolveKey` extract.** Both
+  `lib/i18n/context.tsx` and `lib/i18n/server-translator.ts` now
+  import from the new `lib/i18n/shared-resolve.ts`; the two
+  duplicate copies are gone (net 61 / -66 LOC).
+- **`metricPriorityObjectSchema` derives from
+  `SOURCE_PRIORITY_METRIC_KEYS`.** Adding a metric class is a
+  single-line constant edit instead of three parallel listings.
+- **Workouts attach route collapses 1+N to a single `findMany`.**
+  `POST /api/workouts/batch` swaps the
+  `Promise.all(withoutExternal.map(p => tx.workout.findFirst(...)))`
+  loop for one batched `tx.workout.findMany` with a per-entry `OR`
+  clause; per-batch round-trip count drops from 1+N to 2 for a
+  100-row batch. The createdAt-DESC tie-break is preserved via
+  in-memory grouping.
+- **Form input attributes wired across the surface.** Measurement,
+  medication, mood, settings, admin and auth forms pick up
+  `inputMode` / `enterKeyHint` / `autoComplete` / `autoCapitalize` /
+  `aria-required` / `aria-invalid` / `aria-describedby`. The Input
+  primitive derives `inputMode` from the `type` prop when the caller
+  does not pass one (`number → decimal`, `tel → tel`,
+  `email → email`, `url → url`, `search → search`). Integer-only
+  call sites still pass `inputMode="numeric"` explicitly.
+- **Schedule day-of-week grid widens on narrow viewports.**
+  `medication-form.tsx` stacks the Daily pill above a fixed
+  `grid grid-cols-7` so every weekday keeps the 44 px tap-target
+  floor regardless of container width.
+- **Public-page polish.** `/about` and `/privacy` sticky headers
+  pick up `pt-[env(safe-area-inset-top)]` so the brand row clears
+  the iOS notch. `/privacy` mounts a default-closed `<details>`
+  Contents TOC above the body with anchor links to every numbered
+  section; the 19 HealthKit identifier `<code>` elements gain
+  `break-all` so the longest camelCase entries wrap.
+
+### Fixed
+
+- **Stray-brace typo at the insights-targets route.** The trailing
+  comment block at `src/app/api/insights/targets/route.ts:807`
+  carried a stray `}` that the v1.4.25 polish pass missed; cleaned
+  up alongside the prompt-side audit.
+- **Chart-tick timezone audit.** `compliance-heatmap.tsx` parsed the
+  day-key against local tz (`new Date(dateStr + "T00:00:00")`) and
+  read `getDay()` / `getMonth()` (server-tz) while the dateKey was
+  UTC-anchored via `toISOString().slice(0, 10)`. Pinned to
+  `T00:00:00Z` + `getUTC*` accessors so the Monday-alignment and
+  month-marker placement stay correct under an SSR pass on a
+  non-Berlin host. The five sibling chart files
+  (`sleep-stage-stacked-bar`, `mood-chart`, `health-chart`,
+  `medication-compliance-chart`, plus the broader insights surface)
+  audit clean.
+- **`/about` returned 401 to unauthenticated visitors.** `/about`
+  joined `proxy.ts` `PUBLIC_PATHS` in B3 but the client-side
+  `auth-shell.tsx` `PUBLIC_PATHS` list was missing the entry, so
+  the route surfaced the redirect-to-login screen instead of the
+  credits. `isStandalonePublicPage` also matches `/about` so the
+  route renders edge-to-edge.
+- **Insights empty-state CTAs hit a 404.** The CTAs targeted
+  `/measurements/new`, which is not a route. Swapped to
+  `/measurements?add=<TYPE>` with a `MEASUREMENT_TYPES` allow-list
+  on the consumer side; the measurements page reads the query
+  param, opens the form with `defaultType` set, then
+  `router.replace`s to a clean URL.
+- **`/api/version` register button below the tap floor.** The
+  `/auth/register` submit button promotes to `size="lg" min-h-11
+  w-full` so the primary action stays finger-tap reachable on
+  narrow viewports.
+- **Workouts pagination broken under canonical dedup.** Pulling the
+  full filtered set and slicing post-dedup yields the correct
+  `meta.total` and a no-overlap, no-gap descending order across
+  pages. New regression test paginates eight twin clusters across
+  two pages.
+- **`useIsMobile` first-paint desktop flash.** The hook now reads
+  through `useSyncExternalStore` with `getServerSnapshot() => false`
+  and `getClientSnapshot()` reading
+  `window.matchMedia(query).matches` synchronously. SSR still
+  resolves to `false`; the first client render reads the live
+  media-query state without waiting an effect tick.
+- **`Sheet` close-X tap target.** Widened to match the `Dialog`
+  primitive's 36 px floor.
+- **`/about` and `/privacy` anchors occluded by the sticky header.**
+  `scroll-mt` widened so the section start lands below the sticky
+  header rather than behind it.
+- **`MedicationComplianceChart.compareBaseline` prop intent.** The
+  prop was carried by 24 call sites uniformly but was never
+  consumed; explicitly destructured with `void compareBaseline;` so
+  the type contract is preserved and the dead-prop signal clears.
+- **DrugLevelChart dead axis labels.** Dropped the empty `<text>`
+  child of `<XAxis>` (an invisible SVG node beneath the x-axis) and
+  the duplicate Recharts `label={…}` prop on `<YAxis>` that tried to
+  paint the unit-less caption inside a 1 px-wide axis where it
+  could never be read. The external `<p>` above the chart remains
+  the single source of truth.
+- **`not-found.tsx` missing.** New branded 404 page with the
+  `<Logo>`, the 404 eyebrow, the headline and a single
+  back-to-dashboard `<Link>`. `min-h-dvh` follows the dynamic
+  viewport on iOS Safari; `pt-[calc(env(safe-area-inset-top)+3rem)]`
+  keeps the headline clear of the notch.
+
+### Removed
+
+- **Orphan `/api/audit-log` route.** The route file (1 281 B) had no
+  callers, no test fixture and no DTO. Five admin / monitoring
+  endpoints (`/api/admin/ai-settings`, `/api/admin/backup/test`,
+  `/api/admin/status-overview`, `/api/monitoring/glitchtip/test`,
+  `/api/monitoring/umami/test`) defer to v1.4.28 because each is
+  referenced by README or CHANGELOG — a wire-or-remove decision the
+  maintainer owns.
+- **`<InsightsCardPreview>` surface.** The standalone dashboard
+  preview retired alongside the layout-test contract flip;
+  `dashboard-layout.test.ts` now guards against accidental
+  reintroduction.
+- **14 dead exports across `glp1-knowledge.ts`, `scheduling/cadence.ts`
+  and `glp1-snapshot.ts`.** Eight type symbols on
+  `glp1-knowledge.ts` drop to internal types; `ExpectedDose` drops
+  its `export` keyword; `__testables.WEEKDAY_KEYS` retires with zero
+  callers. `routeForBrand` and `GLP1_DRUG_IDS` stay exported because
+  the test suites read them.
+- **`BASE_SYSTEM_PROMPT` + `INSIGHTS_SYSTEM_PROMPT` bare-symbol
+  exports.** Verified clean — only locale-suffixed `_DE` / `_EN`
+  forms remain.
+- **Stale legacy insights-prompt module.** Pruned alongside the
+  v1.4.25 native-locale rebuild that displaced it.
+- **Three dead Coach prefs.** `showEvidenceByDefault` UI retires
+  from the Coach settings sheet; the persisted Zod field stays for
+  backward compatibility.
+
+### Infrastructure
+
+- **`MAXMIND_LICENSE_KEY` wired into the GHCR build workflow.** A
+  new `Fetch GeoLite2 databases` step in
+  `.github/workflows/docker-publish.yml` between the metadata-action
+  and the buildx build-push exports the secret from repo secrets and
+  fails the workflow with an `::error::` line when unset (instead of
+  silently exiting 0 and producing an empty `assets/geolite2/`
+  directory). The Dockerfile `COPY assets/geolite2/ /opt/geolite2/`
+  step now lands the real MMDB files and the runtime resolver
+  populates the carrier column on the production image.
+- **Migration `0061_audit_log_carrier`.** Additive,
+  `IF NOT EXISTS`-guarded, forward-only. Adds two columns to
+  `AuditLog`: `asn` (`bigint`) + `carrier` (`text`). Safe to
+  re-apply on the demo server.
+
+### Tests
+
+- **`pnpm test --run` — 4004 / 4005 passing, 1 skipped.** Across
+  357 files. The skipped test is a pre-existing
+  visual-regression placeholder.
+- **6 new `responsive-sheet.test.tsx` smoke tests** pin the
+  dialog-vs-sheet branch, the `data-variant` hook, the footer-slot
+  contract and the SSR `useIsMobile` first-paint.
+- **16 new `metric-availability.test.ts` cases** cover each metric ×
+  `{has data, no data, undefined summaries, missing summary entry,
+  BMI-from-WEIGHT derivation, sys-vs-dia independence,
+  mood/medication overrides}`.
+- **6 new `insights-tab-strip.test.tsx` cases** assert
+  backward-compat without `availability`, pill-drop when data is
+  missing, overview pill always renders, mood + medication
+  light-up, BMI-from-WEIGHT derivation.
+- **Drift-guard test at `src/__tests__/i18n-drift-guard.test.ts`**
+  (16 cases) anchors the GLP-1 tile keys, the carrier keys, the
+  insights empty-state keys, the notification dispatcher keys and
+  the personal-record namespace across all six locales.
+- **Locale-native date format test** at
+  `src/lib/i18n/__tests__/format-locale-order.test.ts` (7 cases)
+  asserts ordering per locale.
+- **`canonical-dedup.test.ts`** (4 cases) plus the new
+  pagination regression covers the workouts read route.
+- **Auth + audit suites extended** for the new ASN + carrier
+  columns and the carrier short-label heuristic (14 cases under
+  `geo-asn.test.ts`, 5 new cases under `audit.test.ts`, 8 new
+  under `login-overview-csv.test.ts`).
+- **`coach-launch-context.test.tsx`** (3 cases) pins the new
+  Coach launch context hook shape, the provider mount, and the
+  null fallback outside the provider.
+
 ## [1.4.26] — 2026-05-15
 
 Hotfix release. Adds a public, unauthenticated privacy-policy page at
