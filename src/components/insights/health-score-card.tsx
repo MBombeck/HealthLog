@@ -1,8 +1,7 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ChevronDown, Minus, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowDown, ArrowUp, ChevronDown, Minus } from "lucide-react";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
@@ -149,7 +148,12 @@ export function HealthScoreCard({
   band,
   components,
   delta,
-  onAskCoach,
+  // v1.4.27 B1 — onAskCoach stays on the prop signature so the hero
+  // strip's existing wire-up doesn't break, but the card no longer
+  // mounts an inline button (the hero strip already carries the same
+  // action). Destructure-and-ignore is intentional.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onAskCoach: _onAskCoach,
   initiallyExpanded = false,
 }: HealthScoreCardProps) {
   const { t, locale } = useTranslations();
@@ -228,17 +232,13 @@ export function HealthScoreCard({
       className={cn(
         "bg-card/65 rounded-xl border px-4 py-4 shadow-sm backdrop-blur-sm",
         BAND_BORDER_CLASS[band],
-        // v1.4.25 W3 — Marc reported the German "Einnahmetreue" label
-        // overlapping the band-coloured component-value pill at the
-        // right of each row. The original `w-[220px]` left only ~64px
-        // for the label column after the bar + value chip ate the
-        // rest, which fits "Mood" / "BP" but truncates the longer
-        // German strings. Bumped to `w-[260px]` so the card sits
-        // ~18 % wider on `lg+` without disturbing the title block's
-        // visual centre of gravity; the label column is widened in
-        // step with this so the breathing room actually lands on the
-        // text.
-        "w-full lg:w-[260px] lg:shrink-0",
+        // v1.4.27 B1 — bumped from `lg:w-[260px]` to `lg:w-[360px]
+        // xl:w-[400px]` so the score occupies ~28-31 % of the hero on
+        // 1280-px viewports and ~36 % on 1536+, reading as a true
+        // co-equal column rather than a small inset. The narrower
+        // earlier value was a reaction to a label-overflow bug that
+        // is now fixed by the wider label column below.
+        "w-full lg:w-[360px] lg:shrink-0 xl:w-[400px]",
       )}
     >
       <div className="flex flex-col gap-3">
@@ -277,7 +277,11 @@ export function HealthScoreCard({
           <span
             data-slot="health-score-card-number"
             className={cn(
-              "text-4xl leading-none font-semibold tabular-nums",
+              // v1.4.27 B1 — bumped from text-4xl to text-5xl
+              // (sm:text-6xl on wider viewports) so the headline
+              // number becomes the visual centre of gravity of the
+              // expanded card.
+              "text-5xl leading-none font-semibold tabular-nums sm:text-6xl",
               BAND_NUMBER_CLASS[band],
             )}
           >
@@ -293,7 +297,7 @@ export function HealthScoreCard({
 
         <div
           data-slot="health-score-card-progress"
-          className="bg-muted/50 h-1.5 w-full overflow-hidden rounded-full"
+          className="bg-muted/50 h-2 w-full overflow-hidden rounded-full"
           role="progressbar"
           aria-valuenow={score}
           aria-valuemin={0}
@@ -533,28 +537,19 @@ export function HealthScoreCard({
           )}
         </div>
 
+        {/* v1.4.27 B1 — disclaimer bumped from text-[10px] to
+            text-[11px] (BL-P4-9 L2: the 10 px size was borderline
+            against the 12 px mobile floor). The hero strip already
+            carries an "Ask the coach" action so the inline button
+            here retires; the parent still receives onAskCoach via
+            other surfaces but the card no longer mounts a duplicate
+            CTA. */}
         <p
           data-slot="health-score-card-disclaimer"
-          className="text-muted-foreground text-[10px] leading-snug"
+          className="text-muted-foreground text-[11px] leading-snug"
         >
           {t("insights.healthScore.disclaimer")}
         </p>
-
-        {onAskCoach && (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            data-slot="health-score-card-ask-coach"
-            className="w-full gap-1.5"
-            onClick={() =>
-              onAskCoach(t("insights.healthScore.coachPrompt", { score }))
-            }
-          >
-            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>{t("insights.healthScore.askCoach")}</span>
-          </Button>
-        )}
       </div>
     </div>
   );

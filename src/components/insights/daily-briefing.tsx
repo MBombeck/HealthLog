@@ -232,12 +232,13 @@ export function DailyBriefing({
           </>
         ) : briefing ? (
           <div className="space-y-4">
-            <p
-              data-slot="daily-briefing-paragraph"
-              className="text-foreground text-sm leading-relaxed"
-            >
-              {stripChartTokens(briefing.paragraph)}
-            </p>
+            {/* v1.4.27 B1 — the leading narrative paragraph dropped.
+                The hero strip subtitle on `/insights` already renders
+                the same `briefing.paragraph` text directly above this
+                card, so the user used to read the same string twice
+                within 200 px. The card now opens straight on the
+                structured key-findings list, which is the part the
+                hero subtitle cannot surface. */}
             {briefing.keyFindings.length > 0 && (
               <div className="space-y-2">
                 <p

@@ -179,8 +179,12 @@ describe("<HealthScoreCard>", () => {
     expect(html).toContain("Indicative");
   });
 
-  it("does NOT render the Ask-the-Coach button when onAskCoach is omitted", () => {
-    const html = ssr(
+  it("v1.4.27 B1 — no longer mounts an inline Ask-the-Coach button (hero strip carries the CTA)", () => {
+    // The hero strip's existing "Ask the coach" action covers this
+    // surface; the card-internal duplicate button retired. The
+    // onAskCoach prop stays on the type signature so callers don't
+    // break, but the card no longer renders it.
+    const omitted = ssr(
       <HealthScoreCard
         score={86}
         band="green"
@@ -188,11 +192,7 @@ describe("<HealthScoreCard>", () => {
         delta={null}
       />,
     );
-    expect(html).not.toContain('data-slot="health-score-card-ask-coach"');
-  });
-
-  it("renders the Ask-the-Coach button when onAskCoach is supplied", () => {
-    const html = ssr(
+    const supplied = ssr(
       <HealthScoreCard
         score={86}
         band="green"
@@ -201,8 +201,8 @@ describe("<HealthScoreCard>", () => {
         onAskCoach={() => {}}
       />,
     );
-    expect(html).toMatch(/data-slot="health-score-card-ask-coach"/);
-    expect(html).toContain("Ask the Coach");
+    expect(omitted).not.toContain('data-slot="health-score-card-ask-coach"');
+    expect(supplied).not.toContain('data-slot="health-score-card-ask-coach"');
   });
 
   it("captures the score-aware prefill argument when the button is invoked", () => {
@@ -244,9 +244,11 @@ describe("<HealthScoreCard>", () => {
       "de",
     );
     expect(html).toContain("Gesundheitsscore");
-    expect(html).toContain("Coach fragen");
     expect(html).toContain("im Vergleich zur Vorwoche");
     expect(html).toContain("Orientierungshilfe");
+    // v1.4.27 B1 — the inline Coach button retired; hero strip carries
+    // the action now.
+    expect(html).not.toContain("Coach fragen");
   });
 
   it("uses tabular-nums on the headline number for stable layout", () => {
