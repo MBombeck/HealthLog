@@ -282,6 +282,8 @@ function MetricRow({
               <Input
                 id={`min-${metric}`}
                 type="number"
+                inputMode={metric === "ACTIVITY_STEPS" ? "numeric" : "decimal"}
+                enterKeyHint="next"
                 step={metric === "ACTIVITY_STEPS" ? 100 : 0.1}
                 min={bounds.min}
                 max={bounds.max}
@@ -298,6 +300,8 @@ function MetricRow({
               <Input
                 id={`max-${metric}`}
                 type="number"
+                inputMode={metric === "ACTIVITY_STEPS" ? "numeric" : "decimal"}
+                enterKeyHint="done"
                 step={metric === "ACTIVITY_STEPS" ? 100 : 0.1}
                 min={bounds.min}
                 max={bounds.max}

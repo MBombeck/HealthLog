@@ -54,18 +54,23 @@ export function NotificationsSection() {
 
       <NotificationStatusCard />
 
+      {/* v1.4.27 MB3 — `scroll-mt-28` keeps each notification card's
+          anchor target below the safe-area sticky page header when the
+          user lands on `/settings/notifications#telegram` or similar.
+          Without the offset the section title pins under the header on
+          mobile and the user has to scroll back up to find it. */}
       {showTelegram && (
-        <div id="telegram">
+        <div id="telegram" className="scroll-mt-28">
           <TelegramCard isAuthenticated={isAuthenticated} />
         </div>
       )}
       {showNtfy && (
-        <div id="ntfy">
+        <div id="ntfy" className="scroll-mt-28">
           <NtfyCard isAuthenticated={isAuthenticated} />
         </div>
       )}
       {showWebPush && (
-        <div id="web-push">
+        <div id="web-push" className="scroll-mt-28">
           <WebPushCard />
         </div>
       )}

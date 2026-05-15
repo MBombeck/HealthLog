@@ -148,6 +148,11 @@ export function TelegramCard({
                     : "123456:ABC-DEF..."
                 }
                 maxLength={100}
+                autoComplete="off"
+                inputMode="text"
+                spellCheck={false}
+                autoCapitalize="none"
+                enterKeyHint="next"
               />
             </div>
             <div className="space-y-2">
@@ -158,6 +163,11 @@ export function TelegramCard({
                 onChange={(e) => setChatId(e.target.value)}
                 placeholder="123456789"
                 maxLength={50}
+                autoComplete="off"
+                inputMode="text"
+                spellCheck={false}
+                autoCapitalize="none"
+                enterKeyHint="done"
               />
             </div>
           </div>

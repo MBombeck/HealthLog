@@ -404,6 +404,11 @@ function WithingsCard({
                       : t("settings.withingsClientId")
                   }
                   maxLength={200}
+                  autoComplete="off"
+                  inputMode="text"
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  enterKeyHint="next"
                 />
               </div>
               <div className="space-y-1.5">
@@ -420,6 +425,11 @@ function WithingsCard({
                       : t("settings.withingsClientSecret")
                   }
                   maxLength={200}
+                  autoComplete="off"
+                  inputMode="text"
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  enterKeyHint="done"
                 />
               </div>
               <div className="space-y-1.5">
@@ -703,6 +713,10 @@ function MoodLogCard({
               placeholder={t("settings.moodLogUrlPlaceholder")}
               value={url}
               onChange={(e) => setUrl(e.target.value)}
+              autoComplete="off"
+              spellCheck={false}
+              autoCapitalize="none"
+              enterKeyHint="next"
             />
           </div>
           <div>
@@ -718,6 +732,11 @@ function MoodLogCard({
               }
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
+              autoComplete="off"
+              inputMode="text"
+              spellCheck={false}
+              autoCapitalize="none"
+              enterKeyHint="done"
             />
           </div>
           <div className="flex flex-wrap items-start gap-2">

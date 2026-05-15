@@ -132,6 +132,8 @@ export function RemindersSection() {
             <Input
               id="admin-reminder-late"
               type="number"
+              inputMode="numeric"
+              enterKeyHint="next"
               min={15}
               max={480}
               value={reminderLateDraft ?? settings?.reminderLateMinutes ?? 120}
@@ -153,6 +155,8 @@ export function RemindersSection() {
             <Input
               id="admin-reminder-missed"
               type="number"
+              inputMode="numeric"
+              enterKeyHint="done"
               min={30}
               max={720}
               value={

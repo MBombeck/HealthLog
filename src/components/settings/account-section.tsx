@@ -355,7 +355,12 @@ export function AccountSection() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="username">{t("settings.username")}</Label>
-              <Input id="username" value={user.username} disabled />
+              <Input
+                id="username"
+                value={user.username}
+                disabled
+                autoComplete="username"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">{t("auth.email")}</Label>
@@ -366,6 +371,8 @@ export function AccountSection() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t("auth.emailPlaceholder")}
                 maxLength={320}
+                autoComplete="email"
+                enterKeyHint="next"
               />
             </div>
           </div>
@@ -392,6 +399,8 @@ export function AccountSection() {
               <Input
                 id="height"
                 type="number"
+                inputMode="decimal"
+                enterKeyHint="next"
                 value={heightCm}
                 onChange={(e) => setHeightCm(e.target.value)}
                 placeholder="175"
