@@ -1,26 +1,24 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useInsightStatus } from "@/hooks/use-insight-status";
+import { useInsightsAnalytics } from "@/hooks/use-insights-analytics";
 import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
 import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 import { CoachLaunchButton } from "@/components/insights/coach-launch-button";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
+import { MetricEmptyState } from "@/components/insights/metric-empty-state";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 import { Vo2MaxChartRow } from "@/components/insights/vo2-max-chart-row";
-import type { DataSummary } from "@/lib/analytics/trends";
 import {
   getAgeFromDateOfBirth,
   getPersonalizedPulseTarget,
 } from "@/lib/analytics/pulse-targets";
-import { hasMetricData } from "@/lib/insights/metric-availability";
 
 /**
  * v1.4.25 W4 — `/insights/puls`.
@@ -31,11 +29,12 @@ import { hasMetricData } from "@/lib/insights/metric-availability";
  * comparison-overlay independently from the dashboard pulse card; the
  * MeasurementType filter is `PULSE` (the same field used elsewhere
  * in the codebase).
+ *
+ * v1.4.28 R3d (BK-F-H1 + BK-F-M1) — analytics fetch + empty-state
+ * branch consume `useInsightsAnalytics()` + `<MetricEmptyState>`. The
+ * VO2 max chart-row still reads `data.summaries.VO2_MAX` directly so
+ * the hook exposes the unwrapped payload alongside `isEmpty`.
  */
-interface AnalyticsData {
-  summaries: Record<string, DataSummary>;
-}
-
 export default function InsightsPulsPage() {
   const { isAuthenticated, user } = useAuth();
   const { t } = useTranslations();
@@ -48,17 +47,7 @@ export default function InsightsPulsPage() {
   // bundle the mother page reads. Sharing the cache key keeps the
   // payload single-fetch on tab navigation (React-Query unwraps from
   // the same key).
-  const { data: analytics } = useQuery({
-    queryKey: ["analytics"],
-    queryFn: async () => {
-      const res = await fetch("/api/analytics");
-      if (!res.ok) throw new Error("Failed");
-      const json = await res.json();
-      return json.data as AnalyticsData;
-    },
-    enabled: isAuthenticated,
-    staleTime: 60 * 1000,
-  });
+  const { data: analytics, isEmpty } = useInsightsAnalytics("PULSE");
   const vo2Summary = analytics?.summaries?.VO2_MAX ?? null;
 
   // v1.4.27 F17 — gate the sub-page on at least one pulse observation.
@@ -67,32 +56,24 @@ export default function InsightsPulsPage() {
   // `/measurements?add=PULSE` rather than a chart skeleton over a
   // blank target band. v1.4.27 MB6 — query-param replaces the dead
   // `/measurements/new` route.
-  if (
-    isAuthenticated &&
-    analytics &&
-    !hasMetricData("PULSE", {
-      summaries: analytics.summaries,
-      hasMood: false,
-      hasMedication: false,
-    })
-  ) {
+  if (isEmpty) {
     return (
-      <SubPageShell title={t("insights.pulseSectionTitle")}>
-        <EmptyState
+      <SubPageShell
+        title={t("insights.pulseSectionTitle")}
+        description={t("insights.subPage.pulsDescription")}
+      >
+        <MetricEmptyState
           icon={<Heart className="size-6" />}
           title={t("insights.emptyState.pulse.title")}
           description={t("insights.emptyState.pulse.description")}
-          ctaSize="lg"
-          action={
+          cta={
             <Button size="sm" asChild>
               <Link href="/measurements?add=PULSE">
                 {t("insights.emptyState.pulse.cta")}
               </Link>
             </Button>
           }
-        />
-        <CoachLaunchButton
-          prefill="I haven't recorded any resting pulse yet — why does it matter, and what should I know before I start?"
+          coachPrefill="I haven't recorded any resting pulse yet — why does it matter, and what should I know before I start?"
         />
       </SubPageShell>
     );

@@ -1,26 +1,20 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Scale } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useInsightStatus } from "@/hooks/use-insight-status";
+import { useInsightsAnalytics } from "@/hooks/use-insights-analytics";
 import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
 import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 import { CoachLaunchButton } from "@/components/insights/coach-launch-button";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
+import { MetricEmptyState } from "@/components/insights/metric-empty-state";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 import { buildWeightBandsFromHeight } from "@/lib/analytics/value-bands";
-import type { DataSummary } from "@/lib/analytics/trends";
-import { hasMetricData } from "@/lib/insights/metric-availability";
-
-interface AnalyticsData {
-  summaries: Record<string, DataSummary>;
-}
 
 /**
  * v1.4.25 W4 — `/insights/gewicht`.
@@ -30,6 +24,9 @@ interface AnalyticsData {
  * assessment. The chart-cog (`chartKey="weight"`) lets the user toggle
  * trend lines + comparison overlay independently from the dashboard
  * weight card.
+ *
+ * v1.4.28 R3d (BK-F-H1 + BK-F-M1) — analytics fetch + empty-state
+ * branch now consume `useInsightsAnalytics()` + `<MetricEmptyState>`.
  */
 export default function InsightsGewichtPage() {
   const { isAuthenticated, user } = useAuth();
@@ -39,44 +36,26 @@ export default function InsightsGewichtPage() {
   const { data: status, isLoading: isStatusLoading } =
     useInsightStatus("weight");
 
-  const { data: analytics } = useQuery({
-    queryKey: ["analytics"],
-    queryFn: async () => {
-      const res = await fetch("/api/analytics");
-      if (!res.ok) throw new Error("Failed");
-      const json = await res.json();
-      return json.data as AnalyticsData;
-    },
-    enabled: isAuthenticated,
-    staleTime: 60 * 1000,
-  });
+  const { isEmpty } = useInsightsAnalytics("WEIGHT");
 
-  if (
-    isAuthenticated &&
-    analytics &&
-    !hasMetricData("WEIGHT", {
-      summaries: analytics.summaries,
-      hasMood: false,
-      hasMedication: false,
-    })
-  ) {
+  if (isEmpty) {
     return (
-      <SubPageShell title={t("insights.weightSectionTitle")}>
-        <EmptyState
+      <SubPageShell
+        title={t("insights.weightSectionTitle")}
+        description={t("insights.subPage.gewichtDescription")}
+      >
+        <MetricEmptyState
           icon={<Scale className="size-6" />}
           title={t("insights.emptyState.weight.title")}
           description={t("insights.emptyState.weight.description")}
-          ctaSize="lg"
-          action={
+          cta={
             <Button size="sm" asChild>
               <Link href="/measurements?add=WEIGHT">
                 {t("insights.emptyState.weight.cta")}
               </Link>
             </Button>
           }
-        />
-        <CoachLaunchButton
-          prefill="I haven't recorded any weight yet — why does it matter, and what should I know before I start tracking?"
+          coachPrefill="I haven't recorded any weight yet — why does it matter, and what should I know before I start tracking?"
         />
       </SubPageShell>
     );

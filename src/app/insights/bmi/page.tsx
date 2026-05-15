@@ -1,11 +1,11 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Ruler } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useInsightStatus } from "@/hooks/use-insight-status";
+import { useInsightsAnalytics } from "@/hooks/use-insights-analytics";
 import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
 import { Button } from "@/components/ui/button";
@@ -13,13 +13,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 import { CoachLaunchButton } from "@/components/insights/coach-launch-button";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
+import { MetricEmptyState } from "@/components/insights/metric-empty-state";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
-import type { DataSummary } from "@/lib/analytics/trends";
-import { hasMetricData } from "@/lib/insights/metric-availability";
-
-interface AnalyticsData {
-  summaries: Record<string, DataSummary>;
-}
 
 /**
  * v1.4.25 W4 — `/insights/bmi`.
@@ -29,6 +24,11 @@ interface AnalyticsData {
  * underlying WEIGHT series is reused. When the user has no height set
  * the chart can't compute; we surface the same plain empty-state the
  * mother page used.
+ *
+ * v1.4.28 R3d (BK-F-H1 + BK-F-M1) — analytics fetch + the
+ * weight-not-logged-yet branch consume the shared hook + primitive.
+ * The "height not set" branch keeps its bespoke `<EmptyState>` because
+ * the CTA targets `/settings/account`, not the measurement onboarding.
  */
 const BMI_BANDS = [
   { min: 0, max: 17, color: "#ff5555", opacity: 0.16 },
@@ -45,17 +45,7 @@ export default function InsightsBmiPage() {
 
   const { data: status, isLoading: isStatusLoading } = useInsightStatus("bmi");
 
-  const { data: analytics } = useQuery({
-    queryKey: ["analytics"],
-    queryFn: async () => {
-      const res = await fetch("/api/analytics");
-      if (!res.ok) throw new Error("Failed");
-      const json = await res.json();
-      return json.data as AnalyticsData;
-    },
-    enabled: isAuthenticated,
-    staleTime: 60 * 1000,
-  });
+  const { isEmpty } = useInsightsAnalytics("BMI");
 
   // v1.4.27 F17 — BMI is derived from WEIGHT. When no weight readings
   // exist yet, the existing "set your height" branch can never compute
@@ -63,32 +53,24 @@ export default function InsightsBmiPage() {
   // `/measurements?add=WEIGHT` instead so the user logs the weight
   // first. v1.4.27 MB6 — query-param replaces the dead
   // `/measurements/new` route.
-  if (
-    isAuthenticated &&
-    analytics &&
-    !hasMetricData("BMI", {
-      summaries: analytics.summaries,
-      hasMood: false,
-      hasMedication: false,
-    })
-  ) {
+  if (isEmpty) {
     return (
-      <SubPageShell title={t("insights.bmiSectionTitle")}>
-        <EmptyState
+      <SubPageShell
+        title={t("insights.bmiSectionTitle")}
+        description={t("insights.subPage.bmiDescription")}
+      >
+        <MetricEmptyState
           icon={<Ruler className="size-6" />}
           title={t("insights.emptyState.bmi.title")}
           description={t("insights.emptyState.bmi.description")}
-          ctaSize="lg"
-          action={
+          cta={
             <Button size="sm" asChild>
               <Link href="/measurements?add=WEIGHT">
                 {t("insights.emptyState.bmi.cta")}
               </Link>
             </Button>
           }
-        />
-        <CoachLaunchButton
-          prefill="I haven't recorded any weight yet — why does BMI matter for me, and what should I know before I start tracking it?"
+          coachPrefill="I haven't recorded any weight yet — why does BMI matter for me, and what should I know before I start tracking it?"
         />
       </SubPageShell>
     );
@@ -96,7 +78,10 @@ export default function InsightsBmiPage() {
 
   if (!user?.heightCm) {
     return (
-      <SubPageShell title={t("insights.bmiSectionTitle")}>
+      <SubPageShell
+        title={t("insights.bmiSectionTitle")}
+        description={t("insights.subPage.bmiDescription")}
+      >
         <EmptyState
           icon={<Ruler className="size-6" />}
           title={t("insights.bmiEmptyTitle")}

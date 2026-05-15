@@ -10,10 +10,10 @@ import { useInsightStatus } from "@/hooks/use-insight-status";
 import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { CoachLaunchButton } from "@/components/insights/coach-launch-button";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
+import { MetricEmptyState } from "@/components/insights/metric-empty-state";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 
 /**
@@ -64,22 +64,27 @@ export default function InsightsStimmungPage() {
   // `hasMood = moodCount > 0`. CTA targets `/mood` (the dedicated
   // mood-logging surface) — short-circuits the user to the quickest
   // path to log their first entry.
+  //
+  // v1.4.28 R3d (BK-F-M1) — empty-state render delegates to the shared
+  // `<MetricEmptyState>` primitive. The mood data path stays on
+  // `/api/insights/comprehensive` because the `moodSummary.count`
+  // signal is event-driven, not sensor-aggregated.
   if (isAuthenticated && comprehensive && moodCount === 0) {
     return (
-      <SubPageShell title={t("insights.moodSectionTitle")}>
-        <EmptyState
+      <SubPageShell
+        title={t("insights.moodSectionTitle")}
+        description={t("insights.subPage.stimmungDescription")}
+      >
+        <MetricEmptyState
           icon={<Smile className="size-6" />}
           title={t("insights.emptyState.mood.title")}
           description={t("insights.emptyState.mood.description")}
-          ctaSize="lg"
-          action={
+          cta={
             <Button size="sm" asChild>
               <Link href="/mood">{t("insights.emptyState.mood.cta")}</Link>
             </Button>
           }
-        />
-        <CoachLaunchButton
-          prefill="I haven't logged any mood entries yet — why does mood tracking matter, and how should I start?"
+          coachPrefill="I haven't logged any mood entries yet — why does mood tracking matter, and how should I start?"
         />
       </SubPageShell>
     );

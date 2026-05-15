@@ -1,22 +1,20 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { HeartPulse } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useInsightStatus } from "@/hooks/use-insight-status";
+import { useInsightsAnalytics } from "@/hooks/use-insights-analytics";
 import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
 import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 import { CoachLaunchButton } from "@/components/insights/coach-launch-button";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
+import { MetricEmptyState } from "@/components/insights/metric-empty-state";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
-import type { DataSummary } from "@/lib/analytics/trends";
-import { hasMetricData } from "@/lib/insights/metric-availability";
 
 /**
  * v1.4.25 W4 — `/insights/blutdruck`.
@@ -33,56 +31,39 @@ import { hasMetricData } from "@/lib/insights/metric-availability";
  * v1.4.27 MB6 — the previous `/measurements/new` href hit a 404; the
  * measurements page now consumes `?add=<TYPE>` and auto-opens the
  * dialog with the matching default type.
+ *
+ * v1.4.28 R3d (BK-F-H1 + BK-F-M1) — the analytics fetch and the
+ * empty-state render were lifted into `useInsightsAnalytics()` and
+ * `<MetricEmptyState>`; the page module is now Apple-Health-lean.
  */
-interface AnalyticsData {
-  summaries: Record<string, DataSummary>;
-}
 export default function InsightsBlutdruckPage() {
-  const { isAuthenticated, user } = useAuth();
+  const { user } = useAuth();
   const { t } = useTranslations();
-  const { compareBaseline } = useInsightsLayoutPrefs(isAuthenticated);
+  const { compareBaseline } = useInsightsLayoutPrefs(user != null);
 
   const { data: status, isLoading: isStatusLoading } =
     useInsightStatus("blood-pressure");
 
-  const { data: analytics } = useQuery({
-    queryKey: ["analytics"],
-    queryFn: async () => {
-      const res = await fetch("/api/analytics");
-      if (!res.ok) throw new Error("Failed");
-      const json = await res.json();
-      return json.data as AnalyticsData;
-    },
-    enabled: isAuthenticated,
-    staleTime: 60 * 1000,
-  });
+  const { isEmpty } = useInsightsAnalytics("BLOOD_PRESSURE_SYS");
 
-  if (
-    isAuthenticated &&
-    analytics &&
-    !hasMetricData("BLOOD_PRESSURE_SYS", {
-      summaries: analytics.summaries,
-      hasMood: false,
-      hasMedication: false,
-    })
-  ) {
+  if (isEmpty) {
     return (
-      <SubPageShell title={t("insights.bloodPressureSectionTitle")}>
-        <EmptyState
+      <SubPageShell
+        title={t("insights.bloodPressureSectionTitle")}
+        description={t("insights.subPage.blutdruckDescription")}
+      >
+        <MetricEmptyState
           icon={<HeartPulse className="size-6" />}
           title={t("insights.emptyState.bloodPressure.title")}
           description={t("insights.emptyState.bloodPressure.description")}
-          ctaSize="lg"
-          action={
+          cta={
             <Button size="sm" asChild>
               <Link href="/measurements?add=BLOOD_PRESSURE">
                 {t("insights.emptyState.bloodPressure.cta")}
               </Link>
             </Button>
           }
-        />
-        <CoachLaunchButton
-          prefill="I haven't recorded any blood pressure yet — why does it matter, and what should I know before I start?"
+          coachPrefill="I haven't recorded any blood pressure yet — why does it matter, and what should I know before I start?"
         />
       </SubPageShell>
     );
