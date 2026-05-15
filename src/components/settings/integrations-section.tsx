@@ -385,7 +385,7 @@ function WithingsCard({
           </a>
         )}
         <div className="space-y-3">
-          <h3 className="text-sm font-medium">
+          <h3 className="text-sm font-semibold">
             {t("settings.withingsCredentials")}
           </h3>
           <form onSubmit={handleSaveCredentials} className="space-y-3">

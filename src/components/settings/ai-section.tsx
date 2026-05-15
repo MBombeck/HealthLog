@@ -249,7 +249,7 @@ function AiInsightsCard({ isAuthenticated }: { isAuthenticated: boolean }) {
   }
 
   return (
-    <div className="bg-card border-border space-y-6 rounded-xl border p-6">
+    <div className="bg-card border-border space-y-4 rounded-xl border p-6">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <Sparkles className="text-primary h-5 w-5" />

@@ -609,7 +609,7 @@ export function AccountSection() {
 
           <form onSubmit={handleChangePassword} className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="current-password">
                   {t("settings.currentPassword")}
                 </Label>
@@ -619,7 +619,7 @@ export function AccountSection() {
                   onChange={(e) => setCurrentPassword(e.target.value)}
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="new-password">
                   {t("settings.newPassword")}
                 </Label>
@@ -629,7 +629,7 @@ export function AccountSection() {
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="confirm-password">
                   {t("settings.confirmNewPassword")}
                 </Label>
@@ -707,7 +707,7 @@ function PasskeyListSection({ isAuthenticated }: { isAuthenticated: boolean }) {
   if (!passkeys || passkeys.length === 0) {
     return (
       <div>
-        <h3 className="text-sm font-medium">{t("settings.passkeys")}</h3>
+        <h3 className="text-sm font-semibold">{t("settings.passkeys")}</h3>
         <p className="text-muted-foreground mt-1 text-xs">
           {t("settings.noPasskeys")}
         </p>
@@ -717,7 +717,7 @@ function PasskeyListSection({ isAuthenticated }: { isAuthenticated: boolean }) {
 
   return (
     <div>
-      <h3 className="text-sm font-medium">
+      <h3 className="text-sm font-semibold">
         {t("settings.registeredPasskeys")}
       </h3>
       <p className="text-muted-foreground mt-1 text-xs">

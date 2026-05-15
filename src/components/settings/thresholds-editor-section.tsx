@@ -117,7 +117,7 @@ export function ThresholdsEditorSection({ id }: { id: string }) {
   return (
     <div
       id={id}
-      className="bg-card border-border scroll-mt-28 space-y-5 rounded-xl border p-6"
+      className="bg-card border-border scroll-mt-28 space-y-4 rounded-xl border p-6"
     >
       {/* v1.4.19 A8 / F-07: page header `settings.sections.thresholds.*`
           already provides the title + description for this route, so the

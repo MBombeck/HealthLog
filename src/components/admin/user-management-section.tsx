@@ -417,7 +417,7 @@ export function UserManagementSection() {
       {/* Edit Dialog */}
       {editingUser && (
         <div className="bg-muted/80 mt-4 rounded-lg p-4">
-          <h3 className="mb-3 text-sm font-medium">
+          <h3 className="mb-3 text-sm font-semibold">
             {t("admin.editUserTitle", { name: editingUser.username })}
           </h3>
           <div className="space-y-3">
@@ -484,7 +484,7 @@ export function UserManagementSection() {
       {/* Password Reset Dialog */}
       {resetUser && (
         <div className="bg-muted/80 mt-4 rounded-lg p-4">
-          <h3 className="mb-3 text-sm font-medium">
+          <h3 className="mb-3 text-sm font-semibold">
             {t("admin.resetPasswordTitle", { name: resetUser.username })}
           </h3>
           <div className="space-y-3">
