@@ -1,35 +1,5 @@
-import deMessages from "../../../messages/de.json";
-import enMessages from "../../../messages/en.json";
-import frMessages from "../../../messages/fr.json";
-import esMessages from "../../../messages/es.json";
-import itMessages from "../../../messages/it.json";
-import plMessages from "../../../messages/pl.json";
 import { defaultLocale, type Locale } from "./config";
-
-const allMessages: Record<Locale, Record<string, unknown>> = {
-  de: deMessages,
-  en: enMessages,
-  fr: frMessages,
-  es: esMessages,
-  it: itMessages,
-  pl: plMessages,
-};
-
-function resolveKey(
-  messages: Record<string, unknown>,
-  key: string,
-): string | undefined {
-  const parts = key.split(".");
-  let current: unknown = messages;
-  for (const part of parts) {
-    if (current && typeof current === "object" && part in current) {
-      current = (current as Record<string, unknown>)[part];
-    } else {
-      return undefined;
-    }
-  }
-  return typeof current === "string" ? current : undefined;
-}
+import { allMessages, resolveKey } from "./shared-resolve";
 
 export interface ServerTranslator {
   locale: Locale;
