@@ -75,8 +75,17 @@ function SheetContent({
       >
         {children}
         {showCloseButton && (
-          <SheetPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none">
-            <XIcon className="size-4" />
+          // v1.4.27 R4 RC3 — widen the icon-only close-X tap target to
+          // a 36 px floor, matching the Dialog close-X treatment from
+          // MB2 (Decision I). 36 px (not 44 px) is the intentional
+          // exception for fixed icon-only close affordances per the
+          // dialog primitive's rationale: 44 px would crowd the sheet
+          // header out of proportion on the bottom-sheet branch.
+          <SheetPrimitive.Close
+            data-slot="sheet-close-button"
+            className="ring-offset-background focus-visible:border-ring focus-visible:ring-ring/50 text-muted-foreground hover:bg-accent hover:text-foreground absolute top-3 right-4 inline-flex min-h-9 min-w-9 items-center justify-center rounded-md transition-colors focus-visible:ring-[3px] focus-visible:outline-none disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+          >
+            <XIcon />
             <span className="sr-only">Close</span>
           </SheetPrimitive.Close>
         )}
