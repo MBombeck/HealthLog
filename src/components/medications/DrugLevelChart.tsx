@@ -523,6 +523,9 @@ function ChartBody({
             stroke="var(--border)"
             opacity={0.5}
           />
+          {/* v1.4.27 MB6 CF-16 — dropped a stray empty `<text>` child
+              that previously declared no content and rendered an
+              invisible SVG node beneath the x-axis. */}
           <XAxis
             dataKey="dayOffset"
             type="number"
@@ -532,34 +535,22 @@ function ChartBody({
             tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
             tickLine={false}
             axisLine={false}
-          >
-            <text
-              x="50%"
-              y="100%"
-              dy={14}
-              textAnchor="middle"
-              fontSize={10}
-              fill="var(--muted-foreground)"
-            />
-          </XAxis>
+          />
           {/* Research §2.3 — y-axis is unit-less. We hide tick labels
               and the axis line entirely; the human-readable label sits
               outside the chart frame, above. The `tick={false}` flag
-              suppresses the textual ticks per Recharts. */}
+              suppresses the textual ticks per Recharts. v1.4.27 MB6
+              CF-16 — the duplicate Recharts `label={…}` prop dropped
+              here painted the same caption inside the SVG behind the
+              `width={1}` axis, where it could never be read. The
+              external `<p>` above the chart is the single source of
+              truth for the caption. */}
           <YAxis
             domain={[0, "auto"]}
             tick={false}
             tickLine={false}
             axisLine={false}
             width={1}
-            label={{
-              value: axisLabel,
-              angle: -90,
-              position: "insideLeft",
-              fontSize: 10,
-              fill: "var(--muted-foreground)",
-              offset: 0,
-            }}
           />
           <Tooltip
             content={() => null}

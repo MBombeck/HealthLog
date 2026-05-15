@@ -902,18 +902,30 @@ export function MedicationForm({
                   <Label className="text-sm">
                     {t("medications.scheduleDays")}
                   </Label>
-                  <div className="flex w-full gap-1">
-                    <button
-                      type="button"
-                      onClick={() => updateSchedule(i, "daysOfWeek", [])}
-                      className={`min-h-11 min-w-24 rounded-md border px-3 text-xs font-medium transition-colors ${
-                        s.daysOfWeek.length === 0
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border/70 bg-muted text-foreground/70 hover:bg-accent hover:text-foreground"
-                      }`}
-                    >
-                      {t("medications.scheduleDaily")}
-                    </button>
+                  {/* v1.4.27 MB6 CF-4 — the previous single-row
+                      `flex w-full gap-1` layout placed the wide
+                      "Daily" pill (min-w-24 ≈ 96 px) next to seven
+                      weekday pills inside the same row. At 320 px
+                      viewport widths the eighth child pushed the row
+                      past the form edge and the last weekday clipped
+                      off-screen. The new layout stacks the Daily
+                      pill above a seven-column grid so each weekday
+                      keeps the 44 px tap-target floor without
+                      relying on the available width. The grid wraps
+                      naturally at any container width because every
+                      cell is one explicit grid track. */}
+                  <button
+                    type="button"
+                    onClick={() => updateSchedule(i, "daysOfWeek", [])}
+                    className={`block w-full min-h-11 rounded-md border px-3 text-xs font-medium transition-colors ${
+                      s.daysOfWeek.length === 0
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border/70 bg-muted text-foreground/70 hover:bg-accent hover:text-foreground"
+                    }`}
+                  >
+                    {t("medications.scheduleDaily")}
+                  </button>
+                  <div className="grid w-full grid-cols-7 gap-1">
                     {getDayLabelsShort(t).map((label, dayIndex) => {
                       const isSelected = s.daysOfWeek.includes(dayIndex);
                       return (
@@ -921,7 +933,7 @@ export function MedicationForm({
                           key={dayIndex}
                           type="button"
                           onClick={() => toggleDay(i, dayIndex)}
-                          className={`min-h-11 flex-1 rounded-md border text-xs font-medium transition-colors ${
+                          className={`min-h-11 rounded-md border text-xs font-medium transition-colors ${
                             isSelected
                               ? "border-primary bg-primary text-primary-foreground"
                               : "border-border/70 bg-muted text-foreground/75 hover:bg-accent hover:text-foreground"
