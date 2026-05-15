@@ -136,6 +136,15 @@ export function InsightsTabStrip({
     <nav
       data-slot="insights-tab-strip"
       aria-label={t("insights.navAriaLabel")}
+      // v1.4.28 FB-D3 — `touch-action: pan-y` lets vertical swipes that
+      // begin on the sticky strip scroll the page through it. The
+      // legacy `overflow-x-auto` on the outer `<nav>` claimed the
+      // entire touch surface as a horizontal scroll container, so
+      // vertical drags that started on the pill row never reached the
+      // document. The horizontal pill scroll now lives on the inner
+      // `<div>` below; the outer `<nav>` stays sticky but no longer
+      // owns the gesture.
+      style={{ touchAction: "pan-y" }}
       className={cn(
         // v1.4.27 MB7 / CF-72 — relative wrapper hosts the right-edge
         // fade overlay below so the user reads "there's more to
@@ -144,8 +153,7 @@ export function InsightsTabStrip({
         // strip via a sibling div; it sits only on `<sm` because the
         // wider viewport above already shows every pill.
         "relative",
-        "bg-background/95 sticky top-0 z-30 overflow-x-auto border-b py-2 backdrop-blur",
-        "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        "bg-background/95 sticky top-0 z-30 border-b py-2 backdrop-blur",
       )}
     >
       <div className="flex items-center gap-2">

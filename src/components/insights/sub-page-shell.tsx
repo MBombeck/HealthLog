@@ -60,20 +60,26 @@ export function SubPageShell({
 }: SubPageShellProps) {
   // a11y: focus the heading on mount so a tab-strip navigation actually
   // moves screen-reader focus into the sub-page body. v1.4.27 MB7 /
-  // CF-35 made the call opt-in via `focusOnMount` — the default-on
-  // version was stealing focus from soft-keyboards on mobile and
-  // breaking mid-flow form entries. The `scrollTo` still fires
-  // unconditionally; both honour `prefers-reduced-motion: reduce`
-  // implicitly because `scrollTo({ behavior: "auto" })` does not
-  // animate, and the focus call is a single discrete event.
+  // CF-35 made the focus call opt-in via `focusOnMount` — the
+  // default-on version stole focus from soft-keyboards on mobile.
+  //
+  // v1.4.28 FB-D3 — defer the `scrollTo` to the next animation frame
+  // so the sub-page's first paint settles before the scroll lands.
+  // The legacy unconditional in-effect scroll fired before the chart
+  // skeleton had a height; the viewport snapped to 0, then the chart
+  // popped in and the scroll position visibly jumped again. Wrapping
+  // in `requestAnimationFrame` runs the scroll after the layout pass
+  // so the user sees one smooth landing.
   const headingRef = useRef<HTMLHeadingElement | null>(null);
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window === "undefined") return;
+    const handle = window.requestAnimationFrame(() => {
       window.scrollTo({ top: 0, behavior: "auto" });
-    }
-    if (focusOnMount) {
-      headingRef.current?.focus({ preventScroll: true });
-    }
+      if (focusOnMount) {
+        headingRef.current?.focus({ preventScroll: true });
+      }
+    });
+    return () => window.cancelAnimationFrame(handle);
   }, [focusOnMount]);
 
   return (
