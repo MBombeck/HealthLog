@@ -264,7 +264,13 @@
       "lastInjection": "Last injection",
       "nextInjection": "Next injection",
       "weightDelta": "since start",
-      "inDays": "in {count} days"
+      "inDays": "in {count} days",
+      "tabLevel": "Livello",
+      "tabWeight": "Peso",
+      "tabsAria": "Passa tra vista del livello e vista del peso",
+      "rangeStripLabel": "Seleziona intervallo",
+      "levelUnavailable": "Livello non ancora disponibile — registra una dose e la curva apparirà.",
+      "weightUnavailable": "Andamento del peso non ancora disponibile — registra una misurazione per vederlo."
     }
   },
   "measurements": {
@@ -825,11 +831,6 @@
     "colorRed": "Red:",
     "mood": "Umore",
     "moodScore": "Mood Score",
-    "moodLabel1": "Pessimo",
-    "moodLabel2": "Male",
-    "moodLabel3": "Okay",
-    "moodLabel4": "Bene",
-    "moodLabel5": "Ottimo",
     "weekdays": {
       "mon": "Mon",
       "wed": "Wed",
@@ -1232,7 +1233,44 @@
     "generate": "Generate new analysis",
     "moodSectionTitle": "Umore",
     "confidence": "Confidence",
-    "cached": "Cached"
+    "cached": "Cached",
+    "emptyState": {
+      "bloodPressure": {
+        "title": "Nessuna misurazione della pressione",
+        "description": "Registra una misurazione e qui appariranno l'andamento, la percentuale in target e la classificazione OMS.",
+        "cta": "Registra pressione"
+      },
+      "weight": {
+        "title": "Nessuna misurazione del peso",
+        "description": "Registra un peso: andamento, media mobile e fascia obiettivo appariranno automaticamente.",
+        "cta": "Registra peso"
+      },
+      "pulse": {
+        "title": "Nessuna misurazione del polso",
+        "description": "Registra una misurazione: polso a riposo, HRV e VO₂ max appariranno in questa vista.",
+        "cta": "Registra polso"
+      },
+      "bmi": {
+        "title": "BMI non ancora calcolato",
+        "description": "Una volta inseriti altezza e almeno un peso, qui apparirà l'andamento del BMI con le zone OMS.",
+        "cta": "Registra peso"
+      },
+      "mood": {
+        "title": "Nessuna voce d'umore",
+        "description": "Registra un umore: appariranno andamento, fascia di stabilità e correlazioni.",
+        "cta": "Registra umore"
+      },
+      "medication": {
+        "title": "Nessun farmaco configurato",
+        "description": "Configura un farmaco: aderenza, livello plasmatico e titolazione appariranno qui.",
+        "cta": "Aggiungi farmaco"
+      },
+      "sleep": {
+        "title": "Nessuna voce di sonno",
+        "description": "Quando saranno disponibili dati sul sonno (manuale o tramite Withings / Apple Health), qui apparirà la suddivisione per fase.",
+        "cta": "Collega Withings"
+      }
+    }
   },
   "thresholds": {
     "defaultLabel": "Default",
@@ -2286,7 +2324,9 @@
         "title": "Danger Zone",
         "subtitle": "Destructive system-wide operations."
       }
-    }
+    },
+    "carrier": "Operatore",
+    "carrierUnknown": "Operatore sconosciuto"
   },
   "achievements": {
     "title": "Achievements",
@@ -2596,7 +2636,20 @@
     "loadError": "Notification preferences could not be loaded.",
     "noChannels": "Configure a notification channel in Settings first.",
     "goToSettings": "Go to Settings",
-    "channelDisabled": "Disabilitato"
+    "channelDisabled": "Disabilitato",
+    "admin": {
+      "deployFailedTitle": "Distribuzione fallita: {application}",
+      "deployFailedBody": "Si è verificato un errore durante la distribuzione di {application} (#{deployment}): {error}. Vedi log: {logsUrl}",
+      "testNotificationTitle": "HealthLog notifica di prova",
+      "testNotificationBody": "Questa notifica di prova è stata attivata dal pannello di amministrazione. Se la vedi, il canale funziona.",
+      "reminderCheckMissedTitle": "Promemoria perso: {medication}",
+      "reminderCheckMissedBody": "{medication} ({dose}) non è stato registrato nella finestra {window}.",
+      "reminderCheckOverdueTitle": "Dose in ritardo: {medication}",
+      "reminderCheckOverdueBody": "{medication} ({dose}) nella finestra {window} è in ritardo di {minutes} minuti."
+    },
+    "user": {
+      "telegramTestBody": "HealthLog: connessione riuscita. Le notifiche Telegram sono attive."
+    }
   },
   "i18n": {
     "maintainershipBanner": {

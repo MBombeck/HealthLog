@@ -38,6 +38,7 @@ import { useChartOverlayPrefs } from "@/hooks/use-chart-overlay-prefs";
 import { useViewportWidth } from "@/hooks/use-viewport-width";
 import { chooseTickInterval } from "@/lib/charts/x-axis-density";
 import { CHART_HEIGHT_PX } from "@/lib/charts/constants";
+import { moodLabelKeyForScore } from "@/lib/mood/labels";
 
 // --- Types ---
 
@@ -484,12 +485,16 @@ export function MoodChart({
 
   const maxPointIndex = Math.max(0, (chartData?.length ?? 1) - 1);
 
+  // v1.4.27 B6 / BL-P6-11 — the chart axis and the mood-list cards
+  // share `MOOD_LABEL_KEYS` so a polishing-pass copy update lands in
+  // both surfaces. The shared resolver maps a numeric score back to
+  // the canonical key set under `mood.level*`.
   const moodLabels: Record<number, string> = {
-    1: t("charts.moodLabel1"),
-    2: t("charts.moodLabel2"),
-    3: t("charts.moodLabel3"),
-    4: t("charts.moodLabel4"),
-    5: t("charts.moodLabel5"),
+    1: t(moodLabelKeyForScore(1) ?? "mood.levelLausig"),
+    2: t(moodLabelKeyForScore(2) ?? "mood.levelSchlecht"),
+    3: t(moodLabelKeyForScore(3) ?? "mood.levelOkay"),
+    4: t(moodLabelKeyForScore(4) ?? "mood.levelGut"),
+    5: t(moodLabelKeyForScore(5) ?? "mood.levelSuperGut"),
   };
 
   // v1.4.18 — emoji glyph map removed. the maintainer explicitly rejected
@@ -623,7 +628,7 @@ export function MoodChart({
           </div>
         ) : chartData.length < 3 ? (
           // v1.4.16 B1a — sparse-data placeholder consistent with the
-          // BP/weight/pulse charts. Height tracks the chart strip motion-reduce:animate-none's
+          // BP/weight/pulse charts. Height tracks the chart strip's
           // shared CHART_HEIGHT_PX so the empty state preserves the
           // trend-row rhythm (v1.4.27 — was 280, now 240 to match every
           // other dashboard chart card).

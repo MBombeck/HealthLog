@@ -264,7 +264,13 @@
       "lastInjection": "Last injection",
       "nextInjection": "Next injection",
       "weightDelta": "since start",
-      "inDays": "in {count} days"
+      "inDays": "in {count} days",
+      "tabLevel": "Taux",
+      "tabWeight": "Poids",
+      "tabsAria": "Basculer entre la vue taux et la vue poids",
+      "rangeStripLabel": "Sélectionner la période",
+      "levelUnavailable": "Taux indisponible — enregistrez une dose pour afficher la courbe.",
+      "weightUnavailable": "Tendance de poids indisponible — enregistrez une mesure pour la voir."
     }
   },
   "measurements": {
@@ -825,11 +831,6 @@
     "colorRed": "Red:",
     "mood": "Humeur",
     "moodScore": "Mood Score",
-    "moodLabel1": "Terrible",
-    "moodLabel2": "Mauvais",
-    "moodLabel3": "Okay",
-    "moodLabel4": "Bien",
-    "moodLabel5": "Excellent",
     "weekdays": {
       "mon": "Mon",
       "wed": "Wed",
@@ -1232,7 +1233,44 @@
     "generate": "Generate new analysis",
     "moodSectionTitle": "Humeur",
     "confidence": "Confidence",
-    "cached": "Cached"
+    "cached": "Cached",
+    "emptyState": {
+      "bloodPressure": {
+        "title": "Aucune mesure de tension artérielle",
+        "description": "Enregistrez une mesure de tension : la tendance, la part dans la cible et la classification OMS s'afficheront ici.",
+        "cta": "Enregistrer une tension"
+      },
+      "weight": {
+        "title": "Aucune mesure de poids",
+        "description": "Enregistrez un poids : la tendance, la moyenne glissante et la zone cible apparaîtront automatiquement.",
+        "cta": "Enregistrer un poids"
+      },
+      "pulse": {
+        "title": "Aucune mesure de pouls",
+        "description": "Enregistrez un pouls : pouls au repos, VFC et VO₂ max apparaîtront dans cette vue.",
+        "cta": "Enregistrer un pouls"
+      },
+      "bmi": {
+        "title": "IMC pas encore calculé",
+        "description": "Dès qu'une taille et au moins un poids sont enregistrés, la tendance IMC avec les zones OMS s'affichera ici.",
+        "cta": "Enregistrer un poids"
+      },
+      "mood": {
+        "title": "Aucune entrée d'humeur",
+        "description": "Enregistrez une humeur : la tendance, la bande de stabilité et les corrélations s'afficheront.",
+        "cta": "Enregistrer une humeur"
+      },
+      "medication": {
+        "title": "Aucun médicament configuré",
+        "description": "Configurez un médicament : observance, taux plasmatique et titration apparaîtront ici.",
+        "cta": "Ajouter un médicament"
+      },
+      "sleep": {
+        "title": "Aucune donnée de sommeil",
+        "description": "Dès que des données de sommeil sont disponibles (manuel ou via Withings / Apple Health), la répartition par stade apparaîtra ici.",
+        "cta": "Connecter Withings"
+      }
+    }
   },
   "thresholds": {
     "defaultLabel": "Default",
@@ -2286,7 +2324,9 @@
         "title": "Danger Zone",
         "subtitle": "Destructive system-wide operations."
       }
-    }
+    },
+    "carrier": "Opérateur",
+    "carrierUnknown": "Opérateur inconnu"
   },
   "achievements": {
     "title": "Achievements",
@@ -2596,7 +2636,20 @@
     "loadError": "Notification preferences could not be loaded.",
     "noChannels": "Configure a notification channel in Settings first.",
     "goToSettings": "Go to Settings",
-    "channelDisabled": "Désactivé"
+    "channelDisabled": "Désactivé",
+    "admin": {
+      "deployFailedTitle": "Échec du déploiement : {application}",
+      "deployFailedBody": "Une erreur est survenue lors du déploiement de {application} (#{deployment}) : {error}. Voir les journaux : {logsUrl}",
+      "testNotificationTitle": "HealthLog notification de test",
+      "testNotificationBody": "Cette notification de test a été déclenchée depuis le panneau d'administration. Si vous la voyez, le canal fonctionne.",
+      "reminderCheckMissedTitle": "Rappel manqué : {medication}",
+      "reminderCheckMissedBody": "{medication} ({dose}) n'a pas été enregistré dans la fenêtre {window}.",
+      "reminderCheckOverdueTitle": "Prise en retard : {medication}",
+      "reminderCheckOverdueBody": "{medication} ({dose}) dans la fenêtre {window} est en retard de {minutes} minutes."
+    },
+    "user": {
+      "telegramTestBody": "HealthLog: connexion réussie. Les notifications Telegram sont actives."
+    }
   },
   "i18n": {
     "maintainershipBanner": {

@@ -62,23 +62,16 @@ import {
 import { useState } from "react";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import {
+  MOOD_LABEL_KEYS,
+  MOOD_SCORE_BY_ENUM,
+} from "@/lib/mood/labels";
 import { invalidateKeys, moodDependentKeys } from "@/lib/query-keys";
 
-const MOOD_SCORES: Record<string, number> = {
-  SUPER_GUT: 5,
-  GUT: 4,
-  OKAY: 3,
-  SCHLECHT: 2,
-  LAUSIG: 1,
-};
-
-const MOOD_LABEL_KEYS: Record<string, string> = {
-  SUPER_GUT: "mood.levelSuperGut",
-  GUT: "mood.levelGut",
-  OKAY: "mood.levelOkay",
-  SCHLECHT: "mood.levelSchlecht",
-  LAUSIG: "mood.levelLausig",
-};
+// Re-export the score map under the legacy local name to keep the
+// rest of this file unchanged. v1.4.27 B6 / BL-P6-11 — the single
+// source of truth now lives in `@/lib/mood/labels`.
+const MOOD_SCORES = MOOD_SCORE_BY_ENUM as Record<string, number>;
 
 interface MoodEntry {
   id: string;
@@ -429,7 +422,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
             {/* Mobile list — v1.4.15 phase-A3 fix #2: previously the row
                 rendered the score TWICE on mobile (the big number in the
                 left badge AND a duplicate in the title line: "2 (schlecht)").
-                Desktop motion-reduce:animate-none's table version only ever showed one. The badge is
+                Desktop's table version only ever showed one. The badge is
                 the visual anchor; next to it the user wants the textual
                 label, not a second copy of the digit. The
                 `data-testid="mood-row"` hook is what the Playwright Pixel-5

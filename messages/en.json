@@ -264,7 +264,13 @@
       "lastInjection": "Last injection",
       "nextInjection": "Next injection",
       "weightDelta": "since start",
-      "inDays": "in {count} days"
+      "inDays": "in {count} days",
+      "tabLevel": "Level",
+      "tabWeight": "Weight",
+      "tabsAria": "Switch between drug-level and weight views",
+      "rangeStripLabel": "Select range",
+      "levelUnavailable": "Drug level not yet available — log a dose and the curve will appear.",
+      "weightUnavailable": "Weight trend not yet available — log a measurement to see the trend."
     }
   },
   "measurements": {
@@ -825,11 +831,6 @@
     "colorRed": "Red:",
     "mood": "Mood",
     "moodScore": "Mood Score",
-    "moodLabel1": "Awful",
-    "moodLabel2": "Bad",
-    "moodLabel3": "Okay",
-    "moodLabel4": "Good",
-    "moodLabel5": "Great",
     "weekdays": {
       "mon": "Mon",
       "wed": "Wed",
@@ -1232,7 +1233,44 @@
     "generate": "Generate new analysis",
     "moodSectionTitle": "Mood",
     "confidence": "Confidence",
-    "cached": "Cached"
+    "cached": "Cached",
+    "emptyState": {
+      "bloodPressure": {
+        "title": "No blood pressure entries yet",
+        "description": "Log a blood pressure reading and the trend chart, in-range share, and WHO classification will appear here.",
+        "cta": "Log blood pressure"
+      },
+      "weight": {
+        "title": "No weight entries yet",
+        "description": "Log a weight and the trend, moving average, and target band will appear automatically.",
+        "cta": "Log weight"
+      },
+      "pulse": {
+        "title": "No pulse entries yet",
+        "description": "Log a pulse reading and resting pulse, HRV and VO₂ max will appear in this view.",
+        "cta": "Log pulse"
+      },
+      "bmi": {
+        "title": "BMI not yet computed",
+        "description": "Once height and at least one weight entry are present, the BMI trend with WHO zones will appear here.",
+        "cta": "Log weight"
+      },
+      "mood": {
+        "title": "No mood entries yet",
+        "description": "Log a mood entry and the trend, stability band and correlations will appear.",
+        "cta": "Log mood"
+      },
+      "medication": {
+        "title": "No medications set up yet",
+        "description": "Set up a medication and intake compliance, drug level and titration timeline will appear here.",
+        "cta": "Add medication"
+      },
+      "sleep": {
+        "title": "No sleep entries yet",
+        "description": "Once sleep data lands (manual or via Withings / Apple Health), the per-night stage breakdown will appear here.",
+        "cta": "Connect Withings"
+      }
+    }
   },
   "thresholds": {
     "defaultLabel": "Default",
@@ -2286,7 +2324,9 @@
         "title": "Danger Zone",
         "subtitle": "Destructive system-wide operations."
       }
-    }
+    },
+    "carrier": "Carrier",
+    "carrierUnknown": "Unknown carrier"
   },
   "achievements": {
     "title": "Achievements",
@@ -2596,7 +2636,20 @@
     "loadError": "Notification preferences could not be loaded.",
     "noChannels": "Configure a notification channel in Settings first.",
     "goToSettings": "Go to Settings",
-    "channelDisabled": "Disabled"
+    "channelDisabled": "Disabled",
+    "admin": {
+      "deployFailedTitle": "Deployment failed: {application}",
+      "deployFailedBody": "An error occurred while deploying {application} (#{deployment}): {error}. View logs: {logsUrl}",
+      "testNotificationTitle": "HealthLog test notification",
+      "testNotificationBody": "This test notification was triggered from the admin panel. If you can see it, the channel is working.",
+      "reminderCheckMissedTitle": "Reminder missed: {medication}",
+      "reminderCheckMissedBody": "{medication} ({dose}) was not logged in the {window} window.",
+      "reminderCheckOverdueTitle": "Dose overdue: {medication}",
+      "reminderCheckOverdueBody": "{medication} ({dose}) in the {window} window is {minutes} minutes overdue."
+    },
+    "user": {
+      "telegramTestBody": "HealthLog: connection successful. Telegram notifications are active."
+    }
   },
   "i18n": {
     "maintainershipBanner": {

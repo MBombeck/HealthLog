@@ -264,7 +264,13 @@
       "lastInjection": "Last injection",
       "nextInjection": "Next injection",
       "weightDelta": "since start",
-      "inDays": "in {count} days"
+      "inDays": "in {count} days",
+      "tabLevel": "Poziom",
+      "tabWeight": "Waga",
+      "tabsAria": "Przełącz między widokiem poziomu i widokiem wagi",
+      "rangeStripLabel": "Wybierz zakres",
+      "levelUnavailable": "Poziom jeszcze niedostępny — zarejestruj dawkę, a krzywa się pojawi.",
+      "weightUnavailable": "Trend wagi jeszcze niedostępny — zarejestruj pomiar, aby go zobaczyć."
     }
   },
   "measurements": {
@@ -825,11 +831,6 @@
     "colorRed": "Red:",
     "mood": "Nastrój",
     "moodScore": "Mood Score",
-    "moodLabel1": "Okropnie",
-    "moodLabel2": "Źle",
-    "moodLabel3": "Okay",
-    "moodLabel4": "Dobrze",
-    "moodLabel5": "Świetnie",
     "weekdays": {
       "mon": "Mon",
       "wed": "Wed",
@@ -1232,7 +1233,44 @@
     "generate": "Generate new analysis",
     "moodSectionTitle": "Nastrój",
     "confidence": "Confidence",
-    "cached": "Cached"
+    "cached": "Cached",
+    "emptyState": {
+      "bloodPressure": {
+        "title": "Brak pomiarów ciśnienia krwi",
+        "description": "Zarejestruj pomiar ciśnienia, a pojawi się tu trend, udział w zakresie docelowym i klasyfikacja WHO.",
+        "cta": "Zarejestruj ciśnienie"
+      },
+      "weight": {
+        "title": "Brak pomiarów wagi",
+        "description": "Zarejestruj wagę, a trend, średnia krocząca i zakres docelowy pojawią się automatycznie.",
+        "cta": "Zarejestruj wagę"
+      },
+      "pulse": {
+        "title": "Brak pomiarów tętna",
+        "description": "Zarejestruj tętno, a w tym widoku pojawi się tętno spoczynkowe, HRV i VO₂ max.",
+        "cta": "Zarejestruj tętno"
+      },
+      "bmi": {
+        "title": "BMI jeszcze nie obliczone",
+        "description": "Po wpisaniu wzrostu i co najmniej jednej wagi pojawi się tu trend BMI z zakresami WHO.",
+        "cta": "Zarejestruj wagę"
+      },
+      "mood": {
+        "title": "Brak wpisów nastroju",
+        "description": "Zarejestruj nastrój, a pojawi się trend, pasmo stabilności i korelacje.",
+        "cta": "Zarejestruj nastrój"
+      },
+      "medication": {
+        "title": "Brak skonfigurowanych leków",
+        "description": "Skonfiguruj lek, a pojawi się adherencja, poziom we krwi i schemat titracji.",
+        "cta": "Dodaj lek"
+      },
+      "sleep": {
+        "title": "Brak danych o śnie",
+        "description": "Gdy pojawią się dane o śnie (ręcznie lub przez Withings / Apple Health), wyświetli się tu rozkład faz na noc.",
+        "cta": "Połącz Withings"
+      }
+    }
   },
   "thresholds": {
     "defaultLabel": "Default",
@@ -2286,7 +2324,9 @@
         "title": "Danger Zone",
         "subtitle": "Destructive system-wide operations."
       }
-    }
+    },
+    "carrier": "Operator",
+    "carrierUnknown": "Nieznany operator"
   },
   "achievements": {
     "title": "Achievements",
@@ -2596,7 +2636,20 @@
     "loadError": "Notification preferences could not be loaded.",
     "noChannels": "Configure a notification channel in Settings first.",
     "goToSettings": "Go to Settings",
-    "channelDisabled": "Wyłączone"
+    "channelDisabled": "Wyłączone",
+    "admin": {
+      "deployFailedTitle": "Wdrożenie nie powiodło się: {application}",
+      "deployFailedBody": "Wystąpił błąd podczas wdrażania {application} (#{deployment}): {error}. Zobacz logi: {logsUrl}",
+      "testNotificationTitle": "HealthLog powiadomienie testowe",
+      "testNotificationBody": "To powiadomienie testowe zostało wywołane z panelu administracyjnego. Jeśli je widzisz, kanał działa.",
+      "reminderCheckMissedTitle": "Pominięte przypomnienie: {medication}",
+      "reminderCheckMissedBody": "{medication} ({dose}) nie zostało zarejestrowane w przedziale {window}.",
+      "reminderCheckOverdueTitle": "Dawka opóźniona: {medication}",
+      "reminderCheckOverdueBody": "{medication} ({dose}) w przedziale {window} jest opóźnione o {minutes} minut."
+    },
+    "user": {
+      "telegramTestBody": "HealthLog: połączenie udane. Powiadomienia Telegram są aktywne."
+    }
   },
   "i18n": {
     "maintainershipBanner": {
