@@ -455,6 +455,12 @@ export function CoachDrawer({
                 onSubmit={() => handleSubmit(inputValue)}
                 disabled={send.isStreaming}
                 isStreaming={send.isStreaming}
+                // v1.4.27 MB3 / CF-30 — the composer mounts on drawer
+                // open and unmounts on close (the body collapses with
+                // the sheet), so a one-shot mount focus matches the
+                // "drawer just opened" semantic without any re-render
+                // gymnastics.
+                autoFocusOnOpen
               />
             )
           }

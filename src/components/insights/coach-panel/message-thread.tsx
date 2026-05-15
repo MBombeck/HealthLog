@@ -318,6 +318,13 @@ function ChatBubble({
   // v1.4.27 B7 / L3 — pair the evidence `<details>` and its disclosed
   // list explicitly so screen-readers announce the panel relationship.
   const evidencePanelId = useId();
+  // v1.4.27 MB3 / CF-32 — track the disclosure state in React so the
+  // summary can carry an accurate `aria-expanded`. Native `<details>`
+  // reflects its open state via the `open` attribute, but that does
+  // not surface as `aria-expanded` on the summary by default; screen
+  // readers still need the explicit attribute to announce the panel
+  // as expanded vs collapsed.
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
   if (role === "user") {
     // v1.4.22 B3 — pull the user's Gravatar so the user bubble's
     // avatar matches the Coach avatar in size and visual weight.
@@ -425,11 +432,20 @@ function ChatBubble({
         {keyValues.length > 0 && (
           <details
             data-slot="coach-evidence"
+            open={evidenceOpen}
+            onToggle={(e) =>
+              setEvidenceOpen((e.target as HTMLDetailsElement).open)
+            }
             // v1.4.27 F14 — always closed by default. The `open`
             // attribute was previously tied to a per-user pref that
             // surfaced raw values unconditionally; that pref is now
             // retired and the disclosure is a true progressive-
             // disclosure surface — the user clicks to expand.
+            //
+            // v1.4.27 MB3 / CF-32 — the `open` attribute is now
+            // controlled from local state so the summary's
+            // `aria-expanded` stays in lock-step. The native disclosure
+            // semantics (Enter / Space toggle) are preserved.
             className={cn(
               "border-border/50 bg-muted/30 group rounded-md border",
               "px-2.5 py-1.5 text-xs",
@@ -438,6 +454,7 @@ function ChatBubble({
             <summary
               data-slot="coach-evidence-summary"
               aria-controls={evidencePanelId}
+              aria-expanded={evidenceOpen}
               className={cn(
                 "text-muted-foreground hover:text-foreground flex cursor-pointer",
                 "items-center gap-1.5 leading-relaxed",
