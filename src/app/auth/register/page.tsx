@@ -153,7 +153,16 @@ export default function RegisterPage() {
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          {/* v1.4.27 MB6 — lift the submit to the 44 px tap-target
+              floor and the `lg` size so the primary action stays
+              reachable on a narrow viewport without falling under the
+              iOS keyboard's accessory bar. */}
+          <Button
+            type="submit"
+            size="lg"
+            className="min-h-11 w-full"
+            disabled={loading}
+          >
             {loading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
             ) : (

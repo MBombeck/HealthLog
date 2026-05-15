@@ -74,7 +74,12 @@ export function ErrorDetails({
   }
 
   return (
-    <div className="mx-auto w-full max-w-xl space-y-4 p-6">
+    // v1.4.27 MB6 — `min-h-dvh flex flex-col justify-center` makes
+    // the error panel anchor in the middle of the available viewport
+    // even when this component is mounted at the root layout. Without
+    // it the panel hugged the top edge under the notch on
+    // small-screen devices.
+    <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center space-y-4 p-6">
       <h1 className="text-xl font-semibold">{t("errorBoundary.title")}</h1>
       <p className="text-muted-foreground text-sm">
         {t("errorBoundary.description")}

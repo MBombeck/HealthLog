@@ -40,11 +40,17 @@ export default function GlobalError({
           backgroundColor: "#1e1f29",
           color: "#f8f8f2",
           margin: 0,
-          minHeight: "100vh",
+          // v1.4.27 MB6 — `100dvh` follows the dynamic viewport on
+          // iOS Safari (URL-bar collapse) so the wrapper still
+          // anchors centred when the browser chrome animates in or
+          // out. `safe-area-inset-top` keeps the headline out from
+          // under the notch / Dynamic Island.
+          minHeight: "100dvh",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: "24px",
+          padding:
+            "calc(env(safe-area-inset-top, 0px) + 24px) 24px 24px 24px",
         }}
       >
         <div style={{ maxWidth: 560 }}>
@@ -76,9 +82,13 @@ export default function GlobalError({
                 color: "#282a36",
                 border: "none",
                 borderRadius: 6,
-                padding: "8px 14px",
+                // v1.4.27 MB6 — 44 px minimum height matches the
+                // app-wide tap-target floor; the larger inline padding
+                // keeps the labels comfortably finger-tap-sized.
+                minHeight: 44,
+                padding: "10px 16px",
                 cursor: "pointer",
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: 500,
               }}
             >
@@ -91,9 +101,10 @@ export default function GlobalError({
                 color: "#f8f8f2",
                 border: "1px solid #44475a",
                 borderRadius: 6,
-                padding: "8px 14px",
+                minHeight: 44,
+                padding: "10px 16px",
                 cursor: "pointer",
-                fontSize: 13,
+                fontSize: 14,
               }}
             >
               Copy details
