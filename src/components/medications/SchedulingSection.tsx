@@ -183,7 +183,7 @@ export function SchedulingSection({
 
           {/* 30-day timeline */}
           <div className="space-y-1.5">
-            <p className="text-muted-foreground text-[11px] uppercase tracking-wide">
+            <p className="text-muted-foreground text-xs uppercase tracking-wide">
               {t("medications.scheduling.cadenceViz.title")}
             </p>
             {data.timeline.length === 0 ? (
@@ -232,7 +232,7 @@ export function SchedulingSection({
                     );
                   })}
                 </div>
-                <div className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 pt-1 text-[10px]">
+                <div className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 pt-1 text-xs">
                   {(["taken", "skipped", "missed", "upcoming"] as const).map(
                     (s) => (
                       <span key={s} className="inline-flex items-center gap-1">
@@ -254,7 +254,7 @@ export function SchedulingSection({
 
           {/* Compliance chips */}
           <div className="space-y-1.5">
-            <p className="text-muted-foreground text-[11px] uppercase tracking-wide">
+            <p className="text-muted-foreground text-xs uppercase tracking-wide">
               {t("medications.scheduling.compliance.title")}
             </p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -313,7 +313,7 @@ function ComplianceChip({ label, value, tooltip }: ComplianceChipProps) {
       title={tooltip}
       aria-label={`${label}: ${value}. ${tooltip}`}
     >
-      <p className="text-muted-foreground text-[10px] uppercase tracking-wide">
+      <p className="text-muted-foreground text-xs uppercase tracking-wide">
         {label}
       </p>
       <p className="text-foreground text-sm font-medium">{value}</p>

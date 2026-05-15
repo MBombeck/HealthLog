@@ -269,7 +269,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
 
       {!isLoading && items.length > 0 && (
         <div className="space-y-2">
-          <p className="text-muted-foreground text-[11px] uppercase tracking-wide">
+          <p className="text-muted-foreground text-xs uppercase tracking-wide">
             {t("medications.sideEffects.recentTitle")}
           </p>
           <ul className="space-y-1.5">
@@ -279,28 +279,41 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
                 className="bg-muted/30 flex items-start justify-between gap-2 rounded-md px-2.5 py-2"
               >
                 <div className="min-w-0 flex-1 space-y-1">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <Badge variant="outline" className="text-[10px]">
-                      {t(
-                        `medications.sideEffects.categories.${categoryI18nKey(row.category)}`,
-                      )}
-                    </Badge>
-                    <span className="text-foreground font-medium">
-                      {t(
-                        `medications.sideEffects.entries.${entryI18nKey(row.entry)}`,
-                      )}
-                    </span>
-                    <Badge variant="secondary" className="text-[10px]">
-                      {t(
-                        `medications.sideEffects.severity.${severityLikertLabel(row.severity as 1 | 2 | 3 | 4 | 5)}`,
-                      )}
-                    </Badge>
+                  {/* v1.4.28 FB-F2 — fixed-width date slot pinned to
+                      the right of the row meta so the date stamp keeps
+                      its column across rows. The category badge +
+                      entry label + severity chip share the left-most
+                      slot; the date claims a 4ch-wide right column. */}
+                  <div className="flex items-start gap-2">
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+                      <Badge variant="outline" className="text-xs">
+                        {t(
+                          `medications.sideEffects.categories.${categoryI18nKey(row.category)}`,
+                        )}
+                      </Badge>
+                      <span className="text-foreground truncate text-sm font-medium">
+                        {t(
+                          `medications.sideEffects.entries.${entryI18nKey(row.entry)}`,
+                        )}
+                      </span>
+                      <Badge variant="secondary" className="text-xs">
+                        {t(
+                          `medications.sideEffects.severity.${severityLikertLabel(row.severity as 1 | 2 | 3 | 4 | 5)}`,
+                        )}
+                      </Badge>
+                    </div>
+                    <p
+                      className="text-muted-foreground w-[5.5rem] shrink-0 text-right text-xs tabular-nums"
+                      data-slot="side-effect-row-date"
+                    >
+                      {fmt.dateShort(new Date(row.occurredAt))}
+                    </p>
                   </div>
-                  <p className="text-muted-foreground text-[11px]">
-                    {fmt.dateShort(new Date(row.occurredAt))}
-                  </p>
                   {row.notes && (
-                    <p className="text-foreground/80 whitespace-pre-wrap break-words">
+                    <p
+                      className="text-foreground/80 line-clamp-2 text-sm break-words"
+                      data-slot="side-effect-row-notes"
+                    >
                       {row.notes}
                     </p>
                   )}

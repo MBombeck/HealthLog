@@ -245,12 +245,21 @@ export function DrugLevelChart({
   } as const;
   const body = (
     <>
+      {/* v1.4.28 FB-F3 / F4 — align the standalone chart header to the
+          canonical `<MedicationDetailSection>` heading scale so the
+          full `/medications/[id]` surface reads on one heading shape.
+          The Activity glyph + drug INN line stay as header chrome on
+          the right; the heading element is now `<h2>` + canonical
+          classes to match the surrounding wave-4b sections. */}
       {!compact && (
         <header className="mb-3 flex flex-wrap items-center gap-2">
           <Activity className="text-dracula-purple h-4 w-4 shrink-0" />
-          <h3 id="drug-level-chart-title" className="text-sm font-semibold">
+          <h2
+            id="drug-level-chart-title"
+            className="text-foreground text-base font-semibold leading-6 tracking-tight"
+          >
             {t("medications.researchMode.chart.title")}
-          </h3>
+          </h2>
           {drugId && (
             <span className="text-muted-foreground text-xs">
               · {t(`medications.glp1.drug.${drugId}.name`)}
@@ -259,9 +268,9 @@ export function DrugLevelChart({
         </header>
       )}
       {compact && (
-        <h3 id="drug-level-chart-title" className="sr-only">
+        <h2 id="drug-level-chart-title" className="sr-only">
           {t("medications.researchMode.chart.title")}
-        </h3>
+        </h2>
       )}
 
       {/* Decision tree:

@@ -3,16 +3,24 @@
 import { type ReactNode } from "react";
 
 /**
- * v1.4.25 W21 Fix-N — section wrapper for the three medication-detail
- * panels (Titration, Scheduling, SideEffects). The four wave-4b
+ * v1.4.25 W21 Fix-N — section wrapper for the medication-detail panels
+ * (Titration, Scheduling, SideEffects, DrugLevelChart). The wave-4b
  * sections previously hand-rolled the same chrome — border + header
- * row + dotted divider + body padding — and drifted on padding (px-3
- * vs px-3 py-2.5 vs px-3 py-2), border opacity (border-border/60 vs
- * /70), and aria wiring (aria-labelledby was inconsistent).
+ * row + dotted divider + body padding — and drifted on padding,
+ * border opacity, and aria wiring.
  *
- * This wrapper locks the contract:
+ * v1.4.28 FB-F3 / F4 — heading scale collapsed to one shape across the
+ * `/medications/[id]` surface so the page reads as one consistent
+ * document. Title classes now match the settings symmetry sweep:
+ * `text-base font-semibold leading-6 tracking-tight`. Body band keeps
+ * its `text-xs` density; one heading scale (`text-base font-semibold`),
+ * one body scale (`text-sm`), one micro scale (`text-xs`) on the page.
+ *
+ * Contract:
  *   - `border-border/60 rounded-md border` chrome
- *   - `px-3 py-2.5` header row with `text-foreground/85 text-sm font-medium` title
+ *   - `px-3 py-2.5` header row with
+ *     `text-foreground text-base font-semibold leading-6 tracking-tight`
+ *     title
  *   - `border-border/60 border-t px-3 py-3 text-xs` body band
  *   - `aria-labelledby` wired to a stable per-section id derived from `titleId`
  *
@@ -57,7 +65,7 @@ export function MedicationDetailSection({
       <header className="flex items-center justify-between gap-2 px-3 py-2.5">
         <h2
           id={titleId}
-          className="text-foreground/85 text-sm font-medium"
+          className="text-foreground text-base font-semibold leading-6 tracking-tight"
         >
           {title}
         </h2>
