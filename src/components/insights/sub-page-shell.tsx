@@ -33,6 +33,21 @@ export interface SubPageShellProps {
    * page does not pass it; sub-pages use it to anchor the surface.
    */
   description?: string;
+  /**
+   * v1.4.27 MB7 / CF-35 — opt-in programmatic focus on mount.
+   *
+   * The legacy default-on `focus()` call moved screen-reader focus to
+   * the heading but on mobile it also fought the soft-keyboard: a
+   * sub-page navigation that landed while a form was open dismissed
+   * the keyboard mid-typing. Default is now `false`; sub-pages that
+   * actually want the screen-reader landing (today: none; the routed
+   * sub-pages do not auto-focus anything) opt in explicitly.
+   *
+   * The `scrollTo({ top: 0 })` still fires unconditionally because
+   * the deep-scroll reset between routed sub-pages is a sighted-user
+   * affordance, not an a11y one.
+   */
+  focusOnMount?: boolean;
   children: ReactNode;
 }
 
@@ -40,23 +55,26 @@ export function SubPageShell({
   title,
   badge,
   description,
+  focusOnMount = false,
   children,
 }: SubPageShellProps) {
   // a11y: focus the heading on mount so a tab-strip navigation actually
-  // moves screen-reader focus into the sub-page body. The `scrollTo`
-  // pairs with that so sighted users don't see the previous page's
-  // deep-scroll position bleed in. Both are gated on
-  // `prefers-reduced-motion: reduce` (we honour the OS pref by using
-  // `scroll-behavior: auto` on the parent, which Tailwind already wires
-  // via the reduced-motion utilities — `scrollTo({ behavior: "auto" })`
-  // mirrors that contract intentionally).
+  // moves screen-reader focus into the sub-page body. v1.4.27 MB7 /
+  // CF-35 made the call opt-in via `focusOnMount` — the default-on
+  // version was stealing focus from soft-keyboards on mobile and
+  // breaking mid-flow form entries. The `scrollTo` still fires
+  // unconditionally; both honour `prefers-reduced-motion: reduce`
+  // implicitly because `scrollTo({ behavior: "auto" })` does not
+  // animate, and the focus call is a single discrete event.
   const headingRef = useRef<HTMLHeadingElement | null>(null);
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "auto" });
     }
-    headingRef.current?.focus({ preventScroll: true });
-  }, []);
+    if (focusOnMount) {
+      headingRef.current?.focus({ preventScroll: true });
+    }
+  }, [focusOnMount]);
 
   return (
     <div data-slot="insights-subpage" className="space-y-6">
