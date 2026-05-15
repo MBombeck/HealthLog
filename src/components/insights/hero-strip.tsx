@@ -241,7 +241,6 @@ export function HeroStrip({
                 <Button
                   asChild
                   variant="default"
-                  size="sm"
                   data-slot="insights-hero-strip-action-weekly-report"
                   className="gap-1.5"
                 >
@@ -251,7 +250,6 @@ export function HeroStrip({
                 <Button
                   type="button"
                   variant="default"
-                  size="sm"
                   disabled
                   title={comingSoon}
                   data-slot="insights-hero-strip-action-weekly-report"
@@ -269,7 +267,6 @@ export function HeroStrip({
             <Button
               type="button"
               variant="outline"
-              size="sm"
               onClick={onAskCoach ? () => onAskCoach() : undefined}
               disabled={!onAskCoach}
               title={onAskCoach ? undefined : comingSoon}
@@ -386,7 +383,6 @@ function WeeklyReportBanner({
       <div className="flex flex-wrap items-center gap-1.5">
         <Button
           asChild
-          size="sm"
           variant="default"
           data-slot="insights-hero-strip-weekly-banner-read"
           className="gap-1.5"
@@ -398,7 +394,6 @@ function WeeklyReportBanner({
         </Button>
         <Button
           type="button"
-          size="sm"
           variant="ghost"
           onClick={handleShare}
           data-slot="insights-hero-strip-weekly-banner-share"
@@ -409,7 +404,6 @@ function WeeklyReportBanner({
         </Button>
         <Button
           asChild
-          size="sm"
           variant="ghost"
           data-slot="insights-hero-strip-weekly-banner-export"
           className="gap-1.5"

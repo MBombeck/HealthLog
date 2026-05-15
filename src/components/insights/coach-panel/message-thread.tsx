@@ -546,7 +546,7 @@ function CoachMessageFeedback({ messageId }: CoachMessageFeedbackProps) {
         data-slot="coach-message-feedback-helpful"
         onClick={() => submit.mutate("helpful")}
         disabled={submit.isPending}
-        className="text-muted-foreground hover:text-dracula-green focus-visible:ring-ring/50 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] outline-none focus-visible:ring-2 disabled:opacity-50"
+        className="text-muted-foreground hover:text-dracula-green focus-visible:ring-ring/50 inline-flex min-h-11 items-center gap-1 rounded px-2 py-1.5 text-xs outline-none focus-visible:ring-2 disabled:opacity-50"
       >
         <ThumbsUp className="size-3" aria-hidden="true" />
         {t("insights.coach.feedbackHelpful")}
@@ -556,7 +556,7 @@ function CoachMessageFeedback({ messageId }: CoachMessageFeedbackProps) {
         data-slot="coach-message-feedback-unhelpful"
         onClick={() => submit.mutate("unhelpful")}
         disabled={submit.isPending}
-        className="text-muted-foreground hover:text-dracula-orange focus-visible:ring-ring/50 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] outline-none focus-visible:ring-2 disabled:opacity-50"
+        className="text-muted-foreground hover:text-dracula-orange focus-visible:ring-ring/50 inline-flex min-h-11 items-center gap-1 rounded px-2 py-1.5 text-xs outline-none focus-visible:ring-2 disabled:opacity-50"
       >
         <ThumbsDown className="size-3" aria-hidden="true" />
         {t("insights.coach.feedbackUnhelpful")}

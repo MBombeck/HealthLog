@@ -396,7 +396,6 @@ export function InsightAdvisorCard({
               {onRegenerate && (
                 <Button
                   variant="outline"
-                  size="sm"
                   onClick={onRegenerate}
                   disabled={regenerating}
                   data-slot="insight-retry-button"
@@ -429,7 +428,6 @@ export function InsightAdvisorCard({
               {onRegenerate && (
                 <Button
                   variant="outline"
-                  size="sm"
                   onClick={onRegenerate}
                   disabled={regenerating}
                 >
@@ -476,7 +474,6 @@ export function InsightAdvisorCard({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
                 onClick={onRegenerate}
                 disabled={regenerating}
                 title={t("insights.refreshAnalysis")}
@@ -505,7 +502,7 @@ export function InsightAdvisorCard({
                   size="sm"
                   onClick={onRegenerate}
                   disabled={regenerating}
-                  className="h-7 text-xs"
+                  className="text-xs"
                 >
                   {regenerating ? (
                     <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
@@ -542,7 +539,6 @@ export function InsightAdvisorCard({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
                 onClick={onRegenerate}
                 disabled={regenerating}
                 title={t("insights.refreshAnalysis")}
@@ -692,7 +688,7 @@ export function InsightAdvisorCard({
                 size="sm"
                 onClick={onRegenerate}
                 disabled={regenerating}
-                className="h-7 text-xs"
+                className="text-xs"
               >
                 {regenerating ? (
                   <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />

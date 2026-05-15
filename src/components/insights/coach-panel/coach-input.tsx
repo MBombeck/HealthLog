@@ -197,7 +197,7 @@ export function CoachInput({
                   data-slot="coach-input-hint"
                   className={cn(
                     "text-muted-foreground hover:text-foreground",
-                    "focus-visible:ring-ring/50 inline-flex h-7 w-7",
+                    "focus-visible:ring-ring/50 inline-flex h-11 w-11",
                     "items-center justify-center rounded",
                     "focus-visible:ring-2 focus-visible:outline-none",
                   )}
