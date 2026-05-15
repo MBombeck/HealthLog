@@ -55,6 +55,11 @@ vi.mock("@/components/ui/sheet", () => ({
   SheetDescription: ({ children }: { children: React.ReactNode }) => (
     <p>{children}</p>
   ),
+  // v1.4.27 R3d MB1 — the settings sheet now renders an inline
+  // `<SheetClose>` in the header instead of the primitive's
+  // absolutely-positioned close-X. Mock it as a passthrough so the
+  // existing skeleton + form snapshot assertions keep working.
+  SheetClose: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 import { CoachSettingsSheet } from "../coach-settings-sheet";
