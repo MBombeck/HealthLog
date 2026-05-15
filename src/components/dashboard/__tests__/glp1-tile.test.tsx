@@ -261,8 +261,102 @@ describe("<Glp1Tile>", () => {
     expect(html).not.toContain("Ozempic 0mg");
     // No weight delta caption when both sides are null.
     expect(html).not.toContain('data-slot="glp1-tile-delta"');
-    // No chart when the series is empty.
-    expect(html).not.toContain('data-slot="glp1-tile-chart"');
+    // v1.4.27 B1 — the tab strip + range strip always render; the
+    // weight pane shows the muted "no data yet" hint when the series
+    // is empty rather than suppressing the whole chart row.
+    expect(html).toContain('data-slot="glp1-tile-chart"');
+    expect(html).toContain('data-slot="glp1-tile-tab-level"');
+    expect(html).toContain('data-slot="glp1-tile-tab-weight"');
+  });
+
+  it("v1.4.27 B1 — exposes the tab strip and range strip with drug-level default", () => {
+    queryReturn = {
+      data: {
+        active: true,
+        medications: [
+          {
+            name: "Mounjaro",
+            genericName: "tirzepatide",
+            medicationId: "med-1",
+            currentDose: {
+              value: 7.5,
+              unit: "mg",
+              since: "2026-04-01",
+              weeksOnDose: 6,
+            },
+            doseHistory: [],
+            lastInjection: { date: "2026-05-10", site: null, weeksAgo: 0 },
+            nextInjection: { date: "2026-05-17", daysAway: 3 },
+            startWeight: 92.0,
+            currentWeight: 87.8,
+            weightDeltaKg: -4.2,
+            weightSeries: [{ date: "2026-05-13", weight: 87.8 }],
+            injectionDates: ["2026-04-26", "2026-05-03", "2026-05-10"],
+          },
+        ],
+      },
+      isPending: false,
+    };
+    const html = render();
+    // Tab strip + range strip are present on a populated tile.
+    expect(html).toContain('data-slot="glp1-tile-tabs"');
+    expect(html).toContain('data-slot="glp1-tile-tab-level"');
+    expect(html).toContain('data-slot="glp1-tile-tab-weight"');
+    expect(html).toContain('data-slot="glp1-tile-range-strip"');
+    // Drug-Level tab is the default selection.
+    expect(html).toMatch(
+      /data-slot="glp1-tile-tab-level"[^>]*data-active="true"/,
+    );
+    expect(html).toMatch(
+      /data-slot="glp1-tile-tab-weight"[^>]*data-active="false"/,
+    );
+    // Range strip exposes 7d / 30d / 90d / All buttons.
+    expect(html).toMatch(/data-slot="glp1-tile-range-button"[^>]*data-points="7"/);
+    expect(html).toMatch(/data-slot="glp1-tile-range-button"[^>]*data-points="30"/);
+    expect(html).toMatch(/data-slot="glp1-tile-range-button"[^>]*data-points="90"/);
+    expect(html).toMatch(/data-slot="glp1-tile-range-button"[^>]*data-points="0"/);
+    // 30d preset is the default.
+    expect(html).toMatch(
+      /data-slot="glp1-tile-range-button"[^>]*data-points="30"[^>]*data-active="true"/,
+    );
+  });
+
+  it("v1.4.27 B1 — surfaces the level-unavailable hint when no medicationId is wired", () => {
+    // Some legacy meds don't have a Medication.id surfaced through the
+    // dashboard route (the route returns medicationId: null). The
+    // drug-level pane needs a stable medication id to mount the
+    // chart, so we render a muted hint instead of the chart.
+    queryReturn = {
+      data: {
+        active: true,
+        medications: [
+          {
+            name: "Ozempic",
+            genericName: "semaglutide",
+            medicationId: null,
+            currentDose: {
+              value: 0.5,
+              unit: "mg",
+              since: "2026-04-01",
+              weeksOnDose: 6,
+            },
+            doseHistory: [],
+            lastInjection: null,
+            nextInjection: null,
+            startWeight: 92.0,
+            currentWeight: 87.8,
+            weightDeltaKg: -4.2,
+            weightSeries: [{ date: "2026-05-13", weight: 87.8 }],
+            injectionDates: [],
+          },
+        ],
+      },
+      isPending: false,
+    };
+    const html = render();
+    // Drug-level tab stays selected by default; pane renders the
+    // unavailable hint because medicationId is null.
+    expect(html).toContain('data-slot="glp1-tile-level-unavailable"');
   });
 
   it("renders German copy under the de locale", () => {

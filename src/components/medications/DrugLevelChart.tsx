@@ -70,7 +70,6 @@ const HOURS_PER_DAY = 24;
  *  for a research-view chart that emphasises the sawtooth shape. */
 const WINDOW_HOURS_BEFORE = 21 * HOURS_PER_DAY;
 const WINDOW_HOURS_AFTER = 0;
-const SAMPLE_STEP_HOURS = 6;
 
 interface IntakeEvent {
   id: string;
@@ -112,9 +111,34 @@ export interface DrugLevelChartProps {
    * cost low.
    */
   asOf?: Date;
+  /**
+   * v1.4.27 B1 — compact rendering for tile-internal mounts (the GLP-1
+   * dashboard tile carves out a mini pane for this chart). When set:
+   *   - the outer `<section class="bg-card …">` wrapper drops so the
+   *     parent tile owns the card surface (no card-inside-a-card).
+   *   - the chart body shrinks (160 px instead of 240 px) to match
+   *     mini-mode density of the other tile-internal charts.
+   *   - the header + disclaimer collapse to a single inline caption.
+   */
+  compact?: boolean;
+  /**
+   * v1.4.27 B1 — window length override (in hours of history before
+   * `asOf`). Defaults to 21 × 24 = 504 h (three weekly cycles), the
+   * shape the standalone surface ships. The dashboard mini-chart
+   * exposes 7d / 30d / 90d / All via a range strip and threads the
+   * mapped window length through this prop. The sample step scales
+   * with the window so an "All"-mode chart doesn't paint thousands of
+   * points: 6 h / 12 h / 24 h / 48 h for ≤ 21 d / ≤ 60 d / ≤ 180 d / >.
+   */
+  windowHoursBefore?: number;
 }
 
-export function DrugLevelChart({ medication, asOf }: DrugLevelChartProps) {
+export function DrugLevelChart({
+  medication,
+  asOf,
+  compact = false,
+  windowHoursBefore,
+}: DrugLevelChartProps) {
   const { t } = useTranslations();
 
   // Resolve the catalog key via the shared helper. v1.4.25 W21 Fix-N
@@ -194,27 +218,46 @@ export function DrugLevelChart({ medication, asOf }: DrugLevelChartProps) {
   const isLoading = rmLoading || (gateOpen && (detailsLoading || intakeLoading));
   const hasDoses = doses.length > 0;
   const animationsEnabled = !prefersReducedMotion();
+  // Resolve the window length once, then derive a sample step that
+  // keeps the AreaChart inside a sensible point count even on the
+  // "All" branch of the dashboard's range strip.
+  const resolvedWindowHours = windowHoursBefore ?? WINDOW_HOURS_BEFORE;
+  const resolvedStepHours = pickSampleStepHours(resolvedWindowHours);
+  const chartBodyHeightPx = compact ? 160 : 240;
 
-  return (
-    <section
-      aria-labelledby="drug-level-chart-title"
-      className="bg-card border-border rounded-xl border p-4 md:p-6"
-      data-slot="drug-level-chart"
-    >
-      <header className="mb-3 flex flex-wrap items-center gap-2">
-        <Activity className="text-dracula-purple h-4 w-4 shrink-0" />
-        <h3
-          id="drug-level-chart-title"
-          className="text-sm font-semibold"
-        >
+  // Compact mode mounts the chart inside a host card (the GLP-1 tile)
+  // and skips the outer `<section>` wrapper so the user doesn't see a
+  // card painted inside a card. The disclaimer also collapses to a
+  // single muted line to keep the tile's vertical footprint tight.
+  const wrapperClass = compact
+    ? "space-y-2"
+    : "bg-card border-border rounded-xl border p-4 md:p-6";
+  const wrapperProps = {
+    "aria-labelledby": "drug-level-chart-title",
+    className: wrapperClass,
+    "data-slot": "drug-level-chart",
+    "data-compact": compact ? "true" : undefined,
+  } as const;
+  const body = (
+    <>
+      {!compact && (
+        <header className="mb-3 flex flex-wrap items-center gap-2">
+          <Activity className="text-dracula-purple h-4 w-4 shrink-0" />
+          <h3 id="drug-level-chart-title" className="text-sm font-semibold">
+            {t("medications.researchMode.chart.title")}
+          </h3>
+          {drugId && (
+            <span className="text-muted-foreground text-xs">
+              · {t(`medications.glp1.drug.${drugId}.name`)}
+            </span>
+          )}
+        </header>
+      )}
+      {compact && (
+        <h3 id="drug-level-chart-title" className="sr-only">
           {t("medications.researchMode.chart.title")}
         </h3>
-        {drugId && (
-          <span className="text-muted-foreground text-xs">
-            · {t(`medications.glp1.drug.${drugId}.name`)}
-          </span>
-        )}
-      </header>
+      )}
 
       {/* Decision tree:
             1. drug not in catalog       → gated-unknown-drug placeholder
@@ -232,7 +275,11 @@ export function DrugLevelChart({ medication, asOf }: DrugLevelChartProps) {
         />
       ) : isLoading ? (
         <div
-          className="flex h-[220px] items-center justify-center"
+          className={
+            compact
+              ? "flex h-[160px] items-center justify-center"
+              : "flex h-[220px] items-center justify-center"
+          }
           data-slot="drug-level-chart-loading"
         >
           <Loader2 className="text-primary h-6 w-6 animate-spin" />
@@ -246,19 +293,43 @@ export function DrugLevelChart({ medication, asOf }: DrugLevelChartProps) {
           asOf={now}
           animationsEnabled={animationsEnabled}
           axisLabel={t("medications.researchMode.chart.axisLabel")}
+          windowHoursBefore={resolvedWindowHours}
+          stepHours={resolvedStepHours}
+          heightPx={chartBodyHeightPx}
         />
       )}
 
       {gateOpen && hasDoses && (
         <p
-          className="text-muted-foreground mt-2 text-xs italic"
+          className={
+            compact
+              ? "text-muted-foreground text-[10px] leading-snug italic"
+              : "text-muted-foreground mt-2 text-xs italic"
+          }
           data-slot="drug-level-chart-disclaimer"
         >
           {t("medications.researchMode.chart.estimateNote")}
         </p>
       )}
-    </section>
+    </>
   );
+
+  return compact ? <div {...wrapperProps}>{body}</div> : <section {...wrapperProps}>{body}</section>;
+}
+
+/**
+ * v1.4.27 B1 — pick a sample step in hours appropriate for the chosen
+ * window length. The default 6 h is fine at ≤ 21 days (≤ 84 samples);
+ * "All"-mode windows need a coarser grid so the AreaChart stays under
+ * a few hundred points. The chart is qualitative (research §2.3) so a
+ * coarse step does not change the rising/peak/fading shape.
+ */
+function pickSampleStepHours(windowHoursBefore: number): number {
+  const days = windowHoursBefore / 24;
+  if (days <= 21) return 6;
+  if (days <= 60) return 12;
+  if (days <= 180) return 24;
+  return 48;
 }
 
 /* ────────────────────────────────────────────────────────────────
@@ -354,6 +425,9 @@ function ChartBody({
   asOf,
   animationsEnabled,
   axisLabel,
+  windowHoursBefore,
+  stepHours,
+  heightPx,
 }: {
   drug: Glp1DrugId;
   doses: readonly DoseEvent[];
@@ -366,20 +440,27 @@ function ChartBody({
    * users and SSR snapshots both surface the framing.
    */
   axisLabel: string;
+  /** Window length in hours; the chart's x-axis domain is `[-days, 0]`. */
+  windowHoursBefore: number;
+  /** Sample step in hours; scales with the window length. */
+  stepHours: number;
+  /** Chart-area height in CSS pixels; compact mode passes 160. */
+  heightPx: number;
 }) {
+  const windowDays = windowHoursBefore / HOURS_PER_DAY;
   const samples = useMemo(
     () =>
       computeOneCompartment(drug, doses, asOf, {
-        windowHoursBefore: WINDOW_HOURS_BEFORE,
+        windowHoursBefore,
         windowHoursAfter: WINDOW_HOURS_AFTER,
-        stepHours: SAMPLE_STEP_HOURS,
+        stepHours,
       }),
-    [drug, doses, asOf],
+    [drug, doses, asOf, windowHoursBefore, stepHours],
   );
 
   // Map samples to chart points. x-axis is "days since now" — negative
-  // values for the past 21 days, with 0 = now. Recharts uses the raw
-  // domain so categorical day labels don't crowd a 21-day window.
+  // values for the past window, with 0 = now. Recharts uses the raw
+  // domain so categorical day labels don't crowd the visible range.
   const chartData = useMemo(
     () =>
       samples.map((s) => ({
@@ -388,6 +469,16 @@ function ChartBody({
       })),
     [samples],
   );
+
+  // Pick four x-axis ticks evenly across the window so the strip
+  // reads as quarter / midpoint / three-quarter / now regardless of
+  // whether the user picked 7d, 30d, 90d, or All.
+  const ticks = useMemo(() => {
+    const quarter = -Math.round(windowDays * 0.75);
+    const midpoint = -Math.round(windowDays * 0.5);
+    const lastQuarter = -Math.round(windowDays * 0.25);
+    return [-Math.round(windowDays), quarter, midpoint, lastQuarter, 0];
+  }, [windowDays]);
 
   return (
     <>
@@ -398,7 +489,8 @@ function ChartBody({
         {axisLabel}
       </p>
       <div
-        className="h-[240px] touch-pan-y"
+        className="touch-pan-y"
+        style={{ height: `${heightPx}px` }}
         data-slot="drug-level-chart-area"
       >
       <ResponsiveContainer width="100%" height="100%">
@@ -434,8 +526,8 @@ function ChartBody({
           <XAxis
             dataKey="dayOffset"
             type="number"
-            domain={[-21, 0]}
-            ticks={[-21, -14, -7, 0]}
+            domain={[-windowDays, 0]}
+            ticks={ticks}
             tickFormatter={(v) => (v === 0 ? "0" : `${v}d`)}
             tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
             tickLine={false}
