@@ -1595,7 +1595,7 @@
     "genderFemale": "Mujer",
     "genderHint": "Used for gender-specific target values.",
     "timezone": "Zona horaria",
-    "timezoneHint": "Used for chart axis labels, reminder times, export timestamps, and AI Coach context. Stored data is unchanged.",
+    "timezoneHint": "Used for chart axis labels, reminder times, export timestamps, and Coach context. Stored data is unchanged.",
     "timezoneDetect": "Use browser timezone ({tz})",
     "timezoneInvalid": "Not a valid IANA timezone.",
     "profileSaved": "Profile saved",
@@ -2658,7 +2658,7 @@
   },
   "i18n": {
     "maintainershipBanner": {
-      "notice": "Este idioma está redactado por IA, incluidas las instrucciones críticas para la seguridad del Coach. La validación automática se ejecuta en CI; informe de cualquier regresión del Coach IA en GitHub.",
+      "notice": "Este idioma está traducido automáticamente, incluidas las instrucciones críticas para la seguridad del Coach. Un control de deriva automático se ejecuta en CI; informe de cualquier regresión del Coach en GitHub.",
       "cta": "Informar en GitHub",
       "dismiss": "Cerrar"
     }

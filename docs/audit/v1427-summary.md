@@ -70,3 +70,29 @@ The two MMDB files add ~80 MB to the production image. The
 `tzdata`-bearing Alpine runner stage already sits at ~330 MB
 compressed; the v1.4.27 image lands well under the 90 MB image-size
 delta budget set out in the fix plan.
+
+## Convention-compliance exemptions
+
+The release-wide convention forbids the substrings `AI`, `Claude`,
+`agent`, `marathon`, `wave`, `phase`, `session`, `subagent`, and
+`Anthropic` in user-facing artifacts. Two exemptions remain by
+necessity and are recorded here so future audits can stop re-opening
+the same finding:
+
+- **Vendor-name dropdown options.** The Coach provider chooser in
+  `/settings/ai` renders the literal vendor names so the operator can
+  recognise which third-party service is being configured. The keys
+  `settings.ai.providerOptions.anthropic` and
+  `settings.ai.activeProviderOptions.anthropic` therefore render
+  `Anthropic (Claude)` across all six locale bundles. Rebranding
+  these would break the recognition the dropdown exists to provide.
+  The exemption applies to any vendor label whose product is the
+  setting being chosen, e.g. `OpenAI`, `Anthropic`, `Codex`.
+- **GitHub repository URL on `/about`.** The source-link on the
+  public about page renders
+  `https://github.com/MBombeck/HealthLog`. The username segment is an
+  irreducible technical identifier for the URL and cannot be hidden
+  without breaking the link. The directive's spirit — never surface
+  the maintainer's full name in prose — is honoured: the `/about`
+  page never spells "Marc" or "Bombeck" in body copy, only inside
+  the URL.

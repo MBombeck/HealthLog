@@ -1595,7 +1595,7 @@
     "genderFemale": "Weiblich",
     "genderHint": "Wird für geschlechtsspezifische Zielwerte verwendet.",
     "timezone": "Zeitzone",
-    "timezoneHint": "Wird für Diagrammachsen, Erinnerungszeiten, Export-Zeitstempel und den AI-Coach-Kontext verwendet. Gespeicherte Daten bleiben unverändert.",
+    "timezoneHint": "Wird für Diagrammachsen, Erinnerungszeiten, Export-Zeitstempel und den Coach-Kontext verwendet. Gespeicherte Daten bleiben unverändert.",
     "timezoneDetect": "Browser-Zeitzone übernehmen ({tz})",
     "timezoneInvalid": "Keine gültige IANA-Zeitzone.",
     "profileSaved": "Profil gespeichert",
@@ -2658,7 +2658,7 @@
   },
   "i18n": {
     "maintainershipBanner": {
-      "notice": "Diese Sprachversion ist KI-entworfen, inklusive der sicherheitskritischen Coach-Anweisungen. Automatisierte Validierung läuft in CI; KI-Coach-Regressionen bitte auf GitHub melden.",
+      "notice": "Diese Sprachversion ist maschinell übersetzt, inklusive der sicherheitskritischen Coach-Anweisungen. Eine automatische Drift-Prüfung läuft in CI; Coach-Regressionen bitte auf GitHub melden.",
       "cta": "Auf GitHub melden",
       "dismiss": "Schließen"
     }
