@@ -11,11 +11,12 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/geo", () => ({
   lookupIpLocation: vi.fn(),
+  lookupIpAsn: vi.fn(),
 }));
 
 import { auditLog } from "../audit";
 import { prisma } from "@/lib/db";
-import { lookupIpLocation } from "@/lib/geo";
+import { lookupIpAsn, lookupIpLocation } from "@/lib/geo";
 
 const ENTRY = { id: "audit-1" };
 
@@ -23,6 +24,9 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(prisma.auditLog.create).mockResolvedValue(ENTRY as never);
   vi.mocked(prisma.auditLog.update).mockResolvedValue(ENTRY as never);
+  // Default: no ASN row resolves. Tests that exercise carrier
+  // resolution override this with `mockReturnValueOnce`.
+  vi.mocked(lookupIpAsn).mockReturnValue(null);
 });
 
 afterEach(() => {
@@ -182,5 +186,98 @@ describe("auditLog", () => {
     await flush();
 
     expect(prisma.auditLog.update).toHaveBeenCalledOnce();
+  });
+
+  // ── v1.4.27 B3 — ASN + carrier resolution ────────────────────────
+  it("writes asn + carrier alongside location when both resolvers fire", async () => {
+    vi.mocked(lookupIpLocation).mockResolvedValueOnce("Berlin, DE");
+    vi.mocked(lookupIpAsn).mockReturnValueOnce({
+      asn: 3320,
+      carrier: "Deutsche Telekom AG",
+    });
+
+    await auditLog("auth.login.password", {
+      userId: "user-14",
+      ipAddress: "84.131.0.1",
+    });
+    await flush();
+
+    expect(lookupIpAsn).toHaveBeenCalledWith("84.131.0.1");
+    expect(prisma.auditLog.update).toHaveBeenCalledTimes(1);
+    expect(prisma.auditLog.update).toHaveBeenCalledWith({
+      where: { id: "audit-1" },
+      data: {
+        location: "Berlin, DE",
+        asn: 3320,
+        carrier: "Deutsche Telekom AG",
+      },
+    });
+  });
+
+  it("writes asn + carrier even when the location lookup returns null", async () => {
+    vi.mocked(lookupIpLocation).mockResolvedValueOnce(null);
+    vi.mocked(lookupIpAsn).mockReturnValueOnce({
+      asn: 3209,
+      carrier: "Vodafone GmbH",
+    });
+
+    await auditLog("auth.login.passkey", {
+      userId: "user-15",
+      ipAddress: "139.7.0.1",
+    });
+    await flush();
+
+    expect(prisma.auditLog.update).toHaveBeenCalledWith({
+      where: { id: "audit-1" },
+      data: {
+        asn: 3209,
+        carrier: "Vodafone GmbH",
+      },
+    });
+  });
+
+  it("writes location only when the ASN lookup misses", async () => {
+    vi.mocked(lookupIpLocation).mockResolvedValueOnce("Berlin, DE");
+    vi.mocked(lookupIpAsn).mockReturnValueOnce(null);
+
+    await auditLog("auth.login.password", {
+      userId: "user-16",
+      ipAddress: "192.0.2.1",
+    });
+    await flush();
+
+    expect(prisma.auditLog.update).toHaveBeenCalledWith({
+      where: { id: "audit-1" },
+      data: { location: "Berlin, DE" },
+    });
+  });
+
+  it("does NOT update when both resolvers miss", async () => {
+    vi.mocked(lookupIpLocation).mockResolvedValueOnce(null);
+    vi.mocked(lookupIpAsn).mockReturnValueOnce(null);
+
+    await auditLog("auth.login.password", {
+      userId: "user-17",
+      ipAddress: "192.0.2.2",
+    });
+    await flush();
+
+    expect(prisma.auditLog.update).not.toHaveBeenCalled();
+  });
+
+  it("carries a null carrier through when the ASN row has no organisation", async () => {
+    vi.mocked(lookupIpLocation).mockResolvedValueOnce(null);
+    vi.mocked(lookupIpAsn).mockReturnValueOnce({ asn: 64500, carrier: null });
+
+    await auditLog("auth.login.password", {
+      userId: "user-18",
+      ipAddress: "192.0.2.3",
+    });
+    await flush();
+
+    expect(prisma.auditLog.update).toHaveBeenCalledWith({
+      where: { id: "audit-1" },
+      data: { asn: 64500, carrier: null },
+    });
   });
 });

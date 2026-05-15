@@ -1232,6 +1232,13 @@ model AuditLog {
   details   String? // JSON string, no sensitive data
   ipAddress String?  @map("ip_address")
   location  String? // e.g. "Berlin, DE" — resolved from IP at log time
+  // v1.4.27 B3 — resolved at audit-creation time from the bundled
+  // GeoLite2-ASN MMDB. `asn` is the autonomous-system number,
+  // `carrier` is the organisation string (e.g. "Deutsche Telekom AG").
+  // Both nullable so older rows, private-IP rows, and offline-miss
+  // rows stay valid.
+  asn       Int? // autonomous-system number
+  carrier   String? // autonomous-system organisation
   createdAt DateTime @default(now()) @map("created_at")
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
