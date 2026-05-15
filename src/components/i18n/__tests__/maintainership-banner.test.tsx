@@ -83,33 +83,34 @@ describe("<MaintainershipBanner>", () => {
     expect(cfg.isMaintainedLocale("pl")).toBe(false);
   });
 
-  // v1.4.25 W14c — banner copy upgraded to acknowledge that the
-  // FR/ES/IT/PL Coach prompts are AI-drafted including safety-critical
-  // instructions. Pin the new wording so a copy regression cannot
-  // quietly soften the disclosure.
-  it("EN banner copy names safety-critical AI-drafted Coach content", async () => {
+  // v1.4.27 — the banner copy was rewritten to "machine-translated"
+  // wording in the convention-compliance pass. The disclosure still
+  // names the safety-critical Coach content and points at GitHub;
+  // pin the new shape so a future regression cannot quietly soften
+  // the disclosure or re-introduce the retired vocabulary.
+  it("EN banner copy names the machine-translated safety-critical Coach content", async () => {
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
     const en = JSON.parse(
       readFileSync(join(process.cwd(), "messages", "en.json"), "utf8"),
     ) as { i18n: { maintainershipBanner: { notice: string } } };
     const notice = en.i18n.maintainershipBanner.notice;
-    expect(notice).toMatch(/AI-drafted/);
+    expect(notice).toMatch(/machine-translated/);
     expect(notice).toMatch(/safety-critical/);
     expect(notice).toMatch(/GitHub/);
     expect(notice).toMatch(/Coach/);
   });
 
-  it("every AI-initial locale's banner notice acknowledges the AI-drafted Coach content", async () => {
+  it("every machine-translated locale's banner notice acknowledges the Coach content", async () => {
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
-    const aiDraftPatterns: Record<string, RegExp> = {
-      fr: /rédigée par IA/,
-      es: /redactado por IA/,
-      it: /redatta tramite IA/,
-      pl: /opracowana przez AI/,
+    const machineTranslatedPatterns: Record<string, RegExp> = {
+      fr: /traduite automatiquement/,
+      es: /traducido automáticamente/i,
+      it: /tradotta automaticamente/i,
+      pl: /tłumaczona maszynowo|tłumaczone maszynowo/i,
     };
-    for (const [locale, pattern] of Object.entries(aiDraftPatterns)) {
+    for (const [locale, pattern] of Object.entries(machineTranslatedPatterns)) {
       const data = JSON.parse(
         readFileSync(
           join(process.cwd(), "messages", `${locale}.json`),
