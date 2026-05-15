@@ -18,6 +18,7 @@ import {
   Waves,
 } from "lucide-react";
 import { convertGlucose, resolveGlucoseUnit } from "@/lib/glucose";
+import { cn } from "@/lib/utils";
 import {
   resolveDashboardLayout,
   type DashboardLayout,
@@ -1205,23 +1206,36 @@ export default function DashboardPage() {
                 height for any non-zero count. */}
             {trendCards.length > 0 && (
               <div
-                // CSS Grid with `auto-fit + minmax(9rem, 1fr)` is the v1.4.4
-                // attempt's flex-strip replacement: every tile gets EXACTLY
-                // the same width (1fr each in the row's track list), the gap
-                // is symmetric, and the strip starts and ends at the same
-                // x-coordinates as the charts below because both inherit the
-                // same parent container. When the row no longer fits a 9rem
-                // floor, the grid wraps to a new row instead of horizontal-
-                // scrolling — the maintainer tested both and prefers the v1.3-era
-                // wrap behaviour over the one-row scroll for the symmetry
-                // it preserves.
-                className="grid auto-rows-fr [grid-template-columns:repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-3 pb-2"
+                // v1.4.27 MB7 / CF-42 — at `<sm` the tile strip
+                // switches to a `flex overflow-x-auto` row so the
+                // tiles scroll horizontally instead of wrapping to
+                // 3-4 rows on Pixel 5 / Galaxy Fold. Each tile keeps
+                // a `min-w-[10rem]` so the user sees ~2.5 tiles per
+                // viewport — enough to read "there's more" without
+                // crowding the headline value on the visible tile.
+                // From `sm:` upwards the strip falls back to the
+                // canonical `grid auto-fit + minmax(9rem, 1fr)`
+                // layout (every tile equal width, wraps to a new
+                // row when the 9 rem floor no longer fits) that the
+                // maintainer pinned in v1.4.4.
+                //
+                // `snap-x snap-mandatory` makes the scroll feel
+                // deliberate on touch and is a no-op on the grid
+                // branch above `sm:`.
+                className={cn(
+                  "flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2",
+                  "sm:grid sm:snap-none sm:auto-rows-fr sm:overflow-visible",
+                  "sm:[grid-template-columns:repeat(auto-fit,minmax(min(100%,9rem),1fr))]",
+                )}
                 data-slot="dashboard-tile-strip"
                 data-tour-id="dashboard-tile-strip"
                 data-tile-count={trendCards.length}
               >
                 {trendCards.map((entry) => (
-                  <div key={entry.id} className="flex min-w-0">
+                  <div
+                    key={entry.id}
+                    className="flex min-w-[10rem] shrink-0 snap-start sm:min-w-0 sm:shrink"
+                  >
                     {entry.node}
                   </div>
                 ))}
