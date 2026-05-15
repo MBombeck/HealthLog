@@ -115,15 +115,16 @@ test.describe("Settings mobile consistency (Pixel 5)", () => {
     }
   });
 
-  test("/settings/account: Sprache select is in its own row, not paired with date-of-birth", async ({
+  test("/settings/account: Sprache select shares one grid row with date-of-birth", async ({
     page,
   }) => {
     await page.goto("/settings/account", { waitUntil: "networkidle" });
     await page.waitForLoadState("networkidle");
 
-    // The Sprache native select must NOT live inside the same `grid`
-    // ancestor as the date-of-birth input. Pre-fix they shared
-    // `<div class="grid sm:grid-cols-2"> dob | language </div>`.
+    // The v1.4.27 R1 settings audit pairs date-of-birth with language
+    // in a single `grid sm:grid-cols-2` row so the profile form keeps
+    // a uniform two-column rhythm and the language field no longer
+    // sits alone at the bottom with a `sm:max-w-xs` clamp.
     const sharedGrid = await page.evaluate(() => {
       const lang = document.getElementById("language-select");
       const dob = document.getElementById("dob");
@@ -137,8 +138,8 @@ test.describe("Settings mobile consistency (Pixel 5)", () => {
     });
 
     expect(sharedGrid.found, "language + dob fields must exist").toBe(true);
-    expect(sharedGrid.sharedGrid, "language + dob must NOT share a grid").toBe(
-      false,
+    expect(sharedGrid.sharedGrid, "language + dob must share a grid").toBe(
+      true,
     );
   });
 

@@ -402,13 +402,12 @@ export function AccountSection() {
             </div>
           </div>
 
-          {/* Date of birth pairs with the height/gender block above —
-              all three are "biological profile" data the app uses for
-              BMI + BP target calculations. Language is handled as its
-              own row below: it's a UI preference (cookie-backed),
-              not a profile attribute, so v1.4.19 A6 lifted it out of
-              the dob/language pair where users mistook it for a
-              per-account locale setting. */}
+          {/* Date of birth + language share one paired grid row so the
+              profile form keeps a single rhythm (every row two cells
+              wide on sm+). Date of birth is the bottom of the
+              biological-profile block; language is the only UI
+              preference on this card. They sit together to close the
+              "single-cell row" gap that broke the form's grid. */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="dob">{t("settings.dateOfBirth")}</Label>
@@ -422,28 +421,27 @@ export function AccountSection() {
                 {t("settings.dateOfBirthHint")}
               </p>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="language-select">{t("settings.language")}</Label>
+              <select
+                id="language-select"
+                value={locale}
+                onChange={(e) => setLocale(e.target.value as Locale)}
+                className={NATIVE_SELECT_CLASS}
+              >
+                {locales.map((loc) => (
+                  <option key={loc} value={loc}>
+                    {localeLabels[loc as Locale]}
+                  </option>
+                ))}
+              </select>
+              <p className="text-muted-foreground text-xs">
+                {t("settings.languageDescription")}
+              </p>
+            </div>
           </div>
 
           <TimezonePicker value={timezone} onChange={setTimezone} />
-
-          <div className="space-y-2">
-            <Label htmlFor="language-select">{t("settings.language")}</Label>
-            <select
-              id="language-select"
-              value={locale}
-              onChange={(e) => setLocale(e.target.value as Locale)}
-              className={`${NATIVE_SELECT_CLASS} sm:max-w-xs`}
-            >
-              {locales.map((loc) => (
-                <option key={loc} value={loc}>
-                  {localeLabels[loc as Locale]}
-                </option>
-              ))}
-            </select>
-            <p className="text-muted-foreground text-xs">
-              {t("settings.languageDescription")}
-            </p>
-          </div>
 
           {saveMsg && (
             <p
