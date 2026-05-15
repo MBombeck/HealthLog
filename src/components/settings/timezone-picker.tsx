@@ -88,7 +88,7 @@ export function TimezonePicker({
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{t("settings.timezone")}</Label>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <select
           id={id}
           value={value}
