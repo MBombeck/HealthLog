@@ -907,7 +907,7 @@
     "notAvailableForCompliance": "Comparison N/A for compliance"
   },
   "insights": {
-    "aiAnalysisTitle": "AI Health Analysis",
+    "advisorTitle": "Consulente personale di salute",
     "aiOverviewTitle": "Personal advisor",
     "noAnalysisYet": "No analysis yet.",
     "emptyTitle": "Not enough data yet",

@@ -345,7 +345,7 @@ export function InsightAdvisorCard({
           <div className="flex items-center gap-2">
             {icon ?? <Sparkles className="text-dracula-purple h-5 w-5" />}
             <CardTitle className="text-lg">
-              {t("insights.aiAnalysisTitle")}
+              {t("insights.advisorTitle")}
             </CardTitle>
           </div>
           {title && <p className="text-muted-foreground text-sm">{title}</p>}
@@ -377,7 +377,7 @@ export function InsightAdvisorCard({
             <div className="flex items-center gap-2">
               {icon ?? <Sparkles className="text-dracula-purple h-5 w-5" />}
               <CardTitle className="text-lg">
-                {t("insights.aiAnalysisTitle")}
+                {t("insights.advisorTitle")}
               </CardTitle>
             </div>
           </div>
@@ -467,7 +467,7 @@ export function InsightAdvisorCard({
             <div className="flex items-center gap-2">
               {icon ?? <Sparkles className="text-dracula-purple h-5 w-5" />}
               <CardTitle className="text-lg">
-                {t("insights.aiAnalysisTitle")}
+                {t("insights.advisorTitle")}
               </CardTitle>
             </div>
             {onRegenerate && (
@@ -528,7 +528,7 @@ export function InsightAdvisorCard({
           <div className="flex items-center gap-2">
             {icon ?? <Sparkles className="text-dracula-purple h-5 w-5" />}
             <CardTitle className="text-lg">
-              {t("insights.aiAnalysisTitle")}
+              {t("insights.advisorTitle")}
             </CardTitle>
           </div>
           <div className="flex items-center gap-2">
