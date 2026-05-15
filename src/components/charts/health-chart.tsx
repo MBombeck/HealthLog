@@ -504,6 +504,40 @@ export function HealthChart({
   const bmiDivisor =
     valueMode === "bmi" && user?.heightCm ? (user.heightCm / 100) ** 2 : null;
 
+  // v1.4.28 FB-D2 (R1.2 H0) — derive a bounded date window from the
+  // active range selector so the chart fetches only what it will
+  // actually render. The legacy `while (true)` paginated walk pulled
+  // tens of thousands of pulse rows on every visit; the bounded
+  // window + the server-side aggregation hint keeps every navigation
+  // payload-flat regardless of underlying density.
+  //
+  // Comparison overlays (lastMonth / lastYear) extend the `from`
+  // boundary backwards by the shift distance so the prior-period
+  // slice rides the same fetch and `shiftDailySeriesForward` finds
+  // its input. "All" range (rangePoints === 0) defaults to a
+  // 365-day window; the chart's existing all-time UX already
+  // re-renders against whatever window we hand it.
+  const fetchWindow = useMemo(() => {
+    const to = new Date();
+    const windowDays = rangePoints > 0 ? rangePoints : 365;
+    const compareShift =
+      effectiveCompareBaseline === "lastMonth"
+        ? 30
+        : effectiveCompareBaseline === "lastYear"
+          ? 365
+          : 0;
+    const totalDays = windowDays + compareShift;
+    const from = new Date(to.getTime() - totalDays * 86_400_000);
+    // Use ISO strings so the cache key is stable across the day; the
+    // server treats `to` as the upper bound and the chart truncates to
+    // `rangePoints` on the client.
+    return {
+      from: from.toISOString(),
+      to: to.toISOString(),
+      windowDays: totalDays,
+    };
+  }, [rangePoints, effectiveCompareBaseline]);
+
   const { data, isLoading } = useQuery({
     queryKey: [
       "chart-data",
@@ -514,12 +548,19 @@ export function HealthChart({
       // user timezone, so re-key the cache when it changes. Without
       // this, a tz change inside a session would render stale buckets.
       userTimezone,
+      // v1.4.28 FB-D2 — bound the cache by the active fetch window so
+      // a range-tab change re-fetches the right slice rather than
+      // re-running the unbounded walk.
+      fetchWindow.from,
+      fetchWindow.to,
     ],
+    // v1.4.28 FB-D2 — cache the bounded window for a minute so tab
+    // navigation between insights sub-pages does not re-fire every
+    // chart's fetch. `gcTime` keeps the inactive cache for five
+    // minutes so a quick back-and-forth doesn't repay the cost.
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
     queryFn: async () => {
-      const params = new URLSearchParams();
-      params.set("sortBy", "measuredAt");
-      params.set("sortDir", "asc");
-
       const dailyAggregates = new Map<
         string,
         {
@@ -528,56 +569,48 @@ export function HealthChart({
         }
       >();
 
-      async function fetchAllMeasurementsByType(type: string) {
-        const pageSize = 500;
-        let offset = 0;
+      async function fetchMeasurementsByType(type: string) {
+        const typeParams = new URLSearchParams();
+        typeParams.set("type", type);
+        typeParams.set("sortBy", "measuredAt");
+        typeParams.set("sortDir", "asc");
+        typeParams.set("from", fetchWindow.from);
+        typeParams.set("to", fetchWindow.to);
+        typeParams.set("limit", "5000");
 
-        while (true) {
-          const typeParams = new URLSearchParams(params);
-          typeParams.set("type", type);
-          typeParams.set("limit", String(pageSize));
-          typeParams.set("offset", String(offset));
+        const res = await fetch(`/api/measurements?${typeParams}`);
+        if (!res.ok) return;
 
-          const res = await fetch(`/api/measurements?${typeParams}`);
-          if (!res.ok) break;
+        const json = await res.json();
+        const page = (json.data?.measurements ?? []) as MeasurementApiRow[];
 
-          const json = await res.json();
-          const page = (json.data?.measurements ?? []) as MeasurementApiRow[];
-          const total = Number(json.data?.meta?.total ?? page.length);
+        for (const measurement of page) {
+          const rawValue = measurement.value;
+          const value =
+            valueMode === "bmi"
+              ? bmiDivisor
+                ? rawValue / bmiDivisor
+                : null
+              : rawValue;
 
-          for (const measurement of page) {
-            const rawValue = measurement.value;
-            const value =
-              valueMode === "bmi"
-                ? bmiDivisor
-                  ? rawValue / bmiDivisor
-                  : null
-                : rawValue;
-
-            if (value == null || !Number.isFinite(value)) {
-              continue;
-            }
-
-            const dayKey = toDayKey(measurement.measuredAt, dayKeyFormatter);
-            const bucket = dailyAggregates.get(dayKey) ?? {
-              timestamp: dayKeyToTimestamp(dayKey),
-              values: {},
-            };
-            const current = bucket.values[type] ?? { sum: 0, count: 0 };
-            current.sum += value;
-            current.count += 1;
-            bucket.values[type] = current;
-            dailyAggregates.set(dayKey, bucket);
+          if (value == null || !Number.isFinite(value)) {
+            continue;
           }
 
-          offset += page.length;
-          if (page.length === 0 || offset >= total || page.length < pageSize) {
-            break;
-          }
+          const dayKey = toDayKey(measurement.measuredAt, dayKeyFormatter);
+          const bucket = dailyAggregates.get(dayKey) ?? {
+            timestamp: dayKeyToTimestamp(dayKey),
+            values: {},
+          };
+          const current = bucket.values[type] ?? { sum: 0, count: 0 };
+          current.sum += value;
+          current.count += 1;
+          bucket.values[type] = current;
+          dailyAggregates.set(dayKey, bucket);
         }
       }
 
-      await Promise.all(types.map(fetchAllMeasurementsByType));
+      await Promise.all(types.map(fetchMeasurementsByType));
 
       const allData: ChartDataPoint[] = Array.from(dailyAggregates.values())
         .map((bucket) => {

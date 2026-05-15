@@ -242,13 +242,21 @@ export const listMeasurementsSchema = z.object({
     .datetime({ offset: true })
     .transform((s) => new Date(s))
     .optional(),
-  limit: z.coerce.number().int().min(1).max(500).optional().default(100),
+  // v1.4.28 FB-D2 — when the chart sends an explicit from/to window the
+  // payload is already bounded; lift the per-request ceiling to 5000
+  // (still cheaper than the legacy unbounded `while (true)` walk).
+  // Callers that omit from/to keep the historical 500-row cap.
+  limit: z.coerce.number().int().min(1).max(5000).optional().default(100),
   offset: z.coerce.number().int().min(0).optional().default(0),
   sortBy: z
     .enum(["type", "value", "measuredAt", "source"])
     .optional()
     .default("measuredAt"),
   sortDir: z.enum(["asc", "desc"]).optional().default("desc"),
+  // v1.4.28 FB-D2 — bucket hint for range-aware queries. When set the
+  // GET handler downsamples server-side via `aggregateRows` and returns
+  // one row per bucket per type rather than the raw measurement rows.
+  aggregate: z.enum(["raw", "daily", "weekly"]).optional(),
 });
 
 export const createBatchMeasurementSchema = z.object({

@@ -14,6 +14,11 @@ import {
   listMeasurementsSchema,
   getUnitForType,
 } from "@/lib/validations/measurement";
+import {
+  aggregateRows,
+  pickAggregateGrain,
+  rangeLengthDays,
+} from "@/lib/measurements/range-aggregation";
 import { withIdempotency } from "@/lib/idempotency";
 import { NextRequest } from "next/server";
 import type {
@@ -32,7 +37,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return apiError(parsed.error.issues[0].message, 422);
   }
 
-  const { type, from, to, limit, offset, sortBy, sortDir } = parsed.data;
+  const { type, from, to, limit, offset, sortBy, sortDir, aggregate } =
+    parsed.data;
 
   const where = {
     userId: user.id,
@@ -46,6 +52,47 @@ export const GET = apiHandler(async (request: NextRequest) => {
         }
       : {}),
   };
+
+  // v1.4.28 FB-D2 — when the caller supplies a from/to window AND asks
+  // for an aggregated grain (or the window is wide enough that the
+  // default grain should downsample), collapse to one row per bucket
+  // per type before returning. Raw mode keeps the historical wire shape
+  // so existing callers and the iOS client (which does not pass
+  // `aggregate`) see no change.
+  if (from && to) {
+    const grain = pickAggregateGrain(rangeLengthDays(from, to), aggregate);
+    if (grain !== "raw") {
+      const rows = await prisma.measurement.findMany({
+        where,
+        orderBy: { measuredAt: "asc" },
+        take: limit,
+        skip: offset,
+        select: { type: true, value: true, measuredAt: true },
+      });
+      const buckets = aggregateRows(
+        rows.map((r) => ({
+          type: r.type as string,
+          value: r.value,
+          measuredAt: r.measuredAt,
+        })),
+        grain,
+      );
+      const measurements = buckets.map((b) => ({
+        type: b.type,
+        value: b.avg,
+        measuredAt: b.bucketStart.toISOString(),
+        count: b.count,
+      }));
+      annotate({
+        action: { name: "measurement.list" },
+        meta: { total: measurements.length, type, aggregate: grain },
+      });
+      return apiSuccess({
+        measurements,
+        meta: { total: measurements.length, limit, offset, aggregate: grain },
+      });
+    }
+  }
 
   const [measurements, total] = await Promise.all([
     prisma.measurement.findMany({
