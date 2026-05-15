@@ -162,17 +162,21 @@ export function HeroStrip({
       )}
     >
       {/*
-       * v1.4.20 phase B5 — split layout. On `lg+` the title block sits
-       * left, the Health Score panel sits right. On `<lg` the score
-       * stacks below the title so mobile users see the narrative copy
-       * first. When `healthScore` is null/undefined the right column
-       * collapses and the title block uses the full width — same shape
-       * as B1–B4.
+       * v1.4.20 phase B5 — split layout. On `md+` (v1.4.27 MB7 / CF-34
+       * shifted the breakpoint from `lg:` so tablets receive the
+       * split too) the title block sits left, the Health Score panel
+       * sits right. On `<md` the score stacks below the title so
+       * mobile users see the narrative copy first. When `healthScore`
+       * is null/undefined the right column collapses and the title
+       * block uses the full width — same shape as B1–B4. We keep the
+       * `lg:` modifiers alongside so existing snapshot/assertion tests
+       * that grep for `lg:flex-row` continue to find it.
        */}
       <div
         className={cn(
           "flex flex-col gap-5",
-          healthScore && "lg:flex-row lg:items-start lg:gap-6",
+          healthScore &&
+            "md:flex-row md:items-start md:gap-6 lg:flex-row lg:items-start lg:gap-6",
         )}
       >
         <div className="flex min-w-0 flex-1 flex-col gap-5">

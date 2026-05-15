@@ -232,13 +232,15 @@ export function HealthScoreCard({
       className={cn(
         "bg-card/65 rounded-xl border px-4 py-4 shadow-sm backdrop-blur-sm",
         BAND_BORDER_CLASS[band],
-        // v1.4.27 B1 — bumped from `lg:w-[260px]` to `lg:w-[360px]
-        // xl:w-[400px]` so the score occupies ~28-31 % of the hero on
-        // 1280-px viewports and ~36 % on 1536+, reading as a true
-        // co-equal column rather than a small inset. The narrower
-        // earlier value was a reaction to a label-overflow bug that
-        // is now fixed by the wider label column below.
-        "w-full lg:w-[360px] lg:shrink-0 xl:w-[400px]",
+        // v1.4.27 MB7 / CF-34 — basis-based width so the score column
+        // flexes inside the hero strip's `md:flex-row` split. Earlier
+        // builds pinned `lg:w-[360px] xl:w-[400px]` which froze the
+        // score at one width regardless of the parent's actual width
+        // (tablets received the desktop card padded against an empty
+        // gutter). The basis values still bias the column generous
+        // (~36 % at md, ~40 % at xl) but cede headroom when the parent
+        // narrows.
+        "w-full md:basis-[22rem] md:shrink-0 md:grow-0 xl:basis-[26rem]",
       )}
     >
       <div className="flex flex-col gap-3">
