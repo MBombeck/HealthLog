@@ -4,11 +4,17 @@ vi.mock("@/lib/api-handler", () => ({
   apiHandler: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
 }));
 
+const offlineGeoReadyMock = vi.fn(() => false);
+vi.mock("@/lib/geo", () => ({
+  offlineGeoReady: () => offlineGeoReadyMock(),
+}));
+
 import { GET } from "../route";
 
 beforeEach(() => {
   delete process.env.NEXT_PUBLIC_APP_BUILD_SHA;
   delete process.env.NEXT_PUBLIC_APP_BUILT_AT;
+  offlineGeoReadyMock.mockReturnValue(false);
 });
 
 interface VersionEnvelope {
@@ -20,6 +26,7 @@ interface VersionEnvelope {
     repository: string;
     changelog: string;
     docs: string;
+    offlineGeoEnabled: boolean;
   };
 }
 
@@ -48,5 +55,19 @@ describe("GET /api/version", () => {
     const body = (await response.json()) as VersionEnvelope;
     expect(body.data.buildSha).toBe("abc1234");
     expect(body.data.builtAt).toBe("2026-05-08T12:00:00.000Z");
+  });
+
+  it("reports offlineGeoEnabled=false when the GeoLite2 databases are absent", async () => {
+    offlineGeoReadyMock.mockReturnValue(false);
+    const response = await (GET as unknown as () => Promise<Response>)();
+    const body = (await response.json()) as VersionEnvelope;
+    expect(body.data.offlineGeoEnabled).toBe(false);
+  });
+
+  it("reports offlineGeoEnabled=true when the GeoLite2 databases are present", async () => {
+    offlineGeoReadyMock.mockReturnValue(true);
+    const response = await (GET as unknown as () => Promise<Response>)();
+    const body = (await response.json()) as VersionEnvelope;
+    expect(body.data.offlineGeoEnabled).toBe(true);
   });
 });
