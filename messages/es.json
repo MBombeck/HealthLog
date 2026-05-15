@@ -336,6 +336,7 @@
     "invalidTimestamp": "Please select a valid time.",
     "loginRequired": "Please sign in to view measurements.",
     "allTypes": "All types",
+    "filterByType": "Filter by type",
     "measurementCount": "{count} measurements",
     "emptyTitle": "No measurements yet",
     "emptyDescription": "Log your weight, blood pressure, pulse, or other vitals to start tracking trends.",
