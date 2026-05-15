@@ -210,10 +210,11 @@ export function decrementDose(
  *
  * v1.4.25 W21 Fix-N — widened to accept either the full
  * `InventoryItemView` (server-side path: state-machine-gated, returns
- * null for non-IN_USE) OR a thin `{ firstUseAt }` shape (client-side
- * path: caller already knows state is IN_USE so the gate is a no-op).
- * The widening collapses the reimplementation the inventory-section
- * client previously carried.
+ * null for non-IN_USE) OR a thin `{ firstUseAt }` shape (caller
+ * already knows state is IN_USE so the gate is a no-op). The widening
+ * collapsed an earlier reimplementation in the now-retired web
+ * inventory surface; the helper stays because the GLP-1 details
+ * endpoint still computes weeksOfSupply for iOS.
  */
 export function daysRemainingInUse(
   item: InventoryItemView | { firstUseAt: Date | string | null },

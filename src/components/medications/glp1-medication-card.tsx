@@ -26,16 +26,15 @@ import {
   nextInjectionSite,
   type InjectionSiteKey,
 } from "@/lib/medications/injection-sites";
-import { InventorySection } from "@/components/medications/inventory-section";
-
 /**
  * v1.4.25 W4d — GLP-1 medication card variant.
  *
  * Marc directive 2026-05-14: NO chart on the medication card. The card
  * stays text-rich (drug name + current dose, last/next injection,
- * injection-site rotation hint, pen inventory, side-effect quick-log).
- * v1.4.28 retired the inline dose-history disclosure. Chart-only
- * surfaces are the Dashboard tile + Insights /medikamente sub-page.
+ * injection-site rotation hint, side-effect quick-log). v1.4.28
+ * retired the inline dose-history disclosure and the inventory
+ * surface. Chart-only surfaces are the Dashboard tile + Insights
+ * /medikamente sub-page.
  *
  * Renders inside the standard medications grid alongside generic
  * medication cards; visually mirrors `medication-card.tsx` so the page
@@ -219,8 +218,6 @@ export function Glp1MedicationCard({
       .filter(Boolean) as InjectionSiteKey[],
   );
 
-  const inventory = details?.inventory ?? null;
-
   function lastInjectionLabel(): string | null {
     if (!medication.lastTakenAt) return null;
     const d = new Date(medication.lastTakenAt);
@@ -337,31 +334,11 @@ export function Glp1MedicationCard({
             </div>
           )}
 
-        {/* Inventory line — only when dosesPerUnit + at least one
-            inventory event recorded. Low-stock gets a warning badge. */}
-        {inventory && inventory.pensRemaining !== null && (
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">
-              {t("medications.glp1Inventory", {
-                pens: inventory.pensRemaining,
-                weeks: inventory.weeksOfSupply ?? "—",
-              })}
-            </span>
-            {inventory.lowStock && (
-              <Badge variant="destructive" className="text-[10px]">
-                {t("medications.glp1InventoryLow")}
-              </Badge>
-            )}
-          </div>
-        )}
-
-        {/* v1.4.25 W19b — per-pen / per-vial inventory disclosure.
-            Lazy-loads the inventory list on open; otherwise stays
-            collapsed so the card height matches generic cards. */}
-        <InventorySection
-          medicationId={medication.id}
-          defaultDosesPerUnit={medication.dosesPerUnit ?? null}
-        />
+        {/* v1.4.28 — the "Bestand" (inventory) surface retired from
+            the GLP-1 card: both the inline pens-remaining summary line
+            and the per-pen disclosure are gone. The iOS-consumed
+            Glp1InventoryDTO slot on /api/medications/[id]/glp1 stays
+            in the response shape; only the web mounts are gone. */}
 
         {/* Compliance bars — identical to the generic card so the page
             grid stays harmonious. */}

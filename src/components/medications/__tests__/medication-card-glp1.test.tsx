@@ -308,7 +308,11 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     expect(html).toContain("Abdomen, lower left");
   });
 
-  it("renders the pen-inventory line when inventory data is present", () => {
+  it("no longer renders the pen-inventory line (retired v1.4.28)", () => {
+    // The maintainer retired the entire Bestand / inventory surface
+    // on the GLP-1 card in v1.4.28. The iOS-consumed Glp1InventoryDTO
+    // slot stays in the response shape, but the web card never paints
+    // the inline pens-remaining line or the low-stock badge any more.
     const client = makeClient();
     seedCompliance(client, med7p5.id);
     seedGlp1Details(client, med7p5.id, {
@@ -325,14 +329,11 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
       client,
     );
 
-    // The inventory copy template is "{pens} pens left · ~{weeks} weeks of supply".
-    expect(html).toContain("2 pens left");
-    expect(html).toContain("8 weeks of supply");
-    // Low-stock badge omitted when lowStock=false.
+    expect(html).not.toContain("pens left");
     expect(html).not.toContain("Low stock");
   });
 
-  it("renders the low-stock badge when inventory.lowStock is true", () => {
+  it("does not render the low-stock badge even when inventory.lowStock is true (retired v1.4.28)", () => {
     const client = makeClient();
     seedCompliance(client, med7p5.id);
     seedGlp1Details(client, med7p5.id, {
@@ -349,8 +350,8 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
       client,
     );
 
-    expect(html).toContain("1 pens left");
-    expect(html).toContain("Low stock");
+    expect(html).not.toContain("pens left");
+    expect(html).not.toContain("Low stock");
   });
 
   it("side-effect quick-log button hands off the medication object", () => {
