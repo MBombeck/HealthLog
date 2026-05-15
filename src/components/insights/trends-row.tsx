@@ -110,22 +110,40 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
           v1.4.27 MB7 / CF-71 — drop the unconditional `min-h-[300px]`
           floor to `md:min-h-[300px]` so mobile single-column doesn't
           eat dead space below a short chart; the floor stays on `md+`
-          to preserve the equal-height baseline across the row. */}
-      <div className="grid grid-cols-1 gap-4 md:auto-rows-fr md:grid-cols-3 md:items-stretch">
+          to preserve the equal-height baseline across the row.
+
+          v1.4.28 R3c-Insights (FB-K1/K2) — three-slot template.
+          `auto-rows-fr` covers every viewport, not just `md+`, so the
+          mobile single-column path picks up the same row contract
+          when the user expands the strip side-by-side via the
+          orientation-change. The chart slot is now wrapped in a
+          fixed-height shell so BP / weight / mood all paint the
+          series at the same vertical position; the annotation slot
+          clamps via `<TrendAnnotation>` so long captions can't pull
+          the row taller than the design constant. */}
+      <div className="grid auto-rows-fr grid-cols-1 gap-4 md:grid-cols-3 md:items-stretch">
         <div
           data-slot="trends-row-card"
           data-metric="bp"
           className="flex h-full flex-col gap-2 md:min-h-[300px]"
         >
-          <HealthChart
-            types={["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"]}
-            title={t("charts.bloodPressure")}
-            colors={["#ff79c6", "#8be9fd"]}
-            unit="mmHg"
-            yAxisUnit="Hg"
-            mini
-            userTimezone={userTimezone}
-          />
+          {/* v1.4.28 R3c-Insights — fixed chart slot. `<HealthChart>`
+              mini paints its own 140 px chart band; this wrapper pins
+              the total chart-envelope height so the mood tile's Card
+              wrapper (which carries a heavier shell on a default
+              shadcn Card) lines up with the BP/weight tiles' lighter
+              shell. Both chart types ship the same data-slot now. */}
+          <div data-slot="trends-row-chart-slot" className="shrink-0">
+            <HealthChart
+              types={["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"]}
+              title={t("charts.bloodPressure")}
+              colors={["#ff79c6", "#8be9fd"]}
+              unit="mmHg"
+              yAxisUnit="Hg"
+              mini
+              userTimezone={userTimezone}
+            />
+          </div>
           <TrendAnnotation
             metric="bp"
             annotation={bpAnnotation}
@@ -137,14 +155,16 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
           data-metric="weight"
           className="flex h-full flex-col gap-2 md:min-h-[300px]"
         >
-          <HealthChart
-            types={["WEIGHT"]}
-            title={t("charts.weight")}
-            colors={["#bd93f9"]}
-            unit="kg"
-            mini
-            userTimezone={userTimezone}
-          />
+          <div data-slot="trends-row-chart-slot" className="shrink-0">
+            <HealthChart
+              types={["WEIGHT"]}
+              title={t("charts.weight")}
+              colors={["#bd93f9"]}
+              unit="kg"
+              mini
+              userTimezone={userTimezone}
+            />
+          </div>
           <TrendAnnotation
             metric="weight"
             annotation={weightAnnotation}
@@ -156,11 +176,13 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
           data-metric="mood"
           className="flex h-full flex-col gap-2 md:min-h-[300px]"
         >
-          <MoodChart
-            title={t("charts.mood")}
-            mini
-            userTimezone={userTimezone}
-          />
+          <div data-slot="trends-row-chart-slot" className="shrink-0">
+            <MoodChart
+              title={t("charts.mood")}
+              mini
+              userTimezone={userTimezone}
+            />
+          </div>
           <TrendAnnotation
             metric="mood"
             annotation={moodAnnotation}

@@ -334,10 +334,15 @@ export function DailyBriefing({
             description={t("insights.dailyBriefing.emptyDescription")}
             action={
               onRegenerate ? (
+                // v1.4.28 BK-M2 — switch the empty-state CTA from
+                // `variant="outline"` to the default (filled) variant
+                // so the briefing card matches the dashboard
+                // empty-state CTA shape. Empty-state actions on a card
+                // surface read as the single primary affordance and
+                // earn the filled chip across surfaces in v1.4.28.
                 <Button
                   type="button"
                   size="sm"
-                  variant="outline"
                   onClick={onRegenerate}
                   disabled={regenerating}
                   data-slot="daily-briefing-empty-cta"

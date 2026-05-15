@@ -527,8 +527,22 @@ export function MoodChart({
   if (!isLoading && !data?.entries?.length) return null;
 
   return (
-    <Card data-slot={mini ? "chart-mini" : undefined}>
-      <CardHeader className={mini ? "pb-1" : "pb-2"}>
+    <Card
+      data-slot={mini ? "chart-mini" : undefined}
+      // v1.4.28 R3c-Insights — collapse the Card envelope in mini
+      // mode (FB-K1). The default `<Card>` paints `py-6 gap-6` —
+      // ~48 px of vertical chrome that pulled the mood mini chart
+      // band ~52 px lower than the `<HealthChart mini>` siblings
+      // in the trends row. The mini override gives mood the same
+      // `~p-2` shell HealthChart uses so the chart series anchor
+      // at the same top edge across BP / weight / mood tiles.
+      className={mini ? "gap-1 py-2 shadow-none" : undefined}
+    >
+      <CardHeader
+        className={
+          mini ? "px-2 pb-1 [&]:gap-0.5" : "pb-2"
+        }
+      >
         {/* v1.4.19 A2 — mobile-first header: stack title row above
             controls row on small viewports so the bucket / comparison
             chips never push the range tabs into a 2nd line. ≥sm goes
@@ -617,7 +631,7 @@ export function MoodChart({
           )}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className={mini ? "px-2" : undefined}>
         {isLoading ? (
           <div className="flex h-48 items-center justify-center">
             <Loader2 className="text-primary h-6 w-6 animate-spin motion-reduce:animate-none" />

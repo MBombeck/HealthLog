@@ -67,6 +67,28 @@ describe("<TrendsRow>", () => {
     expect(html).toMatch(/grid-cols-1/);
   });
 
+  // ── v1.4.28 R3c-Insights — equal-height contract (FB-K1/K2) ───────
+  it("pins the row container to `auto-rows-fr` so every cell sits on the same row track", () => {
+    // Per Inv-3 the row already used `md:auto-rows-fr`. v1.4.28 lifts
+    // the modifier so the single-column path on phone-class viewports
+    // honours the same template. The class is load-bearing for the
+    // 3-slot tile contract — if a future refactor drops it the rows
+    // start collapsing on long annotations again.
+    const html = render(<TrendsRow />);
+    expect(html).toMatch(/\bauto-rows-fr\b/);
+  });
+
+  it("wraps each chart in a fixed-height chart slot (FB-K1 mood-tile alignment)", () => {
+    // The chart slot is the visible "where does the chart series
+    // start" landmark across BP / weight / mood. Wrapping the chart
+    // in `trends-row-chart-slot` lets us pin the chart-envelope
+    // height in one place instead of bleeding chart-component
+    // padding through the row.
+    const html = render(<TrendsRow />);
+    const slots = html.match(/data-slot="trends-row-chart-slot"/g) ?? [];
+    expect(slots.length).toBe(3);
+  });
+
   it("renders annotations when supplied", () => {
     const html = render(
       <TrendsRow

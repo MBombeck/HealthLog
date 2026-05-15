@@ -56,7 +56,12 @@ export function TrendAnnotation({
       <p
         data-slot="trend-annotation-empty"
         data-metric={metric}
-        className="text-muted-foreground text-xs italic"
+        // v1.4.28 R3c-Insights — `line-clamp-3` on both states. The
+        // empty-state copy is short by construction but the row
+        // contract still pins the slot's height so the chart slot
+        // above stays aligned with the filled-state neighbour
+        // tiles. The empty caption never inflates the row.
+        className="text-muted-foreground line-clamp-3 text-xs italic"
       >
         {t(EMPTY_KEY[metric])}
       </p>
@@ -74,7 +79,14 @@ export function TrendAnnotation({
         aria-hidden="true"
       />
       <div className="min-w-0 flex-1 space-y-1">
-        <p className="text-foreground text-xs leading-snug">
+        {/* v1.4.28 R3c-Insights — `line-clamp-3` bounds caption
+            variance (FB-K2). A 1-sentence BP annotation paints
+            ~3 lines wrapped; a 4-line mood annotation used to push
+            the cell taller, which `auto-rows-fr` propagated to
+            every neighbour cell. With the clamp the longest
+            annotation ends with an ellipsis at 3 lines and the
+            row stays at a single visual rhythm. */}
+        <p className="text-foreground line-clamp-3 text-xs leading-snug">
           {stripChartTokens(annotation)}
         </p>
         {confidence ? (
