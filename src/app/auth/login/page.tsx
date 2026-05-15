@@ -124,7 +124,11 @@ export default function LoginPage() {
 
   return (
     <div className="flex w-full max-w-sm flex-col gap-4">
-      <div className="border-border bg-card rounded-xl border p-8 shadow-lg shadow-black/20">
+      {/* v1.4.27 MB7 / CF-61 — drop `p-8` to `p-6 sm:p-8` so the
+          auth card breathes on Galaxy Fold / Pixel 5 without stealing
+          half the visible viewport with padding. Tablet+ keeps the
+          generous 32 px padding. */}
+      <div className="border-border bg-card rounded-xl border p-6 shadow-lg shadow-black/20 sm:p-8">
         <div className="flex flex-col items-center gap-3 text-center">
           <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-lg">
             <Logo className="text-primary" size={28} />

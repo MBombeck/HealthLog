@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Activity,
   FileText,
@@ -29,6 +30,33 @@ import type {
   DailyBriefing as DailyBriefingPayload,
   DailyBriefingKeyFinding,
 } from "@/lib/ai/schema";
+
+/**
+ * v1.4.27 MB7 / CF-68 — per-metric routing target for the briefing
+ * key findings. Maps the schema's `sourceMetric` discriminator to the
+ * sub-page slug that owns the deeper view. Metrics that don't have a
+ * dedicated routed sub-page yet (hrv, resting_hr, steps, …) fall
+ * through to `null` and render as a plain row (no link wrap).
+ */
+const METRIC_HREF: Record<DailyBriefingKeyFinding["sourceMetric"], string | null> = {
+  bp: "/insights/blutdruck",
+  weight: "/insights/gewicht",
+  pulse: "/insights/puls",
+  mood: "/insights/stimmung",
+  compliance: "/insights/medikamente",
+  // Apple Health / GLP-1 additive metrics — no dedicated sub-page yet.
+  // They render as static rows; v1.4.28 can wire each as they ship.
+  hrv: null,
+  sleep: "/insights/schlaf",
+  resting_hr: null,
+  steps: null,
+  active_energy: null,
+  flights: null,
+  distance: null,
+  vo2_max: "/insights/puls",
+  body_temp: null,
+  glp1_plateau: "/insights/medikamente",
+};
 
 /**
  * v1.4.20 phase B1 — full-width Daily Briefing card.
@@ -128,11 +156,15 @@ function DeltaBadge({
 
 function KeyFindingRow({ finding }: { finding: DailyBriefingKeyFinding }) {
   const Icon = METRIC_ICON[finding.sourceMetric];
-  return (
-    <div
-      data-slot="daily-briefing-finding"
-      className="border-border/60 bg-card/40 relative flex items-start gap-3 rounded-md border p-3"
-    >
+  const href = METRIC_HREF[finding.sourceMetric];
+  // v1.4.27 MB7 / CF-68 — when the briefing's `sourceMetric` maps to
+  // a routed sub-page, wrap the entire row in a `<Link>` so the
+  // whole card is tappable on mobile instead of the user having to
+  // hit the small headline text. Hover + focus paint a subtle bg
+  // shift; metrics that don't have a sub-page yet render the
+  // original static row.
+  const rowContent = (
+    <>
       <span
         aria-hidden="true"
         className={cn(
@@ -158,6 +190,31 @@ function KeyFindingRow({ finding }: { finding: DailyBriefingKeyFinding }) {
           {stripChartTokens(finding.detail)}
         </p>
       </div>
+    </>
+  );
+  if (href) {
+    return (
+      <Link
+        href={href}
+        data-slot="daily-briefing-finding"
+        data-metric={finding.sourceMetric}
+        className={cn(
+          "border-border/60 bg-card/40 relative flex items-start gap-3 rounded-md border p-3",
+          "hover:bg-accent/40 transition-colors",
+          "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:outline-none",
+        )}
+      >
+        {rowContent}
+      </Link>
+    );
+  }
+  return (
+    <div
+      data-slot="daily-briefing-finding"
+      data-metric={finding.sourceMetric}
+      className="border-border/60 bg-card/40 relative flex items-start gap-3 rounded-md border p-3"
+    >
+      {rowContent}
     </div>
   );
 }

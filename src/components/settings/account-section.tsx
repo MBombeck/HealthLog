@@ -833,11 +833,17 @@ function PasskeyListSection({ isAuthenticated }: { isAuthenticated: boolean }) {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{pk.name}</p>
-                <p className="text-muted-foreground text-xs">
-                  {DEVICE_TYPE_LABELS[pk.credentialDeviceType] ??
-                    pk.credentialDeviceType}
-                </p>
+                {/* v1.4.27 MB7 / CF-75 — promote the device-type from
+                    plain text to an outline Badge so the mobile card
+                    list reads consistent with the desktop table's
+                    "Single-device / Multi-device" column. Sits on the
+                    same chip row as the backup status and date so all
+                    metadata reads as a single horizontal stride. */}
                 <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <Badge variant="outline" className="text-[11px]">
+                    {DEVICE_TYPE_LABELS[pk.credentialDeviceType] ??
+                      pk.credentialDeviceType}
+                  </Badge>
                   <Badge
                     variant={pk.credentialBackedUp ? "secondary" : "outline"}
                     className="text-[11px]"

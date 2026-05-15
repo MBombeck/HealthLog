@@ -154,15 +154,22 @@ export default function InsightsMedikamentePage() {
           return (
             <Card key={med.id}>
               <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Pill className="text-dracula-orange h-4 w-4" />
-                    <CardTitle className="text-sm font-medium">
+                {/* v1.4.27 MB7 / MA2-F8 — `min-w-0` on the title
+                    wrapper + `truncate` on the CardTitle keeps long
+                    medication names (e.g. "Semaglutid Wegovy 0.5 mg
+                    weekly") from pushing the streak badge off the
+                    card on Galaxy Fold / Pixel 5. The Pill icon
+                    + CardTitle pair shrinks to fit; the badge stays
+                    on the right at its natural width. */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Pill className="text-dracula-orange h-4 w-4 shrink-0" />
+                    <CardTitle className="truncate text-sm font-medium">
                       {med.name}
                     </CardTitle>
                   </div>
                   {med.streak > 0 && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="shrink-0 text-xs">
                       {t("insights.dayStreak", { count: med.streak })}
                     </Badge>
                   )}

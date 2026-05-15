@@ -105,13 +105,17 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
           v1.4.25 W3 — strengthen the equal-height contract with
           `md:auto-rows-fr` + `md:items-stretch` on the grid and
           `h-full` on each card so the tallest annotation still pins
-          every row member to a single baseline. The `min-h-[300px]`
-          floor stays in place for the single-column mobile view. */}
+          every row member to a single baseline.
+
+          v1.4.27 MB7 / CF-71 — drop the unconditional `min-h-[300px]`
+          floor to `md:min-h-[300px]` so mobile single-column doesn't
+          eat dead space below a short chart; the floor stays on `md+`
+          to preserve the equal-height baseline across the row. */}
       <div className="grid grid-cols-1 gap-4 md:auto-rows-fr md:grid-cols-3 md:items-stretch">
         <div
           data-slot="trends-row-card"
           data-metric="bp"
-          className="flex h-full min-h-[300px] flex-col gap-2"
+          className="flex h-full flex-col gap-2 md:min-h-[300px]"
         >
           <HealthChart
             types={["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"]}
@@ -131,7 +135,7 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
         <div
           data-slot="trends-row-card"
           data-metric="weight"
-          className="flex h-full min-h-[300px] flex-col gap-2"
+          className="flex h-full flex-col gap-2 md:min-h-[300px]"
         >
           <HealthChart
             types={["WEIGHT"]}
@@ -150,7 +154,7 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
         <div
           data-slot="trends-row-card"
           data-metric="mood"
-          className="flex h-full min-h-[300px] flex-col gap-2"
+          className="flex h-full flex-col gap-2 md:min-h-[300px]"
         >
           <MoodChart
             title={t("charts.mood")}

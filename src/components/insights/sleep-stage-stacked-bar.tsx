@@ -216,7 +216,11 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
             </span>
           </div>
           <div
-            className="flex items-center gap-1 self-end sm:self-auto"
+            // v1.4.27 MB7 / CF-70 — bump the gap from `gap-1` to
+            // `gap-1.5` so the three window-toggle buttons (7d /
+            // 14d / 30d) breathe enough on Pixel 5 that the active
+            // pill's border doesn't fuse with the inactive neighbour.
+            className="flex items-center gap-1.5 self-end sm:self-auto"
             data-slot="sleep-stage-window-toggle"
           >
             {WINDOW_DAYS.map((w) => (

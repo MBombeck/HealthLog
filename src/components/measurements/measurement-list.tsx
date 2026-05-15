@@ -318,10 +318,16 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
   return (
     <>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        {/* v1.4.27 MB7 / CF-46 — the filter row stacks the SelectTrigger
+            and the count caption vertically on `<sm` so the trigger
+            fills the column and the count drops to a separate line.
+            Pre-fix the trigger had a fixed `w-48` (192 px) which on
+            Pixel 5 (375 px content width) left only ~120 px for the
+            count, which wrapped to 2 lines. */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger
-              className="w-48"
+              className="w-full sm:w-48"
               aria-label={t("measurements.filterByType")}
             >
               <SelectValue placeholder={t("measurements.allTypes")} />
@@ -501,11 +507,20 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                         </div>
                       )}
                       <div className="min-w-0">
+                        {/* v1.4.27 MB7 / CF-76 — bump the metadata
+                            badges from `text-[10px]` to `text-[11px]`
+                            so the legibility floor (12 px is the
+                            mobile baseline; 11 px is the lowest
+                            tolerated value for non-primary chrome)
+                            holds across the row. The badge heights
+                            stay at `h-5` / `h-4` since the type-
+                            preface badge owns vertical real estate
+                            inside the headline line. */}
                         {(m.type === "BLOOD_PRESSURE_SYS" ||
                           m.type === "BLOOD_PRESSURE_DIA") && (
                           <Badge
                             variant="outline"
-                            className="mr-1.5 h-5 px-1 text-[10px]"
+                            className="mr-1.5 h-5 px-1 text-[11px]"
                           >
                             {t(TYPE_LABEL_KEYS[m.type])}
                           </Badge>
@@ -519,7 +534,7 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                             <Badge
                               variant="outline"
                               data-testid="measurement-source-badge"
-                              className={`ml-1.5 h-4 px-1 text-[10px] ${sourceBadgeClass(m.source)}`.trim()}
+                              className={`ml-1.5 h-4 px-1 text-[11px] ${sourceBadgeClass(m.source)}`.trim()}
                             >
                               {formatMeasurementSource(m.source, t)}
                             </Badge>

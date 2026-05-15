@@ -137,6 +137,13 @@ export function InsightsTabStrip({
       data-slot="insights-tab-strip"
       aria-label={t("insights.navAriaLabel")}
       className={cn(
+        // v1.4.27 MB7 / CF-72 — relative wrapper hosts the right-edge
+        // fade overlay below so the user reads "there's more to
+        // scroll" when the pill row overflows. The fade is a tiny
+        // pointer-events-none pseudo-strip painted onto the inner
+        // strip via a sibling div; it sits only on `<sm` because the
+        // wider viewport above already shows every pill.
+        "relative",
         "bg-background/95 sticky top-0 z-30 overflow-x-auto border-b py-2 backdrop-blur",
         "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
       )}
@@ -175,6 +182,20 @@ export function InsightsTabStrip({
             );
           })}
         </div>
+        {/* v1.4.27 MB7 / CF-72 — right-edge fade. The gradient
+            absolute-positions over the rightmost ~24 px of the strip
+            so the last visible pill softly fades into the background
+            colour, signalling "scroll for more" without a scrollbar.
+            Only paints on `<sm` because the wider viewports above
+            already fit every pill. The fade is a sibling of the
+            scrollable inner row + the regenerate button so it
+            visually overlays both without trapping pointer events. */}
+        <div
+          aria-hidden="true"
+          className={cn(
+            "from-background/95 pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l to-transparent sm:hidden",
+          )}
+        />
         {onRegenerate && (
           <button
             type="button"
