@@ -198,6 +198,28 @@ export function MessageThread({
     }
   }, [messages.length, streaming?.content, optimisticUser?.localId]);
 
+  // v1.4.27 R3d MB4 / CF-74 — re-pin to the bottom when the
+  // visual viewport shrinks (typically the soft keyboard opening on
+  // a phone). Without this the last bubble drifts behind the keyboard
+  // because the scroller's `scrollHeight` references the layout
+  // viewport, not the visible region. Listening on
+  // `window.visualViewport.resize` and re-issuing the scroll keeps the
+  // tail of the thread visible as the keyboard slides in and out.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const handleResize = () => {
+      const el = scrollerRef.current;
+      if (!el) return;
+      if (wasPinnedRef.current) {
+        el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
+      }
+    };
+    vv.addEventListener("resize", handleResize);
+    return () => vv.removeEventListener("resize", handleResize);
+  }, []);
+
   if (messages.length === 0 && !streamingActive && !optimisticActive) {
     return (
       <div
