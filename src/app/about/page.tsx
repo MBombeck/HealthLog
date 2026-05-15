@@ -18,6 +18,14 @@ import Link from "next/link";
  *
  * The page mirrors `/privacy` in layout and is reachable without a
  * session — see `src/proxy.ts` PUBLIC_PATHS.
+ *
+ * Intentional: no TOC. The `/privacy` page carries a collapsible
+ * `<details>` table of contents because it has eleven numbered
+ * sections that benefit from skim navigation. `/about` is short-form
+ * (Project + Credits) and fits the fold on every viewport we ship to,
+ * so a TOC would cost a tap to expand for negligible payoff. The
+ * scroll-mt-28 anchors stay so deep-links into `#project` /
+ * `#credits` still clear the sticky header on iPhones with a notch.
  */
 
 export const dynamic = "force-static";
