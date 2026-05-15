@@ -37,6 +37,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import { PasswordInput } from "@/components/ui/password-input";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDate } from "@/lib/format";
@@ -53,15 +54,10 @@ interface PasskeyInfo {
   createdAt: string;
 }
 
-/**
- * Shared class string for native `<select>` elements inside the Account
- * card. Mirrors the visual contract of `<Input>` and shadcn
- * `<SelectTrigger>` (`h-9`, identical border/focus tokens) so gender,
- * language, and any future native dropdown render at the same height
- * and width as every other input in the form.
- */
-const NATIVE_SELECT_CLASS =
-  "border-input bg-background text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none";
+// v1.4.27 MB7 / CF-52 — the in-file `NATIVE_SELECT_CLASS` constant
+// retired; the shared `<NativeSelect>` primitive owns the visual
+// contract now. Existing `<select className={NATIVE_SELECT_CLASS}>`
+// call sites in this file swapped to `<NativeSelect>` below.
 
 export function AccountSection() {
   const { t, locale, setLocale } = useTranslations();
@@ -380,16 +376,15 @@ export function AccountSection() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="gender">{t("settings.gender")}</Label>
-              <select
+              <NativeSelect
                 id="gender"
                 value={gender}
                 onChange={(e) => setGender(e.target.value)}
-                className={NATIVE_SELECT_CLASS}
               >
                 <option value="">{t("settings.genderNone")}</option>
                 <option value="MALE">{t("settings.genderMale")}</option>
                 <option value="FEMALE">{t("settings.genderFemale")}</option>
-              </select>
+              </NativeSelect>
               <p className="text-muted-foreground text-xs">
                 {t("settings.genderHint")}
               </p>
@@ -432,18 +427,17 @@ export function AccountSection() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="language-select">{t("settings.language")}</Label>
-              <select
+              <NativeSelect
                 id="language-select"
                 value={locale}
                 onChange={(e) => setLocale(e.target.value as Locale)}
-                className={NATIVE_SELECT_CLASS}
               >
                 {locales.map((loc) => (
                   <option key={loc} value={loc}>
                     {localeLabels[loc as Locale]}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               <p className="text-muted-foreground text-xs">
                 {t("settings.languageDescription")}
               </p>

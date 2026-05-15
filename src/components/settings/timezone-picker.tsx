@@ -21,14 +21,17 @@ import { Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import {
   detectBrowserTimezone,
   listSupportedTimezones,
 } from "@/lib/tz/format";
 import { useTranslations } from "@/lib/i18n/context";
 
-const NATIVE_SELECT_CLASS =
-  "border-input bg-background text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none";
+// v1.4.27 MB7 / CF-52 — the in-file `NATIVE_SELECT_CLASS` constant
+// retired; the shared `<NativeSelect>` primitive owns the visual
+// contract now. The `sm:max-w-sm` modifier still composes via the
+// `className` prop below so the picker keeps its narrow desktop width.
 
 export interface TimezonePickerProps {
   /** The user's current stored timezone. */
@@ -89,11 +92,11 @@ export function TimezonePicker({
     <div className="space-y-2">
       <Label htmlFor={id}>{t("settings.timezone")}</Label>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <select
+        <NativeSelect
           id={id}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={`${NATIVE_SELECT_CLASS} sm:max-w-sm`}
+          className="sm:max-w-sm"
         >
           {/* Preserve the stored value even if the runtime's IANA
               list changed across engines or tzdata rolls. */}
@@ -105,7 +108,7 @@ export function TimezonePicker({
               {zone}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         <Button
           type="button"
           variant="outline"

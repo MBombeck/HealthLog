@@ -3,11 +3,16 @@
 import { useMemo } from "react";
 import { Settings } from "lucide-react";
 import { useTranslations } from "@/lib/i18n/context";
+import { NativeSelect } from "@/components/ui/native-select";
 import { SettingsToggle, useAdminSettings, useUpdateSettings } from "./_shared";
 import { listSupportedTimezones } from "@/lib/tz/format";
 
-const NATIVE_SELECT_CLASS =
-  "border-input bg-background text-foreground ring-offset-background focus-visible:ring-ring flex h-9 rounded-md border px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-none";
+// v1.4.27 MB7 / CF-52 — the in-file `NATIVE_SELECT_CLASS` constant
+// retired; the shared `<NativeSelect>` primitive owns the visual
+// contract now. The admin copy previously diverged on the
+// `focus-visible:ring-[3px]` weight; the shared primitive pins
+// `focus-visible:ring-2` so admin selects match the rest of the form
+// surface.
 
 export function GeneralSettingsSection() {
   const { t } = useTranslations();
@@ -43,17 +48,17 @@ export function GeneralSettingsSection() {
               {t("admin.defaultLanguageDescription")}
             </p>
           </div>
-          <select
+          <NativeSelect
             value={settings?.defaultLocale ?? "de"}
             onChange={(e) =>
               updateSettings.mutate({ defaultLocale: e.target.value })
             }
             disabled={updateSettings.isPending}
-            className={NATIVE_SELECT_CLASS}
+            className="w-auto"
           >
             <option value="de">Deutsch</option>
             <option value="en">English</option>
-          </select>
+          </NativeSelect>
         </div>
 
         {/* v1.4.25 W7 — server-wide default timezone for new
@@ -69,13 +74,13 @@ export function GeneralSettingsSection() {
               {t("admin.defaultUserTimezoneDescription")}
             </p>
           </div>
-          <select
+          <NativeSelect
             value={currentDefaultTz}
             onChange={(e) =>
               updateSettings.mutate({ defaultUserTimezone: e.target.value })
             }
             disabled={updateSettings.isPending}
-            className={NATIVE_SELECT_CLASS}
+            className="sm:w-auto"
           >
             <option value="">{t("admin.defaultUserTimezoneFallback")}</option>
             {/* Preserve the stored value even if it's not in the
@@ -88,7 +93,7 @@ export function GeneralSettingsSection() {
                 {zone}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
       </div>
     </div>
