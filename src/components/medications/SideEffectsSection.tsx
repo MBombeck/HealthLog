@@ -443,6 +443,9 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
                 placeholder={t("medications.sideEffects.notesPlaceholder")}
                 rows={3}
                 maxLength={NOTES_MAX}
+                enterKeyHint="done"
+                autoCapitalize="sentences"
+                autoComplete="off"
                 className="border-input bg-background text-foreground w-full rounded-md border px-2 py-1.5 text-sm"
               />
               <p className="text-muted-foreground text-right text-[10px]">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,6 +64,10 @@ export function MoodForm({ onSuccess, onCancel }: MoodFormProps) {
   const [moodLoggedAt, setMoodLoggedAt] = useState(getDefaultMoodLoggedAtValue);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // v1.4.27 MB3 — error banner descriptor for the timestamp input.
+  const errorId = useId();
+  const errorDescriptor = error ? errorId : undefined;
 
   function resetForm() {
     setMood("");
@@ -156,6 +160,9 @@ export function MoodForm({ onSuccess, onCancel }: MoodFormProps) {
           value={moodLoggedAt}
           onChange={(e) => setMoodLoggedAt(e.target.value)}
           required
+          aria-required="true"
+          aria-invalid={!!error || undefined}
+          aria-describedby={errorDescriptor}
         />
       </div>
 
@@ -176,6 +183,9 @@ export function MoodForm({ onSuccess, onCancel }: MoodFormProps) {
           value={tagsInput}
           onChange={(e) => setTagsInput(e.target.value)}
           placeholder={t("mood.tagsPlaceholder")}
+          enterKeyHint="done"
+          autoCapitalize="none"
+          autoComplete="off"
         />
         {/* v1.4.25 W4d — GLP-1 side-effect quick-tags. Tapping a chip
             appends the localised label to the free-text tag list.
@@ -228,6 +238,7 @@ export function MoodForm({ onSuccess, onCancel }: MoodFormProps) {
 
       {error && (
         <div
+          id={errorId}
           role="alert"
           aria-live="assertive"
           className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm"

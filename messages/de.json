@@ -336,6 +336,7 @@
     "invalidTimestamp": "Bitte einen gültigen Zeitpunkt wählen.",
     "loginRequired": "Bitte anmelden, um Messwerte zu sehen.",
     "allTypes": "Alle Typen",
+    "filterByType": "Nach Typ filtern",
     "measurementCount": "{count} Messwerte",
     "emptyTitle": "Noch keine Messwerte",
     "emptyDescription": "Erfasse Gewicht, Blutdruck, Puls oder andere Werte, um Trends zu erkennen.",

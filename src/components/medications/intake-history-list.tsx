@@ -48,7 +48,7 @@ import {
   SkipForward,
   AlertTriangle,
 } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useId, useState, useCallback } from "react";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -110,6 +110,10 @@ export function IntakeHistoryList({
   const [editSkipped, setEditSkipped] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [editDeleteDialogOpen, setEditDeleteDialogOpen] = useState(false);
+  // v1.4.27 MB3 — error banners reference the form inputs via
+  // aria-describedby so screen readers announce validation failures.
+  const editErrorId = useId();
+  const editErrorDescriptor = editError ? editErrorId : undefined;
 
   // Create state — controlled via props or internal
   const [internalCreating, setInternalCreating] = useState(false);
@@ -118,6 +122,8 @@ export function IntakeHistoryList({
   const [createTakenAt, setCreateTakenAt] = useState("");
   const [createSkipped, setCreateSkipped] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const createErrorId = useId();
+  const createErrorDescriptor = createError ? createErrorId : undefined;
   const setCreatingRaw = onCreateOpenChange ?? setInternalCreating;
   const setCreating = useCallback(
     (open: boolean) => {
@@ -542,6 +548,9 @@ export function IntakeHistoryList({
                   value={editScheduledFor}
                   onChange={(e) => setEditScheduledFor(e.target.value)}
                   required
+                  aria-required="true"
+                  aria-invalid={!!editError || undefined}
+                  aria-describedby={editErrorDescriptor}
                 />
               </div>
 
@@ -554,6 +563,8 @@ export function IntakeHistoryList({
                   value={editTakenAt}
                   onChange={(e) => setEditTakenAt(e.target.value)}
                   disabled={editSkipped}
+                  aria-invalid={!!editError || undefined}
+                  aria-describedby={editErrorDescriptor}
                 />
               </div>
 
@@ -573,6 +584,7 @@ export function IntakeHistoryList({
 
               {editError && (
                 <div
+                  id={editErrorId}
                   role="alert"
                   aria-live="assertive"
                   className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm"
@@ -683,6 +695,9 @@ export function IntakeHistoryList({
                 value={createScheduledFor}
                 onChange={(e) => setCreateScheduledFor(e.target.value)}
                 required
+                aria-required="true"
+                aria-invalid={!!createError || undefined}
+                aria-describedby={createErrorDescriptor}
               />
             </div>
 
@@ -695,6 +710,8 @@ export function IntakeHistoryList({
                 value={createTakenAt}
                 onChange={(e) => setCreateTakenAt(e.target.value)}
                 disabled={createSkipped}
+                aria-invalid={!!createError || undefined}
+                aria-describedby={createErrorDescriptor}
               />
             </div>
 
@@ -714,6 +731,7 @@ export function IntakeHistoryList({
 
             {createError && (
               <div
+                id={createErrorId}
                 role="alert"
                 aria-live="assertive"
                 className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm"

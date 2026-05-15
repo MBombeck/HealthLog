@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -304,6 +304,12 @@ export function MedicationForm({
   const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
   const [phaseConfigOpen, setPhaseConfigOpen] = useState(false);
 
+  // v1.4.27 MB3 — link the form-level error banner to every required
+  // input via `aria-describedby` so screen readers announce the
+  // validation failure on save.
+  const errorId = useId();
+  const errorDescriptor = error ? errorId : undefined;
+
   const isEdit = !!initial;
   const dose = doseAmount
     ? `${doseAmount}${doseUnit ? ` ${doseUnit}` : ""}`
@@ -527,6 +533,12 @@ export function MedicationForm({
           placeholder={t("medications.namePlaceholder")}
           required
           maxLength={100}
+          enterKeyHint="next"
+          autoCapitalize="words"
+          autoComplete="off"
+          aria-required="true"
+          aria-invalid={!!error || undefined}
+          aria-describedby={errorDescriptor}
         />
       </div>
 
@@ -613,6 +625,11 @@ export function MedicationForm({
             placeholder={t("medications.dosePlaceholder")}
             required
             maxLength={20}
+            enterKeyHint="next"
+            autoComplete="off"
+            aria-required="true"
+            aria-invalid={!!error || undefined}
+            aria-describedby={errorDescriptor}
           />
         </div>
         <div className="space-y-1.5">
@@ -625,6 +642,8 @@ export function MedicationForm({
             placeholder="mg"
             maxLength={30}
             className="w-full"
+            enterKeyHint="next"
+            autoComplete="off"
           />
         </div>
       </div>
@@ -690,11 +709,14 @@ export function MedicationForm({
               id="med-doses-per-unit"
               type="number"
               inputMode="numeric"
+              enterKeyHint="next"
               min={1}
               max={100}
               value={dosesPerUnit}
               onChange={(e) => setDosesPerUnit(e.target.value)}
               placeholder={t("medications.glp1DosesPerUnitPlaceholder")}
+              aria-invalid={!!error || undefined}
+              aria-describedby={errorDescriptor}
             />
             <p className="text-muted-foreground text-xs leading-4">
               {t("medications.glp1DosesPerUnitHelp")}
@@ -773,16 +795,23 @@ export function MedicationForm({
                   {t("medications.scheduleFrom")}
                 </Label>
                 <Input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-2][0-9]:[0-5][0-9]"
+                  type="time"
+                  enterKeyHint="next"
                   placeholder="08:00"
                   value={s.windowStart}
-                  className="h-11 text-xs md:text-xs"
+                  // v1.4.27 MB3 — `text-base` on mobile keeps the
+                  // schedule time inputs at 16 px, the iOS Safari floor
+                  // below which the focus-zoom auto-fires. Desktop
+                  // stays compact at `text-xs` because the surrounding
+                  // grid carries the small dense rhythm.
+                  className="h-11 text-base md:text-xs"
                   onChange={(e) =>
                     updateSchedule(i, "windowStart", e.target.value)
                   }
                   required
+                  aria-required="true"
+                  aria-invalid={!!error || undefined}
+                  aria-describedby={errorDescriptor}
                   maxLength={5}
                 />
               </div>
@@ -791,16 +820,18 @@ export function MedicationForm({
                   {t("medications.scheduleTo")}
                 </Label>
                 <Input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-2][0-9]:[0-5][0-9]"
+                  type="time"
+                  enterKeyHint="next"
                   placeholder="09:00"
                   value={s.windowEnd}
-                  className="h-11 text-xs md:text-xs"
+                  className="h-11 text-base md:text-xs"
                   onChange={(e) =>
                     updateSchedule(i, "windowEnd", e.target.value)
                   }
                   required
+                  aria-required="true"
+                  aria-invalid={!!error || undefined}
+                  aria-describedby={errorDescriptor}
                   maxLength={5}
                 />
               </div>
@@ -810,10 +841,13 @@ export function MedicationForm({
                 </Label>
                 <Input
                   value={s.label}
-                  className="h-11 text-xs md:text-xs"
+                  className="h-11 text-base md:text-xs"
                   onChange={(e) => updateSchedule(i, "label", e.target.value)}
                   placeholder={t("medications.labelPlaceholder")}
                   maxLength={50}
+                  enterKeyHint="next"
+                  autoCapitalize="sentences"
+                  autoComplete="off"
                 />
               </div>
               <div className="space-y-2">
@@ -822,10 +856,12 @@ export function MedicationForm({
                 </Label>
                 <Input
                   value={s.dose}
-                  className="h-11 text-xs md:text-xs"
+                  className="h-11 text-base md:text-xs"
                   onChange={(e) => updateSchedule(i, "dose", e.target.value)}
                   placeholder={dose || t("medications.defaultDose")}
                   maxLength={50}
+                  enterKeyHint="done"
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -910,6 +946,7 @@ export function MedicationForm({
 
       {error && (
         <div
+          id={errorId}
           role="alert"
           aria-live="assertive"
           className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm"

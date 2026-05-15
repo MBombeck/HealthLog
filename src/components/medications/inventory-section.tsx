@@ -73,6 +73,10 @@ export function InventorySection({
   // panel for parity with the W8e Provenance accordion.
   const panelId = useId();
   const pastPanelId = useId();
+  // v1.4.27 MB3 — link the add-pen error message back to the doses-total
+  // input via aria-describedby so screen readers announce the failure
+  // when the form rejects an out-of-range value.
+  const formErrorId = useId();
   const [dosesTotal, setDosesTotal] = useState<string>(
     defaultDosesPerUnit ? String(defaultDosesPerUnit) : "",
   );
@@ -438,12 +442,16 @@ export function InventorySection({
                 id="inv-doses-total"
                 type="number"
                 inputMode="numeric"
+                enterKeyHint="next"
                 min={1}
                 max={100}
                 step={1}
                 value={dosesTotal}
                 onChange={(e) => setDosesTotal(e.target.value)}
                 required
+                aria-required="true"
+                aria-invalid={!!formError || undefined}
+                aria-describedby={formError ? formErrorId : undefined}
               />
               <p className="text-muted-foreground text-xs">
                 {t("medications.inventory.fieldDosesTotalHelp")}
@@ -457,6 +465,7 @@ export function InventorySection({
               <Input
                 id="inv-printed-expiry"
                 type="date"
+                enterKeyHint="next"
                 value={printedExpiry}
                 onChange={(e) => setPrintedExpiry(e.target.value)}
               />
@@ -469,6 +478,7 @@ export function InventorySection({
               <Input
                 id="inv-purchased-at"
                 type="date"
+                enterKeyHint="next"
                 value={purchasedAt}
                 onChange={(e) => setPurchasedAt(e.target.value)}
               />
@@ -484,12 +494,21 @@ export function InventorySection({
                 onChange={(e) => setNotes(e.target.value)}
                 maxLength={200}
                 rows={2}
+                enterKeyHint="done"
+                autoCapitalize="sentences"
                 className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
 
             {formError && (
-              <p className="text-destructive text-sm">{formError}</p>
+              <p
+                id={formErrorId}
+                role="alert"
+                aria-live="polite"
+                className="text-destructive text-sm"
+              >
+                {formError}
+              </p>
             )}
 
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

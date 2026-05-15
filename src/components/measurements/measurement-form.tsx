@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -139,6 +139,13 @@ export function MeasurementForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // v1.4.27 MB3 — wire `aria-describedby` on every required field so
+  // screen readers announce the form-level error banner the moment it
+  // surfaces. The banner already carries `role="alert"`, so the
+  // descriptor relationship is purely additive.
+  const errorId = useId();
+  const errorDescriptor = error ? errorId : undefined;
+
   const typeInfo = MEASUREMENT_TYPES.find((t) => t.value === type);
   const isBpMode = type === "BLOOD_PRESSURE";
   const isGlucoseMode = type === "BLOOD_GLUCOSE";
@@ -270,11 +277,16 @@ export function MeasurementForm({
             <Input
               id="sys"
               type="number"
+              inputMode="numeric"
+              enterKeyHint="next"
               step="1"
               value={sysBp}
               onChange={(e) => setSysBp(e.target.value)}
               placeholder="120"
               required
+              aria-required="true"
+              aria-invalid={!!error || undefined}
+              aria-describedby={errorDescriptor}
               min={60}
               max={280}
             />
@@ -284,11 +296,16 @@ export function MeasurementForm({
             <Input
               id="dia"
               type="number"
+              inputMode="numeric"
+              enterKeyHint="next"
               step="1"
               value={diaBp}
               onChange={(e) => setDiaBp(e.target.value)}
               placeholder="80"
               required
+              aria-required="true"
+              aria-invalid={!!error || undefined}
+              aria-describedby={errorDescriptor}
               min={30}
               max={200}
             />
@@ -298,10 +315,14 @@ export function MeasurementForm({
             <Input
               id="puls"
               type="number"
+              inputMode="numeric"
+              enterKeyHint="next"
               step="1"
               value={pulse}
               onChange={(e) => setPulse(e.target.value)}
               placeholder="72"
+              aria-invalid={!!error || undefined}
+              aria-describedby={errorDescriptor}
               min={30}
               max={220}
             />
@@ -321,6 +342,7 @@ export function MeasurementForm({
           <Input
             id="value"
             type="number"
+            enterKeyHint="next"
             step="any"
             value={value}
             onChange={(e) => setValue(e.target.value)}
@@ -330,6 +352,9 @@ export function MeasurementForm({
                 : undefined
             }
             required
+            aria-required="true"
+            aria-invalid={!!error || undefined}
+            aria-describedby={errorDescriptor}
           />
         </div>
       )}
@@ -364,6 +389,9 @@ export function MeasurementForm({
           value={measuredAt}
           onChange={(e) => setMeasuredAt(e.target.value)}
           required
+          aria-required="true"
+          aria-invalid={!!error || undefined}
+          aria-describedby={errorDescriptor}
         />
       </div>
 
@@ -385,11 +413,14 @@ export function MeasurementForm({
           onChange={(e) => setNotes(e.target.value)}
           placeholder={t("measurements.notesPlaceholder")}
           maxLength={MAX_COMMENT_LENGTH}
+          enterKeyHint="done"
+          autoCapitalize="sentences"
         />
       </div>
 
       {error && (
         <div
+          id={errorId}
           role="alert"
           aria-live="assertive"
           className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm"

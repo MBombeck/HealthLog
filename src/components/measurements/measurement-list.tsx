@@ -58,7 +58,7 @@ import {
   ArrowUpDown,
   MoreHorizontal,
 } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { invalidateKeys, measurementDependentKeys } from "@/lib/query-keys";
@@ -150,6 +150,11 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
   const [editNotes, setEditNotes] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
   const [editDeleteDialogOpen, setEditDeleteDialogOpen] = useState(false);
+  // v1.4.27 MB3 — link the edit dialog error banner to the inputs via
+  // `aria-describedby` so screen readers announce the validation
+  // failure when the user submits an invalid value or timestamp.
+  const editErrorId = useId();
+  const editErrorDescriptor = editError ? editErrorId : undefined;
 
   const setTypeFilter = (value: string) => {
     setTypeFilterRaw(value);
@@ -315,7 +320,10 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger
+              className="w-48"
+              aria-label={t("measurements.filterByType")}
+            >
               <SelectValue placeholder={t("measurements.allTypes")} />
             </SelectTrigger>
             <SelectContent>
@@ -601,10 +609,14 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                 <Input
                   id="edit-value"
                   type="number"
+                  enterKeyHint="next"
                   step="any"
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
                   required
+                  aria-required="true"
+                  aria-invalid={!!editError || undefined}
+                  aria-describedby={editErrorDescriptor}
                 />
               </div>
 
@@ -617,6 +629,9 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                   value={editMeasuredAt}
                   onChange={(e) => setEditMeasuredAt(e.target.value)}
                   required
+                  aria-required="true"
+                  aria-invalid={!!editError || undefined}
+                  aria-describedby={editErrorDescriptor}
                 />
               </div>
 
@@ -634,11 +649,14 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
                   maxLength={MAX_COMMENT_LENGTH}
+                  enterKeyHint="done"
+                  autoCapitalize="sentences"
                 />
               </div>
 
               {editError && (
                 <div
+                  id={editErrorId}
                   role="alert"
                   aria-live="assertive"
                   className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm"
