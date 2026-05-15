@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { CoachLaunchButton } from "@/components/insights/coach-launch-button";
 import { SleepOverview } from "@/components/insights/sleep-overview";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 import type { DataSummary } from "@/lib/analytics/trends";
@@ -79,6 +80,8 @@ export default function InsightsSchlafPage() {
       description={t("insights.sleep.description")}
     >
       <SleepOverview />
+
+      <CoachLaunchButton />
     </SubPageShell>
   );
 }

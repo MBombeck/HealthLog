@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Progress } from "@/components/ui/progress";
 import { ComplianceHeatmap } from "@/components/charts/compliance-heatmap";
+import { CoachLaunchButton } from "@/components/insights/coach-launch-button";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 import { TherapyTimeline } from "@/components/insights/therapy-timeline";
@@ -225,6 +226,8 @@ export default function InsightsMedikamentePage() {
           without an active GLP-1 medication, so the page collapses
           back to the compliance grid for everyone else. */}
       <TherapyTimeline />
+
+      <CoachLaunchButton />
     </SubPageShell>
   );
 }

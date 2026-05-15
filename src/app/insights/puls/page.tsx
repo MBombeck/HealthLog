@@ -11,6 +11,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { CoachLaunchButton } from "@/components/insights/coach-launch-button";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 import { Vo2MaxChartRow } from "@/components/insights/vo2-max-chart-row";
@@ -164,6 +165,8 @@ export default function InsightsPulsPage() {
         compareBaseline={compareBaseline}
         userTimezone={user?.timezone}
       />
+
+      <CoachLaunchButton />
     </SubPageShell>
   );
 }

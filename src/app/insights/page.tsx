@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Loader2, TrendingUp } from "lucide-react";
@@ -12,10 +11,10 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { InsightAdvisorCard } from "@/components/insights/insight-advisor-card";
 import { HeroStrip } from "@/components/insights/hero-strip";
 import { DailyBriefing } from "@/components/insights/daily-briefing";
-import { CoachDrawer } from "@/components/insights/coach-panel/coach-drawer";
 import { TrendsRow } from "@/components/insights/trends-row";
 import { CorrelationRow } from "@/components/insights/correlation-row";
 import { useInsightsAdvisorQuery } from "@/components/insights/use-insights-advisor";
+import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
 import type { CorrelationResult } from "@/lib/insights/correlations";
 import { toWeekISO } from "@/lib/insights/week-iso";
 import type { DataSummary } from "@/lib/analytics/trends";
@@ -96,12 +95,12 @@ export default function InsightsPage() {
   const { isAuthenticated, user } = useAuth();
   const { t } = useTranslations();
 
-  // CoachDrawer state. The hero strip's "Ask the coach" button +
-  // suggested-prompt chips toggle the drawer here; the drawer ingests
-  // `coachPrefill` once on open and resets on close so the next open
-  // starts blank.
-  const [coachOpen, setCoachOpen] = useState<boolean>(false);
-  const [coachPrefill, setCoachPrefill] = useState<string | null>(null);
+  // v1.4.27 R3d MB4 — Coach drawer state lives in the layout-level
+  // `<CoachLaunchProvider>` so every routed sub-page can reach it.
+  // The hero strip + suggested-prompt chips call `askCoach(prefill)`
+  // on the same context, and the drawer itself is mounted next to
+  // the provider in `src/app/insights/layout.tsx`.
+  const coachLaunch = useCoachLaunch();
 
   const { data, isLoading } = useQuery({
     queryKey: ["insights", "comprehensive"],
@@ -183,14 +182,16 @@ export default function InsightsPage() {
         briefing={briefingPayload}
         updatedAt={heroStripUpdatedAt}
         userName={heroGreetingName}
-        onAskCoach={(prefill?: string) => {
-          setCoachPrefill(prefill ?? null);
-          setCoachOpen(true);
-        }}
-        onPickPrompt={(prompt) => {
-          setCoachPrefill(prompt);
-          setCoachOpen(true);
-        }}
+        onAskCoach={
+          coachLaunch
+            ? (prefill?: string) => coachLaunch.askCoach(prefill ?? null)
+            : undefined
+        }
+        onPickPrompt={
+          coachLaunch
+            ? (prompt) => coachLaunch.askCoach(prompt)
+            : undefined
+        }
         weeklyReportReady={weeklyReportReady}
         weeklyReportHref={currentWeekHref}
         healthScore={analytics?.healthScore ?? undefined}
@@ -216,12 +217,6 @@ export default function InsightsPage() {
         error={advisor.error?.message ?? null}
         cachedAt={advisor.payload?.cachedAt ?? null}
         legacyPayload={advisor.payload?.legacyPayload ?? false}
-      />
-
-      <CoachDrawer
-        open={coachOpen}
-        onOpenChange={setCoachOpen}
-        prefill={coachPrefill}
       />
     </div>
   );

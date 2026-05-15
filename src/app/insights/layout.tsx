@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 
 import { InsightsLayoutShell } from "@/components/insights/insights-layout-shell";
+import { LayoutCoachMount } from "@/components/insights/layout-coach-mount";
+import { CoachLaunchProvider } from "@/lib/insights/coach-launch-context";
 
 /**
  * v1.4.25 W4 — shared layout for the routed `/insights` sub-pages.
@@ -10,12 +12,20 @@ import { InsightsLayoutShell } from "@/components/insights/insights-layout-shell
  * into a sub-page. The actual page body still owns its own data fetches
  * — the layout is a thin presentational frame.
  *
- * Critical design rule (Marc directive 2026-05-11):
- *   The `<CoachDrawer>` is NOT mounted in this layout. It stays inside
- *   `src/app/insights/page.tsx` body so navigating into a sub-page
- *   unmounts the drawer (matches the Apple Health convention that AI/
- *   coach surfaces only live on the overview, never on a metric page).
+ * v1.4.27 R3d MB4 — the Coach drawer now mounts here (above the routed
+ * children) inside a `<CoachLaunchProvider>` so navigating into a sub-
+ * page no longer unmounts the drawer. Every sub-page mounts a
+ * `<CoachLaunchButton>` that calls `askCoach()` on the same context;
+ * the mother `/insights/page.tsx` consumes the same hook for its hero
+ * strip + suggested-prompt chips. Decision F (audit MA3) drove the
+ * promotion: a mobile user who navigates from `/insights` to
+ * `/insights/blutdruck` keeps a one-tap path back into the Coach.
  */
 export default function InsightsLayout({ children }: { children: ReactNode }) {
-  return <InsightsLayoutShell>{children}</InsightsLayoutShell>;
+  return (
+    <CoachLaunchProvider>
+      <InsightsLayoutShell>{children}</InsightsLayoutShell>
+      <LayoutCoachMount />
+    </CoachLaunchProvider>
+  );
 }
