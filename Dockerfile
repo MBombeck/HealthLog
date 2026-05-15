@@ -63,6 +63,21 @@ RUN mkdir -p /opt/prisma-cli && \
     npm init -y && \
     npm install --omit=dev prisma@7.8 @prisma/engines@7.8
 
+# v1.4.27 B3 — offline GeoLite2 databases for IP→location and IP→ASN
+# lookups. The MMDB files live in `/opt/geolite2/` and are read by
+# `src/lib/geo.ts` via `mmdb-lib`. They are downloaded outside the
+# Docker build by `scripts/fetch-geolite2.sh` (operator runs it before
+# `docker build` with a MaxMind license key) and staged in
+# `assets/geolite2/`. The README + .gitkeep are always present so the
+# COPY target exists; if the maintainer skipped the fetch step the
+# image builds without the DBs and the resolver falls back to the
+# online `ipwho.is` provider — matches v1.4.26 behaviour.
+#
+# Attribution (CC BY-SA 4.0): see `docs/audit/v1427-summary.md` and
+# `/about` in the running app.
+RUN mkdir -p /opt/geolite2
+COPY assets/geolite2/ /opt/geolite2/
+
 # Entrypoint script (runs migrations, then starts app)
 COPY docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh

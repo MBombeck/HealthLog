@@ -29,6 +29,10 @@ const PUBLIC_PATHS = [
   // requires a publicly reachable Privacy-Policy URL during submission;
   // GDPR Art. 13 expects the same for any visitor before they sign up.
   "/privacy",
+  // v1.4.27 B3 — `/about` carries the GeoLite2 CC BY-SA 4.0 attribution
+  // alongside the project credits. The CC licence requires the
+  // attribution to be reachable without a sign-in.
+  "/about",
   // `/onboarding` itself + its subroutes are matched exactly via
   // `isPublicPath()` so we don't admit `/onboarding-export` etc.
   "/robots.txt",
