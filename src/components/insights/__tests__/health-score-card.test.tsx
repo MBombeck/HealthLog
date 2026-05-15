@@ -260,6 +260,50 @@ describe("<HealthScoreCard>", () => {
     expect(progressMatch?.[1]).toBe("100%");
   });
 
+  // ── v1.4.28 R3c-Insights — equal-height contract (FB-H1/H2) ───────
+  it("opts the wrapper into the parent's flex-stretch row via h-full + flex-col", () => {
+    // The hero strip's row now uses `items-stretch`; the card has to
+    // declare `h-full flex flex-col` so the stretched shell actually
+    // affects its rendered height. Pin both classes so a refactor
+    // can't silently drop one.
+    const html = ssr(
+      <HealthScoreCard
+        score={86}
+        band="green"
+        components={baseComponents}
+        delta={null}
+      />,
+    );
+    const cardOpen = html.match(
+      /<div[^>]*data-slot="health-score-card"[^>]*>/,
+    );
+    expect(cardOpen).not.toBeNull();
+    expect(cardOpen?.[0]).toContain("h-full");
+    expect(cardOpen?.[0]).toContain("flex");
+    expect(cardOpen?.[0]).toContain("flex-col");
+  });
+
+  it("pins the disclaimer to the bottom of the stretched card via mt-auto", () => {
+    // Without `mt-auto` the disclaimer rides directly under the
+    // provenance accordion and leaves the recovered space below the
+    // disclaimer instead of between the body and the footer. The
+    // FB-H2 contract is "score number on top, disclaimer on bottom,
+    // recovered space in the middle".
+    const html = ssr(
+      <HealthScoreCard
+        score={86}
+        band="green"
+        components={baseComponents}
+        delta={null}
+      />,
+    );
+    const disclaimerOpen = html.match(
+      /<p[^>]*data-slot="health-score-card-disclaimer"[^>]*>/,
+    );
+    expect(disclaimerOpen).not.toBeNull();
+    expect(disclaimerOpen?.[0]).toContain("mt-auto");
+  });
+
   it("exposes the progressbar role + ARIA values for screen readers", () => {
     const html = ssr(
       <HealthScoreCard

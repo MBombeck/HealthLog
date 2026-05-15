@@ -151,11 +151,23 @@ export function HeroStrip({
        * `lg:` modifiers alongside so existing snapshot/assertion tests
        * that grep for `lg:flex-row` continue to find it.
        */}
+      {/*
+       * v1.4.28 R3c-Insights — switch the row's cross-axis alignment
+       * from `items-start` to `items-stretch` so the right-column
+       * HealthScore card grows to match the left column's natural
+       * height (greeting + subtitle + baseline meta + action row +
+       * suggested-prompts strip). Per Inv-4 the card was painting
+       * 75-110 px shorter than the left column on desktop; the
+       * stretch contract pulls the card's bottom edge down to the
+       * "Wirkt mein Medikament?" chip. The card itself owns
+       * `h-full` + `mt-auto` on its disclaimer to redistribute the
+       * recovered space without visual jank.
+       */}
       <div
         className={cn(
           "flex flex-col gap-5",
           healthScore &&
-            "md:flex-row md:items-start md:gap-6 lg:flex-row lg:items-start lg:gap-6",
+            "md:flex-row md:items-stretch md:gap-6 lg:flex-row lg:items-stretch lg:gap-6",
         )}
       >
         <div className="flex min-w-0 flex-1 flex-col gap-5">

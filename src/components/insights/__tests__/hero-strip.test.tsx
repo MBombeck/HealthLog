@@ -279,4 +279,42 @@ describe("<HeroStrip>", () => {
     // is present so the panel sits beside the title block on desktop.
     expect(html).toContain("lg:flex-row");
   });
+
+  // ── v1.4.28 R3c-Insights — equal-height contract (FB-H1/H2) ───────
+  it("stretches the row's cross-axis when the HealthScore card mounts (md+/lg+)", () => {
+    // Per Inv-4 the right column painted 75-110 px shorter than the
+    // left column on desktop. Switching the parent flex row from
+    // `items-start` to `items-stretch` gives the card a stretched
+    // shell to grow into. The class is load-bearing for FB-H1/H2 —
+    // if a future refactor reverts to `items-start` the height gap
+    // returns.
+    const html = render(
+      <HeroStrip
+        briefing={null}
+        now={morningLocal}
+        healthScore={{
+          score: 86,
+          band: "green",
+          components: {
+            bp: { value: 80, weight: 0.3 },
+            weight: { value: 70, weight: 0.2 },
+            mood: { value: 90, weight: 0.2 },
+            compliance: { value: 100, weight: 0.3 },
+          },
+          delta: null,
+        }}
+      />,
+    );
+    expect(html).toContain("md:items-stretch");
+    expect(html).toContain("lg:items-stretch");
+    expect(html).not.toContain("md:items-start");
+  });
+
+  it("does NOT stretch the row when healthScore is omitted", () => {
+    // Pin the negative case so a future refactor can't blanket-apply
+    // the stretch contract on the no-score layout (no right column
+    // means nothing to stretch toward).
+    const html = render(<HeroStrip briefing={null} now={morningLocal} />);
+    expect(html).not.toContain("md:items-stretch");
+  });
 });
