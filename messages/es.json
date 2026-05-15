@@ -921,6 +921,12 @@
       "componentMood": "Estado de ánimo",
       "componentCompliance": "Meds",
       "disclaimer": "Indicative — not a clinical assessment.",
+      "deltaExplainer": {
+        "trigger": "¿Qué significa este cambio?",
+        "title": "Cómo se calcula el cambio",
+        "description": "Cambio respecto a la semana pasada: {delta}",
+        "body": "La puntuación combina PA, peso, ánimo y adherencia. Comparamos la puntuación de hoy con la del mismo momento de la semana anterior. Registra una medición nueva o una nota de ánimo para empujarla hacia arriba."
+      },
       "provenance": {
         "toggle": "Compuesto por",
         "weightLabel": "peso",

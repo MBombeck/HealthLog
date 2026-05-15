@@ -921,6 +921,12 @@
       "componentMood": "Mood",
       "componentCompliance": "Meds",
       "disclaimer": "Indicative — not a clinical assessment.",
+      "deltaExplainer": {
+        "trigger": "What does this delta mean?",
+        "title": "How the delta is computed",
+        "description": "Change vs last week: {delta}",
+        "body": "The score combines BP, weight, mood and meds. We compare today's score with the same time last week. Log a fresh reading or a mood check to nudge it up."
+      },
       "provenance": {
         "toggle": "Driven by",
         "weightLabel": "share",

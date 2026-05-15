@@ -921,6 +921,12 @@
       "componentMood": "Umore",
       "componentCompliance": "Meds",
       "disclaimer": "Indicative — not a clinical assessment.",
+      "deltaExplainer": {
+        "trigger": "Cosa significa questa variazione?",
+        "title": "Come si calcola la variazione",
+        "description": "Variazione rispetto alla settimana scorsa: {delta}",
+        "body": "Il punteggio combina PA, peso, umore e aderenza. Confrontiamo il punteggio di oggi con quello dello stesso momento della settimana scorsa. Registra una nuova misurazione o una nota di umore per spingerlo verso l'alto."
+      },
       "provenance": {
         "toggle": "Composto da",
         "weightLabel": "peso",

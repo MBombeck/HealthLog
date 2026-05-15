@@ -921,6 +921,12 @@
       "componentMood": "Stimmung",
       "componentCompliance": "Einnahmetreue",
       "disclaimer": "Orientierungshilfe — keine ärztliche Bewertung.",
+      "deltaExplainer": {
+        "trigger": "Was bedeutet diese Veränderung?",
+        "title": "So wird die Veränderung berechnet",
+        "description": "Veränderung gegenüber letzter Woche: {delta}",
+        "body": "Der Score kombiniert Blutdruck, Gewicht, Stimmung und Einnahmetreue. Wir vergleichen den heutigen Stand mit demselben Zeitpunkt vor einer Woche. Erfasse eine frische Messung oder einen Stimmungs-Check, um den Wert nach oben zu schubsen."
+      },
       "provenance": {
         "toggle": "Zusammensetzung",
         "weightLabel": "Anteil",

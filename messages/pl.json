@@ -921,6 +921,12 @@
       "componentMood": "Nastrój",
       "componentCompliance": "Meds",
       "disclaimer": "Indicative — not a clinical assessment.",
+      "deltaExplainer": {
+        "trigger": "Co oznacza ta zmiana?",
+        "title": "Jak liczona jest ta zmiana",
+        "description": "Zmiana względem ubiegłego tygodnia: {delta}",
+        "body": "Wynik łączy ciśnienie, wagę, nastrój i przyjmowanie leków. Porównujemy dzisiejszy wynik z tym samym momentem tydzień wcześniej. Dodaj świeży pomiar lub wpis o nastroju, żeby pchnąć go w górę."
+      },
       "provenance": {
         "toggle": "Składa się z",
         "weightLabel": "udział",

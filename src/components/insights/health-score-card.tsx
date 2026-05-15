@@ -4,6 +4,7 @@ import { useId, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ChevronDown, Minus } from "lucide-react";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
+import { HealthScoreDeltaExplainer } from "./health-score-delta-explainer";
 
 /**
  * v1.4.20 phase B5 — Personal Health Score panel.
@@ -319,6 +320,13 @@ export function HealthScoreCard({
           />
         </div>
 
+        {/* v1.4.28 R3c-Insights — FB-I1 — the delta line gets a
+            sibling `?` glyph that opens a 3-sentence read of which
+            components contributed, what the comparison window is,
+            and one concrete next step. Popover on `md+`, bottom-sheet
+            on phone-class viewports. The explainer only mounts when
+            a numeric delta is available; the "no history yet"
+            branch keeps the existing single-line caption. */}
         <p
           data-slot="health-score-card-delta"
           className="text-muted-foreground inline-flex items-center gap-1 text-[11px]"
@@ -350,6 +358,7 @@ export function HealthScoreCard({
                   delta: delta > 0 ? `+${delta}` : `${delta}`,
                 })}
               </span>
+              <HealthScoreDeltaExplainer delta={delta} />
             </>
           )}
         </p>

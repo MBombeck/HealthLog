@@ -921,6 +921,12 @@
       "componentMood": "Humeur",
       "componentCompliance": "Meds",
       "disclaimer": "Indicative — not a clinical assessment.",
+      "deltaExplainer": {
+        "trigger": "Que signifie cet écart ?",
+        "title": "Comment l'écart est calculé",
+        "description": "Écart par rapport à la semaine dernière : {delta}",
+        "body": "Le score combine TA, poids, humeur et observance. Nous comparons le score d'aujourd'hui à celui de la semaine précédente à la même période. Enregistre une nouvelle mesure ou une note d'humeur pour le faire remonter."
+      },
       "provenance": {
         "toggle": "Composé de",
         "weightLabel": "part",
