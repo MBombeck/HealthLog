@@ -30,6 +30,7 @@ import { CoachInput } from "./coach-input";
 import { CoachSettingsSheet } from "./coach-settings-sheet";
 import { HistoryRail } from "./history-rail";
 import { MessageThread } from "./message-thread";
+import { MobileRailTray } from "./mobile-rail-tray";
 import { DEFAULT_COACH_SCOPE, SourcesRail } from "./sources-rail";
 import { useCoachConversation, useSendCoachMessage } from "./use-coach";
 import type {
@@ -488,74 +489,52 @@ export function CoachDrawer({
           onOpenSourcesTray={() => setSourcesTrayOpen(true)}
         />
 
-        {/* v1.4.20 phase B4 — mobile-only rail trays. Each renders a
-            slide-in panel from the matching edge and surfaces the same
-            HistoryRail / SourcesRail instance the desktop layout uses,
-            so a `>=lg` viewport never shows them but a `<lg` viewport
-            can summon either rail without leaving the message thread. */}
-        <Sheet open={historyTrayOpen} onOpenChange={setHistoryTrayOpen}>
-          <SheetContent
-            side="left"
-            data-slot="coach-drawer-history-tray"
-            className="w-[88vw] max-w-[320px] p-0 lg:hidden"
-          >
-            <SheetHeader className="border-border/70 border-b p-3">
-              <SheetTitle className="text-sm">
-                {t("insights.coach.historyTitle")}
-              </SheetTitle>
-            </SheetHeader>
-            <div className="h-full min-h-0 overflow-y-auto">
-              {historyRail ?? (
-                <HistoryRail
-                  activeId={currentConversationId}
-                  onSelect={(id) => {
-                    setCurrentConversationId(id);
-                    setHistoryTrayOpen(false);
-                  }}
-                />
-              )}
-            </div>
-          </SheetContent>
-        </Sheet>
         {/* v1.4.23 H4 — Coach prompt-tuning sheet. Right-edge sheet so
-            it doesn't conflict with the existing left/right rail
-            trays (those are <lg / <xl only; the settings sheet works
-            on every viewport). */}
+            it doesn't conflict with the existing rail trays (those are
+            <lg / <xl only; the settings sheet works on every
+            viewport). */}
         <CoachSettingsSheet
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
         />
-        <Sheet open={sourcesTrayOpen} onOpenChange={setSourcesTrayOpen}>
-          <SheetContent
-            side="right"
-            data-slot="coach-drawer-sources-tray"
-            // Sources rail is xl+ inline; on lg it's only available
-            // via this tray to match the narrowed drawer cap.
-            className="w-[88vw] max-w-[320px] p-0 xl:hidden"
-          >
-            <SheetHeader className="border-border/70 border-b p-3">
-              <SheetTitle className="text-sm">
-                {t("insights.coach.sourcesTitle")}
-              </SheetTitle>
-            </SheetHeader>
-            <div className="h-full min-h-0 overflow-y-auto">
-              {sourcesRail ?? (
-                <SourcesRail
-                  scope={{
-                    sources: scope.sources,
-                    window: effectiveWindow,
-                  }}
-                  onScopeChange={(next) => {
-                    setScope((prev) => ({ ...prev, sources: next.sources }));
-                    setWindowOverride(
-                      next.window === savedDefaultWindow ? null : next.window,
-                    );
-                  }}
-                />
-              )}
-            </div>
-          </SheetContent>
-        </Sheet>
+        {/* v1.4.28 R3c (BK-F-M6) — mobile-only rail trays carved out of
+            the drawer shell. Each tray surfaces the same HistoryRail /
+            SourcesRail instance the desktop layout uses; the parent
+            still owns the open/closed state + the rail callbacks so
+            the carve-out is pure render. */}
+        <MobileRailTray
+          historyOpen={historyTrayOpen}
+          onHistoryOpenChange={setHistoryTrayOpen}
+          historyRail={
+            historyRail ?? (
+              <HistoryRail
+                activeId={currentConversationId}
+                onSelect={(id) => {
+                  setCurrentConversationId(id);
+                  setHistoryTrayOpen(false);
+                }}
+              />
+            )
+          }
+          sourcesOpen={sourcesTrayOpen}
+          onSourcesOpenChange={setSourcesTrayOpen}
+          sourcesRail={
+            sourcesRail ?? (
+              <SourcesRail
+                scope={{
+                  sources: scope.sources,
+                  window: effectiveWindow,
+                }}
+                onScopeChange={(next) => {
+                  setScope((prev) => ({ ...prev, sources: next.sources }));
+                  setWindowOverride(
+                    next.window === savedDefaultWindow ? null : next.window,
+                  );
+                }}
+              />
+            )
+          }
+        />
       </SheetContent>
     </Sheet>
   );
