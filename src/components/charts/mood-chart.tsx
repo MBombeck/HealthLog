@@ -37,6 +37,7 @@ import { ChartOverlayControls } from "./chart-overlay-controls";
 import { useChartOverlayPrefs } from "@/hooks/use-chart-overlay-prefs";
 import { useViewportWidth } from "@/hooks/use-viewport-width";
 import { chooseTickInterval } from "@/lib/charts/x-axis-density";
+import { CHART_HEIGHT_PX } from "@/lib/charts/constants";
 
 // --- Types ---
 
@@ -622,14 +623,17 @@ export function MoodChart({
           </div>
         ) : chartData.length < 3 ? (
           // v1.4.16 B1a — sparse-data placeholder consistent with the
-          // BP/weight/pulse charts.
+          // BP/weight/pulse charts. Height tracks the chart strip's
+          // shared CHART_HEIGHT_PX so the empty state preserves the
+          // trend-row rhythm (v1.4.27 — was 280, now 240 to match every
+          // other dashboard chart card).
           <ChartEmptyState
             title={t("charts.emptyStateTitle")}
             description={t("charts.emptyStateDescription")}
-            height={280}
+            height={CHART_HEIGHT_PX}
           />
         ) : (
-          <div className={`${mini ? "h-[140px]" : "h-[280px]"} touch-pan-y`}>
+          <div className={`${mini ? "h-[140px]" : "h-[240px]"} touch-pan-y`}>
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
                 data={chartDataWithCompare ?? chartData}
