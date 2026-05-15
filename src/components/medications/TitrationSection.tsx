@@ -10,10 +10,11 @@ import { MedicationDetailSection } from "@/components/medications/medication-det
 /**
  * v1.4.25 W19f — GLP-1 titration-ladder section.
  *
- * Sits between `<SchedulingSection>` (W19e) and `<IntakeHistoryList>`
- * on the medication detail page. Same chrome as the W19d / W19e
- * sections so the Wave-4b panels read as one visual group — chrome is
- * now composed via the shared `<MedicationDetailSection>` wrapper.
+ * Sits at the bottom of the medication detail page below the W19e
+ * SchedulingSection (v1.4.28 retired the IntakeHistoryList block).
+ * Same chrome as the W19d / W19e sections so the panels read as one
+ * visual group — chrome is now composed via the shared
+ * `<MedicationDetailSection>` wrapper.
  *
  * Layout:
  *   - Header: drug INN + "Standard ladder (EMA reference)"

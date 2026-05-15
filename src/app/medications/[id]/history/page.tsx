@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect, use, useState } from "react";
+import { useEffect, use } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { IntakeHistoryList } from "@/components/medications/intake-history-list";
 import { DrugLevelChart } from "@/components/medications/DrugLevelChart";
 import { SideEffectsSection } from "@/components/medications/SideEffectsSection";
 import { SchedulingSection } from "@/components/medications/SchedulingSection";
 import { TitrationSection } from "@/components/medications/TitrationSection";
-import { ArrowLeft, Loader2, Plus } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -23,7 +22,6 @@ export default function IntakeHistoryPage({
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const { t } = useTranslations();
-  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -70,22 +68,18 @@ export default function IntakeHistoryPage({
         </Link>
       </Button>
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {t("medications.intakeHistoryTitle")}
-          </h1>
-          {medication && (
+      {medication && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">
+              {medication.name}
+            </h1>
             <p className="text-muted-foreground hidden text-sm sm:block">
-              {medication.name} — {medication.dose}
+              {medication.dose}
             </p>
-          )}
+          </div>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t("medications.newIntake")}
-        </Button>
-      </div>
+      )}
 
       {/* v1.4.25 W19c-Frontend — Research-mode-gated drug-level chart.
           Renders only for GLP-1 medications; the component itself
@@ -127,18 +121,12 @@ export default function IntakeHistoryPage({
       {/* v1.4.25 W19f — GLP-1 titration-ladder display. Read-only EMA
           reference visual showing the standard dose-escalation schedule
           with the user's current step highlighted. Sits between
-          SchedulingSection and IntakeHistoryList so the user lands on
-          cycle context (chart) -> side effects -> cadence/adherence ->
-          titration position -> per-dose timeline. */}
+          SchedulingSection and the bottom of the page; v1.4.28 retired
+          the IntakeHistoryList block that used to anchor the per-dose
+          timeline below this section. */}
       {medication?.treatmentClass === "GLP1" && (
         <TitrationSection medicationId={id} />
       )}
-
-      <IntakeHistoryList
-        medicationId={id}
-        createOpen={createOpen}
-        onCreateOpenChange={setCreateOpen}
-      />
     </div>
   );
 }

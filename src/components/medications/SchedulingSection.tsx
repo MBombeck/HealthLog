@@ -13,9 +13,10 @@ import { MedicationDetailSection } from "@/components/medications/medication-det
 /**
  * v1.4.25 W19e — GLP-1 cadence + compliance section.
  *
- * Sits between `<SideEffectsSection>` (W19d) and `<IntakeHistoryList>`
- * on the medication detail page. Same chrome as the W19d / W19f
- * sections, composed via the shared `<MedicationDetailSection>` wrapper.
+ * Sits between `<SideEffectsSection>` (W19d) and `<TitrationSection>`
+ * on the medication detail page (v1.4.28 retired the IntakeHistoryList
+ * block below). Same chrome as the W19d / W19f sections, composed via
+ * the shared `<MedicationDetailSection>` wrapper.
  *
  * Three sub-sections, top-to-bottom:
  *

@@ -245,11 +245,11 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     expect(html).toMatch(/Next:/);
   });
 
-  it("renders the inline dose-history disclosure (closed by default)", () => {
-    // The collapsible <details> element keeps the card height matched
-    // to a generic card on first paint. SSR includes the element with
-    // no `open=""` attribute; clicking the summary toggles state via
-    // React's onToggle handler (not exercisable from SSR).
+  it("no longer renders the inline dose-history disclosure (retired v1.4.28)", () => {
+    // The dose-history `<details>` block was retired in v1.4.28 per
+    // maintainer feedback. The doseChanges payload still arrives from
+    // the API (iOS contract preserved), but the GLP-1 card no longer
+    // paints the disclosure or the summary label.
     const client = makeClient();
     seedCompliance(client, med7p5.id);
     seedGlp1Details(client, med7p5.id, {
@@ -276,16 +276,8 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
       client,
     );
 
-    // The <details> wrapper renders with the localised summary.
-    expect(html).toMatch(/<details[^>]*>/);
-    expect(html).toContain("Dose history");
-    // Closed by default — no `open=""` attribute on the <details>.
-    const detailsTag = html.match(/<details[^>]*>/)?.[0] ?? "";
-    expect(detailsTag).not.toMatch(/\sopen(=""|\s|>)/);
-    // Dose-history rows are present in the markup even though they're
-    // visually hidden until expanded.
-    expect(html).toContain("5 mg");
-    expect(html).toContain("7.5 mg");
+    expect(html).not.toContain("Dose history");
+    expect(html).not.toContain("Dosis-Historie");
   });
 
   it("renders the injection-site rotation marker (last + recommended)", () => {
@@ -475,6 +467,7 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     expect(html).toContain("GLP-1-Injektion");
     expect(html).toContain("Letzter Termin:");
     expect(html).toContain("Bauch, unten links");
-    expect(html).toContain("Dosis-Historie");
+    // v1.4.28 retired the "Dosis-Historie" disclosure on the GLP-1 card.
+    expect(html).not.toContain("Dosis-Historie");
   });
 });

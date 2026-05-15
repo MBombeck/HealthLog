@@ -1,11 +1,10 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   Check,
-  ChevronDown,
   Flame,
   History,
   Loader2,
@@ -34,9 +33,9 @@ import { InventorySection } from "@/components/medications/inventory-section";
  *
  * Marc directive 2026-05-14: NO chart on the medication card. The card
  * stays text-rich (drug name + current dose, last/next injection,
- * inline dose-history disclosure, injection-site rotation hint, pen
- * inventory, side-effect quick-log). Chart-only surfaces are the
- * Dashboard tile + Insights /medikamente sub-page.
+ * injection-site rotation hint, pen inventory, side-effect quick-log).
+ * v1.4.28 retired the inline dose-history disclosure. Chart-only
+ * surfaces are the Dashboard tile + Insights /medikamente sub-page.
  *
  * Renders inside the standard medications grid alongside generic
  * medication cards; visually mirrors `medication-card.tsx` so the page
@@ -160,8 +159,6 @@ export function Glp1MedicationCard({
   const { t } = useTranslations();
   const fmt = useFormatters();
   const [intakeLoading, setIntakeLoading] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
-  const doseHistoryId = useId();
 
   const { data: compliance } = useQuery({
     queryKey: ["medications", medication.id, "compliance"],
@@ -213,7 +210,6 @@ export function Glp1MedicationCard({
   const rate30 = compliance?.compliance30?.rate ?? 0;
   const streak = compliance?.compliance7?.streak ?? 0;
 
-  const doseChanges = details?.doseChanges ?? [];
   const recentInjections = details?.recentIntakes ?? [];
   const lastSite =
     recentInjections.find((i) => i.injectionSite)?.injectionSite ?? null;
@@ -358,58 +354,6 @@ export function Glp1MedicationCard({
             )}
           </div>
         )}
-
-        {/* Dose-history disclosure — collapsible row. Stays closed by
-            default so the card height matches a generic card on first
-            paint. */}
-        <details
-          className="border-border/60 rounded-md border text-xs"
-          open={showHistory}
-          onToggle={(e) =>
-            setShowHistory((e.target as HTMLDetailsElement).open)
-          }
-        >
-          <summary
-            className="text-foreground/85 flex cursor-pointer list-none items-center justify-between px-3 py-2 font-medium"
-            aria-controls={doseHistoryId}
-            aria-expanded={showHistory}
-          >
-            <span>{t("medications.glp1DoseHistory")}</span>
-            <ChevronDown
-              className={`h-3.5 w-3.5 transition-transform ${
-                showHistory ? "rotate-180" : ""
-              }`}
-            />
-          </summary>
-          <div
-            id={doseHistoryId}
-            className="border-border/60 space-y-1.5 border-t px-3 py-2"
-          >
-            {doseChanges.length === 0 && (
-              <p className="text-muted-foreground">
-                {t("medications.glp1DoseHistoryEmpty")}
-              </p>
-            )}
-            {doseChanges
-              .slice()
-              .reverse()
-              .map((change) => (
-                <div
-                  key={change.id}
-                  className="flex items-baseline justify-between gap-2"
-                >
-                  <span className="font-medium tabular-nums">
-                    {change.doseValue} {change.doseUnit}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {t("medications.glp1DoseSince", {
-                      date: fmt.dateShort(new Date(change.effectiveFrom)),
-                    })}
-                  </span>
-                </div>
-              ))}
-          </div>
-        </details>
 
         {/* v1.4.25 W19b — per-pen / per-vial inventory disclosure.
             Lazy-loads the inventory list on open; otherwise stays
