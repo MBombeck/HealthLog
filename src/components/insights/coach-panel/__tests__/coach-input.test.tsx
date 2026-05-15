@@ -26,12 +26,19 @@ describe("<CoachInput>", () => {
     expect(html).not.toContain("Coach replies are generated");
   });
 
-  it("renders the localised placeholder + hint", () => {
+  it("renders the localised placeholder + the tooltip-trigger hint", () => {
+    // v1.4.27 F15 — the verbose prose hint footer was replaced by an
+    // Info icon wrapped in a tooltip. The same `composerHint`
+    // translation now surfaces as the trigger's `aria-label` (so
+    // screen-readers still announce it on focus) and as the tooltip
+    // body for sighted users on hover.
     const html = render(
       <CoachInput value="" onChange={() => {}} onSubmit={() => {}} />,
     );
     expect(html).toContain("Ask anything about your data");
-    expect(html).toContain("Press Enter to send");
+    expect(html).toMatch(
+      /aria-label="Press Enter to send[^"]*"\s+data-slot="coach-input-hint"/,
+    );
   });
 
   it("renders the German placeholder under the 'de' locale", () => {

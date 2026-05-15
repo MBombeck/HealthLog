@@ -7,9 +7,15 @@ import {
   useEffect,
   useRef,
 } from "react";
-import { Loader2, Send } from "lucide-react";
+import { Info, Loader2, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -174,19 +180,42 @@ export function CoachInput({
             "placeholder:text-muted-foreground disabled:opacity-60",
           )}
         />
-        <div className="mt-1.5 flex items-center gap-2">
-          <span
-            data-slot="coach-input-hint"
-            className="text-muted-foreground text-[11px]"
-          >
-            {t("insights.coach.composerHint")}
-          </span>
+        {/* v1.4.27 F15 — the verbose "Enter to send, Shift+Enter for
+            new line" prose footer used to render under the textarea;
+            it ate ~140 px of vertical room for an Apple-Health-like
+            single-message exchange. The hint now sits behind a tiny
+            Info icon left of the send button; the existing
+            translation string surfaces as the tooltip body so
+            screen-reader users still hear it on focus. */}
+        <div className="mt-1.5 flex items-center justify-end gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t("insights.coach.composerHint")}
+                  data-slot="coach-input-hint"
+                  className={cn(
+                    "text-muted-foreground hover:text-foreground",
+                    "focus-visible:ring-ring/50 inline-flex h-7 w-7",
+                    "items-center justify-center rounded",
+                    "focus-visible:ring-2 focus-visible:outline-none",
+                  )}
+                >
+                  <Info className="size-3.5" aria-hidden="true" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {t("insights.coach.composerHint")}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <Button
             type="submit"
             size="sm"
             disabled={!canSubmit}
             data-slot="coach-input-send"
-            className="ml-auto gap-1.5"
+            className="gap-1.5"
           >
             {isStreaming ? (
               <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
