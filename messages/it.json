@@ -331,6 +331,7 @@
     "notesPlaceholder": "e.g. after a meal",
     "formReset": "Reset form",
     "saveError": "Error saving",
+    "duplicateTimestamp": "A measurement of this type already exists at the selected timestamp.",
     "deleteError": "Error deleting",
     "invalidValue": "Please enter a valid value.",
     "invalidTimestamp": "Please select a valid time.",

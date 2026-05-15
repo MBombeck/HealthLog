@@ -9,6 +9,7 @@ import {
   safeJson,
 } from "@/lib/api-response";
 import { updateMeasurementSchema } from "@/lib/validations/measurement";
+import { Prisma } from "@/generated/prisma/client";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -62,14 +63,35 @@ export const PUT = apiHandler(
     }
 
     const data = parsed.data;
-    const measurement = await prisma.measurement.update({
-      where: { id },
-      data: {
-        ...(data.value !== undefined && { value: data.value }),
-        ...(data.measuredAt !== undefined && { measuredAt: data.measuredAt }),
-        ...(data.notes !== undefined && { notes: data.notes }),
-      },
-    });
+    let measurement;
+    try {
+      measurement = await prisma.measurement.update({
+        where: { id },
+        data: {
+          ...(data.value !== undefined && { value: data.value }),
+          ...(data.measuredAt !== undefined && { measuredAt: data.measuredAt }),
+          ...(data.notes !== undefined && { notes: data.notes }),
+        },
+      });
+    } catch (err) {
+      // v1.4.28 FB-B1 — re-pointing `measuredAt` onto an existing
+      // `(userId, type, measuredAt, source, sleepStage)` tuple raises
+      // `P2002`. Mirror the POST handler's catch so the row-edit Sheet
+      // surfaces a clean 409 with a translatable `errorCode` instead of
+      // the bare 500 the UI used to render as the generic save-error
+      // toast.
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002"
+      ) {
+        return apiError(
+          "A measurement with this timestamp already exists",
+          409,
+          { errorCode: "measurement.duplicate_timestamp" },
+        );
+      }
+      throw err;
+    }
 
     await auditLog("measurement.update", {
       userId: user.id,

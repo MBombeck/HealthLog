@@ -232,9 +232,24 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
         }),
       });
 
-      const json = await res.json();
+      const json = (await res.json()) as {
+        error?: string;
+        meta?: { errorCode?: string };
+      };
       if (!res.ok) {
-        throw new Error(json.error ?? "Update failed");
+        // v1.4.28 FB-B1 — the PUT route now returns a 409 with
+        // `meta.errorCode === "measurement.duplicate_timestamp"` when
+        // the edit collides with an existing row's
+        // `(type, measuredAt, source, sleepStage)` tuple. Forward the
+        // code alongside the message so `onError` can pick the
+        // localised string.
+        const err = new Error(json.error ?? "Update failed") as Error & {
+          errorCode?: string;
+          status?: number;
+        };
+        err.errorCode = json.meta?.errorCode;
+        err.status = res.status;
+        throw err;
       }
     },
     onSuccess: async () => {
@@ -243,6 +258,11 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
       setEditError(null);
     },
     onError: (err) => {
+      const errWithCode = err as Error & { errorCode?: string };
+      if (errWithCode.errorCode === "measurement.duplicate_timestamp") {
+        setEditError(t("measurements.duplicateTimestamp"));
+        return;
+      }
       setEditError(
         err instanceof Error ? err.message : t("measurements.saveError"),
       );
