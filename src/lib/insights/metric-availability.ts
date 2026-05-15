@@ -29,10 +29,6 @@
  * pill, sub-page, and dashboard tile — no separate feature flag
  * needed. (F18.)
  */
-// TODO(B1+B4 reconcile): wire per-tile availability gate using
-// hasMetricData from src/lib/insights/metric-availability.ts. Bucket
-// B1 owns `src/app/page.tsx`; this helper is the single decision
-// point both buckets should call.
 import type { DataSummary } from "@/lib/analytics/trends";
 
 /**

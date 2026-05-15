@@ -238,7 +238,11 @@ export default function DashboardPage() {
   // its own hook subscription, so the local `useInsightsAdvisorQuery`
   // call dropped with the preview.
 
-  // TODO(B1+B4 reconcile): wire per-tile availability gate using hasMetricData
+  // v1.4.27 — per-tile availability gates live a few lines below as the
+  // existing `hasWeight` / `hasBp` / `hasPulse` / `hasBodyFat` / `hasMood` /
+  // `hasSleep` / `hasSteps` flags. They mirror `hasMetricData` from
+  // `src/lib/insights/metric-availability.ts` for the routed Insights
+  // surfaces — both branches read `summaries[METRIC].count > 0`.
 
   const w = data?.summaries?.WEIGHT;
   const sys = data?.summaries?.BLOOD_PRESSURE_SYS;
