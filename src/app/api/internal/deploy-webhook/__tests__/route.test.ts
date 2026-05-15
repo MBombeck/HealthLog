@@ -9,7 +9,7 @@ vi.mock("@/lib/api-handler", () => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    user: { findMany: vi.fn() },
+    user: { findMany: vi.fn(), findUnique: vi.fn() },
   },
 }));
 
@@ -19,6 +19,14 @@ vi.mock("@/lib/auth/audit", () => ({
 
 vi.mock("@/lib/notifications/dispatcher", () => ({
   dispatchNotification: vi.fn().mockResolvedValue(undefined),
+}));
+
+// v1.4.27 F21 — the deploy-webhook route now wraps every admin alert
+// in `dispatchLocalisedNotification`, which delegates to the base
+// dispatcher. Mock the localised helper so the route-level tests stay
+// hermetic and we can assert recipient-specific calls directly.
+vi.mock("@/lib/notifications/dispatch-localised", () => ({
+  dispatchLocalisedNotification: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/lib/rate-limit", () => ({
@@ -38,6 +46,7 @@ import { POST, GET } from "../route";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
+import { dispatchLocalisedNotification } from "@/lib/notifications/dispatch-localised";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getEvent } from "@/lib/logging/context";
 
@@ -142,10 +151,11 @@ describe("POST /api/internal/deploy-webhook", () => {
         }),
       }),
     );
+    expect(dispatchLocalisedNotification).not.toHaveBeenCalled();
     expect(dispatchNotification).not.toHaveBeenCalled();
   });
 
-  it("failure payload writes system.deploy.failure audit row AND fans a SYSTEM_ALERT to every admin", async () => {
+  it("failure payload writes system.deploy.failure audit row AND fans a localised SYSTEM_ALERT to every admin", async () => {
     vi.mocked(prisma.user.findMany).mockResolvedValueOnce([
       { id: "admin-1" },
       { id: "admin-2" },
@@ -176,20 +186,30 @@ describe("POST /api/internal/deploy-webhook", () => {
       }),
     );
 
-    expect(dispatchNotification).toHaveBeenCalledTimes(2);
-    expect(dispatchNotification).toHaveBeenCalledWith(
+    // v1.4.27 F21 — the route now wraps every admin alert in
+    // `dispatchLocalisedNotification`, which composes the title and
+    // body from translation keys against the admin's locale before
+    // delegating to the base dispatcher. The test asserts the per-admin
+    // call carries the right translation keys and params; the actual
+    // string composition is covered in admin-locale.test.ts.
+    expect(dispatchLocalisedNotification).toHaveBeenCalledTimes(2);
+    expect(dispatchLocalisedNotification).toHaveBeenCalledWith(
       expect.objectContaining({
-        eventType: "SYSTEM_ALERT",
         userId: "admin-1",
-        title: expect.stringContaining("Deploy failed"),
-        message: expect.stringContaining("container exited 137"),
+        titleKey: "notifications.admin.deployFailedTitle",
+        messageKey: "notifications.admin.deployFailedBody",
+        params: expect.objectContaining({
+          application: "HealthLog",
+          error: "container exited 137",
+          deployment: "dep-456",
+        }),
         metadata: expect.objectContaining({
           source: "deploy-webhook",
           deploymentUuid: "dep-456",
         }),
       }),
     );
-    expect(dispatchNotification).toHaveBeenCalledWith(
+    expect(dispatchLocalisedNotification).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "admin-2" }),
     );
   });
@@ -208,7 +228,7 @@ describe("POST /api/internal/deploy-webhook", () => {
       "system.deploy.unknown",
       expect.any(Object),
     );
-    expect(dispatchNotification).not.toHaveBeenCalled();
+    expect(dispatchLocalisedNotification).not.toHaveBeenCalled();
   });
 
   it("emits a Wide Event warning when a deploy fails but no admin user exists", async () => {
@@ -229,7 +249,7 @@ describe("POST /api/internal/deploy-webhook", () => {
     expect(addWarning).toHaveBeenCalledWith(
       expect.stringMatching(/no admin user/i),
     );
-    expect(dispatchNotification).not.toHaveBeenCalled();
+    expect(dispatchLocalisedNotification).not.toHaveBeenCalled();
   });
 
   it("returns 429 and skips audit + alert when rate-limited", async () => {
@@ -247,7 +267,7 @@ describe("POST /api/internal/deploy-webhook", () => {
     );
     expect(res.status).toBe(429);
     expect(auditLog).not.toHaveBeenCalled();
-    expect(dispatchNotification).not.toHaveBeenCalled();
+    expect(dispatchLocalisedNotification).not.toHaveBeenCalled();
   });
 
   it("tolerates malformed (non-string) status fields by treating them as unknown", async () => {
@@ -257,7 +277,7 @@ describe("POST /api/internal/deploy-webhook", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { outcome: string };
     expect(body.outcome).toBe("unknown");
-    expect(dispatchNotification).not.toHaveBeenCalled();
+    expect(dispatchLocalisedNotification).not.toHaveBeenCalled();
   });
 
   it("preserves the full Coolify payload in the audit-log raw field for forward compat", async () => {

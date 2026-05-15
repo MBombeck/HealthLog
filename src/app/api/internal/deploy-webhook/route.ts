@@ -5,7 +5,7 @@ import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { getClientIp, safeJson } from "@/lib/api-response";
-import { dispatchNotification } from "@/lib/notifications/dispatcher";
+import { dispatchLocalisedNotification } from "@/lib/notifications/dispatch-localised";
 import { prisma } from "@/lib/db";
 
 /**
@@ -119,22 +119,24 @@ async function notifyAdminsOfFailure(event: NormalizedEvent): Promise<void> {
     return;
   }
 
-  const title = `Deploy failed: ${event.applicationName}`;
-  const message = [
-    `The Coolify deploy for ${event.applicationName} reported a failure.`,
-    event.error ? `Error: ${event.error}` : null,
-    event.deploymentUuid ? `Deployment: ${event.deploymentUuid}` : null,
-    "Logs: https://apps-01.bombeck.io",
-  ]
-    .filter((line): line is string => line !== null)
-    .join("\n");
-
+  // v1.4.27 F21 — each admin sees the alert in their own User.locale.
+  // The body is composed inside `dispatchLocalisedNotification` from
+  // translation keys; the static "Error:" / "Deployment:" / "Logs:"
+  // labels are emitted as a single param-substituted body key so all
+  // six locale bundles can render them natively. The deployment-uuid
+  // and error lines fall back to an empty string when missing so the
+  // surrounding template still composes cleanly.
   for (const admin of admins) {
-    await dispatchNotification({
-      eventType: "SYSTEM_ALERT",
+    await dispatchLocalisedNotification({
       userId: admin.id,
-      title,
-      message,
+      titleKey: "notifications.admin.deployFailedTitle",
+      messageKey: "notifications.admin.deployFailedBody",
+      params: {
+        application: event.applicationName,
+        error: event.error ?? "",
+        deployment: event.deploymentUuid ?? "",
+        logsUrl: "https://apps-01.bombeck.io",
+      },
       metadata: {
         source: "deploy-webhook",
         applicationName: event.applicationName,

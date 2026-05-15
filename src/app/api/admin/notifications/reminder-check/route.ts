@@ -3,7 +3,7 @@ import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
-import { dispatchNotification } from "@/lib/notifications/dispatcher";
+import { dispatchLocalisedNotification } from "@/lib/notifications/dispatch-localised";
 import { getUserTodayBounds, getDayOfWeekInTz } from "@/lib/timezone";
 
 export const dynamic = "force-dynamic";
@@ -138,20 +138,36 @@ export const POST = apiHandler(async () => {
         const timeWindow = `${schedule.windowStart}–${schedule.windowEnd}`;
 
         try {
+          // v1.4.27 F21 — each notification renders in the affected
+          // user's `User.locale` (the recipient is the user whose dose
+          // is overdue, not the admin running the check).
+          // `dispatchLocalisedNotification` resolves the locale from
+          // the userId inside the helper.
           if (status === "missed") {
-            await dispatchNotification({
-              eventType: "MEDICATION_REMINDER",
+            await dispatchLocalisedNotification({
               userId: med.user.id,
-              title: `Verpasst: ${med.name}`,
-              message: `<b>${med.name}</b> (${doseInfo}, ${timeWindow}) wurde als verpasst markiert.`,
+              eventType: "MEDICATION_REMINDER",
+              titleKey: "notifications.admin.reminderCheckMissedTitle",
+              messageKey: "notifications.admin.reminderCheckMissedBody",
+              params: {
+                medication: med.name,
+                dose: doseInfo,
+                window: timeWindow,
+              },
               metadata: { medicationId: med.id },
             });
           } else {
-            await dispatchNotification({
-              eventType: "MEDICATION_REMINDER",
+            await dispatchLocalisedNotification({
               userId: med.user.id,
-              title: `Erinnerung: ${med.name}`,
-              message: `Erinnerung: <b>${med.name}</b> (${doseInfo}, ${timeWindow}) wurde noch nicht eingenommen. Seit ${minutesPastEnd} Min überfällig.`,
+              eventType: "MEDICATION_REMINDER",
+              titleKey: "notifications.admin.reminderCheckOverdueTitle",
+              messageKey: "notifications.admin.reminderCheckOverdueBody",
+              params: {
+                medication: med.name,
+                dose: doseInfo,
+                window: timeWindow,
+                minutes: minutesPastEnd,
+              },
               metadata: { medicationId: med.id },
             });
           }
