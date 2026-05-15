@@ -91,7 +91,8 @@ describe("<CoachSettingsSheet>", () => {
     );
     expect(html).not.toContain('data-slot="coach-prefs-skeleton"');
     expect(html).toContain('data-slot="coach-prefs-tone"');
-    expect(html).toContain('data-slot="coach-prefs-evidence"');
+    // v1.4.27 F14 — the `showEvidenceByDefault` switch is retired.
+    expect(html).not.toContain('data-slot="coach-prefs-evidence"');
   });
 
   it("fires a sonner toast on save success (Design-H4)", () => {

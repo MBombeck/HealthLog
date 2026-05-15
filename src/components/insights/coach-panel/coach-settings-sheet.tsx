@@ -323,31 +323,13 @@ export function CoachSettingsSheet({
               </ul>
             </div>
 
-            {/* Show evidence by default */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex flex-col gap-1">
-                <Label
-                  htmlFor="coach-prefs-evidence"
-                  className="cursor-pointer text-xs font-medium"
-                >
-                  {t("insights.coach.settingsEvidenceLabel")}
-                </Label>
-                <p className="text-muted-foreground text-[11px] leading-relaxed">
-                  {t("insights.coach.settingsEvidenceHint")}
-                </p>
-              </div>
-              <Switch
-                id="coach-prefs-evidence"
-                data-slot="coach-prefs-evidence"
-                checked={draft.showEvidenceByDefault}
-                onCheckedChange={(next) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    showEvidenceByDefault: next,
-                  }))
-                }
-              />
-            </div>
+            {/* v1.4.27 F14 — the `showEvidenceByDefault` switch was
+                retired. The evidence disclosure is now always closed
+                by default and the user expands by click; surfacing
+                raw values automatically created an UX trap. The
+                persisted `coachPrefs.showEvidenceByDefault` field
+                stays in the schema for backward compatibility, but no
+                UI reads or writes it. */}
           </div>
         )}
 

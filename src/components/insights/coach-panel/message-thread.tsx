@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { stripChartTokens } from "@/lib/insights/chart-tokens";
 import { useAuth } from "@/hooks/use-auth";
-import { useCoachPrefs } from "@/hooks/use-coach-prefs";
 
 import { SourceChips } from "./source-chips";
 import type {
@@ -105,13 +104,13 @@ export function MessageThread({
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const wasPinnedRef = useRef(true);
 
-  // v1.4.23 H4 — read the user's Coach prefs so the evidence
-  // disclosure honours `showEvidenceByDefault`. Cached at the
-  // queryClient level via the shared `useCoachPrefs` hook; the
-  // settings sheet writes the same key after a successful save so the
-  // new default takes effect on the next reply without a page reload.
-  const { data: coachPrefs } = useCoachPrefs();
-  const evidenceDefaultOpen = coachPrefs?.showEvidenceByDefault ?? false;
+  // v1.4.27 F14 — the evidence disclosure used to honour an opt-in
+  // `coachPrefs.showEvidenceByDefault` flag that surfaced the raw
+  // measurement values unconditionally. The flag created an UX trap
+  // (Marc 2026-05-15: "literal metric values exposed under every
+  // bubble") so the disclosure is now collapsed by default for every
+  // reply. The user expands by click; the pref is retired in the
+  // settings sheet so nothing flips it back on.
 
   const messages: CoachMessageDTO[] = useMemo(
     () => conversation?.messages ?? [],
@@ -239,7 +238,6 @@ export function MessageThread({
             content={m.content}
             metricSource={m.metricSource}
             providerType={m.providerType}
-            evidenceDefaultOpen={evidenceDefaultOpen}
             messageId={m.id}
           />
         );
@@ -269,7 +267,6 @@ export function MessageThread({
             providerType={streaming.inProgress ? "streaming" : null}
             inProgress={streaming.inProgress}
             errorCode={streaming.errorCode}
-            evidenceDefaultOpen={evidenceDefaultOpen}
           />
         </div>
       )}
@@ -299,8 +296,6 @@ interface ChatBubbleProps {
   providerType?: string | null;
   inProgress?: boolean;
   errorCode?: string | null;
-  /** v1.4.23 H4 — when true the evidence `<details>` mounts open. */
-  evidenceDefaultOpen?: boolean;
   /**
    * v1.4.23 H7 — present only on persisted assistant messages.
    * Streaming bubbles (no message id yet) skip the thumbs row so the
@@ -316,7 +311,6 @@ function ChatBubble({
   providerType,
   inProgress,
   errorCode,
-  evidenceDefaultOpen,
   messageId,
 }: ChatBubbleProps) {
   const { t } = useTranslations();
@@ -428,11 +422,11 @@ function ChatBubble({
         {keyValues.length > 0 && (
           <details
             data-slot="coach-evidence"
-            // v1.4.23 H4 — open by default when the user's prefs ask
-            // for it. Browsers honour the boolean `open` attribute on
-            // initial mount; toggling at runtime keeps the user's
-            // current expansion state intact.
-            open={evidenceDefaultOpen ? true : undefined}
+            // v1.4.27 F14 — always closed by default. The `open`
+            // attribute was previously tied to a per-user pref that
+            // surfaced raw values unconditionally; that pref is now
+            // retired and the disclosure is a true progressive-
+            // disclosure surface — the user clicks to expand.
             className={cn(
               "border-border/50 bg-muted/30 group rounded-md border",
               "px-2.5 py-1.5 text-xs",
