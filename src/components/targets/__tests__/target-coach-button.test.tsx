@@ -28,7 +28,13 @@ describe("<TargetCoachButton>", () => {
   it("renders the button when aiEnabled is true", () => {
     const html = render({ ...baseProps, aiEnabled: true });
     expect(html).toContain('data-slot="target-coach-cta"');
-    expect(html).toContain("Ask Coach");
+    // v1.4.28 FB-L1 — the affordance is now icon-only; the label
+    // survives as an aria-label + title so screen readers + tooltips
+    // still surface "Ask Coach" / "Coach fragen".
+    expect(html).toContain('aria-label="Ask Coach"');
+    expect(html).toContain('title="Ask Coach"');
+    // No visible text label — only the chat-bubble glyph.
+    expect(html).not.toMatch(/>Ask Coach</);
   });
 
   it("renders NOTHING when aiEnabled is false (no broken-button state)", () => {
