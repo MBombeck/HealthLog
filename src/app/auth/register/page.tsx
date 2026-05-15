@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, UserPlus } from "lucide-react";
@@ -22,6 +22,12 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { t } = useTranslations();
+  // v1.4.27 MB3 — explicit error-region id wired to every required
+  // input via `aria-describedby` so screen readers pair the validation
+  // failure with the offending field instead of announcing it as a
+  // standalone alert detached from the form.
+  const errorId = useId();
+  const errorDescriptor = error ? errorId : undefined;
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
@@ -85,6 +91,12 @@ export default function RegisterPage() {
               placeholder={t("auth.emailPlaceholder")}
               required
               autoComplete="email"
+              enterKeyHint="next"
+              autoCapitalize="none"
+              spellCheck={false}
+              aria-required="true"
+              aria-invalid={!!error || undefined}
+              aria-describedby={errorDescriptor}
             />
           </div>
 
@@ -98,6 +110,12 @@ export default function RegisterPage() {
               placeholder="user"
               required
               autoComplete="username"
+              enterKeyHint="next"
+              autoCapitalize="none"
+              spellCheck={false}
+              aria-required="true"
+              aria-invalid={!!error || undefined}
+              aria-describedby={errorDescriptor}
               minLength={3}
               maxLength={30}
             />
@@ -113,6 +131,10 @@ export default function RegisterPage() {
               placeholder={t("auth.passwordMinLength")}
               required
               autoComplete="new-password"
+              enterKeyHint="go"
+              aria-required="true"
+              aria-invalid={!!error || undefined}
+              aria-describedby={errorDescriptor}
             />
             <PasswordStrength password={password} />
             <p className="text-muted-foreground text-xs">
@@ -122,7 +144,9 @@ export default function RegisterPage() {
 
           {error && (
             <div
+              id={errorId}
               role="alert"
+              aria-live="polite"
               className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm"
             >
               {error}

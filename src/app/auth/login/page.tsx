@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { KeyRound, Lock, Loader2 } from "lucide-react";
@@ -23,6 +23,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // v1.4.27 MB3 — explicit error-region id so the email + password
+  // inputs reference the banner via `aria-describedby`. Screen readers
+  // pair the error with the field instead of announcing it as a
+  // standalone alert detached from the form.
+  const errorId = useId();
+  const errorDescriptor = error ? errorId : undefined;
   const { data: registrationEnabled } = useQuery({
     queryKey: ["auth", "registration-status"],
     queryFn: async () => {
@@ -176,6 +182,13 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoComplete="username"
+                  inputMode="email"
+                  enterKeyHint="next"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  aria-required="true"
+                  aria-invalid={!!error || undefined}
+                  aria-describedby={errorDescriptor}
                   placeholder={t("auth.emailOrUsernamePlaceholder")}
                 />
               </div>
@@ -188,6 +201,10 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="current-password"
+                  enterKeyHint="go"
+                  aria-required="true"
+                  aria-invalid={!!error || undefined}
+                  aria-describedby={errorDescriptor}
                   placeholder="********"
                 />
               </div>
@@ -216,7 +233,9 @@ export default function LoginPage() {
 
           {error && (
             <div
+              id={errorId}
               role="alert"
+              aria-live="polite"
               className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm"
             >
               {error}
