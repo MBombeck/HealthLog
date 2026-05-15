@@ -178,8 +178,10 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     );
 
     expect(html).toContain("GLP-1 injection");
-    // The Syringe lucide icon renders an SVG with this class.
-    expect(html).toMatch(/lucide-syringe/i);
+    // v1.4.28 FB-G1 — the Syringe glyph + middle-dot separator on the
+    // list row are gone. The list row reads as the canonical two-line
+    // shape: `{name} {dose}` on line 1, class label on line 2.
+    expect(html).not.toMatch(/lucide-syringe/i);
   });
 
   it("renders the default MedicationCard when treatmentClass is null/undefined (back-compat)", () => {
@@ -204,7 +206,7 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     expect(html).not.toContain("Dose history");
   });
 
-  it("shows drug name + current dose ('Mounjaro · 7.5 mg')", () => {
+  it("shows drug name + current dose on line 1 ('Mounjaro 7.5 mg')", () => {
     const client = makeClient();
     seedCompliance(client, med7p5.id);
     seedGlp1Details(client, med7p5.id, {});
@@ -216,9 +218,10 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
 
     expect(html).toContain("Mounjaro");
     expect(html).toContain("7.5 mg");
-    // Card title joins the two with the middle-dot separator the
-    // glp1Headline copy uses.
-    expect(html).toContain("·");
+    // v1.4.28 FB-G1 — the GLP-1 row drops the middle-dot separator and
+    // surfaces `{name} {dose}` together on line 1 via the shared
+    // `<MedicationCardHeader>` primitive. The dot separator is gone.
+    expect(html).toContain("Mounjaro 7.5 mg");
   });
 
   it("shows last + next injection labels with localised weekday", () => {

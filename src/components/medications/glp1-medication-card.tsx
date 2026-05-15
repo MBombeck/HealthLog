@@ -11,12 +11,12 @@ import {
   Pencil,
   SkipForward,
   Stethoscope,
-  Syringe,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { MedicationCardHeader } from "@/components/medications/MedicationCardHeader";
 import { Progress } from "@/components/ui/progress";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { invalidateKeys, medicationDependentKeys } from "@/lib/query-keys";
@@ -241,60 +241,57 @@ export function Glp1MedicationCard({
     });
   }
 
+  const stateBadges = (
+    <>
+      {!medication.notificationsEnabled && (
+        <Badge variant="secondary" className="text-xs">
+          {t("medications.withoutNotification")}
+        </Badge>
+      )}
+      {!medication.active && (
+        <Badge variant="secondary" className="text-xs">
+          {medication.pausedAt
+            ? `${t("medications.pausedSince")} ${formatDateTime(medication.pausedAt)}`
+            : t("medications.inactive")}
+        </Badge>
+      )}
+    </>
+  );
+
+  const headerActions = (
+    <>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="min-h-11 min-w-11"
+        asChild
+        aria-label={t("medications.intakeHistory")}
+      >
+        <Link href={`/medications/${medication.id}/history`}>
+          <History className="h-4 w-4" />
+        </Link>
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="min-h-11 min-w-11"
+        onClick={() => onEdit(medication)}
+        aria-label={t("common.edit")}
+      >
+        <Pencil className="h-4 w-4" />
+      </Button>
+    </>
+  );
+
   return (
     <Card className={medication.active ? "" : "opacity-60"}>
-      <CardHeader className="pb-2.5">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Syringe className="text-dracula-purple h-4 w-4 shrink-0" />
-              <span>{medication.name}</span>
-              <span className="text-muted-foreground text-sm font-normal">
-                · {medication.dose}
-              </span>
-            </CardTitle>
-            <div className="text-muted-foreground flex items-center gap-2 text-xs">
-              <Badge variant="outline" className="text-xs">
-                {t("medications.treatmentClassGlp1")}
-              </Badge>
-              {!medication.notificationsEnabled && (
-                <Badge variant="secondary" className="text-xs">
-                  {t("medications.withoutNotification")}
-                </Badge>
-              )}
-              {!medication.active && (
-                <Badge variant="secondary" className="text-xs">
-                  {medication.pausedAt
-                    ? `${t("medications.pausedSince")} ${formatDateTime(medication.pausedAt)}`
-                    : t("medications.inactive")}
-                </Badge>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-0.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="min-h-11 min-w-11"
-              asChild
-              aria-label={t("medications.intakeHistory")}
-            >
-              <Link href={`/medications/${medication.id}/history`}>
-                <History className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="min-h-11 min-w-11"
-              onClick={() => onEdit(medication)}
-              aria-label={t("common.edit")}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
+      <MedicationCardHeader
+        name={medication.name}
+        dose={medication.dose}
+        categoryLabel={t("medications.treatmentClassGlp1")}
+        stateBadges={stateBadges}
+        actions={headerActions}
+      />
 
       <CardContent className="space-y-3.5">
         {/* Injection state — last + next */}

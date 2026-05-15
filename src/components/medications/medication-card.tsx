@@ -5,7 +5,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { MedicationCardHeader } from "@/components/medications/MedicationCardHeader";
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
 import { formatDateTime, formatTime } from "@/lib/format";
@@ -367,59 +368,61 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
     return formatDateTime(value);
   }
 
+  const stateBadges = (
+    <>
+      {!medication.notificationsEnabled && (
+        <Badge variant="secondary" className="text-xs">
+          {t("medications.withoutNotification")}
+        </Badge>
+      )}
+      {!medication.active && (
+        <Badge variant="secondary" className="text-xs">
+          {medication.pausedAt
+            ? `${t("medications.pausedSince")} ${formatDateTime(medication.pausedAt)}`
+            : t("medications.inactive")}
+        </Badge>
+      )}
+    </>
+  );
+
+  const headerActions = (
+    <>
+      {/* Phase A5: bumped from `h-8 w-8` (32px) to `min-h-11
+          min-w-11` (44px) so these meet the WCAG 2.5.5 minimum
+          tap-target on mobile without the icon glyph itself
+          changing size. */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="min-h-11 min-w-11"
+        asChild
+        aria-label={t("medications.intakeHistory")}
+      >
+        <Link href={`/medications/${medication.id}/history`}>
+          <History className="h-4 w-4" />
+        </Link>
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="min-h-11 min-w-11"
+        onClick={() => onEdit(medication)}
+        aria-label={t("common.edit")}
+      >
+        <Pencil className="h-4 w-4" />
+      </Button>
+    </>
+  );
+
   return (
     <Card className={medication.active ? "" : "opacity-60"}>
-      <CardHeader className="pb-2.5">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-lg">{medication.name}</CardTitle>
-            <div className="text-muted-foreground flex items-center gap-2 text-sm">
-              <span>{medication.dose}</span>
-              <Badge variant="outline" className="text-xs">
-                {categoryLabel}
-              </Badge>
-              {!medication.notificationsEnabled && (
-                <Badge variant="secondary" className="text-xs">
-                  {t("medications.withoutNotification")}
-                </Badge>
-              )}
-              {!medication.active && (
-                <Badge variant="secondary" className="text-xs">
-                  {medication.pausedAt
-                    ? `${t("medications.pausedSince")} ${formatDateTime(medication.pausedAt)}`
-                    : t("medications.inactive")}
-                </Badge>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-0.5">
-            {/* Phase A5: bumped from `h-8 w-8` (32px) to `min-h-11
-                min-w-11` (44px) so these meet the WCAG 2.5.5 minimum
-                tap-target on mobile without the icon glyph itself
-                changing size. */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="min-h-11 min-w-11"
-              asChild
-              aria-label={t("medications.intakeHistory")}
-            >
-              <Link href={`/medications/${medication.id}/history`}>
-                <History className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="min-h-11 min-w-11"
-              onClick={() => onEdit(medication)}
-              aria-label={t("common.edit")}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
+      <MedicationCardHeader
+        name={medication.name}
+        dose={medication.dose}
+        categoryLabel={categoryLabel}
+        stateBadges={stateBadges}
+        actions={headerActions}
+      />
 
       <CardContent className="space-y-3.5">
         {/* Status, last & next intake info */}
