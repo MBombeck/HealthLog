@@ -10,6 +10,7 @@ import {
   Smile,
 } from "lucide-react";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -234,20 +235,21 @@ export function SourcesRail({
                 !checked && "opacity-60",
               )}
             >
-              <input
+              {/* v1.4.27 R3d MB4 / CF-40 — swap the raw HTML checkbox
+                  for the shadcn `<Checkbox>` primitive so the rail
+                  ships a real focus ring, a proper keyboard contract
+                  (Space toggles, Tab moves), and a touch-friendly
+                  hit target on the side-tray surface. The wrapping
+                  `<label htmlFor={checkboxId}>` below still acts as
+                  the row-wide tap target on mobile. */}
+              <Checkbox
                 id={checkboxId}
-                type="checkbox"
                 checked={checked}
                 disabled={!interactive}
-                onChange={() => toggleSource(row.key)}
+                onCheckedChange={() => toggleSource(row.key)}
                 data-slot="coach-sources-checkbox"
                 aria-label={t(row.metricKey)}
-                className={cn(
-                  "border-border/70 text-dracula-purple",
-                  "size-4 shrink-0 cursor-pointer rounded",
-                  "focus-visible:ring-ring/50 focus-visible:ring-2",
-                  "disabled:cursor-not-allowed disabled:opacity-50",
-                )}
+                className="cursor-pointer"
               />
               <row.Icon
                 className={cn("size-3.5", row.accentClass)}
