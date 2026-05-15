@@ -274,7 +274,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // block to the user prompt when the active GLP-1 medication has been
   // on a stable dose for ≥21 days with weight delta within ±0.5 kg.
   // The block instructs the model to emit a glp1_plateau keyFinding
-  // framed observationally (no dose recommendation per GROUND RULE 14).
+  // framed observationally (no dose recommendation per GROUND RULE 13).
   // Returns null when no GLP-1 is active OR no plateau condition;
   // 99% of users land in the null branch and pay zero token cost.
   const plateauContext = await detectGlp1Plateau(userId);
@@ -298,7 +298,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       params: {
         // The strict prompt (PROMPT_VERSION 4.20.x) carries GROUND RULE 8
         // — emit a top-level `dailyBriefing` block when the snapshot has
-        // analysable signal — plus the trendAnnotations / weeklyReport /
+        // analysable signal — plus the trendAnnotations and
         // storyboardAnnotations rules. The legacy `getInsightsSystemPrompt`
         // returned the v1.4.5 `{changed, stable, drivers, …}` shape and
         // never asked the model for dailyBriefing, so the hero strip's

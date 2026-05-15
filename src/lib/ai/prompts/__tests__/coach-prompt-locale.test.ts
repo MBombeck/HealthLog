@@ -188,7 +188,6 @@ describe("getStrictInsightsSystemPrompt — native AI-initial locales", () => {
       expect(prompt).toContain("warnings");
       expect(prompt).toContain("dailyBriefing");
       expect(prompt).toContain("trendAnnotations");
-      expect(prompt).toContain("weeklyReport");
       expect(prompt).toContain("storyboardAnnotations");
     },
   );

@@ -112,10 +112,12 @@ describe("<HeroStrip>", () => {
   });
 
   // ── Action row ─────────────────────────────────────────────────────
-  it("renders the weekly-report action button as disabled with a 'Coming soon' title", () => {
+  // v1.4.28 retired the weekly-report button — Coach is now the only
+  // hero-row action. The weekly-report path is gone from the codebase.
+  it("does NOT render a weekly-report action button", () => {
     const html = render(<HeroStrip briefing={null} now={morningLocal} />);
-    expect(html).toMatch(
-      /data-slot="insights-hero-strip-action-weekly-report"[^>]*disabled[^>]*title="Coming soon"/,
+    expect(html).not.toContain(
+      'data-slot="insights-hero-strip-action-weekly-report"',
     );
   });
 
@@ -190,89 +192,12 @@ describe("<HeroStrip>", () => {
   });
 
   // ── B4 — Weekly-report banner card ─────────────────────────────────
-  it("does not render the weekly-report banner when weeklyReportReady is omitted", () => {
+  // v1.4.28 retired the weekly-report path. The banner, the report
+  // route, the AI schema slot and the i18n keys are gone; the hero
+  // strip never paints the banner under any prop combination now.
+  it("does not render the weekly-report banner under any prop combination", () => {
     const html = render(<HeroStrip briefing={null} now={morningLocal} />);
     expect(html).not.toContain('data-slot="insights-hero-strip-weekly-banner"');
-  });
-
-  it("renders the weekly-report banner when weeklyReportReady is supplied", () => {
-    const html = render(
-      <HeroStrip
-        briefing={null}
-        now={morningLocal}
-        weeklyReportReady={{
-          weekISO: "2026-W19",
-          href: "/insights/report/2026-W19",
-        }}
-      />,
-    );
-    expect(html).toMatch(/data-slot="insights-hero-strip-weekly-banner"/);
-    expect(html).toContain("Your 2026-W19 report is ready");
-  });
-
-  it("renders Read / Share / Export PDF actions on the banner", () => {
-    const html = render(
-      <HeroStrip
-        briefing={null}
-        now={morningLocal}
-        weeklyReportReady={{
-          weekISO: "2026-W19",
-          href: "/insights/report/2026-W19",
-        }}
-      />,
-    );
-    expect(html).toMatch(/data-slot="insights-hero-strip-weekly-banner-read"/);
-    expect(html).toMatch(/data-slot="insights-hero-strip-weekly-banner-share"/);
-    expect(html).toMatch(
-      /data-slot="insights-hero-strip-weekly-banner-export"/,
-    );
-    expect(html).toContain("Read");
-    expect(html).toContain("Share");
-    expect(html).toContain("Export PDF");
-  });
-
-  it("read action links to the report URL; export action appends print=1", () => {
-    const html = render(
-      <HeroStrip
-        briefing={null}
-        now={morningLocal}
-        weeklyReportReady={{
-          weekISO: "2026-W19",
-          href: "/insights/report/2026-W19",
-        }}
-      />,
-    );
-    // Read link points to the bare report URL.
-    const readLink = html.match(
-      /<a[^>]*data-slot="insights-hero-strip-weekly-banner-read"[^>]*>/,
-    );
-    expect(readLink).not.toBeNull();
-    expect(readLink?.[0]).toContain('href="/insights/report/2026-W19"');
-    // Export link adds ?print=1.
-    const exportLink = html.match(
-      /<a[^>]*data-slot="insights-hero-strip-weekly-banner-export"[^>]*>/,
-    );
-    expect(exportLink).not.toBeNull();
-    expect(exportLink?.[0]).toContain(
-      'href="/insights/report/2026-W19?print=1"',
-    );
-  });
-
-  it("renders the German banner copy", () => {
-    const html = render(
-      <HeroStrip
-        briefing={null}
-        now={morningLocal}
-        weeklyReportReady={{
-          weekISO: "2026-W19",
-          href: "/insights/report/2026-W19",
-        }}
-      />,
-      "de",
-    );
-    expect(html).toContain("Dein 2026-W19-Bericht ist bereit");
-    expect(html).toContain("Lesen");
-    expect(html).toContain("Als PDF");
   });
 
   // ── B5 — Health Score panel ────────────────────────────────────────

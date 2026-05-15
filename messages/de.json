@@ -958,17 +958,7 @@
     "heroGreetingAfternoon": "Guten Tag",
     "heroGreetingEvening": "Guten Abend",
     "heroComingSoonTooltip": "Kommt bald",
-    "heroActionWeeklyReport": "Wochenbericht erstellen",
     "heroActionAskCoach": "Coach fragen",
-    "heroBanner": {
-      "ready": "Dein {week}-Bericht ist bereit",
-      "read": "Lesen",
-      "share": "Teilen",
-      "exportPdf": "Als PDF",
-      "shareTitle": "HealthLog · Wochenbericht",
-      "shareCopied": "Berichts-Link in die Zwischenablage kopiert.",
-      "shareFailed": "Teilen fehlgeschlagen — der Browser unterstützt das nicht."
-    },
     "healthScore": {
       "label": "Gesundheitsscore",
       "progressAria": "Gesundheitsscore-Fortschritt",
@@ -996,21 +986,6 @@
           "none": "Keine Daten"
         }
       }
-    },
-    "report": {
-      "eyebrow": "Wochenbericht",
-      "title": "Deine Woche — {week}",
-      "backToInsights": "Zurück zu Insights",
-      "printAction": "Drucken / Als PDF",
-      "sectionSummary": "Zusammenfassung",
-      "sectionGoingWell": "Was gut läuft",
-      "sectionWorthWatching": "Was Beachtung verdient",
-      "sectionTips": "Tipps",
-      "sectionDataQuality": "Hinweise zur Datenqualität",
-      "footerNotMedicalAdvice": "Erstellt vom HealthLog Coach. Keine medizinische Beratung — bei klinischen Entscheidungen teile den Bericht mit deinem Arzt.",
-      "emptyTitle": "Noch kein Bericht für diese Woche",
-      "emptyDescription": "Wir haben keinen Bericht für {week}. Geh zurück zu Insights und starte die Analyse neu, um ihn zu befüllen.",
-      "emptyAction": "Insights öffnen"
     },
     "suggestedPrompts": {
       "label": "Frag mich",

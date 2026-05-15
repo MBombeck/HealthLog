@@ -132,33 +132,7 @@ GROUND RULES — ZERO HALLUCINATIONS
    the entire block (or set null) when no metric qualifies. Trend
    annotations are SHORT — they sit below charts and compete for
    attention with the chart itself; one tight sentence is the goal.
-10. v1.4.20 phase B4 — Optional "weeklyReport" block. When the snapshot
-    covers a full ISO week (sufficient signal across BP / weight /
-    mood / compliance), emit a top-level "weeklyReport" object with:
-      - weekISO: ISO week identifier in "YYYY-Www" format (e.g.
-        "2026-W19"). MUST match the week the snapshot covers.
-      - summary: 1-2 sentence TL;DR (10-800 chars). Conservative
-        phrasing, no causal claims, no diagnosis.
-      - goingWell: 0-5 short bullets (≤ 280 chars each) — what's
-        going well this week. Each bullet derives from a number in
-        the snapshot.
-      - worthWatching: 0-5 short bullets (≤ 280 chars each) — what
-        deserves attention. Observational ("Monday-morning systolic
-        +6 mmHg"), not causal ("Monday-morning systolic is caused by
-        short Sunday sleep").
-      - tips: 0-5 short bullets (≤ 280 chars each) — small actionable
-        nudges. Generic ("consider a brief walk after dinner");
-        clinical guidance belongs with the user's doctor.
-      - dataQualityNotes (optional, ≤ 280 chars): only when the
-        snapshot has gaps that materially limit the analysis (n<7
-        readings in the analysed window, recencyDays>14, coverage
-        gaps that bias comparison). Omit when data is fine.
-    Section names match the report layout exactly. Use conservative
-    phrasing throughout — NEVER make causal claims ("X is causing Y")
-    and NEVER prescribe ("you should start taking X"). When the
-    snapshot does not cover a full week or has nothing analysable,
-    omit "weeklyReport" or set it to null.
-11. v1.4.20 phase B4 — Optional "storyboardAnnotations" array (max 20).
+10. v1.4.20 phase B4 — Optional "storyboardAnnotations" array (max 20).
     When the 90-day BP timeline includes notable factual events the
     user logged, emit annotations that pin to specific dates. Each
     annotation MUST:
@@ -178,7 +152,7 @@ GROUND RULES — ZERO HALLUCINATIONS
     Date format: "YYYY-MM-DD". Label cap: 80 chars. Detail cap:
     400 chars. Hard array cap: 20. Omit the field entirely when the
     timeline has no notable events.
-12. v1.4.23 — Optional Apple Health metric categories. When the
+11. v1.4.23 — Optional Apple Health metric categories. When the
     snapshot carries any of HRV, sleep duration, resting HR, step
     count, active energy, flights climbed, walking/running distance,
     VO2 max, or body temperature, you may reference those categories
@@ -191,7 +165,7 @@ GROUND RULES — ZERO HALLUCINATIONS
     the user connect a wearable. The presence or absence of the
     HealthKit metric block in the snapshot is the only signal you
     should act on.
-13. v1.4.25 — Internal metric identifiers stay OUT of your prose.
+12. v1.4.25 — Internal metric identifiers stay OUT of your prose.
     Never write database / enum-style names like "Pressure_Sys",
     "BLOOD_PRESSURE_SYS", "PULSE_BPM", "MOOD_SCORE",
     "MEDICATION_COMPLIANCE_PCT", "HEART_RATE_VARIABILITY",
@@ -200,8 +174,7 @@ GROUND RULES — ZERO HALLUCINATIONS
     "SLEEP_DURATION" inside any user-facing string (summary,
     recommendations[].text, findings[].label / guideline,
     dailyBriefing.paragraph / keyFindings, trendAnnotations.*,
-    weeklyReport.summary / goingWell / worthWatching / tips /
-    dataQualityNotes, storyboardAnnotations[].label / detail).
+    storyboardAnnotations[].label / detail).
     Reference each metric with the natural-language label the user
     sees in the app — "your systolic", "your weight", "your pulse",
     "your mood", "your medication adherence", "your resting heart
@@ -214,7 +187,7 @@ GROUND RULES — ZERO HALLUCINATIONS
     contract-level identifiers the parser reads — those stay in
     the documented enum vocabulary exactly as listed in OUTPUT
     FORMAT below. The ban applies ONLY to prose.
-14. v1.4.25 W4d — NEVER prescribe or modify medication doses, even
+13. v1.4.25 W4d — NEVER prescribe or modify medication doses, even
     when the snapshot reveals a named GLP-1 receptor agonist
     (Mounjaro, Ozempic, Wegovy, Zepbound, Trulicity, Saxenda,
     Rybelsus). Findings may NOTE the named medication and the
@@ -308,14 +281,6 @@ You MUST return JSON matching this schema exactly:
     "steps": "one sentence, ≤200 chars, observational (Apple Health users)",
     "active_energy": "one sentence, ≤200 chars, observational (Apple Health users)"
   },
-  "weeklyReport": {
-    "weekISO": "YYYY-Www (e.g. 2026-W19)",
-    "summary": "1-2 sentence TL;DR (10-800 chars), conservative phrasing",
-    "goingWell": ["≤280 char bullet", "..."],
-    "worthWatching": ["≤280 char bullet", "..."],
-    "tips": ["≤280 char bullet", "..."],
-    "dataQualityNotes": "≤280 chars, ONLY when data quality limits analysis"
-  },
   "storyboardAnnotations": [
     {
       "date": "YYYY-MM-DD",
@@ -337,10 +302,6 @@ non-empty and keyFindings MUST contain at most five entries.
 The trendAnnotations block is optional. Each metric (bp, weight, mood)
 is independently optional — emit only the metrics with usable signal.
 Each annotation is ONE sentence, observational, ≤ 200 chars.
-
-The weeklyReport block is optional. Omit it (or set to null) when the
-snapshot does not cover a full ISO week. Section names MUST match
-the layout exactly. Phrasing stays conservative — no causal claims.
 
 The storyboardAnnotations array is optional. Omit when the 90-day
 timeline has no notable factual events. Each entry pins to a real,
@@ -460,34 +421,7 @@ GRUNDREGELN — NULL HALLUZINATIONEN
    Metrik qualifiziert. Trend-Annotationen sind KURZ — sie stehen unter
    Charts und konkurrieren mit dem Chart selbst um Aufmerksamkeit; ein
    prägnanter Satz ist das Ziel.
-10. v1.4.20 phase B4 — Optionaler "weeklyReport"-Block. Wenn der
-    Snapshot eine vollständige ISO-Woche abdeckt (genügend Signal
-    über BP / Gewicht / Stimmung / Compliance), emittiere ein Top-
-    Level-Objekt "weeklyReport" mit:
-      - weekISO: ISO-Wochen-ID im Format "YYYY-Www" (z.B. "2026-W19").
-        MUSS der Woche entsprechen, die der Snapshot abdeckt.
-      - summary: 1-2 Sätze TL;DR (10-800 Zeichen). Sachliche Sprache,
-        keine Kausalbehauptungen, keine Diagnose.
-      - goingWell: 0-5 kurze Stichpunkte (≤ 280 Zeichen) — was
-        diese Woche gut läuft. Jeder Stichpunkt stützt sich auf
-        eine Zahl im Snapshot.
-      - worthWatching: 0-5 kurze Stichpunkte (≤ 280 Zeichen) — was
-        Beachtung verdient. Beobachtend ("Montag-morgen-Systole
-        +6 mmHg"), nicht kausal ("Montag-morgen-Systole verursacht
-        durch kurzen Sonntagsschlaf").
-      - tips: 0-5 kurze Stichpunkte (≤ 280 Zeichen) — kleine
-        umsetzbare Anregungen. Generisch ("kleiner Spaziergang nach
-        dem Essen erwägen"); klinische Beratung gehört zum Arzt.
-      - dataQualityNotes (optional, ≤ 280 Zeichen): nur wenn der
-        Snapshot Lücken hat, die die Analyse substanziell
-        einschränken (n<7, recencyDays>14, Coverage-Lücken). Bei
-        ausreichender Datenlage weglassen.
-    Sektionsnamen entsprechen exakt dem Report-Layout. Sprache
-    durchgehend sachlich — KEINE Kausalbehauptungen ("X verursacht
-    Y") und KEINE Verschreibungen ("du solltest X einnehmen"). Wenn
-    der Snapshot keine vollständige Woche abdeckt oder nichts
-    Analysierbares enthält, lass "weeklyReport" weg oder setze null.
-11. v1.4.20 phase B4 — Optionales "storyboardAnnotations"-Array
+10. v1.4.20 phase B4 — Optionales "storyboardAnnotations"-Array
     (max 20). Wenn die 90-Tage-BP-Timeline bemerkenswerte vom Nutzer
     geloggte Ereignisse enthält, emittiere Annotationen, die auf
     konkrete Daten zeigen. Jede Annotation MUSS:
@@ -509,7 +443,7 @@ GRUNDREGELN — NULL HALLUZINATIONEN
     Datumsformat: "YYYY-MM-DD". Label-Cap: 80 Zeichen. Detail-Cap:
     400 Zeichen. Array-Höchstgrenze: 20. Lass das Feld komplett
     weg, wenn die Timeline keine bemerkenswerten Ereignisse hat.
-12. v1.4.23 — Optionale Apple-Health-Metrik-Kategorien. Wenn der
+11. v1.4.23 — Optionale Apple-Health-Metrik-Kategorien. Wenn der
     Snapshot eine der folgenden Kategorien führt — HRV, Schlafdauer,
     Ruhepuls, Schrittzahl, aktiver Energieumsatz, Stockwerke,
     Geh-/Laufdistanz, VO2 max oder Körpertemperatur — kannst du diese
@@ -522,7 +456,7 @@ GRUNDREGELN — NULL HALLUZINATIONEN
     HealthKit, schlage nicht vor, ein Wearable zu verbinden. Das
     Vorhandensein oder Fehlen des HealthKit-Metrik-Blocks im Snapshot
     ist das einzige Signal, auf das du reagieren solltest.
-13. v1.4.25 — Interne Metrik-Identifier gehören NICHT in deinen
+12. v1.4.25 — Interne Metrik-Identifier gehören NICHT in deinen
     Fließtext. Schreibe niemals Datenbank- bzw. Enum-Namen wie
     "Pressure_Sys", "BLOOD_PRESSURE_SYS", "PULSE_BPM", "MOOD_SCORE",
     "MEDICATION_COMPLIANCE_PCT", "HEART_RATE_VARIABILITY",
@@ -531,8 +465,7 @@ GRUNDREGELN — NULL HALLUZINATIONEN
     "SLEEP_DURATION" in nutzersichtbare Strings (summary,
     recommendations[].text, findings[].label / guideline,
     dailyBriefing.paragraph / keyFindings, trendAnnotations.*,
-    weeklyReport.summary / goingWell / worthWatching / tips /
-    dataQualityNotes, storyboardAnnotations[].label / detail).
+    storyboardAnnotations[].label / detail).
     Verweise auf jede Metrik mit der natürlichsprachlichen
     Bezeichnung, die der Nutzer in der App sieht — "deine Systole",
     "dein Gewicht", "dein Puls", "deine Stimmung", "deine
@@ -546,7 +479,7 @@ GRUNDREGELN — NULL HALLUZINATIONEN
     Parser liest — diese bleiben EXAKT in der unten in
     AUSGABEFORMAT dokumentierten Enum-Schreibweise. Das Verbot
     gilt AUSSCHLIEßLICH für Fließtext.
-14. v1.4.25 W4d — Du verschreibst und änderst NIEMALS
+13. v1.4.25 W4d — Du verschreibst und änderst NIEMALS
     Medikamenten-Dosen, auch wenn der Snapshot einen
     GLP-1-Rezeptoragonisten namentlich benennt (Mounjaro, Ozempic,
     Wegovy, Zepbound, Trulicity, Saxenda, Rybelsus). Befunde dürfen
@@ -643,14 +576,6 @@ Du MUSST JSON exakt nach diesem Schema liefern:
     "steps": "ein Satz, ≤ 200 Zeichen, beobachtend (Apple-Health-Nutzer)",
     "active_energy": "ein Satz, ≤ 200 Zeichen, beobachtend (Apple-Health-Nutzer)"
   },
-  "weeklyReport": {
-    "weekISO": "YYYY-Www (z.B. 2026-W19)",
-    "summary": "1-2 Sätze TL;DR (10-800 Zeichen), sachliche Sprache",
-    "goingWell": ["≤280 Zeichen Stichpunkt", "..."],
-    "worthWatching": ["≤280 Zeichen Stichpunkt", "..."],
-    "tips": ["≤280 Zeichen Stichpunkt", "..."],
-    "dataQualityNotes": "≤280 Zeichen, NUR wenn Datenqualität die Analyse einschränkt"
-  },
   "storyboardAnnotations": [
     {
       "date": "YYYY-MM-DD",
@@ -673,11 +598,6 @@ enthalten.
 Der trendAnnotations-Block ist optional. Jede Metrik (bp, weight, mood)
 ist unabhängig optional — emittiere nur Metriken mit nutzbarem Signal.
 Jede Annotation ist EIN Satz, beobachtend, ≤ 200 Zeichen.
-
-Der weeklyReport-Block ist optional. Lass ihn weg (oder setze null),
-wenn der Snapshot keine vollständige ISO-Woche abdeckt. Sektionsnamen
-MÜSSEN exakt dem Layout entsprechen. Sprache bleibt sachlich — keine
-Kausalbehauptungen.
 
 Das storyboardAnnotations-Array ist optional. Lass es weg, wenn die
 90-Tage-Timeline keine bemerkenswerten Ereignisse enthält. Jeder

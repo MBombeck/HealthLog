@@ -354,7 +354,6 @@ const insightsComprehensiveResponse = z
     warnings: z.array(z.record(z.string(), z.unknown())),
     dailyBriefing: z.record(z.string(), z.unknown()).nullable().optional(),
     trendAnnotations: z.record(z.string(), z.unknown()).nullable().optional(),
-    weeklyReport: z.record(z.string(), z.unknown()).nullable().optional(),
     storyboardAnnotations: z
       .array(z.record(z.string(), z.unknown()))
       .optional(),

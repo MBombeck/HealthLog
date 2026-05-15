@@ -191,7 +191,7 @@ describe("glp1-plateau", () => {
       expect(prompt).toContain("2026-04-01");
       expect(prompt).toContain("-0.2 kg");
       expect(prompt).toContain("glp1_plateau");
-      expect(prompt).toContain("GROUND RULE 14");
+      expect(prompt).toContain("GROUND RULE 13");
       expect(prompt).toContain("NEVER recommend a dose change");
     });
 
@@ -212,7 +212,7 @@ describe("glp1-plateau", () => {
       expect(prompt).toContain("GLP-1-PLATEAU AKTIV");
       expect(prompt).toContain("Mounjaro 7.5 mg");
       expect(prompt).toContain("KEINE Dosis-Empfehlung");
-      expect(prompt).toContain("GRUNDREGEL 14");
+      expect(prompt).toContain("GRUNDREGEL 13");
     });
 
     it("computes week number from days on dose", () => {

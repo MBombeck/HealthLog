@@ -6,8 +6,9 @@
  * their weight has not decreased by more than 0.5 kg in that same
  * trailing window. The result is injected into the insight-generation
  * user prompt so the LLM can include a plateau finding in the daily
- * briefing — framed conservatively per GROUND RULE 14 of the insight
- * prompt (defer dose decisions to the clinician, observational tone).
+ * briefing — framed conservatively per the dose-prescription refusal
+ * rule of the insight prompt (#13 after the v1.4.28 renumber; defer
+ * dose decisions to the clinician, observational tone).
  *
  * Returns `null` when:
  *   - the user has no GLP-1 medications,
@@ -108,8 +109,8 @@ export async function detectGlp1Plateau(
  * Render a Markdown-flavoured prompt block for the insight generator
  * that names the plateau and tells the model how to frame the
  * resulting finding (deferring to the clinician). Returned string is
- * appended to the user prompt; the model's GROUND RULE 14 carries
- * the dose-prescription refusal.
+ * appended to the user prompt; the model's dose-prescription refusal
+ * rule (#13 after the v1.4.28 renumber) carries the refusal.
  */
 export function buildGlp1PlateauPrompt(
   ctx: Glp1PlateauContext,
@@ -142,7 +143,7 @@ Wenn du einen dailyBriefing-keyFinding zu diesem Plateau emittierst:
 - tone: "info"
 - detail: nenne den Wirkstoff und die aktuelle Dosis ("${doseLabel}, Woche ${Math.floor(ctx.daysOnDose / 7)}")
 - Rahmen es als beobachtetes Muster, keine Empfehlung; weise auf das Gespräch mit der behandelnden Ärztin beim nächsten Termin hin
-- KEINE Dosis-Empfehlung (GRUNDREGEL 14)`;
+- KEINE Dosis-Empfehlung (GRUNDREGEL 13)`;
   }
 
   return `
@@ -156,5 +157,5 @@ If you emit a dailyBriefing keyFinding for this plateau:
 - tone: "info"
 - detail: name the drug and current dose ("${doseLabel}, week ${Math.floor(ctx.daysOnDose / 7)}")
 - frame as observed pattern, not recommendation; mention conversation with the prescribing clinician at the next visit
-- NEVER recommend a dose change (GROUND RULE 14)`;
+- NEVER recommend a dose change (GROUND RULE 13)`;
 }

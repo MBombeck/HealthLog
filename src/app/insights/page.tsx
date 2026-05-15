@@ -17,7 +17,6 @@ import { CorrelationRow } from "@/components/insights/correlation-row";
 import { useInsightsAdvisorQuery } from "@/components/insights/use-insights-advisor";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
 import type { CorrelationResult } from "@/lib/insights/correlations";
-import { toWeekISO } from "@/lib/insights/week-iso";
 import type { DataSummary } from "@/lib/analytics/trends";
 
 /**
@@ -177,21 +176,6 @@ export default function InsightsPage() {
   const briefingPayload = advisor.payload?.dailyBriefing ?? null;
   const heroStripUpdatedAt = advisor.payload?.cachedAt ?? null;
 
-  const weeklyReport = (
-    advisor.payload?.insights as
-      | {
-          weeklyReport?: { weekISO: string } | null;
-        }
-      | undefined
-  )?.weeklyReport;
-  const weeklyReportReady = weeklyReport
-    ? {
-        weekISO: weeklyReport.weekISO,
-        href: `/insights/report/${weeklyReport.weekISO}`,
-      }
-    : undefined;
-  const currentWeekHref = `/insights/report/${toWeekISO(new Date())}`;
-
   return (
     <div className="space-y-8">
       <HeroStrip
@@ -208,8 +192,6 @@ export default function InsightsPage() {
             ? (prompt) => coachLaunch.askCoach(prompt)
             : undefined
         }
-        weeklyReportReady={weeklyReportReady}
-        weeklyReportHref={currentWeekHref}
         healthScore={analytics?.healthScore ?? undefined}
       />
 

@@ -451,14 +451,6 @@ const OUTPUT_SCHEMA_TEMPLATE = `{
     "steps": "one sentence, ≤200 chars, observational",
     "active_energy": "one sentence, ≤200 chars, observational"
   },
-  "weeklyReport": {
-    "weekISO": "YYYY-Www (e.g. 2026-W19)",
-    "summary": "1-2 sentence TL;DR, conservative phrasing",
-    "goingWell": ["≤280 char bullet", "..."],
-    "worthWatching": ["≤280 char bullet", "..."],
-    "tips": ["≤280 char bullet", "..."],
-    "dataQualityNotes": "≤280 chars, ONLY when data quality limits analysis"
-  },
   "storyboardAnnotations": [
     {
       "date": "YYYY-MM-DD",

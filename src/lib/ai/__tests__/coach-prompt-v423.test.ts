@@ -10,7 +10,9 @@ import {
  *
  * Asserts:
  *   1. PROMPT_VERSION sits on the 4.23.x train.
- *   2. GROUND RULE 12 ships in the EN prompt and tells the model to
+ *   2. The Apple Health silent-fallback rule (#11 after the v1.4.28
+ *      renumber that retired the weekly-report rule) ships in the EN
+ *      prompt and tells the model to
  *      stay silent about HealthKit metrics when the snapshot doesn't
  *      carry them — defending against the "you don't have HRV data"
  *      apologetic-opener regression on web-only accounts.
@@ -20,7 +22,8 @@ import {
  */
 describe("PROMPT_VERSION (v1.4.23 Apple Health ratchet)", () => {
   it("matches the 4.23+ train", () => {
-    // v1.4.25 W5b ratchet to 4.24.0 — GROUND RULE 13 bans internal
+    // v1.4.25 W5b ratchet to 4.24.0 — the enum-identifier ban rule
+    // (numbered #12 after v1.4.28 renumber, formerly #13) bans internal
     // metric enum identifiers from prose. The pin loosens to accept
     // any 4.{>=23}.x revision so future additive ratchets don't
     // force a hostile test rewrite each time the rules grow.
@@ -33,8 +36,8 @@ describe("PROMPT_VERSION (v1.4.23 Apple Health ratchet)", () => {
 describe("getStrictInsightsSystemPrompt — EN", () => {
   const prompt = getStrictInsightsSystemPrompt("en");
 
-  it("carries GROUND RULE 12 with the Apple Health silent-fallback contract", () => {
-    expect(prompt).toMatch(/12\. v1\.4\.23/);
+  it("carries the Apple Health silent-fallback contract (rule 11)", () => {
+    expect(prompt).toMatch(/11\. v1\.4\.23/);
     expect(prompt).toMatch(/Apple Health metric categories/);
     expect(prompt).toMatch(/HRV/);
     expect(prompt).toMatch(/sleep duration/);
@@ -44,17 +47,18 @@ describe("getStrictInsightsSystemPrompt — EN", () => {
   });
 
   it("does not bake live tenant figures into the new rule", () => {
-    // PII rule (per the marathon brief): GROUND RULE 12 frames in terms
-    // of metric categories, never a specific number / email / username.
-    // The block starts at "12. v1.4.23" and ends at the
-    // GUIDELINE TARGETS heading that closes the ground-rules section.
-    const rule12 =
-      prompt.split("12. v1.4.23")[1]?.split("GUIDELINE TARGETS")[0] ?? "";
-    expect(rule12.length).toBeGreaterThan(0);
-    expect(rule12).not.toMatch(/@.+\.(com|net|org|de|test)/);
+    // PII rule: the Apple Health rule frames in terms of metric
+    // categories, never a specific number / email / username. The block
+    // starts at "11. v1.4.23" (renumbered when v1.4.28 dropped the
+    // weekly-report rule) and ends at the GUIDELINE TARGETS heading
+    // that closes the ground-rules section.
+    const ruleAppleHealth =
+      prompt.split("11. v1.4.23")[1]?.split("GUIDELINE TARGETS")[0] ?? "";
+    expect(ruleAppleHealth.length).toBeGreaterThan(0);
+    expect(ruleAppleHealth).not.toMatch(/@.+\.(com|net|org|de|test)/);
     // The rule mentions metric category names but no concrete sample
     // values — categories only.
-    expect(rule12).not.toMatch(/\b\d{1,3}\s*(mmHg|bpm|kcal)\b/);
+    expect(ruleAppleHealth).not.toMatch(/\b\d{1,3}\s*(mmHg|bpm|kcal)\b/);
   });
 
   it("documents the additive sourceMetric tokens in the OUTPUT FORMAT", () => {
@@ -67,8 +71,8 @@ describe("getStrictInsightsSystemPrompt — EN", () => {
 describe("getStrictInsightsSystemPrompt — DE", () => {
   const prompt = getStrictInsightsSystemPrompt("de");
 
-  it("carries GROUND RULE 12 with the German silent-fallback wording", () => {
-    expect(prompt).toMatch(/12\. v1\.4\.23/);
+  it("carries the German silent-fallback wording (rule 11)", () => {
+    expect(prompt).toMatch(/11\. v1\.4\.23/);
     expect(prompt).toMatch(/Apple-Health-Metrik-Kategorien/);
     expect(prompt).toMatch(/HRV/);
     expect(prompt).toMatch(/Schlafdauer/);
@@ -85,17 +89,18 @@ describe("getStrictInsightsSystemPrompt — DE", () => {
 });
 
 /**
- * v1.4.25 W5b — pin GROUND RULE 13 (no internal metric identifiers
+ * v1.4.25 W5b — pin the enum-identifier ban rule (no internal metric
+ * identifiers
  * in prose). Marc saw the "Metric Pressure_Sys" leak on the
  * Einschätzungen surface 2026-05-14; the stripper covers the leak at
- * render time, GROUND RULE 13 closes the loop at generation time so
+ * render time, the rule closes the loop at generation time so
  * the cleaned-up prose was the only version emitted in the first
  * place.
  */
-describe("getStrictInsightsSystemPrompt — GROUND RULE 13 (no enum names in prose)", () => {
+describe("getStrictInsightsSystemPrompt — enum-identifier ban (no enum names in prose, rule 12)", () => {
   it("EN prompt carries the rule and enumerates the banned identifiers", () => {
     const prompt = getStrictInsightsSystemPrompt("en");
-    expect(prompt).toMatch(/13\. v1\.4\.25/);
+    expect(prompt).toMatch(/12\. v1\.4\.25/);
     expect(prompt).toMatch(/Internal metric identifiers/);
     // The banned-list is enumerated verbatim so the model has no
     // ambiguity about which strings are off-limits in prose.
@@ -117,7 +122,7 @@ describe("getStrictInsightsSystemPrompt — GROUND RULE 13 (no enum names in pro
 
   it("DE prompt carries the rule with the same banned list", () => {
     const prompt = getStrictInsightsSystemPrompt("de");
-    expect(prompt).toMatch(/13\. v1\.4\.25/);
+    expect(prompt).toMatch(/12\. v1\.4\.25/);
     expect(prompt).toMatch(/Interne Metrik-Identifier/);
     expect(prompt).toMatch(/"Pressure_Sys"/);
     expect(prompt).toMatch(/"BLOOD_PRESSURE_SYS"/);
