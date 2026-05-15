@@ -48,8 +48,14 @@ rm -f "$OUT_DIR/.empty"
 fetch_edition() {
   local edition_id="$1"
   local mmdb_basename="$2"
-  local tmp_tarball
-  tmp_tarball="$(mktemp -t "${edition_id}.tar.gz.XXXXXX")"
+  # Use an isolated working directory per edition so `find` and `tar`
+  # never walk shared `/tmp`. Linux runners (GitHub Actions) populate
+  # `/tmp` with `systemd-private-*` directories that are mode 700, and
+  # `find` returns exit 1 on permission-denied — under `set -e` that
+  # would kill the whole script before our fallback branches fire.
+  local work_dir
+  work_dir="$(mktemp -d -t "${edition_id}.XXXXXX")"
+  local tmp_tarball="${work_dir}/${edition_id}.tar.gz"
 
   echo "fetch-geolite2: downloading $edition_id ..." >&2
   # Use --fail-with-body so curl prints the response on failure; capture
@@ -65,7 +71,7 @@ fetch_edition() {
 
   if [[ "$curl_exit" -ne 0 ]]; then
     echo "fetch-geolite2: $edition_id download failed (curl exit $curl_exit) — falling back to runtime ipwho.is." >&2
-    rm -f "$tmp_tarball"
+    rm -rf "$work_dir"
     # Reinstate the marker so partial state from a previous fetch does
     # not look like a healthy populated directory.
     touch "$OUT_DIR/.empty"
@@ -75,27 +81,22 @@ fetch_edition() {
   # The tarball ships under a date-stamped top-level directory
   # (`GeoLite2-City_YYYYMMDD/`). Extract the MMDB into a flat layout
   # so the Dockerfile COPY uses a stable path.
-  if ! tar -xzf "$tmp_tarball" -C "$(dirname "$tmp_tarball")"; then
+  if ! tar -xzf "$tmp_tarball" -C "$work_dir"; then
     echo "fetch-geolite2: $edition_id tarball extraction failed — falling back to runtime ipwho.is." >&2
-    rm -f "$tmp_tarball"
+    rm -rf "$work_dir"
     touch "$OUT_DIR/.empty"
     return 0
   fi
   local extracted
-  extracted="$(find "$(dirname "$tmp_tarball")" -maxdepth 2 -name "${mmdb_basename}" -print -quit)"
+  extracted="$(find "$work_dir" -maxdepth 2 -name "${mmdb_basename}" -print -quit 2>/dev/null)"
   if [[ -z "$extracted" ]]; then
     echo "fetch-geolite2: expected ${mmdb_basename} inside the ${edition_id} tarball — falling back to runtime ipwho.is." >&2
-    rm -f "$tmp_tarball"
-    find "$(dirname "$tmp_tarball")" -maxdepth 1 -type d -name "${edition_id}_*" \
-      -exec rm -rf {} + 2>/dev/null || true
+    rm -rf "$work_dir"
     touch "$OUT_DIR/.empty"
     return 0
   fi
   mv "$extracted" "$OUT_DIR/$mmdb_basename"
-  rm -f "$tmp_tarball"
-  # Clean up the date-stamped extraction directory.
-  find "$(dirname "$tmp_tarball")" -maxdepth 1 -type d -name "${edition_id}_*" \
-    -exec rm -rf {} +
+  rm -rf "$work_dir"
 
   local sha
   sha="$(shasum -a 256 "$OUT_DIR/$mmdb_basename" | awk '{print $1}')"
