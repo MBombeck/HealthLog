@@ -1172,11 +1172,17 @@ export function HealthChart({
       ) : (
         <div className={`relative ${chartHeightClass}`}>
           {visibleBands.length > 0 ? (
+            // v1.4.27 R3d MB2 — band overlay positioning fix. The
+            // overlay used to inset `right: 18px` while the chart
+            // margin is `right: 8`, so the band rectangle drifted left
+            // of the plotted line by 10 px on every viewport. Pin the
+            // overlay to the same right edge the ComposedChart uses so
+            // the band tracks the line exactly.
             <div
               className="pointer-events-none absolute"
               style={{
                 left: `${8 + yAxisWidth}px`,
-                right: "18px",
+                right: "8px",
                 top: "10px",
                 bottom: "32px",
                 zIndex: 0,

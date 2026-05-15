@@ -111,13 +111,13 @@ export default function PrivacyPage() {
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3 md:px-6">
           <Link
             href="/"
-            className="text-foreground hover:text-primary text-sm font-semibold tracking-tight"
+            className="text-foreground hover:text-primary inline-flex min-h-11 items-center text-sm font-semibold tracking-tight"
           >
             HealthLog
           </Link>
           <Link
             href="/auth/login"
-            className="text-muted-foreground hover:text-foreground text-sm"
+            className="text-muted-foreground hover:text-foreground inline-flex min-h-11 items-center text-sm"
           >
             Sign in
           </Link>

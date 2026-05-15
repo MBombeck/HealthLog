@@ -224,7 +224,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setMode("passkey")}
-                className="text-muted-foreground hover:text-foreground w-full text-center text-xs"
+                className="text-muted-foreground hover:text-foreground inline-flex min-h-11 w-full items-center justify-center text-center text-xs"
               >
                 {t("auth.backToPasskey")}
               </button>

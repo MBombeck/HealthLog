@@ -84,12 +84,12 @@ export function ErrorDetails({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {reset && (
-          <Button onClick={reset} variant="outline" size="sm">
+          <Button onClick={reset} variant="outline">
             <RotateCcw className="mr-2 h-4 w-4" />
             {t("common.retry")}
           </Button>
         )}
-        <Button onClick={handleCopy} variant="outline" size="sm">
+        <Button onClick={handleCopy} variant="outline">
           {copied ? (
             <CheckCircle2 className="text-dracula-green mr-2 h-4 w-4" />
           ) : (
@@ -98,7 +98,7 @@ export function ErrorDetails({
           {copied ? t("common.copied") : t("common.copyDetails")}
         </Button>
         {bugReportEnabled && (
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="outline">
             <Link href={reportHref}>
               <Bug className="mr-2 h-4 w-4" />
               {t("common.reportIssue")}
