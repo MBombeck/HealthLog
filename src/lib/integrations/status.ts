@@ -271,6 +271,80 @@ export async function recordSyncFailure(
 }
 
 /**
+ * Park a connection at `error_reauth` from a deliberate scope-skip
+ * short-circuit. Unlike `recordSyncFailure`, this helper:
+ *
+ *   1. does NOT increment `consecutiveFailures`.
+ *   2. does NOT write an `integrations.sync.failed` audit row through
+ *      `recordSyncFailure`. A standalone `integrations.reauth_required`
+ *      row is written instead so the operations trail still shows the
+ *      park event.
+ *   3. does NOT enter the 3-strike alert ladder — no admin Telegram
+ *      page fires.
+ *
+ * Idempotent: a second call for the same scope-skip leaves the row at
+ * `error_reauth` with the same encrypted message and the same counter
+ * value (no increment). Use it from sync routines that have detected a
+ * deliberate, structural scope gap (e.g. legacy Withings connection
+ * missing `user.activity`). The defence-in-depth catch-block path
+ * stays on `recordSyncFailure` because a 403 reaching the catch is
+ * genuinely unexpected once the scope-skip lands.
+ *
+ * The audit-row-once semantics mean a row is only written if the row
+ * is not already parked at `error_reauth` with the same `lastError`.
+ * Re-parking the same scope-skip is a no-op for the audit log.
+ */
+export async function parkIntegrationAtReauth(opts: {
+  userId: string;
+  integration: IntegrationKey;
+  message: string;
+  errorCode: string;
+}): Promise<void> {
+  const { userId, integration, message, errorCode } = opts;
+  const now = new Date();
+  const encryptedError = safeEncryptError(message);
+
+  // Idempotency probe: re-parking the same scope-skip should NOT emit
+  // another audit row. We read the current row first; only write the
+  // audit log when the state or error changes.
+  const existing = await prisma.integrationStatus.findUnique({
+    where: { userId_integration: { userId, integration } },
+    select: { state: true, lastError: true },
+  });
+  const isFreshPark =
+    existing?.state !== "error_reauth" || existing.lastError !== encryptedError;
+
+  await prisma.integrationStatus.upsert({
+    where: { userId_integration: { userId, integration } },
+    create: {
+      userId,
+      integration,
+      state: "error_reauth",
+      lastError: encryptedError,
+      lastAttemptAt: now,
+      // First-ever row for this (user, integration) — counter stays at
+      // 0 so a later genuine transient burst still has the full
+      // 3-strike runway before paging.
+      consecutiveFailures: 0,
+    },
+    update: {
+      state: "error_reauth",
+      lastError: encryptedError,
+      lastAttemptAt: now,
+      // Deliberately omit `consecutiveFailures` — the existing value
+      // is preserved exactly. This is the whole point of the helper.
+    },
+  });
+
+  if (isFreshPark) {
+    await auditLog("integrations.reauth_required", {
+      userId,
+      details: { integration, message, errorCode, source: "scope_skip" },
+    });
+  }
+}
+
+/**
  * Mark a connection as needing re-auth without recording a fresh
  * "attempt". Used by the OAuth/refresh-token flows when they detect
  * an `invalid_grant`-style permanent revocation OUTSIDE of a sync —

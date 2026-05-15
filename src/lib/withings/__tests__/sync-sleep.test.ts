@@ -21,6 +21,7 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/integrations/status", () => ({
   isReauthRequired: vi.fn().mockResolvedValue(false),
+  parkIntegrationAtReauth: vi.fn(),
   recordSyncFailure: vi.fn(),
   recordSyncSuccess: vi.fn(),
 }));
@@ -44,7 +45,11 @@ vi.mock("@/lib/logging/context", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { recordSyncFailure, recordSyncSuccess } from "@/lib/integrations/status";
+import {
+  parkIntegrationAtReauth,
+  recordSyncFailure,
+  recordSyncSuccess,
+} from "@/lib/integrations/status";
 
 import {
   fetchWithingsSleep,
@@ -279,7 +284,11 @@ describe("syncUserSleep — scope-skip guard (v1.4.26)", () => {
     expect(recordSyncSuccess).not.toHaveBeenCalled();
   });
 
-  it("parks the connection at error_reauth with kind=reauth_required + errorCode=scope_missing", async () => {
+  it("parks the connection via parkIntegrationAtReauth (NOT recordSyncFailure) — v1.4.27 F20 + BL-P3-2 parity", async () => {
+    // BL-P3-2 — sleep mirrors activity. The deliberate scope-skip is a
+    // no-op park, not a failure burst; calling `recordSyncFailure`
+    // here would increment the counter and could trip the 3-strike
+    // admin alert ladder. Swap to `parkIntegrationAtReauth`.
     vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
       scope: "user.metrics",
     } as never);
@@ -287,18 +296,18 @@ describe("syncUserSleep — scope-skip guard (v1.4.26)", () => {
 
     await syncUserSleep("user-1");
 
-    expect(recordSyncFailure).toHaveBeenCalledTimes(1);
-    expect(recordSyncFailure).toHaveBeenCalledWith(
+    expect(parkIntegrationAtReauth).toHaveBeenCalledTimes(1);
+    expect(parkIntegrationAtReauth).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: "user-1",
         integration: "withings",
-        kind: "reauth_required",
         errorCode: "scope_missing",
       }),
     );
+    expect(recordSyncFailure).not.toHaveBeenCalled();
   });
 
-  it("treats a null scope (pre-v1.4.25 connection) as missing user.activity", async () => {
+  it("treats a null scope (pre-v1.4.25 connection) as missing user.activity and parks silently", async () => {
     vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
       scope: null,
     } as never);
@@ -309,16 +318,17 @@ describe("syncUserSleep — scope-skip guard (v1.4.26)", () => {
 
     expect(imported).toBe(0);
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(recordSyncFailure).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: "reauth_required" }),
+    expect(parkIntegrationAtReauth).toHaveBeenCalledWith(
+      expect.objectContaining({ errorCode: "scope_missing" }),
     );
+    expect(recordSyncFailure).not.toHaveBeenCalled();
   });
 
-  it("classifies a Withings 403 in the catch-block as reauth_required (defence-in-depth)", async () => {
-    // Scope claim says we're fine but the resource call 403s — the
-    // race where Withings revokes scope without invalidating the
-    // refresh token. Must park at reauth_required, not transient,
-    // so pg-boss stops retrying.
+  it("classifies a Withings 403 in the catch-block as reauth_required and STILL pages (defence-in-depth)", async () => {
+    // BL-P3-2 — symmetric to sync-activity. The catch-block stays on
+    // `recordSyncFailure` because a 403 reaching the catch IS
+    // genuinely unexpected after the scope-skip lands above. The
+    // 3-strike alert ladder fires here.
     vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
       scope: "user.metrics,user.activity",
     } as never);
@@ -339,5 +349,6 @@ describe("syncUserSleep — scope-skip guard (v1.4.26)", () => {
         errorCode: "403",
       }),
     );
+    expect(parkIntegrationAtReauth).not.toHaveBeenCalled();
   });
 });

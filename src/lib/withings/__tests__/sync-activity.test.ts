@@ -22,6 +22,7 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/integrations/status", () => ({
   isReauthRequired: vi.fn().mockResolvedValue(false),
+  parkIntegrationAtReauth: vi.fn(),
   recordSyncFailure: vi.fn(),
   recordSyncSuccess: vi.fn(),
 }));
@@ -45,7 +46,11 @@ vi.mock("@/lib/logging/context", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { recordSyncFailure, recordSyncSuccess } from "@/lib/integrations/status";
+import {
+  parkIntegrationAtReauth,
+  recordSyncFailure,
+  recordSyncSuccess,
+} from "@/lib/integrations/status";
 
 import { fetchWithingsActivity, syncUserActivity } from "../sync-activity";
 
@@ -284,7 +289,12 @@ describe("syncUserActivity — scope-skip guard (v1.4.26)", () => {
     expect(recordSyncSuccess).not.toHaveBeenCalled();
   });
 
-  it("parks the connection at error_reauth with kind=reauth_required + errorCode=scope_missing", async () => {
+  it("parks the connection via parkIntegrationAtReauth (NOT recordSyncFailure) — v1.4.27 F20", async () => {
+    // The deliberate scope-skip is a no-op park, not a failure burst.
+    // Calling `recordSyncFailure` here would increment the per-user
+    // counter and trip the 3-strike admin alert ladder. The v1.4.27
+    // fix swaps to `parkIntegrationAtReauth`, which leaves the counter
+    // untouched and never pages admins.
     vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
       scope: "user.metrics",
     } as never);
@@ -292,18 +302,20 @@ describe("syncUserActivity — scope-skip guard (v1.4.26)", () => {
 
     await syncUserActivity("user-1");
 
-    expect(recordSyncFailure).toHaveBeenCalledTimes(1);
-    expect(recordSyncFailure).toHaveBeenCalledWith(
+    expect(parkIntegrationAtReauth).toHaveBeenCalledTimes(1);
+    expect(parkIntegrationAtReauth).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: "user-1",
         integration: "withings",
-        kind: "reauth_required",
         errorCode: "scope_missing",
       }),
     );
+    // CRITICAL: the failure path is NOT touched on a scope-skip — that
+    // is what silences the false 3-strike Telegram alert.
+    expect(recordSyncFailure).not.toHaveBeenCalled();
   });
 
-  it("treats a null scope (pre-v1.4.25 connection) as missing user.activity", async () => {
+  it("treats a null scope (pre-v1.4.25 connection) as missing user.activity and parks silently", async () => {
     vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
       scope: null,
     } as never);
@@ -314,18 +326,19 @@ describe("syncUserActivity — scope-skip guard (v1.4.26)", () => {
 
     expect(imported).toBe(0);
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(recordSyncFailure).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: "reauth_required" }),
+    expect(parkIntegrationAtReauth).toHaveBeenCalledWith(
+      expect.objectContaining({ errorCode: "scope_missing" }),
     );
+    expect(recordSyncFailure).not.toHaveBeenCalled();
   });
 
-  it("classifies a Withings 403 in the catch-block as reauth_required (defence-in-depth)", async () => {
-    // The scope-skip above is the primary guard. This test covers the
-    // race where Withings revokes scope between OAuth and the next
-    // sync without invalidating the refresh token — `getValidToken`
-    // succeeds, the connection scope still claims `user.activity`,
-    // but the resource call 403s. Must park at reauth_required, not
-    // transient, so pg-boss stops retrying.
+  it("classifies a Withings 403 in the catch-block as reauth_required and STILL pages (defence-in-depth)", async () => {
+    // BL-P3-2 — the defence-in-depth 403 catch-block stays on
+    // `recordSyncFailure` so a genuinely unexpected 403 (Withings
+    // revokes scope between OAuth and the next sync without
+    // invalidating the refresh token) still trips the 3-strike alert.
+    // This is the asymmetric pair to the scope-skip park above: the
+    // park is silent, the catch is loud.
     vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
       scope: "user.metrics,user.activity",
     } as never);
@@ -346,5 +359,7 @@ describe("syncUserActivity — scope-skip guard (v1.4.26)", () => {
         errorCode: "403",
       }),
     );
+    // The park helper is NOT used for the catch — only the scope-skip.
+    expect(parkIntegrationAtReauth).not.toHaveBeenCalled();
   });
 });

@@ -45,6 +45,7 @@ import {
 import { getValidToken } from "./sync";
 import {
   isReauthRequired,
+  parkIntegrationAtReauth,
   recordSyncFailure,
   recordSyncSuccess,
 } from "@/lib/integrations/status";
@@ -173,10 +174,14 @@ export async function syncUserSleep(
     getEvent()?.addWarning(
       `withings sleep sync skipped for ${userId}: missing user.activity scope (legacy connection — reconnect required)`,
     );
-    await recordSyncFailure({
+    // v1.4.27 — silent park (BL-P3-2 parity with activity sync). The
+    // scope-skip is a deliberate no-op; the 3-strike admin alert must
+    // NOT fire from this branch. The defence-in-depth 403 catch-block
+    // below stays on `recordSyncFailure` so a genuinely unexpected 403
+    // after the scope-skip lands still pages admins.
+    await parkIntegrationAtReauth({
       userId,
       integration: "withings",
-      kind: "reauth_required",
       message:
         "Withings connection is missing the user.activity scope. Reconnect Withings in Settings to enable sleep sync.",
       errorCode: "scope_missing",
