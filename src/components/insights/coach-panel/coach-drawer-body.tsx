@@ -59,36 +59,48 @@ export function CoachDrawerBody({
       {/* Centre — message thread. */}
       <main
         data-slot="coach-drawer-thread"
-        className="relative flex h-full min-h-0 flex-col"
+        className="flex h-full min-h-0 flex-col"
       >
-        {/* v1.4.20 phase B4 — mobile rail tray triggers. Hidden on
-            `>=lg` because the rails are inline there. */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onOpenHistoryTray}
-          data-slot="coach-drawer-history-tray-trigger"
-          aria-label={t("insights.coach.historyTitle")}
-          className="bg-background/80 border-border/60 absolute top-2 left-2 z-10 h-7 gap-1 border px-2 text-[11px] backdrop-blur lg:hidden"
+        {/* v1.4.27 R3d MB2 — rail-tray triggers lifted out of the
+            absolute overlay into a sub-header strip so the chevrons
+            sit at a 44 px tap target and never overlay the first
+            message bubble. Hidden on `>=xl` because both rails are
+            inline at that breakpoint. The history trigger remains
+            visible up to lg-1 (rail is inline at lg+); the sources
+            trigger remains visible up to xl-1 (rail is inline at
+            xl+). */}
+        <div
+          data-slot="coach-drawer-rail-tray-strip"
+          className="border-border/70 flex items-center justify-between gap-2 border-b px-3 py-2 xl:hidden"
         >
-          <ChevronRight className="size-3" aria-hidden="true" />
-          {t("insights.coach.historyTitle")}
-        </Button>
-        {/* Sources tray trigger stays visible up to xl since the
-            inline sources rail is xl+ only. */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onOpenSourcesTray}
-          data-slot="coach-drawer-sources-tray-trigger"
-          aria-label={t("insights.coach.sourcesTitle")}
-          className="bg-background/80 border-border/60 absolute top-2 right-2 z-10 h-7 gap-1 border px-2 text-[11px] backdrop-blur xl:hidden"
-        >
-          {t("insights.coach.sourcesTitle")}
-          <ChevronLeft className="size-3" aria-hidden="true" />
-        </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onOpenHistoryTray}
+            data-slot="coach-drawer-history-tray-trigger"
+            aria-label={t("insights.coach.historyTitle")}
+            className="min-h-11 gap-1.5 text-xs lg:hidden"
+          >
+            <ChevronRight className="size-4" aria-hidden="true" />
+            {t("insights.coach.historyTitle")}
+          </Button>
+          {/* Sources tray trigger stays visible up to xl since the
+              inline sources rail is xl+ only. The empty `<span>` to
+              the left keeps the right-aligned button placement when
+              the history trigger hides at lg+. */}
+          <span aria-hidden="true" className="hidden lg:block" />
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onOpenSourcesTray}
+            data-slot="coach-drawer-sources-tray-trigger"
+            aria-label={t("insights.coach.sourcesTitle")}
+            className="min-h-11 gap-1.5 text-xs"
+          >
+            {t("insights.coach.sourcesTitle")}
+            <ChevronLeft className="size-4" aria-hidden="true" />
+          </Button>
+        </div>
 
         <div className="min-h-0 flex-1">{thread}</div>
         {/* Composer pinned to the bottom. */}

@@ -138,6 +138,12 @@ export function HistoryRail({
                     {formatRelativeTime(c.updatedAt, t)}
                   </span>
                 </button>
+                {/* v1.4.27 R3d MB2 — drop the hover-only `opacity-0`
+                    reveal: touch surfaces have no hover, so the delete
+                    affordance was invisible on mobile. The button now
+                    sits at 44 px always-visible per the WCAG 2.5.5
+                    floor; confirming state stays styled via the
+                    `data-confirming` attribute. */}
                 <Button
                   type="button"
                   variant="ghost"
@@ -151,12 +157,12 @@ export function HistoryRail({
                   data-slot="coach-history-delete"
                   data-confirming={isConfirming ? "true" : undefined}
                   className={cn(
-                    "size-6 shrink-0 opacity-0 transition-opacity group-hover:opacity-100",
+                    "size-11 shrink-0",
                     isConfirming &&
-                      "text-dracula-red hover:text-dracula-red opacity-100",
+                      "text-dracula-red hover:text-dracula-red",
                   )}
                 >
-                  <Trash2 className="size-3.5" aria-hidden="true" />
+                  <Trash2 className="size-4" aria-hidden="true" />
                 </Button>
               </div>
             );

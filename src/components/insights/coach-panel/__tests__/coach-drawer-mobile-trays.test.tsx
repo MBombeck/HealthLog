@@ -41,18 +41,22 @@ describe("<CoachDrawerBody> — mobile rail trays", () => {
   });
 
   it("hides the history trigger on >=lg and the sources trigger on >=xl", () => {
+    // v1.4.27 R3d MB2 — the strip wrapper carries `xl:hidden` so the
+    // sources trigger inherits the breakpoint; the history trigger
+    // keeps its own `lg:hidden` because the history rail mounts
+    // inline already on lg+ while the sources rail still needs the
+    // chevron until xl.
     const html = render(<CoachDrawerBody {...baseProps} />);
+    const strip = html.match(
+      /<div[^>]*data-slot="coach-drawer-rail-tray-strip"[^>]*>/,
+    );
+    expect(strip?.[0]).toContain("xl:hidden");
+
     const historyTrigger = html.match(
       /<button[^>]*data-slot="coach-drawer-history-tray-trigger"[^>]*>/,
     );
     expect(historyTrigger).not.toBeNull();
     expect(historyTrigger?.[0]).toContain("lg:hidden");
-
-    const sourcesTrigger = html.match(
-      /<button[^>]*data-slot="coach-drawer-sources-tray-trigger"[^>]*>/,
-    );
-    expect(sourcesTrigger).not.toBeNull();
-    expect(sourcesTrigger?.[0]).toContain("xl:hidden");
   });
 
   it("renders the desktop history rail (lg+) and sources rail (xl+)", () => {
@@ -95,12 +99,16 @@ describe("<CoachDrawerBody> — mobile rail trays", () => {
     expect(html).toContain("Worauf ich zugreife");
   });
 
-  it("the thread region wraps the rail triggers in a relative container", () => {
-    // The triggers use absolute positioning; the thread region must
-    // be `relative` for them to anchor inside it.
+  it("renders the rail triggers in a sub-header strip above the thread", () => {
+    // v1.4.27 R3d MB2 — the triggers were lifted out of the absolute
+    // overlay into a sub-header strip so the chevrons sit at a 44 px
+    // tap target and never overlay the first message bubble. The
+    // strip lives above the thread within the centre column.
     const html = render(<CoachDrawerBody {...baseProps} />);
-    expect(html).toMatch(
-      /<main[^>]*data-slot="coach-drawer-thread"[^>]*relative/,
+    expect(html).toMatch(/data-slot="coach-drawer-rail-tray-strip"/);
+    const trigger = html.match(
+      /<button[^>]*data-slot="coach-drawer-history-tray-trigger"[^>]*>/,
     );
+    expect(trigger?.[0]).toContain("min-h-11");
   });
 });
