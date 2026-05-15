@@ -272,10 +272,15 @@ export function TrendCard({
           all-time + comparison-delta into a single line that stays
           scannable on Galaxy Fold (280 px) and Pixel 5 (375 px). The
           full layout returns at `>=sm`. */}
+      {/* v1.4.27 MB7 / CF-41 — the `hidden sm:block` gate retired
+          because the mobile-secondary block below is gone (CF-67
+          vestigial wrapper drop). The callout paints on every
+          viewport; when the parent grid is tight on `<sm`, the
+          flex-wrap on the sibling row + this callout's `mt-1`
+          horizontal-row layout absorb the overflow without crowding
+          the headline value above. */}
       {compareBaseline !== "none" && compareDelta != null && (
-        <div
-          className={cn("mt-1", avgAllTime !== undefined && "hidden sm:block")}
-        >
+        <div className="mt-1">
           <span
             className={cn(
               "inline-block max-w-full text-xs leading-snug font-medium [overflow-wrap:anywhere] tabular-nums",
@@ -374,14 +379,18 @@ export function TrendCard({
               to last-30 days). Other tiles leave `avgAllTime` undefined so
               the third sub-row never renders.
 
-              v1.4.22 W5 reconcile (Design-H2) — full label only at
-              `>=sm`; on `<sm` the all-time number moves to the
-              combined secondary row below so the tile keeps the same
-              vertical density as every other trend card. */}
+              v1.4.27 MB7 / CF-41 — the third sub-value renders inline
+              alongside `7d` / `30d` on every viewport. The previous
+              wave split `<sm` into a separate secondary row to keep
+              tile heights uniform, but in practice the flex-wrap on
+              the parent already handles the overflow gracefully — the
+              all-time pair wraps to a second line when the first row
+              fills up. Dropping the duplicated mobile-secondary block
+              also dropped CF-67 (the vestigial wrapper). */}
           {avgAllTime !== undefined && (
             <span
               data-slot="trend-card-all-time"
-              className="hidden max-w-full min-w-0 [overflow-wrap:anywhere] sm:inline"
+              className="max-w-full min-w-0 [overflow-wrap:anywhere]"
             >
               {t(avgAllTimeLabelKey)}:{" "}
               <span
@@ -395,48 +404,6 @@ export function TrendCard({
             </span>
           )}
         </div>
-        {/* v1.4.22 W5 reconcile (Design-H2) — combined secondary row
-            for `<sm` viewports. Renders the all-time aggregate AND
-            (when comparison is on) the comparison delta on a single
-            line: "All-time 11% · vs −0.4 last month". Disappears at
-            `>=sm` because the full layout above takes over. */}
-        {avgAllTime !== undefined && (
-          <div
-            data-slot="trend-card-secondary-mobile"
-            className="text-muted-foreground mt-1 min-w-0 text-xs leading-snug [overflow-wrap:anywhere] sm:hidden"
-          >
-            <span>
-              {t(avgAllTimeLabelKey)}:{" "}
-              <span
-                className={cn(
-                  "font-medium [overflow-wrap:anywhere] tabular-nums",
-                  avgAllTimeColorClass,
-                )}
-              >
-                {avgAllTime !== null ? formatValue(avgAllTime) : "—"}
-              </span>
-            </span>
-            {compareBaseline !== "none" && compareDelta != null && (
-              <>
-                <span aria-hidden="true"> · </span>
-                <span
-                  className={cn(
-                    "font-medium [overflow-wrap:anywhere] tabular-nums",
-                    comparisonDeltaColor,
-                  )}
-                  data-slot="tile-compare-delta-mobile"
-                  data-compare-baseline={compareBaseline}
-                >
-                  {`Δ ${formatDelta(compareDelta)}${unit ? ` ${unit}` : ""} ${t(
-                    compareBaseline === "lastMonth"
-                      ? "comparison.captionLastMonth"
-                      : "comparison.captionLastYear",
-                  )}`}
-                </span>
-              </>
-            )}
-          </div>
-        )}
       </TooltipProvider>
     </div>
   );

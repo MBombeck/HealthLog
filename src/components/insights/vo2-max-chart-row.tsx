@@ -135,10 +135,15 @@ export function Vo2MaxChartRow({
         <p className="text-muted-foreground text-xs">{unit}</p>
       </div>
 
-      {/* Stat strip — latest / min / max / avg30 / Δ vs. prior period. */}
+      {/* Stat strip — latest / min / max / avg30 / Δ vs. prior period.
+          v1.4.27 MB7 / CF-38 — extend the 2-column phone grid all the
+          way to `<lg` so tablets keep the 2×2 layout (avoids
+          mid-viewport reflows on Pixel Fold) and lift each cell to a
+          `min-h-[64px]` floor so the chips paint at consistent
+          heights even when one stat has no trend arrow. */}
       <div
         data-slot="vo2-chart-row-stats"
-        className="bg-card border-border grid grid-cols-2 gap-3 rounded-xl border p-4 sm:grid-cols-4"
+        className="bg-card border-border grid grid-cols-2 gap-3 rounded-xl border p-4 lg:grid-cols-4 [&>div]:min-h-[64px]"
       >
         <div data-slot="vo2-stat" data-stat="latest" className="space-y-1">
           <p className="text-muted-foreground text-xs uppercase tracking-wide">
