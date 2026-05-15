@@ -321,6 +321,46 @@ describe("<Glp1Tile>", () => {
     );
   });
 
+  it("v1.4.27 B1 — promotes the schedule to a pill row and drops the green seam", () => {
+    queryReturn = {
+      data: {
+        active: true,
+        medications: [
+          {
+            name: "Mounjaro",
+            genericName: "tirzepatide",
+            medicationId: "med-1",
+            currentDose: {
+              value: 7.5,
+              unit: "mg",
+              since: "2026-04-01",
+              weeksOnDose: 6,
+            },
+            doseHistory: [],
+            lastInjection: { date: "2026-05-10", site: null, weeksAgo: 0 },
+            nextInjection: { date: "2026-05-17", daysAway: 3 },
+            startWeight: 92.0,
+            currentWeight: 87.8,
+            weightDeltaKg: -4.2,
+            weightSeries: [{ date: "2026-05-13", weight: 87.8 }],
+            injectionDates: ["2026-05-10"],
+          },
+        ],
+      },
+      isPending: false,
+    };
+    const html = render();
+    // Schedule wrapper is the new pill row, not the old <dl>.
+    expect(html).toContain('data-slot="glp1-tile-schedule"');
+    expect(html).not.toContain("<dl");
+    // Pills still carry the per-pill slot anchors the existing tests use.
+    expect(html).toContain('data-slot="glp1-tile-last"');
+    expect(html).toContain('data-slot="glp1-tile-next"');
+    // The green left-seam classes drop from the outer wrapper.
+    expect(html).not.toContain("border-l-dracula-green/60");
+    expect(html).not.toContain("border-l-2");
+  });
+
   it("v1.4.27 B1 — surfaces the level-unavailable hint when no medicationId is wired", () => {
     // Some legacy meds don't have a Medication.id surfaced through the
     // dashboard route (the route returns medicationId: null). The

@@ -246,11 +246,12 @@ export function Glp1Tile() {
       data-medication-id={med.medicationId ?? ""}
       className={cn(
         "bg-card/65 relative overflow-hidden rounded-xl border px-4 py-4 shadow-sm backdrop-blur-sm",
-        // A faint green seam on the left edge so the tile reads as
-        // "active therapy" at a glance without needing to read the
-        // header. The same green is used for the injection-day markers
-        // below — visual consistency across the tile.
-        "border-l-dracula-green/60 border-l-2",
+        // v1.4.27 B1 — the green left-seam drops. The Syringe-icon in
+        // the title row already carries the "active therapy" signal;
+        // the seam was decoration without a semantic tie to the
+        // schedule dates next to it. The schedule pill row below now
+        // groups the two dates visually so the user reads them as one
+        // cohesive unit.
       )}
     >
       <div className="flex items-center gap-2 pb-3">
@@ -280,43 +281,53 @@ export function Glp1Tile() {
         )}
       </div>
 
-      <dl className="text-muted-foreground grid grid-cols-1 gap-y-1 pb-3 text-xs sm:grid-cols-2 sm:gap-x-4">
-        {med.lastInjection && (
-          <div className="flex items-center gap-1.5">
-            <Calendar className="h-3 w-3 shrink-0" aria-hidden="true" />
-            <dt className="font-medium">
-              {t("dashboard.glp1.lastInjection")}:
-            </dt>
-            <dd
+      {/* v1.4.27 B1 — schedule pill row promotes the two injection
+          dates to a header band. Pills carry a soft dracula-green tint
+          so the two dates read as one cohesive "therapy schedule"
+          unit; the old <dl> grid + arbitrary green seam are gone. */}
+      {(med.lastInjection || med.nextInjection) && (
+        <div
+          data-slot="glp1-tile-schedule"
+          className="flex flex-wrap items-center gap-1.5 pb-3 text-xs"
+        >
+          {med.lastInjection && (
+            <span
               data-slot="glp1-tile-last"
-              className="text-foreground tabular-nums"
+              className="border-dracula-green/30 bg-dracula-green/10 text-foreground inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 tabular-nums"
             >
-              {dateWithWeekday(med.lastInjection.date)}
-            </dd>
-          </div>
-        )}
-        {med.nextInjection && (
-          <div className="flex items-center gap-1.5">
-            <Syringe className="h-3 w-3 shrink-0" aria-hidden="true" />
-            <dt className="font-medium">
-              {t("dashboard.glp1.nextInjection")}:
-            </dt>
-            <dd
+              <Calendar
+                className="text-dracula-green/80 h-3 w-3 shrink-0"
+                aria-hidden="true"
+              />
+              <span className="text-muted-foreground font-medium">
+                {t("dashboard.glp1.lastInjection")}:
+              </span>
+              <span>{dateWithWeekday(med.lastInjection.date)}</span>
+            </span>
+          )}
+          {med.nextInjection && (
+            <span
               data-slot="glp1-tile-next"
-              className="text-foreground tabular-nums"
+              className="border-dracula-green/30 bg-dracula-green/10 text-foreground inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 tabular-nums"
             >
-              {dateWithWeekday(med.nextInjection.date)}
-              <span className="text-muted-foreground ml-1">
-                (
+              <Syringe
+                className="text-dracula-green/80 h-3 w-3 shrink-0"
+                aria-hidden="true"
+              />
+              <span className="text-muted-foreground font-medium">
+                {t("dashboard.glp1.nextInjection")}:
+              </span>
+              <span>{dateWithWeekday(med.nextInjection.date)}</span>
+              <span className="text-muted-foreground">
+                ·{" "}
                 {t("dashboard.glp1.inDays", {
                   count: med.nextInjection.daysAway,
                 })}
-                )
               </span>
-            </dd>
-          </div>
-        )}
-      </dl>
+            </span>
+          )}
+        </div>
+      )}
 
       {/* v1.4.27 B1 — chart pane carrying a two-tab segmented control
           (Drug-Level default / Weight) plus a 7d / 30d / 90d / All
