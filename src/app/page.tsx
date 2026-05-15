@@ -28,6 +28,7 @@ import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
+import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import {
   DropdownMenu,
@@ -44,13 +45,6 @@ import { GettingStartedChecklist } from "@/components/onboarding/getting-started
 import { TourLauncher } from "@/components/onboarding/tour-launcher";
 import { RecentAchievementsCard } from "@/components/gamification/recent-achievements-card";
 
-const HealthChart = dynamic(
-  () =>
-    import("@/components/charts/health-chart").then((mod) => ({
-      default: mod.HealthChart,
-    })),
-  { ssr: false, loading: () => <ChartSkeleton /> },
-);
 const MoodChart = dynamic(
   () =>
     import("@/components/charts/mood-chart").then((mod) => ({
@@ -959,7 +953,7 @@ export default function DashboardPage() {
             order: widgetOrder("weight"),
             count: w?.count ?? 0,
             node: (
-              <HealthChart
+              <HealthChartDynamic
                 key="weight-chart"
                 chartKey="weight"
                 types={["WEIGHT"]}
@@ -977,7 +971,7 @@ export default function DashboardPage() {
               id: "bmi-chart",
               order: widgetOrder("weight") + 0.5,
               node: (
-                <HealthChart
+                <HealthChartDynamic
                   key="bmi-chart"
                   chartKey="bmi"
                   types={["WEIGHT"]}
@@ -1004,7 +998,7 @@ export default function DashboardPage() {
             order: widgetOrder("bp"),
             count: Math.max(sys?.count ?? 0, dia?.count ?? 0),
             node: (
-              <HealthChart
+              <HealthChartDynamic
                 key="bp-chart"
                 chartKey="bp"
                 types={["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"]}
@@ -1025,7 +1019,7 @@ export default function DashboardPage() {
             order: widgetOrder("pulse"),
             count: p?.count ?? 0,
             node: (
-              <HealthChart
+              <HealthChartDynamic
                 key="pulse-chart"
                 chartKey="pulse"
                 types={["PULSE"]}
@@ -1045,7 +1039,7 @@ export default function DashboardPage() {
             order: widgetOrder("bodyFat"),
             count: bf?.count ?? 0,
             node: (
-              <HealthChart
+              <HealthChartDynamic
                 key="bodyFat-chart"
                 chartKey="bodyFat"
                 types={["BODY_FAT"]}
@@ -1080,7 +1074,7 @@ export default function DashboardPage() {
             order: widgetOrder("sleep"),
             count: sleepSummary?.count ?? 0,
             node: (
-              <HealthChart
+              <HealthChartDynamic
                 key="sleep-chart"
                 chartKey="sleep"
                 types={["SLEEP_DURATION"]}
@@ -1099,7 +1093,7 @@ export default function DashboardPage() {
             order: widgetOrder("steps"),
             count: stepsSummary?.count ?? 0,
             node: (
-              <HealthChart
+              <HealthChartDynamic
                 key="steps-chart"
                 chartKey="steps"
                 types={["ACTIVITY_STEPS"]}

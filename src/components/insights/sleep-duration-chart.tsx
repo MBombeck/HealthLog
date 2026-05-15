@@ -1,16 +1,14 @@
 "use client";
 
-import dynamic from "next/dynamic";
-
-import { ChartSkeleton } from "@/components/charts/chart-skeleton";
+import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 import { useTranslations } from "@/lib/i18n/context";
 import type { ComparisonBaseline } from "@/lib/dashboard-layout";
 
 /**
  * v1.4.25 W4c — total nightly sleep duration over time.
  *
- * Thin wrapper around `<HealthChart>` so the sleep sub-page gets the
- * same chart-cog parity (`chartKey="sleep"`) as the dashboard chart
+ * Thin wrapper around `<HealthChartDynamic>` so the sleep sub-page gets
+ * the same chart-cog parity (`chartKey="sleep"`) as the dashboard chart
  * surfaces. SLEEP_DURATION rows from Apple Health are per-stage (one
  * row per stage per night) — the analytics API aggregates per Berlin
  * day before summarising, and `HealthChart` itself relies on the
@@ -21,15 +19,11 @@ import type { ComparisonBaseline } from "@/lib/dashboard-layout";
  * (v1.4.23 schema note). The chart shows the raw minutes value with a
  * "min" unit suffix — the parent sub-page renders a separate
  * "X h Y min" headline above the chart for the human-friendly read.
+ *
+ * v1.4.28 R3d (BK-F-M2) — the inline `dynamic()` call site was retired
+ * in favour of the shared `<HealthChartDynamic>` re-export so the
+ * `<ChartSkeleton>` + `ssr: false` configuration stays in one place.
  */
-const HealthChart = dynamic(
-  () =>
-    import("@/components/charts/health-chart").then((mod) => ({
-      default: mod.HealthChart,
-    })),
-  { ssr: false, loading: () => <ChartSkeleton /> },
-);
-
 export interface SleepDurationChartProps {
   compareBaseline?: ComparisonBaseline;
   userTimezone?: string;
@@ -41,7 +35,7 @@ export function SleepDurationChart({
 }: SleepDurationChartProps) {
   const { t } = useTranslations();
   return (
-    <HealthChart
+    <HealthChartDynamic
       chartKey="sleep"
       types={["SLEEP_DURATION"]}
       title={t("charts.sleep")}

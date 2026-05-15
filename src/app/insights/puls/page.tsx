@@ -1,7 +1,6 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 
@@ -11,7 +10,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ChartSkeleton } from "@/components/charts/chart-skeleton";
+import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 import { CoachLaunchButton } from "@/components/insights/coach-launch-button";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
@@ -33,14 +32,6 @@ import { hasMetricData } from "@/lib/insights/metric-availability";
  * MeasurementType filter is `PULSE` (the same field used elsewhere
  * in the codebase).
  */
-const HealthChart = dynamic(
-  () =>
-    import("@/components/charts/health-chart").then((mod) => ({
-      default: mod.HealthChart,
-    })),
-  { ssr: false, loading: () => <ChartSkeleton /> },
-);
-
 interface AnalyticsData {
   summaries: Record<string, DataSummary>;
 }
@@ -140,7 +131,7 @@ export default function InsightsPulsPage() {
       title={t("insights.pulseSectionTitle")}
       description={t("insights.subPage.pulsDescription")}
     >
-      <HealthChart
+      <HealthChartDynamic
         chartKey="pulse"
         types={["PULSE"]}
         title={t("charts.pulse")}

@@ -1,7 +1,6 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { HeartPulse } from "lucide-react";
 
@@ -11,7 +10,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ChartSkeleton } from "@/components/charts/chart-skeleton";
+import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 import { CoachLaunchButton } from "@/components/insights/coach-launch-button";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
@@ -38,14 +37,6 @@ import { hasMetricData } from "@/lib/insights/metric-availability";
 interface AnalyticsData {
   summaries: Record<string, DataSummary>;
 }
-const HealthChart = dynamic(
-  () =>
-    import("@/components/charts/health-chart").then((mod) => ({
-      default: mod.HealthChart,
-    })),
-  { ssr: false, loading: () => <ChartSkeleton /> },
-);
-
 export default function InsightsBlutdruckPage() {
   const { isAuthenticated, user } = useAuth();
   const { t } = useTranslations();
@@ -127,7 +118,7 @@ export default function InsightsBlutdruckPage() {
       title={t("insights.bloodPressureSectionTitle")}
       description={t("insights.subPage.blutdruckDescription")}
     >
-      <HealthChart
+      <HealthChartDynamic
         chartKey="bp"
         types={["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"]}
         title={t("charts.bloodPressure")}
