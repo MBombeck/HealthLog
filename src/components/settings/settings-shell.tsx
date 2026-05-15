@@ -214,8 +214,12 @@ export function SettingsShell({ active, children }: SettingsShellProps) {
           </div>
         </aside>
 
-        {/* Main column — page renders its own h1 + subtitle */}
-        <main className="min-w-0">{children}</main>
+        {/* Main column — page renders its own h1 + subtitle. The
+            `min-h-[calc(100dvh-12rem)]` reserve keeps the column tall
+            enough that swapping a short loading state for a long
+            section list (Thresholds, Sources) does not jump the page
+            height under the sticky sidebar. */}
+        <main className="min-h-[calc(100dvh-12rem)] min-w-0">{children}</main>
       </div>
     </div>
   );

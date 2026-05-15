@@ -263,8 +263,12 @@ export function AdminShell({ active, children }: AdminShellProps) {
           </div>
         </aside>
 
-        {/* Main column — page renders its own h1 + subtitle */}
-        <main className="min-w-0">{children}</main>
+        {/* Main column — page renders its own h1 + subtitle. Same
+            `min-h-[calc(100dvh-12rem)]` reserve as `<SettingsShell>`
+            so navigating between admin sub-pages (e.g. system-status
+            → login-overview) does not jump the page height while the
+            new section is still fetching. */}
+        <main className="min-h-[calc(100dvh-12rem)] min-w-0">{children}</main>
       </div>
     </div>
   );
