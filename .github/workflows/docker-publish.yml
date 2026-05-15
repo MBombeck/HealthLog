@@ -101,20 +101,28 @@ jobs:
       # v1.4.27 B3 — GeoLite2-City + GeoLite2-ASN databases are too large
       # (~80 MB combined) to vendor in git. `scripts/fetch-geolite2.sh`
       # downloads both editions into `assets/geolite2/` so the Dockerfile
-      # COPY at line 78 picks them up. Without the secret the script
-      # would silently exit 0, the COPY would land an empty directory,
-      # and the runtime resolver in `src/lib/geo.ts` would fall back to
-      # the online `ipwho.is` provider — i.e. the offline geo feature
-      # would ship dead. Fail fast instead so the missing-secret state
-      # is visible on the next release run, the same shape the Coolify
-      # auto-deploy step (line 246) adopted in v1.4.26 P6-3.
+      # COPY at line 78 picks them up.
+      #
+      # The build is intentionally resilient to a missing
+      # `MAXMIND_LICENSE_KEY` secret: when the key is unset we emit a
+      # `::warning::` line, drop a `.empty` marker into the assets
+      # directory so the Dockerfile COPY still has a non-empty source,
+      # and continue cleanly. The runtime resolver in `src/lib/geo.ts`
+      # detects the marker on first lookup and emits a one-shot
+      # admin notification — the maintainer hears about the gap from
+      # the running app rather than from a red CI badge that blocks
+      # every release. To enable the offline feature, set the secret
+      # under repo Settings → Secrets and variables → Actions and
+      # redeploy.
       - name: Fetch GeoLite2 databases
         env:
           MAXMIND_LICENSE_KEY: ${{ secrets.MAXMIND_LICENSE_KEY }}
         run: |
           if [ -z "$MAXMIND_LICENSE_KEY" ]; then
-            echo "::error::MAXMIND_LICENSE_KEY secret is missing. Set it under repo Settings → Secrets and variables → Actions → Secrets so the offline GeoLite2 databases land in the image. Without it the runtime resolver falls back to the online ipwho.is provider and the offline geo feature ships dead."
-            exit 1
+            echo "::warning::MAXMIND_LICENSE_KEY secret is unset. The image will ship without the offline GeoLite2 databases; the runtime resolver continues to fall back to the online ipwho.is provider and will send a one-shot admin notification on first use. To enable the offline tier, set MAXMIND_LICENSE_KEY under repo Settings → Secrets and variables → Actions."
+            mkdir -p assets/geolite2
+            touch assets/geolite2/.empty
+            exit 0
           fi
           ./scripts/fetch-geolite2.sh
 

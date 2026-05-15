@@ -8,10 +8,12 @@
 #
 # The MaxMind GeoLite2 databases require a free MaxMind account and
 # a licence key. The key is taken from the `MAXMIND_LICENSE_KEY`
-# environment variable. Without the key, the script exits 0 and the
-# Docker image builds without the offline databases — the runtime
-# resolver in `src/lib/geo.ts` falls back to the online `ipwho.is`
-# provider, which is the v1.4.26 behaviour.
+# environment variable. Without the key, the script writes an `.empty`
+# marker into the output directory and exits 0 — the Docker image
+# still builds (the COPY in `Dockerfile` has a non-empty source) and
+# the runtime resolver in `src/lib/geo.ts` detects the marker, falls
+# back to the online `ipwho.is` provider, and emits a one-shot admin
+# notification so the maintainer can wire the secret when convenient.
 #
 # Licence: the databases are distributed under
 # Creative Commons Attribution-ShareAlike 4.0
@@ -32,10 +34,16 @@ LICENSE_KEY="${MAXMIND_LICENSE_KEY:-}"
 if [[ -z "$LICENSE_KEY" ]]; then
   echo "fetch-geolite2: MAXMIND_LICENSE_KEY is not set — skipping download." >&2
   echo "fetch-geolite2: the runtime resolver will fall back to ipwho.is." >&2
+  mkdir -p "$OUT_DIR"
+  touch "$OUT_DIR/.empty"
   exit 0
 fi
 
 mkdir -p "$OUT_DIR"
+# Clear any stale marker from a previous keyless run so the runtime
+# resolver does not mistake a freshly populated directory for the
+# fallback state.
+rm -f "$OUT_DIR/.empty"
 
 fetch_edition() {
   local edition_id="$1"
