@@ -8,14 +8,17 @@ import { useTranslations } from "@/lib/i18n/context";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
 
 /**
- * v1.4.27 R3d MB4 — Coach launch button.
+ * Inline desktop Coach launch button.
  *
- * Decision F: every routed Insights sub-page mounts this button so the
- * Coach drawer (mounted at the layout root) is always reachable. The
- * button renders as a sticky-bottom FAB on `<lg` viewports (so a phone
- * user always sees it within thumb range) and as an inline header
- * action on `lg+` (where the desktop drawer slides in from the right
- * edge and the FAB would overlap the chart legend).
+ * v1.4.28 R3c — the legacy implementation rendered BOTH a sticky FAB
+ * (visible `<lg`) and the inline pill (`lg+`) from the same component.
+ * Every sub-page that mounted `<CoachLaunchButton>` therefore painted a
+ * second FAB into the DOM, collapsing to one visible button only
+ * because of `fixed` positioning — the duplicates still landed in the
+ * a11y tree. The FAB now lives once at the layout level (see
+ * `<LayoutCoachFab>` in `src/app/insights/layout.tsx`); this component
+ * keeps only the inline `lg+` pill that sub-pages mount inside their
+ * action rows.
  *
  * The button is a thin wrapper around `useCoachLaunch()` — it only
  * renders when the context provider is mounted (so dropping the button
@@ -46,48 +49,24 @@ export function CoachLaunchButton({
 
   const accessibleLabel = label ?? t("insights.heroActionAskCoach");
 
+  // Inline header-style action on `lg+`. Hidden below `lg` because the
+  // layout-level FAB (`<LayoutCoachFab>`) covers that breakpoint —
+  // mounting both at the same time would put two affordances in front
+  // of the user.
   return (
-    <>
-      {/* Sticky FAB on `<lg` viewports — pinned to the bottom-right so
-          the user's thumb always finds it. `bottom-20` clears the
-          mobile bottom navigation; `safe-area-inset-bottom` plus the
-          existing app shell padding keep it clear of the iOS home bar.
-          Hidden on `lg+` where the inline button below takes over. */}
-      <Button
-        type="button"
-        size="lg"
-        data-slot="coach-launch-fab"
-        onClick={() => launch.askCoach(prefill ?? null)}
-        aria-label={accessibleLabel}
-        title={accessibleLabel}
-        className={cn(
-          "fixed right-4 bottom-20 z-40 h-12 rounded-full px-4 shadow-lg",
-          "from-dracula-purple to-dracula-pink bg-gradient-to-br text-white",
-          "hover:from-dracula-purple/90 hover:to-dracula-pink/90",
-          "lg:hidden",
-          className,
-        )}
-      >
-        <Sparkles className="size-4" aria-hidden="true" />
-        <span>{accessibleLabel}</span>
-      </Button>
-      {/* Inline header-style action on `lg+`. Lives in the page body so
-          it picks up the sub-page layout's spacing instead of fighting
-          a sticky header overlay. */}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        data-slot="coach-launch-inline"
-        onClick={() => launch.askCoach(prefill ?? null)}
-        className={cn(
-          "hidden h-10 gap-2 self-end lg:inline-flex",
-          className,
-        )}
-      >
-        <Sparkles className="size-4" aria-hidden="true" />
-        <span>{accessibleLabel}</span>
-      </Button>
-    </>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      data-slot="coach-launch-inline"
+      onClick={() => launch.askCoach(prefill ?? null)}
+      className={cn(
+        "hidden h-10 gap-2 self-end lg:inline-flex",
+        className,
+      )}
+    >
+      <Sparkles className="size-4" aria-hidden="true" />
+      <span>{accessibleLabel}</span>
+    </Button>
   );
 }

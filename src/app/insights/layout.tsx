@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { InsightsLayoutShell } from "@/components/insights/insights-layout-shell";
+import { LayoutCoachFab } from "@/components/insights/layout-coach-fab";
 import { LayoutCoachMount } from "@/components/insights/layout-coach-mount";
 import { CoachLaunchProvider } from "@/lib/insights/coach-launch-context";
 
@@ -20,11 +21,18 @@ import { CoachLaunchProvider } from "@/lib/insights/coach-launch-context";
  * strip + suggested-prompt chips. Decision F (audit MA3) drove the
  * promotion: a mobile user who navigates from `/insights` to
  * `/insights/blutdruck` keeps a one-tap path back into the Coach.
+ *
+ * v1.4.28 R3c — the mobile FAB now also lives here via
+ * `<LayoutCoachFab>` (carved out of `<CoachLaunchButton>` so each sub-
+ * page mount no longer duplicates the FAB into the a11y tree). The
+ * inline `<CoachLaunchButton>` pill stays on the per-page action rows
+ * where copy + position matter.
  */
 export default function InsightsLayout({ children }: { children: ReactNode }) {
   return (
     <CoachLaunchProvider>
       <InsightsLayoutShell>{children}</InsightsLayoutShell>
+      <LayoutCoachFab />
       <LayoutCoachMount />
     </CoachLaunchProvider>
   );
