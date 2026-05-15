@@ -122,6 +122,9 @@ const REQUIRED_KEY_SETS: Array<{
       "notifications.admin.reminderCheckMissedBody",
       "notifications.admin.reminderCheckOverdueTitle",
       "notifications.admin.reminderCheckOverdueBody",
+      // v1.4.27 R5 — offline-geo fallback notifications.
+      "notifications.admin.offlineGeoUnavailableTitle",
+      "notifications.admin.offlineGeoUnavailableBody",
     ],
   },
   {

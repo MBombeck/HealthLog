@@ -48,6 +48,14 @@
  * The previous path lost umlauts in production for at least one
  * maintainer-flagged login row that rendered as "Nrnberg" in
  * /admin/login-overview — see `docs/audit/v1416-summary.md`.
+ *
+ * v1.4.27 R5: the build no longer hard-fails on a missing
+ * `MAXMIND_LICENSE_KEY` secret — the CI workflow drops an `.empty`
+ * marker into the geo asset directory when the key is unset.
+ * `offlineGeoReady()` is the canonical check used by `/api/version`
+ * and the admin status surface, and the lookup paths fire a one-shot
+ * admin notification on the first fallback so the maintainer hears
+ * about the gap from the running app.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -56,6 +64,7 @@ import type {
   AsnResponse,
   CityResponse,
 } from "mmdb-lib/lib/reader/response";
+import { getEvent } from "@/lib/logging/context";
 
 interface IpwhoIsResponse {
   success?: boolean;
@@ -133,6 +142,78 @@ function getAsnReader(): MmdbReader<AsnResponse> | null {
 export function __resetGeoLite2CacheForTests(): void {
   cache.city = undefined;
   cache.asn = undefined;
+  notifiedThisProcess = false;
+}
+
+// ── Offline readiness + one-shot admin notification ─────────────────
+//
+// The CI workflow drops an `.empty` marker into the geo asset directory
+// when the maintainer has not configured `MAXMIND_LICENSE_KEY`, in
+// which case the City + ASN MMDBs are absent and every lookup hits the
+// online fallback. `offlineGeoReady()` is the canonical truth used by
+// `/api/version` and the admin status surface so the two paths cannot
+// disagree.
+//
+// `notifiedThisProcess` is a module-level latch so the admin only
+// receives the "offline geo is disabled" notification once per worker
+// boot — every subsequent fallback hit is silent. Test-only reset is
+// folded into the cache reset above.
+
+let notifiedThisProcess = false;
+
+export function offlineGeoReady(): boolean {
+  try {
+    const dir = geoLiteDir();
+    if (fs.existsSync(path.join(dir, ".empty"))) return false;
+    return fs.existsSync(path.join(dir, "GeoLite2-City.mmdb"));
+  } catch {
+    return false;
+  }
+}
+
+async function notifyOfflineGeoUnavailable(): Promise<void> {
+  if (notifiedThisProcess) return;
+  notifiedThisProcess = true;
+  // Defer the resolve so we don't pay the cost of pulling the
+  // Prisma client into the import graph until the first fallback —
+  // most calls are cache hits or private-IP short-circuits.
+  try {
+    const [{ prisma }, { dispatchLocalisedNotification }] = await Promise.all([
+      import("@/lib/db"),
+      import("@/lib/notifications/dispatch-localised"),
+    ]);
+    const admins = await prisma.user.findMany({
+      where: { role: "ADMIN" },
+      select: { id: true },
+    });
+    if (admins.length === 0) {
+      getEvent()?.addWarning(
+        "geo: offline databases unavailable, no admin user configured to notify",
+      );
+      return;
+    }
+    getEvent()?.addWarning(
+      "geo: offline databases unavailable, falling back to ipwho.is — notifying admins",
+    );
+    for (const admin of admins) {
+      await dispatchLocalisedNotification({
+        userId: admin.id,
+        titleKey: "notifications.admin.offlineGeoUnavailableTitle",
+        messageKey: "notifications.admin.offlineGeoUnavailableBody",
+        params: {
+          secretsUrl:
+            "https://github.com/MBombeck/HealthLog/settings/secrets/actions",
+        },
+        metadata: { source: "geo-offline-detection" },
+      });
+    }
+  } catch (err) {
+    // Never let a notification failure propagate — the auth-audit
+    // caller is fire-and-forget.
+    getEvent()?.addWarning(
+      `geo: offline-geo notification failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
 }
 
 /**
@@ -244,6 +325,14 @@ export async function lookupIpLocation(
   const offline = lookupIpLocationOffline(ip);
   if (offline) return offline;
 
+  // First public-IP lookup that has to leave the offline tier — if the
+  // offline DBs are missing entirely, send the one-shot admin alert so
+  // the maintainer can wire `MAXMIND_LICENSE_KEY` when convenient. The
+  // notification is fire-and-forget so the audit-log path stays fast.
+  if (!offlineGeoReady()) {
+    void notifyOfflineGeoUnavailable();
+  }
+
   return lookupIpLocationOnline(ip);
 }
 
@@ -262,7 +351,15 @@ export function lookupIpAsn(
 ): { asn: number; carrier: string | null } | null {
   if (!ip || PRIVATE_IP.test(ip)) return null;
   const reader = getAsnReader();
-  if (!reader) return null;
+  if (!reader) {
+    // No offline ASN data — alert once per process. There is no online
+    // fallback for ASN, but the maintainer still wants to know the
+    // carrier chip is going to stay empty until the secret is set.
+    if (!offlineGeoReady()) {
+      void notifyOfflineGeoUnavailable();
+    }
+    return null;
+  }
   try {
     const row = reader.get(ip);
     if (!row) return null;

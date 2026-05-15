@@ -2650,7 +2650,9 @@
       "reminderCheckMissedTitle": "Rappel manqué : {medication}",
       "reminderCheckMissedBody": "{medication} ({dose}) n'a pas été enregistré dans la fenêtre {window}.",
       "reminderCheckOverdueTitle": "Prise en retard : {medication}",
-      "reminderCheckOverdueBody": "{medication} ({dose}) dans la fenêtre {window} est en retard de {minutes} minutes."
+      "reminderCheckOverdueBody": "{medication} ({dose}) dans la fenêtre {window} est en retard de {minutes} minutes.",
+      "offlineGeoUnavailableTitle": "Bases de géolocalisation hors ligne non chargées",
+      "offlineGeoUnavailableBody": "HealthLog résout les localisations de connexion via le fallback en ligne ipwho.is. Pour activer les bases hors ligne GeoLite2-City et GeoLite2-ASN, définissez MAXMIND_LICENSE_KEY dans les secrets GitHub Actions à {secretsUrl} puis redéployez. En attendant, la colonne opérateur dans l'aperçu des connexions reste vide."
     },
     "user": {
       "telegramTestBody": "HealthLog: connexion réussie. Les notifications Telegram sont actives."

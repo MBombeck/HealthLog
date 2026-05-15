@@ -2650,7 +2650,9 @@
       "reminderCheckMissedTitle": "Recordatorio perdido: {medication}",
       "reminderCheckMissedBody": "{medication} ({dose}) no se registró en la ventana {window}.",
       "reminderCheckOverdueTitle": "Dosis atrasada: {medication}",
-      "reminderCheckOverdueBody": "{medication} ({dose}) en la ventana {window} lleva {minutes} minutos de retraso."
+      "reminderCheckOverdueBody": "{medication} ({dose}) en la ventana {window} lleva {minutes} minutos de retraso.",
+      "offlineGeoUnavailableTitle": "Bases de datos de geolocalización sin conexión no cargadas",
+      "offlineGeoUnavailableBody": "HealthLog está resolviendo las ubicaciones de inicio de sesión mediante el respaldo en línea ipwho.is. Para habilitar las bases sin conexión GeoLite2-City y GeoLite2-ASN, configura MAXMIND_LICENSE_KEY en los secrets de GitHub Actions en {secretsUrl} y vuelve a desplegar. Hasta entonces, la columna de operador en el resumen de inicios de sesión permanece vacía."
     },
     "user": {
       "telegramTestBody": "HealthLog: conexión correcta. Las notificaciones de Telegram están activas."

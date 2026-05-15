@@ -2650,7 +2650,9 @@
       "reminderCheckMissedTitle": "Promemoria perso: {medication}",
       "reminderCheckMissedBody": "{medication} ({dose}) non è stato registrato nella finestra {window}.",
       "reminderCheckOverdueTitle": "Dose in ritardo: {medication}",
-      "reminderCheckOverdueBody": "{medication} ({dose}) nella finestra {window} è in ritardo di {minutes} minuti."
+      "reminderCheckOverdueBody": "{medication} ({dose}) nella finestra {window} è in ritardo di {minutes} minuti.",
+      "offlineGeoUnavailableTitle": "Database di geolocalizzazione offline non caricati",
+      "offlineGeoUnavailableBody": "HealthLog sta risolvendo le posizioni di accesso tramite il fallback online ipwho.is. Per abilitare i database offline GeoLite2-City e GeoLite2-ASN, imposta MAXMIND_LICENSE_KEY nei secret di GitHub Actions su {secretsUrl} e ridistribuisci. Fino ad allora la colonna operatore nella panoramica degli accessi rimane vuota."
     },
     "user": {
       "telegramTestBody": "HealthLog: connessione riuscita. Le notifiche Telegram sono attive."

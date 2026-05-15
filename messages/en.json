@@ -2650,7 +2650,9 @@
       "reminderCheckMissedTitle": "Reminder missed: {medication}",
       "reminderCheckMissedBody": "{medication} ({dose}) was not logged in the {window} window.",
       "reminderCheckOverdueTitle": "Dose overdue: {medication}",
-      "reminderCheckOverdueBody": "{medication} ({dose}) in the {window} window is {minutes} minutes overdue."
+      "reminderCheckOverdueBody": "{medication} ({dose}) in the {window} window is {minutes} minutes overdue.",
+      "offlineGeoUnavailableTitle": "Offline geolocation databases not loaded",
+      "offlineGeoUnavailableBody": "HealthLog is resolving login locations through the online ipwho.is fallback. To enable the offline GeoLite2-City + GeoLite2-ASN databases, set MAXMIND_LICENSE_KEY in GitHub Actions secrets at {secretsUrl} and redeploy. Until then the carrier column on the login overview stays empty."
     },
     "user": {
       "telegramTestBody": "HealthLog: connection successful. Telegram notifications are active."
