@@ -45,7 +45,7 @@ export interface IntakeEventLike {
 }
 
 /** One slot the schedule expected the user to dose. */
-export interface ExpectedDose {
+interface ExpectedDose {
   /** Midnight of the local day this dose was expected. */
   day: Date;
   /** Start of the dose window for this day (Date with HH:mm applied). */
@@ -308,16 +308,18 @@ export function pairDoses(
   now: Date,
 ): PairedDose[] {
   const claimed = new Set<number>();
-  const result: PairedDose[] = [];
 
-  // Sort slots by window centre so the earlier slot picks its match
-  // first; same shape as the reminder-worker's "process schedules in
-  // window order" loop.
+  // v1.4.27 B7 / simp-M6 — sort once by `windowStart` for the match
+  // pass and return the result in the same order. Slots that touch
+  // pairDoses are always strictly chronologically separable (the
+  // window radius is far smaller than the day grid step), so sorting
+  // by `windowStart` and sorting by the centre `(start+end)/2`
+  // produce the same order. Dropping the second `.sort()` at the
+  // end keeps the contract intact and removes the O(n log n) tail.
   const sorted = [...slots].sort(
-    (a, b) =>
-      (a.windowStart.getTime() + a.windowEnd.getTime()) / 2 -
-      (b.windowStart.getTime() + b.windowEnd.getTime()) / 2,
+    (a, b) => a.windowStart.getTime() - b.windowStart.getTime(),
   );
+  const result: PairedDose[] = [];
 
   for (const slot of sorted) {
     const centre = (slot.windowStart.getTime() + slot.windowEnd.getTime()) / 2;
@@ -352,8 +354,7 @@ export function pairDoses(
     result.push({ ...slot, match, status });
   }
 
-  // Restore the chronological order callers expect.
-  return result.sort((a, b) => a.windowStart.getTime() - b.windowStart.getTime());
+  return result;
 }
 
 /**

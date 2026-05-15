@@ -45,16 +45,16 @@ export type Glp1DrugId =
  * record AND a per-brand override map so a single drug-id can carry
  * mixed routes (semaglutide → Ozempic/Wegovy sc, Rybelsus oral).
  */
-export type Glp1Route = "subcutaneous" | "oral";
+type Glp1Route = "subcutaneous" | "oral";
 
 /**
  * Drug class descriptor — Tirzepatide is the only dual GIP/GLP-1
  * agonist among EMA-approved agents (2026-05); the rest are pure
  * GLP-1 receptor agonists.
  */
-export type Glp1DrugClass = "GIP-GLP1 dual agonist" | "GLP-1 receptor agonist";
+type Glp1DrugClass = "GIP-GLP1 dual agonist" | "GLP-1 receptor agonist";
 
-export type Glp1Pharmacology = {
+type Glp1Pharmacology = {
   /** Terminal elimination half-life. Days for the long-acting agents,
    *  hours for liraglutide / short-acting exenatide. */
   halfLifeDays: number;
@@ -83,7 +83,7 @@ export type Glp1Pharmacology = {
   compartmentModel: "one-compartment" | "two-compartment";
 };
 
-export type Glp1Storage = {
+type Glp1Storage = {
   /** Refrigerated stability — every GLP-1 product is shipped 2–8 °C
    *  per EMA. */
   unopened: {
@@ -97,7 +97,7 @@ export type Glp1Storage = {
   };
 };
 
-export type Glp1Pen = {
+type Glp1Pen = {
   /** Pen device name as printed on the carton. */
   type: string;
   /** Doses per pen / per cartridge — drives W19b inventory
@@ -105,7 +105,7 @@ export type Glp1Pen = {
   dosesPerPen: number | null;
 };
 
-export type Glp1AdverseReactions = {
+type Glp1AdverseReactions = {
   /** ≥ 1/10 frequency per EMA §4.8. */
   veryCommon: readonly string[];
   /** 1/100 to <1/10 per EMA §4.8. */
@@ -116,12 +116,12 @@ export type Glp1AdverseReactions = {
   rare: readonly string[];
 };
 
-export type Glp1Indications = {
+type Glp1Indications = {
   t2dm: { firstLine: boolean };
   weightManagement: { bmiThreshold: number | null };
 };
 
-export type Glp1SourceCitations = {
+type Glp1SourceCitations = {
   /** Direct link to the EMA EPAR product-information PDF. */
   sourceEMA: string;
   /** Peer-reviewed pharmacometric citation where one exists. */
@@ -548,7 +548,8 @@ export const GLP1_DRUGS: Readonly<Record<Glp1DrugId, Glp1DrugRecord>> = {
 
 /**
  * Resolve the route for a given drug + brand. Falls back to the
- * record default when no per-brand override is registered.
+ * record default when no per-brand override is registered. Read by
+ * the glp1-knowledge test suite.
  */
 export function routeForBrand(
   drugId: Glp1DrugId,
@@ -597,8 +598,9 @@ export function findDrugIdByBrand(brand: string): Glp1DrugId | null {
 }
 
 /**
- * The catalog's drug-ids in stable order. Useful for iteration in
- * tests and UI surfaces that need a deterministic display order.
+ * The catalog's drug-ids in stable order. Read by the GLP-1 PK +
+ * ladder test suites so a future drug addition flows through the
+ * verification matrix without a hand-rolled list.
  */
 export const GLP1_DRUG_IDS: readonly Glp1DrugId[] = [
   "tirzepatide",
@@ -607,3 +609,4 @@ export const GLP1_DRUG_IDS: readonly Glp1DrugId[] = [
   "dulaglutide",
   "exenatide",
 ] as const;
+

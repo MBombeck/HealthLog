@@ -70,7 +70,6 @@ function deriveDrugNames(raw: string): { display: string; generic: string } {
   return { display, generic };
 }
 
-const WEEKDAY_KEYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
 function parseDaysOfWeek(raw: string | null): number[] {
   if (!raw) return [];
@@ -417,5 +416,4 @@ export const __testables = {
   parseTagList,
   parseDaysOfWeek,
   predictNextInjection,
-  WEEKDAY_KEYS,
 };

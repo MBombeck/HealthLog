@@ -183,7 +183,19 @@ export function weeksOnCurrentStep(
 
 /**
  * Display flag — true when the EMA-reference minimum dwell time has
- * elapsed AND a next step exists.
+ * elapsed AND a next ladder step exists.
+ *
+ * Parameters:
+ *   - `drugIdForCeiling`: identifies which ladder to walk so the
+ *     "next step exists" guard knows when the user has hit the
+ *     ceiling. The dwell-time check itself reads `typicalWeeks`
+ *     straight off `currentStep`; the drug id is only needed to
+ *     answer "is there a step above this one?".
+ *   - `currentStep`: the step the user is sitting on today. Null
+ *     when titration is paused or the user is at the bottom of the
+ *     ladder with no recorded dose history.
+ *   - `weeksOnStep`: how many complete weeks have elapsed since the
+ *     user landed on `currentStep`. Computed by `weeksOnCurrentStep`.
  *
  * IMPORTANT: this is a *reference* signal, not advice. The UI copy
  * tied to this boolean is strictly observational ("ladder typically
@@ -191,11 +203,11 @@ export function weeksOnCurrentStep(
  * the W19c safety ground-rules.
  */
 export function escalationDue(
-  drugId: Glp1DrugId,
+  drugIdForCeiling: Glp1DrugId,
   currentStep: TitrationStep | null,
   weeksOnStep: number,
 ): boolean {
   if (!currentStep) return false;
-  if (!nextStep(drugId, currentStep)) return false;
+  if (!nextStep(drugIdForCeiling, currentStep)) return false;
   return weeksOnStep >= currentStep.typicalWeeks;
 }
