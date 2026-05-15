@@ -5,13 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { MeasurementForm } from "@/components/measurements/measurement-form";
 import { MeasurementList } from "@/components/measurements/measurement-list";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Plus, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -48,24 +42,22 @@ export default function MeasurementsPage() {
             {t("measurements.subtitle")}
           </p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              {t("measurements.addMeasurement")}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t("measurements.addMeasurement")}</DialogTitle>
-            </DialogHeader>
-            <MeasurementForm
-              onSuccess={() => setDialogOpen(false)}
-              onCancel={() => setDialogOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          {t("measurements.addMeasurement")}
+        </Button>
       </div>
+
+      <ResponsiveSheet
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        title={t("measurements.addMeasurement")}
+      >
+        <MeasurementForm
+          onSuccess={() => setDialogOpen(false)}
+          onCancel={() => setDialogOpen(false)}
+        />
+      </ResponsiveSheet>
 
       <MeasurementList onAddFirst={() => setDialogOpen(true)} />
     </div>

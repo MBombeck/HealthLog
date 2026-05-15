@@ -26,12 +26,7 @@ import type { DataSummary as DataSummaryType } from "@/lib/analytics/trends";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -523,35 +518,27 @@ export default function DashboardPage() {
        * line is free for established users. */}
       <TourLauncher ready={data !== undefined} />
 
-      {/* Quick Entry Dialogs */}
-      <Dialog
+      {/* Quick Entry Sheets — bottom-sheet on `<md`, centred Dialog on `md+`. */}
+      <ResponsiveSheet
         open={quickEntryDialog === "measurement"}
         onOpenChange={(open) => !open && setQuickEntryDialog(null)}
+        title={t("measurements.addMeasurement")}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("measurements.addMeasurement")}</DialogTitle>
-          </DialogHeader>
-          <MeasurementForm
-            onSuccess={() => setQuickEntryDialog(null)}
-            onCancel={() => setQuickEntryDialog(null)}
-          />
-        </DialogContent>
-      </Dialog>
-      <Dialog
+        <MeasurementForm
+          onSuccess={() => setQuickEntryDialog(null)}
+          onCancel={() => setQuickEntryDialog(null)}
+        />
+      </ResponsiveSheet>
+      <ResponsiveSheet
         open={quickEntryDialog === "mood"}
         onOpenChange={(open) => !open && setQuickEntryDialog(null)}
+        title={t("mood.addEntry")}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("mood.addEntry")}</DialogTitle>
-          </DialogHeader>
-          <MoodForm
-            onSuccess={() => setQuickEntryDialog(null)}
-            onCancel={() => setQuickEntryDialog(null)}
-          />
-        </DialogContent>
-      </Dialog>
+        <MoodForm
+          onSuccess={() => setQuickEntryDialog(null)}
+          onCancel={() => setQuickEntryDialog(null)}
+        />
+      </ResponsiveSheet>
 
       {(() => {
         type TrendEntry = { id: string; order: number; node: React.ReactNode };
