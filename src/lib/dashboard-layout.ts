@@ -29,11 +29,6 @@ export const DASHBOARD_WIDGET_IDS = [
   "bpInTarget",
   "oxygenSaturation",
   "achievements",
-  // v1.4.16 phase D reconcile (CRITICAL C2) — dashboard preview of the
-  // top severity-ordered AI recommendations + "View all" CTA. Has only
-  // a `visible` (chart-row) surface; tileVisible is forced false because
-  // there's no tile-strip representation for it.
-  "insightsPreview",
   // v1.4.25 W8d — VO2 max trend tile (opt-in, secondary-metric pattern).
   // Self-gates on having any VO2_MAX sample; default-invisible so
   // existing dashboards stay unchanged until the user enables it in
@@ -216,22 +211,11 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayout = {
     // `tileVisible` is forced false because there is no tile surface
     // for this widget; only the chart-row card.
     { id: "achievements", visible: true, tileVisible: false, order: 13 },
-    // v1.4.16 phase D reconcile (CRITICAL C2) — AI insights preview
-    // anchored at the top of the chart row. Default visible so users
-    // discover the feature without hunting through Settings →
-    // Dashboard; self-gates on having a generated payload AND at least
-    // one recommendation (`<InsightsCardPreview>` returns null
-    // otherwise). `tileVisible` forced false because the preview lives
-    // in the chart row, not the tile strip. The dashboard page
-    // renders this entry independently of the sorted `charts[]` array
-    // so it stays pinned above charts even if the user reorders other
-    // widgets; only the boolean visibility flag is consumed.
-    { id: "insightsPreview", visible: true, tileVisible: false, order: 14 },
     // v1.4.25 W8d — VO2 max trend tile. Default-invisible on both
     // surfaces; opt-in via Settings → Dashboard. Only the tile-strip
     // representation today (`visible` stays false so the chart-row
     // gate never fires; the chart card lands in v1.5).
-    { id: "vo2Max", visible: false, tileVisible: false, order: 15 },
+    { id: "vo2Max", visible: false, tileVisible: false, order: 14 },
   ],
 };
 

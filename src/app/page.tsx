@@ -46,8 +46,6 @@ import { summaryToTrend7Delta } from "@/lib/analytics/trend-delta";
 import { GettingStartedChecklist } from "@/components/onboarding/getting-started-checklist";
 import { TourLauncher } from "@/components/onboarding/tour-launcher";
 import { RecentAchievementsCard } from "@/components/gamification/recent-achievements-card";
-import { InsightsCardPreview } from "@/components/insights/insights-card";
-import { useInsightsAdvisorQuery } from "@/components/insights/use-insights-advisor";
 import { Glp1Tile } from "@/components/dashboard/glp1-tile";
 
 const HealthChart = dynamic(
@@ -234,16 +232,13 @@ export default function DashboardPage() {
     enabled: isAuthenticated,
   });
 
-  // v1.4.16 phase D reconcile (CRITICAL C2) — pull the rich advisor
-  // payload so the dashboard can surface a compact preview of the top
-  // severity-ordered AI recommendations + ring confidence meter +
-  // "View all" CTA. Shares the cache with /insights via the
-  // queryKeys.insightsAdvisor() key so a regenerate on either surface
-  // refreshes the other without a second LLM round-trip. Returns null
-  // when the user has no provider configured (route 422 → null), so
-  // the preview self-hides without burning rate-limit tokens on
-  // unconfigured accounts.
-  const advisor = useInsightsAdvisorQuery(isAuthenticated);
+  // v1.4.27 B1 — the dashboard's `<InsightsCardPreview>` retired (it
+  // duplicated the much-richer `/insights` advisor surface). The advisor
+  // query lives on `/insights` directly; the dashboard no longer needs
+  // its own hook subscription, so the local `useInsightsAdvisorQuery`
+  // call dropped with the preview.
+
+  // TODO(B1+B4 reconcile): wire per-tile availability gate using hasMetricData
 
   const w = data?.summaries?.WEIGHT;
   const sys = data?.summaries?.BLOOD_PRESSURE_SYS;
@@ -340,12 +335,6 @@ export default function DashboardPage() {
   // the layout-toggle gate here. No data-floor check (the empty card is
   // intentional — the maintainer wants the user to discover the feature).
   const showAchievementsCard = isChartVisible("achievements");
-  // v1.4.16 phase D reconcile (CRITICAL C2) — gate the dashboard
-  // insights preview by the layout toggle. The component itself
-  // returns null when the advisor payload is missing or has no
-  // recommendations, so the gate is sufficient — no extra data-floor
-  // check needed.
-  const showInsightsPreview = isChartVisible("insightsPreview");
 
   // Glucose widget — visible iff layout enables it AND at least one reading exists.
   // Glucose has no separate chart slot today, so the tile flag is the
@@ -1247,29 +1236,14 @@ export default function DashboardPage() {
                 ))}
               </div>
             )}
-            {/* v1.4.16 phase D reconcile (CRITICAL C2) — dashboard
-                preview of the polished AI recommendations surface.
-                Pinned above the chart row (out-of-band from the sorted
-                charts[] array) so it stays at the top regardless of
-                widget reorder operations. Self-hides when the user has
-                no provider configured OR no recommendations to surface
-                (`<InsightsCardPreview>` returns null), so the preview
-                doesn't paint an empty card on first visit. */}
-            {showInsightsPreview && (
-              <InsightsCardPreview
-                insight={advisor.payload?.insights ?? null}
-              />
-            )}
             {/* v1.4.25 W6 — GLP-1 status tile. The tile self-gates on
                 `Medication.treatmentClass === "GLP1"` (route returns
                 `data: null` when the user has no active GLP-1 med), so
                 we always mount it and let the tile suppress itself.
-                Slot is below the InsightsCardPreview and above the
-                chart row — high enough that a Mounjaro / Ozempic user
-                sees their dose-response chart without scrolling past
-                BP / pulse, but below the AI preview so the latter
-                stays the "scroll-stop hero" Marc anchored the dashboard
-                around. */}
+                v1.4.27 — the standalone insights preview retired (it
+                duplicated the much-richer `/insights` advisor surface);
+                the GLP-1 tile now anchors the top of the chart-row
+                stack. */}
             <Glp1Tile />
             {charts.map((entry) => (
               <div key={entry.id} className="space-y-2">
