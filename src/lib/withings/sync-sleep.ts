@@ -37,6 +37,7 @@ import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
 import { getUnitForType } from "@/lib/validations/measurement";
 
+import { hasActivityScope } from "./client";
 import {
   extractWithingsStatus,
   isWithingsRefreshReauthFailure,
@@ -158,6 +159,31 @@ export async function syncUserSleep(
   const tokenInfo = await getValidToken(userId);
   if (!tokenInfo) return 0;
 
+  // v1.4.26 — scope-skip guard. Sleep v2 shares the `user.activity`
+  // scope gate with the activity endpoints; legacy v1.4.24- connections
+  // 403 on every call. Park at `error_reauth` rather than retrying so
+  // pg-boss stops queuing and the 3-strike alert doesn't fire for users
+  // who haven't reconnected since W5d. See `sync-activity.ts` for the
+  // full rationale.
+  const connection = await prisma.withingsConnection.findUnique({
+    where: { userId },
+    select: { scope: true },
+  });
+  if (!hasActivityScope(connection?.scope ?? null)) {
+    getEvent()?.addWarning(
+      `withings sleep sync skipped for ${userId}: missing user.activity scope (legacy connection — reconnect required)`,
+    );
+    await recordSyncFailure({
+      userId,
+      integration: "withings",
+      kind: "reauth_required",
+      message:
+        "Withings connection is missing the user.activity scope. Reconnect Withings in Settings to enable sleep sync.",
+      errorCode: "scope_missing",
+    });
+    return 0;
+  }
+
   void opts.fullSync;
   const now = new Date();
   const start = new Date(
@@ -175,14 +201,17 @@ export async function syncUserSleep(
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    const status = extractWithingsStatus(message);
+    // v1.4.26 defence-in-depth — see sync-activity.ts. A 403 on a
+    // scope-gated endpoint always means scope-missing or token-revoked.
+    const isReauth =
+      isWithingsRefreshReauthFailure(message) || status === "403";
     await recordSyncFailure({
       userId,
       integration: "withings",
-      kind: isWithingsRefreshReauthFailure(message)
-        ? "reauth_required"
-        : "transient",
+      kind: isReauth ? "reauth_required" : "transient",
       message,
-      errorCode: extractWithingsStatus(message),
+      errorCode: status,
     });
     throw err;
   }

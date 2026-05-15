@@ -39,6 +39,7 @@ import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
 import { getUnitForType } from "@/lib/validations/measurement";
 
+import { hasActivityScope } from "./client";
 import {
   extractWithingsStatus,
   isWithingsRefreshReauthFailure,
@@ -202,6 +203,40 @@ export async function syncUserActivity(
   const tokenInfo = await getValidToken(userId);
   if (!tokenInfo) return 0;
 
+  // v1.4.26 — scope-skip guard. The W17b activity endpoint is gated on
+  // `user.activity`; legacy v1.4.24-and-earlier connections sit on
+  // `user.metrics` only and Withings returns HTTP 200 / status 403 for
+  // every request. Without this short-circuit the call fires, the
+  // catch-block classifies the 403 as `"transient"` (the refresh-token
+  // worked; only the resource call failed), pg-boss retries, and the
+  // 3-strike alert fires for every legacy user that hasn't reconnected
+  // since W5d. The Settings reconnect-banner is already in place — the
+  // sync just has to stop hammering the endpoint until the user acts.
+  //
+  // Park behaviour: mark the connection `error_reauth` so the next
+  // hourly cron tick also short-circuits via `isReauthRequired` above
+  // (cheap query, no upstream call). `getValidToken` already fetched
+  // the connection row to refresh the access token; we re-read the
+  // `scope` column with a `select` so the call is one indexed lookup.
+  const connection = await prisma.withingsConnection.findUnique({
+    where: { userId },
+    select: { scope: true },
+  });
+  if (!hasActivityScope(connection?.scope ?? null)) {
+    getEvent()?.addWarning(
+      `withings activity sync skipped for ${userId}: missing user.activity scope (legacy connection — reconnect required)`,
+    );
+    await recordSyncFailure({
+      userId,
+      integration: "withings",
+      kind: "reauth_required",
+      message:
+        "Withings connection is missing the user.activity scope. Reconnect Withings in Settings to enable activity sync.",
+      errorCode: "scope_missing",
+    });
+    return 0;
+  }
+
   // 30-day rolling window keeps the call cheap (≤ one page) and
   // self-heals stale rows from a clock skew or a backfill replay.
   // The webhook-driven path narrows naturally to today/yesterday;
@@ -222,14 +257,22 @@ export async function syncUserActivity(
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    const status = extractWithingsStatus(message);
+    // v1.4.26 defence-in-depth — a 403 from a scope-gated endpoint
+    // always means scope-missing or token-revoked. Park at
+    // `error_reauth` rather than `transient` so pg-boss stops
+    // retrying and the 3-strike alert doesn't fire. The early
+    // scope-skip above covers the common case; this catches the
+    // race where Withings revokes scope between OAuth and the next
+    // sync without invalidating the refresh token.
+    const isReauth =
+      isWithingsRefreshReauthFailure(message) || status === "403";
     await recordSyncFailure({
       userId,
       integration: "withings",
-      kind: isWithingsRefreshReauthFailure(message)
-        ? "reauth_required"
-        : "transient",
+      kind: isReauth ? "reauth_required" : "transient",
       message,
-      errorCode: extractWithingsStatus(message),
+      errorCode: status,
     });
     throw err;
   }

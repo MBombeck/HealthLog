@@ -44,7 +44,7 @@ vi.mock("@/lib/logging/context", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { recordSyncSuccess } from "@/lib/integrations/status";
+import { recordSyncFailure, recordSyncSuccess } from "@/lib/integrations/status";
 
 import {
   fetchWithingsSleep,
@@ -73,6 +73,14 @@ function installFetchMock(segments: FakeSegment[]) {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  // v1.4.26 — every syncUserSleep call now reads the connection's
+  // scope to short-circuit legacy `user.metrics`-only connections.
+  // Default-mock to "scope is fine" so the existing segment-mapping
+  // tests stay focused on the write path. The scope-skip case has
+  // its own dedicated tests below.
+  vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
+    scope: "user.metrics,user.activity",
+  } as never);
 });
 
 afterEach(() => {
@@ -252,5 +260,84 @@ describe("syncUserSleep — segment writes + idempotency", () => {
       .mocked(prisma.measurement.create)
       .mock.calls.map((c) => (c[0].data as { sleepStage: string }).sleepStage);
     expect(stages).not.toContain("REM");
+  });
+});
+
+describe("syncUserSleep — scope-skip guard (v1.4.26)", () => {
+  it("returns 0 without firing the Withings call when scope lacks user.activity", async () => {
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
+      scope: "user.metrics",
+    } as never);
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const imported = await syncUserSleep("user-1");
+
+    expect(imported).toBe(0);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(prisma.measurement.create).not.toHaveBeenCalled();
+    expect(recordSyncSuccess).not.toHaveBeenCalled();
+  });
+
+  it("parks the connection at error_reauth with kind=reauth_required + errorCode=scope_missing", async () => {
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
+      scope: "user.metrics",
+    } as never);
+    vi.stubGlobal("fetch", vi.fn());
+
+    await syncUserSleep("user-1");
+
+    expect(recordSyncFailure).toHaveBeenCalledTimes(1);
+    expect(recordSyncFailure).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-1",
+        integration: "withings",
+        kind: "reauth_required",
+        errorCode: "scope_missing",
+      }),
+    );
+  });
+
+  it("treats a null scope (pre-v1.4.25 connection) as missing user.activity", async () => {
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
+      scope: null,
+    } as never);
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const imported = await syncUserSleep("user-1");
+
+    expect(imported).toBe(0);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(recordSyncFailure).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "reauth_required" }),
+    );
+  });
+
+  it("classifies a Withings 403 in the catch-block as reauth_required (defence-in-depth)", async () => {
+    // Scope claim says we're fine but the resource call 403s — the
+    // race where Withings revokes scope without invalidating the
+    // refresh token. Must park at reauth_required, not transient,
+    // so pg-boss stops retrying.
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
+      scope: "user.metrics,user.activity",
+    } as never);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        status: 200,
+        json: async () => ({ status: 403, error: "insufficient scope" }),
+      })),
+    );
+
+    await expect(syncUserSleep("user-1")).rejects.toThrow(
+      /Withings sleep error: 403/,
+    );
+    expect(recordSyncFailure).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "reauth_required",
+        errorCode: "403",
+      }),
+    );
   });
 });
