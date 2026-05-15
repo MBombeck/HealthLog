@@ -23,12 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,6 +54,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { useId, useState } from "react";
+import { createPortal } from "react-dom";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { invalidateKeys, measurementDependentKeys } from "@/lib/query-keys";
@@ -155,6 +151,11 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
   // failure when the user submits an invalid value or timestamp.
   const editErrorId = useId();
   const editErrorDescriptor = editError ? editErrorId : undefined;
+  // v1.4.27 R4 RC2 — Sheet-branch sticky-pinned footer slot.
+  const editFormId = useId();
+  const [editFooterEl, setEditFooterEl] = useState<HTMLDivElement | null>(
+    null,
+  );
 
   const setTypeFilter = (value: string) => {
     setTypeFilterRaw(value);
@@ -604,13 +605,18 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
         )}
       </div>
 
-      <Dialog open={!!editing} onOpenChange={(open) => !open && closeEdit()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("measurements.editMeasurement")}</DialogTitle>
-          </DialogHeader>
+      <ResponsiveSheet
+        open={!!editing}
+        onOpenChange={(open) => !open && closeEdit()}
+        title={t("measurements.editMeasurement")}
+        footer={<div ref={setEditFooterEl} className="flex w-full" />}
+      >
           {editing && (
-            <form onSubmit={submitEdit} className="space-y-4">
+            <form
+              id={editFormId}
+              onSubmit={submitEdit}
+              className="space-y-4"
+            >
               <div className="flex items-center gap-1.5">
                 <Label className="shrink-0">{t("measurements.type")}</Label>
                 <span className="text-sm leading-none font-medium">
@@ -683,57 +689,66 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                 </div>
               )}
 
-              <div className="flex items-center justify-between gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="size-11"
-                      disabled={
-                        updateMutation.isPending || deleteMutation.isPending
-                      }
-                      aria-label={t("common.moreOptions")}
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    <DropdownMenuItem
-                      variant="destructive"
-                      onClick={() => setEditDeleteDialogOpen(true)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      {t("common.delete")}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              {editFooterEl
+                ? createPortal(
+                    <div className="flex w-full items-center justify-between gap-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="size-11"
+                            disabled={
+                              updateMutation.isPending ||
+                              deleteMutation.isPending
+                            }
+                            aria-label={t("common.moreOptions")}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => setEditDeleteDialogOpen(true)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            {t("common.delete")}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
 
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={closeEdit}
-                    disabled={
-                      updateMutation.isPending || deleteMutation.isPending
-                    }
-                  >
-                    {t("common.cancel")}
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={
-                      updateMutation.isPending || deleteMutation.isPending
-                    }
-                  >
-                    {updateMutation.isPending ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
-                    ) : null}
-                    {t("common.save")}
-                  </Button>
-                </div>
-              </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={closeEdit}
+                          disabled={
+                            updateMutation.isPending ||
+                            deleteMutation.isPending
+                          }
+                        >
+                          {t("common.cancel")}
+                        </Button>
+                        <Button
+                          type="submit"
+                          form={editFormId}
+                          disabled={
+                            updateMutation.isPending ||
+                            deleteMutation.isPending
+                          }
+                        >
+                          {updateMutation.isPending ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
+                          ) : null}
+                          {t("common.save")}
+                        </Button>
+                      </div>
+                    </div>,
+                    editFooterEl,
+                  )
+                : null}
 
               <AlertDialog
                 open={editDeleteDialogOpen}
@@ -767,8 +782,7 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
               </AlertDialog>
             </form>
           )}
-        </DialogContent>
-      </Dialog>
+      </ResponsiveSheet>
     </>
   );
 }

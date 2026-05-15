@@ -23,12 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,7 +54,8 @@ import {
   ArrowUpDown,
   MoreHorizontal,
 } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
+import { createPortal } from "react-dom";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import {
@@ -126,6 +122,11 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
   const [editMoodLoggedAt, setEditMoodLoggedAt] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
   const [editDeleteDialogOpen, setEditDeleteDialogOpen] = useState(false);
+  // v1.4.27 R4 RC2 — Sheet-branch sticky-pinned footer slot.
+  const editFormId = useId();
+  const [editFooterEl, setEditFooterEl] = useState<HTMLDivElement | null>(
+    null,
+  );
 
   const setMoodFilter = (value: string) => {
     setMoodFilterRaw(value);
@@ -517,14 +518,19 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
         )}
       </div>
 
-      {/* Edit dialog */}
-      <Dialog open={!!editing} onOpenChange={(open) => !open && closeEdit()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("mood.editEntry")}</DialogTitle>
-          </DialogHeader>
+      {/* Edit sheet — bottom-sheet on `<md`, centred Dialog on `md+`. */}
+      <ResponsiveSheet
+        open={!!editing}
+        onOpenChange={(open) => !open && closeEdit()}
+        title={t("mood.editEntry")}
+        footer={<div ref={setEditFooterEl} className="flex w-full" />}
+      >
           {editing && (
-            <form onSubmit={submitEdit} className="space-y-4">
+            <form
+              id={editFormId}
+              onSubmit={submitEdit}
+              className="space-y-4"
+            >
               <div className="space-y-2">
                 <Label id="edit-mood-level-label">{t("mood.moodLevel")}</Label>
                 <div
@@ -598,57 +604,66 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                 </div>
               )}
 
-              <div className="flex items-center justify-between gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="h-9 w-9"
-                      disabled={
-                        updateMutation.isPending || deleteMutation.isPending
-                      }
-                      aria-label={t("common.moreOptions")}
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    <DropdownMenuItem
-                      variant="destructive"
-                      onClick={() => setEditDeleteDialogOpen(true)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      {t("common.delete")}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              {editFooterEl
+                ? createPortal(
+                    <div className="flex w-full items-center justify-between gap-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9"
+                            disabled={
+                              updateMutation.isPending ||
+                              deleteMutation.isPending
+                            }
+                            aria-label={t("common.moreOptions")}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => setEditDeleteDialogOpen(true)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            {t("common.delete")}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
 
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={closeEdit}
-                    disabled={
-                      updateMutation.isPending || deleteMutation.isPending
-                    }
-                  >
-                    {t("common.cancel")}
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={
-                      updateMutation.isPending || deleteMutation.isPending
-                    }
-                  >
-                    {updateMutation.isPending ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
-                    ) : null}
-                    {t("common.save")}
-                  </Button>
-                </div>
-              </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={closeEdit}
+                          disabled={
+                            updateMutation.isPending ||
+                            deleteMutation.isPending
+                          }
+                        >
+                          {t("common.cancel")}
+                        </Button>
+                        <Button
+                          type="submit"
+                          form={editFormId}
+                          disabled={
+                            updateMutation.isPending ||
+                            deleteMutation.isPending
+                          }
+                        >
+                          {updateMutation.isPending ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
+                          ) : null}
+                          {t("common.save")}
+                        </Button>
+                      </div>
+                    </div>,
+                    editFooterEl,
+                  )
+                : null}
 
               <AlertDialog
                 open={editDeleteDialogOpen}
@@ -682,8 +697,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
               </AlertDialog>
             </form>
           )}
-        </DialogContent>
-      </Dialog>
+      </ResponsiveSheet>
     </>
   );
 }
