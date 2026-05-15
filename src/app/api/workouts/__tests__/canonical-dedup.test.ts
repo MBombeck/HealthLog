@@ -164,4 +164,48 @@ describe("GET /api/workouts — canonical dedup", () => {
     expect(body.data.workouts).toHaveLength(3);
     expect(body.data.meta.limit).toBe(3);
   });
+
+  it("paginates across cluster boundaries without double-counting deduped rows", async () => {
+    // Eight twin clusters: each cluster has an APPLE_HEALTH + WITHINGS
+    // row within the 5 min window. The picker collapses each cluster to
+    // its Apple row, so the canonical projection has 8 rows. Page 1
+    // (offset=0, limit=4) must yield Apple rows for clusters 7–4
+    // (descending). Page 2 (offset=4, limit=4) must yield Apple rows
+    // for clusters 3–0 with no overlap and no gaps. `meta.total` must
+    // reflect the deduped count (8), not the raw row count (16).
+    const rows: FakeWorkoutRow[] = [];
+    for (let i = 0; i < 8; i++) {
+      const start = new Date(2026, 4, 15, 7 + i, 0, 0).toISOString();
+      const start2 = new Date(2026, 4, 15, 7 + i, 1, 30).toISOString();
+      rows.push(makeRow(`apple-${i}`, "APPLE_HEALTH", start));
+      rows.push(makeRow(`withings-${i}`, "WITHINGS", start2));
+    }
+    // Mock returns the full filtered set; the route paginates after
+    // dedup.
+    vi.mocked(prisma.workout.findMany).mockResolvedValue(rows as never);
+
+    const page1 = await GET(makeRequest("?limit=4&offset=0"));
+    const page1Body = await page1.json();
+    const page2 = await GET(makeRequest("?limit=4&offset=4"));
+    const page2Body = await page2.json();
+
+    expect(page1Body.data.workouts).toHaveLength(4);
+    expect(page2Body.data.workouts).toHaveLength(4);
+    expect(page1Body.data.meta.total).toBe(8);
+    expect(page2Body.data.meta.total).toBe(8);
+    expect(page1Body.data.meta.droppedDuplicates).toBe(8);
+    expect(page2Body.data.meta.droppedDuplicates).toBe(8);
+
+    const page1Ids = page1Body.data.workouts.map((w: { id: string }) => w.id);
+    const page2Ids = page2Body.data.workouts.map((w: { id: string }) => w.id);
+    // No overlap across the page boundary.
+    expect(page1Ids.filter((id: string) => page2Ids.includes(id))).toEqual([]);
+    // All eight clusters are covered between the two pages.
+    expect([...page1Ids, ...page2Ids].sort()).toEqual(
+      Array.from({ length: 8 }, (_, i) => `apple-${i}`).sort(),
+    );
+    // Descending order is preserved within each page.
+    expect(page1Ids).toEqual(["apple-7", "apple-6", "apple-5", "apple-4"]);
+    expect(page2Ids).toEqual(["apple-3", "apple-2", "apple-1", "apple-0"]);
+  });
 });

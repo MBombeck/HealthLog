@@ -27,10 +27,22 @@
  *   - `since` / `until` — ISO timestamps, inclusive. Optional.
  *   - `sportType` — narrow to one HKWorkoutActivityType. Optional.
  *
+ * Pagination contract:
+ *   Dedup runs over the full filtered row set, then `offset` / `limit`
+ *   slice the canonical projection. A naive `skip` + per-window dedup
+ *   double-counts boundary clusters across pages because a cluster
+ *   whose first member sits in page N-1 and whose later member sits in
+ *   page N would be dropped on N-1 and surface again on N. Workout
+ *   volume for HealthLog is bounded (single user, tens of workouts per
+ *   week — single-digit MB at the table's busiest), so reading the
+ *   full filtered set per request is well within budget. If the
+ *   workload ever grows to where this matters, a `(startedAt, id)`
+ *   cursor with a deterministic over-fetch window is the next step.
+ *
  * v1.4.27 B7 / BL-P2-3 — wires `pickCanonicalWorkout()` into the read
- * path so the workout dedup contract finally has a consumer. The
- * picker stays a pure function — the route owns the query window and
- * the response shaping.
+ * path. v1.4.27 R4 RC3 — corrects the pagination so `meta.total`
+ * reflects the deduped count and cluster boundaries no longer leak
+ * across pages.
  */
 import { NextRequest } from "next/server";
 
@@ -47,10 +59,6 @@ import {
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
-// The picker can collapse heavy two-source ingest by ~50%; fetching a
-// 2× window ahead of pagination keeps the page full without leaving
-// the server fetching unbounded.
-const FETCH_MULTIPLIER = 2;
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -92,16 +100,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
     where.sportType = sportType;
   }
 
-  const rawTake = Math.min(
-    limit * FETCH_MULTIPLIER,
-    MAX_LIMIT * FETCH_MULTIPLIER,
-  );
-
+  // Read the full filtered set then dedupe once. See the file-level
+  // "Pagination contract" note for the reason this is preferred over
+  // a per-page over-fetch + slice. The picker is O(n) on cluster
+  // building plus O(k) per cluster (k = open clusters of the same
+  // sport type) and the workout table is bounded.
   const rows = await prisma.workout.findMany({
     where,
     orderBy: { startedAt: "desc" },
-    take: rawTake,
-    skip: offset,
     select: {
       id: true,
       source: true,
@@ -127,15 +133,22 @@ export const GET = apiHandler(async (request: NextRequest) => {
     proximityMinutes: DEFAULT_WORKOUT_PROXIMITY_MINUTES,
   });
 
-  const page = canonical.slice(0, limit);
+  // The picker sorts ascending for deterministic cluster building.
+  // Restore descending order on the canonical projection so the API
+  // matches the orderBy contract above.
+  const canonicalDesc = [...canonical].sort(
+    (a, b) => b.startedAt.getTime() - a.startedAt.getTime(),
+  );
+
+  const page = canonicalDesc.slice(offset, offset + limit);
 
   return apiSuccess({
     workouts: page,
     meta: {
-      total: canonical.length,
+      total: canonicalDesc.length,
       limit,
       offset,
-      droppedDuplicates: rows.length - canonical.length,
+      droppedDuplicates: rows.length - canonicalDesc.length,
       clusters: clusters.length,
     },
   });
