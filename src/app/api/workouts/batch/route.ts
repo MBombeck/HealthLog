@@ -356,21 +356,51 @@ async function postBatch(request: NextRequest): Promise<Response> {
           // is NULL-distinct, so two manual entries on the same instant
           // would both insert. We look these up by the deterministic
           // (userId, source, startedAt, sportType) tuple for each row.
-          const manualMatches = await Promise.all(
-            withoutExternal.map((p) =>
-              tx.workout.findFirst({
-                where: {
-                  userId: user.id,
+          //
+          // v1.4.27 B7 / BL-code-M3 — single batched findMany with one
+          // OR-row per entry instead of N serial findFirst probes. For
+          // a 100-row batch this cuts the per-batch round-trip count
+          // from 1 + N to 2; the per-entry "most-recent createdAt"
+          // tie-break is preserved by sorting the returned rows in
+          // memory and keying on the deterministic tuple.
+          type ManualMatch = { id: string; createdAt: Date };
+          const manualMatchesById = new Map<string, ManualMatch>();
+          if (withoutExternal.length > 0) {
+            const manualRows = await tx.workout.findMany({
+              where: {
+                userId: user.id,
+                route: null,
+                OR: withoutExternal.map((p) => ({
                   source: p.row.source,
                   startedAt: p.row.startedAt as Date,
                   sportType: p.row.sportType,
-                  route: null,
-                },
-                select: { id: true },
-                orderBy: { createdAt: "desc" },
-              }),
-            ),
-          );
+                })),
+              },
+              select: {
+                id: true,
+                source: true,
+                startedAt: true,
+                sportType: true,
+                createdAt: true,
+              },
+              orderBy: { createdAt: "desc" },
+            });
+            for (const row of manualRows) {
+              const key = `${row.source}::${row.startedAt.getTime()}::${row.sportType}`;
+              const existing = manualMatchesById.get(key);
+              if (!existing || existing.createdAt < row.createdAt) {
+                manualMatchesById.set(key, {
+                  id: row.id,
+                  createdAt: row.createdAt,
+                });
+              }
+            }
+          }
+          const manualMatches = withoutExternal.map((p) => {
+            const key = `${p.row.source}::${(p.row.startedAt as Date).getTime()}::${p.row.sportType}`;
+            const match = manualMatchesById.get(key);
+            return match ? { id: match.id } : null;
+          });
 
           const routesToInsert: Prisma.WorkoutRouteCreateManyInput[] = [];
           for (let i = 0; i < withExternal.length; i++) {
