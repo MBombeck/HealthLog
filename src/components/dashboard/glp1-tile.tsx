@@ -374,7 +374,7 @@ export function Glp1Tile() {
                 title={t(preset.titleKey)}
                 onClick={() => setRangePoints(preset.points)}
                 className={cn(
-                  "rounded px-1.5 py-0.5 font-medium tabular-nums",
+                  "inline-flex min-h-11 items-center justify-center rounded px-3 font-medium tabular-nums",
                   "hover:text-foreground focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:outline-none",
                   rangePoints === preset.points
                     ? "bg-card text-foreground shadow-sm"
@@ -455,7 +455,7 @@ function TabButton({
       data-active={active ? "true" : "false"}
       onClick={onClick}
       className={cn(
-        "rounded px-2 py-1 text-xs font-medium",
+        "inline-flex min-h-11 items-center justify-center rounded px-3 text-xs font-medium",
         "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:outline-none",
         active
           ? "bg-card text-foreground shadow-sm"

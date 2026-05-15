@@ -352,7 +352,6 @@ export function GettingStartedChecklist() {
         <Button
           type="button"
           variant="ghost"
-          size="sm"
           className="text-muted-foreground hover:text-foreground"
           onClick={() => setDismissedAll(true)}
         >
@@ -445,7 +444,7 @@ export function GettingStartedChecklist() {
                     })
                   }
                   aria-label={t("gettingStarted.dismissTooltip")}
-                  className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors"
+                  className="text-muted-foreground hover:text-foreground inline-flex h-11 w-11 items-center justify-center rounded transition-colors"
                 >
                   <X className="size-4" />
                 </button>
