@@ -71,8 +71,10 @@ export default function InsightsPulsPage() {
 
   // v1.4.27 F17 — gate the sub-page on at least one pulse observation.
   // Brand-new accounts (no manual logs, no Apple-Health upload yet)
-  // see a one-line empty-state with a CTA into `/measurements/new`
-  // rather than a chart skeleton over a blank target band.
+  // see a one-line empty-state with a CTA into
+  // `/measurements?add=PULSE` rather than a chart skeleton over a
+  // blank target band. v1.4.27 MB6 — query-param replaces the dead
+  // `/measurements/new` route.
   if (
     isAuthenticated &&
     analytics &&
@@ -90,7 +92,7 @@ export default function InsightsPulsPage() {
           description={t("insights.emptyState.pulse.description")}
           action={
             <Button size="sm" asChild>
-              <Link href="/measurements/new">
+              <Link href="/measurements?add=PULSE">
                 {t("insights.emptyState.pulse.cta")}
               </Link>
             </Button>

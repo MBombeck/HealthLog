@@ -76,7 +76,7 @@ export default function InsightsGewichtPage() {
           description={t("insights.emptyState.weight.description")}
           action={
             <Button size="sm" asChild>
-              <Link href="/measurements/new">
+              <Link href="/measurements?add=WEIGHT">
                 {t("insights.emptyState.weight.cta")}
               </Link>
             </Button>

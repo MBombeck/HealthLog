@@ -68,7 +68,9 @@ export default function InsightsBmiPage() {
   // v1.4.27 F17 — BMI is derived from WEIGHT. When no weight readings
   // exist yet, the existing "set your height" branch can never compute
   // anything useful either; surface the empty-state CTA pointing at
-  // `/measurements/new` instead so the user logs the weight first.
+  // `/measurements?add=WEIGHT` instead so the user logs the weight
+  // first. v1.4.27 MB6 — query-param replaces the dead
+  // `/measurements/new` route.
   if (
     isAuthenticated &&
     analytics &&
@@ -86,7 +88,7 @@ export default function InsightsBmiPage() {
           description={t("insights.emptyState.bmi.description")}
           action={
             <Button size="sm" asChild>
-              <Link href="/measurements/new">
+              <Link href="/measurements?add=WEIGHT">
                 {t("insights.emptyState.bmi.cta")}
               </Link>
             </Button>

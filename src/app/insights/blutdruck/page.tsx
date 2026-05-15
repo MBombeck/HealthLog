@@ -27,9 +27,12 @@ import { hasMetricData } from "@/lib/insights/metric-availability";
  * assessment, and the chart's target zones tied to the user's age.
  *
  * v1.4.27 F17 — when the user has zero BP observations, the page
- * short-circuits to an empty-state CTA pointing at `/measurements/new`.
- * Apple Health convention: empty surfaces lead to onboarding hints
- * rather than chart skeletons.
+ * short-circuits to an empty-state CTA pointing at
+ * `/measurements?add=BLOOD_PRESSURE`. Apple Health convention: empty
+ * surfaces lead to onboarding hints rather than chart skeletons.
+ * v1.4.27 MB6 — the previous `/measurements/new` href hit a 404; the
+ * measurements page now consumes `?add=<TYPE>` and auto-opens the
+ * dialog with the matching default type.
  */
 interface AnalyticsData {
   summaries: Record<string, DataSummary>;
@@ -79,7 +82,7 @@ export default function InsightsBlutdruckPage() {
           description={t("insights.emptyState.bloodPressure.description")}
           action={
             <Button size="sm" asChild>
-              <Link href="/measurements/new">
+              <Link href="/measurements?add=BLOOD_PRESSURE">
                 {t("insights.emptyState.bloodPressure.cta")}
               </Link>
             </Button>
