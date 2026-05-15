@@ -204,54 +204,64 @@ export function AppLogPreviewSection() {
           description={t("admin.section.app-logs.emptyDescription")}
         />
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-muted-foreground border-b text-xs">
-                <th className="px-2 py-2 text-left font-medium">
-                  {t("admin.section.app-logs.colLevel")}
-                </th>
-                <th className="px-2 py-2 text-left font-medium">
-                  {t("admin.section.app-logs.colTimestamp")}
-                </th>
-                <th className="px-2 py-2 text-left font-medium">
-                  {t("admin.section.app-logs.colAction")}
-                </th>
-                <th className="px-2 py-2 text-right font-medium">
-                  {t("admin.section.app-logs.colDuration")}
-                </th>
-                <th className="px-2 py-2 text-left font-medium">
-                  {t("admin.section.app-logs.colTraceId")}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-border divide-y">
-              {events.map((event, i) => (
-                <tr
-                  key={`${event.request_id}-${i}`}
-                  className={`${i % 2 === 0 ? "bg-muted/30" : ""} hover:bg-muted cursor-pointer`}
-                  onClick={() => setSelected(event)}
-                >
-                  <td className="px-2 py-2">{levelIcon(event.level)}</td>
-                  <td className="text-muted-foreground px-2 py-2 text-xs whitespace-nowrap">
-                    {formatDateTime(event.timestamp)}
-                  </td>
-                  <td className="px-2 py-2 text-xs">
-                    {event.action?.name ??
-                      (`${event.http?.method ?? ""} ${event.http?.path ?? ""}`.trim() ||
-                        event.kind)}
-                  </td>
-                  <td className="text-muted-foreground px-2 py-2 text-right font-mono text-xs">
-                    {event.duration_ms} ms
-                  </td>
-                  <td className="text-muted-foreground px-2 py-2 font-mono text-xs">
-                    {event.trace_id.slice(0, 8)}…
-                  </td>
+        // v1.4.27 MB5 — keep the table scroll container, but lift the
+        // "showing X of Y" summary line out into a sibling `<div>` so
+        // the meta info stays reachable on narrow viewports even when
+        // the table is scrolled horizontally. The refresh control was
+        // already in the header above the table wrapper.
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-muted-foreground border-b text-xs">
+                  <th className="px-2 py-2 text-left font-medium">
+                    {t("admin.section.app-logs.colLevel")}
+                  </th>
+                  <th className="px-2 py-2 text-left font-medium">
+                    {t("admin.section.app-logs.colTimestamp")}
+                  </th>
+                  <th className="px-2 py-2 text-left font-medium">
+                    {t("admin.section.app-logs.colAction")}
+                  </th>
+                  <th className="px-2 py-2 text-right font-medium">
+                    {t("admin.section.app-logs.colDuration")}
+                  </th>
+                  <th className="px-2 py-2 text-left font-medium">
+                    {t("admin.section.app-logs.colTraceId")}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="text-muted-foreground mt-3 flex items-center justify-between text-xs">
+              </thead>
+              <tbody className="divide-border divide-y">
+                {events.map((event, i) => (
+                  <tr
+                    key={`${event.request_id}-${i}`}
+                    className={`${i % 2 === 0 ? "bg-muted/30" : ""} hover:bg-muted cursor-pointer`}
+                    onClick={() => setSelected(event)}
+                  >
+                    <td className="px-2 py-2">{levelIcon(event.level)}</td>
+                    <td className="text-muted-foreground px-2 py-2 text-xs whitespace-nowrap">
+                      {formatDateTime(event.timestamp)}
+                    </td>
+                    <td className="px-2 py-2 text-xs">
+                      {event.action?.name ??
+                        (`${event.http?.method ?? ""} ${event.http?.path ?? ""}`.trim() ||
+                          event.kind)}
+                    </td>
+                    <td className="text-muted-foreground px-2 py-2 text-right font-mono text-xs">
+                      {event.duration_ms} ms
+                    </td>
+                    <td className="text-muted-foreground px-2 py-2 font-mono text-xs">
+                      {event.trace_id.slice(0, 8)}…
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div
+            className="text-muted-foreground mt-3 flex items-center justify-between text-xs"
+            data-testid="app-log-preview-summary"
+          >
             <span>
               {t("admin.section.app-logs.showing", {
                 count: events.length,
@@ -259,7 +269,7 @@ export function AppLogPreviewSection() {
               })}
             </span>
           </div>
-        </div>
+        </>
       )}
 
       <Dialog
