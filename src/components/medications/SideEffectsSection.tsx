@@ -5,13 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -330,12 +324,11 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
         </div>
       )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("medications.sideEffects.sheetTitle")}</DialogTitle>
-          </DialogHeader>
-
+      <ResponsiveSheet
+        open={open}
+        onOpenChange={setOpen}
+        title={t("medications.sideEffects.sheetTitle")}
+      >
           <form
             onSubmit={handleSubmit}
             className="space-y-4"
@@ -463,7 +456,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
               </p>
             )}
 
-            <DialogFooter className="gap-2">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button
                 type="button"
                 variant="ghost"
@@ -477,10 +470,9 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
                 )}
                 {t("medications.sideEffects.submitCta")}
               </Button>
-            </DialogFooter>
+            </div>
           </form>
-        </DialogContent>
-      </Dialog>
+      </ResponsiveSheet>
     </MedicationDetailSection>
   );
 }

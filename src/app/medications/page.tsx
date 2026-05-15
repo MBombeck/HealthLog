@@ -18,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -256,16 +257,17 @@ export default function MedicationsPage() {
         onClose={() => setImportMedId(null)}
       />
 
-      {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {editingMed
-                ? t("medications.editMedication")
-                : t("medications.newMedication")}
-            </DialogTitle>
-          </DialogHeader>
+      {/* Create/Edit Sheet — bottom-sheet on `<md`, centred Dialog on `md+`. */}
+      <ResponsiveSheet
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        title={
+          editingMed
+            ? t("medications.editMedication")
+            : t("medications.newMedication")
+        }
+        className="sm:max-w-lg"
+      >
           <MedicationForm
             initial={
               editingMed
@@ -307,8 +309,7 @@ export default function MedicationsPage() {
             onSuccess={closeDialog}
             onCancel={closeDialog}
           />
-        </DialogContent>
-      </Dialog>
+      </ResponsiveSheet>
     </div>
   );
 }

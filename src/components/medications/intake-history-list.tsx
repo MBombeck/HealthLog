@@ -16,12 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -530,12 +525,12 @@ export function IntakeHistoryList({
         )}
       </div>
 
-      {/* Edit Dialog */}
-      <Dialog open={!!editing} onOpenChange={(open) => !open && closeEdit()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("medications.editIntake")}</DialogTitle>
-          </DialogHeader>
+      {/* Edit Sheet */}
+      <ResponsiveSheet
+        open={!!editing}
+        onOpenChange={(open) => !open && closeEdit()}
+        title={t("medications.editIntake")}
+      >
           {editing && (
             <form onSubmit={submitEdit} className="space-y-4">
               <div className="space-y-2">
@@ -670,15 +665,14 @@ export function IntakeHistoryList({
               </AlertDialog>
             </form>
           )}
-        </DialogContent>
-      </Dialog>
+      </ResponsiveSheet>
 
-      {/* Create Dialog */}
-      <Dialog open={creating} onOpenChange={(open) => !open && closeCreate()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("medications.newIntake")}</DialogTitle>
-          </DialogHeader>
+      {/* Create Sheet */}
+      <ResponsiveSheet
+        open={creating}
+        onOpenChange={(open) => !open && closeCreate()}
+        title={t("medications.newIntake")}
+      >
           <form onSubmit={submitCreate} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="create-scheduledFor">
@@ -745,8 +739,7 @@ export function IntakeHistoryList({
               </Button>
             </div>
           </form>
-        </DialogContent>
-      </Dialog>
+      </ResponsiveSheet>
     </>
   );
 }

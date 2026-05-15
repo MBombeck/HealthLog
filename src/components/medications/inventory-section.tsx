@@ -5,13 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Loader2, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -430,13 +424,11 @@ export function InventorySection({
         </div>
       </details>
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {t("medications.inventory.addPenTitle")}
-            </DialogTitle>
-          </DialogHeader>
+      <ResponsiveSheet
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        title={t("medications.inventory.addPenTitle")}
+      >
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="inv-doses-total">
@@ -500,7 +492,7 @@ export function InventorySection({
               <p className="text-destructive text-sm">{formError}</p>
             )}
 
-            <DialogFooter>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button
                 type="button"
                 variant="outline"
@@ -517,10 +509,9 @@ export function InventorySection({
                 )}
                 {t("medications.inventory.save")}
               </Button>
-            </DialogFooter>
+            </div>
           </form>
-        </DialogContent>
-      </Dialog>
+      </ResponsiveSheet>
     </>
   );
 }
