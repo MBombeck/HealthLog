@@ -85,20 +85,28 @@ export function FeedbackInboxSection() {
         onValueChange={(v) => setActiveStatus(v as FeedbackStatusType)}
         className="mt-4"
       >
-        <TabsList>
-          {FEEDBACK_STATUS_TABS.map((s) => (
-            <TabsTrigger key={s} value={s}>
-              <span>
-                {t(
-                  `admin.feedback.tab${s.charAt(0) + s.slice(1).toLowerCase()}`,
-                )}
-              </span>
-              <Badge variant="secondary" className="ml-1.5 text-xs">
-                {counts[s] ?? 0}
-              </Badge>
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        {/* v1.4.27 MB7 / CF-55 — wrap the TabsList in an
+            overflow-x-auto strip so the 4 status pills + their count
+            badges scroll horizontally on Pixel 5 / Galaxy Fold
+            instead of squashing the badge text below the legibility
+            floor. Hide the scrollbar visually but keep the gesture
+            working (matches the Insights tab-strip pattern). */}
+        <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <TabsList>
+            {FEEDBACK_STATUS_TABS.map((s) => (
+              <TabsTrigger key={s} value={s}>
+                <span>
+                  {t(
+                    `admin.feedback.tab${s.charAt(0) + s.slice(1).toLowerCase()}`,
+                  )}
+                </span>
+                <Badge variant="secondary" className="ml-1.5 text-xs">
+                  {counts[s] ?? 0}
+                </Badge>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
 
         {FEEDBACK_STATUS_TABS.map((s) => (
           <TabsContent key={s} value={s} className="mt-4">

@@ -41,8 +41,10 @@ export function GeneralSettingsSection() {
           disabled={updateSettings.isPending}
         />
 
-        <div className="flex items-center justify-between">
-          <div>
+        {/* v1.4.27 MB7 / CF-56 — match the SettingsToggle stacking
+            contract: stack on `<sm`, side-by-side on `sm+`. */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <p className="text-sm font-medium">{t("admin.defaultLanguage")}</p>
             <p className="text-muted-foreground text-xs">
               {t("admin.defaultLanguageDescription")}
@@ -54,7 +56,7 @@ export function GeneralSettingsSection() {
               updateSettings.mutate({ defaultLocale: e.target.value })
             }
             disabled={updateSettings.isPending}
-            className="w-auto"
+            className="self-end sm:w-auto sm:self-auto"
           >
             <option value="de">Deutsch</option>
             <option value="en">English</option>

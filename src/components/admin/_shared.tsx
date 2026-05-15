@@ -195,11 +195,18 @@ export function SettingsToggle({
   onCheckedChange: (checked: boolean) => void;
   disabled: boolean;
 }) {
+  // v1.4.27 MB7 / CF-56 — stack the toggle row vertically on `<sm` so
+  // the label + description don't have to compete with the switch for
+  // horizontal space on Pixel 5 (the German "Registration enabled — …"
+  // description used to wrap to 4 lines while the switch ate ~52 px on
+  // the right). At `sm:` the original side-by-side layout returns.
+  // The switch self-aligns to the right via `self-end` on the stacked
+  // branch so it stays a familiar tap target.
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        {Icon && <Icon className="text-muted-foreground h-4 w-4" />}
-        <div>
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <div className="flex min-w-0 items-center gap-2">
+        {Icon && <Icon className="text-muted-foreground h-4 w-4 shrink-0" />}
+        <div className="min-w-0">
           <p className="text-sm font-medium">{label}</p>
           {description && (
             <p className="text-muted-foreground text-xs">{description}</p>
@@ -210,6 +217,7 @@ export function SettingsToggle({
         checked={checked}
         onCheckedChange={onCheckedChange}
         disabled={disabled}
+        className="self-end sm:self-auto"
       />
     </div>
   );
