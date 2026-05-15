@@ -9,6 +9,10 @@ import {
 } from "@/lib/insights/memory";
 import { applyPayloadBudget } from "@/lib/insights/bucket-series";
 import { stripChartTokens } from "@/lib/insights/chart-tokens";
+import {
+  withTimeout,
+  STATUS_PROVIDER_TIMEOUT_MS,
+} from "@/lib/insights/with-timeout";
 import { annotate } from "@/lib/logging/context";
 
 const BERLIN_DAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
@@ -141,17 +145,23 @@ export async function generateBmiStatusForUser(
     };
   }
 
-  const measurements = await prisma.measurement.findMany({
-    where: {
-      userId,
-      type: "WEIGHT",
-    },
-    orderBy: { measuredAt: "asc" },
-    select: {
-      value: true,
-      measuredAt: true,
-    },
-  });
+  // v1.4.28 FB-D2 — cap the snapshot input (weight runs at most once
+  // per day for typical users; 365 covers a full year while the
+  // downstream payload budget trims further).
+  const measurements = await prisma.measurement
+    .findMany({
+      where: {
+        userId,
+        type: "WEIGHT",
+      },
+      orderBy: { measuredAt: "desc" },
+      take: 365,
+      select: {
+        value: true,
+        measuredAt: true,
+      },
+    })
+    .then((rows) => rows.reverse());
 
   const now = new Date();
   const weightSeries = applyPayloadBudget(
@@ -250,18 +260,35 @@ export async function generateBmiStatusForUser(
     locale,
   );
 
-  const result = await provider.generateCompletion({
-    systemPrompt: getBmiSystemPrompt(locale),
-    userPrompt: getBmiUserPrompt(
-      snapshotJson,
-      todayKey,
-      locale,
-      previousContextBlock,
-    ),
-    temperature: 0.3,
-    maxTokens: 1000,
-  });
+  // v1.4.28 FB-D2 — 20 s timeout race; fall back to the no-key text
+  // on stall so the InsightStatusCard renders deterministically.
+  const raced = await withTimeout(
+    () =>
+      provider.generateCompletion({
+        systemPrompt: getBmiSystemPrompt(locale),
+        userPrompt: getBmiUserPrompt(
+          snapshotJson,
+          todayKey,
+          locale,
+          previousContextBlock,
+        ),
+        temperature: 0.3,
+        maxTokens: 1000,
+      }),
+    STATUS_PROVIDER_TIMEOUT_MS,
+    null,
+  );
 
+  if (raced.timedOut || raced.value === null) {
+    return {
+      hasProvider: true,
+      text: getNoKeyBmiStatusText(locale),
+      cached: true,
+      updatedAt: null,
+    };
+  }
+
+  const result = raced.value;
   const content = result.content;
   if (typeof content !== "string" || content.trim().length === 0) {
     throw new Error("AI returned empty content for bmi-status");

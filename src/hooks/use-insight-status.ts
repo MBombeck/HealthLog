@@ -78,5 +78,10 @@ export function useInsightStatus(metric: InsightStatusMetric) {
     },
     enabled: isAuthenticated,
     staleTime: 60 * 1000,
+    // v1.4.28 FB-D2 — the status route now returns a deterministic
+    // cached-style envelope on provider timeout. Retrying that response
+    // re-fires the same expensive upstream call and the user perceives
+    // a longer hang. Drop retries to surface the fallback immediately.
+    retry: 0,
   });
 }

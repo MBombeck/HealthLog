@@ -19,6 +19,10 @@ import {
   type DailyBucket,
 } from "@/lib/insights/bucket-series";
 import { stripChartTokens } from "@/lib/insights/chart-tokens";
+import {
+  withTimeout,
+  STATUS_PROVIDER_TIMEOUT_MS,
+} from "@/lib/insights/with-timeout";
 import { annotate } from "@/lib/logging/context";
 
 const BERLIN_DAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
@@ -164,20 +168,26 @@ export async function generateWeightStatusForUser(
     }
   }
 
-  const measurements = await prisma.measurement.findMany({
-    where: {
-      userId,
-      type: {
-        in: ["WEIGHT", "BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"],
+  // v1.4.28 FB-D2 — cap the snapshot input. BP captures three types
+  // per day so 1095 = 365 d × 3 channels. Order desc + reverse so we
+  // keep the most recent year of rows.
+  const measurements = await prisma.measurement
+    .findMany({
+      where: {
+        userId,
+        type: {
+          in: ["WEIGHT", "BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"],
+        },
       },
-    },
-    orderBy: { measuredAt: "asc" },
-    select: {
-      type: true,
-      value: true,
-      measuredAt: true,
-    },
-  });
+      take: 1095,
+      orderBy: { measuredAt: "desc" },
+      select: {
+        type: true,
+        value: true,
+        measuredAt: true,
+      },
+    })
+    .then((rows) => rows.reverse());
 
   const now = new Date();
 
@@ -211,12 +221,16 @@ export async function generateWeightStatusForUser(
     { now },
   );
 
-  // Fetch mood context (optional — for enrichment only)
-  const moodEntries = await prisma.moodEntry.findMany({
-    where: { userId },
-    orderBy: { moodLoggedAt: "asc" },
-    select: { date: true, score: true, moodLoggedAt: true },
-  });
+  // Fetch mood context (optional — for enrichment only). v1.4.28
+  // FB-D2 — cap at 90 entries.
+  const moodEntries = await prisma.moodEntry
+    .findMany({
+      where: { userId },
+      orderBy: { moodLoggedAt: "desc" },
+      take: 90,
+      select: { date: true, score: true, moodLoggedAt: true },
+    })
+    .then((rows) => rows.reverse());
 
   const moodSeries = applyPayloadBudget(
     moodEntries.map((entry) => ({
@@ -396,18 +410,35 @@ export async function generateWeightStatusForUser(
     locale,
   );
 
-  const result = await provider.generateCompletion({
-    systemPrompt: getWeightSystemPrompt(locale),
-    userPrompt: getWeightUserPrompt(
-      snapshotJson,
-      todayKey,
-      locale,
-      previousContextBlock,
-    ),
-    temperature: 0.3,
-    maxTokens: 1000,
-  });
+  // v1.4.28 FB-D2 — 20 s timeout race; fall back to the no-key text
+  // on stall so the InsightStatusCard renders deterministically.
+  const raced = await withTimeout(
+    () =>
+      provider.generateCompletion({
+        systemPrompt: getWeightSystemPrompt(locale),
+        userPrompt: getWeightUserPrompt(
+          snapshotJson,
+          todayKey,
+          locale,
+          previousContextBlock,
+        ),
+        temperature: 0.3,
+        maxTokens: 1000,
+      }),
+    STATUS_PROVIDER_TIMEOUT_MS,
+    null,
+  );
 
+  if (raced.timedOut || raced.value === null) {
+    return {
+      hasProvider: true,
+      text: getNoKeyWeightStatusText(locale),
+      cached: true,
+      updatedAt: null,
+    };
+  }
+
+  const result = raced.value;
   const content = result.content;
   if (typeof content !== "string" || content.trim().length === 0) {
     throw new Error("AI returned empty content for weight-status");

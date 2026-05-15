@@ -15,6 +15,10 @@ import {
 import { getNoKeyPulseStatusText } from "@/lib/insights/no-key-fallbacks";
 import { applyPayloadBudget } from "@/lib/insights/bucket-series";
 import { stripChartTokens } from "@/lib/insights/chart-tokens";
+import {
+  withTimeout,
+  STATUS_PROVIDER_TIMEOUT_MS,
+} from "@/lib/insights/with-timeout";
 import { annotate } from "@/lib/logging/context";
 
 const BERLIN_DAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
@@ -136,17 +140,22 @@ export async function generatePulseStatusForUser(
     }
   }
 
+  // v1.4.28 FB-D2 — cap the snapshot input. The downstream
+  // `applyPayloadBudget` trims further but the unbounded findMany was
+  // pulling tens of thousands of rows for Apple-Health-rich accounts
+  // before the budget call even started.
   const measurements = await prisma.measurement.findMany({
     where: {
       userId,
       type: "PULSE",
     },
-    orderBy: { measuredAt: "asc" },
+    orderBy: { measuredAt: "desc" },
+    take: 365,
     select: {
       value: true,
       measuredAt: true,
     },
-  });
+  }).then((rows) => rows.reverse());
 
   const now = new Date();
 
@@ -161,12 +170,17 @@ export async function generatePulseStatusForUser(
     pulseSeries.daily.map((bucket) => ({ value: bucket.value })),
   );
 
-  // Fetch mood context (optional — for enrichment only)
-  const moodEntries = await prisma.moodEntry.findMany({
-    where: { userId },
-    orderBy: { moodLoggedAt: "asc" },
-    select: { date: true, score: true, moodLoggedAt: true },
-  });
+  // Fetch mood context (optional — for enrichment only). Cap at 90
+  // entries (~3 months); the bucket-series budget then summarises
+  // further. v1.4.28 FB-D2 — prevent unbounded reads for power users.
+  const moodEntries = await prisma.moodEntry
+    .findMany({
+      where: { userId },
+      orderBy: { moodLoggedAt: "desc" },
+      take: 90,
+      select: { date: true, score: true, moodLoggedAt: true },
+    })
+    .then((rows) => rows.reverse());
 
   const moodSeries = applyPayloadBudget(
     moodEntries.map((entry) => ({
@@ -286,18 +300,39 @@ export async function generatePulseStatusForUser(
     locale,
   );
 
-  const result = await provider.generateCompletion({
-    systemPrompt: getPulseSystemPrompt(locale),
-    userPrompt: getPulseUserPrompt(
-      snapshotJson,
-      todayKey,
-      locale,
-      previousContextBlock,
-    ),
-    temperature: 0.3,
-    maxTokens: 1000,
-  });
+  // v1.4.28 FB-D2 — cap the provider round-trip at 20 s. On timeout
+  // (or upstream failure) return the no-key fallback text in a
+  // cached-style envelope so the status card renders deterministically
+  // instead of spinning behind React-Query's default retry ladder.
+  // The fallback is NOT persisted to the audit cache — a transient
+  // upstream stall would otherwise poison tomorrow's hit.
+  const raced = await withTimeout(
+    () =>
+      provider.generateCompletion({
+        systemPrompt: getPulseSystemPrompt(locale),
+        userPrompt: getPulseUserPrompt(
+          snapshotJson,
+          todayKey,
+          locale,
+          previousContextBlock,
+        ),
+        temperature: 0.3,
+        maxTokens: 1000,
+      }),
+    STATUS_PROVIDER_TIMEOUT_MS,
+    null,
+  );
 
+  if (raced.timedOut || raced.value === null) {
+    return {
+      hasProvider: true,
+      text: getNoKeyPulseStatusText(locale),
+      cached: true,
+      updatedAt: null,
+    };
+  }
+
+  const result = raced.value;
   const content = result.content;
   if (typeof content !== "string" || content.trim().length === 0) {
     throw new Error("AI returned empty content for pulse-status");

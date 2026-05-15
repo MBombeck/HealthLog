@@ -14,6 +14,10 @@ import {
 } from "@/lib/insights/memory";
 import { applyPayloadBudget } from "@/lib/insights/bucket-series";
 import { stripChartTokens } from "@/lib/insights/chart-tokens";
+import {
+  withTimeout,
+  STATUS_PROVIDER_TIMEOUT_MS,
+} from "@/lib/insights/with-timeout";
 import { annotate } from "@/lib/logging/context";
 
 const BERLIN_DAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
@@ -137,20 +141,26 @@ export async function generateGeneralStatusForUser(
     }
   }
 
-  const measurements = await prisma.measurement.findMany({
-    where: {
-      userId,
-      type: {
-        in: [...MEASUREMENT_TYPES],
+  // v1.4.28 FB-D2 — cap the snapshot input. General-status pulls
+  // every supported measurement type; without a cap the read scales
+  // linearly with account density.
+  const measurements = await prisma.measurement
+    .findMany({
+      where: {
+        userId,
+        type: {
+          in: [...MEASUREMENT_TYPES],
+        },
       },
-    },
-    orderBy: { measuredAt: "asc" },
-    select: {
-      type: true,
-      value: true,
-      measuredAt: true,
-    },
-  });
+      orderBy: { measuredAt: "desc" },
+      take: 5000,
+      select: {
+        type: true,
+        value: true,
+        measuredAt: true,
+      },
+    })
+    .then((rows) => rows.reverse());
 
   const now = new Date();
 
@@ -219,12 +229,16 @@ export async function generateGeneralStatusForUser(
     }));
   const adherenceSeries = applyPayloadBudget(adherenceRecords, { now });
 
-  // Fetch mood context (optional — for enrichment only)
-  const moodEntries = await prisma.moodEntry.findMany({
-    where: { userId },
-    orderBy: { moodLoggedAt: "asc" },
-    select: { date: true, score: true, moodLoggedAt: true },
-  });
+  // Fetch mood context (optional — for enrichment only). v1.4.28
+  // FB-D2 — cap at 90 entries.
+  const moodEntries = await prisma.moodEntry
+    .findMany({
+      where: { userId },
+      orderBy: { moodLoggedAt: "desc" },
+      take: 90,
+      select: { date: true, score: true, moodLoggedAt: true },
+    })
+    .then((rows) => rows.reverse());
 
   const moodRecords = moodEntries.map((entry) => ({
     measuredAt: entry.moodLoggedAt,
@@ -345,18 +359,35 @@ export async function generateGeneralStatusForUser(
     locale,
   );
 
-  const result = await provider.generateCompletion({
-    systemPrompt: getGeneralStatusSystemPrompt(locale),
-    userPrompt: getGeneralStatusUserPrompt(
-      snapshotJson,
-      todayKey,
-      locale,
-      previousContextBlock,
-    ),
-    temperature: 0.3,
-    maxTokens: 1000,
-  });
+  // v1.4.28 FB-D2 — 20 s timeout race; fall back to the no-key text
+  // on stall so the InsightStatusCard renders deterministically.
+  const raced = await withTimeout(
+    () =>
+      provider.generateCompletion({
+        systemPrompt: getGeneralStatusSystemPrompt(locale),
+        userPrompt: getGeneralStatusUserPrompt(
+          snapshotJson,
+          todayKey,
+          locale,
+          previousContextBlock,
+        ),
+        temperature: 0.3,
+        maxTokens: 1000,
+      }),
+    STATUS_PROVIDER_TIMEOUT_MS,
+    null,
+  );
 
+  if (raced.timedOut || raced.value === null) {
+    return {
+      hasProvider: true,
+      text: getNoKeyGeneralStatusText(locale),
+      cached: true,
+      updatedAt: null,
+    };
+  }
+
+  const result = raced.value;
   const content = result.content;
   if (typeof content !== "string" || content.trim().length === 0) {
     throw new Error("AI returned empty content for general-status");

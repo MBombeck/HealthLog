@@ -14,6 +14,10 @@ import {
 } from "@/lib/insights/memory";
 import { applyPayloadBudget } from "@/lib/insights/bucket-series";
 import { stripChartTokens } from "@/lib/insights/chart-tokens";
+import {
+  withTimeout,
+  STATUS_PROVIDER_TIMEOUT_MS,
+} from "@/lib/insights/with-timeout";
 import { annotate } from "@/lib/logging/context";
 
 // 360 daily days + 24 monthly windows ≈ 1080 days of intake history.
@@ -308,18 +312,36 @@ export async function generateMedicationComplianceStatusForUser(
     locale,
   );
 
-  const result = await provider.generateCompletion({
-    systemPrompt: getMedicationComplianceSystemPrompt(locale),
-    userPrompt: getMedicationComplianceUserPrompt(
-      snapshotJson,
-      todayKey,
-      locale,
-      previousContextBlock,
-    ),
-    temperature: 0.3,
-    maxTokens: 1000,
-  });
+  // v1.4.28 FB-D2 — 20 s timeout race; fall back to the no-key text
+  // on stall so the InsightStatusCard renders deterministically.
+  const raced = await withTimeout(
+    () =>
+      provider.generateCompletion({
+        systemPrompt: getMedicationComplianceSystemPrompt(locale),
+        userPrompt: getMedicationComplianceUserPrompt(
+          snapshotJson,
+          todayKey,
+          locale,
+          previousContextBlock,
+        ),
+        temperature: 0.3,
+        maxTokens: 1000,
+      }),
+    STATUS_PROVIDER_TIMEOUT_MS,
+    null,
+  );
 
+  if (raced.timedOut || raced.value === null) {
+    return {
+      hasProvider: true,
+      summary: getNoKeyMedicationComplianceStatusText(locale),
+      medications: [],
+      cached: true,
+      updatedAt: null,
+    };
+  }
+
+  const result = raced.value;
   const content = result.content;
   if (typeof content !== "string" || content.trim().length === 0) {
     throw new Error(
