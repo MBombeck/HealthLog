@@ -101,29 +101,42 @@ export type DeviceType = z.infer<typeof deviceTypeEnum>;
  */
 const metricSourceLadder = z.array(measurementSourceEnum).max(8);
 
-const metricPriorityObjectSchema = z
-  .object({
-    // ── Cumulative metrics — sum-per-day; pick ONE source per day. ──
-    steps: metricSourceLadder,
-    activeEnergy: metricSourceLadder,
-    walkingRunningDistance: metricSourceLadder,
-    flightsClimbed: metricSourceLadder,
-    // ── Sleep — pick best-resolution source per night. ──
-    sleep: metricSourceLadder,
-    // ── Point measurements — all sources kept; this controls
-    //    "display preference" when multiple sources happen to capture
-    //    the same metric on the same day.
-    weight: metricSourceLadder,
-    bloodPressure: metricSourceLadder,
-    pulse: metricSourceLadder,
-    bodyFat: metricSourceLadder,
-    bodyTemperature: metricSourceLadder,
-    spo2: metricSourceLadder,
-    hrv: metricSourceLadder,
-    restingHeartRate: metricSourceLadder,
-    vo2Max: metricSourceLadder,
-  })
-  .partial();
+/**
+ * Metric-class keys carried by `SourcePriority`. Listed once here so
+ * the Settings UI, the aggregator helper, and the tests all read from
+ * the same place — a future addition (Apple Health workouts in v1.5)
+ * shows up everywhere by extending one constant.
+ */
+export const SOURCE_PRIORITY_METRIC_KEYS = [
+  "steps",
+  "activeEnergy",
+  "walkingRunningDistance",
+  "flightsClimbed",
+  "sleep",
+  "weight",
+  "bloodPressure",
+  "pulse",
+  "bodyFat",
+  "bodyTemperature",
+  "spo2",
+  "hrv",
+  "restingHeartRate",
+  "vo2Max",
+] as const;
+
+export type SourcePriorityMetricKey =
+  (typeof SOURCE_PRIORITY_METRIC_KEYS)[number];
+
+// v1.4.27 B7 / BL-P4-11-S1 — derive the metric-priority schema shape
+// from `SOURCE_PRIORITY_METRIC_KEYS` so the schema and the enum cannot
+// drift. Adding a new metric class is now a single-line constant edit
+// instead of a two-place change that the lint chain doesn't enforce.
+const metricPriorityShape: Record<SourcePriorityMetricKey, typeof metricSourceLadder> =
+  Object.fromEntries(
+    SOURCE_PRIORITY_METRIC_KEYS.map((key) => [key, metricSourceLadder]),
+  ) as Record<SourcePriorityMetricKey, typeof metricSourceLadder>;
+
+const metricPriorityObjectSchema = z.object(metricPriorityShape).partial();
 
 /**
  * v1.4.25 W8c — device-type ladder per metric class. Walked by
@@ -161,20 +174,9 @@ const deviceTypePrioritySchema = z
 export const sourcePrioritySchema = z
   .object({
     // ── v1.4.25 W5e flat shape (backward-compat) ──
-    steps: metricSourceLadder,
-    activeEnergy: metricSourceLadder,
-    walkingRunningDistance: metricSourceLadder,
-    flightsClimbed: metricSourceLadder,
-    sleep: metricSourceLadder,
-    weight: metricSourceLadder,
-    bloodPressure: metricSourceLadder,
-    pulse: metricSourceLadder,
-    bodyFat: metricSourceLadder,
-    bodyTemperature: metricSourceLadder,
-    spo2: metricSourceLadder,
-    hrv: metricSourceLadder,
-    restingHeartRate: metricSourceLadder,
-    vo2Max: metricSourceLadder,
+    // v1.4.27 B7 — derived from the shared metric-priority shape so the
+    // flat keys cannot drift from the nested `metricPriority` schema.
+    ...metricPriorityShape,
     // ── v1.4.25 W8c additions ──
     metricPriority: metricPriorityObjectSchema,
     deviceTypePriority: deviceTypePrioritySchema,
@@ -184,32 +186,6 @@ export const sourcePrioritySchema = z
 export type SourcePriority = z.infer<typeof sourcePrioritySchema>;
 export type MetricPriority = z.infer<typeof metricPriorityObjectSchema>;
 export type DeviceTypePriority = z.infer<typeof deviceTypePrioritySchema>;
-
-/**
- * Metric-class keys carried by `SourcePriority`. Listed once here so
- * the Settings UI, the aggregator helper, and the tests all read from
- * the same place — a future addition (Apple Health workouts in v1.5)
- * shows up everywhere by extending one constant.
- */
-export const SOURCE_PRIORITY_METRIC_KEYS = [
-  "steps",
-  "activeEnergy",
-  "walkingRunningDistance",
-  "flightsClimbed",
-  "sleep",
-  "weight",
-  "bloodPressure",
-  "pulse",
-  "bodyFat",
-  "bodyTemperature",
-  "spo2",
-  "hrv",
-  "restingHeartRate",
-  "vo2Max",
-] as const;
-
-export type SourcePriorityMetricKey =
-  (typeof SOURCE_PRIORITY_METRIC_KEYS)[number];
 
 /**
  * Marc-directive 2026-05-14 defaults:
