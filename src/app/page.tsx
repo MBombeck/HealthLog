@@ -852,37 +852,24 @@ export default function DashboardPage() {
              tile (no DataSummary) so the prior-period delta uses
              `bpInTargetPctAllTime` as the long-arc baseline — when
              comparison is off the field stays null. */
+          // v1.4.28 FB-C1 + FB-C2 — rewrite the BD-Zielbereich tile
+          // against the shared `<TrendCard>` primitive so it matches
+          // the Weight / BP / Pulse sibling tiles exactly. The
+          // synthetic `bpSlope30 = bpTrendDelta / 30` block produced a
+          // small float (≈ 1.1 for a 33-point delta) that the
+          // TrendCard's date-shaped formatter pipeline rendered as
+          // "1.1." — the maintainer's screenshot regression. The
+          // all-time aggregate moves to the `/targets` BP card which
+          // already shows the same number with more context; the
+          // dashboard tile no longer needs to carry it. `avgAllTime`
+          // also retires from the TrendCard API (this was its only
+          // consumer).
           const bp7 = data?.bpInTargetPct7d ?? null;
           const bp30 = data?.bpInTargetPct30d ?? null;
-          const bpAll = data?.bpInTargetPctAllTime ?? null;
           const bpPriorMonth = data?.bpInTargetPctPriorMonth ?? null;
           const bpPriorYear = data?.bpInTargetPctPriorYear ?? null;
           const bpTrendDelta =
             bp7 !== null && bp30 !== null ? bp7 - bp30 : null;
-          const bpSlope30: import("@/lib/analytics/trends").TrendSlope | null =
-            bpTrendDelta === null
-              ? null
-              : {
-                  slope: bpTrendDelta / 30,
-                  direction:
-                    bpTrendDelta > 0.5
-                      ? "up"
-                      : bpTrendDelta < -0.5
-                        ? "down"
-                        : "stable",
-                  // Synthetic slope (last-7d minus last-30d) carries no
-                  // R² — pin to 1 so existing TrendSlope consumers don't
-                  // mis-interpret a `0` as "very low confidence".
-                  confidence: 1,
-                };
-          // v1.4.22 W5 reconcile (Code-H2) — match the comparison
-          // window the user picked. `lastMonth` baseline ⇒ compare
-          // last30 against the now-60d…now-30d window (priorMonth);
-          // `lastYear` baseline ⇒ compare against the matching window
-          // shifted back 365 days. The previous shortcut subtracted
-          // `bpAll` regardless of baseline, which produced a number
-          // whose magnitude was honest but whose label ("vs. last
-          // month") lied to the user.
           const bpComparePrior =
             compareBaseline === "lastMonth"
               ? bpPriorMonth
@@ -904,14 +891,9 @@ export default function DashboardPage() {
                 label={t("dashboard.bpInTargetShort")}
                 latest={data?.bpInTargetPct ?? null}
                 unit="%"
-                /* v1.4.18 A1 — wire 7T / 30T sub-values from the new
-                   windowed analytics fields. Up to v1.4.17 these were
-                   hard-coded to null and rendered "—" even when the
-                   user had paired BP readings in both windows. */
                 avg7={bp7}
                 avg30={bp30}
-                avgAllTime={bpAll}
-                slope30={bpSlope30}
+                slope30={null}
                 trend7Delta={bpTrendDelta}
                 icon={Target}
                 directionSentiment="up-good"

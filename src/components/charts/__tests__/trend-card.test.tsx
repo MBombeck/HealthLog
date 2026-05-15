@@ -125,6 +125,9 @@ describe("<TrendCard> directionSentiment", () => {
 
 describe("<TrendCard> responsive layout", () => {
   it("keeps long BP target tile content wrappable inside the card", () => {
+    // v1.4.28 FB-C2 — the BD-Zielbereich tile dropped `avgAllTime`
+    // and the synthetic slope; assert the surviving shape (overflow
+    // wrap discipline, compare-delta callout) still ships.
     const html = render(
       <TrendCard
         label="BP in target"
@@ -132,8 +135,7 @@ describe("<TrendCard> responsive layout", () => {
         unit="%"
         avg7={100}
         avg30={50}
-        avgAllTime={11}
-        slope30={RISING}
+        slope30={null}
         trend7Delta={50}
         icon={Activity}
         directionSentiment="up-good"
@@ -145,6 +147,6 @@ describe("<TrendCard> responsive layout", () => {
     expect(html).toContain("min-w-0");
     expect(html).toContain("[overflow-wrap:anywhere]");
     expect(html).toContain('data-slot="tile-compare-delta"');
-    expect(html).toContain('data-slot="trend-card-all-time"');
+    expect(html).not.toContain('data-slot="trend-card-all-time"');
   });
 });
