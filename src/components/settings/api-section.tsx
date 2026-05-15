@@ -58,6 +58,21 @@ export function ApiSection() {
 function ApiEndpointsCard() {
   const { t } = useTranslations();
 
+  // v1.4.27 MB5 — dual-render: <md gets a stacked card list, md+
+  // keeps the original table. Mobile cards wrap inside their box and
+  // never trigger horizontal scroll, mirroring the pattern from
+  // `<ApiTokenOverviewSection>`. The endpoint catalogue currently
+  // ships a single row but stays array-driven so adding new rows
+  // remains a one-line edit on both surfaces.
+  const endpoints = [
+    {
+      method: "POST",
+      path: "/api/ingest/medication",
+      auth: "Authorization: Bearer hlk_...",
+      example: `{ "medicationName": "...", "scheduledFor": "..." }`,
+    },
+  ];
+
   return (
     <div className="bg-card border-border rounded-xl border p-6">
       <div className="flex items-center gap-2">
@@ -70,7 +85,8 @@ function ApiEndpointsCard() {
         {t("settings.apiEndpointsDescription")}
       </p>
 
-      <div className="border-border mt-4 overflow-x-auto rounded-lg border">
+      {/* Desktop table — verbatim layout for md+. */}
+      <div className="border-border mt-4 hidden overflow-x-auto rounded-lg border md:block">
         <table className="w-full min-w-[760px] text-xs md:min-w-0">
           <thead>
             <tr className="bg-muted/40 text-muted-foreground border-b">
@@ -89,19 +105,52 @@ function ApiEndpointsCard() {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td className="px-3 py-2 font-medium">POST</td>
-              <td className="px-3 py-2 font-mono">/api/ingest/medication</td>
-              <td className="px-3 py-2 font-mono">
-                Authorization: Bearer hlk_...
-              </td>
-              <td className="px-3 py-2 font-mono">
-                {`{ "medicationName": "...", "scheduledFor": "..." }`}
-              </td>
-            </tr>
+            {endpoints.map((endpoint) => (
+              <tr key={`${endpoint.method} ${endpoint.path}`}>
+                <td className="px-3 py-2 font-medium">{endpoint.method}</td>
+                <td className="px-3 py-2 font-mono">{endpoint.path}</td>
+                <td className="px-3 py-2 font-mono">{endpoint.auth}</td>
+                <td className="px-3 py-2 font-mono">{endpoint.example}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
+
+      {/* Mobile card list — each endpoint stacks its columns vertically
+          with a labelled meta row. No horizontal scroll. */}
+      <ul
+        className="mt-4 space-y-2 md:hidden"
+        data-testid="settings-api-endpoints-mobile-list"
+      >
+        {endpoints.map((endpoint) => (
+          <li
+            key={`${endpoint.method} ${endpoint.path}`}
+            className="bg-muted/30 border-border space-y-1.5 rounded-lg border p-3 text-xs"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary" className="text-[10px]">
+                {endpoint.method}
+              </Badge>
+              <code className="font-mono break-all">{endpoint.path}</code>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-[10px] uppercase tracking-wide">
+                {t("settings.apiEndpointAuth")}
+              </p>
+              <code className="font-mono break-all">{endpoint.auth}</code>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-[10px] uppercase tracking-wide">
+                {t("settings.apiEndpointExample")}
+              </p>
+              <code className="block font-mono break-all">
+                {endpoint.example}
+              </code>
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -236,7 +285,8 @@ function ApiTokensCard() {
           <p className="mb-2 text-sm font-medium">
             {t("settings.activeTokensTitle")}
           </p>
-          <div className="border-border overflow-x-auto rounded-lg border">
+          {/* Desktop table — verbatim layout for md+, hidden on phones. */}
+          <div className="border-border hidden overflow-x-auto rounded-lg border md:block">
             <table className="w-full min-w-[860px] text-sm md:min-w-0">
               <thead>
                 <tr className="bg-muted/40 text-muted-foreground border-b text-xs">
@@ -342,6 +392,103 @@ function ApiTokensCard() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile card list — each row stacks its columns vertically
+              with explicit labels so the data is readable inside a
+              narrow viewport. The revoke action stays full-width to
+              clear the 44pt tap-target floor. */}
+          {activeTokens.length === 0 ? (
+            <p
+              className="text-muted-foreground rounded-lg border border-dashed px-3 py-4 text-center text-sm md:hidden"
+              data-testid="settings-api-tokens-active-empty"
+            >
+              {t("settings.noActiveTokens")}
+            </p>
+          ) : (
+            <ul
+              className="space-y-2 md:hidden"
+              data-testid="settings-api-tokens-mobile-list"
+            >
+              {activeTokens.map((tok) => {
+                const isExpired =
+                  tok.expiresAt && new Date(tok.expiresAt) < new Date();
+                return (
+                  <li
+                    key={tok.id}
+                    className="bg-muted/30 border-border space-y-2 rounded-lg border p-3"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <p className="min-w-0 flex-1 text-sm font-medium break-all">
+                        {tok.name}
+                      </p>
+                      {isExpired ? (
+                        <Badge variant="destructive" className="text-[10px]">
+                          {t("settings.tokenExpired")}
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-dracula-green/15 text-dracula-green text-[10px]">
+                          {t("settings.tokenActive")}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-muted-foreground text-[11px]">
+                      <span className="font-medium">
+                        {t("settings.tokenTablePermissions")}:
+                      </span>{" "}
+                      {tok.permissions.join(", ")}
+                    </p>
+                    <p className="text-muted-foreground text-[11px]">
+                      <span className="font-medium">
+                        {t("settings.tokenTableCreated")}:
+                      </span>{" "}
+                      {formatDate(tok.createdAt)}
+                    </p>
+                    <p className="text-muted-foreground text-[11px]">
+                      <span className="font-medium">
+                        {t("settings.tokenTableLastUsed")}:
+                      </span>{" "}
+                      {tok.lastUsedAt
+                        ? formatDateTime(tok.lastUsedAt)
+                        : t("settings.tokenNeverUsed")}
+                    </p>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive border-destructive/30 min-h-11 w-full"
+                        >
+                          <Trash2 className="mr-2 h-3.5 w-3.5" />
+                          {t("settings.tokenRevoke")}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            {t("settings.tokenRevoke")}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {t("settings.tokenRevokeDescription")}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>
+                            {t("common.cancel")}
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={() => handleRevoke(tok.id)}
+                          >
+                            {t("settings.tokenRevoked")}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
 
         {revokedTokens.length > 0 && (
@@ -359,47 +506,89 @@ function ApiTokensCard() {
               })}
             </button>
             {showRevokedTokens && (
-              <div className="border-border overflow-x-auto rounded-lg border">
-                <table className="w-full min-w-[760px] text-sm md:min-w-0">
-                  <thead>
-                    <tr className="bg-muted/40 text-muted-foreground border-b text-xs">
-                      <th className="px-3 py-2 text-left font-medium">
-                        {t("settings.tokenTableName")}
-                      </th>
-                      <th className="px-3 py-2 text-left font-medium">
-                        {t("settings.tokenTablePermissions")}
-                      </th>
-                      <th className="px-3 py-2 text-left font-medium">
-                        {t("settings.tokenTableCreated")}
-                      </th>
-                      <th className="px-3 py-2 text-left font-medium">
-                        {t("settings.tokenTableLastUsed")}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-border divide-y">
-                    {revokedTokens.map((tok, index) => (
-                      <tr
-                        key={tok.id}
-                        className={index % 2 === 0 ? "bg-muted/20" : ""}
-                      >
-                        <td className="px-3 py-2 font-medium">{tok.name}</td>
-                        <td className="text-muted-foreground px-3 py-2 text-xs">
-                          {tok.permissions.join(", ")}
-                        </td>
-                        <td className="text-muted-foreground px-3 py-2 text-xs whitespace-nowrap">
-                          {formatDate(tok.createdAt)}
-                        </td>
-                        <td className="text-muted-foreground px-3 py-2 text-xs whitespace-nowrap">
-                          {tok.lastUsedAt
-                            ? formatDateTime(tok.lastUsedAt)
-                            : t("settings.tokenNeverUsed")}
-                        </td>
+              <>
+                {/* Desktop table — verbatim layout for md+. */}
+                <div className="border-border hidden overflow-x-auto rounded-lg border md:block">
+                  <table className="w-full min-w-[760px] text-sm md:min-w-0">
+                    <thead>
+                      <tr className="bg-muted/40 text-muted-foreground border-b text-xs">
+                        <th className="px-3 py-2 text-left font-medium">
+                          {t("settings.tokenTableName")}
+                        </th>
+                        <th className="px-3 py-2 text-left font-medium">
+                          {t("settings.tokenTablePermissions")}
+                        </th>
+                        <th className="px-3 py-2 text-left font-medium">
+                          {t("settings.tokenTableCreated")}
+                        </th>
+                        <th className="px-3 py-2 text-left font-medium">
+                          {t("settings.tokenTableLastUsed")}
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-border divide-y">
+                      {revokedTokens.map((tok, index) => (
+                        <tr
+                          key={tok.id}
+                          className={index % 2 === 0 ? "bg-muted/20" : ""}
+                        >
+                          <td className="px-3 py-2 font-medium">{tok.name}</td>
+                          <td className="text-muted-foreground px-3 py-2 text-xs">
+                            {tok.permissions.join(", ")}
+                          </td>
+                          <td className="text-muted-foreground px-3 py-2 text-xs whitespace-nowrap">
+                            {formatDate(tok.createdAt)}
+                          </td>
+                          <td className="text-muted-foreground px-3 py-2 text-xs whitespace-nowrap">
+                            {tok.lastUsedAt
+                              ? formatDateTime(tok.lastUsedAt)
+                              : t("settings.tokenNeverUsed")}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile card list — stacked meta layout, no
+                    horizontal scroll. Revoked tokens are read-only so
+                    no action footer is needed. */}
+                <ul
+                  className="space-y-2 md:hidden"
+                  data-testid="settings-api-tokens-revoked-mobile-list"
+                >
+                  {revokedTokens.map((tok) => (
+                    <li
+                      key={tok.id}
+                      className="bg-muted/30 border-border space-y-1.5 rounded-lg border p-3"
+                    >
+                      <p className="text-sm font-medium break-all">
+                        {tok.name}
+                      </p>
+                      <p className="text-muted-foreground text-[11px]">
+                        <span className="font-medium">
+                          {t("settings.tokenTablePermissions")}:
+                        </span>{" "}
+                        {tok.permissions.join(", ")}
+                      </p>
+                      <p className="text-muted-foreground text-[11px]">
+                        <span className="font-medium">
+                          {t("settings.tokenTableCreated")}:
+                        </span>{" "}
+                        {formatDate(tok.createdAt)}
+                      </p>
+                      <p className="text-muted-foreground text-[11px]">
+                        <span className="font-medium">
+                          {t("settings.tokenTableLastUsed")}:
+                        </span>{" "}
+                        {tok.lastUsedAt
+                          ? formatDateTime(tok.lastUsedAt)
+                          : t("settings.tokenNeverUsed")}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </div>
         )}
