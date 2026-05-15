@@ -315,7 +315,11 @@ export function CoachDrawer({
             <Sparkles className="text-background size-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <SheetTitle className="truncate text-sm font-semibold">
+            {/* v1.4.27 R3d MB4 / CF-73 — pin `min-w-0` on the title
+                node itself in addition to the wrapper so the
+                truncate clipping survives any flex-shrink quirk
+                with very long conversation titles. */}
+            <SheetTitle className="min-w-0 truncate text-sm font-semibold">
               {drawerTitle}
             </SheetTitle>
             <SheetDescription className="text-muted-foreground truncate text-[11px]">
@@ -327,43 +331,56 @@ export function CoachDrawer({
               and resets to it on drawer close. Changing the pill flips
               `windowOverride`; the rail's window picker mirrors the
               same source-of-truth so the user can drive the override
-              from either surface. */}
-          <Select
-            value={effectiveWindow}
-            onValueChange={(value) => {
-              const next = value as CoachScopeWindow;
-              setWindowOverride(next === savedDefaultWindow ? null : next);
-            }}
+              from either surface.
+
+              v1.4.27 R3d MB4 — on `<sm` viewports the bottom-sheet
+              header already carries the avatar, title, new-chat,
+              settings, and close buttons; one more pill there shrinks
+              the title to a single character before truncation. The
+              same override is still reachable from the sources-rail's
+              window picker, which is what the user opens via the
+              right-edge chevron tray on phone-class viewports. */}
+          <div
+            data-slot="coach-drawer-window-pill-wrap"
+            className="hidden sm:block"
           >
-            <SelectTrigger
-              data-slot="coach-drawer-window-pill"
-              aria-label={t("insights.coach.windowLabel")}
-              className={cn(
-                "border-border/60 bg-muted/40 text-foreground h-11 shrink-0 gap-1 rounded-full px-3 text-xs",
-                "hover:bg-muted/60 focus-visible:ring-ring/40 focus-visible:ring-2",
-                windowOverride !== null &&
-                  "border-dracula-purple/40 bg-dracula-purple/10 text-dracula-purple",
-              )}
+            <Select
+              value={effectiveWindow}
+              onValueChange={(value) => {
+                const next = value as CoachScopeWindow;
+                setWindowOverride(next === savedDefaultWindow ? null : next);
+              }}
             >
-              <SelectValue
-                placeholder={t(`insights.coach.window.${effectiveWindow}`)}
-              />
-            </SelectTrigger>
-            <SelectContent align="end">
-              <SelectItem value="last7days" className="text-xs">
-                {t("insights.coach.window.last7days")}
-              </SelectItem>
-              <SelectItem value="last30days" className="text-xs">
-                {t("insights.coach.window.last30days")}
-              </SelectItem>
-              <SelectItem value="last90days" className="text-xs">
-                {t("insights.coach.window.last90days")}
-              </SelectItem>
-              <SelectItem value="allTime" className="text-xs">
-                {t("insights.coach.window.allTime")}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+              <SelectTrigger
+                data-slot="coach-drawer-window-pill"
+                aria-label={t("insights.coach.windowLabel")}
+                className={cn(
+                  "border-border/60 bg-muted/40 text-foreground h-11 shrink-0 gap-1 rounded-full px-3 text-xs",
+                  "hover:bg-muted/60 focus-visible:ring-ring/40 focus-visible:ring-2",
+                  windowOverride !== null &&
+                    "border-dracula-purple/40 bg-dracula-purple/10 text-dracula-purple",
+                )}
+              >
+                <SelectValue
+                  placeholder={t(`insights.coach.window.${effectiveWindow}`)}
+                />
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectItem value="last7days" className="text-xs">
+                  {t("insights.coach.window.last7days")}
+                </SelectItem>
+                <SelectItem value="last30days" className="text-xs">
+                  {t("insights.coach.window.last30days")}
+                </SelectItem>
+                <SelectItem value="last90days" className="text-xs">
+                  {t("insights.coach.window.last90days")}
+                </SelectItem>
+                <SelectItem value="allTime" className="text-xs">
+                  {t("insights.coach.window.allTime")}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           {/* v1.4.25 W5 — header action cluster. All three buttons
               share the same `ghost / size-icon / size-9` shape so they
               visually belong together. 36×36 px hit target meets the
