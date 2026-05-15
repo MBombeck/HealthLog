@@ -90,6 +90,7 @@ export default function InsightsPulsPage() {
           icon={<Heart className="size-6" />}
           title={t("insights.emptyState.pulse.title")}
           description={t("insights.emptyState.pulse.description")}
+          ctaSize="lg"
           action={
             <Button size="sm" asChild>
               <Link href="/measurements?add=PULSE">
@@ -97,6 +98,9 @@ export default function InsightsPulsPage() {
               </Link>
             </Button>
           }
+        />
+        <CoachLaunchButton
+          prefill="I haven't recorded any resting pulse yet — why does it matter, and what should I know before I start?"
         />
       </SubPageShell>
     );

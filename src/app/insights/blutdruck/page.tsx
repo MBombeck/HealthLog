@@ -80,6 +80,7 @@ export default function InsightsBlutdruckPage() {
           icon={<HeartPulse className="size-6" />}
           title={t("insights.emptyState.bloodPressure.title")}
           description={t("insights.emptyState.bloodPressure.description")}
+          ctaSize="lg"
           action={
             <Button size="sm" asChild>
               <Link href="/measurements?add=BLOOD_PRESSURE">
@@ -87,6 +88,9 @@ export default function InsightsBlutdruckPage() {
               </Link>
             </Button>
           }
+        />
+        <CoachLaunchButton
+          prefill="I haven't recorded any blood pressure yet — why does it matter, and what should I know before I start?"
         />
       </SubPageShell>
     );

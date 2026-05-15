@@ -86,6 +86,7 @@ export default function InsightsBmiPage() {
           icon={<Ruler className="size-6" />}
           title={t("insights.emptyState.bmi.title")}
           description={t("insights.emptyState.bmi.description")}
+          ctaSize="lg"
           action={
             <Button size="sm" asChild>
               <Link href="/measurements?add=WEIGHT">
@@ -93,6 +94,9 @@ export default function InsightsBmiPage() {
               </Link>
             </Button>
           }
+        />
+        <CoachLaunchButton
+          prefill="I haven't recorded any weight yet — why does BMI matter for me, and what should I know before I start tracking it?"
         />
       </SubPageShell>
     );
@@ -105,6 +109,7 @@ export default function InsightsBmiPage() {
           icon={<Ruler className="size-6" />}
           title={t("insights.bmiEmptyTitle")}
           description={t("insights.bmiEmptyDescription")}
+          ctaSize="lg"
           action={
             <Button size="sm" asChild>
               <Link href="/settings/account">
@@ -112,6 +117,9 @@ export default function InsightsBmiPage() {
               </Link>
             </Button>
           }
+        />
+        <CoachLaunchButton
+          prefill="I haven't set my height yet — why does BMI matter, and what should I know before I configure it?"
         />
       </SubPageShell>
     );

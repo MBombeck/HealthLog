@@ -70,11 +70,15 @@ export default function InsightsStimmungPage() {
           icon={<Smile className="size-6" />}
           title={t("insights.emptyState.mood.title")}
           description={t("insights.emptyState.mood.description")}
+          ctaSize="lg"
           action={
             <Button size="sm" asChild>
               <Link href="/mood">{t("insights.emptyState.mood.cta")}</Link>
             </Button>
           }
+        />
+        <CoachLaunchButton
+          prefill="I haven't logged any mood entries yet — why does mood tracking matter, and how should I start?"
         />
       </SubPageShell>
     );

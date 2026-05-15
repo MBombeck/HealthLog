@@ -74,6 +74,7 @@ export default function InsightsGewichtPage() {
           icon={<Scale className="size-6" />}
           title={t("insights.emptyState.weight.title")}
           description={t("insights.emptyState.weight.description")}
+          ctaSize="lg"
           action={
             <Button size="sm" asChild>
               <Link href="/measurements?add=WEIGHT">
@@ -81,6 +82,9 @@ export default function InsightsGewichtPage() {
               </Link>
             </Button>
           }
+        />
+        <CoachLaunchButton
+          prefill="I haven't recorded any weight yet — why does it matter, and what should I know before I start tracking?"
         />
       </SubPageShell>
     );

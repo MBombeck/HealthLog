@@ -62,6 +62,7 @@ export default function InsightsSchlafPage() {
           icon={<Moon className="size-6" />}
           title={t("insights.emptyState.sleep.title")}
           description={t("insights.emptyState.sleep.description")}
+          ctaSize="lg"
           action={
             <Button size="sm" asChild>
               <Link href="/settings/data-sources">
@@ -69,6 +70,9 @@ export default function InsightsSchlafPage() {
               </Link>
             </Button>
           }
+        />
+        <CoachLaunchButton
+          prefill="I don't have any sleep data yet — why does sleep tracking matter, and what should I know before I connect a source?"
         />
       </SubPageShell>
     );
