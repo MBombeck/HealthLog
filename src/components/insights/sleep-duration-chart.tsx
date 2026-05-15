@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 
+import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { useTranslations } from "@/lib/i18n/context";
 import type { ComparisonBaseline } from "@/lib/dashboard-layout";
 
@@ -26,7 +27,7 @@ const HealthChart = dynamic(
     import("@/components/charts/health-chart").then((mod) => ({
       default: mod.HealthChart,
     })),
-  { ssr: false },
+  { ssr: false, loading: () => <ChartSkeleton /> },
 );
 
 export interface SleepDurationChartProps {

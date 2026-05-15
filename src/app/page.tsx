@@ -27,6 +27,7 @@ import type { DataSummary as DataSummaryType } from "@/lib/analytics/trends";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import {
   DropdownMenu,
@@ -48,21 +49,21 @@ const HealthChart = dynamic(
     import("@/components/charts/health-chart").then((mod) => ({
       default: mod.HealthChart,
     })),
-  { ssr: false },
+  { ssr: false, loading: () => <ChartSkeleton /> },
 );
 const MoodChart = dynamic(
   () =>
     import("@/components/charts/mood-chart").then((mod) => ({
       default: mod.MoodChart,
     })),
-  { ssr: false },
+  { ssr: false, loading: () => <ChartSkeleton /> },
 );
 const MedicationComplianceChart = dynamic(
   () =>
     import("@/components/charts/medication-compliance-chart").then((mod) => ({
       default: mod.MedicationComplianceChart,
     })),
-  { ssr: false },
+  { ssr: false, loading: () => <ChartSkeleton /> },
 );
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
