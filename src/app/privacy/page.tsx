@@ -48,7 +48,7 @@ interface SectionProps {
 
 function Section({ id, title, children }: SectionProps) {
   return (
-    <section id={id} className="space-y-3 scroll-mt-20">
+    <section id={id} className="space-y-3 scroll-mt-28">
       <h2 className="text-xl font-semibold tracking-tight md:text-2xl">
         {title}
       </h2>
