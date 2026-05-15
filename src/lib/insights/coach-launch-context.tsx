@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from "react";
 
+import type { CoachScopeSource } from "@/lib/ai/coach/types";
+
 /**
  * v1.4.27 R3d MB4 — Coach launch context.
  *
@@ -35,8 +37,14 @@ export interface CoachLaunchScope {
    * Optional metric the user is looking at when they open the Coach.
    * Reserved for v1.4.28 so the drawer can pre-narrow the source rail
    * to the active metric; ignored in v1.4.27.
+   *
+   * v1.4.28 R3c (BK-MED-2 / BK-F-M4) — narrowed from `string` to the
+   * `CoachScopeSource` union so call sites cannot drift to a free-form
+   * label that the sources rail then silently ignores. Adding a new
+   * Apple-Health source to the rail (the union already covers the
+   * v1.4.23 additions) automatically widens the allowed values here.
    */
-  metric?: string;
+  metric?: CoachScopeSource;
 }
 
 interface CoachLaunchValue {
@@ -46,7 +54,14 @@ interface CoachLaunchValue {
   prefill: string | null;
   /** Open the drawer with an optional prefill + scope hint. */
   askCoach: (prefill?: string | null, scope?: CoachLaunchScope) => void;
-  /** Direct setter for the open state — the drawer consumes this. */
+  /**
+   * Direct setter for the open state — the drawer's `onOpenChange`
+   * consumes it on close. Kept (rather than collapsed into a
+   * `closeCoach()` helper) because `<LayoutCoachMount>` forwards the
+   * raw setter to the Sheet's controlled-state contract, which expects
+   * a boolean callback. v1.4.28 R3c (BK-F-M4) audit: exactly one
+   * consumer, no drift.
+   */
   setOpen: (next: boolean) => void;
 }
 
