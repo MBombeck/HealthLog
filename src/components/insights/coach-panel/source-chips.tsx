@@ -51,6 +51,10 @@ const WINDOW_KEYS: Record<CoachProvenance["windows"][number], string> = {
   last7days: "insights.coach.window.last7days",
   last30days: "insights.coach.window.last30days",
   last90days: "insights.coach.window.last90days",
+  // v1.4.27 B7 / BL-P6-4 — year-in-review window. The i18n key
+  // resolves to a localised label; absent translations fall back
+  // through the resolver to the English source.
+  lastYear: "insights.coach.window.lastYear",
   allTime: "insights.coach.window.allTime",
 };
 

@@ -41,6 +41,11 @@ export const coachScopeWindowSchema = z.enum([
   "last7days",
   "last30days",
   "last90days",
+  // v1.4.27 B7 / BL-P6-4 — long-horizon window for the year-in-review
+  // surfaces. Sits between `last90days` and `allTime` so the snapshot
+  // builder can sample a denser timeline (one row per week) than the
+  // unbounded fallback while still surfacing seasonal patterns.
+  "lastYear",
   "allTime",
 ]);
 
@@ -145,7 +150,9 @@ export interface CoachProvenance {
    * Time windows the assistant drew on. Same enum the strict insight
    * schema uses elsewhere so the UI can pin a mini-chart to the chip.
    */
-  windows: ReadonlyArray<"last7days" | "last30days" | "last90days" | "allTime">;
+  windows: ReadonlyArray<
+    "last7days" | "last30days" | "last90days" | "lastYear" | "allTime"
+  >;
   /**
    * Metric topics referenced. Stable contract keys — translated by the
    * UI, never by the server.

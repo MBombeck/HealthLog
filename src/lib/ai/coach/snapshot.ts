@@ -69,6 +69,13 @@ function windowToDays(window: CoachScopeWindow): number {
       return 30;
     case "last90days":
       return 90;
+    case "lastYear":
+      // v1.4.27 B7 / BL-P6-4 — year-in-review window. Same 365-day
+      // ceiling as the historical `allTime` cap so the prompt budget
+      // stays bounded, but with explicit semantics — the Coach knows
+      // the user is asking about a long-horizon view rather than the
+      // unbounded "all time" backfill.
+      return 365;
     case "allTime":
       // Cap "allTime" at one year for the timeline. The aggregate
       // section already cites multi-year ranges via the features
@@ -331,6 +338,14 @@ export async function buildCoachSnapshot(
   // budget for free-tier accounts.
   const snapshot: Record<string, unknown> = {};
   const windows = new Set<CoachProvenance["windows"][number]>();
+  // v1.4.27 B7 / BL-P6-4 — seed the provenance window set with the
+  // user's resolved scope so the year-in-review window surfaces in the
+  // provenance envelope even when the per-metric branches below only
+  // emit `last30days` / `last90days` chips. Older windows are added
+  // by the metric branches as before.
+  if (window === "lastYear" || window === "allTime") {
+    windows.add(window);
+  }
   const metrics = new Set<CoachProvenance["metrics"][number]>();
   const counts: NonNullable<CoachProvenance["counts"]> = {};
 

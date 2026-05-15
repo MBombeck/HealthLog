@@ -132,6 +132,24 @@ describe("buildCoachSnapshot", () => {
     expect(parsed.pulse.timeline.recent.length).toBe(1);
   });
 
+  it("respects the scope.window — lastYear flags the year-in-review window", async () => {
+    featuresMock.mockResolvedValue({
+      bloodPressure: { avg30Sys: 124, coverage: { count: 50 } },
+    });
+    prismaMock.measurement.findMany.mockResolvedValue([
+      daysAgo(120, 124, "BLOOD_PRESSURE_SYS"),
+      daysAgo(120, 81, "BLOOD_PRESSURE_DIA"),
+    ]);
+
+    const out = await buildCoachSnapshot("user-1", {
+      sources: ["bp"],
+      window: "lastYear",
+    });
+    const parsed = JSON.parse(out.snapshotJson);
+    expect(parsed.scope.window).toBe("lastYear");
+    expect(out.provenance.windows).toContain("lastYear");
+  });
+
   it("defaults to all-source last30days when no scope is provided", async () => {
     const out = await buildCoachSnapshot("user-1");
     const parsed = JSON.parse(out.snapshotJson);
