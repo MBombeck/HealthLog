@@ -348,7 +348,7 @@
     "actions": "Acciones",
     "deleteConfirmTitle": "Delete measurement?",
     "deleteConfirmDescription": "This measurement will be permanently deleted.",
-    "pageInfo": "Page {page} de{total}",
+    "pageInfo": "Página {page} de {total}",
     "previousPage": "Previous page",
     "nextPage": "Next page"
   },
@@ -385,7 +385,7 @@
     "invalidTimestamp": "Please select a valid time.",
     "deleteConfirmTitle": "Delete entry?",
     "deleteConfirmDescription": "This mood entry will be permanently deleted.",
-    "pageInfo": "Page {page} de{total}",
+    "pageInfo": "Página {page} de {total}",
     "loginRequired": "Please sign in to view mood entries."
   },
   "medications": {
@@ -714,7 +714,7 @@
     "invalidTimestamp": "Please select a valid time.",
     "noIntakesYet": "No intakes recorded yet",
     "actions": "Acciones",
-    "pageInfo": "Page {page} de{total}",
+    "pageInfo": "Página {page} de {total}",
     "previousPage": "Previous page",
     "nextPage": "Next page",
     "loginRequiredIntakes": "Please sign in to view intakes.",
@@ -1311,7 +1311,7 @@
   "onboarding": {
     "errorGeneric": "Something went wrong while finishing setup. Please try again.",
     "tour": {
-      "stepOf": "Step {current} de{total}",
+      "stepOf": "Paso {current} de {total}",
       "next": "Siguiente",
       "back": "Atrás",
       "skip": "Skip tour",
@@ -1413,7 +1413,7 @@
   "gettingStarted": {
     "title": "Getting started",
     "subtitle": "Quick wins to get the most out of HealthLog.",
-    "progress": "{done} de{total} Hecho",
+    "progress": "{done} de {total} hecho",
     "dismissAll": "Hide checklist",
     "dismissTooltip": "Hide this item",
     "items": {
@@ -2070,7 +2070,7 @@
     "loginEmptyFailedTitle": "No failed sign-in attempts",
     "loginEmptyFailedDescription": "That's the safe state. Switch to all events to see successful sign-ins.",
     "loginEmptyResetFilter": "Show all events",
-    "showingEntries": "Showing {count} de{total} auth entries",
+    "showingEntries": "Mostrando {count} de {total} entradas de autenticación",
     "status": "Estado",
     "action": "Action",
     "ip": "IP",
@@ -2256,7 +2256,7 @@
         "perPage": "Per page",
         "prev": "Previous",
         "next": "Siguiente",
-        "pageOf": "Page {page} de{total}",
+        "pageOf": "Página {page} de {total}",
         "export": "Export CSV",
         "empty": "No audit entries match the current filters."
       },
@@ -2670,8 +2670,8 @@
     "average30d": "30-day average:",
     "consistency": {
       "ariaLabel": "Last 7 days, in-range status per day",
-      "daysInRange": "{count} de{total} in range",
-      "daysLogged": "{count} de{total} logged",
+      "daysInRange": "{count} de {total} en rango",
+      "daysLogged": "{count} de {total} registrados",
       "dotInRange": "in range",
       "dotNearRange": "near range",
       "dotOutOfRange": "out of range",
@@ -2697,7 +2697,7 @@
       "daysAgo": "{count} days ago"
     },
     "summary": {
-      "weekTitle": "{met} de{total} targets met this week",
+      "weekTitle": "{met} de {total} objetivos cumplidos esta semana",
       "weekTitleAll": "Todo{total} targets met this week",
       "streakHighlight": "{count}-day streak: {metric}"
     },
