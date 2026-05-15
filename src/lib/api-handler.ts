@@ -78,7 +78,20 @@ function safeRequestProp<R>(
   try {
     return read(request as NextRequest);
   } catch (err) {
-    if (isTolerableRequestProbeError(err)) return fallback;
+    if (isTolerableRequestProbeError(err)) {
+      // v1.4.27 B7 / BL-P1-3 — surface every fallback so a real read
+      // regression cannot hide behind the tolerated-error narrowing.
+      // Vitest direct-invoke and the force-static placeholder path are
+      // the two known-quiet shapes; anything else worth a look should
+      // show up in the dev console + the run log.
+      if (process.env.NODE_ENV !== "test") {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(
+          `[api-handler] safeRequestProp fallback — tolerable error: ${msg}`,
+        );
+      }
+      return fallback;
+    }
     throw err;
   }
 }
