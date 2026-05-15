@@ -102,7 +102,7 @@ describe("POST /api/settings/telegram/test — locale-aware message", () => {
       locale: "de",
     } as never);
 
-    const result = await POST(new Request("http://x") as never);
+    const result = await (POST as () => Promise<unknown>)();
 
     expect(sendTelegramMessageMock).toHaveBeenCalledTimes(1);
     const [, , body] = sendTelegramMessageMock.mock.calls[0];
@@ -125,7 +125,7 @@ describe("POST /api/settings/telegram/test — locale-aware message", () => {
       locale: "fr",
     } as never);
 
-    await POST(new Request("http://x") as never);
+    await (POST as () => Promise<unknown>)();
 
     const [, , body] = sendTelegramMessageMock.mock.calls[0];
     expect(body).toBe(
@@ -140,7 +140,7 @@ describe("POST /api/settings/telegram/test — locale-aware message", () => {
       locale: null,
     } as never);
 
-    await POST(new Request("http://x") as never);
+    await (POST as () => Promise<unknown>)();
 
     const [, , body] = sendTelegramMessageMock.mock.calls[0];
     expect(body).toBe(
@@ -156,7 +156,7 @@ describe("POST /api/settings/telegram/test — locale-aware message", () => {
       locale: "klingon",
     } as never);
 
-    await POST(new Request("http://x") as never);
+    await (POST as () => Promise<unknown>)();
 
     expect(tCalls[0].locale).toBe("en");
   });
@@ -168,7 +168,7 @@ describe("POST /api/settings/telegram/test — locale-aware message", () => {
       locale: "de",
     } as never);
 
-    const result = await POST(new Request("http://x") as never);
+    const result = await (POST as () => Promise<unknown>)();
 
     expect(sendTelegramMessageMock).not.toHaveBeenCalled();
     expect((result as { status: number }).status).toBe(422);
@@ -181,7 +181,7 @@ describe("POST /api/settings/telegram/test — locale-aware message", () => {
       resetAt: Date.now() + 60_000,
     } as never);
 
-    const result = await POST(new Request("http://x") as never);
+    const result = await (POST as () => Promise<unknown>)();
 
     expect(sendTelegramMessageMock).not.toHaveBeenCalled();
     expect((result as { status: number }).status).toBe(429);
@@ -195,7 +195,7 @@ describe("POST /api/settings/telegram/test — locale-aware message", () => {
     } as never);
     sendTelegramMessageMock.mockResolvedValueOnce({ ok: false });
 
-    const result = await POST(new Request("http://x") as never);
+    const result = await (POST as () => Promise<unknown>)();
 
     expect((result as { status: number }).status).toBe(422);
   });
