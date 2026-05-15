@@ -37,6 +37,7 @@ import { join } from "node:path";
 const ROOT = join(__dirname, "../../..");
 const DASHBOARD_PATH = join(ROOT, "src/app/page.tsx");
 const INSIGHTS_PATH = join(ROOT, "src/app/insights/page.tsx");
+const INSIGHTS_LAYOUT_PATH = join(ROOT, "src/app/insights/layout.tsx");
 
 function load(path: string): string {
   return readFileSync(path, "utf8");
@@ -64,27 +65,37 @@ describe("v1.4.19 A3 — dashboard polish", () => {
   });
 });
 
-describe("v1.4.20 B2b — /insights wires the Coach drawer", () => {
-  it("imports <CoachDrawer> and mounts it at the bottom of the page", () => {
-    const src = load(INSIGHTS_PATH);
-    expect(src).toContain(
-      'from "@/components/insights/coach-panel/coach-drawer"',
+describe("v1.4.27 R3d MB4 — the layout mounts the Coach drawer", () => {
+  it("the insights layout wraps children in <CoachLaunchProvider> and mounts the drawer", () => {
+    // v1.4.27 MB4 promoted the drawer mount from the mother page up to
+    // `/insights/layout.tsx` so a routed sub-page does not unmount the
+    // drawer. The layout owns the mount + the provider; the page (and
+    // every sub-page) consumes the launch context.
+    const layout = load(INSIGHTS_LAYOUT_PATH);
+    expect(layout).toContain(
+      'from "@/lib/insights/coach-launch-context"',
     );
-    expect(src).toMatch(/<CoachDrawer\b[\s\S]*?\/>/);
+    expect(layout).toMatch(/<CoachLaunchProvider\b/);
+    expect(layout).toMatch(/<LayoutCoachMount\b/);
   });
 
-  it("hero strip's onAskCoach handler opens the drawer with no prefill", () => {
+  it("hero strip's onAskCoach handler calls the launch context", () => {
     const src = load(INSIGHTS_PATH);
-    // The hero supplies onAskCoach which sets coachPrefill to null and
-    // flips coachOpen.
+    // The hero supplies onAskCoach which now delegates to
+    // `coachLaunch.askCoach(prefill)` from the layout-level provider
+    // instead of toggling local state.
     expect(src).toMatch(/<HeroStrip[\s\S]*?onAskCoach=\{/);
     expect(src).toMatch(/<HeroStrip[\s\S]*?onPickPrompt=\{/);
+    expect(src).toContain("useCoachLaunch");
+    expect(src).toMatch(/coachLaunch\.askCoach/);
   });
 
-  it("page owns coachOpen + coachPrefill state", () => {
+  it("the page no longer owns coachOpen + coachPrefill local state", () => {
     const src = load(INSIGHTS_PATH);
-    expect(src).toContain("setCoachOpen");
-    expect(src).toContain("setCoachPrefill");
+    // The local useState pair retired with MB4. The launch context
+    // (mounted by the layout) now owns the open + prefill lifecycle.
+    expect(src).not.toContain("setCoachOpen");
+    expect(src).not.toContain("setCoachPrefill");
   });
 });
 
