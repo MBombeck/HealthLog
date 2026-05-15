@@ -27,7 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PasswordInput } from "@/components/settings/password-input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { TestConnectionButton } from "@/components/settings/test-connection-button";
 import { IntegrationStatusPill } from "@/components/settings/integration-status-pill";
 import type { IntegrationPillState } from "@/components/settings/integration-status-pill";

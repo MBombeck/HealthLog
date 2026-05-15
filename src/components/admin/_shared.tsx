@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Cpu, Fingerprint, Globe, KeyRound } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useTranslations } from "@/lib/i18n/context";
-import { PasswordInput as SettingsPasswordInput } from "@/components/settings/password-input";
+import { PasswordInput as SharedPasswordInput } from "@/components/ui/password-input";
 
 /**
  * Re-export the canonical password input so admin sections have access to
@@ -15,7 +15,7 @@ import { PasswordInput as SettingsPasswordInput } from "@/components/settings/pa
  * `button-name` violation on `/admin/integrations` and
  * `/admin/users` (axe-core, WCAG 2.1.2).
  */
-export const PasswordInput = SettingsPasswordInput;
+export const PasswordInput = SharedPasswordInput;
 
 export interface AdminUser {
   id: string;
