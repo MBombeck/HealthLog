@@ -77,7 +77,11 @@ describe("<SideEffectsSection> — surface render", () => {
     seedSideEffects(client, "med-1", []);
     const html = render(<SideEffectsSection medicationId="med-1" />, client);
     expect(html).toContain("Side effects");
-    expect(html).toContain("Log side effect");
+    // v1.4.28 FB-F1 — the CTA dropped its qualifier so the chip stops
+    // overflowing the side-effects card on narrow viewports. The
+    // section title carries the context.
+    expect(html).toContain(">Log<");
+    expect(html).not.toContain("Log side effect");
   });
 
   it("renders the section heading and add-CTA in German", () => {
@@ -89,7 +93,8 @@ describe("<SideEffectsSection> — surface render", () => {
       "de",
     );
     expect(html).toContain("Nebenwirkungen");
-    expect(html).toContain("Nebenwirkung erfassen");
+    expect(html).toContain(">Erfassen<");
+    expect(html).not.toContain("Nebenwirkung erfassen");
   });
 
   it("renders the empty-state copy when no rows are seeded", () => {
