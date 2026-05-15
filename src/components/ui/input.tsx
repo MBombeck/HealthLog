@@ -19,21 +19,51 @@ import { cn } from "@/lib/utils";
  * `autoComplete` is anything other than `"off"`, the LastPass /
  * 1Password ignore attrs are dropped so password managers fill the
  * field normally.
+ *
+ * v1.4.27 mobile pass: derive a sensible `inputMode` default from the
+ * `type` prop so every numeric / email / tel / url / search field
+ * surfaces the right on-screen keyboard on iOS Safari and Android
+ * Chrome without each call site having to repeat the attribute. Most
+ * `type="number"` fields in HealthLog accept decimals (kg, mmol/L,
+ * sleep hours), so the default is `"decimal"`; integer-only call
+ * sites can still pass `inputMode="numeric"` explicitly.
  */
+function deriveInputMode(
+  type: React.HTMLInputTypeAttribute | undefined,
+): React.HTMLAttributes<HTMLInputElement>["inputMode"] | undefined {
+  switch (type) {
+    case "number":
+      return "decimal";
+    case "tel":
+      return "tel";
+    case "email":
+      return "email";
+    case "url":
+      return "url";
+    case "search":
+      return "search";
+    default:
+      return undefined;
+  }
+}
+
 function Input({
   className,
   type,
   autoComplete,
+  inputMode,
   ...props
 }: React.ComponentProps<"input">) {
   const resolvedAutoComplete = autoComplete ?? "off";
   const skipAutofill = resolvedAutoComplete === "off";
+  const resolvedInputMode = inputMode ?? deriveInputMode(type);
 
   return (
     <input
       type={type}
       data-slot="input"
       autoComplete={resolvedAutoComplete}
+      inputMode={resolvedInputMode}
       data-lpignore={skipAutofill ? "true" : undefined}
       data-1p-ignore={skipAutofill ? "true" : undefined}
       className={cn(

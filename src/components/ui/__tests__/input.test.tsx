@@ -28,4 +28,44 @@ describe("<Input>", () => {
     expect(html).not.toContain("lpignore");
     expect(html).not.toContain("1p-ignore");
   });
+
+  it("derives inputMode=decimal from type=number", () => {
+    const html = renderToStaticMarkup(<Input id="weight" type="number" />);
+    expect(html).toContain('inputMode="decimal"');
+  });
+
+  it("derives inputMode=email from type=email", () => {
+    const html = renderToStaticMarkup(
+      <Input id="email" type="email" autoComplete="email" />,
+    );
+    expect(html).toContain('inputMode="email"');
+  });
+
+  it("derives inputMode=url from type=url", () => {
+    const html = renderToStaticMarkup(<Input id="webhook" type="url" />);
+    expect(html).toContain('inputMode="url"');
+  });
+
+  it("derives inputMode=tel from type=tel", () => {
+    const html = renderToStaticMarkup(<Input id="phone" type="tel" />);
+    expect(html).toContain('inputMode="tel"');
+  });
+
+  it("derives inputMode=search from type=search", () => {
+    const html = renderToStaticMarkup(<Input id="filter" type="search" />);
+    expect(html).toContain('inputMode="search"');
+  });
+
+  it("omits inputMode for plain text inputs", () => {
+    const html = renderToStaticMarkup(<Input id="note" type="text" />);
+    expect(html).not.toContain("inputMode=");
+  });
+
+  it("respects an explicit inputMode override on type=number", () => {
+    const html = renderToStaticMarkup(
+      <Input id="steps" type="number" inputMode="numeric" />,
+    );
+    expect(html).toContain('inputMode="numeric"');
+    expect(html).not.toContain('inputMode="decimal"');
+  });
 });
