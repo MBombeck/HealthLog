@@ -25,6 +25,10 @@ const PUBLIC_PATHS = [
   "/api/integrations/moodlog/webhook",
   "/api/auth/codex/callback",
   "/api/ingest/",
+  // v1.4.26 — `/privacy` is a public legal page. iOS App Store Connect
+  // requires a publicly reachable Privacy-Policy URL during submission;
+  // GDPR Art. 13 expects the same for any visitor before they sign up.
+  "/privacy",
   // `/onboarding` itself + its subroutes are matched exactly via
   // `isPublicPath()` so we don't admit `/onboarding-export` etc.
   "/robots.txt",

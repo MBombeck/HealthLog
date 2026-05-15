@@ -117,7 +117,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="w-full max-w-sm">
+    <div className="flex w-full max-w-sm flex-col gap-4">
       <div className="border-border bg-card rounded-xl border p-8 shadow-lg shadow-black/20">
         <div className="flex flex-col items-center gap-3 text-center">
           <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-lg">
@@ -241,6 +241,17 @@ export default function LoginPage() {
           )}
         </div>
       </div>
+      {/* v1.4.26 — discoverable privacy link below the login card.
+          App Store reviewers and first-time visitors need a one-click
+          path to the policy without signing in. */}
+      <p className="text-muted-foreground text-center text-xs">
+        <Link
+          href="/privacy"
+          className="hover:text-foreground underline underline-offset-2"
+        >
+          {t("auth.privacyPolicy")}
+        </Link>
+      </p>
     </div>
   );
 }

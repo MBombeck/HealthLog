@@ -202,7 +202,8 @@
     "backToPasskey": "Back to Passkey",
     "passkeySetupLater": "You can set up passkeys at any time in Settings.",
     "passwordMinLength": "Min. 12 characters",
-    "passwordTooShort": "Password must be at least {minLength} characters long."
+    "passwordTooShort": "Password must be at least {minLength} characters long.",
+    "privacyPolicy": "Politique de confidentialité"
   },
   "dashboard": {
     "title": "Tableau de bord",

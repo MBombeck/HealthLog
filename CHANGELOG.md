@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.4.26] — 2026-05-15
+
+Hotfix release. Adds a public, unauthenticated privacy-policy page at
+`/privacy` so the iOS native application can register a reachable URL
+in App Store Connect. The policy enumerates every Apple HealthKit
+identifier the iOS app reads, lists every active third-party sub-
+processor with its data-protection policy, restates the EU MDR
+medical-device boundary that scopes the AI Coach surface, and walks
+through the GDPR Art. 15-22 / DSGVO data-subject rights with concrete
+in-app routes the user can hit. The page bypasses the standard
+auth-shell so an App-Store reviewer or a first-time visitor sees the
+full document immediately. The conservative-semver pattern still
+applies: this could have been versioned `1.4.25.1` for symmetry with
+the iOS hotfix track, but 4-part versions break the strict-semver
+guard in `/api/version` so we incremented to the next clean patch
+instead.
+
+### Added
+
+- Public privacy policy at `/privacy` with full HealthKit quantity-type
+  enumeration (18 identifiers plus `sleepAnalysis`), Withings
+  measurement-family list, sub-processor table (Anthropic, OpenAI,
+  Withings, Apple, Telegram, GitHub, Cloudflare, Hetzner), Apple
+  privacy-nutrition-label mapping, and a verbatim EU MDR 2017/745 +
+  MDCG 2021-24 medical-device-boundary statement.
+- `auth.privacyPolicy` translation key in all six locales (English in
+  EN, German in DE, native translations for FR / ES / IT / PL).
+
+### Changed
+
+- The unauthenticated login page links out to `/privacy` below the
+  sign-in card so a first-time visitor can review the policy before
+  signing up, matching GDPR Art. 13 pre-signup expectations.
+- The auth shell now treats `/privacy` as a standalone public page —
+  long-form legal content renders edge-to-edge instead of being squeezed
+  into the centered login-card layout.
+
 ## [1.4.25] — 2026-05-14
 
 Largest feature delta in the v1.4.x line. Insights expands from one

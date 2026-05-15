@@ -11,7 +11,7 @@ import { BottomNav } from "./bottom-nav";
 import { SidebarNav } from "./sidebar-nav";
 import { TopBar } from "./top-bar";
 
-const PUBLIC_PATHS = ["/auth/login", "/auth/register"];
+const PUBLIC_PATHS = ["/auth/login", "/auth/register", "/privacy"];
 
 export function AuthShell({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -20,6 +20,12 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   const isPublicPage = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  // v1.4.26 — `/privacy` is a long-form legal page that brings its own
+  // header + footer. Centering it inside the public-page wrapper would
+  // squash a 3000-word policy into a "login card" layout, so we let it
+  // render edge-to-edge while still resolving as a public page for the
+  // auth gate above.
+  const isStandalonePublicPage = pathname.startsWith("/privacy");
   const isAdminPage = pathname.startsWith("/admin");
   const isOnboardingPage = pathname === "/onboarding";
   const showUnlockNotifier = isAuthenticated && !isPublicPage && !!user?.id;
@@ -61,6 +67,10 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
 
   // Public pages (login, register) — render without any nav
   if (isPublicPage) {
+    // Long-form legal pages render edge-to-edge with their own chrome.
+    if (isStandalonePublicPage) {
+      return <>{children}</>;
+    }
     return (
       <div className="flex h-dvh flex-col">
         <MaintainershipBanner />
