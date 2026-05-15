@@ -13,14 +13,35 @@ import {
   Globe,
   Key,
   Loader2,
+  Map,
   RotateCw,
   Server,
   Users,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/format";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { StatusItem, useSystemStatus } from "./_shared";
+
+interface VersionResponse {
+  version: string;
+  buildSha: string | null;
+  builtAt: string | null;
+  offlineGeoEnabled?: boolean;
+}
+
+function useOfflineGeoState() {
+  return useQuery({
+    queryKey: ["public", "version"],
+    queryFn: async () => {
+      const res = await fetch("/api/version");
+      if (!res.ok) throw new Error("Failed to load version");
+      return (await res.json()).data as VersionResponse;
+    },
+    staleTime: 5 * 60_000,
+  });
+}
 
 // v1.4.16 phase B3: Recharts is ~108 KiB Brotli — defer-load the host
 // metrics chart so the system-status page only ships it when an admin
@@ -44,6 +65,7 @@ export function SystemStatusSection() {
   const { t } = useTranslations();
   const fmt = useFormatters();
   const { data: status, isError, refetch, isFetching } = useSystemStatus();
+  const { data: version } = useOfflineGeoState();
 
   return (
     <div className="space-y-6">
@@ -161,6 +183,25 @@ export function SystemStatusSection() {
                 label={t("admin.integrationBugReport")}
                 value={t("admin.configured")}
                 className="text-dracula-green"
+              />
+            )}
+            {/* v1.4.27 R5 — offline GeoLite2 availability. Renders only
+                when /api/version returns the new field so legacy
+                responses do not produce a placeholder row. */}
+            {version?.offlineGeoEnabled !== undefined && (
+              <StatusItem
+                icon={Map}
+                label={t("admin.offlineGeoLabel")}
+                value={
+                  version.offlineGeoEnabled
+                    ? t("admin.offlineGeoEnabled")
+                    : t("admin.offlineGeoFallback")
+                }
+                className={
+                  version.offlineGeoEnabled
+                    ? "text-dracula-green"
+                    : "text-dracula-yellow"
+                }
               />
             )}
           </div>

@@ -17,6 +17,7 @@ import {
   Cog,
   Database,
   GitCommit,
+  Globe,
   Loader2,
   Server,
   Tag,
@@ -30,6 +31,7 @@ interface VersionResponse {
   version: string;
   buildSha: string | null;
   builtAt: string | null;
+  offlineGeoEnabled?: boolean;
 }
 
 function useVersion() {
@@ -114,6 +116,26 @@ export function SystemStatusSummary() {
               icon={Clock}
               label={t("admin.overview.snapshotBuiltAt")}
               value={formatDateTime(version.builtAt)}
+            />
+          )}
+          {/* v1.4.27 R5 — surface the offline-geo state so the maintainer
+              spots the missing MAXMIND_LICENSE_KEY without crawling logs.
+              The field is undefined on legacy responses; the row only
+              renders when /api/version answers the new shape. */}
+          {version?.offlineGeoEnabled !== undefined && (
+            <StatusItem
+              icon={Globe}
+              label={t("admin.overview.snapshotOfflineGeo")}
+              value={
+                version.offlineGeoEnabled
+                  ? t("admin.overview.snapshotOfflineGeoOn")
+                  : t("admin.overview.snapshotOfflineGeoOff")
+              }
+              className={
+                version.offlineGeoEnabled
+                  ? "text-dracula-green"
+                  : "text-dracula-yellow"
+              }
             />
           )}
         </div>
