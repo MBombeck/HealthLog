@@ -39,6 +39,17 @@ The script writes `GeoLite2-City.mmdb` and `GeoLite2-ASN.mmdb` to
 If the script is skipped the image builds cleanly, and the resolver
 falls back to the online `ipwho.is` provider — the v1.4.26 behaviour.
 
+The offline tier is **optional** as of v1.4.27 R5. When
+`MAXMIND_LICENSE_KEY` is unset the `Fetch GeoLite2 databases` step in
+`.github/workflows/docker-publish.yml` emits a `::warning::`, drops an
+`.empty` marker into `assets/geolite2/`, and continues — the build no
+longer blocks on a missing secret. The runtime resolver detects the
+marker on the first public-IP lookup, sends a one-shot admin
+notification with the GitHub Actions secrets URL, and continues to
+serve audits from the `ipwho.is` fallback. `/api/version` exposes
+`offlineGeoEnabled: boolean` so the admin status page can render the
+state at a glance.
+
 MaxMind reissues the databases on the first Tuesday of each month;
 re-run the script before each release to pick up new ASN allocations
 and city renames.

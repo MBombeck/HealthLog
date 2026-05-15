@@ -405,12 +405,20 @@ is additive, `IF NOT EXISTS`-guarded, and forward-only.
 - **`MAXMIND_LICENSE_KEY` wired into the GHCR build workflow.** A
   new `Fetch GeoLite2 databases` step in
   `.github/workflows/docker-publish.yml` between the metadata-action
-  and the buildx build-push exports the secret from repo secrets and
-  fails the workflow with an `::error::` line when unset (instead of
-  silently exiting 0 and producing an empty `assets/geolite2/`
-  directory). The Dockerfile `COPY assets/geolite2/ /opt/geolite2/`
-  step now lands the real MMDB files and the runtime resolver
-  populates the carrier column on the production image.
+  and the buildx build-push exports the secret from repo secrets.
+  Offline GeoLite2 is **optional** in this release: when the secret
+  is unset the workflow emits a `::warning::`, drops an `.empty`
+  marker into `assets/geolite2/`, and continues so the Dockerfile
+  `COPY` still has a non-empty source. The runtime resolver in
+  `src/lib/geo.ts` detects the marker on first lookup, falls back
+  to the existing `ipwho.is` provider, and sends a one-shot admin
+  notification (`notifications.admin.offlineGeoUnavailable*`) with
+  a pointer to the GitHub Actions secrets page so the maintainer
+  hears about the gap from the running app. The `/api/version`
+  endpoint exposes `offlineGeoEnabled: boolean`; the `/admin`
+  overview snapshot and the full `/admin/system-status` page render
+  a green / yellow chip from that flag. Setting the secret and
+  redeploying lights the feature up without code changes.
 - **Migration `0061_audit_log_carrier`.** Additive,
   `IF NOT EXISTS`-guarded, forward-only. Adds two columns to
   `AuditLog`: `asn` (`bigint`) + `carrier` (`text`). Safe to
