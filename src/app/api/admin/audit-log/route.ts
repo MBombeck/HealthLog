@@ -136,6 +136,11 @@ export const GET = apiHandler(async (request: NextRequest) => {
         action: true,
         ipAddress: true,
         location: true,
+        // v1.4.27 B3 — surface the carrier chip data alongside the
+        // existing location string. Both nullable so older rows render
+        // with the same dash that `location` falls back to.
+        asn: true,
+        carrier: true,
         details: true,
         createdAt: true,
         user: {

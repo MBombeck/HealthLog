@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   auditLogCsvHeaderLabels,
   buildAuditLogCsvRecords,
+  carrierShortLabel,
   type AuditCsvEntry,
   type AuditCsvLabels,
 } from "../_shared";
@@ -30,6 +31,9 @@ const LABELS_EN: AuditCsvLabels = {
   user: "Users",
   ip: "IP",
   location: "Location",
+  // v1.4.27 B3 — `admin.carrier` is shipped by bucket B6; the test
+  // pins the English literal so the column order is locked.
+  carrier: "Carrier",
   provider: "Provider",
   outcome: "Outcome",
   action: "Action",
@@ -52,6 +56,7 @@ const LABELS_DE: AuditCsvLabels = {
   user: "Benutzer",
   ip: "IP",
   location: "Standort",
+  carrier: "Mobilfunkanbieter",
   provider: "Anbieter",
   outcome: "Ergebnis",
   action: "Aktion",
@@ -98,6 +103,7 @@ describe("buildAuditLogCsvRecords", () => {
       "user",
       "ip",
       "location",
+      "carrier",
       "provider",
       "outcome",
       "action",
@@ -196,6 +202,7 @@ describe("auditLogCsvHeaderLabels", () => {
       user: "Users",
       ip: "IP",
       location: "Location",
+      carrier: "Carrier",
       provider: "Provider",
       outcome: "Outcome",
       action: "Action",
@@ -224,11 +231,103 @@ describe("toCSV(records, headerLabels) — audit-log integration", () => {
     const csv = toCSV(records, auditLogCsvHeaderLabels(LABELS_DE));
     const lines = csv.split("\n");
     expect(lines[0]).toBe(
-      "Zeitpunkt,Benutzer,IP,Standort,Anbieter,Ergebnis,Aktion,Details",
+      "Zeitpunkt,Benutzer,IP,Standort,Mobilfunkanbieter,Anbieter,Ergebnis,Aktion,Details",
     );
     expect(lines[1]).toBe(
-      '2026-05-11T09:05:00+00:00,marc,203.0.113.7,"Berlin, DE",Passkey,Erfolgreich,auth.login.passkey,',
+      '2026-05-11T09:05:00+00:00,marc,203.0.113.7,"Berlin, DE",,Passkey,Erfolgreich,auth.login.passkey,',
     );
+  });
+
+  it("folds the GeoLite2 organisation string to the short DACH carrier label", () => {
+    // Marc's spec: the verbose MMDB org strings get a glanceable chip.
+    // The CSV column carries the same folded text so a downstream
+    // spreadsheet matches what the admin overview screen renders.
+    const entries: AuditCsvEntry[] = [
+      {
+        createdAt: "2026-05-11T09:05:00.000Z",
+        action: "auth.login.password",
+        ipAddress: "84.131.0.1",
+        location: "Berlin, DE",
+        carrier: "Deutsche Telekom AG",
+        asn: 3320,
+        details: null,
+        user: { id: "u1", username: "marc" },
+      },
+      {
+        createdAt: "2026-05-11T09:06:00.000Z",
+        action: "auth.login.password",
+        ipAddress: "139.7.0.1",
+        location: "Hamburg, DE",
+        carrier: "Vodafone GmbH",
+        asn: 3209,
+        details: null,
+        user: { id: "u2", username: "marc" },
+      },
+      {
+        createdAt: "2026-05-11T09:07:00.000Z",
+        action: "auth.login.password",
+        ipAddress: "212.7.0.1",
+        location: "Köln, DE",
+        carrier: "1&1 Versatel GmbH",
+        asn: 8881,
+        details: null,
+        user: { id: "u3", username: "marc" },
+      },
+      {
+        createdAt: "2026-05-11T09:08:00.000Z",
+        action: "auth.login.password",
+        ipAddress: "92.7.0.1",
+        location: "Frankfurt, DE",
+        carrier: "Telefónica Germany GmbH & Co. OHG",
+        asn: 6805,
+        details: null,
+        user: { id: "u4", username: "marc" },
+      },
+      {
+        createdAt: "2026-05-11T09:09:00.000Z",
+        action: "auth.login.password",
+        ipAddress: "8.8.8.8",
+        location: "Mountain View, US",
+        carrier: "Google LLC",
+        asn: 15169,
+        details: null,
+        user: { id: "u5", username: "marc" },
+      },
+    ];
+    const records = buildAuditLogCsvRecords(
+      entries,
+      LABELS_EN,
+      deterministicFormatter,
+    );
+    expect(records.map((r) => r.carrier)).toEqual([
+      "Telekom",
+      "Vodafone",
+      "1&1",
+      "O2",
+      // Unknown organisations carry the raw GeoLite2 string through.
+      "Google LLC",
+    ]);
+  });
+
+  it("emits an empty carrier cell when the row has no ASN data", () => {
+    const entries: AuditCsvEntry[] = [
+      {
+        createdAt: "2026-05-11T09:05:00.000Z",
+        action: "auth.login.password",
+        ipAddress: "192.0.2.1",
+        location: null,
+        carrier: null,
+        asn: null,
+        details: null,
+        user: null,
+      },
+    ];
+    const [record] = buildAuditLogCsvRecords(
+      entries,
+      LABELS_EN,
+      deterministicFormatter,
+    );
+    expect(record.carrier).toBe("");
   });
 
   it("escapes commas, quotes, and newlines in the details column", () => {
@@ -254,5 +353,37 @@ describe("toCSV(records, headerLabels) — audit-log integration", () => {
     expect(csv).toContain(
       '"reason=""invalid_password"", attempts: 3\nfollowup: lock"',
     );
+  });
+});
+
+describe("carrierShortLabel — DACH carrier folding (v1.4.27 B3)", () => {
+  it("folds 'Deutsche Telekom AG' down to 'Telekom'", () => {
+    expect(carrierShortLabel("Deutsche Telekom AG")).toBe("Telekom");
+  });
+
+  it("folds the standalone Vodafone variants down to 'Vodafone'", () => {
+    expect(carrierShortLabel("Vodafone GmbH")).toBe("Vodafone");
+    expect(carrierShortLabel("Vodafone Kabel Deutschland GmbH")).toBe(
+      "Vodafone",
+    );
+  });
+
+  it("folds the 1&1 sub-brands down to '1&1'", () => {
+    expect(carrierShortLabel("1&1 Telecom GmbH")).toBe("1&1");
+    expect(carrierShortLabel("1&1 Versatel GmbH")).toBe("1&1");
+  });
+
+  it("folds Telefónica + O2 variants down to 'O2'", () => {
+    expect(
+      carrierShortLabel("Telefónica Germany GmbH & Co. OHG"),
+    ).toBe("O2");
+    expect(carrierShortLabel("Telefonica Germany Online Services")).toBe("O2");
+    expect(carrierShortLabel("O2 Deutschland")).toBe("O2");
+  });
+
+  it("returns the raw organisation string for unknown carriers", () => {
+    expect(carrierShortLabel("Google LLC")).toBe("Google LLC");
+    expect(carrierShortLabel("Amazon.com, Inc.")).toBe("Amazon.com, Inc.");
+    expect(carrierShortLabel("Hetzner Online GmbH")).toBe("Hetzner Online GmbH");
   });
 });

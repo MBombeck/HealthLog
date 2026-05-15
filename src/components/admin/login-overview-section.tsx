@@ -29,6 +29,7 @@ import {
   type AdminAuditEntry,
   auditLogCsvHeaderLabels,
   buildAuditLogCsvRecords,
+  carrierShortLabel,
   iconForAuthProvider,
   providerForAction,
   useAuthActionLabels,
@@ -159,6 +160,11 @@ export function LoginOverviewSection() {
       user: t("admin.users"),
       ip: t("admin.ip"),
       location: t("admin.location"),
+      // v1.4.27 B3 — `admin.carrier` is shipped by bucket B6. The
+      // `t()` helper falls back to the raw key string when the
+      // translation row hasn't landed yet, so the CSV stays valid
+      // through the staggered B3 → B6 release.
+      carrier: t("admin.carrier"),
       provider: t("admin.provider"),
       outcome: t("admin.outcome"),
       action: t("admin.action"),
@@ -436,6 +442,24 @@ export function LoginOverviewSection() {
                           />
                           {AUTH_PROVIDER_LABELS[provider]}
                         </span>
+                        {/*
+                          v1.4.27 B3 — carrier chip below the auth-provider
+                          chip. Only renders when the GeoLite2-ASN lookup
+                          found an organisation string for the audit-row's
+                          IP; private/loopback IPs and offline-miss rows
+                          keep the original single-chip layout. The chip
+                          carries the short DACH label ("Telekom",
+                          "Vodafone", "1&1", "O2"); unknown organisations
+                          fall through to the raw GeoLite2 string.
+                        */}
+                        {entry.carrier ? (
+                          <span
+                            className="text-muted-foreground/80 mt-0.5 block text-[10px] leading-tight"
+                            data-slot="login-overview-carrier"
+                          >
+                            {carrierShortLabel(entry.carrier)}
+                          </span>
+                        ) : null}
                       </td>
                       <td className="text-muted-foreground px-3 py-2 font-mono text-xs">
                         {entry.ipAddress ?? "—"}

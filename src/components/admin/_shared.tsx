@@ -92,6 +92,11 @@ export interface AdminAuditEntry {
   action: string;
   ipAddress: string | null;
   location: string | null;
+  // v1.4.27 B3 — populated from the bundled GeoLite2-ASN MMDB at
+  // audit-creation time. Both nullable: older rows, private/loopback
+  // IPs, and offline-miss rows stay valid.
+  asn: number | null;
+  carrier: string | null;
   details: string | null;
   createdAt: string;
   user: { id: string; username: string } | null;
@@ -381,6 +386,30 @@ export function useAuthProviderLabels(): Record<AuthProvider, string> {
 }
 
 /**
+ * v1.4.27 B3 — Fold a GeoLite2 `autonomous_system_organization`
+ * string down to a short DACH carrier label. The MMDB returns the
+ * verbose legal-entity name ("Deutsche Telekom AG", "1&1 Telecom
+ * GmbH", "Telefónica Germany GmbH & Co. OHG"); the admin overview
+ * needs a glanceable chip ("Telekom", "Vodafone", "1&1", "O2").
+ *
+ * The match is case-insensitive substring against the canonical
+ * carrier name; unknown organisations fall through to the original
+ * string so the chip still carries provenance.
+ */
+export function carrierShortLabel(rawAsnOrg: string): string {
+  const haystack = rawAsnOrg.toLowerCase();
+  if (haystack.includes("telekom")) return "Telekom";
+  if (haystack.includes("vodafone")) return "Vodafone";
+  if (haystack.includes("1&1")) return "1&1";
+  // Telefónica / O2 / Telefonica Germany / O2 Deutschland → "O2"
+  if (haystack.includes("telefonica") || haystack.includes("telefónica")) {
+    return "O2";
+  }
+  if (haystack.includes("o2 ") || haystack.endsWith(" o2")) return "O2";
+  return rawAsnOrg;
+}
+
+/**
  * v1.4.25 W8b — Build the CSV record set for the audit-log export.
  *
  * Pulled out of the section component so the column order, header
@@ -391,6 +420,9 @@ export function useAuthProviderLabels(): Record<AuthProvider, string> {
  * require schema/API changes that are out of scope). `action` and
  * `details` follow so the export keeps the full triage payload.
  *
+ * v1.4.27 B3: the `carrier` column lands between `location` and
+ * `provider` so the geo-derived fields stay grouped.
+ *
  * `formatTimestamp` is injected (not imported) so the production
  * callsite passes the user-tz formatter (`formatInUserTz`) while the
  * unit test passes a deterministic stub.
@@ -400,6 +432,10 @@ export interface AuditCsvEntry {
   action: string;
   ipAddress: string | null;
   location: string | null;
+  // v1.4.27 B3 — both optional so legacy fixture data that predates
+  // the column landing still compiles against this shape.
+  carrier?: string | null;
+  asn?: number | null;
   details: string | null;
   user: { id: string; username: string } | null;
 }
@@ -409,6 +445,7 @@ export interface AuditCsvLabels {
   user: string;
   ip: string;
   location: string;
+  carrier: string;
   provider: string;
   outcome: string;
   action: string;
@@ -424,6 +461,7 @@ export interface AuditCsvRecord {
   user: string;
   ip: string;
   location: string;
+  carrier: string;
   provider: string;
   outcome: string;
   action: string;
@@ -450,6 +488,7 @@ export function buildAuditLogCsvRecords(
       user: entry.user?.username ?? labels.unknownUser,
       ip: entry.ipAddress ?? "",
       location: entry.location ?? "",
+      carrier: entry.carrier ? carrierShortLabel(entry.carrier) : "",
       provider: labels.providerLabels[provider],
       outcome: isFailed ? labels.outcomeFailed : labels.outcomeSuccess,
       action: entry.action,
@@ -466,6 +505,7 @@ export function auditLogCsvHeaderLabels(
     user: labels.user,
     ip: labels.ip,
     location: labels.location,
+    carrier: labels.carrier,
     provider: labels.provider,
     outcome: labels.outcome,
     action: labels.action,
