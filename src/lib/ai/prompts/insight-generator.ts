@@ -714,8 +714,7 @@ const INSIGHTS_LOCALE_REPLY_FOOTER_FALLBACK: Record<
 
 /**
  * Returns the active scope-hardened system prompt for a given locale.
- * Use this in place of the legacy `getInsightsSystemPrompt` once the
- * route migrates to `generateInsight()` (planned v1.4.16).
+ * The route consumes this via `generateInsight()`.
  */
 export function getStrictInsightsSystemPrompt(locale: Locale): string {
   if (locale === "de") return SYSTEM_PROMPT_DE;

@@ -410,10 +410,3 @@ export async function buildGlp1SnapshotBlock(
   };
 }
 
-/** Exported for tests. */
-export const __testables = {
-  deriveDrugNames,
-  parseTagList,
-  parseDaysOfWeek,
-  predictNextInjection,
-};

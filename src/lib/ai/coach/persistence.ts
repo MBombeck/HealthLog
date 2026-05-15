@@ -317,10 +317,3 @@ export async function deleteConversation(
   return true;
 }
 
-/**
- * Count assistant + user turns in one conversation. Used by the
- * 20-turn cap before a summarise-and-restart pass.
- */
-export async function countMessages(conversationId: string): Promise<number> {
-  return prisma.coachMessage.count({ where: { conversationId } });
-}

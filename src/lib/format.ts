@@ -61,7 +61,3 @@ export function formatTime(date: Date | string): string {
   return formatters().time(date);
 }
 
-/** Locale-aware short weekday + date. */
-export function formatDateWithWeekday(date: Date | string): string {
-  return formatters().dateWithWeekday(date);
-}

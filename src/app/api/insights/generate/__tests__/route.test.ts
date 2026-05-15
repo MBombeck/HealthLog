@@ -77,7 +77,6 @@ vi.mock("@/lib/insights/features", () => ({
 }));
 
 vi.mock("@/lib/insights/prompt", () => ({
-  getInsightsSystemPrompt: vi.fn(() => "system"),
   buildUserPrompt: vi.fn(() => "user"),
 }));
 

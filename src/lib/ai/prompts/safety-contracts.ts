@@ -187,11 +187,6 @@ export function loadSafetyContracts(locale: Locale): SafetyContractMatrix {
   return data;
 }
 
-/** Clear the in-process cache. Used in tests that swap matrices. */
-export function _resetSafetyContractsCacheForTests(): void {
-  cache = {};
-}
-
 /**
  * Return the locale-specific body of a ground rule. For EN the matrix
  * stores it under `.en`; for every other locale it lives under
@@ -211,21 +206,6 @@ export function getGroundRuleBody(
     );
   }
   return body;
-}
-
-/**
- * Iterate every (locale, ground-rule-key) pair. Used by the parity +
- * refusal-probe tests so they cover the full 14×6 = 84 grid without
- * hard-coding the locale list.
- */
-export function forEachLocaleAndRule(
-  fn: (locale: Locale, key: GroundRuleKey) => void,
-): void {
-  for (const locale of ALL_LOCALES) {
-    for (const key of GROUND_RULE_KEYS) {
-      fn(locale, key);
-    }
-  }
 }
 
 /** Ordered locale list — exported so tests can iterate identically. */

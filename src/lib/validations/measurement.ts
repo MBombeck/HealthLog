@@ -41,15 +41,6 @@ export const glucoseContextEnum = z.enum([
   "BEDTIME",
 ]);
 
-export const sleepStageEnum = z.enum([
-  "IN_BED",
-  "AWAKE",
-  "ASLEEP",
-  "REM",
-  "CORE",
-  "DEEP",
-]);
-
 export const measurementSourceEnum = z.enum([
   "MANUAL",
   "WITHINGS",

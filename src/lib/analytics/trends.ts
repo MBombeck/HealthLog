@@ -104,57 +104,6 @@ export function trendSlope(
   };
 }
 
-// ── Trend Line Points ────────────────────────────────────
-
-/**
- * Generate two data points representing the linear trend line endpoints.
- * Used by chart components to overlay a regression line.
- */
-export function trendLinePoints(
-  data: DataPoint[],
-  windowDays: number,
-): { start: DataPoint; end: DataPoint } | null {
-  if (data.length < 2) return null;
-
-  const sorted = [...data].sort((a, b) => a.date.getTime() - b.date.getTime());
-  const cutoff =
-    sorted[sorted.length - 1].date.getTime() - windowDays * 24 * 60 * 60 * 1000;
-  const window = sorted.filter((p) => p.date.getTime() >= cutoff);
-
-  if (window.length < 2) return null;
-
-  const startTime = window[0].date.getTime();
-  const points = window.map((p) => ({
-    x: (p.date.getTime() - startTime) / (24 * 60 * 60 * 1000),
-    y: p.value,
-  }));
-
-  const n = points.length;
-  const sumX = points.reduce((s, p) => s + p.x, 0);
-  const sumY = points.reduce((s, p) => s + p.y, 0);
-  const sumXY = points.reduce((s, p) => s + p.x * p.y, 0);
-  const sumXX = points.reduce((s, p) => s + p.x * p.x, 0);
-
-  const denominator = n * sumXX - sumX * sumX;
-  if (denominator === 0) return null;
-
-  const slope = (n * sumXY - sumX * sumY) / denominator;
-  const intercept = (sumY - slope * sumX) / n;
-
-  const endDays = points[points.length - 1].x;
-
-  return {
-    start: {
-      date: window[0].date,
-      value: Math.round(intercept * 100) / 100,
-    },
-    end: {
-      date: window[window.length - 1].date,
-      value: Math.round((intercept + slope * endDays) * 100) / 100,
-    },
-  };
-}
-
 // ── Anomaly Detection ────────────────────────────────────
 
 export interface Anomaly {

@@ -17,13 +17,6 @@
 export const CHART_HEIGHT_PX = 240;
 
 /**
- * Compact / mini variant used by inline previews (rationale cards,
- * dashboard tile carve-outs). Smaller so the chart fits inside a host
- * card without doubling its vertical footprint.
- */
-export const CHART_MINI_HEIGHT_PX = 160;
-
-/**
  * Range-preset options for charts that expose a 7d / 30d / 90d / All
  * range selector. Each entry carries the i18n keys for the visible
  * label + sr-only title, plus a `points` count used by the underlying

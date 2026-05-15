@@ -20,15 +20,6 @@ export const EVENT_TYPES = [
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
-export const EVENT_TYPE_LABELS: Record<EventType, string> = {
-  MEDICATION_REMINDER: "Medication reminder",
-  MEASUREMENT_ANOMALY: "Anomalous measurements",
-  COMPLIANCE_LOW: "Low compliance",
-  WITHINGS_SYNC_FAILED: "Withings sync failed",
-  SYSTEM_ALERT: "System alerts",
-  PERSONAL_RECORD: "Personal records",
-};
-
 /**
  * Per-event default policy when no `NotificationPreference` row
  * exists. The dispatcher reads this to decide whether to fire on a

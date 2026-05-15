@@ -52,16 +52,6 @@ export async function checkRateLimit(
 }
 
 /**
- * Delete expired rate limit entries. Called periodically by pg-boss.
- */
-export async function cleanupExpiredRateLimits(): Promise<number> {
-  const result = await prisma.$executeRaw`
-    DELETE FROM rate_limits WHERE reset_at < NOW()
-  `;
-  return result;
-}
-
-/**
  * Rate limit response headers.
  */
 export function rateLimitHeaders(

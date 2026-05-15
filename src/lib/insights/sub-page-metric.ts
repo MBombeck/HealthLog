@@ -46,6 +46,3 @@ export const SUB_PAGE_SLUGS = Object.keys(SUB_PAGE_METRIC) as SubPageSlug[];
  */
 export const INSIGHTS_OVERVIEW_PATH = "/insights" as const;
 
-export function isSubPageSlug(value: string): value is SubPageSlug {
-  return (SUB_PAGE_SLUGS as readonly string[]).includes(value);
-}

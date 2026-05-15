@@ -403,8 +403,3 @@ export async function generateGeneralStatusForUser(
   };
 }
 
-export function resolveGeneralStatusLocale(
-  locale: string | null | undefined,
-): SupportedLocale {
-  return normalizeLocale(locale);
-}

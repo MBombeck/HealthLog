@@ -306,13 +306,6 @@ export function getWeightRange(heightCm: number): { min: number; max: number } {
 }
 
 /**
- * Normal resting pulse range (AHA).
- */
-export function getPulseRange(): { min: number; max: number } {
-  return { min: 60, max: 100 };
-}
-
-/**
  * Recommended nightly sleep duration for adults (AASM/SRS).
  */
 export function getSleepDurationRange(): { min: number; max: number } {

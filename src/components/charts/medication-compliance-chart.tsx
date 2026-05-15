@@ -191,7 +191,15 @@ interface MedicationComplianceChartProps {
 export function MedicationComplianceChart({
   title,
   userTimezone = "Europe/Berlin",
+  compareBaseline,
 }: MedicationComplianceChartProps) {
+  // v1.4.27 R4 RC3 — the prop is accepted so the dashboard can pass
+  // `compareBaseline={compareBaseline}` uniformly across every chart.
+  // The comparison overlay itself is deferred: medication compliance is
+  // a percentage-of-doses metric whose prior-period overlay needs a
+  // second window of intake events. Discard explicitly so the
+  // destructure is intentional rather than a missed wire-up.
+  void compareBaseline;
   const { isAuthenticated } = useAuth();
   const { t, locale } = useTranslations();
   const fmt = useFormatters();

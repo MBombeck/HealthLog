@@ -5,11 +5,9 @@ import { HeroStrip } from "../hero-strip";
 import type { DailyBriefing as DailyBriefingPayload } from "@/lib/ai/schema";
 
 /**
- * v1.4.20 phase B1 — Insights hero strip.
- *
- * Replaces v1.4.16 `<InsightsPageHero>`. Pinning the slots so future
- * polish can't silently drop the greeting / subtitle / action row /
- * suggested-prompt strip.
+ * Insights hero strip — pins the slots so future polish can't
+ * silently drop the greeting / subtitle / action row / suggested-
+ * prompt strip.
  */
 
 function render(node: React.ReactNode, locale: "en" | "de" = "en") {

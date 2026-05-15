@@ -44,11 +44,6 @@ export function markWorkerStarted() {
   status.lastHeartbeat = new Date().toISOString();
 }
 
-export function recordHeartbeat() {
-  const status = getStatus();
-  status.lastHeartbeat = new Date().toISOString();
-}
-
 export function recordReminderCheck() {
   const status = getStatus();
   status.lastReminderCheck = new Date().toISOString();

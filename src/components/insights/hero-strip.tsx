@@ -15,10 +15,10 @@ import {
 import type { DailyBriefing as DailyBriefingPayload } from "@/lib/ai/schema";
 
 /**
- * v1.4.20 phase B1 — Insights redesign hero strip.
+ * Insights redesign hero strip.
  *
- * Replaces the v1.4.16 `<InsightsPageHero>` with the wider band from
- * the design handoff (`prototype/artboard-fullpage.jsx → BriefingHero`):
+ * The wider band lifted from the design handoff
+ * (`prototype/artboard-fullpage.jsx → BriefingHero`):
  *
  *   - locale-aware time-of-day greeting line ("Good morning, …" /
  *     "Guten Morgen, …") + a narrative subtitle (the briefing
