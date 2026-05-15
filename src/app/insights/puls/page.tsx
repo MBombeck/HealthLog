@@ -2,12 +2,15 @@
 
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { Heart } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useInsightStatus } from "@/hooks/use-insight-status";
 import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 import { Vo2MaxChartRow } from "@/components/insights/vo2-max-chart-row";
@@ -16,6 +19,7 @@ import {
   getAgeFromDateOfBirth,
   getPersonalizedPulseTarget,
 } from "@/lib/analytics/pulse-targets";
+import { hasMetricData } from "@/lib/insights/metric-availability";
 
 /**
  * v1.4.25 W4 — `/insights/puls`.
@@ -63,6 +67,37 @@ export default function InsightsPulsPage() {
     staleTime: 60 * 1000,
   });
   const vo2Summary = analytics?.summaries?.VO2_MAX ?? null;
+
+  // v1.4.27 F17 — gate the sub-page on at least one pulse observation.
+  // Brand-new accounts (no manual logs, no Apple-Health upload yet)
+  // see a one-line empty-state with a CTA into `/measurements/new`
+  // rather than a chart skeleton over a blank target band.
+  if (
+    isAuthenticated &&
+    analytics &&
+    !hasMetricData("PULSE", {
+      summaries: analytics.summaries,
+      hasMood: false,
+      hasMedication: false,
+    })
+  ) {
+    return (
+      <SubPageShell title={t("insights.pulseSectionTitle")}>
+        <EmptyState
+          icon={<Heart className="size-6" />}
+          title={t("insights.emptyState.pulse.title")}
+          description={t("insights.emptyState.pulse.description")}
+          action={
+            <Button size="sm" asChild>
+              <Link href="/measurements/new">
+                {t("insights.emptyState.pulse.cta")}
+              </Link>
+            </Button>
+          }
+        />
+      </SubPageShell>
+    );
+  }
 
   const pulseAge = getAgeFromDateOfBirth(user?.dateOfBirth ?? null);
   const pulseTarget = getPersonalizedPulseTarget(

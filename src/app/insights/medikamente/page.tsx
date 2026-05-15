@@ -117,16 +117,19 @@ export default function InsightsMedikamentePage() {
   }
 
   if (medications.length === 0) {
+    // v1.4.27 F17 — medication compliance is event-driven so the
+    // gate reads `medications.length > 0`. CTA targets `/medications`
+    // (the dedicated medication-management surface).
     return (
       <SubPageShell title={t("insights.medicationCompliance")}>
         <EmptyState
           icon={<Pill className="size-6" />}
-          title={t("insights.subPage.medikamenteEmptyTitle")}
-          description={t("insights.subPage.medikamenteEmptyDescription")}
+          title={t("insights.emptyState.medication.title")}
+          description={t("insights.emptyState.medication.description")}
           action={
             <Button size="sm" asChild>
               <Link href="/medications">
-                {t("insights.subPage.medikamenteEmptyAction")}
+                {t("insights.emptyState.medication.cta")}
               </Link>
             </Button>
           }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Ruler } from "lucide-react";
@@ -12,6 +13,12 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
+import type { DataSummary } from "@/lib/analytics/trends";
+import { hasMetricData } from "@/lib/insights/metric-availability";
+
+interface AnalyticsData {
+  summaries: Record<string, DataSummary>;
+}
 
 /**
  * v1.4.25 W4 — `/insights/bmi`.
@@ -44,6 +51,49 @@ export default function InsightsBmiPage() {
   const { compareBaseline } = useInsightsLayoutPrefs(isAuthenticated);
 
   const { data: status, isLoading: isStatusLoading } = useInsightStatus("bmi");
+
+  const { data: analytics } = useQuery({
+    queryKey: ["analytics"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics");
+      if (!res.ok) throw new Error("Failed");
+      const json = await res.json();
+      return json.data as AnalyticsData;
+    },
+    enabled: isAuthenticated,
+    staleTime: 60 * 1000,
+  });
+
+  // v1.4.27 F17 — BMI is derived from WEIGHT. When no weight readings
+  // exist yet, the existing "set your height" branch can never compute
+  // anything useful either; surface the empty-state CTA pointing at
+  // `/measurements/new` instead so the user logs the weight first.
+  if (
+    isAuthenticated &&
+    analytics &&
+    !hasMetricData("BMI", {
+      summaries: analytics.summaries,
+      hasMood: false,
+      hasMedication: false,
+    })
+  ) {
+    return (
+      <SubPageShell title={t("insights.bmiSectionTitle")}>
+        <EmptyState
+          icon={<Ruler className="size-6" />}
+          title={t("insights.emptyState.bmi.title")}
+          description={t("insights.emptyState.bmi.description")}
+          action={
+            <Button size="sm" asChild>
+              <Link href="/measurements/new">
+                {t("insights.emptyState.bmi.cta")}
+              </Link>
+            </Button>
+          }
+        />
+      </SubPageShell>
+    );
+  }
 
   if (!user?.heightCm) {
     return (

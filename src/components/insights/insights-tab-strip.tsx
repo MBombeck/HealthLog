@@ -13,6 +13,11 @@ import {
   SUB_PAGE_SLUGS,
   type SubPageSlug,
 } from "@/lib/insights/sub-page-metric";
+import {
+  hasMetricData,
+  type InsightInputs,
+  type InsightMetric,
+} from "@/lib/insights/metric-availability";
 
 /**
  * v1.4.25 W4 — routed tab strip for `/insights`.
@@ -53,6 +58,13 @@ export interface InsightsTabStripProps {
   onRegenerate?: () => void;
   /** Spinner state — disables the button and swaps the icon. */
   regenerating?: boolean;
+  /**
+   * v1.4.27 F19 — analytics + event-driven availability inputs the
+   * gating helper reads. When omitted the strip falls back to its
+   * pre-v1.4.27 behaviour (every pill renders) so legacy mounts
+   * stay backward-compatible.
+   */
+  availability?: InsightInputs;
 }
 
 interface TabEntry {
@@ -62,32 +74,50 @@ interface TabEntry {
   labelKey: string;
 }
 
-function buildTabs(): TabEntry[] {
-  const subPages: Record<SubPageSlug, string> = {
-    blutdruck: "insights.navBloodPressure",
-    gewicht: "insights.navWeight",
-    puls: "insights.navPulse",
-    stimmung: "insights.navMood",
-    medikamente: "insights.navMedication",
-    bmi: "insights.navBmi",
-    schlaf: "insights.navSleep",
-  };
+/**
+ * Slug → (label key, gating metric) mapping. Keeping the metric here
+ * means the tab strip and the empty-state gates on each sub-page can
+ * stay in sync from a single source of truth — adding a sub-page is
+ * one row.
+ */
+const SUB_PAGE_TABS: Record<
+  SubPageSlug,
+  { labelKey: string; metric: InsightMetric }
+> = {
+  blutdruck: {
+    labelKey: "insights.navBloodPressure",
+    metric: "BLOOD_PRESSURE_SYS",
+  },
+  gewicht: { labelKey: "insights.navWeight", metric: "WEIGHT" },
+  puls: { labelKey: "insights.navPulse", metric: "PULSE" },
+  stimmung: { labelKey: "insights.navMood", metric: "MOOD" },
+  medikamente: { labelKey: "insights.navMedication", metric: "MEDICATION" },
+  bmi: { labelKey: "insights.navBmi", metric: "BMI" },
+  schlaf: { labelKey: "insights.navSleep", metric: "SLEEP_DURATION" },
+};
+
+function buildTabs(availability: InsightInputs | undefined): TabEntry[] {
+  const subPageEntries = SUB_PAGE_SLUGS.filter((slug) => {
+    if (!availability) return true;
+    return hasMetricData(SUB_PAGE_TABS[slug].metric, availability);
+  }).map((slug) => ({
+    href: `${INSIGHTS_OVERVIEW_PATH}/${slug}`,
+    labelKey: SUB_PAGE_TABS[slug].labelKey,
+  }));
   return [
     { href: INSIGHTS_OVERVIEW_PATH, labelKey: "insights.navOverview" },
-    ...SUB_PAGE_SLUGS.map((slug) => ({
-      href: `${INSIGHTS_OVERVIEW_PATH}/${slug}`,
-      labelKey: subPages[slug],
-    })),
+    ...subPageEntries,
   ];
 }
 
 export function InsightsTabStrip({
   onRegenerate,
   regenerating = false,
+  availability,
 }: InsightsTabStripProps) {
   const { t } = useTranslations();
   const pathname = usePathname();
-  const tabs = buildTabs();
+  const tabs = buildTabs(availability);
 
   // Fire success toast on the falling edge of `regenerating`. Same
   // rising-edge ref guard as the W3 implementation so the toast fires
