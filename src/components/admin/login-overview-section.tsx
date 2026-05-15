@@ -340,7 +340,7 @@ export function LoginOverviewSection() {
 
         {isLoading ? (
           <div className="flex justify-center py-4">
-            <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
+            <Loader2 className="text-muted-foreground h-5 w-5 animate-spin motion-reduce:animate-none" />
           </div>
         ) : !entries.length ? (
           <EmptyState

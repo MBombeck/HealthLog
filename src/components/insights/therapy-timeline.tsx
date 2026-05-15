@@ -108,6 +108,13 @@ export function TherapyTimeline({ limit }: TherapyTimelineProps) {
                 style={{ backgroundColor: colourForKind(entry.kind) }}
               />
               <div className="space-y-0.5">
+                {/* v1.4.27 B7 / L4 — sr-only drug-name heading per
+                    entry so screen-reader users can jump between
+                    medication blocks; the visible row keeps the
+                    inline <strong> rendering. */}
+                {entry.medicationName && (
+                  <h4 className="sr-only">{entry.medicationName}</h4>
+                )}
                 <p className="text-muted-foreground text-xs">
                   {fmt.dateWithWeekday(new Date(entry.date))}
                 </p>

@@ -112,7 +112,7 @@ export function NotificationStatusCard() {
   if (isLoading) {
     return (
       <div className="bg-card border-border rounded-xl border p-6">
-        <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
+        <Loader2 className="text-muted-foreground h-4 w-4 animate-spin motion-reduce:animate-none" />
       </div>
     );
   }
@@ -279,7 +279,7 @@ function ChannelRow({
             className="min-h-11"
           >
             {reEnablePending ? (
-              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
             ) : (
               <RotateCw className="mr-1 h-3.5 w-3.5" />
             )}
@@ -296,7 +296,7 @@ function ChannelRow({
           className="min-h-11"
         >
           {testPending ? (
-            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
           ) : (
             <Send className="mr-1 h-3.5 w-3.5" />
           )}

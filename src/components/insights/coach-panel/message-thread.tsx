@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   Bot,
@@ -315,6 +315,9 @@ function ChatBubble({
 }: ChatBubbleProps) {
   const { t } = useTranslations();
   const { user } = useAuth();
+  // v1.4.27 B7 / L3 — pair the evidence `<details>` and its disclosed
+  // list explicitly so screen-readers announce the panel relationship.
+  const evidencePanelId = useId();
   if (role === "user") {
     // v1.4.22 B3 — pull the user's Gravatar so the user bubble's
     // avatar matches the Coach avatar in size and visual weight.
@@ -434,6 +437,7 @@ function ChatBubble({
           >
             <summary
               data-slot="coach-evidence-summary"
+              aria-controls={evidencePanelId}
               className={cn(
                 "text-muted-foreground hover:text-foreground flex cursor-pointer",
                 "items-center gap-1.5 leading-relaxed",
@@ -448,6 +452,7 @@ function ChatBubble({
               <span>{t("insights.coach.evidenceLabel")}</span>
             </summary>
             <ul
+              id={evidencePanelId}
               data-slot="coach-evidence-list"
               className="text-foreground mt-2 flex flex-col gap-1"
             >

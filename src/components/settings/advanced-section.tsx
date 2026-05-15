@@ -281,7 +281,7 @@ function DataResetCard() {
           <AlertDialogTrigger asChild>
             <Button variant="destructive" size="sm" disabled={deleting}>
               {deleting ? (
-                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
               ) : (
                 <Trash2 className="mr-1 h-3.5 w-3.5" />
               )}

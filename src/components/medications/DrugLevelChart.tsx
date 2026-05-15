@@ -365,7 +365,7 @@ function GatedPlaceholder({
   // Three distinguishable states:
   //   - Research Mode is off entirely.
   //   - Research Mode is on but the acknowledged version is stale.
-  //   - We don't know yet (server returned null) — still render the
+  //   - We don motion-reduce:animate-none't know yet (server returned null) — still render the
   //     opt-in CTA so the user has a path forward.
   const stale = !!knownState?.enabled && !versionsAligned;
   return (

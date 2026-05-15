@@ -59,7 +59,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
   if (isLoading) {
     return (
       <div className="flex h-dvh items-center justify-center" role="status">
-        <Loader2 className="text-primary h-6 w-6 animate-spin" />
+        <Loader2 className="text-primary h-6 w-6 animate-spin motion-reduce:animate-none" />
         <span className="sr-only">{t("nav.loadingScreen")}</span>
       </div>
     );
@@ -88,7 +88,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated) {
     return (
       <div className="flex h-dvh items-center justify-center" role="status">
-        <Loader2 className="text-primary h-6 w-6 animate-spin" />
+        <Loader2 className="text-primary h-6 w-6 animate-spin motion-reduce:animate-none" />
         <span className="sr-only">{t("nav.loadingScreen")}</span>
       </div>
     );

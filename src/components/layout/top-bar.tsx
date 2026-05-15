@@ -56,7 +56,7 @@ export function TopBar() {
       {/* Mobile-only auth section (desktop uses sidebar user section) */}
       <div className="flex items-center gap-2 md:hidden">
         {isLoading ? (
-          <div className="bg-muted h-4 w-20 animate-pulse rounded" />
+          <div className="bg-muted h-4 w-20 animate-pulse rounded motion-reduce:animate-none" />
         ) : user ? (
           <DropdownMenu>
             <DropdownMenuTrigger

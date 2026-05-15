@@ -716,7 +716,7 @@ function CodexProviderForm({
 /* ────────────────────────────────────────────────────────────────
  * OpenAI form — API key + model select + collapsed Base URL override.
  * Save mutation flips both `aiProvider` (for the legacy single-result
- * resolver) and `aiOpenaiKeyEncrypted` (the user's key) so an OPENAI
+ * resolver) and `aiOpenaiKeyEncrypted` (the user motion-reduce:animate-none's key) so an OPENAI
  * pick is visible to every code path that reads the row.
  * ──────────────────────────────────────────────────────────────── */
 
@@ -889,7 +889,7 @@ function OpenAIProviderForm({
           disabled={saveMutation.isPending}
         >
           {saveMutation.isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
           ) : (
             <Save className="mr-2 h-4 w-4" />
           )}
@@ -1045,7 +1045,7 @@ function AnthropicProviderForm({
           disabled={saveMutation.isPending}
         >
           {saveMutation.isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
           ) : (
             <Save className="mr-2 h-4 w-4" />
           )}
@@ -1202,7 +1202,7 @@ function LocalProviderForm({
           disabled={saveMutation.isPending}
         >
           {saveMutation.isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
           ) : (
             <Save className="mr-2 h-4 w-4" />
           )}
@@ -1454,7 +1454,7 @@ function FallbackChainCard({
           data-testid="ai-fallback-chain-save"
         >
           {saveMutation.isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
           ) : (
             <Save className="mr-2 h-4 w-4" />
           )}
@@ -1659,7 +1659,7 @@ function RuntimeActionsRow({
           data-testid="ai-test-active-provider"
         >
           {testing ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
           ) : (
             <Sparkles className="mr-2 h-4 w-4" />
           )}
@@ -1673,7 +1673,7 @@ function RuntimeActionsRow({
             disabled={regen}
           >
             {regen ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
             ) : (
               <RefreshCw className="mr-2 h-4 w-4" />
             )}

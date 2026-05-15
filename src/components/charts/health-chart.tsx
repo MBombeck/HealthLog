@@ -1164,7 +1164,7 @@ export function HealthChart({
       ) : !chartData?.length ? null : (chartData?.length ?? 0) < 3 ? (
         // v1.4.16 B1a — sparse-data placeholder. <3 daily points is too
         // few to render a meaningful trend; paint a friendly hint
-        // instead so the dashboard doesn't look broken.
+        // instead so the dashboard doesn motion-reduce:animate-none't look broken.
         <ChartEmptyState
           title={t("charts.emptyStateTitle")}
           description={t("charts.emptyStateDescription")}

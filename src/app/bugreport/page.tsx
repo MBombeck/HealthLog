@@ -228,7 +228,7 @@ export default function BugReportPage() {
 
           <div className="flex items-center justify-end pt-2">
             <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />}
               <Bug className="mr-2 h-4 w-4" />
               {t("bugreport.submit")}
             </Button>

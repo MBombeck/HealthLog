@@ -110,7 +110,7 @@ export default function InsightsMedikamentePage() {
     return (
       <SubPageShell title={t("insights.medicationCompliance")}>
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="text-primary h-6 w-6 animate-spin" />
+          <Loader2 className="text-primary h-6 w-6 animate-spin motion-reduce:animate-none" />
         </div>
       </SubPageShell>
     );
@@ -250,7 +250,7 @@ function MedicationComplianceCalendar({
   if (isLoading) {
     return (
       <div className="flex h-32 items-center justify-center">
-        <Loader2 className="text-primary h-4 w-4 animate-spin" />
+        <Loader2 className="text-primary h-4 w-4 animate-spin motion-reduce:animate-none" />
       </div>
     );
   }

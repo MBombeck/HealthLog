@@ -140,7 +140,7 @@ export default function LoginPage() {
             disabled={loading}
           >
             {loading && mode === "passkey" ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
             ) : (
               <KeyRound className="mr-2 h-4 w-4" />
             )}
@@ -198,7 +198,7 @@ export default function LoginPage() {
                 disabled={loading}
               >
                 {loading && mode === "password" ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
                 ) : (
                   <Lock className="mr-2 h-4 w-4" />
                 )}

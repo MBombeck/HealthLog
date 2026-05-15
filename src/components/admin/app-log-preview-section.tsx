@@ -133,7 +133,7 @@ export function AppLogPreviewSection() {
           aria-label={t("admin.section.app-logs.refresh")}
         >
           <RefreshCw
-            className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+            className={`h-4 w-4 ${isFetching ? "animate-spin" : ""} motion-reduce:animate-none`}
           />
         </Button>
       </header>
@@ -195,7 +195,7 @@ export function AppLogPreviewSection() {
 
       {isLoading ? (
         <div className="flex justify-center py-4">
-          <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
+          <Loader2 className="text-muted-foreground h-5 w-5 animate-spin motion-reduce:animate-none" />
         </div>
       ) : events.length === 0 ? (
         <EmptyState

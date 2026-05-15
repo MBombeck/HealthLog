@@ -87,7 +87,7 @@ export function TestConnectionButton({
         disabled={disabled || testing}
       >
         {testing ? (
-          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
         ) : (
           <Plug className="mr-1 h-3.5 w-3.5" />
         )}

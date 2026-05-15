@@ -89,7 +89,7 @@ export function WeeklyReportView({
         data-slot="weekly-report-loading"
         className="flex h-64 items-center justify-center"
       >
-        <Loader2 className="text-primary h-6 w-6 animate-spin" />
+        <Loader2 className="text-primary h-6 w-6 animate-spin motion-reduce:animate-none" />
       </div>
     );
   }

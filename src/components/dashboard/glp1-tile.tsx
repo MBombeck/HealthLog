@@ -430,7 +430,7 @@ export function Glp1Tile() {
 }
 
 /**
- * v1.4.27 B1 — small segmented-control button used by the tile's
+ * v1.4.27 B1 — small segmented-control button used by the tile motion-reduce:animate-none's
  * tab strip. Carved into its own component so the active/inactive
  * styling lives in one place and the test can pin the data-slot
  * markers per tab.

@@ -567,7 +567,7 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
               disabled={!!intakeLoading}
             >
               {intakeLoading === "take" ? (
-                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-1 h-4 w-4 animate-spin motion-reduce:animate-none" />
               ) : (
                 <Check className="mr-1 h-4 w-4" />
               )}
@@ -580,7 +580,7 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
               disabled={!!intakeLoading}
             >
               {intakeLoading === "skip" ? (
-                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-1 h-4 w-4 animate-spin motion-reduce:animate-none" />
               ) : (
                 <SkipForward className="mr-1 h-4 w-4" />
               )}

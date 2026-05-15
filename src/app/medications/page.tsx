@@ -113,7 +113,7 @@ export default function MedicationsPage() {
   if (authLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="text-primary h-6 w-6 animate-spin" />
+        <Loader2 className="text-primary h-6 w-6 animate-spin motion-reduce:animate-none" />
       </div>
     );
   }
@@ -161,7 +161,7 @@ export default function MedicationsPage() {
 
       {isLoading ? (
         <div className="flex h-32 items-center justify-center">
-          <Loader2 className="text-primary h-6 w-6 animate-spin" />
+          <Loader2 className="text-primary h-6 w-6 animate-spin motion-reduce:animate-none" />
         </div>
       ) : isError ? (
         <div className="bg-card border-border flex h-64 items-center justify-center rounded-xl border">
@@ -499,7 +499,7 @@ function IntakeImportDialog({
                 onClick={handleImport}
                 disabled={importing || !jsonText.trim()}
               >
-                {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />}
                 <Upload className="mr-2 h-4 w-4" />
                 {t("common.import")}
               </Button>

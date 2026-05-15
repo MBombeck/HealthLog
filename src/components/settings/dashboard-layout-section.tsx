@@ -241,7 +241,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
 
       {isLoading || !layout ? (
         <div className="text-muted-foreground flex items-center gap-2 text-sm">
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
           {t("common.loading")}
         </div>
       ) : (
@@ -342,7 +342,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
             disabled={saveMutation.isPending}
           >
             {saveMutation.isPending && (
-              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
             )}
             {t("common.save")}
           </Button>

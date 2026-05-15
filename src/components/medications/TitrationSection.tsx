@@ -119,7 +119,7 @@ export function TitrationSection({ medicationId }: TitrationSectionProps) {
     >
       {isLoading && (
         <div className="text-muted-foreground flex items-center gap-2">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
           <span>{t("medications.titration.loading")}</span>
         </div>
       )}

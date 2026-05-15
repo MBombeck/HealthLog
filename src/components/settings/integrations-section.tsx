@@ -434,7 +434,7 @@ function WithingsCard({
                   }
                 >
                   {credsSaving ? (
-                    <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                    <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
                   ) : (
                     <Save className="mr-1 h-3.5 w-3.5" />
                   )}
@@ -463,7 +463,7 @@ function WithingsCard({
                 disabled={syncing}
               >
                 {syncing ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
                 ) : (
                   <RefreshCw className="mr-1 h-3.5 w-3.5" />
                 )}
@@ -473,7 +473,7 @@ function WithingsCard({
                 <AlertDialogTrigger asChild>
                   <Button variant="outline" size="sm" disabled={syncing}>
                     {syncing ? (
-                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
                     ) : (
                       <RefreshCw className="mr-1 h-3.5 w-3.5" />
                     )}
@@ -726,7 +726,7 @@ function MoodLogCard({
               disabled={saving || (!url.trim() && !apiKey.trim())}
               size="sm"
             >
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />}
               <Save className="mr-2 h-4 w-4" />
               {t("common.save")}
             </Button>
@@ -792,7 +792,7 @@ function MoodLogCard({
                 disabled={syncing}
                 onClick={() => handleSync(false)}
               >
-                {syncing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {syncing && <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />}
                 <RefreshCw className="mr-2 h-4 w-4" />
                 {t("settings.moodLogSync")}
               </Button>

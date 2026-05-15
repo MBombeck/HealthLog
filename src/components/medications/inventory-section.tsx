@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Loader2, Plus, Trash2 } from "lucide-react";
 
@@ -75,6 +75,10 @@ export function InventorySection({
 
   const [open, setOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  // v1.4.27 B7 / L3 — explicit aria-controls between summary and disclosed
+  // panel for parity with the W8e Provenance accordion.
+  const panelId = useId();
+  const pastPanelId = useId();
   const [dosesTotal, setDosesTotal] = useState<string>(
     defaultDosesPerUnit ? String(defaultDosesPerUnit) : "",
   );
@@ -247,7 +251,11 @@ export function InventorySection({
         open={open}
         onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}
       >
-        <summary className="text-foreground/85 flex cursor-pointer list-none items-center justify-between px-3 py-2 font-medium">
+        <summary
+          className="text-foreground/85 flex cursor-pointer list-none items-center justify-between px-3 py-2 font-medium"
+          aria-controls={panelId}
+          aria-expanded={open}
+        >
           <span>
             {t("medications.inventory.title")}
             {liveItems.length > 0 && (
@@ -262,10 +270,13 @@ export function InventorySection({
             }`}
           />
         </summary>
-        <div className="border-border/60 space-y-3 border-t px-3 py-2.5">
+        <div
+          id={panelId}
+          className="border-border/60 space-y-3 border-t px-3 py-2.5"
+        >
           {isLoading && (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
               <span>{t("medications.inventory.loading")}</span>
             </div>
           )}
@@ -357,12 +368,18 @@ export function InventorySection({
 
           {pastItems.length > 0 && (
             <details className="border-border/40 rounded-md border">
-              <summary className="text-muted-foreground cursor-pointer list-none px-2.5 py-1.5 font-medium">
+              <summary
+                className="text-muted-foreground cursor-pointer list-none px-2.5 py-1.5 font-medium"
+                aria-controls={pastPanelId}
+              >
                 {t("medications.inventory.pastTitle", {
                   count: pastItems.length,
                 })}
               </summary>
-              <ul className="border-border/40 space-y-1 border-t px-2.5 py-2">
+              <ul
+                id={pastPanelId}
+                className="border-border/40 space-y-1 border-t px-2.5 py-2"
+              >
                 {pastItems.map((item) => (
                   <li
                     key={item.id}
@@ -496,7 +513,7 @@ export function InventorySection({
               </Button>
               <Button type="submit" disabled={createMutation.isPending}>
                 {createMutation.isPending && (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
                 )}
                 {t("medications.inventory.save")}
               </Button>

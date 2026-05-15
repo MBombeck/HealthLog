@@ -75,7 +75,7 @@ export function AiQualitySection() {
   if (query.isLoading) {
     return (
       <div className="bg-card border-border flex items-center gap-2 rounded-xl border p-6">
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
         <span className="text-muted-foreground text-sm">
           {t("admin.aiQuality.loading")}
         </span>

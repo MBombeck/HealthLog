@@ -369,7 +369,7 @@ export function MedicationComplianceChart({
 
       {isLoading ? (
         <div className="flex h-48 items-center justify-center">
-          <Loader2 className="text-primary h-6 w-6 animate-spin" />
+          <Loader2 className="text-primary h-6 w-6 animate-spin motion-reduce:animate-none" />
         </div>
       ) : !hasData ? (
         <div className="text-muted-foreground flex h-48 items-center justify-center text-sm">

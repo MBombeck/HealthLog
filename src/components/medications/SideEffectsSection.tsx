@@ -256,7 +256,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
     >
       {isLoading && (
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
           <span>{t("medications.sideEffects.loading")}</span>
         </div>
       )}
@@ -473,7 +473,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
               </Button>
               <Button type="submit" disabled={createMutation.isPending}>
                 {createMutation.isPending && (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
                 )}
                 {t("medications.sideEffects.submitCta")}
               </Button>

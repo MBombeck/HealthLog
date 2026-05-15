@@ -171,7 +171,7 @@ export function PhaseConfigDialog({
 
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin" />
+            <Loader2 className="h-6 w-6 animate-spin motion-reduce:animate-none" />
           </div>
         ) : (
           <div className="space-y-3">
@@ -253,7 +253,7 @@ export function PhaseConfigDialog({
               disabled={saveMutation.isPending}
             >
               {saveMutation.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
               )}
               {t("common.save")}
             </Button>

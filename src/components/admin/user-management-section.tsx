@@ -407,7 +407,7 @@ export function UserManagementSection() {
         )
       ) : (
         <div className="mt-4 flex items-center gap-2">
-          <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
+          <Loader2 className="text-muted-foreground h-4 w-4 animate-spin motion-reduce:animate-none" />
           <span className="text-muted-foreground text-sm">
             {t("admin.loadingUsers")}
           </span>
@@ -460,7 +460,7 @@ export function UserManagementSection() {
                 }
               >
                 {updateUser.isPending && (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
                 )}
                 {t("common.save")}
               </Button>
@@ -510,7 +510,7 @@ export function UserManagementSection() {
                 }
               >
                 {resetPw.isPending && (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
                 )}
                 {t("admin.reset")}
               </Button>
@@ -562,7 +562,7 @@ export function UserManagementSection() {
               className="bg-destructive hover:bg-destructive/90"
             >
               {forceLogout.isPending ? (
-                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
               ) : null}
               {t("admin.section.users.forceLogout")}
             </AlertDialogAction>

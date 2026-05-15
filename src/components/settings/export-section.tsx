@@ -224,7 +224,7 @@ function DoctorReportCard() {
           onClick={() => setOpen(true)}
           disabled={busy}
         >
-          {busy && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
+          {busy && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />}
           {t("settings.sections.export.cards.doctorReport.action")}
         </Button>
       }
@@ -358,7 +358,7 @@ function CsvCard({
           disabled={busy}
         >
           {busy ? (
-            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
           ) : (
             <Download className="mr-1 h-3.5 w-3.5" />
           )}
@@ -445,7 +445,7 @@ function MedicationsCsvCard() {
           disabled={busy}
         >
           {busy ? (
-            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
           ) : (
             <Download className="mr-1 h-3.5 w-3.5" />
           )}
@@ -534,7 +534,7 @@ function FullBackupCard() {
           disabled={busy}
         >
           {busy ? (
-            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
           ) : (
             <FileText className="mr-1 h-3.5 w-3.5" />
           )}

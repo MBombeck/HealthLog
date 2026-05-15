@@ -218,7 +218,7 @@ export function CoachInput({
             className="gap-1.5"
           >
             {isStreaming ? (
-              <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+              <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
             ) : (
               <Send className="size-3.5" aria-hidden="true" />
             )}

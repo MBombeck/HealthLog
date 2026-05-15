@@ -34,7 +34,7 @@ export function InsightStatusCard({
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="text-dracula-purple h-5 w-5 animate-spin" />
+          <Loader2 className="text-dracula-purple h-5 w-5 animate-spin motion-reduce:animate-none" />
           <span className="text-muted-foreground ml-2 text-sm">
             {t("common.loading")}
           </span>

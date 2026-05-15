@@ -79,7 +79,7 @@ export function RecentAuditPreview() {
         {isLoading ? (
           <div className="flex items-center gap-2 py-2">
             <Loader2
-              className="text-muted-foreground h-4 w-4 animate-spin"
+              className="text-muted-foreground h-4 w-4 animate-spin motion-reduce:animate-none"
               aria-hidden="true"
             />
             <span className="text-muted-foreground text-sm">

@@ -338,7 +338,7 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
 
         {isLoading ? (
           <div className="flex h-32 items-center justify-center">
-            <Loader2 className="text-primary h-6 w-6 animate-spin" />
+            <Loader2 className="text-primary h-6 w-6 animate-spin motion-reduce:animate-none" />
           </div>
         ) : !data?.measurements?.length ? (
           // v1.4.15 phase-C5: replaces the bare-text empty rectangle.
@@ -692,7 +692,7 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                     }
                   >
                     {updateMutation.isPending ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
                     ) : null}
                     {t("common.save")}
                   </Button>
@@ -722,7 +722,7 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                       disabled={deleteMutation.isPending}
                     >
                       {deleteMutation.isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
                       ) : null}
                       {t("common.delete")}
                     </AlertDialogAction>

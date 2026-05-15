@@ -32,7 +32,7 @@ export default function MeasurementsPage() {
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="text-primary h-8 w-8 animate-spin" />
+        <Loader2 className="text-primary h-8 w-8 animate-spin motion-reduce:animate-none" />
       </div>
     );
   }

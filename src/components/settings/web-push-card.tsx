@@ -182,7 +182,7 @@ export function WebPushCard() {
       <div className="mt-4 space-y-3">
         {loading ? (
           <div className="flex items-center gap-2">
-            <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
+            <Loader2 className="text-muted-foreground h-4 w-4 animate-spin motion-reduce:animate-none" />
           </div>
         ) : !isSupported ? (
           <p className="text-muted-foreground text-sm">
@@ -202,7 +202,7 @@ export function WebPushCard() {
                 disabled={actionLoading}
               >
                 {actionLoading && (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
                 )}
                 {t("settings.webPushUnsubscribe")}
               </Button>
@@ -214,7 +214,7 @@ export function WebPushCard() {
                 disabled={actionLoading}
               >
                 {actionLoading ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
                 ) : (
                   <BellRing className="mr-1 h-3.5 w-3.5" />
                 )}

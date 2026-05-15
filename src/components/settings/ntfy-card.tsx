@@ -195,7 +195,7 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
               onClick={() => test.mutate()}
             >
               {test.isPending ? (
-                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
               ) : (
                 <Send className="mr-1 h-3.5 w-3.5" />
               )}
@@ -203,7 +203,7 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
             </Button>
             <Button type="submit" disabled={save.isPending}>
               {save.isPending && (
-                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
               )}
               {t("common.save")}
             </Button>

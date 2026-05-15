@@ -768,7 +768,7 @@ export function MedicationForm({
             </div>
 
             <div className="mt-1 grid items-end gap-2 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs font-normal">
                   {t("medications.scheduleFrom")}
                 </Label>
@@ -786,7 +786,7 @@ export function MedicationForm({
                   maxLength={5}
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs font-normal">
                   {t("medications.scheduleTo")}
                 </Label>
@@ -804,7 +804,7 @@ export function MedicationForm({
                   maxLength={5}
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs font-normal">
                   {t("medications.scheduleLabel")}
                 </Label>
@@ -816,7 +816,7 @@ export function MedicationForm({
                   maxLength={50}
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs font-normal">
                   {t("medications.dose")}
                 </Label>
@@ -838,7 +838,7 @@ export function MedicationForm({
             {/* Day-of-week selection */}
             {s.showAdvanced && (
               <div className="border-border/60 mt-2.5 space-y-2.5 border-t pt-2.5">
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label className="text-sm">
                     {t("medications.scheduleInterval")}
                   </Label>
@@ -862,7 +862,7 @@ export function MedicationForm({
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label className="text-sm">
                     {t("medications.scheduleDays")}
                   </Label>
@@ -870,7 +870,7 @@ export function MedicationForm({
                     <button
                       type="button"
                       onClick={() => updateSchedule(i, "daysOfWeek", [])}
-                      className={`h-8 min-w-24 rounded-md border px-3 text-xs font-medium transition-colors ${
+                      className={`min-h-11 min-w-24 rounded-md border px-3 text-xs font-medium transition-colors ${
                         s.daysOfWeek.length === 0
                           ? "border-primary bg-primary text-primary-foreground"
                           : "border-border/70 bg-muted text-foreground/70 hover:bg-accent hover:text-foreground"
@@ -885,7 +885,7 @@ export function MedicationForm({
                           key={dayIndex}
                           type="button"
                           onClick={() => toggleDay(i, dayIndex)}
-                          className={`h-8 flex-1 rounded-md border text-xs font-medium transition-colors ${
+                          className={`min-h-11 flex-1 rounded-md border text-xs font-medium transition-colors ${
                             isSelected
                               ? "border-primary bg-primary text-primary-foreground"
                               : "border-border/70 bg-muted text-foreground/75 hover:bg-accent hover:text-foreground"
@@ -925,7 +925,7 @@ export function MedicationForm({
               type="button"
               variant="outline"
               size="icon"
-              className="h-9 w-9"
+              className="h-11 w-11"
               disabled={loading || deleting}
               aria-label={t("common.moreOptions")}
             >
@@ -1009,7 +1009,7 @@ export function MedicationForm({
             </Button>
           )}
           <Button type="submit" disabled={loading || deleting}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />}
             {isEdit ? t("common.save") : t("medications.createMedication")}
           </Button>
         </div>
@@ -1057,7 +1057,7 @@ export function MedicationForm({
               disabled={purging}
             >
               {purging ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
               ) : null}
               {t("medications.purgeRecords")}
             </AlertDialogAction>

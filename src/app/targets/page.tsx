@@ -196,7 +196,7 @@ export default function TargetsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="text-primary h-6 w-6 animate-spin" />
+        <Loader2 className="text-primary h-6 w-6 animate-spin motion-reduce:animate-none" />
       </div>
     );
   }

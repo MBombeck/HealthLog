@@ -429,7 +429,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
             {/* Mobile list — v1.4.15 phase-A3 fix #2: previously the row
                 rendered the score TWICE on mobile (the big number in the
                 left badge AND a duplicate in the title line: "2 (schlecht)").
-                Desktop's table version only ever showed one. The badge is
+                Desktop motion-reduce:animate-none's table version only ever showed one. The badge is
                 the visual anchor; next to it the user wants the textual
                 label, not a second copy of the digit. The
                 `data-testid="mood-row"` hook is what the Playwright Pixel-5
@@ -650,7 +650,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                     }
                   >
                     {updateMutation.isPending ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
                     ) : null}
                     {t("common.save")}
                   </Button>
@@ -680,7 +680,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                       disabled={deleteMutation.isPending}
                     >
                       {deleteMutation.isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
                       ) : null}
                       {t("common.delete")}
                     </AlertDialogAction>

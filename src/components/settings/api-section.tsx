@@ -210,7 +210,7 @@ function ApiTokensCard() {
             size="sm"
             disabled={creating || !newName.trim()}
           >
-            {creating && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
+            {creating && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />}
             {t("common.create")}
           </Button>
         </form>

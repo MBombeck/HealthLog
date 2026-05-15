@@ -177,7 +177,7 @@ export function RemindersSection() {
           disabled={testNotification.isPending}
         >
           {testNotification.isPending && (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
           )}
           <Bell className="mr-1.5 h-3.5 w-3.5" />
           {t("admin.notificationTestSend")}
@@ -189,7 +189,7 @@ export function RemindersSection() {
           disabled={reminderCheck.isPending}
         >
           {reminderCheck.isPending && (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
           )}
           <Activity className="mr-1.5 h-3.5 w-3.5" />
           {t("admin.reminderCheckRun")}
@@ -220,7 +220,7 @@ export function RemindersSection() {
           }
         >
           {updateSettings.isPending && (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
           )}
           {t("common.save")}
         </Button>

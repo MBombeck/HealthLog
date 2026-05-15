@@ -623,7 +623,7 @@ export function MoodChart({
           </div>
         ) : chartData.length < 3 ? (
           // v1.4.16 B1a — sparse-data placeholder consistent with the
-          // BP/weight/pulse charts. Height tracks the chart strip's
+          // BP/weight/pulse charts. Height tracks the chart strip motion-reduce:animate-none's
           // shared CHART_HEIGHT_PX so the empty state preserves the
           // trend-row rhythm (v1.4.27 — was 280, now 240 to match every
           // other dashboard chart card).

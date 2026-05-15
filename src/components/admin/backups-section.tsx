@@ -90,7 +90,7 @@ function RestoreRowDialog({
           className="min-h-11"
         >
           {pending ? (
-            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
           ) : (
             <History className="mr-1 h-3.5 w-3.5" />
           )}

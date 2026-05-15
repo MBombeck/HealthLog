@@ -265,7 +265,7 @@ export function AboutSection() {
       {/* Updates — proper heading + last-check timestamp + manual button
           that proxies through `/api/version/check-updates`. The v1.4.2
           version called `api.github.com` directly from the browser, which
-          the production CSP blocked silently — that's why "nothing
+          the production CSP blocked silently — that motion-reduce:animate-none's why "nothing
           happened" when the user clicked the button. */}
       {version && (
         <div className="bg-card border-border rounded-xl border p-6">
@@ -284,7 +284,7 @@ export function AboutSection() {
               disabled={checking}
             >
               {checking ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
               ) : (
                 <RefreshCw className="mr-2 h-4 w-4" />
               )}

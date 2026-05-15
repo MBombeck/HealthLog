@@ -351,7 +351,7 @@ export function CoachSettingsSheet({
             data-slot="coach-prefs-save"
           >
             {save.isPending ? (
-              <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+              <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
             ) : null}
             {t("insights.coach.settingsSave")}
           </Button>
