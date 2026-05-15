@@ -107,3 +107,65 @@ describe("generateMedicationComplianceStatusForUser — v1.4.6 bucketed payload"
     expect(dailySeries.monthly[0]).toHaveProperty("n");
   });
 });
+
+describe("generateMedicationComplianceStatusForUser — token-leak hardening (v1.4.27 F16)", () => {
+  it("strips metric: tokens out of the cached summary + per-medication text", async () => {
+    const now = new Date();
+    const medication = {
+      id: "med-1",
+      name: "Ramipril",
+      dose: "5mg",
+      active: true,
+      createdAt: new Date(now.getTime() - 60 * dayMs),
+      schedules: [{ id: "s1", time: "08:00" }],
+    };
+
+    vi.mocked(prisma.auditLog.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.medication.findMany).mockResolvedValue([
+      medication,
+    ] as never);
+    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
+      [] as never,
+    );
+    vi.mocked(prisma.auditLog.create).mockResolvedValue({
+      createdAt: new Date(),
+    } as never);
+
+    vi.mocked(resolveProvider).mockResolvedValue({
+      type: "anthropic",
+      generateCompletion: vi.fn(async () => ({
+        content: JSON.stringify({
+          summary:
+            "Compliance held steady at 96%. metric:BLOOD_PRESSURE_SYS over the last 30 days.",
+          medications: [
+            {
+              medicationId: "med-1",
+              summary:
+                "Ramipril taken on schedule. metric:PULSE no missed doses in 30 days.",
+            },
+          ],
+        }),
+        model: "x",
+        tokensUsed: 1,
+      })),
+    } as never);
+
+    const result = await generateMedicationComplianceStatusForUser("user-1", {
+      locale: "en",
+    });
+
+    expect(result.summary).toBeTruthy();
+    expect(result.summary).not.toContain("metric:");
+    expect(result.medications[0].text).not.toContain("metric:");
+    const createCalls = vi.mocked(prisma.auditLog.create).mock.calls;
+    expect(createCalls.length).toBeGreaterThan(0);
+    const details = (createCalls[0][0] as { data: { details: string } }).data
+      .details;
+    const parsed = JSON.parse(details) as {
+      summary: string;
+      medications: Array<{ text: string }>;
+    };
+    expect(parsed.summary).not.toContain("metric:");
+    expect(parsed.medications[0].text).not.toContain("metric:");
+  });
+});

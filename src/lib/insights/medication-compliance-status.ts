@@ -13,6 +13,7 @@ import {
   getPreviousInsightContext,
 } from "@/lib/insights/memory";
 import { applyPayloadBudget } from "@/lib/insights/bucket-series";
+import { stripChartTokens } from "@/lib/insights/chart-tokens";
 import { annotate } from "@/lib/logging/context";
 
 // 360 daily days + 24 monthly windows ≈ 1080 days of intake history.
@@ -52,7 +53,7 @@ function round(value: number, digits = 1): number {
 }
 
 function normalizeSummaryText(value: string): string {
-  return value.replace(/\s+/g, " ").trim();
+  return stripChartTokens(value).replace(/\s+/g, " ").trim();
 }
 
 function normalizeLocale(value: string | null | undefined): SupportedLocale {

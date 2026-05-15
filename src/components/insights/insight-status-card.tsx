@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import { stripChartTokens } from "@/lib/insights/chart-tokens";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -94,7 +95,16 @@ export function InsightStatusCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
-        <p className="text-muted-foreground text-sm leading-relaxed">{text}</p>
+        {/* v1.4.27 — defence-in-depth strip. Cached status text from
+            pre-v1.4.27 rows can still carry literal `metric:<TYPE>`
+            tokens the model embedded on the assumption a chart would
+            render inline. The sub-page never mounts the chart, so the
+            token surfaces verbatim. The producer side now strips too;
+            this consumer-side wrap keeps existing caches clean while
+            they roll forward. */}
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          {stripChartTokens(text)}
+        </p>
         <LastUpdatedFooter updatedAt={updatedAt} />
       </CardContent>
     </Card>

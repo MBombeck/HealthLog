@@ -87,3 +87,37 @@ describe("generateMoodStatusForUser — v1.4.6 bucketed payload", () => {
     expect(mood.monthly[0]).toHaveProperty("n");
   });
 });
+
+describe("generateMoodStatusForUser — token-leak hardening (v1.4.27 F16)", () => {
+  it("strips metric: tokens out of the cached text before persisting", async () => {
+    const t = new Date();
+    vi.mocked(prisma.auditLog.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([
+      { date: t.toISOString().slice(0, 10), score: 4, tags: [], moodLoggedAt: t },
+    ] as never);
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
+    vi.mocked(prisma.auditLog.create).mockResolvedValue({
+      createdAt: new Date(),
+    } as never);
+
+    vi.mocked(resolveProvider).mockResolvedValue({
+      type: "anthropic",
+      generateCompletion: vi.fn(async () => ({
+        content: '{"summary":"Mood stayed positive. metric:MOOD"}',
+        model: "x",
+        tokensUsed: 1,
+      })),
+    } as never);
+
+    const result = await generateMoodStatusForUser("user-1", { locale: "en" });
+
+    expect(result.text).toBeTruthy();
+    expect(result.text).not.toContain("metric:");
+    const createCalls = vi.mocked(prisma.auditLog.create).mock.calls;
+    expect(createCalls.length).toBeGreaterThan(0);
+    const details = (createCalls[0][0] as { data: { details: string } }).data
+      .details;
+    const parsed = JSON.parse(details) as { text: string };
+    expect(parsed.text).not.toContain("metric:");
+  });
+});

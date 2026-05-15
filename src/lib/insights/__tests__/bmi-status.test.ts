@@ -78,3 +78,39 @@ describe("generateBmiStatusForUser — v1.4.6 bucketed payload", () => {
     expect(bmi.monthly[0]).toHaveProperty("n");
   });
 });
+
+describe("generateBmiStatusForUser — token-leak hardening (v1.4.27 F16)", () => {
+  it("strips metric: tokens out of the cached text before persisting", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      heightCm: 175,
+    } as never);
+    vi.mocked(prisma.auditLog.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue([
+      { value: 80, measuredAt: new Date() },
+    ] as never);
+    vi.mocked(prisma.auditLog.create).mockResolvedValue({
+      createdAt: new Date(),
+    } as never);
+
+    vi.mocked(resolveProvider).mockResolvedValue({
+      type: "anthropic",
+      generateCompletion: vi.fn(async () => ({
+        content:
+          '{"summary":"BMI sits in the green band. metric:WEIGHT and steady."}',
+        model: "x",
+        tokensUsed: 1,
+      })),
+    } as never);
+
+    const result = await generateBmiStatusForUser("user-1", { locale: "en" });
+
+    expect(result.text).toBeTruthy();
+    expect(result.text).not.toContain("metric:");
+    const createCalls = vi.mocked(prisma.auditLog.create).mock.calls;
+    expect(createCalls.length).toBeGreaterThan(0);
+    const details = (createCalls[0][0] as { data: { details: string } }).data
+      .details;
+    const parsed = JSON.parse(details) as { text: string };
+    expect(parsed.text).not.toContain("metric:");
+  });
+});

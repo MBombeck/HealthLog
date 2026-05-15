@@ -8,6 +8,7 @@ import {
   getPreviousInsightContext,
 } from "@/lib/insights/memory";
 import { applyPayloadBudget } from "@/lib/insights/bucket-series";
+import { stripChartTokens } from "@/lib/insights/chart-tokens";
 import { annotate } from "@/lib/logging/context";
 
 const BERLIN_DAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
@@ -43,7 +44,7 @@ function average(values: number[]): number {
 }
 
 function normalizeSummaryText(value: string): string {
-  return value.replace(/\s+/g, " ").trim();
+  return stripChartTokens(value).replace(/\s+/g, " ").trim();
 }
 
 function normalizeLocale(value: string | null | undefined): SupportedLocale {
