@@ -42,14 +42,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AlertTriangle, BookOpenCheck, Loader2 } from "lucide-react";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -131,27 +124,44 @@ export function ResearchModeAcknowledgmentDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        data-slot="research-mode-acknowledgment-dialog"
-        className="flex max-h-[90vh] flex-col sm:max-w-xl"
-      >
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <BookOpenCheck className="text-dracula-purple h-5 w-5 shrink-0" />
-            {t("medications.researchMode.dialog.title")}
-          </DialogTitle>
-          <DialogDescription>
-            {t("medications.researchMode.dialog.intro")}
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* Only the body scrolls; header + footer stay pinned so the
-            Acknowledge / Cancel CTAs are always reachable without
-            scrolling on small viewports (the previous markup scrolled
-            the entire DialogContent, pushing the footer below the
-            fold on iPhone-class heights). */}
-        <div className="-mr-2 flex-1 space-y-4 overflow-y-auto pr-2 text-sm">
+    <ResponsiveSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title={
+        <span className="flex items-center gap-2">
+          <BookOpenCheck className="text-dracula-purple h-5 w-5 shrink-0" />
+          {t("medications.researchMode.dialog.title")}
+        </span>
+      }
+      description={t("medications.researchMode.dialog.intro")}
+      className="sm:max-w-xl"
+      footer={
+        <div className="flex w-full gap-2 sm:justify-end sm:gap-2">
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+            disabled={mutation.isPending}
+            data-slot="research-mode-cancel"
+          >
+            {t("medications.researchMode.dialog.cancelCta")}
+          </Button>
+          <Button
+            onClick={handleAcknowledge}
+            disabled={mutation.isPending || !currentDisclaimerVersion}
+            data-slot="research-mode-acknowledge"
+          >
+            {mutation.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
+            ) : null}
+            {t("medications.researchMode.dialog.acknowledgeCta")}
+          </Button>
+        </div>
+      }
+    >
+        <div
+          data-slot="research-mode-acknowledgment-dialog"
+          className="space-y-4 text-sm"
+        >
           <section
             aria-labelledby="research-mode-what-it-is"
             data-slot="research-mode-what-it-is"
@@ -253,28 +263,6 @@ export function ResearchModeAcknowledgmentDialog({
             </p>
           )}
         </div>
-
-        <DialogFooter className="gap-2 sm:gap-2">
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            disabled={mutation.isPending}
-            data-slot="research-mode-cancel"
-          >
-            {t("medications.researchMode.dialog.cancelCta")}
-          </Button>
-          <Button
-            onClick={handleAcknowledge}
-            disabled={mutation.isPending || !currentDisclaimerVersion}
-            data-slot="research-mode-acknowledge"
-          >
-            {mutation.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
-            ) : null}
-            {t("medications.researchMode.dialog.acknowledgeCta")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </ResponsiveSheet>
   );
 }

@@ -610,7 +610,7 @@ export function AccountSection() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleChangePassword} className="space-y-3">
+          <form onSubmit={handleChangePassword} className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="current-password">

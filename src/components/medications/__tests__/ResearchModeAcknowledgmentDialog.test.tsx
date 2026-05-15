@@ -60,37 +60,38 @@ vi.mock("sonner", () => ({
   },
 }));
 
-// Radix Dialog uses Portals which `renderToStaticMarkup` does not
-// realise. We collapse the primitives to plain wrappers so the body of
-// the dialog is reachable in the static markup.
-vi.mock("@/components/ui/dialog", () => ({
-  Dialog: ({
+// v1.4.27 R4 RC2 — the dialog now mounts <ResponsiveSheet>. Its
+// internals (Sheet on `<md`, Dialog on `md+`) both portal at runtime;
+// we collapse the primitive to a plain wrapper so the body of the
+// dialog stays reachable in the static markup.
+vi.mock("@/components/ui/responsive-sheet", () => ({
+  ResponsiveSheet: ({
     open,
+    title,
+    description,
+    footer,
     children,
   }: {
     open: boolean;
+    title: React.ReactNode;
+    description?: React.ReactNode;
+    footer?: React.ReactNode;
     children: React.ReactNode;
-  }) => (open ? <div data-slot="mock-dialog">{children}</div> : null),
-  DialogContent: ({
-    children,
-    ...rest
-  }: React.ComponentProps<"div"> & { children: React.ReactNode }) => (
-    <div data-slot="mock-dialog-content" {...rest}>
-      {children}
-    </div>
-  ),
-  DialogHeader: ({ children }: { children: React.ReactNode }) => (
-    <div data-slot="mock-dialog-header">{children}</div>
-  ),
-  DialogTitle: ({ children }: { children: React.ReactNode }) => (
-    <h2 data-slot="mock-dialog-title">{children}</h2>
-  ),
-  DialogDescription: ({ children }: { children: React.ReactNode }) => (
-    <p data-slot="mock-dialog-description">{children}</p>
-  ),
-  DialogFooter: ({ children }: { children: React.ReactNode }) => (
-    <div data-slot="mock-dialog-footer">{children}</div>
-  ),
+  }) =>
+    open ? (
+      <div data-slot="mock-responsive-sheet">
+        <div data-slot="mock-responsive-sheet-header">
+          <h2 data-slot="mock-responsive-sheet-title">{title}</h2>
+          {description ? (
+            <p data-slot="mock-responsive-sheet-description">{description}</p>
+          ) : null}
+        </div>
+        <div data-slot="mock-responsive-sheet-body">{children}</div>
+        {footer ? (
+          <div data-slot="mock-responsive-sheet-footer">{footer}</div>
+        ) : null}
+      </div>
+    ) : null,
 }));
 
 import { ResearchModeAcknowledgmentDialog } from "../ResearchModeAcknowledgmentDialog";

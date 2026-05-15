@@ -738,7 +738,7 @@ export function MoodChart({
                   tickLine={false}
                   axisLine={false}
                   width={65}
-                  tickMargin={6}
+                  tickMargin={10}
                   tickFormatter={formatMoodTick}
                 />
                 <Tooltip

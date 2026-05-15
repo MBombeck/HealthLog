@@ -25,13 +25,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDateTime } from "@/lib/format";
@@ -329,38 +323,110 @@ function FeedbackDetailDialog({
     typeof meta.appVersion === "string" ? meta.appVersion : null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            {item.subject}
-          </DialogTitle>
-          <DialogDescription>
-            <span className="flex flex-wrap items-center gap-2 text-xs">
-              <FeedbackCategoryBadge category={item.category} />
-              <span>
-                {t("admin.feedback.submittedBy")}:{" "}
-                {item.user?.username ?? t("admin.feedback.anonymous")}
-              </span>
-              <span>·</span>
-              <span>{formatDateTime(item.createdAt)}</span>
-              {issueUrl && (
-                <a
-                  href={issueUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary inline-flex items-center gap-1"
+    <ResponsiveSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title={
+        <span className="flex items-center gap-2">
+          <MessageSquare className="h-5 w-5" />
+          {item.subject}
+        </span>
+      }
+      description={
+        <span className="flex flex-wrap items-center gap-2 text-xs">
+          <FeedbackCategoryBadge category={item.category} />
+          <span>
+            {t("admin.feedback.submittedBy")}:{" "}
+            {item.user?.username ?? t("admin.feedback.anonymous")}
+          </span>
+          <span>·</span>
+          <span>{formatDateTime(item.createdAt)}</span>
+          {issueUrl && (
+            <a
+              href={issueUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary inline-flex items-center gap-1"
+            >
+              <GitPullRequest className="h-3 w-3" />
+              {t("admin.feedback.viewIssue")}
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
+        </span>
+      }
+      className="sm:max-w-2xl"
+      footer={
+        <div className="flex w-full flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={update.isPending || item.status === "ACKNOWLEDGED"}
+            onClick={() => update.mutate({ status: "ACKNOWLEDGED" })}
+          >
+            <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+            {t("admin.feedback.actionAcknowledge")}
+          </Button>
+          <Button
+            size="sm"
+            disabled={update.isPending || item.status === "RESOLVED"}
+            onClick={() => update.mutate({ status: "RESOLVED" })}
+          >
+            <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+            {t("admin.feedback.actionResolve")}
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={archive.isPending || item.status === "ARCHIVED"}
+              >
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                {t("admin.feedback.actionArchive")}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {t("admin.feedback.archiveConfirm")}
+                </AlertDialogTitle>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => archive.mutate()}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  <GitPullRequest className="h-3 w-3" />
-                  {t("admin.feedback.viewIssue")}
-                  <ExternalLink className="h-3 w-3" />
-                </a>
+                  {t("admin.feedback.actionArchive")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          {githubConfigured && !issueUrl && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={publish.isPending}
+              onClick={() => publish.mutate()}
+              className="ml-auto"
+            >
+              {publish.isPending ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+              ) : (
+                <GitPullRequest className="mr-1.5 h-3.5 w-3.5" />
               )}
-            </span>
-          </DialogDescription>
-        </DialogHeader>
-
+              {t("admin.feedback.actionPublishGithub")}
+            </Button>
+          )}
+          {issueUrl && (
+            <Badge className="border-success/30 bg-success/15 text-success ml-auto">
+              {t("admin.feedback.publishedToGithub")}
+            </Badge>
+          )}
+        </div>
+      }
+    >
         <div className="space-y-4 text-sm">
           <div className="bg-muted/40 rounded-md p-3 whitespace-pre-wrap">
             {item.description}
@@ -450,76 +516,7 @@ function FeedbackDetailDialog({
             </div>
           </div>
 
-          <div className="border-border flex flex-wrap items-center gap-2 border-t pt-3">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={update.isPending || item.status === "ACKNOWLEDGED"}
-              onClick={() => update.mutate({ status: "ACKNOWLEDGED" })}
-            >
-              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-              {t("admin.feedback.actionAcknowledge")}
-            </Button>
-            <Button
-              size="sm"
-              disabled={update.isPending || item.status === "RESOLVED"}
-              onClick={() => update.mutate({ status: "RESOLVED" })}
-            >
-              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-              {t("admin.feedback.actionResolve")}
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  disabled={archive.isPending || item.status === "ARCHIVED"}
-                >
-                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                  {t("admin.feedback.actionArchive")}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    {t("admin.feedback.archiveConfirm")}
-                  </AlertDialogTitle>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => archive.mutate()}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    {t("admin.feedback.actionArchive")}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            {githubConfigured && !issueUrl && (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={publish.isPending}
-                onClick={() => publish.mutate()}
-                className="ml-auto"
-              >
-                {publish.isPending ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-                ) : (
-                  <GitPullRequest className="mr-1.5 h-3.5 w-3.5" />
-                )}
-                {t("admin.feedback.actionPublishGithub")}
-              </Button>
-            )}
-            {issueUrl && (
-              <Badge className="border-success/30 bg-success/15 text-success ml-auto">
-                {t("admin.feedback.publishedToGithub")}
-              </Badge>
-            )}
-          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+    </ResponsiveSheet>
   );
 }

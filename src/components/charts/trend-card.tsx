@@ -240,7 +240,7 @@ export function TrendCard({
         className="mt-2 flex min-w-0 items-baseline gap-x-1.5"
         data-slot="trend-card-value-row"
       >
-        <span className="min-w-0 truncate text-3xl leading-none font-bold tracking-tight tabular-nums">
+        <span className="min-w-0 truncate text-3xl leading-none font-semibold tracking-tight tabular-nums">
           {latest !== null ? renderPair(latest, secondary?.latest) : "—"}
         </span>
         <span className="text-muted-foreground shrink-0 text-sm tabular-nums">

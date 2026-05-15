@@ -1,18 +1,11 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { RotateCcw } from "lucide-react";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -106,11 +99,13 @@ export function TargetEditSheet(props: TargetEditSheetProps) {
   // test-friendly: existing tests can render the card without
   // standing up a QueryClientProvider, and the hooks only execute
   // once the user actually clicks the cog.
-  return (
-    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      {props.open ? <TargetEditSheetBody {...props} /> : null}
-    </Dialog>
-  );
+  //
+  // v1.4.27 R4 RC2 — migrated raw <Dialog> → <ResponsiveSheet> so the
+  // bottom-sheet branch sticky-pins reset + cancel + save above the
+  // soft keyboard on phones. The lazy-mount toggle stays at this layer
+  // so closed renders never instantiate the TanStack Query hooks.
+  if (!props.open) return null;
+  return <TargetEditSheetBody {...props} />;
 }
 
 function TargetEditSheetBody({
@@ -184,10 +179,25 @@ function TargetEditSheetBody({
   const displayDiaMin = diaMinStr ?? (secondary ? String(secondary.min) : "");
   const displayDiaMax = diaMaxStr ?? (secondary ? String(secondary.max) : "");
 
-  // Focus management — the first input gets focus when the dialog
+  // Focus management — the first input gets focus when the sheet
   // opens, matching the Dashboard chart cog's open-on-focus pattern.
+  // v1.4.27 R4 RC2 — under the ResponsiveSheet primitive we no longer
+  // hook Radix's `onOpenAutoFocus`; a mount effect lands focus on the
+  // primary input as soon as the portal paints.
   const firstInputRef = useRef<HTMLInputElement | null>(null);
   const dialogContentId = useId();
+  useEffect(() => {
+    // Defer one frame so Radix has finished placing the portal before
+    // we steal focus — otherwise the focus jumps to the close-X on
+    // some browsers.
+    const handle = window.requestAnimationFrame(() => {
+      if (firstInputRef.current) {
+        firstInputRef.current.focus();
+        firstInputRef.current.select();
+      }
+    });
+    return () => window.cancelAnimationFrame(handle);
+  }, []);
 
   const updateMutation = useMutation({
     mutationFn: async (
@@ -301,36 +311,73 @@ function TargetEditSheetBody({
       ? Boolean(thresholdsData?.overrides?.[metric])
       : false;
 
+  // v1.4.27 R4 RC2 — focus the first numeric input on mount instead of
+  // relying on Radix's <Dialog>-specific onOpenAutoFocus. The body
+  // only mounts once `open=true` (lazy mount above), so the effect
+  // runs exactly when the surface comes into view.
+  // Note: ResponsiveSheet does not currently expose onOpenAutoFocus —
+  // we use a tiny mount effect to steal focus.
   return (
-    <DialogContent
+    <ResponsiveSheet
+      open
+      onOpenChange={onOpenChange}
+      title={t("targets.edit.title", { metric: targetLabel })}
+      description={
+        isDerivedMetric
+          ? t("targets.edit.derivedHint")
+          : t("targets.edit.description", { unit })
+      }
       className="sm:max-w-md"
-      data-slot="target-edit-sheet"
-      data-target-type={targetType}
-      onOpenAutoFocus={(event) => {
-        // Defer to the first input ref so the user lands on the min
-        // field rather than the close X (default Radix behaviour
-        // focuses the first focusable child).
-        if (firstInputRef.current) {
-          event.preventDefault();
-          firstInputRef.current.focus();
-          firstInputRef.current.select();
-        }
-      }}
-      aria-describedby={dialogContentId}
+      footer={
+        <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          {hasOverride ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => resetMutation.mutate()}
+              disabled={busy}
+              data-slot="target-edit-reset"
+            >
+              <RotateCcw className="mr-2 h-3.5 w-3.5" />
+              {t("targets.edit.resetToDefault")}
+            </Button>
+          ) : (
+            <span aria-hidden="true" />
+          )}
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              disabled={busy}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={!canSave}
+              data-slot="target-edit-save"
+            >
+              {t("common.save")}
+            </Button>
+          </div>
+        </div>
+      }
     >
-      <DialogHeader>
-        <DialogTitle>
-          {t("targets.edit.title", { metric: targetLabel })}
-        </DialogTitle>
-        <DialogDescription id={dialogContentId}>
+      <div
+        data-slot="target-edit-sheet"
+        data-target-type={targetType}
+        aria-describedby={dialogContentId}
+      >
+        <p id={dialogContentId} className="sr-only">
           {isDerivedMetric
             ? t("targets.edit.derivedHint")
             : t("targets.edit.description", { unit })}
-        </DialogDescription>
-      </DialogHeader>
+        </p>
 
-      {!isDerivedMetric && primaryBounds && (
-        <div className="space-y-4">
+        {!isDerivedMetric && primaryBounds && (
+          <div className="space-y-4">
           <div
             className="grid grid-cols-1 gap-3 sm:grid-cols-2"
             data-slot="target-edit-primary-row"
@@ -414,50 +461,16 @@ function TargetEditSheetBody({
             </div>
           )}
 
-          <p className="text-muted-foreground text-xs">
-            {t("targets.edit.boundsHint", {
-              min: String(primaryBounds.min),
-              max: String(primaryBounds.max),
-              unit: primaryBounds.unit,
-            })}
-          </p>
-        </div>
-      )}
-
-      <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-        {hasOverride ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => resetMutation.mutate()}
-            disabled={busy}
-            data-slot="target-edit-reset"
-          >
-            <RotateCcw className="mr-2 h-3.5 w-3.5" />
-            {t("targets.edit.resetToDefault")}
-          </Button>
-        ) : (
-          <span aria-hidden="true" />
+            <p className="text-muted-foreground text-xs">
+              {t("targets.edit.boundsHint", {
+                min: String(primaryBounds.min),
+                max: String(primaryBounds.max),
+                unit: primaryBounds.unit,
+              })}
+            </p>
+          </div>
         )}
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            disabled={busy}
-          >
-            {t("common.cancel")}
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={!canSave}
-            data-slot="target-edit-save"
-          >
-            {t("common.save")}
-          </Button>
-        </div>
-      </DialogFooter>
-    </DialogContent>
+      </div>
+    </ResponsiveSheet>
   );
 }
