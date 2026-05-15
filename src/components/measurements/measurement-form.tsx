@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -104,6 +105,15 @@ interface MeasurementFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
   defaultType?: string;
+  /**
+   * v1.4.27 R4 RC2 — when the form is mounted inside a
+   * `<ResponsiveSheet>` the caller passes the sheet's footer slot
+   * element here. The form's action-row (kebab + Cancel + Save) is
+   * portalled into that slot so the bottom-sheet branch can
+   * sticky-pin it; the Save button stays associated with the logical
+   * `<form>` via the HTML `form` attribute.
+   */
+  footerSlot?: HTMLElement | null;
 }
 
 function getDefaultMeasuredAtValue() {
@@ -117,6 +127,7 @@ export function MeasurementForm({
   onSuccess,
   onCancel,
   defaultType,
+  footerSlot,
 }: MeasurementFormProps) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
@@ -145,6 +156,10 @@ export function MeasurementForm({
   // descriptor relationship is purely additive.
   const errorId = useId();
   const errorDescriptor = error ? errorId : undefined;
+
+  // v1.4.27 R4 RC2 — stable id so the portalled Save button can keep
+  // its `<form>` association via the HTML `form` attribute.
+  const formId = useId();
 
   const typeInfo = MEASUREMENT_TYPES.find((t) => t.value === type);
   const isBpMode = type === "BLOOD_PRESSURE";
@@ -250,8 +265,58 @@ export function MeasurementForm({
     }
   }
 
+  const footerNode = (
+    <div className="flex w-full items-center justify-between gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-11"
+            disabled={loading}
+            aria-label={t("common.moreOptions")}
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem onClick={resetForm}>
+            <RotateCcw className="mr-2 h-4 w-4" />
+            {t("measurements.formReset")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <div className="flex items-center gap-2">
+        {onCancel && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            {t("common.cancel")}
+          </Button>
+        )}
+        <Button
+          type="submit"
+          form={formId}
+          disabled={loading}
+        >
+          {loading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
+          ) : (
+            <Plus className="mr-2 h-4 w-4" />
+          )}
+          {t("common.save")}
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form id={formId} onSubmit={handleSubmit} className="space-y-4">
       <div className="flex items-center gap-3">
         <Label htmlFor="measurement-type" className="shrink-0">
           {t("measurements.type")}
@@ -429,49 +494,7 @@ export function MeasurementForm({
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="size-11"
-              disabled={loading}
-              aria-label={t("common.moreOptions")}
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuItem onClick={resetForm}>
-              <RotateCcw className="mr-2 h-4 w-4" />
-              {t("measurements.formReset")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <div className="flex items-center gap-2">
-          {onCancel && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              disabled={loading}
-            >
-              {t("common.cancel")}
-            </Button>
-          )}
-          <Button type="submit" disabled={loading}>
-            {loading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
-            ) : (
-              <Plus className="mr-2 h-4 w-4" />
-            )}
-            {t("common.save")}
-          </Button>
-        </div>
-      </div>
+      {footerSlot ? createPortal(footerNode, footerSlot) : footerNode}
     </form>
   );
 }

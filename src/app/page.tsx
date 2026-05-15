@@ -191,6 +191,11 @@ export default function DashboardPage() {
   const [quickEntryDialog, setQuickEntryDialog] = useState<
     "measurement" | "mood" | null
   >(null);
+  // v1.4.27 R4 RC2 — DOM handles for the form action-row portal target
+  // on each quick-entry sheet. The Sheet branch sticky-pins this slot.
+  const [measurementFooterEl, setMeasurementFooterEl] =
+    useState<HTMLDivElement | null>(null);
+  const [moodFooterEl, setMoodFooterEl] = useState<HTMLDivElement | null>(null);
 
   const { data } = useQuery({
     queryKey: queryKeys.analytics(),
@@ -524,20 +529,26 @@ export default function DashboardPage() {
         open={quickEntryDialog === "measurement"}
         onOpenChange={(open) => !open && setQuickEntryDialog(null)}
         title={t("measurements.addMeasurement")}
+        footer={
+          <div ref={setMeasurementFooterEl} className="flex w-full" />
+        }
       >
         <MeasurementForm
           onSuccess={() => setQuickEntryDialog(null)}
           onCancel={() => setQuickEntryDialog(null)}
+          footerSlot={measurementFooterEl}
         />
       </ResponsiveSheet>
       <ResponsiveSheet
         open={quickEntryDialog === "mood"}
         onOpenChange={(open) => !open && setQuickEntryDialog(null)}
         title={t("mood.addEntry")}
+        footer={<div ref={setMoodFooterEl} className="flex w-full" />}
       >
         <MoodForm
           onSuccess={() => setQuickEntryDialog(null)}
           onCancel={() => setQuickEntryDialog(null)}
+          footerSlot={moodFooterEl}
         />
       </ResponsiveSheet>
 

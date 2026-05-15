@@ -79,6 +79,10 @@ export default function MedicationsPage() {
     id: string;
     name: string;
   } | null>(null);
+  // v1.4.27 R4 RC2 — DOM handle the medication form portals its
+  // action-row into so the sheet branch can sticky-pin Save / Cancel
+  // above the keyboard.
+  const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
 
   const {
     data: medications,
@@ -267,8 +271,10 @@ export default function MedicationsPage() {
             : t("medications.newMedication")
         }
         className="sm:max-w-lg"
+        footer={<div ref={setFooterEl} className="flex w-full" />}
       >
           <MedicationForm
+            footerSlot={footerEl}
             initial={
               editingMed
                 ? {

@@ -46,6 +46,9 @@ export default function MeasurementsPage() {
     undefined,
   );
   const [consumedAddParam, setConsumedAddParam] = useState<string | null>(null);
+  // v1.4.27 R4 RC2 — DOM handle the form portals its action row into so
+  // the Sheet branch can sticky-pin Save / Cancel.
+  const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
 
   if (addParam && addParam !== consumedAddParam) {
     setConsumedAddParam(addParam);
@@ -96,6 +99,7 @@ export default function MeasurementsPage() {
           if (!open) setDefaultType(undefined);
         }}
         title={t("measurements.addMeasurement")}
+        footer={<div ref={setFooterEl} className="flex w-full" />}
       >
         <MeasurementForm
           defaultType={defaultType}
@@ -107,6 +111,7 @@ export default function MeasurementsPage() {
             setDialogOpen(false);
             setDefaultType(undefined);
           }}
+          footerSlot={footerEl}
         />
       </ResponsiveSheet>
 

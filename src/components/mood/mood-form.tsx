@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +47,15 @@ const GLP1_SIDE_EFFECT_KEYS = [
 interface MoodFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
+  /**
+   * v1.4.27 R4 RC2 — when the form is mounted inside a
+   * `<ResponsiveSheet>` the caller can pass the sheet's footer slot
+   * element here. The action-row (kebab + Cancel + Save) is portalled
+   * into that slot so the bottom-sheet branch can sticky-pin it; the
+   * Save button stays inside the logical `<form>` via the HTML `form`
+   * attribute so submit-on-Enter still works.
+   */
+  footerSlot?: HTMLElement | null;
 }
 
 function getDefaultMoodLoggedAtValue() {
@@ -55,7 +65,7 @@ function getDefaultMoodLoggedAtValue() {
   return local.toISOString().slice(0, 16);
 }
 
-export function MoodForm({ onSuccess, onCancel }: MoodFormProps) {
+export function MoodForm({ onSuccess, onCancel, footerSlot }: MoodFormProps) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
 
@@ -68,6 +78,11 @@ export function MoodForm({ onSuccess, onCancel }: MoodFormProps) {
   // v1.4.27 MB3 — error banner descriptor for the timestamp input.
   const errorId = useId();
   const errorDescriptor = error ? errorId : undefined;
+
+  // v1.4.27 R4 RC2 — stable form id so the portalled Save button can
+  // associate with this `<form>` element via the HTML `form` attribute
+  // even when DOM-mounted inside the `<ResponsiveSheet>` footer slot.
+  const formId = useId();
 
   function resetForm() {
     setMood("");
@@ -117,8 +132,58 @@ export function MoodForm({ onSuccess, onCancel }: MoodFormProps) {
     }
   }
 
+  const footerNode = (
+    <div className="flex w-full items-center justify-between gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-9 w-9"
+            disabled={loading}
+            aria-label={t("common.moreOptions")}
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem onClick={resetForm}>
+            <RotateCcw className="mr-2 h-4 w-4" />
+            {t("mood.formReset")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <div className="flex items-center gap-2">
+        {onCancel && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            {t("common.cancel")}
+          </Button>
+        )}
+        <Button
+          type="submit"
+          form={formId}
+          disabled={loading || !mood}
+        >
+          {loading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
+          ) : (
+            <Plus className="mr-2 h-4 w-4" />
+          )}
+          {t("common.save")}
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form id={formId} onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label id="mood-level-label">{t("mood.moodLevel")}</Label>
         <div
@@ -247,49 +312,7 @@ export function MoodForm({ onSuccess, onCancel }: MoodFormProps) {
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-9 w-9"
-              disabled={loading}
-              aria-label={t("common.moreOptions")}
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuItem onClick={resetForm}>
-              <RotateCcw className="mr-2 h-4 w-4" />
-              {t("mood.formReset")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <div className="flex items-center gap-2">
-          {onCancel && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              disabled={loading}
-            >
-              {t("common.cancel")}
-            </Button>
-          )}
-          <Button type="submit" disabled={loading || !mood}>
-            {loading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
-            ) : (
-              <Plus className="mr-2 h-4 w-4" />
-            )}
-            {t("common.save")}
-          </Button>
-        </div>
-      </div>
+      {footerSlot ? createPortal(footerNode, footerSlot) : footerNode}
     </form>
   );
 }

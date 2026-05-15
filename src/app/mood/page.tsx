@@ -15,6 +15,10 @@ export default function MoodPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
+  // v1.4.27 R4 RC2 — DOM-ref handle the form portals its action row
+  // into. The ref lives on the `<ResponsiveSheet>` footer slot so the
+  // Sheet branch can sticky-pin Save / Cancel above the keyboard.
+  const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
   const { t } = useTranslations();
 
   useEffect(() => {
@@ -52,10 +56,12 @@ export default function MoodPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         title={t("mood.addEntry")}
+        footer={<div ref={setFooterEl} className="flex w-full" />}
       >
         <MoodForm
           onSuccess={() => setDialogOpen(false)}
           onCancel={() => setDialogOpen(false)}
+          footerSlot={footerEl}
         />
       </ResponsiveSheet>
 

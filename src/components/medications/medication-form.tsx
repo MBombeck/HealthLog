@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -160,6 +161,14 @@ interface Schedule {
 interface MedicationFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
+  /**
+   * v1.4.27 R4 RC2 — when the form is mounted inside a
+   * `<ResponsiveSheet>` the caller passes the sheet's footer slot
+   * element here. The kebab + Cancel + Save row portals into that slot
+   * so the bottom-sheet branch can sticky-pin it; the Save button keeps
+   * its `<form>` association via the HTML `form` attribute.
+   */
+  footerSlot?: HTMLElement | null;
   editActions?: {
     onImportIntakes: () => void;
     onApiAccess: () => void;
@@ -236,12 +245,18 @@ function sortSchedules(list: Schedule[]): Schedule[] {
 export function MedicationForm({
   onSuccess,
   onCancel,
+  footerSlot,
   editActions,
   initial,
 }: MedicationFormProps) {
   const queryClient = useQueryClient();
   const { t, locale } = useTranslations();
   const fmt = useFormatters();
+
+  // v1.4.27 R4 RC2 — stable form id so the portalled Save button keeps
+  // its `<form>` association via the HTML `form` attribute even when
+  // DOM-mounted in the `<ResponsiveSheet>` footer slot.
+  const formId = useId();
 
   const doseUnits = [
     "mg",
@@ -523,7 +538,7 @@ export function MedicationForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form id={formId} onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
         <Label htmlFor="med-name">{t("medications.name")}</Label>
         <Input
@@ -967,102 +982,123 @@ export function MedicationForm({
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-11 w-11"
-              disabled={loading || deleting}
-              aria-label={t("common.moreOptions")}
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            {isEdit ? (
-              <>
-                {editActions && (
+      {(() => {
+        const footerNode = (
+          <div className="flex w-full items-center justify-between gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-11 w-11"
+                  disabled={loading || deleting}
+                  aria-label={t("common.moreOptions")}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {isEdit ? (
                   <>
-                    <DropdownMenuItem onClick={editActions.onImportIntakes}>
-                      <Upload className="mr-2 h-4 w-4" />
-                      {t("medications.importIntakesAction")}
+                    {editActions && (
+                      <>
+                        <DropdownMenuItem onClick={editActions.onImportIntakes}>
+                          <Upload className="mr-2 h-4 w-4" />
+                          {t("medications.importIntakesAction")}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={editActions.onApiAccess}>
+                          <Terminal className="mr-2 h-4 w-4" />
+                          {t("medications.apiEndpointAction")}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setPhaseConfigOpen(true)}
+                        >
+                          <Clock className="mr-2 h-4 w-4" />
+                          {t("medications.phaseConfig")}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    <DropdownMenuItem
+                      onClick={() => setActive((prev) => !prev)}
+                    >
+                      {active ? (
+                        <Pause className="mr-2 h-4 w-4" />
+                      ) : (
+                        <Play className="mr-2 h-4 w-4" />
+                      )}
+                      {active
+                        ? t("medications.pause")
+                        : t("medications.activate")}
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={editActions.onApiAccess}>
-                      <Terminal className="mr-2 h-4 w-4" />
-                      {t("medications.apiEndpointAction")}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setPhaseConfigOpen(true)}>
-                      <Clock className="mr-2 h-4 w-4" />
-                      {t("medications.phaseConfig")}
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setNotificationsEnabled((prev) => !prev)
+                      }
+                    >
+                      {notificationsEnabled ? (
+                        <BellOff className="mr-2 h-4 w-4" />
+                      ) : (
+                        <Bell className="mr-2 h-4 w-4" />
+                      )}
+                      {notificationsEnabled
+                        ? t("medications.disableNotifications")
+                        : t("medications.enableNotifications")}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() => setPurgeDialogOpen(true)}
+                    >
+                      <Eraser className="mr-2 h-4 w-4" />
+                      {t("medications.purgeRecords")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() => setDeleteDialogOpen(true)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {t("common.delete")}
+                    </DropdownMenuItem>
                   </>
+                ) : (
+                  <DropdownMenuItem onClick={resetCreateForm}>
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    {t("medications.formReset")}
+                  </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => setActive((prev) => !prev)}>
-                  {active ? (
-                    <Pause className="mr-2 h-4 w-4" />
-                  ) : (
-                    <Play className="mr-2 h-4 w-4" />
-                  )}
-                  {active ? t("medications.pause") : t("medications.activate")}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setNotificationsEnabled((prev) => !prev)}
-                >
-                  {notificationsEnabled ? (
-                    <BellOff className="mr-2 h-4 w-4" />
-                  ) : (
-                    <Bell className="mr-2 h-4 w-4" />
-                  )}
-                  {notificationsEnabled
-                    ? t("medications.disableNotifications")
-                    : t("medications.enableNotifications")}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() => setPurgeDialogOpen(true)}
-                >
-                  <Eraser className="mr-2 h-4 w-4" />
-                  {t("medications.purgeRecords")}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() => setDeleteDialogOpen(true)}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  {t("common.delete")}
-                </DropdownMenuItem>
-              </>
-            ) : (
-              <DropdownMenuItem onClick={resetCreateForm}>
-                <RotateCcw className="mr-2 h-4 w-4" />
-                {t("medications.formReset")}
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-        <div className="flex items-center gap-2">
-          {onCancel && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              disabled={loading || deleting}
-            >
-              {t("common.cancel")}
-            </Button>
-          )}
-          <Button type="submit" disabled={loading || deleting}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />}
-            {isEdit ? t("common.save") : t("medications.createMedication")}
-          </Button>
-        </div>
-      </div>
+            <div className="flex items-center gap-2">
+              {onCancel && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onCancel}
+                  disabled={loading || deleting}
+                >
+                  {t("common.cancel")}
+                </Button>
+              )}
+              <Button
+                type="submit"
+                form={formId}
+                disabled={loading || deleting}
+              >
+                {loading && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
+                )}
+                {isEdit
+                  ? t("common.save")
+                  : t("medications.createMedication")}
+              </Button>
+            </div>
+          </div>
+        );
+        return footerSlot ? createPortal(footerNode, footerSlot) : footerNode;
+      })()}
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Loader2, Plus, Trash2 } from "lucide-react";
 
@@ -77,6 +78,10 @@ export function InventorySection({
   // input via aria-describedby so screen readers announce the failure
   // when the form rejects an out-of-range value.
   const formErrorId = useId();
+  // v1.4.27 R4 RC2 — portal target + stable form id wire the sticky
+  // Save / Cancel row into the `<ResponsiveSheet>` footer slot.
+  const formId = useId();
+  const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
   const [dosesTotal, setDosesTotal] = useState<string>(
     defaultDosesPerUnit ? String(defaultDosesPerUnit) : "",
   );
@@ -430,8 +435,9 @@ export function InventorySection({
         open={addOpen}
         onOpenChange={setAddOpen}
         title={t("medications.inventory.addPenTitle")}
+        footer={<div ref={setFooterEl} className="flex w-full" />}
       >
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form id={formId} onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="inv-doses-total">
                 {t("medications.inventory.fieldDosesTotal")}
@@ -509,25 +515,34 @@ export function InventorySection({
               </p>
             )}
 
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  resetAddForm();
-                  setAddOpen(false);
-                }}
-              >
-                {t("medications.inventory.cancel")}
-              </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending && (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-                )}
-                {t("medications.inventory.save")}
-              </Button>
-            </div>
           </form>
+          {footerEl
+            ? createPortal(
+                <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      resetAddForm();
+                      setAddOpen(false);
+                    }}
+                  >
+                    {t("medications.inventory.cancel")}
+                  </Button>
+                  <Button
+                    type="submit"
+                    form={formId}
+                    disabled={createMutation.isPending}
+                  >
+                    {createMutation.isPending && (
+                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+                    )}
+                    {t("medications.inventory.save")}
+                  </Button>
+                </div>,
+                footerEl,
+              )
+            : null}
       </ResponsiveSheet>
     </>
   );

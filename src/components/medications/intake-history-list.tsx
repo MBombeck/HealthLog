@@ -49,6 +49,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useId, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -114,6 +115,17 @@ export function IntakeHistoryList({
   // aria-describedby so screen readers announce validation failures.
   const editErrorId = useId();
   const editErrorDescriptor = editError ? editErrorId : undefined;
+
+  // v1.4.27 R4 RC2 — portal targets + stable form ids so the edit and
+  // create sheets sticky-pin Save / Cancel via the
+  // `<ResponsiveSheet>` footer slot. Submit buttons keep their `<form>`
+  // association via the HTML `form` attribute.
+  const editFormId = useId();
+  const createFormId = useId();
+  const [editFooterEl, setEditFooterEl] = useState<HTMLDivElement | null>(null);
+  const [createFooterEl, setCreateFooterEl] = useState<HTMLDivElement | null>(
+    null,
+  );
 
   // Create state — controlled via props or internal
   const [internalCreating, setInternalCreating] = useState(false);
@@ -540,9 +552,14 @@ export function IntakeHistoryList({
         open={!!editing}
         onOpenChange={(open) => !open && closeEdit()}
         title={t("medications.editIntake")}
+        footer={<div ref={setEditFooterEl} className="flex w-full" />}
       >
           {editing && (
-            <form onSubmit={submitEdit} className="space-y-4">
+            <form
+              id={editFormId}
+              onSubmit={submitEdit}
+              className="space-y-4"
+            >
               <div className="space-y-2">
                 <Label htmlFor="edit-scheduledFor">
                   {t("medications.intakeScheduledFor")}
@@ -597,57 +614,66 @@ export function IntakeHistoryList({
                 </div>
               )}
 
-              <div className="flex items-center justify-between gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="size-11"
-                      disabled={
-                        updateMutation.isPending || deleteMutation.isPending
-                      }
-                      aria-label={t("common.moreOptions")}
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    <DropdownMenuItem
-                      variant="destructive"
-                      onClick={() => setEditDeleteDialogOpen(true)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      {t("common.delete")}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              {editFooterEl
+                ? createPortal(
+                    <div className="flex w-full items-center justify-between gap-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="size-11"
+                            disabled={
+                              updateMutation.isPending ||
+                              deleteMutation.isPending
+                            }
+                            aria-label={t("common.moreOptions")}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => setEditDeleteDialogOpen(true)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            {t("common.delete")}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
 
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={closeEdit}
-                    disabled={
-                      updateMutation.isPending || deleteMutation.isPending
-                    }
-                  >
-                    {t("common.cancel")}
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={
-                      updateMutation.isPending || deleteMutation.isPending
-                    }
-                  >
-                    {updateMutation.isPending ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
-                    ) : null}
-                    {t("common.save")}
-                  </Button>
-                </div>
-              </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={closeEdit}
+                          disabled={
+                            updateMutation.isPending ||
+                            deleteMutation.isPending
+                          }
+                        >
+                          {t("common.cancel")}
+                        </Button>
+                        <Button
+                          type="submit"
+                          form={editFormId}
+                          disabled={
+                            updateMutation.isPending ||
+                            deleteMutation.isPending
+                          }
+                        >
+                          {updateMutation.isPending ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
+                          ) : null}
+                          {t("common.save")}
+                        </Button>
+                      </div>
+                    </div>,
+                    editFooterEl,
+                  )
+                : null}
 
               <AlertDialog
                 open={editDeleteDialogOpen}
@@ -688,8 +714,13 @@ export function IntakeHistoryList({
         open={creating}
         onOpenChange={(open) => !open && closeCreate()}
         title={t("medications.newIntake")}
+        footer={<div ref={setCreateFooterEl} className="flex w-full" />}
       >
-          <form onSubmit={submitCreate} className="space-y-4">
+          <form
+            id={createFormId}
+            onSubmit={submitCreate}
+            className="space-y-4"
+          >
             <div className="space-y-2">
               <Label htmlFor="create-scheduledFor">
                 {t("medications.intakeScheduledFor")}
@@ -744,23 +775,32 @@ export function IntakeHistoryList({
               </div>
             )}
 
-            <div className="flex items-center justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={closeCreate}
-                disabled={createMutation.isPending}
-              >
-                {t("common.cancel")}
-              </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
-                ) : null}
-                {t("common.save")}
-              </Button>
-            </div>
           </form>
+          {createFooterEl
+            ? createPortal(
+                <div className="flex w-full items-center justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={closeCreate}
+                    disabled={createMutation.isPending}
+                  >
+                    {t("common.cancel")}
+                  </Button>
+                  <Button
+                    type="submit"
+                    form={createFormId}
+                    disabled={createMutation.isPending}
+                  >
+                    {createMutation.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
+                    ) : null}
+                    {t("common.save")}
+                  </Button>
+                </div>,
+                createFooterEl,
+              )
+            : null}
       </ResponsiveSheet>
     </>
   );

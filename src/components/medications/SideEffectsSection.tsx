@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 
@@ -103,6 +104,11 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
   const [severity, setSeverity] = useState<1 | 2 | 3 | 4 | 5 | null>(null);
   const [notes, setNotes] = useState<string>("");
   const [formError, setFormError] = useState<string | null>(null);
+  // v1.4.27 R4 RC2 — sticky-pin the Save / Cancel row by portalling it
+  // into the `<ResponsiveSheet>` footer slot. The submit button keeps
+  // its `<form>` association via the HTML `form` attribute.
+  const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
+  const formId = useId();
 
   const listKey = [
     "medications",
@@ -328,8 +334,10 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
         open={open}
         onOpenChange={setOpen}
         title={t("medications.sideEffects.sheetTitle")}
+        footer={<div ref={setFooterEl} className="flex w-full" />}
       >
           <form
+            id={formId}
             onSubmit={handleSubmit}
             className="space-y-4"
             aria-label={t("medications.sideEffects.sheetTitle")}
@@ -459,22 +467,31 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
               </p>
             )}
 
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setOpen(false)}
-              >
-                {t("medications.sideEffects.cancelCta")}
-              </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending && (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-                )}
-                {t("medications.sideEffects.submitCta")}
-              </Button>
-            </div>
           </form>
+          {footerEl
+            ? createPortal(
+                <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setOpen(false)}
+                  >
+                    {t("medications.sideEffects.cancelCta")}
+                  </Button>
+                  <Button
+                    type="submit"
+                    form={formId}
+                    disabled={createMutation.isPending}
+                  >
+                    {createMutation.isPending && (
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+                    )}
+                    {t("medications.sideEffects.submitCta")}
+                  </Button>
+                </div>,
+                footerEl,
+              )
+            : null}
       </ResponsiveSheet>
     </MedicationDetailSection>
   );
