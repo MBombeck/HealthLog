@@ -288,11 +288,14 @@ export function CoachDrawer({
           "w-full p-0 sm:max-w-[720px]",
           "lg:!max-w-[min(960px,75vw)] xl:!max-w-[1080px]",
           isPhoneViewport
-            ? // Bottom-sheet caps at 95 dvh so a sliver of the underlying
-              // /insights page remains visible — clear "this is a
-              // sheet, not a takeover" signal. The rounded top corners
-              // match the iOS bottom-sheet feel.
-              "flex h-[95dvh] max-h-[95dvh] flex-col gap-0 rounded-t-2xl"
+            ? // Bottom-sheet caps at 90 dvh so a 10 % slice of the
+              // underlying /insights page stays visible — same
+              // convention as every other mobile sheet on the app via
+              // <ResponsiveSheet>'s phone branch (v1.4.28 R3c BK-M5
+              // alignment; previously 95 dvh, which left only a 5 %
+              // sliver and read as a takeover instead of a sheet).
+              // Rounded top corners match the iOS bottom-sheet feel.
+              "flex h-[90dvh] max-h-[90dvh] flex-col gap-0 rounded-t-2xl"
             : "flex h-[100dvh] flex-col gap-0",
         )}
       >
