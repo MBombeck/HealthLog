@@ -24,10 +24,9 @@ export const queryKeys = {
   insightsTargets: () => ["insights", "targets"] as const,
   /**
    * Shared cache key for the rich `/api/insights/generate` advisor
-   * payload. `/insights` (full `<InsightAdvisorCard>`) and any other
-   * surface that subscribes under this key share the same cache so a
-   * regenerate on one surface refreshes the others without a second
-   * LLM round-trip.
+   * payload. Every surface that subscribes under this key shares the
+   * same cache so a regenerate on one surface refreshes the others
+   * without a second LLM round-trip.
    */
   insightsAdvisor: () => ["insights", "advisor"] as const,
   insightsBpStatus: (locale: string) =>

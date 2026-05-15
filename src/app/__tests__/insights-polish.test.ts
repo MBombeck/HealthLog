@@ -12,19 +12,12 @@ import { join } from "node:path";
  *      The underlying `compareBaseline` value is still consumed by
  *      every dashboard chart; only the on-surface affordance is gone.
  *   2. The `/insights` page renders exactly ONE page-level refresh
- *      affordance — the hero's regenerate button. The advisor card
- *      no longer carries its own onRegenerate handler that
- *      duplicated the hero one and again surfaced "Analyse starten"
- *      in the empty-state CTA. The per-recommendation Regenerate
- *      stays — that's per-card, not page-level.
+ *      affordance — the regenerate icon on `<InsightsTabStrip>`. The
+ *      hero strip no longer takes an onRegenerate prop. v1.4.28 retired
+ *      the InsightAdvisorCard surface entirely.
  *   3. The `/insights` page does NOT render the small BP / Weight /
  *      Pulse trend tiles — those duplicate the dashboard tile-strip.
- *   4. The `/insights` page does NOT pass the `aiOverviewTitle`
- *      ("Persönlicher Berater") subtitle into `<InsightAdvisorCard>`.
- *      The CardTitle ("KI-Gesundheitsanalyse") is sufficient framing;
- *      the second subtitle was an empty-section placeholder the maintainer
- *      called "Titel da aber NICHTS PASSIERT".
- *   5. The `stripChartTokens()` matcher catches lowercase + mixed-
+ *   4. The `stripChartTokens()` matcher catches lowercase + mixed-
  *      case AI-emitted tokens (`metric:blood_pressure_sweet_spot`),
  *      so the literal token text never reaches the DOM. The
  *      *render-side* parse matcher stays uppercase-only — only the
@@ -100,22 +93,13 @@ describe("v1.4.27 R3d MB4 — the layout mounts the Coach drawer", () => {
 });
 
 describe("v1.4.19 A3 — /insights polish", () => {
-  it("does NOT mount the legacy advisor-card regenerate handler", () => {
+  it("does NOT mount <InsightAdvisorCard> anywhere (v1.4.28 retire)", () => {
     const src = load(INSIGHTS_PATH);
-    // The advisor card no longer carries its own onRegenerate handler
-    // that duplicated the hero one. v1.4.20 phase B1 added a second
-    // wiring (the <DailyBriefing> empty-state CTA), which only renders
-    // while the briefing payload is null — its purpose is "generate
-    // today's briefing" rather than "refresh", and it disappears the
-    // moment a briefing exists. The original v1.4.19 ratchet was the
-    // advisor-card duplication; that one stays banned.
-    //
-    // We extract the InsightAdvisorCard JSX block (everything up to
-    // the closing `/>`) and assert no `onRegenerate` prop appears
-    // inside it.
-    const advisorBlock = src.match(/<InsightAdvisorCard\b[^>]*\/>/);
-    expect(advisorBlock).not.toBeNull();
-    expect(advisorBlock?.[0]).not.toContain("onRegenerate");
+    // v1.4.28 retired the InsightAdvisorCard surface. The component
+    // file, every test fixture and the page-level mount are gone;
+    // Coach drawer is the sole conversational entry point on /insights.
+    expect(src).not.toContain("InsightAdvisorCard");
+    expect(src).not.toContain("insight-advisor-card");
   });
 
   it("tab strip owns the always-visible page-level refresh affordance (v1.4.25 W4)", () => {
@@ -150,15 +134,6 @@ describe("v1.4.19 A3 — /insights polish", () => {
     // Also verify no JSX-style mount survives (`<TrendCard ` + space
     // for an attribute, or `<TrendCard\n` for a multi-line element).
     expect(src).not.toMatch(/<TrendCard[\s\n]/);
-  });
-
-  it("does NOT pass the `aiOverviewTitle` placeholder subtitle to <InsightAdvisorCard>", () => {
-    const src = load(INSIGHTS_PATH);
-    // The "Persönlicher Berater" / "Personal advisor" string was a
-    // dead title above an empty-state body when the user had no
-    // provider configured. Removed; the CardTitle inside the advisor
-    // card already says "KI-Gesundheitsanalyse".
-    expect(src).not.toContain('t("insights.aiOverviewTitle")');
   });
 
   it("does NOT contain raw `metric:<name>` template strings in static prose", () => {

@@ -894,8 +894,6 @@
     "notAvailableForCompliance": "Vergleich für Compliance nicht verfügbar"
   },
   "insights": {
-    "advisorTitle": "Persönlicher Berater",
-    "aiOverviewTitle": "Persönlicher Berater",
     "emptyTitle": "Noch nicht genug Daten",
     "emptyDescription": "Insights erscheinen, sobald du ein paar Messwerte erfasst hast. Beginne mit Gewicht oder Blutdruck.",
     "emptyAddMeasurement": "Messwert erfassen",

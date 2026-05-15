@@ -9,7 +9,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { InsightAdvisorCard } from "@/components/insights/insight-advisor-card";
 import { HeroStrip } from "@/components/insights/hero-strip";
 import { DailyBriefing } from "@/components/insights/daily-briefing";
 import { TrendsRow } from "@/components/insights/trends-row";
@@ -208,14 +207,6 @@ export default function InsightsPage() {
       )}
 
       <TrendsRow annotations={advisor.payload?.trendAnnotations ?? null} />
-
-      <InsightAdvisorCard
-        insight={advisor.payload?.insights ?? null}
-        loading={advisor.isLoading}
-        error={advisor.error?.message ?? null}
-        cachedAt={advisor.payload?.cachedAt ?? null}
-        legacyPayload={advisor.payload?.legacyPayload ?? false}
-      />
     </div>
   );
 }

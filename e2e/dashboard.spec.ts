@@ -110,83 +110,13 @@ test.describe("authenticated dashboard render", () => {
       });
     });
 
-    // The /insights mother page gates the InsightAdvisorCard on
-    // `/api/insights/comprehensive` returning a non-null payload
-    // (`totalMeasurements` is the gate). Mock it so the page renders
-    // the card surface instead of the EmptyState CTA.
-    await page.route("**/api/insights/comprehensive", (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          data: {
-            summaries: {},
-            bmi: 24.2,
-            bmiClassification: null,
-            bpClassification: null,
-            bpPctInTarget: 78,
-            bpTargets: { sysLow: 120, sysHigh: 140, diaLow: 80, diaHigh: 90 },
-            weightBpCorrelation: null,
-            scatterData: [],
-            bpMedicationCorrelation: null,
-            bpMedicationScatterData: [],
-            medications: [],
-            alerts: [],
-            hasOpenAiKey: true,
-            dataSpanDays: 90,
-            totalMeasurements: 25,
-            moodSummary: null,
-            moodBpCorrelation: null,
-            moodBpScatterData: [],
-            moodWeightCorrelation: null,
-            moodWeightScatterData: [],
-            moodPulseCorrelation: null,
-            moodPulseScatterData: [],
-          },
-          error: null,
-        }),
-      }),
-    );
-
-    // InsightAdvisorCard reads `/api/insights/generate` (a POST that
-    // doubles as cache-aware read). Mock a minimal-but-valid
-    // InsightResult so the card renders the populated body branch with
-    // the `data-slot="insight-summary"` container the assertion below
-    // pins on. The exact prose is intentionally NOT asserted — AI
-    // Insights are HealthLog's differentiator and the rendered text
-    // depends on provider + cache state. The contract under test is
-    // "an insight card with a populated body is visible", not "the
-    // string X is on screen".
-    await page.route("**/api/insights/generate", (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          data: {
-            insights: {
-              insightType: "general",
-              summary: "Blood-pressure trend is stable; continue routine.",
-              classification: "gut",
-              classificationLabel: "Good",
-              findings: [],
-              correlations: [],
-              primaryRecommendation: "Keep up the current routine.",
-              recommendations: [],
-              dataQuality: {
-                coverage: "good",
-                gaps: [],
-                confidence: "hoch",
-              },
-              disclaimer: "Not medical advice.",
-            },
-            cached: true,
-            cachedAt: new Date().toISOString(),
-            legacyPayload: false,
-          },
-          error: null,
-        }),
-      }),
-    );
+    // v1.4.28 retired the InsightAdvisorCard surface. Coach drawer
+    // remains the conversational entry point on /insights, but the
+    // bottom-of-page card with its own summary container is gone. The
+    // dashboard render assertion below no longer touches /insights, so
+    // we don't need to mock /api/insights/comprehensive or
+    // /api/insights/generate any more (the iOS-consumed POST endpoint
+    // is preserved server-side; only the web mount retired).
   });
 
   test("dashboard tile strip + chart + insight card render", async ({
@@ -219,20 +149,10 @@ test.describe("authenticated dashboard render", () => {
       page.locator(".recharts-wrapper, .recharts-surface").first(),
     ).toBeVisible({ timeout: 10_000 });
 
-    // AI insight card: visit the dedicated /insights page (the
-    // mother surface that mounts the InsightAdvisorCard). We assert
-    // on the populated-card's stable structural hook
-    // (`data-slot="insight-summary"`) rather than a literal piece of
-    // AI prose. AI Insights are evidence-grounded and dynamic by
-    // design — the rendered text changes per provider + cache state
-    // and never repeats verbatim, so pinning a literal substring is
-    // brittle and contradicts the differentiator. The contract under
-    // test is "the insight card mounts its summary body when the
-    // payload arrives", which is exactly what the slot signals.
-    await page.goto("/insights", { waitUntil: "domcontentloaded" });
-    await expect(
-      page.locator('[data-slot="insight-summary"]'),
-    ).toBeVisible({ timeout: 10_000 });
+    // v1.4.28 — the bottom-of-page InsightAdvisorCard retired; the
+    // dashboard spec no longer asserts on its summary slot. The hero
+    // strip and the Coach drawer carry the differentiator on /insights
+    // and are covered by their own specs.
 
     // Filter out a small set of known-noise messages — we care about
     // real React/JS uncaught errors only. 404s from optional assets

@@ -23,9 +23,9 @@ import { queryKeys } from "@/lib/query-keys";
  * C1+C2 specifically because it assumed that duplication was required,
  * but the route already supports the cache-aware path.
  *
- * `/insights` (`<InsightAdvisorCard>`) and any other surface that mounts
- * the query under the same key share the cache, so a regenerate from
- * one surface refreshes the others without a second LLM call.
+ * Every surface that mounts the query under the same key shares the
+ * cache, so a regenerate from one surface refreshes the others without
+ * a second LLM call.
  */
 export interface InsightAdvisorPayload {
   insights: InsightResult;

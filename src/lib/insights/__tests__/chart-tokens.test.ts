@@ -228,11 +228,11 @@ describe("ALLOWED_CHART_TOKENS — drift guard", () => {
   });
 
   it("includes metric:MOOD now that <MoodChart> is wired into the renderer", () => {
-    // v1.4.3 enabled `metric:MOOD`. The renderer in
-    // `<InsightAdvisorCard>` branches on `tokenKind(token) === "mood"`
-    // and mounts the dedicated, self-fetching `<MoodChart>` instead of
-    // the generic `<HealthChart>` (which Zod-validates against
-    // `measurementTypeEnum` and would silently render empty).
+    // v1.4.3 enabled `metric:MOOD`. The chart-token renderer branches
+    // on `tokenKind(token) === "mood"` and mounts the dedicated,
+    // self-fetching `<MoodChart>` instead of the generic `<HealthChart>`
+    // (which Zod-validates against `measurementTypeEnum` and would
+    // silently render empty).
     expect(ALLOWED_CHART_TOKENS).toContain("metric:MOOD");
   });
 
