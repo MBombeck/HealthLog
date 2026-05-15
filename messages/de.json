@@ -497,7 +497,7 @@
     "glp1LogSideEffect": "Nebenwirkung loggen",
     "sideEffects": {
       "section": "Nebenwirkungen",
-      "addCta": "Nebenwirkung erfassen",
+      "addCta": "Erfassen",
       "sheetTitle": "Nebenwirkung erfassen",
       "categoryLabel": "Kategorie",
       "entryLabel": "Symptom",

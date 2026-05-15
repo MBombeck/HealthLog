@@ -497,7 +497,7 @@
     "glp1LogSideEffect": "Log side effect",
     "sideEffects": {
       "section": "Side effects",
-      "addCta": "Log side effect",
+      "addCta": "Log",
       "sheetTitle": "Log a side effect",
       "categoryLabel": "Category",
       "entryLabel": "Symptom",

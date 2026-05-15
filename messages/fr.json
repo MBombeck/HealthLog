@@ -497,7 +497,7 @@
     "glp1LogSideEffect": "Log side effect",
     "sideEffects": {
       "section": "Effets secondaires",
-      "addCta": "Consigner un effet",
+      "addCta": "Consigner",
       "sheetTitle": "Consigner un effet secondaire",
       "categoryLabel": "Catégorie",
       "entryLabel": "Symptôme",

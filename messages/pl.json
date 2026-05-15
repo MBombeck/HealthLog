@@ -497,7 +497,7 @@
     "glp1LogSideEffect": "Log side effect",
     "sideEffects": {
       "section": "Skutki uboczne",
-      "addCta": "Dodaj skutek uboczny",
+      "addCta": "Dodaj",
       "sheetTitle": "Zarejestruj skutek uboczny",
       "categoryLabel": "Kategoria",
       "entryLabel": "Objaw",
