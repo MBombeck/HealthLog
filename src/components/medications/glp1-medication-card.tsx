@@ -511,5 +511,5 @@ function siteSuffix(site: InjectionSiteKey): string {
     .join("");
 }
 
-/** Re-export so the parent doesn motion-reduce:animate-none't need to import describeInjectionSite. */
+/** Re-export so the parent doesn't need to import describeInjectionSite. */
 export { describeInjectionSite };

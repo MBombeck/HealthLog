@@ -407,7 +407,7 @@ export function AccountSection() {
               wide on sm+). Date of birth is the bottom of the
               biological-profile block; language is the only UI
               preference on this card. They sit together to close the
-              "single-cell row" gap that broke the form motion-reduce:animate-none's grid. */}
+              "single-cell row" gap that broke the form's grid. */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="dob">{t("settings.dateOfBirth")}</Label>
@@ -728,7 +728,7 @@ function PasskeyListSection({ isAuthenticated }: { isAuthenticated: boolean }) {
           which on a 393px viewport hid the right-most column —
           including the destructive delete action. Render the desktop
           table only at `≥ md`, and at `< md` paint a card-list where
-          every passkey motion-reduce:animate-none's name, device type, backup status, created
+          every passkey's name, device type, backup status, created
           date, and delete action are all visible without scrolling. */}
       <div className="border-border mt-3 hidden overflow-x-auto rounded-lg border md:block">
         <table className="w-full text-sm">

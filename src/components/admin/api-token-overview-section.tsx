@@ -170,7 +170,7 @@ export function ApiTokenOverviewSection() {
         ) : !tokens?.length ? (
           // v1.4.15 phase-C5: empty state explains where tokens come
           // from (native client sign-in / Settings → Account) so a
-          // fresh admin doesn motion-reduce:animate-none't think they need to create them here.
+          // fresh admin doesn't think they need to create them here.
           <EmptyState
             icon={<Key className="size-6" />}
             title={t("admin.tokensEmptyTitle")}

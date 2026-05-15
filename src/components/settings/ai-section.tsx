@@ -716,7 +716,7 @@ function CodexProviderForm({
 /* ────────────────────────────────────────────────────────────────
  * OpenAI form — API key + model select + collapsed Base URL override.
  * Save mutation flips both `aiProvider` (for the legacy single-result
- * resolver) and `aiOpenaiKeyEncrypted` (the user motion-reduce:animate-none's key) so an OPENAI
+ * resolver) and `aiOpenaiKeyEncrypted` (the user's key) so an OPENAI
  * pick is visible to every code path that reads the row.
  * ──────────────────────────────────────────────────────────────── */
 

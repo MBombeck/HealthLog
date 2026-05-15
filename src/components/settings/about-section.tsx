@@ -265,7 +265,7 @@ export function AboutSection() {
       {/* Updates — proper heading + last-check timestamp + manual button
           that proxies through `/api/version/check-updates`. The v1.4.2
           version called `api.github.com` directly from the browser, which
-          the production CSP blocked silently — that motion-reduce:animate-none's why "nothing
+          the production CSP blocked silently — that's why "nothing
           happened" when the user clicked the button. */}
       {version && (
         <div className="bg-card border-border rounded-xl border p-6">
