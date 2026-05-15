@@ -328,9 +328,8 @@ export function InventorySection({
                   <div className="flex shrink-0 flex-col gap-1">
                     {item.state === "ACTIVE" && (
                       <Button
-                        size="sm"
                         variant="outline"
-                        className="h-7 px-2 text-[10px]"
+                        className="min-h-11 px-3 text-xs"
                         onClick={() =>
                           patchMutation.mutate({
                             itemId: item.id,
@@ -344,9 +343,8 @@ export function InventorySection({
                     )}
                     {(item.state === "ACTIVE" || item.state === "IN_USE") && (
                       <Button
-                        size="sm"
                         variant="ghost"
-                        className="h-7 px-2 text-[10px]"
+                        className="min-h-11 px-3 text-xs"
                         onClick={() =>
                           patchMutation.mutate({
                             itemId: item.id,
@@ -401,14 +399,14 @@ export function InventorySection({
                       )}
                     </div>
                     <Button
-                      size="sm"
                       variant="ghost"
-                      className="h-6 w-6 p-0"
+                      size="icon"
+                      className="size-11 shrink-0"
                       onClick={() => deleteMutation.mutate(item.id)}
                       disabled={deleteMutation.isPending}
                       aria-label={t("medications.inventory.delete")}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </li>
                 ))}

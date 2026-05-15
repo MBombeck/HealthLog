@@ -436,7 +436,7 @@ export function MeasurementForm({
               type="button"
               variant="outline"
               size="icon"
-              className="h-9 w-9"
+              className="size-11"
               disabled={loading}
               aria-label={t("common.moreOptions")}
             >

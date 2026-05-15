@@ -347,7 +347,9 @@
     "actions": "Acciones",
     "deleteConfirmTitle": "Delete measurement?",
     "deleteConfirmDescription": "This measurement will be permanently deleted.",
-    "pageInfo": "Page {page} de{total}"
+    "pageInfo": "Page {page} de{total}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page"
   },
   "mood": {
     "title": "Estado de ánimo",
@@ -712,6 +714,8 @@
     "noIntakesYet": "No intakes recorded yet",
     "actions": "Acciones",
     "pageInfo": "Page {page} de{total}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
     "loginRequiredIntakes": "Please sign in to view intakes.",
     "phaseConfig": "Reminder phases",
     "phaseConfigDescription": "Configure timing for reminders.",

@@ -347,7 +347,9 @@
     "actions": "Azioni",
     "deleteConfirmTitle": "Delete measurement?",
     "deleteConfirmDescription": "This measurement will be permanently deleted.",
-    "pageInfo": "Page {page} di{total}"
+    "pageInfo": "Page {page} di{total}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page"
   },
   "mood": {
     "title": "Umore",
@@ -712,6 +714,8 @@
     "noIntakesYet": "No intakes recorded yet",
     "actions": "Azioni",
     "pageInfo": "Page {page} di{total}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
     "loginRequiredIntakes": "Please sign in to view intakes.",
     "phaseConfig": "Reminder phases",
     "phaseConfigDescription": "Configure timing for reminders.",

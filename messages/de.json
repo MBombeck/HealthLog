@@ -348,7 +348,9 @@
     "actions": "Aktionen",
     "deleteConfirmTitle": "Messwert löschen?",
     "deleteConfirmDescription": "Dieser Messwert wird unwiderruflich gelöscht.",
-    "pageInfo": "Seite {page} von {total}"
+    "pageInfo": "Seite {page} von {total}",
+    "previousPage": "Vorherige Seite",
+    "nextPage": "Nächste Seite"
   },
   "mood": {
     "title": "Stimmung",
@@ -713,6 +715,8 @@
     "noIntakesYet": "Noch keine Einnahmen vorhanden",
     "actions": "Aktionen",
     "pageInfo": "Seite {page} von {total}",
+    "previousPage": "Vorherige Seite",
+    "nextPage": "Nächste Seite",
     "loginRequiredIntakes": "Bitte anmelden, um Einnahmen zu sehen.",
     "phaseConfig": "Erinnerungsphasen",
     "phaseConfigDescription": "Konfiguriere die Zeitpunkte für Erinnerungen.",

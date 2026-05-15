@@ -348,7 +348,9 @@
     "actions": "Actions",
     "deleteConfirmTitle": "Delete measurement?",
     "deleteConfirmDescription": "This measurement will be permanently deleted.",
-    "pageInfo": "Page {page} of {total}"
+    "pageInfo": "Page {page} of {total}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page"
   },
   "mood": {
     "title": "Mood",
@@ -713,6 +715,8 @@
     "noIntakesYet": "No intakes recorded yet",
     "actions": "Actions",
     "pageInfo": "Page {page} of {total}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
     "loginRequiredIntakes": "Please sign in to view intakes.",
     "phaseConfig": "Reminder phases",
     "phaseConfigDescription": "Configure timing for reminders.",

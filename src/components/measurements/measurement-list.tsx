@@ -370,13 +370,12 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
               typeFilter !== "ALL" ? (
                 <Button
                   variant="outline"
-                  size="sm"
                   onClick={() => setTypeFilter("ALL")}
                 >
                   {t("measurements.emptyResetFilter")}
                 </Button>
               ) : onAddFirst ? (
-                <Button size="sm" onClick={onAddFirst}>
+                <Button onClick={onAddFirst}>
                   <Plus className="mr-1 h-4 w-4" />
                   {t("measurements.emptyAddFirst")}
                 </Button>
@@ -537,14 +536,14 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="size-11"
                         onClick={() => startEdit(m)}
                         aria-label={t("common.edit")}
                       >
-                        <Pencil className="h-3.5 w-3.5" />
+                        <Pencil className="h-4 w-4" />
                       </Button>
                       <DeleteButton
-                        className="h-10 w-10"
+                        className="size-11"
                         onConfirm={() => deleteMutation.mutate(m.id)}
                       />
                     </div>
@@ -567,17 +566,21 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
             <div className="flex gap-1">
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
+                className="size-11"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
+                aria-label={t("measurements.previousPage")}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
+                className="size-11"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
+                aria-label={t("measurements.nextPage")}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -672,7 +675,7 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                       type="button"
                       variant="outline"
                       size="icon"
-                      className="h-9 w-9"
+                      className="size-11"
                       disabled={
                         updateMutation.isPending || deleteMutation.isPending
                       }
@@ -795,7 +798,7 @@ function SortableHead({
 
 function DeleteButton({
   onConfirm,
-  className = "h-8 w-8",
+  className = "size-11",
 }: {
   onConfirm: () => void;
   className?: string;

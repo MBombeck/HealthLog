@@ -347,7 +347,9 @@
     "actions": "Akcje",
     "deleteConfirmTitle": "Delete measurement?",
     "deleteConfirmDescription": "This measurement will be permanently deleted.",
-    "pageInfo": "Page {page} z{total}"
+    "pageInfo": "Page {page} z{total}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page"
   },
   "mood": {
     "title": "Nastrój",
@@ -712,6 +714,8 @@
     "noIntakesYet": "No intakes recorded yet",
     "actions": "Akcje",
     "pageInfo": "Page {page} z{total}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
     "loginRequiredIntakes": "Please sign in to view intakes.",
     "phaseConfig": "Reminder phases",
     "phaseConfigDescription": "Configure timing for reminders.",

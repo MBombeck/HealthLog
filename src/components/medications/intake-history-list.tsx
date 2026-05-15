@@ -434,11 +434,11 @@ export function IntakeHistoryList({
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="size-11"
                             onClick={() => startEdit(event)}
                             aria-label={t("common.edit")}
                           >
-                            <Pencil className="h-3.5 w-3.5" />
+                            <Pencil className="h-4 w-4" />
                           </Button>
                           <DeleteButton
                             label={t("medications.intakeDeleteConfirm")}
@@ -484,11 +484,11 @@ export function IntakeHistoryList({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="size-11"
                         onClick={() => startEdit(event)}
                         aria-label={t("common.edit")}
                       >
-                        <Pencil className="h-3.5 w-3.5" />
+                        <Pencil className="h-4 w-4" />
                       </Button>
                       <DeleteButton
                         label={t("medications.intakeDeleteConfirm")}
@@ -512,17 +512,21 @@ export function IntakeHistoryList({
             <div className="flex gap-1">
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
+                className="size-11"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
+                aria-label={t("medications.previousPage")}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
+                className="size-11"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
+                aria-label={t("medications.nextPage")}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -600,7 +604,7 @@ export function IntakeHistoryList({
                       type="button"
                       variant="outline"
                       size="icon"
-                      className="h-9 w-9"
+                      className="size-11"
                       disabled={
                         updateMutation.isPending || deleteMutation.isPending
                       }
@@ -816,10 +820,10 @@ function DeleteButton({
         <Button
           variant="ghost"
           size="icon"
-          className="text-destructive h-8 w-8"
+          className="text-destructive size-11"
           aria-label={label}
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="h-4 w-4" />
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
