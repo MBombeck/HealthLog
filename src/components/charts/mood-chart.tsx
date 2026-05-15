@@ -638,7 +638,13 @@ export function MoodChart({
             height={CHART_HEIGHT_PX}
           />
         ) : (
-          <div className={`${mini ? "h-[140px]" : "h-[240px]"} touch-pan-y`}>
+          <div
+            className={`${
+              mini
+                ? "h-[var(--chart-height,140px)]"
+                : "h-[var(--chart-height,240px)] md:h-[var(--chart-height-md,280px)]"
+            } touch-pan-y`}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
                 data={chartDataWithCompare ?? chartData}

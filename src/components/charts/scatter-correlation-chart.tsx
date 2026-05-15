@@ -82,8 +82,19 @@ export function ScatterCorrelationChart<T extends Record<string, number>>({
   tooltipFormatter,
   height = 250,
 }: ScatterCorrelationChartProps<T>) {
+  // v1.4.27 MB7 / CF-37 — drop the fixed pixel height in favour of a
+  // responsive aspect-ratio on mobile so the chart never compresses
+  // below readable axes. The `aspect-square` ratio at `<sm` keeps the
+  // plot area as a centred square (matches Apple Health correlation
+  // viz); from `sm:` upwards the chart falls back to the legacy
+  // pixel-height contract via a 3:2 aspect-ratio fallback that
+  // approximates the previous 250 px shape.
   return (
-    <div className="touch-pan-y" style={{ height }}>
+    <div
+      className="touch-pan-y aspect-square sm:aspect-[3/2] sm:h-auto"
+      style={{ height: undefined }}
+      data-explicit-height={height}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <ScatterChart margin={{ top: 10, right: 20, bottom: 36, left: 12 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
