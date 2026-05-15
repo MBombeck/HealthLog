@@ -4,29 +4,18 @@ import { STORAGE_STATE_PATH } from "./setup/global-setup";
 
 /**
  * v1.4.19 A6 — Settings consistency snapshot at Pixel-5 (393 CSS px).
+ * v1.4.27 — input height floor lifted from 36 px (`h-9`) to 40 px
+ * (`h-10`) on `Input`, `Select` trigger, and the native `<select>`
+ * primitives per the WCAG 2.5.5 tap-target sweep (MB2). The
+ * Dashboard Compare-to trigger followed the same path.
  *
- * Marc reported four interlocking inconsistencies on the mobile
- * settings shell:
+ * The fixes that still apply:
  *
- *   1. Input heights differed across sections — `<Input>` rendered at
- *      36 px, the AI active-provider native `<select>` at 40 px, the
- *      AI add-provider select at 32 px, the Dashboard "Compare to"
- *      `<SelectTrigger>` at 44 px. Same shell, four heights.
- *   2. Action buttons inside title rows ("Change password", "Restart
- *      onboarding tour") could overflow the parent card on narrow
- *      viewports because the `flex justify-between` row never wrapped.
- *   3. The Sprache (language) select was buried half-way down the
- *      Profile card, paired with a profile-data field (date of birth).
- *   4. Card-internal `space-y-*` rhythm varied between 3 / 4 / 5 / 6.
- *
- * The fixes:
- *
- *   - `h-9` (36 px) is the canonical input height across Settings.
+ *   - 40 px (`h-10`) is the canonical input height across Settings.
  *   - Title + action rows use `flex-col` on `<sm` and `flex-row` on
  *     `>=sm` so the action button stacks below on mobile.
- *   - Sprache lifted into its own row at the bottom of the Profile
- *     card, `max-w-xs` on `>=sm` so it doesn't render heavier than
- *     other fields.
+ *   - Sprache pairs with date-of-birth in a single `sm:grid-cols-2`
+ *     row at the bottom of the Profile card (v1.4.27 R1 audit).
  *   - Card-internal spacing standardised on `space-y-4`.
  *
  * This spec captures the post-fix invariants. It is mobile-only — the
@@ -39,7 +28,7 @@ test.describe("Settings mobile consistency (Pixel 5)", () => {
     test.skip(testInfo.project.name !== "chromium-mobile", "mobile-only spec");
   });
 
-  test("/settings/account: every form input renders at 36 px", async ({
+  test("/settings/account: every form input renders at 40 px", async ({
     page,
   }) => {
     await page.goto("/settings/account", { waitUntil: "networkidle" });
@@ -61,7 +50,7 @@ test.describe("Settings mobile consistency (Pixel 5)", () => {
 
     expect(formInputs.length).toBeGreaterThan(0);
     for (const inp of formInputs) {
-      expect.soft(inp.height, `${inp.tag}#${inp.id} (${inp.type})`).toBe(36);
+      expect.soft(inp.height, `${inp.tag}#${inp.id} (${inp.type})`).toBe(40);
     }
   });
 
@@ -143,7 +132,7 @@ test.describe("Settings mobile consistency (Pixel 5)", () => {
     );
   });
 
-  test("/settings/dashboard: Compare-to trigger renders at 36 px", async ({
+  test("/settings/dashboard: Compare-to trigger renders at 40 px", async ({
     page,
   }) => {
     await page.goto("/settings/dashboard", { waitUntil: "networkidle" });
@@ -152,10 +141,10 @@ test.describe("Settings mobile consistency (Pixel 5)", () => {
     const trigger = page.locator("#comparison-baseline");
     await expect(trigger).toBeVisible();
     const h = await trigger.evaluate((el) => el.getBoundingClientRect().height);
-    expect(Math.round(h)).toBe(36);
+    expect(Math.round(h)).toBe(40);
   });
 
-  test("/settings/ai: every native select renders at 36 px", async ({
+  test("/settings/ai: every native select renders at 40 px", async ({
     page,
   }) => {
     await page.goto("/settings/ai", { waitUntil: "networkidle" });
@@ -169,7 +158,7 @@ test.describe("Settings mobile consistency (Pixel 5)", () => {
 
     expect(heights.length).toBeGreaterThan(0);
     for (const h of heights) {
-      expect.soft(h).toBe(36);
+      expect.soft(h).toBe(40);
     }
   });
 });
