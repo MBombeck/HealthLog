@@ -258,20 +258,7 @@
     "layoutChartColumn": "Gráfico",
     "emptyTitle": "Your dashboard is empty",
     "emptyDescription": "Log your first measurement or mood entry. Tiles and charts appear automatically as data lands.",
-    "emptyAddMeasurement": "Add your first measurement",
-    "glp1": {
-      "title": "Terapia GLP-1",
-      "lastInjection": "Última inyección",
-      "nextInjection": "Próxima inyección",
-      "weightDelta": "desde el inicio",
-      "inDays": "en {count} días",
-      "tabLevel": "Nivel",
-      "tabWeight": "Peso",
-      "tabsAria": "Cambiar entre vista de nivel y vista de peso",
-      "rangeStripLabel": "Seleccionar rango",
-      "levelUnavailable": "Nivel no disponible aún — registra una dosis y la curva aparecerá.",
-      "weightUnavailable": "Tendencia de peso no disponible aún — registra una medición para verla."
-    }
+    "emptyAddMeasurement": "Add your first measurement"
   },
   "measurements": {
     "title": "Measurements",

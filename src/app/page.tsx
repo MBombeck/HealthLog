@@ -42,7 +42,6 @@ import { summaryToTrend7Delta } from "@/lib/analytics/trend-delta";
 import { GettingStartedChecklist } from "@/components/onboarding/getting-started-checklist";
 import { TourLauncher } from "@/components/onboarding/tour-launcher";
 import { RecentAchievementsCard } from "@/components/gamification/recent-achievements-card";
-import { Glp1Tile } from "@/components/dashboard/glp1-tile";
 
 const HealthChart = dynamic(
   () =>
@@ -1234,15 +1233,6 @@ export default function DashboardPage() {
                 ))}
               </div>
             )}
-            {/* v1.4.25 W6 — GLP-1 status tile. The tile self-gates on
-                `Medication.treatmentClass === "GLP1"` (route returns
-                `data: null` when the user has no active GLP-1 med), so
-                we always mount it and let the tile suppress itself.
-                v1.4.27 — the standalone insights preview retired (it
-                duplicated the much-richer `/insights` advisor surface);
-                the GLP-1 tile now anchors the top of the chart-row
-                stack. */}
-            <Glp1Tile />
             {charts.map((entry) => (
               <div key={entry.id} className="space-y-2">
                 {entry.node}

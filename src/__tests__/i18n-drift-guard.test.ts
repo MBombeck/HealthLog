@@ -10,8 +10,7 @@
  * specific call-site key groups so a contributor who only edits one
  * bundle gets a precise failure instead of a 200-line parity diff.
  *
- * Scope (mirrors v1.4.27 buckets B1, B3, B4, B5):
- *   - dashboard.glp1.*          (B1 — drug-level + weight tabs)
+ * Scope (mirrors v1.4.27 buckets B3, B4, B5):
  *   - admin.carrier* + admin.providerWithings + admin.providerPasskey   (B3 — login carrier chip)
  *   - insights.emptyState.*     (B4 — per-metric empty states)
  *   - notifications.admin.*     (B5 — admin notification messages)
@@ -67,20 +66,6 @@ const REQUIRED_KEY_SETS: Array<{
   label: string;
   required: string[];
 }> = [
-  {
-    label: "dashboard.glp1.* (B1 — GLP-1 tile tabs)",
-    required: [
-      "dashboard.glp1.title",
-      "dashboard.glp1.tabLevel",
-      "dashboard.glp1.tabWeight",
-      "dashboard.glp1.tabsAria",
-      "dashboard.glp1.rangeStripLabel",
-      "dashboard.glp1.levelUnavailable",
-      "dashboard.glp1.weightUnavailable",
-      "dashboard.glp1.lastInjection",
-      "dashboard.glp1.nextInjection",
-    ],
-  },
   {
     label: "admin.carrier (B3 — login carrier chip)",
     required: ["admin.carrier", "admin.carrierUnknown"],

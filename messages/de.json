@@ -258,20 +258,7 @@
     "layoutChartColumn": "Chart",
     "emptyTitle": "Dein Dashboard ist leer",
     "emptyDescription": "Erfasse den ersten Messwert oder Stimmungseintrag. Kacheln und Charts erscheinen automatisch, sobald Daten vorhanden sind.",
-    "emptyAddMeasurement": "Ersten Messwert erfassen",
-    "glp1": {
-      "title": "GLP-1-Therapie",
-      "lastInjection": "Letzte Injektion",
-      "nextInjection": "Nächste Injektion",
-      "weightDelta": "seit Beginn",
-      "inDays": "in {count} Tagen",
-      "tabLevel": "Spiegel",
-      "tabWeight": "Gewicht",
-      "tabsAria": "Wirkstoffspiegel oder Gewichtsverlauf anzeigen",
-      "rangeStripLabel": "Zeitraum auswählen",
-      "levelUnavailable": "Spiegel noch nicht verfügbar — Dosis loggen, dann erscheint die Kurve.",
-      "weightUnavailable": "Gewichtsverlauf noch nicht verfügbar — Messung erfassen, um den Verlauf zu sehen."
-    }
+    "emptyAddMeasurement": "Ersten Messwert erfassen"
   },
   "measurements": {
     "title": "Messungen",

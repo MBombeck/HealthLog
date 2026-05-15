@@ -83,14 +83,6 @@ export const queryKeys = {
   dashboardWidgets: () => ["user", "dashboardWidgets"] as const,
 
   /**
-   * v1.4.25 W6 — dashboard GLP-1 tile data. Self-gating: the route
-   * returns `data: null` when the user has no active GLP-1 medication
-   * so the tile component can suppress itself without a 404 special-
-   * case in the cache.
-   */
-  dashboardGlp1: () => ["dashboard", "glp1"] as const,
-
-  /**
    * v1.4.25 W5e — per-user, per-metric-class source priority. The
    * Settings → Sources surface reads + writes this key; saving
    * invalidates `analytics()` because the cumulative-metric aggregator
