@@ -3,15 +3,11 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  SlidersHorizontal,
-  RotateCcw,
-  Loader2,
-  AlertTriangle,
-} from "lucide-react";
+import { SlidersHorizontal, RotateCcw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
@@ -147,10 +143,7 @@ export function ThresholdsEditorSection({ id }: { id: string }) {
       </div>
 
       {isLoading || !data ? (
-        <div className="text-muted-foreground flex items-center gap-2 text-sm">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          {t("common.loading")}
-        </div>
+        <ThresholdsSkeletonList />
       ) : (
         <div className="space-y-3">
           {METRIC_ORDER.map((metric) => (
@@ -166,6 +159,41 @@ export function ThresholdsEditorSection({ id }: { id: string }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Skeleton placeholder rendered while `/api/user/thresholds` is in
+ * flight. Reserves one row per `METRIC_ORDER` entry at roughly the
+ * loaded height so the page does not jump when the fetched list
+ * swaps in. The pulsing animation honours `prefers-reduced-motion`
+ * via Tailwind's `motion-reduce:animate-none`.
+ */
+function ThresholdsSkeletonList() {
+  return (
+    <div
+      className="space-y-3"
+      data-testid="thresholds-skeleton"
+      aria-hidden="true"
+    >
+      {METRIC_ORDER.map((metric) => (
+        <div
+          key={metric}
+          className="border-border space-y-3 rounded-lg border p-4"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-48" />
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <Skeleton className="h-3 w-12" />
+              <Skeleton className="h-5 w-9 rounded-full" />
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

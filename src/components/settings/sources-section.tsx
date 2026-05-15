@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import {
@@ -314,10 +315,7 @@ export function SourcesSection() {
         </p>
 
         {isLoading || !priority ? (
-          <div className="text-muted-foreground flex items-center gap-2 text-sm">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {t("common.loading")}
-          </div>
+          <SourcesSkeletonList />
         ) : (
           <div className="space-y-3">
             {SOURCE_PRIORITY_METRIC_KEYS.map((metric) => {
@@ -562,5 +560,35 @@ export function SourcesSection() {
         )}
       </div>
     </section>
+  );
+}
+
+/**
+ * Skeleton placeholder rendered while `/api/auth/me/source-priority`
+ * is in flight. Reserves one row per `SOURCE_PRIORITY_METRIC_KEYS`
+ * entry at roughly the loaded height so the page does not jump when
+ * the fetched ladder list swaps in. The pulsing animation honours
+ * `prefers-reduced-motion` via Tailwind's `motion-reduce:animate-none`.
+ */
+function SourcesSkeletonList() {
+  return (
+    <div
+      className="space-y-3"
+      data-testid="sources-skeleton"
+      aria-hidden="true"
+    >
+      {SOURCE_PRIORITY_METRIC_KEYS.map((metric) => (
+        <div
+          key={metric}
+          className="border-border bg-background/30 space-y-2 rounded-md border p-3"
+        >
+          <Skeleton className="h-4 w-40" />
+          <div className="space-y-1">
+            <Skeleton className="h-9 w-full rounded-md" />
+            <Skeleton className="h-9 w-full rounded-md" />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
