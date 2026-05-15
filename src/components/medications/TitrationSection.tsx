@@ -138,7 +138,15 @@ export function TitrationSection({ medicationId }: TitrationSectionProps) {
 
           {hasLadder ? (
             <ol
-              className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-stretch"
+              // v1.4.27 MB7 / CF-48 — keep the vertical (`flex-col`)
+              // layout until `md:` instead of breaking to horizontal
+              // at `sm:`. On Pixel 5 (375 px) the horizontal ladder
+              // had 4-5 visible steps but each step's "Standard 0.5
+              // mg" + "typical 4 weeks" label combo wrapped to 3
+              // lines per step, which read as a denser block than
+              // the vertical layout below. From `md:` upwards the
+              // wider container can absorb the horizontal stride.
+              className="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-stretch"
               aria-label={t("medications.titration.drugLadderHeader")}
             >
               {data.ladder.map((step) => {
@@ -149,7 +157,7 @@ export function TitrationSection({ medicationId }: TitrationSectionProps) {
                   <li
                     key={step.stepIndex}
                     className={[
-                      "border-border/70 flex flex-1 flex-col rounded-md border px-2.5 py-2 sm:min-w-[7rem]",
+                      "border-border/70 flex flex-1 flex-col rounded-md border px-2.5 py-2 md:min-w-[7rem]",
                       isCurrent
                         ? "border-primary ring-primary/40 ring-2"
                         : "",

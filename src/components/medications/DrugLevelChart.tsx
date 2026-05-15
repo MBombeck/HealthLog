@@ -229,9 +229,14 @@ export function DrugLevelChart({
   // and skips the outer `<section>` wrapper so the user doesn't see a
   // card painted inside a card. The disclaimer also collapses to a
   // single muted line to keep the tile's vertical footprint tight.
+  // v1.4.27 MB7 / CF-66 — drop the `md:p-6` lift so the wrapper
+  // stays at the `p-4` density across viewports. The 6 unit padding
+  // on `md+` made the GLP-1 tile feel oversized relative to the
+  // neighbouring trend cards, which all use `p-4`. Compact mode
+  // retains the `space-y-2` layout without an outer card wrapper.
   const wrapperClass = compact
     ? "space-y-2"
-    : "bg-card border-border rounded-xl border p-4 md:p-6";
+    : "bg-card border-border rounded-xl border p-4";
   const wrapperProps = {
     "aria-labelledby": "drug-level-chart-title",
     className: wrapperClass,

@@ -192,7 +192,14 @@ export function SchedulingSection({
             ) : (
               <>
                 <div
-                  className="flex flex-wrap gap-1"
+                  // v1.4.27 MB7 / CF-49 — tighten the gap from
+                  // `gap-1` (4 px) to `gap-0.5` (2 px) on `<sm` so
+                  // the 30-day cadence grid fits in fewer rows on
+                  // Pixel 5 (375 px) without sacrificing the 44 px
+                  // tap target per cell. At `sm:` and above the
+                  // original 4 px gap returns; the wider container
+                  // there already absorbs the timeline in 1-2 rows.
+                  className="flex flex-wrap gap-0.5 sm:gap-1"
                   role="img"
                   aria-label={t(
                     "medications.scheduling.cadenceViz.ariaTimeline",

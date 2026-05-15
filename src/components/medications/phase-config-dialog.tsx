@@ -182,7 +182,18 @@ export function PhaseConfigDialog({
               const mode = form[modeKey] as "MINUTES" | "PERCENT";
 
               return (
-                <div key={key} className="flex items-center gap-2">
+                // v1.4.27 MB7 / CF-50 — stack the row on `<sm` so
+                // the input + mode toggle + suffix caption don't
+                // overflow the 280-300 px dialog inner width on
+                // Galaxy Fold. The dot + phase label stay on the
+                // first line; the input / toggle / suffix wrap
+                // beneath. At `sm:` the original single-line layout
+                // returns because the wider dialog can absorb the
+                // five horizontal slots.
+                <div
+                  key={key}
+                  className="flex flex-wrap items-center gap-2 sm:flex-nowrap"
+                >
                   <div
                     className={`h-3 w-3 rounded-full ${dotClass} shrink-0`}
                     aria-hidden="true"
@@ -211,7 +222,7 @@ export function PhaseConfigDialog({
                       ? t("medications.phaseMinutes")
                       : t("medications.phasePercent")}
                   </Button>
-                  <span className="text-muted-foreground shrink-0 text-xs">
+                  <span className="text-muted-foreground basis-full text-xs sm:basis-auto sm:shrink-0">
                     {direction === "before"
                       ? t("medications.phaseBeforeEnd")
                       : t("medications.phaseAfterEnd")}
