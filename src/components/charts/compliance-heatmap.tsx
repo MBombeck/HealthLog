@@ -57,8 +57,13 @@ function getColor(data: DailyData): string {
 }
 
 function formatDateDE(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
-  return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
+  // v1.4.27 B7 / BL-P4-2 — parse the day-key against UTC so the
+  // formatted tooltip label matches the dateKey computation below
+  // (which uses `toISOString().slice(0, 10)`). Without the UTC
+  // anchor an SSR server in a non-Berlin timezone could format the
+  // tick a day off the dateKey it sits under.
+  const d = new Date(dateStr + "T00:00:00Z");
+  return `${d.getUTCDate()}.${d.getUTCMonth() + 1}.${d.getUTCFullYear()}`;
 }
 
 export function ComplianceHeatmap({
@@ -133,9 +138,16 @@ export function ComplianceHeatmap({
       dates.push(date);
     }
 
-    // Start from the first date, align to Monday
+    // Start from the first date, align to Monday.
+    //
+    // v1.4.27 B7 / BL-P4-2 — read every weekday + month boundary off
+    // the UTC accessor pair (`getUTCDay`, `getUTCMonth`) so the
+    // computation matches the dateKey, which is also UTC-anchored
+    // (`toISOString().slice(0, 10)`). Reading in server-tz here would
+    // shift the Monday-alignment + month-marker placement when the
+    // SSR pass runs on a server in a non-Berlin timezone.
     const firstDate = dates[0];
-    const firstDow = (firstDate.getDay() + 6) % 7; // Monday = 0
+    const firstDow = (firstDate.getUTCDay() + 6) % 7; // Monday = 0
 
     let col = 0;
     const markers: Array<{ col: number; label: string }> = [];
@@ -143,7 +155,7 @@ export function ComplianceHeatmap({
 
     for (let i = 0; i < dates.length; i++) {
       const date = dates[i];
-      const dow = (date.getDay() + 6) % 7; // Monday = 0
+      const dow = (date.getUTCDay() + 6) % 7; // Monday = 0
       const currentCol = Math.floor((i + firstDow) / 7);
       const row = dow;
       const dateKey = date.toISOString().slice(0, 10);
@@ -154,7 +166,7 @@ export function ComplianceHeatmap({
       };
 
       // Track month boundaries
-      const month = date.getMonth();
+      const month = date.getUTCMonth();
       if (month !== lastMonth) {
         markers.push({ col: currentCol, label: MONTH_LABELS[month] });
         lastMonth = month;
