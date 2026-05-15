@@ -107,7 +107,7 @@ export default function PrivacyPage() {
       {/* Top bar — visible home-link so an App-Store reviewer can confirm
           the policy belongs to the same brand as the iOS app. Public; no
           nav menu (this page is reachable without a session). */}
-      <header className="border-border/60 bg-background/80 sticky top-0 z-10 border-b backdrop-blur">
+      <header className="border-border/60 bg-background/80 sticky top-0 z-10 border-b backdrop-blur pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3 md:px-6">
           <Link
             href="/"
@@ -142,6 +142,102 @@ export default function PrivacyPage() {
             Last updated: {LAST_UPDATED}
           </p>
         </div>
+
+        {/* v1.4.27 MB6 — collapsible TOC. Default-closed on every
+            viewport so the policy's first paragraphs reach the fold
+            on `<sm`; an open summary on a wide screen costs nothing,
+            and the reader can flip it open to skim the section list. */}
+        <details
+          className="border-border/60 bg-card/40 group rounded-md border"
+          data-slot="privacy-toc"
+        >
+          <summary className="text-foreground hover:bg-muted/50 cursor-pointer list-none rounded-md px-4 py-3 text-sm font-medium select-none">
+            Contents
+            <span
+              aria-hidden="true"
+              className="text-muted-foreground ml-2 inline-block transition-transform group-open:rotate-90"
+            >
+              ›
+            </span>
+          </summary>
+          <nav
+            aria-label="Privacy policy contents"
+            className="border-border/60 border-t px-4 py-3"
+          >
+            <ol className="text-muted-foreground space-y-1.5 text-sm leading-relaxed">
+              <li>
+                <a className="hover:text-foreground hover:underline" href="#intro">
+                  1. Overview
+                </a>
+              </li>
+              <li>
+                <a
+                  className="hover:text-foreground hover:underline"
+                  href="#data-we-collect"
+                >
+                  2. Data we collect
+                </a>
+              </li>
+              <li>
+                <a className="hover:text-foreground hover:underline" href="#purpose">
+                  3. Why we collect each category
+                </a>
+              </li>
+              <li>
+                <a
+                  className="hover:text-foreground hover:underline"
+                  href="#sub-processors"
+                >
+                  4. Third-party sub-processors
+                </a>
+              </li>
+              <li>
+                <a className="hover:text-foreground hover:underline" href="#storage">
+                  5. Data storage and retention
+                </a>
+              </li>
+              <li>
+                <a className="hover:text-foreground hover:underline" href="#rights">
+                  6. Your rights (GDPR Art. 15-22, DSGVO)
+                </a>
+              </li>
+              <li>
+                <a
+                  className="hover:text-foreground hover:underline"
+                  href="#medical-boundary"
+                >
+                  7. Medical-device boundary (EU MDR 2017/745, MDCG 2021-24)
+                </a>
+              </li>
+              <li>
+                <a
+                  className="hover:text-foreground hover:underline"
+                  href="#apple-categories"
+                >
+                  8. Apple App Store privacy categories
+                </a>
+              </li>
+              <li>
+                <a
+                  className="hover:text-foreground hover:underline"
+                  href="#children"
+                >
+                  9. Children
+                </a>
+              </li>
+              <li>
+                <a className="hover:text-foreground hover:underline" href="#changes">
+                  10. Changes to this policy
+                </a>
+              </li>
+              <li>
+                <a className="hover:text-foreground hover:underline" href="#contact">
+                  11. Contact
+                </a>
+              </li>
+            </ol>
+          </nav>
+        </details>
 
         <Section id="intro" title="1. Overview">
           <p>
@@ -288,64 +384,64 @@ export default function PrivacyPage() {
             data-slot="privacy-hk-quantity"
           >
             <li>
-              <code className="text-xs">bodyMass</code>
+              <code className="text-xs break-all">bodyMass</code>
             </li>
             <li>
-              <code className="text-xs">bodyFatPercentage</code>
+              <code className="text-xs break-all">bodyFatPercentage</code>
             </li>
             <li>
-              <code className="text-xs">bodyTemperature</code>
+              <code className="text-xs break-all">bodyTemperature</code>
             </li>
             <li>
-              <code className="text-xs">bloodPressureSystolic</code>
+              <code className="text-xs break-all">bloodPressureSystolic</code>
             </li>
             <li>
-              <code className="text-xs">bloodPressureDiastolic</code>
+              <code className="text-xs break-all">bloodPressureDiastolic</code>
             </li>
             <li>
-              <code className="text-xs">bloodGlucose</code>
+              <code className="text-xs break-all">bloodGlucose</code>
             </li>
             <li>
-              <code className="text-xs">oxygenSaturation</code>
+              <code className="text-xs break-all">oxygenSaturation</code>
             </li>
             <li>
-              <code className="text-xs">heartRate</code>
+              <code className="text-xs break-all">heartRate</code>
             </li>
             <li>
-              <code className="text-xs">restingHeartRate</code>
+              <code className="text-xs break-all">restingHeartRate</code>
             </li>
             <li>
-              <code className="text-xs">heartRateVariabilitySDNN</code>
+              <code className="text-xs break-all">heartRateVariabilitySDNN</code>
             </li>
             <li>
-              <code className="text-xs">vo2Max</code>
+              <code className="text-xs break-all">vo2Max</code>
             </li>
             <li>
-              <code className="text-xs">stepCount</code>
+              <code className="text-xs break-all">stepCount</code>
             </li>
             <li>
-              <code className="text-xs">activeEnergyBurned</code>
+              <code className="text-xs break-all">activeEnergyBurned</code>
             </li>
             <li>
-              <code className="text-xs">flightsClimbed</code>
+              <code className="text-xs break-all">flightsClimbed</code>
             </li>
             <li>
-              <code className="text-xs">distanceWalkingRunning</code>
+              <code className="text-xs break-all">distanceWalkingRunning</code>
             </li>
             <li>
-              <code className="text-xs">environmentalAudioExposure</code>
+              <code className="text-xs break-all">environmentalAudioExposure</code>
             </li>
             <li>
-              <code className="text-xs">headphoneAudioExposure</code>
+              <code className="text-xs break-all">headphoneAudioExposure</code>
             </li>
             <li>
-              <code className="text-xs">timeInDaylight</code> (iOS 17 and later)
+              <code className="text-xs break-all">timeInDaylight</code> (iOS 17 and later)
             </li>
           </ul>
           <p className="font-medium">HKCategoryTypeIdentifier:</p>
           <ul className="list-disc space-y-1 pl-5">
             <li>
-              <code className="text-xs">sleepAnalysis</code> — read with full
+              <code className="text-xs break-all">sleepAnalysis</code> — read with full
               per-stage granularity (Awake, REM, Core, Deep). Stages are stored
               server-side as separate rows so the chart can stack them.
             </li>

@@ -56,7 +56,7 @@ function Section({
 export default function AboutPage() {
   return (
     <div className="bg-background text-foreground min-h-dvh">
-      <header className="border-border/60 bg-background/80 sticky top-0 z-10 border-b backdrop-blur">
+      <header className="border-border/60 bg-background/80 sticky top-0 z-10 border-b backdrop-blur pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3 md:px-6">
           <Link
             href="/"

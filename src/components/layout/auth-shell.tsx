@@ -11,7 +11,18 @@ import { BottomNav } from "./bottom-nav";
 import { SidebarNav } from "./sidebar-nav";
 import { TopBar } from "./top-bar";
 
-const PUBLIC_PATHS = ["/auth/login", "/auth/register", "/privacy"];
+// v1.4.27 MB6 — `/about` joins the public-path list so the GeoLite2
+// CC BY-SA 4.0 attribution stays reachable for unauthenticated
+// visitors. The `/about` route is already registered in `proxy.ts`
+// PUBLIC_PATHS; this constant gates the client-side auth shell, and
+// both lists must agree or the route round-trips through the
+// sign-in redirect.
+const PUBLIC_PATHS = [
+  "/auth/login",
+  "/auth/register",
+  "/privacy",
+  "/about",
+];
 
 export function AuthShell({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -25,7 +36,10 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
   // squash a 3000-word policy into a "login card" layout, so we let it
   // render edge-to-edge while still resolving as a public page for the
   // auth gate above.
-  const isStandalonePublicPage = pathname.startsWith("/privacy");
+  // v1.4.27 MB6 — `/about` follows the same shape (own header, own
+  // footer, full-width body), so it joins the standalone list.
+  const isStandalonePublicPage =
+    pathname.startsWith("/privacy") || pathname.startsWith("/about");
   const isAdminPage = pathname.startsWith("/admin");
   const isOnboardingPage = pathname === "/onboarding";
   const showUnlockNotifier = isAuthenticated && !isPublicPage && !!user?.id;
