@@ -218,8 +218,6 @@
     "streakLabel": "days in a row",
     "weight": "Poids",
     "bloodPressure": "Tension artérielle",
-    "bloodPressureSys": "Blood Pressure (Sys)",
-    "bloodPressureDia": "Blood Pressure (Dia)",
     "pulse": "Pouls",
     "bodyFat": "Masse grasse",
     "sleep": "Sommeil",
@@ -238,7 +236,6 @@
     "vo2MaxShort": "VO₂ max",
     "bpInTargetShort": "TA-cible",
     "medications": "Médicaments",
-    "insightsPreview": "AI Insights preview",
     "quickAddMeasurement": "Log measurement",
     "quickAddMood": "Log mood",
     "compliance7d": "Compliance (7 days)",
@@ -629,8 +626,7 @@
         "missedLast30": "Manquées (30 j.)",
         "unit": {
           "days": "j.",
-          "doses": "doses",
-          "percent": "%"
+          "doses": "doses"
         },
         "chips": {
           "adherenceTooltip": "Part des doses prises sur les 30 derniers jours (les doses sautées sont exclues du dénominateur).",
@@ -651,7 +647,6 @@
       "ceilingMessage": "Vous êtes au sommet du palier standard.",
       "escalationDueHint": "Vous êtes à ce palier depuis {weeks} semaines ; le schéma prévoit une progression typique après ~{typical} semaines.",
       "currentStepDwell": "À ce palier depuis {weeks} semaines",
-      "weeksUnit": "sem.",
       "doseUnitMg": "mg",
       "emptyState": "Aucun historique de dose. Enregistrez une dose pour voir votre position dans le schéma.",
       "nonStandardDose": "La dose actuelle est en dehors des paliers standard.",
@@ -704,7 +699,6 @@
     "purgeError": "Error deleting records",
     "invalidTimestamp": "Please select a valid time.",
     "noIntakesYet": "No intakes recorded yet",
-    "deleteIntakeAriaLabel": "Delete intake",
     "actions": "Actions",
     "pageInfo": "Page {page} de{total}",
     "loginRequiredIntakes": "Please sign in to view intakes.",
@@ -738,29 +732,20 @@
     "glp1": {
       "drug": {
         "tirzepatide": {
-          "name": "Tirzépatide",
-          "class": "Agoniste double GIP-GLP-1"
+          "name": "Tirzépatide"
         },
         "semaglutide": {
-          "name": "Sémaglutide",
-          "class": "Agoniste du récepteur GLP-1"
+          "name": "Sémaglutide"
         },
         "liraglutide": {
-          "name": "Liraglutide",
-          "class": "Agoniste du récepteur GLP-1"
+          "name": "Liraglutide"
         },
         "dulaglutide": {
-          "name": "Dulaglutide",
-          "class": "Agoniste du récepteur GLP-1"
+          "name": "Dulaglutide"
         },
         "exenatide": {
-          "name": "Exénatide",
-          "class": "Agoniste du récepteur GLP-1"
+          "name": "Exénatide"
         }
-      },
-      "source": {
-        "ema": "Source EMA",
-        "psp4": "Pharmacométrie évaluée par les pairs"
       }
     },
     "researchMode": {
@@ -830,10 +815,6 @@
     "trend": "Tendance",
     "perWeek": "/week",
     "totalDelta": "Total",
-    "selectMedication": "Select medication",
-    "noComplianceData": "No compliance data available",
-    "history": "Historique",
-    "complianceDays90": "Compliance (90 days)",
     "colorGreen": "Green:",
     "colorOrange": "Orange:",
     "colorRed": "Red:",
@@ -968,10 +949,6 @@
     "confidenceMittel": "Medium",
     "confidenceGering": "Low",
     "loadError": "Failed to load insights",
-    "generationFailed": "The analysis couldn't be generated. Please try again.",
-    "title": "Analyses",
-    "subtitle": "AI-powered analysis of your health data",
-    "overviewSubtitle": "Trends, risks, progress at a glance",
     "heroGenerated": "Generated {time}",
     "heroPersonalBaseline": "Based on your last 90 days",
     "heroRegenerate": "Regenerate",
@@ -985,7 +962,6 @@
     "heroComingSoonTooltip": "Coming soon",
     "heroActionWeeklyReport": "Generate weekly report",
     "heroActionAskCoach": "Ask the coach",
-    "heroActionRerun": "Re-run analysis",
     "heroBanner": {
       "ready": "Your {week} report is ready",
       "read": "Read",
@@ -1005,8 +981,6 @@
       "componentMood": "Humeur",
       "componentCompliance": "Meds",
       "disclaimer": "Indicative — not a clinical assessment.",
-      "askCoach": "Ask the Coach",
-      "coachPrompt": "Why is my health score {score} out of 100?",
       "provenance": {
         "toggle": "Composé de",
         "weightLabel": "part",
@@ -1179,13 +1153,10 @@
       "providerRateLimitTitle": "Provider rate-limited",
       "providerRateLimitBody": "Provider temporarily rate-limited; retry in ~5 min."
     },
-    "viewAll": "View all",
-    "previewEmpty": "No recommendations yet.",
     "relativeJustNow": "just now",
     "relativeMinutesAgo": "{count} minutes ago",
     "relativeHoursAgo": "{count} hours ago",
     "relativeDaysAgo": "{count} days ago",
-    "navGeneral": "General",
     "navOverview": "Vue d'ensemble",
     "navBloodPressure": "Tension artérielle",
     "navWeight": "Poids",
@@ -1234,38 +1205,7 @@
         "action": "Manage devices"
       }
     },
-    "measurementsOverDays": "{count} measurements over {days} days",
-    "healthStatus": "Health Status",
-    "noWeightData": "No weight data or height not set.",
-    "notEnoughBpData": "Not enough blood pressure data.",
-    "bpTargetRange": "BP Target Range",
-    "inTargetRange": "in target range",
-    "bpTarget": "Target: {range}",
-    "noDobSet": "Date of birth not set.",
-    "avg30dEsc": "30d average · ESH 2023",
-    "whoClassification": "WHO Classification",
     "correlations": "Correlations",
-    "weightVsBp": "Weight vs. Blood Pressure (Systolic)",
-    "strengthStrong": "Strong correlation",
-    "strengthModerate": "Moderate correlation",
-    "strengthWeak": "Weak correlation",
-    "strengthNone": "No correlation",
-    "weightBpStrong": "There is a strong correlation between weight and blood pressure.",
-    "weightBpModerate": "There is a moderate correlation between weight and blood pressure.",
-    "weightBpWeak": "There is a weak correlation between weight and blood pressure.",
-    "weightBpNone": "No discernible correlation between weight and blood pressure.",
-    "notEnoughCorrelationData": "Not enough data for correlation analysis.",
-    "minCorrelationData": "At least 5 time-matched weight and blood pressure measurements needed.",
-    "bpMedContinuity": "BP Medication Continuity vs. Blood Pressure (Systolic)",
-    "continuityLabel": "Continuity",
-    "continuityBpLabel": "BP Medication Continuity (%)",
-    "weightKgLabel": "Weight (kg)",
-    "bpMedNegative": "Negative correlation: higher continuity tends to be associated with lower systolic blood pressure.",
-    "bpMedPositive": "Positive correlation: higher continuity tends to be associated with higher systolic blood pressure in your data.",
-    "bpMedNone": "No discernible correlation in your data.",
-    "bpMedCount": "{count} BP medications",
-    "notEnoughMedData": "Not enough data for this analysis.",
-    "notEnoughMedDataHint": "Tag medications as blood pressure medications and record sufficient intakes + blood pressure measurements.",
     "medicationCompliance": "Medication Compliance",
     "dayStreak": "{count} day streak",
     "compliance7d": "7-day compliance",
@@ -1273,11 +1213,6 @@
     "taken": "Pris",
     "skipped": "Sauté",
     "missed": "Manqué",
-    "complianceTrend": "Compliance Trend",
-    "generalStatusTitle": "General Health Status",
-    "generalStatusLoading": "Generating general status...",
-    "generalStatusNoKey": "The general status cannot be generated because no OpenAI key is configured.",
-    "generalStatusUnavailable": "The general status is currently unavailable.",
     "generalStatusBadge": {
       "good": "Bien",
       "watch": "Watch",
@@ -1285,70 +1220,14 @@
     },
     "assessmentTitle": "Assessment",
     "bloodPressureSectionTitle": "Tension artérielle",
-    "bloodPressureMedicationListTitle": "Blood Pressure Medication & Compliance",
-    "bloodPressureMedicationListEmpty": "No active blood pressure medication configured.",
-    "bloodPressureStatusLoading": "Generating blood pressure summary...",
-    "bloodPressureStatusNoKey": "The blood pressure summary cannot be generated because no OpenAI key is configured.",
-    "bloodPressureStatusUnavailable": "The blood pressure summary is currently unavailable.",
     "weightSectionTitle": "Poids",
-    "weightStatusLoading": "Generating weight summary...",
-    "weightStatusNoKey": "The weight summary cannot be generated because no OpenAI key is configured.",
-    "weightStatusUnavailable": "The weight summary is currently unavailable.",
     "pulseSectionTitle": "Pouls",
-    "pulseStatusLoading": "Generating pulse summary...",
-    "pulseStatusNoKey": "The pulse summary cannot be generated because no OpenAI key is configured.",
-    "pulseStatusUnavailable": "The pulse summary is currently unavailable.",
     "bmiSectionTitle": "IMC",
-    "bmiStatusLoading": "Generating BMI summary...",
-    "bmiStatusNoKey": "The BMI summary cannot be generated because no OpenAI key is configured.",
-    "bmiStatusUnavailable": "The BMI summary is currently unavailable.",
-    "medicationComplianceStatusLoading": "Generating medication compliance text...",
-    "medicationComplianceStatusNoKey": "The medication compliance text cannot be generated because no OpenAI key is configured.",
-    "medicationComplianceStatusUnavailable": "The medication compliance text is currently unavailable.",
     "complianceNoData": "No compliance data available.",
-    "aiInsights": "AI Insights",
-    "configureApiKey": "Configure an OpenAI API key in Settings to get AI-powered insights.",
-    "alertsTitle": "Notes & Recommendations",
-    "showLess": "Show less",
-    "showMore": "+{count} more",
     "generate": "Generate new analysis",
-    "generating": "Generating analysis...",
-    "lastGenerated": "Last analysis",
-    "noInsights": "No analysis available yet.",
-    "rateLimit": "Please wait before generating a new analysis.",
-    "noApiKey": "Please add an OpenAI API key in Settings first.",
-    "sendRawData": "Send raw data",
-    "minMoodCorrelationData": "At least 5 temporally matched mood and measurement data points required.",
-    "moodBpModerate": "There is a moderate correlation between mood and blood pressure.",
-    "moodBpNone": "No detectable correlation between mood and blood pressure.",
-    "moodBpStrong": "There is a strong correlation between mood and blood pressure.",
-    "moodBpWeak": "There is a weak correlation between mood and blood pressure.",
-    "moodScoreLabel": "Mood (avg)",
     "moodSectionTitle": "Humeur",
-    "moodStatusLoading": "Generating mood analysis...",
-    "moodStatusNoKey": "Mood summary cannot be generated because no OpenAI API key is configured.",
-    "moodStatusUnavailable": "Mood analysis unavailable",
-    "moodVsBp": "Mood vs. Blood Pressure (Systolic)",
-    "moodVsPulse": "Mood vs. Pulse",
-    "moodVsWeight": "Mood vs. Weight",
-    "moodWeightModerate": "There is a moderate correlation between mood and weight.",
-    "moodWeightNone": "No detectable correlation between mood and weight.",
-    "moodWeightStrong": "There is a strong correlation between mood and weight.",
-    "moodWeightWeak": "There is a weak correlation between mood and weight.",
-    "notEnoughMoodCorrelationData": "Not enough mood data for correlation analysis.",
-    "refreshButton": "Refresh",
-    "generateButton": "Generate",
-    "analyzing": "Analyzing health data...",
     "confidence": "Confidence",
-    "confidence_niedrig": "low",
-    "confidence_mittel": "medium",
-    "confidence_hoch": "high",
-    "cached": "Cached",
-    "sectionChanged": "What has changed",
-    "sectionStable": "What is stable",
-    "sectionDrivers": "Possible correlations",
-    "sectionNextSteps": "Next steps",
-    "generatePrompt": "Click \"Generate\" for AI-powered insights about your health data."
+    "cached": "Cached"
   },
   "thresholds": {
     "defaultLabel": "Default",
@@ -1382,45 +1261,7 @@
     "unsetExplanation": "No override — using computed default."
   },
   "onboarding": {
-    "errorProfile": "Could not save your profile. Please try again.",
     "errorGeneric": "Something went wrong while finishing setup. Please try again.",
-    "v2": {
-      "title": "Welcome to HealthLog",
-      "subtitle": "Three quick steps. You can finish anything later from Settings.",
-      "stepOf": "Step {current} de{total}",
-      "back": "Retour",
-      "continue": "Continuer",
-      "finish": "Finish setup",
-      "skipStep": "Skip this step — you can finish setup later from Settings.",
-      "step1": {
-        "title": "About you",
-        "description": "Used for blood-pressure targets, BMI, and the right reminders.",
-        "displayNameLabel": "Display name",
-        "displayNameHint": "Shown on the dashboard greeting and in reports.",
-        "languageLabel": "Langue",
-        "languageHint": "We'll use this for the app, PDFs, and notifications."
-      },
-      "step2": {
-        "title": "Log your first measurement",
-        "description": "Weight, blood pressure, or pulse — whatever you have right now. The dashboard comes alive with one entry.",
-        "added": "Got it — you can add more anytime from the dashboard.",
-        "skipHint": "No measurement at hand? Skip and log one when you're ready."
-      },
-      "step3": {
-        "title": "Pick one notification channel",
-        "description": "We'll only send what you ask for. You can add more channels or fine-tune events later.",
-        "channelTelegramTitle": "Telegram bot",
-        "channelTelegramHint": "Reminders with snooze buttons inside Telegram.",
-        "channelWebPushTitle": "Web Push",
-        "channelWebPushHint": "Native browser notifications on this device.",
-        "channelNtfyTitle": "ntfy.sh",
-        "channelNtfyHint": "Open-source push to phone or desktop, no account.",
-        "channelNoneTitle": "Skip for now",
-        "channelNoneHint": "I'll set up notifications later from Settings.",
-        "openSettings": "Continue in Settings"
-      },
-      "doneToast": "You're all set — welcome aboard."
-    },
     "tour": {
       "stepOf": "Step {current} de{total}",
       "next": "Suivant",
@@ -1466,7 +1307,6 @@
       "title": "Que souhaitez-vous suivre ?",
       "body": "Sélectionnez les domaines qui comptent pour vous. Le tableau de bord et les rappels s'y adapteront.",
       "helpHint": "Un à trois axes prioritaires fonctionnent généralement le mieux, mais vous pourrez en ajouter plus tard.",
-      "placeholder": "Sélection des objectifs à venir.",
       "options": {
         "weightManagement": "Gestion du poids",
         "bpTracking": "Tension artérielle",
@@ -1479,7 +1319,6 @@
     "source": {
       "title": "Connecter une source",
       "body": "Importez les mesures automatiquement ou conservez la saisie manuelle, c'est vous qui décidez.",
-      "placeholder": "Sélection de la source à venir.",
       "recommended": "Recommandé",
       "manual": {
         "title": "Saisie manuelle",
@@ -1500,7 +1339,6 @@
     "baseline": {
       "title": "Quelques informations",
       "body": "Quatre champs facultatifs affinent vos seuils cibles, l'IMC et les rappels. Tout reste modifiable plus tard dans les paramètres.",
-      "placeholder": "Saisie initiale à venir.",
       "displayNameLabel": "Nom d'affichage",
       "displayNamePlaceholder": "Comment HealthLog doit-il vous appeler ?",
       "displayNameHint": "Apparaît dans le message d'accueil du tableau de bord et dans les rapports.",
@@ -2753,9 +2591,7 @@
     "loadError": "Notification preferences could not be loaded.",
     "noChannels": "Configure a notification channel in Settings first.",
     "goToSettings": "Go to Settings",
-    "channelDisabled": "Désactivé",
-    "eventPersonalRecord": "Record personnel",
-    "eventPersonalRecordDesc": "Notification lorsqu'un nouveau record est atteint pour une mesure ou un entraînement. Désactivé par défaut."
+    "channelDisabled": "Désactivé"
   },
   "i18n": {
     "maintainershipBanner": {

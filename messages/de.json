@@ -218,8 +218,6 @@
     "streakLabel": "Tage in Folge",
     "weight": "Gewicht",
     "bloodPressure": "Blutdruck",
-    "bloodPressureSys": "Blutdruck (Sys)",
-    "bloodPressureDia": "Blutdruck (Dia)",
     "pulse": "Puls",
     "bodyFat": "Körperfett",
     "sleep": "Schlaf",
@@ -238,7 +236,6 @@
     "vo2MaxShort": "VO₂ max",
     "bpInTargetShort": "BD-Ziel",
     "medications": "Medikamente",
-    "insightsPreview": "KI-Insights-Vorschau",
     "quickAddMeasurement": "Messung erfassen",
     "quickAddMood": "Stimmung erfassen",
     "compliance7d": "Einnahmetreue (7 Tage)",
@@ -629,8 +626,7 @@
         "missedLast30": "Verpasst (30 T.)",
         "unit": {
           "days": "T.",
-          "doses": "Dosen",
-          "percent": "%"
+          "doses": "Dosen"
         },
         "chips": {
           "adherenceTooltip": "Anteil genommener Dosen im 30-Tage-Fenster (ausgelassene Dosen werden ausgenommen).",
@@ -651,7 +647,6 @@
       "ceilingMessage": "Du bist auf der höchsten Standardstufe.",
       "escalationDueHint": "Du bist seit {weeks} Wochen auf dieser Stufe; das Schema sieht eine Steigerung typischerweise nach ~{typical} Wochen vor.",
       "currentStepDwell": "Seit {weeks} Wochen auf dieser Stufe",
-      "weeksUnit": "Wo.",
       "doseUnitMg": "mg",
       "emptyState": "Noch keine Dosis-Historie. Erfasse eine Dosis, um deine Position im Schema zu sehen.",
       "nonStandardDose": "Aktuelle Dosis liegt außerhalb des Standard-Schemas.",
@@ -704,7 +699,6 @@
     "purgeError": "Fehler beim Löschen der Aufzeichnungen",
     "invalidTimestamp": "Bitte einen gültigen Zeitpunkt wählen.",
     "noIntakesYet": "Noch keine Einnahmen vorhanden",
-    "deleteIntakeAriaLabel": "Einnahme löschen",
     "actions": "Aktionen",
     "pageInfo": "Seite {page} von {total}",
     "loginRequiredIntakes": "Bitte anmelden, um Einnahmen zu sehen.",
@@ -738,29 +732,20 @@
     "glp1": {
       "drug": {
         "tirzepatide": {
-          "name": "Tirzepatid",
-          "class": "GIP-GLP-1-Doppel-Agonist"
+          "name": "Tirzepatid"
         },
         "semaglutide": {
-          "name": "Semaglutid",
-          "class": "GLP-1-Rezeptoragonist"
+          "name": "Semaglutid"
         },
         "liraglutide": {
-          "name": "Liraglutid",
-          "class": "GLP-1-Rezeptoragonist"
+          "name": "Liraglutid"
         },
         "dulaglutide": {
-          "name": "Dulaglutid",
-          "class": "GLP-1-Rezeptoragonist"
+          "name": "Dulaglutid"
         },
         "exenatide": {
-          "name": "Exenatid",
-          "class": "GLP-1-Rezeptoragonist"
+          "name": "Exenatid"
         }
-      },
-      "source": {
-        "ema": "EMA-Quelle",
-        "psp4": "Peer-Reviewed Pharmakometrik"
       }
     },
     "researchMode": {
@@ -830,10 +815,6 @@
     "trend": "Trend",
     "perWeek": "/Woche",
     "totalDelta": "Gesamt",
-    "selectMedication": "Medikament wählen",
-    "noComplianceData": "Keine Compliance-Daten verfügbar",
-    "history": "Verlauf",
-    "complianceDays90": "Einnahmetreue (90 Tage)",
     "colorGreen": "Grün:",
     "colorOrange": "Orange:",
     "colorRed": "Rot:",
@@ -968,10 +949,6 @@
     "confidenceMittel": "Mittel",
     "confidenceGering": "Gering",
     "loadError": "Auswertungen konnten nicht geladen werden",
-    "generationFailed": "Die Analyse konnte nicht erstellt werden. Bitte versuche es erneut.",
-    "title": "Insights",
-    "subtitle": "KI-basierte Analyse deiner Gesundheitsdaten",
-    "overviewSubtitle": "Trends, Risiken, Fortschritt auf einen Blick",
     "heroGenerated": "Erstellt {time}",
     "heroPersonalBaseline": "Basierend auf deinen letzten 90 Tagen",
     "heroRegenerate": "Neu generieren",
@@ -985,7 +962,6 @@
     "heroComingSoonTooltip": "Kommt bald",
     "heroActionWeeklyReport": "Wochenbericht erstellen",
     "heroActionAskCoach": "Coach fragen",
-    "heroActionRerun": "Analyse neu starten",
     "heroBanner": {
       "ready": "Dein {week}-Bericht ist bereit",
       "read": "Lesen",
@@ -1005,8 +981,6 @@
       "componentMood": "Stimmung",
       "componentCompliance": "Einnahmetreue",
       "disclaimer": "Orientierungshilfe — keine ärztliche Bewertung.",
-      "askCoach": "Coach fragen",
-      "coachPrompt": "Warum ist mein Gesundheitsscore {score} von 100?",
       "provenance": {
         "toggle": "Zusammensetzung",
         "weightLabel": "Anteil",
@@ -1179,13 +1153,10 @@
       "providerRateLimitTitle": "Provider rate-limited",
       "providerRateLimitBody": "Provider ist temporär überlastet; Reset in ~5 min."
     },
-    "viewAll": "Alle ansehen",
-    "previewEmpty": "Noch keine Empfehlungen.",
     "relativeJustNow": "gerade eben",
     "relativeMinutesAgo": "vor {count} Minuten",
     "relativeHoursAgo": "vor {count} Stunden",
     "relativeDaysAgo": "vor {count} Tagen",
-    "navGeneral": "Allgemein",
     "navOverview": "Übersicht",
     "navBloodPressure": "Blutdruck",
     "navWeight": "Gewicht",
@@ -1234,38 +1205,7 @@
         "action": "Geräte verwalten"
       }
     },
-    "measurementsOverDays": "{count} Messungen über {days} Tage",
-    "healthStatus": "Gesundheitsstatus",
-    "noWeightData": "Keine Gewichtsdaten oder Größe nicht hinterlegt.",
-    "notEnoughBpData": "Nicht genügend Blutdruckdaten.",
-    "bpTargetRange": "Zielbereich Blutdruck",
-    "inTargetRange": "im Zielbereich",
-    "bpTarget": "Ziel: {range}",
-    "noDobSet": "Geburtsdatum nicht hinterlegt.",
-    "avg30dEsc": "30T-Durchschnitt · ESH 2023",
-    "whoClassification": "WHO-Klassifikation",
     "correlations": "Korrelationen",
-    "weightVsBp": "Gewicht vs. Blutdruck (Systolisch)",
-    "strengthStrong": "Starke Korrelation",
-    "strengthModerate": "Moderate Korrelation",
-    "strengthWeak": "Schwache Korrelation",
-    "strengthNone": "Keine Korrelation",
-    "weightBpStrong": "Es besteht ein starker Zusammenhang zwischen Gewicht und Blutdruck.",
-    "weightBpModerate": "Es besteht ein moderater Zusammenhang zwischen Gewicht und Blutdruck.",
-    "weightBpWeak": "Es besteht ein schwacher Zusammenhang zwischen Gewicht und Blutdruck.",
-    "weightBpNone": "Kein erkennbarer Zusammenhang zwischen Gewicht und Blutdruck.",
-    "notEnoughCorrelationData": "Zu wenig Daten für Korrelationsanalyse.",
-    "minCorrelationData": "Mindestens 5 zeitlich übereinstimmende Gewichts- und Blutdruckmessungen nötig.",
-    "bpMedContinuity": "Blutdrucksenker-Kontinuität vs. Blutdruck (Systolisch)",
-    "continuityLabel": "Kontinuität",
-    "continuityBpLabel": "Kontinuität Blutdrucksenker (%)",
-    "weightKgLabel": "Gewicht (kg)",
-    "bpMedNegative": "Negativer Zusammenhang: höhere Kontinuität geht eher mit niedrigerem systolischen Blutdruck einher.",
-    "bpMedPositive": "Positiver Zusammenhang: höhere Kontinuität geht in deinen Daten eher mit höherem systolischen Blutdruck einher.",
-    "bpMedNone": "Kein erkennbarer Zusammenhang in deinen Daten.",
-    "bpMedCount": "{count} Blutdrucksenker",
-    "notEnoughMedData": "Zu wenig Daten für diese Analyse.",
-    "notEnoughMedDataHint": "Markiere Medikamente als Blutdrucksenker und erfasse ausreichend Einnahmen + Blutdruckmessungen.",
     "medicationCompliance": "Medikamenten-Compliance",
     "dayStreak": "{count} Tage Serie",
     "compliance7d": "7-Tage-Compliance",
@@ -1273,11 +1213,6 @@
     "taken": "genommen",
     "skipped": "übersprungen",
     "missed": "verpasst",
-    "complianceTrend": "Compliance-Verlauf",
-    "generalStatusTitle": "Allgemeiner Gesundheitszustand",
-    "generalStatusLoading": "Allgemeiner Zustand wird erstellt...",
-    "generalStatusNoKey": "Der allgemeine Zustand kann nicht erstellt werden, da kein OpenAI-KI-Schlüssel hinterlegt ist.",
-    "generalStatusUnavailable": "Der allgemeine Zustand konnte aktuell nicht geladen werden.",
     "generalStatusBadge": {
       "good": "Gut",
       "watch": "Beobachten",
@@ -1285,70 +1220,14 @@
     },
     "assessmentTitle": "Einschätzung",
     "bloodPressureSectionTitle": "Blutdruck",
-    "bloodPressureMedicationListTitle": "Blutdrucksenker & Compliance",
-    "bloodPressureMedicationListEmpty": "Keine aktiven Blutdrucksenker hinterlegt.",
-    "bloodPressureStatusLoading": "Blutdruck-Zusammenfassung wird erstellt...",
-    "bloodPressureStatusNoKey": "Die Blutdruck-Zusammenfassung kann nicht erstellt werden, da kein OpenAI-KI-Schlüssel hinterlegt ist.",
-    "bloodPressureStatusUnavailable": "Die Blutdruck-Zusammenfassung konnte aktuell nicht geladen werden.",
     "weightSectionTitle": "Gewicht",
-    "weightStatusLoading": "Gewichts-Zusammenfassung wird erstellt...",
-    "weightStatusNoKey": "Die Gewichts-Zusammenfassung kann nicht erstellt werden, da kein OpenAI-KI-Schlüssel hinterlegt ist.",
-    "weightStatusUnavailable": "Die Gewichts-Zusammenfassung konnte aktuell nicht geladen werden.",
     "pulseSectionTitle": "Puls",
-    "pulseStatusLoading": "Puls-Zusammenfassung wird erstellt...",
-    "pulseStatusNoKey": "Die Puls-Zusammenfassung kann nicht erstellt werden, da kein OpenAI-KI-Schlüssel hinterlegt ist.",
-    "pulseStatusUnavailable": "Die Puls-Zusammenfassung konnte aktuell nicht geladen werden.",
     "bmiSectionTitle": "BMI",
-    "bmiStatusLoading": "BMI-Zusammenfassung wird erstellt...",
-    "bmiStatusNoKey": "Die BMI-Zusammenfassung kann nicht erstellt werden, da kein OpenAI-KI-Schlüssel hinterlegt ist.",
-    "bmiStatusUnavailable": "Die BMI-Zusammenfassung konnte aktuell nicht geladen werden.",
-    "medicationComplianceStatusLoading": "Text zur Medikamentencompliance wird erstellt...",
-    "medicationComplianceStatusNoKey": "Der Text zur Medikamentencompliance kann nicht erstellt werden, da kein OpenAI-KI-Schlüssel hinterlegt ist.",
-    "medicationComplianceStatusUnavailable": "Der Text zur Medikamentencompliance konnte aktuell nicht geladen werden.",
     "complianceNoData": "Keine Compliance-Daten verfügbar",
-    "aiInsights": "KI-Insights",
-    "configureApiKey": "Konfiguriere einen OpenAI API-Key in den Einstellungen, um KI-basierte Insights zu erhalten.",
-    "alertsTitle": "Hinweise & Empfehlungen",
-    "showLess": "Weniger anzeigen",
-    "showMore": "+{count} weitere",
     "generate": "Neue Analyse erstellen",
-    "generating": "Analyse wird erstellt...",
-    "lastGenerated": "Letzte Analyse",
-    "noInsights": "Noch keine Analyse vorhanden.",
-    "rateLimit": "Bitte warte, bevor du eine neue Analyse erstellst.",
-    "noApiKey": "Bitte hinterlege zuerst einen OpenAI API-Key in den Einstellungen.",
-    "sendRawData": "Rohdaten mitsenden",
-    "minMoodCorrelationData": "Mindestens 5 zeitlich übereinstimmende Stimmungs- und Messdaten nötig.",
-    "moodBpModerate": "Es besteht ein moderater Zusammenhang zwischen Stimmung und Blutdruck.",
-    "moodBpNone": "Kein erkennbarer Zusammenhang zwischen Stimmung und Blutdruck.",
-    "moodBpStrong": "Es besteht ein starker Zusammenhang zwischen Stimmung und Blutdruck.",
-    "moodBpWeak": "Es besteht ein schwacher Zusammenhang zwischen Stimmung und Blutdruck.",
-    "moodScoreLabel": "Stimmung (Ø)",
     "moodSectionTitle": "Stimmung",
-    "moodStatusLoading": "Stimmungsanalyse wird erstellt...",
-    "moodStatusNoKey": "Die Stimmungs-Zusammenfassung kann nicht erstellt werden, da kein OpenAI-KI-Schlüssel hinterlegt ist.",
-    "moodStatusUnavailable": "Stimmungsanalyse nicht verfügbar",
-    "moodVsBp": "Stimmung vs. Blutdruck (Systolisch)",
-    "moodVsPulse": "Stimmung vs. Puls",
-    "moodVsWeight": "Stimmung vs. Gewicht",
-    "moodWeightModerate": "Es besteht ein moderater Zusammenhang zwischen Stimmung und Gewicht.",
-    "moodWeightNone": "Kein erkennbarer Zusammenhang zwischen Stimmung und Gewicht.",
-    "moodWeightStrong": "Es besteht ein starker Zusammenhang zwischen Stimmung und Gewicht.",
-    "moodWeightWeak": "Es besteht ein schwacher Zusammenhang zwischen Stimmung und Gewicht.",
-    "notEnoughMoodCorrelationData": "Zu wenig Stimmungsdaten für Korrelationsanalyse.",
-    "refreshButton": "Aktualisieren",
-    "generateButton": "Generieren",
-    "analyzing": "Analysiere Gesundheitsdaten...",
     "confidence": "Konfidenz",
-    "confidence_niedrig": "niedrig",
-    "confidence_mittel": "mittel",
-    "confidence_hoch": "hoch",
-    "cached": "Gecacht",
-    "sectionChanged": "Was hat sich verändert",
-    "sectionStable": "Was ist stabil",
-    "sectionDrivers": "Mögliche Zusammenhänge",
-    "sectionNextSteps": "Nächste Schritte",
-    "generatePrompt": "Klicke auf \"Generieren\" für KI-basierte Insights deiner Gesundheitsdaten."
+    "cached": "Gecacht"
   },
   "thresholds": {
     "defaultLabel": "Default",
@@ -1382,45 +1261,7 @@
     "unsetExplanation": "Kein eigener Wert — berechneter Default aktiv."
   },
   "onboarding": {
-    "errorProfile": "Dein Profil konnte nicht gespeichert werden. Bitte versuche es erneut.",
     "errorGeneric": "Beim Abschluss des Setups ist etwas schiefgelaufen. Bitte versuche es erneut.",
-    "v2": {
-      "title": "Willkommen bei HealthLog",
-      "subtitle": "Drei schnelle Schritte. Alles weitere kannst du später in den Einstellungen erledigen.",
-      "stepOf": "Schritt {current} von {total}",
-      "back": "Zurück",
-      "continue": "Weiter",
-      "finish": "Setup abschließen",
-      "skipStep": "Schritt überspringen — du kannst das Setup später in den Einstellungen abschließen.",
-      "step1": {
-        "title": "Über dich",
-        "description": "Wird für Blutdruck-Zielwerte, BMI und passende Erinnerungen genutzt.",
-        "displayNameLabel": "Anzeigename",
-        "displayNameHint": "Erscheint in der Dashboard-Begrüßung und in Berichten.",
-        "languageLabel": "Sprache",
-        "languageHint": "Wird für App, PDFs und Benachrichtigungen verwendet."
-      },
-      "step2": {
-        "title": "Lege deine erste Messung an",
-        "description": "Gewicht, Blutdruck oder Puls — was du gerade zur Hand hast. Schon eine Messung lässt das Dashboard lebendig wirken.",
-        "added": "Top — weitere Messungen kannst du jederzeit über das Dashboard hinzufügen.",
-        "skipHint": "Keine Messung zur Hand? Überspringe und logge eine, wenn du soweit bist."
-      },
-      "step3": {
-        "title": "Wähle einen Benachrichtigungs-Kanal",
-        "description": "Wir senden nur, was du auch willst. Du kannst weitere Kanäle und Events später feinjustieren.",
-        "channelTelegramTitle": "Telegram-Bot",
-        "channelTelegramHint": "Erinnerungen mit Snooze-Buttons direkt in Telegram.",
-        "channelWebPushTitle": "Web Push",
-        "channelWebPushHint": "Native Browser-Benachrichtigungen auf diesem Gerät.",
-        "channelNtfyTitle": "ntfy.sh",
-        "channelNtfyHint": "Open-Source-Push an Handy oder Desktop, ohne Account.",
-        "channelNoneTitle": "Vorerst überspringen",
-        "channelNoneHint": "Ich richte Benachrichtigungen später in den Einstellungen ein.",
-        "openSettings": "In den Einstellungen fortsetzen"
-      },
-      "doneToast": "Alles eingerichtet — willkommen an Bord."
-    },
     "tour": {
       "stepOf": "Schritt {current} von {total}",
       "next": "Weiter",
@@ -1466,7 +1307,6 @@
       "title": "Was möchtest du erfassen?",
       "body": "Wähle die Bereiche, die dir wichtig sind. Dashboard und Erinnerungen richten sich danach.",
       "helpHint": "Ein bis drei Schwerpunkte funktionieren erfahrungsgemäß am besten – mehr geht aber jederzeit.",
-      "placeholder": "Auswahl der Ziele folgt.",
       "options": {
         "weightManagement": "Gewicht im Griff",
         "bpTracking": "Blutdruck",
@@ -1479,7 +1319,6 @@
     "source": {
       "title": "Quelle verbinden",
       "body": "Werte automatisch übernehmen oder weiter manuell eintragen – deine Entscheidung.",
-      "placeholder": "Quellenauswahl folgt.",
       "recommended": "Empfohlen",
       "manual": {
         "title": "Manuelle Eingabe",
@@ -1500,7 +1339,6 @@
     "baseline": {
       "title": "Kurz zu dir",
       "body": "Vier optionale Angaben verbessern Zielwerte, BMI und Erinnerungen. Du kannst alles später in den Einstellungen anpassen.",
-      "placeholder": "Eingabe der Erstmessung folgt.",
       "displayNameLabel": "Anzeigename",
       "displayNamePlaceholder": "Wie soll dich HealthLog ansprechen?",
       "displayNameHint": "Erscheint im Dashboard-Gruß und in Berichten.",
@@ -2753,9 +2591,7 @@
     "loadError": "Benachrichtigungseinstellungen konnten nicht geladen werden.",
     "noChannels": "Konfiguriere zuerst einen Benachrichtigungskanal in den Einstellungen.",
     "goToSettings": "Zu den Einstellungen",
-    "channelDisabled": "Deaktiviert",
-    "eventPersonalRecord": "Persönlicher Rekord",
-    "eventPersonalRecordDesc": "Push bei einem neuen Bestwert für eine erfasste Kennzahl oder ein Training. Standardmäßig aus."
+    "channelDisabled": "Deaktiviert"
   },
   "i18n": {
     "maintainershipBanner": {

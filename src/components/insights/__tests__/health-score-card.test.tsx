@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { I18nProvider, useTranslations } from "@/lib/i18n/context";
+import { I18nProvider } from "@/lib/i18n/context";
 import {
   HealthScoreCard,
   type HealthScoreCardProps,
@@ -10,9 +10,10 @@ import {
  * v1.4.20 phase B5 — Personal Health Score card.
  *
  * SSR markup pins the slot wrappers so future polish can't silently
- * drop the score number, sub-bars or disclaimer. The interactive
- * "Ask the Coach" button is exercised through Testing Library so the
- * prefill argument forwarded to the parent handler stays stable.
+ * drop the score number, sub-bars or disclaimer. The inline
+ * Ask-the-Coach button retired in v1.4.27 B1 — the hero strip
+ * carries the CTA. The negative-assertion test below pins that
+ * decision so a future revival has to update the test in lock-step.
  */
 
 const baseComponents: HealthScoreCardProps["components"] = {
@@ -205,32 +206,6 @@ describe("<HealthScoreCard>", () => {
     expect(supplied).not.toContain('data-slot="health-score-card-ask-coach"');
   });
 
-  it("captures the score-aware prefill argument when the button is invoked", () => {
-    // The handler closure receives `t("insights.healthScore.coachPrompt", { score })`
-    // which interpolates the current score. We assert the closure shape by
-    // probing the i18n provider directly rather than wiring a DOM testing
-    // library — the component's onClick lambda is one line and its
-    // contract is the prefill string format, not the click plumbing.
-    let captured: string | null = null;
-    const onAskCoach = vi.fn((prefill: string) => {
-      captured = prefill;
-    });
-
-    function Probe() {
-      const { t } = useTranslations();
-      // Reproduce the same call the button's onClick performs.
-      onAskCoach(t("insights.healthScore.coachPrompt", { score: 86 }));
-      return null;
-    }
-
-    renderToStaticMarkup(
-      <I18nProvider initialLocale="en">
-        <Probe />
-      </I18nProvider>,
-    );
-    expect(onAskCoach).toHaveBeenCalledTimes(1);
-    expect(captured).toBe("Why is my health score 86 out of 100?");
-  });
 
   it("renders German strings", () => {
     const html = ssr(
