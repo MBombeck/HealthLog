@@ -98,6 +98,26 @@ jobs:
             org.opencontainers.image.licenses=AGPL-3.0-only
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
+      # v1.4.27 B3 — GeoLite2-City + GeoLite2-ASN databases are too large
+      # (~80 MB combined) to vendor in git. `scripts/fetch-geolite2.sh`
+      # downloads both editions into `assets/geolite2/` so the Dockerfile
+      # COPY at line 78 picks them up. Without the secret the script
+      # would silently exit 0, the COPY would land an empty directory,
+      # and the runtime resolver in `src/lib/geo.ts` would fall back to
+      # the online `ipwho.is` provider — i.e. the offline geo feature
+      # would ship dead. Fail fast instead so the missing-secret state
+      # is visible on the next release run, the same shape the Coolify
+      # auto-deploy step (line 246) adopted in v1.4.26 P6-3.
+      - name: Fetch GeoLite2 databases
+        env:
+          MAXMIND_LICENSE_KEY: ${{ secrets.MAXMIND_LICENSE_KEY }}
+        run: |
+          if [ -z "$MAXMIND_LICENSE_KEY" ]; then
+            echo "::error::MAXMIND_LICENSE_KEY secret is missing. Set it under repo Settings → Secrets and variables → Actions → Secrets so the offline GeoLite2 databases land in the image. Without it the runtime resolver falls back to the online ipwho.is provider and the offline geo feature ships dead."
+            exit 1
+          fi
+          ./scripts/fetch-geolite2.sh
+
       # Per-ref + per-platform gha cache scope. Tag builds warm-start
       # off main's last good layer set for the same platform; tag and
       # main builds at the same SHA do not contend on writes, and
