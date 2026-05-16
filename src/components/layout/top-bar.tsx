@@ -3,6 +3,7 @@
 import {
   Bell,
   ChevronDown,
+  Info,
   LogIn,
   LogOut,
   Monitor,
@@ -80,6 +81,15 @@ export function TopBar() {
                 <Link href="/notifications" className="cursor-pointer">
                   <Bell className="mr-2 h-4 w-4" />
                   {t("nav.notifications")}
+                </Link>
+              </DropdownMenuItem>
+              {/* v1.4.33 IW7 — "About" folded out of Settings into the
+                  user-card dropdown; mobile dropdown mirrors the
+                  desktop sidebar so the entry shows up here too. */}
+              <DropdownMenuItem asChild>
+                <Link href="/settings/about" className="cursor-pointer">
+                  <Info className="mr-2 h-4 w-4" />
+                  {t("nav.about")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSub>

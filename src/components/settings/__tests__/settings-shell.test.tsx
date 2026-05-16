@@ -80,9 +80,16 @@ describe("SETTINGS_SECTION_SLUGS", () => {
 });
 
 describe("<SettingsShell>", () => {
-  it("renders every section link — once for the mobile strip and once for the desktop sidebar", () => {
+  it("renders every navigable section link — once for the mobile strip and once for the desktop sidebar", () => {
     const html = renderShell({ active: "account" });
-    for (const slug of SETTINGS_SECTION_SLUGS) {
+    // v1.4.33 IW7 — the `about` slug is alive as a route
+    // (`/settings/about` still resolves and `generateStaticParams()`
+    // still emits the page) but it is hidden from the in-shell nav.
+    // The user-card dropdown owns the link now. Iterate the visible
+    // sections list, not the slug list, when asserting on rendered
+    // markup.
+    const navigableSlugs = SETTINGS_SECTIONS.map((section) => section.slug);
+    for (const slug of navigableSlugs) {
       const matches = html.match(new RegExp(`href="/settings/${slug}"`, "g"));
       // Two renders — mobile strip + desktop sidebar — guarantee the link
       // exists in both layouts. Tablet/desktop hide the strip with `md:`,
@@ -90,6 +97,8 @@ describe("<SettingsShell>", () => {
       // before media queries resolve.
       expect(matches?.length ?? 0).toBe(2);
     }
+    // The hidden `about` slug must NOT appear in the in-shell nav.
+    expect(html).not.toContain('href="/settings/about"');
   });
 
   it("links use the correct `/settings/<slug>` href — regression guard against typos", () => {
@@ -149,7 +158,10 @@ describe("<SettingsShell>", () => {
     // entry in the sidebar; the link must be present in both locales.
     expect(html).toContain('href="/settings/export"');
     expect(html).toContain("Advanced");
-    expect(html).toContain("About");
+    // v1.4.33 IW7 — About is no longer in the settings nav; it lives
+    // in the sidebar user-card dropdown. Route `/settings/about` is
+    // still alive for direct links.
+    expect(html).not.toContain('href="/settings/about"');
   });
 
   it("resolves every section title via the i18n provider — German", () => {
@@ -172,7 +184,9 @@ describe("<SettingsShell>", () => {
     // API & Tokens is identical in both locales (proper noun + ampersand)
     expect(html).toContain("API &amp; Tokens");
     expect(html).toContain("Erweitert");
-    expect(html).toContain("Über");
+    // v1.4.33 IW7 — "Über" (About) section removed from the in-shell
+    // nav, folded into the sidebar user-card dropdown ("Über HealthLog").
+    expect(html).not.toContain('href="/settings/about"');
   });
 
   it("does NOT surface the raw key when a translation resolves — guards against missing JSON entries", () => {

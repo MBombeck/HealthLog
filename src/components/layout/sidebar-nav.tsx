@@ -8,6 +8,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Home,
+  Info,
   Lightbulb,
   LogOut,
   Monitor,
@@ -141,6 +142,17 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
         <Link href="/notifications" className="cursor-pointer">
           <Bell className="mr-2 h-4 w-4" />
           {t("nav.notifications")}
+        </Link>
+      </DropdownMenuItem>
+      {/* v1.4.33 IW7 — "About" used to live as its own Settings
+          section but the three small cards inside (identity / links /
+          update check) collectively get read once or twice a year, so
+          the top-level slot has been collapsed into this dropdown. The
+          route stays alive at `/settings/about`. */}
+      <DropdownMenuItem asChild>
+        <Link href="/settings/about" className="cursor-pointer">
+          <Info className="mr-2 h-4 w-4" />
+          {t("nav.about")}
         </Link>
       </DropdownMenuItem>
       <DropdownMenuSub>

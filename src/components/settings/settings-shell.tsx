@@ -20,7 +20,6 @@ import { usePathname } from "next/navigation";
 import {
   Bell,
   Download,
-  Info,
   KeyRound,
   Layers,
   LayoutDashboard,
@@ -61,9 +60,19 @@ interface SettingsSection {
 }
 
 /**
- * Source of truth for the section list. Order matches the in-app navigation
- * order so the sidebar, mobile strip, and `generateStaticParams()` all line
- * up. Don't reorder without updating tests.
+ * Source of truth for the section list that the settings shell renders
+ * in its sidebar + mobile chip-strip. Order matches the in-app
+ * navigation order. Don't reorder without updating tests.
+ *
+ * v1.4.33 IW7 — "About" was folded into the sidebar user-card
+ * dropdown (sidebar-nav.tsx -> "Über HealthLog" / "About HealthLog")
+ * because its three small cards (identity / links / update check)
+ * collectively read once or twice a year and didn't earn a top-level
+ * settings slot. The route `/settings/about` is still alive — the
+ * slug stays in `SETTINGS_SECTION_SLUGS` so `generateStaticParams()`
+ * keeps emitting the page — but it no longer appears in the in-page
+ * navigation. Direct links (the user-card dropdown, the public
+ * `/about` permalink) continue to resolve to the same component.
  */
 export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   { slug: "account", titleKey: "settings.sections.account.title", icon: User },
@@ -104,7 +113,6 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     titleKey: "settings.sections.advanced.title",
     icon: Settings2,
   },
-  { slug: "about", titleKey: "settings.sections.about.title", icon: Info },
 ] as const;
 
 export interface SettingsShellProps {
