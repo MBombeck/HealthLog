@@ -482,6 +482,7 @@ function IntakeImportDialog({
                   size="icon"
                   className="h-9 w-9"
                   disabled={importing}
+                  aria-label={t("common.moreOptions")}
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
@@ -732,6 +733,7 @@ function ApiEndpointDialog({
                 size="icon"
                 className="h-8 w-8 shrink-0"
                 onClick={() => copyText(endpoint, "url")}
+                aria-label={t("common.copy")}
               >
                 <Copy className="h-3.5 w-3.5" />
               </Button>
@@ -756,6 +758,7 @@ function ApiEndpointDialog({
                   size="icon"
                   className="h-8 w-8 shrink-0"
                   onClick={() => copyText(token, "token")}
+                  aria-label={t("common.copy")}
                 >
                   <Copy className="h-3.5 w-3.5" />
                 </Button>
@@ -807,6 +810,7 @@ function ApiEndpointDialog({
                 size="icon"
                 className="absolute top-1 right-1 h-7 w-7"
                 onClick={() => copyText(selectedExample.value, "example")}
+                aria-label={t("common.copy")}
               >
                 <Copy className="h-3 w-3" />
               </Button>
@@ -833,6 +837,7 @@ function ApiEndpointDialog({
                   size="icon"
                   className="h-9 w-9"
                   disabled={loadingStatus || toggling}
+                  aria-label={t("common.moreOptions")}
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
