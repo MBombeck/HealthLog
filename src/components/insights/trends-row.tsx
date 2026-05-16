@@ -37,7 +37,7 @@ const MoodChart = dynamic(
 
 interface TrendsRowProps {
   /**
-   * AI-authored one-sentence annotations, keyed by metric. Optional —
+   * Assistant-authored one-sentence annotations, keyed by metric. Optional —
    * legacy advisor payloads (pre-PROMPT_VERSION 4.20.1) won't carry
    * the field.
    */
@@ -80,7 +80,7 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
           {t("insights.trendsRow.subtitle")}
         </p>
       </div>
-      {/* v1.4.22 A4 — equal-height cards. The AI annotation prose
+      {/* v1.4.22 A4 — equal-height cards. The annotation prose
           below each chart varies in length, which used to leave the
           three cards on visibly different baselines. Each card is now
           a flex column with `min-h-[300px]` so the chart anchors to

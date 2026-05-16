@@ -4,10 +4,10 @@ import { type ReactNode } from "react";
 
 /**
  * v1.4.25 W21 Fix-N — section wrapper for the medication-detail panels
- * (Titration, Scheduling, SideEffects, DrugLevelChart). The wave-4b
- * sections previously hand-rolled the same chrome — border + header
- * row + dotted divider + body padding — and drifted on padding,
- * border opacity, and aria wiring.
+ * (Titration, Scheduling, SideEffects, DrugLevelChart). The earlier
+ * sections hand-rolled the same chrome — border + header row + dotted
+ * divider + body padding — and drifted on padding, border opacity, and
+ * aria wiring.
  *
  * v1.4.28 FB-F3 / F4 — heading scale collapsed to one shape across the
  * `/medications/[id]` surface so the page reads as one consistent

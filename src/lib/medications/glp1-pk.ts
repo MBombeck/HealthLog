@@ -37,7 +37,7 @@
  *   If a future maintainer needs the two-compartment model
  *   (deferred to v1.5 / R8 per research §12.2), it must ship
  *   alongside (a) the v1.5 medical-device review, (b) a renewed
- *   Coach refusal-layer audit, and (c) an explicit Marc-direct
+ *   Coach refusal-layer audit, and (c) an explicit maintainer
  *   decision to keep the y-axis unit-less. Do NOT add it as a
  *   silent refactor of this file.
  *
@@ -288,15 +288,15 @@ export function computeOneCompartment(
 }
 
 /**
- * Convenience wrapper — qualitative phase label for a single
- * timepoint. Surfaces the "shot phase" chip on the GLP-1 tile
- * (research §2.4) without exposing any numeric concentration.
+ * Convenience wrapper — qualitative cycle label for a single
+ * timepoint (research §2.4). Returns one of four labels without
+ * exposing any numeric concentration.
  *
  *   "rising"  — concentration is climbing toward its next peak.
  *   "peak"    — within ±10% of the local maximum.
  *   "fading"  — concentration is decaying after the last peak.
  *   "none"    — no contributing doses inside the look-back window
- *               (e.g. user just started; chart cannot infer phase).
+ *               (e.g. user just started; chart cannot infer cycle).
  */
 export type ShotPhase = "rising" | "peak" | "fading" | "none";
 

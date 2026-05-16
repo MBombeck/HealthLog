@@ -44,7 +44,7 @@ import { MedicationDetailSection } from "@/components/medications/medication-det
  *     timestamp + delete button + collapsed notes.
  *
  * v1.4.25 W21 Fix-N — wraps the shared `<MedicationDetailSection>` so
- * the three Wave-4b sections share one chrome contract, and swaps the
+ * the three sibling sections share one chrome contract, and swaps the
  * native `<select>` for the shadcn-radix `<Select>` so the picker
  * matches the rest of the form library (focus rings, keyboard nav,
  * theme tokens).

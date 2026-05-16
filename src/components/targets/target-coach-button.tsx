@@ -45,7 +45,7 @@ export interface TargetCoachButtonProps {
   onAskCoach: (payload: { prefill: string; scope: CoachScope }) => void;
   /**
    * Renders ONLY when this is true. The parent gates on
-   * `chainData?.activeProvider != null` so a user with no AI provider
+   * `chainData?.activeProvider != null` so a user with no provider
    * configured never sees a button that opens an empty drawer.
    */
   aiEnabled: boolean;

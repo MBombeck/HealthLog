@@ -54,25 +54,25 @@ interface ChartDataPoint {
   score: number;
   ma?: number;
   trend?: number;
-  /** v1.4.16 phase B8 — prior-period overlay value. */
+  /** v1.4.16 B8 — prior-period overlay value. */
   scoreCompare?: number;
 }
 
 interface MoodChartProps {
   title?: string;
   /**
-   * v1.4.16 phase B5c — compact mode for embedding inside the
+   * v1.4.16 B5c — compact mode for embedding inside the
    * RecommendationCard. Hides the range tabs / toggle row and shrinks
    * padding. Tooltip stays intact.
    */
   mini?: boolean;
   /**
-   * v1.4.16 phase B5c — pin the chart to a specific rationale data
+   * v1.4.16 B5c — pin the chart to a specific rationale data
    * window regardless of any parent UI state.
    */
   windowOverride?: "last7days" | "last30days" | "last90days" | "allTime";
   /**
-   * v1.4.16 phase B8 — when set to "lastMonth" / "lastYear", overlay a
+   * v1.4.16 B8 — when set to "lastMonth" / "lastYear", overlay a
    * dimmed prior-period mood line beneath the current series. Same
    * shift mechanic the BP/weight/pulse chart uses; the mood score is
    * a single metric so only one comparison line is drawn.
@@ -419,7 +419,7 @@ export function MoodChart({
   }, [data, rangePoints, showMA, showTrend, tzFmt]);
 
   /**
-   * v1.4.16 phase B8 — comparison overlay merged into chartData.
+   * v1.4.16 B8 — comparison overlay merged into chartData.
    *
    * Same mechanic as HealthChart: shift the full mood-entries history
    * forward by 30 / 365 days, key by the existing `date` formatter, and
@@ -577,7 +577,7 @@ export function MoodChart({
                 )}
               </span>
             )}
-            {/* v1.4.16 phase B8 — comparison caption (mood).
+            {/* v1.4.16 B8 — comparison caption (mood).
                 v1.4.19 A2 — hidden on mobile to free up the title row. */}
             {!mini &&
               effectiveCompareBaseline !== "none" &&
@@ -912,7 +912,7 @@ export function MoodChart({
                     connectNulls
                   />
                 )}
-                {/* v1.4.16 phase B8 — comparison overlay (mood). Same
+                {/* v1.4.16 B8 — comparison overlay (mood). Same
                     dimmed dashed treatment the BP/weight/pulse chart
                     uses; mood is a single metric so we only render
                     one overlay line. Suppressed when there's no prior

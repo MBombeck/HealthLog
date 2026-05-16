@@ -23,7 +23,7 @@ import { MedicationCardHeader } from "@/components/medications/MedicationCardHea
  *
  * Routed Medication-Compliance sub-page. Mirrors the per-medication
  * grid from the v1.4.24 mother page (compliance bars + heatmap +
- * per-med AI sentence) plus the section-level AI assessment.
+ * per-med assistant sentence) plus the section-level assessment.
  *
  * No `<HealthChart>` here — medication compliance is event-driven, so
  * the data path runs through `/api/insights/comprehensive` +

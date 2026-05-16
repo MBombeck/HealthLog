@@ -59,9 +59,9 @@ describe("<HeroStrip>", () => {
 
   it("appends the user name to the greeting when supplied", () => {
     const html = render(
-      <HeroStrip briefing={null} now={morningLocal} userName="Marc" />,
+      <HeroStrip briefing={null} now={morningLocal} userName="Alex" />,
     );
-    expect(html).toContain("Good morning, Marc");
+    expect(html).toContain("Good morning, Alex");
   });
 
   it("does NOT append a comma when userName is missing", () => {
@@ -193,7 +193,7 @@ describe("<HeroStrip>", () => {
 
   // ── B4 — Weekly-report banner card ─────────────────────────────────
   // v1.4.28 retired the weekly-report path. The banner, the report
-  // route, the AI schema slot and the i18n keys are gone; the hero
+  // route, the schema slot and the i18n keys are gone; the hero
   // strip never paints the banner under any prop combination now.
   it("does not render the weekly-report banner under any prop combination", () => {
     const html = render(<HeroStrip briefing={null} now={morningLocal} />);

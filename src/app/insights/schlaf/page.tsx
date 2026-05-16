@@ -63,15 +63,15 @@ export default function InsightsSchlafPage() {
       <SleepOverview />
 
       {/*
-        v1.4.28 R3d (BK-UI-StatusSchlaf) — the six sibling sub-pages all
+        v1.4.28 (BK-UI-StatusSchlaf) — the six sibling sub-pages all
         mount `<InsightStatusCard>` underneath the chart so the user
-        gets a written per-section AI assessment. Sleep has no
+        sees a written per-section assessment. Sleep has no
         `/api/insights/sleep-status` route yet (the v1.4.23 schema
         landed the data but the assessment-generation pass was deferred
         to the v1.5 iOS sprint where the Apple-Health sleep snapshot
-        will inform the prompt). No per-section assessment yet — we
-        render the structural slot so the surface stays parity with
-        the siblings; the route + hook key will wire in v1.5.
+        will inform the prompt). No per-section assessment yet; the
+        structural slot waits for v1.5 where the route + hook key will
+        wire in.
       */}
 
       <CoachLaunchButton />

@@ -158,7 +158,7 @@ describe("<HealthScoreDeltaExplainer>", () => {
     expect(periods).toBeLessThanOrEqual(4);
   });
 
-  it("ships the DE body copy with the same structure (3-sentence Marc-Voice translation)", () => {
+  it("ships the DE body copy with the same structure (3-sentence translation)", () => {
     const html = renderToStaticMarkup(
       <I18nProvider initialLocale="de">
         <BodyProbe />

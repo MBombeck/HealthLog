@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { HealthScoreDeltaExplainer } from "./health-score-delta-explainer";
 
 /**
- * v1.4.20 phase B5 — Personal Health Score panel.
+ * v1.4.20 B5 — Personal Health Score panel.
  *
  * Lives on the right side of the `<HeroStrip>` band on `lg+` viewports
  * and stacks below the title block on `<lg`. Surfaces:
