@@ -1,8 +1,13 @@
-# v1.4.34.1 — Insights cold-mount perf hotfix — closure
+# v1.4.34.1 + v1.4.34.2 — Insights perf hotfix + Coolify deploy mechanic fix — closure
 
-Shipped: 2026-05-16T22:27Z
-Tag: `v1.4.34.1`
-Release: <https://github.com/MBombeck/HealthLog/releases/tag/v1.4.34.1>
+Shipped:
+
+| Release | Time (UTC) | Tag | Notes |
+| --- | --- | --- | --- |
+| v1.4.34.1 | 2026-05-16T20:27Z | [v1.4.34.1](https://github.com/MBombeck/HealthLog/releases/tag/v1.4.34.1) | Insights cold-mount perf hotfix (SQL aggregator + cache wraps + scatter sizing) |
+| v1.4.34.2 | 2026-05-16T21:14Z | [v1.4.34.2](https://github.com/MBombeck/HealthLog/releases/tag/v1.4.34.2) | `pull_policy: always` on docker-compose to defeat Coolify's `:latest` pull-skip bug |
+
+Both LIVE on `healthlog.bombeck.io` (verified `/api/version` returns `"1.4.34.2"`).
 
 ## What was broken
 
@@ -118,12 +123,30 @@ CREATE TABLE measurement_rollups (
 
 ## Operator actions still pending (from v1.4.34 closure)
 
-These are environment-side and unchanged by v1.4.34.1:
+These are environment-side, mostly unchanged by v1.4.34.1/.2:
 
 1. edge01 Coolify MCP daemon restart.
 2. edge01 `DATABASE_URL` pool-bump (apps01 already drained).
 3. Coolify resource-limits resize on apps01 (CPU=2, Memory=1g, Reservation=512m).
-4. Coolify "watch registry for new digests" toggle on both hosts.
+4. ~~Coolify "watch registry for new digests" toggle on both hosts.~~ **Obsoleted by v1.4.34.2 `pull_policy: always` — Docker now pulls every `compose up` regardless of the Coolify-side toggle.**
 5. apps01 env-var duplicate-pair prune (28 entries).
 
 The pool-bump (#2) and resource-cap (#3) make the SECOND comprehensive call inside the window even cheaper, but neither is needed for the perf fix to land.
+
+## v1.4.34.2 — the deploy-mechanic addendum
+
+While verifying v1.4.34.1 live, the version endpoint kept reporting `"1.4.34"`. Three force-rebuilds via the Coolify MCP each finished in ~20 seconds — no real registry pull. Root cause: `docker-compose.yml` declared no `pull_policy`, so Docker's default ("only pull if missing") happily skipped the registry round-trip and restarted the container with the locally cached `:latest` digest from v1.4.34.
+
+```
+[Pulling & building required images.]    ← line emitted...
+[Adding build arguments...]              ← ...261 ms later. No pull happened.
+[Removing old containers.]
+[Starting new application.]
+[New container started.]                 ← 20-second deploy, prior image in container.
+```
+
+The `Coolify MCP application update` call setting `docker_registry_image_name` + `docker_registry_image_tag` had no effect because the `dockercompose` build-pack reads from `docker_compose_raw`, not from those fields — Coolify regenerated the same `:latest`-compose every deploy.
+
+**Fix**: declare `pull_policy: always` on the `app` service. Compose-up now re-checks the registry digest on every `up`, regardless of the local cache state. Bundle-shipped as v1.4.34.2 with the v1.4.34.1 perf payload riding the same `:latest` refresh.
+
+From v1.4.34.2 onwards every release lands on prod without a host-side retag fallback, and Operator-Action #4 from the v1.4.34 closure is obsoleted.
