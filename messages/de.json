@@ -1120,6 +1120,12 @@
     "navBodyTemperature": "Temperatur",
     "navActiveEnergy": "Aktive Energie",
     "navAriaLabel": "Zu Abschnitt springen",
+    "tabStrip": {
+      "vitalsParent": {
+        "label": "Vitalwerte",
+        "header": "Vital-Werte"
+      }
+    },
     "hrv": {
       "title": "HRV",
       "description": "Herzratenvariabilität im Verlauf — dein Erholungssignal des autonomen Nervensystems, nächtlich von Apple Watch und kompatiblen Wearables erfasst.",
@@ -1519,12 +1525,13 @@
         "description": "Kachel-Layout und Reihenfolge."
       },
       "thresholds": {
-        "title": "Persönliche Zielwerte",
-        "description": "Eigene Zielbereiche für jede Metrik."
+        "title": "Zielwerte & Quellen",
+        "description": "Pro Metrik: eigener Zielbereich und welche Quelle führt, wenn mehrere am selben Tag denselben Wert liefern."
       },
       "sources": {
         "title": "Quellen",
         "description": "Lege fest, welche Quelle führt, wenn mehrere am selben Tag dieselbe Metrik liefern.",
+        "redirectNotice": "Quellen sind jetzt Teil von „Zielwerte & Quellen“.",
         "cardTitle": "Quellen-Priorität pro Metrik",
         "help": "Wenn mehrere Quellen denselben Wert am selben Tag liefern (z. B. Withings + Apple Health beide 1.200 Schritte), wird die oberste Quelle als kanonisch verwendet. Andere Quellen bleiben gespeichert für die Audit-Spur.",
         "resetDefaults": "Auf Standard zurücksetzen",

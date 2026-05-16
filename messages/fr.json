@@ -1120,6 +1120,12 @@
     "navBodyTemperature": "Température",
     "navActiveEnergy": "Énergie active",
     "navAriaLabel": "Skip to section",
+    "tabStrip": {
+      "vitalsParent": {
+        "label": "Constantes",
+        "header": "Constantes vitales"
+      }
+    },
     "hrv": {
       "title": "VFC",
       "description": "Variabilité de la fréquence cardiaque dans le temps — signal de récupération du système nerveux, capté la nuit par l'Apple Watch et d'autres wearables compatibles.",
@@ -1519,12 +1525,13 @@
         "description": "Tile layout and order."
       },
       "thresholds": {
-        "title": "Personal thresholds",
-        "description": "Override target ranges for every metric."
+        "title": "Objectifs et sources",
+        "description": "Par métrique : votre propre plage cible et quelle source prévaut quand plusieurs enregistrent la même valeur le même jour."
       },
       "sources": {
         "title": "Sources",
         "description": "Pick which ingest source wins when more than one records the same metric for the same day.",
+        "redirectNotice": "Les sources font désormais partie de « Objectifs et sources ».",
         "cardTitle": "Source priority by metric",
         "help": "When more than one source delivers the same value on the same day (e.g. Withings and Apple Health both report 1,200 steps), the top source counts as the canonical reading. Other sources stay stored for the audit trail.",
         "resetDefaults": "Reset to defaults",
