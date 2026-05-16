@@ -1,17 +1,12 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { Sparkles, Trophy } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "@/lib/i18n/context";
-import type { AchievementProgress } from "@/lib/gamification/achievements";
+import { useAchievementsQuery } from "@/lib/queries/use-achievements-query";
 
 const STORAGE_KEY_PREFIX = "healthlog-achievements-seen";
-
-interface AchievementsPayload {
-  achievements: AchievementProgress[];
-}
 
 interface AchievementUnlockNotifierProps {
   userId: string;
@@ -66,23 +61,16 @@ export function AchievementUnlockNotifier({
   const localStateReadyRef = useRef(false);
   const hasSnapshotRef = useRef(false);
 
-  const { data } = useQuery({
-    queryKey: ["gamification", "achievements", "unlock-notifier", userId],
-    queryFn: async () => {
-      try {
-        const response = await fetch("/api/gamification/achievements");
-        if (!response.ok) {
-          return { achievements: [] } satisfies AchievementsPayload;
-        }
-        const json = await response.json();
-        return (json.data ?? { achievements: [] }) as AchievementsPayload;
-      } catch {
-        return { achievements: [] } satisfies AchievementsPayload;
-      }
-    },
-    staleTime: 60 * 1000,
+  // v1.4.34 IW-F-Perf — the notifier and `<RecentAchievementsCard>`
+  // both ride the shared `["gamification", "achievements"]` cache cell.
+  // Before, the notifier carried a per-user discriminator on its key,
+  // which made TanStack treat it as a fresh cell and fire a second
+  // network call alongside the dashboard tile. The shared hook owns the
+  // refetch cadence; the notifier supplies the polling interval so
+  // long-open tabs still surface new unlocks without forcing the card
+  // to re-render on the same cadence.
+  const { data } = useAchievementsQuery({
     refetchInterval: 2 * 60 * 1000,
-    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {

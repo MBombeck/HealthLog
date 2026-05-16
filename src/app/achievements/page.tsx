@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   AlertTriangle,
@@ -36,19 +35,12 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { formatDate } from "@/lib/format";
+import { useAchievementsQuery } from "@/lib/queries/use-achievements-query";
 import {
   ACHIEVEMENT_CATEGORY_ORDER,
   type AchievementCategory,
-  type AchievementMetrics,
   type AchievementProgress,
-  type AchievementSummary,
 } from "@/lib/gamification/achievements";
-
-interface AchievementsData {
-  summary: AchievementSummary;
-  achievements: AchievementProgress[];
-  metrics: AchievementMetrics;
-}
 
 const iconMap: Record<string, LucideIcon> = {
   Activity,
@@ -271,16 +263,11 @@ export default function AchievementsPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { t } = useTranslations();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["gamification", "achievements"],
-    queryFn: async () => {
-      const res = await fetch("/api/gamification/achievements");
-      if (!res.ok) throw new Error("Failed to load achievements");
-      const json = await res.json();
-      return json.data as AchievementsData;
-    },
-    enabled: isAuthenticated,
-  });
+  // v1.4.34 IW-F-Perf — mother page rides the shared cache slot
+  // alongside `<RecentAchievementsCard>` and
+  // `<AchievementUnlockNotifier>` so the three consumers never trigger
+  // more than one network call on a cold dashboard mount.
+  const { data, isLoading } = useAchievementsQuery();
 
   if (authLoading || isLoading) {
     return (

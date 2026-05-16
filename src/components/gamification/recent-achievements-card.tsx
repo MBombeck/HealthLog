@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   AlertTriangle,
@@ -20,14 +19,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { formatDate } from "@/lib/format";
-import type {
-  AchievementProgress,
-  AchievementSummary,
-  AchievementMetrics,
-} from "@/lib/gamification/achievements";
+import { useAchievementsQuery } from "@/lib/queries/use-achievements-query";
+import type { AchievementProgress } from "@/lib/gamification/achievements";
 
 const iconMap: Record<string, LucideIcon> = {
   Activity,
@@ -45,12 +40,6 @@ const iconMap: Record<string, LucideIcon> = {
   AlertTriangle,
   SkipForward,
 };
-
-interface AchievementsData {
-  summary: AchievementSummary;
-  achievements: AchievementProgress[];
-  metrics: AchievementMetrics;
-}
 
 /**
  * Pure helper — pick the N most-recently unlocked achievements.
@@ -84,23 +73,15 @@ const RECENT_LIMIT = 3;
  * (`achievements` widget id).
  *
  * Reuses the same `/api/gamification/achievements` endpoint as the
- * dedicated page; TanStack Query dedupes the request when both this
- * card and the page render in the same session.
+ * dedicated page and the unlock notifier; v1.4.34 IW-F-Perf folds all
+ * three consumers onto the shared `useAchievementsQuery()` hook so a
+ * single cache slot and a single network call back this dashboard
+ * tile, the mother page, and the toast notifier.
  */
 export function RecentAchievementsCard() {
-  const { isAuthenticated } = useAuth();
   const { t } = useTranslations();
 
-  const { data } = useQuery({
-    queryKey: ["gamification", "achievements"],
-    queryFn: async () => {
-      const res = await fetch("/api/gamification/achievements");
-      if (!res.ok) throw new Error("Failed to load achievements");
-      const json = await res.json();
-      return json.data as AchievementsData;
-    },
-    enabled: isAuthenticated,
-  });
+  const { data } = useAchievementsQuery();
 
   const recent = pickRecentUnlocks(data?.achievements ?? [], RECENT_LIMIT);
 
