@@ -91,7 +91,7 @@ export const GET = apiHandler(async (request?: Request) => {
   const body = await cached(
     caches.analytics as ServerCache<Awaited<ReturnType<typeof buildAnalyticsResponse>>>,
     `${user.id}|default`,
-    () => buildAnalyticsResponse(user, request),
+    () => buildAnalyticsResponse(user),
     annotate,
   );
 
@@ -116,10 +116,7 @@ type AuthedUser = Awaited<ReturnType<typeof requireAuth>>["user"];
  * matches the v1.4.33 snapshot LRU's `buildCoachSnapshot` →
  * `buildCoachSnapshotImpl` shape.
  */
-async function buildAnalyticsResponse(
-  user: AuthedUser,
-  _request: Request | undefined,
-) {
+async function buildAnalyticsResponse(user: AuthedUser) {
   // v1.4.25 W7b — every day-bucket call inside this route now honours
   // the user's display timezone. The legacy `berlinDayKey()` import
   // remains for sleep-stage and correlation paths that share their

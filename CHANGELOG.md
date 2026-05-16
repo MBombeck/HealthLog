@@ -4,6 +4,20 @@
 
 ### Added
 
+- **Server-side aggregation cache.** A new `ServerCache<T>` primitive
+  (`src/lib/cache/server-cache.ts`) extends the v1.4.33 Coach snapshot
+  LRU shape into a reusable per-route layer with TTL expiry,
+  capacity-bounded LRU eviction, single-flight read coalescing, and
+  per-instance hit / miss / eviction / stampede counters. Wires the
+  three hottest dashboard reads — `/api/analytics` (slim + default),
+  `/api/gamification/achievements`, `/api/medications/intake?scope=compliance`
+  — and bolts per-user invalidation onto every measurement / mood /
+  medication / workout / dashboard-widget write endpoint so the next
+  read paints fresh data instead of waiting out the TTL. Every cache
+  hit / miss surfaces on the active wide event as
+  `cache.<name>.outcome` + `cache.<name>.key_hash` so production logs
+  carry the hit-ratio signal without leaking userIds.
+
 - **Apple Health `export.zip` import.** New endpoint
   `POST /api/import/apple-health-export` (synchronous multipart
   upload, asynchronous ingest via a dedicated pg-boss
