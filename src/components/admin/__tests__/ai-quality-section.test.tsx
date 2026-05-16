@@ -57,7 +57,9 @@ describe("<AiQualitySection>", () => {
     mockQueryState.isLoading = false;
     mockQueryState.isError = false;
     const html = render(<AiQualitySection />);
-    expect(html).toContain("AI Quality");
+    // v1.4.33 IW7 — admin section renamed from "AI Quality" to
+    // "Insights Quality" per the Marc-Voice rule.
+    expect(html).toContain("Insights Quality");
     expect(html).toContain("No feedback yet");
   });
 
@@ -118,6 +120,6 @@ describe("<AiQualitySection>", () => {
     mockQueryState.isLoading = false;
     mockQueryState.isError = true;
     const html = render(<AiQualitySection />);
-    expect(html).toContain("Failed to load AI quality summary");
+    expect(html).toContain("Failed to load Insights quality summary");
   });
 });

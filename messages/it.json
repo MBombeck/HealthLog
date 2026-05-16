@@ -867,7 +867,7 @@
     "bmiEmptyTitle": "Set your height to see BMI",
     "bmiEmptyDescription": "BMI needs your height. Add it under Settings → Account.",
     "bmiEmptyAction": "Open account settings",
-    "noProviderConfigured": "AI provider not configured.",
+    "noProviderConfigured": "Assessment unavailable.",
     "startAnalysis": "Start analysis",
     "refreshAnalysis": "Refresh analysis",
     "keyTakeaway": "Key Takeaway",
@@ -1024,7 +1024,7 @@
       "refusalOutOfScope": "I can only help with the health metrics in your log — measurements, medications, mood, trends. I cannot answer questions outside that scope.",
       "refusalInjection": "I noticed wording that tries to override my instructions. I am the HealthLog Coach and only summarise your own health data — please rephrase your question in those terms.",
       "errorBudget": "You've reached today's Coach usage limit. The budget refreshes at midnight UTC.",
-      "errorProvider": "The Coach could not reach an AI provider just now. Please try again in a moment.",
+      "errorProvider": "The Coach could not reach an Insights provider just now. Please try again in a moment.",
       "tagline": "Personal health coach, grounded in your data.",
       "newChat": "New chat",
       "send": "Send",
@@ -1162,19 +1162,19 @@
       }
     },
     "subPage": {
-      "blutdruckDescription": "Your systolic / diastolic trend with age-personalised target zones and a written AI assessment.",
-      "gewichtDescription": "Weight trend mapped against your height-derived healthy band, plus an AI assessment.",
-      "pulsDescription": "Resting pulse vs. the personalised Karvonen target band, plus an AI assessment.",
-      "stimmungDescription": "Daily mood scores over time with a written AI assessment.",
+      "blutdruckDescription": "Your systolic / diastolic trend with age-personalised target zones and a written assessment.",
+      "gewichtDescription": "Weight trend mapped against your height-derived healthy band, plus a written assessment.",
+      "pulsDescription": "Resting pulse vs. the personalised Karvonen target band, plus a written assessment.",
+      "stimmungDescription": "Daily mood scores over time with a written assessment.",
       "stimmungEmptyTitle": "Log your first mood",
       "stimmungEmptyDescription": "Mood insights light up once you've logged a few entries. Tap below to get started.",
       "stimmungEmptyAction": "Open mood journal",
-      "medikamenteDescription": "Per-medication adherence calendars and a written AI assessment.",
+      "medikamenteDescription": "Per-medication adherence calendars and a written assessment.",
       "medikamenteEmptyTitle": "Add your first medication",
       "medikamenteEmptyDescription": "Compliance insights need at least one tracked medication.",
       "medikamenteEmptyAction": "Open medications",
       "therapyTimelineDescription": "Chronological GLP-1 therapy log — dose changes, injections, inventory, side effects.",
-      "bmiDescription": "BMI derived from your weight and height, with a written AI assessment."
+      "bmiDescription": "BMI derived from your weight and height, with a written assessment."
     },
     "sleep": {
       "title": "Sonno",
@@ -1370,12 +1370,12 @@
           "body": "Use the Add button to drop a measurement or mood entry without leaving the dashboard. The form remembers your last context and tags."
         },
         "insights": {
-          "title": "AI-assisted insights",
-          "body": "Insights turns your readings into a plain-English health summary, with classifications for blood pressure, weight trend and mood. Bring your own AI key or use the built-in default."
+          "title": "Automatic insights",
+          "body": "Insights turns your readings into a plain-English health summary, with classifications for blood pressure, weight trend and mood. Bring your own provider key or use the built-in default."
         },
         "integrations": {
           "title": "Connect your devices",
-          "body": "Open Settings to link Withings (auto-sync weight, BP and pulse), moodLog, or your AI provider. Everything stays optional and encrypted."
+          "body": "Open Settings to link Withings (auto-sync weight, BP and pulse), moodLog, or your Insights provider. Everything stays optional and encrypted."
         },
         "achievements": {
           "title": "Earn streaks and badges",
@@ -1569,7 +1569,7 @@
         }
       },
       "ai": {
-        "title": "AI Insights",
+        "title": "Insights",
         "description": "Provider, model, key."
       },
       "api": {
@@ -1699,22 +1699,22 @@
     "webPushUnsubscribed": "Push notifications disabled.",
     "webPushSubscribeFailed": "Activation failed",
     "webPushActive": "Attivo",
-    "kiInsights": "AI Insights (OpenAI)",
-    "kiInsightsDescription": "Optional: Save your OpenAI key for daily, automatic AI evaluations in Insights.",
-    "codexConnected": "ChatGPT connected successfully! AI insights are now active.",
+    "kiInsights": "Insights (OpenAI)",
+    "kiInsightsDescription": "Optional: Save your OpenAI key for daily, automatic evaluations in Insights.",
+    "codexConnected": "ChatGPT connected successfully! Insights are now active.",
     "codexDisconnected": "ChatGPT connection removed.",
     "codexConnectionFailed": "ChatGPT connection failed. Please try again.",
     "rawData": "Send raw data",
-    "rawDataOnDescription": "Aggregated metrics plus anonymized raw points from the last 30 days are sent. This includes per-metric measurements (for example weight, blood pressure, pulse) with time context so AI can detect patterns, outliers, and correlations more reliably. Name, email, and direct account identifiers are not transmitted.",
-    "rawDataOffDescription": "Only summarized metrics are sent (for example averages, trends, minimum/maximum). No individual points and no exact time context. This is more privacy-preserving, but AI can be less precise for short-term patterns and fluctuations.",
-    "rawDataWarning": "Raw mode enabled: AI receives additional anonymized points from the last 30 days for higher analysis accuracy.",
+    "rawDataOnDescription": "Aggregated metrics plus anonymized raw points from the last 30 days are sent. This includes per-metric measurements (for example weight, blood pressure, pulse) with time context so the provider can detect patterns, outliers, and correlations more reliably. Name, email, and direct account identifiers are not transmitted.",
+    "rawDataOffDescription": "Only summarized metrics are sent (for example averages, trends, minimum/maximum). No individual points and no exact time context. This is more privacy-preserving, but the provider can be less precise for short-term patterns and fluctuations.",
+    "rawDataWarning": "Raw mode enabled: the provider receives additional anonymized points from the last 30 days for higher analysis accuracy.",
     "regenerateInsights": "Regenerate reports",
     "regenerateSuccess": "Reports regenerated successfully",
     "regenerateRateLimit": "Please wait — you've hit the hourly limit for analyses.",
     "lastGeneratedAt": "Last generated",
     "ai": {
       "chatgptConnectedBadge": "ChatGPT connected",
-      "adminAiActiveBadge": "Admin AI active",
+      "adminAiActiveBadge": "Admin provider active",
       "connectionExpiredBadge": "Connection expired",
       "connectedSince": "Connected since {when}.",
       "deviceCodeHeading": "Finish connecting on chatgpt.com",
@@ -1760,7 +1760,7 @@
         "resetConfirmTitle": "Reset chain to defaults?",
         "resetConfirmBody": "The chain reverts to Codex → OpenAI → Anthropic → Local → Admin OpenAI. Your saved credentials are not touched."
       },
-      "activeProviderHeading": "Active AI provider",
+      "activeProviderHeading": "Active provider",
       "activeProviderBody": "Pick the provider you want to use first. The form below configures only the selected provider; the fallback chain at the bottom decides what happens if it fails.",
       "activeProviderLabel": "Primary provider",
       "providerConfigTitle": "Provider configuration",
@@ -1988,9 +1988,9 @@
       "loadError": "Failed to load host metrics. Try refreshing the page."
     },
     "aiQuality": {
-      "title": "AI Quality",
+      "title": "Insights Quality",
       "loading": "Loading feedback summary...",
-      "loadError": "Failed to load AI quality summary. Try refreshing the page.",
+      "loadError": "Failed to load Insights quality summary. Try refreshing the page.",
       "empty": "No feedback yet. The aggregator runs daily at 04:00 — once users start rating recommendations, helpful-rate bands appear here.",
       "windowLabel": "Last {days} days",
       "generatedAtLabel": "Generated",
@@ -2276,7 +2276,7 @@
         "subtitle": "Configure Umami, GlitchTip, Web Push, and bug reports."
       },
       "ai-quality": {
-        "title": "AI Quality",
+        "title": "Insights Quality",
         "subtitle": "Helpfulness scores grouped by severity and provider, from the last 30 days of user feedback."
       },
       "assistant": {

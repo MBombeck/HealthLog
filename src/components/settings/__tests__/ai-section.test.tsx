@@ -186,9 +186,13 @@ describe("<AiSection> — dropdown-driven UX (B2)", () => {
     const html = render("de");
     expect(html).toContain("Mit ChatGPT verbinden");
     expect(html).toContain("ChatGPT-Account (Codex)");
-    // Heading uses the locale's full string ("Aktiver KI-Provider"); a
-    // shorter substring would also match the "Aktiver Provider" line
-    // in the chain summary.
-    expect(html).toContain("Aktiver KI-Provider");
+    // v1.4.33 IW7 — the active-provider heading and the parent section
+    // both ship without the "KI"/"AI" prefix per the Marc-Voice rule
+    // ("Aktiver KI-Provider" → "Aktiver Provider"). The heading and the
+    // chain summary now share the same phrase, so we assert against the
+    // explicit `activeProviderLabel` slot below it ("Primärer Provider")
+    // to keep the test pinned to the right surface.
+    expect(html).toContain("Aktiver Provider");
+    expect(html).toContain("Primärer Provider");
   });
 });

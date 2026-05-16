@@ -148,7 +148,10 @@ describe("admin sections — SSR smoke", () => {
   // ai-quality-section test.
   it("<AiQualitySection> renders the empty-state when no summary exists", () => {
     const html = render(<AiQualitySection />);
-    expect(html).toContain("AI Quality");
+    // v1.4.33 IW7 — section renamed from "AI Quality" to
+    // "Insights Quality" per the Marc-Voice rule (no "KI"/"AI" prefix
+    // in user-facing copy).
+    expect(html).toContain("Insights Quality");
     expect(html).toContain("No feedback yet");
   });
 

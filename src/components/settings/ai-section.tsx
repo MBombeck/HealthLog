@@ -251,11 +251,17 @@ function AiInsightsCard({ isAuthenticated }: { isAuthenticated: boolean }) {
 
   return (
     <div className="bg-card border-border space-y-4 rounded-xl border p-6">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Sparkles className="text-primary h-5 w-5" />
-          <h2 className="text-lg font-semibold">{t("settings.kiInsights")}</h2>
-        </div>
+      {/* v1.4.33 IW7 — the dedicated H2 ("KI-Insights") used to repeat
+          the parent section title ("KI-Auswertungen"). Both are gone now:
+          the section renders "Auswertungen" once at the top, and this
+          card carries only the Sparkles icon + the live provider-status
+          badges, mirroring the description that lives on the section
+          header. The configuration description is moved one level up
+          into the section subtitle so the visual hierarchy stays
+          two-level (section -> form) instead of three-level
+          (section -> card title -> form). */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Sparkles className="text-primary h-5 w-5" aria-hidden="true" />
         <ProviderStatusBadges
           settings={insightsSettings}
           activeProvider={chainData?.activeProvider ?? null}

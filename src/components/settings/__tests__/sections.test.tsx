@@ -137,9 +137,13 @@ describe("settings sections — SSR smoke", () => {
     expect(html).not.toContain("settings.about.");
   });
 
-  it("<AiSection> renders the AI Insights card", () => {
+  it("<AiSection> renders the Insights card", () => {
     const html = render(<AiSection />);
-    expect(html).toContain("AI Insights");
+    // v1.4.33 IW7 — section renamed from "AI Insights" to "Insights"
+    // per the Marc-Voice rule. The card title is replaced with a sparkles
+    // icon + status badges, and the section H1 carries the only heading.
+    expect(html).toContain("Insights");
+    expect(html).toContain("settings-section-ai-title");
   });
 
   it("<IntegrationsSection> renders Withings card title", () => {
@@ -150,7 +154,10 @@ describe("settings sections — SSR smoke", () => {
 
   it("<NotificationsSection> renders heading", () => {
     const html = render(<NotificationsSection />);
-    expect(html).toContain("Notifications");
+    // v1.4.33 IW7 — section renamed from "Notifications" to
+    // "Notification channels" so it doesn't collide with the inbox at
+    // `/notifications` ("Notification Center").
+    expect(html).toContain("Notification channels");
   });
 
   it("<DashboardSection> renders heading and embeds the layout customizer", () => {
