@@ -1,5 +1,39 @@
 # Changelog
 
+## [1.4.34.5] — 2026-05-17 — Audit follow-on: critical-path tests + iOS textarea zoom
+
+Follow-on to v1.4.34.4. Two batches: the missing critical-path
+integration tests the test-coverage audit flagged, and the textarea
+viewport-zoom fix the mobile-deep audit flagged as F-5.
+
+### Tests
+
+- **24 new integration tests across 5 files** closing the critical
+  gaps from `.planning/round-audit-test-coverage.md`:
+  - `tests/integration/auth-password-change.test.ts` pins the v1.4.34.3+
+    `destroyAllSessions` three-transport revocation contract
+    end-to-end (Session.deleteMany, ApiToken.revoked, RefreshToken.revokedAt).
+  - `tests/integration/admin-reset-password.test.ts` mirrors the same
+    contract for the admin-driven reset.
+  - `tests/integration/withings-oauth.test.ts` covers connect /
+    callback / disconnect plus state-token replay rejection.
+  - `tests/integration/passkey-register.test.ts` covers register-options
+    + register-verify + tampered-attestation rejection + challenge
+    single-use.
+  - `tests/integration/cache-invalidation-coverage.test.ts` grids the
+    v1.4.34 IW-G invalidation matrix across 5 write surfaces.
+- Integration suite goes from 197/50 to 222/55. tsc + lint clean.
+
+### Mobile
+
+- **Five textareas no longer trigger iOS Safari zoom-on-focus.** The
+  Coach composer, bug-report description, admin feedback note,
+  medication-side-effects notes, and medication-intake JSON import all
+  shipped `text-sm` (14 px). iOS Safari zooms the viewport whenever an
+  input renders below 16 px. Switched each to `text-base sm:text-sm`
+  so the mobile baseline clears the floor while desktop keeps the
+  compact look.
+
 ## [1.4.34.4] — 2026-05-17 — Audit-driven hotfix bundle (security, UX, code-quality, docs)
 
 A consolidated hotfix landing the findings from a six-axis audit
