@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircle } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -24,8 +24,11 @@ import type { CoachScope, CoachScopeSource } from "@/lib/ai/coach/types";
  * a status pill, range bar, consistency strip, headline number, edit
  * cog and a source link, the labelled pill dominated the visual
  * hierarchy. Dropping the label retains the affordance via the
- * chat-bubble glyph + `aria-label` while shrinking the optical weight
- * to a per-card icon button.
+ * Sparkles glyph + `aria-label` while shrinking the optical weight
+ * to a per-card icon button. UI-H2 — the glyph is the same Sparkles
+ * the hero strip, the inline pill and the layout-level FAB use, so
+ * the per-card Coach launch reads on one icon vocabulary across the
+ * app.
  */
 export interface TargetCoachButtonProps {
   /**
@@ -85,7 +88,7 @@ export function TargetCoachButton({
       // Coach drawer cluster). Glyph stays `size-4`.
       className={cn("min-h-11 min-w-11", className)}
     >
-      <MessageCircle className="size-4" aria-hidden="true" />
+      <Sparkles className="size-4" aria-hidden="true" />
     </Button>
   );
 }

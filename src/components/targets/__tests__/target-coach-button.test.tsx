@@ -6,8 +6,8 @@ import { TargetCoachButton } from "../target-coach-button";
 
 /**
  * v1.4.25 W3e — gate test for the per-card Coach CTA. The button
- * MUST disappear when `aiEnabled` is false (Marc directive: no
- * broken-button state for users with no AI provider configured).
+ * MUST disappear when `aiEnabled` is false (the maintainer's rule:
+ * no broken-button state for users with no provider configured).
  */
 
 function render(props: Parameters<typeof TargetCoachButton>[0]) {
@@ -33,8 +33,12 @@ describe("<TargetCoachButton>", () => {
     // still surface "Ask Coach" / "Coach fragen".
     expect(html).toContain('aria-label="Ask Coach"');
     expect(html).toContain('title="Ask Coach"');
-    // No visible text label — only the chat-bubble glyph.
+    // No visible text label — only the Sparkles glyph.
     expect(html).not.toMatch(/>Ask Coach</);
+    // UI-H2 — the Coach-launch glyph is one Sparkles vocabulary
+    // across hero strip, inline pill, layout FAB and per-card icon.
+    expect(html).toMatch(/lucide-sparkles/i);
+    expect(html).not.toMatch(/lucide-message-circle/i);
   });
 
   it("lifts the tap target to the 44 px WCAG 2.5.5 floor", () => {

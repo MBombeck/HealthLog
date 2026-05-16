@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Progress } from "@/components/ui/progress";
 import { ComplianceHeatmap } from "@/components/charts/compliance-heatmap";
@@ -16,6 +16,7 @@ import { CoachLaunchButton } from "@/components/insights/coach-launch-button";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 import { TherapyTimeline } from "@/components/insights/therapy-timeline";
+import { MedicationCardHeader } from "@/components/medications/MedicationCardHeader";
 
 /**
  * v1.4.25 W4 — `/insights/medikamente`.
@@ -155,31 +156,31 @@ export default function InsightsMedikamentePage() {
       >
         {medications.map((med) => {
           const medicationSummary = medicationSummaryById.get(med.id);
+          // UI-H3 — route every medication-list row (medications page
+          // + insights/medikamente) through `<MedicationCardHeader>`
+          // so the surface stays one shape: `{name} {dose}` on line 1
+          // + outline category badge on line 2. The streak chip rides
+          // the `stateBadges` slot so a strong streak still surfaces.
+          const categoryLabel =
+            med.category === "BLOOD_PRESSURE"
+              ? t("medications.categoryBloodPressure")
+              : med.category === "VITAMIN"
+                ? t("medications.categoryVitamin")
+                : t("medications.categoryOther");
+          const streakBadge =
+            med.streak > 0 ? (
+              <Badge variant="outline" className="shrink-0 text-xs">
+                {t("insights.dayStreak", { count: med.streak })}
+              </Badge>
+            ) : null;
           return (
             <Card key={med.id}>
-              <CardHeader className="pb-2">
-                {/* v1.4.27 MB7 / MA2-F8 — `min-w-0` on the title
-                    wrapper + `truncate` on the CardTitle keeps long
-                    medication names (e.g. "Semaglutid Wegovy 0.5 mg
-                    weekly") from pushing the streak badge off the
-                    card on Galaxy Fold / Pixel 5. The Pill icon
-                    + CardTitle pair shrinks to fit; the badge stays
-                    on the right at its natural width. */}
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <Pill className="text-dracula-orange h-4 w-4 shrink-0" />
-                    <CardTitle className="truncate text-sm font-medium">
-                      {med.name}
-                    </CardTitle>
-                  </div>
-                  {med.streak > 0 && (
-                    <Badge variant="outline" className="shrink-0 text-xs">
-                      {t("insights.dayStreak", { count: med.streak })}
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-muted-foreground text-xs">{med.dose}</p>
-              </CardHeader>
+              <MedicationCardHeader
+                name={med.name}
+                dose={med.dose}
+                categoryLabel={categoryLabel}
+                stateBadges={streakBadge}
+              />
               <CardContent className="space-y-3">
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-xs">
