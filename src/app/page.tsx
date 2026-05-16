@@ -321,7 +321,29 @@ export default function DashboardPage() {
   const hasSleep = (sleepSummary?.count ?? 0) > 0;
   const hasSteps = (stepsSummary?.count ?? 0) > 0;
   const hasVo2 = (vo2Summary?.count ?? 0) > 0;
-  const hasBpInTarget = data?.bpInTargetPct != null;
+  /**
+   * v1.4.33 F4 — gate the BD-Zielbereich tile so a literal "0,0 %"
+   * placeholder doesn't ride on the dashboard when none of the user's
+   * paired readings sit inside the target band. The historical
+   * behaviour (`!= null`) painted the tile whenever the analytics
+   * route emitted a numeric percentage, including the legitimate-but-
+   * misleading zero. The corrected gate requires at least one window
+   * (7d, 30d, all-time) to report a non-zero share. When every
+   * window is zero, the tile is hidden — the user sees the BP charts
+   * + the `/targets` Blutdruck card for the deeper analysis instead.
+   * The audit's F4 reproduction sat on 540 BP samples with all sub-
+   * windows reading 0 % because the seed data straddled the target
+   * ceiling; the tile keeps its place once even one sub-window
+   * crosses zero.
+   */
+  const hasBpInTarget =
+    data?.bpInTargetPct != null &&
+    [
+      data?.bpInTargetPct,
+      data?.bpInTargetPct7d,
+      data?.bpInTargetPct30d,
+      data?.bpInTargetPctAllTime,
+    ].some((pct) => pct != null && pct > 0);
 
   // Tile (strip) gates — controlled by the new `tileVisible` flag.
   const showWeightTile = isTileVisible("weight") && hasWeight;
@@ -485,13 +507,21 @@ export default function DashboardPage() {
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            {/* WCAG 2.5.5 — touch targets must be ≥44×44 CSS px on mobile.
-                `size="sm"` (h-8 = 32px) was below threshold; the explicit
-                min-h-11 ensures we hit 44px on the Pixel 5 viewport while
-                keeping the desktop visual unchanged. */}
+            {/* v1.4.33 maintainer-item-7 — restore proportional sizing
+                across viewports. The v1.4.27 fix pinned a `size="sm"
+                min-h-11` combo to hit WCAG 2.5.5's 44 px touch-target
+                contract on mobile, but `size="sm"` is h-8 (32 px) and
+                the `min-h-11` override stretched the cap vertically
+                while keeping the small horizontal padding — the
+                button read as klobig on Pixel 5. Switch to
+                `size="default"` (h-10 = 40 px) on mobile with a
+                responsive `min-h-11 sm:min-h-9` so the button is
+                44 px tall under finger pressure and shrinks back to
+                the desktop-friendly 36 px on `sm:` upwards. The icon
+                + label keep the same visual contract. */}
             <Button
-              size="sm"
-              className="min-h-11"
+              size="default"
+              className="min-h-11 sm:min-h-9"
               data-tour-id="dashboard-quick-add"
             >
               <Plus className="mr-1 h-4 w-4" />
@@ -1220,44 +1250,46 @@ export default function DashboardPage() {
                 height for any non-zero count. */}
             {trendCards.length > 0 && (
               <div
-                // v1.4.27 MB7 / CF-42 — at `<sm` the tile strip
-                // switches to a `flex overflow-x-auto` row so the
-                // tiles scroll horizontally instead of wrapping to
-                // 3-4 rows on Pixel 5 / Galaxy Fold. Each tile keeps
-                // a `min-w-[10rem]` so the user sees ~2.5 tiles per
-                // viewport — enough to read "there's more" without
-                // crowding the headline value on the visible tile.
-                // From `sm:` upwards the strip falls back to the
-                // canonical `grid auto-fit + minmax(9rem, 1fr)`
-                // layout (every tile equal width, wraps to a new
-                // row when the 9 rem floor no longer fits) that the
-                // maintainer pinned in v1.4.4.
+                // v1.4.33 A3 Win 2 + F3 — collapse the bifurcated
+                // mobile-flex / desktop-grid layout into one
+                // responsive grid track. The v1.4.27 MB7 fix pinned a
+                // `flex overflow-x-auto` row at `<sm` so tiles
+                // scrolled horizontally rather than wrapping to 3-4
+                // rows on a 280 px Galaxy Fold; the v1.4.33 audit
+                // (Win 2) called the side-scroll an unwanted
+                // regression for the Pixel 5 / iPhone-13-mini
+                // viewports where two tiles per row fit naturally.
+                // One grid track for every breakpoint:
                 //
-                // `snap-x snap-mandatory` makes the scroll feel
-                // deliberate on touch and is a no-op on the grid
-                // branch above `sm:`.
+                //   `repeat(auto-fit, minmax(min(100%, 11rem), 1fr))`
+                //
+                // - Galaxy Fold (280 px) → 1 column, tiles stretch
+                //   full width.
+                // - Pixel 5 / iPhone-13-mini (375 px) → 2 columns,
+                //   strip wraps to a second row when needed.
+                // - 1440×900 desktop → 6 columns (1440 / 220 ≈ 6.5),
+                //   widens the value column from the v1.4.27
+                //   `9rem` floor so the headline number stops
+                //   truncating to `8…` / `1.` (audit F3). 11 rem
+                //   ≈ 176 px gives every tile ~220 px including
+                //   gutter — comfortably wider than `text-3xl`
+                //   digits plus the unit + arrow.
+                // - 1920+ desktop → 8 columns, no horizontal slack.
+                //
+                // `auto-rows-fr` keeps the row height deterministic
+                // so a 7-tile run still shares one baseline across
+                // the wrap, regardless of which tile renders a
+                // callout.
                 className={cn(
-                  "flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2",
-                  // v1.4.29 — fixed mobile tile height contract.
-                  // At `<sm` every tile pins to 140 px via the
-                  // `--tile-h` CSS custom property so divergent
-                  // content (callout on / off, sub-row wrap / no
-                  // wrap) cannot drift sibling heights. `sm:`
-                  // releases to `auto` where `grid auto-rows-fr`
-                  // already enforces equal heights.
-                  "[--tile-h:140px] sm:[--tile-h:auto]",
-                  "sm:grid sm:snap-none sm:auto-rows-fr sm:overflow-visible",
-                  "sm:[grid-template-columns:repeat(auto-fit,minmax(min(100%,9rem),1fr))]",
+                  "grid auto-rows-fr gap-3",
+                  "[grid-template-columns:repeat(auto-fit,minmax(min(100%,11rem),1fr))]",
                 )}
                 data-slot="dashboard-tile-strip"
                 data-tour-id="dashboard-tile-strip"
                 data-tile-count={trendCards.length}
               >
                 {trendCards.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="flex h-[var(--tile-h)] min-w-[10rem] shrink-0 snap-start sm:h-auto sm:min-w-0 sm:shrink"
-                  >
+                  <div key={entry.id} className="flex min-w-0">
                     {entry.node}
                   </div>
                 ))}

@@ -39,6 +39,50 @@ interface SecondaryMetric {
  */
 export type TrendDirectionSentiment = "up-good" | "up-bad" | "neutral";
 
+/**
+ * v1.4.33 F5 — single sentiment helper so the headline arrow, the 7-day
+ * delta value, and the comparison-overlay caption all paint the same
+ * colour for the same signal. Before this helper each consumer ran its
+ * own branch — the arrow read `slope30.direction`, the delta value read
+ * `trend7Delta > 0`, and the comparison caption read `compareDelta > 0`.
+ * When the 30-day regression and the 7-day delta disagreed (weight down
+ * over a month, up over a week) the tile painted a green arrow next to
+ * an orange value, which read as "two metrics in one tile".
+ *
+ * `change` is a signed magnitude of the movement under inspection (the
+ * 7-day delta in units, or the slope-projected-over-7-days for tiles
+ * with only `slope30`). `sentiment` is the metric's improvement
+ * direction.
+ *
+ *  - `'positive'` — the change moves the metric toward its goal
+ *    (e.g. weight on `up-bad` going down, mood on `up-good` going up).
+ *    Renders green.
+ *  - `'negative'` — the change moves away from the goal. Renders orange.
+ *  - `'neutral'` — either the sentiment is neutral (pulse, BP-in-target),
+ *    or the change is below the noise floor (|change| < 0.05). Renders
+ *    muted.
+ */
+export type TrendSentimentDirection = "positive" | "negative" | "neutral";
+
+export function getTrendSentiment(
+  change: number | null | undefined,
+  sentiment: TrendDirectionSentiment,
+): TrendSentimentDirection {
+  if (change == null || Math.abs(change) < 0.05) return "neutral";
+  if (sentiment === "neutral") return "neutral";
+  const isUp = change > 0;
+  const isGood =
+    (sentiment === "up-good" && isUp) ||
+    (sentiment === "up-bad" && !isUp);
+  return isGood ? "positive" : "negative";
+}
+
+function sentimentColorClass(direction: TrendSentimentDirection): string {
+  if (direction === "positive") return "text-dracula-green";
+  if (direction === "negative") return "text-dracula-orange";
+  return "text-muted-foreground";
+}
+
 interface TrendCardProps {
   label: string;
   latest: number | null;
@@ -87,6 +131,17 @@ interface TrendCardProps {
    */
   compareBaseline?: ComparisonBaseline;
   compareDelta?: number | null;
+  /**
+   * v1.4.33 maintainer-item-1 — when the metric's most recent reading is
+   * older than 7 days but the all-time count is still non-zero, the
+   * caller passes a positive integer day count here. The tile renders a
+   * muted "Letzter Wert vor Xd" caption underneath the value row so the
+   * user sees the tile didn't disappear because of stale data — it kept
+   * showing the historical value with an explicit "how old" hint.
+   *
+   * `null` / `undefined` suppresses the caption (current data path).
+   */
+  staleDays?: number | null;
 }
 
 export function TrendCard({
@@ -106,70 +161,57 @@ export function TrendCard({
   trend7Delta = null,
   compareBaseline = "none",
   compareDelta = null,
+  staleDays = null,
 }: TrendCardProps) {
   const { t } = useTranslations();
   const fmt = useFormatters();
-  const TrendIcon =
-    slope30?.direction === "up"
-      ? ArrowUp
-      : slope30?.direction === "down"
-        ? ArrowDown
-        : slope30
-          ? ArrowRight
-          : Minus;
 
-  // v1.5: per-metric arrow sentiment. Flat ("→") and "no slope yet" ("—")
-  // always stay muted; only an actual rise / fall paints colour, and the
-  // colour direction depends on what's good for *this* metric. The
-  // `text-muted-foreground` default keeps every metric tagged `neutral`
-  // (pulse, BP-in-target %) visually identical to v1.4.6.
-  const trendColor = ((): string => {
-    // No data yet (Minus icon) or a "stable" slope (ArrowRight) stays muted —
-    // we don't celebrate or scold a flat metric.
-    if (!slope30 || slope30.direction === "stable") {
-      return "text-muted-foreground";
-    }
-    if (directionSentiment === "neutral") return "text-muted-foreground";
-    const isUp = slope30.direction === "up";
-    const isGood =
-      (directionSentiment === "up-good" && isUp) ||
-      (directionSentiment === "up-bad" && !isUp);
-    return isGood ? "text-dracula-green" : "text-dracula-orange";
+  // v1.4.33 F5 — pick a single signal to drive both the arrow and the
+  // 7-day delta value so they never disagree. `trend7Delta` is the
+  // user-facing number on the tile; when present, the arrow follows
+  // its sign. When the caller only supplies `slope30` (legacy tiles
+  // that haven't been migrated to a delta), we project the slope over
+  // a 7-day window so both signals share the same dimension. This
+  // unifies the F5 audit complaint where a green arrow + orange value
+  // appeared on the same tile because slope30 and trend7Delta could
+  // legitimately disagree (30-day downward arc, 7-day uptick).
+  const primarySignal: number | null =
+    trend7Delta != null
+      ? trend7Delta
+      : slope30
+        ? slope30.slope * 7
+        : null;
+
+  const TrendIcon = ((): typeof ArrowUp => {
+    if (primarySignal == null) return Minus;
+    if (Math.abs(primarySignal) < 0.05) return ArrowRight;
+    return primarySignal > 0 ? ArrowUp : ArrowDown;
   })();
+
+  // Sentiment is one centralized helper now — see `getTrendSentiment`
+  // at the top of the file. All three tile elements (arrow, 7-day
+  // delta value, comparison-overlay caption) route through the same
+  // function so colour reads as "same signal" across the tile.
+  const arrowSentiment = getTrendSentiment(primarySignal, directionSentiment);
+  const trendColor = sentimentColorClass(arrowSentiment);
 
   const formatValue = (value: number) => fmt.number(value, 1);
 
-  // v1.4.15 Fix 4 — color the 7-day delta with the same metric-aware
-  // sentiment rules the headline arrow already uses. Tiny absolute
-  // deltas (< 0.05) read as "no movement" and stay muted.
-  const deltaColor = ((): string => {
-    if (trend7Delta == null || Math.abs(trend7Delta) < 0.05) {
-      return "text-muted-foreground";
-    }
-    if (directionSentiment === "neutral") return "text-muted-foreground";
-    const isUp = trend7Delta > 0;
-    const isGood =
-      (directionSentiment === "up-good" && isUp) ||
-      (directionSentiment === "up-bad" && !isUp);
-    return isGood ? "text-dracula-green" : "text-dracula-orange";
-  })();
+  // v1.4.15 Fix 4 — the 7-day delta now shares the arrow's colour so
+  // both elements communicate the same sentiment for the same signal.
+  const deltaSentiment = getTrendSentiment(trend7Delta, directionSentiment);
+  const deltaColor = sentimentColorClass(deltaSentiment);
 
   /**
    * v1.4.16 phase B8 — color the comparison delta with the same
    * metric-aware sentiment rules used everywhere else on the tile.
    * Tiny deltas read as stable and stay muted.
    */
-  const comparisonDeltaColor = ((): string => {
-    if (compareDelta == null || Math.abs(compareDelta) < 0.05) {
-      return "text-muted-foreground";
-    }
-    if (directionSentiment === "neutral") return "text-muted-foreground";
-    const isUp = compareDelta > 0;
-    const isGood =
-      (directionSentiment === "up-good" && isUp) ||
-      (directionSentiment === "up-bad" && !isUp);
-    return isGood ? "text-dracula-green" : "text-dracula-orange";
-  })();
+  const comparisonSentiment = getTrendSentiment(
+    compareDelta,
+    directionSentiment,
+  );
+  const comparisonDeltaColor = sentimentColorClass(comparisonSentiment);
 
   const formatDelta = (value: number): string => {
     if (Math.abs(value) < 0.05) return `±0`;
@@ -218,7 +260,7 @@ export function TrendCard({
           across every tile in the strip (Weight 80 kg vs. BP 122 mmHg used
           to land at different heights when one tile had a one-line heading
           and another had a two-line wrap). The arrow slot is always
-          present — when there is no slope yet, a muted "—" placeholder
+          present — when there is no signal yet, a muted "—" placeholder
           renders so the value row keeps a deterministic width. Marc's
           ask: "rechts neben der Zahl … der Pfeil [ist], wie gerade der
           Trend ist". */}
@@ -237,40 +279,25 @@ export function TrendCard({
           data-slot="trend-card-arrow"
           aria-hidden="true"
         >
-          {slope30 ? (
+          {primarySignal != null ? (
             <TrendIcon className={`h-4 w-4 ${trendColor}`} />
           ) : (
             <span className="text-muted-foreground text-xs opacity-30">—</span>
           )}
         </span>
       </div>
-      {/* v1.4.16 phase B8 — comparison delta callout. Sits on its own
-          line below the latest value so the tile stays scannable on
-          mobile viewports (no horizontal-scroll, no overlap with the
-          existing 7d/30d row). Suppressed when comparison is off OR
-          we don't have enough data to compute a delta.
-
-          v1.4.22 W5 reconcile (Design-H2) — on `<sm` viewports the
-          BP-in-target tile (the only consumer of `avgAllTime`) packs
-          three sub-rows + this callout into the height budget of
-          every other tile. Hide the standalone callout at `<sm` for
-          BP-in-target tiles; the secondary row below combines
-          all-time + comparison-delta into a single line that stays
-          scannable on Galaxy Fold (280 px) and Pixel 5 (375 px). The
-          full layout returns at `>=sm`. */}
-      {/* v1.4.27 MB7 / CF-41 — the `hidden sm:block` gate retired
-          because the mobile-secondary block below is gone (CF-67
-          vestigial wrapper drop). The callout paints on every
-          viewport; when the parent grid is tight on `<sm`, the
-          flex-wrap on the sibling row + this callout's `mt-1`
-          horizontal-row layout absorb the overflow without crowding
-          the headline value above. */}
-      {/* v1.4.29 — clamp the callout to one line at `<sm` so the
-          tile's overall height stays inside the 140-px contract.
-          `min-h-[18px]` reserves the slot when no callout is being
-          rendered so the sub-row pair below pins to the same y
-          across every tile. `sm:` releases both bounds. */}
-      <div className="mt-1 min-h-[18px] sm:min-h-0">
+      {/* v1.4.29 — `min-h-[18px]` reserves the callout slot at every
+          breakpoint so an empty callout doesn't drift sibling tiles
+          18 px taller. v1.4.32 dropped the reservation at `sm:` (via
+          `sm:min-h-0`); the v1.4.33 A3 Win 5 audit caught the
+          asymmetry — a comparison-overlay run on the BD-Zielbereich
+          tile expanded the strip's intrinsic height while its
+          no-callout neighbours stayed short. Holding the floor across
+          breakpoints makes the row's height deterministic regardless
+          of which tiles render the callout. The callout itself clamps
+          to one line at `<sm`; `sm:` releases the line-clamp + the
+          [overflow-wrap:anywhere] fallback. */}
+      <div className="mt-1 min-h-[18px]">
         {compareBaseline !== "none" && compareDelta != null && (
           <span
             className={cn(
@@ -290,6 +317,24 @@ export function TrendCard({
                 ? "comparison.captionLastMonth"
                 : "comparison.captionLastYear",
             )}`}
+          </span>
+        )}
+        {/* v1.4.33 maintainer-item-1 — stale-data caption. Renders
+            only when the caller passes `staleDays` (positive integer
+            of days since the metric's last reading). The tile keeps
+            the historical value visible because the maintainer would
+            rather see "Letzter Wert vor 12d / 80,2 kg" than have the
+            whole tile disappear because of a gap in logging. Ride the
+            same callout-slot reservation as the comparison-overlay
+            caption; on `<sm` the line-clamp keeps the 140 px height
+            contract intact. */}
+        {staleDays != null && staleDays > 0 && (
+          <span
+            className="text-muted-foreground line-clamp-1 inline-block max-w-full text-xs leading-snug tabular-nums sm:line-clamp-none"
+            data-slot="tile-stale-hint"
+            data-stale-days={staleDays}
+          >
+            {t("dashboard.staleHint", { count: staleDays })}
           </span>
         )}
       </div>

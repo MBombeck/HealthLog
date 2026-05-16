@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    measurement: { findMany: vi.fn() },
+    measurement: { findMany: vi.fn(), groupBy: vi.fn() },
     medicationIntakeEvent: { findMany: vi.fn() },
   },
 }));
@@ -54,6 +54,10 @@ function makeReq(): NextRequest {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
+  // v1.4.33 maintainer-item-1 — the route now issues a `groupBy` for
+  // per-type all-time count + most-recent timestamp. Default to an
+  // empty aggregate so legacy tests keep their "no data" expectations.
+  vi.mocked(prisma.measurement.groupBy).mockResolvedValue([] as never);
   vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
     [] as never,
   );
@@ -88,6 +92,107 @@ describe("GET /api/dashboard/summary", () => {
         expect.objectContaining({ id: "pulse" }),
       ]),
     );
+  });
+
+  it("emits allTimeCount + lastSeenAt for every base metric (v1.4.33 maintainer-item-1)", async () => {
+    // Empty-data path — every metric card still ships the new fields
+    // so the iOS client can render a tile + "Letzter Wert vor Xd"
+    // hint regardless of whether the route saw any rows in the 7-day
+    // window.
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const res = await callGet(makeReq());
+    const body = (await res.json()) as {
+      data: {
+        metrics: Array<{
+          id: string;
+          allTimeCount: number;
+          lastSeenAt: string | null;
+        }>;
+      };
+    };
+    const baseIds = body.data.metrics.map((m) => m.id);
+    for (const required of ["weight", "bp", "pulse"]) {
+      expect(baseIds, `${required} card missing from metrics list`).toContain(
+        required,
+      );
+    }
+    for (const card of body.data.metrics) {
+      expect(card.allTimeCount, `${card.id} missing allTimeCount`).toBe(0);
+      expect(card.lastSeenAt, `${card.id} missing lastSeenAt`).toBeNull();
+    }
+  });
+
+  it("surfaces lastSeenAt from the historical aggregate even when the 7-day window is empty", async () => {
+    // Power-user path — the user has logged weight for years but
+    // hasn't touched the app in two weeks. `groupBy` returns the
+    // all-time count + most-recent timestamp; the 7-day `findMany`
+    // returns empty. The route should still emit the weight card
+    // with the historical `lastSeenAt` so the iOS client renders the
+    // staleness caption.
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const twoWeeksAgo = new Date(Date.now() - 14 * 86_400_000);
+    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
+      {
+        type: "WEIGHT",
+        _count: { _all: 312 },
+        _max: { measuredAt: twoWeeksAgo },
+      },
+    ] as never);
+    const res = await callGet(makeReq());
+    const body = (await res.json()) as {
+      data: {
+        metrics: Array<{
+          id: string;
+          latestValue: number | null;
+          allTimeCount: number;
+          lastSeenAt: string | null;
+          updatedAt: string | null;
+        }>;
+      };
+    };
+    const weight = body.data.metrics.find((m) => m.id === "weight");
+    expect(weight, "weight card must be present").toBeDefined();
+    expect(weight?.allTimeCount).toBe(312);
+    expect(weight?.lastSeenAt).toBe(twoWeeksAgo.toISOString());
+    // No 7-day reading → latestValue stays null but updatedAt falls
+    // through to the historical timestamp so the iOS client can
+    // build the relative-age caption from a single field.
+    expect(weight?.latestValue).toBeNull();
+    expect(weight?.updatedAt).toBe(twoWeeksAgo.toISOString());
+  });
+
+  it("emits optional cards when allTimeCount > 0 but the 7-day window is empty", async () => {
+    // Glucose / sleep / steps used to only emit when the 7-day
+    // window had a reading. v1.4.33 widens the gate so a metric the
+    // user logged once last month still surfaces a tile (latestValue
+    // null + lastSeenAt populated → iOS renders the historical
+    // hint).
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const tenDaysAgo = new Date(Date.now() - 10 * 86_400_000);
+    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
+      {
+        type: "BLOOD_GLUCOSE",
+        _count: { _all: 4 },
+        _max: { measuredAt: tenDaysAgo },
+      },
+    ] as never);
+    const res = await callGet(makeReq());
+    const body = (await res.json()) as {
+      data: {
+        metrics: Array<{
+          id: string;
+          allTimeCount: number;
+          lastSeenAt: string | null;
+        }>;
+      };
+    };
+    const glucose = body.data.metrics.find((m) => m.id === "glucose");
+    expect(
+      glucose,
+      "glucose card must be present (v1.4.33 widened gate)",
+    ).toBeDefined();
+    expect(glucose?.allTimeCount).toBe(4);
+    expect(glucose?.lastSeenAt).toBe(tenDaysAgo.toISOString());
   });
 
   it("computes intake compliance for today", async () => {

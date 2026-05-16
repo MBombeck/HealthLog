@@ -44,6 +44,24 @@ interface MetricCard {
   trend: "up" | "down" | "flat" | "unknown";
   sparkline: number[];
   updatedAt: string | null;
+  /**
+   * v1.4.33 maintainer-item-1 — total readings the user has ever
+   * logged for this metric, irrespective of the 7-day sparkline
+   * window. The dashboard tile keeps showing whenever `allTimeCount > 0`
+   * so a user with valid historical data isn't surprised by a tile
+   * disappearing during a logging gap. Distinct from `sparkline.length`
+   * which only carries the trailing-7-day points.
+   */
+  allTimeCount: number;
+  /**
+   * v1.4.33 maintainer-item-1 — ISO timestamp of the metric's single
+   * most recent reading. When `allTimeCount > 0` but the latest
+   * reading is older than 7 days, the iOS tile renders a muted
+   * "Letzter Wert vor Xd" caption so the user understands the value
+   * isn't stale silently. `null` when the metric has no readings at
+   * all.
+   */
+  lastSeenAt: string | null;
 }
 
 const METRIC_TITLES: Record<MetricKind, string> = {
@@ -168,8 +186,15 @@ export const GET = apiHandler(async () => {
     ...measurementTypeEnum.options,
   ] as MeasurementType[];
 
-  const [recentMeasurements, todaysIntakes, streakActivity] = await Promise.all(
-    [
+  // v1.4.33 maintainer-item-1 — pull per-type all-time counts + latest
+  // timestamps alongside the 7-day sparkline window so the iOS tile
+  // can keep rendering when the recent window is empty but the user
+  // has logged the metric before. `groupBy` with `_count._all` +
+  // `_max(measuredAt)` is a single Postgres aggregate round-trip; no
+  // additional row materialisation beyond the aggregate values
+  // themselves.
+  const [recentMeasurements, allTimeAggregate, todaysIntakes, streakActivity] =
+    await Promise.all([
       prisma.measurement.findMany({
         where: {
           userId: user.id,
@@ -178,6 +203,12 @@ export const GET = apiHandler(async () => {
         },
         orderBy: { measuredAt: "asc" },
         select: { type: true, value: true, measuredAt: true },
+      }),
+      prisma.measurement.groupBy({
+        by: ["type"],
+        where: { userId: user.id, type: { in: measurementTypes } },
+        _count: { _all: true },
+        _max: { measuredAt: true },
       }),
       prisma.medicationIntakeEvent.findMany({
         where: {
@@ -194,8 +225,33 @@ export const GET = apiHandler(async () => {
         },
         select: { takenAt: true, scheduledFor: true },
       }),
-    ],
-  );
+    ]);
+
+  // Per-type metadata lookup — typed Map so a metric with no readings
+  // at all falls through `metaForType` to the `{ allTimeCount: 0,
+  // lastSeenAt: null }` default. The aggregate row's `_count._all` is
+  // always `number` per Prisma's runtime contract; defending against
+  // undefined keeps the helper's narrow signature stable.
+  const allTimeByType = new Map<
+    MeasurementType,
+    { allTimeCount: number; lastSeenAt: Date | null }
+  >();
+  for (const row of allTimeAggregate) {
+    allTimeByType.set(row.type, {
+      allTimeCount: row._count?._all ?? 0,
+      lastSeenAt: row._max?.measuredAt ?? null,
+    });
+  }
+  function metaForType(type: MeasurementType): {
+    allTimeCount: number;
+    lastSeenAt: string | null;
+  } {
+    const slot = allTimeByType.get(type);
+    return {
+      allTimeCount: slot?.allTimeCount ?? 0,
+      lastSeenAt: slot?.lastSeenAt?.toISOString() ?? null,
+    };
+  }
 
   const activityDays = new Set<string>();
   for (const m of recentMeasurements)
@@ -240,10 +296,17 @@ export const GET = apiHandler(async () => {
 
   const metrics: MetricCard[] = [];
 
+  // v1.4.33 maintainer-item-1 — every emitted card now carries
+  // `allTimeCount` + `lastSeenAt` so the iOS tile renderer can keep
+  // a metric visible during a logging gap (gate on `allTimeCount > 0`)
+  // and paint a muted "Letzter Wert vor Xd" caption when the most
+  // recent reading is older than the 7-day sparkline window.
+
   // Weight
   {
     const latest = latestOf("WEIGHT");
     const spark = sparkOf("WEIGHT");
+    const meta = metaForType("WEIGHT");
     metrics.push({
       id: "weight",
       kind: "weight",
@@ -253,7 +316,9 @@ export const GET = apiHandler(async () => {
       unit: METRIC_UNITS.weight,
       trend: trendOf(spark),
       sparkline: spark,
-      updatedAt: latest?.at?.toISOString() ?? null,
+      updatedAt: latest?.at?.toISOString() ?? meta.lastSeenAt,
+      allTimeCount: meta.allTimeCount,
+      lastSeenAt: meta.lastSeenAt,
     });
   }
 
@@ -263,6 +328,20 @@ export const GET = apiHandler(async () => {
     const diaList = byType.get("BLOOD_PRESSURE_DIA") ?? [];
     const latestSys = sysList[sysList.length - 1] ?? null;
     const latestDia = diaList[diaList.length - 1] ?? null;
+    const sysMeta = metaForType("BLOOD_PRESSURE_SYS");
+    const diaMeta = metaForType("BLOOD_PRESSURE_DIA");
+    // BP is a paired metric — the tile is "alive" whenever either side
+    // of the pair has history. Sum the count to reflect total readings
+    // and pick the most recent `_max` so the staleness hint follows
+    // whichever side is freshest.
+    const bpAllTimeCount = sysMeta.allTimeCount + diaMeta.allTimeCount;
+    const bpLastSeenAt = ((): string | null => {
+      const sysAt = sysMeta.lastSeenAt;
+      const diaAt = diaMeta.lastSeenAt;
+      if (!sysAt) return diaAt;
+      if (!diaAt) return sysAt;
+      return sysAt >= diaAt ? sysAt : diaAt;
+    })();
     metrics.push({
       id: "bp",
       kind: "bloodPressure",
@@ -273,7 +352,11 @@ export const GET = apiHandler(async () => {
       trend: trendOf(sysList.map((p) => p.value)),
       sparkline: sysList.map((p) => p.value),
       updatedAt:
-        latestSys?.at?.toISOString() ?? latestDia?.at?.toISOString() ?? null,
+        latestSys?.at?.toISOString() ??
+        latestDia?.at?.toISOString() ??
+        bpLastSeenAt,
+      allTimeCount: bpAllTimeCount,
+      lastSeenAt: bpLastSeenAt,
     });
   }
 
@@ -281,6 +364,7 @@ export const GET = apiHandler(async () => {
   {
     const latest = latestOf("PULSE");
     const spark = sparkOf("PULSE");
+    const meta = metaForType("PULSE");
     metrics.push({
       id: "pulse",
       kind: "pulse",
@@ -290,30 +374,43 @@ export const GET = apiHandler(async () => {
       unit: METRIC_UNITS.pulse,
       trend: trendOf(spark),
       sparkline: spark,
-      updatedAt: latest?.at?.toISOString() ?? null,
+      updatedAt: latest?.at?.toISOString() ?? meta.lastSeenAt,
+      allTimeCount: meta.allTimeCount,
+      lastSeenAt: meta.lastSeenAt,
     });
   }
 
-  // Body fat
+  // Body fat — v1.4.33 widens the emit gate from `latestOf` (only
+  // fires when the 7-day window has a reading) to `allTimeCount > 0`
+  // so a tile doesn't disappear during a fortnight without a fresh
+  // reading.
   {
     const latest = latestOf("BODY_FAT");
     const spark = sparkOf("BODY_FAT");
-    if (latest) {
+    const meta = metaForType("BODY_FAT");
+    if (latest || meta.allTimeCount > 0) {
       metrics.push({
         id: "bodyFat",
         kind: "bodyFat",
         title: METRIC_TITLES.bodyFat,
-        latestValue: latest.value,
+        latestValue: latest?.value ?? null,
         secondaryValue: null,
         unit: METRIC_UNITS.bodyFat,
         trend: trendOf(spark),
         sparkline: spark,
-        updatedAt: latest.at.toISOString(),
+        updatedAt: latest?.at.toISOString() ?? meta.lastSeenAt,
+        allTimeCount: meta.allTimeCount,
+        lastSeenAt: meta.lastSeenAt,
       });
     }
   }
 
-  // Optional cards — only emitted if the user has data for that type.
+  // Optional cards — emitted whenever the user has *ever* logged the
+  // metric. Up to v1.4.32 the gate was `latestOf(type)` (only fires
+  // when the trailing 7-day window has a reading); v1.4.33 widens to
+  // the all-time count so a glucose tile that hasn't been touched in
+  // 10 days still renders with the historical value visible to the
+  // iOS client (paired with the lastSeenAt caption).
   for (const [type, kind] of [
     ["BLOOD_GLUCOSE", "glucose"],
     ["SLEEP_DURATION", "sleep"],
@@ -323,18 +420,21 @@ export const GET = apiHandler(async () => {
     ["OXYGEN_SATURATION", "oxygenSaturation"],
   ] as const) {
     const latest = latestOf(type);
-    if (!latest) continue;
+    const meta = metaForType(type);
+    if (!latest && meta.allTimeCount === 0) continue;
     const spark = sparkOf(type);
     metrics.push({
       id: kind,
       kind,
       title: METRIC_TITLES[kind],
-      latestValue: latest.value,
+      latestValue: latest?.value ?? null,
       secondaryValue: null,
       unit: METRIC_UNITS[kind],
       trend: trendOf(spark),
       sparkline: spark,
-      updatedAt: latest.at.toISOString(),
+      updatedAt: latest?.at.toISOString() ?? meta.lastSeenAt,
+      allTimeCount: meta.allTimeCount,
+      lastSeenAt: meta.lastSeenAt,
     });
   }
 
