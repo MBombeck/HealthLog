@@ -22,26 +22,41 @@
 
 export const DAILY_AGGREGATE_THRESHOLD_DAYS = 90;
 export const WEEKLY_AGGREGATE_THRESHOLD_DAYS = 365;
+export const MONTHLY_AGGREGATE_THRESHOLD_DAYS = 730;
 
-export type AggregateGrain = "raw" | "daily" | "weekly";
+export type AggregateGrain = "raw" | "daily" | "weekly" | "monthly";
+
+/**
+ * Maximum bucket count per grain. Bounds the aggregated response shape
+ * so a multi-year window never paints more buckets than the chart can
+ * reasonably absorb. Applied after bucketising, NOT before — the SQL
+ * aggregation always sees the full row set inside the window.
+ */
+export const BUCKET_CAP: Record<Exclude<AggregateGrain, "raw">, number> = {
+  daily: 365,
+  weekly: 105, // ~2 years of weeks; the monthly grain kicks in past 730 d
+  monthly: 24,
+};
 
 /**
  * Pick the bucket grain for a date window. `raw` returns the
  * measurements unchanged (legacy behaviour); `daily` collapses to one
  * row per UTC day per type with avg / count; `weekly` collapses to one
- * row per ISO week per type.
+ * row per ISO week per type; `monthly` collapses to one row per UTC
+ * calendar month per type.
  *
  * The thresholds favour the user's perceived smoothness over absolute
  * resolution. Charts that draw 7 / 30 / 90 days of pulse stay raw —
- * the in-browser daily bucket already does the right thing. The "all
- * time" range pulls daily aggregates; multi-year scopes (rare today,
- * common with Apple Health backfill) pull weekly.
+ * the in-browser daily bucket already does the right thing. Charts
+ * past 90 d switch to daily, past 365 d to weekly, past 730 d to
+ * monthly (the "All time" chart on a multi-year account).
  */
 export function pickAggregateGrain(
   rangeDays: number,
   explicit?: AggregateGrain,
 ): AggregateGrain {
   if (explicit && explicit !== "raw") return explicit;
+  if (rangeDays > MONTHLY_AGGREGATE_THRESHOLD_DAYS) return "monthly";
   if (rangeDays > WEEKLY_AGGREGATE_THRESHOLD_DAYS) return "weekly";
   if (rangeDays > DAILY_AGGREGATE_THRESHOLD_DAYS) return "daily";
   return "raw";
@@ -69,15 +84,14 @@ interface RawRow {
 }
 
 /**
- * In-memory daily / weekly aggregation. The route uses this when the
- * client requests an aggregated grain — Postgres pre-aggregates would
- * be faster, but the row volume is already bounded by the from/to
- * window and the per-type ceiling, so a single linear pass is enough
- * for v1.4.28 and keeps the helper portable to the test harness.
+ * In-memory daily / weekly / monthly aggregation. Used by the route's
+ * fallback path and by the test harness — the production path runs the
+ * `aggregateRowsSql` query so the take cap never applies before
+ * bucketising (v1.4.28 R4-CODE-C1).
  */
 export function aggregateRows(
   rows: RawRow[],
-  grain: "daily" | "weekly",
+  grain: "daily" | "weekly" | "monthly",
 ): AggregatedRow[] {
   const buckets = new Map<
     string,
@@ -111,11 +125,17 @@ export function aggregateRows(
     .sort((a, b) => a.bucketStart.getTime() - b.bucketStart.getTime());
 }
 
-function bucketStartFor(d: Date, grain: "daily" | "weekly"): Date {
+function bucketStartFor(
+  d: Date,
+  grain: "daily" | "weekly" | "monthly",
+): Date {
   if (grain === "daily") {
     return new Date(
       Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
     );
+  }
+  if (grain === "monthly") {
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
   }
   // Weekly — anchor to the start of the ISO week (Monday) in UTC.
   const day = d.getUTCDay() || 7; // Sunday → 7

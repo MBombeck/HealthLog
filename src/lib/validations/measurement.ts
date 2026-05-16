@@ -254,9 +254,11 @@ export const listMeasurementsSchema = z.object({
     .default("measuredAt"),
   sortDir: z.enum(["asc", "desc"]).optional().default("desc"),
   // v1.4.28 FB-D2 — bucket hint for range-aware queries. When set the
-  // GET handler downsamples server-side via `aggregateRows` and returns
+  // GET handler runs a server-side `date_trunc` aggregation and returns
   // one row per bucket per type rather than the raw measurement rows.
-  aggregate: z.enum(["raw", "daily", "weekly"]).optional(),
+  // Omitting `aggregate` keeps the raw wire shape (iOS contract); the
+  // chart-data client must opt in explicitly.
+  aggregate: z.enum(["raw", "daily", "weekly", "monthly"]).optional(),
 });
 
 export const createBatchMeasurementSchema = z.object({

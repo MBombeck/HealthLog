@@ -5,6 +5,8 @@ import {
   rangeLengthDays,
   DAILY_AGGREGATE_THRESHOLD_DAYS,
   WEEKLY_AGGREGATE_THRESHOLD_DAYS,
+  MONTHLY_AGGREGATE_THRESHOLD_DAYS,
+  BUCKET_CAP,
 } from "../range-aggregation";
 
 describe("range-aggregation", () => {
@@ -23,18 +25,36 @@ describe("range-aggregation", () => {
       expect(pickAggregateGrain(WEEKLY_AGGREGATE_THRESHOLD_DAYS)).toBe("daily");
     });
 
-    it("returns weekly for ranges over one year", () => {
+    it("returns weekly for ranges over one year up to two years", () => {
       expect(pickAggregateGrain(WEEKLY_AGGREGATE_THRESHOLD_DAYS + 1)).toBe(
         "weekly",
       );
-      expect(pickAggregateGrain(1000)).toBe("weekly");
+      expect(pickAggregateGrain(MONTHLY_AGGREGATE_THRESHOLD_DAYS)).toBe(
+        "weekly",
+      );
+    });
+
+    it("returns monthly for ranges over two years", () => {
+      expect(pickAggregateGrain(MONTHLY_AGGREGATE_THRESHOLD_DAYS + 1)).toBe(
+        "monthly",
+      );
+      expect(pickAggregateGrain(3650)).toBe("monthly");
     });
 
     it("honours an explicit grain override", () => {
       expect(pickAggregateGrain(7, "daily")).toBe("daily");
       expect(pickAggregateGrain(7, "weekly")).toBe("weekly");
+      expect(pickAggregateGrain(7, "monthly")).toBe("monthly");
       // "raw" override falls through to the threshold ladder.
       expect(pickAggregateGrain(500, "raw")).toBe("weekly");
+    });
+  });
+
+  describe("BUCKET_CAP", () => {
+    it("caps daily at 365 buckets and monthly at 24", () => {
+      expect(BUCKET_CAP.daily).toBe(365);
+      expect(BUCKET_CAP.monthly).toBe(24);
+      expect(BUCKET_CAP.weekly).toBeGreaterThan(BUCKET_CAP.monthly);
     });
   });
 
@@ -97,6 +117,29 @@ describe("range-aggregation", () => {
       expect(out).toHaveLength(2);
       const types = new Set(out.map((r) => r.type));
       expect(types).toEqual(new Set(["PULSE", "WEIGHT"]));
+    });
+
+    it("collapses to one row per UTC calendar month with monthly", () => {
+      const a = new Date("2025-01-05T10:00:00.000Z");
+      const b = new Date("2025-01-20T10:00:00.000Z");
+      const c = new Date("2025-02-10T10:00:00.000Z");
+      const rows = [
+        { type: "WEIGHT", value: 75, measuredAt: a },
+        { type: "WEIGHT", value: 76, measuredAt: b },
+        { type: "WEIGHT", value: 77, measuredAt: c },
+      ];
+      const out = aggregateRows(rows, "monthly");
+      expect(out).toHaveLength(2);
+      expect(out[0].count).toBe(2);
+      expect(out[0].avg).toBeCloseTo(75.5, 5);
+      expect(out[1].count).toBe(1);
+      expect(out[1].avg).toBe(77);
+      expect(out[0].bucketStart.toISOString()).toBe(
+        "2025-01-01T00:00:00.000Z",
+      );
+      expect(out[1].bucketStart.toISOString()).toBe(
+        "2025-02-01T00:00:00.000Z",
+      );
     });
   });
 });
