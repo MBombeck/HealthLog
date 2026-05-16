@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.4.34.3] — 2026-05-17 — Remove the dashboard Coach CTA
+
+Per maintainer directive: the dashboard hero CTA that v1.4.34 added
+("Frag den Coach" sparkles button next to "Hinzufügen") is removed
+from the dashboard. The Coach surface remains reachable from the
+`/insights` tree where it originally lived; the auth-shell-level
+`<CoachLaunchProvider>` + drawer mount stay intact so other pages
+that want to surface a Coach CTA can opt in cleanly. The button was
+visually loud on the dashboard hero and not the right placement for
+the surface.
+
+### Changed
+
+- `src/app/page.tsx` no longer renders the dashboard Coach CTA. The
+  `useCoachLaunch` hook, the `useFeatureFlags` hook (only used for
+  the CTA gate), and the `Sparkles` icon import all drop out of the
+  dashboard tree as a side effect.
+
 ## [1.4.34.2] — 2026-05-16 — `pull_policy: always` so Coolify deploys actually pull
 
 Bundle-release hotfix for the v1.4.34.1 deploy stall. The GHCR image

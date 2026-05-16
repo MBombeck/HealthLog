@@ -13,7 +13,6 @@ import {
   Percent,
   Plus,
   Smile,
-  Sparkles,
   Target,
   TrendingUp,
   Waves,
@@ -62,8 +61,6 @@ const MedicationComplianceChart = dynamic(
   { ssr: false, loading: () => <ChartSkeleton /> },
 );
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
-import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
-import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { queryKeys } from "@/lib/query-keys";
 import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
 import type { DataSummary } from "@/lib/analytics/trends";
@@ -198,14 +195,6 @@ export default function DashboardPage() {
   const { isAuthenticated, user } = useAuth();
   const { t } = useTranslations();
   const fmt = useFormatters();
-  // v1.4.34 IW-B — Coach launch context lives on the auth-shell now so
-  // every authed route (this dashboard included) can call `askCoach()`.
-  // Returns `null` outside the provider; the dashboard hero CTA self-
-  // gates on the hook + the operator's coach feature flag so the
-  // button silently disappears when either is unavailable.
-  const coachLaunch = useCoachLaunch();
-  const featureFlags = useFeatureFlags();
-  const coachEnabled = featureFlags.coach && coachLaunch !== null;
   const [quickEntryDialog, setQuickEntryDialog] = useState<
     "measurement" | "mood" | null
   >(null);
@@ -545,28 +534,6 @@ export default function DashboardPage() {
           <p className="text-muted-foreground mt-1 text-sm">{welcomeText}</p>
         </div>
         <div className="flex items-center gap-2">
-          {/* v1.4.34 IW-B — dashboard hero CTA to the Coach drawer. The
-              provider lives on the auth-shell now so this button can
-              call `askCoach()` from the same context every authed
-              surface shares. Mobile-first: 44 px tap target via
-              `min-h-11` (WCAG 2.5.5), shrinks back to 36 px on `sm:`
-              upwards alongside the sibling "Hinzufügen" button. Self-
-              gates on the provider mount + the operator's `coach`
-              feature flag so the button disappears cleanly when the
-              Coach surface is disabled or unreachable. */}
-          {coachEnabled && coachLaunch ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="default"
-              className="min-h-11 gap-1 sm:min-h-9"
-              data-slot="dashboard-coach-cta"
-              onClick={() => coachLaunch.askCoach(null)}
-            >
-              <Sparkles className="h-4 w-4" aria-hidden="true" />
-              <span>{t("dashboard.coachCta")}</span>
-            </Button>
-          ) : null}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               {/* v1.4.33 maintainer-item-7 — restore proportional sizing
