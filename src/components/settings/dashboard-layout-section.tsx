@@ -252,15 +252,23 @@ export function DashboardLayoutSection({ id }: { id: string }) {
               chart in the lower row. the maintainer wanted independent control
               of the two surfaces (per feedback_dashboard_top_tiles
               _selectable.md). */}
-          <div className="text-muted-foreground flex items-center gap-3 px-3 pb-1 text-[10px] font-medium tracking-wide uppercase">
-            <span className="w-11" aria-hidden="true" />
-            <span className="flex-1" />
+          {/* v1.4.29 — column-header alignment for the new
+              horizontal arrow pair on the trailing edge. The
+              right-hand spacer reserves the width of two
+              size-11/sm:size-9 buttons so the Tile / Chart column
+              headers continue to line up with the switches below. */}
+          <div className="text-muted-foreground flex items-center gap-2 px-3 pb-1 text-[10px] font-medium tracking-wide uppercase">
+            <span className="flex-1" aria-hidden="true" />
             <span className="w-12 text-center">
               {t("dashboard.layoutTileColumn")}
             </span>
             <span className="w-12 text-center">
               {t("dashboard.layoutChartColumn")}
             </span>
+            <span
+              className="w-22 sm:w-18"
+              aria-hidden="true"
+            />
           </div>
           {[...layout.widgets]
             .sort((a, b) => a.order - b.order)
@@ -271,37 +279,24 @@ export function DashboardLayoutSection({ id }: { id: string }) {
                   ? widget.tileVisible
                   : widget.visible;
               return (
+                // v1.4.29 — drag-list row compactness. The legacy
+                // vertical 44+44-px arrow stack inflated each row
+                // to ~116 px; the horizontal arrow pair on the
+                // trailing edge drops the row to 48 px (`min-h-12`)
+                // while preserving the 44-px mobile tap target
+                // (`size-11`). `sm:size-9` shrinks the buttons
+                // visually on desktop where pointer accuracy is
+                // higher.
                 <div
                   key={widget.id}
-                  className="border-border bg-background/30 flex items-center gap-3 rounded-md border p-3"
+                  className="border-border bg-background/30 flex min-h-12 items-center gap-2 rounded-md border px-3 py-2"
                 >
-                  <div className="flex flex-col gap-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-11"
-                      onClick={() => move(widget.id, -1)}
-                      disabled={index === 0 || saveMutation.isPending}
-                      aria-label={t("dashboard.moveUp")}
-                    >
-                      <ArrowUp className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-11"
-                      onClick={() => move(widget.id, 1)}
-                      disabled={
-                        index === arr.length - 1 || saveMutation.isPending
-                      }
-                      aria-label={t("dashboard.moveDown")}
-                    >
-                      <ArrowDown className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <span className="flex-1 text-sm">{t(labelKey)}</span>
+                  <span
+                    className="flex-1 truncate text-sm"
+                    title={t(labelKey)}
+                  >
+                    {t(labelKey)}
+                  </span>
                   <div className="flex w-12 justify-center">
                     <Switch
                       checked={tileChecked}
@@ -320,6 +315,30 @@ export function DashboardLayoutSection({ id }: { id: string }) {
                       data-slot="widget-chart-switch"
                     />
                   </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-11 sm:size-9"
+                    onClick={() => move(widget.id, -1)}
+                    disabled={index === 0 || saveMutation.isPending}
+                    aria-label={t("dashboard.moveUp")}
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-11 sm:size-9"
+                    onClick={() => move(widget.id, 1)}
+                    disabled={
+                      index === arr.length - 1 || saveMutation.isPending
+                    }
+                    aria-label={t("dashboard.moveDown")}
+                  >
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
                 </div>
               );
             })}
