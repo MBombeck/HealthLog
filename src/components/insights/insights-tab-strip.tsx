@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Loader2, RefreshCw } from "lucide-react";
@@ -110,14 +110,21 @@ function buildTabs(availability: InsightInputs | undefined): TabEntry[] {
   ];
 }
 
-export function InsightsTabStrip({
+function InsightsTabStripImpl({
   onRegenerate,
   regenerating = false,
   availability,
 }: InsightsTabStripProps) {
   const { t } = useTranslations();
   const pathname = usePathname();
-  const tabs = buildTabs(availability);
+  // v1.4.31 — memoise the pill list so the strip's main render
+  // path doesn't rebuild the array on every parent re-render. The
+  // strip is wrapped in `React.memo` (see export below); the memo
+  // here keeps the inner `<Link>` references stable so React's
+  // reconciliation short-circuits when neither pathname nor
+  // availability changed. Per
+  // `.planning/research/v15-insights-blocking-bug.md` fix 2.
+  const tabs = useMemo(() => buildTabs(availability), [availability]);
 
   // Fire success toast on the falling edge of `regenerating`. Same
   // rising-edge ref guard as the W3 implementation so the toast fires
@@ -238,3 +245,17 @@ export function InsightsTabStrip({
     </nav>
   );
 }
+
+/**
+ * v1.4.31 — `React.memo`'d export. The strip mounts in
+ * `<InsightsLayoutShell>` and gets a new `availability` prop on
+ * every cache-write of the analytics or comprehensive query; without
+ * the memo, every resolve cycle re-runs `buildTabs(availability)` +
+ * the eight `<Link>` reconciliations on the main thread inside the
+ * same window the iOS touch handler is sitting in. The memo, paired
+ * with the `useMemo` on `availability` in the shell, collapses that
+ * cascade so the strip only re-renders when the operator-visible
+ * pill set actually changed. Per
+ * `.planning/research/v15-insights-blocking-bug.md` fix 2.
+ */
+export const InsightsTabStrip = memo(InsightsTabStripImpl);

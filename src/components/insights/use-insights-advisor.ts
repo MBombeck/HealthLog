@@ -49,14 +49,45 @@ export interface InsightAdvisorPayload {
   trendAnnotations?: TrendAnnotations | null;
 }
 
+/**
+ * v1.4.31 — bound the advisor POST with an 8-second
+ * `AbortController` so a cache-miss path (server still waiting on
+ * the provider chain) does not pin the mother-page main thread for
+ * the LLM's full completion tail. The strip stays interactive in
+ * the DOM, but every re-render of a parent during a long pending
+ * fetch competes with WebKit's gesture-recognition timeout —
+ * dropping the worst case from 30 s to 8 s eliminates the
+ * mobile-tap-block window per
+ * `.planning/research/v15-insights-blocking-bug.md` fix 1.
+ */
+const ADVISOR_TIMEOUT_MS = 8_000;
+
 async function fetchAdvisor(
   options: { force?: boolean } = {},
 ): Promise<InsightAdvisorPayload | null> {
-  const res = await fetch("/api/insights/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(options.force ? { force: true } : {}),
-  });
+  const controller = new AbortController();
+  const timeoutHandle = setTimeout(
+    () => controller.abort(),
+    ADVISOR_TIMEOUT_MS,
+  );
+  let res: Response;
+  try {
+    res = await fetch("/api/insights/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(options.force ? { force: true } : {}),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      // Graceful empty payload — the UI surfaces the empty / regen
+      // CTA exactly as it does for the 422 / 429 / 503 paths below.
+      return null;
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutHandle);
+  }
   if (!res.ok) {
     // 422 (no provider configured) and 429 (rate-limited) are expected
     // surfaces — return null so the consuming UI shows the empty / error

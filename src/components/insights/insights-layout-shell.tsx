@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/hooks/use-auth";
@@ -69,14 +69,21 @@ export function InsightsLayoutShell({ children }: { children: ReactNode }) {
     enabled: isAuthenticated,
   });
 
-  const availability: InsightInputs | undefined = isAuthenticated
-    ? {
-        summaries: analyticsQuery.data?.summaries,
-        hasMood: (comprehensiveQuery.data?.moodSummary?.count ?? 0) > 0,
-        hasMedication:
-          (comprehensiveQuery.data?.medications?.length ?? 0) > 0,
-      }
-    : undefined;
+  // v1.4.31 — memoise the `availability` prop so an unchanged
+  // payload doesn't recreate the object on every cache-write of
+  // analytics or comprehensive. The strip is wrapped in
+  // `React.memo` and would still rerun `buildTabs(availability)` on
+  // every parent render if this prop kept arriving as a fresh
+  // reference. Per
+  // `.planning/research/v15-insights-blocking-bug.md` fix 2.
+  const summaries = analyticsQuery.data?.summaries;
+  const hasMood = (comprehensiveQuery.data?.moodSummary?.count ?? 0) > 0;
+  const hasMedication =
+    (comprehensiveQuery.data?.medications?.length ?? 0) > 0;
+  const availability: InsightInputs | undefined = useMemo(() => {
+    if (!isAuthenticated) return undefined;
+    return { summaries, hasMood, hasMedication };
+  }, [isAuthenticated, summaries, hasMood, hasMedication]);
 
   return (
     <div className="space-y-8">

@@ -1,8 +1,27 @@
 "use client";
 
-import { CoachDrawer } from "@/components/insights/coach-panel/coach-drawer";
+import dynamic from "next/dynamic";
+
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
 import { useFeatureFlags } from "@/hooks/use-feature-flags";
+
+/**
+ * v1.4.31 — defer the Coach drawer subtree behind `next/dynamic` so
+ * the SSE machinery (chat reader, suggested-prompts chip rail,
+ * source-chip thread, persistent settings sheet) doesn't load on
+ * every cold /insights mount. The drawer renders nothing until the
+ * user opens it, but the legacy direct import still ran every
+ * `useState` initialiser + the Sheet portal scaffolding inside the
+ * mother-page render window. Per
+ * `.planning/research/v15-insights-blocking-bug.md` fix 4.
+ */
+const CoachDrawer = dynamic(
+  () =>
+    import("@/components/insights/coach-panel/coach-drawer").then((mod) => ({
+      default: mod.CoachDrawer,
+    })),
+  { ssr: false, loading: () => null },
+);
 
 /**
  * v1.4.27 R3d MB4 — bridge between the layout-level
