@@ -21,6 +21,7 @@ import {
 } from "@/lib/dashboard-layout";
 import { Prisma } from "@/generated/prisma/client";
 import { z } from "zod/v4";
+import { invalidateUserDashboardWidgets } from "@/lib/cache/invalidate";
 import type { NextRequest } from "next/server";
 
 // Single source of truth — every widget id rendered by the Settings →
@@ -149,6 +150,10 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     meta: { visible_count: normalized.widgets.filter((w) => w.visible).length },
   });
 
+  // v1.4.34 IW-G — bust the per-user dashboard-widgets cache so the
+  // next dashboard mount paints the new layout.
+  invalidateUserDashboardWidgets(user.id);
+
   return apiSuccess(normalized);
 });
 
@@ -161,6 +166,10 @@ export const DELETE = apiHandler(async () => {
   });
 
   annotate({ action: { name: "dashboard.widgets.reset" } });
+
+  // v1.4.34 IW-G — bust the per-user dashboard-widgets cache so the
+  // next dashboard mount paints the reset (default) layout.
+  invalidateUserDashboardWidgets(user.id);
 
   return apiSuccess(DEFAULT_DASHBOARD_LAYOUT);
 });

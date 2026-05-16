@@ -15,6 +15,7 @@ import {
   invalidateServerDefaultTimezone,
   isValidTimezone,
 } from "@/lib/tz/resolver";
+import { invalidateAppSettings } from "@/lib/cache/invalidate";
 
 export const dynamic = "force-dynamic";
 
@@ -227,6 +228,11 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   if (didTouchTimezone) {
     invalidateServerDefaultTimezone();
   }
+
+  // v1.4.34 IW-G — bust the bug-report status cache (global singleton)
+  // so the next read reflects the new GitHub-token / bug-report-enabled
+  // shape. Cheap call — the cache holds at most 10 entries.
+  invalidateAppSettings();
 
   await auditLog("admin.settings.update", {
     userId: user.id,

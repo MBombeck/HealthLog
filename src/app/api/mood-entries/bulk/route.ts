@@ -42,6 +42,7 @@ import {
   moodSourceEnum,
 } from "@/lib/validations/moodlog";
 import { moodDateKey, DEFAULT_TIMEZONE } from "@/lib/mood/date-key";
+import { invalidateUserMood } from "@/lib/cache/invalidate";
 
 const MAX_ENTRIES_PER_BATCH = 500;
 const BATCH_RATE_LIMIT_MAX = 60;
@@ -209,6 +210,13 @@ async function postBulk(request: NextRequest): Promise<Response> {
       skipped: skipped.length,
     },
   });
+
+  // v1.4.34 IW-G — bust per-user mood + achievements + analytics caches
+  // when at least one row landed so the next read picks up the ingested
+  // batch. Skipped / duplicate-only ingests are no-ops.
+  if (inserted > 0) {
+    invalidateUserMood(user.id);
+  }
 
   return apiSuccess({
     processed: entries.length,

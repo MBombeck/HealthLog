@@ -37,6 +37,7 @@ import { validateMeasurementRange } from "@/lib/validations/measurement";
 import { deviceTypeEnum } from "@/lib/validations/source-priority";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { enqueuePrDetection } from "@/lib/jobs/pr-detection";
+import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { Prisma } from "@/generated/prisma/client";
 
 // v1.4.25 W16c — historical-backfill threshold for PR push
@@ -365,6 +366,14 @@ async function postBatch(request: NextRequest): Promise<Response> {
       skipped: skipped.length,
     },
   });
+
+  // v1.4.34 IW-G — bust per-user analytics + achievements + workouts
+  // caches when at least one row landed so the next read picks up the
+  // ingested batch. Skipped-only ingests don't change state, so we
+  // gate the invalidation on `insertedCount > 0`.
+  if (insertedCount > 0) {
+    invalidateUserMeasurements(user.id);
+  }
 
   return apiSuccess({
     processed: entries.length,

@@ -15,6 +15,7 @@ import {
 } from "@/lib/medication-category";
 import { serializeScheduleRecurrence } from "@/lib/medication-schedule";
 import { getUserTodayBounds } from "@/lib/timezone";
+import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { NextRequest } from "next/server";
 
 export const GET = apiHandler(async () => {
@@ -152,6 +153,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
       entity_id: medication.id,
     },
   });
+
+  // v1.4.34 IW-G — bust per-user medications + compliance + achievement
+  // caches so the next read reflects the new schedule.
+  invalidateUserMedications(user.id);
 
   return apiSuccess(
     {

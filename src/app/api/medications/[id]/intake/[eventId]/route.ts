@@ -9,6 +9,7 @@ import {
   safeJson,
 } from "@/lib/api-response";
 import { updateIntakeEventSchema } from "@/lib/validations/medication";
+import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string; eventId: string }> };
@@ -62,6 +63,10 @@ export const PUT = apiHandler(
       meta: { medication_id: id },
     });
 
+    // v1.4.34 IW-G — bust per-user medications + compliance + achievement
+    // caches so the next read reflects the edited event.
+    invalidateUserMedications(user.id);
+
     return apiSuccess(updated);
   },
 );
@@ -97,6 +102,10 @@ export const DELETE = apiHandler(
       },
       meta: { medication_id: id },
     });
+
+    // v1.4.34 IW-G — bust per-user medications + compliance + achievement
+    // caches so the next read reflects the deletion.
+    invalidateUserMedications(user.id);
 
     return apiSuccess({ deleted: true });
   },

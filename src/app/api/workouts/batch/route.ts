@@ -63,6 +63,7 @@ import {
 import { withIdempotency } from "@/lib/idempotency";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { enqueuePrDetection } from "@/lib/jobs/pr-detection";
+import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import {
   createBatchWorkoutSchema,
   MAX_WORKOUTS_PER_BATCH,
@@ -522,6 +523,14 @@ async function postBatch(request: NextRequest): Promise<Response> {
       skipped: skipped.length,
     },
   });
+
+  // v1.4.34 IW-G — bust per-user analytics + achievements + workouts
+  // caches when at least one row landed. Workouts ride on the
+  // measurements bucket because achievements / analytics also touch
+  // workout-derived metrics.
+  if (insertedCount > 0) {
+    invalidateUserMeasurements(user.id);
+  }
 
   return apiSuccess({
     processed: workouts.length,

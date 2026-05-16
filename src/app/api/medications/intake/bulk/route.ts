@@ -40,6 +40,7 @@ import {
 } from "@/lib/api-response";
 import { withIdempotency } from "@/lib/idempotency";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { invalidateUserMedications } from "@/lib/cache/invalidate";
 
 const MAX_ENTRIES_PER_BATCH = 500;
 const BATCH_RATE_LIMIT_MAX = 60;
@@ -204,6 +205,13 @@ async function postBulk(request: NextRequest): Promise<Response> {
       skipped: skipped.length,
     },
   });
+
+  // v1.4.34 IW-G — bust per-user medications + compliance + achievement
+  // caches when at least one row landed so the next read reflects the
+  // ingested batch.
+  if (inserted > 0) {
+    invalidateUserMedications(user.id);
+  }
 
   return apiSuccess({
     processed: entries.length,

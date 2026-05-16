@@ -14,6 +14,7 @@ import { NextRequest } from "next/server";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { moodDateKey, DEFAULT_TIMEZONE } from "@/lib/mood/date-key";
+import { invalidateUserMood } from "@/lib/cache/invalidate";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -108,6 +109,9 @@ export const PUT = apiHandler(
       meta: { moodEntryId: id },
     });
 
+    // v1.4.34 IW-G — bust per-user mood + achievements + analytics caches.
+    invalidateUserMood(user.id);
+
     return apiSuccess({ ...entry, tags: parseTags(entry.tags) });
   },
 );
@@ -136,6 +140,9 @@ export const DELETE = apiHandler(
       action: { name: "mood-entries.delete" },
       meta: { moodEntryId: id },
     });
+
+    // v1.4.34 IW-G — bust per-user mood + achievements + analytics caches.
+    invalidateUserMood(user.id);
 
     return apiSuccess({ deleted: true });
   },

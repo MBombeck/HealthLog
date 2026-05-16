@@ -17,6 +17,7 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { withIdempotency } from "@/lib/idempotency";
 import { moodDateKey, DEFAULT_TIMEZONE } from "@/lib/mood/date-key";
+import { invalidateUserMood } from "@/lib/cache/invalidate";
 
 function parseTags(tags: string | null): string[] {
   if (!tags) return [];
@@ -124,6 +125,9 @@ async function postMoodEntry(request: NextRequest) {
       action: { name: "mood-entries.create" },
       meta: { moodEntryId: entry.id, mood },
     });
+
+    // v1.4.34 IW-G — bust per-user mood + achievements + analytics caches.
+    invalidateUserMood(user.id);
 
     return apiSuccess({ ...entry, tags: parseTags(entry.tags) }, 201);
   } catch (err) {

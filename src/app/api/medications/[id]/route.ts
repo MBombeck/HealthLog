@@ -9,6 +9,7 @@ import {
   safeJson,
 } from "@/lib/api-response";
 import { updateMedicationSchema } from "@/lib/validations/medication";
+import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import {
   deleteMedicationCategory,
   getMedicationCategories,
@@ -177,6 +178,10 @@ export const PUT = apiHandler(
       },
     });
 
+    // v1.4.34 IW-G — bust per-user medications + compliance + achievement
+    // caches so the next read reflects the schedule change.
+    invalidateUserMedications(user.id);
+
     return apiSuccess({
       ...medication,
       category: normalizedCategory,
@@ -221,6 +226,10 @@ export const DELETE = apiHandler(
         entity_id: id,
       },
     });
+
+    // v1.4.34 IW-G — bust per-user medications + compliance + achievement
+    // caches so the next read reflects the deletion.
+    invalidateUserMedications(user.id);
 
     return apiSuccess({ deleted: true });
   },

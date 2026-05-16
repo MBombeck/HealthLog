@@ -37,6 +37,7 @@ vi.mock("next/headers", () => ({
 import { GET, POST } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -45,6 +46,9 @@ const SESSION_OK = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  // v1.4.34 IW-G — reset compliance LRU between tests so each case
+  // observes a cold cache.
+  __resetAllCachesForTests();
   vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
     [] as never,
   );

@@ -9,6 +9,7 @@ import {
   safeJson,
 } from "@/lib/api-response";
 import { updateMeasurementSchema } from "@/lib/validations/measurement";
+import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { Prisma } from "@/generated/prisma/client";
 import { NextRequest } from "next/server";
 
@@ -107,6 +108,10 @@ export const PUT = apiHandler(
       },
     });
 
+    // v1.4.34 IW-G — bust per-user analytics + achievements + workouts
+    // caches so subsequent reads reflect the edited row.
+    invalidateUserMeasurements(user.id);
+
     return apiSuccess(measurement);
   },
 );
@@ -140,6 +145,10 @@ export const DELETE = apiHandler(
         entity_id: id,
       },
     });
+
+    // v1.4.34 IW-G — bust per-user analytics + achievements + workouts
+    // caches so subsequent reads reflect the deletion.
+    invalidateUserMeasurements(user.id);
 
     return apiSuccess({ deleted: true });
   },

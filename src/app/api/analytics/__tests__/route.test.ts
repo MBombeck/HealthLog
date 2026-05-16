@@ -52,6 +52,7 @@ vi.mock("next/headers", () => ({
 import { GET } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
 
 interface MeasurementRow {
   id: string;
@@ -89,6 +90,10 @@ function pulseRow(measuredAt: Date, value: number, id: string): MeasurementRow {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  // v1.4.34 IW-G — reset the analytics LRU between tests so each case
+  // observes a cold cache (otherwise tests sharing a userId would land
+  // on the prior test's cached response).
+  __resetAllCachesForTests();
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
   vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(

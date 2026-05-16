@@ -31,6 +31,7 @@ import {
   getClientIp,
   safeJson,
 } from "@/lib/api-response";
+import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 
 const MAX_BATCH_ENTRIES = 500;
 
@@ -102,6 +103,13 @@ async function deleteByExternalIds(request: NextRequest): Promise<Response> {
     action: { name: "measurement.delete.by_external_ids" },
     meta: { processed: externalIds.length, deleted: result.count },
   });
+
+  // v1.4.34 IW-G — bust per-user analytics + achievements + workouts
+  // caches when at least one row deleted so the next read reflects the
+  // reconciliation. A 0-delete batch is a no-op and skips the eviction.
+  if (result.count > 0) {
+    invalidateUserMeasurements(user.id);
+  }
 
   return apiSuccess({ deletedCount: result.count });
 }

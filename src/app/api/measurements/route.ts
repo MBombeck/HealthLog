@@ -20,6 +20,7 @@ import {
 } from "@/lib/measurements/range-aggregation";
 import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
 import { withIdempotency } from "@/lib/idempotency";
+import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { NextRequest } from "next/server";
 import type {
   MeasurementType,
@@ -214,6 +215,10 @@ async function postMeasurement(request: NextRequest) {
       },
     });
 
+    // v1.4.34 IW-G — flush every cache that reflects this user's
+    // measurement set so the next read paints the new rows.
+    invalidateUserMeasurements(user.id);
+
     return apiSuccess(results, 201);
   }
 
@@ -269,6 +274,10 @@ async function postMeasurement(request: NextRequest) {
       entity_id: measurement.id,
     },
   });
+
+  // v1.4.34 IW-G — flush every cache that reflects this user's
+  // measurement set so the next read paints the new row.
+  invalidateUserMeasurements(user.id);
 
   return apiSuccess(measurement, 201);
 }
