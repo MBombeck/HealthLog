@@ -899,6 +899,8 @@ components:
             - AUDIO_EXPOSURE_ENV
             - AUDIO_EXPOSURE_HEADPHONE
             - TIME_IN_DAYLIGHT
+            - WALKING_STEADINESS
+            - AUDIO_EXPOSURE_EVENT
           type: string
         unit:
           type: string
@@ -2179,6 +2181,8 @@ paths:
               - AUDIO_EXPOSURE_ENV
               - AUDIO_EXPOSURE_HEADPHONE
               - TIME_IN_DAYLIGHT
+              - WALKING_STEADINESS
+              - AUDIO_EXPOSURE_EVENT
             type: string
         - in: query
           name: from
@@ -2311,6 +2315,8 @@ paths:
                     - AUDIO_EXPOSURE_ENV
                     - AUDIO_EXPOSURE_HEADPHONE
                     - TIME_IN_DAYLIGHT
+                    - WALKING_STEADINESS
+                    - AUDIO_EXPOSURE_EVENT
                   type: string
                 value:
                   type: number
