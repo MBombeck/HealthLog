@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/popover";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { useIsMobile } from "@/hooks/use-is-mobile";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
@@ -61,12 +62,19 @@ export function HealthScoreDeltaExplainer({
 }: HealthScoreDeltaExplainerProps) {
   const { t } = useTranslations();
   const isMobile = useIsMobile();
+  const flags = useFeatureFlags();
   const [open, setOpen] = useState(false);
   // Stable fallback id when the parent doesn't supply one. The body
   // still paints the id so future consumers can thread the same
   // describedby pattern without modifying the explainer.
   const generatedId = useId();
   const resolvedBodyId = bodyId ?? generatedId;
+  // v1.4.31 — operator can hide the `?` trigger; the delta digit on
+  // the parent line stays visible because the parent reads it
+  // directly. Silent suppression per the architecture brief. The
+  // early return sits below every hook call so the hook order stays
+  // stable across renders.
+  if (!flags.healthScoreExplainer) return null;
 
   const triggerLabel = t("insights.healthScore.deltaExplainer.trigger");
   const title = t("insights.healthScore.deltaExplainer.title");

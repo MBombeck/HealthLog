@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Loader2, TrendingUp } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { useTranslations } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -115,6 +116,7 @@ export default function InsightsPage() {
   // on the same context, and the drawer itself is mounted next to
   // the provider in `src/app/insights/layout.tsx`.
   const coachLaunch = useCoachLaunch();
+  const flags = useFeatureFlags();
 
   const { data, isLoading } = useQuery({
     queryKey: ["insights", "comprehensive"],
@@ -194,15 +196,17 @@ export default function InsightsPage() {
         healthScore={analytics?.healthScore ?? undefined}
       />
 
-      <DailyBriefing
-        briefing={briefingPayload}
-        updatedAt={heroStripUpdatedAt}
-        loading={advisor.isLoading}
-        onRegenerate={advisor.regenerate}
-        regenerating={advisor.isRegenerating}
-      />
+      {flags.briefing && (
+        <DailyBriefing
+          briefing={briefingPayload}
+          updatedAt={heroStripUpdatedAt}
+          loading={advisor.isLoading}
+          onRegenerate={advisor.regenerate}
+          regenerating={advisor.isRegenerating}
+        />
+      )}
 
-      {analytics?.correlations && (
+      {flags.correlations && analytics?.correlations && (
         <CorrelationRow results={analytics.correlations} />
       )}
 

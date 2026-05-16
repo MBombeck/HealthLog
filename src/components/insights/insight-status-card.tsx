@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { stripChartTokens } from "@/lib/insights/chart-tokens";
 import { cn } from "@/lib/utils";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -32,6 +33,11 @@ export function InsightStatusCard({
   loading = false,
 }: InsightStatusCardProps) {
   const { t } = useTranslations();
+  const flags = useFeatureFlags();
+  // v1.4.31 — operator can hide every per-metric status card
+  // app-wide. The delta number stays; the LLM narration card is
+  // suppressed in full so the layout collapses naturally.
+  if (!flags.insightStatus) return null;
 
   if (loading) {
     return (

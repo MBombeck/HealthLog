@@ -2,6 +2,7 @@
 
 import { CoachDrawer } from "@/components/insights/coach-panel/coach-drawer";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 
 /**
  * v1.4.27 R3d MB4 — bridge between the layout-level
@@ -15,7 +16,11 @@ import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
  */
 export function LayoutCoachMount() {
   const launch = useCoachLaunch();
+  const flags = useFeatureFlags();
   if (!launch) return null;
+  // v1.4.31 — operator can hide the Coach drawer app-wide; suppress
+  // the entire SSE mount when the flag is off.
+  if (!flags.coach) return null;
   return (
     <CoachDrawer
       open={launch.open}

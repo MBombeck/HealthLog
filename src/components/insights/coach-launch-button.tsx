@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 
 /**
  * Inline desktop Coach launch button.
@@ -40,12 +41,15 @@ export function CoachLaunchButton({
 }: CoachLaunchButtonProps) {
   const { t } = useTranslations();
   const launch = useCoachLaunch();
+  const flags = useFeatureFlags();
 
   if (!launch) {
     // The button only makes sense beneath the provider. Render nothing
     // so the sub-page doesn't paint a dead control.
     return null;
   }
+  // v1.4.31 — operator can hide the Coach surface app-wide.
+  if (!flags.coach) return null;
 
   const accessibleLabel = label ?? t("insights.heroActionAskCoach");
 

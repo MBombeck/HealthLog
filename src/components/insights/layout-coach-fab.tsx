@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 
 /**
  * Layout-level mobile Coach launch FAB.
@@ -25,7 +26,11 @@ import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
 export function LayoutCoachFab() {
   const { t } = useTranslations();
   const launch = useCoachLaunch();
+  const flags = useFeatureFlags();
   if (!launch) return null;
+  // v1.4.31 — operator can hide the Coach surface app-wide. The
+  // FAB returns null when the master OR the coach sub-flag is off.
+  if (!flags.coach) return null;
 
   const accessibleLabel = t("insights.heroActionAskCoach");
 
