@@ -1,5 +1,155 @@
 # Changelog
 
+## [1.4.34.4] — 2026-05-17 — Audit-driven hotfix bundle (security, UX, code-quality, docs)
+
+A consolidated hotfix landing the findings from a six-axis audit
+covering mobile security, UX + accessibility, code quality + docs,
+README + discoverability, web performance, and mobile-deep responsive
+behaviour. None of the changes break the public API or the existing
+data shape; every fix is additive and SAFE under the v1.4.34.x web
+freeze. The full audit reports live in `.planning/round-audit-*.md`.
+
+### Security
+
+- **Password rotation now revokes every transport.** `destroyAllSessions`
+  previously deleted only `Session` rows; long-lived `ApiToken` Bearer
+  credentials and short-lived `RefreshToken` rotations survived a
+  user-initiated password change or an admin reset. A stolen iOS
+  Bearer kept working past the user's most obvious self-remediation.
+  The helper now wraps a `$transaction` that revokes all three
+  transports in one shot. Same rotation runs from
+  `POST /api/auth/password`, `POST /api/admin/users/[id]/reset-password`,
+  and `DELETE /api/settings/account`.
+- **`/.well-known/` proxy bypass tightened.** Replaced the prefix-match
+  `startsWith("/.well-known/")` with an explicit-allowlist `Set` seeded
+  only with `apple-app-site-association`. New IETF discovery endpoints
+  must be added explicitly so a future `/.well-known/openid-configuration`
+  doesn't silently inherit "no auth" status. Also dropped the stale
+  `/api/auth/codex/callback` PUBLIC_PATHS entry (the route was renamed
+  to the device-code family).
+- **HSTS gains `preload`.** The domain is now eligible for the Chromium
+  preload list (submit to hstspreload.org after this lands).
+- **Withings host removed from the global CSP.** `wbsapi.withings.net`
+  was in every page's `connect-src`; mirrored the AI-host gating
+  pattern so the host enters CSP only on `/settings/integrations/withings`
+  and `/api/withings/` paths. Closes a DOM-XSS exfil shape on every
+  non-Withings page.
+- **`getClientIp` trust-violation signal.** When `TRUST_PROXY_HOPS` and
+  the XFF chain length disagree, every anonymous caller collapsed to
+  the `"unknown"` rate-limit bucket. The helper now warns once per
+  process and exposes a tagged `getClientIpOrTrustWarning(request)`
+  return so future callers can route to a tighter universal bucket.
+- **Service-worker URL trust.** `notificationclick` now rejects payload
+  URLs whose origin doesn't match `self.location.origin` and falls
+  back to `/`. Push payloads are VAPID-authenticated but the
+  push-server is our own; a server-side bug should not be able to
+  navigate the user's PWA window off-origin.
+- **PWA manifest hygiene.** Added `"scope": "/"`, `"id": "/?source=pwa"`,
+  `"display_override": ["standalone"]` so sub-path deployments don't
+  inherit root scope and install-prompt heuristics anchor on a stable id.
+
+### UX + accessibility
+
+- **i18n leaks closed.** Dialog and Sheet close-X buttons no longer
+  ship hardcoded `<span sr-only>Close</span>` — both read `common.close`
+  in every locale. Same fix on the ChartSkeleton's loading announcement
+  (new `charts.loadingLabel` key) and the notifications-section
+  breadcrumb (`nav.breadcrumb`). All six locale files updated.
+- **Focus rings on mobile + tablet navigation.** The bottom-nav primary
+  links, the More overflow trigger, and the mobile top-bar user menu
+  trigger gained `focus-visible:ring-ring/50 focus-visible:ring-2
+  focus-visible:outline-none focus-visible:ring-offset-2`. Keyboard
+  and switch-control users can now see focus on every nav surface.
+- **Tap-target floor (WCAG 2.5.5).** Input, NativeSelect, Select, and
+  DateTimeInput now ship `h-11 sm:h-10` so mobile clears the 44 px
+  floor while desktop keeps the 40 px norm the Button primitive
+  converged on in v1.4.33.
+- **Admin chip-strip auto-scroll-into-view.** Mirrored the v1.4.33
+  settings-shell pattern: the active admin chip now scrolls to the
+  centre of the strip on route change.
+- **List-page subtitles on mobile.** Measurements, Mood, and Medications
+  pages now keep their descriptive subtitle on `<sm` viewports (was
+  hidden behind `sm:block`); mobile users get the contextual help
+  comparable apps surface.
+- **Insights empty-state CTA vocabulary fixed.** `ALLOWED_ADD_TYPES`
+  on the measurements page now derives from `MEASUREMENT_TYPES` plus a
+  legacy-token normalisation map (`GLUCOSE → BLOOD_GLUCOSE`,
+  `TEMPERATURE → BODY_TEMPERATURE`, `HEART_RATE → PULSE`, `BMI → WEIGHT`).
+  Insights empty-state CTAs that emit these tokens now open the right
+  dialog instead of silently failing.
+
+### Mobile-deep responsive
+
+- **`viewport.themeColor` reacts to light/dark mode.** Replaced the
+  hardcoded `#282a36` with a media-query pair so the Android URL bar
+  and iOS PWA status bar match the active palette.
+- **TopBar reserves `env(safe-area-inset-top)`.** iOS PWA on notched
+  iPhones no longer clips the HealthLog logo + auth controls under
+  the system status bar.
+- **Coach FAB respects safe-area-inset-bottom.** Bottom position now
+  reads `calc(env(safe-area-inset-bottom,0px)+5rem)` so the FAB
+  doesn't collide with the bottom-nav on the home-indicator inset.
+- **Sonner toaster reads `theme="system"`.** Was hardcoded to dark; on
+  light-mode pages the toast contrasted badly against the surface.
+
+### Code quality
+
+- **`SESSION_SECRET` dropped.** The env var was required by the docker
+  entrypoint and listed in every onboarding doc but never read by
+  code. Removed from `.env.example`, `docker-entrypoint.sh`,
+  `docker-compose.yml`, `CONTRIBUTING.md`, `docs/self-hosting/scaling.md`,
+  and the README's Quick Start (three secrets, not four). Self-hosters
+  upgrading can delete the existing line; the entrypoint no longer
+  fails-fast on its absence.
+- **`toJson<T>()` helper.** Seven Prisma JSON-write sites cast via
+  `value as unknown as Prisma.InputJsonValue`; consolidated onto one
+  helper in `src/lib/db.ts`. New unit test pins the cast shape.
+- **`db-compat.ts` header docstring.** Names the file as the
+  schema-bootstrap path that runs ALTER-TABLE-IF-NOT-EXISTS so a
+  fresh container syncs without `prisma migrate deploy`.
+- **Passkey types.** `RegistrationResponseJSON` and
+  `AuthenticationResponseJSON` from `@simplewebauthn/server` replace
+  the previous `any`-typed responses; the per-line `eslint-disable`
+  pragmas drop out.
+- **Zero-TODO CI gate.** A new workflow at
+  `.github/workflows/no-todo-markers.yml` fails the build if any
+  future contribution introduces a TODO/FIXME/XXX/HACK marker into
+  product code. Test files are excluded.
+
+### Documentation + discoverability
+
+- **README rework.** New "How it compares" matrix vs Withings web,
+  Apple Health, Oura, Garmin, and generic CSV. Apple Health import
+  and AI Coach + Insights both promoted to standalone Key-Features
+  bullets (Apple Health was previously absent from the README despite
+  being the v1.4.34 banner feature). Added a Status block, a live
+  Latest-release badge, a GHCR multi-arch badge, and a one-line
+  OpenAPI pointer above the API Reference table. Tagline tightened
+  to lead with "self-hosted health tracker" + the two integration
+  anchors.
+- **OG metadata.** `src/app/layout.tsx` openGraph + twitter cards now
+  carry `images`, a higher-intent description, and the
+  `summary_large_image` Twitter card. Uses the existing
+  `logo-readme.png` until a 1200×630 dashboard capture replaces it.
+- **GitHub repo metadata.** `description` tightened from 290 chars to
+  156 chars and keyword-front. `homepageUrl` flipped from a personal
+  tenant to the demo site. Six generic / PII-adjacent topics dropped
+  (`glp-1`, `mounjaro`, `tracking`, `health`, `dashboard`,
+  `bloodpressure`) and replaced with six high-intent ones
+  (`apple-health-import`, `withings-alternative`, `glucose-tracker`,
+  `mood-tracker`, `ai-insights`, `personal-dashboard`).
+- **New user-facing docs.** Five guides added under `docs/`:
+  - `docs/self-hosting/getting-started.md` (clone → first measurement)
+  - `docs/self-hosting/reverse-proxy.md` (Caddy / Traefik / NPM /
+    Coolify / bare Nginx)
+  - `docs/integrations/apple-health.md` (the v1.4.34 banner feature)
+  - `docs/integrations/withings.md` (developer-portal walkthrough +
+    webhook-secret path-segment rationale)
+  - `docs/integrations/ai-providers.md` (all four `User.aiProvider`
+    values + local-endpoint setup)
+- **`docs/README.md` clarifies the docs tree** as internal playbooks
+  vs the user-facing `docs.healthlog.dev` site.
+
 ## [1.4.34.3] — 2026-05-17 — Remove the dashboard Coach CTA
 
 Per maintainer directive: the dashboard hero CTA that v1.4.34 added
