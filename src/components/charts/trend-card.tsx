@@ -265,11 +265,16 @@ export function TrendCard({
           flex-wrap on the sibling row + this callout's `mt-1`
           horizontal-row layout absorb the overflow without crowding
           the headline value above. */}
-      {compareBaseline !== "none" && compareDelta != null && (
-        <div className="mt-1">
+      {/* v1.4.29 — clamp the callout to one line at `<sm` so the
+          tile's overall height stays inside the 140-px contract.
+          `min-h-[18px]` reserves the slot when no callout is being
+          rendered so the sub-row pair below pins to the same y
+          across every tile. `sm:` releases both bounds. */}
+      <div className="mt-1 min-h-[18px] sm:min-h-0">
+        {compareBaseline !== "none" && compareDelta != null && (
           <span
             className={cn(
-              "inline-block max-w-full text-xs leading-snug font-medium [overflow-wrap:anywhere] tabular-nums",
+              "line-clamp-1 inline-block max-w-full text-xs leading-snug font-medium tabular-nums sm:line-clamp-none sm:[overflow-wrap:anywhere]",
               comparisonDeltaColor,
             )}
             data-slot="tile-compare-delta"
@@ -286,10 +291,14 @@ export function TrendCard({
                 : "comparison.captionLastYear",
             )}`}
           </span>
-        </div>
-      )}
+        )}
+      </div>
       <TooltipProvider>
-        <div className="text-muted-foreground mt-auto flex min-w-0 flex-wrap gap-x-3 gap-y-1 pt-1 text-xs leading-snug">
+        {/* v1.4.29 — sub-row pair clips rather than wraps at `<sm`
+            so a narrow tile cannot grow vertically beyond the
+            140-px contract. `sm:` releases back to the original
+            wrap behaviour. */}
+        <div className="text-muted-foreground mt-auto flex min-w-0 flex-nowrap items-baseline gap-x-3 overflow-hidden pt-1 text-xs leading-snug sm:flex-wrap sm:gap-y-1">
           <span className="max-w-full min-w-0 [overflow-wrap:anywhere]">
             {t(avg7LabelKey)}:{" "}
             {avg7Hint ? (
