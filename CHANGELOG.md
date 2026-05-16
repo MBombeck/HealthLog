@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.4.34] — unreleased
+
+### Added
+
+- **Apple Health `export.zip` import.** New endpoint
+  `POST /api/import/apple-health-export` (synchronous multipart
+  upload, asynchronous ingest via a dedicated pg-boss
+  `apple-health-import` worker, per-`MeasurementType` ingestion
+  stats). Streams the upload straight to disk so a multi-gigabyte
+  export never lands in V8 heap, hashes the bytes inline for
+  content-based idempotency, and unpacks `apple_health_export/export.xml`
+  with a hand-rolled ZIP central-directory walker that handles Zip64
+  for archives past the 4 GB barrier. The parser folds every
+  `<Record>`, `<Workout>`, `<Correlation>`, and `<ClinicalRecord>`
+  into the existing `Measurement` and `Workout` row shapes — spot
+  rows keyed by `HKMetadataKeyExternalUUID` (or a deterministic
+  `sample:<sha256>` fallback), cumulative HK types collapsed into
+  one `stats:<HKType>:<YYYY-MM-DD>` row per user-local day to match
+  the iOS daily-aggregation convention. Live per-phase progress
+  surfaces through `GET /api/import/apple-health-export/{jobId}/status`.
+  An admin variant at `POST /api/admin/import-apple-health-export`
+  imports on behalf of a target user (cookie-only `requireAdmin()`
+  gate; Bearer tokens never elevate).
+
 ## [1.4.33] — 2026-05-17 — Polish and reliability
 
 Quality-leap release between two HealthKit milestones. The headline is
