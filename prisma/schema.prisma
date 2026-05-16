@@ -246,6 +246,10 @@ model User {
   // capture (not per-shot) so delayed-onset symptoms map to their
   // actual occurrence time.
   medicationSideEffects  MedicationSideEffect[]
+  // v1.4.34 — Apple Health `export.zip` import jobs. Mirrors the
+  // pg-boss job state so the polling endpoint can read live per-
+  // phase progress without round-tripping through pg-boss internals.
+  importJobs             ImportJob[]
 
   @@map("users")
 }
@@ -1380,6 +1384,62 @@ model DataBackup {
   @@unique([userId, type], map: "data_backups_user_id_type_key")
   @@index([userId])
   @@map("data_backups")
+}
+
+// ─── Apple Health export.zip import (v1.4.34) ───────────────
+//
+// Mirrors a `pg-boss` `apple-health-import` job's lifecycle so the
+// polling endpoint can read live per-phase progress without
+// round-tripping through pg-boss internals (`output` only populates
+// on completion in v12). The `pgBossJobId` link lets the worker
+// reconcile a row by the boss id it just received from `boss.send`.
+//
+// Status state machine:
+//   queued → unpacking → parsing → upserting → done
+//                                            ↘  failed
+//
+// `progress` carries the live snapshot the worker writes every
+// 1 000 records (see `ImportJobProgress` in
+// `src/lib/measurements/import-apple-health-export.ts`). `result`
+// carries the terminal `ImportJobResult` envelope.
+model ImportJob {
+  id                 String    @id @default(cuid())
+  userId             String    @map("user_id")
+  /// Admin who triggered the import on behalf of `userId` (admin
+  /// variant only). NULL when the user kicked off their own import.
+  triggeredByAdminId String?   @map("triggered_by_admin_id")
+  /// `pg-boss` job id assigned by `boss.send`. Allows the worker to
+  /// look up its mirror row by the boss id rather than passing the
+  /// HealthLog id through the payload.
+  pgBossJobId        String?   @unique @map("pg_boss_job_id")
+  /// `queued | unpacking | parsing | upserting | done | failed`.
+  status             String    @default("queued")
+  /// Free-text reason on `failed`; null otherwise.
+  failureReason      String?   @map("failure_reason")
+  /// Bytes uploaded — surfaced to the operator audit trail.
+  uploadBytes        Int       @map("upload_bytes")
+  /// SHA-256 hex digest of the uploaded `export.zip`. Lets the
+  /// kick-off endpoint short-circuit a re-upload of the exact same
+  /// file back to the existing job id without re-queueing.
+  uploadSha256       String?   @map("upload_sha256")
+  /// Apple's `ExportDate` attribute string-formatted, parsed during
+  /// the unpack phase. NULL until the parser sees it.
+  exportedAt         DateTime? @map("exported_at")
+  startedAt          DateTime  @default(now()) @map("started_at")
+  completedAt        DateTime? @map("completed_at")
+  /// JSON envelope mirroring `ImportJobProgress` (`src/lib/measurements/
+  /// import-apple-health-export.ts`). Updated mid-run.
+  progress           Json      @default("{}")
+  /// JSON envelope mirroring `ImportJobResult`. NULL until terminal
+  /// state. Carries per-type counts, workout counts, clinical /
+  /// deferred / unknown buckets.
+  result             Json?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startedAt])
+  @@index([status])
+  @@map("import_jobs")
 }
 
 // ─── Rate Limiting ──────────────────────────────────────────
