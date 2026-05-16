@@ -5,6 +5,7 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     user: { findUnique: vi.fn(), update: vi.fn() },
   },
+  toJson: <T,>(v: T) => v,
 }));
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
