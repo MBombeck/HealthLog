@@ -81,4 +81,29 @@ describe("<MoodChart> v1.4.18 clean-line revert", () => {
     expect(src).not.toContain("mood-emoji-glyph");
     expect(src).not.toMatch(/[\u{1F600}-\u{1F64F}]/u);
   });
+
+  it("paints the rounded-md mini shell so the trends row shares one radius", async () => {
+    // D-H5 — the mood-chart mini sits next to two HealthChart mini
+    // tiles on `/insights`. HealthChart mini paints
+    // `bg-card border-border rounded-md border p-2`; mood mini rode
+    // the shadcn `<Card>` default `rounded-xl`, so the trends row
+    // showed two corner radii. The override on the Card wrapper now
+    // collapses the mood tile to `rounded-md` to match.
+    const { I18nProvider } = await import("@/lib/i18n/context");
+    const { MoodChart } = await import("../mood-chart");
+
+    const html = renderToStaticMarkup(
+      <I18nProvider initialLocale="en">
+        <MoodChart mini />
+      </I18nProvider>,
+    );
+    // The mini wrapper paints data-slot="chart-mini" with rounded-md.
+    const wrapper = html.match(
+      /<div[^>]*data-slot="chart-mini"[^>]*class="([^"]+)"/,
+    );
+    expect(wrapper).not.toBeNull();
+    const cls = wrapper?.[1] ?? "";
+    expect(cls).toContain("rounded-md");
+    expect(cls).not.toMatch(/\brounded-xl\b/);
+  });
 });

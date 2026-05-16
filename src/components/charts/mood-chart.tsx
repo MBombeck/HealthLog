@@ -536,7 +536,17 @@ export function MoodChart({
       // in the trends row. The mini override gives mood the same
       // `~p-2` shell HealthChart uses so the chart series anchor
       // at the same top edge across BP / weight / mood tiles.
-      className={mini ? "gap-1 py-2 shadow-none" : undefined}
+      //
+      // D-H5 follow-up — the Card primitive carries `rounded-xl
+      // border bg-card shadow-sm` by default. HealthChart mini
+      // paints `rounded-md border bg-card` (no shadow). Without an
+      // explicit `rounded-md` override the mood tile painted a
+      // visibly heavier corner radius than BP / weight in the same
+      // row. Align to the `rounded-md` shell so the three trend
+      // tiles share one corner radius.
+      className={
+        mini ? "gap-1 rounded-md py-2 shadow-none" : undefined
+      }
     >
       <CardHeader
         className={
