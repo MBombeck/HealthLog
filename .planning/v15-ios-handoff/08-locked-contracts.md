@@ -520,7 +520,144 @@ cache (`type, day, last-posted-value`) drives the divergence check.
 **Test fence**: `dailyStatsExternalId` round-trip is covered by
 `src/lib/measurements/__tests__/apple-health-mapping.test.ts`.
 
-## 13. What is NOT in this file
+## §13 — SyncMode conflict-resolution policy (locked v1.4.30.1)
+
+Source: `.planning/RESPONSE-TO-IOS-TEAM-2026-05-16.md` §3 R9.
+
+Hard-spec for the bidirectional sync path between iOS-side SwiftData
+and the server-side `Measurement` / `MoodEntry` / `MedicationIntakeLog`
+rows once `SyncMode = paired` (or `SyncMode = cloud-sync`). The
+underlying SyncMode columns (`syncVersion Int @default(1)`,
+`deletedAt DateTime?` soft-delete, `User.lastSyncedAt DateTime?`)
+ship in v1.4.30 migration 0062.
+
+The four sub-policies plus the sync-state envelope below are locked.
+Richer merge semantics (per-field LWW, three-way merge) defer to v1.6
+if iOS-side evidence warrants — they are explicitly out of scope for
+v1.5.
+
+1. **Bulk-backfill (first-pair).** iOS pushes a backlog via
+   `POST /api/mood-entries/bulk` / `POST /api/medications/intake/bulk`
+   the first time a standalone user pairs with the server. The
+   server UPSERTs every entry keyed on `externalId` (or `clientId`
+   when no `externalId` exists). The existing
+   `@@unique([userId, type, measuredAt, source, sleepStage])` index
+   on `Measurement` and the sibling uniqueness constraints on
+   `MoodEntry` + `MedicationIntakeLog` handle dedup. LWW is not
+   invoked on the bulk path — duplicates collapse to
+   `status: "duplicate"` in the per-entry response.
+
+2. **Steady-state bidirectional sync.** Every synced row carries:
+
+   - `updatedAt DateTime` — server-set on every write
+   - `syncVersion Int @default(1)` — server-incremented on every
+     write
+   - `deletedAt DateTime?` — soft-delete only; hard-delete blocked
+     server-side under `SyncMode = paired`
+
+   iOS treats `(updatedAt, syncVersion)` as the version pair for
+   optimistic concurrency control.
+
+3. **Write conflict.** iOS sends:
+
+   ```http
+   PATCH /api/<entity>/{id}
+   If-Match: <syncVersion>
+   ```
+
+   Server resolution:
+
+   - `If-Match` matches the row's `syncVersion`: accept the write,
+     increment `syncVersion`, return `200 OK` with the new
+     `syncVersion` in the response body.
+   - `If-Match` is older than the row's `syncVersion`: reject with
+     `409 Conflict` and return the canonical row in the standard
+     envelope:
+
+     ```json
+     {
+       "data": { "id": "…", "syncVersion": 7, "updatedAt": "…", "…": "…" },
+       "error": "sync.conflict",
+       "meta": { "errorCode": "sync.conflict" }
+     }
+     ```
+
+   iOS-side resolution on 409:
+
+   - **Default policy: LWW by `updatedAt`.** Whoever has the newer
+     `updatedAt` wins.
+     - If iOS-local `updatedAt` is newer than the server's: iOS
+       re-sends the PATCH with the server's new `syncVersion` in
+       `If-Match` (effectively a rebase).
+     - If the server's `updatedAt` is newer: iOS adopts the server
+       payload and discards the local edit.
+   - **Edge case (tie on `updatedAt` to the millisecond):
+     server-wins.** iOS adopts the server payload. The server's
+     `updatedAt` resolution is millisecond; sub-millisecond ties are
+     a theoretical edge case in practice but the rule keeps the
+     algorithm total.
+   - User-visible UX is iOS's call — a small toast "synced with
+     cloud version — your changes were discarded" is the suggested
+     pattern when iOS adopts the server payload over a pending local
+     edit.
+
+4. **Delete conflict.** Hard-delete is blocked server-side under
+   `SyncMode = paired`. Deletes flow as soft-delete via:
+
+   ```http
+   PATCH /api/<entity>/{id}
+   Content-Type: application/json
+   { "deletedAt": "<ISO 8601>" }
+   ```
+
+   Server resolution:
+
+   - iOS PATCHes a soft-delete on a row the server has subsequently
+     edited: server returns `409 Conflict` + the canonical row.
+     iOS-side: treat as "server says this row was edited after your
+     delete intent — abort the delete and prompt the user to
+     confirm again".
+   - iOS PATCHes an edit on a row the server has already
+     soft-deleted (`deletedAt IS NOT NULL`): server returns
+     `410 Gone`. iOS-side: adopt the server's soft-delete state, or
+     surface "this row was deleted on another device — discard
+     your edit?" depending on the iOS UX call.
+
+5. **Sync-state envelope.** `GET /api/sync/state` returns:
+
+   ```json
+   {
+     "data": {
+       "syncVersion": 42,
+       "lastSyncedAt": "2026-05-16T10:30:00.000Z",
+       "perEntity": {
+         "Measurement": 42,
+         "MoodEntry": 17,
+         "MedicationIntakeLog": 9
+       }
+     },
+     "error": null
+   }
+   ```
+
+   - `syncVersion` is the user-level high-water mark — the max of
+     every `perEntity` value.
+   - `perEntity` lets iOS decide which `?since=syncVersion=N` reads
+     to fire after a reconnect (no point pulling MoodEntry rows if
+     the per-entity high-water hasn't moved).
+   - The handshake also bumps `User.lastSyncedAt` — iOS reads the
+     OLD value in the response and trusts that subsequent server
+     writes after the new checkpoint round-trip via the standard
+     read paths.
+
+**Test fence**: the bulk + sync-state paths are covered by the
+v1.4.30 integration suite (`src/app/api/sync/state/__tests__/`,
+`src/app/api/mood-entries/bulk/__tests__/`,
+`src/app/api/medications/intake/bulk/__tests__/`). The 409 / 410
+delete-conflict paths land alongside the PATCH-on-divergence wiring
+in a subsequent web patch (no client consumes them yet).
+
+## 14. What is NOT in this file
 
 - **API envelope details (`{ data, error, meta }`)** → `17-error-handling.md`
 - **Coach snapshot construction** → `14-coach-mental-model.md`
