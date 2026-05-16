@@ -154,7 +154,16 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
             id="main-content"
             className="flex-1 overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0"
           >
-            <div className="mx-auto max-w-[76.8rem] px-4 py-6 md:px-6">
+            {/*
+              v1.4.33 IW9 — container normalised on `max-w-screen-xl`
+              (1280 px) so dashboard / settings / admin / bugreport all
+              hit the same content frame. Pre-v1.4.33 the dashboard
+              shell capped at `max-w-[76.8rem]` (1228 px) while the
+              settings/admin shells used `max-w-screen-xl`, producing a
+              52 px lateral wobble on every route switch. Same audit
+              note in `.planning/round-v1433-audit-polish.md` §4.2.
+            */}
+            <div className="mx-auto max-w-screen-xl px-4 py-6 md:px-6">
               {children}
             </div>
           </main>

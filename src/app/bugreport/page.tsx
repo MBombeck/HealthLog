@@ -99,7 +99,7 @@ export default function BugReportPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="mx-auto w-full max-w-6xl space-y-6">
+      <div className="w-full space-y-6">
         <h1 className="text-2xl font-bold tracking-tight">
           {t("bugreport.title")}
         </h1>
@@ -112,7 +112,7 @@ export default function BugReportPage() {
 
   if (status && status.enabled === false) {
     return (
-      <div className="mx-auto w-full max-w-6xl space-y-6">
+      <div className="w-full space-y-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
             {t("bugreport.title")}
