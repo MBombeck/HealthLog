@@ -122,7 +122,7 @@ function ExportCardShell({
   return (
     <div
       data-testid={testId}
-      className={`bg-card border-border flex h-full flex-col rounded-xl border p-5${outerClassName ? ` ${outerClassName}` : ""}`}
+      className={`bg-card border-border flex h-full flex-col rounded-xl border p-6${outerClassName ? ` ${outerClassName}` : ""}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">

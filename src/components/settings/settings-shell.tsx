@@ -135,6 +135,29 @@ export function SettingsShell({ active, children }: SettingsShellProps) {
   const { t } = useTranslations();
   const activeSlug = deriveActiveSlug(pathname, active);
 
+  // v1.4.33 IW4 — scroll the active chip into view inside the
+  // horizontal mobile strip. On a 393 CSS px viewport the strip
+  // is 11 chips wide and the rightmost four sit below the fold; a
+  // user who tapped one of those chips lands on the new route
+  // with the strip still scrolled to the leftmost chip, which
+  // reads as if the navigation is broken. `inline: "center"`
+  // anchors the active chip in the visible middle of its scroll
+  // container so the user keeps spatial orientation between
+  // sections.
+  const mobileStripRef = React.useRef<HTMLElement | null>(null);
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const strip = mobileStripRef.current;
+    if (!strip) return;
+    const active = strip.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!active) return;
+    active.scrollIntoView({
+      block: "nearest",
+      inline: "center",
+      behavior: "smooth",
+    });
+  }, [activeSlug]);
+
   // v1.4.25 W8 — AuthShell wraps the page in `px-4 py-6 md:px-6`
   // already, so this inner shell only carries the wider max-width.
   // Previously the duplicate `px-4 py-6 md:px-6 md:py-8` here was
@@ -150,6 +173,7 @@ export function SettingsShell({ active, children }: SettingsShellProps) {
           page, which makes the page feel like every section card has
           an overflow problem. */}
       <nav
+        ref={mobileStripRef}
         aria-label={t("settings.shell.sectionsNav")}
         className="no-scrollbar -mx-4 mb-4 overflow-x-auto px-4 md:hidden"
       >

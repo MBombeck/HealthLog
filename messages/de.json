@@ -1321,6 +1321,7 @@
     "defaultLabel": "Default",
     "autoModeLabel": "Auto",
     "overrideModeLabel": "Überschrieben",
+    "overrideToggleLabel": "Eigene Werte",
     "resetAction": "Auf Default zurücksetzen",
     "resetAllAction": "Alle auf Default zurücksetzen",
     "minLabel": "Min",

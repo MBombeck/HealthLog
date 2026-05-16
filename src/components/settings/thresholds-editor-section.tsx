@@ -250,10 +250,18 @@ function MetricRow({
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {/* v1.4.33 F17 — the switch label used to flip between
+              "Auto" and "Überschrieben" with the current state. The
+              maintainer's audit caught that as confusing: a user
+              looking at a row with "Auto" + the toggle off reads it
+              as "Auto is off, why are there no inputs?" instead of
+              "flip the switch to enter a custom range". Anchor the
+              label on the *action* ("Eigene Werte" / "Custom range")
+              so the affordance is unambiguous; the
+              `thresholds.sourceOverride` badge to the right still
+              announces when the override is active. */}
           <Label htmlFor={`override-${metric}`} className="text-xs">
-            {overrideMode
-              ? t("thresholds.overrideModeLabel")
-              : t("thresholds.autoModeLabel")}
+            {t("thresholds.overrideToggleLabel")}
           </Label>
           <Switch
             id={`override-${metric}`}

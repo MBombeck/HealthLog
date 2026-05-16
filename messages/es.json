@@ -1321,6 +1321,7 @@
     "defaultLabel": "Default",
     "autoModeLabel": "Auto",
     "overrideModeLabel": "Override",
+    "overrideToggleLabel": "Custom range",
     "resetAction": "Reset to default",
     "resetAllAction": "Reset all to default",
     "minLabel": "Mín",

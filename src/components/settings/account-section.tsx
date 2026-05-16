@@ -740,7 +740,13 @@ function PasskeyListSection({ isAuthenticated }: { isAuthenticated: boolean }) {
           table only at `≥ md`, and at `< md` paint a card-list where
           every passkey's name, device type, backup status, created
           date, and delete action are all visible without scrolling. */}
-      <div className="border-border mt-3 hidden overflow-x-auto rounded-lg border md:block">
+      {/* v1.4.33 — desktop table flips to card list at `lg` instead
+          of `md` so iPad portrait (768 px = exactly the `md`
+          inflection) lands on the card layout. The table needs
+          ~620 px of column width to read; below that it scrolls
+          horizontally and the destructive delete column is the one
+          that disappears. */}
+      <div className="border-border mt-3 hidden overflow-x-auto rounded-lg border lg:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-muted/40 text-muted-foreground border-b text-xs">
@@ -824,12 +830,15 @@ function PasskeyListSection({ isAuthenticated }: { isAuthenticated: boolean }) {
         </table>
       </div>
 
-      {/* Mobile card list — < md only. Each passkey gets its own
-          card so the delete action stays visible and tap-targetable
-          (44px) without the user having to horizontally scroll
-          through a wide table. */}
+      {/* Mobile + tablet card list — < lg only. Each passkey gets
+          its own card so the delete action stays visible and
+          tap-targetable (44 px) without the user having to
+          horizontally scroll through a wide table. v1.4.33 bumped
+          the breakpoint from `md` to `lg` so iPad portrait (768 px)
+          stays on the card layout instead of flipping between
+          layouts on rotation. */}
       <ul
-        className="mt-3 space-y-2 md:hidden"
+        className="mt-3 space-y-2 lg:hidden"
         data-testid="passkeys-mobile-list"
       >
         {passkeys.map((pk) => (
