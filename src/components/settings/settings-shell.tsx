@@ -179,18 +179,25 @@ export function SettingsShell({ active, children }: SettingsShellProps) {
           scrolling still work. Without it the 10-section strip
           renders an always-on scrollbar at the top of every settings
           page, which makes the page feel like every section card has
-          an overflow problem. */}
+          an overflow problem.
+
+          v1.4.33 IW7 — `snap-x snap-mandatory` lets a swipe-flick land
+          on the next chip's leading edge instead of the in-between
+          dead zone. The auto `scrollIntoView({inline: "center"})`
+          effect above stays the canonical positioner for the active
+          chip; snap is the polish layer when the user manually flicks
+          through the strip without tapping. */}
       <nav
         ref={mobileStripRef}
         aria-label={t("settings.shell.sectionsNav")}
-        className="no-scrollbar -mx-4 mb-4 overflow-x-auto px-4 md:hidden"
+        className="no-scrollbar -mx-4 mb-4 snap-x snap-mandatory overflow-x-auto px-4 md:hidden"
       >
         <ul className="flex min-w-max gap-2">
           {SETTINGS_SECTIONS.map((section) => {
             const isActive = section.slug === activeSlug;
             const Icon = section.icon;
             return (
-              <li key={section.slug}>
+              <li key={section.slug} className="snap-start">
                 <Link
                   href={`/settings/${section.slug}`}
                   aria-current={isActive ? "page" : undefined}
