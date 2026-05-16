@@ -1699,7 +1699,6 @@
     "webPushUnsubscribed": "Push-Benachrichtigungen deaktiviert.",
     "webPushSubscribeFailed": "Aktivierung fehlgeschlagen",
     "webPushActive": "Aktiv",
-    "kiInsights": "Insights (OpenAI)",
     "kiInsightsDescription": "Optional: Hinterlege deinen OpenAI-Key für tägliche, automatische Auswertungen in den Insights.",
     "codexConnected": "ChatGPT erfolgreich verbunden! Insights sind jetzt aktiv.",
     "codexDisconnected": "ChatGPT-Verbindung getrennt.",

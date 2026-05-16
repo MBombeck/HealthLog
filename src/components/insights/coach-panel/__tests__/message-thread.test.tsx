@@ -190,7 +190,10 @@ describe("<MessageThread>", () => {
         }}
       />,
     );
-    expect(html).toContain("could not reach an AI provider");
+    // v1.4.33 IW7 — copy rewritten from "AI provider" to "Insights
+    // provider" per the Marc-Voice rule (no "KI"/"AI" prefix in
+    // user-facing strings).
+    expect(html).toContain("could not reach an Insights provider");
   });
 
   it("hides the streaming bubble once its persisted twin lands by id", () => {
@@ -449,7 +452,10 @@ describe("<MessageThread>", () => {
       />,
     );
     expect(html).toContain("Daily limit reached; resets at 00:00 UTC.");
-    expect(html).not.toContain("could not reach an AI provider");
+    // v1.4.33 IW7 — fallback copy rewritten ("AI provider" -> "Insights
+    // provider"). Both old and new strings should be absent here when
+    // the budget-exceeded error takes precedence.
+    expect(html).not.toContain("could not reach an Insights provider");
   });
 
   it("surfaces the provider rate-limit copy for coach.provider.rate_limited", () => {
