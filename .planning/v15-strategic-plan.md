@@ -10,53 +10,69 @@ sources: 6 R-A through R-F research outputs + v1429-backlog + iOS handoff pack
 
 ## 1. Executive summary
 
+### Release-shape correction (maintainer directive)
+
+v1.5 on the web is **a version-bump-only marker**, not a coordinated
+web-plus-iOS sprint. Every functional change the iOS client depends on
+lands in a sequence of small v1.4.x patches that ship before iOS goes
+to TestFlight. The web then enters freeze. The iOS engineering work
+runs in parallel against the already-live web API. When the iOS app
+clears Apple review and launches, the web bumps to v1.5.0 with a
+CHANGELOG entry that names the milestone — no functional diff. This
+removes the coordinated-release risk, lets iOS engineers consume
+stable production endpoints from day one, and keeps each web patch
+small enough to roll back independently.
+
 ### Product-Lead view
 
-The maintainer asked for three things: a clean closure of the v1.4
-line on the web, a focused iOS sprint that ships v1.5 as a real
-release rather than a v0.4.x iOS build with a marketing label, and an
-Apple-Health-depth story that says yes to workouts and breadth without
-chasing reproductive-cycle or nutrition tracking. The recommendation
-is to ship **v1.4.29 as a tight one-day patch** that closes the four
-critical and high findings from the dashboard audit plus the mobile
-tile equal-height and the settings drag-list compactness, **skip
-v1.4.30**, freeze the web after v1.4.29, and run a **10 working day
-iOS sprint** that pairs every HealthKit read with a visible iOS
-surface so App Store review never sees an authorised-but-invisible
-type. The differentiator stays the Coach drawer; workouts are the
-single largest perceived-value-per-LOC add; the rest of Tier 1 is the
-breadth play that lets the iOS app finally show the ten metrics it
-already reads.
+The maintainer wants the v1.4 line to ship the iOS-facing surface
+incrementally, not as one large sprint at the end. v1.4.29 closes the
+polish backlog (dashboard performance, mobile-tile symmetry, settings
+drag-list, x-axis tick density, chart touch-action). v1.4.30 lands
+the server-prep the iOS sprint depends on (SyncMode schema, MoodEntry
+note column, two new MeasurementType enums, categorisation overlay,
+APNs paste, daily-stats helper). v1.4.31 + v1.4.32 land the Tier 1
+HealthKit web surfaces (Workouts end-to-end, 10 chart cards for the
+invisible-but-stored metrics, hearing-event chips, walking-steadiness
+gauge, HKStateOfMind read surface). After v1.4.32 the web freezes:
+emergency hotfixes only, no feature work. iOS development continues
+in parallel through this window and ships when ready. The differentiator
+stays the Coach drawer; workouts are the largest perceived-value-per-LOC
+add; the rest of Tier 1 is the breadth play that finally surfaces what
+iOS already reads.
 
 ### Senior-Dev view
 
-Architectural posture is conservative. After v1.4.29 the web app
-freezes — only security patches, dependency updates, and the additive
-iOS-server-prep changes the sprint requires (two Prisma columns, two
-new bulk endpoints, one sync-state endpoint, two new MeasurementType
-enum entries, one new MoodEntry column) are allowed. No new web
-features, no UI rewrites, no non-additive schema changes. The
-locked-contracts file at `.planning/v15-ios-handoff/08-locked-contracts.md`
-holds. Nothing in the proposed scope flags as breaking. The largest
-single risk is the v1.4.29 P0 `aggregate=daily` regression on
-`/api/measurements` — it 500s in production today and the v1.4.28
-suite mocked `prisma.$queryRaw` past the bug. Fixing C2 before wiring
-C3 is the only correct sequence; both ride in v1.4.29 in that order.
+Architectural posture is conservative through every v1.4.x patch.
+Each patch is an atomic, independently-revertible unit: one Prisma
+migration max, one Zod schema delta max, one endpoint added or one
+endpoint set hardened. The locked-contracts file at
+`.planning/v15-ios-handoff/08-locked-contracts.md` holds; every change
+flags additive. The largest single risk is the v1.4.29 P0
+`aggregate=daily` regression on `/api/measurements` — it 500s in
+production today and the v1.4.28 suite mocked `prisma.$queryRaw` past
+the bug. Fixing C2 before wiring C3 is the only correct sequence;
+both ride in v1.4.29. After v1.4.32 the web sits stable and the
+freeze closes the surface area where new bugs can be introduced
+during the iOS sprint.
 
 ### iOS-Dev view
 
-10 working days + a 3-5 day Apple-review buffer. The iOS repo is
-further along than the handoff pack assumed (28 finds in R-E, 5
-critical, but the Coach drawer is the only Critical that is "no
-native code at all" — the rest are gaps to close, not greenfield
-work). Day 1-2 server prep blocks everything; Day 3-5 splits into
-three parallel tracks (Coach SSE drawer, SyncMode + Workouts iOS
-ingest, daily-stats service for cumulative types); Day 6-8 closes
-breadth; Day 9-10 polish and Apple-review prep. **Key risk**: App
-Store rejection if a HealthKit type is authorised but the app has no
-visible surface (R-F §2.5). **Locked decision**: every HK read pairs
-with a surface in the same track. Without the Coach drawer native
-build, v1.5 is materially v0.4.2 iOS.
+Roughly 10 working days of iOS-engineering time, running parallel to
+the v1.4.30 → v1.4.32 web patches. The iOS repo is further along than
+the handoff pack assumed (28 finds in R-E, 5 critical, but the Coach
+drawer is the only Critical that is "no native code at all"). iOS
+work picks up each web patch's surface as soon as it deploys: Track A
+(Coach SSE drawer) starts whenever the APNs paste in v1.4.30 lands;
+Track B (SyncMode + Workouts ingest) starts when v1.4.30's
+sync-state endpoints + Workouts API route deploy; Track C
+(daily-stats service for cumulative types) starts when v1.4.30's
+daily-stats helper deploys. By the time Track A/B/C are mid-flight,
+v1.4.31 + v1.4.32 are deploying the chart-card surfaces the
+Apple-review pairing rule demands. **Locked decision**: every HK
+read pairs with a visible surface — no authorised-but-invisible
+types. Without the Coach drawer native build, v1.5 is materially
+v0.4.2 iOS.
 
 ---
 
@@ -96,50 +112,93 @@ move aggregation to SQL, rewrite `summarize()` for single-pass). 2-3
 days plus integration tests. Lands during the v1.5 server-prep
 window if calendar permits, otherwise rides to v1.5.x.
 
-### v1.4.30 — Final web polish (skip recommendation)
+### v1.4.30 — iOS-server-prep menu
 
-Recommend **skip**. The R-A Option A web-side preparation folds into
-v1.5's Day 1-2 server prep. The v1.4.29 deferrals in
-`v1429-backlog.md` are design Mediums, UI-conformity Mediums, i18n
-drift, and `<ResponsiveSheet>` migration carry-forwards — none are
-blockers for v1.5 and none are visible to the iOS app. Carry them to
-v1.5.x. Ship v1.4.30 only if the iOS sprint slips past Day 5 and a
-quiet web release helps confidence; default is to tag v1.5 directly
-after the sprint.
+Ship 2-3 days after v1.4.29. Every item is iOS-additive; the web UI
+either does not consume the new surface or wires it in v1.4.31.
+
+| Item | Source | Effort |
+|---|---|---|
+| SyncMode server-side: `syncVersion Int @default(1)` on `Measurement`, `deletedAt DateTime?` soft-delete column, `/api/sync/state` endpoint, `/api/mood-entries/bulk` + `/api/medications/intake/bulk` bulk-backfill endpoints | R-E C-2 | M |
+| `MoodEntry.note TEXT NULL` — replaces the `tags: ["note:<text>"]` workaround that contaminates the Coach evidence shelf | R-E H-5 | S |
+| `HKWorkoutType` server route — verify `/api/workouts/batch` (in v1.4.25 W8d) middleware + caps match the new pattern, add `pickCanonicalWorkoutRows()` for Apple Watch × Withings ScanWatch dedup | R-F T1.1 | S |
+| Categorisation overlay: `src/lib/measurements/categories.ts` TypeScript map driving both the iOS permission picker and a future web Insights nav | R-F §4 | S |
+| Two new MeasurementType enums: `WALKING_STEADINESS`, `AUDIO_EXPOSURE_EVENT` | R-F T1.4 + T1.5 | XS |
+| R-A Option A server-side: `dailyStatsExternalId()` helper + `CUMULATIVE_HK_TYPES` set in `src/lib/measurements/apple-health-mapping.ts`; handoff-doc lock for the `externalId` shape | R-A §6 | S |
+| APNs `.p8` paste into Coolify (1-hour Marc-action) | R-E C-3 | external |
+| Real-Postgres integration-test container (paid down once, every aggregate test rides it) | R-B Critical+ | S |
+
+iOS impact: every change is additive on the wire. The
+`/api/sync/state` endpoint is net-new (no iOS consumer yet),
+SyncMode columns expand the `Measurement` shape with defaults so
+existing iOS calls round-trip unchanged, the new MeasurementType
+enums are net-new values iOS can encounter without 422 once the
+codegen catches them.
+
+### v1.4.31 — HealthKit Tier 1 web surfaces, wave A
+
+Ship 2-3 days after v1.4.30. Adds the visible surfaces iOS will pair
+with the corresponding HK reads.
+
+| Item | Source | Effort |
+|---|---|---|
+| Workouts end-to-end on the web — list page (`/insights/workouts`), detail page, dashboard "Recent workouts" tile | R-F T1.1 | M |
+| Chart cards for 5 of the 10 invisible-but-stored metrics: HRV, RestingHR, SpO2, BodyTemperature, ActiveEnergyBurned | R-F T1.3 | M |
+
+### v1.4.32 — HealthKit Tier 1 web surfaces, wave B + freeze marker
+
+Ship 2-3 days after v1.4.31. Closes the breadth wave.
+
+| Item | Source | Effort |
+|---|---|---|
+| Chart cards for the remaining 5 invisible-but-stored metrics: FlightsClimbed, WalkingRunningDistance, AudioExposureEnv, AudioExposureHeadphone, TimeInDaylight | R-F T1.3 | S |
+| Hearing-event chips on `/insights/puls` (or the relevant insights sub-page) | R-F T1.4 | S |
+| Walking-steadiness gauge | R-F T1.5 | S |
+| HKStateOfMind read surface integrated with `/insights/stimmung` (the existing mood page picks up APPLE_HEALTH-sourced mood entries cleanly via the source-priority pipeline) | R-F T1.2 | S |
+| Source-priority editor — the `/api/auth/me/source-priority` endpoint already locks for iOS in v1.4.25 W8c; the web has nothing today. Add the two-axis editor under `/settings/sources` so the iOS side can mirror the same UI shape | R-E C-5 (web-side helper) | M |
+| CHANGELOG **WEB-FREEZE marker** — explicit line noting that web functionality is complete for v1.5 and that subsequent v1.4.x tags are limited to hotfixes + dependency updates until the iOS app ships | this plan | — |
+
+After v1.4.32 tags on `main`, the web enters **freeze**.
 
 ### Web-freeze posture
 
-After v1.4.29 tags on `main`, the web app enters **freeze**.
-
-Allowed during the v1.5 sprint:
+Allowed during the freeze (v1.4.32 → v1.5.0):
 
 - Security patches (CVE feeds, dependency vulnerabilities)
 - Dependency updates that ride existing test infrastructure
-- iOS-server-prep changes the sprint requires (additive endpoints +
-  Prisma columns documented in §3 Day 1-2)
 - Hotfix-only emergencies (the v1.4.28.1 dashboard-save pattern)
+- Tightly-scoped reactive fixes if iOS testing surfaces a real gap
+  on a v1.4.32 endpoint — but only as additive corrections, never
+  as new feature work
 
-Not allowed during the v1.5 sprint:
+Not allowed during the freeze:
 
 - New web features
 - UI rewrites or design refactors
-- Schema changes that aren't additive
-- The C1 architectural lift on `/api/analytics` unless it folds
-  cleanly into the iOS-server prep
+- Schema changes that are not additive
+- The C1 architectural lift on `/api/analytics` (defers explicitly
+  to v1.5.x — see §4)
 
-Document this posture in the v1.5 closure record. When the sprint
-ends and v1.5 ships, the freeze ends — v1.5.x patches resume normal
-web cadence.
+### v1.5.0 — version bump marker
+
+Ships the day after iOS clears Apple review. Single commit on
+`main`: `package.json` `1.4.32` → `1.5.0`, CHANGELOG entry stating
+"iOS native client now live on the App Store; web functionality
+unchanged since v1.4.32." No source diff outside the version bump
+and CHANGELOG. Triggers GHCR rebuild + auto-deploy so the running
+image's `/api/version` sentinel matches the public release tag.
 
 ---
 
-## 3. v1.5 iOS sprint shape
+## 3. iOS development track (parallel to v1.4.x patches)
 
-10 working days. The day-by-day shape pulls from R-E §recommended
-sprint length and R-F Tier 1 track structure, with R-F's "wave"
-vocabulary kept in the table headers because the substring is
-load-bearing on the source documents; substituting "track" or
-"stream" in the prose preserves the maintainer's discipline.
+Roughly 10 working days of iOS-engineering time. Runs in parallel
+with the v1.4.30 → v1.4.32 web patch sequence rather than as a
+coordinated release sprint. Each iOS track picks up its supporting
+web surface as soon as the corresponding patch deploys. The day
+numbering below is **iOS-engineer-day**, not calendar day; the
+calendar window stretches across whatever wall-clock time the web
+patches + iOS tracks take in parallel.
 
 ### Day-by-day schedule
 
@@ -282,8 +341,9 @@ navigates to a feature that needs it (R-F §2.5 option 2).
 | iOS HK reads pairing rule | Every read paired with a visible surface in the same track — no authorised-but-invisible | R-F §2.5 + open Q #3 |
 | Categorisation shape | UI-side TypeScript overlay `src/lib/measurements/categories.ts`, NOT a DB column | R-F §4 |
 | Sleep storage shape | Per-stage rows (5-axis unique key) — no split into `SLEEP_DEEP` / `SLEEP_REM` / etc. enum entries | R-F open Q #6 |
-| Web freeze trigger | v1.4.29 tag on `main` | This plan §2 |
-| v1.4.30 ship-or-skip | Skip; tag v1.5 directly after the sprint | This plan §2 |
+| Web freeze trigger | v1.4.32 tag on `main` (after the Tier 1 wave B closes) | This plan §2 |
+| v1.5 release shape | Version-bump-only marker the day after iOS clears Apple review. All functional work lands incrementally in v1.4.29 → v1.4.32. | Maintainer directive 2026-05-16 |
+| Web patch sequence | v1.4.29 polish → v1.4.30 iOS server-prep → v1.4.31 Tier 1 wave A → v1.4.32 Tier 1 wave B + freeze | This plan §2 |
 | AVG/SUM cumulative-type fix | Rides v1.4.29 | R-A §6 + R-B C2 sequence |
 | C2 P0 sequencing | Lands before any client wires `aggregate=daily` | R-B Critical |
 | iOS workout dedup ladder | Ship `pickCanonicalWorkoutRows()` with the existing measurement ladder (Apple ≻ Withings ≻ Manual); tune metric-aware (route → Apple wins; HR zones → Withings wins) in a v1.5.x follow-up | R-F open Q #4 |
@@ -298,41 +358,28 @@ changes. Nothing in this plan flags as breaking.
 
 ## 6. Open questions for the maintainer
 
-1. **One pass through this plan for sharpening.** Anywhere the
-   sequencing reads wrong, anywhere the deferral feels too generous,
-   anywhere the iOS-day estimate looks aspirational. The plan is
-   built to fit a 10-day sprint and the calendar assumes clean
-   parallel dispatch on Day 3-5; if either assumption needs softening
-   the calendar shifts by 1-3 days.
-
-2. **Whether to ship v1.4.30 at all.** Default recommendation is
-   skip — fold the R-A Option A server prep into v1.5's Day 1-2.
-   Counterargument: a quiet v1.4.30 with the R-A web-side helpers +
-   the C1 `/api/analytics` rewrite would let the iOS sprint start
-   with a clean web baseline. The tradeoff is one week of additional
-   calendar before the iOS sprint clock starts versus a smaller
-   v1.5 server-prep day.
-
-3. **Whether to drop unused HK reads instead of adding cards.** R-F
+1. **Whether to drop unused HK reads instead of adding cards.** R-F
    §2.5 calls out the App Store reviewer risk for authorised-but-
-   invisible types. The proposed plan (R-F T1.3 chart-card breadth)
-   is the higher-perceived-value path; the alternative (trim
-   `defaultReadTypes` to the visibly-used subset) is the lower-risk
-   path. If the calendar tightens, the trim is the fallback.
+   invisible types. The proposed plan (R-F T1.3 chart-card breadth
+   in v1.4.31 + v1.4.32) is the higher-perceived-value path; the
+   alternative (trim `defaultReadTypes` to the visibly-used subset)
+   is the lower-risk path. If a v1.4.x patch tightens, the trim is
+   the fallback.
 
-4. **Whether to defer C-4 RefreshScheduler to v1.5.1.** R-E flags
-   this as Critical (midnight-401 bug). The mitigation (the existing
-   401-bridge in `APIClient.swift:135-158`) is reactive but works.
-   If the Day 6 schedule slips, deferring the proactive scheduler
-   to v1.5.1 is survivable.
+2. **Whether to defer C-4 RefreshScheduler to a post-v1.5 iOS
+   patch.** R-E flags this as Critical (midnight-401 bug). The
+   mitigation (the existing 401-bridge in `APIClient.swift:135-158`)
+   is reactive but works. If iOS Track B's timeline tightens,
+   deferring the proactive scheduler to a v1.5.x iOS-side release
+   is survivable.
 
-5. **Whether the Apple-Health-XML import (`export.zip`) belongs in
-   v1.5.** R-F §2.6 and open Q #7. Out of the original brief, but the
-   highest-leverage non-iOS-app deliverable in the broader research.
-   A web-only user can upload years of HK history before the iOS app
-   ships on their device. ~200 LOC server-side, reuses the existing
-   batch endpoint. Lift into v1.5 if the calendar permits; defer to
-   v1.6 if not.
+3. **Whether the Apple-Health-XML import (`export.zip`) belongs
+   before the freeze.** R-F §2.6 and open Q #7. Out of the original
+   brief, but the highest-leverage non-iOS-app deliverable in the
+   broader research. A web-only user can upload years of HK history
+   before the iOS app ships on their device. ~200 LOC server-side,
+   reuses the existing batch endpoint. Lift into v1.4.32 if the
+   calendar permits; defer to v1.6 if not.
 
 ---
 
