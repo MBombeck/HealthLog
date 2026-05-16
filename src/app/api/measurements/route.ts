@@ -74,20 +74,34 @@ export const GET = apiHandler(async (request: NextRequest) => {
   if (aggregate && aggregate !== "raw" && from && to) {
     const grain: AggregateGrain = aggregate;
     const cap = Math.min(limit, BUCKET_CAP[grain]);
-    const truncUnit = grain === "daily" ? "day" : grain;
+    // Postgres `date_trunc` requires the unit argument to be a SQL
+    // literal — it cannot be supplied as a prepared-statement parameter.
+    // The previous `${truncUnit}` (bound) interpolation 500'd in
+    // production for every grain; the grain string is restricted to
+    // the `AggregateGrain` enum upstream via the Zod schema, so
+    // injecting the mapped unit via `Prisma.raw` is safe. The mapping
+    // also fixes the "weekly"/"monthly" passthrough — Postgres expects
+    // the singular forms `week`/`month`.
+    const TRUNC_UNIT: Record<Exclude<AggregateGrain, "raw">, string> = {
+      daily: "day",
+      weekly: "week",
+      monthly: "month",
+    };
+    const truncUnit = TRUNC_UNIT[grain];
+    const truncUnitLiteral = Prisma.raw(`'${truncUnit}'`);
     const buckets = await prisma.$queryRaw<
       Array<{ type: string; bucket_start: Date; avg: number; cnt: number }>
     >`
       SELECT
         m."type"::text AS type,
-        date_trunc(${truncUnit}, m."measured_at") AS bucket_start,
+        date_trunc(${truncUnitLiteral}, m."measured_at") AS bucket_start,
         AVG(m."value")::double precision AS avg,
         COUNT(*)::int AS cnt
       FROM measurements m
       WHERE m."user_id" = ${user.id}
         AND m."measured_at" >= ${from}
         AND m."measured_at" <= ${to}
-        ${type ? Prisma.sql`AND m."type" = ${type}::"MeasurementType"` : Prisma.empty}
+        ${type ? Prisma.sql`AND m."type" = ${type}::measurement_type` : Prisma.empty}
       GROUP BY m."type", bucket_start
       ORDER BY bucket_start ASC
       LIMIT ${cap}
