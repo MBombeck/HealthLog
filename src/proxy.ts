@@ -23,7 +23,6 @@ const PUBLIC_PATHS = [
   "/api/withings/webhook",
   "/api/telegram/webhook",
   "/api/integrations/moodlog/webhook",
-  "/api/auth/codex/callback",
   "/api/ingest/",
   // v1.4.26 — `/privacy` is a public legal page. iOS App Store Connect
   // requires a publicly reachable Privacy-Policy URL during submission;
@@ -33,18 +32,24 @@ const PUBLIC_PATHS = [
   // alongside the project credits. The CC licence requires the
   // attribution to be reachable without a sign-in.
   "/about",
-  // v1.4.33 — `/.well-known/*` covers IETF-registered discovery
-  // endpoints (RFC 8615). Apple reads
-  // `/.well-known/apple-app-site-association` without credentials to
-  // wire Web Credentials (passkey sharing) and Universal Links to the
-  // iOS bundle, so the path must answer 200 with the bare JSON body
-  // before any auth gate runs. The trailing slash future-proofs the
-  // namespace for `/security.txt`, `/openid-configuration`, etc.
-  "/.well-known/",
   // `/onboarding` itself + its subroutes are matched exactly via
   // `isPublicPath()` so we don't admit `/onboarding-export` etc.
   "/robots.txt",
 ];
+
+/**
+ * Exact-match allowlist for IETF-registered discovery endpoints
+ * (RFC 8615). Apple reads `/.well-known/apple-app-site-association`
+ * without credentials to wire passkey sharing and Universal Links;
+ * the bare JSON body has to answer 200 before any auth gate runs.
+ *
+ * Exact match (not prefix) — a future `/.well-known/openid-configuration`
+ * or `/.well-known/security.txt` must be added here explicitly so a new
+ * sub-path doesn't auto-inherit "no auth" status.
+ */
+const WELL_KNOWN_PUBLIC_PATHS = new Set<string>([
+  "/.well-known/apple-app-site-association",
+]);
 
 /**
  * v1.4.22 W5 reconcile (Sec-MED-2) — `/onboarding` matches exact
@@ -57,6 +62,9 @@ const PUBLIC_PATHS = [
  */
 function isPublicPath(pathname: string): boolean {
   if (pathname === "/onboarding" || pathname.startsWith("/onboarding/")) {
+    return true;
+  }
+  if (WELL_KNOWN_PUBLIC_PATHS.has(pathname)) {
     return true;
   }
   return PUBLIC_PATHS.some((p) => pathname.startsWith(p));

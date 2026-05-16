@@ -13,6 +13,13 @@ vi.mock("@/lib/db", () => ({
       deleteMany: vi.fn(),
       update: vi.fn(),
     },
+    apiToken: {
+      updateMany: vi.fn(),
+    },
+    refreshToken: {
+      updateMany: vi.fn(),
+    },
+    $transaction: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
   },
 }));
 
@@ -36,7 +43,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { getSession } from "../session";
+import { getSession, destroyAllSessions } from "../session";
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -61,5 +68,34 @@ describe("getSession", () => {
     });
     expect(cookieState.delete).toHaveBeenCalledWith("healthlog_session");
     expect(cookieState.delete).toHaveBeenCalledWith("hl_onboarding");
+  });
+});
+
+describe("destroyAllSessions", () => {
+  it("revokes web sessions, API tokens, and refresh tokens for the user", async () => {
+    vi.mocked(prisma.session.deleteMany).mockResolvedValue({
+      count: 2,
+    } as never);
+    vi.mocked(prisma.apiToken.updateMany).mockResolvedValue({
+      count: 1,
+    } as never);
+    vi.mocked(prisma.refreshToken.updateMany).mockResolvedValue({
+      count: 3,
+    } as never);
+
+    await destroyAllSessions("user-rotated");
+
+    expect(prisma.session.deleteMany).toHaveBeenCalledWith({
+      where: { userId: "user-rotated" },
+    });
+    expect(prisma.apiToken.updateMany).toHaveBeenCalledWith({
+      where: { userId: "user-rotated", revoked: false },
+      data: { revoked: true },
+    });
+    expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
+      where: { userId: "user-rotated", revokedAt: null },
+      data: { revokedAt: expect.any(Date) },
+    });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
   });
 });
