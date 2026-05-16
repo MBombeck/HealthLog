@@ -23,6 +23,8 @@ vi.mock("@/lib/db", () => ({
     moodEntry: { findMany: vi.fn() },
     medicationIntakeEvent: { findMany: vi.fn() },
     medication: { findMany: vi.fn() },
+    // v1.4.33 C1 — slim summaries slice runs through `$queryRaw`.
+    $queryRaw: vi.fn(),
   },
 }));
 
@@ -168,5 +170,61 @@ describe("GET /api/analytics", () => {
     expect(body.data.summaries.WEIGHT.count).toBe(0);
     expect(body.data.bmi).toBeNull();
     expect(body.data.healthScore).toBeNull();
+  });
+
+  // v1.4.33 C1 — slim summaries slice. The route branches on
+  // `?slice=summaries` BEFORE any chunked findMany; the two `$queryRaw`
+  // passes carry the per-type DataSummary shape with the same
+  // contract the dashboard tile strip reads.
+  it("returns the slim summaries slice when ?slice=summaries is set", async () => {
+    // Aggregate pass + latest pass. The mock returns one row per pass.
+    vi.mocked(prisma.$queryRaw)
+      .mockResolvedValueOnce([
+        {
+          type: "WEIGHT",
+          count: BigInt(12),
+          min_value: 80.0,
+          max_value: 84.5,
+          mean_value: 82.1,
+          avg7: 82.0,
+          avg30: 82.2,
+          slope7: -0.05,
+          r2_7: 0.4,
+          slope30: -0.02,
+          r2_30: 0.3,
+          slope90: -0.01,
+          r2_90: 0.2,
+        },
+      ] as never)
+      .mockResolvedValueOnce([{ type: "WEIGHT", value: 81.8 }] as never);
+
+    const req = new Request(
+      "http://localhost/api/analytics?slice=summaries",
+    );
+    const res = await (
+      GET as unknown as (req: Request) => Promise<Response>
+    )(req);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: {
+        summaries: Record<
+          string,
+          {
+            count: number;
+            latest: number | null;
+            slope30: { slope: number; direction: string } | null;
+          }
+        >;
+        bmi: number | null;
+      };
+    };
+    // The slim slice produced WEIGHT from the SQL pass; no chunked
+    // findMany was called.
+    expect(prisma.measurement.findMany).not.toHaveBeenCalled();
+    expect(body.data.summaries.WEIGHT.count).toBe(12);
+    expect(body.data.summaries.WEIGHT.latest).toBe(81.8);
+    expect(body.data.summaries.WEIGHT.slope30?.direction).toBe("down");
+    // Slim slice never carries BMI — the consumer re-derives.
+    expect(body.data.bmi).toBeNull();
   });
 });

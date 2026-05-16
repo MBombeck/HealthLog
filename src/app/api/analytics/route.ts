@@ -3,6 +3,7 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
+import { computeSummariesSlice } from "@/lib/analytics/summaries-slice";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import { computeBpInTargetWindows } from "@/lib/analytics/bp-in-target";
 import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
@@ -29,9 +30,42 @@ import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
 
 export const dynamic = "force-dynamic";
 
-export const GET = apiHandler(async () => {
+/**
+ * v1.4.33 C1 — pull `?slice=…` from either a NextRequest (the
+ * route's production wrapper) or a plain `Request` (the integration
+ * tests instantiate `new Request("http://localhost/api/analytics")`
+ * and cast through). Falls back to the raw `URL(request.url)` parse
+ * so the slim slice branch is reachable from both call shapes.
+ */
+function readSliceParam(request: Request | undefined): string | null {
+  if (!request) return null;
+  try {
+    return new URL(request.url).searchParams.get("slice");
+  } catch {
+    return null;
+  }
+}
+
+export const GET = apiHandler(async (request?: Request) => {
   const { user } = await requireAuth();
   annotate({ action: { name: "analytics.get" } });
+
+  // v1.4.33 C1 — slim summaries slice for the dashboard tile strip.
+  // The default path runs 30+ chunked findMany reads to feed
+  // `summarize()` per type; under `?slice=summaries` the route
+  // resolves the same per-type DataSummary shape from 2 SQL passes
+  // (a `groupBy` for count/min/max/mean plus a single `$queryRaw`
+  // carrying the windowed averages and Postgres `regr_slope` /
+  // `regr_r2` for the slope tuples). The slim slice drops the thick
+  // `correlations` / `healthScore` / `bpInTargetPct` / `glucoseByContext`
+  // / `sleepStages` / `bmi` blocks — those stay on the default path
+  // behind a hover-prefetch from the Coach drawer + the correlation
+  // tile's `<InView>` boundary. Consumers that need only the headline
+  // tile values land on this branch and skip the heavy chain.
+  if (readSliceParam(request) === "summaries") {
+    const slim = await computeSummariesSlice(user.id);
+    return apiSuccess(slim);
+  }
 
   // v1.4.25 W7b — every day-bucket call inside this route now honours
   // the user's display timezone. The legacy `berlinDayKey()` import
