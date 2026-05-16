@@ -63,3 +63,38 @@ v1.4.30 scope grows from the original iOS-server-prep menu to that menu plus the
 ## Closure complete
 
 v1.4.29 lives on both production hosts and the GitHub Release reads it as the latest. The next patch is v1.4.30 (iOS-server-prep menu + insights-blocking + assistant-optional toggles).
+
+## v1.4.29.1 follow-up — daily-step aggregation hotfix
+
+Shipped 2026-05-16 a few hours after v1.4.29. Maintainer reported the
+dashboard 7-day step chart still rendered per-sample averages
+(hundreds) instead of daily totals (thousands). Root cause was the
+client-side daily aggregator inside `health-chart.tsx` reducing every
+HealthKit type with `sum / count` regardless of cumulative vs spot
+semantics — the same bug v1.4.29 closed on the server-side aggregate
+path was still live on the in-browser bucketing of raw rows.
+
+Fix at `c265103b` branches on `CUMULATIVE_HK_TYPES` and picks `sum`
+for steps, active energy, flights climbed, distance, daylight; spot
+metrics keep the mean. One-line aggregator change, no test additions
+(the 137 existing chart specs cover the surface).
+
+### Outcome
+
+- `healthlog.bombeck.io/api/version` → `1.4.29.1`, `/privacy` → 200.
+- `demo.healthlog.dev/api/version` → `1.4.29.1`, `/privacy` → 200.
+- GitHub Release: <https://github.com/MBombeck/HealthLog/releases/tag/v1.4.29.1>.
+- Sister-repos: `healthlog-docs@5e7f5cd3`, `healthlog-landing@11f18ce6`.
+- PR #173 squashed on `main` at `945b5566`; tag `v1.4.29.1` points there.
+- GHCR tag-build produced the named `1.4.29.1` cleanly (the `3a920661` workflow fix continues to hold).
+
+### Deploy mechanics
+
+apps01 deploy via Coolify reported "finished" but did not actually
+pull the new `:latest` digest (third release in a row — the same
+auto-deploy gap that blocked v1.4.27/v1.4.28/v1.4.29). Host-side SSH
+fallback (`docker pull 1.4.29.1 && docker tag … :latest && compose up
+-d --force-recreate`) finished the rollout. Edge-01 used the explicit
+`1.4.29` → `1.4.29.1` sed bump on docker-compose with a
+`.pre-v14291.bak` snapshot; clean execution.
+
