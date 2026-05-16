@@ -1952,6 +1952,34 @@
     "bugReportGithubDescription": "Configure GitHub issue token and repository for incoming bug reports.",
     "bugReportEnabledLabel": "Bug reports enabled",
     "bugReportEnabledDescription": "When off, the in-app report button hides — token and repository stay configured.",
+    "assistant": {
+      "title": "Superfici dell'assistente",
+      "description": "Ogni interruttore nasconde una superficie guidata dal modello in tutta l'app senza rimuovere la configurazione del provider. Il master forza ogni opzione secondaria su off.",
+      "master": {
+        "title": "Assistente attivo",
+        "description": "Interruttore master per ogni superficie guidata dal modello. Quando spento, ogni opzione secondaria qui sotto è forzata su off."
+      },
+      "coach": {
+        "title": "Coach",
+        "description": "Drawer chat, pulsante di lancio e FAB mobile su ogni pagina Insights."
+      },
+      "briefing": {
+        "title": "Briefing giornaliero",
+        "description": "Scheda briefing, narrazione hero strip, griglia raccomandazioni e l'azione Rigenera."
+      },
+      "insightStatus": {
+        "title": "Schede di stato",
+        "description": "Schede di stato per metrica su ogni sotto-pagina /insights."
+      },
+      "correlations": {
+        "title": "Correlazioni",
+        "description": "Narrazione del tile di correlazione sulla panoramica Insights."
+      },
+      "healthScoreExplainer": {
+        "title": "Spiegatore Health-Score",
+        "description": "L'icona ? accanto alla riga del delta dell'Health-Score. La cifra del delta resta visibile in ogni caso."
+      }
+    },
     "bugReportRepo": "Repository",
     "bugReportRepoPlaceholder": "owner/repo",
     "bugReportToken": "Issue token",
@@ -2133,6 +2161,10 @@
       "ai-quality": {
         "title": "AI Quality",
         "subtitle": "Helpfulness scores grouped by severity and provider, from the last 30 days of user feedback."
+      },
+      "assistant": {
+        "title": "Superfici dell'assistente",
+        "subtitle": "Attiva o disattiva ciascuna superficie guidata dal modello senza rimuovere la configurazione del provider."
       },
       "coach-feedback": {
         "title": "Coach Feedback",

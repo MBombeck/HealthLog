@@ -1952,6 +1952,34 @@
     "bugReportGithubDescription": "Hinterlege GitHub-Issue-Token und Repository für eingehende Bugreports.",
     "bugReportEnabledLabel": "Bug-Reports aktiviert",
     "bugReportEnabledDescription": "Wenn deaktiviert, ist der Report-Button im Frontend nicht mehr sichtbar — Token und Repository bleiben gespeichert.",
+    "assistant": {
+      "title": "Assistenz-Oberflächen",
+      "description": "Jeder Toggle versteckt eine modellgestützte Oberfläche app-weit, ohne die Provider-Konfiguration zu entfernen. Der Hauptschalter erzwingt jede Unter-Option aus.",
+      "master": {
+        "title": "Assistent aktiv",
+        "description": "Hauptschalter für jede modellgestützte Oberfläche. Wenn aus, sind alle Unter-Optionen unten zwangsweise aus."
+      },
+      "coach": {
+        "title": "Coach",
+        "description": "Chat-Drawer, Launch-Button und die mobile FAB auf jeder Insights-Seite."
+      },
+      "briefing": {
+        "title": "Tagesbriefing",
+        "description": "Briefing-Karte, Hero-Erzähltext, Empfehlungen und der Regenerieren-Knopf."
+      },
+      "insightStatus": {
+        "title": "Status-Karten",
+        "description": "Pro-Metrik-Status-Karten auf jeder /insights-Unterseite."
+      },
+      "correlations": {
+        "title": "Korrelationen",
+        "description": "Erzähl-Kachel zur Korrelation auf der Insights-Übersicht."
+      },
+      "healthScoreExplainer": {
+        "title": "Health-Score-Erklärer",
+        "description": "Das ?-Symbol neben der Health-Score-Differenz. Die Zahl bleibt unabhängig davon sichtbar."
+      }
+    },
     "bugReportRepo": "Repository",
     "bugReportRepoPlaceholder": "owner/repo",
     "bugReportToken": "Issue-Token",
@@ -2133,6 +2161,10 @@
       "ai-quality": {
         "title": "KI-Qualität",
         "subtitle": "Hilfreichkeit nach Schweregrad und Provider — Nutzer-Feedback der letzten 30 Tage."
+      },
+      "assistant": {
+        "title": "Assistenz-Oberflächen",
+        "subtitle": "Jede modellgestützte Oberfläche separat ein- oder ausschalten, ohne die Provider-Konfiguration zu entfernen."
       },
       "coach-feedback": {
         "title": "Coach-Feedback",

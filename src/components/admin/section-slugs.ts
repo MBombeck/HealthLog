@@ -15,6 +15,11 @@ export const ADMIN_SECTION_SLUGS = [
   "services",
   "integrations",
   "ai-quality",
+  // v1.4.31 — operator-side assistant feature-flag toggles. Sits
+  // between `ai-quality` (provider config) and `coach-feedback`
+  // (in-app feedback inbox) per
+  // `.planning/research/v15-assistant-optional.md` Part B.
+  "assistant",
   "coach-feedback",
   "feedback",
   "reminders",

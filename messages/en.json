@@ -1952,6 +1952,34 @@
     "bugReportGithubDescription": "Configure GitHub issue token and repository for incoming bug reports.",
     "bugReportEnabledLabel": "Bug reports enabled",
     "bugReportEnabledDescription": "When off, the in-app report button hides — token and repository stay configured.",
+    "assistant": {
+      "title": "Assistant Surfaces",
+      "description": "Each toggle hides a model-driven surface app-wide without removing the provider configuration. The master kills every sub-flag at once.",
+      "master": {
+        "title": "Assistant enabled",
+        "description": "Master switch for every model-driven surface. When off, every sub-flag below is forced off."
+      },
+      "coach": {
+        "title": "Coach",
+        "description": "Chat drawer, launcher button, and the mobile FAB on every Insights page."
+      },
+      "briefing": {
+        "title": "Daily Briefing",
+        "description": "Briefing card, hero strip narration, recommendations grid, and the regenerate action."
+      },
+      "insightStatus": {
+        "title": "Status cards",
+        "description": "Per-metric status cards on every /insights sub-page."
+      },
+      "correlations": {
+        "title": "Correlations",
+        "description": "Correlation tile narration on the Insights overview."
+      },
+      "healthScoreExplainer": {
+        "title": "Health-Score explainer",
+        "description": "The ? glyph next to the Health-Score delta line. The delta digit stays visible regardless."
+      }
+    },
     "bugReportRepo": "Repository",
     "bugReportRepoPlaceholder": "owner/repo",
     "bugReportToken": "Issue token",
@@ -2133,6 +2161,10 @@
       "ai-quality": {
         "title": "AI Quality",
         "subtitle": "Helpfulness scores grouped by severity and provider, from the last 30 days of user feedback."
+      },
+      "assistant": {
+        "title": "Assistant Surfaces",
+        "subtitle": "Toggle each model-driven surface on or off without removing the provider configuration."
       },
       "coach-feedback": {
         "title": "Coach Feedback",

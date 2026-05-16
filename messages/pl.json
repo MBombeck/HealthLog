@@ -1952,6 +1952,34 @@
     "bugReportGithubDescription": "Configure GitHub issue token and repository for incoming bug reports.",
     "bugReportEnabledLabel": "Bug reports enabled",
     "bugReportEnabledDescription": "When off, the in-app report button hides — token and repository stay configured.",
+    "assistant": {
+      "title": "Powierzchnie asystenta",
+      "description": "Każdy przełącznik ukrywa powierzchnię opartą na modelu w całej aplikacji bez usuwania konfiguracji dostawcy. Główny wyłącznik wymusza wyłączenie każdej opcji podrzędnej.",
+      "master": {
+        "title": "Asystent włączony",
+        "description": "Główny wyłącznik dla każdej powierzchni opartej na modelu. Gdy wyłączony, każda opcja podrzędna jest wymuszana na off."
+      },
+      "coach": {
+        "title": "Coach",
+        "description": "Szuflada czatu, przycisk uruchamiający i mobilny FAB na każdej stronie Insights."
+      },
+      "briefing": {
+        "title": "Codzienny briefing",
+        "description": "Karta briefingu, narracja hero strip, siatka rekomendacji i akcja Regeneruj."
+      },
+      "insightStatus": {
+        "title": "Karty statusu",
+        "description": "Karty statusu na metrykę na każdej podstronie /insights."
+      },
+      "correlations": {
+        "title": "Korelacje",
+        "description": "Narracja kafelka korelacji w przeglądzie Insights."
+      },
+      "healthScoreExplainer": {
+        "title": "Objaśnienie Health-Score",
+        "description": "Ikona ? obok linii delty Health-Score. Cyfra delty pozostaje widoczna niezależnie."
+      }
+    },
     "bugReportRepo": "Repository",
     "bugReportRepoPlaceholder": "owner/repo",
     "bugReportToken": "Issue token",
@@ -2133,6 +2161,10 @@
       "ai-quality": {
         "title": "AI Quality",
         "subtitle": "Helpfulness scores grouped by severity and provider, from the last 30 days of user feedback."
+      },
+      "assistant": {
+        "title": "Powierzchnie asystenta",
+        "subtitle": "Włącz lub wyłącz każdą powierzchnię opartą na modelu bez usuwania konfiguracji dostawcy."
       },
       "coach-feedback": {
         "title": "Coach Feedback",

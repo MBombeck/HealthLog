@@ -1952,6 +1952,34 @@
     "bugReportGithubDescription": "Configure GitHub issue token and repository for incoming bug reports.",
     "bugReportEnabledLabel": "Bug reports enabled",
     "bugReportEnabledDescription": "When off, the in-app report button hides — token and repository stay configured.",
+    "assistant": {
+      "title": "Surfaces d'assistance",
+      "description": "Chaque bascule masque une surface pilotée par le modèle dans toute l'application sans retirer la configuration du fournisseur. Le commutateur principal force chaque option secondaire à off.",
+      "master": {
+        "title": "Assistant activé",
+        "description": "Commutateur principal pour chaque surface pilotée par le modèle. Lorsqu'il est désactivé, toutes les options secondaires ci-dessous sont forcées à off."
+      },
+      "coach": {
+        "title": "Coach",
+        "description": "Drawer de chat, bouton de lancement, et la FAB mobile sur chaque page Insights."
+      },
+      "briefing": {
+        "title": "Briefing quotidien",
+        "description": "Carte de briefing, narration du hero strip, grille de recommandations, et l'action Régénérer."
+      },
+      "insightStatus": {
+        "title": "Cartes de statut",
+        "description": "Cartes de statut par métrique sur chaque sous-page /insights."
+      },
+      "correlations": {
+        "title": "Corrélations",
+        "description": "Narration de la tuile de corrélation sur la vue d'ensemble Insights."
+      },
+      "healthScoreExplainer": {
+        "title": "Explicateur de Health-Score",
+        "description": "L'icône ? près de la ligne de delta du Health-Score. Le chiffre du delta reste visible quoi qu'il arrive."
+      }
+    },
     "bugReportRepo": "Repository",
     "bugReportRepoPlaceholder": "owner/repo",
     "bugReportToken": "Issue token",
@@ -2133,6 +2161,10 @@
       "ai-quality": {
         "title": "AI Quality",
         "subtitle": "Helpfulness scores grouped by severity and provider, from the last 30 days of user feedback."
+      },
+      "assistant": {
+        "title": "Surfaces d'assistance",
+        "subtitle": "Activer ou désactiver chaque surface pilotée par le modèle sans supprimer la configuration du fournisseur."
       },
       "coach-feedback": {
         "title": "Coach Feedback",
