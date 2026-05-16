@@ -59,59 +59,72 @@ fetch_edition() {
 
   echo "fetch-geolite2: downloading $edition_id ..." >&2
   # Use --fail-with-body so curl prints the response on failure; capture
-  # the exit code without aborting the script. Any non-zero exit (401
-  # EULA-pending, 403 throttled, 5xx, network timeout, etc.) flips the
-  # build into the same fallback shape as the missing-key path: write
-  # the `.empty` marker and let the runtime gate surface the issue to
-  # the maintainer.
+  # the exit code without aborting the script. The license key is set
+  # (the no-key path returned earlier with the `.empty` marker), so any
+  # non-zero exit is a real configuration problem — bubble it up so CI
+  # surfaces the gap on the next release rather than letting it ship as
+  # a silent no-op offline tier.
   local curl_exit=0
   curl --silent --show-error --fail-with-body --location \
     --output "$tmp_tarball" \
     "https://download.maxmind.com/app/geoip_download?edition_id=${edition_id}&license_key=${LICENSE_KEY}&suffix=tar.gz" || curl_exit=$?
 
   if [[ "$curl_exit" -ne 0 ]]; then
-    echo "fetch-geolite2: $edition_id download failed (curl exit $curl_exit) — falling back to runtime ipwho.is." >&2
+    echo "fetch-geolite2: $edition_id download failed (curl exit $curl_exit) with MAXMIND_LICENSE_KEY set — aborting." >&2
+    echo "fetch-geolite2: 401 means the key is wrong or the EULA is unsigned; 403 means a throttle; 5xx means MaxMind-side. Investigate before retrying." >&2
     rm -rf "$work_dir"
-    # Reinstate the marker so partial state from a previous fetch does
-    # not look like a healthy populated directory.
-    touch "$OUT_DIR/.empty"
-    return 0
+    return "$curl_exit"
   fi
 
   # The tarball ships under a date-stamped top-level directory
   # (`GeoLite2-City_YYYYMMDD/`). Extract the MMDB into a flat layout
   # so the Dockerfile COPY uses a stable path.
   if ! tar -xzf "$tmp_tarball" -C "$work_dir"; then
-    echo "fetch-geolite2: $edition_id tarball extraction failed — falling back to runtime ipwho.is." >&2
+    echo "fetch-geolite2: $edition_id tarball extraction failed with MAXMIND_LICENSE_KEY set — aborting." >&2
     rm -rf "$work_dir"
-    touch "$OUT_DIR/.empty"
-    return 0
+    return 1
   fi
   local extracted
   extracted="$(find "$work_dir" -maxdepth 2 -name "${mmdb_basename}" -print -quit 2>/dev/null)"
   if [[ -z "$extracted" ]]; then
-    echo "fetch-geolite2: expected ${mmdb_basename} inside the ${edition_id} tarball — falling back to runtime ipwho.is." >&2
+    echo "fetch-geolite2: expected ${mmdb_basename} inside the ${edition_id} tarball but it was not found — aborting." >&2
     rm -rf "$work_dir"
-    touch "$OUT_DIR/.empty"
-    return 0
+    return 1
   fi
   mv "$extracted" "$OUT_DIR/$mmdb_basename"
   rm -rf "$work_dir"
+
+  if [[ ! -s "$OUT_DIR/$mmdb_basename" ]]; then
+    echo "fetch-geolite2: ${mmdb_basename} landed empty — aborting." >&2
+    return 1
+  fi
 
   local sha
   sha="$(shasum -a 256 "$OUT_DIR/$mmdb_basename" | awk '{print $1}')"
   echo "fetch-geolite2: $mmdb_basename SHA256 $sha" >&2
 }
 
-# Track whether every edition landed cleanly. If any fetch fell back to
-# the runtime path, leave the `.empty` marker so the runtime gate +
-# admin notification fires; otherwise clear it so a healthy populated
-# directory is not misread as the fallback state.
+# With the license key present, both editions are required. Any failure
+# from `fetch_edition` is a real configuration or upstream problem and
+# must take the build down so the maintainer sees it — the v1.4.27
+# silent-fallback path is reserved for the deliberate "no key" case
+# handled at the top of the script.
 fetch_edition "GeoLite2-City" "GeoLite2-City.mmdb"
 fetch_edition "GeoLite2-ASN" "GeoLite2-ASN.mmdb"
 
-if [[ -f "$OUT_DIR/.empty" ]]; then
-  echo "fetch-geolite2: at least one edition fell back; runtime resolver will use ipwho.is." >&2
-else
-  echo "fetch-geolite2: done. Files in $OUT_DIR." >&2
+# Belt-and-braces assertion: with the key set the script must leave
+# both MMDB files behind. If we reach this point with a missing file
+# something funny happened (filesystem fault, stray rm, ...); fail loud
+# instead of producing a degraded image silently.
+missing=()
+for mmdb in "GeoLite2-City.mmdb" "GeoLite2-ASN.mmdb"; do
+  if [[ ! -s "$OUT_DIR/$mmdb" ]]; then
+    missing+=("$mmdb")
+  fi
+done
+if [[ "${#missing[@]}" -gt 0 ]]; then
+  echo "fetch-geolite2: missing or empty after fetch: ${missing[*]} — aborting." >&2
+  exit 1
 fi
+
+echo "fetch-geolite2: done. Files in $OUT_DIR." >&2
