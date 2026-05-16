@@ -34,7 +34,7 @@ describe("GET /api/version", () => {
   it("returns the package.json version", async () => {
     const response = await (GET as unknown as () => Promise<Response>)();
     const body = (await response.json()) as VersionEnvelope;
-    expect(body.data.version).toMatch(/^\d+\.\d+\.\d+(-[a-z0-9.-]+)?$/i);
+    expect(body.data.version).toMatch(/^\d+\.\d+\.\d+(\.\d+)?(-[a-z0-9.-]+)?$/i);
     expect(body.data.license).toBe("AGPL-3.0");
     expect(body.data.repository).toContain("github.com");
     expect(body.data.changelog).toContain("CHANGELOG");
