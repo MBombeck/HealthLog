@@ -193,4 +193,71 @@ describe("GET /api/measurements?aggregate=… (real Postgres)", () => {
     };
     expect(json.data.meta.aggregate).toBe("monthly");
   });
+
+  // v1.4.29 — cumulative HK types (steps, active energy, flights,
+  // distance, daylight) must aggregate with SUM, not AVG. Five rows
+  // of 1000 steps each on the same day must collapse to 5000, not
+  // 1000. See R-A finding 2.
+  it("sums cumulative HK types instead of averaging", async () => {
+    const prisma = getPrismaClient();
+    const baseTime = new Date("2026-05-01T08:00:00.000Z").getTime();
+    await prisma.measurement.createMany({
+      data: Array.from({ length: 5 }, (_, i) => ({
+        userId: TEST_USER_ID,
+        type: "ACTIVITY_STEPS" as const,
+        value: 1000,
+        unit: "steps",
+        source: "MANUAL" as const,
+        measuredAt: new Date(baseTime + i * 60 * 60 * 1000),
+      })),
+    });
+
+    const { GET } = await import("@/app/api/measurements/route");
+    const response = await GET(
+      getRequest(
+        "type=ACTIVITY_STEPS&from=2026-05-01T00:00:00Z&to=2026-05-02T00:00:00Z&aggregate=daily&limit=365",
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    const json = (await response.json()) as {
+      data: {
+        measurements: Array<{ value: number; count: number }>;
+      };
+    };
+    expect(json.data.measurements).toHaveLength(1);
+    expect(json.data.measurements[0].value).toBe(5000);
+    expect(json.data.measurements[0].count).toBe(5);
+  });
+
+  it("averages spot types (pulse) rather than summing", async () => {
+    // Belt-and-braces guard so a future refactor that mis-wires the
+    // SUM branch back across every type catches loudly here.
+    const prisma = getPrismaClient();
+    const baseTime = new Date("2026-05-01T08:00:00.000Z").getTime();
+    await prisma.measurement.createMany({
+      data: [60, 70, 80].map((v, i) => ({
+        userId: TEST_USER_ID,
+        type: "PULSE" as const,
+        value: v,
+        unit: "bpm",
+        source: "MANUAL" as const,
+        measuredAt: new Date(baseTime + i * 60 * 60 * 1000),
+      })),
+    });
+
+    const { GET } = await import("@/app/api/measurements/route");
+    const response = await GET(
+      getRequest(
+        "type=PULSE&from=2026-05-01T00:00:00Z&to=2026-05-02T00:00:00Z&aggregate=daily&limit=365",
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    const json = (await response.json()) as {
+      data: { measurements: Array<{ value: number }> };
+    };
+    expect(json.data.measurements).toHaveLength(1);
+    expect(json.data.measurements[0].value).toBe(70); // (60+70+80)/3
+  });
 });

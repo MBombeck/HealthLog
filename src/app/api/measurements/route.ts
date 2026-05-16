@@ -18,6 +18,7 @@ import {
   BUCKET_CAP,
   type AggregateGrain,
 } from "@/lib/measurements/range-aggregation";
+import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
 import { withIdempotency } from "@/lib/idempotency";
 import { NextRequest } from "next/server";
 import type {
@@ -89,13 +90,23 @@ export const GET = apiHandler(async (request: NextRequest) => {
     };
     const truncUnit = TRUNC_UNIT[grain];
     const truncUnitLiteral = Prisma.raw(`'${truncUnit}'`);
+    // Cumulative HK types (steps, active energy, flights, distance,
+    // daylight) are partial-day increments — averaging across the day
+    // understates the daily total by the per-bucket sample count.
+    // SUM for those; AVG for spot metrics (BP, weight, pulse, BG,
+    // body fat, mood, sleep). See R-A finding 2.
+    const useSum =
+      type != null && CUMULATIVE_HK_TYPES.has(type as MeasurementType);
+    const aggregator = useSum
+      ? Prisma.raw(`SUM(m."value")::double precision`)
+      : Prisma.raw(`AVG(m."value")::double precision`);
     const buckets = await prisma.$queryRaw<
       Array<{ type: string; bucket_start: Date; avg: number; cnt: number }>
     >`
       SELECT
         m."type"::text AS type,
         date_trunc(${truncUnitLiteral}, m."measured_at") AS bucket_start,
-        AVG(m."value")::double precision AS avg,
+        ${aggregator} AS avg,
         COUNT(*)::int AS cnt
       FROM measurements m
       WHERE m."user_id" = ${user.id}

@@ -288,6 +288,29 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
 };
 
 /**
+ * v1.4.29 — MeasurementTypes whose `aggregate=daily|weekly|monthly`
+ * grain on `GET /api/measurements` must reduce with `SUM`, not `AVG`.
+ *
+ * These are the cumulative-quantity HealthKit types where every row
+ * is a partial-day increment (steps for one minute, kilocalories for
+ * one workout, metres for one walk). Averaging across the day
+ * silently understates the daily total by the per-bucket sample
+ * count. Spot metrics (BP, weight, pulse, mood, BG, body fat, sleep)
+ * stay on `AVG`.
+ *
+ * Used by `src/app/api/measurements/route.ts` when picking the SQL
+ * aggregator. Mirrors the canonical list documented in
+ * `.planning/research/v15-r-a-step-aggregation.md` §6.
+ */
+export const CUMULATIVE_HK_TYPES: ReadonlySet<MeasurementType> = new Set<MeasurementType>([
+  "ACTIVITY_STEPS",
+  "ACTIVE_ENERGY_BURNED",
+  "FLIGHTS_CLIMBED",
+  "WALKING_RUNNING_DISTANCE",
+  "TIME_IN_DAYLIGHT",
+]);
+
+/**
  * HK identifiers the iOS app may emit that HealthLog deliberately does
  * NOT map yet. Listing them here means the batch route can log a
  * "deferred, not unknown" signal and the iOS DTO can decide upstream
