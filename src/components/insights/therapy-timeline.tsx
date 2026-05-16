@@ -111,9 +111,14 @@ export function TherapyTimeline({ limit }: TherapyTimelineProps) {
                 {/* v1.4.27 B7 / L4 — sr-only drug-name heading per
                     entry so screen-reader users can jump between
                     medication blocks; the visible row keeps the
-                    inline <strong> rendering. */}
+                    inline <strong> rendering.
+                    v1.4.33 IW9 — promoted from h4 -> h2 so the page
+                    outline stays sequential. The parent SubPageShell
+                    ships an <h1>; CardTitle is a <div>, so the timeline
+                    is the only heading-bearing surface here and h2
+                    nests directly under h1 without skipping levels. */}
                 {entry.medicationName && (
-                  <h4 className="sr-only">{entry.medicationName}</h4>
+                  <h2 className="sr-only">{entry.medicationName}</h2>
                 )}
                 <p className="text-muted-foreground text-xs">
                   {fmt.dateWithWeekday(new Date(entry.date))}

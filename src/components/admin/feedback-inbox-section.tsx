@@ -434,9 +434,11 @@ function FeedbackDetailDialog({
 
           {(url || locale || userAgent || appVersion) && (
             <div>
-              <h4 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+              {/* v1.4.33 IW9 — h4 -> h3 so the sheet outline stays
+                  sequential beneath the ResponsiveSheet's h2 title. */}
+              <h3 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                 {t("admin.feedback.metadataHeading")}
-              </h4>
+              </h3>
               <dl className="mt-2 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-xs">
                 {url && (
                   <>
@@ -476,9 +478,9 @@ function FeedbackDetailDialog({
 
           {item.screenshotBase64 && (
             <div>
-              <h4 className="text-muted-foreground mb-2 text-xs font-semibold tracking-wider uppercase">
+              <h3 className="text-muted-foreground mb-2 text-xs font-semibold tracking-wider uppercase">
                 {t("admin.feedback.screenshotHeading")}
-              </h4>
+              </h3>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={item.screenshotBase64}

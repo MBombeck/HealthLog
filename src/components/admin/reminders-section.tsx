@@ -252,9 +252,11 @@ export function RemindersSection() {
       {reminderCheck.data?.medications &&
         reminderCheck.data.medications.length > 0 && (
           <div className="mt-4 space-y-2">
-            <h4 className="text-sm font-medium">
+            {/* v1.4.33 IW9 — h4 -> h2 so the page outline stays
+                sequential (parent admin SectionFrame ships <h1>). */}
+            <h2 className="text-sm font-medium">
               {t("admin.reminderCheckResults")}
-            </h4>
+            </h2>
             <div className="space-y-2">
               {reminderCheck.data.medications.map((med, i) => (
                 <div key={i} className="bg-muted/50 space-y-1.5 rounded-lg p-3">
