@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Loader2, TrendingUp } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useFeatureFlags } from "@/hooks/use-feature-flags";
+import { useScrollResetOnRoute } from "@/hooks/use-scroll-reset-on-route";
 import { useTranslations } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -16,6 +16,7 @@ import { TrendsRow } from "@/components/insights/trends-row";
 import { CorrelationRow } from "@/components/insights/correlation-row";
 import { useInsightsAdvisorQuery } from "@/components/insights/use-insights-advisor";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
+import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
 import type { CorrelationResult } from "@/lib/insights/correlations";
 import type { DataSummary } from "@/lib/analytics/trends";
 
@@ -95,20 +96,13 @@ export default function InsightsPage() {
   const { isAuthenticated, user } = useAuth();
   const { t } = useTranslations();
 
-  // v1.4.28 FB-D3 — mirror `<SubPageShell>`'s deferred scroll-reset on
-  // the mother page so a back-navigation from a sub-page (where
-  // `SubPageShell` already reset the scroll on mount) lands cleanly
-  // at the top of the overview instead of inheriting the sub-page's
-  // vertical position through the cached scroll state. Single
-  // mount-only effect; uses `requestAnimationFrame` so the reset
-  // settles after first paint, same as the sub-page shell.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const handle = window.requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, behavior: "auto" });
-    });
-    return () => window.cancelAnimationFrame(handle);
-  }, []);
+  // v1.4.33 IW9 — scroll-to-top on route mount centralised in the
+  // shared `useScrollResetOnRoute()` hook. The mother page + the
+  // `<SubPageShell>` both consume the same hook; the legacy duplicate
+  // RAF that lived here pre-v1.4.33 produced a visible double-snap on
+  // slow hydrates (chart skeletons inflating between the two
+  // callbacks).
+  useScrollResetOnRoute();
 
   // v1.4.27 R3d MB4 — Coach drawer state lives in the layout-level
   // `<CoachLaunchProvider>` so every routed sub-page can reach it.
@@ -134,16 +128,12 @@ export default function InsightsPage() {
   // beyond the React-state subscription.
   const advisor = useInsightsAdvisorQuery(isAuthenticated);
 
-  const { data: analytics } = useQuery({
-    queryKey: ["analytics"],
-    queryFn: async () => {
-      const res = await fetch("/api/analytics");
-      if (!res.ok) throw new Error("Failed");
-      const json = await res.json();
-      return json.data as AnalyticsData;
-    },
-    enabled: isAuthenticated,
-  });
+  // v1.4.33 IW2 — the mother page reads `correlations` + `healthScore`
+  // (thick-only fields) so it stays on the default thick slice. The
+  // shared hook still centralises the cache settings so the consumer
+  // dedups with the sub-page mounts that ride the slim slice instead.
+  const analyticsQuery = useAnalyticsQuery();
+  const analytics = analyticsQuery.data as AnalyticsData | undefined;
 
   if (isLoading) {
     return (

@@ -3,6 +3,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { useScrollResetOnRoute } from "@/hooks/use-scroll-reset-on-route";
 import { cn } from "@/lib/utils";
 
 /**
@@ -63,21 +64,18 @@ export function SubPageShell({
   // CF-35 made the focus call opt-in via `focusOnMount` — the
   // default-on version stole focus from soft-keyboards on mobile.
   //
-  // v1.4.28 FB-D3 — defer the `scrollTo` to the next animation frame
-  // so the sub-page's first paint settles before the scroll lands.
-  // The legacy unconditional in-effect scroll fired before the chart
-  // skeleton had a height; the viewport snapped to 0, then the chart
-  // popped in and the scroll position visibly jumped again. Wrapping
-  // in `requestAnimationFrame` runs the scroll after the layout pass
-  // so the user sees one smooth landing.
+  // v1.4.33 IW9 — the scroll-to-top affordance moved into the shared
+  // `useScrollResetOnRoute()` hook so the mother page + sub-page can't
+  // both fire (which produced a visible double-snap when the chart
+  // skeleton inflated between the two RAF callbacks). The hook itself
+  // still defers to `requestAnimationFrame` so the scroll lands after
+  // first paint, same behaviour the legacy in-line effect provided.
   const headingRef = useRef<HTMLHeadingElement | null>(null);
+  useScrollResetOnRoute();
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!focusOnMount || typeof window === "undefined") return;
     const handle = window.requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, behavior: "auto" });
-      if (focusOnMount) {
-        headingRef.current?.focus({ preventScroll: true });
-      }
+      headingRef.current?.focus({ preventScroll: true });
     });
     return () => window.cancelAnimationFrame(handle);
   }, [focusOnMount]);
