@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.4.29.1] — 2026-05-16 — Daily-step aggregation hotfix
+
+A one-line follow-up to v1.4.29. The dashboard 7-day step chart now
+renders daily totals (sums in the thousands), not per-sample averages
+(hundreds), matching the server-side `aggregate=daily` contract that
+landed earlier today.
+
+### Fixed
+
+- **Client-side daily aggregator.** `health-chart.tsx` reduced every
+  HealthKit type with `sum / count` regardless of whether the
+  metric is cumulative or spot. The branch now consults
+  `CUMULATIVE_HK_TYPES` and picks `sum` for steps, active energy,
+  flights climbed, walking + running distance, and time in
+  daylight, while the spot metrics (BP, weight, pulse, BG, body
+  fat, mood, sleep) keep the mean.
+
+### Tests
+
+- The existing chart suite (137 specs) continues to pass; the
+  one-line branch is exercised by the v1.4.29 server-side
+  aggregation tests and needs no additional coverage.
+
 ## [1.4.29] — 2026-05-16 — Dashboard performance + chart polish
 
 A targeted performance + polish patch. The headline is a faster
