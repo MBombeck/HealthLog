@@ -62,8 +62,6 @@ export const MEASUREMENT_CATEGORIES: ReadonlyMap<
   ["BLOOD_PRESSURE_SYS", "vitals"],
   ["BLOOD_PRESSURE_DIA", "vitals"],
   ["PULSE", "vitals"],
-  ["RESTING_HEART_RATE", "vitals"],
-  ["HEART_RATE_VARIABILITY", "vitals"],
   ["OXYGEN_SATURATION", "vitals"],
   ["BODY_TEMPERATURE", "vitals"],
 
@@ -96,7 +94,15 @@ export const MEASUREMENT_CATEGORIES: ReadonlyMap<
   // ── Environment ──
   ["TIME_IN_DAYLIGHT", "environment"],
 
-  // ── Cardiovascular (derived risk markers) ──
+  // ── Cardiovascular (derived risk markers + Apple-Health-grouped
+  // heart-rate variants). v1.4.32 — RESTING_HEART_RATE +
+  // HEART_RATE_VARIABILITY moved here from `vitals` to align with the
+  // iOS handoff brief's category table (RESTING_HR, HRV →
+  // cardiovascular). PULSE stays in `vitals` because spot-pulse
+  // samples are point-in-time signals; the resting + variability
+  // metrics are the derived cardiac-risk surface. ──
+  ["RESTING_HEART_RATE", "cardiovascular"],
+  ["HEART_RATE_VARIABILITY", "cardiovascular"],
   ["PULSE_WAVE_VELOCITY", "cardiovascular"],
   ["VASCULAR_AGE", "cardiovascular"],
 

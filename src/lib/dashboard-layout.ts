@@ -131,6 +131,14 @@ export const CHART_OVERLAY_KEYS = [
   // overlay-prefs slot so the cardio sub-page's VO2 chart-cog state
   // doesn't bleed into the pulse chart sitting directly above it.
   "vo2Max",
+  // v1.4.32 — wave-A HealthKit chart cards. Each one owns its own
+  // overlay-prefs slot so the chart-cog popover (7-day trend / Trend
+  // arrow / Target range / Comparison baseline) persists per metric.
+  "hrv",
+  "restingHr",
+  "oxygenSaturation",
+  "bodyTemperature",
+  "activeEnergy",
 ] as const;
 export type ChartOverlayKey = (typeof CHART_OVERLAY_KEYS)[number];
 

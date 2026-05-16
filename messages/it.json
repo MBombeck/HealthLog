@@ -1118,6 +1118,56 @@
     "navBodyTemperature": "Temperatura",
     "navActiveEnergy": "Energia attiva",
     "navAriaLabel": "Skip to section",
+    "hrv": {
+      "title": "HRV",
+      "description": "Variabilità della frequenza cardiaca nel tempo — segnale di recupero del sistema nervoso, captato di notte da Apple Watch e altri wearable compatibili.",
+      "chartTitle": "Variabilità della frequenza cardiaca",
+      "emptyState": {
+        "title": "Ancora nessun valore HRV",
+        "description": "I valori HRV appariranno qui non appena Apple Watch (o un dispositivo Withings compatibile) sincronizza le misurazioni notturne.",
+        "cta": ""
+      }
+    },
+    "restingHr": {
+      "title": "FC a riposo",
+      "description": "Il livello cardiaco di base sulla giornata — distinto dalle frequenze puntuali della pagina Polso. Apple Salute fornisce un valore al giorno.",
+      "chartTitle": "Frequenza cardiaca a riposo",
+      "emptyState": {
+        "title": "Ancora nessuna FC a riposo",
+        "description": "La FC a riposo arriva quando Apple Watch o un Withings compatibile ha indossato una giornata tranquilla.",
+        "cta": ""
+      }
+    },
+    "oxygenSaturation": {
+      "title": "Saturazione di ossigeno",
+      "description": "Ossigeno nel sangue (SpO₂) — intervallo clinico normale 95–100 %, con zone obiettivo ombreggiate sul grafico.",
+      "chartTitle": "Saturazione di ossigeno",
+      "emptyState": {
+        "title": "Ancora nessun campione SpO₂",
+        "description": "I campioni SpO₂ appariranno qui non appena un wearable compatibile (Apple Watch, Withings ScanWatch) cattura una lettura.",
+        "cta": ""
+      }
+    },
+    "bodyTemperature": {
+      "title": "Temperatura corporea",
+      "description": "Andamento della temperatura corporea centrale in Celsius. La temperatura cutanea di Withings vive su una metrica separata.",
+      "chartTitle": "Temperatura corporea",
+      "emptyState": {
+        "title": "Ancora nessuna temperatura corporea",
+        "description": "Registra una misura o lascia che il tuo wearable ne sincronizzi una — l'andamento apparirà qui.",
+        "cta": "Registra temperatura corporea"
+      }
+    },
+    "activeEnergy": {
+      "title": "Energia attiva",
+      "description": "Totale giornaliero di energia attiva in kilocalorie — una riga al giorno, da Apple Salute o dall'attività Withings.",
+      "chartTitle": "Energia attiva",
+      "emptyState": {
+        "title": "Ancora nessun dato di energia attiva",
+        "description": "I totali di energia attiva appariranno qui non appena Apple Salute o un dispositivo di attività Withings sincronizza un'intera giornata.",
+        "cta": ""
+      }
+    },
     "subPage": {
       "blutdruckDescription": "Your systolic / diastolic trend with age-personalised target zones and a written AI assessment.",
       "gewichtDescription": "Weight trend mapped against your height-derived healthy band, plus an AI assessment.",

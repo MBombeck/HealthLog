@@ -1118,6 +1118,56 @@
     "navBodyTemperature": "Temperatur",
     "navActiveEnergy": "Aktive Energie",
     "navAriaLabel": "Zu Abschnitt springen",
+    "hrv": {
+      "title": "HRV",
+      "description": "Herzratenvariabilität im Verlauf — dein Erholungssignal des autonomen Nervensystems, nächtlich von Apple Watch und kompatiblen Wearables erfasst.",
+      "chartTitle": "Herzratenvariabilität",
+      "emptyState": {
+        "title": "Noch keine HRV-Werte",
+        "description": "HRV-Werte erscheinen hier, sobald die Apple Watch (oder ein kompatibles Withings-Gerät) nächtliche Messungen synchronisiert.",
+        "cta": ""
+      }
+    },
+    "restingHr": {
+      "title": "Ruhepuls",
+      "description": "Die tägliche Grundlinie deines Herzschlags — unterschieden vom Spot-Puls. Apple Health liefert einen Wert pro Tag.",
+      "chartTitle": "Ruhepuls",
+      "emptyState": {
+        "title": "Noch kein Ruhepuls",
+        "description": "Der Ruhepuls erscheint, sobald die Apple Watch oder ein kompatibles Withings-Gerät einen ruhigen Tag durchgetragen hat.",
+        "cta": ""
+      }
+    },
+    "oxygenSaturation": {
+      "title": "Sauerstoffsättigung",
+      "description": "Blutsauerstoff (SpO₂) — klinischer Normalbereich 95–100 %; Zielzonen sind am Chart hinterlegt.",
+      "chartTitle": "Sauerstoffsättigung",
+      "emptyState": {
+        "title": "Noch keine SpO₂-Werte",
+        "description": "SpO₂-Werte erscheinen, sobald ein kompatibles Wearable (Apple Watch, Withings ScanWatch) eine Messung erfasst.",
+        "cta": ""
+      }
+    },
+    "bodyTemperature": {
+      "title": "Körpertemperatur",
+      "description": "Verlauf der Körperkerntemperatur in Celsius. Hauttemperaturwerte von Withings laufen über eine separate Metrik.",
+      "chartTitle": "Körpertemperatur",
+      "emptyState": {
+        "title": "Noch keine Körpertemperatur",
+        "description": "Erfasse eine Körpertemperatur oder lass dein Wearable einen Wert synchronisieren — der Verlauf erscheint dann hier.",
+        "cta": "Körpertemperatur erfassen"
+      }
+    },
+    "activeEnergy": {
+      "title": "Aktive Energie",
+      "description": "Tägliche aktive-Energie-Summe in Kilokalorien — eine Zeile pro Tag, aus Apple Health oder Withings-Aktivität.",
+      "chartTitle": "Aktive Energie",
+      "emptyState": {
+        "title": "Noch keine Aktive-Energie-Werte",
+        "description": "Aktive-Energie-Summen erscheinen hier, sobald Apple Health oder ein Withings-Aktivitätsgerät einen Tagesumfang synchronisiert.",
+        "cta": ""
+      }
+    },
     "subPage": {
       "blutdruckDescription": "Dein systolisch-/diastolisch-Verlauf mit altersangepassten Zielbereichen und einer textbasierten KI-Einschätzung.",
       "gewichtDescription": "Gewichtsverlauf gegen das aus deiner Größe abgeleitete gesunde Band, mit KI-Einschätzung.",

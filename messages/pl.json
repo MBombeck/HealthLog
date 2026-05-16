@@ -1118,6 +1118,56 @@
     "navBodyTemperature": "Temperatura",
     "navActiveEnergy": "Energia czynna",
     "navAriaLabel": "Skip to section",
+    "hrv": {
+      "title": "HRV",
+      "description": "Zmienność rytmu serca w czasie — sygnał regeneracji układu nerwowego, rejestrowany nocą przez Apple Watch i inne zgodne wearable.",
+      "chartTitle": "Zmienność rytmu serca",
+      "emptyState": {
+        "title": "Brak wartości HRV",
+        "description": "Wartości HRV pojawią się tutaj, gdy Apple Watch (lub zgodne urządzenie Withings) zsynchronizuje pomiary nocne.",
+        "cta": ""
+      }
+    },
+    "restingHr": {
+      "title": "Tętno spoczynkowe",
+      "description": "Dzienna linia bazowa rytmu serca — różna od tętna punktowego na stronie Pulse. Apple Zdrowie podaje jedną wartość na dobę.",
+      "chartTitle": "Tętno spoczynkowe",
+      "emptyState": {
+        "title": "Brak tętna spoczynkowego",
+        "description": "Tętno spoczynkowe pojawi się, gdy Apple Watch lub zgodne urządzenie Withings spędzi spokojny dzień na nadgarstku.",
+        "cta": ""
+      }
+    },
+    "oxygenSaturation": {
+      "title": "Saturacja tlenu",
+      "description": "Tlen we krwi (SpO₂) — kliniczny zakres normy 95–100 %, ze strefami docelowymi zacienionymi na wykresie.",
+      "chartTitle": "Saturacja tlenu",
+      "emptyState": {
+        "title": "Brak próbek SpO₂",
+        "description": "Próbki SpO₂ trafią tutaj, gdy zgodne wearable (Apple Watch, Withings ScanWatch) wykona pomiar.",
+        "cta": ""
+      }
+    },
+    "bodyTemperature": {
+      "title": "Temperatura ciała",
+      "description": "Trend temperatury rdzenia ciała w stopniach Celsjusza. Temperatura skóry z Withings działa na osobnej metryce.",
+      "chartTitle": "Temperatura ciała",
+      "emptyState": {
+        "title": "Brak temperatury ciała",
+        "description": "Zarejestruj pomiar lub pozwól wearable zsynchronizować jeden — trend pojawi się tutaj.",
+        "cta": "Zarejestruj temperaturę ciała"
+      }
+    },
+    "activeEnergy": {
+      "title": "Energia czynna",
+      "description": "Dzienna suma energii czynnej w kilokaloriach — jeden wiersz na dobę, z Apple Zdrowie lub aktywności Withings.",
+      "chartTitle": "Energia czynna",
+      "emptyState": {
+        "title": "Brak danych o energii czynnej",
+        "description": "Sumy energii czynnej pojawią się tutaj, gdy Apple Zdrowie lub urządzenie Withings zsynchronizuje pełny dzień.",
+        "cta": ""
+      }
+    },
     "subPage": {
       "blutdruckDescription": "Your systolic / diastolic trend with age-personalised target zones and a written AI assessment.",
       "gewichtDescription": "Weight trend mapped against your height-derived healthy band, plus an AI assessment.",

@@ -1118,6 +1118,56 @@
     "navBodyTemperature": "Temperature",
     "navActiveEnergy": "Active energy",
     "navAriaLabel": "Skip to section",
+    "hrv": {
+      "title": "HRV",
+      "description": "Heart-rate variability over time — your nervous-system recovery signal, captured during sleep by Apple Watch and other compatible wearables.",
+      "chartTitle": "Heart-rate variability",
+      "emptyState": {
+        "title": "No HRV samples yet",
+        "description": "HRV samples land here once Apple Watch (or a compatible Withings device) starts syncing nightly readings.",
+        "cta": ""
+      }
+    },
+    "restingHr": {
+      "title": "Resting heart rate",
+      "description": "The daily floor your heart settles at — distinct from the spot pulse samples on the pulse page. Apple Health surfaces one value per day.",
+      "chartTitle": "Resting heart rate",
+      "emptyState": {
+        "title": "No resting heart rate yet",
+        "description": "Resting heart rate arrives once Apple Watch or a compatible Withings device has worn through one quiet day.",
+        "cta": ""
+      }
+    },
+    "oxygenSaturation": {
+      "title": "Oxygen saturation",
+      "description": "Blood oxygen (SpO₂) — clinical normal is 95–100 %, with target zones shaded on the chart.",
+      "chartTitle": "Oxygen saturation",
+      "emptyState": {
+        "title": "No SpO₂ samples yet",
+        "description": "SpO₂ samples land here once a compatible wearable (Apple Watch, Withings ScanWatch) captures a reading.",
+        "cta": ""
+      }
+    },
+    "bodyTemperature": {
+      "title": "Body temperature",
+      "description": "Core body temperature trend — Celsius. Skin-temperature readings from Withings live on a separate metric.",
+      "chartTitle": "Body temperature",
+      "emptyState": {
+        "title": "No body temperature yet",
+        "description": "Log a body-temperature reading or let your wearable sync one, and the trend will appear here.",
+        "cta": "Log body temperature"
+      }
+    },
+    "activeEnergy": {
+      "title": "Active energy",
+      "description": "Daily active-energy total in kilocalories — one row per day, sourced from Apple Health or Withings activity.",
+      "chartTitle": "Active energy",
+      "emptyState": {
+        "title": "No active-energy data yet",
+        "description": "Active-energy totals land here once Apple Health or a Withings activity device syncs a day's worth of movement.",
+        "cta": ""
+      }
+    },
     "subPage": {
       "blutdruckDescription": "Your systolic / diastolic trend with age-personalised target zones and a written AI assessment.",
       "gewichtDescription": "Weight trend mapped against your height-derived healthy band, plus an AI assessment.",
