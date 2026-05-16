@@ -1,5 +1,111 @@
 # Changelog
 
+## [1.4.30] — 2026-05-16 — iOS-coordinated foundation (Daily-Stats + SyncMode)
+
+Server-side prep for the next iOS TestFlight build. Five surfaces
+land together so the iOS engineer can pick them up in one cut-over:
+a locked `externalId` shape for daily-aggregated cumulative
+HealthKit rows, the SyncMode foundation columns + handshake +
+bulk-backfill endpoints, a first-class `MoodEntry.note` column that
+replaces the legacy `tags: ["note:<text>"]` workaround, a
+cross-source workout dedup helper, and two new MeasurementType
+enums (`WALKING_STEADINESS`, `AUDIO_EXPOSURE_EVENT`) plus the
+shared `MEASUREMENT_CATEGORIES` overlay that drives the iOS
+permission picker and the future Insights nav.
+
+### Added
+
+- **Daily-stats `externalId` helper.** `dailyStatsExternalId(hkId,
+  date)` mints `"stats:<HKQuantityTypeIdentifier>:<YYYY-MM-DD>"`
+  alongside the v1.4.29 `CUMULATIVE_HK_TYPES` set. The shape is
+  locked in `.planning/v15-ios-handoff/08-locked-contracts.md` §12
+  and `.planning/v15-ios-handoff/06-ios-responsibilities.md`. iOS
+  emits one row per day per cumulative type via
+  `HKStatisticsCollectionQuery`; the unique index collapses
+  re-syncs idempotently, and a future PATCH-on-divergence call
+  updates a late-watch-sync revision without inserting a second
+  row.
+- **Drain script + admin endpoint** at
+  `scripts/drain-per-sample-cumulative.ts` and
+  `POST /api/admin/drain-per-sample-cumulative` (gated by
+  `requireAdmin()`, default `dryRun: true`). Collapses pre-Option-A
+  per-sample APPLE_HEALTH cumulative rows into one row per day per
+  type. Idempotent — re-running on a fully-collapsed account
+  reports zero buckets touched.
+- **SyncMode foundation.** Migration 0062 adds
+  `Measurement.sync_version` (Int, default 1),
+  `Measurement.deleted_at` (Timestamp, nullable) for soft-deletes,
+  and `User.last_synced_at` (Timestamp, nullable). The new
+  `GET /api/sync/state` returns the handshake response (lastSyncedAt,
+  server clock, live + tombstoned counters); the call also bumps the
+  checkpoint so iOS reads the OLD value then trusts subsequent
+  writes via the standard read paths.
+- **Bulk backfill endpoints.** `POST /api/mood-entries/bulk` and
+  `POST /api/medications/intake/bulk` accept up to 500 entries per
+  call with the same response envelope as the measurements + workouts
+  batch. Probe-then-upsert distinguishes inserted vs duplicate on the
+  mood path; idempotency-key collision yields duplicate on the
+  intake path. Both rate-limited at 60/min/user.
+- **`MoodEntry.note` column** (migration 0063). The bulk + single
+  POST + PUT routes thread the new field through; the existing
+  `tags: ["note:<text>"]` workaround backfills via
+  `scripts/backfill-mood-note-column.ts` (CLI dry-run by default,
+  `--confirm` commits).
+- **`pickCanonicalWorkoutRows()`** at
+  `src/lib/measurements/pick-canonical-workout-rows.ts`. Cross-source
+  workout dedup symmetric to `pickCanonicalSourceRows()`. Buckets
+  rows by 5-minute startedAt slot + sportType and walks the
+  existing measurement source ladder; metric-aware tunes (route →
+  Apple wins, HR zones → Withings wins) defer to v1.5.x.
+- **`MEASUREMENT_CATEGORIES` overlay** at
+  `src/lib/measurements/categories.ts`. UI-only category map
+  (vitals / body / activity / sleep / hearing / environment /
+  cardiovascular / metabolic) that drives the iOS HealthKit
+  permission picker, the post-v1.5 web Insights nav, and the Coach
+  evidence shelf chip-grouping. Completeness wall in the test suite
+  catches a new MeasurementType lacking a category assignment.
+- **Two MeasurementType enums** (migration 0064) —
+  `WALKING_STEADINESS` (iOS 15+ Mobility daily rollup, ×100 scaled
+  from Apple's 0..1 fraction) and `AUDIO_EXPOSURE_EVENT` (iOS 13+
+  category flag fired when the rolling 7-day average crosses the
+  WHO 80-dBA threshold; environmental + headphone events share the
+  same enum value). The wiring registries (`apple-health-mapping`,
+  `categories`, `pr-direction`, `chart-tokens`, six locale files)
+  pick them up in the same release.
+
+### Changed
+
+- **Real-Postgres integration coverage expanded.** Every new
+  endpoint introduced in v1.4.30 rides the v1.4.29 testcontainer
+  fixture: the drain helper, the admin endpoint, the sync-state
+  handshake, the mood-entries bulk upsert, the medication-intake
+  bulk insert + idempotency-key collision, the mood-note column
+  round-trip. Full integration suite at 47 files / 190 specs.
+- **`HK_QUANTITY_TYPE_DEFERRED` trimmed.** Three identifiers move
+  out of the deferred set into the mapping table:
+  `HKQuantityTypeIdentifierAppleWalkingSteadiness`,
+  `HKCategoryTypeIdentifierEnvironmentalAudioExposureEvent`,
+  `HKCategoryTypeIdentifierHeadphoneAudioExposureEvent`.
+
+### iOS contract
+
+Every API change is additive. The new endpoints
+(`/api/sync/state`, `/api/mood-entries/bulk`,
+`/api/medications/intake/bulk`,
+`/api/admin/drain-per-sample-cumulative`) are net-new — no iOS
+consumer yet. The SyncMode columns carry defaults so existing iOS
+POSTs round-trip unchanged. The two new MeasurementType enums are
+net-new values; iOS clients that predate the codegen pass will not
+encounter them in read paths because no source writes them yet, and
+the codegen path will pick them up on the next iOS regeneration.
+
+**Cutover sequence.** v1.4.30 ships with the helper + drain script
++ server tolerance for both shapes. The next iOS TestFlight build
+adopts `HealthKitStatisticsService.swift` and starts posting daily-
+aggregated rows for the five cumulative types. Operator runs the
+drain script once after the new TestFlight cuts over; per-sample
+row pressure on `Measurement` drops 50-200× for cumulative types.
+
 ## [1.4.29.1] — 2026-05-16 — Daily-step aggregation hotfix
 
 A one-line follow-up to v1.4.29. The dashboard 7-day step chart now
