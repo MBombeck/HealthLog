@@ -1,8 +1,20 @@
 name: Build & Publish Docker Image
 
+# v1.4.34 IW-A — release pipeline fires on tag pushes only. Earlier
+# releases triggered the workflow twice on each cut: the squash-merge
+# to `main` and the corresponding `v*` tag push landed within a second
+# of each other and each kicked off its own build. Both runs ended
+# green and produced the same image at the same SHA with overlapping
+# tag sets (the main run added `latest`, the tag run added the
+# semver tags), but the duplication doubled GHCR CI minutes for
+# every release. Dropping `push.branches: [main]` collapses the
+# pipeline to a single run per release tag. The `latest` rule in
+# the metadata-action (`type=raw,value=latest,...`) now keys on
+# the v* tag presence so each release still refreshes the `latest`
+# alias in the same run. PR + workflow_dispatch triggers stay so
+# the image still builds on PR validation and manual reruns.
 on:
   push:
-    branches: [main]
     tags: ["v*"]
   pull_request:
     branches: [main]
@@ -13,8 +25,8 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 # Cancel in-progress runs when a new commit is pushed to the same ref.
-# main + a v* tag at the same SHA are different refs, so the per-ref
-# gha cache scope below keeps them from contending on cache writes.
+# Different ref types (tag vs PR head) don't share a group, so a tag
+# build and a concurrent PR build won't cancel each other.
 concurrency:
   group: docker-publish-${{ github.ref }}
   cancel-in-progress: true
@@ -264,7 +276,16 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=match,pattern=v(.+),group=1
             type=ref,event=tag
-            type=raw,value=latest,enable={{is_default_branch}}
+            # v1.4.34 IW-A — release pipeline fires on `v*` tag pushes
+            # only (the `push.branches: [main]` trigger was dropped to
+            # eliminate the per-release double-build). `is_default_branch`
+            # is false for tag refs, so the prior condition stopped
+            # refreshing the `latest` alias once main pushes no longer
+            # trigger the workflow. Enable on every release tag that
+            # does not carry a pre-release suffix (`-rc.1`, `-beta.2`,
+            # etc.) so each stable release rotates the `latest` alias
+            # while pre-release tags stay off it.
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-') }}
             type=sha,prefix=sha-,format=short
           labels: |
             org.opencontainers.image.title=HealthLog
