@@ -1,12 +1,12 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { ArrowDown, ArrowRight, ArrowUp, Gauge, Minus } from "lucide-react";
 
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import type { ComparisonBaseline } from "@/lib/dashboard-layout";
 import type { DataSummary } from "@/lib/analytics/trends";
 import { cn } from "@/lib/utils";
+import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 
 /**
  * v1.4.25 W16a — VO2 max chart-row card for `/insights/puls`.
@@ -22,21 +22,11 @@ import { cn } from "@/lib/utils";
  * The card stays mounted even when `summary` reports zero samples — a
  * brand-new account gets the "no data yet" hint rather than a missing
  * surface, matching the dashboard tile's opt-in pattern.
+ *
+ * The HealthChart mounts behind the shared `<HealthChartDynamic>`
+ * boundary so the lazy-import + skeleton-loading state stays in
+ * lock-step with the other Insights chart consumers.
  */
-
-// Mirror the Recharts defer-load + skeleton used by `<TrendsRow>` so the
-// VO2 chart-row doesn't blow up the Insights bundle.
-const ChartSkeleton = () => (
-  <div className="bg-muted/40 h-[220px] w-full animate-pulse rounded-md motion-reduce:animate-none" />
-);
-
-const HealthChart = dynamic(
-  () =>
-    import("@/components/charts/health-chart").then((mod) => ({
-      default: mod.HealthChart,
-    })),
-  { ssr: false, loading: ChartSkeleton },
-);
 
 interface Vo2MaxChartRowProps {
   /**
@@ -205,7 +195,7 @@ export function Vo2MaxChartRow({
           the dashboard VO2 tile and from the pulse chart sitting above
           it on the same page. */}
       {hasData ? (
-        <HealthChart
+        <HealthChartDynamic
           chartKey="vo2Max"
           types={["VO2_MAX"]}
           title={title}

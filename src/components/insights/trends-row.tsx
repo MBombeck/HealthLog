@@ -3,52 +3,36 @@
 import dynamic from "next/dynamic";
 import { useTranslations } from "@/lib/i18n/context";
 import { useAuth } from "@/hooks/use-auth";
+import { ChartSkeleton } from "@/components/charts/chart-skeleton";
+import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 import {
   TrendAnnotation,
   type TrendAnnotationConfidenceBand,
 } from "./trend-annotation";
 
 /**
- * v1.4.20 phase B3 — Trends row.
- *
- * Renders three small charts (BP / Weight / Mood) above a one-sentence
- * AI annotation each. Recharts is ~108 KiB Brotli, so we mirror the
- * `<ScatterCorrelationChart>` defer-load pattern from `/insights` for
- * the two HealthChart-backed cards. The MoodChart already has its own
- * fetch wired so it composes naturally.
+ * Trends row — three small charts (BP / Weight / Mood) above a
+ * one-sentence assessment each. Recharts is ~108 KiB Brotli, so the
+ * three charts ride the shared lazy-import boundary
+ * (`<HealthChartDynamicDynamic>` for BP + weight; MoodChart still resolves
+ * locally because no shared re-export exists yet for it).
  *
  * Layout:
  *   - `<md`: single column, full width
  *   - `>=md`: 3-up grid, equal column tracks
  *
- * Annotations come from `trendAnnotations.{bp,weight,mood}` on the AI
- * advisor payload. When a metric's annotation is null, the
+ * Annotations come from `trendAnnotations.{bp,weight,mood}` on the
+ * Insights payload. When a metric's annotation is null, the
  * `<TrendAnnotation>` empty state hints at the gap without breaking
  * the row's visual rhythm.
  */
-
-// v1.4.22 W5 reconcile (S-04) — both `dynamic()` calls used the same
-// pulse-skeleton placeholder. Hoist so the loading affordance stays
-// in lock-step (cleared against `feedback_charts_visual_identity.md`
-// — placeholder only, no chart visual change).
-const ChartSkeleton = () => (
-  <div className="bg-muted/40 h-[220px] w-full animate-pulse rounded-md motion-reduce:animate-none" />
-);
-
-const HealthChart = dynamic(
-  () =>
-    import("@/components/charts/health-chart").then((mod) => ({
-      default: mod.HealthChart,
-    })),
-  { ssr: false, loading: ChartSkeleton },
-);
 
 const MoodChart = dynamic(
   () =>
     import("@/components/charts/mood-chart").then((mod) => ({
       default: mod.MoodChart,
     })),
-  { ssr: false, loading: ChartSkeleton },
+  { ssr: false, loading: () => <ChartSkeleton /> },
 );
 
 interface TrendsRowProps {
@@ -127,14 +111,14 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
           data-metric="bp"
           className="flex h-full flex-col gap-2 md:min-h-[300px]"
         >
-          {/* v1.4.28 R3c-Insights — fixed chart slot. `<HealthChart>`
+          {/* v1.4.28 R3c-Insights — fixed chart slot. `<HealthChartDynamic>`
               mini paints its own 140 px chart band; this wrapper pins
               the total chart-envelope height so the mood tile's Card
               wrapper (which carries a heavier shell on a default
               shadcn Card) lines up with the BP/weight tiles' lighter
               shell. Both chart types ship the same data-slot now. */}
           <div data-slot="trends-row-chart-slot" className="shrink-0">
-            <HealthChart
+            <HealthChartDynamic
               types={["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"]}
               title={t("charts.bloodPressure")}
               colors={["#ff79c6", "#8be9fd"]}
@@ -156,7 +140,7 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
           className="flex h-full flex-col gap-2 md:min-h-[300px]"
         >
           <div data-slot="trends-row-chart-slot" className="shrink-0">
-            <HealthChart
+            <HealthChartDynamic
               types={["WEIGHT"]}
               title={t("charts.weight")}
               colors={["#bd93f9"]}
