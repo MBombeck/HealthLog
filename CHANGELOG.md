@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.4.28.1] — 2026-05-16 — Dashboard-save hotfix
+
+"Speichern" on the Dashboard works again for every account whose
+layout was last persisted before v1.4.28. The v1.4.28 retire of the
+`glp1` widget id left an orphan entry in `dashboardWidgetsJson` for
+legacy users, which made the save validator reject the payload; the
+resolver now filters unknown widget ids on read.
+
+### Fixed
+
+- **Dashboard save against legacy layouts.**
+  `resolveDashboardLayout` in `src/lib/dashboard-layout.ts` drops
+  widget ids that are no longer in the registry before returning
+  the layout, so the `dashboardWidgetsJson` round-trip
+  (`GET /api/me/dashboard` → user edit → `PUT /api/me/dashboard`)
+  succeeds even when the persisted JSON still names `glp1` or any
+  other retired widget.
+
+### Tests
+
+- `src/lib/__tests__/dashboard-layout.test.ts` gains a case for the
+  retired-id filter (19/19 green).
+
 ## [1.4.28] — 2026-05-16
 
 Bug-fix and consistency follow-through after the v1.4.27 mobile sweep.
