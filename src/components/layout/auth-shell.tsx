@@ -5,8 +5,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { AchievementUnlockNotifier } from "@/components/gamification/achievement-unlock-notifier";
 import { MaintainershipBanner } from "@/components/i18n/maintainership-banner";
+import { LayoutCoachMount } from "@/components/insights/layout-coach-mount";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
+import { CoachLaunchProvider } from "@/lib/insights/coach-launch-context";
 import { BottomNav } from "./bottom-nav";
 import { SidebarNav } from "./sidebar-nav";
 import { TopBar } from "./top-bar";
@@ -125,9 +127,19 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Authenticated — full app shell
+  // Authenticated — full app shell.
+  //
+  // v1.4.34 IW-B — the Coach launch provider lives here (not inside
+  // `app/insights/layout.tsx` anymore) so every authenticated route can
+  // call `askCoach()` from the same context. Pre-hoist the drawer was
+  // only reachable from `/insights/**`; the dashboard hero CTA now opens
+  // it without a route hop. `<LayoutCoachMount>` consumes the same
+  // context to render the drawer once at the shell level — the
+  // insights-only mobile FAB stays where it is, inside the routed
+  // insights layout, so the bottom-right floating action sits beside
+  // the chart tooltips only on the surfaces that need it.
   return (
-    <>
+    <CoachLaunchProvider>
       {showUnlockNotifier && user?.id ? (
         <AchievementUnlockNotifier userId={user.id} />
       ) : null}
@@ -170,6 +182,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
         </div>
         <BottomNav />
       </div>
-    </>
+      <LayoutCoachMount />
+    </CoachLaunchProvider>
   );
 }

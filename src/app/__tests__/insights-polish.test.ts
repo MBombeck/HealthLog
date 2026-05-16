@@ -59,17 +59,31 @@ describe("v1.4.19 A3 — dashboard polish", () => {
 });
 
 describe("v1.4.27 R3d MB4 — the layout mounts the Coach drawer", () => {
-  it("the insights layout wraps children in <CoachLaunchProvider> and mounts the drawer", () => {
-    // v1.4.27 MB4 promoted the drawer mount from the mother page up to
-    // `/insights/layout.tsx` so a routed sub-page does not unmount the
-    // drawer. The layout owns the mount + the provider; the page (and
-    // every sub-page) consumes the launch context.
-    const layout = load(INSIGHTS_LAYOUT_PATH);
-    expect(layout).toContain(
+  // v1.4.34 IW-B — `<CoachLaunchProvider>` + `<LayoutCoachMount>` moved
+  // up to the global `<AuthShell>` so the dashboard hero (and every
+  // other authed surface) can call `askCoach()` from the same context.
+  // The insights layout keeps the FAB but no longer wraps the provider
+  // or mounts the drawer.
+  it("the global auth-shell wraps the authenticated tree in <CoachLaunchProvider> and mounts the drawer", () => {
+    const shellSource = load(
+      `${process.cwd()}/src/components/layout/auth-shell.tsx`,
+    );
+    expect(shellSource).toContain(
       'from "@/lib/insights/coach-launch-context"',
     );
-    expect(layout).toMatch(/<CoachLaunchProvider\b/);
-    expect(layout).toMatch(/<LayoutCoachMount\b/);
+    expect(shellSource).toMatch(/<CoachLaunchProvider>/);
+    expect(shellSource).toMatch(/<LayoutCoachMount \/>/);
+  });
+
+  it("the insights layout no longer double-mounts the provider or drawer", () => {
+    const layout = load(INSIGHTS_LAYOUT_PATH);
+    expect(layout).not.toContain(
+      'from "@/lib/insights/coach-launch-context"',
+    );
+    expect(layout).not.toContain("import { LayoutCoachMount }");
+    // FAB stays scoped to `/insights/**` because the floating button
+    // would distract on surfaces with a contextual inline CTA.
+    expect(layout).toContain("LayoutCoachFab");
   });
 
   it("hero strip's onAskCoach handler calls the launch context", () => {
