@@ -49,6 +49,7 @@ describe("measurementTypesForCategory", () => {
   it("lists every type assigned to a category", () => {
     expect(measurementTypesForCategory("hearing").sort()).toEqual([
       "AUDIO_EXPOSURE_ENV",
+      "AUDIO_EXPOSURE_EVENT",
       "AUDIO_EXPOSURE_HEADPHONE",
     ]);
   });

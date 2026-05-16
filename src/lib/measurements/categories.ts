@@ -77,19 +77,21 @@ export const MEASUREMENT_CATEGORIES: ReadonlyMap<
   ["BONE_MASS", "body"],
   ["VISCERAL_FAT", "body"],
 
-  // ── Activity (cumulative + fitness) ──
+  // ── Activity (cumulative + fitness + mobility) ──
   ["ACTIVITY_STEPS", "activity"],
   ["ACTIVE_ENERGY_BURNED", "activity"],
   ["FLIGHTS_CLIMBED", "activity"],
   ["WALKING_RUNNING_DISTANCE", "activity"],
   ["VO2_MAX", "activity"],
+  ["WALKING_STEADINESS", "activity"],
 
   // ── Sleep ──
   ["SLEEP_DURATION", "sleep"],
 
-  // ── Hearing (audio exposure quantities) ──
+  // ── Hearing (audio exposure quantities + events) ──
   ["AUDIO_EXPOSURE_ENV", "hearing"],
   ["AUDIO_EXPOSURE_HEADPHONE", "hearing"],
+  ["AUDIO_EXPOSURE_EVENT", "hearing"],
 
   // ── Environment ──
   ["TIME_IN_DAYLIGHT", "environment"],

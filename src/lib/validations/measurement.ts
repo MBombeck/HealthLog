@@ -32,6 +32,9 @@ export const measurementTypeEnum = z.enum([
   "AUDIO_EXPOSURE_ENV",
   "AUDIO_EXPOSURE_HEADPHONE",
   "TIME_IN_DAYLIGHT",
+  // ── v1.4.30 R-F T1.4 + T1.5 ──
+  "WALKING_STEADINESS",
+  "AUDIO_EXPOSURE_EVENT",
 ]);
 
 export const glucoseContextEnum = z.enum([

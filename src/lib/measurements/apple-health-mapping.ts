@@ -285,6 +285,43 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     convertToDbUnit: (v) => v,
     aggregation: "sum",
   },
+
+  // ── v1.4.30 R-F T1.4 + T1.5 Tier-1 additions ────────────────
+  // Walking steadiness — iOS 15+ Mobility daily rollup. Apple ships
+  // a 0..1 fraction; HealthLog stores 0..100 percent (same convention
+  // as oxygen saturation + body fat).
+  HKQuantityTypeIdentifierAppleWalkingSteadiness: {
+    hkIdentifier: "HKQuantityTypeIdentifierAppleWalkingSteadiness",
+    measurementType: "WALKING_STEADINESS",
+    hkUnit: "%",
+    dbUnit: "%",
+    // Apple ships 0..1 fraction; HealthLog stores 0..100.
+    convertToDbUnit: (v) => v * 100,
+    aggregation: "latest",
+  },
+  // Environmental audio-exposure event — iOS 13+ category-type that
+  // fires when the rolling 7-day average crosses the WHO 80-dBA loud-
+  // listening threshold. Stored as a 1.0 count per fired event; the
+  // `notes` field carries the source token ("env" vs "headphone").
+  HKCategoryTypeIdentifierEnvironmentalAudioExposureEvent: {
+    hkIdentifier: "HKCategoryTypeIdentifierEnvironmentalAudioExposureEvent",
+    measurementType: "AUDIO_EXPOSURE_EVENT",
+    hkUnit: "count",
+    dbUnit: "count",
+    convertToDbUnit: () => 1,
+    aggregation: "sum",
+  },
+  // Headphone audio-exposure event — same shape as the environmental
+  // sibling; both share the AUDIO_EXPOSURE_EVENT MeasurementType so
+  // chart-card consumers can pick them up uniformly.
+  HKCategoryTypeIdentifierHeadphoneAudioExposureEvent: {
+    hkIdentifier: "HKCategoryTypeIdentifierHeadphoneAudioExposureEvent",
+    measurementType: "AUDIO_EXPOSURE_EVENT",
+    hkUnit: "count",
+    dbUnit: "count",
+    convertToDbUnit: () => 1,
+    aggregation: "sum",
+  },
 };
 
 /**
@@ -467,9 +504,9 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   // opt-in than the existing Health-share prompt.
   "HKQuantityTypeIdentifierAtrialFibrillationBurden",
   "HKQuantityTypeIdentifierPeripheralPerfusionIndex",
-  // Mobility (iOS 15+) — surface as a wellness signal in v1.5 once the
-  // Insights cardio sub-page has room for a steadiness gauge.
-  "HKQuantityTypeIdentifierAppleWalkingSteadiness",
+  // Mobility (iOS 15+) — `AppleWalkingSteadiness` moved into the
+  // mapping table in v1.4.30 (R-F T1.5). The remaining identifiers
+  // stay deferred until a wellness sub-page surface lands.
   "HKQuantityTypeIdentifierNumberOfTimesFallen",
   "HKCategoryTypeIdentifierAppleWalkingSteadinessEvent",
   // Respiratory / pulmonary clinical (iOS 17) — pair with FHIR clinical
@@ -491,12 +528,11 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   "HKCategoryTypeIdentifierHighHeartRateEvent",
   "HKCategoryTypeIdentifierIrregularHeartRhythmEvent",
   "HKCategoryTypeIdentifierLowCardioFitnessEvent",
-  // Audio-exposure events (iOS 13+) — the continuous AUDIO_EXPOSURE_*
-  // quantity identifiers ARE mapped above; these are the
-  // "loud-event-fired" flags that pair with them. Defer until we
-  // surface event chips in the Insights audio sub-page.
-  "HKCategoryTypeIdentifierEnvironmentalAudioExposureEvent",
-  "HKCategoryTypeIdentifierHeadphoneAudioExposureEvent",
+  // Audio-exposure events (iOS 13+) — Environmental + Headphone
+  // moved into the mapping table in v1.4.30 (R-F T1.4) as
+  // AUDIO_EXPOSURE_EVENT. The general "sound reduction" flag stays
+  // deferred until we surface event chips in the Insights audio
+  // sub-page.
   "HKCategoryTypeIdentifierEnvironmentalSoundReduction",
   // Behavioural / habit category-types — not in HealthLog scope yet.
   "HKCategoryTypeIdentifierHandwashingEvent",

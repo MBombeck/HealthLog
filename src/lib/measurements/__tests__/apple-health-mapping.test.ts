@@ -131,8 +131,8 @@ describe("HK_QUANTITY_TYPE_DEFERRED", () => {
       // Cardiovascular / clinical
       "HKQuantityTypeIdentifierAtrialFibrillationBurden",
       "HKQuantityTypeIdentifierPeripheralPerfusionIndex",
-      // Mobility
-      "HKQuantityTypeIdentifierAppleWalkingSteadiness",
+      // Mobility — `AppleWalkingSteadiness` moved into the mapped
+      // set in v1.4.30. The remaining identifiers stay deferred.
       "HKQuantityTypeIdentifierNumberOfTimesFallen",
       "HKCategoryTypeIdentifierAppleWalkingSteadinessEvent",
       // Respiratory / pulmonary
@@ -151,9 +151,9 @@ describe("HK_QUANTITY_TYPE_DEFERRED", () => {
       "HKCategoryTypeIdentifierHighHeartRateEvent",
       "HKCategoryTypeIdentifierIrregularHeartRhythmEvent",
       "HKCategoryTypeIdentifierLowCardioFitnessEvent",
-      // Audio-exposure events
-      "HKCategoryTypeIdentifierEnvironmentalAudioExposureEvent",
-      "HKCategoryTypeIdentifierHeadphoneAudioExposureEvent",
+      // Audio-exposure events — environmental + headphone moved into
+      // the mapped set in v1.4.30 (AUDIO_EXPOSURE_EVENT). The general
+      // sound-reduction flag stays deferred.
       "HKCategoryTypeIdentifierEnvironmentalSoundReduction",
       // Behavioural / habit
       "HKCategoryTypeIdentifierHandwashingEvent",
@@ -343,6 +343,50 @@ describe("mapAppleHealthEntry", () => {
       sleepStage: 99,
     });
     expect(out).toBeNull();
+  });
+});
+
+describe("v1.4.30 Tier-1 additions (R-F T1.4 + T1.5)", () => {
+  it("maps appleWalkingSteadiness to WALKING_STEADINESS with × 100 scaling", () => {
+    const mapping =
+      APPLE_HEALTH_TYPE_MAP.HKQuantityTypeIdentifierAppleWalkingSteadiness;
+    expect(mapping).toBeDefined();
+    expect(mapping.measurementType).toBe("WALKING_STEADINESS");
+    expect(mapping.convertToDbUnit(0.85)).toBeCloseTo(85);
+    expect(mapping.dbUnit).toBe("%");
+  });
+
+  it("maps environmental + headphone audio-exposure events to AUDIO_EXPOSURE_EVENT (count 1)", () => {
+    const envMapping =
+      APPLE_HEALTH_TYPE_MAP.HKCategoryTypeIdentifierEnvironmentalAudioExposureEvent;
+    expect(envMapping).toBeDefined();
+    expect(envMapping.measurementType).toBe("AUDIO_EXPOSURE_EVENT");
+    expect(envMapping.convertToDbUnit(0)).toBe(1);
+    expect(envMapping.convertToDbUnit(99)).toBe(1);
+
+    const hpMapping =
+      APPLE_HEALTH_TYPE_MAP.HKCategoryTypeIdentifierHeadphoneAudioExposureEvent;
+    expect(hpMapping).toBeDefined();
+    expect(hpMapping.measurementType).toBe("AUDIO_EXPOSURE_EVENT");
+    expect(hpMapping.convertToDbUnit(0)).toBe(1);
+  });
+
+  it("does not double-book the new identifiers as deferred AND mapped", () => {
+    expect(
+      HK_QUANTITY_TYPE_DEFERRED.has(
+        "HKQuantityTypeIdentifierAppleWalkingSteadiness",
+      ),
+    ).toBe(false);
+    expect(
+      HK_QUANTITY_TYPE_DEFERRED.has(
+        "HKCategoryTypeIdentifierEnvironmentalAudioExposureEvent",
+      ),
+    ).toBe(false);
+    expect(
+      HK_QUANTITY_TYPE_DEFERRED.has(
+        "HKCategoryTypeIdentifierHeadphoneAudioExposureEvent",
+      ),
+    ).toBe(false);
   });
 });
 

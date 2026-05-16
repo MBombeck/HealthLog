@@ -55,6 +55,10 @@ export function getPRDirection(
     case "BONE_MASS":
     case "MUSCLE_MASS":
     case "TIME_IN_DAYLIGHT":
+    // v1.4.30 — walking steadiness on a 0-100 scale; Apple's own
+    // Mobility section treats higher as the achievement (the
+    // recovery direction from a low-steadiness window).
+    case "WALKING_STEADINESS":
       return PersonalRecordDirection.MAX;
 
     // MIN direction — lower value is the record.
@@ -79,6 +83,11 @@ export function getPRDirection(
     case "WEIGHT":
     case "SLEEP_DURATION":
     case "FAT_FREE_MASS":
+    // v1.4.30 — audio-exposure events fire on a threshold-cross, not
+    // on a goal axis. A "record" for "fewest loud-listening days in
+    // a row" is interesting but better surfaced as a streak than a
+    // PR direction. Defer.
+    case "AUDIO_EXPOSURE_EVENT":
       return null;
   }
 }

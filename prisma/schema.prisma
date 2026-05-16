@@ -329,6 +329,9 @@ enum MeasurementType {
   AUDIO_EXPOSURE_ENV // dBA — HealthKit `environmentalAudioExposure`; ambient noise sample (e.g. concert, traffic). Watch + iPhone microphone.
   AUDIO_EXPOSURE_HEADPHONE // dBA — HealthKit `headphoneAudioExposure`; AirPods listening-volume sampling.
   TIME_IN_DAYLIGHT // minutes — HealthKit `timeInDaylight` (iOS 17+). Sun-exposure daily rollup; mood + sleep correlate.
+  // ── v1.4.30 R-F T1.4 + T1.5 Tier-1 additions ──
+  WALKING_STEADINESS // percent (0-100, scaled ×100 from Apple's 0..1 fraction) — HealthKit `appleWalkingSteadiness` (iOS 15+). Daily rollup. Falls + mobility-risk signal Apple's own Health app shows prominently in the Mobility section.
+  AUDIO_EXPOSURE_EVENT // count (event flag: 1 per fired loud-listening event) — HealthKit `environmentalAudioExposureEvent` + `headphoneAudioExposureEvent` category-events. Apple fires these when the rolling 7-day average crosses the WHO 80-dBA threshold. The notes field carries the source identifier (env vs headphone).
 
   @@map("measurement_type")
 }
