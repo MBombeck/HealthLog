@@ -322,6 +322,7 @@ jobs:
           COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
           COOLIFY_AUTO_DEPLOY: ${{ vars.COOLIFY_AUTO_DEPLOY }}
+          IMAGE_VERSION: ${{ steps.meta.outputs.version }}
         run: |
           mode="${COOLIFY_AUTO_DEPLOY:-}"
           if [ "$mode" = "off" ]; then
@@ -336,6 +337,20 @@ jobs:
             echo "::warning::COOLIFY_WEBHOOK or COOLIFY_TOKEN secret missing — skipping auto-deploy. Configure in repo Settings → Secrets to enable, or set the COOLIFY_AUTO_DEPLOY variable to 'off' to silence this warning."
             exit 0
           fi
+          # v1.4.31 — wait for GHCR cache propagation before firing
+          # the Coolify webhook. Five releases in a row (v1.4.27
+          # through v1.4.30.1) the webhook reported "finished" but
+          # Coolify still pulled the prior `:latest` digest. The
+          # `docker buildx imagetools create` + `inspect` steps
+          # above confirm the manifest exists at registry-write time,
+          # but GHCR's CDN edges can take 30-90 s to propagate the
+          # new digest. The webhook fires inside that window, so
+          # Coolify pulls "latest" while the edge still serves the
+          # prior digest, gets "no change", and returns success.
+          # See `.planning/round-coolify-auto-deploy-fix-2026-05-16.md`
+          # for the full root-cause + remediation note.
+          echo "Waiting 90 s for GHCR cache propagation before triggering Coolify (image: $IMAGE_VERSION)…"
+          sleep 90
           # v1.4.22 C3 — force=true tells Coolify to skip its image-cache
           # and re-pull the registry digest. If the maintainer's secret
           # URL already carries a `?force=` query, leave it alone;
