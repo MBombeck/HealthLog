@@ -81,7 +81,7 @@ describe("<InsightStatusCard>", () => {
         text="ignored when hasProvider is false"
       />,
     );
-    expect(html).toContain("AI provider not configured.");
+    expect(html).toContain("Assessment unavailable.");
     expect(html).not.toContain("ignored when hasProvider is false");
   });
 

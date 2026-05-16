@@ -24,27 +24,45 @@
  * enum, the slug array, and the per-slug metric list all derive from
  * the keys of this record — adding a sub-page is a one-place change.
  */
+// v1.4.33 F9 — order follows the MeasurementCategory overlay
+// (`src/lib/measurements/categories.ts`):
+//
+//   vitals → body → activity → sleep → cardiovascular → mood → events
+//
+// The wave-A HealthKit entries added in v1.4.32 (HRV, resting HR, SpO2,
+// body temperature, active energy) used to stack at the end of the
+// strip in insertion order; the regrouping below interleaves them into
+// their categorical neighbours so a user reading left-to-right scans
+// each metric domain as a block. Heavier regrouping (collapse five
+// wave-A pills under a single "Apple Health" pill, fold BMI into
+// Gewicht, fold Sauerstoff/Körpertemperatur into a single Vitals pill)
+// is deferred to v1.4.34 — that needs a screenshot review per
+// .planning/round-v1433-audit-menu.md §7.
 export const SUB_PAGE_METRIC = {
+  // ── vitals ──
   blutdruck: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA", "PULSE"],
-  gewicht: ["WEIGHT"],
   puls: ["PULSE"],
-  stimmung: ["MOOD"],
-  // medication adherence is event-driven; no measurement series.
-  medikamente: [],
+  sauerstoff: ["OXYGEN_SATURATION"],
+  koerpertemperatur: ["BODY_TEMPERATURE"],
+  // ── body composition ──
+  gewicht: ["WEIGHT"],
   // BMI is derived from WEIGHT + profile height (no separate series).
   bmi: ["WEIGHT"],
-  schlaf: ["SLEEP_DURATION"],
+  // ── activity ──
+  "aktive-energie": ["ACTIVE_ENERGY_BURNED"],
   // v1.4.32 — workouts surface; the page reads `Workout` rows directly
   // through `useWorkouts()` rather than the `summaries` map, so the
   // metric list stays empty.
   workouts: [],
-  // v1.4.32 — five new HealthKit wave-A sub-pages. Each one reads its
-  // own MeasurementType series via the standard analytics path.
-  hrv: ["HEART_RATE_VARIABILITY"],
+  // ── sleep ──
+  schlaf: ["SLEEP_DURATION"],
+  // ── cardiovascular ──
   ruhepuls: ["RESTING_HEART_RATE"],
-  sauerstoff: ["OXYGEN_SATURATION"],
-  koerpertemperatur: ["BODY_TEMPERATURE"],
-  "aktive-energie": ["ACTIVE_ENERGY_BURNED"],
+  hrv: ["HEART_RATE_VARIABILITY"],
+  // ── mood ──
+  stimmung: ["MOOD"],
+  // ── events (medication adherence is event-driven; no measurement series) ──
+  medikamente: [],
 } as const satisfies Record<string, readonly string[]>;
 
 export type SubPageSlug = keyof typeof SUB_PAGE_METRIC;

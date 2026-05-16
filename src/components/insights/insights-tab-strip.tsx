@@ -80,31 +80,20 @@ interface TabEntry {
  * stay in sync from a single source of truth — adding a sub-page is
  * one row.
  */
+// v1.4.33 F9 — label + gating-metric for every routed sub-page. Pill
+// ORDER is owned by `SUB_PAGE_SLUGS` (which iterates the keys of
+// `SUB_PAGE_METRIC`) so adding a new metric is one row in
+// `sub-page-metric.ts` and the strip picks it up automatically.
 const SUB_PAGE_TABS: Record<
   SubPageSlug,
   { labelKey: string; metric: InsightMetric }
 > = {
+  // ── vitals ──
   blutdruck: {
     labelKey: "insights.navBloodPressure",
     metric: "BLOOD_PRESSURE_SYS",
   },
-  gewicht: { labelKey: "insights.navWeight", metric: "WEIGHT" },
   puls: { labelKey: "insights.navPulse", metric: "PULSE" },
-  stimmung: { labelKey: "insights.navMood", metric: "MOOD" },
-  medikamente: { labelKey: "insights.navMedication", metric: "MEDICATION" },
-  bmi: { labelKey: "insights.navBmi", metric: "BMI" },
-  schlaf: { labelKey: "insights.navSleep", metric: "SLEEP_DURATION" },
-  // v1.4.32 — workouts pill. Gate is event-driven; the
-  // availability helper reads `inputs.hasWorkouts` rather than a
-  // `summaries[…].count`.
-  workouts: { labelKey: "insights.navWorkouts", metric: "WORKOUTS" },
-  // v1.4.32 — five wave-A HealthKit pills. Each one reads its own
-  // MeasurementType count from the analytics summaries.
-  hrv: { labelKey: "insights.navHrv", metric: "HEART_RATE_VARIABILITY" },
-  ruhepuls: {
-    labelKey: "insights.navRestingHr",
-    metric: "RESTING_HEART_RATE",
-  },
   sauerstoff: {
     labelKey: "insights.navOxygenSaturation",
     metric: "OXYGEN_SATURATION",
@@ -113,10 +102,30 @@ const SUB_PAGE_TABS: Record<
     labelKey: "insights.navBodyTemperature",
     metric: "BODY_TEMPERATURE",
   },
+  // ── body composition ──
+  gewicht: { labelKey: "insights.navWeight", metric: "WEIGHT" },
+  bmi: { labelKey: "insights.navBmi", metric: "BMI" },
+  // ── activity ──
   "aktive-energie": {
     labelKey: "insights.navActiveEnergy",
     metric: "ACTIVE_ENERGY_BURNED",
   },
+  // v1.4.32 — workouts pill. Gate is event-driven; the
+  // availability helper reads `inputs.hasWorkouts` rather than a
+  // `summaries[…].count`.
+  workouts: { labelKey: "insights.navWorkouts", metric: "WORKOUTS" },
+  // ── sleep ──
+  schlaf: { labelKey: "insights.navSleep", metric: "SLEEP_DURATION" },
+  // ── cardiovascular ──
+  ruhepuls: {
+    labelKey: "insights.navRestingHr",
+    metric: "RESTING_HEART_RATE",
+  },
+  hrv: { labelKey: "insights.navHrv", metric: "HEART_RATE_VARIABILITY" },
+  // ── mood ──
+  stimmung: { labelKey: "insights.navMood", metric: "MOOD" },
+  // ── events ──
+  medikamente: { labelKey: "insights.navMedication", metric: "MEDICATION" },
 };
 
 function buildTabs(availability: InsightInputs | undefined): TabEntry[] {
