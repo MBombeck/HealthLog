@@ -16,7 +16,17 @@ export const queryKeys = {
   measurements: () => ["measurements"] as const,
   moodEntries: () => ["mood-entries"] as const,
 
-  analytics: () => ["analytics"] as const,
+  /**
+   * v1.4.33 IW2 — the analytics queryKey now optionally carries a
+   * `slice` discriminator so the dashboard tile-strip can subscribe to
+   * the slim `?slice=summaries` server slice (IW1 / C1) without
+   * colliding with the thick-payload consumers on the Insights tree.
+   * Calling `queryKeys.analytics()` without a slice keeps the legacy
+   * shape `["analytics"]` so mutation invalidations and the bulk-key
+   * lists below stay byte-identical.
+   */
+  analytics: (slice?: "summaries") =>
+    (slice ? (["analytics", slice] as const) : (["analytics"] as const)),
   moodAnalytics: () => ["mood-analytics"] as const,
 
   insightsRoot: () => ["insights"] as const,

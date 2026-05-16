@@ -1,12 +1,12 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Moon } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
+import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -67,16 +67,14 @@ export function SleepOverview() {
   const { t, locale } = useTranslations();
   const { compareBaseline } = useInsightsLayoutPrefs(isAuthenticated);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["analytics"],
-    queryFn: async () => {
-      const res = await fetch("/api/analytics");
-      if (!res.ok) throw new Error("Failed to load analytics");
-      const json = await res.json();
-      return json.data as SleepAnalyticsResponse;
-    },
-    enabled: isAuthenticated,
-  });
+  // v1.4.33 IW2 — sleep overview reads `sleepStages` (a thick-only
+  // field) alongside `summaries.SLEEP_DURATION`, so it stays on the
+  // default thick slice. The shared hook still centralises the cache
+  // settings (60s staleTime, no refetch on mount / window focus) so
+  // the consumer behaves identically to every other analytics mount.
+  const analyticsQuery = useAnalyticsQuery();
+  const data = analyticsQuery.data as SleepAnalyticsResponse | undefined;
+  const isLoading = analyticsQuery.isLoading;
 
   const sleepSummary = data?.summaries?.SLEEP_DURATION ?? null;
   const sleepStages = data?.sleepStages ?? null;

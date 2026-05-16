@@ -1,10 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-
 import { useAuth } from "@/hooks/use-auth";
 import { hasMetricData, type InsightMetric } from "@/lib/insights/metric-availability";
-import { queryKeys } from "@/lib/query-keys";
+import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
 import type { SubPageAnalyticsData } from "@/types/analytics";
 
 /**
@@ -53,24 +51,20 @@ export function useInsightsAnalytics(
   metric: InsightMetric,
 ): UseInsightsAnalyticsResult {
   const { isAuthenticated } = useAuth();
-
-  const query = useQuery({
-    queryKey: queryKeys.analytics(),
-    queryFn: async (): Promise<SubPageAnalyticsData> => {
-      const res = await fetch("/api/analytics");
-      if (!res.ok) throw new Error("Failed");
-      const json = (await res.json()) as { data: SubPageAnalyticsData };
-      return json.data;
-    },
-    enabled: isAuthenticated,
-    staleTime: 60 * 1000,
-  });
+  // v1.4.33 IW2 — sub-pages only read `summaries[METRIC].count` for the
+  // gating short-circuit, so they ride on the slim slice. The mother
+  // page keeps the default thick slice for `correlations` /
+  // `healthScore` / `bpInTargetPct*`; both consumers live in the same
+  // queryKey tree (root `["analytics"]`) but the slim slice has its own
+  // cache slot under `["analytics", "summaries"]`.
+  const query = useAnalyticsQuery({ slice: "summaries" });
+  const data = query.data as SubPageAnalyticsData | undefined;
 
   const isEmpty =
     Boolean(isAuthenticated) &&
-    query.data !== undefined &&
+    data !== undefined &&
     !hasMetricData(metric, {
-      summaries: query.data.summaries,
+      summaries: data.summaries,
       // Sub-pages that go through this hook are sensor-backed only
       // (PULSE / WEIGHT / BMI / BLOOD_PRESSURE_SYS / SLEEP_DURATION).
       // Mood + medication run their own gate.
@@ -79,7 +73,7 @@ export function useInsightsAnalytics(
     });
 
   return {
-    data: query.data,
+    data,
     isLoading: query.isLoading,
     isEmpty,
     error: query.error as Error | null,

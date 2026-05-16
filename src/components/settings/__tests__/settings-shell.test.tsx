@@ -136,9 +136,12 @@ describe("<SettingsShell>", () => {
     const html = renderShell({ active: "account", locale: "en" });
     expect(html).toContain("Account");
     expect(html).toContain("Integrations");
-    expect(html).toContain("Notifications");
+    // v1.4.33 IW7 — section renamed from "Notifications" to
+    // "Notification channels" so it doesn't collide with the inbox at
+    // `/notifications` ("Notification Center").
+    expect(html).toContain("Notification channels");
     expect(html).toContain("Dashboard");
-    expect(html).toContain("AI Insights");
+    expect(html).toContain("Insights");
     // The ampersand is HTML-escaped by React SSR — assert on the encoded
     // form so we don't accidentally match a parser that double-escapes.
     expect(html).toContain("API &amp; Tokens");
@@ -153,14 +156,19 @@ describe("<SettingsShell>", () => {
     const html = renderShell({ active: "account", locale: "de" });
     expect(html).toContain("Konto");
     expect(html).toContain("Integrationen");
-    expect(html).toContain("Benachrichtigungen");
+    // v1.4.33 IW7 — section renamed from "Benachrichtigungen" to
+    // "Benachrichtigungs-Kanäle" so it doesn't collide with the inbox at
+    // `/notifications` ("Benachrichtigungs-Center").
+    expect(html).toContain("Benachrichtigungs-Kanäle");
     // v1.4.3: the Settings sub-section formerly labelled "Übersicht" is now
     // "Dashboard" (matching the term users see in the main nav). The
     // per-metric overrides moved out into their own "Persönliche Zielwerte"
     // section, which is the new entry below the Dashboard one.
     expect(html).toContain("Dashboard");
     expect(html).toContain("Persönliche Zielwerte");
-    expect(html).toContain("KI-Auswertungen");
+    // v1.4.33 IW7 — "KI-Auswertungen" renamed to "Auswertungen" per
+    // the Marc-Voice rule (no "KI"/"AI" prefix in user-facing copy).
+    expect(html).toContain("Auswertungen");
     // API & Tokens is identical in both locales (proper noun + ampersand)
     expect(html).toContain("API &amp; Tokens");
     expect(html).toContain("Erweitert");

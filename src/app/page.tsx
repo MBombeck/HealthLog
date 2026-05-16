@@ -62,6 +62,7 @@ const MedicationComplianceChart = dynamic(
 );
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
+import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
 import type { DataSummary } from "@/lib/analytics/trends";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import {
@@ -202,17 +203,14 @@ export default function DashboardPage() {
     refetchOnWindowFocus: false,
   } as const;
 
-  const { data } = useQuery({
-    queryKey: queryKeys.analytics(),
-    queryFn: async () => {
-      const res = await fetch("/api/analytics");
-      if (!res.ok) throw new Error("Failed");
-      const json = await res.json();
-      return json.data as AnalyticsData;
-    },
-    enabled: isAuthenticated,
-    ...DASHBOARD_QUERY_OPTS,
-  });
+  // v1.4.33 IW2 — the dashboard tile-strip reads `bpInTargetPct*` +
+  // `glucoseByContext` (thick-only fields) so it stays on the default
+  // thick slice. The shared hook still centralises the cache settings
+  // (60s staleTime, no refetch on mount / window focus) so the
+  // tile-strip dedups with the Insights mother page on the same
+  // queryKey + slice combination.
+  const analyticsQuery = useAnalyticsQuery();
+  const data = analyticsQuery.data as AnalyticsData | undefined;
 
   const { data: layoutData } = useQuery({
     queryKey: queryKeys.dashboardWidgets(),

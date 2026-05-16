@@ -1,6 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
@@ -40,6 +42,32 @@ export function NotificationsSection() {
       aria-labelledby="settings-section-notifications-title"
       className="space-y-6"
     >
+      {/* v1.4.33 IW7 — disambiguate the channel-config screen from the
+          inbox at `/notifications`. Both surfaces used to be named plain
+          "Notifications", so the crumb spells out where the user is and
+          offers a one-tap jump to the inbox. */}
+      <nav aria-label="Breadcrumb" className="text-muted-foreground text-xs">
+        <ol className="flex items-center gap-1">
+          <li>{t("notifications.breadcrumbSettings")}</li>
+          <li aria-hidden="true">
+            <ChevronRight className="h-3 w-3" />
+          </li>
+          <li className="text-foreground font-medium">
+            {t("notifications.breadcrumbChannels")}
+          </li>
+          <li aria-hidden="true">
+            <ChevronRight className="h-3 w-3" />
+          </li>
+          <li>
+            <Link
+              href="/notifications"
+              className="hover:text-foreground underline-offset-2 hover:underline"
+            >
+              {t("notifications.breadcrumbInbox")}
+            </Link>
+          </li>
+        </ol>
+      </nav>
       <header className="space-y-1">
         <h1
           id="settings-section-notifications-title"

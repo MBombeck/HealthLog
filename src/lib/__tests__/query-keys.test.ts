@@ -22,6 +22,18 @@ describe("queryKeys factory", () => {
       "en",
     ]);
   });
+
+  // v1.4.33 IW2 — slice param routes the slim consumer onto its own
+  // cache slot but leaves `["analytics"]` (the root) as a prefix so
+  // mutation invalidations sweep both shapes.
+  it("threads the slim slice through queryKeys.analytics", () => {
+    expect(queryKeys.analytics("summaries")).toEqual(["analytics", "summaries"]);
+  });
+
+  it("keeps the no-arg call byte-identical to the legacy literal", () => {
+    expect(queryKeys.analytics()).toEqual(["analytics"]);
+    expect(queryKeys.analytics(undefined)).toEqual(["analytics"]);
+  });
 });
 
 describe("dependent-key bundles", () => {

@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import {
   METRIC_BOUNDS,
   type ThresholdMetric,
@@ -87,7 +88,7 @@ export function ThresholdsEditorSection({ id }: { id: string }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user", "thresholds"] });
       // Every chart/band depends on these thresholds — invalidate everything.
-      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.analytics() });
       queryClient.invalidateQueries({ queryKey: ["insights"] });
       toast.success(t("thresholds.saveSuccess"));
     },
@@ -107,7 +108,7 @@ export function ThresholdsEditorSection({ id }: { id: string }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user", "thresholds"] });
-      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.analytics() });
       queryClient.invalidateQueries({ queryKey: ["insights"] });
       toast.success(t("thresholds.resetSuccess"));
     },

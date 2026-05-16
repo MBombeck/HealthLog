@@ -170,7 +170,7 @@
     "admin": "Admin Console",
     "logout": "Sign out",
     "login": "Se connecter",
-    "notifications": "Notifications",
+    "notifications": "Centre de notifications",
     "theme": "Apparence",
     "themeSystem": "Système",
     "themeDark": "Sombre",
@@ -1506,7 +1506,7 @@
         "description": "Withings, moodLog, and other connected services."
       },
       "notifications": {
-        "title": "Notifications",
+        "title": "Canaux de notification",
         "description": "Live overview of every configured channel."
       },
       "dashboard": {
@@ -2713,12 +2713,15 @@
     "disabledBody": "The administrator has disabled bug reports on this server."
   },
   "notifications": {
-    "title": "Notifications",
+    "title": "Centre de notifications",
+    "breadcrumbInbox": "Centre de notifications",
+    "breadcrumbChannels": "Canaux de notification",
+    "breadcrumbSettings": "Réglages",
     "eventColumn": "Event",
     "subtitle": "Choose which notifications you want to receive through which channel.",
     "loadError": "Notification preferences could not be loaded.",
     "noChannels": "Configure a notification channel in Settings first.",
-    "goToSettings": "Go to Settings",
+    "goToSettings": "Go to channel settings",
     "channelDisabled": "Désactivé",
     "admin": {
       "deployFailedTitle": "Échec du déploiement : {application}",

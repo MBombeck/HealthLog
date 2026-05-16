@@ -18,6 +18,7 @@ import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
+import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
 import {
   buildChecklist,
   checklistProgress,
@@ -184,25 +185,18 @@ export function GettingStartedChecklist() {
   // Light-weight queries: each fetch is small and cached by tanstack.
   // We rely on the React Query cache the dashboard already uses for
   // analytics, so this won't fire a second request when the dashboard
-  // and the checklist mount together. Critically, every queryFn here
-  // must return `json.data` (the unwrapped shape) so it matches the
-  // canonical consumer (dashboard / medications page / notifications
-  // page / integrations section). Returning `res.json()` would write
-  // the full `{data, error}` envelope into the shared cache, which then
-  // makes the canonical consumers' `data?.summaries` / `data?.length`
-  // reads silently return undefined — that's how the v1.4.2 dashboard
-  // ended up rendering only the mood tile.
-  const analyticsQuery = useQuery<AnalyticsData>({
-    queryKey: ["analytics"],
-    queryFn: async () => {
-      const res = await fetch("/api/analytics");
-      if (!res.ok) throw new Error("Failed");
-      const json = await res.json();
-      return json.data;
-    },
+  // and the checklist mount together. v1.4.33 IW2 routes the checklist
+  // onto IW1's slim `?slice=summaries` branch — the only field
+  // consumed is `summaries[METRIC].count`, which the slim slice fills
+  // directly. The cache slot is distinct from the dashboard's thick
+  // slice but each consumer's payload is byte-correct for its own
+  // reads, and the shared hook keeps the legacy `?.data` unwrap so the
+  // canonical consumers still see `{summaries, …}` not `{data: …}`.
+  const analyticsQuery = useAnalyticsQuery({
+    slice: "summaries",
     enabled: !!user,
   });
-  const analyticsData = analyticsQuery.data;
+  const analyticsData = analyticsQuery.data as AnalyticsData | undefined;
 
   const { data: medsData } = useQuery<Array<{ id: string }>>({
     queryKey: ["medications"],

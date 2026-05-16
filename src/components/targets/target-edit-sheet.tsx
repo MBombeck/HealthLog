@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import {
   METRIC_BOUNDS,
   type ThresholdMetric,
@@ -216,7 +217,7 @@ function TargetEditSheetBody({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user", "thresholds"] });
       queryClient.invalidateQueries({ queryKey: ["insights", "targets"] });
-      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.analytics() });
       queryClient.invalidateQueries({ queryKey: ["insights"] });
       toast.success(t("targets.edit.saveSuccess"));
       onOpenChange(false);
@@ -248,7 +249,7 @@ function TargetEditSheetBody({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user", "thresholds"] });
       queryClient.invalidateQueries({ queryKey: ["insights", "targets"] });
-      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.analytics() });
       queryClient.invalidateQueries({ queryKey: ["insights"] });
       toast.success(t("targets.edit.resetSuccess"));
       onOpenChange(false);

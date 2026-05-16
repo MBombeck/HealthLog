@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Bell, Loader2, Settings, AlertCircle } from "lucide-react";
+import { Bell, ChevronRight, Loader2, Settings, AlertCircle } from "lucide-react";
 import {
   EVENT_DEFAULT_ENABLED,
   type EventType,
@@ -31,6 +31,42 @@ interface PreferencesData {
   channels: ChannelInfo[];
   preferences: Preference[];
   eventTypes: string[];
+}
+
+/**
+ * Breadcrumb strip for the notification surfaces. v1.4.33 IW7 introduced
+ * this so the inbox (`/notifications`) and the channel-config section
+ * (`/settings/notifications`) never read as the same page — the two names
+ * used to collide as plain "Notifications" in both nav labels. The crumb
+ * sits above the h1 on every render branch of this page (loading,
+ * unauthenticated, error, empty, populated) so the user always sees the
+ * disambiguation, even when the body content is a fallback state.
+ */
+function NotificationsBreadcrumb({
+  t,
+}: {
+  t: (key: string) => string;
+}) {
+  return (
+    <nav aria-label="Breadcrumb" className="text-muted-foreground text-xs">
+      <ol className="flex items-center gap-1">
+        <li className="text-foreground font-medium">
+          {t("notifications.breadcrumbInbox")}
+        </li>
+        <li aria-hidden="true">
+          <ChevronRight className="h-3 w-3" />
+        </li>
+        <li>
+          <Link
+            href="/settings/notifications"
+            className="hover:text-foreground underline-offset-2 hover:underline"
+          >
+            {t("notifications.breadcrumbChannels")}
+          </Link>
+        </li>
+      </ol>
+    </nav>
+  );
 }
 
 /** Maps SCREAMING_SNAKE event type to translation key, e.g. MEDICATION_REMINDER → eventMedicationReminder */
@@ -137,6 +173,7 @@ export default function NotificationsPage() {
   if (!isAuthenticated) {
     return (
       <div className="space-y-6">
+        <NotificationsBreadcrumb t={t} />
         <h1 className="text-2xl font-bold tracking-tight">
           {t("notifications.title")}
         </h1>
@@ -154,6 +191,7 @@ export default function NotificationsPage() {
   if (isError) {
     return (
       <div className="space-y-6">
+        <NotificationsBreadcrumb t={t} />
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
             {t("notifications.title")}
@@ -176,6 +214,7 @@ export default function NotificationsPage() {
   if (activeChannels.length === 0) {
     return (
       <div className="space-y-6">
+        <NotificationsBreadcrumb t={t} />
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
             {t("notifications.title")}
@@ -204,6 +243,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-6">
+      <NotificationsBreadcrumb t={t} />
       <div>
         <h1 className="text-2xl font-bold tracking-tight">
           {t("notifications.title")}

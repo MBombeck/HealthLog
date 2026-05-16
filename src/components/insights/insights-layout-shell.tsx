@@ -8,8 +8,8 @@ import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { useWorkouts } from "@/hooks/use-workouts";
 import { InsightsTabStrip } from "@/components/insights/insights-tab-strip";
 import { useInsightsAdvisorQuery } from "@/components/insights/use-insights-advisor";
+import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
 import type { InsightInputs } from "@/lib/insights/metric-availability";
-import type { DataSummary } from "@/lib/analytics/trends";
 
 /**
  * v1.4.25 W4 — client shell for `src/app/insights/layout.tsx`.
@@ -22,19 +22,16 @@ import type { DataSummary } from "@/lib/analytics/trends";
  * same cache entry without extra network traffic.
  *
  * v1.4.27 F19 — also owns the analytics + comprehensive reads that
- * power the tab-strip availability gate. Both queries share their
- * cache keys with the sub-page consumers (`["analytics"]` and
- * `["insights", "comprehensive"]`) so the cost stays one fetch per
- * route, dedup-shared across consumers.
+ * power the tab-strip availability gate. The analytics consumer goes
+ * through the shared `useAnalyticsQuery({ slice: "summaries" })` hook
+ * (v1.4.33 IW2); the comprehensive consumer still owns its bespoke
+ * fetch but shares its cache key with the sub-page consumers so the
+ * payload lands once per route, dedup-shared across consumers.
  *
  * CRITICAL — the `<CoachDrawer>` does NOT mount here. It lives only in
  * `src/app/insights/page.tsx` body so navigating into a sub-page
  * unmounts the drawer.
  */
-interface AnalyticsPayload {
-  summaries?: Record<string, DataSummary>;
-}
-
 interface ComprehensivePayload {
   moodSummary: { count: number } | null;
   medications: Array<{ id: string }>;
@@ -59,18 +56,11 @@ export function InsightsLayoutShell({ children }: { children: ReactNode }) {
     isAuthenticated && flags.enabled && flags.briefing;
   const advisor = useInsightsAdvisorQuery(advisorEnabled);
 
-  // Shared analytics fetch — sub-pages consume the same cache key.
-  const analyticsQuery = useQuery({
-    queryKey: ["analytics"],
-    queryFn: async () => {
-      const res = await fetch("/api/analytics");
-      if (!res.ok) throw new Error("Failed");
-      const json = await res.json();
-      return json.data as AnalyticsPayload;
-    },
-    enabled: isAuthenticated,
-    staleTime: 60 * 1000,
-  });
+  // Shared analytics fetch — the layout shell only reads
+  // `summaries[METRIC].count` for the tab-strip availability gate, so
+  // it lands on IW1's slim `?slice=summaries` branch (2 SQL passes,
+  // no correlations / health-score / bp-in-target tail).
+  const analyticsQuery = useAnalyticsQuery({ slice: "summaries" });
 
   // Shared comprehensive fetch — mood + medication signals for the
   // event-driven gating branches. Sub-pages read the same key so the
