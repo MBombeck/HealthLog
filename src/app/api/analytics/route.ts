@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
+import { NO_STORE_BUT_BFCACHE } from "@/lib/http/cache-headers";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
 import { computeSummariesSlice } from "@/lib/analytics/summaries-slice";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
@@ -64,7 +65,12 @@ export const GET = apiHandler(async (request?: Request) => {
   // tile values land on this branch and skip the heavy chain.
   if (readSliceParam(request) === "summaries") {
     const slim = await computeSummariesSlice(user.id);
-    return apiSuccess(slim);
+    // v1.4.34 IW-B — bfcache-friendly directive on the slim slice too
+    // so a back-forward navigation that landed on the dashboard tile
+    // strip can restore from memory instead of paying a full reload.
+    const slimRes = apiSuccess(slim);
+    slimRes.headers.set("Cache-Control", NO_STORE_BUT_BFCACHE);
+    return slimRes;
   }
 
   // v1.4.25 W7b — every day-bucket call inside this route now honours
@@ -91,6 +97,19 @@ export const GET = apiHandler(async (request?: Request) => {
   // when the column is null or malformed.
   const sourcePriorityJson = user.sourcePriorityJson;
 
+  // v1.4.34 IW-B — capture the most-recent `measuredAt` per type so the
+  // dashboard tile strip can render an "Letzter Wert vor Xd" caption on
+  // tiles whose latest reading is older than a week. The series read
+  // already orders ascending (`fetchMeasurementSeriesChunked`'s stable
+  // `(measuredAt, id)` order); the last entry is the freshest sample.
+  // Surface as ISO + a server-computed `daysAgo` so the client never
+  // has to do tz-aware date math to colour the tile.
+  const nowForStaleness = new Date();
+  const lastSeenByType: Record<string, {
+    lastSeenAt: string;
+    daysAgo: number;
+  } | null> = {};
+
   let totalRowsReadForAggregate = 0;
   const measurementsByType = await Promise.all(
     types.map((type) =>
@@ -98,6 +117,23 @@ export const GET = apiHandler(async (request?: Request) => {
         includeSleepStage: true,
       }).then((measurements) => {
         totalRowsReadForAggregate += measurements.length;
+        // v1.4.34 IW-B — record the freshest `measuredAt` for this type
+        // (or null when the user has never logged this metric). The
+        // helper returns rows sorted ascending so `.at(-1)` is the
+        // most-recent point without an extra pass.
+        const latest = measurements.at(-1);
+        if (latest) {
+          const daysAgo = Math.floor(
+            (nowForStaleness.getTime() - latest.measuredAt.getTime()) /
+              (24 * 60 * 60 * 1000),
+          );
+          lastSeenByType[type] = {
+            lastSeenAt: latest.measuredAt.toISOString(),
+            daysAgo,
+          };
+        } else {
+          lastSeenByType[type] = null;
+        }
         // v1.4.23 — Apple Health's sleep ingest stores one row per
         // stage per night. Summarising the raw rows would treat each
         // stage as its own datapoint and grossly understate "average
@@ -310,7 +346,7 @@ export const GET = apiHandler(async (request?: Request) => {
     });
   }
 
-  return apiSuccess({
+  const response = apiSuccess({
     summaries: results,
     bmi,
     bpInTargetPct,
@@ -323,7 +359,20 @@ export const GET = apiHandler(async (request?: Request) => {
     correlations,
     healthScore,
     sleepStages,
+    // v1.4.34 IW-B — per-type freshness map drives the dashboard's
+    // staleness caption on each `<TrendCard>`. Additive: clients that
+    // don't read the field stay unchanged.
+    lastSeenByType,
   });
+  // v1.4.34 IW-B — bfcache-friendly directive so back-forward navigation
+  // restores the dashboard from memory. Per `src/lib/http/cache-headers.ts`:
+  // `private` keeps shared caches out of personal data, `max-age=0` forces
+  // revalidation on every navigation so session swaps detect on the wire,
+  // and `must-revalidate` holds the staleness contract. Replaces the
+  // framework's stock `no-store` which Chromium treats as a hard
+  // bfcache breaker.
+  response.headers.set("Cache-Control", NO_STORE_BUT_BFCACHE);
+  return response;
 });
 
 /**

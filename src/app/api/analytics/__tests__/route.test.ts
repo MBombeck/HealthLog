@@ -172,11 +172,76 @@ describe("GET /api/analytics", () => {
     expect(body.data.healthScore).toBeNull();
   });
 
+  // v1.4.34 IW-B — the dashboard tile strip reads `lastSeenByType[type]?.daysAgo`
+  // and forwards it to each `<TrendCard>` so a metric the user hasn't
+  // logged in a while keeps its tile visible with an "Letzter Wert vor
+  // Xd" caption instead of disappearing.
+  it("emits lastSeenByType keyed on the freshest measuredAt per type", async () => {
+    const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+    const oneDayAgo = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000);
+
+    vi.mocked(prisma.measurement.findMany).mockImplementation(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (async (args: any) => {
+        if (args.where?.type === "WEIGHT" && !args.cursor) {
+          return [
+            {
+              id: "w-old",
+              measuredAt: eightDaysAgo,
+              value: 80.5,
+              source: "MANUAL",
+              deviceType: null,
+            },
+          ] as never;
+        }
+        if (args.where?.type === "PULSE" && !args.cursor) {
+          return [
+            {
+              id: "p-fresh",
+              measuredAt: oneDayAgo,
+              value: 72,
+              source: "APPLE_HEALTH",
+              deviceType: "watch",
+            },
+          ] as never;
+        }
+        return [] as never;
+      }) as never,
+    );
+
+    const res = await (
+      GET as unknown as (...args: never[]) => Promise<Response>
+    )();
+    expect(res.status).toBe(200);
+    // bfcache-friendly Cache-Control — verifies the IW-B header
+    // posture is on the wire.
+    expect(res.headers.get("Cache-Control")).toBe(
+      "private, max-age=0, must-revalidate",
+    );
+
+    const body = (await res.json()) as {
+      data: {
+        lastSeenByType: Record<
+          string,
+          { lastSeenAt: string; daysAgo: number } | null
+        >;
+      };
+    };
+    expect(body.data.lastSeenByType.WEIGHT?.daysAgo).toBeGreaterThanOrEqual(7);
+    expect(body.data.lastSeenByType.WEIGHT?.daysAgo).toBeLessThanOrEqual(9);
+    expect(body.data.lastSeenByType.PULSE?.daysAgo).toBeGreaterThanOrEqual(0);
+    expect(body.data.lastSeenByType.PULSE?.daysAgo).toBeLessThanOrEqual(2);
+    // Types the user never logged report `null` so the tile-strip
+    // helper falls through without painting a caption.
+    expect(body.data.lastSeenByType.BLOOD_GLUCOSE).toBeNull();
+  });
+
   // v1.4.33 C1 — slim summaries slice. The route branches on
   // `?slice=summaries` BEFORE any chunked findMany; the two `$queryRaw`
   // passes carry the per-type DataSummary shape with the same
   // contract the dashboard tile strip reads.
   it("returns the slim summaries slice when ?slice=summaries is set", async () => {
+    const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
     // Aggregate pass + latest pass. The mock returns one row per pass.
     vi.mocked(prisma.$queryRaw)
       .mockResolvedValueOnce([
@@ -196,7 +261,9 @@ describe("GET /api/analytics", () => {
           r2_90: 0.2,
         },
       ] as never)
-      .mockResolvedValueOnce([{ type: "WEIGHT", value: 81.8 }] as never);
+      .mockResolvedValueOnce([
+        { type: "WEIGHT", value: 81.8, measured_at: fiveDaysAgo },
+      ] as never);
 
     const req = new Request(
       "http://localhost/api/analytics?slice=summaries",
@@ -205,6 +272,11 @@ describe("GET /api/analytics", () => {
       GET as unknown as (req: Request) => Promise<Response>
     )(req);
     expect(res.status).toBe(200);
+    // v1.4.34 IW-B — bfcache-friendly directive rides on the slim
+    // slice too.
+    expect(res.headers.get("Cache-Control")).toBe(
+      "private, max-age=0, must-revalidate",
+    );
     const body = (await res.json()) as {
       data: {
         summaries: Record<
@@ -216,6 +288,10 @@ describe("GET /api/analytics", () => {
           }
         >;
         bmi: number | null;
+        lastSeenByType: Record<
+          string,
+          { lastSeenAt: string; daysAgo: number } | null
+        >;
       };
     };
     // The slim slice produced WEIGHT from the SQL pass; no chunked
@@ -226,5 +302,11 @@ describe("GET /api/analytics", () => {
     expect(body.data.summaries.WEIGHT.slope30?.direction).toBe("down");
     // Slim slice never carries BMI — the consumer re-derives.
     expect(body.data.bmi).toBeNull();
+    // v1.4.34 IW-B — slim slice surfaces lastSeenByType too so the
+    // tile-strip caption works regardless of which slice the client
+    // read.
+    expect(body.data.lastSeenByType.WEIGHT?.daysAgo).toBeGreaterThanOrEqual(4);
+    expect(body.data.lastSeenByType.WEIGHT?.daysAgo).toBeLessThanOrEqual(6);
+    expect(body.data.lastSeenByType.PULSE).toBeNull();
   });
 });

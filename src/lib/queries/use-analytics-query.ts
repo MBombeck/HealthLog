@@ -76,6 +76,17 @@ export interface AnalyticsRawPayload {
   correlations?: unknown;
   healthScore?: unknown;
   sleepStages?: unknown;
+  /**
+   * v1.4.34 IW-B — per-type freshness map. The dashboard's tile strip
+   * reads `lastSeenByType[type]?.daysAgo` and forwards it to each
+   * `<TrendCard>` so a stale tile renders an "Letzter Wert vor Xd"
+   * caption instead of disappearing. Present on both the thick default
+   * and the slim `?slice=summaries` branch.
+   */
+  lastSeenByType?: Record<
+    string,
+    { lastSeenAt: string; daysAgo: number } | null
+  >;
   // Keep the contract open — additive server fields don't need a
   // type bump every release.
   [key: string]: unknown;

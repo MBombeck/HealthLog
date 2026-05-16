@@ -63,6 +63,14 @@ interface AggregateRow {
 interface LatestRow {
   type: string;
   value: number;
+  /**
+   * v1.4.34 IW-B — per-type freshness timestamp. The DISTINCT ON pass
+   * already orders by `measured_at DESC` to pick the latest row's
+   * value; surfacing `measured_at` from the same row costs zero extra
+   * round-trips and feeds the dashboard tile-strip's stale-data
+   * caption (driven via `<TrendCard staleDays>`).
+   */
+  measured_at: Date;
 }
 
 /** Same threshold/rounding contract as `trendSlope()` in `trends.ts`. */
@@ -113,6 +121,16 @@ export interface SummariesSlice {
    * default slice.
    */
   bmi: null;
+  /**
+   * v1.4.34 IW-B — per-type freshness map matching the default-slice
+   * shape so the dashboard tile strip can render a "Letzter Wert vor
+   * Xd" caption on stale tiles regardless of which slice the client
+   * read from. Types the user has never logged report `null`.
+   */
+  lastSeenByType: Record<
+    string,
+    { lastSeenAt: string; daysAgo: number } | null
+  >;
 }
 
 export async function computeSummariesSlice(
@@ -178,7 +196,8 @@ export async function computeSummariesSlice(
     prisma.$queryRaw<LatestRow[]>`
       SELECT DISTINCT ON (m."type")
         m."type"::text AS type,
-        m."value"::double precision AS value
+        m."value"::double precision AS value,
+        m."measured_at" AS measured_at
       FROM measurements m
       WHERE m."user_id" = ${userId}
       ORDER BY m."type", m."measured_at" DESC
@@ -186,16 +205,39 @@ export async function computeSummariesSlice(
   ]);
 
   const latestByType = new Map<string, number>();
+  // v1.4.34 IW-B — capture the per-type `measured_at` alongside the
+  // value so we can surface the freshness map on the slim slice
+  // without an extra round-trip.
+  const lastSeenAtByType = new Map<string, Date>();
   for (const row of latests) {
     latestByType.set(row.type, Number(row.value));
+    if (row.measured_at) {
+      lastSeenAtByType.set(row.type, new Date(row.measured_at));
+    }
   }
 
   // Seed every enum option so consumers can read `summaries.PULSE` and
   // get a deterministic empty shape rather than `undefined`. Mirrors
   // the default route which iterates `measurementTypeEnum.options`.
   const summaries: Record<string, DataSummary> = {};
+  const lastSeenByType: Record<
+    string,
+    { lastSeenAt: string; daysAgo: number } | null
+  > = {};
   for (const type of measurementTypeEnum.options) {
     summaries[type] = emptySummary();
+    lastSeenByType[type] = null;
+  }
+
+  const nowForStaleness = Date.now();
+  for (const [type, measuredAt] of lastSeenAtByType.entries()) {
+    const daysAgo = Math.floor(
+      (nowForStaleness - measuredAt.getTime()) / (24 * 60 * 60 * 1000),
+    );
+    lastSeenByType[type] = {
+      lastSeenAt: measuredAt.toISOString(),
+      daysAgo,
+    };
   }
 
   let totalRows = 0;
@@ -232,5 +274,5 @@ export async function computeSummariesSlice(
     },
   });
 
-  return { summaries, bmi: null };
+  return { summaries, bmi: null, lastSeenByType };
 }

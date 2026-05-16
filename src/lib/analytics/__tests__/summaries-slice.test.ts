@@ -75,7 +75,9 @@ describe("computeSummariesSlice", () => {
         slope90: 0.001,
         r2_90: 0.12,
       },
-    ]).mockResolvedValueOnce([{ type: "WEIGHT", value: 81.4 }]);
+    ]).mockResolvedValueOnce([
+      { type: "WEIGHT", value: 81.4, measured_at: new Date() },
+    ]);
 
     const result = await computeSummariesSlice("user-1");
     const weight = result.summaries.WEIGHT;
@@ -128,12 +130,51 @@ describe("computeSummariesSlice", () => {
         slope90: null,
         r2_90: null,
       },
-    ]).mockResolvedValueOnce([{ type: "PULSE", value: 72 }]);
+    ]).mockResolvedValueOnce([
+      { type: "PULSE", value: 72, measured_at: new Date() },
+    ]);
 
     const result = await computeSummariesSlice("user-1");
     expect(result.summaries.PULSE.slope7).toBeNull();
     expect(result.summaries.PULSE.slope30).toBeNull();
     expect(result.summaries.PULSE.slope90).toBeNull();
+  });
+
+  // v1.4.34 IW-B — surface the per-type freshness map so the
+  // dashboard tile strip can render an "Letzter Wert vor Xd" caption
+  // even when the consumer read from the slim slice (the path the
+  // tile-strip pre-fetch uses on cold paint).
+  it("surfaces lastSeenByType from the DISTINCT ON pass's measured_at", async () => {
+    const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+    RAW.mockResolvedValueOnce([
+      {
+        type: "WEIGHT",
+        count: BigInt(5),
+        min_value: 80,
+        max_value: 84,
+        mean_value: 82,
+        avg7: null,
+        avg30: 82,
+        slope7: null,
+        r2_7: null,
+        slope30: 0.005,
+        r2_30: 0.2,
+        slope90: null,
+        r2_90: null,
+      },
+    ]).mockResolvedValueOnce([
+      { type: "WEIGHT", value: 82.3, measured_at: tenDaysAgo },
+    ]);
+
+    const result = await computeSummariesSlice("user-1");
+    const ws = result.lastSeenByType.WEIGHT;
+    expect(ws).not.toBeNull();
+    expect(ws?.daysAgo).toBeGreaterThanOrEqual(9);
+    expect(ws?.daysAgo).toBeLessThanOrEqual(11);
+    expect(ws?.lastSeenAt).toBe(tenDaysAgo.toISOString());
+    // Types the user never logged report null so call sites can
+    // fall through without painting a caption.
+    expect(result.lastSeenByType.PULSE).toBeNull();
   });
 
   it("seeds the latest value from the DISTINCT ON pass per type", async () => {
@@ -153,7 +194,9 @@ describe("computeSummariesSlice", () => {
         slope90: 0,
         r2_90: 0,
       },
-    ]).mockResolvedValueOnce([{ type: "PULSE", value: 88 }]);
+    ]).mockResolvedValueOnce([
+      { type: "PULSE", value: 88, measured_at: new Date() },
+    ]);
 
     const result = await computeSummariesSlice("user-1");
     // Latest is NOT max — comes from the row at MAX(measured_at).
