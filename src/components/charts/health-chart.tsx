@@ -38,6 +38,8 @@ import type {
   ChartOverlayKey,
   ComparisonBaseline,
 } from "@/lib/dashboard-layout";
+import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
+import type { MeasurementType } from "@/generated/prisma/client";
 import { ChartOverlayControls } from "./chart-overlay-controls";
 import { useChartOverlayPrefs } from "@/hooks/use-chart-overlay-prefs";
 import { useViewportWidth } from "@/hooks/use-viewport-width";
@@ -629,7 +631,16 @@ export function HealthChart({
           };
 
           for (const [type, stats] of Object.entries(bucket.values)) {
-            point[type] = stats.sum / stats.count;
+            // v1.4.29.1 — cumulative HealthKit types (steps, active energy,
+            // distance, flights, daylight) must reduce with sum, not the
+            // per-sample average. The server already does this when the
+            // chart fetches with `aggregate=daily` (windows over 7 days);
+            // the 7-day path still pulls raw rows and aggregates here,
+            // so the same distinction must hold client-side.
+            const isCumulative = CUMULATIVE_HK_TYPES.has(
+              type as MeasurementType,
+            );
+            point[type] = isCumulative ? stats.sum : stats.sum / stats.count;
           }
 
           return point;
