@@ -234,22 +234,35 @@ export function proxy(request: NextRequest) {
     "camera=(), microphone=(), geolocation=()",
   );
 
-  // CSP — permissive in dev, strict in production. AI provider hosts
-  // (OpenAI / chatgpt.com) are gated to /settings/ai/** because that is
-  // the only surface a browser fetch is needed (V3 audit: blanket
-  // chatgpt.com on /auth/login is a DOM-XSS exfil channel).
+  // CSP — permissive in dev, strict in production. Third-party hosts in
+  // `connect-src` are gated to the surfaces that actually need them so a
+  // DOM-XSS on an unrelated page can't exfiltrate to them (V3 audit:
+  // blanket chatgpt.com on /auth/login was a DOM-XSS exfil channel).
+  //
+  // F-5 (mobile security audit, 2026-05-16): `wbsapi.withings.net` used
+  // to live in the global `connect-src` and shipped on every page. The
+  // Withings client lives server-side, so the browser never needs to
+  // reach it from a non-Withings surface; mirror the AI gating shape.
   const isDev = process.env.NODE_ENV === "development";
   const cspReportEndpoint = "/api/monitoring/csp-report";
   const isAiSettingsRoute = pathname.startsWith("/settings/ai");
   const aiConnectSrc = isAiSettingsRoute
     ? " https://api.openai.com https://chatgpt.com"
     : "";
+  const isWithingsRoute =
+    pathname.startsWith("/settings/integrations/withings") ||
+    pathname.startsWith("/api/withings/");
+  const withingsConnectSrc = isWithingsRoute
+    ? " https://wbsapi.withings.net"
+    : "";
   const csp = isDev
     ? `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.gravatar.com; connect-src 'self'; font-src 'self';`
-    : `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.gravatar.com; connect-src 'self'${aiConnectSrc} https://wbsapi.withings.net; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self'; report-uri ${cspReportEndpoint}; report-to csp-endpoint;`;
+    : `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.gravatar.com; connect-src 'self'${aiConnectSrc}${withingsConnectSrc}; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self'; report-uri ${cspReportEndpoint}; report-to csp-endpoint;`;
   response.headers.set("Content-Security-Policy", csp);
 
-  // Production-only headers
+  // Production-only headers. HSTS carries `preload` so the domain stays
+  // eligible for the Chromium preload list — closes the first-visit MITM
+  // window on hostile networks (F-5, mobile security audit 2026-05-16).
   if (!isDev) {
     response.headers.set(
       "Reporting-Endpoints",
@@ -257,7 +270,7 @@ export function proxy(request: NextRequest) {
     );
     response.headers.set(
       "Strict-Transport-Security",
-      "max-age=31536000; includeSubDomains",
+      "max-age=31536000; includeSubDomains; preload",
     );
   }
 

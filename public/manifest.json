@@ -2,8 +2,11 @@
   "name": "HealthLog",
   "short_name": "HealthLog",
   "description": "Personal health tracking — weight, blood pressure, medications",
+  "id": "/?source=pwa",
+  "scope": "/",
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["standalone"],
   "theme_color": "#282a36",
   "background_color": "#282a36",
   "icons": [

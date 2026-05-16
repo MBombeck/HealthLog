@@ -100,9 +100,15 @@ async function networkFirst(request, cacheName) {
     const cached = await caches.match(request);
     if (cached) return cached;
 
-    // Offline fallback
+    // Offline fallback. F-7 (mobile security audit, 2026-05-16): the
+    // previous fallback rendered hard-coded German body copy, which is
+    // wrong for any en/* user reaching it offline. The replacement is
+    // language-neutral — wordmark + the universally understood
+    // "Offline" token + a generic retry hint expressed as an icon
+    // (the round-trip arrow), so the page does the right thing in any
+    // locale without shipping a translation bundle into the worker.
     return new Response(
-      '<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HealthLog — Offline</title><style>body{font-family:system-ui,sans-serif;background:#282a36;color:#f8f8f2;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}div{text-align:center;padding:2rem}h1{color:#bd93f9;margin-bottom:0.5rem}p{color:#6272a4}</style></head><body><div><h1>Offline</h1><p>Keine Internetverbindung. Bitte versuche es später erneut.</p></div></body></html>',
+      '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HealthLog — Offline</title><style>body{font-family:system-ui,sans-serif;background:#282a36;color:#f8f8f2;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}div{text-align:center;padding:2rem}h1{color:#bd93f9;margin:0 0 .5rem;font-size:2rem;letter-spacing:.05em}p{color:#6272a4;margin:.25rem 0;font-size:.9rem}svg{width:48px;height:48px;color:#6272a4;margin-bottom:1rem}</style></head><body><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg><h1>HealthLog</h1><p>Offline</p></div></body></html>',
       {
         status: 503,
         headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -155,7 +161,22 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const url = event.notification.data?.url || "/";
+  // F-7 (mobile security audit, 2026-05-16): validate the destination
+  // resolves to the same origin before navigating any client. Push
+  // payloads are VAPID-signed by our own server, but a server-side bug
+  // (or compromised admin issuing pushes) could ship an off-origin URL
+  // into `data.url` and use the focused PWA as a redirect-driven phish.
+  // Reject anything that doesn't match our origin and fall back to "/".
+  const rawUrl = event.notification.data?.url || "/";
+  let safeUrl = "/";
+  try {
+    const resolved = new URL(rawUrl, self.location.origin);
+    if (resolved.origin === self.location.origin) {
+      safeUrl = resolved.pathname + resolved.search + resolved.hash;
+    }
+  } catch {
+    safeUrl = "/";
+  }
 
   event.waitUntil(
     self.clients
@@ -163,11 +184,11 @@ self.addEventListener("notificationclick", (event) => {
       .then((clientList) => {
         for (const client of clientList) {
           if (client.url.includes(self.location.origin) && "focus" in client) {
-            client.navigate(url);
+            client.navigate(safeUrl);
             return client.focus();
           }
         }
-        return self.clients.openWindow(url);
+        return self.clients.openWindow(safeUrl);
       }),
   );
 });

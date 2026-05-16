@@ -1,10 +1,15 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { getClientIp } from "../api-response";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  getClientIp,
+  getClientIpOrTrustWarning,
+  _resetTrustViolationWarningForTests,
+} from "../api-response";
 
 const ORIGINAL_ENV = process.env.TRUST_PROXY_HOPS;
 
 beforeEach(() => {
   delete process.env.TRUST_PROXY_HOPS;
+  _resetTrustViolationWarningForTests();
 });
 
 afterEach(() => {
@@ -95,5 +100,94 @@ describe("getClientIp trusted-proxy semantics (V3 audit)", () => {
   it("falls back to x-real-ip if XFF missing", () => {
     const ip = getClientIp(makeRequest({ "x-real-ip": "5.6.7.8" }));
     expect(ip).toBe("5.6.7.8");
+  });
+});
+
+/**
+ * F-6 (mobile security audit, 2026-05-16): when `TRUST_PROXY_HOPS` and
+ * the actual proxy chain don't agree, getClientIp returns null and every
+ * caller falls back to a literal `"unknown"` rate-limit bucket. The
+ * operator needs a single warning per process so the dashboards reflect
+ * the misconfiguration, and a new `getClientIpOrTrustWarning` helper
+ * lets future callers route the request to a tighter universal bucket.
+ */
+describe("getClientIp trust-violation warning (F-6, 2026-05-16)", () => {
+  it("emits a console.warn once when the chain is shorter than configured hops", () => {
+    process.env.TRUST_PROXY_HOPS = "2";
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      getClientIp(makeRequest({ "x-forwarded-for": "5.6.7.8" }));
+      getClientIp(makeRequest({ "x-forwarded-for": "5.6.7.8" }));
+      getClientIp(makeRequest({ "x-forwarded-for": "5.6.7.8" }));
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toMatch(/TRUST_PROXY_HOPS=2/);
+      expect(warn.mock.calls[0][0]).toMatch(/1 entry/);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("does not warn when the chain length matches", () => {
+    process.env.TRUST_PROXY_HOPS = "1";
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      getClientIp(makeRequest({ "x-forwarded-for": "5.6.7.8" }));
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+});
+
+describe("getClientIpOrTrustWarning shape (F-6, 2026-05-16)", () => {
+  it("returns trustViolation=false on a well-formed chain", () => {
+    const result = getClientIpOrTrustWarning(
+      makeRequest({ "x-forwarded-for": "1.2.3.4, 5.6.7.8" }),
+    );
+    expect(result).toEqual({ ip: "5.6.7.8", trustViolation: false });
+  });
+
+  it("returns trustViolation=true when the chain is shorter than hops", () => {
+    process.env.TRUST_PROXY_HOPS = "2";
+    const result = getClientIpOrTrustWarning(
+      makeRequest({ "x-forwarded-for": "5.6.7.8" }),
+    );
+    expect(result.trustViolation).toBe(true);
+    // ip falls back to x-real-ip (absent here) so it's null
+    expect(result.ip).toBeNull();
+  });
+
+  it("returns trustViolation=true and x-real-ip when chain is short but x-real-ip is set", () => {
+    process.env.TRUST_PROXY_HOPS = "2";
+    const result = getClientIpOrTrustWarning(
+      makeRequest({
+        "x-forwarded-for": "5.6.7.8",
+        "x-real-ip": "9.9.9.9",
+      }),
+    );
+    expect(result).toEqual({ ip: "9.9.9.9", trustViolation: true });
+  });
+
+  it("returns trustViolation=false when XFF is absent (no chain to validate)", () => {
+    const result = getClientIpOrTrustWarning(
+      makeRequest({ "x-real-ip": "9.9.9.9" }),
+    );
+    expect(result).toEqual({ ip: "9.9.9.9", trustViolation: false });
+  });
+
+  it("emits the same once-per-process warning when triggered via the tagged helper", () => {
+    process.env.TRUST_PROXY_HOPS = "2";
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      getClientIpOrTrustWarning(
+        makeRequest({ "x-forwarded-for": "5.6.7.8" }),
+      );
+      getClientIpOrTrustWarning(
+        makeRequest({ "x-forwarded-for": "5.6.7.8" }),
+      );
+      expect(warn).toHaveBeenCalledTimes(1);
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

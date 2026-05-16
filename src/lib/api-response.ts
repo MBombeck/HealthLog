@@ -95,6 +95,34 @@ function parseTrustProxyHops(raw: string | undefined): number {
   return parseInt(trimmed, 10);
 }
 
+/**
+ * Module-scope flag so the trust-violation warning fires at most once per
+ * process. F-6 (mobile security audit, 2026-05-16): every IP-keyed
+ * rate-limit caller falls back to a literal `"unknown"` bucket when
+ * `getClientIp` returns null, which collapses anonymous traffic into a
+ * single shared bucket. A persistent stderr line tells the operator the
+ * proxy chain length and the configured `TRUST_PROXY_HOPS` value don't
+ * match and the deployment is silently degrading rate-limit precision.
+ */
+let trustViolationWarned = false;
+
+/**
+ * Reset the once-per-process warning flag. Test-only; the production
+ * code never calls this.
+ */
+export function _resetTrustViolationWarningForTests(): void {
+  trustViolationWarned = false;
+}
+
+function warnTrustViolationOnce(hops: number, chainLength: number): void {
+  if (trustViolationWarned) return;
+  trustViolationWarned = true;
+  console.warn(
+    `[getClientIp] TRUST_PROXY_HOPS=${hops} but X-Forwarded-For carried ${chainLength} entr${chainLength === 1 ? "y" : "ies"}; ` +
+      `refusing to read XFF for this request. Every anonymous caller will now share the same "unknown" rate-limit bucket — fix TRUST_PROXY_HOPS or the proxy chain.`,
+  );
+}
+
 export function getClientIp(request: Request): string | null {
   const hops = parseTrustProxyHops(process.env.TRUST_PROXY_HOPS);
 
@@ -113,8 +141,55 @@ export function getClientIp(request: Request): string | null {
       if (chain.length >= hops) {
         return chain[chain.length - hops];
       }
+      // F-6 (mobile security audit, 2026-05-16): emit a one-shot
+      // operator signal when the chain shape doesn't match the
+      // configured trust. Without this warning the silent degrade was
+      // invisible until rate-limits visibly misfired in production.
+      warnTrustViolationOnce(hops, chain.length);
     }
   }
   const realIp = request.headers.get("x-real-ip");
   return realIp && looksLikeIp(realIp) ? realIp : null;
+}
+
+/**
+ * Tagged return shape so a caller can apply a tighter universal
+ * rate-limit when the trust chain is misconfigured. F-6 (mobile security
+ * audit, 2026-05-16): callers today fall back to a literal `"unknown"`
+ * string, collapsing every anonymous request into one bucket. New
+ * callers should branch on `trustViolation === true` and route the
+ * request to a tighter global rate-limit instead of the per-IP one.
+ *
+ * Existing callers using `getClientIp(request) ?? "unknown"` keep
+ * working unchanged; this helper is additive.
+ */
+export function getClientIpOrTrustWarning(request: Request): {
+  ip: string | null;
+  trustViolation: boolean;
+} {
+  const hops = parseTrustProxyHops(process.env.TRUST_PROXY_HOPS);
+
+  if (hops > 0) {
+    const forwarded = request.headers.get("x-forwarded-for");
+    if (forwarded) {
+      const chain = forwarded
+        .split(",")
+        .map((s) => s.trim())
+        .filter(looksLikeIp);
+      if (chain.length >= hops) {
+        return { ip: chain[chain.length - hops], trustViolation: false };
+      }
+      warnTrustViolationOnce(hops, chain.length);
+      const realIp = request.headers.get("x-real-ip");
+      return {
+        ip: realIp && looksLikeIp(realIp) ? realIp : null,
+        trustViolation: true,
+      };
+    }
+  }
+  const realIp = request.headers.get("x-real-ip");
+  return {
+    ip: realIp && looksLikeIp(realIp) ? realIp : null,
+    trustViolation: false,
+  };
 }
