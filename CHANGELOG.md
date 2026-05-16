@@ -1,5 +1,56 @@
 # Changelog
 
+## [1.4.30.1] — 2026-05-16 — Categories endpoint + conflict-resolution lock
+
+A two-item follow-up to v1.4.30. The categorisation overlay shipped
+yesterday as a TypeScript map; the new `GET /api/measurement-categories`
+endpoint projects it over HTTP so the iOS-side picker can fetch the
+canonical shape rather than carry a hard-coded mirror — the
+unblocker the iOS team flagged as the one missing piece. In parallel
+the SyncMode conflict-resolution policy that the v0.6.0
+standalone-first track depends on lands as §13 of
+`08-locked-contracts.md`.
+
+### Added
+
+- **`GET /api/measurement-categories`.** Thin projection of
+  `src/lib/measurements/categories.ts` over HTTP. Response carries
+  `version: 1`, an ordered `categories` array with `labelKey`
+  translation keys, and the `assignments` map keyed on
+  `MeasurementType`. `requireAuth()` gates the route — any logged-in
+  user passes — and `Cache-Control: public, max-age=600` enables a
+  10-minute edge cache. Locked per
+  `.planning/RESPONSE-TO-IOS-TEAM-2026-05-16.md` §3 R1.
+
+### Documented
+
+- **SyncMode conflict-resolution policy.**
+  `.planning/v15-ios-handoff/08-locked-contracts.md` gains §13 per
+  R9 of the iOS-team response doc. Hard-spec covers bulk-backfill,
+  steady-state bidirectional sync via `(updatedAt, syncVersion)`
+  optimistic concurrency, the 409 write-conflict + 410 Gone
+  delete-conflict envelope shapes, the LWW-by-`updatedAt` resolution
+  with server-wins on millisecond tie, and the
+  `GET /api/sync/state` response. The "What is NOT in this file"
+  stub renumbers to §14.
+- **iOS contributor brief.** §3 bumps the live-production marker to
+  v1.4.30 and adds the four v1.4.30 endpoints plus the new
+  v1.4.30.1 endpoint to the iOS-consumable list. §5b / §6 reframe
+  the Coach SSE story per R6 — the server endpoint stays live; the
+  iOS native server-Coach drawer is deferred pending MDR Class-IIa
+  pre-review. v1.5.0 iOS ships Apple Foundation Models on-device
+  Daily Briefing + Trend Observations as the primary assistant
+  surface.
+- **v1.5 strategic plan.** §2 slots Apple Health XML import as
+  v1.4.34 immediately before the web-freeze marker (per R2),
+  detailing the multipart endpoint, the streaming XML parser, the
+  async job model, the per-MeasurementType ingestion stats, the
+  idempotent UPSERT on `externalId`, and the admin endpoint
+  variant. Effort L (~3-4 days). The freeze trigger renumbers from
+  v1.4.33 to v1.4.34; the decision-log row "Apple Health XML
+  import slot" lands; the §4 deferred row and §6 open question #3
+  close out.
+
 ## [1.4.30] — 2026-05-16 — iOS-coordinated foundation (Daily-Stats + SyncMode)
 
 Server-side prep for the next iOS TestFlight build. Five surfaces
