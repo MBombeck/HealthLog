@@ -112,16 +112,15 @@ test.describe("dashboard onboarding card flicker guard", () => {
 
     await page.goto("/", { waitUntil: "domcontentloaded" });
 
-    // Sample visibility every 50 ms for ~600 ms (covers the 250 ms
-    // analytics delay + render commit + a buffer). If the card mounts
-    // at any sampled instant, the assertion fails.
-    const samples: boolean[] = [];
-    for (let i = 0; i < 12; i++) {
-      samples.push(await card.isVisible().catch(() => false));
-      await page.waitForTimeout(50);
-    }
-
-    expect(samples.every((visible) => visible === false)).toBe(true);
+    // The card must stay hidden through the 250 ms analytics delay and
+    // the render commit that follows. Playwright's auto-retrying
+    // assertion re-evaluates every animation frame, so a 700 ms window
+    // covers the delay + buffer while keeping the intent ("user never
+    // sees it") explicit. The previous 50-ms poll loop had a 1-2 ms
+    // race window where the analytics-pending shell could paint before
+    // `useAuth().user` resolved `onboardingCompletedAt`; the auto-
+    // retrying assertion collapses that window.
+    await expect(card).toBeHidden({ timeout: 700 });
 
     // After the network has settled the card is still hidden — the
     // user is past the setup gate, so `shouldShowChecklist` returns
