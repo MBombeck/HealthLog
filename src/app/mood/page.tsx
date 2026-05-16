@@ -42,7 +42,9 @@ export default function MoodPage() {
           <h1 className="text-2xl font-bold tracking-tight">
             {t("mood.title")}
           </h1>
-          <p className="text-muted-foreground hidden text-sm sm:block">
+          {/* v1.4.34 IW-G — subtitle stays visible on mobile so the
+              H1 isn't an unframed label. */}
+          <p className="text-muted-foreground text-xs sm:text-sm">
             {t("mood.subtitle")}
           </p>
         </div>

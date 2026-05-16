@@ -6,6 +6,7 @@ import { Dialog as DialogPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "@/lib/i18n/context";
 
 function Dialog({
   ...props
@@ -55,6 +56,7 @@ function DialogContent({
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
 }) {
+  const { t } = useTranslations();
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
@@ -84,7 +86,9 @@ function DialogContent({
             className="ring-offset-background focus-visible:border-ring focus-visible:ring-ring/50 text-muted-foreground hover:bg-accent hover:text-foreground absolute top-3 right-4 inline-flex min-h-9 min-w-9 items-center justify-center rounded-md transition-colors focus-visible:ring-[3px] focus-visible:outline-none disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
           >
             <XIcon />
-            <span className="sr-only">Close</span>
+            {/* v1.4.34 IW-G — read `common.close` so screen readers
+                hear the localised label instead of literal English. */}
+            <span className="sr-only">{t("common.close")}</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Content>
@@ -110,6 +114,7 @@ function DialogFooter({
 }: React.ComponentProps<"div"> & {
   showCloseButton?: boolean;
 }) {
+  const { t } = useTranslations();
   return (
     <div
       data-slot="dialog-footer"
@@ -122,7 +127,7 @@ function DialogFooter({
       {children}
       {showCloseButton && (
         <DialogPrimitive.Close asChild>
-          <Button variant="outline">Close</Button>
+          <Button variant="outline">{t("common.close")}</Button>
         </DialogPrimitive.Close>
       )}
     </div>

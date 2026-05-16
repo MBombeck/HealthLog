@@ -156,6 +156,26 @@ export function AdminShell({ active, children }: AdminShellProps) {
   const { t } = useTranslations();
   const activeSlug = deriveActiveSlug(pathname, active);
 
+  // v1.4.34 IW-G — mirror the settings-shell auto-scroll pattern so
+  // the active chip stays in view when the user lands on a deeper
+  // admin route. Without it the 16-chip strip stays scrolled to the
+  // left and the active chip lives off-screen, reading as a broken nav.
+  const mobileStripRef = React.useRef<HTMLElement | null>(null);
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const strip = mobileStripRef.current;
+    if (!strip) return;
+    const activeChip = strip.querySelector<HTMLElement>(
+      '[aria-current="page"]',
+    );
+    if (!activeChip) return;
+    activeChip.scrollIntoView({
+      block: "nearest",
+      inline: "center",
+      behavior: "smooth",
+    });
+  }, [activeSlug]);
+
   // v1.4.25 W8 — AuthShell wraps the page in `px-4 py-6 md:px-6`
   // already, so this inner shell only carries the wider max-width.
   // Previously the duplicate `px-4 py-6 md:px-6 md:py-8` here was
@@ -169,13 +189,19 @@ export function AdminShell({ active, children }: AdminShellProps) {
           horizontal swipe + keyboard arrow scrolling still work, the
           bar just doesn't draw. Without this the 13-section strip
           would render an always-on scrollbar that the maintainer kept
-          mis-attributing to the api-tokens table below it. */}
+          mis-attributing to the api-tokens table below it.
+
+          v1.4.34 IW-G — `snap-x snap-mandatory` plus per-chip
+          `snap-start` lets a swipe-flick land on the next chip's
+          leading edge instead of the in-between dead zone, matching
+          the settings-shell polish. */}
       <nav
+        ref={mobileStripRef}
         aria-label={t("admin.shell.sectionsNav")}
-        className="no-scrollbar -mx-4 mb-4 overflow-x-auto px-4 md:hidden"
+        className="no-scrollbar -mx-4 mb-4 snap-x snap-mandatory overflow-x-auto px-4 md:hidden"
       >
         <ul className="flex min-w-max gap-2">
-          <li>
+          <li className="snap-start">
             <Link
               href="/admin"
               aria-current={activeSlug === null ? "page" : undefined}
@@ -197,7 +223,7 @@ export function AdminShell({ active, children }: AdminShellProps) {
             const isActive = section.slug === activeSlug;
             const Icon = section.icon;
             return (
-              <li key={section.slug}>
+              <li key={section.slug} className="snap-start">
                 <Link
                   href={`/admin/${section.slug}`}
                   aria-current={isActive ? "page" : undefined}

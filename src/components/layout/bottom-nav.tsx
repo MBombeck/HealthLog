@@ -99,8 +99,13 @@ export function BottomNav() {
                 // Touch target sized to WCAG 2.5.5 (44×44 CSS px). The
                 // outer min-h-11 min-w-11 is the actual hit area; the icon
                 // stays visually centered at 20px so the design doesn't shift.
+                //
+                // v1.4.34 IW-G — keyboard users get a visible ring on
+                // focus-visible, matching the sidebar treatment from
+                // v1.4.33. Without it the bottom-nav had no focus
+                // indicator at all on Tab navigation.
                 className={cn(
-                  "relative flex min-h-11 min-w-11 flex-1 items-center justify-center rounded-lg transition-colors",
+                  "relative flex min-h-11 min-w-11 flex-1 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground",
@@ -121,7 +126,7 @@ export function BottomNav() {
             aria-current={overflowActive ? "page" : undefined}
             onClick={() => setMoreOpen(true)}
             className={cn(
-              "relative flex min-h-11 min-w-11 flex-1 items-center justify-center rounded-lg transition-colors",
+              "relative flex min-h-11 min-w-11 flex-1 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2",
               overflowActive
                 ? "text-primary"
                 : "text-muted-foreground hover:text-foreground",

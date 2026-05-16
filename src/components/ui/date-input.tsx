@@ -29,8 +29,11 @@ import { useTranslations } from "@/lib/i18n/context";
  *   even when iOS shrinks its placeholder, so the field looks
  *   identical on both engines.
  */
+// v1.4.34 IW-G — match the `<Input>` mobile floor (44 px) so date and
+// datetime fields don't sit below the WCAG 2.5.5 target-size minimum
+// on Pixel-5-class viewports. Desktop falls back to the 40 px norm.
 const DATE_INPUT_HEIGHT_CLASSES =
-  "appearance-none min-h-10 h-10 [&::-webkit-date-and-time-value]:min-h-[1.5em]";
+  "appearance-none min-h-11 h-11 sm:min-h-10 sm:h-10 [&::-webkit-date-and-time-value]:min-h-[1.5em]";
 
 type InputProps = React.ComponentProps<typeof Input>;
 type DateInputProps = Omit<InputProps, "type" | "lang">;

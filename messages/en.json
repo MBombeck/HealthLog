@@ -182,6 +182,7 @@
     "sidebar": "Sidebar",
     "mainNavigation": "Main navigation",
     "mobileNavigation": "Mobile navigation",
+    "breadcrumb": "Breadcrumb navigation",
     "loadingScreen": "Loading…",
     "more": "More",
     "moreSheetTitle": "More",
@@ -760,6 +761,7 @@
     }
   },
   "charts": {
+    "loadingLabel": "Loading chart…",
     "weight": "Weight",
     "bloodPressure": "Blood Pressure",
     "pulse": "Pulse",

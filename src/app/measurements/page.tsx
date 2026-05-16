@@ -2,30 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { MeasurementForm } from "@/components/measurements/measurement-form";
+import {
+  MeasurementForm,
+  resolveAddToken,
+} from "@/components/measurements/measurement-form";
 import { MeasurementList } from "@/components/measurements/measurement-list";
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Plus, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "@/lib/i18n/context";
-
-// v1.4.27 MB6 — the insights empty-state CTAs link here with a
-// `?add=<TYPE>` query param to auto-open the add-measurement dialog
-// with the right default type. Keep the allow-list aligned with
-// MEASUREMENT_TYPES inside `measurement-form.tsx`; an unknown value
-// is dropped silently so a stale link can never trap the user on a
-// broken form.
-const ALLOWED_ADD_TYPES = new Set([
-  "BLOOD_PRESSURE",
-  "WEIGHT",
-  "PULSE",
-  "BMI",
-  "GLUCOSE",
-  "TEMPERATURE",
-  "BODY_FAT",
-  "HEART_RATE",
-]);
 
 export default function MeasurementsPage() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -52,8 +38,13 @@ export default function MeasurementsPage() {
 
   if (addParam && addParam !== consumedAddParam) {
     setConsumedAddParam(addParam);
-    if (ALLOWED_ADD_TYPES.has(addParam)) {
-      setDefaultType(addParam);
+    // v1.4.34 IW-G — `resolveAddToken` is the single source of truth
+    // for legacy aliases (`GLUCOSE`, `TEMPERATURE`, …) plus the
+    // canonical form values. Unknown tokens still drop silently so a
+    // stale link cannot trap the user on a broken form.
+    const resolved = resolveAddToken(addParam);
+    if (resolved) {
+      setDefaultType(resolved);
       setDialogOpen(true);
     }
     // Drop the query string so the back-button leaves the user on
@@ -82,7 +73,10 @@ export default function MeasurementsPage() {
           <h1 className="text-2xl font-bold tracking-tight">
             {t("measurements.title")}
           </h1>
-          <p className="text-muted-foreground hidden text-sm sm:block">
+          {/* v1.4.34 IW-G — subtitle now stays visible on mobile so
+              the H1 isn't an unframed label. `text-xs sm:text-sm`
+              preserves the desktop hierarchy. */}
+          <p className="text-muted-foreground text-xs sm:text-sm">
             {t("measurements.subtitle")}
           </p>
         </div>

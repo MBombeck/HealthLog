@@ -182,6 +182,7 @@
     "sidebar": "Sidebar",
     "mainNavigation": "Main navigation",
     "mobileNavigation": "Mobile navigation",
+    "breadcrumb": "Ruta de navegación",
     "loadingScreen": "Loading…",
     "more": "More",
     "moreSheetTitle": "More",
@@ -760,6 +761,7 @@
     }
   },
   "charts": {
+    "loadingLabel": "Cargando gráfico…",
     "weight": "Peso",
     "bloodPressure": "Presión arterial",
     "pulse": "Pulso",

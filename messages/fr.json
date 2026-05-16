@@ -182,6 +182,7 @@
     "sidebar": "Sidebar",
     "mainNavigation": "Main navigation",
     "mobileNavigation": "Mobile navigation",
+    "breadcrumb": "Fil d'Ariane",
     "loadingScreen": "Loading…",
     "more": "More",
     "moreSheetTitle": "More",
@@ -760,6 +761,7 @@
     }
   },
   "charts": {
+    "loadingLabel": "Chargement du graphique…",
     "weight": "Poids",
     "bloodPressure": "Tension artérielle",
     "pulse": "Pouls",

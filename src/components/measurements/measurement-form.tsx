@@ -87,7 +87,44 @@ const MEASUREMENT_TYPES = [
     unit: "%",
     placeholder: "98",
   },
+  {
+    value: "BODY_TEMPERATURE",
+    labelKey: "measurements.typeBodyTemperature",
+    unit: "°C",
+    placeholder: "36.6",
+  },
 ] as const;
+
+// v1.4.34 IW-G — single source of truth for the `/measurements?add=<TYPE>`
+// deep link the Insights empty-state CTAs ship. Derived from the form's
+// MEASUREMENT_TYPES so a new row in the form is immediately usable as
+// a deep-link target.
+export const MEASUREMENT_FORM_TYPE_VALUES = MEASUREMENT_TYPES.map(
+  (t) => t.value,
+) as readonly string[];
+
+// Legacy / Insights-internal tokens that predate the canonical enum.
+// Older empty-state CTAs and a handful of dashboard tiles still emit
+// these — translate them to the form's canonical value so the link
+// keeps working without forcing every caller to rename in lockstep.
+export const ADD_TOKEN_ALIASES: Readonly<Record<string, string>> = {
+  GLUCOSE: "BLOOD_GLUCOSE",
+  TEMPERATURE: "BODY_TEMPERATURE",
+  HEART_RATE: "PULSE",
+  BMI: "WEIGHT",
+};
+
+/**
+ * Resolve a `?add=<token>` deep-link value to a real form type, or
+ * `null` when the token has no canonical mapping. Centralised so the
+ * page-level dispatcher and the F-1 contract test consume the same
+ * resolver.
+ */
+export function resolveAddToken(token: string | null | undefined): string | null {
+  if (!token) return null;
+  const aliased = ADD_TOKEN_ALIASES[token] ?? token;
+  return MEASUREMENT_FORM_TYPE_VALUES.includes(aliased) ? aliased : null;
+}
 
 const GLUCOSE_CONTEXTS = [
   { value: "FASTING", labelKey: "measurements.glucoseContextFasting" },

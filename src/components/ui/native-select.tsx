@@ -35,8 +35,10 @@ import { cn } from "@/lib/utils";
  * uniform with the rest of the form's `<Input>` + `<SelectTrigger>`
  * rows.
  */
+// v1.4.34 IW-G — floor at 44 px on mobile to clear WCAG 2.5.5; shrink
+// to 40 px on sm+ where the pointer precision is higher.
 const NATIVE_SELECT_CLASS =
-  "border-input bg-background text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none";
+  "border-input bg-background text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-11 sm:h-10 w-full rounded-md border px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none";
 
 export type NativeSelectProps = React.SelectHTMLAttributes<HTMLSelectElement>;
 

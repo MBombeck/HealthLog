@@ -2,6 +2,7 @@
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/lib/i18n/context";
 
 /**
  * v1.4.28 R3d (R1.2 H4) — layout-stable loading shell for every
@@ -27,6 +28,7 @@ import { cn } from "@/lib/utils";
  * `motion-reduce:animate-none` modifier.
  */
 export function ChartSkeleton({ className }: { className?: string }) {
+  const { t } = useTranslations();
   return (
     <div
       data-slot="chart-skeleton"
@@ -38,7 +40,9 @@ export function ChartSkeleton({ className }: { className?: string }) {
         className,
       )}
     >
-      <span className="sr-only">Loading chart…</span>
+      {/* v1.4.34 IW-G — sr-only announcement now reads the locale's
+          `charts.loadingLabel` key instead of literal English. */}
+      <span className="sr-only">{t("charts.loadingLabel")}</span>
 
       {/* Header row — title + range tabs match the real chart's
           `mb-4 flex flex-col gap-2 sm:flex-row` chrome. */}

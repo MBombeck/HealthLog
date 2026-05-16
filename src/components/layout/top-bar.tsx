@@ -64,7 +64,11 @@ export function TopBar() {
               aria-label={t("nav.userMenu")}
               // v1.4.25 W8 — hit the WCAG 2.5.5 44 px touch-target floor on
               // mobile. The text-only py-1.5 was previously ~30 px tall.
-              className="text-muted-foreground hover:text-foreground flex min-h-11 min-w-11 items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-colors focus:outline-none"
+              //
+              // v1.4.34 IW-G — keyboard users get a visible ring on
+              // focus-visible. The previous `focus:outline-none` killed
+              // the focus indicator without replacing it.
+              className="text-muted-foreground hover:text-foreground flex min-h-11 min-w-11 items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2"
             >
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">{user.username}</span>

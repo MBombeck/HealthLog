@@ -5,6 +5,7 @@ import { XIcon } from "lucide-react";
 import { Dialog as SheetPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/lib/i18n/context";
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;
@@ -54,6 +55,7 @@ function SheetContent({
   side?: "top" | "right" | "bottom" | "left";
   showCloseButton?: boolean;
 }) {
+  const { t } = useTranslations();
   return (
     <SheetPortal>
       <SheetOverlay />
@@ -86,7 +88,9 @@ function SheetContent({
             className="ring-offset-background focus-visible:border-ring focus-visible:ring-ring/50 text-muted-foreground hover:bg-accent hover:text-foreground absolute top-3 right-4 inline-flex min-h-9 min-w-9 items-center justify-center rounded-md transition-colors focus-visible:ring-[3px] focus-visible:outline-none disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
           >
             <XIcon />
-            <span className="sr-only">Close</span>
+            {/* v1.4.34 IW-G — read `common.close` so screen readers
+                hear the localised label instead of literal English. */}
+            <span className="sr-only">{t("common.close")}</span>
           </SheetPrimitive.Close>
         )}
       </SheetPrimitive.Content>

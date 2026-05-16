@@ -46,7 +46,10 @@ export function NotificationsSection() {
           inbox at `/notifications`. Both surfaces used to be named plain
           "Notifications", so the crumb spells out where the user is and
           offers a one-tap jump to the inbox. */}
-      <nav aria-label="Breadcrumb" className="text-muted-foreground text-xs">
+      <nav
+        aria-label={t("nav.breadcrumb")}
+        className="text-muted-foreground text-xs"
+      >
         <ol className="flex items-center gap-1">
           <li>{t("notifications.breadcrumbSettings")}</li>
           <li aria-hidden="true">
