@@ -127,6 +127,30 @@ describe("<HealthScoreCard>", () => {
     expect(html).toContain("-7 vs last week");
   });
 
+  it("threads aria-describedby from the delta text to the explainer body", () => {
+    // FB-I1 a11y — the delta `<span>` carries aria-describedby; the
+    // explainer trigger's aria-controls reads the same id. Both
+    // attributes share one `useId()` thread so SR can connect
+    // "−3 vs last week" to the three-sentence read.
+    const html = ssr(
+      <HealthScoreCard
+        score={64}
+        band="yellow"
+        components={baseComponents}
+        delta={-3}
+      />,
+    );
+    // The aria-describedby attribute lands on the delta span.
+    const deltaSpan = html.match(
+      /<span\s+aria-describedby="([^"]+)"[^>]*>[^<]*vs last week[^<]*<\/span>/,
+    );
+    expect(deltaSpan).not.toBeNull();
+    const threadedId = deltaSpan?.[1] ?? "";
+    expect(threadedId).not.toBe("");
+    // The same id sits on the trigger button's aria-controls.
+    expect(html).toContain(`aria-controls="${threadedId}"`);
+  });
+
   it("renders four component rows with their values", () => {
     const html = ssr(
       <HealthScoreCard

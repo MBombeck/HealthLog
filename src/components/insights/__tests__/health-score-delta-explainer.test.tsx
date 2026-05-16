@@ -70,6 +70,47 @@ describe("<HealthScoreDeltaExplainer>", () => {
     expect(trigger?.[0]).toContain("min-w-11");
   });
 
+  it("threads aria-expanded + aria-controls onto the trigger button", () => {
+    // SR users get a clear "this opens a disclosure" cue via
+    // aria-expanded; the aria-controls value is the same id the
+    // body paints so the SR can jump to the explanation after
+    // the user activates the trigger.
+    const html = ssr(<HealthScoreDeltaExplainer delta={-3} />);
+    const trigger = html.match(
+      /<button[^>]*data-slot="health-score-delta-explainer-trigger"[^>]*>/,
+    );
+    expect(trigger).not.toBeNull();
+    expect(trigger?.[0]).toContain("aria-expanded");
+    expect(trigger?.[0]).toContain("aria-controls");
+  });
+
+  it("uses the parent-supplied bodyId so aria-describedby can thread to it", () => {
+    // Parent owns the id and paints aria-describedby on the delta
+    // span; the explainer re-uses the same id for its
+    // aria-controls thread. The shared id is the seam SR uses to
+    // jump from the digit to the explanation.
+    const html = ssr(
+      <HealthScoreDeltaExplainer delta={-3} bodyId="parent-id-x" />,
+    );
+    const trigger = html.match(
+      /<button[^>]*data-slot="health-score-delta-explainer-trigger"[^>]*>/,
+    );
+    expect(trigger?.[0]).toContain('aria-controls="parent-id-x"');
+  });
+
+  it("does not wrap the trigger in a clickable <span> (single interactive element)", () => {
+    // The earlier mobile path wrapped the button in a
+    // `<span onClick onKeyDown>` which created two interactive
+    // elements in the a11y tree and intercepted clicks on the 2 px
+    // gap around the button. The button now owns the open toggle
+    // directly. Pinning the negative so a future refactor can't
+    // reintroduce the wrapper.
+    const html = ssr(<HealthScoreDeltaExplainer delta={-3} />);
+    expect(html).not.toMatch(
+      /<span[^>]*onclick/i,
+    );
+  });
+
   it("renders the trigger in German with the localised aria-label", () => {
     const html = ssr(<HealthScoreDeltaExplainer delta={2} />, "de");
     const trigger = html.match(

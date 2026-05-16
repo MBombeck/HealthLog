@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { HelpCircle } from "lucide-react";
 import {
   Popover,
@@ -45,25 +45,48 @@ interface HealthScoreDeltaExplainerProps {
    * align the glyph to the delta line's baseline.
    */
   className?: string;
+  /**
+   * Optional id the parent owns and threads to the explainer body via
+   * the popover/sheet markup. The same id sits on the parent's delta
+   * `<span>` as `aria-describedby` so screen readers can connect "−3
+   * vs last week" to the three-sentence read on demand.
+   */
+  bodyId?: string;
 }
 
 export function HealthScoreDeltaExplainer({
   delta,
   className,
+  bodyId,
 }: HealthScoreDeltaExplainerProps) {
   const { t } = useTranslations();
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
+  // Stable fallback id when the parent doesn't supply one. The body
+  // still paints the id so future consumers can thread the same
+  // describedby pattern without modifying the explainer.
+  const generatedId = useId();
+  const resolvedBodyId = bodyId ?? generatedId;
 
   const triggerLabel = t("insights.healthScore.deltaExplainer.trigger");
   const title = t("insights.healthScore.deltaExplainer.title");
   const body = t("insights.healthScore.deltaExplainer.body");
+
+  // Direct click handler on the button on both branches. Earlier
+  // mobile path wrapped the button in a `<span onClick onKeyDown>`
+  // which created two interactive elements in the a11y tree and
+  // intercepted clicks on the 2 px gap around the button. The button
+  // already handles Enter/Space natively; the only thing the wrapper
+  // owned was the open toggle, which moves onto the button itself.
+  const handleOpen = () => setOpen(true);
 
   const trigger = (
     <button
       type="button"
       data-slot="health-score-delta-explainer-trigger"
       aria-label={triggerLabel}
+      aria-expanded={open}
+      aria-controls={resolvedBodyId}
       className={cn(
         // Visible glyph stays 12 px so the chip reads at the delta
         // line's height without inflating the row. The button itself
@@ -78,6 +101,7 @@ export function HealthScoreDeltaExplainer({
         "transition-colors focus-visible:ring-2 focus-visible:outline-none",
         className,
       )}
+      onClick={handleOpen}
     >
       <HelpCircle className="h-3 w-3" aria-hidden="true" />
     </button>
@@ -86,17 +110,7 @@ export function HealthScoreDeltaExplainer({
   if (isMobile) {
     return (
       <>
-        <span
-          onClick={() => setOpen(true)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              setOpen(true);
-            }
-          }}
-        >
-          {trigger}
-        </span>
+        {trigger}
         <ResponsiveSheet
           open={open}
           onOpenChange={setOpen}
@@ -107,6 +121,7 @@ export function HealthScoreDeltaExplainer({
           )}
         >
           <p
+            id={bodyId}
             data-slot="health-score-delta-explainer-body"
             className="text-muted-foreground text-sm leading-relaxed"
           >
@@ -133,6 +148,7 @@ export function HealthScoreDeltaExplainer({
           {title}
         </p>
         <p
+          id={resolvedBodyId}
           data-slot="health-score-delta-explainer-body"
           className="text-muted-foreground text-[11px] leading-snug"
         >

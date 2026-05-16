@@ -184,6 +184,11 @@ export function HealthScoreCard({
   // the card is mounted twice on the same page (lg+ hero strip vs
   // smaller stacked previews in tests).
   const panelId = useId();
+  // FB-I1 a11y — id wired from the delta `<span>` (aria-describedby)
+  // to the explainer popover/sheet body. The thread lets screen
+  // readers connect "−3 vs last week" to the three-sentence read
+  // without relying on visual proximity alone.
+  const deltaExplainerId = useId();
 
   const componentEntries = (
     Object.keys(components) as Array<ComponentKey>
@@ -353,12 +358,15 @@ export function HealthScoreCard({
                   aria-hidden="true"
                 />
               )}
-              <span>
+              <span aria-describedby={deltaExplainerId}>
                 {t("insights.healthScore.deltaVsLastWeek", {
                   delta: delta > 0 ? `+${delta}` : `${delta}`,
                 })}
               </span>
-              <HealthScoreDeltaExplainer delta={delta} />
+              <HealthScoreDeltaExplainer
+                delta={delta}
+                bodyId={deltaExplainerId}
+              />
             </>
           )}
         </p>
