@@ -66,7 +66,7 @@ describe("<NotificationStatusCard />", () => {
   it("renders empty state when no channels exist", () => {
     setChannels([]);
     const html = render(<NotificationStatusCard />);
-    expect(html).toContain("Channel reliability");
+    expect(html).toContain("Delivery status");
     expect(html).toContain("No channels configured yet");
     expect(html).not.toContain('data-testid="notification-status-list"');
   });
@@ -189,7 +189,7 @@ describe("<NotificationStatusCard />", () => {
       },
     ]);
     const html = render(<NotificationStatusCard />, "de");
-    expect(html).toContain("Kanalzuverlässigkeit");
+    expect(html).toContain("Zustellstatus");
     expect(html).toContain("Automatisch deaktiviert");
     expect(html).toContain("Wieder aktivieren");
   });

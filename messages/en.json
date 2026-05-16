@@ -1510,7 +1510,7 @@
       },
       "notifications": {
         "title": "Notifications",
-        "description": "Per-channel delivery and the live reliability board for every configured channel."
+        "description": "Live overview of every configured channel."
       },
       "dashboard": {
         "title": "Dashboard",
@@ -1676,8 +1676,8 @@
     "singleDevice": "Single device",
     "multiDevice": "Multi-device",
     "backedUp": "backed up",
-    "telegram": "Telegram Notifications",
-    "telegramDescription": "Get reminders for missed medication intake via Telegram.",
+    "telegram": "Telegram",
+    "telegramDescription": "Medication reminders via bot.",
     "telegramSaved": "Telegram settings saved",
     "botToken": "Bot Token",
     "chatId": "Chat ID",
@@ -1890,7 +1890,7 @@
     "saved": "Saved",
     "savingError": "Error saving",
     "moodLogTitle": "moodLog",
-    "moodLogDescription": "Import mood data from moodLog",
+    "moodLogDescription": "Import mood entries.",
     "moodLogUrl": "moodLog URL",
     "moodLogUrlPlaceholder": "https://mood.example.com",
     "moodLogApiKey": "API Key",
@@ -1951,8 +1951,8 @@
       }
     },
     "notificationStatus": {
-      "title": "Channel reliability",
-      "description": "Live status of every notification channel — Auto-disabled means HealthLog stopped retrying after a permanent error.",
+      "title": "Delivery status",
+      "description": "Per-channel state; \"Auto-disabled\" stops retries after permanent errors.",
       "emptyDescription": "No channels configured yet. Add a channel below to start tracking its delivery health.",
       "stateActive": "Active",
       "stateAutoDisabled": "Auto-disabled",

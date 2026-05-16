@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, MessageCircle, Save, Send } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -106,28 +105,15 @@ export function TelegramCard({
 
   return (
     <div className="bg-card border-border rounded-xl border p-6">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <MessageCircle className="text-primary h-5 w-5" />
-          <h2 className="text-lg font-semibold">{t("settings.telegram")}</h2>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {/* F-16 (v1.4.19): show one unified status pill instead of
-              the previous "Configured" + "Enabled" pair, which had no
-              visual hierarchy and made it unclear how the two states
-              differed. The new pill collapses both bits of info:
-              green when active, neutral when configured-but-paused. */}
-          {settings?.hasBotToken && settings?.chatId && settings?.enabled && (
-            <Badge className="border-dracula-green/30 bg-dracula-green/15 text-dracula-green">
-              {t("common.active")}
-            </Badge>
-          )}
-          {settings?.hasBotToken && settings?.chatId && !settings?.enabled && (
-            <Badge variant="outline" className="text-xs">
-              {t("settings.configured")} · {t("common.disabled")}
-            </Badge>
-          )}
-        </div>
+      {/* v1.4.33 — drop the per-card status badge pair. The
+          `<NotificationStatusCard>` above already paints the live
+          channel pill for Telegram; surfacing the same fact a
+          second time inside this card produced overlapping status
+          surfaces (page header + card pill + dual Badge + the
+          enable Switch) for one bit of state. */}
+      <div className="flex items-center gap-2">
+        <MessageCircle className="text-primary h-5 w-5" />
+        <h2 className="text-lg font-semibold">{t("settings.telegram")}</h2>
       </div>
       <p className="text-muted-foreground mt-1 text-xs">
         {t("settings.telegramDescription")}

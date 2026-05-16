@@ -1506,7 +1506,7 @@
       },
       "notifications": {
         "title": "Benachrichtigungen",
-        "description": "Zustellung pro Kanal und die Live-Übersicht der Kanalzuverlässigkeit für jeden konfigurierten Kanal."
+        "description": "Live-Übersicht aller konfigurierten Kanäle."
       },
       "dashboard": {
         "title": "Dashboard",
@@ -1669,8 +1669,8 @@
     "singleDevice": "Einzelgerät",
     "multiDevice": "Multi-Gerät",
     "backedUp": "gesichert",
-    "telegram": "Telegram-Benachrichtigungen",
-    "telegramDescription": "Erhalte Erinnerungen bei vergessenen Medikamenten-Einnahmen per Telegram.",
+    "telegram": "Telegram",
+    "telegramDescription": "Medikamenten-Erinnerungen per Bot.",
     "telegramSaved": "Telegram-Einstellungen gespeichert",
     "botToken": "Bot-Token",
     "chatId": "Chat-ID",
@@ -1883,7 +1883,7 @@
     "saved": "Gespeichert",
     "savingError": "Fehler beim Speichern",
     "moodLogTitle": "moodLog",
-    "moodLogDescription": "Stimmungsdaten aus moodLog importieren",
+    "moodLogDescription": "Stimmungseinträge übernehmen.",
     "moodLogUrl": "moodLog URL",
     "moodLogUrlPlaceholder": "https://mood.example.com",
     "moodLogApiKey": "API-Key",
@@ -1944,8 +1944,8 @@
       }
     },
     "notificationStatus": {
-      "title": "Kanalzuverlässigkeit",
-      "description": "Live-Status jedes Benachrichtigungskanals — \"Automatisch deaktiviert\" bedeutet, HealthLog hat nach einem dauerhaften Fehler aufgehört, weiterzusenden.",
+      "title": "Zustellstatus",
+      "description": "Pro Kanal aktueller Status; \"Automatisch deaktiviert\" stoppt nach dauerhaften Fehlern.",
       "emptyDescription": "Noch keine Kanäle konfiguriert. Lege unten einen Kanal an, um die Zustellung zu überwachen.",
       "stateActive": "Aktiv",
       "stateAutoDisabled": "Automatisch deaktiviert",

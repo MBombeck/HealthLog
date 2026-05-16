@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Loader2, Send } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -101,23 +100,12 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
 
   return (
     <div className="bg-card border-border rounded-xl border p-6">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Bell className="text-primary h-5 w-5" />
-          <h2 className="text-lg font-semibold">{t("settings.ntfy")}</h2>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {settings?.serverUrl && settings?.topic && (
-            <Badge className="border-dracula-green/30 bg-dracula-green/15 text-dracula-green">
-              {t("settings.configured")}
-            </Badge>
-          )}
-          {settings?.enabled && (
-            <Badge variant="outline" className="text-xs">
-              {t("common.enabled")}
-            </Badge>
-          )}
-        </div>
+      {/* v1.4.33 — drop the per-card status badge pair; the channel
+          pill in `<NotificationStatusCard>` above already shows
+          live ntfy state. See `telegram-card.tsx` for the same fix. */}
+      <div className="flex items-center gap-2">
+        <Bell className="text-primary h-5 w-5" />
+        <h2 className="text-lg font-semibold">{t("settings.ntfy")}</h2>
       </div>
       <p className="text-muted-foreground mt-1 text-xs">
         {t("settings.ntfyDescription")}
