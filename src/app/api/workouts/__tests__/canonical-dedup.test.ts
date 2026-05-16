@@ -16,6 +16,8 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     workout: {
@@ -100,6 +102,11 @@ function makeRow(
 describe("GET /api/workouts — canonical dedup", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset every server cache between tests so a fixed userId doesn't
+    // carry cached state across cases (v1.4.34.2 — added when the
+    // `/api/workouts` GET handler started reading through
+    // `caches.workouts`).
+    __resetAllCachesForTests();
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     // Default: no per-user source-priority override → fall back to the
     // canonical APPLE_HEALTH ≻ WITHINGS ≻ MANUAL ≻ IMPORT ladder.

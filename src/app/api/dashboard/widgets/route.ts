@@ -22,6 +22,7 @@ import {
 import { Prisma } from "@/generated/prisma/client";
 import { z } from "zod/v4";
 import { invalidateUserDashboardWidgets } from "@/lib/cache/invalidate";
+import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
 import type { NextRequest } from "next/server";
 
 // Single source of truth — every widget id rendered by the Settings →
@@ -94,15 +95,26 @@ const layoutSchema = z.object({
     .optional(),
 });
 
+async function buildDashboardLayout(userId: string): Promise<DashboardLayout> {
+  const row = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { dashboardWidgetsJson: true },
+  });
+  return resolveDashboardLayout(row?.dashboardWidgetsJson);
+}
+
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
 
-  const row = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { dashboardWidgetsJson: true },
-  });
-
-  const layout = resolveDashboardLayout(row?.dashboardWidgetsJson);
+  // 5-minute TTL per blueprint §5; the layout changes only when the user
+  // hits the Settings → Dashboard save button, which invalidates this
+  // cache via `invalidateUserDashboardWidgets()`.
+  const layout = await cached(
+    caches.dashboardWidgets as ServerCache<DashboardLayout>,
+    user.id,
+    () => buildDashboardLayout(user.id),
+    annotate,
+  );
   return apiSuccess(layout);
 });
 

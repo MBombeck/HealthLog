@@ -25,6 +25,7 @@ import {
   serializeDashboardLayout,
   type DashboardLayout,
 } from "@/lib/dashboard-layout";
+import { invalidateUserDashboardWidgets } from "@/lib/cache/invalidate";
 import { Prisma } from "@/generated/prisma/client";
 import { z } from "zod/v4";
 import type { NextRequest } from "next/server";
@@ -85,6 +86,11 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     },
     { isolationLevel: "Serializable" },
   );
+
+  // The partial-update path mutates the same `User.dashboardWidgetsJson`
+  // blob the `/api/dashboard/widgets` GET reads from. Bust the cache so
+  // the next dashboard mount surfaces the new chartOverlayPrefs slot.
+  invalidateUserDashboardWidgets(user.id);
 
   annotate({
     action: { name: "dashboard.chartOverlayPrefs.update" },

@@ -16,40 +16,34 @@ import {
 import { serializeScheduleRecurrence } from "@/lib/medication-schedule";
 import { getUserTodayBounds } from "@/lib/timezone";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
+import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { NextRequest } from "next/server";
 
-export const GET = apiHandler(async () => {
-  const { user } = await requireAuth();
+type MedicationsListResult = Array<Record<string, unknown>>;
 
-  // Compute today's UTC range for event counting
-  const userTz = user.timezone || "Europe/Berlin";
+async function buildMedicationsList(
+  userId: string,
+  userTz: string,
+): Promise<MedicationsListResult> {
   const { start: todayStartUtc, end: todayEndUtc } = getUserTodayBounds(
     new Date(),
     userTz,
   );
 
-  // Run all three queries in parallel
   const [medications, latestIntakes, todayEvents] = await Promise.all([
     prisma.medication.findMany({
-      where: { userId: user.id },
+      where: { userId },
       include: { schedules: true },
       orderBy: { createdAt: "desc" },
     }),
     prisma.medicationIntakeEvent.groupBy({
       by: ["medicationId"],
-      where: {
-        userId: user.id,
-        skipped: false,
-        takenAt: { not: null },
-      },
+      where: { userId, skipped: false, takenAt: { not: null } },
       _max: { takenAt: true },
     }),
     prisma.medicationIntakeEvent.groupBy({
       by: ["medicationId"],
-      where: {
-        userId: user.id,
-        scheduledFor: { gte: todayStartUtc, lte: todayEndUtc },
-      },
+      where: { userId, scheduledFor: { gte: todayStartUtc, lte: todayEndUtc } },
       _count: { id: true },
     }),
   ]);
@@ -76,24 +70,36 @@ export const GET = apiHandler(async () => {
     getEvent()?.addWarning("Medication categories could not be loaded");
   }
 
+  return medications.map((m) => ({
+    ...m,
+    category: categoryMap[m.id] ?? "OTHER",
+    lastTakenAt: lastTakenAtByMedicationId[m.id] ?? null,
+    todayEventCount: todayEventCountByMedId[m.id] ?? 0,
+  }));
+}
+
+export const GET = apiHandler(async () => {
+  const { user } = await requireAuth();
+
+  const userTz = user.timezone || "Europe/Berlin";
+
+  // Cache the list shape on userId. The 60s TTL bounds the cross-midnight
+  // staleness window for `todayEventCount` (the only time-of-day-derived
+  // field in the response); writes via POST/PUT/DELETE flush through
+  // `invalidateUserMedications` before the next read lands.
+  const result = await cached(
+    caches.medications as ServerCache<MedicationsListResult>,
+    user.id,
+    () => buildMedicationsList(user.id, userTz),
+    annotate,
+  );
+
   annotate({
     action: { name: "medication.list" },
-    meta: { count: medications.length },
+    meta: { count: result.length },
   });
 
-  return apiSuccess(
-    medications.map((m) => ({
-      ...m,
-      // v1.4.25 W4d — `category` is the existing clinical taxonomy
-      // (BLOOD_PRESSURE / VITAMIN / ...) from the side-table; the
-      // Prisma model has its own `treatmentClass` (GENERIC | GLP1) that
-      // spreads through `...m` and unlocks the GLP-1 surfaces. Two
-      // orthogonal concepts, both exposed.
-      category: categoryMap[m.id] ?? "OTHER",
-      lastTakenAt: lastTakenAtByMedicationId[m.id] ?? null,
-      todayEventCount: todayEventCountByMedId[m.id] ?? 0,
-    })),
-  );
+  return apiSuccess(result);
 });
 
 export const POST = apiHandler(async (request: NextRequest) => {

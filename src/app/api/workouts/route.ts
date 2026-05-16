@@ -54,9 +54,118 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
 import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
+import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
+
+interface WorkoutsParams {
+  readonly limit: number;
+  readonly offset: number;
+  readonly since: string | null;
+  readonly until: string | null;
+  readonly sportType: string | null;
+}
+
+interface WorkoutsResult {
+  workouts: Array<{
+    id: string;
+    sportType: string | null;
+    startedAt: Date | null;
+    endedAt: Date | null;
+    durationSec: number | null;
+    distanceM: number | null;
+    activeEnergyKcal: number | null;
+    avgHr: number | null;
+    maxHr: number | null;
+    source: string;
+    externalId: string | null;
+  }>;
+  meta: {
+    total: number;
+    limit: number;
+    offset: number;
+    droppedDuplicates: number;
+  };
+}
+
+async function buildWorkoutsResponse(
+  userId: string,
+  params: WorkoutsParams,
+): Promise<WorkoutsResult> {
+  const { limit, offset, since, until, sportType } = params;
+
+  const where: Record<string, unknown> = { userId };
+  if (since || until) {
+    const range: Record<string, Date> = {};
+    if (since) {
+      const d = new Date(since);
+      if (!Number.isNaN(d.getTime())) range.gte = d;
+    }
+    if (until) {
+      const d = new Date(until);
+      if (!Number.isNaN(d.getTime())) range.lte = d;
+    }
+    if (Object.keys(range).length > 0) {
+      where.startedAt = range;
+    }
+  }
+  if (sportType) {
+    where.sportType = sportType;
+  }
+
+  const rows = await prisma.workout.findMany({
+    where,
+    orderBy: [{ startedAt: "desc" }, { id: "asc" }],
+    select: {
+      id: true,
+      source: true,
+      externalId: true,
+      sportType: true,
+      startedAt: true,
+      endedAt: true,
+      durationSec: true,
+      totalDistanceM: true,
+      totalEnergyKcal: true,
+      avgHeartRate: true,
+      maxHeartRate: true,
+      createdAt: true,
+    },
+  });
+
+  const userRow = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { sourcePriorityJson: true },
+  });
+  const canonical = pickCanonicalWorkoutRows(
+    rows,
+    userRow?.sourcePriorityJson ?? null,
+  );
+
+  const page = canonical.slice(offset, offset + limit).map((row) => ({
+    id: row.id,
+    sportType: row.sportType,
+    startedAt: row.startedAt,
+    endedAt: row.endedAt,
+    durationSec: row.durationSec,
+    distanceM: row.totalDistanceM,
+    activeEnergyKcal: row.totalEnergyKcal,
+    avgHr: row.avgHeartRate,
+    maxHr: row.maxHeartRate,
+    source: row.source,
+    externalId: row.externalId,
+  }));
+
+  return {
+    workouts: page,
+    meta: {
+      total: canonical.length,
+      limit,
+      offset,
+      droppedDuplicates: rows.length - canonical.length,
+    },
+  };
+}
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -79,80 +188,15 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const until = searchParams.get("until");
   const sportType = searchParams.get("sportType");
 
-  const where: Record<string, unknown> = { userId: user.id };
-  if (since || until) {
-    const range: Record<string, Date> = {};
-    if (since) {
-      const d = new Date(since);
-      if (!Number.isNaN(d.getTime())) range.gte = d;
-    }
-    if (until) {
-      const d = new Date(until);
-      if (!Number.isNaN(d.getTime())) range.lte = d;
-    }
-    if (Object.keys(range).length > 0) {
-      where.startedAt = range;
-    }
-  }
-  if (sportType) {
-    where.sportType = sportType;
-  }
+  const params: WorkoutsParams = { limit, offset, since, until, sportType };
+  const cacheKey = `${user.id}|${limit}|${offset}|${since ?? ""}|${until ?? ""}|${sportType ?? ""}`;
 
-  // Read the full filtered set, descending start. The picker requires
-  // deterministic input order; the `(startedAt, id)` secondary sort
-  // pins the tie-break for rows that share a millisecond stamp.
-  const rows = await prisma.workout.findMany({
-    where,
-    orderBy: [{ startedAt: "desc" }, { id: "asc" }],
-    select: {
-      id: true,
-      source: true,
-      externalId: true,
-      sportType: true,
-      startedAt: true,
-      endedAt: true,
-      durationSec: true,
-      totalDistanceM: true,
-      totalEnergyKcal: true,
-      avgHeartRate: true,
-      maxHeartRate: true,
-      createdAt: true,
-    },
-  });
-
-  // Pass the user's source-priority blob so the picker honours the
-  // per-user ladder. The picker preserves input order on the returned
-  // subset; descending-start input → descending-start output.
-  const userRow = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { sourcePriorityJson: true },
-  });
-  const canonical = pickCanonicalWorkoutRows(
-    rows,
-    userRow?.sourcePriorityJson ?? null,
+  const result = await cached(
+    caches.workouts as ServerCache<WorkoutsResult>,
+    cacheKey,
+    () => buildWorkoutsResponse(user.id, params),
+    annotate,
   );
 
-  const page = canonical.slice(offset, offset + limit).map((row) => ({
-    id: row.id,
-    sportType: row.sportType,
-    startedAt: row.startedAt,
-    endedAt: row.endedAt,
-    durationSec: row.durationSec,
-    distanceM: row.totalDistanceM,
-    activeEnergyKcal: row.totalEnergyKcal,
-    avgHr: row.avgHeartRate,
-    maxHr: row.maxHeartRate,
-    source: row.source,
-    externalId: row.externalId,
-  }));
-
-  return apiSuccess({
-    workouts: page,
-    meta: {
-      total: canonical.length,
-      limit,
-      offset,
-      droppedDuplicates: rows.length - canonical.length,
-    },
-  });
+  return apiSuccess(result);
 });

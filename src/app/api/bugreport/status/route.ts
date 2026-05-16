@@ -12,17 +12,16 @@ import { apiSuccess, apiError } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
+import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
 
-export const GET = apiHandler(async () => {
-  const { user } = await requireAuth();
+interface BugreportStatusCacheValue {
+  configured: boolean;
+  enabled: boolean;
+  hasToken: boolean;
+  hasRepo: boolean;
+}
 
-  // Light rate limit — the endpoint is cheap, but no reason to let a logged-in
-  // client hammer Postgres in a loop.
-  const rl = await checkRateLimit(`bugreport-status:${user.id}`, 30, 60 * 1000);
-  if (!rl.allowed) {
-    return apiError("Rate limit exceeded", 429);
-  }
-
+async function buildBugreportStatusValue(): Promise<BugreportStatusCacheValue> {
   const appSettings = await prisma.appSettings.findUnique({
     where: { id: "singleton" },
     select: {
@@ -42,10 +41,44 @@ export const GET = apiHandler(async () => {
   // Default ON when the column has never been written.
   const enabled = appSettings?.bugReportEnabled !== false;
 
+  return { configured, enabled, hasToken, hasRepo };
+}
+
+export const GET = apiHandler(async () => {
+  const { user } = await requireAuth();
+
+  // Light rate limit — the endpoint is cheap, but no reason to let a logged-in
+  // client hammer Postgres in a loop.
+  const rl = await checkRateLimit(`bugreport-status:${user.id}`, 30, 60 * 1000);
+  if (!rl.allowed) {
+    return apiError("Rate limit exceeded", 429);
+  }
+
+  // Cache the global app-settings shape on a singleton key (per blueprint §3).
+  // `isAdmin` lives outside the cache because it varies per request. The
+  // `invalidateAppSettings()` helper called from
+  // `PATCH /api/admin/app-settings` evicts this entry when bug-report
+  // configuration changes.
+  const status = await cached(
+    caches.bugreportStatus as ServerCache<BugreportStatusCacheValue>,
+    "singleton",
+    () => buildBugreportStatusValue(),
+    annotate,
+  );
+
   annotate({
     action: { name: "bugreport.status" },
-    meta: { configured, enabled, has_token: hasToken, has_repo: hasRepo },
+    meta: {
+      configured: status.configured,
+      enabled: status.enabled,
+      has_token: status.hasToken,
+      has_repo: status.hasRepo,
+    },
   });
 
-  return apiSuccess({ configured, enabled, isAdmin: user.role === "ADMIN" });
+  return apiSuccess({
+    configured: status.configured,
+    enabled: status.enabled,
+    isAdmin: user.role === "ADMIN",
+  });
 });
