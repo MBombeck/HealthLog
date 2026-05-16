@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+#
+# v1.4.31 — Pre-commit hook: OpenAPI spec drift check.
+#
+# v1.4.30 PR push failed CI on first attempt because the two new
+# MeasurementType enums (WALKING_STEADINESS, AUDIO_EXPOSURE_EVENT)
+# weren't reflected in `docs/api/openapi.yaml`. A separate
+# `chore(openapi): regenerate the public spec` commit was needed
+# before the checks turned green. This hook catches that drift
+# locally so a contributor sees the regeneration prompt at commit
+# time instead of after a CI round-trip.
+#
+# Behaviour:
+#   - Runs only when the staged diff touches a file that is likely
+#     to invalidate the OpenAPI spec (Zod schemas under
+#     src/lib/openapi/ or src/lib/validations/, or API route
+#     handlers under src/app/api/).
+#   - Reruns `pnpm openapi:generate` quietly and re-stages the
+#     regenerated spec if the file diverged.
+#   - Exits non-zero only if regeneration fails entirely.
+#
+# Install via `bash scripts/install-hooks.sh` (idempotent) or
+# `git config core.hooksPath .githooks` from the repo root.
+
+set -euo pipefail
+
+# Skip in non-interactive contexts (CI doesn't commit through this
+# path anyway — the security.yml workflow runs `pnpm openapi:check`
+# server-side). The check still fires under `git commit` from a
+# terminal.
+if [ -n "${CI:-}" ]; then
+  exit 0
+fi
+
+# Only run when relevant files are staged. The spec is generated
+# from Zod schemas + route registrations; nothing else can
+# legitimately move it.
+staged_files="$(git diff --cached --name-only --diff-filter=ACMRT)"
+if ! echo "$staged_files" | grep -qE '^(src/(lib/openapi|lib/validations|app/api)/|scripts/generate-openapi\.ts$)'; then
+  exit 0
+fi
+
+echo "[openapi pre-commit] Checking the spec against the staged schema changes…"
+
+# Quick path: run the comparison-only `check-openapi.ts`. If the
+# generated and committed forms match, exit fast.
+if pnpm --silent openapi:check >/dev/null 2>&1; then
+  exit 0
+fi
+
+echo "[openapi pre-commit] Drift detected — regenerating docs/api/openapi.yaml."
+if ! pnpm --silent openapi:generate; then
+  echo "::error::pnpm openapi:generate failed. Fix the underlying error before committing."
+  exit 1
+fi
+
+# Re-stage the regenerated spec so the commit-in-flight carries it.
+git add docs/api/openapi.yaml
+echo "[openapi pre-commit] Spec regenerated and re-staged. Continuing the commit."
+exit 0

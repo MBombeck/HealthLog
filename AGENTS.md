@@ -50,6 +50,11 @@ pnpm lint             # ESLint
 pnpm format           # Prettier format
 pnpm format:check     # Prettier check
 pnpm typecheck        # TypeScript strict check
+pnpm openapi:generate # Regenerate docs/api/openapi.yaml from Zod schemas
+pnpm openapi:check    # Verify the spec is in sync (CI gate)
+
+# Git hooks (one-time per clone)
+bash scripts/install-hooks.sh    # Activates .githooks/, including the OpenAPI pre-commit check
 
 # Tests
 pnpm test             # Run all tests (vitest)
