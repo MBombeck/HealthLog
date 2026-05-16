@@ -8,8 +8,15 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+// v1.4.33 — `mockEvent` lets the dedicated memoisation describe-block
+// below pin a stable WideEventBuilder stub so the per-request cache
+// keys on the same reference across multiple `getAssistantFlags()`
+// calls. The legacy describe-blocks leave `mockEvent` null so every
+// call gets a fresh `{}` and the memo never collapses — preserves the
+// pre-v1.4.33 assertion semantics.
+let mockEvent: object | null = null;
 vi.mock("@/lib/logging/context", () => ({
-  getEvent: () => ({ addWarning: vi.fn() }),
+  getEvent: () => mockEvent ?? { addWarning: vi.fn() },
 }));
 
 import { prisma } from "@/lib/db";
@@ -25,6 +32,7 @@ const FIND = prisma.appSettings.findUnique as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   FIND.mockReset();
+  mockEvent = null;
 });
 
 describe("resolveAssistantFlags", () => {
@@ -160,5 +168,53 @@ describe("requireAssistantSurface", () => {
     const err = new AssistantDisabledError("correlations");
     expect(err.surface).toBe("correlations");
     expect(err.errorCode).toBe("assistant.disabled.correlations");
+  });
+});
+
+describe("per-request memoisation", () => {
+  // v1.4.33 — When the same request opens the Coach drawer, five gated
+  // routes (`/api/insights/chat`, the rail list, each `<metric>-status`
+  // call, etc.) all funnel through `getAssistantFlags()` → `AppSettings`
+  // read. The memo on the active WideEventBuilder collapses those to
+  // one DB hit.
+  it("collapses repeated reads inside the same request to one DB call", async () => {
+    FIND.mockResolvedValue({
+      assistantEnabled: true,
+      assistantCoachEnabled: true,
+      assistantBriefingEnabled: true,
+      assistantInsightStatusEnabled: true,
+      assistantCorrelationsEnabled: true,
+      assistantHealthScoreExplainerEnabled: true,
+    });
+    // Pin a stable stub object so every `getEvent()` inside this test
+    // returns the same reference — the memo keys on identity, so a
+    // shared reference == shared cache.
+    mockEvent = { addWarning: vi.fn() };
+
+    const a = await getAssistantFlags();
+    const b = await getAssistantFlags();
+    const c = await getAssistantFlags();
+
+    expect(a).toBe(b);
+    expect(b).toBe(c);
+    expect(FIND).toHaveBeenCalledTimes(1);
+  });
+
+  it("issues independent reads when the request context changes", async () => {
+    FIND.mockResolvedValue({
+      assistantEnabled: true,
+      assistantCoachEnabled: true,
+      assistantBriefingEnabled: true,
+      assistantInsightStatusEnabled: true,
+      assistantCorrelationsEnabled: true,
+      assistantHealthScoreExplainerEnabled: true,
+    });
+
+    mockEvent = { addWarning: vi.fn(), id: "req-1" };
+    await getAssistantFlags();
+    mockEvent = { addWarning: vi.fn(), id: "req-2" };
+    await getAssistantFlags();
+
+    expect(FIND).toHaveBeenCalledTimes(2);
   });
 });

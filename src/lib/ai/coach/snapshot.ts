@@ -275,6 +275,67 @@ function resolveScope(scope?: CoachScope): {
 }
 
 /**
+ * v1.4.33 — 60-second in-memory cache for `buildCoachSnapshot()`. The
+ * snapshot reads only persisted data; a single chat conversation sends
+ * 2-4 turns within a minute and the snapshot would otherwise rebuild
+ * from the same rows each turn. Caching the result for 60s shaves the
+ * ~10 measurement reads + the GLP-1 / mood / intake side-fetches off
+ * every turn after the first, which `.planning/round-v1433-audit-perf.md`
+ * §3.3 estimates at 200-800 ms of server-side tail.
+ *
+ * Scope is part of the cache key so a switch from `last30days` to
+ * `last7days` (or a different `sources` set) computes fresh. The map
+ * is bounded at 64 entries — a multi-tenant deployment with a few
+ * active power users sits well inside that ceiling even if each cycles
+ * through several scopes per minute.
+ */
+const SNAPSHOT_TTL_MS = 60_000;
+const SNAPSHOT_LRU_MAX = 64;
+const snapshotCache = new Map<
+  string,
+  { expiresAt: number; result: CoachSnapshotResult }
+>();
+
+function snapshotCacheKey(userId: string, scope: CoachScope | undefined): string {
+  const { sources, window } = resolveScope(scope);
+  const sourceList = Array.from(sources).sort().join(",");
+  return `${userId}|${window}|${sourceList}`;
+}
+
+function readSnapshotCache(key: string): CoachSnapshotResult | null {
+  const entry = snapshotCache.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    snapshotCache.delete(key);
+    return null;
+  }
+  // Touch for LRU — re-insert moves to the end of the Map's iteration order.
+  snapshotCache.delete(key);
+  snapshotCache.set(key, entry);
+  return entry.result;
+}
+
+function writeSnapshotCache(key: string, result: CoachSnapshotResult): void {
+  if (snapshotCache.size >= SNAPSHOT_LRU_MAX) {
+    // Evict the oldest entry — JS Map iteration order is insertion order,
+    // so the first key is the least-recently inserted/touched.
+    const oldest = snapshotCache.keys().next().value;
+    if (oldest !== undefined) {
+      snapshotCache.delete(oldest);
+    }
+  }
+  snapshotCache.set(key, {
+    expiresAt: Date.now() + SNAPSHOT_TTL_MS,
+    result,
+  });
+}
+
+/** Clear the snapshot cache. Test-only escape hatch. */
+export function __resetCoachSnapshotCacheForTests(): void {
+  snapshotCache.clear();
+}
+
+/**
  * Build the Coach prompt snapshot for `userId`. Always uses
  * `includeRaw=false` because the Coach replies are conversational and
  * the user is asking the model — they should never depend on raw
@@ -293,8 +354,25 @@ function resolveScope(scope?: CoachScope): {
  * user's display timezone (read from `User.timezone`). Falls back to
  * Europe/Berlin when the column is missing so the legacy snapshot
  * stays byte-identical for the only path the v1.4.24 suite tested.
+ *
+ * v1.4.33 — wraps the previous `buildCoachSnapshotImpl` with a 60s
+ * in-memory LRU keyed on `(userId, window, sources)`. The Coach's
+ * chat handler calls this once per turn; within the same conversation
+ * the second+ turn lands a cache hit and skips the row-level reads.
  */
 export async function buildCoachSnapshot(
+  userId: string,
+  scope?: CoachScope,
+): Promise<CoachSnapshotResult> {
+  const key = snapshotCacheKey(userId, scope);
+  const cached = readSnapshotCache(key);
+  if (cached) return cached;
+  const result = await buildCoachSnapshotImpl(userId, scope);
+  writeSnapshotCache(key, result);
+  return result;
+}
+
+async function buildCoachSnapshotImpl(
   userId: string,
   scope?: CoachScope,
 ): Promise<CoachSnapshotResult> {

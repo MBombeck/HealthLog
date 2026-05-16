@@ -1,6 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-import { buildCoachSnapshot } from "../snapshot";
+import {
+  __resetCoachSnapshotCacheForTests,
+  buildCoachSnapshot,
+} from "../snapshot";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -47,6 +50,10 @@ function daysAgo(
 describe("buildCoachSnapshot", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // v1.4.33 — `buildCoachSnapshot` now memoises results in-process
+    // for 60 s. Reset the cache between tests so each test sees its
+    // own freshly-mocked Prisma fixture.
+    __resetCoachSnapshotCacheForTests();
     prismaMock.measurement.findMany.mockResolvedValue([]);
     prismaMock.moodEntry.findMany.mockResolvedValue([]);
     prismaMock.medicationIntakeEvent.findMany.mockResolvedValue([]);
@@ -181,5 +188,51 @@ describe("buildCoachSnapshot", () => {
     expect(out.provenance.metrics).toContain("mood");
     const parsed = JSON.parse(out.snapshotJson);
     expect(parsed.mood.timeline.recent.length).toBe(1);
+  });
+
+  // v1.4.33 — 60 s in-process snapshot cache. A chat conversation
+  // sends 2-4 turns within a minute and rebuilding the snapshot from
+  // ~10 measurement reads on every turn is wasteful. Cache hits skip
+  // every persistent read; cache misses on a different scope (window
+  // or sources) compute fresh.
+  it("memoises the result for repeated (userId, scope) within the 60 s window", async () => {
+    featuresMock.mockResolvedValue({
+      weight: { avg30: 82.1, coverage: { count: 5 } },
+    });
+    prismaMock.measurement.findMany.mockResolvedValue([
+      daysAgo(2, 82.0, "WEIGHT"),
+      daysAgo(5, 82.4, "WEIGHT"),
+    ]);
+
+    const first = await buildCoachSnapshot("user-1", { sources: ["weight"] });
+    const second = await buildCoachSnapshot("user-1", { sources: ["weight"] });
+
+    // Same JSON shape on both calls.
+    expect(second.snapshotJson).toBe(first.snapshotJson);
+    // Prisma reads ran once for the first call; the second call short-
+    // circuits on the cache so the count is still 1.
+    expect(prismaMock.measurement.findMany).toHaveBeenCalledTimes(1);
+    expect(prismaMock.user.findUnique).toHaveBeenCalledTimes(1);
+  });
+
+  it("recomputes when the scope window or sources change", async () => {
+    featuresMock.mockResolvedValue({
+      weight: { avg30: 82.1, coverage: { count: 5 } },
+    });
+    prismaMock.measurement.findMany.mockResolvedValue([
+      daysAgo(3, 82.0, "WEIGHT"),
+    ]);
+
+    await buildCoachSnapshot("user-1", {
+      window: "last7days",
+      sources: ["weight"],
+    });
+    await buildCoachSnapshot("user-1", {
+      window: "last30days",
+      sources: ["weight"],
+    });
+
+    // Two distinct window keys → two cache slots → two Prisma reads.
+    expect(prismaMock.measurement.findMany).toHaveBeenCalledTimes(2);
   });
 });

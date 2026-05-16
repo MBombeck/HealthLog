@@ -1,6 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-import { buildCoachSnapshot } from "../snapshot";
+import {
+  __resetCoachSnapshotCacheForTests,
+  buildCoachSnapshot,
+} from "../snapshot";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -50,6 +53,9 @@ function daysAgo(
 describe("buildCoachSnapshot — Apple Health additive metrics (v1.4.23)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // v1.4.33 — `buildCoachSnapshot` now memoises results in-process
+    // for 60 s; reset between tests so each fixture is read fresh.
+    __resetCoachSnapshotCacheForTests();
     prismaMock.moodEntry.findMany.mockResolvedValue([]);
     prismaMock.medicationIntakeEvent.findMany.mockResolvedValue([]);
     // v1.4.23 H4 — snapshot now reads `User.coachPrefsJson`. Default
