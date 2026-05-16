@@ -229,13 +229,22 @@ export function resolveDashboardLayout(raw: unknown): DashboardLayout {
     return DEFAULT_DASHBOARD_LAYOUT;
   }
 
+  // Drop widget ids the current build does not know about. v1.4.28
+  // retired the `glp1` tile; any user who saved a layout before then
+  // still has the orphan id in `dashboardWidgetsJson`, and the PUT
+  // route's Zod enum rejects the entire blob on the next save round-
+  // trip. Filtering on read keeps the GET shape current-build-safe
+  // and lets the Settings UI re-PUT a clean array.
+  const knownIds = new Set<string>(DASHBOARD_WIDGET_IDS);
+  const filtered = candidate.widgets.filter((w) => knownIds.has(w.id));
+
   // Merge with defaults so new widgets introduced in later versions show up
   // automatically (invisible by default, users opt-in).
-  const savedIds = new Set(candidate.widgets.map((w) => w.id));
+  const savedIds = new Set(filtered.map((w) => w.id));
   const missing = DEFAULT_DASHBOARD_LAYOUT.widgets.filter(
     (w) => !savedIds.has(w.id),
   );
-  const maxOrder = Math.max(0, ...candidate.widgets.map((w) => w.order));
+  const maxOrder = Math.max(0, ...filtered.map((w) => w.order));
   const appended = missing.map((w, i) => ({
     ...w,
     visible: false, // default-invisible on auto-upgrade
@@ -247,7 +256,7 @@ export function resolveDashboardLayout(raw: unknown): DashboardLayout {
   // never had the field (the v1.4.15 schema upgrade). Users who saved
   // a layout before this release see no behavioural change until they
   // explicitly toggle the new strip switch.
-  const normalized = candidate.widgets.map((w) => ({
+  const normalized = filtered.map((w) => ({
     ...w,
     tileVisible: typeof w.tileVisible === "boolean" ? w.tileVisible : w.visible,
   }));

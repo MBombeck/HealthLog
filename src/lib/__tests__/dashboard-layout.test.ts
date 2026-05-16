@@ -162,6 +162,28 @@ describe("DEFAULT_DASHBOARD_LAYOUT contract", () => {
       DEFAULT_DASHBOARD_LAYOUT.widgets.map((w) => w.id).sort(),
     );
   });
+
+  it("drops widget ids the current build no longer knows about", () => {
+    // v1.4.28 retired the `glp1` tile. Users who saved a layout before
+    // then still have the orphan id in `dashboardWidgetsJson`; the PUT
+    // route's Zod enum would reject the entire blob on the next save
+    // round-trip, surfacing the "Speichern fehlgeschlagen" toast.
+    // The resolver filters unknown ids on read so the GET shape is
+    // current-build-safe and the next save round-trips cleanly.
+    const stored = {
+      version: 1,
+      widgets: [
+        { id: "weight", visible: true, tileVisible: true, order: 0 },
+        { id: "glp1", visible: true, tileVisible: true, order: 1 },
+        { id: "bp", visible: true, tileVisible: true, order: 2 },
+      ],
+    };
+    const resolved = resolveDashboardLayout(stored);
+    const ids = resolved.widgets.map((w) => w.id);
+    expect(ids).not.toContain("glp1");
+    expect(ids).toContain("weight");
+    expect(ids).toContain("bp");
+  });
 });
 
 /**
