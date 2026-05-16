@@ -318,7 +318,7 @@
     "notesPlaceholder": "e.g. after a meal",
     "formReset": "Reset form",
     "saveError": "Error saving",
-    "duplicateTimestamp": "A measurement of this type already exists at the selected timestamp.",
+    "duplicateTimestamp": "Pomiar tego typu już istnieje dla wybranej daty.",
     "deleteError": "Error deleting",
     "invalidValue": "Please enter a valid value.",
     "invalidTimestamp": "Please select a valid time.",
@@ -1115,7 +1115,7 @@
     },
     "sleep": {
       "title": "Sen",
-      "description": "Stage breakdown and nightly duration, drawn from Apple Health.",
+      "description": "Podział na fazy i nocna długość snu, dane z Apple Health.",
       "headlineTitle": "Average per night",
       "headlineCaption": "Averaged across {count} nights — {suffix}",
       "headlineCaptionSuffix": "na noc",

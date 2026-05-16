@@ -318,7 +318,7 @@
     "notesPlaceholder": "e.g. after a meal",
     "formReset": "Reset form",
     "saveError": "Error saving",
-    "duplicateTimestamp": "A measurement of this type already exists at the selected timestamp.",
+    "duplicateTimestamp": "Une mesure de ce type existe déjà à cet horodatage.",
     "deleteError": "Error deleting",
     "invalidValue": "Please enter a valid value.",
     "invalidTimestamp": "Please select a valid time.",
@@ -1115,7 +1115,7 @@
     },
     "sleep": {
       "title": "Sommeil",
-      "description": "Stage breakdown and nightly duration, drawn from Apple Health.",
+      "description": "Répartition des phases et durée nocturne, issues d’Apple Health.",
       "headlineTitle": "Average per night",
       "headlineCaption": "Averaged across {count} nights — {suffix}",
       "headlineCaptionSuffix": "par nuit",
