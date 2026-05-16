@@ -91,7 +91,13 @@ export function ScatterCorrelationChart<T extends Record<string, number>>({
   // approximates the previous 250 px shape.
   return (
     <div
-      className="touch-pan-y aspect-square sm:aspect-[3/2] sm:h-auto"
+      // v1.4.34.1 — reserve a minimum height matching the dynamic-import
+      // skeleton so ResponsiveContainer always measures a non-zero parent
+      // at first paint. The `aspect-ratio` rules still drive the final
+      // shape once layout settles; this floor only prevents the brief
+      // zero-height window that fires Recharts' width(-1)/height(-1)
+      // console warning when the chart swaps in after the skeleton.
+      className="touch-pan-y aspect-square min-h-[180px] sm:aspect-[3/2] sm:h-auto"
       style={{ height: undefined }}
       data-explicit-height={height}
     >
