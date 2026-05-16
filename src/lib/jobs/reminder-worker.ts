@@ -45,6 +45,13 @@ import {
   MEDICATION_INVENTORY_EXPIRE_CRON,
   type MedicationInventoryExpirePayload,
 } from "@/lib/jobs/medication-inventory-expire";
+import {
+  APPLE_HEALTH_IMPORT_QUEUE,
+  APPLE_HEALTH_IMPORT_CONCURRENCY,
+  handleAppleHealthImport,
+  reconcileOrphanImportJobs,
+  type AppleHealthImportPayload,
+} from "@/lib/jobs/apple-health-import-worker";
 import { expireStaleInUseItems } from "@/lib/medications/inventory/service";
 import { rotateLegacyMoodLogSecrets } from "@/lib/moodlog-secret";
 import { deleteMessage } from "@/lib/telegram";
@@ -1451,10 +1458,25 @@ export async function startReminderWorker() {
     FEEDBACK_AGGREGATOR_QUEUE,
     PR_DETECTION_QUEUE,
     MEDICATION_INVENTORY_EXPIRE_QUEUE,
+    APPLE_HEALTH_IMPORT_QUEUE,
   ];
 
   for (const q of allQueues) {
     await boss.createQueue(q);
+  }
+
+  // v1.4.34 — reconcile any `ImportJob` rows that were mid-parse when
+  // the worker last shut down. Flips orphaned rows to `failed` so the
+  // operator can re-upload without leaving the polling endpoint
+  // stuck on `parsing` / `upserting`.
+  try {
+    await reconcileOrphanImportJobs();
+  } catch (err) {
+    workerLog(
+      "error",
+      "Failed to reconcile orphan ImportJob rows",
+      err,
+    );
   }
 
   // Schedule recurring cron jobs
@@ -1599,6 +1621,21 @@ export async function startReminderWorker() {
     MEDICATION_INVENTORY_EXPIRE_QUEUE,
     { localConcurrency: 1 },
     handleMedicationInventoryExpire,
+  );
+  // v1.4.34 — Apple Health export.zip ingest worker. localConcurrency
+  // caps at 1 because the parse loop is CPU-bound and a concurrent
+  // second 1 GB import would race the first for RSS.
+  await boss.work<AppleHealthImportPayload>(
+    APPLE_HEALTH_IMPORT_QUEUE,
+    { localConcurrency: APPLE_HEALTH_IMPORT_CONCURRENCY },
+    async (jobs) => {
+      // pg-boss v12 work callbacks always receive an array (batched
+      // worker mode); for our concurrency-1 + batchSize-1 case we just
+      // process each job sequentially.
+      for (const job of jobs) {
+        await handleAppleHealthImport(job);
+      }
+    },
   );
 
   return boss;
