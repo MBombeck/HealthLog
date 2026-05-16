@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { PasswordInput } from "@/components/ui/password-input";
+import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
 
 interface NtfySettings {
@@ -100,16 +101,11 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
 
   return (
     <div className="bg-card border-border rounded-xl border p-6">
-      {/* v1.4.33 — drop the per-card status badge pair; the channel
-          pill in `<NotificationStatusCard>` above already shows
-          live ntfy state. See `telegram-card.tsx` for the same fix. */}
-      <div className="flex items-center gap-2">
-        <Bell className="text-primary h-5 w-5" />
-        <h2 className="text-lg font-semibold">{t("settings.ntfy")}</h2>
-      </div>
-      <p className="text-muted-foreground mt-1 text-xs">
-        {t("settings.ntfyDescription")}
-      </p>
+      <SettingsCardHeader
+        icon={Bell}
+        title={t("settings.ntfy")}
+        description={t("settings.ntfyDescription")}
+      />
 
       <div className="mt-4 space-y-4">
         <div className="flex items-center justify-between">

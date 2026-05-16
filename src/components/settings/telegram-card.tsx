@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { PasswordInput } from "@/components/ui/password-input";
+import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
 
 interface TelegramSettings {
@@ -105,19 +106,11 @@ export function TelegramCard({
 
   return (
     <div className="bg-card border-border rounded-xl border p-6">
-      {/* v1.4.33 — drop the per-card status badge pair. The
-          `<NotificationStatusCard>` above already paints the live
-          channel pill for Telegram; surfacing the same fact a
-          second time inside this card produced overlapping status
-          surfaces (page header + card pill + dual Badge + the
-          enable Switch) for one bit of state. */}
-      <div className="flex items-center gap-2">
-        <MessageCircle className="text-primary h-5 w-5" />
-        <h2 className="text-lg font-semibold">{t("settings.telegram")}</h2>
-      </div>
-      <p className="text-muted-foreground mt-1 text-xs">
-        {t("settings.telegramDescription")}
-      </p>
+      <SettingsCardHeader
+        icon={MessageCircle}
+        title={t("settings.telegram")}
+        description={t("settings.telegramDescription")}
+      />
 
       <div className="mt-4 space-y-4">
         <form onSubmit={handleSave} className="space-y-4">

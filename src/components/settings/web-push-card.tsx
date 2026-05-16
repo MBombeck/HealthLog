@@ -5,6 +5,7 @@ import { BellRing, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { TestConnectionButton } from "@/components/settings/test-connection-button";
+import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
 
 /** Convert a URL-safe base64 string to an ArrayBuffer (for VAPID key). */
@@ -156,17 +157,11 @@ export function WebPushCard() {
 
   return (
     <div className="bg-card border-border rounded-xl border p-6">
-      {/* v1.4.33 — drop the per-card status badge pair; the channel
-          pill in `<NotificationStatusCard>` above already shows
-          live Web Push state. See `telegram-card.tsx` for the same
-          fix. */}
-      <div className="flex items-center gap-2">
-        <BellRing className="text-primary h-5 w-5" />
-        <h2 className="text-lg font-semibold">{t("settings.webPush")}</h2>
-      </div>
-      <p className="text-muted-foreground mt-1 text-xs">
-        {t("settings.webPushDescription")}
-      </p>
+      <SettingsCardHeader
+        icon={BellRing}
+        title={t("settings.webPush")}
+        description={t("settings.webPushDescription")}
+      />
 
       <div className="mt-4 space-y-3">
         {loading ? (
