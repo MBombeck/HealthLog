@@ -13,8 +13,7 @@ import { z } from "zod/v4";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess, safeJson } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
-import { prisma } from "@/lib/db";
-import { Prisma } from "@/generated/prisma/client";
+import { prisma, toJson } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 
 export const directionEnum = z.enum([
@@ -174,7 +173,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      healthKitConfigJson: updatedConfig as unknown as Prisma.InputJsonValue,
+      healthKitConfigJson: toJson(updatedConfig),
     },
   });
 

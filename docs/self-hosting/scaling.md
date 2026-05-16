@@ -20,8 +20,7 @@ deployed in three modes:
    `app` service and uncomment the `app-worker` service block at the
    bottom (it ships with `HEALTHLOG_PROCESS_TYPE=worker` baked in).
 2. Make sure both containers see the same `DATABASE_URL`,
-   `ENCRYPTION_KEY` (or `ENCRYPTION_KEYS`), `API_TOKEN_HMAC_KEY`,
-   and `SESSION_SECRET`.
+   `ENCRYPTION_KEY` (or `ENCRYPTION_KEYS`), and `API_TOKEN_HMAC_KEY`.
 3. `docker compose up -d --build`.
 
 Both containers connect to the same Postgres. pg-boss claims jobs

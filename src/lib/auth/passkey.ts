@@ -3,6 +3,8 @@ import {
   verifyRegistrationResponse,
   generateAuthenticationOptions,
   verifyAuthenticationResponse,
+  type AuthenticationResponseJSON,
+  type RegistrationResponseJSON,
   type VerifiedRegistrationResponse,
   type VerifiedAuthenticationResponse,
 } from "@simplewebauthn/server";
@@ -100,8 +102,7 @@ export async function createRegistrationOptions(
 
 export async function verifyRegistration(
   challengeId: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  response: any,
+  response: unknown,
 ): Promise<VerifiedRegistrationResponse> {
   const challenge = await prisma.authChallenge.findUnique({
     where: { id: challengeId },
@@ -112,8 +113,12 @@ export async function verifyRegistration(
   }
 
   try {
+    // The caller passes a parsed JSON body without prior shape-validation —
+    // the SimpleWebAuthn verifier owns full schema validation and throws
+    // on any mismatch. We narrow at the boundary so the rest of the file
+    // sees the documented `RegistrationResponseJSON` shape.
     const verification = await verifyRegistrationResponse({
-      response,
+      response: response as RegistrationResponseJSON,
       expectedChallenge: challenge.challenge,
       expectedOrigin: getExpectedOrigin(),
       expectedRPID: getRpId(),
@@ -166,8 +171,7 @@ export async function createAuthenticationOptions(userId?: string) {
 
 export async function verifyAuthentication(
   challengeId: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  response: any,
+  response: unknown,
 ): Promise<{
   verification: VerifiedAuthenticationResponse;
   passkey: { userId: string };
@@ -180,8 +184,12 @@ export async function verifyAuthentication(
     throw new Error("Challenge expired or not found");
   }
 
+  // The caller passes a parsed JSON body — narrow at the boundary; the
+  // SimpleWebAuthn verifier below performs full shape validation.
+  const typedResponse = response as AuthenticationResponseJSON;
+
   // Find the passkey by credential ID
-  const credentialId = response.id;
+  const credentialId = typedResponse.id;
   const passkey = await prisma.passkey.findUnique({
     where: { credentialId },
   });
@@ -192,7 +200,7 @@ export async function verifyAuthentication(
 
   try {
     const verification = await verifyAuthenticationResponse({
-      response,
+      response: typedResponse,
       expectedChallenge: challenge.challenge,
       expectedOrigin: getExpectedOrigin(),
       expectedRPID: getRpId(),

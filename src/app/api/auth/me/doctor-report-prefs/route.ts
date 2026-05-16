@@ -20,7 +20,7 @@ import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
 import { apiSuccess, getClientIp } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
-import { prisma } from "@/lib/db";
+import { prisma, toJson } from "@/lib/db";
 import {
   doctorReportPrefsSchema,
   parseDoctorReportPrefs,
@@ -74,11 +74,8 @@ export const PUT = apiHandler(async (req: Request) => {
 
   await prisma.user.update({
     where: { id: user.id },
-    // `merged` is a typed object; Prisma's `InputJsonValue` insists on an
-    // index signature so cast through `unknown` rather than widen the
-    // typed return surface. Shape is identical to the validated input.
     data: {
-      doctorReportPrefsJson: merged as unknown as Record<string, boolean>,
+      doctorReportPrefsJson: toJson(merged),
     },
   });
 

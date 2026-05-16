@@ -25,7 +25,8 @@
  * Locks per `.planning/research/v1434-r-1-xml-import.md` §5.1.
  */
 import { unlinkSync } from "node:fs";
-import { PrismaClient, Prisma } from "@/generated/prisma/client";
+import { PrismaClient } from "@/generated/prisma/client";
+import { toJson } from "@/lib/db";
 import { PrismaPg } from "@prisma/adapter-pg";
 import type { Job } from "pg-boss";
 
@@ -82,7 +83,7 @@ async function writeProgress(
     where: { id: importJobId },
     data: {
       status,
-      progress: progress as unknown as Prisma.InputJsonValue,
+      progress: toJson(progress),
     },
   });
 }
@@ -173,7 +174,7 @@ export async function handleAppleHealthImport(
           where: { id: importJobId },
           data: {
             status: snapshot.currentPhase,
-            progress: snapshot as unknown as Prisma.InputJsonValue,
+            progress: toJson(snapshot),
           },
         });
       },
@@ -185,14 +186,14 @@ export async function handleAppleHealthImport(
       data: {
         status: "done",
         completedAt: new Date(),
-        progress: {
+        progress: toJson({
           currentPhase: "upserting",
           recordsRead: result.totals.recordsRead,
           rowsUpserted: result.totals.rowsUpserted,
           percent: 100,
           elapsedMs: result.totals.durationMs,
-        } as unknown as Prisma.InputJsonValue,
-        result: result as unknown as Prisma.InputJsonValue,
+        }),
+        result: toJson(result),
       },
     });
 

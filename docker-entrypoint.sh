@@ -9,7 +9,7 @@ set -e
 # Validating here guarantees a clear, deploy-platform-agnostic
 # failure message before we touch the database.
 missing=""
-for var in DATABASE_URL SESSION_SECRET ENCRYPTION_KEY API_TOKEN_HMAC_KEY; do
+for var in DATABASE_URL ENCRYPTION_KEY API_TOKEN_HMAC_KEY; do
   eval "value=\$$var"
   if [ -z "$value" ]; then
     missing="$missing $var"

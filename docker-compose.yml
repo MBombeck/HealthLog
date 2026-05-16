@@ -20,7 +20,6 @@ services:
     environment:
       DATABASE_URL: "postgresql://healthlog:${POSTGRES_PASSWORD}@db:5432/healthlog?schema=public"
       NODE_ENV: production
-      SESSION_SECRET: "${SESSION_SECRET}"
       ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
       ENCRYPTION_KEYS: "${ENCRYPTION_KEYS:-}"
       ENCRYPTION_ACTIVE_KEY_ID: "${ENCRYPTION_ACTIVE_KEY_ID:-}"
@@ -65,7 +64,6 @@ services:
   #   environment:
   #     DATABASE_URL: "postgresql://healthlog:${POSTGRES_PASSWORD}@db:5432/healthlog?schema=public"
   #     NODE_ENV: production
-  #     SESSION_SECRET: "${SESSION_SECRET}"
   #     ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
   #     ENCRYPTION_KEYS: "${ENCRYPTION_KEYS:-}"
   #     ENCRYPTION_ACTIVE_KEY_ID: "${ENCRYPTION_ACTIVE_KEY_ID:-}"

@@ -1,0 +1,39 @@
+name: No TODO markers
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  # Product code is currently zero TODO / FIXME / XXX / HACK markers and
+  # the convention is to keep it that way — open a real follow-up issue
+  # instead of leaving a marker in the source. This gate fails fast if a
+  # future contributor reintroduces the pattern.
+  grep:
+    name: Forbidden marker grep
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Scan src/ for TODO/FIXME/XXX/HACK markers
+        run: |
+          # Tests are exempt — they can legitimately reference an outstanding
+          # ticket via a TODO; `src/generated/` is third-party output from
+          # `prisma generate` and is regenerated on every db:generate.
+          if grep -rEn "\b(TODO|FIXME|XXX|HACK)\b" src/ \
+              --include='*.ts' \
+              --include='*.tsx' \
+              --exclude-dir='__tests__' \
+              --exclude-dir='generated' \
+              --exclude='*.test.ts' \
+              --exclude='*.test.tsx'; then
+            echo "::error::TODO/FIXME/XXX/HACK markers detected in product code — open a follow-up issue instead."
+            exit 1
+          fi
+          echo "::notice::No forbidden markers in product code."

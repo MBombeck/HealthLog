@@ -8,7 +8,7 @@
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
-import { prisma } from "@/lib/db";
+import { prisma, toJson } from "@/lib/db";
 import {
   resolveDashboardLayout,
   serializeDashboardLayout,
@@ -153,7 +153,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      dashboardWidgetsJson: normalized as unknown as Prisma.InputJsonValue,
+      dashboardWidgetsJson: toJson(normalized),
     },
   });
 

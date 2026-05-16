@@ -18,7 +18,7 @@
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
-import { prisma } from "@/lib/db";
+import { prisma, toJson } from "@/lib/db";
 import {
   CHART_OVERLAY_KEYS,
   resolveDashboardLayout,
@@ -26,7 +26,6 @@ import {
   type DashboardLayout,
 } from "@/lib/dashboard-layout";
 import { invalidateUserDashboardWidgets } from "@/lib/cache/invalidate";
-import { Prisma } from "@/generated/prisma/client";
 import { z } from "zod/v4";
 import type { NextRequest } from "next/server";
 
@@ -80,7 +79,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
       await tx.user.update({
         where: { id: user.id },
         data: {
-          dashboardWidgetsJson: normalized as unknown as Prisma.InputJsonValue,
+          dashboardWidgetsJson: toJson(normalized),
         },
       });
     },

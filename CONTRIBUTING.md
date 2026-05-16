@@ -22,16 +22,14 @@ Edit `.env` and configure at minimum:
 ```
 POSTGRES_PASSWORD=<base64, 24 bytes>
 DATABASE_URL="postgresql://healthlog:${POSTGRES_PASSWORD}@db:5432/healthlog"
-SESSION_SECRET=<64-char hex>
 ENCRYPTION_KEY=<64-char hex>
 API_TOKEN_HMAC_KEY=<64-char hex>
 ```
 
-Generate the four secrets:
+Generate the three secrets:
 
 ```bash
 echo "POSTGRES_PASSWORD=$(openssl rand -base64 24)" >> .env
-echo "SESSION_SECRET=$(openssl rand -hex 32)"       >> .env
 echo "ENCRYPTION_KEY=$(openssl rand -hex 32)"       >> .env
 echo "API_TOKEN_HMAC_KEY=$(openssl rand -hex 32)"   >> .env
 ```

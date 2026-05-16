@@ -1,3 +1,21 @@
+/**
+ * Schema-bootstrap path for fresh self-host containers.
+ *
+ * Production deploys run `prisma migrate deploy` from the entrypoint,
+ * so the canonical migration history lives in `prisma/migrations/`.
+ * That history is the source of truth — any new column or table must
+ * land there first.
+ *
+ * This file is the belt-and-suspenders companion: it issues
+ * idempotent `ALTER TABLE … ADD COLUMN IF NOT EXISTS` statements on
+ * boot so a container that came up against a database which somehow
+ * missed a migration (interrupted deploy, restored from an older
+ * dump, etc.) self-heals before the app starts taking traffic.
+ *
+ * Treat every statement here as a mirror of an existing migration —
+ * never invent schema in this file. If a column appears here without
+ * a corresponding entry under `prisma/migrations/`, that is a bug.
+ */
 import { prisma } from "@/lib/db";
 
 let dbCompatibilityPromise: Promise<void> | null = null;
