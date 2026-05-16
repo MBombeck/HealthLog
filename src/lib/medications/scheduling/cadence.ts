@@ -70,8 +70,8 @@ const WEEK_MS = 7 * DAY_MS;
  * Match window for pairing an actual intake event to an expected
  * dose: +/- 12 hours around the slot's center.
  *
- * Rationale: the existing classifyIntakeTiming uses a 1-hour grace
- * before the window + ~2-hour late tolerance after. For cadence
+ * Rationale: the existing classifyIntakeTiming uses a 3-hour grace
+ * around the window + a configurable late tolerance after. For cadence
  * visualisation we want a wider matching radius so users who logged a
  * weekly shot a day late still see it paired with that week's slot
  * (and the slot reads `taken`, not `missed` followed by an "extra").

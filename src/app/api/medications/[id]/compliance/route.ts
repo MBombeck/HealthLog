@@ -80,6 +80,7 @@ export const GET = apiHandler(
       let onTime = 0;
       let late = 0;
       let veryLate = 0;
+      let early = 0;
 
       for (const evt of takenEvents) {
         if (medication.schedules.length === 0) {
@@ -111,7 +112,13 @@ export const GET = apiHandler(
           dayStart, // the scheduled date
         );
 
+        // v1.4.34 IW-C — `early` is the new compliant bucket; it counts
+        // alongside `onTime` for the heatmap so a proactive logger reads
+        // green. The classifier still emits a distinct `"early"` value
+        // for downstream consumers that want to differentiate; the
+        // separate counter is surfaced on the daily entry below.
         if (timing === "on_time") onTime++;
+        else if (timing === "early") early++;
         else if (timing === "late") late++;
         else veryLate++;
       }
@@ -120,9 +127,10 @@ export const GET = apiHandler(
         expected: schedulesPerDay,
         taken: takenEvents.length,
         skipped: dayEvents.filter((e) => e.skipped).length,
-        onTime,
+        onTime: onTime + early,
         late,
         veryLate,
+        early,
       };
     }
 

@@ -278,7 +278,9 @@ function getOnTimePerfectDaySeries(
         scheduledDate,
       );
 
-      if (timing !== "on_time") {
+      // v1.4.34 IW-C — `early` is also a compliant bucket (dose taken
+      // within the 3h pre-window grace), so it preserves a perfect day.
+      if (timing !== "on_time" && timing !== "early") {
         isPerfectDay = false;
         break;
       }
