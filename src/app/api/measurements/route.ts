@@ -63,6 +63,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // applied AFTER, so a 1-year `aggregate=daily` window walks every
   // row in the window and returns up to 365 buckets per type instead
   // of truncating to the first N raw rows.
+  //
+  // SD-H1 — "All time" range semantics. When the chart's "All" tab
+  // is active, the client passes `from` = the user's earliest
+  // measurement (or a sentinel like 1970-01-01) plus `to` = now plus
+  // `aggregate=monthly` (or `weekly` when full history < 2 years).
+  // The route's response is bounded by the `BUCKET_CAP` ceiling per
+  // grain (monthly: 24, weekly: 105, daily: 365) so a multi-decade
+  // account never paints an unbounded series.
   if (aggregate && aggregate !== "raw" && from && to) {
     const grain: AggregateGrain = aggregate;
     const cap = Math.min(limit, BUCKET_CAP[grain]);

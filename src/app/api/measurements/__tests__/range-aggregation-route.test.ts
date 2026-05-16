@@ -152,3 +152,67 @@ describe("GET /api/measurements — aggregation gate (C2)", () => {
     expect(json.data.meta.aggregate).toBe("monthly");
   });
 });
+
+describe("GET /api/measurements — all-time semantics (SD-H1)", () => {
+  it("returns a sensible monthly series for a multi-year all-time window", async () => {
+    // Simulate four years of monthly weight rollups. The fixture mirrors
+    // what `date_trunc('month', measured_at)` produces server-side and
+    // proves the route hands back the full history (capped at the
+    // monthly BUCKET_CAP of 24 — the chart paints the most recent 24
+    // months when "All time" exceeds the cap).
+    const buckets = Array.from({ length: 24 }, (_, i) => ({
+      type: "WEIGHT",
+      bucket_start: new Date(Date.UTC(2024, i, 1, 0, 0, 0)),
+      avg: 80 - i * 0.05,
+      cnt: 30,
+    }));
+    vi.mocked(prisma.$queryRaw).mockResolvedValue(buckets as never);
+
+    // "All time" client call: oldest measurement → today, monthly grain.
+    const res = await GET(
+      getRequest(
+        "type=WEIGHT&from=2020-01-01T00:00:00Z&to=2026-05-15T00:00:00Z&aggregate=monthly&limit=5000",
+      ),
+    );
+
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as {
+      data: {
+        measurements: Array<{ measuredAt: string; count: number }>;
+        meta: { aggregate?: string; total: number };
+      };
+    };
+    // The response is monthly-bucketed (NOT a truncated 365-day slice).
+    expect(json.data.meta.aggregate).toBe("monthly");
+    expect(json.data.measurements.length).toBe(24);
+    // Buckets cover distinct calendar months — a 365-day slice could
+    // not span more than 13 months.
+    const months = new Set(
+      json.data.measurements.map((m) => m.measuredAt.slice(0, 7)),
+    );
+    expect(months.size).toBe(24);
+  });
+
+  it("returns a weekly series when the all-time window is under two years", async () => {
+    // Three months past one year → falls in the weekly grain band.
+    const weeks = Array.from({ length: 60 }, (_, i) => ({
+      type: "PULSE",
+      bucket_start: new Date(Date.UTC(2025, 0, 6 + i * 7, 0, 0, 0)),
+      avg: 60 + (i % 5),
+      cnt: 7 * 24 * 60,
+    }));
+    vi.mocked(prisma.$queryRaw).mockResolvedValue(weeks as never);
+
+    const res = await GET(
+      getRequest(
+        "type=PULSE&from=2024-12-15T00:00:00Z&to=2026-05-15T00:00:00Z&aggregate=weekly&limit=5000",
+      ),
+    );
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as {
+      data: { meta: { aggregate?: string }; measurements: Array<unknown> };
+    };
+    expect(json.data.meta.aggregate).toBe("weekly");
+    expect(json.data.measurements.length).toBe(60);
+  });
+});
