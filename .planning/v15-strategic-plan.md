@@ -171,7 +171,7 @@ with the corresponding HK reads.
 | Workouts end-to-end on the web — list page (`/insights/workouts`), detail page, dashboard "Recent workouts" tile | R-F T1.1 | M |
 | Chart cards for 5 of the 10 invisible-but-stored metrics: HRV, RestingHR, SpO2, BodyTemperature, ActiveEnergyBurned | R-F T1.3 | M |
 
-### v1.4.33 — HealthKit Tier 1 web surfaces, wave B + freeze marker
+### v1.4.33 — HealthKit Tier 1 web surfaces, wave B
 
 Ship 2-3 days after v1.4.32. Closes the breadth wave.
 
@@ -182,19 +182,38 @@ Ship 2-3 days after v1.4.32. Closes the breadth wave.
 | Walking-steadiness gauge | R-F T1.5 | S |
 | HKStateOfMind read surface integrated with `/insights/stimmung` (the existing mood page picks up APPLE_HEALTH-sourced mood entries cleanly via the source-priority pipeline) | R-F T1.2 | S |
 | Source-priority editor — the `/api/auth/me/source-priority` endpoint already locks for iOS in v1.4.25 W8c; the web has nothing today. Add the two-axis editor under `/settings/sources` so the iOS side can mirror the same UI shape | R-E C-5 (web-side helper) | M |
+
+### v1.4.34 — Apple Health XML import + web freeze marker
+
+Slots in per `.planning/RESPONSE-TO-IOS-TEAM-2026-05-16.md` §3 R2.
+The iOS-side calendar realignment (v1.5.0 marker ~2026-11 to
+~2026-12) leaves multi-month room before the freeze actually needs
+to bite; the highest-leverage non-iOS-app deliverable in the broader
+research moves up out of v1.6 into the slot immediately preceding
+the freeze marker.
+
+| Item | Source | Effort |
+|---|---|---|
+| `POST /api/import/apple-health-export` accepting `multipart/form-data` | R-F §2.6 + R2 | L (~3-4 days) |
+| Streaming XML parser (Node `sax-stream` or similar) — large files (100 MB - 1 GB) need a background worker | R2 | — |
+| Async job model: synchronous endpoint returns `{ jobId }`; `GET /api/import/apple-health-export/{jobId}/status` polls progress | R2 | — |
+| Per-`MeasurementType` ingestion stats + duration in the response | R2 | — |
+| Idempotent UPSERT keyed on `externalId` so re-imports are no-ops | R2 | — |
+| Operator-side admin endpoint variant (support-staff-driven imports) | R2 | — |
+| Map HKQuantityTypeSample, HKCategoryTypeSample, HKWorkout to existing MeasurementType + Workout models (HKClinicalRecord defers per R-F T3) | R2 | — |
 | CHANGELOG **WEB-FREEZE marker** — explicit line noting that web functionality is complete for v1.5 and that subsequent v1.4.x tags are limited to hotfixes + dependency updates until the iOS app ships | this plan | — |
 
-After v1.4.33 tags on `main`, the web enters **freeze**.
+After v1.4.34 tags on `main`, the web enters **freeze**.
 
 ### Web-freeze posture
 
-Allowed during the freeze (v1.4.32 → v1.5.0):
+Allowed during the freeze (v1.4.34 → v1.5.0):
 
 - Security patches (CVE feeds, dependency vulnerabilities)
 - Dependency updates that ride existing test infrastructure
 - Hotfix-only emergencies (the v1.4.28.1 dashboard-save pattern)
 - Tightly-scoped reactive fixes if iOS testing surfaces a real gap
-  on a v1.4.32 endpoint — but only as additive corrections, never
+  on a v1.4.34 endpoint — but only as additive corrections, never
   as new feature work
 
 Not allowed during the freeze:
@@ -208,9 +227,9 @@ Not allowed during the freeze:
 ### v1.5.0 — version bump marker
 
 Ships the day after iOS clears Apple review. Single commit on
-`main`: `package.json` `1.4.32` → `1.5.0`, CHANGELOG entry stating
+`main`: `package.json` `1.4.34` → `1.5.0`, CHANGELOG entry stating
 "iOS native client now live on the App Store; web functionality
-unchanged since v1.4.32." No source diff outside the version bump
+unchanged since v1.4.34." No source diff outside the version bump
 and CHANGELOG. Triggers GHCR rebuild + auto-deploy so the running
 image's `/api/version` sentinel matches the public release tag.
 
@@ -343,7 +362,6 @@ navigates to a feature that needs it (R-F §2.5 option 2).
 | R-F T3 | UV exposure, electrodermal activity, blood-alcohol | Niche |
 | R-F T3 | Audiogram clinical waveform | Defers with ECG bucket |
 | R-F T3 | Apple Watch independent app | Separate Xcode target; iOS app first |
-| R-F open Q #7 | Apple Health XML import (`export.zip` ingest) | Highest-leverage non-iOS-app deliverable but outside v1.5 brief |
 | R-A generalisation | Per-hour drill-in for cumulative types (read-only HK query, no persistence) | Apple's Health app does not show this beyond per-hour ring either |
 | R-A compaction | One-time script to collapse pre-Option-A per-sample APPLE_HEALTH cumulative rows into daily rows | Optional; idempotent re-run is a no-op |
 
@@ -367,9 +385,10 @@ navigates to a feature that needs it (R-F §2.5 option 2).
 | iOS HK reads pairing rule | Every read paired with a visible surface in the same track — no authorised-but-invisible | R-F §2.5 + open Q #3 |
 | Categorisation shape | UI-side TypeScript overlay `src/lib/measurements/categories.ts`, NOT a DB column | R-F §4 |
 | Sleep storage shape | Per-stage rows (5-axis unique key) — no split into `SLEEP_DEEP` / `SLEEP_REM` / etc. enum entries | R-F open Q #6 |
-| Web freeze trigger | v1.4.33 tag on `main` (after the Tier 1 wave B closes) | This plan §2 |
-| v1.5 release shape | Version-bump-only marker the day after iOS clears Apple review. All functional work lands incrementally in v1.4.29 → v1.4.33. | Maintainer directive 2026-05-16 |
-| Web patch sequence | v1.4.29 polish → v1.4.29.1 step hotfix → v1.4.30 iOS-coordinated foundation (Daily-Stats + SyncMode) → v1.4.31 toggles + insights blocking + Coolify auto-deploy → v1.4.32 Tier 1 wave A → v1.4.33 Tier 1 wave B + freeze | This plan §2, maintainer directive 2026-05-16 |
+| Web freeze trigger | v1.4.34 tag on `main` (after the Apple Health XML import lands) | This plan §2, R2 |
+| v1.5 release shape | Version-bump-only marker the day after iOS clears Apple review. All functional work lands incrementally in v1.4.29 → v1.4.34. | Maintainer directive 2026-05-16 |
+| Web patch sequence | v1.4.29 polish → v1.4.29.1 step hotfix → v1.4.30 iOS-coordinated foundation (Daily-Stats + SyncMode) → v1.4.30.1 categories endpoint + conflict-resolution lock → v1.4.31 toggles + insights blocking + Coolify auto-deploy → v1.4.32 Tier 1 wave A → v1.4.33 Tier 1 wave B → v1.4.34 freeze | This plan §2, maintainer directive 2026-05-16 + R1 + R2 |
+| Apple Health XML import slot | v1.4.34 (before freeze) | R2 + maintainer 2026-05-16 |
 | R-A Option A iOS daily-stats | Rides v1.4.30 (server-side helper + drain script + handoff-doc lock) coordinated with iOS TestFlight cutover — NOT a v1.5 sprint item | Maintainer directive 2026-05-16 |
 | AVG/SUM cumulative-type fix | Server-side rode v1.4.29; client-side daily aggregator rode v1.4.29.1 | R-A §6 + R-B C2 sequence + maintainer report |
 | C2 P0 sequencing | Lands before any client wires `aggregate=daily` | R-B Critical |
@@ -400,13 +419,15 @@ changes. Nothing in this plan flags as breaking.
    deferring the proactive scheduler to a v1.5.x iOS-side release
    is survivable.
 
-3. **Whether the Apple-Health-XML import (`export.zip`) belongs
-   before the freeze.** R-F §2.6 and open Q #7. Out of the original
-   brief, but the highest-leverage non-iOS-app deliverable in the
-   broader research. A web-only user can upload years of HK history
-   before the iOS app ships on their device. ~200 LOC server-side,
-   reuses the existing batch endpoint. Lift into v1.4.32 if the
-   calendar permits; defer to v1.6 if not.
+3. ~~**Whether the Apple-Health-XML import (`export.zip`) belongs
+   before the freeze.**~~ **Resolved 2026-05-16** per
+   `.planning/RESPONSE-TO-IOS-TEAM-2026-05-16.md` §3 R2 — slots into
+   v1.4.34 immediately before the web-freeze marker. The iOS-side
+   calendar realignment (v1.5.0 marker ~2026-11 to ~2026-12) leaves
+   multi-month room before the freeze actually bites; the highest-
+   leverage non-iOS-app deliverable in the broader research moves
+   up out of v1.6 into the slot preceding the freeze. Effort: L
+   (~3-4 days).
 
 ---
 
