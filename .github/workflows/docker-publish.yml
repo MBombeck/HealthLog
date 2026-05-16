@@ -103,17 +103,24 @@ jobs:
       # downloads both editions into `assets/geolite2/` so the Dockerfile
       # COPY at line 78 picks them up.
       #
-      # The build is intentionally resilient to a missing
-      # `MAXMIND_LICENSE_KEY` secret: when the key is unset we emit a
-      # `::warning::` line, drop a `.empty` marker into the assets
-      # directory so the Dockerfile COPY still has a non-empty source,
-      # and continue cleanly. The runtime resolver in `src/lib/geo.ts`
-      # detects the marker on first lookup and emits a one-shot
-      # admin notification — the maintainer hears about the gap from
-      # the running app rather than from a red CI badge that blocks
-      # every release. To enable the offline feature, set the secret
-      # under repo Settings → Secrets and variables → Actions and
-      # redeploy.
+      # Two intentional paths:
+      #   - `MAXMIND_LICENSE_KEY` unset → emit a `::warning::`, drop a
+      #     `.empty` marker into the assets directory so the Dockerfile
+      #     COPY still has a non-empty source, and continue cleanly. The
+      #     runtime resolver in `src/lib/geo.ts` detects the marker on
+      #     first lookup and emits a one-shot admin notification — the
+      #     maintainer hears about the gap from the running app rather
+      #     than from a red CI badge that blocks every release.
+      #   - `MAXMIND_LICENSE_KEY` set → run `fetch-geolite2.sh` and
+      #     fail the build if it errors. The "Verify GeoLite2 databases"
+      #     step below adds a belt-and-braces assertion that both MMDB
+      #     files landed in `assets/geolite2/` before the Dockerfile
+      #     COPY reads the directory, so v1.4.28-era silent fallback
+      #     (offlineGeoEnabled: false on both nodes after a tag build)
+      #     can no longer ship.
+      #
+      # To enable the offline feature, set the secret under repo
+      # Settings → Secrets and variables → Actions and redeploy.
       - name: Fetch GeoLite2 databases
         env:
           MAXMIND_LICENSE_KEY: ${{ secrets.MAXMIND_LICENSE_KEY }}
@@ -125,6 +132,42 @@ jobs:
             exit 0
           fi
           ./scripts/fetch-geolite2.sh
+
+      # Build-time assertion: with the license key present, both MMDB
+      # files must land in `assets/geolite2/` before the Dockerfile
+      # COPY at line 78 picks them up. The fetch script already fails
+      # loud on a curl / tarball error, but a stale `.empty` marker
+      # from a previous keyless run or a workspace-cache surprise could
+      # otherwise survive into the image — this step is the operator
+      # guarantee that "key set" really means "MMDBs in the image".
+      #
+      # `secrets.*` is not available in step-level `if:` expressions,
+      # so we surface the presence flag through env and gate inline.
+      - name: Verify GeoLite2 databases
+        env:
+          MAXMIND_LICENSE_KEY: ${{ secrets.MAXMIND_LICENSE_KEY }}
+        run: |
+          if [ -z "$MAXMIND_LICENSE_KEY" ]; then
+            echo "MAXMIND_LICENSE_KEY unset — verification skipped (offline geo tier intentionally absent on this build)."
+            exit 0
+          fi
+          missing=()
+          for mmdb in GeoLite2-City.mmdb GeoLite2-ASN.mmdb; do
+            if [ ! -s "assets/geolite2/$mmdb" ]; then
+              missing+=("$mmdb")
+            fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::MAXMIND_LICENSE_KEY is set but the following GeoLite2 MMDB files are missing or empty in assets/geolite2/: ${missing[*]}. The Dockerfile would COPY them into /opt/geolite2/ in the final image, leaving the offline geo tier disabled at runtime. Investigate the previous 'Fetch GeoLite2 databases' step before retrying."
+            exit 1
+          fi
+          if [ -f assets/geolite2/.empty ]; then
+            echo "::error::Stale .empty marker present in assets/geolite2/ despite MAXMIND_LICENSE_KEY being set. The runtime resolver would treat the image as missing the offline tier. Investigate the previous 'Fetch GeoLite2 databases' step before retrying."
+            exit 1
+          fi
+          city_size="$(stat -c%s assets/geolite2/GeoLite2-City.mmdb)"
+          asn_size="$(stat -c%s assets/geolite2/GeoLite2-ASN.mmdb)"
+          echo "::notice::GeoLite2 MMDBs verified — GeoLite2-City.mmdb ${city_size} bytes; GeoLite2-ASN.mmdb ${asn_size} bytes."
 
       # Per-ref + per-platform gha cache scope. Tag builds warm-start
       # off main's last good layer set for the same platform; tag and
