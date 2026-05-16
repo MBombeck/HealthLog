@@ -158,7 +158,6 @@
     "description": "An unexpected error occurred. You can retry, copy the technical details, or open a bug report."
   },
   "nav": {
-    "home": "Home",
     "dashboard": "Cruscotto",
     "measurements": "Measurements",
     "medications": "Farmaci",

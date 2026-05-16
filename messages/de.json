@@ -158,7 +158,6 @@
     "description": "Ein unerwarteter Fehler ist aufgetreten. Du kannst es erneut versuchen, die technischen Details kopieren oder einen Bug-Report öffnen."
   },
   "nav": {
-    "home": "Home",
     "dashboard": "Dashboard",
     "measurements": "Messungen",
     "medications": "Medikamente",
