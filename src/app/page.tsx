@@ -191,6 +191,16 @@ export default function DashboardPage() {
     useState<HTMLDivElement | null>(null);
   const [moodFooterEl, setMoodFooterEl] = useState<HTMLDivElement | null>(null);
 
+  // v1.4.29 M5 — the three inline dashboard queries default to a
+  // 0-ms `staleTime`, so a tab-focus-and-return triggered a refetch
+  // storm. None of these are real-time data; minute-scale staleness
+  // is fine and the dashboard's chart queries already match this
+  // cadence.
+  const DASHBOARD_QUERY_OPTS = {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  } as const;
+
   const { data } = useQuery({
     queryKey: queryKeys.analytics(),
     queryFn: async () => {
@@ -200,6 +210,7 @@ export default function DashboardPage() {
       return json.data as AnalyticsData;
     },
     enabled: isAuthenticated,
+    ...DASHBOARD_QUERY_OPTS,
   });
 
   const { data: layoutData } = useQuery({
@@ -211,6 +222,7 @@ export default function DashboardPage() {
       return json.data as DashboardLayout;
     },
     enabled: isAuthenticated,
+    ...DASHBOARD_QUERY_OPTS,
   });
 
   const { data: moodData } = useQuery({
@@ -225,6 +237,7 @@ export default function DashboardPage() {
       };
     },
     enabled: isAuthenticated,
+    ...DASHBOARD_QUERY_OPTS,
   });
 
   // v1.4.27 B1 — the dashboard's `<InsightsCardPreview>` retired (it

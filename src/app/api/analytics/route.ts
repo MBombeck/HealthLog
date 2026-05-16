@@ -183,9 +183,21 @@ export const GET = apiHandler(async () => {
     // `BpReading[]` shape the existing helper expects. The
     // `analytics.bp_in_target.row_count` wide-event meta lets ops
     // attribute slow requests to specific outlier users.
+    // v1.4.29 M1 — bound the BP-in-target reads to the trailing
+    // 365 days. `computeBpInTargetWindows` only needs the last
+    // year (the longest sub-window it computes is `priorYear`);
+    // pre-bound, each chunked walk pulled the entire BP history
+    // every dashboard mount.
+    const bpInTargetSince = new Date(
+      now.getTime() - 365 * 24 * 60 * 60 * 1000,
+    );
     const [sysData, diaData] = await Promise.all([
-      fetchMeasurementSeriesChunked(user.id, "BLOOD_PRESSURE_SYS"),
-      fetchMeasurementSeriesChunked(user.id, "BLOOD_PRESSURE_DIA"),
+      fetchMeasurementSeriesChunked(user.id, "BLOOD_PRESSURE_SYS", {
+        since: bpInTargetSince,
+      }),
+      fetchMeasurementSeriesChunked(user.id, "BLOOD_PRESSURE_DIA", {
+        since: bpInTargetSince,
+      }),
     ]);
 
     annotate({
@@ -210,8 +222,17 @@ export const GET = apiHandler(async () => {
   }
 
   // Per-context glucose summaries (canonical mg/dL).
+  //
+  // v1.4.29 H2 — bound to the trailing 30 days. The dashboard tile
+  // path only reads the trailing window; pre-bound this query
+  // walked every persisted BG row a multi-year user has written.
+  const glucoseSince = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const glucoseRows = await prisma.measurement.findMany({
-    where: { userId: user.id, type: "BLOOD_GLUCOSE" },
+    where: {
+      userId: user.id,
+      type: "BLOOD_GLUCOSE",
+      measuredAt: { gte: glucoseSince },
+    },
     orderBy: { measuredAt: "asc" },
     select: { value: true, measuredAt: true, glucoseContext: true },
   });
