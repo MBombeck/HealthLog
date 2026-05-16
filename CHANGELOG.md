@@ -44,6 +44,13 @@ the affected surfaces.
   near-duplicate copies inside the Settings shell so future
   section additions inherit the icon / title / description
   treatment without redeclaring the markup.
+- **Apple App Site Association handler.** `/.well-known/apple-app-site-association`
+  now answers 200 with `application/json` on every host that fronts
+  the app, advertising the iOS bundle's App ID prefix
+  (`S8WDX4W5KX.dev.healthlog.app`) under `webcredentials.apps` so the
+  passkey ceremony shares cleanly between the web origin and the iOS
+  app. The proxy gained a `/.well-known/` public-prefix entry so the
+  Apple CDN fetch lands on the asset instead of the auth gate.
 
 ### Changed
 
