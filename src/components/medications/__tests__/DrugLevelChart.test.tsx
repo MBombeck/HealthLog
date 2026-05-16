@@ -244,6 +244,29 @@ describe("<DrugLevelChart> — gating decision tree", () => {
     expect(call.asOf).toEqual(fixedNow);
   });
 
+  it("wraps the chart inside the canonical MedicationDetailSection chrome (UI-H1)", () => {
+    // v1.4.28 — the dashboard tile retired and the standalone
+    // mount on `/medications/[id]/history` lifts onto the shared
+    // `<MedicationDetailSection>` chrome alongside Titration /
+    // Scheduling / SideEffects. The aria-labelledby thread + the
+    // `border-border/60 rounded-md border` shell are the
+    // load-bearing seams.
+    setQueryResult("research-mode", {
+      enabled: true,
+      acknowledgedAt: "2026-05-14T00:00:00Z",
+      acknowledgedVersion: "2026-05-14.1",
+      currentDisclaimerVersion: "2026-05-14.1",
+    });
+    const html = render(<DrugLevelChart medication={mounjaro} />);
+    expect(html).toContain('data-slot="drug-level-chart"');
+    expect(html).toContain('aria-labelledby="drug-level-chart-title"');
+    expect(html).toContain("border-border/60");
+    expect(html).toContain("rounded-md");
+    // No more standalone `<header>` block on the chart — the section
+    // header band owns the heading scale now.
+    expect(html).not.toContain("text-dracula-purple h-4 w-4");
+  });
+
   it("hides the y-axis tick labels (research §2.3, unit-less)", () => {
     setQueryResult("research-mode", {
       enabled: true,

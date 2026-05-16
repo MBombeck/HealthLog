@@ -5,7 +5,7 @@
  * medications. Opt-in behind Research Mode (the acknowledgment dialog
  * in this directory gates entry); even when enabled the chart paints
  * "Estimated level (relative)" on the y-axis without tick labels —
- * research §2.3 + W19c-Backend phase report carry the rationale.
+ * research §2.3 + W19c-Backend round report carry the rationale.
  *
  * Inputs (read-only):
  *   - Drug id resolved from the medication name (catalog lookup via
@@ -27,17 +27,19 @@
  * `glp1-pk.ts`. The chart renders a 21-day window so three weekly
  * cycles are visible, anchored at "now". Mobile-first ResponsiveContainer,
  * Dracula tokens that match the rest of the chart suite.
+ *
+ * v1.4.28 — the dashboard tile that consumed the compact rendering
+ * branch retired with FB-A2. The standalone `/medications/[id]/history`
+ * page is the sole mount; the chart now lifts onto the canonical
+ * `<MedicationDetailSection>` chrome alongside Titration / Scheduling /
+ * SideEffects (UI-H1). The `compact` prop + `windowHoursBefore` override
+ * dropped with the tile.
  */
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import {
-  Activity,
-  AlertTriangle,
-  Loader2,
-  Syringe,
-} from "lucide-react";
+import { AlertTriangle, Loader2, Syringe } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -61,6 +63,7 @@ import {
 import { parseDoseMg } from "@/lib/medications/dose-string";
 import type { ResearchModeStatus } from "@/lib/medications/research-mode-types";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
+import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
 
 const CHART_COLOR = "var(--dracula-purple)";
 const CHART_FILL_OPACITY = 0.18;
@@ -111,34 +114,9 @@ export interface DrugLevelChartProps {
    * cost low.
    */
   asOf?: Date;
-  /**
-   * v1.4.27 B1 — compact rendering for tile-internal mounts (the GLP-1
-   * dashboard tile carves out a mini pane for this chart). When set:
-   *   - the outer `<section class="bg-card …">` wrapper drops so the
-   *     parent tile owns the card surface (no card-inside-a-card).
-   *   - the chart body shrinks (160 px instead of 240 px) to match
-   *     mini-mode density of the other tile-internal charts.
-   *   - the header + disclaimer collapse to a single inline caption.
-   */
-  compact?: boolean;
-  /**
-   * v1.4.27 B1 — window length override (in hours of history before
-   * `asOf`). Defaults to 21 × 24 = 504 h (three weekly cycles), the
-   * shape the standalone surface ships. The dashboard mini-chart
-   * exposes 7d / 30d / 90d / All via a range strip and threads the
-   * mapped window length through this prop. The sample step scales
-   * with the window so an "All"-mode chart doesn't paint thousands of
-   * points: 6 h / 12 h / 24 h / 48 h for ≤ 21 d / ≤ 60 d / ≤ 180 d / >.
-   */
-  windowHoursBefore?: number;
 }
 
-export function DrugLevelChart({
-  medication,
-  asOf,
-  compact = false,
-  windowHoursBefore,
-}: DrugLevelChartProps) {
+export function DrugLevelChart({ medication, asOf }: DrugLevelChartProps) {
   const { t } = useTranslations();
 
   // Resolve the catalog key via the shared helper. v1.4.25 W21 Fix-N
@@ -218,125 +196,82 @@ export function DrugLevelChart({
   const isLoading = rmLoading || (gateOpen && (detailsLoading || intakeLoading));
   const hasDoses = doses.length > 0;
   const animationsEnabled = !prefersReducedMotion();
-  // Resolve the window length once, then derive a sample step that
-  // keeps the AreaChart inside a sensible point count even on the
-  // "All" branch of the dashboard's range strip.
-  const resolvedWindowHours = windowHoursBefore ?? WINDOW_HOURS_BEFORE;
-  const resolvedStepHours = pickSampleStepHours(resolvedWindowHours);
-  const chartBodyHeightPx = compact ? 160 : 240;
+  // Single-window contract — three weekly cycles with the sample step
+  // tuned for the AreaChart's point count. The dashboard tile that
+  // previously threaded a window-length override retired with FB-A2.
+  const stepHours = pickSampleStepHours(WINDOW_HOURS_BEFORE);
 
-  // Compact mode mounts the chart inside a host card (the GLP-1 tile)
-  // and skips the outer `<section>` wrapper so the user doesn't see a
-  // card painted inside a card. The disclaimer also collapses to a
-  // single muted line to keep the tile's vertical footprint tight.
-  // v1.4.27 MB7 / CF-66 — drop the `md:p-6` lift so the wrapper
-  // stays at the `p-4` density across viewports. The 6 unit padding
-  // on `md+` made the GLP-1 tile feel oversized relative to the
-  // neighbouring trend cards, which all use `p-4`. Compact mode
-  // retains the `space-y-2` layout without an outer card wrapper.
-  const wrapperClass = compact
-    ? "space-y-2"
-    : "bg-card border-border rounded-xl border p-4";
-  const wrapperProps = {
-    "aria-labelledby": "drug-level-chart-title",
-    className: wrapperClass,
-    "data-slot": "drug-level-chart",
-    "data-compact": compact ? "true" : undefined,
-  } as const;
-  const body = (
-    <>
-      {/* v1.4.28 FB-F3 / F4 — align the standalone chart header to the
-          canonical `<MedicationDetailSection>` heading scale so the
-          full `/medications/[id]` surface reads on one heading shape.
-          The Activity glyph + drug INN line stay as header chrome on
-          the right; the heading element is now `<h2>` + canonical
-          classes to match the surrounding wave-4b sections. */}
-      {!compact && (
-        <header className="mb-3 flex flex-wrap items-center gap-2">
-          <Activity className="text-dracula-purple h-4 w-4 shrink-0" />
-          <h2
-            id="drug-level-chart-title"
-            className="text-foreground text-base font-semibold leading-6 tracking-tight"
-          >
-            {t("medications.researchMode.chart.title")}
-          </h2>
-          {drugId && (
-            <span className="text-muted-foreground text-xs">
-              · {t(`medications.glp1.drug.${drugId}.name`)}
-            </span>
-          )}
-        </header>
-      )}
-      {compact && (
-        <h2 id="drug-level-chart-title" className="sr-only">
-          {t("medications.researchMode.chart.title")}
-        </h2>
-      )}
+  // UI-H1 — the chart mounts inside the shared
+  // `<MedicationDetailSection>` chrome alongside Titration / Scheduling
+  // / SideEffects so the `/medications/[id]/history` page reads on one
+  // section recipe. The drug-INN qualifier rides the headerExtras slot
+  // on the right edge of the header band.
+  const headerExtras = drugId ? (
+    <span className="text-muted-foreground text-xs">
+      {t(`medications.glp1.drug.${drugId}.name`)}
+    </span>
+  ) : null;
 
-      {/* Decision tree:
-            1. drug not in catalog       → gated-unknown-drug placeholder
-            2. !researchMode.enabled OR  → gated placeholder + Settings CTA
-               versions !== aligned         (the defence-in-depth rule)
-            3. loading                   → skeleton
-            4. no intake events          → empty-state with log CTA
-            5. otherwise                 → AreaChart */}
-      {!drugId ? (
-        <GatedUnknownDrug medicationName={medication.name} />
-      ) : !gateOpen ? (
-        <GatedPlaceholder
-          versionsAligned={versionsAligned}
-          knownState={researchMode}
-        />
-      ) : isLoading ? (
-        <div
-          className={
-            compact
-              ? "flex h-[160px] items-center justify-center"
-              : "flex h-[220px] items-center justify-center"
-          }
-          data-slot="drug-level-chart-loading"
-        >
-          <Loader2 className="text-primary h-6 w-6 animate-spin" />
-        </div>
-      ) : !hasDoses ? (
-        <EmptyState />
-      ) : (
-        <ChartBody
-          drug={drugId}
-          doses={doses}
-          asOf={now}
-          animationsEnabled={animationsEnabled}
-          axisLabel={t("medications.researchMode.chart.axisLabel")}
-          windowHoursBefore={resolvedWindowHours}
-          stepHours={resolvedStepHours}
-          heightPx={chartBodyHeightPx}
-        />
-      )}
+  // Decision tree:
+  //   1. drug not in catalog       → gated-unknown-drug placeholder
+  //   2. !researchMode.enabled OR  → gated placeholder + Settings CTA
+  //      versions !== aligned         (the defence-in-depth rule)
+  //   3. loading                   → skeleton
+  //   4. no intake events          → empty-state with log CTA
+  //   5. otherwise                 → AreaChart
+  const body = !drugId ? (
+    <GatedUnknownDrug medicationName={medication.name} />
+  ) : !gateOpen ? (
+    <GatedPlaceholder
+      versionsAligned={versionsAligned}
+      knownState={researchMode}
+    />
+  ) : isLoading ? (
+    <div
+      className="flex h-[220px] items-center justify-center"
+      data-slot="drug-level-chart-loading"
+    >
+      <Loader2 className="text-primary h-6 w-6 animate-spin" />
+    </div>
+  ) : !hasDoses ? (
+    <EmptyState />
+  ) : (
+    <ChartBody
+      drug={drugId}
+      doses={doses}
+      asOf={now}
+      animationsEnabled={animationsEnabled}
+      axisLabel={t("medications.researchMode.chart.axisLabel")}
+      stepHours={stepHours}
+    />
+  );
 
+  return (
+    <MedicationDetailSection
+      titleId="drug-level-chart-title"
+      title={t("medications.researchMode.chart.title")}
+      headerExtras={headerExtras}
+      dataSlot="drug-level-chart"
+    >
+      {body}
       {gateOpen && hasDoses && (
         <p
-          className={
-            compact
-              ? "text-muted-foreground text-[10px] leading-snug italic"
-              : "text-muted-foreground mt-2 text-xs italic"
-          }
+          className="text-muted-foreground mt-2 text-xs italic"
           data-slot="drug-level-chart-disclaimer"
         >
           {t("medications.researchMode.chart.estimateNote")}
         </p>
       )}
-    </>
+    </MedicationDetailSection>
   );
-
-  return compact ? <div {...wrapperProps}>{body}</div> : <section {...wrapperProps}>{body}</section>;
 }
 
 /**
- * v1.4.27 B1 — pick a sample step in hours appropriate for the chosen
- * window length. The default 6 h is fine at ≤ 21 days (≤ 84 samples);
- * "All"-mode windows need a coarser grid so the AreaChart stays under
- * a few hundred points. The chart is qualitative (research §2.3) so a
- * coarse step does not change the rising/peak/fading shape.
+ * Pick a sample step in hours appropriate for the chosen window
+ * length. The default 6 h is fine at ≤ 21 days (≤ 84 samples); longer
+ * windows need a coarser grid so the AreaChart stays under a few
+ * hundred points. The chart is qualitative (research §2.3) so a coarse
+ * step does not change the rising/peak/fading shape.
  */
 function pickSampleStepHours(windowHoursBefore: number): number {
   const days = windowHoursBefore / 24;
@@ -439,9 +374,7 @@ function ChartBody({
   asOf,
   animationsEnabled,
   axisLabel,
-  windowHoursBefore,
   stepHours,
-  heightPx,
 }: {
   drug: Glp1DrugId;
   doses: readonly DoseEvent[];
@@ -454,22 +387,18 @@ function ChartBody({
    * users and SSR snapshots both surface the framing.
    */
   axisLabel: string;
-  /** Window length in hours; the chart's x-axis domain is `[-days, 0]`. */
-  windowHoursBefore: number;
   /** Sample step in hours; scales with the window length. */
   stepHours: number;
-  /** Chart-area height in CSS pixels; compact mode passes 160. */
-  heightPx: number;
 }) {
-  const windowDays = windowHoursBefore / HOURS_PER_DAY;
+  const windowDays = WINDOW_HOURS_BEFORE / HOURS_PER_DAY;
   const samples = useMemo(
     () =>
       computeOneCompartment(drug, doses, asOf, {
-        windowHoursBefore,
+        windowHoursBefore: WINDOW_HOURS_BEFORE,
         windowHoursAfter: WINDOW_HOURS_AFTER,
         stepHours,
       }),
-    [drug, doses, asOf, windowHoursBefore, stepHours],
+    [drug, doses, asOf, stepHours],
   );
 
   // Map samples to chart points. x-axis is "days since now" — negative
@@ -504,7 +433,7 @@ function ChartBody({
       </p>
       <div
         className="touch-pan-y"
-        style={{ height: `${heightPx}px` }}
+        style={{ height: "240px" }}
         data-slot="drug-level-chart-area"
       >
       <ResponsiveContainer width="100%" height="100%">
