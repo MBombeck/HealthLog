@@ -44,7 +44,15 @@ export function TopBar() {
     );
 
   return (
-    <header className="bg-card/80 border-border sticky top-0 z-40 flex h-16 items-center justify-between border-b px-4 backdrop-blur-md md:px-6">
+    <header
+      className="bg-card/80 border-border sticky top-0 z-40 flex h-16 items-center justify-between border-b px-4 backdrop-blur-md md:px-6"
+      // iOS PWA on notched iPhones overlays the status bar onto the
+      // sticky header unless we reserve the safe-area inset. The
+      // inline style adds `safe-area-inset-top` as padding-top on
+      // devices that report one and is a no-op on every other
+      // platform; the inner h-16 content area stays nominally 64 px.
+      style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+    >
       {/* Mobile logo */}
       <Link href="/" className="flex items-center gap-2 md:hidden">
         <Logo className="text-primary" size={20} />
