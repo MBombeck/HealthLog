@@ -778,13 +778,6 @@ components:
               type: string
             type: object
           type: array
-        weeklyReport:
-          anyOf:
-            - additionalProperties: {}
-              propertyNames:
-                type: string
-              type: object
-            - type: "null"
       required:
         - summary
         - recommendations
@@ -2203,7 +2196,7 @@ paths:
           name: limit
           schema:
             default: 100
-            maximum: 500
+            maximum: 5000
             minimum: 1
             type: integer
         - in: query
@@ -2230,6 +2223,15 @@ paths:
             enum:
               - asc
               - desc
+            type: string
+        - in: query
+          name: aggregate
+          schema:
+            enum:
+              - raw
+              - daily
+              - weekly
+              - monthly
             type: string
       responses:
         "200":
