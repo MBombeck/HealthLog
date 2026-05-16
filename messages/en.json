@@ -1167,7 +1167,7 @@
     "subPage": {
       "blutdruckDescription": "Your systolic / diastolic trend with age-personalised target zones and a written AI assessment.",
       "gewichtDescription": "Weight trend mapped against your height-derived healthy band, plus an AI assessment.",
-      "pulsDescription": "Resting pulse vs. the personalised Karvonen target band, plus an AI assessment.",
+      "pulsDescription": "Pulse trend against the personalised Karvonen target band, plus an AI assessment.",
       "stimmungDescription": "Daily mood scores over time with a written AI assessment.",
       "stimmungEmptyTitle": "Log your first mood",
       "stimmungEmptyDescription": "Mood insights light up once you've logged a few entries. Tap below to get started.",

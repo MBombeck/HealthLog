@@ -1167,7 +1167,7 @@
     "subPage": {
       "blutdruckDescription": "Dein systolisch-/diastolisch-Verlauf mit altersangepassten Zielbereichen und einer textbasierten KI-Einschätzung.",
       "gewichtDescription": "Gewichtsverlauf gegen das aus deiner Größe abgeleitete gesunde Band, mit KI-Einschätzung.",
-      "pulsDescription": "Ruhepuls gegenüber dem persönlichen Karvonen-Zielband, mit KI-Einschätzung.",
+      "pulsDescription": "Pulsverlauf gegenüber dem persönlichen Karvonen-Zielband, mit KI-Einschätzung.",
       "stimmungDescription": "Tägliche Stimmungswerte im Zeitverlauf mit einer textbasierten KI-Einschätzung.",
       "stimmungEmptyTitle": "Erste Stimmung erfassen",
       "stimmungEmptyDescription": "Stimmungs-Insights erscheinen, sobald du einige Einträge protokolliert hast. Tippe unten, um zu beginnen.",
