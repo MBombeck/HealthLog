@@ -54,8 +54,14 @@ export default function IntakeHistoryPage({
     );
   }
 
+  // D-H8 — bump the sibling-section stride from `space-y-4` (16 px)
+  // to `space-y-6` (24 px) so the medication-detail page matches the
+  // `/insights/*` sub-page stride. The earlier 16 px gap rode tight
+  // against each section's 1 px border (~14 px optical gap) and read
+  // dense after the heading collapse landed in the canonical
+  // `<MedicationDetailSection>`.
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Button
         variant="ghost"
         size="sm"
