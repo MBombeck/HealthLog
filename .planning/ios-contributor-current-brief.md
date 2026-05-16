@@ -83,7 +83,7 @@ consumes.
 ## 3. What is live in production right now
 
 Both production hosts (`healthlog.bombeck.io` and
-`demo.healthlog.dev`) currently serve **v1.4.29.1**.
+`demo.healthlog.dev`) currently serve **v1.4.30**.
 
 ### Recent releases
 
@@ -94,6 +94,8 @@ Both production hosts (`healthlog.bombeck.io` and
 | v1.4.28.1 | Dashboard-save hotfix | Resolver filters retired widget ids from the saved layout on read |
 | v1.4.29 | Dashboard performance + chart polish | aggregate=daily server path, AVG/SUM for cumulative HK types, pulse chart bounds, x-axis tick positions, mobile tile equal-height, drag-list compactness |
 | v1.4.29.1 | Daily-step aggregation hotfix | Client-side daily aggregator branches on `CUMULATIVE_HK_TYPES` for sum vs average |
+| v1.4.30 | iOS-coordinated foundation | Daily-stats externalId lock + SyncMode columns + bulk-backfill endpoints + `MoodEntry.note` first-class column + workouts canonical-row picker + categorisation overlay + two new MeasurementType enums |
+| v1.4.30.1 | Categories endpoint + conflict-resolution spec lock | `GET /api/measurement-categories` exposes the overlay over HTTP; `08-locked-contracts.md` §13 locks the SyncMode conflict-resolution policy (LWW by `updatedAt`, server-wins on tie) |
 
 ### Endpoints the iOS client may consume today (additive contracts)
 
@@ -111,6 +113,11 @@ Stable since their respective release tags. Every one is locked per
 - `GET /api/insights/chat` (SSE) — Coach stream
 - `GET /api/insights/cards`, `GET /api/insights/correlations`, `GET /api/insights/comprehensive`, `GET /api/insights/targets`
 - `POST /api/workouts/batch` — batch ingest from HKWorkout (since v1.4.25 W8d; canonical-row picker added in v1.4.30 — see §4)
+- `GET /api/sync/state` — SyncMode handshake (since v1.4.30). Returns `lastSyncedAt`, server clock for skew, live + tombstoned counters; the call also bumps the user-side checkpoint.
+- `POST /api/mood-entries/bulk` — bulk mood-entry backfill (since v1.4.30). Up to 500 entries per call; probe-then-upsert distinguishes inserted vs duplicate; rate-limited at 60/min/user.
+- `POST /api/medications/intake/bulk` — bulk medication-intake backfill (since v1.4.30). Same envelope shape, idempotency-key collision yields duplicate; rate-limited at 60/min/user.
+- `POST /api/admin/drain-per-sample-cumulative` — operator-only drain endpoint (since v1.4.30, `requireAdmin()`). Collapses pre-Option-A per-sample APPLE_HEALTH cumulative rows into one row per day per type. Idempotent; default `dryRun: true`.
+- `GET /api/measurement-categories` — HTTP projection of the categorisation overlay (since v1.4.30.1). Returns `{ version, categories[], assignments }` per `.planning/RESPONSE-TO-IOS-TEAM-2026-05-16.md` §3 R1. `Cache-Control: public, max-age=600`. iOS reads on cold start to drive the HealthKit permission picker grouping; hard-coded mirror in the iOS app stays as the offline fallback.
 - `GET /api/version` — live build + `offlineGeoEnabled` flag
 - 47 distinct paths total per the R-E iOS audit (`/Users/marc/Projects/HealthLog/.planning/research/v1428-r1-ios-contracts.md` enumerates them; mostly admin + monitoring routes not iOS-relevant)
 
