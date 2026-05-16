@@ -346,6 +346,27 @@ export function dailyStatsExternalId(
 }
 
 /**
+ * v1.4.30 — reverse lookup from a HealthLog `MeasurementType` to the
+ * canonical HealthKit identifier for that type. Used by the drain
+ * script when minting a `dailyStatsExternalId` from a row whose
+ * `hkIdentifier` is not carried on the table (the per-sample ingest
+ * stores only the resolved `MeasurementType`).
+ *
+ * Returns `null` when the type has no HealthKit counterpart (Withings-
+ * only metrics). Callers in the cumulative-drain path can assume the
+ * lookup succeeds because `CUMULATIVE_HK_TYPES` is a subset of the
+ * HK-mapped types.
+ */
+export function hkIdentifierForType(
+  type: MeasurementType,
+): string | null {
+  for (const mapping of Object.values(APPLE_HEALTH_TYPE_MAP)) {
+    if (mapping.measurementType === type) return mapping.hkIdentifier;
+  }
+  return null;
+}
+
+/**
  * HK identifiers the iOS app may emit that HealthLog deliberately does
  * NOT map yet. Listing them here means the batch route can log a
  * "deferred, not unknown" signal and the iOS DTO can decide upstream
