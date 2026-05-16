@@ -69,15 +69,23 @@ export function HistoryRail({
       data-slot="coach-history-rail"
       className={cn("flex h-full min-h-0 flex-col gap-2 p-3", className)}
     >
-      <div className="flex items-center gap-1.5 px-1">
+      {/* v1.4.33 — promote the rail label from a `<span>` to a real
+          `<h3>` so the drawer carries a semantic outline on desktop
+          where the rail is mounted inline (no `SheetTitle` wrapper).
+          The mobile rail-tray still wraps the rail inside its own
+          `SheetTitle`, so screen-reader users hear the section twice
+          when the tray is open — that's intentional Radix behaviour
+          (the rail still has to stand alone on desktop). */}
+      <h3
+        data-slot="coach-history-rail-heading"
+        className="text-muted-foreground flex items-center gap-1.5 px-1 text-[11px] font-medium tracking-wide uppercase"
+      >
         <MessagesSquare
           className="text-muted-foreground size-3.5"
           aria-hidden="true"
         />
-        <span className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
-          {t("insights.coach.historyTitle")}
-        </span>
-      </div>
+        {t("insights.coach.historyTitle")}
+      </h3>
       <div className="relative">
         <Search
           aria-hidden="true"

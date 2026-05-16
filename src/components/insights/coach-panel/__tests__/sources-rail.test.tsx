@@ -17,6 +17,17 @@ describe("<SourcesRail>", () => {
     expect(html).toContain("What I can see");
   });
 
+  it("renders the rail label as a real `<h3>` heading (v1.4.33)", () => {
+    // The rail mounts inline on `xl+` desktop where no `SheetTitle`
+    // wrapper covers it. Promoting the label to `<h3>` restores the
+    // drawer's semantic outline so screen-reader users can navigate
+    // by heading.
+    const html = render(<SourcesRail />);
+    expect(html).toMatch(
+      /<h3[^>]*data-slot="coach-sources-rail-heading"[^>]*>[\s\S]*What I can see[\s\S]*<\/h3>/,
+    );
+  });
+
   it("lists exactly five rows (BP, weight, pulse, mood, compliance)", () => {
     const html = render(<SourcesRail />);
     const rows = html.match(/data-slot="coach-sources-row"/g) ?? [];

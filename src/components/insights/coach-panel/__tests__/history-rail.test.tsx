@@ -66,6 +66,21 @@ describe("<HistoryRail>", () => {
     expect(html).toContain("Conversations");
   });
 
+  it("renders the rail label as a real `<h3>` heading (v1.4.33)", () => {
+    // The rail mounts inline on `lg+` desktop where no `SheetTitle`
+    // wrapper covers it. Without a real heading element the drawer
+    // lost its semantic outline above the message thread — fixed in
+    // v1.4.33 by promoting the rail label to `<h3>`.
+    const client = makeClientWithConversations(samplePage);
+    const html = render(
+      <HistoryRail activeId={null} onSelect={() => {}} />,
+      client,
+    );
+    expect(html).toMatch(
+      /<h3[^>]*data-slot="coach-history-rail-heading"[^>]*>[\s\S]*Conversations[\s\S]*<\/h3>/,
+    );
+  });
+
   it("renders one row per conversation", () => {
     const client = makeClientWithConversations(samplePage);
     const html = render(

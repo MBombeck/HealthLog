@@ -172,12 +172,20 @@ export function SourcesRail({
       data-slot="coach-sources-rail"
       className={cn("flex h-full min-h-0 flex-col gap-3 p-3", className)}
     >
-      <div className="flex items-center gap-1.5 px-1">
+      {/* v1.4.33 — promote the rail label from a `<span>` to a real
+          `<h3>` so the rail carries a semantic outline on desktop
+          where it mounts inline next to the message thread. The
+          mobile rail-tray wraps the rail inside its own `SheetTitle`
+          (an `<h2>`), so the rail's own `<h3>` simply nests beneath
+          it — the heading hierarchy stays consistent across
+          viewports. */}
+      <h3
+        data-slot="coach-sources-rail-heading"
+        className="text-muted-foreground flex items-center gap-1.5 px-1 text-[11px] font-medium tracking-wide uppercase"
+      >
         <Eye className="text-muted-foreground size-3.5" aria-hidden="true" />
-        <span className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
-          {t("insights.coach.sourcesTitle")}
-        </span>
-      </div>
+        {t("insights.coach.sourcesTitle")}
+      </h3>
 
       {/* Window selector — every row below is filtered to the picked
           window when the next Coach message goes out. 36px touch
