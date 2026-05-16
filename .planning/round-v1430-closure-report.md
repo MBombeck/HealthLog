@@ -157,3 +157,89 @@ GitHub Release reads it as the latest. The full integration suite
 runs 47 files / 190 specs against the real-Postgres container; the
 unit suite passes 4035 specs. The next patch is v1.4.31 (operator
 toggles + insights blocking + Coolify auto-deploy fix).
+
+## v1.4.30.1 follow-up — categories endpoint + conflict-resolution lock
+
+Shipped 2026-05-16 a few hours after v1.4.30. The iOS team's
+response doc at `.planning/RESPONSE-TO-IOS-TEAM-2026-05-16.md`
+flagged two items as the immediate v1.4.30 follow-ups: R1 asked for
+the categorisation overlay to be exposed over HTTP (so the iOS-side
+permission picker can fetch the canonical shape instead of carrying
+a hard-coded mirror), and R9 asked for the SyncMode conflict-
+resolution policy to be locked in `08-locked-contracts.md` ahead of
+the v0.6.0 standalone-first iOS work. Both land in v1.4.30.1.
+
+The remaining iOS-team-response items (R6 Coach SSE decouple, R2
+Apple Health XML import slot, the Apple Foundation Models pivot
+absorption) ride doc updates in the same hotfix:
+
+- `.planning/ios-contributor-current-brief.md` §3 bumps the live-
+  production marker to v1.4.30 and adds the four v1.4.30 endpoints
+  plus the new `/api/measurement-categories` entry to the iOS-
+  consumable list. §5b / §6 reframe the Coach SSE story per R6 —
+  the server endpoint stays live; the iOS native server-Coach
+  drawer is deferred pending MDR Class-IIa pre-review. v1.5.0 iOS
+  ships Apple Foundation Models on-device Daily Briefing + Trend
+  Observations as the primary assistant surface.
+- `.planning/v15-strategic-plan.md` §2 slots Apple Health XML
+  import as v1.4.34 immediately before the web-freeze marker (per
+  R2). The freeze trigger renumbers from v1.4.33 to v1.4.34; the
+  decision-log row "Apple Health XML import slot" lands; the §4
+  deferred row and §6 open question #3 close out.
+
+### Commits
+
+| SHA | Subject |
+|---|---|
+| `bd3a4470` | feat(api): expose the measurement-categories map as a public endpoint |
+| `2fcc47ca` | docs(handoff): lock the SyncMode conflict-resolution policy |
+| `0378e8e9` | docs(brief): bump live state to v1.4.30 and add new endpoint listings |
+| `15cbc102` | docs(brief): decouple Coach SSE from the v1.5 ship gate per iOS-team pivot |
+| `b4fa2239` | docs(planning): slot Apple Health XML import as v1.4.34 + reshuffle the freeze marker |
+| `993dfae2` | chore(release): v1.4.30.1 |
+
+### Outcome
+
+- `healthlog.bombeck.io/api/version` → `1.4.30.1`, `/privacy` → 200.
+- `demo.healthlog.dev/api/version` → `1.4.30.1`, `/privacy` → 200.
+- GitHub Release: <https://github.com/MBombeck/HealthLog/releases/tag/v1.4.30.1>.
+- Sister-repos: `healthlog-docs@43688fe`, `healthlog-landing@bf6da09`.
+- PR #175 squashed on `main` at `175e3aea`; tag `v1.4.30.1` points there.
+- GHCR tag-build produced the named `1.4.30.1` cleanly (the
+  `3a920661` workflow fix continues to hold).
+- Full unit suite: 368 files / 4039 passed / 1 skipped on the
+  pre-release gate. New endpoint covered by 4 Vitest specs at
+  `src/app/api/measurement-categories/__tests__/route.test.ts`
+  (401, response shape, assignments-map parity with the source
+  overlay, cache-control header).
+
+### Deploy mechanics
+
+Coolify auto-deploy continues to no-op (fifth release in a row —
+the gap remains the v1.4.31 work item). apps01 host-side SSH
+fallback: `docker pull ghcr.io/mbombeck/healthlog:1.4.30.1`,
+`docker pull ghcr.io/mbombeck/healthlog:latest`, `docker compose up
+-d --force-recreate --no-deps app`. Both pulls returned the same
+digest (`sha256:70c4ab05d340…`). Edge-01 used the explicit
+`1.4.30` → `1.4.30.1` sed bump on docker-compose with a
+`.pre-v14301.bak` snapshot; the service name on edge-01 is
+`ck8cs4osswg8w440gskw08w8-203339946444`, not `app`, so the
+`docker compose up` invocation references it explicitly.
+
+### Locked-contracts file changes
+
+`.planning/v15-ios-handoff/08-locked-contracts.md` gains §13 (the
+SyncMode conflict-resolution policy) and renumbers the prior
+"What is NOT in this file" stub to §14. Iter pre-v1.4.30 referred
+to §12 (daily-stats externalId) as the last functional section;
+v1.4.30.1 makes §13 (conflict-resolution) the last functional
+section.
+
+### What v1.4.30.1 deliberately does not touch
+
+- No new endpoint surface beyond `/api/measurement-categories`.
+- No schema changes.
+- No CHANGELOG entries outside the `[1.4.30.1]` block.
+- No e2e re-run on the demo host — the demo `/privacy` 200 +
+  `/api/version` probe is the full demo-side verification scope
+  per the anti-stall discipline.
