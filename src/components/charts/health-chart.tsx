@@ -961,7 +961,16 @@ export function HealthChart({
     return zones;
   }, [showBands, targetZones, yDomain]);
 
-  const formatAxisValue = (value: number) => fmt.integer(value);
+  // v1.4.33 F10 — preserve one decimal when the visible Y-domain span is
+  // narrow enough that two distinct gridlines would otherwise round to
+  // the same integer (e.g. weight at 82.8 vs 83.5 both rendering as
+  // "83 kg"). The threshold matches the body-composition cluster: any
+  // domain spanning < 6 units gets `0.1`-precision ticks; wider domains
+  // keep the integer formatter so BP / glucose / steps stay clean.
+  const yDomainSpan = yDomain ? yDomain[1] - yDomain[0] : null;
+  const useDecimalAxis = yDomainSpan !== null && yDomainSpan < 6;
+  const formatAxisValue = (value: number) =>
+    useDecimalAxis ? fmt.number(value, 1) : fmt.integer(value);
 
   const formatTooltipValue = (value: number) => fmt.number(value, 1);
 
@@ -1313,7 +1322,7 @@ export function HealthChart({
                   domain={yDomain}
                   tickFormatter={(value) =>
                     typeof value === "number"
-                      ? formatAxisValue(Math.round(value))
+                      ? formatAxisValue(useDecimalAxis ? value : Math.round(value))
                       : String(value)
                   }
                   unit={
