@@ -29,15 +29,17 @@
 //
 //   vitals → body → activity → sleep → cardiovascular → mood → events
 //
-// The wave-A HealthKit entries added in v1.4.32 (HRV, resting HR, SpO2,
-// body temperature, active energy) used to stack at the end of the
-// strip in insertion order; the regrouping below interleaves them into
-// their categorical neighbours so a user reading left-to-right scans
-// each metric domain as a block. Heavier regrouping (collapse five
-// wave-A pills under a single "Apple Health" pill, fold BMI into
-// Gewicht, fold Sauerstoff/Körpertemperatur into a single Vitals pill)
-// is deferred to v1.4.34 — that needs a screenshot review per
-// .planning/round-v1433-audit-menu.md §7.
+// v1.4.34 IW-D — the five wave-A HealthKit entries (HRV, resting HR,
+// SpO2, body temperature, active energy) added in v1.4.32 share a
+// presentation group on the routed tab strip. Each sub-page keeps its
+// own URL and own page component — only the strip presentation changes
+// so the five pills collapse behind one "Vitalwerte" / "Vitals" parent
+// pill with a popover sub-list. The `group: "vitals"` field below
+// drives that grouping; the canonical order inside the popover follows
+// the strip order. The earlier inline pills (`puls`, `blutdruck`,
+// `gewicht`, `bmi`, `schlaf`, `stimmung`, `medikamente`, `workouts`)
+// stay flat — they predate v1.4.32 and the maintainer's audit kept
+// them as direct entries.
 export const SUB_PAGE_METRIC = {
   // ── vitals ──
   blutdruck: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA", "PULSE"],
@@ -68,6 +70,34 @@ export const SUB_PAGE_METRIC = {
 export type SubPageSlug = keyof typeof SUB_PAGE_METRIC;
 
 export const SUB_PAGE_SLUGS = Object.keys(SUB_PAGE_METRIC) as SubPageSlug[];
+
+/**
+ * v1.4.34 IW-D — strip-presentation grouping. Only `"vitals"` is in
+ * use today; every other slug renders as a top-level pill. The group
+ * key is rendered through a single parent pill that opens a popover
+ * containing the grouped sub-pages. Adding a new group is a one-row
+ * change here plus a matching label key under
+ * `insights.tabStrip.<group>Parent.*` in every locale.
+ */
+export type SubPageGroup = "vitals";
+
+export const SUB_PAGE_GROUP: Partial<Record<SubPageSlug, SubPageGroup>> = {
+  hrv: "vitals",
+  ruhepuls: "vitals",
+  sauerstoff: "vitals",
+  koerpertemperatur: "vitals",
+  "aktive-energie": "vitals",
+};
+
+/**
+ * v1.4.34 IW-D — canonical order of the sub-pages inside each parent
+ * popover. The strip iterates `SUB_PAGE_SLUGS`, so a vitals member's
+ * position in the popover follows its position in that array.
+ */
+export const SUB_PAGE_GROUP_ORDER: Record<SubPageGroup, readonly SubPageSlug[]> =
+  {
+    vitals: SUB_PAGE_SLUGS.filter((slug) => SUB_PAGE_GROUP[slug] === "vitals"),
+  };
 
 /**
  * Mother-page route. Kept here as a named constant so call sites

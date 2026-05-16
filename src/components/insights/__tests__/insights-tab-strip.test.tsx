@@ -70,6 +70,9 @@ describe("<InsightsTabStrip> — availability gating (v1.4.27 F19)", () => {
     expect(html).not.toContain(">Mood<");
     expect(html).not.toContain(">Medication<");
     expect(html).not.toContain(">Sleep<");
+    // v1.4.34 IW-D — the parent "Vitals" pill stays out when no
+    // wave-A HealthKit metric has data (none in this availability).
+    expect(html).not.toContain(">Vitals<");
   });
 
   it("keeps the overview pill regardless of availability", () => {
@@ -113,5 +116,60 @@ describe("<InsightsTabStrip> — availability gating (v1.4.27 F19)", () => {
     const html = render(<InsightsTabStrip availability={availability} />);
     expect(html).toContain(">Weight<");
     expect(html).toContain(">BMI<");
+  });
+});
+
+describe("<InsightsTabStrip> — vitals group collapse (v1.4.34 IW-D)", () => {
+  it("renders a single 'Vitals' parent pill instead of five wave-A pills in the strip row", () => {
+    // No availability ⇒ every wave-A pill is visible ⇒ the parent pill
+    // appears once. The five sub-pages still render in the popover
+    // body but that lives in a Radix Portal which `renderToStaticMarkup`
+    // does not serialise (no portal target in SSR) — so we assert on
+    // the strip-row only. Behaviour test for the popover body sits in
+    // a Playwright spec when the dev server runs.
+    const html = render(<InsightsTabStrip />);
+    // Parent pill — there is exactly one.
+    const parentMatches = html.match(/>Vitals</g);
+    expect(parentMatches).not.toBeNull();
+    expect(parentMatches!.length).toBe(1);
+    // The flat strip-row should NOT carry the five individual labels —
+    // they live behind the parent pill now.
+    expect(html).not.toContain(">HRV<");
+    expect(html).not.toContain(">Resting HR<");
+    expect(html).not.toContain(">Oxygen<");
+    expect(html).not.toContain(">Temperature<");
+    // "Active energy" overlaps with no other label in en/de so we can
+    // assert the exact match.
+    expect(html).not.toContain(">Active energy<");
+  });
+
+  it("hides the parent pill when no wave-A metric has data", () => {
+    const availability: InsightInputs = {
+      summaries: { WEIGHT: fakeSummary(2) },
+      hasMood: false,
+      hasMedication: false,
+    };
+    const html = render(<InsightsTabStrip availability={availability} />);
+    expect(html).not.toContain(">Vitals<");
+    expect(html).not.toContain('data-slot="insights-tab-strip-group"');
+  });
+
+  it("renders the parent pill as a popover trigger (button, not link)", () => {
+    const html = render(<InsightsTabStrip />);
+    expect(html).toContain('data-slot="insights-tab-strip-group"');
+    expect(html).toContain('data-group="vitals"');
+  });
+
+  it("preserves the non-grouped pills inline", () => {
+    const html = render(<InsightsTabStrip />);
+    // Flat (non-grouped) pills must still be reachable directly.
+    expect(html).toContain(">Blood Pressure<");
+    expect(html).toContain(">Pulse<");
+    expect(html).toContain(">Weight<");
+    expect(html).toContain(">BMI<");
+    expect(html).toContain(">Sleep<");
+    expect(html).toContain(">Mood<");
+    expect(html).toContain(">Medication<");
+    expect(html).toContain(">Workouts<");
   });
 });

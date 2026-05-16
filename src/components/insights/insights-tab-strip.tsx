@@ -3,14 +3,22 @@
 import { memo, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Loader2, RefreshCw } from "lucide-react";
+import { ChevronDown, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import {
   INSIGHTS_OVERVIEW_PATH,
+  SUB_PAGE_GROUP,
+  SUB_PAGE_GROUP_ORDER,
   SUB_PAGE_SLUGS,
+  type SubPageGroup,
   type SubPageSlug,
 } from "@/lib/insights/sub-page-metric";
 import {
@@ -67,12 +75,31 @@ export interface InsightsTabStripProps {
   availability?: InsightInputs;
 }
 
-interface TabEntry {
-  /** Pathname this pill links to. */
-  href: string;
-  /** Translation key for the pill label. */
-  labelKey: string;
-}
+/**
+ * v1.4.34 IW-D — a strip entry is either a flat `<Link>` pill or a
+ * group "parent" pill that opens a popover containing the sub-pages
+ * in the group. The discriminated union keeps the renderer branch-
+ * exhaustive and lets future groups land with one new variant.
+ */
+type TabEntry =
+  | {
+      kind: "link";
+      /** Pathname this pill links to. */
+      href: string;
+      /** Translation key for the pill label. */
+      labelKey: string;
+    }
+  | {
+      kind: "group";
+      /** Group key (e.g. `"vitals"`). Used for keys + a11y wiring. */
+      group: SubPageGroup;
+      /** Translation key for the parent-pill label. */
+      labelKey: string;
+      /** Translation key for the popover header. */
+      headerKey: string;
+      /** Visible sub-pages inside the group (post-availability gating). */
+      children: Array<{ href: string; labelKey: string; slug: SubPageSlug }>;
+    };
 
 /**
  * Slug → (label key, gating metric) mapping. Keeping the metric here
@@ -128,18 +155,70 @@ const SUB_PAGE_TABS: Record<
   medikamente: { labelKey: "insights.navMedication", metric: "MEDICATION" },
 };
 
+/**
+ * v1.4.34 IW-D — group metadata (label + popover header) keyed by
+ * `SubPageGroup`. The strip renders one parent pill per group; the
+ * five wave-A HealthKit pills are the only group today.
+ */
+const SUB_PAGE_GROUP_META: Record<
+  SubPageGroup,
+  { labelKey: string; headerKey: string }
+> = {
+  vitals: {
+    labelKey: "insights.tabStrip.vitalsParent.label",
+    headerKey: "insights.tabStrip.vitalsParent.header",
+  },
+};
+
 function buildTabs(availability: InsightInputs | undefined): TabEntry[] {
-  const subPageEntries = SUB_PAGE_SLUGS.filter((slug) => {
+  const visibleSlugs = SUB_PAGE_SLUGS.filter((slug) => {
     if (!availability) return true;
     return hasMetricData(SUB_PAGE_TABS[slug].metric, availability);
-  }).map((slug) => ({
-    href: `${INSIGHTS_OVERVIEW_PATH}/${slug}`,
-    labelKey: SUB_PAGE_TABS[slug].labelKey,
-  }));
-  return [
-    { href: INSIGHTS_OVERVIEW_PATH, labelKey: "insights.navOverview" },
-    ...subPageEntries,
+  });
+
+  const visibleSet = new Set(visibleSlugs);
+  const entries: TabEntry[] = [
+    {
+      kind: "link",
+      href: INSIGHTS_OVERVIEW_PATH,
+      labelKey: "insights.navOverview",
+    },
   ];
+
+  // v1.4.34 IW-D — track which groups have already been emitted so the
+  // first encountered group-member triggers the parent pill at the
+  // same strip position (preserving categorical order).
+  const emittedGroups = new Set<SubPageGroup>();
+
+  for (const slug of visibleSlugs) {
+    const group = SUB_PAGE_GROUP[slug];
+    if (group) {
+      if (emittedGroups.has(group)) continue;
+      emittedGroups.add(group);
+      const children = SUB_PAGE_GROUP_ORDER[group]
+        .filter((childSlug) => visibleSet.has(childSlug))
+        .map((childSlug) => ({
+          slug: childSlug,
+          href: `${INSIGHTS_OVERVIEW_PATH}/${childSlug}`,
+          labelKey: SUB_PAGE_TABS[childSlug].labelKey,
+        }));
+      if (children.length === 0) continue;
+      entries.push({
+        kind: "group",
+        group,
+        labelKey: SUB_PAGE_GROUP_META[group].labelKey,
+        headerKey: SUB_PAGE_GROUP_META[group].headerKey,
+        children,
+      });
+      continue;
+    }
+    entries.push({
+      kind: "link",
+      href: `${INSIGHTS_OVERVIEW_PATH}/${slug}`,
+      labelKey: SUB_PAGE_TABS[slug].labelKey,
+    });
+  }
+  return entries;
 }
 
 function InsightsTabStripImpl({
@@ -198,34 +277,109 @@ function InsightsTabStripImpl({
       <div className="flex items-center gap-2">
         <div className="flex min-w-0 flex-1 [scrollbar-width:none] gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
           {tabs.map((tab) => {
-            // The overview pill matches the mother page exactly; the
-            // sub-page pills match a prefix so future nested routes
-            // (e.g. `/insights/schlaf/2026-05-11`) still highlight the
-            // parent tab.
-            const isActive =
-              tab.href === INSIGHTS_OVERVIEW_PATH
-                ? pathname === INSIGHTS_OVERVIEW_PATH
-                : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+            if (tab.kind === "link") {
+              // The overview pill matches the mother page exactly; the
+              // sub-page pills match a prefix so future nested routes
+              // (e.g. `/insights/schlaf/2026-05-11`) still highlight the
+              // parent tab.
+              const isActive =
+                tab.href === INSIGHTS_OVERVIEW_PATH
+                  ? pathname === INSIGHTS_OVERVIEW_PATH
+                  : pathname === tab.href ||
+                    pathname.startsWith(`${tab.href}/`);
+              return (
+                <Link
+                  key={tab.href}
+                  href={tab.href}
+                  aria-current={isActive ? "page" : undefined}
+                  data-slot="insights-tab-strip-pill"
+                  data-active={isActive ? "true" : undefined}
+                  className={cn(
+                    // 44px touch-target floor (W8.3) — pills are primary
+                    // navigation; the regenerate icon-button to the right
+                    // already meets the same minimum.
+                    "inline-flex min-h-11 shrink-0 items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                    "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+                    isActive
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {t(tab.labelKey)}
+                </Link>
+              );
+            }
+            // v1.4.34 IW-D — group parent pill. Renders as a popover
+            // trigger so desktop hover (`onMouseEnter` falls through to
+            // Radix click semantics — tap-to-open is the same gesture
+            // on every device, matching the `<Popover>` MB3 decision).
+            // Sub-page navigation happens via the `<Link>` inside the
+            // popover; the parent pill never navigates on its own.
+            const isGroupActive = tab.children.some(
+              (child) =>
+                pathname === child.href ||
+                pathname.startsWith(`${child.href}/`),
+            );
             return (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                aria-current={isActive ? "page" : undefined}
-                data-slot="insights-tab-strip-pill"
-                data-active={isActive ? "true" : undefined}
-                className={cn(
-                  // 44px touch-target floor (W8.3) — pills are primary
-                  // navigation; the regenerate icon-button to the right
-                  // already meets the same minimum.
-                  "inline-flex min-h-11 shrink-0 items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                  "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
-                  isActive
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {t(tab.labelKey)}
-              </Link>
+              <Popover key={`group-${tab.group}`}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-current={isGroupActive ? "page" : undefined}
+                    data-slot="insights-tab-strip-group"
+                    data-group={tab.group}
+                    data-active={isGroupActive ? "true" : undefined}
+                    className={cn(
+                      "inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                      "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+                      isGroupActive
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {t(tab.labelKey)}
+                    <ChevronDown
+                      className="h-3 w-3 opacity-70"
+                      aria-hidden="true"
+                    />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  data-slot="insights-tab-strip-group-popover"
+                  className="w-56 p-2 text-sm"
+                >
+                  <p className="text-muted-foreground px-2 py-1 text-[11px] font-semibold tracking-wide uppercase">
+                    {t(tab.headerKey)}
+                  </p>
+                  <ul className="space-y-1" role="list">
+                    {tab.children.map((child) => {
+                      const isChildActive =
+                        pathname === child.href ||
+                        pathname.startsWith(`${child.href}/`);
+                      return (
+                        <li key={child.href}>
+                          <Link
+                            href={child.href}
+                            aria-current={isChildActive ? "page" : undefined}
+                            data-slot="insights-tab-strip-group-item"
+                            data-active={isChildActive ? "true" : undefined}
+                            className={cn(
+                              "flex min-h-10 items-center rounded-md px-2 py-1.5 text-sm transition-colors",
+                              "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+                              isChildActive
+                                ? "bg-primary/10 text-primary"
+                                : "text-foreground hover:bg-accent",
+                            )}
+                          >
+                            {t(child.labelKey)}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </PopoverContent>
+              </Popover>
             );
           })}
         </div>
