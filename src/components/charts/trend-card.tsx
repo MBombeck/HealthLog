@@ -327,14 +327,41 @@ export function TrendCard({
             whole tile disappear because of a gap in logging. Ride the
             same callout-slot reservation as the comparison-overlay
             caption; on `<sm` the line-clamp keeps the 140 px height
-            contract intact. */}
-        {staleDays != null && staleDays > 0 && (
+            contract intact.
+
+            v1.4.34 IW-B — bucket-aware copy. Days under a week stay
+            silent (the tile reads as fresh); 8-30 days surfaces as
+            "vor Xd"; 31-60 days collapses to "vor X Wochen"; beyond
+            two months collapses to "vor X Monaten". One key per
+            bucket plus a singular/plural pair so locales with
+            non-English plural rules read naturally. */}
+        {staleDays != null && staleDays > 7 && (
           <span
             className="text-muted-foreground line-clamp-1 inline-block max-w-full text-xs leading-snug tabular-nums sm:line-clamp-none"
             data-slot="tile-stale-hint"
             data-stale-days={staleDays}
           >
-            {t("dashboard.staleHint", { count: staleDays })}
+            {(() => {
+              if (staleDays <= 30) {
+                return t("dashboard.staleHint", { count: staleDays });
+              }
+              if (staleDays <= 60) {
+                const weeks = Math.floor(staleDays / 7);
+                return t(
+                  weeks === 1
+                    ? "dashboard.staleHintWeeksOne"
+                    : "dashboard.staleHintWeeksOther",
+                  { count: weeks },
+                );
+              }
+              const months = Math.floor(staleDays / 30);
+              return t(
+                months === 1
+                  ? "dashboard.staleHintMonthsOne"
+                  : "dashboard.staleHintMonthsOther",
+                { count: months },
+              );
+            })()}
           </span>
         )}
       </div>

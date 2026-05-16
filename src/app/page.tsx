@@ -105,6 +105,17 @@ interface AnalyticsData {
   bpInTargetPctPriorMonth?: number | null;
   bpInTargetPctPriorYear?: number | null;
   glucoseByContext?: Record<string, DataSummaryType>;
+  /**
+   * v1.4.34 IW-B — per-type freshness map from `/api/analytics`. The
+   * tile-strip helper reads `lastSeenByType[type]?.daysAgo` and forwards
+   * it to each `<TrendCard staleDays>` so a metric the user hasn't
+   * logged in a while keeps its tile visible (with an explicit
+   * "Letzter Wert vor …" caption) instead of disappearing.
+   */
+  lastSeenByType?: Record<
+    string,
+    { lastSeenAt: string; daysAgo: number } | null
+  >;
 }
 
 interface RangeDisplayConfig {
@@ -290,6 +301,25 @@ export default function DashboardPage() {
         : (summary.avg30LastYear ?? null);
     if (current === null || prior === null) return null;
     return Math.round((current - prior) * 100) / 100;
+  };
+
+  /**
+   * v1.4.34 IW-B — read the per-type freshness map and surface the
+   * `daysAgo` value when the metric is older than a week. The
+   * tile-strip below forwards the result to `<TrendCard staleDays>`
+   * which picks the bucket-aware copy (Xd / X weeks / X months) and
+   * paints the caption on the tile. Returns `null` for metrics with no
+   * reading yet OR within the fresh window so call sites stay
+   * undefined-safe and tiles with recent data paint byte-identical
+   * with the pre-v1.4.34 contract.
+   */
+  const tileStaleDays = (
+    type: string | null | undefined,
+  ): number | null => {
+    if (!type) return null;
+    const entry = data?.lastSeenByType?.[type];
+    if (!entry) return null;
+    return entry.daysAgo > 7 ? entry.daysAgo : null;
   };
   /** Whether the widget's *chart* (lower row) shows. */
   const isChartVisible = (id: string) =>
@@ -632,6 +662,7 @@ export default function DashboardPage() {
                 directionSentiment="up-bad"
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(w)}
+                staleDays={tileStaleDays("WEIGHT")}
               />
             ),
           });
@@ -677,6 +708,7 @@ export default function DashboardPage() {
                 directionSentiment="up-bad"
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(sys)}
+                staleDays={tileStaleDays("BLOOD_PRESSURE_SYS")}
               />
             ),
           });
@@ -717,6 +749,7 @@ export default function DashboardPage() {
                 directionSentiment="up-bad"
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(dia)}
+                staleDays={tileStaleDays("BLOOD_PRESSURE_DIA")}
               />
             ),
           });
@@ -756,6 +789,7 @@ export default function DashboardPage() {
                 icon={TrendingUp}
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(p)}
+                staleDays={tileStaleDays("PULSE")}
               />
             ),
           });
@@ -778,6 +812,7 @@ export default function DashboardPage() {
                 directionSentiment="up-bad"
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(bf)}
+                staleDays={tileStaleDays("BODY_FAT")}
               />
             ),
           });
@@ -822,6 +857,7 @@ export default function DashboardPage() {
                 directionSentiment="up-good"
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(sleepSummary)}
+                staleDays={tileStaleDays("SLEEP_DURATION")}
               />
             ),
           });
@@ -844,6 +880,7 @@ export default function DashboardPage() {
                 directionSentiment="up-good"
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(stepsSummary)}
+                staleDays={tileStaleDays("ACTIVITY_STEPS")}
               />
             ),
           });
@@ -873,6 +910,7 @@ export default function DashboardPage() {
                 directionSentiment="up-good"
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(vo2Summary)}
+                staleDays={tileStaleDays("VO2_MAX")}
               />
             ),
           });
@@ -973,6 +1011,7 @@ export default function DashboardPage() {
                   }
                   slope30={s.slope30 ?? null}
                   icon={Droplet}
+                  staleDays={tileStaleDays("BLOOD_GLUCOSE")}
                 />
               ),
             });
