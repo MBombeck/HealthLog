@@ -1,5 +1,336 @@
 # Changelog
 
+## [1.4.28] — 2026-05-16
+
+Bug-fix and consistency follow-through after the v1.4.27 mobile sweep.
+The headline is a tighter dashboard and insights surface: six widgets
+retire from code entirely (GLP-1 tile, dashboard `<DrugLevelChart>`
+mount, GLP-1 detail-page intake history + inventory, the
+`<InsightAdvisorCard>` block and its regeneration affordance, the
+weekly-report route), four broken edges close (workout-edit duplicate-
+timestamp 409, BD-Zielbereich tile rebuilt on the shared
+`<TrendCard>` primitive, `/insights/puls` chart timeout fallback,
+sticky tab-strip scroll lock), and one consistency contract lands per
+maintainer directive: every medication-list row, every medication-
+detail section header, every trend tile, every Coach launch glyph,
+every chart-height contract reads on one shape. The HealthScore card
+grows to fill its column, gains an accessible `?` tooltip explaining
+the delta, and drops the placeholder "Wochenbericht erstellen"
+button. iOS contracts are intact; the only `/api/*` evolution is
+additive (the `aggregate=monthly` grain on `/api/measurements` and an
+internal-only `/api/internal/web-vitals` beacon route).
+
+### Removed
+
+- **GLP-1 dashboard tile.** `src/components/dashboard/glp1-tile.tsx`
+  and every reference (`dashboard-layout.ts` entry, the
+  `dashboard.glp1.*` i18n keys, the test fixtures) retire. The tile
+  is gone from `/`; the recovered vertical real estate flows to the
+  trends row + HealthScore column.
+- **Dashboard `<DrugLevelChart>` mount.** The standalone Drug-Level
+  pane retired from `/`. The component itself stays — it serves the
+  `/medications/[id]/history` page exclusively. The `compact` mode
+  and `windowHoursBefore` override drop with the dashboard mount; the
+  history-page recipe paints the chart inside
+  `<MedicationDetailSection>` on the same heading scale as every
+  other section on the page.
+- **`<InsightAdvisorCard>` surface.** The "Persönlicher Berater"
+  card at the bottom of `/insights` and its "Insights aktualisieren"
+  regeneration button retire. The Coach drawer is the single
+  assistant entry point. Component, mounts, test fixtures, i18n
+  keys, and the cached-advisor query all retire together.
+- **Weekly-report route.** `/insights/report/[week]` and the
+  `<WeeklyReportBanner>` mount on the hero retire. No remaining
+  consumer; the Coach drawer covers the equivalent ask.
+- **GLP-1 detail-page intake history + inventory.** The "Dosis-
+  Historie" disclosure and "Bestand" section retire from the GLP-1
+  medication detail page. The page now collapses to header,
+  schedule, dose-titration ladder, and side-effects — every section
+  the maintainer flagged as wanted; every section flagged as
+  unwanted is gone. Inventory tracking remains opt-in for a future
+  release.
+- **Hero "Wochenbericht erstellen" button.** The placeholder
+  affordance retires from the `/insights` action row. The row now
+  carries a single "Coach fragen" button so the HealthScore card on
+  the opposite column has the height to reach the last suggested
+  prompt.
+
+### Fixed
+
+- **Workout edit raised a 500 on duplicate timestamps.** The save
+  path on `PUT /api/measurements/[id]` returned a generic 500 when a
+  sport-typed sample (`ACTIVE_ENERGY_BURNED`, `FLIGHTS_CLIMBED`,
+  `WALKING_RUNNING_DISTANCE`, `EXERCISE_TIME`) collided with an
+  existing row on the same `(type, measuredAt)` natural key. Returns
+  409 with a `measurements.duplicateTimestamp` translation key now;
+  the iOS native client and the web measurement-form both surface
+  the conflict to the user instead of a generic toast.
+- **BD-Zielbereich tile rendered "1.1." instead of numbers.** The
+  tile's bespoke rendering path read the schedule date through
+  `Intl.DateTimeFormat` and missed the underlying value. Tile
+  rebuilt on the shared `<TrendCard>` primitive so the chrome, the
+  state shape, the prop API, and the fallback behaviour match the
+  Weight and BP siblings. The divergence has been the open finding
+  across v1.4.22, v1.4.25, v1.4.26 patches — this release rewrites
+  the tile instead of patching.
+- **`/insights/puls` hung waiting on the assessment provider.** The
+  pulse status card called the language-model provider with no
+  client-side timeout. A timeout helper (`with-timeout.ts`) caps
+  every status-card provider call at 20 s and returns the rule-based
+  fallback string on timeout; the page renders the chart immediately
+  and the assessment line resolves async.
+- **Scroll stuck on `/insights` mother-page navigation.** The sticky
+  tab-strip's intersection-observer was fighting the focus-on-mount
+  logic so the page sometimes refused to scroll past the tab row.
+  The observer rebinds on route change and the focus-on-mount
+  effect now waits for the next animation frame so the scroll
+  position is locked in before the observer fires.
+- **`<DrugLevelChart>` paint exceeded the active range window.** The
+  chart fetched every dose-event in history regardless of the
+  selected range. Now bounded to the active range — 30 days / 90
+  days / all-time — so the wire payload and the recharts render
+  scale linearly with the visible window.
+- **Mood trend tile painted a residual `rounded-xl` border.** The
+  shadcn `<Card>` default paints `rounded-xl` while the trends row
+  needs `rounded-md` to match the `<HealthChart mini>` shape. Mini-
+  mode override adds `rounded-md`; the visual rhythm of the row
+  reads on one envelope.
+- **Side-effects card overflowed at 320 px.** The "Nebenwirkungen
+  erfassen" CTA chip ran past the section header. The qualifier
+  drops from every locale ("Erfassen" / "Log" / "Consigner" /
+  "Registrar" / "Registra" / "Dodaj"); the section title carries
+  the context. The date column on the entry rows narrows from 88 px
+  to 56 px so the free-text slot recovers 32 px of wrap headroom.
+- **Medication-list row shape diverged for GLP-1 entries.** The
+  GLP-1 row painted with a brand icon and a middle-dot separator;
+  every other row painted two-line without an icon. Both routes
+  through a shared `<MedicationCardHeader>` now — line 1 is `{name}
+  {dose}`, line 2 is the class label plus state badges. The GLP-1
+  outlier shape is gone.
+- **HealthScore card came up short below the action+prompts column.**
+  The card now opts into `flex h-full flex-col` with the disclaimer
+  footer pinned via `mt-auto`; the hero row switches to
+  `md:items-stretch` on `md+` so the score column reaches the
+  bottom of the suggested-prompt rail. Equal-height contract across
+  the hero strip.
+- **`/measurements` aggregation truncated long-window queries.** The
+  `take` cap applied before bucketising, so a 365-day daily-grain
+  query returned only the first N raw rows. Aggregation now runs
+  as a Postgres `date_trunc` GROUP BY and the cap applies to the
+  bucketised result; a 1-year window returns up to 365 daily
+  buckets. The all-time chart range resolves to monthly grain (24-
+  bucket ceiling) or weekly when history is under two years.
+- **Schlaf sub-page missed the per-section assessment slot.** Six of
+  seven insights sub-pages mount `<InsightStatusCard>` underneath
+  the chart; Sleep did not. Documented as the intentional skip
+  with a `// no per-section assessment yet` marker so future
+  contributors do not re-flag it.
+- **Insights-targets locale strings missed on FR / ES / IT / PL.**
+  `measurements.duplicateTimestamp` and `insights.sleep.description`
+  now carry native translations in every locale.
+
+### Changed
+
+- **BD-Zielbereich tile aligned to `<TrendCard>`.** Tile chrome,
+  state shape, prop API, and fallback states all match Weight and
+  BP. The Z-value rounds to one decimal at the boundary, the legend
+  carries the same micro labels across siblings, the empty state
+  reads the same copy with the same CTA shape.
+- **Medication-list rows route through `<MedicationCardHeader>`.**
+  GLP-1 and standard rows both render `{name} {dose}` on line 1 and
+  class label plus state badges on line 2. State badges break onto
+  their own row at 320 px so the two-line shape holds.
+- **Medications detail-page chrome collapsed to one heading scale.**
+  Every section on `/medications/[id]` mounts through
+  `<MedicationDetailSection>` (`text-base font-semibold leading-6
+  tracking-tight`). DrugLevelChart's standalone header migrates to
+  `<h2>` with the same classes. Micro labels lift from
+  `text-[10px]` / `text-[11px]` to `text-xs` across Scheduling,
+  Titration, SideEffects. Three scales survive the page: heading,
+  body (`text-sm`), micro (`text-xs`).
+- **Coach launch shape consolidated to three primitives.** A single
+  `<LayoutCoachFab>` mounts once per Insights surface (FAB on `<lg`,
+  hidden on `lg+`); `<CoachLaunchButton>` paints the inline desktop
+  ghost button only; `<TargetCoachButton>` paints the per-card
+  icon-only chat-bubble. The five-shape inventory collapses to
+  three. Every Coach launch glyph reads on one vocabulary
+  (`Sparkles`); the suggested-prompt chips stay their own visual
+  class because the pre-fill flow is conceptually distinct.
+- **Targets page Coach launch is icon-only.** The bottom-left "Coach
+  fragen" pill on `/insights/zielwerte` collapses to a 44 px
+  icon-only affordance. The visible label drops; the same string
+  carries through `aria-label` + `title` so screen readers still
+  announce the action.
+- **HealthScore delta gains a `?` explainer.** Tap or hover on the
+  icon next to the "-3 vs last week" line opens a popover on `md+`
+  and a `<ResponsiveSheet>` bottom-sheet on phone viewports.
+  Three-sentence body per locale: which components contribute, what
+  window, what the user can do to nudge it.
+- **Trends row pins to an equal-height contract.** The
+  `auto-rows-fr` rule lifts from `md:` to every breakpoint; each
+  chart wraps in a `trends-row-chart-slot` div with `shrink-0` so
+  the slot is the load-bearing height anchor. `<MoodChart>` mini
+  envelope tightens to match `<HealthChart mini>`. Captions clamp
+  at three lines.
+- **`<CoachLaunchScope>.metric` narrows to `CoachScopeSource`.** The
+  type is forward-looking — no call site passes the parameter yet —
+  but the union now mirrors what the iOS client speaks. The
+  v1.4.28 narrowing closes the open type-system note from
+  v1.4.27.
+- **Coach mobile sheet caps at 90 dvh.** The Coach drawer's bottom-
+  sheet branch on phones now matches the `<ResponsiveSheet>`
+  convention (the v1.4.27 release picked 95 dvh; this release
+  aligns the cap).
+- **Insights sub-pages share one data-fetch hook.** The seven sub-
+  pages duplicated the same React-Query analytics fetch plus the
+  empty-state branch; both now route through `useInsightsAnalytics`
+  and `<MetricEmptyState>`. Adding a future metric sub-page is a
+  one-file change.
+- **Chart dynamic imports consolidate on `<HealthChartDynamic>`.**
+  Six `dynamic(() => import("@/components/charts/health-chart"))`
+  call sites collapse to one re-export. Every dynamic chart slot
+  ships a layout-stable `<ChartSkeleton>` loading state so the
+  page does not jump as the bundle resolves.
+- **Side-effects add CTA shortens across all six locales.** "Log",
+  "Erfassen", "Consigner", "Registrar", "Registra", "Dodaj" — the
+  qualifier drops; the section title carries the context.
+- **`/api/measurements` aggregate branch flips to GROUP BY.** The
+  Postgres `date_trunc` path resolves daily / weekly / monthly
+  grain server-side; the `BUCKET_CAP` keeps the response bounded.
+  iOS callers that pass `limit` only land in the unchanged raw
+  branch (byte-stable against v1.4.27).
+- **`/medications/[id]/history` page wrapper stride.**
+  `space-y-4 → space-y-6` so the section stride matches
+  `/insights/*`.
+
+### Added
+
+- **`useInsightsAnalytics()` hook + `<MetricEmptyState>` primitive.**
+  Shared data-fetch + empty-state scaffolding across the insights
+  sub-pages. Adding a new metric route reads on one fetcher and one
+  empty-state recipe. `AnalyticsData` hoists to
+  `src/types/analytics.ts` as `SubPageAnalyticsData`.
+- **`<HealthChartDynamic>` re-export.** Single canonical lazy-loaded
+  health-chart entry consumed by the dashboard, the five `/insights`
+  metric pages, the trends row, and the VO2 max chart row.
+- **`<ChartSkeleton>` loading state across every dynamic chart.**
+  Layout-stable placeholder pinned at the same height the chart
+  paints when loaded. Nine `next/dynamic` chart call sites lift onto
+  the shared primitive.
+- **`with-timeout.ts` envelope helper.** Wraps any provider call in
+  a 20 s timeout and returns a structured `TimeoutEnvelope<T>`
+  (`{ ok: true, value } | { ok: false, error }`). Adopted by the
+  insights status cards; the user-visible chart paints immediately
+  while the language-model assessment resolves async.
+- **`HealthScoreDeltaExplainer`.** New
+  `src/components/insights/health-score-delta-explainer.tsx`
+  surfaces the `?` icon next to the delta line; tap opens a
+  popover on `md+` and a `<ResponsiveSheet>` on phone viewports.
+  Three-sentence body per locale. The trigger paints
+  `aria-expanded` + `aria-controls`; the body owns an `id` matched
+  by `aria-describedby` on the delta `<span>`.
+- **`<LayoutCoachFab>` mount.** Floating Coach affordance lifts out
+  of `<CoachLaunchButton>` and mounts once per Insights layout. The
+  duplicate-FAB nodes (one per sub-page) collapse to one node in the
+  a11y tree.
+- **`<MobileRailTray>` carve-out.** The two `<Sheet>` mounts that
+  wrap the Coach history rail and sources rail lift out of
+  `<CoachDrawer>` into their own ~80 LOC primitive. Pure refactor:
+  every `data-slot` identifier and breakpoint class survives intact.
+- **`useReportWebVitals` beacon + bundle analyzer.** `pnpm analyze`
+  runs `next build` with `@next/bundle-analyzer` enabled (reports
+  land in `.next/analyze/`). The beacon POSTs CLS / LCP / INP / FCP
+  / TTFB / INP to `/api/internal/web-vitals` via
+  `navigator.sendBeacon` with a `fetch({ keepalive: true })`
+  fallback. The route validates the payload with Zod, rate-limits
+  to 60 / min per IP, requires same-origin Referer (when
+  `NEXT_PUBLIC_APP_URL` is set), and forwards the metric name +
+  value + rating to the wide-event logger via `annotate({ meta })`.
+- **`aggregate=monthly` grain on `/api/measurements`.** Additive
+  enum value resolving 30-day buckets. All-time chart range now
+  resolves to monthly aggregation when full history ≥ 2 years,
+  weekly when shorter. The 24-bucket ceiling keeps the response
+  bounded. Schema is iOS-additive.
+- **`dispatchLocalisedNotification` user-lookup cache.** 30 s TTL
+  LRU keyed on `userId`; repeat dispatches inside the window share
+  one Prisma query. Capped at 1 000 entries with FIFO eviction.
+  For a burst of admin alerts to the same recipient the cache
+  collapses N round-trips to 1.
+- **`insights.coach.window.lastYear` key across six locales.** The
+  enum value shipped in v1.4.27; the strings now carry native
+  copy in every locale ("year so far", "Jahresrückblick", "depuis
+  le début de l'année", "lo que va de año", "anno in corso",
+  "od początku roku").
+
+### Performance
+
+- **Health-chart fetches bound to the active range window.** The
+  client now passes the resolved `from`/`to` for the selected range
+  instead of pulling the full history every time; the wire payload
+  and the Recharts render scale linearly with the visible window.
+- **Insights status-card provider call capped at 20 s.** Hung
+  assessments resolve to the rule-based fallback instead of blocking
+  the chart paint. The chart is rendered from local analytics on
+  first paint; the assessment line streams in when (and if) the
+  provider returns.
+- **Dispatch-localised notification user lookup cached.** See the
+  Added entry — same line item, performance impact is the
+  collapsed Prisma round-trips on burst dispatches.
+- **Dynamic chart imports collapsed onto one re-export.** Six
+  duplicate `next/dynamic` call sites reduce to one; chart
+  skeletons pin layout across the dynamic resolve so the user
+  never sees a height jump.
+
+### Tests
+
+- **17 new Vitest cases for the range-aggregation route.** Cover
+  the iOS gate (raw branch byte-stable when `aggregate` is omitted),
+  the daily 365-bucket assertion, the monthly cap, the all-time
+  monthly path, the all-time weekly fallback, and the per-grain
+  threshold.
+- **8 new cases on the web-vitals beacon route.** Happy 204, three
+  schema rejections, malformed JSON, 429 under rate limit,
+  cross-origin drop, same-origin accept.
+- **5 new cases on the dispatch-localised cache.** Cache hit, TTL
+  expiry, just-inside-TTL, reset helper, per-user isolation.
+- **11 new tests across the medication, insights, and target
+  surfaces.** Three on `<MedicationCardHeader>`, one on the side-
+  effects narrow-viewport responsive shape, four on the HealthScore
+  delta explainer (size, screen-reader wiring, trigger label,
+  closed-by-default), one on the mood-tile radius, one on the
+  trends-row equal-height contract, one on the targets-page Coach
+  icon affordance.
+- **5 new cases on `<MobileRailTray>`.** Slot identifiers,
+  breakpoint hides, rail content forwarding, localised titles,
+  closed-state gating.
+- **1 new case on the workout edit duplicate-timestamp path.** The
+  `ACTIVE_ENERGY_BURNED` sport-typed row pins the 409 response
+  shape and the `measurements.duplicateTimestamp` key resolves to
+  native translations on every locale.
+- **Test totals: 3953 → 3974 passing across the broad sweep, with
+  546 / 546 green on the touched surfaces.**
+
+### Deferred
+
+- **SD-H1 client wire-up.** The server machinery lands in
+  `8144281d`; the client still defaults the "All time" tab to a
+  365-day window with no `aggregate` param. Flipping the client to
+  pass `aggregate=monthly` plus the user's earliest measurement as
+  `from` is a four-line edit deferred to v1.4.29 — the bucketed
+  rows carry a divergent shape and the chart adapter needs a small
+  helper to merge bucketed vs raw inputs.
+- **R4 Medium-tier findings.** The simplifier, design, UI-conformity,
+  i18n, and senior-dev reviewers each surfaced a Medium-tier
+  backlog. Closed only the high-impact items in this release;
+  Medium-tier items (8 design, 4 UI-conformity, 5 i18n, 7 senior-
+  dev, plus the `<ResponsiveSheet>` footer-slot wiring and the 5
+  `<Dialog>` consumers still to migrate) defer to v1.4.29 per the
+  scope-discipline directive ("less scope, more depth").
+- **Five admin / monitoring orphan endpoints.** Unchanged from
+  v1.4.27. The wire-or-remove decision still pends — each is
+  documented in README but has no runtime consumer. Carry forward
+  to v1.4.29.
+
 ## [1.4.27] — 2026-05-15
 
 Mobile capability + maintainer-finding cleanup. The headline is a new
