@@ -1,0 +1,863 @@
+{
+  "durations": {
+    "puls": 1173,
+    "blutdruck": 879,
+    "gewicht": 855,
+    "stimmung": 832,
+    "schlaf": 900,
+    "aktive-energie": 1520,
+    "hrv": 1201,
+    "ruhepuls": 1473,
+    "sauerstoff": 1260,
+    "koerpertemperatur": 1546,
+    "bmi": 815,
+    "medikamente": 1444,
+    "workouts": 1016
+  },
+  "findings": [],
+  "consoleErrors": [
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "url": "http://localhost:3000/auth/login"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/puls"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)",
+      "url": "http://localhost:3000/insights/puls"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/blutdruck"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)",
+      "url": "http://localhost:3000/insights/blutdruck"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/gewicht"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)",
+      "url": "http://localhost:3000/insights/gewicht"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/stimmung"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)",
+      "url": "http://localhost:3000/insights/stimmung"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/schlaf"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/schlaf"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)",
+      "url": "http://localhost:3000/insights/schlaf"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/aktive-energie"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)",
+      "url": "http://localhost:3000/insights/aktive-energie"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/hrv"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)",
+      "url": "http://localhost:3000/insights/hrv"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/ruhepuls"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)",
+      "url": "http://localhost:3000/insights/ruhepuls"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/sauerstoff"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)",
+      "url": "http://localhost:3000/insights/sauerstoff"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/koerpertemperatur"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/koerpertemperatur"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/koerpertemperatur"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)",
+      "url": "http://localhost:3000/insights/koerpertemperatur"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/bmi"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/bmi"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/bmi"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/bmi"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/bmi"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/bmi"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/medikamente"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/medikamente"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/medikamente"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/medikamente"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/workouts"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/workouts"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/workouts"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/workouts"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/account"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/account"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/account"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/integrations"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/integrations"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/integrations"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/notifications"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/notifications"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/notifications"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/dashboard"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/dashboard"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/dashboard"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/thresholds"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/thresholds"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/thresholds"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/sources"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/sources"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/sources"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/ai"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/ai"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/ai"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/api"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/api"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/api"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/export"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/export"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/export"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/advanced"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/advanced"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/advanced"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/about"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/about"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/settings/about"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "url": "http://localhost:3000/auth/login"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/auth/login"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/auth/login"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/auth/login"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/auth/login"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/puls"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/puls"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/puls"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/blutdruck"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/blutdruck"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/gewicht"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/gewicht"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/stimmung"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/stimmung"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/schlaf"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/schlaf"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/schlaf"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/hrv"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/hrv"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/account"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/account"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/thresholds"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/sources"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/integrations"
+    },
+    {
+      "type": "mobile-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/ai"
+    },
+    {
+      "type": "repeat-console",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "url": "http://localhost:3000/auth/login"
+    },
+    {
+      "type": "repeat-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/auth/login"
+    },
+    {
+      "type": "repeat-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "type": "repeat-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/blutdruck"
+    },
+    {
+      "type": "repeat-console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/blutdruck"
+    },
+    {
+      "type": "repeat-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/account"
+    },
+    {
+      "type": "repeat-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/settings/account"
+    },
+    {
+      "type": "repeat-console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/blutdruck"
+    },
+    {
+      "type": "repeat-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/insights/blutdruck"
+    },
+    {
+      "type": "repeat-console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/blutdruck"
+    },
+    {
+      "type": "repeat-console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/insights/blutdruck"
+    },
+    {
+      "type": "repeat-console",
+      "text": "Failed to load resource: the server responded with a status of 404 ()",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "type": "repeat-console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "type": "repeat-console",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://localhost:3000/"
+    }
+  ],
+  "networkFailures": [
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3000/api/internal/web-vitals",
+      "method": "POST",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "slowResponses": []
+}
