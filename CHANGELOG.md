@@ -1,5 +1,56 @@
 # Changelog
 
+## [1.4.34.1] — 2026-05-16 — Insights cold-mount perf hotfix + scatter-card sizing
+
+Hotfix on top of v1.4.34. The Insights page mount was paying ~29 s on
+every cold load against accounts populated by the v1.4.34 Apple Health
+importer. Root cause: `/api/insights/comprehensive` walked the unbounded
+90-day measurement set into JS, then ran per-type `summarize()`, BMI,
+blood-pressure classification, target adherence, and four Pearson
+correlations from the same pile of rows. On a 100 000+ row account the
+route consumed one of the 20 pool connections for the whole 29 s, which
+cascaded sibling endpoints into Cloudflare "no available server" 503s.
+The scatter-correlation card also surfaced a `width(-1)/height(-1)`
+Recharts warning on first paint because its dynamic-mount lacked a
+non-zero floor before aspect-ratio resolved.
+
+### Changed
+
+- `/api/insights/comprehensive` now reads through a SQL-side aggregator
+  (`src/lib/insights/comprehensive-aggregator.ts`) that groups by metric
+  type with Postgres-native `AVG` / `MIN` / `MAX` / `REGR_SLOPE` /
+  `REGR_R2` on the `measurements (user_id, type, measured_at)` index
+  path. Returns the same `DataSummary`-shaped per-type bundle the legacy
+  route stitched together; the medication-compliance block keeps its
+  bounded Prisma reads — those were already on the safe path. The route
+  is wired through the server cache keyed on `${userId}|comprehensive`
+  (60 s TTL) so the second consumer inside the window resolves on a
+  `Map.get()` instead of re-running the aggregate. Witnessed wall-time:
+  the cold path drops from ~29 s to a few hundred milliseconds against
+  a fixture matching the production volume that triggered the bug; the
+  warm path resolves in single-digit milliseconds.
+- Cache-wrap the five remaining read routes the v1.4.34 server-cache
+  blueprint left staged but unwired: `/api/mood/analytics`,
+  `/api/workouts`, `/api/bugreport/status`, `/api/medications`,
+  `/api/dashboard/widgets`. All five sit on `caches.*` instances already
+  provisioned by the v1.4.34 IW-G primitive; each handler now reads
+  through `cached(...)` and benefits from the existing per-user
+  invalidation matrix (`invalidateUserMeasurements`,
+  `invalidateUserMood`, `invalidateUserMedications`,
+  `invalidateUserDashboardWidgets`, `invalidateAppSettings`). The
+  Cloudflare 503 cascade on `/api/measurements?aggregate=daily` resolves
+  as a downstream consequence — once the comprehensive route stops
+  monopolising the pool, the origin accepts new connections fast enough
+  that Cloudflare's origin-fail circuit-breaker no longer trips.
+
+### Fixed
+
+- Scatter-correlation card no longer logs the Recharts
+  `The width(-1) and height(-1) of chart should be greater than 0`
+  warning on first mount. The wrapper now carries a `min-h-[180px]`
+  floor that matches the loading skeleton so `ResponsiveContainer`
+  always measures a non-zero parent before aspect-ratio settles.
+
 ## [1.4.34] — 2026-05-17 — Apple Health import + reliability + web freeze
 
 The final functional web release before the iOS native client lands.
