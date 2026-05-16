@@ -32,9 +32,9 @@ interface AssistantDisabledNoticeProps {
 
 const SURFACE_LABEL_KEY: Record<AssistantDisabledSurface, string> = {
   coach: "insights.coach.disabledByOperator",
-  briefing: "insights.briefing.disabledByOperator",
-  insightStatus: "insights.status.disabledByOperator",
-  correlations: "insights.correlations.disabledByOperator",
+  briefing: "insights.briefingDisabledByOperator",
+  insightStatus: "insights.statusDisabledByOperator",
+  correlations: "insights.correlationsDisabledByOperator",
 };
 
 export function AssistantDisabledNotice({

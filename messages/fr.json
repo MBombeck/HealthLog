@@ -867,6 +867,9 @@
     "heroFindingAttention": "Worth attention",
     "heroFindingWarning": "Top alert",
     "correlationsTitle": "Corrélations",
+    "briefingDisabledByOperator": "Le Briefing quotidien est actuellement indisponible sur ce serveur.",
+    "statusDisabledByOperator": "Les cartes de statut sont actuellement indisponibles sur ce serveur.",
+    "correlationsDisabledByOperator": "La narration des corrélations est actuellement indisponible sur ce serveur.",
     "recommendationsTitle": "Recommandations",
     "personalRecord": {
       "badge": "PR",
@@ -1023,6 +1026,7 @@
       "composerHint": "Press Enter to send, Shift+Enter for a new line.",
       "composerDisclaimer": "Coach replies are generated. Clinical decisions belong with your doctor.",
       "voiceComingSoon": "Voice input arrives with the iOS app in v1.5.",
+      "disabledByOperator": "Le Coach est actuellement indisponible sur ce serveur.",
       "threadEmpty": "Ask anything about your trends, medications, or readings to start a conversation.",
       "historyTitle": "Conversations",
       "historySearchPlaceholder": "Search conversations…",

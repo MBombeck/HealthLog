@@ -867,6 +867,9 @@
     "heroFindingAttention": "Beachten",
     "heroFindingWarning": "Wichtigster Alarm",
     "correlationsTitle": "Zusammenhänge",
+    "briefingDisabledByOperator": "Das Tagesbriefing ist auf diesem Server derzeit nicht verfügbar.",
+    "statusDisabledByOperator": "Status-Karten sind auf diesem Server derzeit nicht verfügbar.",
+    "correlationsDisabledByOperator": "Korrelations-Erzählung ist auf diesem Server derzeit nicht verfügbar.",
     "recommendationsTitle": "Empfehlungen",
     "personalRecord": {
       "badge": "PR",
@@ -1023,6 +1026,7 @@
       "composerHint": "Enter zum Senden, Umschalt+Enter für eine neue Zeile.",
       "composerDisclaimer": "Coach-Antworten sind generiert. Klinische Entscheidungen gehören in die Hand deines Arztes.",
       "voiceComingSoon": "Spracheingabe kommt mit der iOS-App in v1.5.",
+      "disabledByOperator": "Der Coach ist auf diesem Server derzeit nicht verfügbar.",
       "threadEmpty": "Frag mich etwas zu deinen Trends, Medikamenten oder Messwerten, um zu starten.",
       "historyTitle": "Unterhaltungen",
       "historySearchPlaceholder": "Unterhaltungen durchsuchen…",
