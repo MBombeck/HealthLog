@@ -181,6 +181,14 @@ model User {
   researchModeAcknowledgedAt      DateTime? @map("research_mode_acknowledged_at")
   researchModeAcknowledgedVersion String?   @map("research_mode_acknowledged_version")
 
+  // v1.4.30 — iOS SyncMode foundation (R-E C-2). Last-known
+  // synchronization checkpoint per user. iOS reads it via
+  // `GET /api/sync/state` to decide whether to drain its local
+  // SwiftData backlog before opening a fresh anchored-query window.
+  // NULL = never synced; the SyncMode store treats that as "force
+  // a full refresh on the next pair".
+  lastSyncedAt DateTime? @map("last_synced_at")
+
   // v1.4.25 W6c — Doctor-report section toggles.
   // Shape:
   //   { "bp": boolean,
@@ -396,6 +404,21 @@ model Measurement {
   // include `deviceType` so two ingest paths from the same source
   // still dedup on (type, source, externalId).
   deviceType            String?           @map("device_type")
+  // v1.4.30 — iOS SyncMode foundation (R-E C-2). Monotonically
+  // incremented on every server-side mutation of the row. iOS uses
+  // it for last-writer-wins reconciliation when two devices write
+  // the same logical reading. Default = 1 for the create path; the
+  // update path is responsible for bumping it. Existing rows
+  // start at the default after the additive migration so legacy
+  // ingest keeps round-tripping unchanged.
+  syncVersion           Int               @default(1) @map("sync_version")
+  // v1.4.30 — soft-delete column. The DELETE path on the
+  // by-external-ids endpoint flips this rather than removing the row
+  // so paired iOS clients can reconcile deletions without losing the
+  // audit trail. NULL = live row; non-NULL = tombstoned at the
+  // recorded instant. The unique-by-externalId index keeps both
+  // states distinguishable for the bulk-backfill UPSERT path.
+  deletedAt             DateTime?         @map("deleted_at")
   createdAt             DateTime          @default(now()) @map("created_at")
   updatedAt             DateTime          @updatedAt @map("updated_at")
 
