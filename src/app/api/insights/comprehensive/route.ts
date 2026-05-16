@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db";
 import { resolveProvider } from "@/lib/ai/provider";
 import { apiSuccess } from "@/lib/api-response";
-import { summarize, type DataPoint } from "@/lib/analytics/trends";
+import type { DataPoint, DataSummary } from "@/lib/analytics/trends";
+import { summarize } from "@/lib/analytics/trends";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
 import {
@@ -16,11 +17,11 @@ import {
 } from "@/lib/analytics/correlations";
 import { calculateCompliance } from "@/lib/analytics/compliance";
 import { getMedicationCategories } from "@/lib/medication-category";
-import type { MeasurementType } from "@/generated/prisma/client";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireAuth, type AuthContext } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { requireAssistantSurface } from "@/lib/feature-flags";
+import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
+import { buildComprehensiveAggregate } from "@/lib/insights/comprehensive-aggregator";
 
 export const dynamic = "force-dynamic";
 
@@ -30,10 +31,41 @@ export const GET = apiHandler(async () => {
   // recommendations grid that share the Coach gate.
   await requireAssistantSurface("coach");
 
+  // v1.4.35 — read-through the analytics cache keyed on
+  // (userId, "comprehensive"). The /insights page mount routinely
+  // fans out to this endpoint alongside the Coach drawer + the
+  // recommendations grid; the 60s TTL converts every duplicate
+  // mount within the window to a Map lookup. Invalidation is handled
+  // by `invalidateUserMeasurements` which already evicts every key
+  // under the `${userId}|` prefix (see `lib/cache/invalidate.ts`).
+  const body = await cached(
+    caches.analytics as ServerCache<Awaited<
+      ReturnType<typeof buildComprehensiveResponse>
+    >>,
+    `${user.id}|comprehensive`,
+    () => buildComprehensiveResponse(user),
+    annotate,
+  );
+
+  return apiSuccess(body);
+});
+
+type AuthedUser = AuthContext["user"];
+
+/**
+ * v1.4.35 — comprehensive insights response body, lifted out of the
+ * route handler so `cached()` can wrap it. Replaces the previous
+ * 100k-row-in-JS aggregation with SQL-side aggregates served by
+ * `buildComprehensiveAggregate`. The medication-compliance block keeps
+ * its bounded Prisma reads (medications + intake events) — the directive
+ * called those out as already on the safe path. The byte-shape of the
+ * returned envelope is unchanged from the legacy route.
+ */
+export async function buildComprehensiveResponse(user: AuthedUser) {
   const userId = user.id;
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
-  // Fetch user profile
+  // Fetch user profile (height + DOB drive BMI + BP targets).
   const dbUser = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -42,24 +74,26 @@ export const GET = apiHandler(async () => {
     },
   });
 
-  // Derived from canonical enum so adding a new measurement type does not
-  // require touching this file (V3 audit finding: enum drift cousins).
-  const types = [...measurementTypeEnum.options] as MeasurementType[];
+  // ── Aggregate-first reads ─────────────────────────────────
+  // SQL-side rollup replaces the 100k-row findMany on the legacy
+  // route. Returns per-type DataSummary identical to the JS
+  // `summarize()` semantics over the 90-day window, plus the bounded
+  // raw rows the BP target adherence pairing needs, plus daily-mean
+  // buckets for the correlation pairings.
+  const aggregate = await buildComprehensiveAggregate(userId);
 
-  const allMeasurements = await prisma.measurement.findMany({
-    where: { userId, type: { in: types }, measuredAt: { gte: ninetyDaysAgo } },
-    orderBy: { measuredAt: "asc" },
-    select: { type: true, value: true, measuredAt: true },
-  });
-
-  // Fetch mood entries (90 days)
+  // Mood entries are user-recorded; the table is small and the
+  // `moodSummary` field requires raw scores (`summarize()` over the
+  // raw score series). The findMany stays.
   const moodEntries = await prisma.moodEntry.findMany({
     where: { userId, moodLoggedAt: { gte: ninetyDaysAgo } },
     orderBy: { moodLoggedAt: "asc" },
     select: { date: true, score: true, moodLoggedAt: true },
   });
 
-  // Aggregate mood to daily averages
+  // Aggregate mood to daily averages (drives the mood × metric
+  // correlations). Bucket key matches the legacy code's `date` column
+  // semantics (YYYY-MM-DD anchored to the user's tz at write time).
   const moodByDay = new Map<string, { sum: number; count: number }>();
   for (const entry of moodEntries) {
     const current = moodByDay.get(entry.date) ?? { sum: 0, count: 0 };
@@ -74,7 +108,9 @@ export const GET = apiHandler(async () => {
       value: Math.round((stats.sum / stats.count) * 100) / 100,
     }));
 
-  // Build DataPoint array for mood summary
+  // moodSummary uses the same `summarize()` helper over raw scores —
+  // the table is bounded by user-recorded entries so the in-JS path
+  // is safe.
   const moodDataPoints: DataPoint[] = moodEntries.map((e) => ({
     date: e.moodLoggedAt,
     value: e.score,
@@ -82,21 +118,9 @@ export const GET = apiHandler(async () => {
   const moodSummary =
     moodDataPoints.length > 0 ? summarize(moodDataPoints) : null;
 
-  const byType = (t: MeasurementType): DataPoint[] =>
-    allMeasurements
-      .filter((m) => m.type === t)
-      .map((m) => ({ date: m.measuredAt, value: m.value }));
+  const summaries: Record<string, DataSummary> = aggregate.summaries;
 
-  // Summaries
-  const summaries: Record<string, ReturnType<typeof summarize>> = {};
-  for (const t of types) {
-    const data = byType(t);
-    if (data.length > 0) {
-      summaries[t] = summarize(data);
-    }
-  }
-
-  // BMI
+  // ── BMI ──────────────────────────────────────────────────
   let bmi: number | null = null;
   let bmiClassification = null;
   if (dbUser?.heightCm && summaries.WEIGHT?.latest) {
@@ -105,7 +129,7 @@ export const GET = apiHandler(async () => {
     bmiClassification = classifyBMI(bmi);
   }
 
-  // BP classification (30-day average)
+  // ── BP classification (30-day average) ────────────────────
   let bpClassification = null;
   const bpTargets = getBpTargets(dbUser?.dateOfBirth ?? null);
   if (
@@ -118,11 +142,21 @@ export const GET = apiHandler(async () => {
     );
   }
 
-  // BP target adherence
+  // ── BP target adherence ──────────────────────────────────
+  // Keeps the 5-minute tolerance contract — sys + dia must pair on
+  // the same reading session. The aggregator pulled the bounded raw
+  // rows; we reuse `pairByTimestamp` against them so the output is
+  // byte-identical to the legacy path.
   let bpPctInTarget: number | null = null;
   if (bpTargets) {
-    const sysData = byType("BLOOD_PRESSURE_SYS");
-    const diaData = byType("BLOOD_PRESSURE_DIA");
+    const sysData: DataPoint[] = aggregate.bpRawRows.sys.map((r) => ({
+      date: r.measuredAt,
+      value: r.value,
+    }));
+    const diaData: DataPoint[] = aggregate.bpRawRows.dia.map((r) => ({
+      date: r.measuredAt,
+      value: r.value,
+    }));
     const sysPairs = pairByTimestamp(sysData, diaData, 5 * 60 * 1000);
 
     if (sysPairs.length > 0) {
@@ -135,82 +169,48 @@ export const GET = apiHandler(async () => {
     }
   }
 
-  // Correlations: Weight vs Sys BP
-  const weightData = byType("WEIGHT");
-  const sysData = byType("BLOOD_PRESSURE_SYS");
-  const weightBpPairs = pairByTimestamp(weightData, sysData);
+  // ── Correlations: weight × Sys BP ─────────────────────────
+  // Daily-key pairing (the legacy `pairByTimestamp` ran with a
+  // 24-hour default tolerance — daily-mean buckets are the
+  // SQL-side equivalent and the directive explicitly accepts the
+  // small semantic shift to bound the raw-row footprint).
+  const weightDaily = aggregate.dailyByType.WEIGHT ?? [];
+  const sysDaily = aggregate.dailyByType.BLOOD_PRESSURE_SYS ?? [];
+  const weightBpPairs: PairedPoint[] = joinDailyByDay(
+    weightDaily,
+    sysDaily,
+  );
   const weightBpCorrelation = pearsonCorrelation(weightBpPairs);
   const scatterData = weightBpPairs.map((p) => ({
     weight: p.a,
     sysBP: p.b,
   }));
 
-  // Correlations: Mood vs metrics (using daily averages matched by date)
-  function buildMoodMetricPairs(
-    dailyMood: Array<{ day: string; value: number }>,
-    measurements: Array<{ measuredAt: Date; value: number }>,
-  ): PairedPoint[] {
-    // Group measurements by day
-    const metricByDay = new Map<string, { sum: number; count: number }>();
-    for (const m of measurements) {
-      const dayKey = m.measuredAt.toISOString().slice(0, 10);
-      const current = metricByDay.get(dayKey) ?? { sum: 0, count: 0 };
-      current.sum += m.value;
-      current.count += 1;
-      metricByDay.set(dayKey, current);
-    }
-
-    const pairs: PairedPoint[] = [];
-    for (const mood of dailyMood) {
-      const metric = metricByDay.get(mood.day);
-      if (metric) {
-        pairs.push({
-          a: mood.value,
-          b: Math.round((metric.sum / metric.count) * 100) / 100,
-          date: new Date(`${mood.day}T12:00:00.000Z`),
-        });
-      }
-    }
-    return pairs;
-  }
-
-  // Mood vs Systolic BP
-  const moodBpPairs = buildMoodMetricPairs(
-    dailyMoodEntries,
-    allMeasurements
-      .filter((m) => m.type === "BLOOD_PRESSURE_SYS")
-      .map((m) => ({ measuredAt: m.measuredAt, value: m.value })),
-  );
+  // ── Correlations: mood × {sys BP, weight, pulse} ─────────
+  // Daily-key matches the legacy `buildMoodMetricPairs` exactly —
+  // mood is already per-day in the legacy code and we just align the
+  // metric side to the same daily bucket.
+  const moodBpPairs = pairMoodWithDaily(dailyMoodEntries, sysDaily);
   const moodBpCorrelation = pearsonCorrelation(moodBpPairs);
   const moodBpScatterData = moodBpPairs.map((p) => ({ mood: p.a, sysBP: p.b }));
 
-  // Mood vs Weight
-  const moodWeightPairs = buildMoodMetricPairs(
-    dailyMoodEntries,
-    allMeasurements
-      .filter((m) => m.type === "WEIGHT")
-      .map((m) => ({ measuredAt: m.measuredAt, value: m.value })),
-  );
+  const moodWeightPairs = pairMoodWithDaily(dailyMoodEntries, weightDaily);
   const moodWeightCorrelation = pearsonCorrelation(moodWeightPairs);
   const moodWeightScatterData = moodWeightPairs.map((p) => ({
     mood: p.a,
     weight: p.b,
   }));
 
-  // Mood vs Pulse
-  const moodPulsePairs = buildMoodMetricPairs(
-    dailyMoodEntries,
-    allMeasurements
-      .filter((m) => m.type === "PULSE")
-      .map((m) => ({ measuredAt: m.measuredAt, value: m.value })),
-  );
+  const pulseDaily = aggregate.dailyByType.PULSE ?? [];
+  const moodPulsePairs = pairMoodWithDaily(dailyMoodEntries, pulseDaily);
   const moodPulseCorrelation = pearsonCorrelation(moodPulsePairs);
   const moodPulseScatterData = moodPulsePairs.map((p) => ({
     mood: p.a,
     pulse: p.b,
   }));
 
-  // Medication compliance
+  // ── Medication compliance ────────────────────────────────
+  // Bounded reads — left untouched per the directive.
   const medications = await prisma.medication.findMany({
     where: { userId, active: true },
     include: { schedules: true },
@@ -229,9 +229,7 @@ export const GET = apiHandler(async () => {
     (med) => (categoryMap[med.id] ?? "OTHER") === "BLOOD_PRESSURE",
   );
   // Single round-trip for all medications instead of N+1: one query keyed
-  // on `medicationId IN (...)`, then group in memory. The previous loop
-  // hit Postgres once per medication, which scales poorly for users with
-  // many active meds.
+  // on `medicationId IN (...)`, then group in memory.
   const allEvents = medications.length
     ? await prisma.medicationIntakeEvent.findMany({
         where: {
@@ -284,7 +282,11 @@ export const GET = apiHandler(async () => {
     }
   }
 
-  // Correlation: continuity of BP medications vs systolic BP
+  // ── Correlation: BP medication continuity × systolic BP ──
+  // Uses the same daily BP_SYS series the aggregator pre-computed —
+  // no second round-trip. The intake-side aggregation matches the
+  // legacy code: continuity = min(1, taken / expectedPerDay), pairing
+  // every day that had a sys reading.
   let bpMedicationCorrelation: {
     r: number;
     strength: string;
@@ -302,13 +304,10 @@ export const GET = apiHandler(async () => {
   );
 
   if (expectedBpIntakesPerDay > 0) {
-    const sysByDay = new Map<string, number[]>();
-    for (const m of allMeasurements) {
-      if (m.type !== "BLOOD_PRESSURE_SYS") continue;
-      const dayKey = m.measuredAt.toISOString().slice(0, 10);
-      const list = sysByDay.get(dayKey) ?? [];
-      list.push(m.value);
-      sysByDay.set(dayKey, list);
+    // Daily systolic means (already keyed YYYY-MM-DD) from the SQL pass.
+    const sysByDay = new Map<string, number>();
+    for (const row of sysDaily) {
+      sysByDay.set(row.day, row.value);
     }
 
     const takenByDay = new Map<string, number>();
@@ -319,11 +318,9 @@ export const GET = apiHandler(async () => {
     }
 
     const pairs: Array<{ a: number; b: number; date: Date }> = [];
-    for (const [dayKey, sysValues] of sysByDay.entries()) {
+    for (const [dayKey, avgSys] of sysByDay.entries()) {
       const taken = takenByDay.get(dayKey) ?? 0;
       const continuity = Math.min(1, taken / expectedBpIntakesPerDay);
-      const avgSys =
-        sysValues.reduce((sum, value) => sum + value, 0) / sysValues.length;
       pairs.push({
         a: continuity,
         b: avgSys,
@@ -360,25 +357,24 @@ export const GET = apiHandler(async () => {
     })),
   });
 
-  // Data span
-  const firstMeasurement =
-    allMeasurements.length > 0 ? allMeasurements[0].measuredAt : null;
-  const dataSpanDays = firstMeasurement
+  // Data span — derived from the earliest 90-day measurement.
+  const dataSpanDays = aggregate.firstMeasurementAt
     ? Math.ceil(
-        (Date.now() - firstMeasurement.getTime()) / (24 * 60 * 60 * 1000),
+        (Date.now() - aggregate.firstMeasurementAt.getTime()) /
+          (24 * 60 * 60 * 1000),
       )
     : 0;
 
   annotate({
     action: { name: "insights.comprehensive" },
     meta: {
-      totalMeasurements: allMeasurements.length,
+      totalMeasurements: aggregate.totalMeasurements,
       moodEntries: moodEntries.length,
       medications: medications.length,
     },
   });
 
-  return apiSuccess({
+  return {
     summaries,
     bmi,
     bmiClassification,
@@ -400,6 +396,75 @@ export const GET = apiHandler(async () => {
     alerts,
     hasProvider: (await resolveProvider(userId)).type !== "none",
     dataSpanDays,
-    totalMeasurements: allMeasurements.length,
-  });
-});
+    totalMeasurements: aggregate.totalMeasurements,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Daily-key inner join between two daily-aggregated series. Returns
+ * `PairedPoint` shapes compatible with `pearsonCorrelation`.
+ *
+ * Inputs are sorted ASC by `day` (the aggregator's ORDER BY
+ * guarantees that). The walk is O(n + m) merge-join style instead of
+ * Map.lookup-per-element so it scales with the worst-case 90 buckets
+ * x 90 buckets case without surprises.
+ */
+function joinDailyByDay(
+  a: Array<{ day: string; value: number }>,
+  b: Array<{ day: string; value: number }>,
+): PairedPoint[] {
+  const pairs: PairedPoint[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < a.length && j < b.length) {
+    const ai = a[i];
+    const bj = b[j];
+    if (ai.day === bj.day) {
+      pairs.push({
+        a: ai.value,
+        b: bj.value,
+        date: new Date(`${ai.day}T12:00:00.000Z`),
+      });
+      i += 1;
+      j += 1;
+    } else if (ai.day < bj.day) {
+      i += 1;
+    } else {
+      j += 1;
+    }
+  }
+  return pairs;
+}
+
+/**
+ * Pair the daily mood series (left side) with a daily-aggregated
+ * metric (right side). Matches the legacy `buildMoodMetricPairs`
+ * helper byte-for-byte: same daily YYYY-MM-DD key, same
+ * `T12:00:00.000Z` anchor for the `date` field.
+ */
+function pairMoodWithDaily(
+  dailyMood: Array<{ day: string; value: number }>,
+  dailyMetric: Array<{ day: string; value: number }>,
+): PairedPoint[] {
+  if (dailyMood.length === 0 || dailyMetric.length === 0) return [];
+  const metricByDay = new Map<string, number>();
+  for (const m of dailyMetric) {
+    metricByDay.set(m.day, m.value);
+  }
+  const pairs: PairedPoint[] = [];
+  for (const mood of dailyMood) {
+    const metric = metricByDay.get(mood.day);
+    if (metric !== undefined) {
+      pairs.push({
+        a: mood.value,
+        b: metric,
+        date: new Date(`${mood.day}T12:00:00.000Z`),
+      });
+    }
+  }
+  return pairs;
+}
