@@ -260,6 +260,11 @@
     "emptyDescription": "Log your first measurement or mood entry. Tiles and charts appear automatically as data lands.",
     "emptyAddMeasurement": "Add your first measurement",
     "staleHint": "Ostatni odczyt {count} d temu",
+    "staleHintWeeksOne": "Ostatni odczyt 1 tydzień temu",
+    "staleHintWeeksOther": "Ostatni odczyt {count} tygodni temu",
+    "staleHintMonthsOne": "Ostatni odczyt 1 miesiąc temu",
+    "staleHintMonthsOther": "Ostatni odczyt {count} miesięcy temu",
+    "coachCta": "Zapytaj coacha",
     "recentWorkouts": {
       "title": "Ostatnie treningi",
       "viewAll": "Zobacz wszystkie",

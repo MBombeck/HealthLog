@@ -260,6 +260,11 @@
     "emptyDescription": "Erfasse den ersten Messwert oder Stimmungseintrag. Kacheln und Charts erscheinen automatisch, sobald Daten vorhanden sind.",
     "emptyAddMeasurement": "Ersten Messwert erfassen",
     "staleHint": "Letzter Wert vor {count} T.",
+    "staleHintWeeksOne": "Letzter Wert vor 1 Woche",
+    "staleHintWeeksOther": "Letzter Wert vor {count} Wochen",
+    "staleHintMonthsOne": "Letzter Wert vor 1 Monat",
+    "staleHintMonthsOther": "Letzter Wert vor {count} Monaten",
+    "coachCta": "Frag den Coach",
     "recentWorkouts": {
       "title": "Letzte Workouts",
       "viewAll": "Alle anzeigen",
