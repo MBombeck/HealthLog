@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.4.34.2] — 2026-05-16 — `pull_policy: always` so Coolify deploys actually pull
+
+Bundle-release hotfix for the v1.4.34.1 deploy stall. The GHCR image
+for v1.4.34.1 published successfully, but Coolify's `docker compose up`
+on the apps-01 host kept reusing the cached `:latest` digest because
+`docker-compose.yml` had no pull policy declared — Docker's default
+("only pull if missing") happily skipped the registry round-trip and
+restarted the container with the prior v1.4.34 image, completing each
+deploy in ~20 s without ever fetching the new manifest. Two consecutive
+force-rebuilds of v1.4.34.1 reproduced the pattern.
+
+### Changed
+
+- `docker-compose.yml` now declares `pull_policy: always` on the `app`
+  service. Compose-up re-checks the registry digest on every `up` and
+  pulls when GHCR has a newer manifest, regardless of the tag string.
+  The minor bandwidth cost per deploy is the price of correctness; the
+  alternative — pinning to a version tag per release — would require
+  every operator (self-host included) to bump the tag on every release.
+  v1.4.34.1's perf work ships in this image because all of it is on the
+  `:latest` tag the Coolify deploy will now actually pull.
+
 ## [1.4.34.1] — 2026-05-16 — Insights cold-mount perf hotfix + scatter-card sizing
 
 Hotfix on top of v1.4.34. The Insights page mount was paying ~29 s on

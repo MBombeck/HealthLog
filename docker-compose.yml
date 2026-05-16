@@ -4,12 +4,16 @@ services:
   # For horizontal scaling switch to the web/worker split below
   # (HEALTHLOG_PROCESS_TYPE=web on this service + uncomment app-worker).
   app:
-    # Pinned to GHCR :1.3.3 multi-arch image (gestern released, audit-tested).
-    # Production on apps-01 has been 503-ing since today's deploys; rolling back
-    # to the last release that's verifiably running on self-host installs to
-    # rule out runtime / Docker-network issues. No `build:` block on purpose:
-    # we want Coolify to PULL the prebuilt image, not build from source.
+    # Tracks the GHCR `:latest` multi-arch image. `pull_policy: always`
+    # is the load-bearing line — without it, Docker keeps a stale
+    # `:latest` digest cached on the host and skips the registry round-
+    # trip on `compose up`, which is what kept Coolify re-deploying the
+    # previous image after every tag push. With pull_policy=always the
+    # compose-up always re-checks the registry digest and pulls when
+    # GHCR has a fresher manifest. The small bandwidth cost on every
+    # `compose up` is the price of digest-correctness.
     image: ghcr.io/mbombeck/healthlog:latest
+    pull_policy: always
     container_name: healthlog-app
     ports:
       - "3000:3000"
