@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
+import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
 import {
   ACHIEVEMENT_DEFINITIONS,
   GAMIFICATION_ROLLOUT_AT,
@@ -463,6 +464,58 @@ export const GET = apiHandler(async (request: NextRequest) => {
     meta: { format: isIosFormat ? "ios" : "default" },
   });
 
+  // v1.4.34 IW-G — cache the web-shape result keyed on userId. The
+  // iOS-format branch runs the locale-aware transform after the cache
+  // read so the cache stays format-agnostic and the achievement-progress
+  // dashboard duplicate (seen twice per dashboard mount in the v1.4.33
+  // HAR) coalesces into one builder call. Newly-unlocked achievements
+  // get persisted inside the builder so the second concurrent mount
+  // observes the up-to-date `persisted` state.
+  const result = await cached(
+    caches.achievements as ServerCache<AchievementsResult>,
+    user.id,
+    () => buildAchievementsResult(user),
+    annotate,
+  );
+
+  if (isIosFormat) {
+    const locale = await resolveServerLocale({
+      request,
+      userLocale: user.locale,
+    });
+    const t = getServerTranslator(locale);
+    const ios: IosAchievement[] = result.achievements.map((a) => ({
+      id: a.id,
+      key: a.id,
+      title: t.t(a.titleKey),
+      description: t.t(a.descriptionKey),
+      iconName: a.icon,
+      unlocked: a.unlocked,
+      unlockedAt: a.completedAt,
+      progress: Math.max(0, Math.min(1, a.progressPercent / 100)),
+    }));
+    return apiSuccess(ios);
+  }
+
+  return apiSuccess(result);
+});
+
+type AuthedUser = Awaited<ReturnType<typeof requireAuth>>["user"];
+
+type AchievementsResult = Awaited<ReturnType<typeof buildAchievementsResult>>;
+
+/**
+ * v1.4.34 IW-G — pulled out of the GET handler so `cached()` can wrap
+ * the heavy aggregation. Returns the locale-agnostic web payload; the
+ * iOS-format transform runs in the handler after the cache read.
+ *
+ * `prisma.userAchievement.createMany` inside the builder is kept here
+ * (rather than moved to the cache hit path) because new unlocks are
+ * a side effect of the same aggregate computation. A duplicate concurrent
+ * read coalesces through the cache's single-flight `pending` map so the
+ * createMany only fires once.
+ */
+async function buildAchievementsResult(user: AuthedUser) {
   const now = new Date();
   const userId = user.id;
   const startDate = maxDate(user.createdAt, GAMIFICATION_ROLLOUT_AT);
@@ -868,31 +921,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
     metrics: redactedMetrics,
   };
 
-  if (isIosFormat) {
-    const locale = await resolveServerLocale({
-      request,
-      userLocale: user.locale,
-    });
-    const t = getServerTranslator(locale);
-    // Same redaction principle: iOS clients receive opaque
-    // placeholders for hidden+locked entries. The native client
-    // mirrors the web-card opaque-placeholder UI when it sees the
-    // sentinel id `achievements.hiddenCard.title` come back.
-    const ios: IosAchievement[] = redactedAchievements.map((a) => ({
-      id: a.id,
-      key: a.id,
-      title: t.t(a.titleKey),
-      description: t.t(a.descriptionKey),
-      iconName: a.icon,
-      unlocked: a.unlocked,
-      unlockedAt: a.completedAt,
-      progress: Math.max(0, Math.min(1, a.progressPercent / 100)),
-    }));
-    return apiSuccess(ios);
-  }
-
-  return apiSuccess(result);
-});
+  return result;
+}
 
 /**
  * Hidden Easter-eggs ship to the client *only* as opaque cards while

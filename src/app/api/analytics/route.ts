@@ -3,6 +3,7 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
 import { NO_STORE_BUT_BFCACHE } from "@/lib/http/cache-headers";
+import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
 import { computeSummariesSlice } from "@/lib/analytics/summaries-slice";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
@@ -64,7 +65,16 @@ export const GET = apiHandler(async (request?: Request) => {
   // tile's `<InView>` boundary. Consumers that need only the headline
   // tile values land on this branch and skip the heavy chain.
   if (readSliceParam(request) === "summaries") {
-    const slim = await computeSummariesSlice(user.id);
+    // v1.4.34 IW-G — read-through the analytics cache keyed on
+    // (userId, slice). The slim slice is the dashboard tile strip's hot
+    // path; multiple dashboard mounts inside a 60-second TTL all hit a
+    // warm cache.
+    const slim = await cached(
+      caches.analytics as ServerCache<Awaited<ReturnType<typeof computeSummariesSlice>>>,
+      `${user.id}|summaries`,
+      () => computeSummariesSlice(user.id),
+      annotate,
+    );
     // v1.4.34 IW-B — bfcache-friendly directive on the slim slice too
     // so a back-forward navigation that landed on the dashboard tile
     // strip can restore from memory instead of paying a full reload.
@@ -73,6 +83,43 @@ export const GET = apiHandler(async (request?: Request) => {
     return slimRes;
   }
 
+  // v1.4.34 IW-G — wrap the heavy default-slice body in the analytics
+  // cache keyed on (userId, "default"). The dashboard, the checklist
+  // mount, and the Coach drawer all hit this endpoint within seconds
+  // of each other; the 60s TTL converts the 7.99s combined dashboard
+  // wait to a Map lookup on every subsequent caller.
+  const body = await cached(
+    caches.analytics as ServerCache<Awaited<ReturnType<typeof buildAnalyticsResponse>>>,
+    `${user.id}|default`,
+    () => buildAnalyticsResponse(user, request),
+    annotate,
+  );
+
+  const response = apiSuccess(body);
+  // v1.4.34 IW-B — bfcache-friendly directive so back-forward navigation
+  // restores the dashboard from memory. Per `src/lib/http/cache-headers.ts`:
+  // `private` keeps shared caches out of personal data, `max-age=0` forces
+  // revalidation on every navigation so session swaps detect on the wire,
+  // and `must-revalidate` holds the staleness contract. Replaces the
+  // framework's stock `no-store` which Chromium treats as a hard
+  // bfcache breaker.
+  response.headers.set("Cache-Control", NO_STORE_BUT_BFCACHE);
+  return response;
+});
+
+type AuthedUser = Awaited<ReturnType<typeof requireAuth>>["user"];
+
+/**
+ * v1.4.34 IW-G — the heavy default-slice body, lifted out of the route
+ * handler so `cached()` can wrap it. Returns the raw JSON payload; the
+ * route handler attaches `Cache-Control` headers afterward. The split
+ * matches the v1.4.33 snapshot LRU's `buildCoachSnapshot` →
+ * `buildCoachSnapshotImpl` shape.
+ */
+async function buildAnalyticsResponse(
+  user: AuthedUser,
+  _request: Request | undefined,
+) {
   // v1.4.25 W7b — every day-bucket call inside this route now honours
   // the user's display timezone. The legacy `berlinDayKey()` import
   // remains for sleep-stage and correlation paths that share their
@@ -346,7 +393,7 @@ export const GET = apiHandler(async (request?: Request) => {
     });
   }
 
-  const response = apiSuccess({
+  return {
     summaries: results,
     bmi,
     bpInTargetPct,
@@ -363,17 +410,8 @@ export const GET = apiHandler(async (request?: Request) => {
     // staleness caption on each `<TrendCard>`. Additive: clients that
     // don't read the field stay unchanged.
     lastSeenByType,
-  });
-  // v1.4.34 IW-B — bfcache-friendly directive so back-forward navigation
-  // restores the dashboard from memory. Per `src/lib/http/cache-headers.ts`:
-  // `private` keeps shared caches out of personal data, `max-age=0` forces
-  // revalidation on every navigation so session swaps detect on the wire,
-  // and `must-revalidate` holds the staleness contract. Replaces the
-  // framework's stock `no-store` which Chromium treats as a hard
-  // bfcache breaker.
-  response.headers.set("Cache-Control", NO_STORE_BUT_BFCACHE);
-  return response;
-});
+  };
+}
 
 /**
  * Per-stage sleep-minutes breakdown over the trailing 30 days.

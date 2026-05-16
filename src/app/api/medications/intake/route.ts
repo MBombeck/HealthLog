@@ -24,6 +24,8 @@ import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
+import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
+import { invalidateUserMedications } from "@/lib/cache/invalidate";
 
 const querySchema = z.object({
   scope: z.enum(["today", "compliance"]),
@@ -109,16 +111,54 @@ export const GET = apiHandler(async (request: NextRequest) => {
     );
   }
 
-  // compliance: per-day scheduled vs taken for the last N days
-  const start = new Date(Date.now() - days * 86_400_000);
+  // v1.4.34 IW-G — compliance: per-day scheduled vs taken for the last
+  // N days. Cached at a 15-minute TTL because daily compliance buckets
+  // are slow-moving (intake events trickle in, yesterday's row doesn't
+  // move). Cache key carries the userTz so a user who changes timezone
+  // doesn't read another tz's bucketing.
+  const result = await cached(
+    caches.medicationsIntake as ServerCache<ComplianceBucket[]>,
+    `${user.id}|compliance|${days}|${userTz}`,
+    () => buildComplianceBuckets(user.id, days, userTz),
+    annotate,
+  );
+
+  annotate({
+    action: { name: "medications.intake.compliance" },
+    meta: { days, count: result.length },
+  });
+
+  return apiSuccess(result);
+});
+
+interface ComplianceBucket {
+  date: string;
+  scheduled: number;
+  taken: number;
+}
+
+/**
+ * v1.4.34 IW-G — pulled out of the GET handler so `cached()` can wrap
+ * the per-user compliance aggregation. Pure function over the user's
+ * intake events + the requested window; deterministic given a fixed
+ * "now" wall-clock (we anchor on `Date.now()` once at call time so a
+ * 15-minute cached row stays internally consistent).
+ */
+async function buildComplianceBuckets(
+  userId: string,
+  days: number,
+  userTz: string,
+): Promise<ComplianceBucket[]> {
+  const nowMs = Date.now();
+  const start = new Date(nowMs - days * 86_400_000);
   const events = await prisma.medicationIntakeEvent.findMany({
-    where: { userId: user.id, scheduledFor: { gte: start } },
+    where: { userId, scheduledFor: { gte: start } },
     select: { scheduledFor: true, takenAt: true, skipped: true },
   });
 
   const buckets = new Map<string, { scheduled: number; taken: number }>();
   for (let i = 0; i < days; i++) {
-    const d = new Date(Date.now() - i * 86_400_000);
+    const d = new Date(nowMs - i * 86_400_000);
     buckets.set(userDayKey(d, userTz), { scheduled: 0, taken: 0 });
   }
   for (const e of events) {
@@ -129,17 +169,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
     if (e.takenAt && !e.skipped) bucket.taken += 1;
   }
 
-  const result = [...buckets.entries()]
+  return [...buckets.entries()]
     .map(([date, v]) => ({ date, scheduled: v.scheduled, taken: v.taken }))
     .sort((a, b) => a.date.localeCompare(b.date));
-
-  annotate({
-    action: { name: "medications.intake.compliance" },
-    meta: { days, count: result.length },
-  });
-
-  return apiSuccess(result);
-});
+}
 
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -200,6 +233,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     action: { name: "medications.intake.update" },
     meta: { intakeId, status },
   });
+
+  // v1.4.34 IW-G — bust the medications + compliance + achievement
+  // caches for this user so the next read reflects the dose change.
+  invalidateUserMedications(user.id);
 
   return apiSuccess(updated);
 });
