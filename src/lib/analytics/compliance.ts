@@ -13,7 +13,12 @@ interface ScheduleWindow {
   windowEnd: string; // HH:mm
 }
 
-export type IntakeTimingClass = "on_time" | "late" | "very_late" | "missed";
+export type IntakeTimingClass =
+  | "early"
+  | "on_time"
+  | "late"
+  | "very_late"
+  | "missed";
 
 export interface ComplianceResult {
   totalExpected: number;
@@ -24,7 +29,13 @@ export interface ComplianceResult {
   streak: number; // consecutive days with all taken
 }
 
-/** Daily compliance data including timing breakdown. */
+/**
+ * Daily compliance data including timing breakdown.
+ *
+ * `early` is the v1.4.34 bucket for doses taken before the window's
+ * 3-hour grace start. Consumers that group by compliance status
+ * should treat `early` as compliant (alongside `onTime`).
+ */
 export interface DailyComplianceEntry {
   expected: number;
   taken: number;
@@ -32,6 +43,7 @@ export interface DailyComplianceEntry {
   onTime: number;
   late: number;
   veryLate: number;
+  early?: number;
 }
 
 /**
@@ -55,12 +67,25 @@ function toDateOnDay(time: string, day: Date): Date {
 /**
  * Classify how punctual an intake was relative to a schedule window.
  *
- * - "on_time":   within windowStart-1h .. windowEnd (1h early grace)
- * - "late":      within windowEnd .. windowEnd+2h
- * - "very_late": after windowEnd+2h
+ * v1.4.34 IW-C — widened pre-window grace from 1h to 3h and introduced
+ * a dedicated `early` bucket so a proactive logger (e.g. 10 min before
+ * the window) no longer gets flushed into `very_late`. The post-window
+ * grace likewise grew to 3h so a "20 minutes late" dose stays `on_time`.
+ * Only doses beyond a 3-hour late tolerance fall into `late`, and only
+ * doses beyond a further `lateMinutes` tail fall into `very_late`.
+ *
+ * Buckets:
+ * - "early":     within (windowStart - 3h) .. windowStart           (compliant)
+ * - "on_time":   windowStart .. (windowEnd + 3h)                    (compliant)
+ * - "late":      (windowEnd + 3h) .. (windowEnd + 3h + lateMinutes) (default 2h tail)
+ * - "very_late": before windowStart - 3h, or after the late tail
  * - "missed":    takenAt is null
  *
  * Handles overnight windows (windowEnd < windowStart means next day).
+ *
+ * @param options.lateMinutes Width of the `late` band beyond the 3-hour
+ *   on-time tolerance, in minutes. Defaults to 120. Doses past this
+ *   tail land in `very_late`.
  */
 export function classifyIntakeTiming(
   takenAt: Date | null,
@@ -79,16 +104,22 @@ export function classifyIntakeTiming(
     end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
   }
 
-  // 1h grace period before windowStart
-  const graceStart = new Date(start.getTime() - 60 * 60 * 1000);
-  // Configurable tolerance after windowEnd (default 120 min)
+  const HOUR_MS = 60 * 60 * 1000;
+  // 3h pre-window grace: doses inside this window are `early` (still
+  // compliant). Doses before it are `very_late`.
+  const earlyStart = new Date(start.getTime() - 3 * HOUR_MS);
+  // 3h post-window grace: doses up to here are still `on_time`.
+  const onTimeEnd = new Date(end.getTime() + 3 * HOUR_MS);
+  // Configurable `late` tail past the on-time grace (default 120 min).
   const lateTolerance = (options?.lateMinutes ?? 120) * 60 * 1000;
-  const lateEnd = new Date(end.getTime() + lateTolerance);
+  const lateEnd = new Date(onTimeEnd.getTime() + lateTolerance);
 
   const t = takenAt.getTime();
 
-  if (t >= graceStart.getTime() && t <= end.getTime()) return "on_time";
-  if (t > end.getTime() && t <= lateEnd.getTime()) return "late";
+  if (t < earlyStart.getTime()) return "very_late";
+  if (t < start.getTime()) return "early";
+  if (t <= onTimeEnd.getTime()) return "on_time";
+  if (t <= lateEnd.getTime()) return "late";
   return "very_late";
 }
 
