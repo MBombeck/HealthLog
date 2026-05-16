@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useRef } from "react";
 import { useReportWebVitals } from "next/web-vitals";
 
 /**
@@ -38,16 +38,24 @@ const SAMPLE_RATE = 0.1;
 
 export function WebVitalsReporter() {
   // Decide once per mount whether this page-load reports its vitals.
-  // `useMemo` with an empty dep array keeps the decision stable across
-  // every metric callback inside the same navigation — partial sampling
-  // would mix LCP-without-CLS noise into the wide-event aggregates.
-  // `SSR` evaluates Math.random() to a stable false branch (Node), but
-  // the hook only fires post-hydration so the decision uses the
-  // browser's PRNG.
-  const sampled = useMemo(() => Math.random() < SAMPLE_RATE, []);
+  // Math.random() is impure, so we deferred the draw to `useEffect`
+  // (React's purity contract forbids running impure work inside
+  // useMemo / the render body). The ref keeps the decision stable
+  // across every metric callback inside the same navigation —
+  // partial sampling would mix LCP-without-CLS noise into the wide-
+  // event aggregates. SSR initialises the ref to `null` (no sample
+  // decision yet); the first reportWebVitals callback fires post-
+  // hydration once the effect has filled the slot.
+  const sampledRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    sampledRef.current = Math.random() < SAMPLE_RATE;
+  }, []);
 
   useReportWebVitals((metric) => {
-    if (!sampled) return;
+    // If the effect hasn't yet seeded the sample decision (very first
+    // pre-hydration measurement), drop the beacon — over-sampling at
+    // first paint would defeat the rate-limit relief.
+    if (sampledRef.current !== true) return;
 
     const body = JSON.stringify({
       id: metric.id,
