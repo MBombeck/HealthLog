@@ -501,7 +501,9 @@ function FeedbackDetailDialog({
               rows={3}
               maxLength={5000}
               placeholder={t("admin.feedback.adminNotePlaceholder")}
-              className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
+              // text-base on mobile so iOS Safari doesn't zoom on
+              // focus; text-sm on sm+ keeps the compact admin look.
+              className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring w-full rounded-md border px-3 py-2 text-base focus-visible:ring-2 focus-visible:outline-none sm:text-sm"
             />
             <div className="flex justify-end">
               <Button

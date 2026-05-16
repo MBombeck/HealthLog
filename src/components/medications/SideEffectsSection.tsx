@@ -474,7 +474,10 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
                 enterKeyHint="done"
                 autoCapitalize="sentences"
                 autoComplete="off"
-                className="border-input bg-background text-foreground w-full rounded-md border px-2 py-1.5 text-sm"
+                // text-base on mobile so iOS Safari doesn't
+                // zoom-on-focus; text-sm on sm+ keeps the compact
+                // notes-row visual.
+                className="border-input bg-background text-foreground w-full rounded-md border px-2 py-1.5 text-base sm:text-sm"
               />
               <p className="text-muted-foreground text-right text-[10px]">
                 {notes.length} / {NOTES_MAX}

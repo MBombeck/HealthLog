@@ -466,7 +466,9 @@ function IntakeImportDialog({
             onChange={(e) => setJsonText(e.target.value)}
             placeholder={t("medications.importPaste")}
             rows={8}
-            className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring w-full rounded-md border px-3 py-2 font-mono text-sm focus-visible:ring-2 focus-visible:outline-none"
+            // text-base on mobile so iOS Safari doesn't zoom on
+            // focus; text-sm on sm+ for the compact import textarea.
+            className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring w-full rounded-md border px-3 py-2 font-mono text-base focus-visible:ring-2 focus-visible:outline-none sm:text-sm"
           />
           {result && (
             <p

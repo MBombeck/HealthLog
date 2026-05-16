@@ -208,7 +208,12 @@ export function CoachInput({
           // `max-h-[9.5rem]`, ≈6 lines at the current line-height).
           rows={1}
           className={cn(
-            "w-full resize-none bg-transparent text-sm leading-relaxed outline-none",
+            // `text-base` (16 px) on mobile so iOS Safari does not
+            // zoom-on-focus — the kerned `text-sm` (14 px) trips the
+            // 16 px floor and yanks the viewport on every Coach tap.
+            // Desktop shrinks back to `text-sm` for the compact
+            // composer.
+            "w-full resize-none bg-transparent text-base leading-relaxed outline-none sm:text-sm",
             "max-h-[9.5rem] overflow-auto",
             "placeholder:text-muted-foreground disabled:opacity-60",
           )}
