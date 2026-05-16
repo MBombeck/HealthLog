@@ -48,12 +48,27 @@ export function MedicationCardHeader({
           <CardTitle className="text-lg">
             {name} {dose}
           </CardTitle>
-          <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
+          {/* D-H6 — state badges (without-notification, paused-since,
+              inactive) used to share line 2 with the category badge
+              via `flex flex-wrap`. At 320 px any state badge pushed
+              the row to three lines and broke the FB-G1 "two-line,
+              no exceptions" contract for ~20 % of configured drugs.
+              State badges now ride their own row below the category
+              badge so the canonical row stays two lines on narrow
+              viewports. */}
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <Badge variant="outline" className="text-xs">
               {categoryLabel}
             </Badge>
-            {stateBadges}
           </div>
+          {stateBadges ? (
+            <div
+              data-slot="medication-card-header-state-badges"
+              className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm"
+            >
+              {stateBadges}
+            </div>
+          ) : null}
         </div>
         {actions ? (
           <div className="flex items-center gap-0.5">{actions}</div>

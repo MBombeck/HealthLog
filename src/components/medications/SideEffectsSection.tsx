@@ -303,7 +303,14 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
                       </Badge>
                     </div>
                     <p
-                      className="text-muted-foreground w-[5.5rem] shrink-0 text-right text-xs tabular-nums"
+                      // D-H7 — narrowed from `w-[5.5rem]` (88 px) to
+                      // `w-14` (56 px). The longest short-date variant
+                      // ("15. Mai") fits inside 56 px with slack;
+                      // recovering 32 px relieves the left slot's
+                      // wrap rhythm at 320 px so the category badge +
+                      // entry label + severity chip stop pushing the
+                      // free-text notes off-screen.
+                      className="text-muted-foreground w-14 shrink-0 text-right text-xs tabular-nums"
                       data-slot="side-effect-row-date"
                     >
                       {fmt.dateShort(new Date(row.occurredAt))}
