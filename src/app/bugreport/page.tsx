@@ -227,9 +227,22 @@ export default function BugReportPage() {
           )}
 
           <div className="flex items-center justify-end pt-2">
-            <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />}
-              <Bug className="mr-2 h-4 w-4" />
+            <Button type="submit" disabled={loading} aria-busy={loading || undefined}>
+              {/*
+                v1.4.33 IW9 — swap the icon on loading (Loader2 takes
+                the same 16x16 slot as the Bug icon) so the button
+                width is stable across the disabled flip. The previous
+                `{loading && <Loader2/>}<Bug/>` rendered both icons
+                during the in-flight request and grew the button by
+                ~24 px — the CLS regression flagged in the v1.4.33
+                Lighthouse punch list (0.186 on
+                `div.space-y-2 > Button > Loader-Circle`).
+              */}
+              {loading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
+              ) : (
+                <Bug className="mr-2 h-4 w-4" />
+              )}
               {t("bugreport.submit")}
             </Button>
           </div>

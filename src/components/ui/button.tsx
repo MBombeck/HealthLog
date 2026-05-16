@@ -4,6 +4,31 @@ import { Slot } from "radix-ui";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * v1.4.33 IW9 — loading-state convention.
+ *
+ * Callers driving a transient loading state on a button must SWAP the
+ * leading icon for `<Loader2 />` rather than APPENDING the spinner
+ * next to the existing icon. The legacy `{loading && <Loader2/>}<Icon/>`
+ * pattern grew the button by ~24 px during the request, which produced
+ * the 0.186 CLS hit flagged on the v1.4.33 Lighthouse run. The
+ * spinner and the icon are both 16 px (`h-4 w-4`); swapping keeps the
+ * intrinsic button width stable.
+ *
+ *   ```tsx
+ *   <Button disabled={loading} aria-busy={loading || undefined}>
+ *     {loading ? (
+ *       <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
+ *     ) : (
+ *       <Icon className="mr-2 h-4 w-4" />
+ *     )}
+ *     {label}
+ *   </Button>
+ *   ```
+ *
+ * Also: pass `aria-busy={loading || undefined}` so screen readers
+ * announce the in-flight state.
+ */
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
   {

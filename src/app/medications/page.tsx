@@ -505,9 +505,21 @@ function IntakeImportDialog({
               <Button
                 onClick={handleImport}
                 disabled={importing || !jsonText.trim()}
+                aria-busy={importing || undefined}
               >
-                {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />}
-                <Upload className="mr-2 h-4 w-4" />
+                {/*
+                  v1.4.33 IW9 — icon swap (not append) on `importing`
+                  to keep the button width stable through the
+                  in-flight request. Pre-v1.4.33 both icons painted
+                  during loading and the button grew by ~24 px, which
+                  showed up as a CLS hit on the medications import
+                  dialog.
+                */}
+                {importing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
+                ) : (
+                  <Upload className="mr-2 h-4 w-4" />
+                )}
                 {t("common.import")}
               </Button>
             </div>
