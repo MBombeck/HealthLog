@@ -25,6 +25,16 @@
  * is reserved for a future per-channel routing pass and is currently
  * a no-op (the dispatcher fans the message across every enabled
  * channel as before).
+ *
+ * v1.4.28 R3d (R1.2 H5) — the locale lookup previously fired
+ * `prisma.user.findUnique` on every call. A 30-second TTL LRU keyed on
+ * `userId` collapses repeat reads inside the same recipient burst onto
+ * one DB round-trip; the next read after 30 s re-validates. The
+ * trade-off: a user who flips their locale in Settings won't see the
+ * change reflected in dispatch output for up to 30 s. That's
+ * acceptable for the call-sites this helper serves (admin alerts,
+ * deploy webhooks, reminder cron) — none of them are user-initiated
+ * within a tight feedback loop.
  */
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
@@ -57,27 +67,68 @@ function isLocale(value: string | null | undefined): value is Locale {
 }
 
 /**
- * Resolve a user's persisted locale, falling back to the project
- * default when the column is null/empty. We deliberately do NOT chain
- * through cookies or Accept-Language here — this helper runs from
- * background jobs and webhook handlers where the request context may
- * not belong to the recipient (an admin alert resolves the admin's
- * locale, not the affected user's), so the only authoritative source
- * is the persisted column.
+ * Process-level locale cache.
+ *
+ * `Map`-based; capped to 1 000 entries with FIFO-style eviction once
+ * we hit the cap (LRU on insertion order — `Map` iterates in insertion
+ * order, so deleting + re-inserting on read marks the entry "fresh").
+ * Each entry stores the resolved `Locale` and the `Date.now()` at
+ * which it expires. Reads past the expiry re-fire the Prisma query
+ * and refresh the entry.
+ *
+ * Memory footprint at the cap is trivial (1 000 short strings + 1 000
+ * numbers ≈ 50 KB worst-case), so no eviction-by-size pressure is
+ * needed. The cap exists only to bound unbounded growth in workers
+ * that dispatch to many distinct users.
  */
+const LOCALE_CACHE_TTL_MS = 30_000;
+const LOCALE_CACHE_MAX = 1_000;
+const localeCache = new Map<string, { locale: Locale; expiresAt: number }>();
+
+/**
+ * Reset hook for tests. Production code never calls this — the cache
+ * is intentionally process-lifetime.
+ */
+export function __resetDispatchLocaleCacheForTests(): void {
+  localeCache.clear();
+}
+
 async function resolveRecipientLocale(userId: string): Promise<Locale> {
+  // v1.4.28 R3d (R1.2 H5) — fast path: cached entry within TTL.
+  const cached = localeCache.get(userId);
+  if (cached && cached.expiresAt > Date.now()) {
+    // Mark as fresh by re-inserting (Map iteration order doubles as
+    // LRU order — older entries sit at the head, newer at the tail).
+    localeCache.delete(userId);
+    localeCache.set(userId, cached);
+    return cached.locale;
+  }
+
+  // Cache miss or stale → resolve from Prisma.
+  let resolved: Locale = defaultLocale;
   try {
     const row = await prisma.user.findUnique({
       where: { id: userId },
       select: { locale: true },
     });
-    if (isLocale(row?.locale)) return row.locale;
+    if (isLocale(row?.locale)) resolved = row.locale;
   } catch (err) {
     getEvent()?.addWarning(
       `dispatchLocalisedNotification — locale lookup failed: ${err instanceof Error ? err.message : String(err)}`,
     );
+    return defaultLocale;
   }
-  return defaultLocale;
+
+  // Insert + opportunistic eviction at the head when over the cap.
+  if (localeCache.size >= LOCALE_CACHE_MAX) {
+    const firstKey = localeCache.keys().next().value;
+    if (firstKey !== undefined) localeCache.delete(firstKey);
+  }
+  localeCache.set(userId, {
+    locale: resolved,
+    expiresAt: Date.now() + LOCALE_CACHE_TTL_MS,
+  });
+  return resolved;
 }
 
 export async function dispatchLocalisedNotification(
