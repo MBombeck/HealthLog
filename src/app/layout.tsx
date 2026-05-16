@@ -49,17 +49,29 @@ export const metadata: Metadata = {
   openGraph: {
     title: "HealthLog",
     description:
-      "Personal health tracking — weight, blood pressure, pulse, mood, medication compliance",
+      "Self-hosted health tracker. Weight, blood pressure, glucose, mood, medications. Withings + Apple Health sync. AI Insights you own.",
     type: "website",
     locale: "en_US",
     alternateLocale: ["de_DE", "fr_FR", "es_ES", "it_IT", "pl_PL"],
     siteName: "HealthLog",
+    // Drop-in OG asset. Replace with a 1200×630 dashboard-screenshot
+    // capture when an official one ships; the logo render keeps the
+    // unfurl from rendering a blank tile in the meantime.
+    images: [
+      {
+        url: "/logo-readme.png",
+        width: 1000,
+        height: 1000,
+        alt: "HealthLog — your health data, your server",
+      },
+    ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "HealthLog",
     description:
-      "Personal health tracking — weight, blood pressure, pulse, mood, medication compliance",
+      "Self-hosted health tracker. Weight, blood pressure, glucose, mood, medications. Withings + Apple Health sync. AI Insights you own.",
+    images: ["/logo-readme.png"],
   },
 };
 

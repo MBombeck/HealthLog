@@ -10,15 +10,16 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License: AGPL-3.0" /></a>
-  <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Next.js-16-black?logo=next.js" alt="Next.js 16" />
+  <a href="https://github.com/MBombeck/HealthLog/releases"><img src="https://img.shields.io/github/v/release/MBombeck/HealthLog?sort=semver&color=success" alt="Latest release" /></a>
   <img src="https://img.shields.io/badge/Self--Hosted-yes-success" alt="Self-Hosted" />
-  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" />
+  <img src="https://img.shields.io/badge/Next.js-16-black?logo=next.js" alt="Next.js 16" />
+  <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
+  <a href="https://github.com/MBombeck/HealthLog/pkgs/container/healthlog"><img src="https://img.shields.io/badge/GHCR-multi--arch-2496ED?logo=docker&logoColor=white" alt="GHCR multi-arch image" /></a>
 </p>
 
 <p align="center">
-  A self-hosted, privacy-first health tracking PWA.<br/>
-  Weight, blood pressure, mood, medications, AI insights -- all under your control.
+  Self-hosted health tracker. Weight, blood pressure, glucose, mood, medications.<br/>
+  Withings and Apple Health sync, multi-provider AI Insights you own, doctor-report PDF.
 </p>
 
 <p align="center">
@@ -31,7 +32,9 @@
 
 ## What it is
 
-HealthLog is a self-hosted personal health tracker that runs from a single `docker compose up`. It covers the metrics most people actually log -- weight, blood pressure, pulse, body composition, blood glucose, sleep, mood, and medication compliance -- and brings them together in one dashboard with reference ranges from ESC/ESH 2018, ADA 2024, and NICE NG115. Withings devices sync automatically; multi-provider AI Insights (BYOK or local) explain what the numbers mean; a doctor-report PDF generates client-side. EN/DE end-to-end. AGPL-3.0.
+HealthLog is a self-hosted personal health tracker that runs from a single `docker compose up`. It covers the metrics most people actually log -- weight, blood pressure, pulse, body composition, blood glucose, sleep, mood, and medication compliance -- and brings them together in one dashboard with reference ranges from ESC/ESH 2018, ADA 2024, and NICE NG115. Withings devices sync automatically; an `export.zip` import folds your full Apple Health history into the same timeline; multi-provider AI Insights (BYOK or local) explain what the numbers mean; a doctor-report PDF generates client-side. EN/DE end-to-end. AGPL-3.0.
+
+> **Status**: active. New releases roughly weekly -- see [CHANGELOG](CHANGELOG.md). Current focus: native iOS client (v1.5).
 
 Built for people who want their health data on their own server -- whether that's a NAS, a homelab, or a small VPS -- and who don't want to hand it to a US cloud to read a 7-day weight trend. **Try the [live demo](https://demo.healthlog.dev)** to see what a working install looks like, or skip to [Quick Start](#quick-start) below.
 
@@ -40,6 +43,22 @@ Built for people who want their health data on their own server -- whether that'
 ## Why HealthLog?
 
 Most health apps lock your data behind proprietary clouds, push subscriptions, and sell your metrics to advertisers. HealthLog takes a different approach: your data stays on your server, encrypted at rest, accessible only to you.
+
+---
+
+## How it compares
+
+|                          | HealthLog            | Withings web    | Apple Health  | Oura web    | Generic CSV |
+| ------------------------ | -------------------- | --------------- | ------------- | ----------- | ----------- |
+| Self-hosted              | Yes                  | No              | No            | No          | Yes         |
+| Open source              | AGPL-3.0             | No              | No            | No          | n/a         |
+| Withings device sync     | Yes (OAuth2)         | Yes (native)    | Via shortcut  | No          | No          |
+| Apple Health import      | Yes (`export.zip`)   | No              | Native        | No          | Manual      |
+| Custom clinician targets | Yes (audit-logged)   | Limited         | No            | No          | n/a         |
+| Doctor-report PDF        | Yes (client-side)    | No              | No            | No          | n/a         |
+| AI Insights              | Multi-provider BYOK  | No              | Limited       | Subscription| n/a         |
+| Subscription required    | No                   | For some metrics| No            | Yes         | No          |
+| Your data leaves device  | Never                | Withings cloud  | Apple cloud   | Oura cloud  | Depends     |
 
 ---
 
@@ -57,7 +76,9 @@ Most health apps lock your data behind proprietary clouds, push subscriptions, a
 
 **Withings Integration** -- OAuth2 device sync for scales, blood pressure monitors, and activity trackers with automatic deduplication.
 
-**Multi-Provider AI Insights** -- Pick OpenAI, Anthropic Claude, or any local OpenAI-compatible endpoint (Ollama, LM Studio, vLLM). BYOK or admin-shared key. Cached daily. Local endpoints keep all data on your network.
+**Apple Health import** -- Drop your iOS `export.zip` on the import page. A streaming parser handles multi-gigabyte archives (Zip64), folds every `<Record>`, `<Workout>`, `<Correlation>`, and `<ClinicalRecord>` into the same timeline as your other metrics, and stays idempotent on re-upload. Per-type ingestion stats plus a live status endpoint so you can watch the progress on a long historical drain.
+
+**AI Coach + Insights** -- A conversational Coach grounded in your own data, a daily briefing, a weekly report, and a Health Score tile on the dashboard. Pick OpenAI, Anthropic Claude, or any OpenAI-compatible local endpoint (Ollama, LM Studio, vLLM). BYOK or admin-shared. Every claim links back to the measurements that produced it. Local endpoints keep all data on your network.
 
 **Doctor Report PDF Export** -- Generate professional medical reports client-side. Locale-aware (English/German), with vital sign summaries, BP/BMI/glucose classification, compliance rates, custom-threshold badges, and optional AI analysis.
 
@@ -87,11 +108,10 @@ cd HealthLog
 cp .env.example .env
 ```
 
-Generate the four required secrets and paste them into `.env`:
+Generate the three required secrets and paste them into `.env`:
 
 ```bash
 echo "POSTGRES_PASSWORD=$(openssl rand -base64 24)" >> .env
-echo "SESSION_SECRET=$(openssl rand -hex 32)"       >> .env
 echo "ENCRYPTION_KEY=$(openssl rand -hex 32)"       >> .env
 echo "API_TOKEN_HMAC_KEY=$(openssl rand -hex 32)"   >> .env
 ```
@@ -151,7 +171,6 @@ HealthLog is designed for people who take data ownership seriously.
 | -------------------- | ------------------------------------------------------------- |
 | `POSTGRES_PASSWORD`  | Password for the bundled Postgres service (Docker Compose)    |
 | `DATABASE_URL`       | PostgreSQL connection string (uses `POSTGRES_PASSWORD` above) |
-| `SESSION_SECRET`     | 64-char hex string for session signing                        |
 | `ENCRYPTION_KEY`     | 64-char hex string for AES-256-GCM                            |
 | `API_TOKEN_HMAC_KEY` | 64-char hex string for API token hashing                      |
 
@@ -239,7 +258,7 @@ src/
 
 ## API Reference
 
-All mutations require authentication via session cookie. External ingest uses Bearer tokens.
+All mutations require authentication via session cookie. External ingest uses Bearer tokens. A machine-readable OpenAPI 3.1 spec for the iOS-locked native subset lives at [`docs/api/openapi.yaml`](docs/api/openapi.yaml) — the source of truth for any client codegen (Swift / Kotlin / OpenAPI Generator).
 
 <details>
 <summary><strong>Health Data</strong></summary>
