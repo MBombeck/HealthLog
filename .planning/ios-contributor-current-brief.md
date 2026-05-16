@@ -493,11 +493,18 @@ Mode-switching is iOS-local; the server has no concept of "this user
 is in standalone mode". The server just answers whatever the iOS app
 asks.
 
-### Coach SSE — the v1.5 differentiator
+### Coach SSE — server endpoint stays live; iOS native drawer deferred
 
-By v1.5.0 the iOS Coach drawer is the native implementation of
-`GET /api/insights/chat`. Reference web implementation in
-`src/components/insights/coach-panel/`. Contract specifics:
+Coach SSE remains live as a server endpoint. iOS native server-Coach
+drawer is deferred pending MDR Class-IIa pre-review. v1.5.0 ships
+iOS with Apple Foundation Models on-device Daily Briefing + Trend
+Observations as the primary assistant surface. The server's
+`GET /api/insights/chat` SSE endpoint stays live for: PWA users on
+non-AFM-capable devices, future iOS reevaluation post-MDR, any other
+client that adopts the SSE protocol.
+
+Contract for any future iOS adoption (or for the PWA + non-iOS
+consumers today):
 
 - Server-Sent Events stream
 - Token-by-token streaming text
@@ -505,6 +512,8 @@ By v1.5.0 the iOS Coach drawer is the native implementation of
 - Refusal events per GROUND-RULE-9 / 15
 - 429 `coach.budget.exceeded` on rate-limited paths
 - 403 `assistant.disabled.coach` if the operator-side flag is off
+
+Reference web implementation: `src/components/insights/coach-panel/`.
 
 ### Push notifications (post-APNs `.p8` paste)
 
@@ -545,12 +554,18 @@ pasting the `.p8` into the deployment environment.
 This blocks push notifications only; everything else functions
 without it.
 
-### Coach SSE drawer iOS implementation
+### Coach SSE drawer iOS implementation — deferred past v1.5
 
 Per R-E C-1, the iOS Coach drawer has zero native code today. The
-server-side SSE endpoint at `/api/insights/chat` is live and tested.
-The v1.5 differentiator is the native Coach drawer. The iOS side is
-the implementation:
+server-side SSE endpoint at `/api/insights/chat` stays live and
+tested. v1.5.0 ships iOS with Apple Foundation Models on-device
+Daily Briefing + Trend Observations as the primary assistant
+surface; a native server-Coach drawer is deferred pending the MDR
+Class-IIa pre-review. No server-side coordination needed for the
+deferral — the SSE endpoint is already shaped for the PWA + any
+future client that re-enters this work.
+
+If a future iOS revisit lands post-MDR, the contract is:
 
 - `CoachService` actor over `URLSession.bytes`
 - `CoachStreamEvent` AsyncThrowingStream
@@ -561,8 +576,7 @@ the implementation:
 - `coach.budget.exceeded` 429 surface
 
 Pattern reference: `src/components/insights/coach-panel/` (web
-implementation) is the model. The iOS implementation should mirror
-the user experience while consuming the same SSE stream.
+implementation) stays the model whenever iOS reopens the work.
 
 ### Source-priority editor
 
