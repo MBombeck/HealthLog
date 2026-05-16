@@ -10,16 +10,22 @@ import {
   type ChartOverlayPrefsMap,
   type DashboardLayout,
 } from "@/lib/dashboard-layout";
+import { queryKeys } from "@/lib/query-keys";
 
 /**
  * v1.4.18 — TanStack Query hook that returns a single chart's overlay
  * prefs and a setter that persists them via the new
  * `PUT /api/dashboard/chart-overlay-prefs` endpoint.
  *
- * Reads from the existing dashboard-widgets cache (queryKey
- * `["dashboard-layout"]`) so a chart on the dashboard doesn't fire a
- * second network request — the layout already lands once on initial
- * dashboard render.
+ * Reads from the existing dashboard-widgets cache so a chart on the
+ * dashboard doesn't fire a second network request — the layout
+ * already lands once on initial dashboard render.
+ *
+ * v1.4.29 C4 — share the same `queryKeys.dashboardWidgets()` slot
+ * the dashboard page + Settings → Dashboard already consume.
+ * Pre-fix the hook keyed under `["dashboard-layout"]`, splitting the
+ * cache into two slots for the same endpoint and firing
+ * `/api/dashboard/widgets` twice on dashboard mount.
  *
  * The mutation is optimistic: we update the cached layout immediately
  * so the chart re-renders with the new toggle state before the network
@@ -36,7 +42,7 @@ export function useChartOverlayPrefs(
   const queryClient = useQueryClient();
 
   const { data: layout } = useQuery({
-    queryKey: ["dashboard-layout"],
+    queryKey: queryKeys.dashboardWidgets(),
     queryFn: async (): Promise<DashboardLayout> => {
       const res = await fetch("/api/dashboard/widgets");
       if (!res.ok) throw new Error("Failed to load dashboard layout");
@@ -73,10 +79,12 @@ export function useChartOverlayPrefs(
     },
     onMutate: async (next) => {
       if (!chartKey) return { previous: undefined };
-      await queryClient.cancelQueries({ queryKey: ["dashboard-layout"] });
-      const previous = queryClient.getQueryData<DashboardLayout>([
-        "dashboard-layout",
-      ]);
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.dashboardWidgets(),
+      });
+      const previous = queryClient.getQueryData<DashboardLayout>(
+        queryKeys.dashboardWidgets(),
+      );
       if (previous) {
         const nextLayout: DashboardLayout = {
           ...previous,
@@ -85,18 +93,23 @@ export function useChartOverlayPrefs(
             [chartKey]: next,
           } as ChartOverlayPrefsMap,
         };
-        queryClient.setQueryData(["dashboard-layout"], nextLayout);
+        queryClient.setQueryData(queryKeys.dashboardWidgets(), nextLayout);
       }
       return { previous };
     },
     onError: (_err, _next, ctx) => {
       const context = ctx as { previous?: DashboardLayout } | undefined;
       if (context?.previous) {
-        queryClient.setQueryData(["dashboard-layout"], context.previous);
+        queryClient.setQueryData(
+          queryKeys.dashboardWidgets(),
+          context.previous,
+        );
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["dashboard-layout"] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboardWidgets(),
+      });
     },
   });
 
