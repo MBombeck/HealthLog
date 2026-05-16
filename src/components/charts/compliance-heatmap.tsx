@@ -38,47 +38,25 @@ function getColor(data: DailyData): string {
     data.veryLate !== undefined;
 
   if (hasTimingData) {
-    const onTime = data.onTime ?? 0;
     const veryLate = data.veryLate ?? 0;
     const late = data.late ?? 0;
     const missed = Math.max(0, data.expected - taken - data.skipped);
 
-    // v1.4.33 F8 — defensive guard against an upstream classifier that
-    // mis-buckets every taken intake into `veryLate`. The runtime audit
-    // (round-v1433-audit-runtime.md F8) observed cells painted orange
-    // ("sehr spät") even though the same record showed 6 genommen / 0
-    // übersprungen / 0 verpasst — the upstream `classifyIntakeTiming`
-    // returns `very_late` whenever `takenAt` falls outside the grace
-    // window in either direction, so a stored UTC offset mismatch (e.g.
-    // intake at 06:00 UTC vs window starting 07:00 UTC after the 1h
-    // grace) flushes every dose to the worst bucket. Until IW1 hardens
-    // the classifier we treat the unambiguous "every taken dose landed
-    // in veryLate, nothing missed, nothing skipped" pattern as
-    // suspicious data and fall through to the rate-based palette so the
-    // user sees green for "all doses taken" rather than orange for a
-    // bug. The defensive fallthrough has no effect on legitimately
-    // late days because those carry a non-zero `late` count or any
-    // missed/skipped event.
-    const looksClassifierBug =
-      veryLate === taken &&
-      onTime === 0 &&
-      late === 0 &&
-      missed === 0 &&
-      data.skipped === 0;
-    if (!looksClassifierBug) {
-      // Any missed doses → red
-      if (missed > 0) return "var(--dracula-red)";
-      // Any very late → deep orange
-      if (veryLate > 0) return "var(--dracula-orange)";
-      // Any late → yellow
-      if (late > 0) return "var(--dracula-yellow)";
-      // All on time → green
-      return "var(--dracula-green)";
-    }
+    // v1.4.34 IW-C — the v1.4.33 `looksClassifierBug` fallthrough is
+    // gone because the root cause is fixed: `classifyIntakeTiming` now
+    // routes proactive logs into the `early` bucket (counted as
+    // compliant by the API) instead of flushing them to `very_late`.
+    // Any missed doses → red
+    if (missed > 0) return "var(--dracula-red)";
+    // Any very late → deep orange
+    if (veryLate > 0) return "var(--dracula-orange)";
+    // Any late → yellow
+    if (late > 0) return "var(--dracula-yellow)";
+    // All on time (incl. early) → green
+    return "var(--dracula-green)";
   }
 
-  // Fallback: rate-based coloring (no timing data, or defensive
-  // fallthrough above).
+  // Fallback: rate-based coloring when no timing data is supplied.
   const rate = (taken / data.expected) * 100;
   if (rate >= 100) return "var(--dracula-green)";
   if (rate >= 50) return "var(--dracula-yellow)";
