@@ -1,5 +1,133 @@
 # Changelog
 
+## [1.4.31] — 2026-05-16 — Operator toggles + insights tab-strip + Coolify auto-deploy fix
+
+Three orthogonal patches in one release. The biggest item is a
+per-surface operator toggle matrix that lets the maintainer carve
+which model-driven surfaces stay visible without removing the
+provider configuration — Coach, Daily Briefing, per-metric status
+cards, correlations, and the Health-Score delta explainer each
+get an admin switch, plus a master kill-switch above them all.
+Alongside that lands the root-cause fix for the /insights
+tab-strip blocking on mobile: an abort timeout on the advisor
+fetch, a `React.memo` on the strip with its `availability` prop
+memoised in the layout shell, and a lazy-loaded Coach drawer
+collapse the worst-case tap-block window from the LLM-completion
+tail down to the bounded parallel-fetch window. The release also
+closes the long-standing Coolify auto-deploy race: five releases
+in a row the webhook reported "finished" but Coolify still
+pulled the prior `:latest` digest because the publish workflow
+fired the webhook inside GHCR's CDN propagation window; a 90 s
+sleep before the trigger step lands inside the existing
+`continue-on-error: true` envelope.
+
+### Added
+
+- **Assistant-surface operator toggles.** Six boolean columns on
+  `AppSettings` (`assistantEnabled` + five sub-flags) carve the
+  visibility cut for every model-driven surface. Master forces
+  every sub-flag false in the resolver, so a single flip kills
+  the whole assistant. New admin panel at
+  `/admin/assistant` (slug between `ai-quality` and
+  `coach-feedback`) renders the six toggles; sub-toggles grey out
+  when the master is off. Defaults preserve the v1.4.30 behaviour
+  (every surface visible) so upgrades require no admin action.
+- **`GET /api/feature-flags`.** Projects the matrix over HTTP for
+  every client — web React tree + iOS native. `requireAuth()`
+  gates the route, `Cache-Control: private, max-age=60` caps the
+  read cost on the hot /insights mount path.
+- **`PUT /api/admin/settings/assistant-flags`.** Dedicated admin
+  write surface that echoes both the raw column values and the
+  resolved (master-killed) shape. Optimistic UI on the admin
+  panel; the runtime feature-flag cache invalidates on every
+  write so toggled surfaces react within the same operator
+  session.
+- **`<AssistantDisabledNotice>` component.** Small inline notice
+  for callers that resolve a 403 +
+  `errorCode: "assistant.disabled.<surface>"` from the server.
+  Localised in all six locales.
+- **`useFeatureFlags()` hook.** Fails open — any network error
+  or absent `<QueryClientProvider>` returns the all-on default so
+  the user never loses an affordance to an instrumentation gap.
+
+### Fixed
+
+- **Insights tab-strip blocking on mobile.** Three orthogonal
+  client-side fixes per
+  `.planning/research/v15-insights-blocking-bug.md`:
+  - `fetchAdvisor` gets an 8 s `AbortController`; `AbortError`
+    falls through to the existing graceful-null return path so the
+    UI surfaces the regen CTA instead of pinning the query in
+    `isFetching: true` for the LLM tail.
+  - `<InsightsTabStrip>` is `React.memo`'d, the inner `buildTabs`
+    call is `useMemo`'d on `availability`, and the layout shell
+    memoises the `availability` prop on its three leaf inputs.
+    Together they collapse the
+    "shell re-renders → strip re-renders → 8 pills re-render"
+    cascade on every cache-write of analytics or comprehensive.
+  - `<CoachDrawer>` is now lazy-loaded via `next/dynamic` so the
+    SSE machinery, chat reader, suggested-prompts rail, and
+    settings sheet don't initialise on every cold /insights mount.
+
+### Changed
+
+- **Server-side gating of assistant endpoints.** Every
+  LLM-driven endpoint now reads the operator flag set near the
+  top of the handler and throws a typed `AssistantDisabledError`
+  when the relevant surface is off. The api-handler catches the
+  error and returns 403 +
+  `meta.errorCode: "assistant.disabled.<surface>"`. Older
+  clients without the errorCode see a generic 403; v1.4.31+
+  clients render the `<AssistantDisabledNotice>` empty state.
+  Gated endpoints:
+  `/api/insights/chat` (coach),
+  `/api/insights/generate` (coach),
+  `/api/insights/comprehensive` (coach),
+  `/api/insights/cards` (insightStatus),
+  `/api/insights/correlations` (correlations),
+  and the six `*-status` per-metric routes (insightStatus).
+
+### CI
+
+- **Coolify auto-deploy race fix.** `Trigger Coolify deploy`
+  step in `.github/workflows/docker-publish.yml` now sleeps 90 s
+  before firing so GHCR's CDN edges have time to propagate the
+  fresh `:latest` digest. The webhook lands after the edge read
+  catches up, Coolify pulls the new digest, and the running
+  container recreates cleanly. Full root-cause + hypothesis
+  matrix in
+  `.planning/round-coolify-auto-deploy-fix-2026-05-16.md`.
+- **OpenAPI pre-commit hook.** New `.githooks/pre-commit` runs
+  `pnpm openapi:check` when the staged diff touches Zod schemas
+  or API routes; on drift it regenerates the spec, re-stages the
+  file, and continues the commit. Activated via the new
+  `scripts/install-hooks.sh`. Skips in CI so the existing
+  `security.yml` server-side gate stays authoritative.
+
+### iOS contract
+
+Every change is additive on the wire.
+
+- `GET /api/feature-flags` is net-new. iOS clients that predate
+  it never call the endpoint and see the all-on default
+  implicitly.
+- The six `AppSettings.assistant*` columns default to `true` in
+  the migration so existing rows pick the defaults up without
+  data movement.
+- The 403 +
+  `meta.errorCode: "assistant.disabled.<surface>"` envelope is
+  additive — pre-v1.4.31 iOS reads the 403 as a generic auth
+  error and degrades gracefully through its existing 403
+  handler. v1.4.31+ iOS reads the `errorCode` to render the
+  surface-specific empty state.
+- The locked-contract entry at
+  `.planning/v15-ios-handoff/08-locked-contracts.md` §14
+  documents the rule that the flag matrix gates BOTH
+  server-routed AND on-device assistant surfaces. Apple
+  Foundation Models on-device Coach + Briefing flows in the
+  v0.6.0 iOS path honour the same flag matrix as the
+  server-routed surfaces.
+
 ## [1.4.30.1] — 2026-05-16 — Categories endpoint + conflict-resolution lock
 
 A two-item follow-up to v1.4.30. The categorisation overlay shipped
