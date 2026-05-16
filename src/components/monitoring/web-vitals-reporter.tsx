@@ -1,24 +1,54 @@
 "use client";
 
+import { useMemo } from "react";
 import { useReportWebVitals } from "next/web-vitals";
 
 /**
- * v1.4.28 R3d — client-side mount that pipes every Web Vitals
- * measurement to `/api/internal/web-vitals`.
+ * v1.4.28 R3d — client-side mount that pipes Web Vitals measurements
+ * to `/api/internal/web-vitals`.
  *
  * Next 16 ships `useReportWebVitals` as the supported hook for
  * capturing CLS / FCP / FID / LCP / TTFB / INP from the live
- * navigation. The hook fires once per metric per page load, so even a
- * heavy navigation produces at most six beacons.
+ * navigation. The hook fires once per metric per page load, so a
+ * heavy navigation can produce up to six beacons per route change.
+ *
+ * v1.4.33 F19 — the reporter previously posted EVERY measurement on
+ * EVERY page-load. In production the runtime audit captured
+ * `POST /api/internal/web-vitals 429` for almost every metric after
+ * the first navigation: six beacons × N navigations burned through
+ * the per-IP 60/min route-side rate-limit in seconds, so most samples
+ * were dropped before they reached the wide-event sink. Telemetry
+ * was self-throttled.
+ *
+ * Switch to client-side sampling at SAMPLE_RATE: each page-load
+ * decides ONCE (memoised via `useMemo`) whether to report and either
+ * sends every metric for that load or sends none. Per-load all-or-
+ * none keeps a sampled session's vitals coherent (the LCP from one
+ * page must be comparable to the CLS from the same page) while
+ * cutting traffic by an order of magnitude. The route-side rate-limit
+ * stays in place as a backstop against runaway sampling.
  *
  * Delivery transport: `navigator.sendBeacon` when available (queues
  * the POST without blocking the page lifecycle, survives the
  * `pagehide` event) with a `fetch({ keepalive: true })` fallback.
- * The route accepts the payload best-effort and returns 200 even on
+ * The route accepts the payload best-effort and returns 204 even on
  * malformed bodies — beacons must never delay or fail the navigation.
  */
+const SAMPLE_RATE = 0.1;
+
 export function WebVitalsReporter() {
+  // Decide once per mount whether this page-load reports its vitals.
+  // `useMemo` with an empty dep array keeps the decision stable across
+  // every metric callback inside the same navigation — partial sampling
+  // would mix LCP-without-CLS noise into the wide-event aggregates.
+  // `SSR` evaluates Math.random() to a stable false branch (Node), but
+  // the hook only fires post-hydration so the decision uses the
+  // browser's PRNG.
+  const sampled = useMemo(() => Math.random() < SAMPLE_RATE, []);
+
   useReportWebVitals((metric) => {
+    if (!sampled) return;
+
     const body = JSON.stringify({
       id: metric.id,
       name: metric.name,
