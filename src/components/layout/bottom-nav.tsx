@@ -68,9 +68,24 @@ export function BottomNav() {
 
   return (
     <>
+      {/* v1.4.33 F14 — bar height and safe-area defence so the bar can
+          never overlap the last viewport line of scrollable page content.
+          - `min-h-16` floors the bar at 64px even if the inner flex row
+            collapses (e.g. a future variant without one of the icons).
+          - `pb-[env(safe-area-inset-bottom)]` reserves the home-indicator
+            inset on iOS / iPadOS PWA installs.
+          - `bg-card` (solid, not the previous `bg-card/80`) plus
+            `border-t` give the bar a clean visual edge so any page
+            content that scrolls under the bar is properly occluded
+            rather than bleeding through a translucent surface. Page-
+            level pb-* padding owners (auth-shell + per-page shells)
+            still reserve room above the bar; this change hardens the
+            bar itself so the visual contract holds even when a page
+            shell forgets the bottom-padding contract.
+        */}
       <nav
         aria-label={t("nav.mobileNavigation")}
-        className="bg-card/80 border-border fixed bottom-0 left-0 z-50 w-full border-t pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
+        className="bg-card border-border fixed bottom-0 left-0 z-50 min-h-16 w-full border-t pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
       >
         <div className="mx-auto flex h-16 max-w-lg items-stretch justify-around px-1">
           {PRIMARY.map((item) => {
