@@ -27,12 +27,36 @@ const nextConfig: NextConfig = {
   // bfcache restore path stays clear. The other CSP-style security
   // headers already live on the response via the standalone runtime;
   // we add only the bfcache hint here.
+  //
+  // v1.4.34 IW-A — second rule layers the bfcache-friendly
+  // `Cache-Control` directive onto every authenticated HTML page
+  // response (the source negative-lookahead excludes `/api/*` and
+  // `/_next/*` so static assets keep their immutable caching and API
+  // routes keep their explicit headers). The framework default for
+  // pages that read cookies is `no-store, must-revalidate`, which
+  // Chromium counts as a hard bfcache breaker. `private, max-age=0,
+  // must-revalidate` keeps shared caches out (proxies, CDNs cannot
+  // store personal data), still forces revalidation on every
+  // navigation so session swaps detect on the wire, and is
+  // bfcache-eligible — back/forward navigation restores the page
+  // from memory instead of paying a full reload. See
+  // `src/lib/http/cache-headers.ts` for the typed constant reused by
+  // route handlers that opt into the same posture.
   async headers() {
     return [
       {
         source: "/:path*",
         headers: [
           { key: "Permissions-Policy", value: "unload=()" },
+        ],
+      },
+      {
+        source: "/((?!api|_next).*)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "private, max-age=0, must-revalidate",
+          },
         ],
       },
     ];
@@ -52,6 +76,16 @@ const nextConfig: NextConfig = {
   // bundled module.
   outputFileTracingIncludes: {
     "*": ["./src/lib/ai/prompts/safety-contracts.*.yaml"],
+  },
+  // v1.4.34 IW-A — silence the Turbopack NFT trace warnings emitted
+  // during `next build`. The tracer follows the `MAXMIND_LICENSE_KEY`
+  // env access in `src/lib/geo.ts` back into the config file, then
+  // emits "cannot be traced" warnings for paths it tried to walk
+  // (next.config.ts → mood-entries/bulk route, etc.). The standalone
+  // bundle is controlled by `output: "standalone"` above; this exclude
+  // only narrows trace reporting and has no runtime effect.
+  outputFileTracingExcludes: {
+    "*": ["./next.config.ts"],
   },
   experimental: {
     optimizePackageImports: ["recharts", "lucide-react"],
