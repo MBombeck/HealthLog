@@ -311,6 +311,41 @@ export const CUMULATIVE_HK_TYPES: ReadonlySet<MeasurementType> = new Set<Measure
 ]);
 
 /**
+ * v1.4.30 — externalId shape for daily-aggregated cumulative
+ * HealthKit rows. iOS emits one row per day per cumulative type via
+ * `HKStatisticsCollectionQuery` per R-A Option A; the externalId
+ * UPSERTs the matching server row idempotently across re-syncs.
+ *
+ * Format: `stats:<HKQuantityTypeIdentifier>:<YYYY-MM-DD>`.
+ *
+ * Cumulative HK types only — the spot-sample path keeps using
+ * `HKSample.uuid` as `externalId`. The shape is intentionally
+ * stable across the cutover: iOS clients still posting per-sample
+ * rows round-trip through the existing `(userId, type, source,
+ * externalId)` unique index; iOS clients on the daily-stats path
+ * collide on the deterministic `"stats:..."` key for idempotent
+ * UPSERTs.
+ *
+ * Locked contract — see
+ * `.planning/v15-ios-handoff/08-locked-contracts.md` §13 and
+ * `.planning/v15-ios-handoff/06-ios-responsibilities.md` Domain 1
+ * "Cumulative metrics: daily aggregation on iOS".
+ *
+ * The helper accepts the date string as-is: iOS generates it from
+ * the user's IANA timezone via `DateFormatter` with the
+ * `yyyy-MM-dd` pattern; the server trusts that format rather than
+ * re-validating per ingest because the iOS handoff doc locks the
+ * shape and the receiving Zod schema already caps `externalId` at
+ * 120 characters.
+ */
+export function dailyStatsExternalId(
+  hkIdentifier: string,
+  dateYYYYMMDD: string,
+): string {
+  return `stats:${hkIdentifier}:${dateYYYYMMDD}`;
+}
+
+/**
  * HK identifiers the iOS app may emit that HealthLog deliberately does
  * NOT map yet. Listing them here means the batch route can log a
  * "deferred, not unknown" signal and the iOS DTO can decide upstream

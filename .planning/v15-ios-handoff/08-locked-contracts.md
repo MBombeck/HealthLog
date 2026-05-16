@@ -466,7 +466,61 @@ BEFORE shipping.
 
 ---
 
-## 12. What is NOT in this file
+## 12. Daily-stats externalId shape (v1.4.30 — R-A Option A)
+
+The five cumulative HealthKit types switch from per-sample ingest
+(`externalId = HKSample.uuid`) to one row per day per type, pre-aggregated
+on iOS via `HKStatisticsCollectionQuery`. The per-day row's
+`externalId` is locked at this shape:
+
+```
+externalId = "stats:<HKQuantityTypeIdentifier>:<YYYY-MM-DD>"
+```
+
+Examples:
+
+| HK identifier | Day | externalId |
+| --- | --- | --- |
+| `HKQuantityTypeIdentifierStepCount` | 2026-05-16 | `stats:HKQuantityTypeIdentifierStepCount:2026-05-16` |
+| `HKQuantityTypeIdentifierActiveEnergyBurned` | 2026-05-16 | `stats:HKQuantityTypeIdentifierActiveEnergyBurned:2026-05-16` |
+| `HKQuantityTypeIdentifierFlightsClimbed` | 2026-05-16 | `stats:HKQuantityTypeIdentifierFlightsClimbed:2026-05-16` |
+| `HKQuantityTypeIdentifierDistanceWalkingRunning` | 2026-05-16 | `stats:HKQuantityTypeIdentifierDistanceWalkingRunning:2026-05-16` |
+| `HKQuantityTypeIdentifierTimeInDaylight` | 2026-05-16 | `stats:HKQuantityTypeIdentifierTimeInDaylight:2026-05-16` |
+
+**Scope**: cumulative types only. The set is the canonical
+`CUMULATIVE_HK_TYPES` in `src/lib/measurements/apple-health-mapping.ts`.
+Spot metrics (weight, BP, pulse, BG, body fat, HRV, RHR, SpO2, body
+temp, VO2 max, sleep) keep `externalId = HKSample.uuid.uuidString`.
+
+**Server enforcement**: the helper
+`dailyStatsExternalId(hkIdentifier, dateYYYYMMDD)` is the single source
+of truth on the server side. The drain script
+`scripts/drain-per-sample-cumulative.ts` mints the same shape when
+collapsing legacy per-sample rows.
+
+**Date string**: anchored to the user's IANA timezone (read via
+`GET /api/auth/me` → `User.timezone`). iOS generates it with
+`DateFormatter` using the `yyyy-MM-dd` pattern. The server trusts the
+inbound format and does not re-validate beyond the existing
+`externalId` Zod cap (`min(1).max(120)`).
+
+**Cutover tolerance**: the server accepts BOTH shapes during the
+cutover window. Operator runs the drain script
+(`POST /api/admin/drain-per-sample-cumulative` or the CLI variant) once
+after the new TestFlight build adopts the daily-stats path; re-running
+the drain is a no-op (idempotent).
+
+**Late-watch-sync handling**: a second POST for the same day collapses
+to `status: "duplicate"` via the existing
+`@@unique([userId, type, source, externalId])` index. To make a
+divergent daily total visible, iOS issues
+`PATCH /api/measurements/[id]` with the new value; the per-day SQLite
+cache (`type, day, last-posted-value`) drives the divergence check.
+
+**Test fence**: `dailyStatsExternalId` round-trip is covered by
+`src/lib/measurements/__tests__/apple-health-mapping.test.ts`.
+
+## 13. What is NOT in this file
 
 - **API envelope details (`{ data, error, meta }`)** → `17-error-handling.md`
 - **Coach snapshot construction** → `14-coach-mental-model.md`

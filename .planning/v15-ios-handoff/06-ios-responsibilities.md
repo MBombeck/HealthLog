@@ -349,6 +349,43 @@ The iOS app could accidentally cross the MDR line by:
 
 When in doubt: **the iOS app is a thin client over server-rendered intelligence**. The server is the medical-information custodian; iOS is the presentation layer + the HK adapter.
 
+## Cumulative metrics: daily aggregation on iOS (v1.4.30 — R-A Option A)
+
+The five cumulative HealthKit types — `HKQuantityTypeIdentifierStepCount`, `HKQuantityTypeIdentifierActiveEnergyBurned`, `HKQuantityTypeIdentifierFlightsClimbed`, `HKQuantityTypeIdentifierDistanceWalkingRunning`, `HKQuantityTypeIdentifierTimeInDaylight` — switch from per-sample ingest to **one row per day per type**, pre-aggregated on iOS via `HKStatisticsCollectionQuery` with `intervalComponents: DateComponents(day: 1)` and `options: .cumulativeSum`.
+
+Rationale + decision record: `.planning/research/v15-r-a-step-aggregation.md` §5. Server enforcement of the externalId shape: `.planning/v15-ios-handoff/08-locked-contracts.md` §13.
+
+### Daily-stats externalId shape
+
+```
+externalId = "stats:<HKQuantityTypeIdentifier>:<YYYY-MM-DD>"
+```
+
+Example: `stats:HKQuantityTypeIdentifierStepCount:2026-05-16`.
+
+The date string is anchored to the user's IANA timezone (read via `GET /api/auth/me` → `User.timezone`). iOS generates it with `DateFormatter` using the `yyyy-MM-dd` pattern; the server trusts the format and does not re-validate. The existing `@@unique([userId, type, source, externalId])` index UPSERTs idempotently across re-syncs.
+
+### iOS service contract
+
+- New file `HealthLog/Services/HealthKitStatisticsService.swift` wraps `HKStatisticsCollectionQuery` per cumulative type. On every observer wake, ask "what's the new daily sum for the affected days?" and POST one row per affected day per type via the existing `/api/measurements/batch` endpoint.
+- `value` = `HKStatistics.sumQuantity().doubleValue(for: <canonical unit>)`.
+- `measuredAt` = the canonical midday-UTC timestamp for the user's calendar day (matches the Withings activity-sync convention).
+- `unit`, `startDate`, `endDate` follow the per-day envelope (canonical unit; `startDate` = day-start, `endDate` = next-day-start − 1 ms in user TZ).
+- `deviceType` = the dominant contributing source's device (`watch` when the user wears one, else `phone`).
+- `externalId` = `dailyStatsExternalId(hkIdentifier, dateYYYYMMDD)` per the helper in `src/lib/measurements/apple-health-mapping.ts`.
+
+### Late-watch-sync (PATCH-on-divergence)
+
+When the Watch syncs at 14:00 with samples from the same morning, the existing day's row should **update**, not insert a second. The deterministic externalId collapses the second POST to `status: "duplicate"` via the unique index; to make the new value visible iOS keeps a small SQLite cache of `(type, day, last-posted-value)` and issues `PATCH /api/measurements/[id]` when the new daily total diverges. Insert-only batch ingest stays narrow; the PATCH path already exists.
+
+### Server tolerance during cutover
+
+The server accepts BOTH shapes — pre-existing per-sample rows (`externalId = HKSample.uuid`) and the new daily-aggregated rows (`externalId = "stats:..."`) coexist for the cutover window. Operator runs `POST /api/admin/drain-per-sample-cumulative` (or `scripts/drain-per-sample-cumulative.ts` directly) once after the new TestFlight build adopts the daily path; the drain collapses pre-existing per-sample APPLE_HEALTH cumulative rows into daily rows keyed on the new externalId shape. Re-running the drain is a no-op (idempotent).
+
+### Spot-sample path unchanged
+
+Non-cumulative HK types (weight, BP, pulse, BG, body fat, HRV, RHR, SpO2, body temp, VO2 max, sleep) keep `externalId = HKSample.uuid.uuidString`. Only the five cumulative types switch shape; only their iOS pipeline (`HealthKitStatisticsService.swift`) is new.
+
 ## "Since v1.4.24" diff markers
 
 - **NEW v1.4.25** — `MeasurementType` enum gained `AUDIO_EXPOSURE_ENV`, `AUDIO_EXPOSURE_HEADPHONE`, `TIME_IN_DAYLIGHT` for HK + Withings parity.
@@ -356,6 +393,7 @@ When in doubt: **the iOS app is a thin client over server-rendered intelligence*
 - **NEW v1.4.25 W16c** — `PERSONAL_RECORD` event type for APNs; default OFF.
 - **NEW v1.4.25 W10** — batch ingest rate limit 60/min per user (was unbounded).
 - **NEW v1.4.25 W17b/c** — Withings now syncs Activity v2 + Sleep v2 — iOS should be aware that some HK metrics may arrive via the Withings path (no action required, but the source-priority picker now matters more).
+- **NEW v1.4.30** — Cumulative HealthKit types switch to one-row-per-day daily-aggregated ingest. iOS owns `HealthKitStatisticsService.swift` with `HKStatisticsCollectionQuery`; per-day externalId is `"stats:<HKQuantityTypeIdentifier>:<YYYY-MM-DD>"`. Per-sample path stays valid during the cutover (server tolerates both shapes); operator runs the drain script once post-cutover. See the "Cumulative metrics: daily aggregation on iOS" section above and `08-locked-contracts.md` §13.
 
 ## iOS implementation checklist
 
