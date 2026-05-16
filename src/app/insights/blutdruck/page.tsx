@@ -105,7 +105,7 @@ export default function InsightsBlutdruckPage() {
         title={t("charts.bloodPressure")}
         colors={["#ff79c6", "#8be9fd"]}
         unit="mmHg"
-        yAxisUnit="Hg"
+        yAxisUnit="mmHg"
         targetZones={bpTargetZones}
         compareBaseline={compareBaseline}
         userTimezone={user?.timezone}

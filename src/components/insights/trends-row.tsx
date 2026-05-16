@@ -123,7 +123,7 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
               title={t("charts.bloodPressure")}
               colors={["#ff79c6", "#8be9fd"]}
               unit="mmHg"
-              yAxisUnit="Hg"
+              yAxisUnit="mmHg"
               mini
               userTimezone={userTimezone}
             />
