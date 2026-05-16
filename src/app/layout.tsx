@@ -5,6 +5,7 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { AuthShell } from "@/components/layout/auth-shell";
 import { MonitoringBootstrap } from "@/components/monitoring/bootstrap";
+import { WebVitalsReporter } from "@/components/monitoring/web-vitals-reporter";
 import { parseLocaleFromAcceptLanguage } from "@/lib/format-locale";
 import { locales, type Locale } from "@/lib/i18n/config";
 
@@ -96,6 +97,7 @@ export default async function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <Providers initialLocale={initialLocale}>
           <MonitoringBootstrap />
+          <WebVitalsReporter />
           <AuthShell>{children}</AuthShell>
         </Providers>
       </body>

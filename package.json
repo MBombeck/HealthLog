@@ -26,6 +26,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "analyze": "ANALYZE=1 next build",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "prisma generate",
@@ -80,6 +81,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",
+    "@next/bundle-analyzer": "^16.2.6",
     "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@testcontainers/postgresql": "^11.14.0",

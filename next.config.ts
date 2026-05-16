@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import bundleAnalyzer from "@next/bundle-analyzer";
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -24,4 +25,16 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+/**
+ * v1.4.28 R3d — opt-in bundle analyzer behind `ANALYZE=1`.
+ *
+ * `pnpm analyze` (defined in `package.json`) sets the env var and
+ * runs `next build`; the analyzer writes static HTML reports to
+ * `.next/analyze/*.html`. The wrapper is a no-op when the env var is
+ * unset so the regular `pnpm build` pipeline pays nothing.
+ */
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "1",
+});
+
+export default withBundleAnalyzer(nextConfig);
