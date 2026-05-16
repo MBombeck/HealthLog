@@ -4,6 +4,7 @@ import { useMemo, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/hooks/use-auth";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { useWorkouts } from "@/hooks/use-workouts";
 import { InsightsTabStrip } from "@/components/insights/insights-tab-strip";
 import { useInsightsAdvisorQuery } from "@/components/insights/use-insights-advisor";
@@ -41,7 +42,22 @@ interface ComprehensivePayload {
 
 export function InsightsLayoutShell({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth();
-  const advisor = useInsightsAdvisorQuery(isAuthenticated);
+  // v1.4.33 F18 — gate the advisor POST on the operator's assistant
+  // feature flag. Pre-fix, every /insights mount fired POST
+  // /api/insights/generate even when the operator had disabled the
+  // briefing surface or the user had no AI provider configured. The
+  // server returned 422 in that case and the regenerate button on the
+  // tab strip rendered a non-functional spinner. Reading the flag
+  // matrix off `/api/feature-flags` keeps the hot path one fetch
+  // (shared `["feature-flags"]` cache, 60s staleTime) and skips the
+  // advisor request entirely when the operator has the briefing gate
+  // off. The fail-open default in `useFeatureFlags` means a network
+  // hiccup still renders the advisor — the gate only takes effect when
+  // the operator has explicitly turned the surface off.
+  const flags = useFeatureFlags();
+  const advisorEnabled =
+    isAuthenticated && flags.enabled && flags.briefing;
+  const advisor = useInsightsAdvisorQuery(advisorEnabled);
 
   // Shared analytics fetch — sub-pages consume the same cache key.
   const analyticsQuery = useQuery({
@@ -96,7 +112,7 @@ export function InsightsLayoutShell({ children }: { children: ReactNode }) {
   return (
     <div className="space-y-8">
       <InsightsTabStrip
-        onRegenerate={isAuthenticated ? advisor.regenerate : undefined}
+        onRegenerate={advisorEnabled ? advisor.regenerate : undefined}
         regenerating={advisor.isRegenerating}
         availability={availability}
       />
