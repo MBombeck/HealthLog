@@ -90,7 +90,7 @@ async function postMoodEntry(request: NextRequest) {
     return apiError(parsed.error.issues[0].message, 422);
   }
 
-  const { mood, tags, moodLoggedAt, source } = parsed.data;
+  const { mood, tags, note, moodLoggedAt, source } = parsed.data;
   // v1.4.25 W7b (Decision A) — anchor the `date` string to the user's
   // current displayTimezone and store the resolved zone on the row.
   // Legacy rows with `tz IS NULL` continue to read as Europe/Berlin
@@ -108,6 +108,7 @@ async function postMoodEntry(request: NextRequest) {
         mood,
         score,
         tags: tags ? JSON.stringify(tags) : null,
+        note: note ?? null,
         source: source ?? "MANUAL",
         moodLoggedAt,
       },

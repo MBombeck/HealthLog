@@ -1076,6 +1076,14 @@ model MoodEntry {
   mood         String // SUPER_GUT, GUT, OKAY, SCHLECHT, LAUSIG
   score        Int // 1-5
   tags         String? // JSON array of tag keys
+  /// v1.4.30 — first-class free-text note. Replaces the
+  /// `tags: ["note:<text>"]` workaround the iOS app shipped through
+  /// v0.4.1.1 (per R-E H-5); the prior pattern contaminated the
+  /// tags axis with prose the Coach evidence shelf then read as
+  /// taxonomic labels. Nullable for the additive-only migration
+  /// path; the bulk-backfill endpoint pulls existing `note:...` tag
+  /// rows into this column via the migration script.
+  note         String?  @db.Text
   source       String   @default("MOODLOG") // WEB, TELEGRAM, DAYLIO
   moodLoggedAt DateTime @map("mood_logged_at")
   /// v1.4.25 W7b — per-row IANA timezone that the `date` string is

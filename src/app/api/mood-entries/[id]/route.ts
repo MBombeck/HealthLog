@@ -88,6 +88,9 @@ export const PUT = apiHandler(
     if (data.tags !== undefined) {
       updateData.tags = data.tags ? JSON.stringify(data.tags) : null;
     }
+    if (data.note !== undefined) {
+      updateData.note = data.note;
+    }
 
     const entry = await prisma.moodEntry.update({
       where: { id },

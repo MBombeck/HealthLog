@@ -81,6 +81,10 @@ export function getScoreForMood(mood: string): number {
 export const createMoodEntrySchema = z.object({
   mood: moodLevelEnum,
   tags: z.array(z.string().max(50)).max(20).optional(),
+  // v1.4.30 H-5 — first-class free-text note. Replaces the
+  // `tags: ["note:<text>"]` workaround. Capped at 500 chars so the
+  // Coach evidence shelf renders cleanly without truncating chips.
+  note: z.string().max(500).optional(),
   moodLoggedAt: z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
   source: moodSourceEnum.optional().default("MANUAL"),
 });
@@ -88,6 +92,7 @@ export const createMoodEntrySchema = z.object({
 export const updateMoodEntrySchema = z.object({
   mood: moodLevelEnum.optional(),
   tags: z.array(z.string().max(50)).max(20).nullable().optional(),
+  note: z.string().max(500).nullable().optional(),
   moodLoggedAt: z.iso
     .datetime({ offset: true })
     .transform((s) => new Date(s))

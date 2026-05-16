@@ -50,6 +50,7 @@ const BATCH_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const bulkEntrySchema = z.object({
   mood: moodLevelEnum,
   tags: z.array(z.string().max(50)).max(20).optional(),
+  note: z.string().max(500).optional(),
   moodLoggedAt: z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
   source: moodSourceEnum.optional().default("MANUAL"),
   /**
@@ -158,16 +159,18 @@ async function postBulk(request: NextRequest): Promise<Response> {
           mood: entry.mood,
           score,
           tags: entry.tags ? JSON.stringify(entry.tags) : null,
+          note: entry.note ?? null,
           source: entry.source,
           moodLoggedAt: entry.moodLoggedAt,
         },
         update: {
-          // Last-writer-wins on the mood + tags pair. The iOS client
-          // only re-posts an existing entry when it has new data; the
-          // server trusts that decision.
+          // Last-writer-wins on the mood + tags + note triple. The
+          // iOS client only re-posts an existing entry when it has
+          // new data; the server trusts that decision.
           mood: entry.mood,
           score,
           tags: entry.tags ? JSON.stringify(entry.tags) : null,
+          note: entry.note ?? null,
         },
       });
 
