@@ -850,9 +850,9 @@ export default function DashboardPage() {
           // against the shared `<TrendCard>` primitive so it matches
           // the Weight / BP / Pulse sibling tiles exactly. The
           // synthetic `bpSlope30 = bpTrendDelta / 30` block produced a
-          // small float (≈ 1.1 for a 33-point delta) that the
-          // TrendCard's date-shaped formatter pipeline rendered as
-          // "1.1." — the maintainer's screenshot regression. The
+          // small fractional float that the TrendCard's date-shaped
+          // formatter pipeline rendered as "1.1." — the regression the
+          // maintainer flagged in the post-v1.4.27 walk-through. The
           // all-time aggregate moves to the `/targets` BP card which
           // already shows the same number with more context; the
           // dashboard tile no longer needs to carry it. `avgAllTime`
