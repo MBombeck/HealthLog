@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
+import { memoizePerRequest } from "@/lib/request-cache";
 
 /**
  * v1.4.31 — Assistant-surface operator feature flags.
@@ -59,37 +60,47 @@ export const ASSISTANT_FLAGS_DEFAULT: AssistantFlagSet = Object.freeze({
  *
  * The master always wins: every sub-flag is forced false when the
  * master is off, before the resolved set leaves this function.
+ *
+ * v1.4.33 — memoised per-request so a single Coach-drawer open that
+ * fires five gated fetches in parallel (`/api/insights/chat`,
+ * `/api/insights/comprehensive`, six `/api/insights/<metric>-status`
+ * routes, the rail list) reads `AppSettings.singleton` once instead of
+ * five times. The cache lives on the active `WideEventBuilder` so it
+ * goes away with the request; behaviour outside an event context (unit
+ * tests, background jobs) stays unchanged.
  */
 export async function getAssistantFlags(): Promise<AssistantFlagSet> {
-  try {
-    const settings = await prisma.appSettings.findUnique({
-      where: { id: "singleton" },
-      select: {
-        assistantEnabled: true,
-        assistantCoachEnabled: true,
-        assistantBriefingEnabled: true,
-        assistantInsightStatusEnabled: true,
-        assistantCorrelationsEnabled: true,
-        assistantHealthScoreExplainerEnabled: true,
-      },
-    });
+  return memoizePerRequest("assistant-flags", async () => {
+    try {
+      const settings = await prisma.appSettings.findUnique({
+        where: { id: "singleton" },
+        select: {
+          assistantEnabled: true,
+          assistantCoachEnabled: true,
+          assistantBriefingEnabled: true,
+          assistantInsightStatusEnabled: true,
+          assistantCorrelationsEnabled: true,
+          assistantHealthScoreExplainerEnabled: true,
+        },
+      });
 
-    const master = settings?.assistantEnabled ?? true;
-    return resolveAssistantFlags({
-      enabled: master,
-      coach: settings?.assistantCoachEnabled ?? true,
-      briefing: settings?.assistantBriefingEnabled ?? true,
-      insightStatus: settings?.assistantInsightStatusEnabled ?? true,
-      correlations: settings?.assistantCorrelationsEnabled ?? true,
-      healthScoreExplainer:
-        settings?.assistantHealthScoreExplainerEnabled ?? true,
-    });
-  } catch {
-    getEvent()?.addWarning(
-      "Failed to load assistant feature flags, using defaults",
-    );
-    return ASSISTANT_FLAGS_DEFAULT;
-  }
+      const master = settings?.assistantEnabled ?? true;
+      return resolveAssistantFlags({
+        enabled: master,
+        coach: settings?.assistantCoachEnabled ?? true,
+        briefing: settings?.assistantBriefingEnabled ?? true,
+        insightStatus: settings?.assistantInsightStatusEnabled ?? true,
+        correlations: settings?.assistantCorrelationsEnabled ?? true,
+        healthScoreExplainer:
+          settings?.assistantHealthScoreExplainerEnabled ?? true,
+      });
+    } catch {
+      getEvent()?.addWarning(
+        "Failed to load assistant feature flags, using defaults",
+      );
+      return ASSISTANT_FLAGS_DEFAULT;
+    }
+  });
 }
 
 /**
@@ -120,8 +131,8 @@ export function resolveAssistantFlags(raw: AssistantFlagSet): AssistantFlagSet {
  *
  * Older iOS clients that predate the v1.4.31 contract surface this as
  * a generic 403 (their existing 403-handler covers the case); v1.4.31+
- * clients read the `errorCode` to render the `AssistantDisabledNotice`
- * empty-state.
+ * clients read the `errorCode` to render an inline operator-disabled
+ * notice.
  */
 export class AssistantDisabledError extends Error {
   readonly surface: AssistantSurface;
