@@ -33,6 +33,14 @@ const PUBLIC_PATHS = [
   // alongside the project credits. The CC licence requires the
   // attribution to be reachable without a sign-in.
   "/about",
+  // v1.4.33 — `/.well-known/*` covers IETF-registered discovery
+  // endpoints (RFC 8615). Apple reads
+  // `/.well-known/apple-app-site-association` without credentials to
+  // wire Web Credentials (passkey sharing) and Universal Links to the
+  // iOS bundle, so the path must answer 200 with the bare JSON body
+  // before any auth gate runs. The trailing slash future-proofs the
+  // namespace for `/security.txt`, `/openid-configuration`, etc.
+  "/.well-known/",
   // `/onboarding` itself + its subroutes are matched exactly via
   // `isPublicPath()` so we don't admit `/onboarding-export` etc.
   "/robots.txt",
