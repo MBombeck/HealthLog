@@ -657,7 +657,112 @@ v1.4.30 integration suite (`src/app/api/sync/state/__tests__/`,
 delete-conflict paths land alongside the PATCH-on-divergence wiring
 in a subsequent web patch (no client consumes them yet).
 
-## 14. What is NOT in this file
+## §14 — Assistant feature-flag scope (locked v1.4.31)
+
+`GET /api/feature-flags` returns the operator-effective shape:
+
+```json
+{
+  "data": {
+    "assistant": {
+      "enabled": true,
+      "coach": true,
+      "briefing": true,
+      "insightStatus": true,
+      "correlations": true,
+      "healthScoreExplainer": true
+    }
+  },
+  "error": null
+}
+```
+
+- **`requireAuth()`** gates the route — any logged-in user passes.
+- **Master kill-switch.** `assistant.enabled = false` forces every
+  sub-flag false in the resolved response. Server-side resolver
+  never returns `enabled: false` with any sub-flag `true`. iOS
+  does not have to compose `master && sub`; reading
+  `assistant.coach` already accounts for both layers.
+- **Cache.** `Cache-Control: private, max-age=60`. The web web
+  hook also caches the matrix in TanStack Query for 60 s
+  (`staleTime: 60_000`). iOS should mirror that posture — read
+  on cold start, cache per session, refresh in the background.
+
+### Scope rule — applies to BOTH server-routed AND on-device surfaces
+
+Locked verbatim from
+`.planning/RESPONSE-TO-IOS-TEAM-2026-05-16.md` §3 R5:
+
+> The operator-control philosophy is "operator can disable
+> assistant surfaces app-wide". `assistant.coach` and
+> `assistant.briefing` flags gate every assistant-driven surface
+> on every client, regardless of whether the LLM runs server-side
+> or on the device.
+>
+> - Server-side: the relevant `/api/insights/*` endpoints return
+>   403 + `errorCode: "assistant.disabled.<surface>"` when the
+>   flag is off.
+> - iOS-side: when `GET /api/feature-flags` returns
+>   `assistant.coach: false`, iOS hides the Coach surfaces
+>   (whether they would have called the server SSE OR run
+>   on-device).
+> - iOS-side: when `assistant.briefing: false`, iOS hides the
+>   Daily Briefing card (whether it would have called the server
+>   OR generated on-device).
+> - iOS-side: when `assistant.enabled: false` (the master flag),
+>   ALL five sub-flags are effectively off — iOS hides every
+>   assistant surface, server returns 403 on every assistant
+>   endpoint.
+>
+> iOS-side default to gate-both is correct. No client-server
+> split on flag semantics.
+
+This holds for the Apple Foundation Models on-device path
+introduced in the v0.6.0 iOS roadmap. The operator's intent is
+"no model-driven surface in this app on this server"; whether the
+inference happens server-side or on-device is an implementation
+detail the operator does not see and does not need to control
+separately.
+
+### Server-side gated endpoints (v1.4.31)
+
+When the relevant flag is off, each endpoint returns:
+
+```json
+{ "data": null, "error": "<message>", "meta": { "errorCode": "assistant.disabled.<surface>" } }
+```
+
+with HTTP status 403.
+
+| Endpoint | Flag |
+|---|---|
+| `POST /api/insights/chat` (SSE) | `coach` |
+| `GET /api/insights/chat` (rail) | `coach` |
+| `POST /api/insights/generate` | `coach` |
+| `GET /api/insights/comprehensive` | `coach` |
+| `GET /api/insights/cards` | `insightStatus` |
+| `GET /api/insights/weight-status` … `medication-compliance-status` (6 routes) | `insightStatus` |
+| `GET /api/insights/correlations` | `correlations` |
+
+The Health-Score delta explainer has no server endpoint — the
+explanation text lives in the briefing payload's
+`delta-explanation` slot, so server-side it shares the `coach`
+gate via `/api/insights/generate`. iOS suppresses the `?` glyph
+purely client-side when `assistant.healthScoreExplainer = false`;
+the delta digit stays visible because the parent reads it from
+the analytics payload directly.
+
+### Admin write surface
+
+`PUT /api/admin/settings/assistant-flags` flips one or more
+sub-flags atomically; `requireAdmin()` gates it. The endpoint
+echoes both the raw column values and the resolved (master-killed)
+matrix so the operator UI can render the master vs sub-flag
+distinction visually. The runtime feature-flag query is
+invalidated on write so a flipped surface goes dark / live within
+the same operator session.
+
+## 15. What is NOT in this file
 
 - **API envelope details (`{ data, error, meta }`)** → `17-error-handling.md`
 - **Coach snapshot construction** → `14-coach-mental-model.md`
