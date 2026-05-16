@@ -26,9 +26,17 @@ function load(path: string): string {
 
 describe("v1.4.20 B3 — /insights mounts CorrelationRow + TrendsRow", () => {
   it("imports both new components", () => {
+    // v1.4.33 IW2 deferred below-the-fold blocks behind `next/dynamic`,
+    // so the static `from "..."` import-string was replaced with a
+    // `dynamic(() => import("..."))` call. Either spelling counts as
+    // a load-bearing reference to the module path.
     const src = load(INSIGHTS_PATH);
-    expect(src).toContain('from "@/components/insights/correlation-row"');
-    expect(src).toContain('from "@/components/insights/trends-row"');
+    expect(src).toMatch(
+      /(?:from\s+"@\/components\/insights\/correlation-row"|import\("@\/components\/insights\/correlation-row"\))/,
+    );
+    expect(src).toMatch(
+      /(?:from\s+"@\/components\/insights\/trends-row"|import\("@\/components\/insights\/trends-row"\))/,
+    );
   });
 
   it("mounts <CorrelationRow> behind a non-null analytics.correlations guard", () => {
