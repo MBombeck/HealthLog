@@ -1898,6 +1898,7 @@
     "moodLogWebhookSecretHelp": "Enter this secret in moodLog as webhook secret",
     "moodLogSync": "Start sync",
     "moodLogFullSync": "Full sync",
+    "moodLogFullSyncConfirm": "Synchronize fully",
     "moodLogFullSyncTitle": "Full sync?",
     "moodLogFullSyncDescription": "All available mood data will be fully synchronized.",
     "moodLogDisconnect": "Disconnect",

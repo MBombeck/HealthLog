@@ -351,10 +351,17 @@ export function AccountSection() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="username">{t("settings.username")}</Label>
+              {/* v1.4.33 F13 — `disabled` adds `opacity-50` to the input
+                  primitive, which the maintainer's mobile pass read as
+                  "empty placeholder text" because the username then
+                  matches the muted-foreground colour exactly. Username
+                  changes still aren't allowed, but `readOnly` keeps the
+                  text crisp (full contrast) so it reads as a value, not
+                  a hint. */}
               <Input
                 id="username"
                 value={user.username}
-                disabled
+                readOnly
                 autoComplete="username"
               />
             </div>

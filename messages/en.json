@@ -259,6 +259,7 @@
     "emptyTitle": "Your dashboard is empty",
     "emptyDescription": "Log your first measurement or mood entry. Tiles and charts appear automatically as data lands.",
     "emptyAddMeasurement": "Add your first measurement",
+    "staleHint": "Last reading {count} d ago",
     "recentWorkouts": {
       "title": "Recent workouts",
       "viewAll": "View all",

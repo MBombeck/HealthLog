@@ -753,7 +753,16 @@ function MoodLogCard({
               enterKeyHint="done"
             />
           </div>
-          <div className="flex flex-wrap items-start gap-2">
+          {/* v1.4.33 — save-button placement contract:
+              right-aligned primary `Speichern` with the secondary
+              `Verbindung testen` immediately to its left. Mood Log
+              used to left-align its row, which was the only
+              integration form that did. */}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <TestConnectionButton
+              endpoint="/api/integrations/moodlog/test"
+              disabled={!status?.configured}
+            />
             <Button
               type="submit"
               disabled={saving || (!url.trim() && !apiKey.trim())}
@@ -763,10 +772,6 @@ function MoodLogCard({
               <Save className="mr-2 h-4 w-4" />
               {t("common.save")}
             </Button>
-            <TestConnectionButton
-              endpoint="/api/integrations/moodlog/test"
-              disabled={!status?.configured}
-            />
           </div>
         </form>
 
@@ -777,12 +782,18 @@ function MoodLogCard({
                 <Label htmlFor="moodlog-webhook-secret">
                   {t("settings.moodLogWebhookSecret")}
                 </Label>
-                <div className="flex gap-2">
+                {/* v1.4.33 — the webhook secret is a long hex string;
+                    on a 393 CSS px viewport the input + Copy button
+                    used to push past the card edge and trigger a body
+                    horizontal scroll. Stack vertically on `<sm` and
+                    break the input value so it wraps inside its own
+                    box. */}
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <Input
                     id="moodlog-webhook-secret"
                     value={status.webhookSecret}
                     readOnly
-                    className="font-mono text-xs"
+                    className="font-mono text-xs break-all"
                   />
                   <Button
                     variant="outline"
@@ -792,6 +803,7 @@ function MoodLogCard({
                       setMsg(t("common.copied"));
                       setMsgType("success");
                     }}
+                    className="w-full sm:w-auto"
                   >
                     {/* v1.4.22 D / D-DSGN-M-04 — use the proper
                         common.copy key instead of stripping the
@@ -818,7 +830,14 @@ function MoodLogCard({
               </span>
             </div>
 
-            <div className="flex gap-2">
+            {/* v1.4.33 — the Sync / Voll-Sync / Trennen triplet
+                overflowed the card edge on a 393 CSS px viewport
+                (~376 px of buttons + gaps inside 345 px of inner
+                width). Match the Withings card pattern: `flex-wrap`
+                + `min-w-[10rem]` on `<sm` so the triggers stack two
+                per row and fill their column cleanly; tablet+ keeps
+                the inline row. */}
+            <div className="flex flex-wrap items-start gap-2 [&>*]:min-w-[10rem] sm:[&>*]:min-w-0">
               <Button
                 variant="outline"
                 size="sm"
@@ -849,7 +868,7 @@ function MoodLogCard({
                   <AlertDialogFooter>
                     <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                     <AlertDialogAction onClick={() => handleSync(true)}>
-                      {t("settings.moodLogFullSync")}
+                      {t("settings.moodLogFullSyncConfirm")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

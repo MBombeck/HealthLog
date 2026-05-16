@@ -218,8 +218,17 @@ export function SettingsShell({ active, children }: SettingsShellProps) {
             `min-h-[calc(100dvh-12rem)]` reserve keeps the column tall
             enough that swapping a short loading state for a long
             section list (Thresholds, Sources) does not jump the page
-            height under the sticky sidebar. */}
-        <main className="min-h-[calc(100dvh-12rem)] min-w-0">{children}</main>
+            height under the sticky sidebar.
+
+            v1.4.33 F14 — `pb-24 md:pb-0` reserves a 96 px bottom gutter
+            on `<md` so the last form field on
+            `/settings/account` (Geschlecht / Gender) and
+            `/settings/ai` (Aktiver Provider) is not eaten by the
+            floating mobile bottom-nav. Desktop reverts to the parent's
+            own padding because the bottom-nav doesn't render on `md+`. */}
+        <main className="min-h-[calc(100dvh-12rem)] min-w-0 pb-24 md:pb-0">
+          {children}
+        </main>
       </div>
     </div>
   );

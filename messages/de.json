@@ -1617,9 +1617,6 @@
       "about": {
         "title": "Über",
         "description": "Version, Lizenz, Links."
-      },
-      "placeholder": {
-        "coming_soon": "Wird mit dem nächsten Release-Update hierher umziehen."
       }
     },
     "profile": "Profil",
