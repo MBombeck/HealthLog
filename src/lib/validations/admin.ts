@@ -80,5 +80,19 @@ export const adminSettingsSchema = z
     // against Intl.supportedValuesOf at runtime; this schema just
     // guards the shape + length.
     defaultUserTimezone: z.string().max(64).optional(),
+    // v1.4.31 — assistant-surface operator feature flags. Master
+    // kills every sub-flag; sub-flags carve specific surfaces. The
+    // dedicated admin endpoint at
+    // /api/admin/settings/assistant-flags also accepts these via
+    // its own schema; this entry exists so the generic
+    // /api/admin/settings PUT path can still carry the values for
+    // operators who script their settings updates over a single
+    // route.
+    assistantEnabled: z.boolean().optional(),
+    assistantCoachEnabled: z.boolean().optional(),
+    assistantBriefingEnabled: z.boolean().optional(),
+    assistantInsightStatusEnabled: z.boolean().optional(),
+    assistantCorrelationsEnabled: z.boolean().optional(),
+    assistantHealthScoreExplainerEnabled: z.boolean().optional(),
   })
   .strict();

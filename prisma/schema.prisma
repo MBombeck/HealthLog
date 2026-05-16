@@ -1208,6 +1208,26 @@ model AppSettings {
   // 32 chars) plus headroom.
   defaultUserTimezone String? @map("default_user_timezone") @db.VarChar(64)
 
+  // v1.4.31 — Assistant-surface operator feature flags. The master
+  // gates every LLM-driven surface app-wide; five sub-flags carve
+  // the visibility cut per surface (Coach drawer + chat, Daily
+  // Briefing + advisor, per-metric status cards, correlation
+  // narration, Health-Score delta explainer). Defaults preserve the
+  // v1.4.30 behaviour (every surface visible) so upgrades require
+  // no admin action. The runtime resolver in
+  // `src/lib/feature-flags/index.ts` forces every sub-flag false
+  // when the master is off. Locked per
+  // `.planning/RESPONSE-TO-IOS-TEAM-2026-05-16.md` §3 R5: the same
+  // flag matrix gates server-routed AND iOS on-device surfaces, so
+  // operators can opt out of every assistant surface regardless of
+  // where the model runs.
+  assistantEnabled                     Boolean @default(true) @map("assistant_enabled")
+  assistantCoachEnabled                Boolean @default(true) @map("assistant_coach_enabled")
+  assistantBriefingEnabled             Boolean @default(true) @map("assistant_briefing_enabled")
+  assistantInsightStatusEnabled        Boolean @default(true) @map("assistant_insight_status_enabled")
+  assistantCorrelationsEnabled         Boolean @default(true) @map("assistant_correlations_enabled")
+  assistantHealthScoreExplainerEnabled Boolean @default(true) @map("assistant_health_score_explainer_enabled")
+
   @@map("app_settings")
 }
 
