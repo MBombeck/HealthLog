@@ -65,13 +65,16 @@ export function HealthScoreDeltaExplainer({
       data-slot="health-score-delta-explainer-trigger"
       aria-label={triggerLabel}
       className={cn(
-        // Icon-only chip sized to read at the delta line's height
-        // without inflating the row. The 16 px hit target satisfies
-        // the existing 11 px delta line's reading rhythm while the
-        // outer focus ring still grants a comfortable tap target
-        // because the ring sits outside the box.
+        // Visible glyph stays 12 px so the chip reads at the delta
+        // line's height without inflating the row. The button itself
+        // sits at the 44 px WCAG 2.5.5 floor via `min-h-11 min-w-11`;
+        // negative `-my-3 -mx-2` collapses the surrounding row back
+        // to its 16 px stride so the optical chip stays small while
+        // the hit surface lifts to 44 px. Transparent padding owns
+        // the extra reach.
         "text-muted-foreground hover:text-foreground focus-visible:ring-ring/50",
-        "inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full",
+        "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full",
+        "-my-3 -mx-2",
         "transition-colors focus-visible:ring-2 focus-visible:outline-none",
         className,
       )}

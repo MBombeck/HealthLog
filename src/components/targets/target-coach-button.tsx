@@ -3,6 +3,7 @@
 import { MessageCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import type { CoachScope, CoachScopeSource } from "@/lib/ai/coach/types";
 
@@ -78,7 +79,11 @@ export function TargetCoachButton({
       data-slot="target-coach-cta"
       aria-label={accessibleLabel}
       title={accessibleLabel}
-      className={className}
+      // Lift the icon button to the 44 px WCAG 2.5.5 floor. The
+      // shadcn `icon` variant ships `size-10` (40 px); the project
+      // floor is 44 px (matches the medication-history button and the
+      // Coach drawer cluster). Glyph stays `size-4`.
+      className={cn("min-h-11 min-w-11", className)}
     >
       <MessageCircle className="size-4" aria-hidden="true" />
     </Button>

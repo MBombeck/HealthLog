@@ -55,6 +55,21 @@ describe("<HealthScoreDeltaExplainer>", () => {
     expect(trigger?.[0]).toContain('aria-label="What does this delta mean?"');
   });
 
+  it("lifts the tap target to the 44 px WCAG 2.5.5 floor", () => {
+    // The glyph stays 12 px but the click surface inflates to 44 px
+    // via `min-h-11 min-w-11` on the trigger; the parent row keeps
+    // its 16 px stride because `-my-3 -mx-2` swallows the extra
+    // reach. Pinning so a future refactor can't drop back to the
+    // visual-chip-as-hit-target shape that failed WCAG 2.5.5.
+    const html = ssr(<HealthScoreDeltaExplainer delta={-3} />);
+    const trigger = html.match(
+      /<button[^>]*data-slot="health-score-delta-explainer-trigger"[^>]*>/,
+    );
+    expect(trigger).not.toBeNull();
+    expect(trigger?.[0]).toContain("min-h-11");
+    expect(trigger?.[0]).toContain("min-w-11");
+  });
+
   it("renders the trigger in German with the localised aria-label", () => {
     const html = ssr(<HealthScoreDeltaExplainer delta={2} />, "de");
     const trigger = html.match(
