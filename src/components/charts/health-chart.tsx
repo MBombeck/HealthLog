@@ -577,6 +577,15 @@ export function HealthChart({
         typeParams.set("from", fetchWindow.from);
         typeParams.set("to", fetchWindow.to);
         typeParams.set("limit", "5000");
+        // v1.4.29 C3 — windows over 7 days ask the server to bucket
+        // daily. Caps the chart's per-type payload at ~365 rows
+        // instead of ~5 000 for high-density types (pulse), and drops
+        // Recharts paint cost ~50× on continuous-monitoring accounts.
+        // Short windows keep raw fetching so hour-by-hour detail
+        // stays visible.
+        if (fetchWindow.windowDays > 7) {
+          typeParams.set("aggregate", "daily");
+        }
 
         const res = await fetch(`/api/measurements?${typeParams}`);
         if (!res.ok) return;

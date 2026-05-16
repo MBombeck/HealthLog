@@ -84,6 +84,36 @@ describe("<HealthChart> — bounded range fetch", () => {
     expect(measurementsUrl!).toMatch(/type=PULSE/);
     // Guard against the legacy unbounded paginator returning.
     expect(measurementsUrl!).not.toMatch(/offset=/);
+    // v1.4.29 C3 — the default 30-day window must request server-
+    // side daily aggregation so the client doesn't pay for ~5000
+    // raw pulse rows on every range-tab change.
+    expect(measurementsUrl!).toMatch(/aggregate=daily/);
+  });
+
+  it("omits aggregate=daily on windows of 7 days or fewer", async () => {
+    // v1.4.29 C3 — short windows keep raw fetching so the user can
+    // see hour-by-hour detail on the 7-day view.
+    const { I18nProvider } = await import("@/lib/i18n/context");
+    const { HealthChart } = await import("../health-chart");
+
+    renderToStaticMarkup(
+      <I18nProvider initialLocale="en">
+        <HealthChart
+          types={["PULSE"]}
+          title="Pulse"
+          unit="bpm"
+          windowOverride="last7days"
+        />
+      </I18nProvider>,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const measurementsUrl = fetchCalls.find((u) =>
+      u.includes("/api/measurements"),
+    );
+    expect(measurementsUrl).toBeDefined();
+    expect(measurementsUrl!).not.toMatch(/aggregate=daily/);
   });
 
   it("re-keys the query when the range window changes", async () => {
