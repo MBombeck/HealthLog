@@ -169,8 +169,8 @@ export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
           // envelope is locked per
           // `.planning/RESPONSE-TO-IOS-TEAM-2026-05-16.md` §3 R5.
           // Older iOS clients that don't know the errorCode surface
-          // this as a generic 403; v1.4.31+ clients render the
-          // `<AssistantDisabledNotice>` empty state.
+          // this as a generic 403; v1.4.31+ clients can branch on the
+          // errorCode to render an inline operator-disabled notice.
           evt.setError(error);
           response = NextResponse.json(
             {

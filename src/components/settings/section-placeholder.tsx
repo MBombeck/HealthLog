@@ -54,6 +54,14 @@ export function SectionPlaceholder({ slug }: SectionPlaceholderProps) {
   const sectionTitle = t(`settings.sections.${slug}.title`);
   const sectionDescription = t(`settings.sections.${slug}.description`);
 
+  // v1.4.33 A4 — `<SectionPlaceholder>` is a defensive fallback for
+  // slugs added to SETTINGS_SECTION_SLUGS without a matching component.
+  // The type system blocks that path today, so the EmptyState body is
+  // effectively unreachable. We retire the dedicated locale key
+  // (`settings.sections.placeholder.coming_soon`) and inherit the
+  // section's own description so the guard still renders meaningful
+  // copy if it ever does fire — no more dead-string maintenance across
+  // six locale files.
   return (
     <section
       aria-labelledby={`settings-section-${slug}-title`}
@@ -72,7 +80,7 @@ export function SectionPlaceholder({ slug }: SectionPlaceholderProps) {
       <EmptyState
         icon={<Icon className="size-6" />}
         title={sectionTitle}
-        description={t("settings.sections.placeholder.coming_soon")}
+        description={sectionDescription}
       />
     </section>
   );

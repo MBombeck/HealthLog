@@ -878,9 +878,6 @@
     "heroFindingWarning": "Top alert",
     "correlationsTitle": "Correlations",
     "recommendationsTitle": "Recommendations",
-    "briefingDisabledByOperator": "The Daily Briefing is currently unavailable on this server.",
-    "statusDisabledByOperator": "Status cards are currently unavailable on this server.",
-    "correlationsDisabledByOperator": "Correlation narration is currently unavailable on this server.",
     "personalRecord": {
       "badge": "PR",
       "tooltip": "Personal record: {value} {unit} on {date}"
@@ -1036,7 +1033,6 @@
       "composerHint": "Press Enter to send, Shift+Enter for a new line.",
       "composerDisclaimer": "Coach replies are generated. Clinical decisions belong with your doctor.",
       "voiceComingSoon": "Voice input arrives with the iOS app in v1.5.",
-      "disabledByOperator": "Coach is currently unavailable on this server.",
       "threadEmpty": "Ask anything about your trends, medications, or readings to start a conversation.",
       "historyTitle": "Conversations",
       "historySearchPlaceholder": "Search conversations…",
@@ -1621,9 +1617,6 @@
       "about": {
         "title": "About",
         "description": "Version, license, links."
-      },
-      "placeholder": {
-        "coming_soon": "Moving here with the next release update."
       }
     },
     "profile": "Profile",
