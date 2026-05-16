@@ -51,10 +51,6 @@ function round(value: number, digits = 1): number {
   return Math.round(value * factor) / factor;
 }
 
-function average(values: number[]): number {
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
 function normalizeSummaryText(value: string): string {
   return stripChartTokens(value).replace(/\s+/g, " ").trim();
 }
@@ -63,14 +59,29 @@ function summarizeSeries(series: Array<{ value: number }>) {
   if (series.length === 0) return null;
   const first = series[0].value;
   const last = series[series.length - 1].value;
+  // v1.4.33 — fold sum/min/max into a single walk. The previous
+  // `Math.min(...series.map(...))` / `Math.max(...series.map(...))`
+  // spread tripped V8's ~125 000-arg ceiling on the bound /api/analytics
+  // path; see `.planning/round-v1433-analytics-500-report.md` §"Carry-
+  // over". These helpers are fed bounded windows today so the crash
+  // never reached them, but the spread allocates a transient args array
+  // on every call — the fold is both stack-safe and cheaper.
+  let sum = 0;
+  let minVal = series[0].value;
+  let maxVal = series[0].value;
+  for (const entry of series) {
+    sum += entry.value;
+    if (entry.value < minVal) minVal = entry.value;
+    if (entry.value > maxVal) maxVal = entry.value;
+  }
   return {
     points: series.length,
     start: round(first, 2),
     end: round(last, 2),
     delta: round(last - first, 2),
-    mean: round(average(series.map((entry) => entry.value)), 2),
-    min: round(Math.min(...series.map((entry) => entry.value)), 2),
-    max: round(Math.max(...series.map((entry) => entry.value)), 2),
+    mean: round(sum / series.length, 2),
+    min: round(minVal, 2),
+    max: round(maxVal, 2),
   };
 }
 
