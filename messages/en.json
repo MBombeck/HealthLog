@@ -1053,6 +1053,7 @@
         "last7days": "last 7 days",
         "last30days": "last 30 days",
         "last90days": "last 90 days",
+        "lastYear": "year so far",
         "allTime": "all time"
       },
       "windowLabel": "Window",
