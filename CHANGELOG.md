@@ -1,6 +1,19 @@
 # Changelog
 
-## [1.4.34] — unreleased
+## [1.4.34] — 2026-05-17 — Apple Health import + reliability + web freeze
+
+The final functional web release before the iOS native client lands.
+Headline work: a streaming Apple Health `export.zip` importer for
+prospective iOS-migrating accounts, a server-side aggregation cache
+that collapses the three hottest dashboard reads onto in-process LRU
+slots with single-flight coalescing and per-user invalidation, a
+broader compliance classifier with a dedicated `early` bucket so
+ahead-of-window doses count as compliant, the Coach launch surface
+hoisted onto every authed page with a dashboard-hero CTA, and a
+trimmer Settings shelf that folds Sources into Targets. The release
+also lights up the `cache.<name>.outcome` annotation on the active
+wide event so production logs carry the cache hit-ratio signal
+without leaking userIds.
 
 ### Added
 
@@ -17,7 +30,6 @@
   hit / miss surfaces on the active wide event as
   `cache.<name>.outcome` + `cache.<name>.key_hash` so production logs
   carry the hit-ratio signal without leaking userIds.
-
 - **Apple Health `export.zip` import.** New endpoint
   `POST /api/import/apple-health-export` (synchronous multipart
   upload, asynchronous ingest via a dedicated pg-boss
@@ -32,11 +44,148 @@
   rows keyed by `HKMetadataKeyExternalUUID` (or a deterministic
   `sample:<sha256>` fallback), cumulative HK types collapsed into
   one `stats:<HKType>:<YYYY-MM-DD>` row per user-local day to match
-  the iOS daily-aggregation convention. Live per-phase progress
+  the iOS daily-aggregation convention. Live per-stage progress
   surfaces through `GET /api/import/apple-health-export/{jobId}/status`.
   An admin variant at `POST /api/admin/import-apple-health-export`
   imports on behalf of a target user (cookie-only `requireAdmin()`
   gate; Bearer tokens never elevate).
+- **`ImportJob` schema model + migration.** New Prisma model captures
+  the per-upload state machine (`queued | unpacking | parsing |
+  upserting | done | failed`), the content-hash for idempotency
+  short-circuits, and the per-`MeasurementType` ingestion counters
+  the status route surfaces back to the client.
+- **`lastSeenByType` on `/api/analytics`.** Both the slim
+  (`?slice=summaries`) and default slices return a per-type
+  `{ lastSeenAt, daysAgo }` map. The dashboard trend tiles wire 12
+  mounts to a new `tileStaleDays()` helper so an "X days / weeks /
+  months ago" hint paints under any per-metric tile whose last
+  sample crosses the 7-day floor. Six locales gained additive
+  week / month plural keys; Polish uses the genitive-plural form
+  that covers every non-1 count the bucket math can produce.
+- **Dashboard "Ask the coach" hero CTA.** A new pill next to the
+  existing "Hinzufügen" / "Add" launches the Coach drawer directly
+  from the dashboard hero. The `<CoachLaunchProvider>` hoisted from
+  the insights layout to the auth shell so the drawer is reachable
+  from every authed route; the floating action button stays scoped
+  to `/insights/**` so it cannot distract on the dashboard.
+- **Shared achievements query hook.** `useAchievementsQuery()`
+  centralises the three previous consumers — recent-achievements
+  card, the `/achievements` mother page, and the unlock notifier —
+  onto one TanStack queryKey + cache slot so dashboard cold mount
+  fires the endpoint once instead of twice.
+- **Typed authed Cache-Control presets.** New
+  `src/lib/http/cache-headers.ts` module exports
+  `NO_STORE_BUT_BFCACHE = "private, max-age=0, must-revalidate"`,
+  `SHORT_LIVED_PUBLIC`, and an `applyAuthedHeaders()` helper. The
+  presets land at the framework level via a `next.config.ts`
+  `headers()` rule that stamps the bfcache-friendly directive on
+  every authed HTML response, restoring Chromium bfcache eligibility
+  for in-app back / forward navigation.
+- **`scripts/print-bundle-report.mjs`.** Restores the at-a-glance
+  "top client chunks by parsed size" signal Turbopack dropped from
+  `next build`; reads `.next/analyze/client.json` (written by
+  `@next/bundle-analyzer` when `pnpm analyze` runs with `ANALYZE=1`)
+  and prints a sorted table plus totals.
+
+### Changed
+
+- **Settings sidebar: "Sources" folded into "Targets & Sources".**
+  Per-metric threshold ranges and per-metric source priority now
+  share one `/settings/thresholds` page so the same metric's
+  threshold and device-source preference sit together instead of
+  one sidebar entry away. `/settings/sources` keeps a
+  `permanentRedirect` so external bookmarks and docs links follow
+  through unchanged. Section count: 11 → 10.
+- **Insights tab strip: vital pills collapse under a "Vitals"
+  parent.** Five vital pills (HRV, Resting HR, Oxygen, Body
+  Temperature, Active Energy) hide behind one parent pill that
+  opens a popover sub-list. Parent-pill active state mirrors the
+  URL so spatial orientation survives the collapse; each sub-page
+  keeps its own URL and bookmark resolves unchanged. Strip
+  footprint: 14 → 10 entries when every metric has data.
+- **Coolify env-var audit.** `mcp__coolify-apps01__env_vars`
+  inspection captured the section-1 / section-2 duplicates that
+  have accumulated under apps-01 since v1.3.1. Audit pinned at
+  `.planning/round-v1434-iwa-coolify-env-audit.md`; no env-var
+  deletes performed (operator action).
+
+### Fixed
+
+- **Compliance classifier: early intakes count as compliant.** The
+  classifier picked up a dedicated `early` bucket (window-start
+  minus three hours through window-start), the `on_time` post-window
+  tolerance widened from one hour to three hours, and the `late`
+  band sits between the new `on_time` ceiling and the configurable
+  `lateMinutes` knob. Heatmap consumers route the new bucket
+  through the compliant path; the dedicated `early` counter rides
+  on `DailyComplianceEntry` for downstream consumers that want to
+  distinguish ahead-of-window from on-window intakes.
+- **Compliance heatmap fallback retired.** The v1.4.33 defensive
+  `looksClassifierBug` fallthrough is gone now that the underlying
+  classifier widening removes the every-dose-very-late mode the
+  fallback covered.
+
+### Performance
+
+- **`/api/gamification/achievements` consumer collapse.** Two of
+  three previous consumers shared the same TanStack queryKey
+  literal; the third carried a per-user discriminator so the cache
+  treated it as a fresh slot. Dashboard cold mount fired the
+  endpoint twice. Collapsing onto the shared hook trims that to a
+  single request; with the new server-side cache slot warm, the
+  duplicate-mount worst case rides single-flight coalescing.
+- **GHCR build fires once per release tag.** The
+  `docker-publish.yml` workflow lost its `push.branches: [main]`
+  trigger; the `:latest` raw-tag enable rule moved onto the tag
+  ref so each release produces exactly one multi-arch build that
+  refreshes both the semver tags and the `:latest` alias.
+- **NFT-trace warnings silenced.** `next.config.ts` gained an
+  `outputFileTracingExcludes` block that narrows the Turbopack
+  tracer away from the `MAXMIND_LICENSE_KEY` env-access path so
+  the trace-report no longer warns on every dependent route file.
+
+### Refactor
+
+- **Dashboard analytics consumers.** The two cards that previously
+  decided their own freshness copy now lean on the typed
+  `tileStaleDays()` helper and the additive `lastSeenByType` field
+  on the analytics response. Mood and BD-Zielbereich tiles keep the
+  default `null` because they have no underlying per-type freshness
+  signal.
+
+### Accessibility
+
+- **Dashboard hero CTA hits the WCAG 2.5.5 touch-target floor.**
+  The new "Ask the coach" pill carries `min-h-11` on mobile and
+  the matching `sm:min-h-9` desktop floor so the touch target
+  stays above 44 px on the Pixel 5 boundary.
+- **Insights tab-strip Vitals parent reads correctly to assistive
+  tech.** Parent pill carries `aria-current="page"` whenever the
+  current URL matches one of its child vital sub-pages, plus a
+  `data-slot="insights-tab-strip-group"` hook for visual-regression
+  testing.
+
+### Internal
+
+- **Two e2e flake windows tightened.** `onboarding-flicker` swapped
+  its 12-sample 50 ms poll loop for a single Playwright
+  auto-retrying `toBeHidden({ timeout: 700 })` assertion so the
+  1-2 ms race window between the analytics-pending shell and
+  `useAuth().user` resolving collapses to a single retry slot.
+  `mobile-viewport` dropped `nav a[href]` from the touch-target
+  sweep (the bottom-nav owns its own WCAG spec) and gated the
+  44-px floor on `matchMedia('(min-width: 640px)').matches === false`
+  so the Pixel 5 viewport never tripped into the `sm:` tier during
+  WebKit render commits.
+- **Server-cache observability.** Every `cached()` invocation passes
+  an `annotate` callback that lands two keys on the wide event:
+  `cache.<name>.outcome` ∈ `{ hit | miss | stampede }` and
+  `cache.<name>.key_hash` (non-reversible djb2 32-bit hash). Ops
+  can grep `cache.analytics.outcome` over any time window to
+  compute the hit ratio per deployment.
+- **AASA followups verified.** The v1.4.33 `/.well-known/apple-app-site-association`
+  handler serves a direct 200 on every fronting origin; Apple's
+  CDN has ingested matching bodies for all three domains.
 
 ### Web freeze
 
@@ -44,7 +193,9 @@ v1.4.34 marks the last functional release of the web codebase before
 the iOS native client launches. Subsequent v1.4.x tags carry security
 fixes, dependency bumps, and hotfix-only corrections. New feature work
 is paused until the iOS app clears Apple review, at which point a
-v1.5.0 version-bump-only release tags the milestone.
+v1.5.0 version-bump-only release tags the milestone. The Prisma
+schema head comment and `.planning/v15-strategic-plan.md` §5
+decision-log row pin the freeze trigger in-tree.
 
 ## [1.4.33] — 2026-05-17 — Polish and reliability
 
