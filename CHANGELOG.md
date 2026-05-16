@@ -1,5 +1,109 @@
 # Changelog
 
+## [1.4.29] — 2026-05-16 — Dashboard performance + chart polish
+
+A targeted performance + polish patch. The headline is a faster
+dashboard on data-rich accounts: the pulse chart drops up to ~5 000
+raw rows per range tab in favour of one row per day, the duplicate
+`/api/dashboard/widgets` fetch on every mount collapses to one, and
+three long-running analytics reads are bounded to the trailing
+window the tile path actually needs. Two production regressions
+close — the `aggregate=daily|weekly|monthly` path on
+`/api/measurements` 500'd for every grain, and the same path
+averaged cumulative step counts instead of summing. Mobile chrome
+gets a tighter rhythm: dashboard tiles pin to a single 140-px
+contract at `<sm` and the Settings → Dashboard drag-list rows drop
+from ~116 px to 48 px. X-axis tick density on numeric pulse + mood
+charts comes back after Recharts was silently ignoring the legacy
+`interval` policy on `type="number"` axes.
+
+### Fixed
+
+- **`aggregate=daily|weekly|monthly` on `/api/measurements`.** The
+  endpoint returned HTTP 500 for every grain in production. Two
+  root causes the mocked-`$queryRaw` suite hid end-to-end: the
+  Postgres `date_trunc` unit was passed as a bound parameter
+  (the function requires a SQL literal), and the `weekly` /
+  `monthly` forms weren't mapped to the singular Postgres units
+  (`week` / `month`). A new real-Postgres integration suite
+  pins the contract.
+- **Cumulative-type aggregation.** The same path averaged step
+  counts instead of summing — five 1 000-step rows on the same
+  day reported 1 000, not 5 000. `CUMULATIVE_HK_TYPES` covers
+  `ACTIVITY_STEPS`, `ACTIVE_ENERGY_BURNED`, `FLIGHTS_CLIMBED`,
+  `WALKING_RUNNING_DISTANCE`, and `TIME_IN_DAYLIGHT`; the SQL
+  picks `SUM(value)` for those and keeps `AVG(value)` for spot
+  metrics (BP, weight, pulse, BG, body fat, mood, sleep).
+- **Duplicate dashboard-widgets fetch on every dashboard mount.**
+  `useChartOverlayPrefs` keyed under `["dashboard-layout"]`
+  while the page + Settings + the rest of the codebase used
+  `queryKeys.dashboardWidgets()`. Two cache slots, one endpoint,
+  two requests per mount. Unified onto the shared key.
+- **Numeric x-axis tick density.** Recharts ignores `interval`
+  on `type="number"` axes. Pulse + mood charts silently lost the
+  day-aware density policy after the v1.4.25 numeric-axis
+  switch. A new `computeTickPositions` helper translates the
+  legacy skip count into explicit `ticks` indices and clamps to
+  a 3-12 visible-label range.
+- **Mobile dashboard tile heights drift between siblings.** At
+  `<sm` each tile took content height, so callout-on tiles grew
+  taller than callout-off neighbours (glucose tiles especially).
+  Pin a 140-px floor via the `--tile-h` CSS custom property at
+  `<sm` and release back to `auto` from `sm:` upwards. The
+  comparison-delta callout clamps to a single line; the sub-row
+  pair switches to `flex-nowrap overflow-hidden` so a narrow
+  tile cannot grow vertically.
+
+### Changed
+
+- **Settings → Dashboard drag-list rhythm.** The vertical 44 + 44 px
+  arrow stack on each widget row dropped row height to ~116 px,
+  three times the height of every neighbour on the Settings page.
+  A horizontal arrow pair on the trailing edge (`size-11` on
+  mobile preserves the 44-px tap target, `sm:size-9` on desktop)
+  with `min-h-12` as the floor cuts each row to 48 px — 2.4×
+  tighter. The widget label gains `truncate` + `title` so long
+  names stay on a single line.
+
+### Performance
+
+- **Pulse chart payload.** Windows beyond seven days now ask the
+  server for `aggregate=daily`. A 30-day pulse view drops from
+  up to ~5 000 raw rows to at most 30 daily buckets; Recharts
+  paint cost drops accordingly on continuous-monitoring accounts.
+  Short windows (7 days) keep raw fetching so hour-by-hour detail
+  stays visible.
+- **`/api/analytics` read bounds.** The per-context glucose
+  summaries walked every persisted `BLOOD_GLUCOSE` row a multi-
+  year user had written. Bounded to the trailing 30 days the
+  tile path consumes. Same shape for the BP-in-target chunked
+  walk — passed no `since` bound even though
+  `computeBpInTargetWindows`'s longest sub-window is `priorYear`.
+  Bounded to the trailing 365 days.
+- **Inline dashboard queries default staleness.** The three
+  inline `useQuery` blocks on `/` shared no `staleTime` or
+  `refetchOnWindowFocus` setting, so a tab-focus-and-return
+  triggered an immediate refetch storm. A shared
+  `DASHBOARD_QUERY_OPTS` lifts them to the 1-minute staleness
+  cadence the chart queries already use, with
+  `refetchOnWindowFocus: false`.
+
+### Tests
+
+- New integration suite
+  `tests/integration/measurements-aggregate-daily.test.ts` hits
+  the route against a real Postgres so every grain compiles +
+  executes end-to-end. The mocked unit suite stays for the
+  route-shape contracts.
+- `computeTickPositions` gains six cases in
+  `x-axis-density.test.ts`: sparse data emits every index, dense
+  data clamps to 3-12 ticks, empty / single-point edge cases.
+- `<HealthChart>` range test asserts the default 30-day window
+  asks for `aggregate=daily` and the `windowOverride="last7days"`
+  mini-chart does not.
+- `<TrendCard>` mobile-tile-height contract pinned via a new
+  snapshot test (`trend-card-tile-height.test.tsx`).
+
 ## [1.4.28.1] — 2026-05-16 — Dashboard-save hotfix
 
 "Speichern" on the Dashboard works again for every account whose
