@@ -131,4 +131,36 @@ describe("summarize", () => {
     expect(summary.slope7).toBeNull(); // window snaps to `now`, no points
     expect(summary.slope30).toBeNull(); // same
   });
+
+  // v1.4.33 P0 regression — production stacktrace
+  // `RangeError: Maximum call stack size exceeded` at index 3 of the
+  // analytics route's per-type `Promise.all` (PULSE).
+  //
+  // Root cause: `Math.min(...values)` / `Math.max(...values)` spread the
+  // whole series as function arguments. V8 caps function arity at
+  // ~125 000-130 000; an Apple-Health-synced PULSE series easily
+  // exceeds that for a multi-year power user. The fix folds min/max via
+  // a single pass instead, keeping the working set bounded.
+  it("survives a multi-hundred-thousand-row series without blowing the stack", () => {
+    // 250 000 points — well above V8's spread-arg ceiling. The
+    // unrolled values give us deterministic min/max so we can assert
+    // both the safety contract AND the correctness contract in one go.
+    const N = 250_000;
+    const now = Date.now();
+    const data: DataPoint[] = new Array(N);
+    for (let i = 0; i < N; i++) {
+      data[i] = {
+        date: new Date(now - (N - i) * 1000),
+        // Wave between 40 and 199; min=40, max=199.
+        value: 40 + (i % 160),
+      };
+    }
+    // Must not throw — before the fix this raised
+    // `RangeError: Maximum call stack size exceeded`.
+    const summary = summarize(data);
+    expect(summary.count).toBe(N);
+    expect(summary.min).toBe(40);
+    expect(summary.max).toBe(199);
+    expect(summary.latest).toBe(data[N - 1].value);
+  });
 });

@@ -192,7 +192,24 @@ export function summarize(data: DataPoint[]): DataSummary {
 
   const sorted = [...data].sort((a, b) => a.date.getTime() - b.date.getTime());
   const values = sorted.map((p) => p.value);
-  const mean = values.reduce((s, v) => s + v, 0) / values.length;
+  // v1.4.33 P0 — single-pass fold for sum/min/max replaces the previous
+  // `Math.min(...values)` / `Math.max(...values)` spread. V8 caps
+  // function arity at ~125k-130k; Apple-Health-synced PULSE series for
+  // a multi-year power user routinely exceed that, and the spread
+  // surfaced as `RangeError: Maximum call stack size exceeded` from the
+  // `/api/analytics` route's per-type `Promise.all` aggregator. Folding
+  // the three reductions into one walk keeps the working set bounded
+  // (no transient argument array) and is also cheaper than three
+  // separate passes.
+  let sum = 0;
+  let minVal = values[0];
+  let maxVal = values[0];
+  for (const v of values) {
+    sum += v;
+    if (v < minVal) minVal = v;
+    if (v > maxVal) maxVal = v;
+  }
+  const mean = sum / values.length;
 
   const now = Date.now();
   const DAY = 24 * 60 * 60 * 1000;
@@ -222,8 +239,8 @@ export function summarize(data: DataPoint[]): DataSummary {
   return {
     count: data.length,
     latest: sorted[sorted.length - 1].value,
-    min: Math.min(...values),
-    max: Math.max(...values),
+    min: minVal,
+    max: maxVal,
     mean: Math.round(mean * 100) / 100,
     avg7:
       last7.length > 0

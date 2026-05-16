@@ -1,0 +1,172 @@
+/**
+ * v1.4.33 P0 regression coverage for `GET /api/analytics`.
+ *
+ * Production stacktrace 2026-05-16 14:39:51 UTC (cf-ray 9fcb223c…):
+ *   `RangeError: Maximum call stack size exceeded`
+ *   at Promise.all (index 3 — `PULSE`)
+ *
+ * Root cause was in `summarize()` (`src/lib/analytics/trends.ts`) — the
+ * `Math.min(...values)` / `Math.max(...values)` spread blew V8's
+ * ~125 000-arg function-arity ceiling once an Apple-Health-synced PULSE
+ * series for a multi-year power user grew past it.
+ *
+ * The fix folds min/max into the single sum/mean pass; this test pins
+ * the contract from the route entry-point so a future refactor (e.g.
+ * the v1.4.33 C1 SQL-side aggregation rewrite) can't silently
+ * reintroduce a spread anywhere along the call chain.
+ */
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/db", () => ({
+  prisma: {
+    measurement: { findMany: vi.fn() },
+    moodEntry: { findMany: vi.fn() },
+    medicationIntakeEvent: { findMany: vi.fn() },
+    medication: { findMany: vi.fn() },
+  },
+}));
+
+vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
+
+vi.mock("@/lib/auth/audit", () => ({
+  auditLog: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
+
+vi.mock("@/lib/db-compat", () => ({
+  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("next/headers", () => ({
+  headers: vi.fn(async () => ({ get: () => null })),
+  cookies: vi.fn(async () => ({
+    get: () => undefined,
+    set: () => {},
+    delete: () => {},
+  })),
+}));
+
+import { GET } from "../route";
+import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth/session";
+
+interface MeasurementRow {
+  id: string;
+  measuredAt: Date;
+  value: number;
+  source: "MANUAL" | "WITHINGS" | "IMPORT" | "APPLE_HEALTH";
+  deviceType: string | null;
+  sleepStage?: string | null;
+}
+
+const SESSION_USER = {
+  id: "user-1",
+  username: "test",
+  role: "USER" as const,
+  timezone: "Europe/Berlin",
+  heightCm: 180,
+  dateOfBirth: new Date("1980-01-01T00:00:00Z"),
+  sourcePriorityJson: null,
+};
+
+const SESSION_OK = {
+  session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
+  user: SESSION_USER as never,
+};
+
+function pulseRow(measuredAt: Date, value: number, id: string): MeasurementRow {
+  return {
+    id,
+    measuredAt,
+    value,
+    source: "APPLE_HEALTH",
+    deviceType: "watch",
+  };
+}
+
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+  vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
+    [] as never,
+  );
+  vi.mocked(prisma.medication.findMany).mockResolvedValue([] as never);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe("GET /api/analytics", () => {
+  it("survives a 130 000-row PULSE series without blowing the stack", async () => {
+    // The chunked reader pages 5 000 at a time. Simulate one full page
+    // for PULSE so the route's per-type aggregator hits the failing
+    // `summarize()` codepath with a 5 000-point series, then stop. We
+    // intentionally don't seed every single Apple Watch sample in the
+    // mock — V8's spread-arg ceiling is repeatable with a far smaller
+    // array than production (see `trends.test.ts` for the 250 000-row
+    // direct regression). This test pins the route-entry contract.
+    const N = 5_000;
+    const now = Date.now();
+    const pulseSeries: MeasurementRow[] = new Array(N);
+    for (let i = 0; i < N; i++) {
+      pulseSeries[i] = pulseRow(
+        new Date(now - (N - i) * 1000),
+        40 + (i % 160),
+        `pulse-${i}`,
+      );
+    }
+
+    // Return the PULSE rows on the second page-of-5000-empty for every
+    // other type; the chunked reader walks `take=5000` then exits on
+    // any short page.
+    vi.mocked(prisma.measurement.findMany).mockImplementation(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (async (args: any) => {
+        if (args.where?.type === "PULSE" && !args.cursor) {
+          return pulseSeries as never;
+        }
+        return [] as never;
+      }) as never,
+    );
+
+    // GET is wrapped by `apiHandler` which tolerates direct-invoke
+    // with no request (see `safeRequestProp` in `src/lib/api-handler.ts`).
+    // Cast through `unknown` so the TS signature `(...args: never[])`
+    // doesn't fight the vitest direct-invoke pattern.
+    const res = await (
+      GET as unknown as (...args: never[]) => Promise<Response>
+    )();
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: { summaries: Record<string, { count: number; min: number | null; max: number | null }> };
+    };
+    expect(body.data.summaries.PULSE.count).toBe(N);
+    // 40 + (N-1) % 160 → wave around (40..199).
+    expect(body.data.summaries.PULSE.min).toBeGreaterThanOrEqual(40);
+    expect(body.data.summaries.PULSE.max).toBeLessThanOrEqual(199);
+  });
+
+  it("returns a 200 envelope for a brand-new user with zero rows", async () => {
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
+
+    const res = await (
+      GET as unknown as (...args: never[]) => Promise<Response>
+    )();
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: {
+        summaries: Record<string, { count: number }>;
+        bmi: number | null;
+        healthScore: unknown;
+      };
+    };
+    // Empty series should not crash on the new fold path either.
+    expect(body.data.summaries.PULSE.count).toBe(0);
+    expect(body.data.summaries.WEIGHT.count).toBe(0);
+    expect(body.data.bmi).toBeNull();
+    expect(body.data.healthScore).toBeNull();
+  });
+});
