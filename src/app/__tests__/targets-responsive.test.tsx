@@ -123,11 +123,10 @@ describe("/targets page — mobile-first responsive grid", () => {
     expect(html).toMatch(/lg:gap-6/);
   });
 
-  it("renders the Coach CTA full-width on mobile when AI is enabled", () => {
+  it("renders the Coach CTA as an icon-only affordance on every target card", () => {
     const html = render();
-    // The TargetCoachButton wraps the Sparkles + "Ask Coach" label;
-    // its container element should carry the mobile full-width class.
-    expect(html).toContain("w-full");
-    expect(html).toContain("sm:w-auto");
+    expect(html).toContain('data-slot="target-coach-cta"');
+    expect(html).toContain('aria-label="Ask Coach"');
+    expect(html).toContain("size-10");
   });
 });
