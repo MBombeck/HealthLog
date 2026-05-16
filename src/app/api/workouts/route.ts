@@ -1,25 +1,23 @@
 /**
- * `GET /api/workouts` — paginated workout list with canonical-source
- * deduplication.
+ * `GET /api/workouts` — paginated workout list with cross-source
+ * canonical-row dedup.
  *
- * Consumers (v1.4.27+):
- *   1. The /insights workouts surface (and future /workouts page) reads
- *      from this endpoint so duplicate twin workouts (Apple Watch
- *      writing a workout that Withings also published over its server-
- *      to-server feed) collapse to a single canonical row.
+ * Consumers (v1.4.32+):
+ *   1. The `/insights/workouts` web surface reads from this endpoint so
+ *      duplicate twin workouts (Apple Watch writing a workout that
+ *      Withings also published over its server-to-server feed) collapse
+ *      to a single canonical row per cluster.
  *   2. The native iOS app drains historical workouts through the same
  *      surface — Apple Health is the canonical ladder anchor, so an
  *      iOS-originated request typically returns its own rows back.
  *
  * Dedup contract:
- *   - The route reads `DEFAULT_WORKOUT_SOURCE_PRIORITY` from
- *     `pick-canonical-workout.ts` (APPLE_HEALTH > WITHINGS > MANUAL >
- *     IMPORT) with the ±5 min cluster window. A per-user workout
- *     ladder override is reserved for the v1.5 Settings surface; the
- *     server already honours it transparently through the picker's
- *     options bag when the field lands in `User.sourcePriorityJson`.
- *   - Per-cluster the picker keeps the row from the highest-priority
- *     source present; the others are dropped from the canonical list.
+ *   - The route runs `pickCanonicalWorkoutRows()` from v1.4.30 over the
+ *     filtered row set. The picker reads the per-user
+ *     `User.sourcePriorityJson` blob (falling back to
+ *     `APPLE_HEALTH ≻ WITHINGS ≻ MANUAL ≻ IMPORT`) and buckets by
+ *     `(startedAt slot-of-5-min, sportType)`. The highest-priority
+ *     source's rows win each bucket; the rest are dropped.
  *
  * Query params:
  *   - `limit` (default 50, max 200)
@@ -35,14 +33,19 @@
  *   page N would be dropped on N-1 and surface again on N. Workout
  *   volume for HealthLog is bounded (single user, tens of workouts per
  *   week — single-digit MB at the table's busiest), so reading the
- *   full filtered set per request is well within budget. If the
- *   workload ever grows to where this matters, a `(startedAt, id)`
- *   cursor with a deterministic over-fetch window is the next step.
+ *   full filtered set per request is well within budget.
  *
- * v1.4.27 B7 / BL-P2-3 — wires `pickCanonicalWorkout()` into the read
- * path. v1.4.27 R4 RC3 — corrects the pagination so `meta.total`
- * reflects the deduped count and cluster boundaries no longer leak
- * across pages.
+ * Response shape (iOS contract):
+ *   - `workouts: WorkoutListEntry[]` — each entry exposes
+ *     `id, sportType, startedAt, endedAt, durationSec, distanceM,
+ *     activeEnergyKcal, avgHr, maxHr, source, externalId`. Stable across
+ *     iOS / web consumers.
+ *   - `meta: { total, limit, offset, droppedDuplicates }`.
+ *
+ * v1.4.32 — swap the cluster-based dedup helper (v1.4.27 B7) for the
+ * source-priority-aware `pickCanonicalWorkoutRows()` helper (v1.4.30)
+ * so the per-user source ladder governs the canonical pick. Response
+ * field names match the iOS handoff contract.
  */
 import { NextRequest } from "next/server";
 
@@ -50,12 +53,7 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
-import {
-  pickCanonicalWorkout,
-  DEFAULT_WORKOUT_SOURCE_PRIORITY,
-  DEFAULT_WORKOUT_PROXIMITY_MINUTES,
-  type WorkoutPickerRow,
-} from "@/lib/sources/pick-canonical-workout";
+import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
@@ -100,14 +98,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
     where.sportType = sportType;
   }
 
-  // Read the full filtered set then dedupe once. See the file-level
-  // "Pagination contract" note for the reason this is preferred over
-  // a per-page over-fetch + slice. The picker is O(n) on cluster
-  // building plus O(k) per cluster (k = open clusters of the same
-  // sport type) and the workout table is bounded.
+  // Read the full filtered set, descending start. The picker requires
+  // deterministic input order; the `(startedAt, id)` secondary sort
+  // pins the tie-break for rows that share a millisecond stamp.
   const rows = await prisma.workout.findMany({
     where,
-    orderBy: { startedAt: "desc" },
+    orderBy: [{ startedAt: "desc" }, { id: "asc" }],
     select: {
       id: true,
       source: true,
@@ -116,40 +112,47 @@ export const GET = apiHandler(async (request: NextRequest) => {
       startedAt: true,
       endedAt: true,
       durationSec: true,
-      distanceMeters: true,
+      totalDistanceM: true,
+      totalEnergyKcal: true,
       avgHeartRate: true,
       maxHeartRate: true,
-      energyKcal: true,
       createdAt: true,
     },
   });
 
-  // The picker only inspects `source`, `startedAt`, `sportType`, and
-  // `id`. The rest of the selected columns ride through untouched on
-  // the returned subset.
-  const pickerRows = rows as Array<(typeof rows)[number] & WorkoutPickerRow>;
-  const { canonical, clusters } = pickCanonicalWorkout(pickerRows, {
-    sourcePriority: DEFAULT_WORKOUT_SOURCE_PRIORITY,
-    proximityMinutes: DEFAULT_WORKOUT_PROXIMITY_MINUTES,
+  // Pass the user's source-priority blob so the picker honours the
+  // per-user ladder. The picker preserves input order on the returned
+  // subset; descending-start input → descending-start output.
+  const userRow = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { sourcePriorityJson: true },
   });
-
-  // The picker sorts ascending for deterministic cluster building.
-  // Restore descending order on the canonical projection so the API
-  // matches the orderBy contract above.
-  const canonicalDesc = [...canonical].sort(
-    (a, b) => b.startedAt.getTime() - a.startedAt.getTime(),
+  const canonical = pickCanonicalWorkoutRows(
+    rows,
+    userRow?.sourcePriorityJson ?? null,
   );
 
-  const page = canonicalDesc.slice(offset, offset + limit);
+  const page = canonical.slice(offset, offset + limit).map((row) => ({
+    id: row.id,
+    sportType: row.sportType,
+    startedAt: row.startedAt,
+    endedAt: row.endedAt,
+    durationSec: row.durationSec,
+    distanceM: row.totalDistanceM,
+    activeEnergyKcal: row.totalEnergyKcal,
+    avgHr: row.avgHeartRate,
+    maxHr: row.maxHeartRate,
+    source: row.source,
+    externalId: row.externalId,
+  }));
 
   return apiSuccess({
     workouts: page,
     meta: {
-      total: canonicalDesc.length,
+      total: canonical.length,
       limit,
       offset,
-      droppedDuplicates: rows.length - canonicalDesc.length,
-      clusters: clusters.length,
+      droppedDuplicates: rows.length - canonical.length,
     },
   });
 });

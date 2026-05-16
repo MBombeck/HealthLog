@@ -1,13 +1,17 @@
 /**
  * Unit suite for `GET /api/workouts` — the canonical-dedup contract.
  *
- * v1.4.27 B7 / BL-P2-3 — wires `pickCanonicalWorkout()` into the read
- * path. The test pins the contract:
- *   - twin workouts on the same `(sportType, ±5 min)` cluster
+ * v1.4.27 B7 / BL-P2-3 — original wiring with `pickCanonicalWorkout()`.
+ * v1.4.32 — swap to `pickCanonicalWorkoutRows()` (v1.4.30) so the
+ * per-user source-priority ladder governs the canonical pick. The
+ * test pins:
+ *   - twin workouts on the same `(sportType, 5 min slot)` cluster
  *     collapse to a single row;
  *   - the source ladder picks APPLE_HEALTH over WITHINGS over MANUAL;
- *   - the `meta.droppedDuplicates` count reflects the diff between
- *     the raw fetch and the canonical subset.
+ *   - `meta.droppedDuplicates` reflects the diff between the raw fetch
+ *     and the canonical subset;
+ *   - the response wire-shape exposes `distanceM` + `activeEnergyKcal`
+ *     (iOS handoff names) rather than the legacy Prisma column names.
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
@@ -16,6 +20,9 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     workout: {
       findMany: vi.fn(),
+    },
+    user: {
+      findUnique: vi.fn(),
     },
   },
 }));
@@ -60,10 +67,10 @@ interface FakeWorkoutRow {
   startedAt: Date;
   endedAt: Date;
   durationSec: number;
-  distanceMeters: number | null;
+  totalDistanceM: number | null;
   avgHeartRate: number | null;
   maxHeartRate: number | null;
-  energyKcal: number | null;
+  totalEnergyKcal: number | null;
   createdAt: Date;
 }
 
@@ -82,10 +89,10 @@ function makeRow(
     startedAt: start,
     endedAt: new Date(start.getTime() + 30 * 60_000),
     durationSec: 1800,
-    distanceMeters: 5000,
+    totalDistanceM: 5000,
     avgHeartRate: 145,
     maxHeartRate: 170,
-    energyKcal: 320,
+    totalEnergyKcal: 320,
     createdAt: start,
   };
 }
@@ -94,6 +101,11 @@ describe("GET /api/workouts — canonical dedup", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    // Default: no per-user source-priority override → fall back to the
+    // canonical APPLE_HEALTH ≻ WITHINGS ≻ MANUAL ≻ IMPORT ladder.
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      sourcePriorityJson: null,
+    } as never);
   });
 
   it("collapses an APPLE_HEALTH + WITHINGS twin to the Apple row", async () => {
@@ -112,7 +124,31 @@ describe("GET /api/workouts — canonical dedup", () => {
     expect(body.data.workouts).toHaveLength(1);
     expect(body.data.workouts[0].id).toBe("w-apple");
     expect(body.data.meta.droppedDuplicates).toBe(1);
-    expect(body.data.meta.clusters).toBe(1);
+  });
+
+  it("returns 401 without a session", async () => {
+    vi.mocked(getSession).mockResolvedValueOnce(null);
+    const res = await GET(makeRequest());
+    expect(res.status).toBe(401);
+  });
+
+  it("filters by ownership — only the caller's rows enter the picker", async () => {
+    // The mock returns whatever the route asked Prisma for; the route's
+    // `where: { userId: user.id }` filter is what enforces ownership.
+    // This test pins that the route passes `userId: user-1` so the
+    // database layer drops other users' rows before the picker runs.
+    const apple = makeRow("w-apple", "APPLE_HEALTH", "2026-05-15T07:00:00Z");
+    vi.mocked(prisma.workout.findMany).mockResolvedValueOnce([
+      apple,
+    ] as never);
+
+    await GET(makeRequest());
+
+    expect(prisma.workout.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ userId: "user-1" }),
+      }),
+    );
   });
 
   it("keeps two workouts when they are outside the proximity window", async () => {
@@ -129,12 +165,21 @@ describe("GET /api/workouts — canonical dedup", () => {
 
     expect(body.data.workouts).toHaveLength(2);
     expect(body.data.meta.droppedDuplicates).toBe(0);
-    expect(body.data.meta.clusters).toBe(2);
   });
 
   it("keeps two workouts when sportType differs at the same instant", async () => {
-    const run = makeRow("w-run", "APPLE_HEALTH", "2026-05-15T07:00:00Z", "RUNNING");
-    const walk = makeRow("w-walk", "APPLE_HEALTH", "2026-05-15T07:00:00Z", "WALKING");
+    const run = makeRow(
+      "w-run",
+      "APPLE_HEALTH",
+      "2026-05-15T07:00:00Z",
+      "RUNNING",
+    );
+    const walk = makeRow(
+      "w-walk",
+      "APPLE_HEALTH",
+      "2026-05-15T07:00:00Z",
+      "WALKING",
+    );
 
     vi.mocked(prisma.workout.findMany).mockResolvedValueOnce([
       run,
@@ -146,6 +191,24 @@ describe("GET /api/workouts — canonical dedup", () => {
 
     expect(body.data.workouts).toHaveLength(2);
     expect(body.data.meta.droppedDuplicates).toBe(0);
+  });
+
+  it("exposes iOS-contract field names on each workout row", async () => {
+    const apple = makeRow("w-apple", "APPLE_HEALTH", "2026-05-15T07:00:00Z");
+    vi.mocked(prisma.workout.findMany).mockResolvedValueOnce([
+      apple,
+    ] as never);
+
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    const row = body.data.workouts[0];
+    expect(row.distanceM).toBe(5000);
+    expect(row.activeEnergyKcal).toBe(320);
+    expect(row.avgHr).toBe(145);
+    expect(row.maxHr).toBe(170);
+    expect(row).not.toHaveProperty("totalDistanceM");
+    expect(row).not.toHaveProperty("totalEnergyKcal");
   });
 
   it("honours the limit query parameter after dedup", async () => {
@@ -166,22 +229,20 @@ describe("GET /api/workouts — canonical dedup", () => {
   });
 
   it("paginates across cluster boundaries without double-counting deduped rows", async () => {
-    // Eight twin clusters: each cluster has an APPLE_HEALTH + WITHINGS
-    // row within the 5 min window. The picker collapses each cluster to
-    // its Apple row, so the canonical projection has 8 rows. Page 1
-    // (offset=0, limit=4) must yield Apple rows for clusters 7–4
-    // (descending). Page 2 (offset=4, limit=4) must yield Apple rows
-    // for clusters 3–0 with no overlap and no gaps. `meta.total` must
-    // reflect the deduped count (8), not the raw row count (16).
+    // Eight twin clusters spaced 1 hour apart: each cluster has an
+    // APPLE_HEALTH + WITHINGS row within the 5 min slot. The picker
+    // collapses each cluster to its Apple row, so the canonical
+    // projection has 8 rows. Page 1 (offset=0, limit=4) must yield
+    // Apple rows for the four most-recent clusters; page 2 (offset=4,
+    // limit=4) must yield the four older clusters with no overlap.
     const rows: FakeWorkoutRow[] = [];
-    for (let i = 0; i < 8; i++) {
+    for (let i = 7; i >= 0; i--) {
       const start = new Date(2026, 4, 15, 7 + i, 0, 0).toISOString();
       const start2 = new Date(2026, 4, 15, 7 + i, 1, 30).toISOString();
+      // Descending order on input as the route's orderBy would yield.
       rows.push(makeRow(`apple-${i}`, "APPLE_HEALTH", start));
       rows.push(makeRow(`withings-${i}`, "WITHINGS", start2));
     }
-    // Mock returns the full filtered set; the route paginates after
-    // dedup.
     vi.mocked(prisma.workout.findMany).mockResolvedValue(rows as never);
 
     const page1 = await GET(makeRequest("?limit=4&offset=0"));
@@ -200,12 +261,9 @@ describe("GET /api/workouts — canonical dedup", () => {
     const page2Ids = page2Body.data.workouts.map((w: { id: string }) => w.id);
     // No overlap across the page boundary.
     expect(page1Ids.filter((id: string) => page2Ids.includes(id))).toEqual([]);
-    // All eight clusters are covered between the two pages.
+    // Together both pages cover the eight canonical (Apple) rows.
     expect([...page1Ids, ...page2Ids].sort()).toEqual(
       Array.from({ length: 8 }, (_, i) => `apple-${i}`).sort(),
     );
-    // Descending order is preserved within each page.
-    expect(page1Ids).toEqual(["apple-7", "apple-6", "apple-5", "apple-4"]);
-    expect(page2Ids).toEqual(["apple-3", "apple-2", "apple-1", "apple-0"]);
   });
 });

@@ -724,6 +724,23 @@ components:
         - data
         - error
       type: object
+    GetWorkoutResponse:
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/WorkoutDetailResponse"
+        error:
+          type: "null"
+        meta:
+          additionalProperties: false
+          properties:
+            requestId:
+              type: string
+          type: object
+      required:
+        - data
+        - error
+      type: object
     InsightsComprehensiveResponse:
       additionalProperties: false
       description: AI-generated insights bundle. Strict-schema validated server-side; Coach-routed when the insight surface
@@ -819,6 +836,23 @@ components:
             - measurements
             - total
           type: object
+        error:
+          type: "null"
+        meta:
+          additionalProperties: false
+          properties:
+            requestId:
+              type: string
+          type: object
+      required:
+        - data
+        - error
+      type: object
+    ListWorkoutsResponse:
+      additionalProperties: false
+      properties:
+        data:
+          $ref: "#/components/schemas/WorkoutListResponse"
         error:
           type: "null"
         meta:
@@ -1502,6 +1536,221 @@ components:
         - duplicates
         - skipped
         - entries
+      type: object
+    WorkoutDetailResponse:
+      additionalProperties: false
+      properties:
+        activeEnergyKcal:
+          anyOf:
+            - type: number
+            - type: "null"
+        avgHr:
+          anyOf:
+            - maximum: 9007199254740991
+              minimum: -9007199254740991
+              type: integer
+            - type: "null"
+        canonicalId:
+          type: string
+        distanceM:
+          anyOf:
+            - type: number
+            - type: "null"
+        durationSec:
+          maximum: 9007199254740991
+          minimum: 0
+          type: integer
+        elevationM:
+          anyOf:
+            - type: number
+            - type: "null"
+        endedAt:
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          type: string
+        externalId:
+          anyOf:
+            - type: string
+            - type: "null"
+        id:
+          type: string
+        maxHr:
+          anyOf:
+            - maximum: 9007199254740991
+              minimum: -9007199254740991
+              type: integer
+            - type: "null"
+        metadata:
+          anyOf:
+            - {}
+            - type: "null"
+        minHr:
+          anyOf:
+            - maximum: 9007199254740991
+              minimum: -9007199254740991
+              type: integer
+            - type: "null"
+        pauseDurationSec:
+          anyOf:
+            - maximum: 9007199254740991
+              minimum: -9007199254740991
+              type: integer
+            - type: "null"
+        route:
+          anyOf:
+            - $ref: "#/components/schemas/WorkoutRouteGeometry"
+            - type: "null"
+        source:
+          enum:
+            - MANUAL
+            - WITHINGS
+            - IMPORT
+            - APPLE_HEALTH
+          type: string
+        sportType:
+          type: string
+        startedAt:
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          type: string
+        stepCount:
+          anyOf:
+            - maximum: 9007199254740991
+              minimum: -9007199254740991
+              type: integer
+            - type: "null"
+      required:
+        - id
+        - sportType
+        - startedAt
+        - endedAt
+        - durationSec
+        - distanceM
+        - activeEnergyKcal
+        - avgHr
+        - maxHr
+        - minHr
+        - stepCount
+        - elevationM
+        - pauseDurationSec
+        - source
+        - externalId
+        - metadata
+        - route
+        - canonicalId
+      type: object
+    WorkoutListEntry:
+      additionalProperties: false
+      properties:
+        activeEnergyKcal:
+          anyOf:
+            - type: number
+            - type: "null"
+        avgHr:
+          anyOf:
+            - maximum: 9007199254740991
+              minimum: -9007199254740991
+              type: integer
+            - type: "null"
+        distanceM:
+          anyOf:
+            - type: number
+            - type: "null"
+        durationSec:
+          maximum: 9007199254740991
+          minimum: 0
+          type: integer
+        endedAt:
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          type: string
+        externalId:
+          anyOf:
+            - type: string
+            - type: "null"
+        id:
+          type: string
+        maxHr:
+          anyOf:
+            - maximum: 9007199254740991
+              minimum: -9007199254740991
+              type: integer
+            - type: "null"
+        source:
+          enum:
+            - MANUAL
+            - WITHINGS
+            - IMPORT
+            - APPLE_HEALTH
+          type: string
+        sportType:
+          type: string
+        startedAt:
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          type: string
+      required:
+        - id
+        - sportType
+        - startedAt
+        - endedAt
+        - durationSec
+        - distanceM
+        - activeEnergyKcal
+        - avgHr
+        - maxHr
+        - source
+        - externalId
+      type: object
+    WorkoutListResponse:
+      additionalProperties: false
+      properties:
+        meta:
+          additionalProperties: false
+          properties:
+            droppedDuplicates:
+              maximum: 9007199254740991
+              minimum: 0
+              type: integer
+            limit:
+              exclusiveMinimum: 0
+              maximum: 9007199254740991
+              type: integer
+            offset:
+              maximum: 9007199254740991
+              minimum: 0
+              type: integer
+            total:
+              maximum: 9007199254740991
+              minimum: 0
+              type: integer
+          required:
+            - total
+            - limit
+            - offset
+            - droppedDuplicates
+          type: object
+        workouts:
+          items:
+            $ref: "#/components/schemas/WorkoutListEntry"
+          type: array
+      required:
+        - workouts
+        - meta
+      type: object
+    WorkoutRouteGeometry:
+      additionalProperties: false
+      properties:
+        geometry: {}
+        sampleTimestamps:
+          anyOf:
+            - items:
+                type: string
+              type: array
+            - type: "null"
+      required:
+        - geometry
+        - sampleTimestamps
       type: object
   securitySchemes:
     bearerAuth:
@@ -2387,6 +2636,54 @@ paths:
       summary: Delete measurements by external ID (iOS deletion-sync)
       tags:
         - Measurements
+  /api/workouts:
+    get:
+      description: "Paginated workout list with cross-source canonical-row dedup. The picker reads the per-user
+        source-priority ladder and buckets by `(startedAt 5 min slot, sportType)` — twin workouts (Apple Watch +
+        Withings ScanWatch) collapse to a single canonical row per cluster. Field names mirror the iOS handoff contract:
+        `distanceM`, `activeEnergyKcal`, `avgHr`, `maxHr`."
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            maximum: 200
+            minimum: 1
+            type: integer
+        - in: query
+          name: offset
+          schema:
+            maximum: 9007199254740991
+            minimum: 0
+            type: integer
+        - in: query
+          name: since
+          schema:
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            type: string
+        - in: query
+          name: until
+          schema:
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            type: string
+        - in: query
+          name: sportType
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListWorkoutsResponse"
+          description: Canonical workout page.
+        "401": *a1
+        "422": *a2
+        "429": *a3
+      summary: List workouts (v1.4.32)
+      tags:
+        - Measurements
   /api/workouts/batch:
     post:
       description: Server-side ingest endpoint for HKWorkout records (iOS) and Withings activity rows (server-to-server). Up
@@ -2568,6 +2865,36 @@ paths:
         "422": *a2
         "429": *a3
       summary: Typed workout batch ingest (v1.4.25 W16b)
+      tags:
+        - Measurements
+  /api/workouts/{id}:
+    get:
+      description: Single-workout envelope. Owns the optional `WorkoutRoute` GeoJSON geometry + `canonicalId` pointer that
+        resolves to the cluster winner so deep-links into non-canonical twin rows can redirect cleanly. Cross-user rows
+        surface as 404 (existence channel sealed).
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetWorkoutResponse"
+          description: Workout detail.
+        "401": *a1
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: Workout not found (or owned by another user).
+        "422": *a2
+        "429": *a3
+      summary: Workout detail (v1.4.32)
       tags:
         - Measurements
 servers:

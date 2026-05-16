@@ -315,6 +315,68 @@ const workoutBatchResponse = z
   })
   .meta({ id: "WorkoutBatchResponse" });
 
+// v1.4.32 — workout list / detail wire shape. The field names follow
+// the iOS handoff contract (`distanceM` + `activeEnergyKcal`) rather
+// than the Prisma column names so iOS and web consumers share one
+// JSON envelope.
+const workoutListEntry = z
+  .object({
+    id: z.string(),
+    sportType: z.string(),
+    startedAt: z.iso.datetime({ offset: true }),
+    endedAt: z.iso.datetime({ offset: true }),
+    durationSec: z.number().int().nonnegative(),
+    distanceM: z.number().nullable(),
+    activeEnergyKcal: z.number().nullable(),
+    avgHr: z.number().int().nullable(),
+    maxHr: z.number().int().nullable(),
+    source: measurementSourceEnum,
+    externalId: z.string().nullable(),
+  })
+  .meta({ id: "WorkoutListEntry" });
+
+const workoutListResponse = z
+  .object({
+    workouts: z.array(workoutListEntry),
+    meta: z.object({
+      total: z.number().int().nonnegative(),
+      limit: z.number().int().positive(),
+      offset: z.number().int().nonnegative(),
+      droppedDuplicates: z.number().int().nonnegative(),
+    }),
+  })
+  .meta({ id: "WorkoutListResponse" });
+
+const workoutRouteGeometry = z
+  .object({
+    geometry: z.unknown(),
+    sampleTimestamps: z.array(z.string()).nullable(),
+  })
+  .meta({ id: "WorkoutRouteGeometry" });
+
+const workoutDetailResponse = z
+  .object({
+    id: z.string(),
+    sportType: z.string(),
+    startedAt: z.iso.datetime({ offset: true }),
+    endedAt: z.iso.datetime({ offset: true }),
+    durationSec: z.number().int().nonnegative(),
+    distanceM: z.number().nullable(),
+    activeEnergyKcal: z.number().nullable(),
+    avgHr: z.number().int().nullable(),
+    maxHr: z.number().int().nullable(),
+    minHr: z.number().int().nullable(),
+    stepCount: z.number().int().nullable(),
+    elevationM: z.number().nullable(),
+    pauseDurationSec: z.number().int().nullable(),
+    source: measurementSourceEnum,
+    externalId: z.string().nullable(),
+    metadata: z.unknown().nullable(),
+    route: workoutRouteGeometry.nullable(),
+    canonicalId: z.string(),
+  })
+  .meta({ id: "WorkoutDetailResponse" });
+
 const deleteByExternalIdsRequest = z
   .object({
     externalIds: z.array(z.string().min(1).max(120)).min(0).max(500),
@@ -553,6 +615,60 @@ export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               ),
             },
           },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/workouts": {
+    get: {
+      tags: ["Measurements"],
+      summary: "List workouts (v1.4.32)",
+      description:
+        "Paginated workout list with cross-source canonical-row dedup. The picker reads the per-user source-priority ladder and buckets by `(startedAt 5 min slot, sportType)` — twin workouts (Apple Watch + Withings ScanWatch) collapse to a single canonical row per cluster. Field names mirror the iOS handoff contract: `distanceM`, `activeEnergyKcal`, `avgHr`, `maxHr`.",
+      requestParams: {
+        query: z.object({
+          limit: z.coerce.number().int().min(1).max(200).optional(),
+          offset: z.coerce.number().int().min(0).optional(),
+          since: z.iso.datetime({ offset: true }).optional(),
+          until: z.iso.datetime({ offset: true }).optional(),
+          sportType: z.string().optional(),
+        }),
+      },
+      responses: {
+        "200": {
+          description: "Canonical workout page.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(workoutListResponse, "ListWorkoutsResponse"),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/workouts/{id}": {
+    get: {
+      tags: ["Measurements"],
+      summary: "Workout detail (v1.4.32)",
+      description:
+        "Single-workout envelope. Owns the optional `WorkoutRoute` GeoJSON geometry + `canonicalId` pointer that resolves to the cluster winner so deep-links into non-canonical twin rows can redirect cleanly. Cross-user rows surface as 404 (existence channel sealed).",
+      requestParams: {
+        path: z.object({ id: z.string() }),
+      },
+      responses: {
+        "200": {
+          description: "Workout detail.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(workoutDetailResponse, "GetWorkoutResponse"),
+            },
+          },
+        },
+        "404": {
+          description: "Workout not found (or owned by another user).",
+          content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
       },
