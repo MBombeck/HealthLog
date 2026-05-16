@@ -1103,6 +1103,11 @@
     "navMedication": "Lek",
     "navBmi": "BMI",
     "navSleep": "Sen",
+    "navHrv": "HRV",
+    "navRestingHr": "Tętno spoczynkowe",
+    "navOxygenSaturation": "Tlen",
+    "navBodyTemperature": "Temperatura",
+    "navActiveEnergy": "Energia czynna",
     "navAriaLabel": "Skip to section",
     "subPage": {
       "blutdruckDescription": "Your systolic / diastolic trend with age-personalised target zones and a written AI assessment.",
@@ -1201,6 +1206,62 @@
         "title": "Brak danych o śnie",
         "description": "Gdy pojawią się dane o śnie (ręcznie lub przez Withings / Apple Health), wyświetli się tu rozkład faz na noc.",
         "cta": "Połącz Withings"
+      }
+    },
+    "navWorkouts": "Treningi",
+    "workouts": {
+      "title": "Treningi",
+      "description": "Ostatnie biegi, jazdy, marsze i treningi siłowe — zdeduplikowane między Apple Watch a Withings.",
+      "emptyState": {
+        "title": "Brak treningów",
+        "description": "Otwórz aplikację Apple Zdrowie na iPhonie, aby zsynchronizować treningi. Import aktywności z Withings także dorzuca marsze i przejażdżki."
+      },
+      "row": {
+        "duration": "Czas trwania",
+        "distance": "Dystans",
+        "energy": "Energia czynna"
+      },
+      "detail": {
+        "backToList": "Powrót do treningów",
+        "statsTitle": "Statystyki",
+        "statsDuration": "Czas trwania",
+        "statsDistance": "Dystans",
+        "statsActiveEnergy": "Energia czynna",
+        "statsAvgHr": "Średnie tętno",
+        "statsMaxHr": "Maks. tętno",
+        "statsMinHr": "Min. tętno",
+        "statsStepCount": "Kroki",
+        "statsElevation": "Przewyższenie",
+        "statsPace": "Tempo",
+        "statsSource": "Źródło",
+        "routeTitle": "Trasa",
+        "routeUnavailable": "Dla tego treningu nie zapisano trasy GPS.",
+        "hrChartTitle": "Tętno",
+        "hrChartUnavailable": "Próbki tętna co sekundę nie są zapisywane dla tego treningu.",
+        "notFound": "Nie znaleziono treningu.",
+        "loading": "Wczytywanie treningu…"
+      },
+      "sport": {
+        "walking": "Marsz",
+        "running": "Bieg",
+        "cycling": "Rower",
+        "hiking": "Górska wędrówka",
+        "swimming": "Pływanie",
+        "rowing": "Wioślarstwo",
+        "elliptical": "Orbitrek",
+        "stairClimber": "Stepper",
+        "yoga": "Joga",
+        "mindAndBody": "Mind and body",
+        "strength": "Siła",
+        "hiit": "HIIT",
+        "dance": "Taniec",
+        "golf": "Golf",
+        "tennis": "Tenis",
+        "basketball": "Koszykówka",
+        "soccer": "Piłka nożna",
+        "crossTraining": "Cross-trening",
+        "mixedCardio": "Cardio mieszane",
+        "other": "Inne"
       }
     }
   },

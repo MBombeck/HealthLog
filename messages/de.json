@@ -1103,6 +1103,11 @@
     "navMedication": "Medikamente",
     "navBmi": "BMI",
     "navSleep": "Schlaf",
+    "navHrv": "HRV",
+    "navRestingHr": "Ruhepuls",
+    "navOxygenSaturation": "Sauerstoff",
+    "navBodyTemperature": "Temperatur",
+    "navActiveEnergy": "Aktive Energie",
     "navAriaLabel": "Zu Abschnitt springen",
     "subPage": {
       "blutdruckDescription": "Dein systolisch-/diastolisch-Verlauf mit altersangepassten Zielbereichen und einer textbasierten KI-Einschätzung.",
@@ -1201,6 +1206,62 @@
         "title": "Noch keine Schlafwerte",
         "description": "Sobald Schlafdaten vorliegen (manuell oder via Withings / Apple Health), erscheint hier der nächtliche Stadien-Verlauf.",
         "cta": "Withings verbinden"
+      }
+    },
+    "navWorkouts": "Workouts",
+    "workouts": {
+      "title": "Workouts",
+      "description": "Letzte Läufe, Touren, Spaziergänge und Krafteinheiten — quellenübergreifend entdoppelt zwischen Apple Watch und Withings.",
+      "emptyState": {
+        "title": "Noch keine Workouts",
+        "description": "Öffne die Apple-Health-App auf dem iPhone, damit Workouts hier synchronisiert werden. Withings-Aktivitätsimport pflegt Geh- und Radtouren mit ein."
+      },
+      "row": {
+        "duration": "Dauer",
+        "distance": "Distanz",
+        "energy": "Aktive Energie"
+      },
+      "detail": {
+        "backToList": "Zurück zu Workouts",
+        "statsTitle": "Werte",
+        "statsDuration": "Dauer",
+        "statsDistance": "Distanz",
+        "statsActiveEnergy": "Aktive Energie",
+        "statsAvgHr": "Ø Herzfrequenz",
+        "statsMaxHr": "Max. Herzfrequenz",
+        "statsMinHr": "Min. Herzfrequenz",
+        "statsStepCount": "Schritte",
+        "statsElevation": "Höhenmeter",
+        "statsPace": "Pace",
+        "statsSource": "Quelle",
+        "routeTitle": "Strecke",
+        "routeUnavailable": "Für dieses Workout liegt keine GPS-Strecke vor.",
+        "hrChartTitle": "Herzfrequenz",
+        "hrChartUnavailable": "Sekundengenaue Herzfrequenz-Werte werden für dieses Workout nicht gespeichert.",
+        "notFound": "Workout nicht gefunden.",
+        "loading": "Workout wird geladen…"
+      },
+      "sport": {
+        "walking": "Gehen",
+        "running": "Laufen",
+        "cycling": "Radfahren",
+        "hiking": "Wandern",
+        "swimming": "Schwimmen",
+        "rowing": "Rudern",
+        "elliptical": "Crosstrainer",
+        "stairClimber": "Stepper",
+        "yoga": "Yoga",
+        "mindAndBody": "Mind and Body",
+        "strength": "Kraft",
+        "hiit": "HIIT",
+        "dance": "Tanz",
+        "golf": "Golf",
+        "tennis": "Tennis",
+        "basketball": "Basketball",
+        "soccer": "Fußball",
+        "crossTraining": "Cross-Training",
+        "mixedCardio": "Mixed Cardio",
+        "other": "Sonstiges"
       }
     }
   },

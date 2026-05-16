@@ -51,7 +51,16 @@ export type InsightMetric =
   | "SLEEP_DURATION"
   | "VO2_MAX"
   | "STEPS"
-  | "ACTIVE_ENERGY";
+  | "ACTIVE_ENERGY"
+  // v1.4.32 — wave-A HealthKit metrics promoted to first-class sub-pages.
+  | "HEART_RATE_VARIABILITY"
+  | "RESTING_HEART_RATE"
+  | "OXYGEN_SATURATION"
+  | "BODY_TEMPERATURE"
+  | "ACTIVE_ENERGY_BURNED"
+  // v1.4.32 — workouts surface; gate is event-driven (workouts table
+  // row count, not a Measurement series) and threaded via `hasWorkouts`.
+  | "WORKOUTS";
 
 /**
  * Inputs the gating helper consumes. The `summaries` shape mirrors
@@ -66,6 +75,13 @@ export interface InsightInputs {
   hasMood: boolean;
   /** Whether the user has at least one active medication. */
   hasMedication: boolean;
+  /**
+   * v1.4.32 — whether the user has at least one workout row. Drives
+   * the workouts pill + the workout list page's empty-state gate.
+   * Optional so legacy mounts that pre-date v1.4.32 keep type-checking;
+   * the helper treats `undefined` as "not available".
+   */
+  hasWorkouts?: boolean;
 }
 
 /**
@@ -80,6 +96,7 @@ export function hasMetricData(
 ): boolean {
   if (metric === "MOOD") return inputs.hasMood;
   if (metric === "MEDICATION") return inputs.hasMedication;
+  if (metric === "WORKOUTS") return inputs.hasWorkouts === true;
   if (metric === "BMI") {
     // BMI is derived from WEIGHT + the profile height. The chart
     // mounts even at one weight reading; the gate matches.

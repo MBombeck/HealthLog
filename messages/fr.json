@@ -1103,6 +1103,11 @@
     "navMedication": "Médicament",
     "navBmi": "IMC",
     "navSleep": "Sommeil",
+    "navHrv": "VFC",
+    "navRestingHr": "FC repos",
+    "navOxygenSaturation": "Oxygène",
+    "navBodyTemperature": "Température",
+    "navActiveEnergy": "Énergie active",
     "navAriaLabel": "Skip to section",
     "subPage": {
       "blutdruckDescription": "Your systolic / diastolic trend with age-personalised target zones and a written AI assessment.",
@@ -1201,6 +1206,62 @@
         "title": "Aucune donnée de sommeil",
         "description": "Dès que des données de sommeil sont disponibles (manuel ou via Withings / Apple Health), la répartition par stade apparaîtra ici.",
         "cta": "Connecter Withings"
+      }
+    },
+    "navWorkouts": "Entraînements",
+    "workouts": {
+      "title": "Entraînements",
+      "description": "Courses, sorties à vélo, marches et séances de musculation récentes, dédupliquées entre Apple Watch et Withings.",
+      "emptyState": {
+        "title": "Aucun entraînement",
+        "description": "Ouvre l'app Apple Santé sur ton iPhone pour synchroniser tes entraînements. L'import d'activité Withings alimente également la marche et le vélo."
+      },
+      "row": {
+        "duration": "Durée",
+        "distance": "Distance",
+        "energy": "Énergie active"
+      },
+      "detail": {
+        "backToList": "Retour aux entraînements",
+        "statsTitle": "Statistiques",
+        "statsDuration": "Durée",
+        "statsDistance": "Distance",
+        "statsActiveEnergy": "Énergie active",
+        "statsAvgHr": "FC moyenne",
+        "statsMaxHr": "FC max",
+        "statsMinHr": "FC min",
+        "statsStepCount": "Pas",
+        "statsElevation": "Dénivelé",
+        "statsPace": "Allure",
+        "statsSource": "Source",
+        "routeTitle": "Parcours",
+        "routeUnavailable": "Aucun parcours GPS enregistré pour cet entraînement.",
+        "hrChartTitle": "Fréquence cardiaque",
+        "hrChartUnavailable": "Les échantillons de fréquence cardiaque à la seconde ne sont pas stockés pour cet entraînement.",
+        "notFound": "Entraînement introuvable.",
+        "loading": "Chargement de l'entraînement…"
+      },
+      "sport": {
+        "walking": "Marche",
+        "running": "Course",
+        "cycling": "Vélo",
+        "hiking": "Randonnée",
+        "swimming": "Natation",
+        "rowing": "Aviron",
+        "elliptical": "Elliptique",
+        "stairClimber": "Stepper",
+        "yoga": "Yoga",
+        "mindAndBody": "Mind and Body",
+        "strength": "Musculation",
+        "hiit": "HIIT",
+        "dance": "Danse",
+        "golf": "Golf",
+        "tennis": "Tennis",
+        "basketball": "Basket",
+        "soccer": "Football",
+        "crossTraining": "Cross-training",
+        "mixedCardio": "Cardio mixte",
+        "other": "Autre"
       }
     }
   },

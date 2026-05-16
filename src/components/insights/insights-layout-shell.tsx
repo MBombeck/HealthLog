@@ -4,6 +4,7 @@ import { useMemo, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/hooks/use-auth";
+import { useWorkouts } from "@/hooks/use-workouts";
 import { InsightsTabStrip } from "@/components/insights/insights-tab-strip";
 import { useInsightsAdvisorQuery } from "@/components/insights/use-insights-advisor";
 import type { InsightInputs } from "@/lib/insights/metric-availability";
@@ -69,6 +70,12 @@ export function InsightsLayoutShell({ children }: { children: ReactNode }) {
     enabled: isAuthenticated,
   });
 
+  // v1.4.32 — workout-presence gate. The workouts pill gates on at
+  // least one canonical row in the list-endpoint response. The
+  // single-row probe shares its cache slot with the list page +
+  // dashboard tile so navigation between surfaces is a free cache hit.
+  const workoutsProbe = useWorkouts({ limit: 1 });
+
   // v1.4.31 — memoise the `availability` prop so an unchanged
   // payload doesn't recreate the object on every cache-write of
   // analytics or comprehensive. The strip is wrapped in
@@ -80,10 +87,11 @@ export function InsightsLayoutShell({ children }: { children: ReactNode }) {
   const hasMood = (comprehensiveQuery.data?.moodSummary?.count ?? 0) > 0;
   const hasMedication =
     (comprehensiveQuery.data?.medications?.length ?? 0) > 0;
+  const hasWorkouts = (workoutsProbe.data?.workouts.length ?? 0) > 0;
   const availability: InsightInputs | undefined = useMemo(() => {
     if (!isAuthenticated) return undefined;
-    return { summaries, hasMood, hasMedication };
-  }, [isAuthenticated, summaries, hasMood, hasMedication]);
+    return { summaries, hasMood, hasMedication, hasWorkouts };
+  }, [isAuthenticated, summaries, hasMood, hasMedication, hasWorkouts]);
 
   return (
     <div className="space-y-8">

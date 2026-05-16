@@ -94,6 +94,29 @@ const SUB_PAGE_TABS: Record<
   medikamente: { labelKey: "insights.navMedication", metric: "MEDICATION" },
   bmi: { labelKey: "insights.navBmi", metric: "BMI" },
   schlaf: { labelKey: "insights.navSleep", metric: "SLEEP_DURATION" },
+  // v1.4.32 — workouts pill. Gate is event-driven; the
+  // availability helper reads `inputs.hasWorkouts` rather than a
+  // `summaries[…].count`.
+  workouts: { labelKey: "insights.navWorkouts", metric: "WORKOUTS" },
+  // v1.4.32 — five wave-A HealthKit pills. Each one reads its own
+  // MeasurementType count from the analytics summaries.
+  hrv: { labelKey: "insights.navHrv", metric: "HEART_RATE_VARIABILITY" },
+  ruhepuls: {
+    labelKey: "insights.navRestingHr",
+    metric: "RESTING_HEART_RATE",
+  },
+  sauerstoff: {
+    labelKey: "insights.navOxygenSaturation",
+    metric: "OXYGEN_SATURATION",
+  },
+  koerpertemperatur: {
+    labelKey: "insights.navBodyTemperature",
+    metric: "BODY_TEMPERATURE",
+  },
+  "aktive-energie": {
+    labelKey: "insights.navActiveEnergy",
+    metric: "ACTIVE_ENERGY_BURNED",
+  },
 };
 
 function buildTabs(availability: InsightInputs | undefined): TabEntry[] {

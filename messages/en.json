@@ -1103,6 +1103,11 @@
     "navMedication": "Medication",
     "navBmi": "BMI",
     "navSleep": "Sleep",
+    "navHrv": "HRV",
+    "navRestingHr": "Resting HR",
+    "navOxygenSaturation": "Oxygen",
+    "navBodyTemperature": "Temperature",
+    "navActiveEnergy": "Active energy",
     "navAriaLabel": "Skip to section",
     "subPage": {
       "blutdruckDescription": "Your systolic / diastolic trend with age-personalised target zones and a written AI assessment.",
@@ -1201,6 +1206,62 @@
         "title": "No sleep entries yet",
         "description": "Once sleep data lands (manual or via Withings / Apple Health), the per-night stage breakdown will appear here.",
         "cta": "Connect Withings"
+      }
+    },
+    "navWorkouts": "Workouts",
+    "workouts": {
+      "title": "Workouts",
+      "description": "Recent runs, rides, walks and strength sessions, deduped across Apple Watch and Withings sources.",
+      "emptyState": {
+        "title": "No workouts yet",
+        "description": "Open the Apple Health app on your iPhone to sync workouts here. Withings activity import keeps walking and cycling sessions flowing in too."
+      },
+      "row": {
+        "duration": "Duration",
+        "distance": "Distance",
+        "energy": "Active energy"
+      },
+      "detail": {
+        "backToList": "Back to workouts",
+        "statsTitle": "Stats",
+        "statsDuration": "Duration",
+        "statsDistance": "Distance",
+        "statsActiveEnergy": "Active energy",
+        "statsAvgHr": "Average HR",
+        "statsMaxHr": "Max HR",
+        "statsMinHr": "Min HR",
+        "statsStepCount": "Steps",
+        "statsElevation": "Elevation",
+        "statsPace": "Pace",
+        "statsSource": "Source",
+        "routeTitle": "Route",
+        "routeUnavailable": "No GPS route recorded for this workout.",
+        "hrChartTitle": "Heart rate",
+        "hrChartUnavailable": "Per-second heart-rate samples are not stored for this workout.",
+        "notFound": "Workout not found.",
+        "loading": "Loading workout…"
+      },
+      "sport": {
+        "walking": "Walking",
+        "running": "Running",
+        "cycling": "Cycling",
+        "hiking": "Hiking",
+        "swimming": "Swimming",
+        "rowing": "Rowing",
+        "elliptical": "Elliptical",
+        "stairClimber": "Stair climber",
+        "yoga": "Yoga",
+        "mindAndBody": "Mind and body",
+        "strength": "Strength",
+        "hiit": "HIIT",
+        "dance": "Dance",
+        "golf": "Golf",
+        "tennis": "Tennis",
+        "basketball": "Basketball",
+        "soccer": "Soccer",
+        "crossTraining": "Cross training",
+        "mixedCardio": "Mixed cardio",
+        "other": "Other"
       }
     }
   },

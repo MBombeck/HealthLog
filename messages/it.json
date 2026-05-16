@@ -1103,6 +1103,11 @@
     "navMedication": "Farmaco",
     "navBmi": "IMC",
     "navSleep": "Sonno",
+    "navHrv": "HRV",
+    "navRestingHr": "FC riposo",
+    "navOxygenSaturation": "Ossigeno",
+    "navBodyTemperature": "Temperatura",
+    "navActiveEnergy": "Energia attiva",
     "navAriaLabel": "Skip to section",
     "subPage": {
       "blutdruckDescription": "Your systolic / diastolic trend with age-personalised target zones and a written AI assessment.",
@@ -1201,6 +1206,62 @@
         "title": "Nessuna voce di sonno",
         "description": "Quando saranno disponibili dati sul sonno (manuale o tramite Withings / Apple Health), qui apparirà la suddivisione per fase.",
         "cta": "Collega Withings"
+      }
+    },
+    "navWorkouts": "Allenamenti",
+    "workouts": {
+      "title": "Allenamenti",
+      "description": "Corse, uscite in bici, camminate e sessioni di forza recenti, deduplicati tra Apple Watch e Withings.",
+      "emptyState": {
+        "title": "Nessun allenamento",
+        "description": "Apri l'app Salute di Apple sull'iPhone per sincronizzare gli allenamenti. L'import di attività di Withings porta dentro anche camminate e uscite in bici."
+      },
+      "row": {
+        "duration": "Durata",
+        "distance": "Distanza",
+        "energy": "Energia attiva"
+      },
+      "detail": {
+        "backToList": "Torna agli allenamenti",
+        "statsTitle": "Statistiche",
+        "statsDuration": "Durata",
+        "statsDistance": "Distanza",
+        "statsActiveEnergy": "Energia attiva",
+        "statsAvgHr": "FC media",
+        "statsMaxHr": "FC max",
+        "statsMinHr": "FC min",
+        "statsStepCount": "Passi",
+        "statsElevation": "Dislivello",
+        "statsPace": "Passo",
+        "statsSource": "Fonte",
+        "routeTitle": "Percorso",
+        "routeUnavailable": "Nessun tracciato GPS registrato per questo allenamento.",
+        "hrChartTitle": "Frequenza cardiaca",
+        "hrChartUnavailable": "I campioni di frequenza cardiaca al secondo non vengono salvati per questo allenamento.",
+        "notFound": "Allenamento non trovato.",
+        "loading": "Caricamento allenamento…"
+      },
+      "sport": {
+        "walking": "Camminata",
+        "running": "Corsa",
+        "cycling": "Bici",
+        "hiking": "Escursionismo",
+        "swimming": "Nuoto",
+        "rowing": "Canottaggio",
+        "elliptical": "Ellittica",
+        "stairClimber": "Stepper",
+        "yoga": "Yoga",
+        "mindAndBody": "Mente e corpo",
+        "strength": "Forza",
+        "hiit": "HIIT",
+        "dance": "Danza",
+        "golf": "Golf",
+        "tennis": "Tennis",
+        "basketball": "Pallacanestro",
+        "soccer": "Calcio",
+        "crossTraining": "Cross-training",
+        "mixedCardio": "Cardio misto",
+        "other": "Altro"
       }
     }
   },

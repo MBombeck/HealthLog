@@ -34,6 +34,17 @@ export const SUB_PAGE_METRIC = {
   // BMI is derived from WEIGHT + profile height (no separate series).
   bmi: ["WEIGHT"],
   schlaf: ["SLEEP_DURATION"],
+  // v1.4.32 — workouts surface; the page reads `Workout` rows directly
+  // through `useWorkouts()` rather than the `summaries` map, so the
+  // metric list stays empty.
+  workouts: [],
+  // v1.4.32 — five new HealthKit wave-A sub-pages. Each one reads its
+  // own MeasurementType series via the standard analytics path.
+  hrv: ["HEART_RATE_VARIABILITY"],
+  ruhepuls: ["RESTING_HEART_RATE"],
+  sauerstoff: ["OXYGEN_SATURATION"],
+  koerpertemperatur: ["BODY_TEMPERATURE"],
+  "aktive-energie": ["ACTIVE_ENERGY_BURNED"],
 } as const satisfies Record<string, readonly string[]>;
 
 export type SubPageSlug = keyof typeof SUB_PAGE_METRIC;
