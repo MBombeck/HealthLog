@@ -1,5 +1,76 @@
 # Changelog
 
+## [1.4.32] — 2026-05-17 — HealthKit Tier 1 wave A
+
+First public surface wave for the HealthKit Tier 1 metrics that
+the iOS contributor brief locked in for v1.5. The headline item
+is a workouts flow that lands end-to-end on the web: a list page
+at `/insights/workouts`, a detail page with route preview and
+summary stats, and a dashboard tile that surfaces the three most
+recent sessions. Alongside the workouts surface arrives a family
+of five new metric sub-pages — HRV, resting heart rate, blood
+oxygen, body temperature, and active energy — each carried by a
+shared scaffold so adding the next HealthKit metric is a four-line
+page module. The release also cleans up two latent issues uncovered
+during the wave-A audit: the workouts list endpoint had a Prisma
+field-name bug that would have produced a 500 the moment a real
+client called it, and HRV plus resting heart rate were sitting
+in the `vitals` insight bucket where they did not belong.
+
+### Added
+
+- **Workouts API.** `GET /api/workouts` returns a paginated list
+  shaped to the iOS contract (`distanceM`, `activeEnergyKcal`,
+  `avgHr`, `maxHr`) using the v1.4.30 canonical-row picker;
+  `GET /api/workouts/{id}` returns a single workout with the same
+  field shape. Both endpoints honour `requireAuth()` and respect
+  the existing per-user isolation guarantees.
+- **`/insights/workouts` list page.** Browsable workout archive
+  with newest-first ordering, type-filter pills, and an
+  Apple-Health-onboarding hint when the list is empty.
+- **`/insights/workouts/[id]` detail page.** Per-workout view
+  with summary tiles (duration, distance, energy, average and
+  max heart rate), an inline-SVG route preview when GPS samples
+  are present, and a graceful-unavailable notice for per-second
+  HR samples.
+- **Dashboard recent-workouts tile.** New widget id
+  `recentWorkouts` defaults to visible and surfaces the three
+  most recent sessions on the home page. Self-gates on a
+  non-empty list and renders an Apple-Health-onboarding hint
+  otherwise.
+- **Five HealthKit metric sub-pages.** New pages at
+  `/insights/hrv`, `/insights/ruhepuls`, `/insights/sauerstoffsaettigung`,
+  `/insights/koerpertemperatur`, and `/insights/aktive-energie`,
+  each rendered through the shared `<HealthKitMetricPage>`
+  scaffold with its own chart-cog popover state slot. Body
+  temperature surfaces the existing manual-entry CTA; the other
+  four intentionally render their empty state without a primary
+  action because the Apple Health / Withings ingest is the only
+  path for those metrics.
+- **Insights tab-strip pills.** Six new pills (workouts plus the
+  five HealthKit metrics) join the strip and self-gate on data
+  presence, so brand-new accounts still see the seven pre-existing
+  pills only.
+
+### Changed
+
+- **HRV + resting HR realigned to the cardiovascular bucket.**
+  Both metrics moved out of `vitals` into `cardiovascular` to
+  match the iOS handoff brief's category table. The insight
+  bucket map, the per-metric status card grouping, and the
+  comprehensive narration all read the new placement; no client
+  contract changes because the bucket only drives in-app
+  grouping.
+
+### Fixed
+
+- **Latent 500 on workouts list endpoint.** The list query
+  referenced two non-existent Prisma columns (`distanceMeters`
+  and `energyKcal`); tests mocked Prisma with `as never` so the
+  bug never surfaced in CI. The endpoint now uses the v1.4.30
+  `pickCanonicalWorkoutRows()` helper and projects the iOS
+  contract field shape end-to-end.
+
 ## [1.4.31] — 2026-05-16 — Operator toggles + insights tab-strip + Coolify auto-deploy fix
 
 Three orthogonal patches in one release. The biggest item is a
