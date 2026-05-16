@@ -80,9 +80,14 @@ export function TimezonePicker({
           variant="outline"
           size="sm"
           onClick={handleUseBrowserTz}
+          aria-label={
+            detected
+              ? t("settings.timezoneDetectAria", { tz: detected })
+              : undefined
+          }
         >
           <Compass className="mr-2 h-4 w-4" />
-          {t("settings.timezoneDetect", { tz: detected })}
+          {t("settings.timezoneDetect")}
         </Button>
       </div>
     );
@@ -109,15 +114,26 @@ export function TimezonePicker({
             </option>
           ))}
         </NativeSelect>
+        {/* v1.4.33 — visible label is "use browser zone"; the actual
+            IANA zone is read out via aria-label so screen-reader users
+            still hear which zone the click will apply. Previously the
+            label inlined `(Europe/Berlin)`, which on a 393 CSS px
+            viewport wrapped the button to two lines and broke height
+            parity with the adjacent select. */}
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={handleUseBrowserTz}
           className="sm:w-auto"
+          aria-label={
+            detected
+              ? t("settings.timezoneDetectAria", { tz: detected })
+              : undefined
+          }
         >
           <Compass className="mr-2 h-4 w-4" />
-          {t("settings.timezoneDetect", { tz: detected })}
+          {t("settings.timezoneDetect")}
         </Button>
       </div>
       <p className="text-muted-foreground text-xs">{labelHint}</p>
