@@ -187,14 +187,24 @@ export default function InsightsMedikamentePage() {
                     <span>{t("insights.compliance7d")}</span>
                     <span className="font-medium">{med.compliance7}%</span>
                   </div>
-                  <Progress value={med.compliance7} className="h-2" />
+                  {/* v1.4.33 IW9 — aria-label so the bar has an
+                      accessible name (Lighthouse a11y 91/94). */}
+                  <Progress
+                    value={med.compliance7}
+                    className="h-2"
+                    aria-label={t("insights.compliance7d")}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-xs">
                     <span>{t("insights.compliance30d")}</span>
                     <span className="font-medium">{med.compliance30}%</span>
                   </div>
-                  <Progress value={med.compliance30} className="h-2" />
+                  <Progress
+                    value={med.compliance30}
+                    className="h-2"
+                    aria-label={t("insights.compliance30d")}
+                  />
                 </div>
                 <div className="text-muted-foreground flex justify-between text-xs">
                   <span>

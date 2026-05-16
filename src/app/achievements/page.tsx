@@ -225,7 +225,19 @@ function AchievementCard({ achievement, t }: AchievementCardProps) {
               target: formatMetric(achievement.format, achievement.target, t),
             })}
           </p>
-          <Progress value={achievement.progressPercent} className="h-1.5" />
+          {/* v1.4.33 IW9 — aria-label so the bar carries an accessible name. */}
+          <Progress
+            value={achievement.progressPercent}
+            className="h-1.5"
+            aria-label={t("achievements.criterionHint", {
+              current: formatMetric(
+                achievement.format,
+                achievement.current,
+                t,
+              ),
+              target: formatMetric(achievement.format, achievement.target, t),
+            })}
+          />
         </div>
       )}
 
@@ -328,6 +340,7 @@ export default function AchievementsPage() {
                 : 0
             }
             className="h-1.5"
+            aria-label={t("achievements.points")}
           />
         </div>
         <div className="bg-card border-border flex min-h-34 flex-col justify-between rounded-xl border p-5">
@@ -385,6 +398,7 @@ export default function AchievementsPage() {
           <Progress
             value={summary?.nextAchievement?.progressPercent ?? 100}
             className="mt-3 h-1.5"
+            aria-label={t("achievements.nextProgressLabel")}
           />
         </div>
       </div>

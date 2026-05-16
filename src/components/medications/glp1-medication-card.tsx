@@ -348,7 +348,12 @@ export function Glp1MedicationCard({
                 </span>
                 <span className="font-medium">{rate7}%</span>
               </div>
-              <Progress value={rate7} className="h-2" />
+              {/* v1.4.33 IW9 — aria-label so the bar has an accessible name. */}
+              <Progress
+                value={rate7}
+                className="h-2"
+                aria-label={t("medications.compliance7d")}
+              />
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-sm">
@@ -357,7 +362,11 @@ export function Glp1MedicationCard({
                 </span>
                 <span className="font-medium">{rate30}%</span>
               </div>
-              <Progress value={rate30} className="h-2" />
+              <Progress
+                value={rate30}
+                className="h-2"
+                aria-label={t("medications.compliance30d")}
+              />
             </div>
             {streak > 0 && (
               <div className="flex items-center gap-4 text-xs">
