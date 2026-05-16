@@ -6,13 +6,20 @@
  * graph.
  */
 
+// v1.4.34 IW-D — `sources` slug was retired. The two former sections
+// (`/settings/thresholds` and `/settings/sources`) merged into a single
+// "Targets & Sources" page under `/settings/thresholds`. The historic
+// `/settings/sources` URL stays alive as a `permanentRedirect` (see
+// `src/app/settings/sources/page.tsx`) so external bookmarks (iOS,
+// docs) follow through unchanged. Per
+// `.planning/research/v1434-r-2-carryover-scope.md` §7 and
+// `.planning/round-v1433-audit-menu.md` §7.1 (item 3).
 export const SETTINGS_SECTION_SLUGS = [
   "account",
   "integrations",
   "notifications",
   "dashboard",
   "thresholds",
-  "sources",
   "ai",
   "api",
   "export",

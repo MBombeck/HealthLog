@@ -21,7 +21,6 @@ import {
   Bell,
   Download,
   KeyRound,
-  Layers,
   LayoutDashboard,
   Link2,
   Settings2,
@@ -73,6 +72,15 @@ interface SettingsSection {
  * keeps emitting the page — but it no longer appears in the in-page
  * navigation. Direct links (the user-card dropdown, the public
  * `/about` permalink) continue to resolve to the same component.
+ *
+ * v1.4.34 IW-D — `sources` was merged into `thresholds` (now titled
+ * "Targets & Sources" / "Zielwerte & Quellen"). The combined section
+ * surfaces per-metric source priority alongside the threshold inputs
+ * on a single page. `/settings/sources` stays alive as a
+ * `permanentRedirect` so external bookmarks keep working; the slug
+ * was dropped from `SETTINGS_SECTION_SLUGS` because the dynamic
+ * `[section]` route no longer serves it. Per
+ * `.planning/research/v1434-r-2-carryover-scope.md` §7.
  */
 export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   { slug: "account", titleKey: "settings.sections.account.title", icon: User },
@@ -95,11 +103,6 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     slug: "thresholds",
     titleKey: "settings.sections.thresholds.title",
     icon: SlidersHorizontal,
-  },
-  {
-    slug: "sources",
-    titleKey: "settings.sections.sources.title",
-    icon: Layers,
   },
   { slug: "ai", titleKey: "settings.sections.ai.title", icon: Sparkles },
   { slug: "api", titleKey: "settings.sections.api.title", icon: KeyRound },

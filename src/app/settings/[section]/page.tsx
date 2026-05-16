@@ -11,7 +11,10 @@ import { ExportSection } from "@/components/settings/export-section";
 import { IntegrationsSection } from "@/components/settings/integrations-section";
 import { NotificationsSection } from "@/components/settings/notifications-section";
 import { SectionPlaceholder } from "@/components/settings/section-placeholder";
-import { SourcesSection } from "@/components/settings/sources-section";
+// v1.4.34 IW-D — `sources` slug was retired (merged into `thresholds`).
+// The combined "Targets & Sources" component lives in
+// `thresholds-section.tsx`; `/settings/sources` is now a
+// `permanentRedirect` handled by the dedicated route file.
 import { ThresholdsSection } from "@/components/settings/thresholds-section";
 import {
   SETTINGS_SECTION_SLUGS,
@@ -46,7 +49,6 @@ const SECTION_COMPONENTS: Record<
   notifications: NotificationsSection,
   dashboard: DashboardSection,
   thresholds: ThresholdsSection,
-  sources: SourcesSection,
   api: ApiSection,
   export: ExportSection,
   advanced: AdvancedSection,

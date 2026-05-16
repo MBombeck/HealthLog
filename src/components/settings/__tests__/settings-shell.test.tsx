@@ -35,7 +35,7 @@ function renderShell(props: {
 }
 
 describe("SETTINGS_SECTION_SLUGS", () => {
-  it("declares the eleven sections agreed for v1.4.25", () => {
+  it("declares the ten sections agreed for v1.4.34", () => {
     // Order matters — `generateStaticParams()` and the sidebar derive their
     // ordering from this constant, so a reorder is a behaviour change.
     // v1.4.3 split the dashboard panel: layout stays under `dashboard`,
@@ -48,13 +48,15 @@ describe("SETTINGS_SECTION_SLUGS", () => {
     // per-metric-class source-priority surface lives next to the other
     // analytics-shaping controls (thresholds → ranges; sources →
     // canonical source per metric).
+    // v1.4.34 IW-D — `sources` slug was retired (merged into
+    // `thresholds`, now "Targets & Sources"). `/settings/sources` stays
+    // alive as a `permanentRedirect`. Section count: 10 (was 11).
     expect([...SETTINGS_SECTION_SLUGS]).toEqual([
       "account",
       "integrations",
       "notifications",
       "dashboard",
       "thresholds",
-      "sources",
       "ai",
       "api",
       "export",
@@ -162,6 +164,11 @@ describe("<SettingsShell>", () => {
     // in the sidebar user-card dropdown. Route `/settings/about` is
     // still alive for direct links.
     expect(html).not.toContain('href="/settings/about"');
+    // v1.4.34 IW-D — Sources slug retired; merged into Targets & Sources
+    // under `/settings/thresholds`. The Sources nav entry must not
+    // appear; the route stays alive via permanentRedirect.
+    expect(html).not.toContain('href="/settings/sources"');
+    expect(html).toContain("Targets &amp; Sources");
   });
 
   it("resolves every section title via the i18n provider — German", () => {
@@ -177,7 +184,9 @@ describe("<SettingsShell>", () => {
     // per-metric overrides moved out into their own "Persönliche Zielwerte"
     // section, which is the new entry below the Dashboard one.
     expect(html).toContain("Dashboard");
-    expect(html).toContain("Persönliche Zielwerte");
+    // v1.4.34 IW-D — section renamed from "Persönliche Zielwerte" to
+    // "Zielwerte & Quellen" (combined with the former Sources section).
+    expect(html).toContain("Zielwerte &amp; Quellen");
     // v1.4.33 IW7 — "KI-Auswertungen" renamed to "Auswertungen" per
     // the Marc-Voice rule (no "KI"/"AI" prefix in user-facing copy).
     expect(html).toContain("Auswertungen");
@@ -187,6 +196,9 @@ describe("<SettingsShell>", () => {
     // v1.4.33 IW7 — "Über" (About) section removed from the in-shell
     // nav, folded into the sidebar user-card dropdown ("Über HealthLog").
     expect(html).not.toContain('href="/settings/about"');
+    // v1.4.34 IW-D — Sources nav entry retired (merged into Targets &
+    // Sources).
+    expect(html).not.toContain('href="/settings/sources"');
   });
 
   it("does NOT surface the raw key when a translation resolves — guards against missing JSON entries", () => {
