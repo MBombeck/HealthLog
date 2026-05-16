@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Loader2, TrendingUp } from "lucide-react";
 
@@ -11,14 +12,59 @@ import { useTranslations } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HeroStrip } from "@/components/insights/hero-strip";
-import { DailyBriefing } from "@/components/insights/daily-briefing";
-import { TrendsRow } from "@/components/insights/trends-row";
-import { CorrelationRow } from "@/components/insights/correlation-row";
 import { useInsightsAdvisorQuery } from "@/components/insights/use-insights-advisor";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
 import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
 import type { CorrelationResult } from "@/lib/insights/correlations";
 import type { DataSummary } from "@/lib/analytics/trends";
+
+/**
+ * v1.4.33 IW2 — defer the three below-the-fold mother-page blocks
+ * behind `next/dynamic`. `<HeroStrip>` (the only above-the-fold piece)
+ * stays an eager import so the initial paint shows the greeting and
+ * health-score badge without a flash; the briefing, correlation row
+ * and trends row each carry their own icon-set + chart wiring (a chart
+ * card alone weighs in at the lucide tree-shake limit) and used to
+ * land on every Insights cold mount. Loader skeletons match the
+ * existing fallback so the layout doesn't shift while the chunks
+ * resolve.
+ */
+const DailyBriefing = dynamic(
+  () =>
+    import("@/components/insights/daily-briefing").then((mod) => ({
+      default: mod.DailyBriefing,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="bg-card border-border h-48 animate-pulse rounded-xl border" />
+    ),
+  },
+);
+const CorrelationRow = dynamic(
+  () =>
+    import("@/components/insights/correlation-row").then((mod) => ({
+      default: mod.CorrelationRow,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="bg-card border-border h-32 animate-pulse rounded-xl border" />
+    ),
+  },
+);
+const TrendsRow = dynamic(
+  () =>
+    import("@/components/insights/trends-row").then((mod) => ({
+      default: mod.TrendsRow,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="bg-card border-border h-64 animate-pulse rounded-xl border" />
+    ),
+  },
+);
 
 /**
  * v1.4.25 W4d — Insights mother page.

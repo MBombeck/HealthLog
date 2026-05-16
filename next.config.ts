@@ -4,6 +4,39 @@ import bundleAnalyzer from "@next/bundle-analyzer";
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  // v1.4.33 IW2 — strip `console.*` calls from the production bundle
+  // (keep `console.error` + `console.warn` so the GlitchTip reporter
+  // and prod-side debug rails still surface). The Lighthouse audit
+  // flagged ~211 KiB of bundled JS as "unminified" — Turbopack already
+  // mangles + minifies the chunks, but the in-tree `console.log`
+  // breadcrumbs from the chart wiring + Coach SSE handlers carried
+  // hundreds of preserved string literals through to the client. The
+  // SWC compiler drops the calls + their literal-only arguments
+  // entirely in production.
+  compiler: {
+    removeConsole:
+      process.env.NODE_ENV === "production"
+        ? { exclude: ["error", "warn"] }
+        : false,
+  },
+  // v1.4.33 IW2 — bfcache hygiene. `Permissions-Policy: unload=()`
+  // tells the browser the page does not need the `unload` event,
+  // which Chromium uses as a hint to admit the page to the
+  // back/forward cache on navigation away. Pair with the absence of
+  // any `beforeunload` / `unload` listener in our own code so the
+  // bfcache restore path stays clear. The other CSP-style security
+  // headers already live on the response via the standalone runtime;
+  // we add only the bfcache hint here.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Permissions-Policy", value: "unload=()" },
+        ],
+      },
+    ];
+  },
   serverExternalPackages: [
     "@prisma/client",
     "pg-boss",
