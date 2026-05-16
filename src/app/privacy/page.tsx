@@ -124,6 +124,13 @@ export default function PrivacyPage() {
         </div>
       </header>
 
+      {/*
+        v1.4.33 IW9 — `max-w-3xl` (768 px) is intentional, not a stale
+        token. The legal/long-form column reads better at 70-80 chars
+        per line; widening to the app shell's `max-w-screen-xl` would
+        push line lengths to ~120 chars on a 1440 px laptop and degrade
+        legibility. The same exception applies to `/about`.
+      */}
       <main
         id="main-content"
         className="mx-auto max-w-3xl space-y-10 px-4 py-8 md:px-6 md:py-12"

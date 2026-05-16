@@ -81,6 +81,12 @@ export default function AboutPage() {
         </div>
       </header>
 
+      {/*
+        v1.4.33 IW9 — `max-w-3xl` is intentional (same rationale as
+        `/privacy`): long-form column reads better around 70-80
+        chars per line. The dashboard / settings / admin shells use
+        `max-w-screen-xl` (1280 px); legal pages stay at 768 px.
+      */}
       <main
         id="main-content"
         className="mx-auto max-w-3xl space-y-10 px-4 py-8 md:px-6 md:py-12"
