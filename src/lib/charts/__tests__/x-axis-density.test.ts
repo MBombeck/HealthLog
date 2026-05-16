@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { chooseTickInterval, resolveTargetTickCount } from "../x-axis-density";
+import {
+  chooseTickInterval,
+  computeTickPositions,
+  resolveTargetTickCount,
+} from "../x-axis-density";
 
 describe("resolveTargetTickCount (v1.4.19 legacy cap helper)", () => {
   it("caps Galaxy Fold compact (≤360px) at 4 ticks", () => {
@@ -105,5 +109,57 @@ describe("chooseTickInterval (v1.4.25 W3b day-aware policy)", () => {
         }
       }
     });
+  });
+});
+
+describe("computeTickPositions (v1.4.29 numeric-axis helper)", () => {
+  // Recharts ignores `interval` on `type="number"` axes; the pulse +
+  // mood charts switched to numeric axes and silently lost the
+  // density policy. `computeTickPositions` translates the policy
+  // into explicit indices the numeric axis can consume.
+
+  it("returns every index when the chart has fewer points than the bucket threshold", () => {
+    const data = Array.from({ length: 5 }, (_, i) => ({ timestamp: i }));
+    expect(computeTickPositions(data, 393)).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it("returns [0] for a single-point chart", () => {
+    expect(computeTickPositions([{ timestamp: 0 }], 393)).toEqual([0]);
+  });
+
+  it("returns [] for an empty chart", () => {
+    expect(computeTickPositions([], 393)).toEqual([]);
+  });
+
+  it("caps ticks to ~12 for a 365-point series", () => {
+    const data = Array.from({ length: 365 }, (_, i) => ({ timestamp: i }));
+    const ticks = computeTickPositions(data, 393);
+    expect(ticks.length).toBeLessThanOrEqual(13);
+    expect(ticks.length).toBeGreaterThanOrEqual(6);
+    // First + last indices always present.
+    expect(ticks[0]).toBe(0);
+    expect(ticks[ticks.length - 1]).toBe(364);
+  });
+
+  it("hits a weekly-rhythm cadence on a 30-day chart at mobile width", () => {
+    const data = Array.from({ length: 30 }, (_, i) => ({ timestamp: i }));
+    const ticks = computeTickPositions(data, 393);
+    // 30 points / 7-day skip → 5 ticks (0, 7, 14, 21, 28) + last (29).
+    expect(ticks.length).toBeGreaterThanOrEqual(4);
+    expect(ticks.length).toBeLessThanOrEqual(6);
+    expect(ticks[0]).toBe(0);
+    expect(ticks[ticks.length - 1]).toBe(29);
+  });
+
+  it("never returns duplicate or out-of-bounds indices", () => {
+    for (const length of [2, 7, 14, 30, 90, 180, 365]) {
+      const data = Array.from({ length }, (_, i) => ({ timestamp: i }));
+      const ticks = computeTickPositions(data, 393);
+      expect(new Set(ticks).size).toBe(ticks.length);
+      for (const t of ticks) {
+        expect(t).toBeGreaterThanOrEqual(0);
+        expect(t).toBeLessThan(length);
+      }
+    }
   });
 });

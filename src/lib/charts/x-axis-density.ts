@@ -160,3 +160,58 @@ export function getViewportWidth(): number {
   // viewport, not the visual one. Fall back to innerWidth.
   return window.innerWidth ?? 1280;
 }
+
+/**
+ * v1.4.29 — Recharts ignores the `interval` prop on a numeric
+ * `<XAxis type="number" />`. The pulse + mood charts switched to
+ * numeric axes in v1.4.25 to support multi-band rendering; the
+ * legacy `interval` value silently degraded to "every tick" on
+ * those charts.
+ *
+ * `computeTickPositions` returns explicit tick indices the numeric
+ * axis can consume via the `ticks` prop. The skip count comes from
+ * `chooseTickInterval` so the day-aware policy stays in one place.
+ * The result is clamped to at least 3 ticks (when the chart has
+ * enough data) and at most ~12, so the user always sees calendar
+ * landmarks without overcrowding.
+ *
+ * Returns an empty array for zero-length data and `[0]` for a
+ * single-point chart.
+ */
+export function computeTickPositions(
+  chartData: ReadonlyArray<{ timestamp: number } | unknown>,
+  viewportWidth: number,
+): number[] {
+  const length = chartData?.length ?? 0;
+  if (length <= 0) return [];
+  if (length === 1) return [0];
+
+  const lastIndex = length - 1;
+  const interval = chooseTickInterval(length, viewportWidth);
+  // `interval === 0` means "render every tick". Cap the visible tick
+  // count so dense series (e.g. 365-row pulse) never blow past ~12
+  // labels — pick a step that hits ~6 ticks if the policy would
+  // otherwise produce too many.
+  const TARGET_MAX_TICKS = 12;
+  let step = interval > 0 ? interval + 1 : 1;
+  if (length / step > TARGET_MAX_TICKS) {
+    step = Math.ceil(length / TARGET_MAX_TICKS);
+  }
+  // Floor on visible tick count — never fewer than 3 ticks unless
+  // the data simply doesn't have that many points.
+  const minTicks = Math.min(3, length);
+  if (length / step < minTicks) {
+    step = Math.max(1, Math.floor(length / minTicks));
+  }
+
+  const ticks: number[] = [];
+  for (let i = 0; i <= lastIndex; i += step) {
+    ticks.push(i);
+  }
+  // Always include the last index so the chart's right edge keeps a
+  // tick label.
+  if (ticks[ticks.length - 1] !== lastIndex) {
+    ticks.push(lastIndex);
+  }
+  return ticks;
+}

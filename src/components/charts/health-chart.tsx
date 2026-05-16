@@ -41,7 +41,7 @@ import type {
 import { ChartOverlayControls } from "./chart-overlay-controls";
 import { useChartOverlayPrefs } from "@/hooks/use-chart-overlay-prefs";
 import { useViewportWidth } from "@/hooks/use-viewport-width";
-import { chooseTickInterval } from "@/lib/charts/x-axis-density";
+import { computeTickPositions } from "@/lib/charts/x-axis-density";
 
 const TIME_RANGES_KEYS = [
   {
@@ -1281,8 +1281,13 @@ export function HealthChart({
                       ),
                     )
                   }
-                  interval={chooseTickInterval(
-                    chartData?.length ?? 0,
+                  // v1.4.29 — Recharts ignores `interval` on numeric
+                  // axes (`type="number"`). Hand explicit tick
+                  // positions through the `ticks` prop so the legacy
+                  // day-aware density policy stays effective on the
+                  // pulse chart.
+                  ticks={computeTickPositions(
+                    chartData ?? [],
                     viewportWidth,
                   )}
                   padding={{ left: 10, right: 10 }}
