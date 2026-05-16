@@ -117,6 +117,50 @@ describe("PUT /api/measurements/[id] — duplicate-timestamp handling", () => {
     expect(res.status).toBe(500);
   });
 
+  it("returns 409 on a sport-style measurement edit (FB-B1)", async () => {
+    // v1.4.28 FB-B1 — the maintainer's "Sport edit + save → error"
+    // report maps onto measurement-typed sport rows (Apple Health
+    // ingests workouts as ACTIVE_ENERGY_BURNED / FLIGHTS_CLIMBED /
+    // WALKING_RUNNING_DISTANCE samples, all of which route through
+    // /api/measurements/[id] for edits). No separate /api/workouts/[id]
+    // PUT exists — workouts are ingested via POST /api/workouts/batch
+    // only. The 409 handler must therefore fire for sport-typed rows.
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.measurement.findUnique).mockResolvedValue({
+      id: "m-sport",
+      userId: "user-1",
+      type: "ACTIVE_ENERGY_BURNED",
+      value: 320,
+      measuredAt: new Date("2026-05-10T10:00:00.000Z"),
+      source: "APPLE_HEALTH",
+      sleepStage: null,
+      notes: null,
+      unit: "kcal",
+    } as never);
+
+    const p2002 = new Prisma.PrismaClientKnownRequestError(
+      "Unique constraint failed",
+      {
+        code: "P2002",
+        clientVersion: "x",
+        meta: { target: ["userId", "type", "measuredAt", "source", "sleepStage"] },
+      },
+    );
+    vi.mocked(prisma.measurement.update).mockRejectedValue(p2002);
+
+    const res = await PUT(
+      putRequest("m-sport", { measuredAt: "2026-05-10T09:00:00.000Z" }),
+      { params: Promise.resolve({ id: "m-sport" }) },
+    );
+
+    expect(res.status).toBe(409);
+    const json = (await res.json()) as {
+      error: string;
+      meta?: { errorCode?: string };
+    };
+    expect(json.meta?.errorCode).toBe("measurement.duplicate_timestamp");
+  });
+
   it("returns the updated measurement on the 200 happy path", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.measurement.findUnique).mockResolvedValue({
