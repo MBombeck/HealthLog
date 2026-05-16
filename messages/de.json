@@ -258,7 +258,16 @@
     "layoutChartColumn": "Chart",
     "emptyTitle": "Dein Dashboard ist leer",
     "emptyDescription": "Erfasse den ersten Messwert oder Stimmungseintrag. Kacheln und Charts erscheinen automatisch, sobald Daten vorhanden sind.",
-    "emptyAddMeasurement": "Ersten Messwert erfassen"
+    "emptyAddMeasurement": "Ersten Messwert erfassen",
+    "recentWorkouts": {
+      "title": "Letzte Workouts",
+      "viewAll": "Alle anzeigen",
+      "loading": "Workouts werden geladen…",
+      "empty": {
+        "title": "Noch keine Workouts",
+        "cta": "Öffne die Apple-Health-App auf dem iPhone, damit Workouts hier erscheinen."
+      }
+    }
   },
   "measurements": {
     "title": "Messungen",

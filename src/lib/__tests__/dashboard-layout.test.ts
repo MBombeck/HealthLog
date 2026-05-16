@@ -141,6 +141,15 @@ describe("DEFAULT_DASHBOARD_LAYOUT contract", () => {
     expect(ids).toContain("achievements");
   });
 
+  it("includes the recentWorkouts widget (v1.4.32) default-visible", () => {
+    const widget = DEFAULT_DASHBOARD_LAYOUT.widgets.find(
+      (w) => w.id === "recentWorkouts",
+    );
+    expect(widget).toBeDefined();
+    expect(widget?.visible).toBe(true);
+    expect(widget?.tileVisible).toBe(true);
+  });
+
   it("does NOT advertise a retired insightsPreview widget (v1.4.27 B1)", () => {
     // v1.4.27 B1 retired the standalone dashboard preview because it
     // duplicated the much-richer `/insights` advisor surface. The

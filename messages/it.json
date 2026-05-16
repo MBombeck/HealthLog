@@ -258,7 +258,16 @@
     "layoutChartColumn": "Grafico",
     "emptyTitle": "Your dashboard is empty",
     "emptyDescription": "Log your first measurement or mood entry. Tiles and charts appear automatically as data lands.",
-    "emptyAddMeasurement": "Add your first measurement"
+    "emptyAddMeasurement": "Add your first measurement",
+    "recentWorkouts": {
+      "title": "Allenamenti recenti",
+      "viewAll": "Vedi tutti",
+      "loading": "Caricamento allenamenti…",
+      "empty": {
+        "title": "Nessun allenamento",
+        "cta": "Apri l'app Salute di Apple sull'iPhone per sincronizzare gli allenamenti."
+      }
+    }
   },
   "measurements": {
     "title": "Measurements",

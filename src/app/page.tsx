@@ -44,6 +44,7 @@ import { summaryToTrend7Delta } from "@/lib/analytics/trend-delta";
 import { GettingStartedChecklist } from "@/components/onboarding/getting-started-checklist";
 import { TourLauncher } from "@/components/onboarding/tour-launcher";
 import { RecentAchievementsCard } from "@/components/gamification/recent-achievements-card";
+import { RecentWorkoutsTile } from "@/components/dashboard/recent-workouts-tile";
 
 const MoodChart = dynamic(
   () =>
@@ -347,6 +348,10 @@ export default function DashboardPage() {
   // the layout-toggle gate here. No data-floor check (the empty card is
   // intentional — the maintainer wants the user to discover the feature).
   const showAchievementsCard = isChartVisible("achievements");
+  // v1.4.32 — recent workouts dashboard tile. Self-gates on the
+  // workouts query response so we only need the layout toggle here;
+  // the tile renders an Apple-Health-onboarding hint when empty.
+  const showRecentWorkoutsTile = isChartVisible("recentWorkouts");
 
   // Glucose widget — visible iff layout enables it AND at least one reading exists.
   // Glucose has no separate chart slot today, so the tile flag is the
@@ -1145,6 +1150,15 @@ export default function DashboardPage() {
             id: "achievements",
             order: widgetOrder("achievements"),
             node: <RecentAchievementsCard key="achievements" />,
+          });
+        }
+        if (showRecentWorkoutsTile) {
+          // v1.4.32 — slotted via the same `order` mechanism. Self-gates
+          // on the workouts query response inside the tile itself.
+          charts.push({
+            id: "recentWorkouts",
+            order: widgetOrder("recentWorkouts"),
+            node: <RecentWorkoutsTile key="recentWorkouts" />,
           });
         }
 

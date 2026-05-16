@@ -46,6 +46,8 @@ const WIDGET_LABEL_KEYS: Record<DashboardWidgetId, string> = {
   achievements: "achievements.title",
   // v1.4.25 W8d — VO2 max secondary-metric tile (opt-in).
   vo2Max: "dashboard.vo2Max",
+  // v1.4.32 — Recent workouts tile (default-on).
+  recentWorkouts: "dashboard.recentWorkouts.title",
 };
 
 export function DashboardLayoutSection({ id }: { id: string }) {

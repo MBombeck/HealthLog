@@ -35,6 +35,13 @@ export const DASHBOARD_WIDGET_IDS = [
   // Settings → Dashboard. Only the tile-strip surface; chart row
   // lands alongside the iOS-app body-composition sub-page in v1.5.
   "vo2Max",
+  // v1.4.32 — "Recent workouts" tile. Surfaces the three most-recent
+  // canonical workouts; self-gates on at least one row. Default-on
+  // (`visible: true`) because the maintainer wants new accounts to
+  // see the surface even when empty so the Apple-Health onboarding
+  // cue is discoverable from the dashboard rather than hidden
+  // behind Settings.
+  "recentWorkouts",
 ] as const;
 
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number];
@@ -216,6 +223,12 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayout = {
     // representation today (`visible` stays false so the chart-row
     // gate never fires; the chart card lands in v1.5).
     { id: "vo2Max", visible: false, tileVisible: false, order: 14 },
+    // v1.4.32 — Recent workouts dashboard tile. Default-visible so
+    // brand-new accounts discover the workout surface without
+    // hunting through Settings; the tile self-gates on a non-empty
+    // workouts list and renders an Apple-Health onboarding hint
+    // otherwise.
+    { id: "recentWorkouts", visible: true, tileVisible: true, order: 15 },
   ],
 };
 
