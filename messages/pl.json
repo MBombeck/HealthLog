@@ -299,6 +299,8 @@
     "typeAudioExposureEnv": "Audio Exposure (Environment)",
     "typeAudioExposureHeadphone": "Audio Exposure (Headphones)",
     "typeTimeInDaylight": "Time in Daylight",
+    "typeWalkingSteadiness": "Walking Steadiness",
+    "typeAudioExposureEvent": "Loud-Listening Event",
     "glucoseContext": "Context",
     "glucoseContextFasting": "Fasting (≥8h without food)",
     "glucoseContextPostprandial": "Post-meal (2h after eating)",

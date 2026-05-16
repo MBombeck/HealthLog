@@ -299,6 +299,8 @@
     "typeAudioExposureEnv": "Lärmbelastung (Umgebung)",
     "typeAudioExposureHeadphone": "Lärmbelastung (Kopfhörer)",
     "typeTimeInDaylight": "Zeit im Tageslicht",
+    "typeWalkingSteadiness": "Gehstabilität",
+    "typeAudioExposureEvent": "Lautes-Hören-Ereignis",
     "glucoseContext": "Kontext",
     "glucoseContextFasting": "Nüchtern (≥8 h ohne Nahrung)",
     "glucoseContextPostprandial": "Postprandial (2 h nach dem Essen)",

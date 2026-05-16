@@ -46,10 +46,13 @@ const EXPECTED_TYPES = [
   "AUDIO_EXPOSURE_ENV",
   "AUDIO_EXPOSURE_HEADPHONE",
   "TIME_IN_DAYLIGHT",
+  // ── v1.4.30 R-F T1.4 + T1.5 ──
+  "WALKING_STEADINESS",
+  "AUDIO_EXPOSURE_EVENT",
 ] as const;
 
 describe("measurementTypeEnum coverage", () => {
-  it("exposes the 28 canonical measurement types", () => {
+  it("exposes the 30 canonical measurement types", () => {
     expect([...measurementTypeEnum.options].sort()).toEqual(
       [...EXPECTED_TYPES].sort(),
     );
@@ -96,6 +99,12 @@ describe("measurementTypeEnum coverage", () => {
     "AUDIO_EXPOSURE_ENV",
     "AUDIO_EXPOSURE_HEADPHONE",
     "TIME_IN_DAYLIGHT",
+    // v1.4.30 R-F T1.4 + T1.5 additions held under the same v1.5 gate.
+    // Walking-steadiness pairs with a mobility chip; audio-exposure
+    // events surface on the Insights audio sub-page. Neither belongs
+    // in the clinical PDF until the iOS-app sync lands.
+    "WALKING_STEADINESS",
+    "AUDIO_EXPOSURE_EVENT",
   ]);
 
   it("doctor-report PDF vital types cover the canonical enum minus documented exclusions", () => {

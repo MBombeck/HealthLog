@@ -68,6 +68,9 @@ export const MEASUREMENT_TYPE_LABEL_KEYS: Record<string, string> = {
   AUDIO_EXPOSURE_ENV: "measurements.typeAudioExposureEnv",
   AUDIO_EXPOSURE_HEADPHONE: "measurements.typeAudioExposureHeadphone",
   TIME_IN_DAYLIGHT: "measurements.typeTimeInDaylight",
+  // ── v1.4.30 R-F T1.4 + T1.5 ──
+  WALKING_STEADINESS: "measurements.typeWalkingSteadiness",
+  AUDIO_EXPOSURE_EVENT: "measurements.typeAudioExposureEvent",
 };
 
 export const MEASUREMENT_TYPE_ICONS: Record<string, LucideIcon> = {
@@ -110,6 +113,12 @@ export const MEASUREMENT_TYPE_ICONS: Record<string, LucideIcon> = {
   AUDIO_EXPOSURE_ENV: Volume2,
   AUDIO_EXPOSURE_HEADPHONE: Headphones,
   TIME_IN_DAYLIGHT: Sun,
+  // ── v1.4.30 R-F T1.4 + T1.5 ──
+  // Activity/Gauge carries the mobility-steadiness signal (same
+  // family as VO2_MAX). Volume2 is reused for the loud-listening
+  // event flag — the event is a louder-cousin of the env quantity.
+  WALKING_STEADINESS: Gauge,
+  AUDIO_EXPOSURE_EVENT: Volume2,
 };
 
 export const MEASUREMENT_TYPE_COLORS: Record<string, string> = {
@@ -149,4 +158,7 @@ export const MEASUREMENT_TYPE_COLORS: Record<string, string> = {
   AUDIO_EXPOSURE_ENV: "bg-chart-5/20 text-chart-5",
   AUDIO_EXPOSURE_HEADPHONE: "bg-chart-5/20 text-chart-5",
   TIME_IN_DAYLIGHT: "bg-chart-2/20 text-chart-2",
+  // ── v1.4.30 R-F T1.4 + T1.5 ──
+  WALKING_STEADINESS: "bg-chart-2/20 text-chart-2",
+  AUDIO_EXPOSURE_EVENT: "bg-chart-5/20 text-chart-5",
 };

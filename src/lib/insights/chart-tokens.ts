@@ -60,6 +60,11 @@ export const ALLOWED_CHART_TOKENS = [
   "metric:AUDIO_EXPOSURE_ENV",
   "metric:AUDIO_EXPOSURE_HEADPHONE",
   "metric:TIME_IN_DAYLIGHT",
+  // v1.4.30 — R-F T1.4 + T1.5 Tier-1 additions. Same posture: the
+  // LLM can reference the tokens in prose; the chart components land
+  // alongside the iOS-app sync.
+  "metric:WALKING_STEADINESS",
+  "metric:AUDIO_EXPOSURE_EVENT",
 ] as const;
 
 export type ChartToken = (typeof ALLOWED_CHART_TOKENS)[number];
