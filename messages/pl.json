@@ -1124,8 +1124,7 @@
       "chartTitle": "Zmienność rytmu serca",
       "emptyState": {
         "title": "Brak wartości HRV",
-        "description": "Wartości HRV pojawią się tutaj, gdy Apple Watch (lub zgodne urządzenie Withings) zsynchronizuje pomiary nocne.",
-        "cta": ""
+        "description": "Wartości HRV pojawią się tutaj, gdy Apple Watch (lub zgodne urządzenie Withings) zsynchronizuje pomiary nocne."
       }
     },
     "restingHr": {
@@ -1134,8 +1133,7 @@
       "chartTitle": "Tętno spoczynkowe",
       "emptyState": {
         "title": "Brak tętna spoczynkowego",
-        "description": "Tętno spoczynkowe pojawi się, gdy Apple Watch lub zgodne urządzenie Withings spędzi spokojny dzień na nadgarstku.",
-        "cta": ""
+        "description": "Tętno spoczynkowe pojawi się, gdy Apple Watch lub zgodne urządzenie Withings spędzi spokojny dzień na nadgarstku."
       }
     },
     "oxygenSaturation": {
@@ -1144,8 +1142,7 @@
       "chartTitle": "Saturacja tlenu",
       "emptyState": {
         "title": "Brak próbek SpO₂",
-        "description": "Próbki SpO₂ trafią tutaj, gdy zgodne wearable (Apple Watch, Withings ScanWatch) wykona pomiar.",
-        "cta": ""
+        "description": "Próbki SpO₂ trafią tutaj, gdy zgodne wearable (Apple Watch, Withings ScanWatch) wykona pomiar."
       }
     },
     "bodyTemperature": {
@@ -1164,8 +1161,7 @@
       "chartTitle": "Energia czynna",
       "emptyState": {
         "title": "Brak danych o energii czynnej",
-        "description": "Sumy energii czynnej pojawią się tutaj, gdy Apple Zdrowie lub urządzenie Withings zsynchronizuje pełny dzień.",
-        "cta": ""
+        "description": "Sumy energii czynnej pojawią się tutaj, gdy Apple Zdrowie lub urządzenie Withings zsynchronizuje pełny dzień."
       }
     },
     "subPage": {

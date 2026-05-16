@@ -1124,8 +1124,7 @@
       "chartTitle": "Variabilité de la fréquence cardiaque",
       "emptyState": {
         "title": "Aucune mesure de VFC",
-        "description": "Les mesures de VFC apparaîtront ici dès que l'Apple Watch (ou un appareil Withings compatible) synchronisera des relevés nocturnes.",
-        "cta": ""
+        "description": "Les mesures de VFC apparaîtront ici dès que l'Apple Watch (ou un appareil Withings compatible) synchronisera des relevés nocturnes."
       }
     },
     "restingHr": {
@@ -1134,8 +1133,7 @@
       "chartTitle": "Fréquence cardiaque au repos",
       "emptyState": {
         "title": "Aucune FC au repos",
-        "description": "La FC au repos arrive dès que l'Apple Watch ou un appareil Withings compatible a porté une journée calme.",
-        "cta": ""
+        "description": "La FC au repos arrive dès que l'Apple Watch ou un appareil Withings compatible a porté une journée calme."
       }
     },
     "oxygenSaturation": {
@@ -1144,8 +1142,7 @@
       "chartTitle": "Saturation en oxygène",
       "emptyState": {
         "title": "Aucune mesure SpO₂",
-        "description": "Les mesures SpO₂ apparaîtront dès qu'un wearable compatible (Apple Watch, Withings ScanWatch) en capturera une.",
-        "cta": ""
+        "description": "Les mesures SpO₂ apparaîtront dès qu'un wearable compatible (Apple Watch, Withings ScanWatch) en capturera une."
       }
     },
     "bodyTemperature": {
@@ -1164,8 +1161,7 @@
       "chartTitle": "Énergie active",
       "emptyState": {
         "title": "Aucune donnée d'énergie active",
-        "description": "Les totaux d'énergie active apparaîtront dès qu'Apple Santé ou un appareil Withings activité synchronise une journée complète.",
-        "cta": ""
+        "description": "Les totaux d'énergie active apparaîtront dès qu'Apple Santé ou un appareil Withings activité synchronise une journée complète."
       }
     },
     "subPage": {

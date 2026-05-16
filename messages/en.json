@@ -1124,8 +1124,7 @@
       "chartTitle": "Heart-rate variability",
       "emptyState": {
         "title": "No HRV samples yet",
-        "description": "HRV samples land here once Apple Watch (or a compatible Withings device) starts syncing nightly readings.",
-        "cta": ""
+        "description": "HRV samples land here once Apple Watch (or a compatible Withings device) starts syncing nightly readings."
       }
     },
     "restingHr": {
@@ -1134,8 +1133,7 @@
       "chartTitle": "Resting heart rate",
       "emptyState": {
         "title": "No resting heart rate yet",
-        "description": "Resting heart rate arrives once Apple Watch or a compatible Withings device has worn through one quiet day.",
-        "cta": ""
+        "description": "Resting heart rate arrives once Apple Watch or a compatible Withings device has worn through one quiet day."
       }
     },
     "oxygenSaturation": {
@@ -1144,8 +1142,7 @@
       "chartTitle": "Oxygen saturation",
       "emptyState": {
         "title": "No SpO₂ samples yet",
-        "description": "SpO₂ samples land here once a compatible wearable (Apple Watch, Withings ScanWatch) captures a reading.",
-        "cta": ""
+        "description": "SpO₂ samples land here once a compatible wearable (Apple Watch, Withings ScanWatch) captures a reading."
       }
     },
     "bodyTemperature": {
@@ -1164,8 +1161,7 @@
       "chartTitle": "Active energy",
       "emptyState": {
         "title": "No active-energy data yet",
-        "description": "Active-energy totals land here once Apple Health or a Withings activity device syncs a day's worth of movement.",
-        "cta": ""
+        "description": "Active-energy totals land here once Apple Health or a Withings activity device syncs a day's worth of movement."
       }
     },
     "subPage": {
