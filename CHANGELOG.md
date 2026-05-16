@@ -24,6 +24,14 @@
   imports on behalf of a target user (cookie-only `requireAdmin()`
   gate; Bearer tokens never elevate).
 
+### Web freeze
+
+v1.4.34 marks the last functional release of the web codebase before
+the iOS native client launches. Subsequent v1.4.x tags carry security
+fixes, dependency bumps, and hotfix-only corrections. New feature work
+is paused until the iOS app clears Apple review, at which point a
+v1.5.0 version-bump-only release tags the milestone.
+
 ## [1.4.33] — 2026-05-17 — Polish and reliability
 
 Quality-leap release between two HealthKit milestones. The headline is

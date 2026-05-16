@@ -386,6 +386,7 @@ navigates to a feature that needs it (R-F §2.5 option 2).
 | Categorisation shape | UI-side TypeScript overlay `src/lib/measurements/categories.ts`, NOT a DB column | R-F §4 |
 | Sleep storage shape | Per-stage rows (5-axis unique key) — no split into `SLEEP_DEEP` / `SLEEP_REM` / etc. enum entries | R-F open Q #6 |
 | Web freeze trigger | v1.4.34 tag on `main` (after the Apple Health XML import lands) | This plan §2, R2 |
+| v1.4.34 ships web-freeze marker | tag on main | this plan §2 |
 | v1.5 release shape | Version-bump-only marker the day after iOS clears Apple review. All functional work lands incrementally in v1.4.29 → v1.4.34. | Maintainer directive 2026-05-16 |
 | Web patch sequence | v1.4.29 polish → v1.4.29.1 step hotfix → v1.4.30 iOS-coordinated foundation (Daily-Stats + SyncMode) → v1.4.30.1 categories endpoint + conflict-resolution lock → v1.4.31 toggles + insights blocking + Coolify auto-deploy → v1.4.32 Tier 1 wave A → v1.4.33 Tier 1 wave B → v1.4.34 freeze | This plan §2, maintainer directive 2026-05-16 + R1 + R2 |
 | Apple Health XML import slot | v1.4.34 (before freeze) | R2 + maintainer 2026-05-16 |

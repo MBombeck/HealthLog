@@ -1,3 +1,6 @@
+// v1.4.34 web-freeze. Schema is locked additive-only until iOS launch
+// + v1.5.0 marker. See .planning/v15-strategic-plan.md §2.
+
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
