@@ -112,21 +112,34 @@ move aggregation to SQL, rewrite `summarize()` for single-pass). 2-3
 days plus integration tests. Lands during the v1.5 server-prep
 window if calendar permits, otherwise rides to v1.5.x.
 
-### v1.4.30 — iOS-server-prep menu
+### v1.4.30 — iOS-coordinated foundation (Daily-Stats + SyncMode)
 
-Ship 2-3 days after v1.4.29. Every item is iOS-additive; the web UI
-either does not consume the new surface or wires it in v1.4.31.
+Ship 2-3 days after v1.4.29.1. Maintainer-directive 2026-05-16: R-A
+Option A daily-stats lands in this patch, not in a v1.5 sprint. The
+existing TestFlight build on the maintainer's device is already
+posting per-sample cumulative rows; the server-side helper + drain
+script + the `externalId` handoff-doc lock here let the iOS
+TestFlight engineer cut over to `HKStatisticsCollectionQuery` in the
+next iOS build with no further server release.
 
 | Item | Source | Effort |
 |---|---|---|
+| **R-A Option A server-side**: `dailyStatsExternalId()` helper (returns `"stats:<HKQuantityTypeIdentifier>:<YYYY-MM-DD>"`) + the `CUMULATIVE_HK_TYPES` set already exported in v1.4.29 `642e78a6`. Handoff-doc lock for the `externalId` shape in `.planning/v15-ios-handoff/06-ios-responsibilities.md` + `08-locked-contracts.md`. Server tolerates BOTH shapes during the cutover (per-sample + daily-aggregated) — the existing `@@unique([userId, type, measuredAt, source, sleepStage])` constraint plus the new `externalId` UPSERT path coexist | R-A §6, maintainer directive 2026-05-16 | S |
+| **R-A drain script** at `scripts/drain-per-sample-cumulative.ts`. Idempotent: for each user × cumulative type × calendar day, SUM per-sample APPLE_HEALTH rows → UPSERT a single daily row with `externalId = "stats:<type>:<date>"` → DELETE the per-sample rows. Re-run is a no-op once collapsed. Operator runs it once after the iOS TestFlight cuts over. Optional admin endpoint `/api/admin/drain-per-sample-cumulative` triggers it via the standard admin auth gate; CLI variant for self-hosters | R-A migration path, maintainer directive | M |
 | SyncMode server-side: `syncVersion Int @default(1)` on `Measurement`, `deletedAt DateTime?` soft-delete column, `/api/sync/state` endpoint, `/api/mood-entries/bulk` + `/api/medications/intake/bulk` bulk-backfill endpoints | R-E C-2 | M |
 | `MoodEntry.note TEXT NULL` — replaces the `tags: ["note:<text>"]` workaround that contaminates the Coach evidence shelf | R-E H-5 | S |
 | `HKWorkoutType` server route — verify `/api/workouts/batch` (in v1.4.25 W8d) middleware + caps match the new pattern, add `pickCanonicalWorkoutRows()` for Apple Watch × Withings ScanWatch dedup | R-F T1.1 | S |
 | Categorisation overlay: `src/lib/measurements/categories.ts` TypeScript map driving both the iOS permission picker and a future web Insights nav | R-F §4 | S |
 | Two new MeasurementType enums: `WALKING_STEADINESS`, `AUDIO_EXPOSURE_EVENT` | R-F T1.4 + T1.5 | XS |
-| R-A Option A server-side: `dailyStatsExternalId()` helper + `CUMULATIVE_HK_TYPES` set in `src/lib/measurements/apple-health-mapping.ts`; handoff-doc lock for the `externalId` shape | R-A §6 | S |
 | APNs `.p8` paste into Coolify (1-hour Marc-action) | R-E C-3 | external |
 | Real-Postgres integration-test container (paid down once, every aggregate test rides it) | R-B Critical+ | S |
+
+**Cutover sequence**:
+
+1. v1.4.30 ships with the helper + drain script + server-tolerance for both shapes.
+2. iOS-engineer ships a new TestFlight build with `HealthKitStatisticsService.swift` per R-A §5 — `HKStatisticsCollectionQuery` for every cumulative type, one PR-per-day-per-type POST via the existing batch endpoint with the new `externalId` shape.
+3. Operator runs the drain script once. Existing per-sample APPLE_HEALTH cumulative rows collapse into one row per day per type.
+4. From that point: every cumulative type carries one daily row per user. Per-sample row pressure on `Measurement` drops ~50-200× for these types.
 
 iOS impact: every change is additive on the wire. The
 `/api/sync/state` endpoint is net-new (no iOS consumer yet),
@@ -135,9 +148,22 @@ existing iOS calls round-trip unchanged, the new MeasurementType
 enums are net-new values iOS can encounter without 422 once the
 codegen catches them.
 
-### v1.4.31 — HealthKit Tier 1 web surfaces, wave A
+### v1.4.31 — Operator toggles + Insights blocking + Coolify auto-deploy
 
-Ship 2-3 days after v1.4.30. Adds the visible surfaces iOS will pair
+Ship 2-3 days after v1.4.30. UX-correction patch that closes the
+maintainer's daily-walk-through findings from the v1.4.29 window plus
+an ops-side fix that's been silently failing for three releases in a
+row.
+
+| Item | Source | Effort |
+|---|---|---|
+| **Assistant-optional operator toggles** — 6 boolean columns on `AppSettings` (master `assistant.enabled` + 5 sub-flags), `/admin/system/assistant` panel, `GET /api/feature-flags` endpoint iOS queries on startup, gated `/api/insights/chat` + `/api/insights/generate` + `/api/insights/comprehensive` + `/api/insights/briefing` return 403 with `errorCode: "assistant.disabled.<surface>"` when the relevant flag is off, web mounts gate on `useFeatureFlags()` hook, fallbacks render naturally without empty boxes | `.planning/research/v15-assistant-optional.md` | M (~14h) |
+| **Insights tab-strip blocking on mobile** — three small client fixes per the root-cause analysis: AbortController + 8 s timeout on `fetchAdvisor`, `React.memo` + `useMemo` on the tab strip + availability check, `next/dynamic` for `<CoachDrawer>` so the SSE machinery loads lazily | `.planning/research/v15-insights-blocking-bug.md` | S |
+| **Coolify auto-deploy investigation** — three releases in a row (v1.4.27, v1.4.28, v1.4.29.1) the Coolify webhook reported "finished" but did not pull the new `:latest` digest. SSH host-side retag is the documented fallback but the gap costs minutes per release. Investigate: is the webhook receiving but not triggering pull? Coolify image-cache stale? Token expired? Webhook URL stale? Document the root cause + fix in `.planning/round-coolify-auto-deploy-fix.md` and patch the workflow / Coolify settings so the next release auto-deploys without manual SSH | this plan, maintainer note | S-M |
+
+### v1.4.32 — HealthKit Tier 1 web surfaces, wave A
+
+Ship 2-3 days after v1.4.31. Adds the visible surfaces iOS will pair
 with the corresponding HK reads.
 
 | Item | Source | Effort |
@@ -145,9 +171,9 @@ with the corresponding HK reads.
 | Workouts end-to-end on the web — list page (`/insights/workouts`), detail page, dashboard "Recent workouts" tile | R-F T1.1 | M |
 | Chart cards for 5 of the 10 invisible-but-stored metrics: HRV, RestingHR, SpO2, BodyTemperature, ActiveEnergyBurned | R-F T1.3 | M |
 
-### v1.4.32 — HealthKit Tier 1 web surfaces, wave B + freeze marker
+### v1.4.33 — HealthKit Tier 1 web surfaces, wave B + freeze marker
 
-Ship 2-3 days after v1.4.31. Closes the breadth wave.
+Ship 2-3 days after v1.4.32. Closes the breadth wave.
 
 | Item | Source | Effort |
 |---|---|---|
@@ -158,7 +184,7 @@ Ship 2-3 days after v1.4.31. Closes the breadth wave.
 | Source-priority editor — the `/api/auth/me/source-priority` endpoint already locks for iOS in v1.4.25 W8c; the web has nothing today. Add the two-axis editor under `/settings/sources` so the iOS side can mirror the same UI shape | R-E C-5 (web-side helper) | M |
 | CHANGELOG **WEB-FREEZE marker** — explicit line noting that web functionality is complete for v1.5 and that subsequent v1.4.x tags are limited to hotfixes + dependency updates until the iOS app ships | this plan | — |
 
-After v1.4.32 tags on `main`, the web enters **freeze**.
+After v1.4.33 tags on `main`, the web enters **freeze**.
 
 ### Web-freeze posture
 
@@ -213,7 +239,7 @@ patches + iOS tracks take in parallel.
 | 1-2 | Server | R-A Option A server-side: `dailyStatsExternalId()` helper + `CUMULATIVE_HK_TYPES` set in `src/lib/measurements/apple-health-mapping.ts`. Handoff doc updates: `.planning/v15-ios-handoff/06-ios-responsibilities.md` + `08-locked-contracts.md` lock the `externalId` shape `"stats:<typeIdentifier>:<YYYY-MM-DD>"`. | Server stops paying for per-sample step rows once iOS cuts over. |
 | 3-5 | iOS Track A | Coach SSE drawer native build per R-E C-1. `CoachService` actor over `URLSession.bytes`, `CoachStreamEvent` AsyncThrowingStream, SwiftData-backed `CoachConversation` cache, streaming bubble view, provenance disclosure, GROUND-RULE-9/15 refusal-acceptance UI, `coach.budget.exceeded` 429 surface. Reuse the existing `MDRAcknowledgmentDialog`. Adds `coach.*` locale keys to `Localizable.xcstrings`. Wires `AppRouter` to a real `.coach` TabIdentifier. | TestFlight build runs Coach against staging end-to-end. |
 | 3-5 | iOS Track B | SyncMode + Workouts ingest. Per R-E C-2: extend `@Model` types with `syncVersion + deletedAt`, gate every repository call behind `SyncModeStore.isPaired`, build the pair/unpair sheet. Per R-F T1.1 + R-E H-2: `HKWorkoutType.workoutType()` reader, `HKWorkoutRouteQuery` route streamer, `WorkoutBatchEntryDTO` mirror, `WorkoutsRepository`, dashboard "Recent workouts" tile. | Workouts flow from HK to dashboard; SyncMode honours pairing state across every repo path. |
-| 3-5 | iOS Track C | R-A Option A iOS implementation per `HealthKitStatisticsService.swift` sketch. `HKStatisticsCollectionQuery` wrapper per cumulative type, per-day last-posted-value cache, PATCH-on-divergence path for late watch syncs, `ENABLE_DAILY_STATS` build flag (default OFF for first TestFlight, ON for cut-over build). | Steps + active energy + flights + distance + daylight ingest as one row per day per type; per-sample row pressure on `Measurement` drops 50-200× for those types. |
+| coordinated with v1.4.30 | iOS Track C | **MOVED OUT of the v1.5 sprint per maintainer directive 2026-05-16.** R-A Option A iOS implementation rides v1.4.30: as soon as v1.4.30 ships the server-side `dailyStatsExternalId()` helper + drain script, the iOS TestFlight build adopts `HealthKitStatisticsService.swift` with `HKStatisticsCollectionQuery` per cumulative type. Operator runs the drain script once after the new TestFlight cut-over. Per-sample row pressure on `Measurement` drops 50-200× for cumulative types. | Daily-stats ingest live before the v1.5 sprint clock starts. |
 | 6 | iOS | R-E C-4 RefreshScheduler (proactive bearer refresh 5 min before expiry) + R-E C-5 source-priority editor (Settings → Sources & Geräte sheet, drag-reorder per metric, nested device-type picker, full-object PUT) + R-E H-7 Withings `hasActivityScope` reconnect banner. | Midnight-refresh 401 closed for real; iOS users can edit the two-axis source priority natively. |
 | 6-7 | iOS | R-F T1.3 breadth wave: 10 chart cards for invisible-but-stored metrics — `restingHr`, `hrv`, `spo2`, `bodyTemperature`, `activeEnergy`, `flights`, `distance`, `audioExposureEnv`, `audioExposureHeadphone`, `daylight`. Each is a one-line `CHART_OVERLAY_KEYS` add server-side + a SwiftUI card mount on iOS. Pair every HK read with a visible surface per the Apple-review pairing rule. | iOS dashboard finally shows what it has been reading; App Store reviewer sees one visible surface per authorised type. |
 | 7 | iOS | R-F T1.2 HKStateOfMind read path (iOS 18+) + R-F T1.4 hearing-event chips on `/insights/puls` + R-F T1.5 walking-steadiness gauge. | Mood bidirectional with Apple Health; loud-listening events surfaced; mobility signal visible. |
@@ -341,10 +367,11 @@ navigates to a feature that needs it (R-F §2.5 option 2).
 | iOS HK reads pairing rule | Every read paired with a visible surface in the same track — no authorised-but-invisible | R-F §2.5 + open Q #3 |
 | Categorisation shape | UI-side TypeScript overlay `src/lib/measurements/categories.ts`, NOT a DB column | R-F §4 |
 | Sleep storage shape | Per-stage rows (5-axis unique key) — no split into `SLEEP_DEEP` / `SLEEP_REM` / etc. enum entries | R-F open Q #6 |
-| Web freeze trigger | v1.4.32 tag on `main` (after the Tier 1 wave B closes) | This plan §2 |
-| v1.5 release shape | Version-bump-only marker the day after iOS clears Apple review. All functional work lands incrementally in v1.4.29 → v1.4.32. | Maintainer directive 2026-05-16 |
-| Web patch sequence | v1.4.29 polish → v1.4.30 iOS server-prep → v1.4.31 Tier 1 wave A → v1.4.32 Tier 1 wave B + freeze | This plan §2 |
-| AVG/SUM cumulative-type fix | Rides v1.4.29 | R-A §6 + R-B C2 sequence |
+| Web freeze trigger | v1.4.33 tag on `main` (after the Tier 1 wave B closes) | This plan §2 |
+| v1.5 release shape | Version-bump-only marker the day after iOS clears Apple review. All functional work lands incrementally in v1.4.29 → v1.4.33. | Maintainer directive 2026-05-16 |
+| Web patch sequence | v1.4.29 polish → v1.4.29.1 step hotfix → v1.4.30 iOS-coordinated foundation (Daily-Stats + SyncMode) → v1.4.31 toggles + insights blocking + Coolify auto-deploy → v1.4.32 Tier 1 wave A → v1.4.33 Tier 1 wave B + freeze | This plan §2, maintainer directive 2026-05-16 |
+| R-A Option A iOS daily-stats | Rides v1.4.30 (server-side helper + drain script + handoff-doc lock) coordinated with iOS TestFlight cutover — NOT a v1.5 sprint item | Maintainer directive 2026-05-16 |
+| AVG/SUM cumulative-type fix | Server-side rode v1.4.29; client-side daily aggregator rode v1.4.29.1 | R-A §6 + R-B C2 sequence + maintainer report |
 | C2 P0 sequencing | Lands before any client wires `aggregate=daily` | R-B Critical |
 | iOS workout dedup ladder | Ship `pickCanonicalWorkoutRows()` with the existing measurement ladder (Apple ≻ Withings ≻ Manual); tune metric-aware (route → Apple wins; HR zones → Withings wins) in a v1.5.x follow-up | R-F open Q #4 |
 | HKStateOfMind round-trip filter | Bake the `HKMetadataKeyExternalUUID` write-back filter into the read path from day one — same pattern as the existing quantity-sample filter | R-F open Q #5 |
