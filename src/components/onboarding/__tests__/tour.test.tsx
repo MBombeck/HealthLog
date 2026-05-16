@@ -46,8 +46,10 @@ describe("<OnboardingTour>", () => {
 
   it("exposes a skip control with an accessible label", () => {
     const html = renderTour();
-    // The backdrop button doubles as a Skip control with aria-label,
-    // and the explicit footer Skip button.
+    // After v1.4.33 F2 the dim panels are purely visual
+    // (pointer-events: none) so skip lives entirely on the explicit
+    // tooltip-footer Skip button. The visible label still has to be
+    // there — both for sighted users and for screen readers.
     expect(html).toContain("Skip tour");
   });
 
