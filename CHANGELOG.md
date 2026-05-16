@@ -1,5 +1,191 @@
 # Changelog
 
+## [1.4.33] — 2026-05-17 — Polish and reliability
+
+Quality-leap release between two HealthKit milestones. The headline is
+a P0 hotfix for the `/api/analytics` 500 that broke the Insights
+mother page for any account with more than a few thousand
+measurements: the six per-metric status helpers were spreading
+the entire numeric history into `Math.min` / `Math.max`, which
+trips a stack overflow once a single argument list exceeds the V8
+spread cap. Both the surfaced symptom and the latent risk in five
+sibling helpers were folded onto a reduce-based min/max path.
+Around that hotfix landed a deep polish pass: the Insights mother
+page now defers three below-the-fold blocks behind `next/dynamic`
+to trim the cold mount cost, the analytics endpoint gained a
+`?slice=summaries` slim slice that the per-metric sub-pages now
+ride, the Coach snapshot builder picked up a 60 s LRU keyed on
+`(userId, scope)`, the Settings shell consolidated three
+duplicate copies of the about / notifications / about-dropdown
+surfaces, the navigation strip dropped a redundant "Home" group
+label and a colliding "Notifications" sibling, every icon-only
+button on the medications and admin surfaces gained an accessible
+name, every Progress bar gained one too, three pages had their
+heading hierarchy repaired to a sequential `h1 → h2 → h3`, the
+mobile Coach FAB now hides while a chart tooltip is open so it
+cannot occlude the read-out, and the auth shell normalised every
+authenticated route to a single `max-w-screen-xl` container. The
+release closes nineteen issues from a five-surface audit + a
+runtime bug-hunt pass, plus six follow-up tracks of polish across
+the affected surfaces.
+
+### Added
+
+- **Slim `/api/analytics?slice=summaries` slice.** Per-metric
+  sub-pages opt into a payload that drops `correlations` +
+  `healthScore` + `medications` blocks, cutting the cold-mount
+  response on those routes by roughly half. The mother page stays
+  on the default thick slice so the correlation row + health
+  score badge still resolve from the same cache key.
+- **`useScrollResetOnRoute()` hook.** Single source of truth for
+  the route-change scroll-to-top behaviour, replacing per-page
+  `useEffect` duplicates across seven mounted surfaces.
+- **`<SettingsCardHeader>` primitive.** Extracted from three
+  near-duplicate copies inside the Settings shell so future
+  section additions inherit the icon / title / description
+  treatment without redeclaring the markup.
+
+### Changed
+
+- **Insights mother page deferred below-the-fold blocks.** Daily
+  briefing, correlation row, and trends row now resolve through
+  `next/dynamic` with skeleton fallbacks that match the existing
+  loading shape. Above-the-fold hero stays an eager import so the
+  initial paint shows the greeting + health-score badge without
+  a flash.
+- **Settings section renamed.** "Notifications" became
+  "Notification channels" (German: "Benachrichtigungs-Kanäle") so
+  it no longer collides with the inbox at `/notifications`
+  ("Notification Center" / "Benachrichtigungs-Center").
+- **Settings Auswertungen section renamed.** The German label
+  "KI-Auswertungen" became "Auswertungen" in user-facing copy
+  per the long-standing rule that user-facing surfaces drop the
+  model-vendor prefix.
+- **Insights tab strip regrouped by metric category.** Pills now
+  cluster vitals / cardiovascular / activity / wellbeing so
+  long-strip scrolling lands on a related neighbour.
+- **About section folded into the user-card dropdown.** The
+  in-shell Settings nav no longer surfaces an "About" entry; the
+  sidebar user-card dropdown now owns the "About HealthLog" link.
+  Route `/settings/about` still resolves for direct links.
+- **Auth shell container width normalised.** Every authenticated
+  route now renders inside a single `max-w-screen-xl` container,
+  retiring three competing widths that drifted across the
+  Insights / Settings / Dashboard surfaces.
+- **Card defaults normalised.** Every card now defaults to
+  `p-4 md:p-6` padding so mobile + desktop spacing stay in lock
+  step without per-instance overrides.
+
+### Fixed
+
+- **`/api/analytics` 500 (P0).** Stack overflow from
+  `Math.min(...values)` / `Math.max(...values)` spreads on long
+  histories. Hotfixed on the surfaced helper and folded across
+  the six sibling status helpers.
+- **Spotlight onboarding tour intercepted dashboard clicks.**
+  Overlay z-index + pointer-events combination meant the first
+  post-completion tap landed on the dimmed overlay instead of
+  the tile underneath.
+- **BP chart Y-axis unit.** Read "Hg" instead of "mmHg".
+- **Bottom nav viewport overlap.** Hardened against the
+  last-line clip on shorter viewports.
+- **`/insights/puls` subtitle.** Read "Ruhepuls" instead of
+  "Puls".
+- **Weight chart duplicate Y-axis ticks.** Tick generator emitted
+  the same value twice on narrow domains.
+- **Web-vitals beacon self-throttling.** Beacon was sampling at
+  full rate and tripping its own queue cap; sample rate dropped
+  to 10% so RUM telemetry actually reports.
+- **Medication compliance classifier flushing every dose to
+  `very_late`.** Defensive fallback when the dose-window
+  estimator can't resolve a window.
+- **`/api/insights/generate` POST gating.** Endpoint now refuses
+  on a disabled assistant master flag instead of returning a
+  500.
+- **Mood Log overflow on narrow viewports.** Cards no longer
+  shred their internal grid below 360 CSS px.
+- **F13 username readability.** Header username now respects
+  contrast tokens on the dark theme.
+- **F14 mobile bottom-nav padding.** Bottom nav no longer
+  vertically clips its second row on the smallest mobile
+  viewport.
+- **F17 threshold toggle parity.** Settings threshold toggles
+  now reflect their server-side enabled state on mount instead
+  of always opening on.
+- **Notifications section redundancy.** Three near-duplicate
+  status surfaces collapsed onto one.
+- **Insights coach-rail labels.** Promoted to semantic `<h3>`
+  headings so the accessible-name tree resolves consistently.
+- **Heading hierarchy on three surfaces.** Repaired non-sequential
+  `h1 → h3` jumps so the accessible-name tree resolves with the
+  expected nesting.
+- **Icon-only buttons on the medications page.** Every icon
+  button gained an accessible name; same sweep on the admin
+  feedback inbox and reminders surface.
+- **Progress-bar accessibility.** Every `<Progress>` instance now
+  carries an accessible name so a screen-reader pass reads the
+  metric label rather than a bare percentage.
+- **Button loader CLS.** Buttons now reserve space for the
+  in-flight loader so the surrounding layout doesn't shift when
+  a request lands.
+- **Mobile Coach FAB occlusion.** FAB auto-hides while any chart
+  tooltip is open so it cannot cover the read-out.
+- **Settings mobile section strip.** Scroll-snap on the
+  horizontally scrollable strip so the active pill always lands
+  on the leading edge.
+- **Passkey breakpoint.** Passkey card no longer clips its
+  internal grid on the tablet breakpoint.
+- **Settings tile padding parity.** Every settings tile reads
+  `p-4 md:p-6` after the card-default normalisation.
+- **Sidebar "Home" group label.** Redundant collapsible label
+  dropped from the desktop sidebar; the four nav entries now
+  live at the top level.
+- **Legal-page narrow column convention.** Pinned in code
+  comments so a future refactor doesn't widen the privacy /
+  imprint / terms pages back out.
+
+### Performance
+
+- **Coach snapshot builder LRU cache.** 60 s TTL keyed on
+  `(userId, scope)` keeps repeat Coach drawer opens within a
+  short window off the snapshot-build path.
+- **Assistant flags memoised per request.** Resolver lookup was
+  re-running per surface mount on the Insights cold path.
+- **Web-vitals sample rate dropped to 10%.** Stops the beacon
+  from self-throttling under high-traffic load.
+
+### Refactor
+
+- **`Math.min` / `Math.max` spread folds.** Six per-metric status
+  helpers now reduce instead of spread, retiring the latent stack
+  overflow path that surfaced as the P0 above.
+- **Scroll-reset consolidated.** Seven per-page `useEffect`
+  duplicates retired behind `useScrollResetOnRoute()`.
+- **Settings card header consolidated.** Three near-duplicate
+  header markups retired behind `<SettingsCardHeader>`.
+
+### Accessibility
+
+- **Icon-only buttons named** on the medications page + admin
+  feedback inbox + admin reminders surface.
+- **Progress bars named** across the app so the accessible-name
+  tree exposes the metric label.
+- **Heading order repaired** on three surfaces so the
+  accessible-name tree nests correctly.
+- **Coach rail labels** promoted to semantic `<h3>` headings.
+
+### Internal
+
+- **Retired** the now-orphan `settings.kiInsights` locale key
+  after the Auswertungen section rename, the
+  `AssistantDisabledNotice` component, and the dead
+  `settings.placeholder` locale entries left behind by earlier
+  releases.
+- **Test fixtures** aligned with the renamed Insights /
+  Notifications / Settings surfaces; the import-string scan on
+  the Insights mother page now accepts both eager and
+  `next/dynamic` spellings.
+
 ## [1.4.32] — 2026-05-17 — HealthKit Tier 1 wave A
 
 First public surface wave for the HealthKit Tier 1 metrics that
