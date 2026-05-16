@@ -155,8 +155,11 @@ const mockData = {
   },
 };
 
-vi.mock("@tanstack/react-query", () => ({
-  useQuery: () => ({ data: mockData, isLoading: false }),
+// v1.4.34 IW-F-Perf — page now reads through the shared
+// `useAchievementsQuery` hook; mock it directly so the test stays
+// scoped to the page render and bypasses the TanStack provider.
+vi.mock("@/lib/queries/use-achievements-query", () => ({
+  useAchievementsQuery: () => ({ data: mockData, isLoading: false }),
 }));
 
 import AchievementsPage, { groupByCategory } from "../page";

@@ -28,8 +28,11 @@ let mockData: {
   metrics: {},
 };
 
-vi.mock("@tanstack/react-query", () => ({
-  useQuery: () => ({ data: mockData }),
+// v1.4.34 IW-F-Perf — the card now reads through the shared
+// `useAchievementsQuery` hook; the test mocks the hook directly so the
+// network layer + TanStack provider scaffolding stays out of scope.
+vi.mock("@/lib/queries/use-achievements-query", () => ({
+  useAchievementsQuery: () => ({ data: mockData }),
 }));
 
 import {
