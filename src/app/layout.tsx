@@ -79,7 +79,14 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#282a36",
+  // Match the browser chrome (Android URL bar, iOS PWA status bar) to
+  // the active palette. The hex values are the resolved background of
+  // `--background` from `app/globals.css` for each theme so the bar
+  // edge never seams against the page on cold paint.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#282a36" },
+  ],
 };
 
 // Inline script to apply theme before first paint (prevents FOUC)

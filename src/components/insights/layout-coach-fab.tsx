@@ -61,7 +61,13 @@ export function LayoutCoachFab() {
       aria-hidden={tooltipActive ? true : undefined}
       tabIndex={tooltipActive ? -1 : undefined}
       className={cn(
-        "fixed right-4 bottom-20 z-40 h-12 rounded-full px-4 shadow-lg",
+        // Sit above the 64 px bottom-nav + the iPhone home-indicator
+        // safe-area inset. `calc(env(safe-area-inset-bottom,0)+5rem)`
+        // keeps the FAB clear of the nav on notched iPhones (where the
+        // inset is ~34 px) without forcing extra padding into the
+        // layout grid.
+        "fixed right-4 z-40 h-12 rounded-full px-4 shadow-lg",
+        "bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)]",
         "from-dracula-purple to-dracula-pink bg-gradient-to-br text-white",
         "hover:from-dracula-purple/90 hover:to-dracula-pink/90",
         "lg:hidden",
