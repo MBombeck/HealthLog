@@ -32,6 +32,7 @@ import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
+import { requireAssistantSurface } from "@/lib/feature-flags";
 
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import {
@@ -127,6 +128,10 @@ function buildHistoryWindow(turns: CoachTurn[]): CoachTurn[] {
 
 async function handleChatRequest(request: NextRequest): Promise<Response> {
   const auth = await requireAuth();
+  // v1.4.31 — operator can disable the Coach surface app-wide.
+  // Throws AssistantDisabledError → apiHandler returns 403 +
+  // `errorCode: "assistant.disabled.coach"` per the iOS contract.
+  await requireAssistantSurface("coach");
   const userId = auth.user.id;
 
   let body: unknown;
@@ -501,6 +506,10 @@ export const POST = apiHandler(handleChatRequest);
  */
 export const GET = apiHandler(async (request: NextRequest) => {
   const auth = await requireAuth();
+  // v1.4.31 — same gate as the SSE POST. Hiding the rail when
+  // the operator has disabled Coach matches the FAB suppression
+  // on the client.
+  await requireAssistantSurface("coach");
   const url = new URL(request.url);
   const cursor = url.searchParams.get("cursor");
   const limitRaw = url.searchParams.get("limit");

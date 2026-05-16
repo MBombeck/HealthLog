@@ -7,6 +7,10 @@ vi.mock("@/lib/db", () => ({
     measurement: { findMany: vi.fn() },
     medication: { findMany: vi.fn() },
     medicationIntakeEvent: { findMany: vi.fn() },
+    // v1.4.31 — gated on `assistant.insightStatus`; null row falls
+    // back to the all-on default so existing assertions ride
+    // through unchanged.
+    appSettings: { findUnique: vi.fn().mockResolvedValue(null) },
   },
 }));
 
@@ -52,12 +56,45 @@ beforeEach(() => {
     dateOfBirth: null,
     aiProvider: null,
   } as never);
+  vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null as never);
 });
 
 const callGet = GET as unknown as (req: NextRequest) => Promise<Response>;
 function makeReq(): NextRequest {
   return new NextRequest("http://localhost/api/insights/cards");
 }
+
+describe("GET /api/insights/cards — assistant-flag gate", () => {
+  it("returns 403 + errorCode when insightStatus is disabled", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValueOnce({
+      assistantEnabled: true,
+      assistantCoachEnabled: true,
+      assistantBriefingEnabled: true,
+      assistantInsightStatusEnabled: false,
+      assistantCorrelationsEnabled: true,
+      assistantHealthScoreExplainerEnabled: true,
+    } as never);
+    const res = await callGet(makeReq());
+    expect(res.status).toBe(403);
+    const body = (await res.json()) as { meta?: { errorCode?: string } };
+    expect(body.meta?.errorCode).toBe("assistant.disabled.insightStatus");
+  });
+
+  it("returns 403 when the master flag is off", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValueOnce({
+      assistantEnabled: false,
+      assistantCoachEnabled: true,
+      assistantBriefingEnabled: true,
+      assistantInsightStatusEnabled: true,
+      assistantCorrelationsEnabled: true,
+      assistantHealthScoreExplainerEnabled: true,
+    } as never);
+    const res = await callGet(makeReq());
+    expect(res.status).toBe(403);
+  });
+});
 
 describe("GET /api/insights/cards", () => {
   it("returns 401 when unauthenticated", async () => {

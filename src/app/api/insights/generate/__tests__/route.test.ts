@@ -23,6 +23,14 @@ vi.mock("@/lib/api-handler", () => ({
   })),
 }));
 
+// v1.4.31 — `requireAssistantSurface()` is gated near the top of
+// the handler. The test mocks the apiHandler wrapper itself out, so
+// flag reads need a deterministic mock at the module boundary.
+vi.mock("@/lib/feature-flags", () => ({
+  requireAssistantSurface: vi.fn(async () => undefined),
+  AssistantDisabledError: class extends Error {},
+}));
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     user: {

@@ -20,11 +20,15 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
+import { requireAssistantSurface } from "@/lib/feature-flags";
 
 export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
+  // v1.4.31 — comprehensive feeds the hero strip narration and the
+  // recommendations grid that share the Coach gate.
+  await requireAssistantSurface("coach");
 
   const userId = user.id;
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);

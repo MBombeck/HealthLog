@@ -27,6 +27,7 @@ import { isLegacyInsightPayload } from "@/lib/ai/legacy-payload";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { requireAssistantSurface } from "@/lib/feature-flags";
 import { annotate } from "@/lib/logging/context";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
 
@@ -174,6 +175,11 @@ async function buildComparisonSnapshotForUser(
 
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
+  // v1.4.31 — the advisor + daily briefing surfaces ride this
+  // endpoint. Operator disables Coach, every advisor consumer
+  // (briefing card, recommendations grid, hero strip narration)
+  // empties out.
+  await requireAssistantSurface("coach");
   const userId = user.id;
 
   const dbUser = await prisma.user.findUnique({

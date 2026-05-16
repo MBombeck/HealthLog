@@ -7,11 +7,13 @@ import {
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
+import { requireAssistantSurface } from "@/lib/feature-flags";
 
 export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
+  await requireAssistantSurface("insightStatus");
 
   const localeParam = request.nextUrl.searchParams.get("locale");
   const resolved = await resolveServerLocale({

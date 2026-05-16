@@ -10,11 +10,14 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
+import { requireAssistantSurface } from "@/lib/feature-flags";
 
 export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
+  // v1.4.31 — operator can hide the correlation narration tile.
+  await requireAssistantSurface("correlations");
   annotate({ action: { name: "insights.correlations" } });
 
   await auditLog("insights.correlations.empty", {

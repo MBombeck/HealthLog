@@ -9,6 +9,7 @@ import { getSession } from "./auth/session";
 import { hashToken } from "./auth/hmac";
 import { prisma } from "./db";
 import { auditLog } from "./auth/audit";
+import { AssistantDisabledError } from "./feature-flags";
 
 /**
  * Custom error class for HTTP errors with status codes.
@@ -162,7 +163,24 @@ export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
       try {
         response = await handler(...args);
       } catch (error) {
-        if (error instanceof HttpError) {
+        if (error instanceof AssistantDisabledError) {
+          // v1.4.31 — operator has disabled the assistant surface.
+          // The 403 + `errorCode: "assistant.disabled.<surface>"`
+          // envelope is locked per
+          // `.planning/RESPONSE-TO-IOS-TEAM-2026-05-16.md` §3 R5.
+          // Older iOS clients that don't know the errorCode surface
+          // this as a generic 403; v1.4.31+ clients render the
+          // `<AssistantDisabledNotice>` empty state.
+          evt.setError(error);
+          response = NextResponse.json(
+            {
+              data: null,
+              error: error.message,
+              meta: { errorCode: error.errorCode },
+            },
+            { status: 403 },
+          );
+        } else if (error instanceof HttpError) {
           evt.setError(error);
           response = NextResponse.json(
             { data: null, error: error.message },

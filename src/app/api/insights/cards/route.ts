@@ -7,6 +7,7 @@
  * provider).
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { requireAssistantSurface } from "@/lib/feature-flags";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
@@ -56,6 +57,10 @@ export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
+  // v1.4.31 — the iOS cards adapter feeds the same per-metric
+  // insight surfaces the web `<InsightStatusCard>` mounts on each
+  // /insights/<metric> sub-page. Both share the operator gate.
+  await requireAssistantSurface("insightStatus");
   annotate({ action: { name: "insights.cards" } });
 
   const ninetyDaysAgo = new Date(Date.now() - 90 * 86_400_000);
