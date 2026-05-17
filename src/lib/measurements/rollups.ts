@@ -556,6 +556,26 @@ function bucketSpan(
 }
 
 /**
+ * v1.4.38 — per-userId in-flight dedup. v1.4.37.1 fire-and-forgets the
+ * `ensureUserRollupsFresh` call from the read path so a stale 90-day
+ * recompute can no longer stall the response, but if a request DOES
+ * end up awaiting a synchronous recompute (worker code path, future
+ * caller without the fire-and-forget) and the same user has a cold
+ * fan-out hitting analytics + comprehensive + summaries within the
+ * same tick, the legacy shape would queue N parallel
+ * `recomputeUserRollups` invocations against the same 90-day window.
+ * The map below collapses those into one shared promise — every
+ * caller after the first re-uses the in-flight resolution and only
+ * one Postgres aggregate runs. Mirrors the `buildCoachSnapshot` dedup
+ * pattern that lives one layer up. Cleared in `finally` so a slow
+ * promise that eventually rejects does not poison the next request.
+ */
+const ensureUserRollupsFreshInFlight = new Map<
+  string,
+  Promise<{ recomputed: boolean }>
+>();
+
+/**
  * Cheap read-side warm-up. Called from the analytics + comprehensive
  * read paths so the rollup table stays current for downstream
  * consumers without each read paying the full live-aggregation cost
@@ -572,8 +592,38 @@ function bucketSpan(
  *     here.
  *   - Best-effort: thrown errors are swallowed so the read path
  *     never fails because of a populator hiccup.
+ *   - v1.4.38: concurrent callers for the same `userId` share one
+ *     in-flight promise so a cold fan-out can never queue N parallel
+ *     `recomputeUserRollups` runs against the same 90-day window.
  */
 export async function ensureUserRollupsFresh(
+  userId: string,
+): Promise<{ recomputed: boolean }> {
+  // v1.4.38 — share the in-flight promise across concurrent callers
+  // for the same userId. The map is keyed on `userId` because the
+  // helper has no other parameters; the next caller hits the
+  // resolved promise as soon as it lands. We delete the slot in
+  // `finally` so a slow rejected promise does not stay cached and
+  // poison the next request.
+  const existing = ensureUserRollupsFreshInFlight.get(userId);
+  if (existing) return existing;
+  const inflight = ensureUserRollupsFreshImpl(userId).finally(() => {
+    ensureUserRollupsFreshInFlight.delete(userId);
+  });
+  ensureUserRollupsFreshInFlight.set(userId, inflight);
+  return inflight;
+}
+
+/**
+ * Test-only handle on the in-flight map. Mirrors the
+ * `_resetTrustViolationWarningForTests` pattern in api-response.ts —
+ * production code never calls this.
+ */
+export function _resetEnsureUserRollupsFreshInFlightForTests(): void {
+  ensureUserRollupsFreshInFlight.clear();
+}
+
+async function ensureUserRollupsFreshImpl(
   userId: string,
 ): Promise<{ recomputed: boolean }> {
   try {

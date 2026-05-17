@@ -83,6 +83,7 @@ void queryRaw;
 import {
   ROLLUP_FULL_BACKFILL_QUEUE,
   ROLLUP_RECOMPUTE_QUEUE,
+  _resetEnsureUserRollupsFreshInFlightForTests,
   collapseToTypeDayKeys,
   enqueueBootTimeRollupBackfill,
   enqueueRollupRecompute,
@@ -101,6 +102,10 @@ beforeEach(() => {
   findFirstMeasurement.mockReset();
   bossSend.mockReset();
   getGlobalBossMock.mockReset();
+  // v1.4.38 — clear the per-userId in-flight map so a previous test's
+  // resolved promise does not short-circuit the next test's recompute
+  // assertion.
+  _resetEnsureUserRollupsFreshInFlightForTests();
   // Default: $transaction takes an array of pre-built promises (the
   // populator passes `slice.map(prisma.measurementRollup.upsert(...))`)
   // and returns them awaited.
@@ -289,6 +294,76 @@ describe("ensureUserRollupsFresh", () => {
     findFirstMeasurement.mockRejectedValueOnce(new Error("pool exhausted"));
     const result = await ensureUserRollupsFresh("user-1");
     expect(result.recomputed).toBe(false);
+  });
+
+  // v1.4.38 — concurrent callers for the same userId share one
+  // in-flight promise so a cold fan-out can never queue N parallel
+  // recompute runs against the same 90-day window.
+  it("dedups concurrent callers for the same userId onto one in-flight promise", async () => {
+    const rollupAt = new Date("2026-05-10T10:00:00.000Z");
+    const measurementAt = new Date("2026-05-10T12:00:00.000Z");
+    // Both round-trips inside the helper run twice (the helper issues
+    // a parallel `Promise.all` for the rollup-most-recent + measurement
+    // -most-recent). With dedup, those should fire ONCE across two
+    // concurrent callers.
+    findFirst.mockResolvedValue({ computedAt: rollupAt });
+    findFirstMeasurement.mockResolvedValue({
+      updatedAt: measurementAt,
+      measuredAt: measurementAt,
+    });
+    queryRawUnsafe.mockResolvedValue([]);
+
+    const [a, b, c] = await Promise.all([
+      ensureUserRollupsFresh("user-1"),
+      ensureUserRollupsFresh("user-1"),
+      ensureUserRollupsFresh("user-1"),
+    ]);
+    expect(a.recomputed).toBe(true);
+    expect(b.recomputed).toBe(true);
+    expect(c.recomputed).toBe(true);
+    // The Postgres-side recompute fires exactly once across the three
+    // concurrent callers — proof the dedup map collapsed the fan-out.
+    expect(queryRawUnsafe).toHaveBeenCalledTimes(1);
+    // The findFirst probe fires exactly once per call type (rollup,
+    // measurement) across all three concurrent callers.
+    expect(findFirst).toHaveBeenCalledTimes(1);
+    expect(findFirstMeasurement).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears the in-flight slot after resolution so the next call runs fresh", async () => {
+    const rollupAt = new Date("2026-05-10T10:00:00.000Z");
+    const measurementAt = new Date("2026-05-10T12:00:00.000Z");
+    findFirst.mockResolvedValue({ computedAt: rollupAt });
+    findFirstMeasurement.mockResolvedValue({
+      updatedAt: measurementAt,
+      measuredAt: measurementAt,
+    });
+    queryRawUnsafe.mockResolvedValue([]);
+
+    await ensureUserRollupsFresh("user-1");
+    await ensureUserRollupsFresh("user-1");
+    // Two serial calls => two recompute runs (no dedup short-circuit
+    // because the first call already resolved and dropped its slot).
+    expect(queryRawUnsafe).toHaveBeenCalledTimes(2);
+  });
+
+  it("clears the in-flight slot on rejection so the next call retries", async () => {
+    findFirst.mockRejectedValueOnce(new Error("pool exhausted"));
+    findFirstMeasurement.mockRejectedValueOnce(new Error("pool exhausted"));
+    const first = await ensureUserRollupsFresh("user-1");
+    expect(first.recomputed).toBe(false);
+
+    // Second call: probe succeeds, stale watermark triggers a recompute.
+    const rollupAt = new Date("2026-05-10T10:00:00.000Z");
+    const measurementAt = new Date("2026-05-10T12:00:00.000Z");
+    findFirst.mockResolvedValueOnce({ computedAt: rollupAt });
+    findFirstMeasurement.mockResolvedValueOnce({
+      updatedAt: measurementAt,
+      measuredAt: measurementAt,
+    });
+    queryRawUnsafe.mockResolvedValueOnce([]);
+    const second = await ensureUserRollupsFresh("user-1");
+    expect(second.recomputed).toBe(true);
   });
 
   it("annotates the failure when the inner recompute throws (H3)", async () => {
