@@ -69,7 +69,7 @@
     "pg-boss": "^12.18.2",
     "prisma": "^7.8.0",
     "radix-ui": "^1.4.3",
-    "react": "19.2.5",
+    "react": "19.2.6",
     "react-dom": "19.2.5",
     "react-hook-form": "^7.75.0",
     "recharts": "^3.8.1",
