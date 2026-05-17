@@ -117,7 +117,7 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
     <DropdownMenuContent
       side="right"
       align="end"
-      className="w-56"
+      className="w-60"
       sideOffset={8}
     >
       <div className="flex items-center gap-3 px-2 py-2">
