@@ -397,7 +397,21 @@ export function Glp1MedicationCard({
                   })}
             </p>
           )}
-          <p className="text-foreground/85">{nextInjectionLabel()}</p>
+          <p className="text-foreground/85">
+            {nextInjectionLabel()}
+            {/* v1.4.37 W4b — purple dose accent on the upcoming
+                schedule dose, byte-equivalent with the generic
+                medication card. Schedule.dose can override the
+                medication-level dose during titration, so we surface
+                it here when set. Hidden below sm: to keep the narrow
+                viewport row tight, matching the generic card. */}
+            {schedule?.dose && (
+              <span className="hidden font-medium text-purple-400 sm:inline">
+                {" "}
+                — {schedule.dose}
+              </span>
+            )}
+          </p>
         </div>
 
         {/* Rotation hint — only when we have a last + recommended site

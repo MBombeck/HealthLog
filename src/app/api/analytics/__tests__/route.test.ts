@@ -19,12 +19,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    measurement: { findMany: vi.fn() },
+    // v1.4.37 W2 — `ensureUserRollupsFresh` pokes `measurement.findFirst`
+    // for the newest-measurement watermark; mock both shapes.
+    measurement: {
+      findMany: vi.fn(),
+      findFirst: vi.fn().mockResolvedValue(null),
+    },
     moodEntry: { findMany: vi.fn() },
     medicationIntakeEvent: { findMany: vi.fn() },
     medication: { findMany: vi.fn() },
-    // v1.4.33 C1 — slim summaries slice runs through `$queryRaw`.
-    $queryRaw: vi.fn(),
+    // v1.4.33 C1 — slim summaries slice runs through `$queryRaw`. The
+    // v1.4.36 per-type coverage probe and the v1.4.37 default-slice
+    // probe also ride `$queryRaw`. Default to an empty coverage map so
+    // the route falls back to the live aggregator branches and the
+    // assertions stay byte-shape stable.
+    $queryRaw: vi.fn().mockResolvedValue([]),
+    $queryRawUnsafe: vi.fn().mockResolvedValue([]),
     // v1.4.35 — slim slice also reads DAY buckets; the freshness
     // watermark inside `ensureUserRollupsFresh` pokes `findFirst`.
     // Default both to empty so the parity check falls back to live
@@ -32,7 +42,13 @@ vi.mock("@/lib/db", () => ({
     measurementRollup: {
       findMany: vi.fn().mockResolvedValue([]),
       findFirst: vi.fn().mockResolvedValue(null),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+      upsert: vi.fn().mockResolvedValue({}),
     },
+    $transaction: vi.fn().mockImplementation(async (queries: unknown[]) => {
+      if (Array.isArray(queries)) return Promise.all(queries);
+      return undefined;
+    }),
   },
 }));
 
@@ -118,6 +134,29 @@ beforeEach(() => {
   );
   vi.mocked(prisma.measurementRollup.findFirst).mockResolvedValue(
     null as never,
+  );
+  vi.mocked(prisma.measurementRollup.deleteMany).mockResolvedValue(
+    { count: 0 } as never,
+  );
+  vi.mocked(prisma.measurementRollup.upsert).mockResolvedValue(
+    {} as never,
+  );
+  // v1.4.37 W2 — `ensureUserRollupsFresh` reads `measurement.findFirst`;
+  // the per-type coverage probe + the rollup-recompute aggregator ride
+  // `$queryRaw` / `$queryRawUnsafe`. Default to empty so the route
+  // falls back to the live fast-path branches and the assertions stay
+  // byte-shape stable.
+  vi.mocked(prisma.measurement.findFirst).mockResolvedValue(null as never);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  vi.mocked(prisma.$queryRaw as any).mockResolvedValue([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  vi.mocked(prisma.$queryRawUnsafe as any).mockResolvedValue([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  vi.mocked(prisma.$transaction as any).mockImplementation(
+    async (queries: unknown) => {
+      if (Array.isArray(queries)) return Promise.all(queries);
+      return undefined;
+    },
   );
 });
 

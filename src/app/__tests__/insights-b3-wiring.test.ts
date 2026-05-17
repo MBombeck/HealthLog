@@ -58,8 +58,19 @@ describe("v1.4.20 B3 — /insights mounts CorrelationRow + TrendsRow", () => {
 });
 
 describe("v1.4.20 B3 — /api/analytics surfaces correlations", () => {
+  // v1.4.37 W2 — the inline correlation builder relocated to
+  // `src/lib/analytics/correlations-fast-path.ts`. The route now
+  // delegates through `computeCorrelationHypothesesFastPath`; the
+  // three Pearson runner imports live alongside the new dispatcher.
+  // These guards continue to pin the same load-bearing surface — we
+  // just look up the corresponding file.
+  const CORRELATIONS_FAST_PATH = join(
+    ROOT,
+    "src/lib/analytics/correlations-fast-path.ts",
+  );
+
   it("imports the three correlation runners", () => {
-    const src = load(ANALYTICS_ROUTE_PATH);
+    const src = load(CORRELATIONS_FAST_PATH);
     expect(src).toContain("correlateBpCompliance");
     expect(src).toContain("correlateMoodPulse");
     expect(src).toContain("correlateWeightWeekday");
@@ -72,7 +83,7 @@ describe("v1.4.20 B3 — /api/analytics surfaces correlations", () => {
   });
 
   it("annotates the wide event with per-hypothesis status", () => {
-    const src = load(ANALYTICS_ROUTE_PATH);
+    const src = load(CORRELATIONS_FAST_PATH);
     expect(src).toMatch(
       /annotate\(\{[\s\S]*correlations:[\s\S]*bpCompliance:[\s\S]*moodPulse:[\s\S]*weightWeekday:/,
     );
