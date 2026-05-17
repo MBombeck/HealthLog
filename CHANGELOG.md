@@ -1,5 +1,179 @@
 # Changelog
 
+## [1.4.36] — 2026-05-17 — Perf, charts, AI payload trim, UX punch
+
+Builds on the v1.4.35 rollup foundation. The aggregator hot paths now
+skip the legacy live `COUNT/MIN/MAX/AVG $queryRaw` when every logged
+type already has DAY-bucket coverage, daily chart fetches opt into
+reading from `measurement_rollups`, and the Insights feature
+extractor swaps raw measurements for the same bucket source — which
+caps the prompt payload in the low hundreds of kB rather than
+double-digit MB for power users. The Insights page itself stops
+blocking the entire shell on `/api/insights/comprehensive`, so each
+section renders its own skeleton and fills in independently.
+
+On top of the perf wave: chart slot heights pinned to kill Recharts'
+`width=-1 height=-1` warning and the matching CLS, a tri-state trend
+annotation contract that ends the cold-mount "more data needed" flash,
+medication intake history restored on the detail page, About card
+folded into the Admin Console with an auto-checking update badge in
+place of the manual button, cumulative-metric tiles (Steps + four
+others) reading the day's running sum, and an IP-whois fallback that
+surfaces city + country when the carrier lookup misses.
+
+### Performance
+
+- **Heavy-aggregate skip on the rollup-fresh + fully-covered path.**
+  `comprehensive-aggregator` and the slim `summaries-slice` now consult
+  a per-type coverage probe (`src/lib/measurements/rollup-coverage.ts`)
+  before running the legacy `COUNT/MIN/MAX/AVG $queryRaw`. If every
+  logged type has DAY coverage the probe wins and the live aggregate
+  is skipped entirely. Partial coverage (e.g. an account with BP
+  buckets + a freshly logged WEIGHT type) falls back to the live
+  aggregate so no type silently underreports.
+- **Daily chart fetches opt into rollup buckets.** `GET
+  /api/measurements?aggregate=daily&source=rollup` reads DAY buckets
+  from `measurement_rollups` instead of scanning the measurements
+  table when the window exceeds seven days. The Insights chart
+  fetchers pass `source=rollup`; iOS and other clients are
+  unaffected.
+- **`/api/insights/targets` cached.** Wrapped in the analytics LRU
+  (60 s TTL, per-user key, evicted on measurement / mood / medication
+  mutations).
+- **Insights page: early-skeleton paint.** The page-level `isLoading`
+  gate that held the entire shell on `/api/insights/comprehensive`
+  is gone. DailyBriefing, CorrelationRow and TrendsRow render their
+  own skeletons and fill in independently. (This is early-skeleton
+  paint, not Suspense streaming — the page is `"use client"` +
+  `next/dynamic({ssr:false})`, so the boundaries the rewrite tried
+  to install never triggered and were dropped during reconcile.)
+
+### AI
+
+- **Insights `extractFeatures` swap to rollup buckets.** The feature
+  extractor reads `measurement_rollups` DAY buckets instead of raw
+  measurements, dropping the prompt payload on a power-user account
+  from ~26 MB to the low hundreds of kB. A hard 5 MB
+  `FEATURES_MAX_BYTES` guard catches future regressions: the route
+  handler downgrades on first oversize (drop raw measurements) and
+  again on second oversize (drop anthropometrics + medications +
+  compliance + sleep + steps + HRV + resting HR via the exclude
+  filter). A third failure returns 422 with
+  `insights_payload_too_large` — never a 500.
+- **Coach exclusion toggles surfaced.** The Coach settings sheet
+  gained medications and anthropometrics switches. The Coach PUT
+  mirrors `excludeMetrics` onto a new
+  `users.insights_exclude_metrics` column so the Coach sheet and the
+  Insights privacy panel share a single contract.
+- **`compactSections` empty-block omit.** Coach and Insights prompts
+  no longer ship `Schlafdaten: [keine]` / `Medikamente: [keine]`
+  lines for sections the account has no data for.
+
+### Charts + Insights UI
+
+- **`trends-row-chart-slot` fixed to `h-[140px]`.** Mood, BP and
+  Weight trend cards now align byte-for-byte. Recharts'
+  `width=-1 height=-1` warning is gone; expect a measurable
+  Lighthouse CLS drop on the Insights page.
+- **`ChartSkeleton` mini variant** matches the loaded chart's wrapper
+  dimensions so the trends row stops shifting on hydration.
+- **`TrendAnnotation` tri-state contract** (`pending` / `needs_data` /
+  `generated`). Fixes the cold-mount and regenerate-in-flight flash
+  of "mehr Daten nötig, um diesen Trend zu kommentieren". `pending`
+  wins over `needs_data` so a regenerate already in flight never
+  drops into the empty-hint copy.
+
+### UX
+
+- **Medication intake history restored** via `<IntakeHistoryListV2>`
+  on the medication detail page. Server-paginated, sortable by
+  `takenAt`, no inline CRUD (consistent with the v1.4.28 retirement
+  rationale — edits and deletes go through the regular medication-
+  intake routes). Mounted for every medication kind, not just GLP-1.
+- **Tab-strip scroll** `inline: "center"` → `inline: "start"` on the
+  Settings and Admin Console nav strips. The selected chip now lands
+  flush-left instead of jumping into the middle of the viewport.
+- **Cumulative-metric tiles** (Steps, Active Energy, Walking/Running
+  Distance, Flights Climbed, Time in Daylight) read the day's
+  cumulative sum from 00:00 in the user's timezone via a new
+  `pickCumulativeDaySum` helper, source-priority-aware in the same
+  shape SLEEP_DURATION already used.
+- **Insights nav strict-gate** flipped (`if (!availability) return
+  true` → `return false`). Types without measurements no longer
+  appear in the strip.
+- **About → Admin Console.** "Über HealthLog" moved out of the
+  personal dropdown into a new `/admin/about` slug. The public
+  marketing `/about` page is untouched. `/settings/about` stays as a
+  bookmarkable permalink for any authenticated user.
+- **Update badge auto-check.** The manual "Update prüfen" button is
+  retired. A 44 px-square, focus-ringed, `aria-label`-bearing badge
+  surfaces next to the version line when the existing 24 h
+  auto-check returns `newer_available`; the latest tag is
+  interpolated into both the label and an `sr-only` span.
+- **IP-whois fallback** surfaces city + country with "Carrier nicht
+  verfügbar" / "Carrier unavailable" when the upstream ASN lookup
+  misses. The free-tier ipwho.is shortcoming is now graceful UX, not
+  a blank chip.
+
+### Accessibility
+
+- IntakeHistoryListV2 sort headers and pagination buttons clear the
+  44 px touch floor and carry `focus-visible:ring`.
+- UpdateBadge ditto, with a real `aria-label` and an `sr-only` tag
+  exposure inside the anchor.
+
+### Schema
+
+- **Additive `users.insights_exclude_metrics`** (`String[] NOT NULL
+  DEFAULT '{}'`). Migration
+  `0068_v1436_insights_exclude_metrics` is idempotent under re-run.
+
+### Refactor
+
+- New shared helpers under `src/lib/insights/` and
+  `src/lib/measurements/`: `compactSections`,
+  `applyInsightsExcludeFilter`, `pickCumulativeDaySum`,
+  `probeRollupCoverage`, `isFullyCovered`. Tested standalone.
+- `ensureUserRollupsFresh` now annotates `{ rollup_refresh_failed:
+  true, rollup_refresh_error: ... }` on failure instead of swallowing
+  silently. The read path still returns `{ recomputed: false }` so
+  the response never fails because of a populator hiccup.
+- Cumulative metric-key lookup hoisted out of a four-level nested
+  ternary into a `switch`.
+- 42 orphan i18n strings removed (7 keys × 6 locales) — the
+  `settings.about.updates*` / `checkUpdates` cluster left behind by
+  the manual update-check retirement.
+
+### Tests
+
+- Unit suite 4285 → 4354 passing (1 skipped). `pnpm typecheck` +
+  `pnpm lint` clean. Integration suite stable at 230 passing; two
+  known mock-isolation flakes (`apns-dispatch` /
+  `integration-status` and `enqueueBootTimeRollupBackfill` when run
+  alongside `admin-backups-audit.test.ts`) pass in isolation and
+  predate v1.4.36.
+
+### Deferred to v1.4.37
+
+- `applyInsightsExcludeFilter` shallow `next.context` mutation needs
+  a contract test pin.
+- Narrow-aggregate query still scans 90 days of `measurements`; the
+  column-pruning is real but not sub-second on cold rows.
+- `/settings/about` legacy route still serves AboutSection to any
+  authenticated user — content scope is benign; decision pending on
+  redirect vs 404 vs documented permalink.
+- `/api/measurements?source=rollup` response omits `id` / `unit` /
+  `source` for the bucketed shape; iOS unaffected (does not pass
+  `source=rollup`). A dedicated `MeasurementBucketResource` schema
+  or an `id`/`unit` echo lands next.
+- `BUCKETED_TYPES` in `features.ts` duplicates the rollup-populator
+  enum (drift risk).
+- COUNT-probe call sites in `summaries-slice.ts` and
+  `comprehensive-aggregator.ts` could collapse into one helper.
+- Cumulative SUM `mean × count` over-counts when two sources
+  contribute the same day (Apple Health + Withings both posting
+  steps). Pre-existing chart behaviour, not a v1.4.36 regression.
+
 ## [1.4.35.1] — 2026-05-17 — Auto-converging rollup backfill on worker boot
 
 Follow-on to v1.4.35. Removes the operator action that was implicit
