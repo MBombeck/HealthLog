@@ -266,8 +266,12 @@ describe("GET /api/analytics", () => {
   // contract the dashboard tile strip reads.
   it("returns the slim summaries slice when ?slice=summaries is set", async () => {
     const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
-    // Aggregate pass + latest pass. The mock returns one row per pass.
+    // v1.4.36 — slim slice now opens with a cheap `SELECT COUNT(*) FROM
+    // measurement_rollups` probe. Force `n: 0` so the route takes the
+    // legacy heavy-aggregate fallback path that this test's fixtures
+    // expect (aggregate + latest, two `$queryRaw` passes).
     vi.mocked(prisma.$queryRaw)
+      .mockResolvedValueOnce([{ n: BigInt(0) }] as never)
       .mockResolvedValueOnce([
         {
           type: "WEIGHT",
