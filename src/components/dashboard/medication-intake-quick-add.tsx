@@ -165,6 +165,17 @@ export function MedicationIntakeQuickAdd({
       const json = await res.json();
       return json.data as MedicationOption[];
     },
+    // v1.4.38 — share the parent dashboard's medications cache.
+    // `queryKeys.medications()` resolves to `["medications"]` — the
+    // same key the dashboard's onboarding checklist subscriber holds.
+    // Without a staleTime the sheet-mount triggers a fresh
+    // `/api/medications` GET on every open even when the parent cache
+    // already has current data. Match the dashboard's 60s window and
+    // skip the refetch-on-mount so opening the sheet inside the TTL
+    // reads straight from the React-Query cache.
+    staleTime: 60_000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
   const medications = useMemo(
