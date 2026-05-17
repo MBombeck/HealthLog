@@ -75,10 +75,39 @@ export async function safeJson<T = unknown>(
  *                    observed when the request arrived.
  *   - "N" (>1)     → trust N hops; read the Nth-from-rightmost XFF entry.
  *
+ * Cloudflare opt-in (`TRUST_CF_CONNECTING_IP=1`): when the env flag is
+ * set, the helper prefers the `cf-connecting-ip` header before walking
+ * the XFF chain. Cloudflare strips and re-sets this header on every
+ * request that lands on its edge, so it carries the real visitor IP
+ * even when XFF/x-real-ip end up as the Coolify proxy's loopback
+ * address. The flag is OFF by default: a self-hosted deployment
+ * without Cloudflare in front would otherwise trust an attacker-set
+ * header on the public internet.
+ *
  * Returns the resolved IP or null when no trusted source is available.
  */
 function looksLikeIp(s: string): boolean {
   return /^[0-9a-fA-F.:]+$/.test(s) && s.length >= 3 && s.length <= 45;
+}
+
+/**
+ * v1.4.37 — Cloudflare puts the visitor IP into `cf-connecting-ip` on
+ * every request hitting the edge. The Coolify-fronted HealthLog stack
+ * sits behind Cloudflare; without consulting this header, every
+ * `getClientIp` caller landed with the Caddy loopback IP and the geo
+ * resolver had no signal to backfill the admin sign-in overview from.
+ *
+ * The header is honoured only when `TRUST_CF_CONNECTING_IP=1`. A
+ * self-hosted deployment without Cloudflare in front must NOT trust
+ * the header — any attacker can set it on a direct request and the
+ * downstream geo resolver would happily report a forged location.
+ */
+function readCfConnectingIp(request: Request): string | null {
+  if (process.env.TRUST_CF_CONNECTING_IP !== "1") return null;
+  const candidate = request.headers.get("cf-connecting-ip");
+  if (!candidate) return null;
+  const trimmed = candidate.trim();
+  return looksLikeIp(trimmed) ? trimmed : null;
 }
 
 function parseTrustProxyHops(raw: string | undefined): number {
@@ -124,6 +153,13 @@ function warnTrustViolationOnce(hops: number, chainLength: number): void {
 }
 
 export function getClientIp(request: Request): string | null {
+  // v1.4.37 — Cloudflare's `cf-connecting-ip` takes precedence when
+  // the env flag opts in. The header carries the visitor IP the edge
+  // observed; without consulting it first, every request behind
+  // Cloudflare lands with the Caddy loopback as the resolved IP.
+  const cfIp = readCfConnectingIp(request);
+  if (cfIp) return cfIp;
+
   const hops = parseTrustProxyHops(process.env.TRUST_PROXY_HOPS);
 
   if (hops > 0) {
@@ -167,6 +203,14 @@ export function getClientIpOrTrustWarning(request: Request): {
   ip: string | null;
   trustViolation: boolean;
 } {
+  // v1.4.37 — same CF preference as `getClientIp`. The Cloudflare
+  // header is the operator-controlled signal; trusting it bypasses
+  // the XFF trust-violation accounting entirely because Cloudflare's
+  // edge re-sets the value on every request, so there is no chain to
+  // violate.
+  const cfIp = readCfConnectingIp(request);
+  if (cfIp) return { ip: cfIp, trustViolation: false };
+
   const hops = parseTrustProxyHops(process.env.TRUST_PROXY_HOPS);
 
   if (hops > 0) {

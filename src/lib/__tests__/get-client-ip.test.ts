@@ -5,16 +5,20 @@ import {
   _resetTrustViolationWarningForTests,
 } from "../api-response";
 
-const ORIGINAL_ENV = process.env.TRUST_PROXY_HOPS;
+const ORIGINAL_HOPS = process.env.TRUST_PROXY_HOPS;
+const ORIGINAL_CF_FLAG = process.env.TRUST_CF_CONNECTING_IP;
 
 beforeEach(() => {
   delete process.env.TRUST_PROXY_HOPS;
+  delete process.env.TRUST_CF_CONNECTING_IP;
   _resetTrustViolationWarningForTests();
 });
 
 afterEach(() => {
-  if (ORIGINAL_ENV === undefined) delete process.env.TRUST_PROXY_HOPS;
-  else process.env.TRUST_PROXY_HOPS = ORIGINAL_ENV;
+  if (ORIGINAL_HOPS === undefined) delete process.env.TRUST_PROXY_HOPS;
+  else process.env.TRUST_PROXY_HOPS = ORIGINAL_HOPS;
+  if (ORIGINAL_CF_FLAG === undefined) delete process.env.TRUST_CF_CONNECTING_IP;
+  else process.env.TRUST_CF_CONNECTING_IP = ORIGINAL_CF_FLAG;
 });
 
 function makeRequest(headers: Record<string, string>): Request {
@@ -136,6 +140,83 @@ describe("getClientIp trust-violation warning (F-6, 2026-05-16)", () => {
     } finally {
       warn.mockRestore();
     }
+  });
+});
+
+/**
+ * v1.4.37 — Cloudflare's `cf-connecting-ip` carries the visitor IP
+ * for every request that lands on its edge. The Coolify-fronted
+ * HealthLog stack sits behind Cloudflare; without consulting this
+ * header, the admin sign-in geo lookup had no signal to resolve from
+ * because XFF stops at the Caddy loopback. The header is honoured
+ * only under `TRUST_CF_CONNECTING_IP=1` so a self-hosted deployment
+ * without Cloudflare in front cannot be tricked by an attacker
+ * setting the header directly.
+ */
+describe("getClientIp Cloudflare cf-connecting-ip branch (v1.4.37)", () => {
+  it("returns cf-connecting-ip when the env flag is on and the header is present", () => {
+    process.env.TRUST_CF_CONNECTING_IP = "1";
+    const ip = getClientIp(
+      makeRequest({
+        "cf-connecting-ip": "203.0.113.42",
+        "x-forwarded-for": "1.1.1.1, 192.0.2.7",
+      }),
+    );
+    expect(ip).toBe("203.0.113.42");
+  });
+
+  it("ignores cf-connecting-ip when the env flag is off (default)", () => {
+    // Default — header set by an attacker on a deployment without
+    // Cloudflare in front must NOT be trusted; the helper falls
+    // through to the XFF / x-real-ip chain.
+    const ip = getClientIp(
+      makeRequest({
+        "cf-connecting-ip": "203.0.113.42",
+        "x-forwarded-for": "9.9.9.9, 5.6.7.8",
+      }),
+    );
+    expect(ip).toBe("5.6.7.8");
+  });
+
+  it("ignores cf-connecting-ip when the env flag is any value other than '1'", () => {
+    process.env.TRUST_CF_CONNECTING_IP = "true";
+    const ip = getClientIp(
+      makeRequest({
+        "cf-connecting-ip": "203.0.113.42",
+        "x-forwarded-for": "9.9.9.9, 5.6.7.8",
+      }),
+    );
+    expect(ip).toBe("5.6.7.8");
+  });
+
+  it("falls back to the XFF chain when the env flag is on but cf-connecting-ip is missing", () => {
+    process.env.TRUST_CF_CONNECTING_IP = "1";
+    const ip = getClientIp(
+      makeRequest({ "x-forwarded-for": "1.1.1.1, 5.6.7.8" }),
+    );
+    expect(ip).toBe("5.6.7.8");
+  });
+
+  it("rejects a malformed cf-connecting-ip when the env flag is on", () => {
+    process.env.TRUST_CF_CONNECTING_IP = "1";
+    const ip = getClientIp(
+      makeRequest({
+        "cf-connecting-ip": "<<not-an-ip>>",
+        "x-forwarded-for": "1.1.1.1, 5.6.7.8",
+      }),
+    );
+    expect(ip).toBe("5.6.7.8");
+  });
+
+  it("getClientIpOrTrustWarning also prefers cf-connecting-ip when the flag is on", () => {
+    process.env.TRUST_CF_CONNECTING_IP = "1";
+    const result = getClientIpOrTrustWarning(
+      makeRequest({
+        "cf-connecting-ip": "203.0.113.42",
+        "x-forwarded-for": "1.1.1.1",
+      }),
+    );
+    expect(result).toEqual({ ip: "203.0.113.42", trustViolation: false });
   });
 });
 
