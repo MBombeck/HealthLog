@@ -8,12 +8,6 @@ import { summarize, type DataPoint } from "@/lib/analytics/trends";
 import { computeSummariesSlice } from "@/lib/analytics/summaries-slice";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
-import {
-  correlateBpCompliance,
-  correlateMoodPulse,
-  correlateWeightWeekday,
-  type CorrelationResult,
-} from "@/lib/insights/correlations";
 import type {
   MeasurementSource,
   MeasurementType,
@@ -25,6 +19,7 @@ import { ensureUserRollupsFresh } from "@/lib/measurements/rollups";
 import { probeRollupCoverage } from "@/lib/measurements/rollup-coverage";
 import { computeBpInTargetFastPath } from "@/lib/analytics/bp-in-target-fast-path";
 import { computeUserHealthScoreFastPath } from "@/lib/analytics/health-score-fast-path";
+import { computeCorrelationHypothesesFastPath } from "@/lib/analytics/correlations-fast-path";
 import {
   isCumulativeDaySumType,
   pickCumulativeDaySum,
@@ -389,12 +384,20 @@ async function buildAnalyticsResponse(user: AuthedUser) {
   }
 
   // v1.4.20 phase B3 — three pre-defined correlation hypotheses.
-  // All three run on the trailing 30 days so a sparse account doesn't
-  // burn the n >= 20 gate on a stale window (v1.4.23 H6 raised the
-  // floor from 14 → 20). Each runner gates on n >= 20 + p < 0.05;
-  // below the bar the result.status === "insufficient" and the UI
-  // paints an EmptyState.
-  const correlations = await computeCorrelationHypotheses(user.id, userTz);
+  // v1.4.37 W2 — probe-gated helper. The 28-day scan window (down
+  // from 30 to keep the cold critical path tight while still
+  // satisfying the n >= 20 surface gate) reads SYS / PULSE / WEIGHT
+  // per-day means from `measurement_rollups` when the user has full
+  // coverage; mood and medication-intake reads always stay live (no
+  // rollup equivalent). The helper emits `meta.correlations.path` +
+  // `meta.correlations.window_days` so prod logs prove the branch
+  // selection and the truthful window.
+  const correlations = await computeCorrelationHypothesesFastPath({
+    userId: user.id,
+    userTz,
+    now: new Date(),
+    coverage,
+  });
 
   // v1.4.20 phase B5 — Personal Health Score. Server-deterministic
   // composite of BP-in-target % + weight-trend alignment + mood
@@ -506,160 +509,11 @@ async function computeSleepStageBreakdown(
   };
 }
 
-/**
- * Build inputs for the three pre-defined hypotheses + run them.
- * Pure-ish — only Prisma reads, no external calls.
- *
- * Window: trailing 30 days. Anything older falls outside the surface
- * because the user-facing "based on N paired readings · last 30 days"
- * source-chip has to remain truthful.
- */
-async function computeCorrelationHypotheses(
-  userId: string,
-  userTz: string,
-): Promise<{
-  bpCompliance: CorrelationResult;
-  moodPulse: CorrelationResult;
-  weightWeekday: CorrelationResult;
-}> {
-  const DAY_MS = 24 * 60 * 60 * 1000;
-  const since = new Date(Date.now() - 30 * DAY_MS);
-
-  // v1.4.23 Sr-H1 — the four measurement reads route through the
-  // chunked helper so even a noisy 30-day window (e.g. minute-level
-  // HealthKit pulse samples) cannot allocate an unbounded buffer. The
-  // helper still returns the full filtered series the Pearson runners
-  // need; we just bound the per-page Prisma round-trip.
-  const [sysRows, pulseRows, weightRows, moodRows, intakeRows] =
-    await Promise.all([
-      fetchMeasurementSeriesChunked(userId, "BLOOD_PRESSURE_SYS", { since }),
-      fetchMeasurementSeriesChunked(userId, "PULSE", { since }),
-      fetchMeasurementSeriesChunked(userId, "WEIGHT", { since }),
-      prisma.moodEntry.findMany({
-        where: { userId, moodLoggedAt: { gte: since } },
-        select: { score: true, moodLoggedAt: true, date: true },
-      }),
-      prisma.medicationIntakeEvent.findMany({
-        where: { userId, scheduledFor: { gte: since } },
-        select: { scheduledFor: true, takenAt: true, skipped: true },
-      }),
-    ]);
-
-  // ── Hypothesis 1: BP × medication compliance ────────────────
-  // Aggregate by the user's display-tz day key so DST + UTC boundary
-  // issues don't split a day's readings. The day's "compliance %" is
-  // taken / expected for that calendar day across all medications.
-  const dayKey = (d: Date): string => userDayKey(d, userTz);
-
-  const dailySys = new Map<string, number[]>();
-  for (const row of sysRows) {
-    const key = dayKey(row.measuredAt);
-    const list = dailySys.get(key) ?? [];
-    list.push(row.value);
-    dailySys.set(key, list);
-  }
-
-  const dailyCompliance = new Map<
-    string,
-    { expected: number; taken: number }
-  >();
-  for (const event of intakeRows) {
-    const key = dayKey(event.scheduledFor);
-    const slot = dailyCompliance.get(key) ?? { expected: 0, taken: 0 };
-    slot.expected += 1;
-    if (event.takenAt && !event.skipped) slot.taken += 1;
-    dailyCompliance.set(key, slot);
-  }
-
-  const bpCompliancePairs: Array<{
-    date: Date;
-    systolic: number;
-    compliancePct: number;
-  }> = [];
-  for (const [key, sysValues] of dailySys.entries()) {
-    const slot = dailyCompliance.get(key);
-    if (!slot || slot.expected === 0) continue;
-    const compliancePct = (slot.taken / slot.expected) * 100;
-    const meanSys = sysValues.reduce((s, v) => s + v, 0) / sysValues.length;
-    bpCompliancePairs.push({
-      date: dateFromDayKey(key),
-      systolic: meanSys,
-      compliancePct,
-    });
-  }
-  const bpCompliance = correlateBpCompliance({ daily: bpCompliancePairs });
-
-  // ── Hypothesis 2: Mood × resting pulse ──────────────────────
-  // Same-day pairing: take the day's mean mood vs the day's mean pulse.
-  // "Resting" is approximated by mean — HealthLog has no separate
-  // resting-pulse field, so we accept the noise rather than skip.
-  const dailyMood = new Map<string, number[]>();
-  for (const row of moodRows) {
-    const key = userDayKey(row.moodLoggedAt, userTz);
-    const list = dailyMood.get(key) ?? [];
-    list.push(row.score);
-    dailyMood.set(key, list);
-  }
-  const dailyPulse = new Map<string, number[]>();
-  for (const row of pulseRows) {
-    const key = userDayKey(row.measuredAt, userTz);
-    const list = dailyPulse.get(key) ?? [];
-    list.push(row.value);
-    dailyPulse.set(key, list);
-  }
-  const moodPulsePairs: Array<{
-    date: Date;
-    mood: number;
-    restingPulse: number;
-  }> = [];
-  for (const [key, moodScores] of dailyMood.entries()) {
-    const pulseValues = dailyPulse.get(key);
-    if (!pulseValues || pulseValues.length === 0) continue;
-    const meanMood = moodScores.reduce((s, v) => s + v, 0) / moodScores.length;
-    const meanPulse =
-      pulseValues.reduce((s, v) => s + v, 0) / pulseValues.length;
-    moodPulsePairs.push({
-      date: dateFromDayKey(key),
-      mood: meanMood,
-      restingPulse: meanPulse,
-    });
-  }
-  const moodPulse = correlateMoodPulse({ daily: moodPulsePairs });
-
-  // ── Hypothesis 3: Weight × weekday ──────────────────────────
-  // 0 = Monday … 6 = Sunday. ISO weekday minus 1.
-  //
-  // v1.4.25 W10 reconcile (Code-H1) — buckets the weekday by the
-  // user's display tz, matching W7's per-user-tz threading that the
-  // BP, mood, sleep, and pulse aggregators above already honour. The
-  // pre-W10 helper was pinned to `Europe/Berlin` and would land a
-  // user-local 23:30 weight reading from `Pacific/Auckland` under
-  // Sunday's bucket instead of Monday's — Pearson on the wrong
-  // weekday column.
-  const weightWeekdayPairs: Array<{ weekday: number; weight: number }> = [];
-  for (const row of weightRows) {
-    const isoWeekday = isoWeekdayInTz(row.measuredAt, userTz); // 1..7, 1=Mon
-    weightWeekdayPairs.push({
-      weekday: isoWeekday - 1,
-      weight: row.value,
-    });
-  }
-  const weightWeekday = correlateWeightWeekday({ daily: weightWeekdayPairs });
-
-  // Annotate so admin observability can attribute coverage to the
-  // corresponding wide-event rather than chasing it via DB queries.
-  annotate({
-    meta: {
-      correlations: {
-        bpCompliance: bpCompliance.status,
-        moodPulse: moodPulse.status,
-        weightWeekday: weightWeekday.status,
-      },
-    },
-  });
-
-  return { bpCompliance, moodPulse, weightWeekday };
-}
+// v1.4.37 W2 — `computeCorrelationHypotheses` body relocated to
+// `src/lib/analytics/correlations-fast-path.ts` so the probe-gated
+// rollup / live dispatcher can be unit-tested independently of the
+// route. The new helper also tightens the scan window to 28 days and
+// emits a sentinel on `meta.correlations.window_days` / `degraded`.
 
 /**
  * v1.4.23 Sr-H1 — paged read of every Measurement of a given type for
@@ -761,56 +615,12 @@ async function fetchMeasurementSeriesChunked(
   return out;
 }
 
-// v1.4.22 W5 reconcile (Code-MED-3) — `berlinDayKey()` lifted to
-// `src/lib/analytics/berlin-day.ts` so the targets route's sparkline
-// bucketing shares the same Europe/Berlin contract. The
-// `weekday: "short"` formatter still lives here because it's only
-// used by `isoWeekdayInTz()` below.
-//
-// v1.4.25 W10 reconcile (Code-H1) — formatter is now per-tz so the
-// weight-weekday correlator honours the same per-user-tz contract the
-// BP/mood/pulse aggregators above already use. Memoised by tz so the
-// formatter is built once per unique timezone per process (tz strings
-// rarely change at runtime; the cache is bounded by the IANA database
-// to a few hundred entries even in the worst case).
-const WEEKDAY_FORMATTER_CACHE = new Map<string, Intl.DateTimeFormat>();
-function getWeekdayFormatter(timeZone: string): Intl.DateTimeFormat {
-  let formatter = WEEKDAY_FORMATTER_CACHE.get(timeZone);
-  if (!formatter) {
-    formatter = new Intl.DateTimeFormat("en-CA", {
-      timeZone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      weekday: "short",
-    });
-    WEEKDAY_FORMATTER_CACHE.set(timeZone, formatter);
-  }
-  return formatter;
-}
-
-function dateFromDayKey(key: string): Date {
-  // Anchor to UTC midnight — the date is a sortable bucket label rather
-  // than a wall-clock timestamp, so DST drift is irrelevant. The tz
-  // info is already baked into the key (built via `userDayKey` upstream).
-  return new Date(`${key}T00:00:00.000Z`);
-}
-
-const ISO_WEEKDAY: Record<string, number> = {
-  Mon: 1,
-  Tue: 2,
-  Wed: 3,
-  Thu: 4,
-  Fri: 5,
-  Sat: 6,
-  Sun: 7,
-};
-
-function isoWeekdayInTz(d: Date, timeZone: string): number {
-  const parts = getWeekdayFormatter(timeZone).formatToParts(d);
-  const weekday = parts.find((p) => p.type === "weekday")?.value ?? "Mon";
-  return ISO_WEEKDAY[weekday] ?? 1;
-}
+// v1.4.37 W2 — `WEEKDAY_FORMATTER_CACHE`, `getWeekdayFormatter`,
+// `dateFromDayKey`, `ISO_WEEKDAY`, and `isoWeekdayInTz` relocated
+// alongside the correlation runner in
+// `src/lib/analytics/correlations-fast-path.ts`. They were only ever
+// used by the weight-weekday + day-key helpers inside the old inline
+// correlation builder.
 
 
 // v1.4.37 W2 — `mapMeasurementSourceToLabel`, `uniqueComponentSources`,
