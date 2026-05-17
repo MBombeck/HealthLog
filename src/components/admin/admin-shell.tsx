@@ -21,6 +21,7 @@ import {
   Bell,
   Database,
   FileText,
+  Info,
   KeyRound,
   Inbox,
   Plug,
@@ -124,6 +125,12 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     slug: "danger-zone",
     titleKey: "admin.section.danger-zone.title",
     icon: ShieldAlert,
+  },
+  // v1.4.36 W4e — About / version / update check folded into Admin.
+  {
+    slug: "about",
+    titleKey: "admin.section.about.title",
+    icon: Info,
   },
 ] as const;
 

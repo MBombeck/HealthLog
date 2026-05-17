@@ -29,6 +29,10 @@ export const ADMIN_SECTION_SLUGS = [
   "app-logs",
   "backups",
   "danger-zone",
+  // v1.4.36 W4e — About / version / update check folded into Admin
+  // Console. Lives at /admin/about; the legacy /settings/about route
+  // is unlinked from the user-card dropdown.
+  "about",
 ] as const;
 
 export type AdminSectionSlug = (typeof ADMIN_SECTION_SLUGS)[number];

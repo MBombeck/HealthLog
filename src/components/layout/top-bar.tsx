@@ -3,7 +3,6 @@
 import {
   Bell,
   ChevronDown,
-  Info,
   LogIn,
   LogOut,
   Monitor,
@@ -95,15 +94,10 @@ export function TopBar() {
                   {t("nav.notifications")}
                 </Link>
               </DropdownMenuItem>
-              {/* v1.4.33 IW7 — "About" folded out of Settings into the
-                  user-card dropdown; mobile dropdown mirrors the
-                  desktop sidebar so the entry shows up here too. */}
-              <DropdownMenuItem asChild>
-                <Link href="/settings/about" className="cursor-pointer">
-                  <Info className="mr-2 h-4 w-4" />
-                  {t("nav.about")}
-                </Link>
-              </DropdownMenuItem>
+              {/* v1.4.36 W4e — About moved into the Admin Console
+                  (`/admin/about`). The dropdown entry was redundant
+                  for the small audience that still reaches it (admins
+                  only, on the order of once or twice a year). */}
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
                   {themeIcon}

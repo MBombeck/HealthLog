@@ -8,7 +8,6 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Home,
-  Info,
   Lightbulb,
   LogOut,
   Monitor,
@@ -144,17 +143,10 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
           {t("nav.notifications")}
         </Link>
       </DropdownMenuItem>
-      {/* v1.4.33 IW7 — "About" used to live as its own Settings
-          section but the three small cards inside (identity / links /
-          update check) collectively get read once or twice a year, so
-          the top-level slot has been collapsed into this dropdown. The
-          route stays alive at `/settings/about`. */}
-      <DropdownMenuItem asChild>
-        <Link href="/settings/about" className="cursor-pointer">
-          <Info className="mr-2 h-4 w-4" />
-          {t("nav.about")}
-        </Link>
-      </DropdownMenuItem>
+      {/* v1.4.36 W4e — About moved into the Admin Console
+          (`/admin/about`). Admins reach it through the Admin sidebar
+          and the mobile section strip; non-admin users see the
+          public `/about` landing instead. */}
       <DropdownMenuSub>
         <DropdownMenuSubTrigger>
           {themeIcon}

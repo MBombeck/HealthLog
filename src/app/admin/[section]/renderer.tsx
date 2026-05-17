@@ -16,6 +16,7 @@ import type { JSX } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
+import { AboutSection } from "@/components/settings/about-section";
 import { AiQualitySection } from "@/components/admin/ai-quality-section";
 import { AssistantSection } from "@/components/admin/assistant-section";
 import { CoachFeedbackSection } from "@/components/admin/coach-feedback-section";
@@ -185,6 +186,11 @@ export function AdminSectionRenderer({
           <DangerZoneSection />
         </SectionFrame>
       );
+    case "about":
+      // v1.4.36 W4e — About section reused as-is from the settings
+      // surface. The component owns its own heading + cards layout
+      // so no SectionFrame wrapper.
+      return <AboutSection />;
     default:
       slug satisfies never;
       return null;

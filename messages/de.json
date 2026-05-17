@@ -2438,6 +2438,10 @@
       "danger-zone": {
         "title": "Gefahrenzone",
         "subtitle": "Destruktive systemweite Operationen."
+      },
+      "about": {
+        "title": "Über",
+        "subtitle": "Version, Lizenz, Quellcode und Update-Prüfung."
       }
     },
     "carrier": "Anbieter",
