@@ -81,7 +81,7 @@ export function TopBar() {
               <span className="hidden sm:inline">{user.username}</span>
               <ChevronDown className="h-3 w-3 opacity-60" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-60">
               <DropdownMenuItem asChild>
                 <Link href="/settings/account" className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" />
