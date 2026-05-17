@@ -3,7 +3,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Loader2, ArrowUp, ArrowDown, ArrowUpDown, History } from "lucide-react";
+import {
+  Loader2,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  History,
+  Check,
+  SkipForward,
+} from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
@@ -40,8 +48,19 @@ import {
  *  - Paginated 25/page via the existing `?limit=&offset=` query on
  *    `GET /api/medications/[id]/intake`. The route already supports
  *    `sortBy=takenAt|scheduledFor|createdAt|source` + `sortDir=asc|desc`.
+ *  - v1.4.37 W3: filters server-side with `?status=completed` so the
+ *    detail-page list shows only rows the user actually actioned
+ *    (taken OR skipped). The ambiguous "missed / never confirmed"
+ *    rows (`takenAt IS NULL AND skipped = false`) stay hidden here
+ *    and remain visible on the calendar / today surfaces. This
+ *    restores the v1 component's effective behaviour and fixes the
+ *    bug where such rows rendered as "Eingenommen" with an empty
+ *    leading column.
  *  - Sortable by `takenAt` (default) and `scheduledFor`. Click the
  *    header to toggle the direction; switching column resets to desc.
+ *  - Status chip: green Check + "Eingenommen" for taken rows,
+ *    outline SkipForward + "Übersprungen" for skipped rows. The
+ *    component never labels a row both at once.
  *  - Source badge surfaces WEB / API / REMINDER / IMPORT using the
  *    existing `medications.source*` keys.
  *  - Empty state copy + CTA back to the daily intake page.
@@ -74,6 +93,13 @@ interface IntakeHistoryListV2Props {
 type SortKey = "takenAt" | "scheduledFor";
 
 const DEFAULT_PAGE_SIZE = 25;
+/**
+ * v1.4.37 W3 — pinned to "completed" for the detail-page surface so
+ * planned / missed rows never leak into the table. Lifted to a
+ * module-level constant so the queryKey stays stable across renders
+ * and `setQueryData` in tests can pre-seed the same shape.
+ */
+const STATUS_FILTER = "completed";
 
 export function IntakeHistoryListV2({
   medicationId,
@@ -95,7 +121,7 @@ export function IntakeHistoryListV2({
       medicationId,
       "intake",
       "list",
-      { sortBy, sortDir, limit: pageSize, offset },
+      { sortBy, sortDir, limit: pageSize, offset, status: STATUS_FILTER },
     ],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -103,6 +129,7 @@ export function IntakeHistoryListV2({
         sortDir,
         limit: String(pageSize),
         offset: String(offset),
+        status: STATUS_FILTER,
       });
       const res = await fetch(
         `/api/medications/${medicationId}/intake?${params.toString()}`,
@@ -211,31 +238,59 @@ export function IntakeHistoryListV2({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {events.map((event) => (
-                  <TableRow key={event.id}>
-                    <TableCell className="text-sm">
-                      {event.takenAt ? formatters.dateTime(event.takenAt) : "—"}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {formatters.dateTime(event.scheduledFor)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={event.skipped ? "outline" : "secondary"}
-                        className="text-xs"
-                      >
-                        {event.skipped
-                          ? t("medications.intakeHistoryStatusSkipped")
-                          : t("medications.intakeHistoryStatusTaken")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs">
-                        {sourceLabels[event.source] ?? event.source}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {events.map((event) => {
+                  // v1.4.37 W3 — `status=completed` server filter
+                  // guarantees that every row is either a taken or a
+                  // skipped event. We derive the branch from the data
+                  // itself rather than trusting a single `skipped`
+                  // flag so a malformed row (e.g. `skipped:false` with
+                  // `takenAt:null`, the v1.4.36 regression) never
+                  // sneaks past as "Eingenommen".
+                  const isTaken = !event.skipped && !!event.takenAt;
+                  const isSkipped = event.skipped;
+                  return (
+                    <TableRow key={event.id}>
+                      <TableCell className="text-sm">
+                        {event.takenAt
+                          ? formatters.dateTime(event.takenAt)
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {formatters.dateTime(event.scheduledFor)}
+                      </TableCell>
+                      <TableCell>
+                        {isTaken ? (
+                          <Badge
+                            variant="secondary"
+                            className="gap-1 bg-green-500/20 text-xs text-green-400"
+                          >
+                            <Check
+                              aria-hidden="true"
+                              className="h-3 w-3"
+                            />
+                            {t("medications.intakeHistoryStatusTaken")}
+                          </Badge>
+                        ) : isSkipped ? (
+                          <Badge
+                            variant="outline"
+                            className="text-muted-foreground gap-1 text-xs"
+                          >
+                            <SkipForward
+                              aria-hidden="true"
+                              className="h-3 w-3"
+                            />
+                            {t("medications.intakeHistoryStatusSkipped")}
+                          </Badge>
+                        ) : null}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {sourceLabels[event.source] ?? event.source}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
 
