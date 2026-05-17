@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.4.37.2] — 2026-05-17 — Slim summaries SQL aggregation
+
+Second hotfix on top of v1.4.37. The v1.4.37.1 fire-and-forget
+release removed the 60 s event-loop block but live HAR still
+showed `/api/analytics?slice=summaries` taking ~3.1 s per cache
+miss. Root cause: the v1.4.35 implementation read EVERY DAY
+rollup bucket for the user (`findMany` without a `bucketStart`
+window) and composed `count / min / max / mean` in JavaScript.
+On a power-user account that materialised as a ~306k-row
+transfer plus a JS loop. The slim slice's contract is the
+all-time per-type aggregate — exactly what a SQL `GROUP BY type`
+returns in a single round-trip.
+
+### Fixed
+
+- `computeFromRollups` in `src/lib/analytics/summaries-slice.ts`
+  swaps the unwindowed `prisma.measurementRollup.findMany` for a
+  per-type `$queryRaw` GROUP BY that hands back 8 rows of
+  `count / min / max / mean` instead of ~306k bucket rows. The
+  downstream JS aggregation is bypassed because the per-type
+  aggregate is already shaped server-side. Cache-miss budget on
+  Marc-sized accounts: ~3.1 s → < 100 ms expected.
+
+### Operator notes
+
+- No schema change. No env-var change. No public API change
+  (the response body shape is identical to v1.4.37.1).
+- Coolify auto-deploys main on tag push.
+
 ## [1.4.37.1] — 2026-05-17 — Event-loop unblock on the read path
 
 Hotfix on top of v1.4.37. Post-deploy verification surfaced live

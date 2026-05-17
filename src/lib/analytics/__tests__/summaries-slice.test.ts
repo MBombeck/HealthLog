@@ -228,10 +228,15 @@ describe("computeSummariesSlice", () => {
   });
 
   describe("rollup-fresh happy path", () => {
-    it("composes count/min/max/mean from DAY buckets without running the heavy aggregate", async () => {
+    it("composes count/min/max/mean from the per-type rollup GROUP BY without running the heavy aggregate", async () => {
+      // v1.4.37.2 — the slim slice's rollup read is now a per-type
+      // GROUP BY ($queryRaw) instead of a row-per-bucket findMany,
+      // so the mock sequence is:
       // 1. per-type coverage probe — WEIGHT fully covered ⇒ happy path.
-      // 2. narrow aggregate ($queryRaw) — windowed/regression only.
-      // 3. latests ($queryRaw).
+      // 2. narrow aggregate — windowed/regression only.
+      // 3. latests.
+      // 4. rollup GROUP BY — one row per type with count/min/max/mean
+      //    already composed server-side.
       RAW.mockResolvedValueOnce([{ type: "WEIGHT", has_buckets: true }])
         .mockResolvedValueOnce([
           {
@@ -248,31 +253,26 @@ describe("computeSummariesSlice", () => {
         ])
         .mockResolvedValueOnce([
           { type: "WEIGHT", value: 82.7, measured_at: new Date() },
+        ])
+        .mockResolvedValueOnce([
+          {
+            type: "WEIGHT",
+            // pre-aggregated server-side: SUM(count), MIN(min),
+            // MAX(max), weighted mean — equivalent to the two-bucket
+            // fixture below.
+            //   bucket A: count=10, mean=81.0, min=79.5, max=82.0
+            //   bucket B: count=10, mean=83.0, min=81.5, max=84.0
+            //   ⇒ count=20, min=79.5, max=84.0, mean=82
+            count: 20,
+            min: 79.5,
+            max: 84.0,
+            mean: 82.0,
+          },
         ]);
-
-      ROLLUP_FIND_MANY.mockResolvedValueOnce([
-        {
-          type: "WEIGHT",
-          bucketStart: new Date("2026-05-10T00:00:00.000Z"),
-          count: 10,
-          mean: 81.0,
-          minValue: 79.5,
-          maxValue: 82.0,
-        },
-        {
-          type: "WEIGHT",
-          bucketStart: new Date("2026-05-11T00:00:00.000Z"),
-          count: 10,
-          mean: 83.0,
-          minValue: 81.5,
-          maxValue: 84.0,
-        },
-      ]);
 
       const result = await computeSummariesSlice("user-rollup");
       const weight = result.summaries.WEIGHT;
 
-      // count = 10 + 10 = 20; min/max across buckets; weighted mean.
       expect(weight.count).toBe(20);
       expect(weight.min).toBe(79.5);
       expect(weight.max).toBe(84.0);
@@ -285,9 +285,10 @@ describe("computeSummariesSlice", () => {
         confidence: 0.5,
       });
 
-      // probe + narrow aggregate + latests — NOT the heavy aggregate.
-      expect(RAW).toHaveBeenCalledTimes(3);
-      expect(ROLLUP_FIND_MANY).toHaveBeenCalledTimes(1);
+      // probe + narrow aggregate + latests + rollup GROUP BY
+      // (v1.4.37.2 — the prior `findMany` is gone). No heavy aggregate.
+      expect(RAW).toHaveBeenCalledTimes(4);
+      expect(ROLLUP_FIND_MANY).toHaveBeenCalledTimes(0);
     });
   });
 });

@@ -58,7 +58,6 @@ import type { DataSummary } from "@/lib/analytics/trends";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { annotate } from "@/lib/logging/context";
 import { ensureUserRollupsFresh } from "@/lib/measurements/rollups";
-import { aggregateBuckets } from "@/lib/measurements/rollup-read";
 import {
   isFullyCovered,
   probeRollupCoverage,
@@ -91,6 +90,20 @@ interface HeavyAggregateRow {
  * so the rollup-fresh read path's SQL projection is half as wide as
  * the legacy aggregate's.
  */
+/**
+ * v1.4.37.2 — shape returned by the per-type GROUP BY over
+ * `measurement_rollups`. Replaces the v1.4.35 row-per-bucket transfer
+ * that materialised ~306k rows on a power-user account; the SQL now
+ * does the aggregation server-side and hands back one row per type.
+ */
+interface RollupAggregateRow {
+  type: string;
+  count: number;
+  min: number;
+  max: number;
+  mean: number;
+}
+
 interface NarrowAggregateRow {
   type: string;
   avg7: number | null;
@@ -272,24 +285,32 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
       WHERE m."user_id" = ${userId}
       ORDER BY m."type", m."measured_at" DESC
     `,
-    // v1.4.35 — every DAY rollup bucket for the user. The slim slice's
-    // `count / min / max / mean` is all-time, so we read the bucket
-    // table without a `bucketStart` window. The defensive parity
-    // check below uses the live aggregate's `COUNT(*)` to decide
-    // whether the rollup is complete for this account (post-backfill
-    // → composed) or partial (pre-backfill → falls back to live).
-    prisma.measurementRollup.findMany({
-      where: { userId, granularity: "DAY" },
-      orderBy: [{ type: "asc" }, { bucketStart: "asc" }],
-      select: {
-        type: true,
-        bucketStart: true,
-        count: true,
-        mean: true,
-        minValue: true,
-        maxValue: true,
-      },
-    }),
+    // v1.4.37.2 hotfix — the v1.4.35 implementation read EVERY DAY
+    // rollup bucket for the user (`findMany` without a `bucketStart`
+    // window) and then composed `count / min / max / mean` in JS.
+    // On a power-user account that materialised as a 306k-row
+    // transfer + a JS loop = ~3.85 s per cache miss, even with the
+    // rollup table hot. The slim slice's contract is the all-time
+    // count / min / max / mean per type — exactly what a SQL
+    // `GROUP BY type` returns in a single round-trip. Returns 8 rows
+    // instead of 306k, brings the cache-miss cost into the < 100 ms
+    // budget. The downstream `aggregateBuckets` call is bypassed
+    // because the per-type aggregate is already shaped server-side.
+    prisma.$queryRaw<RollupAggregateRow[]>`
+      SELECT
+        "type"::text                                       AS type,
+        SUM("count")::int                                  AS count,
+        MIN("min_value")::double precision                 AS min,
+        MAX("max_value")::double precision                 AS max,
+        (
+          SUM("count" * "mean")::double precision
+          / NULLIF(SUM("count")::double precision, 0)
+        )                                                  AS mean
+      FROM "measurement_rollups"
+      WHERE "user_id" = ${userId}
+        AND "granularity" = 'DAY'
+      GROUP BY "type"
+    `,
   ]);
 
   const latestByType = new Map<string, number>();
@@ -328,48 +349,30 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
     };
   }
 
-  // v1.4.35 — partition the DAY buckets by type so the per-type loop
-  // can compose `count / min / max / mean` from them in O(1).
-  const bucketsByType = new Map<
-    string,
-    Array<{
-      day: Date;
-      count: number;
-      mean: number;
-      minValue: number;
-      maxValue: number;
-    }>
-  >();
-  for (const b of dayBuckets) {
-    const list = bucketsByType.get(b.type) ?? [];
-    list.push({
-      day: b.bucketStart,
-      count: b.count,
-      mean: b.mean,
-      minValue: b.minValue,
-      maxValue: b.maxValue,
-    });
-    bucketsByType.set(b.type, list);
-  }
-
+  // v1.4.37.2 hotfix — the rollup aggregate is now shaped server-side
+  // (one row per type with count / min / max / mean already computed),
+  // so we map straight through instead of partitioning + composing in
+  // JS. The narrows query feeds the windowed avgs + slope columns the
+  // GROUP BY cannot reconstruct.
   const narrowByType = new Map<string, NarrowAggregateRow>();
   for (const row of narrows) {
     narrowByType.set(row.type, row);
   }
 
   let totalRows = 0;
-  for (const [type, buckets] of bucketsByType.entries()) {
-    const composed = aggregateBuckets(buckets);
-    if (composed.count === 0) continue;
-    totalRows += composed.count;
-    const narrow = narrowByType.get(type);
-    const latest = latestByType.get(type) ?? null;
-    summaries[type] = {
-      count: composed.count,
+  let typeCount = 0;
+  for (const row of dayBuckets) {
+    if (!row.count || row.count <= 0) continue;
+    typeCount += 1;
+    totalRows += row.count;
+    const narrow = narrowByType.get(row.type);
+    const latest = latestByType.get(row.type) ?? null;
+    summaries[row.type] = {
+      count: row.count,
       latest,
-      min: round2(composed.min),
-      max: round2(composed.max),
-      mean: round2(composed.mean),
+      min: round2(row.min),
+      max: round2(row.max),
+      mean: round2(row.mean),
       avg7: round2(narrow?.avg7 ?? null),
       avg30: round2(narrow?.avg30 ?? null),
       slope7: buildSlope(narrow?.slope7 ?? null, narrow?.r2_7 ?? null),
@@ -387,7 +390,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
       analytics: {
         slim_summaries: {
           row_count: totalRows,
-          type_count: bucketsByType.size,
+          type_count: typeCount,
           path: "rollup",
         },
       },
