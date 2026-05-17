@@ -40,15 +40,22 @@ function fakeSummary(count: number): DataSummary {
 }
 
 describe("<InsightsTabStrip> — availability gating (v1.4.27 F19)", () => {
-  it("renders every pill when availability is omitted (backward compat)", () => {
+  it("renders only the Overview pill when availability is omitted (v1.4.36 W4d strict gate)", () => {
+    // v1.4.36 W4d — the pre-v1.4.36 fallback used to render every
+    // metric pill while the analytics fetch was in flight. Users with
+    // zero observations on a metric briefly saw nav targets they
+    // couldn't act on, and on a failed fetch the pills stayed up
+    // forever. The strict gate flips the contract: no availability =>
+    // only Overview, then pills light up as data arrives.
     const html = render(<InsightsTabStrip />);
-    expect(html).toContain(">Blood Pressure<");
-    expect(html).toContain(">Weight<");
-    expect(html).toContain(">Pulse<");
-    expect(html).toContain(">Mood<");
-    expect(html).toContain(">Medication<");
-    expect(html).toContain(">BMI<");
-    expect(html).toContain(">Sleep<");
+    expect(html).toContain(">Overview<");
+    expect(html).not.toContain(">Blood Pressure<");
+    expect(html).not.toContain(">Weight<");
+    expect(html).not.toContain(">Pulse<");
+    expect(html).not.toContain(">Mood<");
+    expect(html).not.toContain(">Medication<");
+    expect(html).not.toContain(">BMI<");
+    expect(html).not.toContain(">Sleep<");
   });
 
   it("drops pills for metrics with zero observations", () => {
@@ -120,14 +127,40 @@ describe("<InsightsTabStrip> — availability gating (v1.4.27 F19)", () => {
 });
 
 describe("<InsightsTabStrip> — vitals group collapse (v1.4.34 IW-D)", () => {
+  // v1.4.36 W4d — strict gate: every test here passes an explicit
+  // `availability` that lights up the wave-A metrics so the popover
+  // parent pill renders. Pre-v1.4.36 the no-availability fallback
+  // lit up every pill by default; under the strict gate the same
+  // intent is expressed by passing the right summaries.
+  const fullAvailability: InsightInputs = {
+    summaries: {
+      BLOOD_PRESSURE_SYS: fakeSummary(5),
+      BLOOD_PRESSURE_DIA: fakeSummary(5),
+      PULSE: fakeSummary(5),
+      WEIGHT: fakeSummary(5),
+      SLEEP_DURATION: fakeSummary(5),
+      VO2_MAX: fakeSummary(5),
+      STEPS: fakeSummary(5),
+      ACTIVE_ENERGY: fakeSummary(5),
+      ACTIVE_ENERGY_BURNED: fakeSummary(5),
+      HEART_RATE_VARIABILITY: fakeSummary(5),
+      RESTING_HEART_RATE: fakeSummary(5),
+      OXYGEN_SATURATION: fakeSummary(5),
+      BODY_TEMPERATURE: fakeSummary(5),
+    },
+    hasMood: true,
+    hasMedication: true,
+    hasWorkouts: true,
+  };
+
   it("renders a single 'Vitals' parent pill instead of five wave-A pills in the strip row", () => {
-    // No availability ⇒ every wave-A pill is visible ⇒ the parent pill
-    // appears once. The five sub-pages still render in the popover
-    // body but that lives in a Radix Portal which `renderToStaticMarkup`
-    // does not serialise (no portal target in SSR) — so we assert on
-    // the strip-row only. Behaviour test for the popover body sits in
-    // a Playwright spec when the dev server runs.
-    const html = render(<InsightsTabStrip />);
+    // Every wave-A pill has data ⇒ the parent pill appears once. The
+    // five sub-pages still render in the popover body but that lives
+    // in a Radix Portal which `renderToStaticMarkup` does not serialise
+    // (no portal target in SSR) — so we assert on the strip-row only.
+    // Behaviour test for the popover body sits in a Playwright spec
+    // when the dev server runs.
+    const html = render(<InsightsTabStrip availability={fullAvailability} />);
     // Parent pill — there is exactly one.
     const parentMatches = html.match(/>Vitals</g);
     expect(parentMatches).not.toBeNull();
@@ -155,13 +188,13 @@ describe("<InsightsTabStrip> — vitals group collapse (v1.4.34 IW-D)", () => {
   });
 
   it("renders the parent pill as a popover trigger (button, not link)", () => {
-    const html = render(<InsightsTabStrip />);
+    const html = render(<InsightsTabStrip availability={fullAvailability} />);
     expect(html).toContain('data-slot="insights-tab-strip-group"');
     expect(html).toContain('data-group="vitals"');
   });
 
   it("preserves the non-grouped pills inline", () => {
-    const html = render(<InsightsTabStrip />);
+    const html = render(<InsightsTabStrip availability={fullAvailability} />);
     // Flat (non-grouped) pills must still be reachable directly.
     expect(html).toContain(">Blood Pressure<");
     expect(html).toContain(">Pulse<");

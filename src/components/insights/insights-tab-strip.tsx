@@ -171,10 +171,22 @@ const SUB_PAGE_GROUP_META: Record<
 };
 
 function buildTabs(availability: InsightInputs | undefined): TabEntry[] {
-  const visibleSlugs = SUB_PAGE_SLUGS.filter((slug) => {
-    if (!availability) return true;
-    return hasMetricData(SUB_PAGE_TABS[slug].metric, availability);
-  });
+  // v1.4.36 W4d — strict gating contract: a sub-page only surfaces a
+  // pill when the availability inputs CONFIRM the metric has at
+  // least one observation in the 90-day window. The legacy
+  // `if (!availability) return true` fallback rendered every pill
+  // while the analytics fetch was in flight, so users with empty
+  // metrics briefly saw nav targets they couldn't act on (and on
+  // a failed/stale fetch the pills stayed up forever). The new
+  // contract: no availability → no metric pills, only Overview.
+  // The pills appear progressively as `summaries[METRIC].count`
+  // flips from 0 to ≥1 — exactly the auto-light-up behaviour
+  // described in `metric-availability.ts` line 26.
+  const visibleSlugs = availability
+    ? SUB_PAGE_SLUGS.filter((slug) =>
+        hasMetricData(SUB_PAGE_TABS[slug].metric, availability),
+      )
+    : [];
 
   const visibleSet = new Set(visibleSlugs);
   const entries: TabEntry[] = [
