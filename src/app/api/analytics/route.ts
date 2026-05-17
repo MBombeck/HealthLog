@@ -112,14 +112,18 @@ type AuthedUser = Awaited<ReturnType<typeof requireAuth>>["user"];
  * `buildCoachSnapshotImpl` shape.
  */
 async function buildAnalyticsResponse(user: AuthedUser) {
-  // v1.5.0 — warm the persistent rollup table as a side effect of
-  // the analytics fan-out. No-op when rollups are already ahead of
-  // the newest measurement; on first cold-mount after a process
-  // restart it folds the trailing 90-day window so downstream
-  // consumers (Coach drawer, weekly report, admin analytics) see a
-  // warm rollup table on their next read. The route's response
-  // shape is untouched.
-  await ensureUserRollupsFresh(user.id);
+  // v1.4.37.1 hotfix — fire-and-forget the rollup-fresh check.
+  // Awaiting it on the read path can stall the Node event loop for
+  // 30–60 s on a power-user account whose iOS step samples keep the
+  // 90-day DAY window slightly stale, which starves /api/health,
+  // /api/version, and concurrent iOS calls. The downstream coverage
+  // probe falls back to live SQL when a type is uncovered, so
+  // correctness is preserved; the worst the user sees is data from
+  // up to ~60 s ago on the very first request after a fresh
+  // measurement lands, and the next request returns the up-to-date
+  // value once the background refresh completes. `ensureUserRollupsFresh`
+  // wraps its own try/catch, so the void call cannot reject.
+  void ensureUserRollupsFresh(user.id);
 
   // v1.4.37 W2 — single per-type coverage probe shared by the
   // bp_in_target / healthScore / correlations branches below. The

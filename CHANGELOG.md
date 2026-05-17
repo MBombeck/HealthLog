@@ -1,5 +1,43 @@
 # Changelog
 
+## [1.4.37.1] — 2026-05-17 — Event-loop unblock on the read path
+
+Hotfix on top of v1.4.37. Post-deploy verification surfaced live
+`/api/analytics` cold-mount hits of ~62 s and parallel
+`/api/health` checks of ~58 s on the live instance — far above the
+v1.4.37 perf claim of 1.5–3 s. Root cause: the synchronous
+`ensureUserRollupsFresh(userId)` call at the top of each heavy
+read path (analytics route, comprehensive aggregator, summaries
+slice) folds the trailing 90-day DAY window when the rollup
+watermark trails the newest measurement. On an account with
+high-frequency Apple Health step ingest the watermark falls behind
+every few minutes, so each cache miss synchronously paid the full
+refresh cost on a Node.js worker that also serves the rest of the
+request fan-out — including `/api/health`, `/api/version`, and
+concurrent iOS calls — and the event loop was blocked for the
+duration of the recompute.
+
+### Fixed
+
+- `ensureUserRollupsFresh` is now fired-and-forgotten on all three
+  read-path call sites (`src/app/api/analytics/route.ts`,
+  `src/lib/insights/comprehensive-aggregator.ts`,
+  `src/lib/analytics/summaries-slice.ts`). The function already
+  carries its own try/catch envelope, so the `void`-call cannot
+  reject. Correctness is preserved by the downstream
+  `probeRollupCoverage` check: when a type is partial the live
+  fallback fires; the only user-observable change is that the very
+  first request after a fresh measurement landed may serve data up
+  to ~60 s old, and the next request returns the up-to-date value
+  once the background refresh completes.
+
+### Operator notes
+
+- No schema change. No env-var change.
+- Coolify auto-deploys main on tag push; first webhook may pull
+  stale `:latest`, redeploy after the docker-publish workflow
+  completes.
+
 ## [1.4.37] — 2026-05-17 — Final web polish before iOS focus
 
 The closing web release before the v1.5 iOS-app sprint. Carries the

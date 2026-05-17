@@ -179,11 +179,14 @@ export interface SummariesSlice {
 export async function computeSummariesSlice(
   userId: string,
 ): Promise<SummariesSlice> {
-  // Keep the persistent rollup table current before the bucket read
-  // fires. On a warm process this is a single watermark query; on a
-  // cold mount it folds the trailing 90-day window into the DAY
-  // rollup so the bucket read below has something to compose.
-  await ensureUserRollupsFresh(userId);
+  // v1.4.37.1 hotfix — fire-and-forget. See `src/app/api/analytics/route.ts`
+  // for the full rationale: awaiting this on the read path can stall
+  // the event loop for 30–60 s on power-user accounts whose iOS step
+  // samples keep the 90-day window slightly stale. The downstream
+  // coverage probe falls back to live SQL for uncovered types, so
+  // correctness is preserved; the read just doesn't block waiting
+  // for the background refresh.
+  void ensureUserRollupsFresh(userId);
 
   // v1.4.36 QA C1 — per-type coverage probe replaces the legacy global
   // COUNT. The previous gate returned true as soon as ANY type had at

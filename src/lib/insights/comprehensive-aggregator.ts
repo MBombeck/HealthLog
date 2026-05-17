@@ -233,12 +233,14 @@ export async function buildComprehensiveAggregate(
 ): Promise<ComprehensiveAggregate> {
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
-  // Keep the persistent rollup table current before any read fires.
-  // After this returns the DAY-granularity buckets for the trailing
-  // 90 days reflect every measurement that landed before this call
-  // (the per-write hook is synchronous on the DAY bucket, and
-  // `ensureUserRollupsFresh` covers cold-mount / process-restart).
-  await ensureUserRollupsFresh(userId);
+  // v1.4.37.1 hotfix — fire-and-forget. See `src/app/api/analytics/route.ts`
+  // for the full rationale: awaiting this on the read path can stall
+  // the event loop for 30–60 s on power-user accounts whose iOS step
+  // samples keep the 90-day window slightly stale. The downstream
+  // coverage probe falls back to live SQL for uncovered types, so
+  // correctness is preserved; the read just doesn't block waiting
+  // for the background refresh.
+  void ensureUserRollupsFresh(userId);
 
   // v1.4.36 QA C1 — per-type coverage probe. The legacy global COUNT
   // returned true as soon as any one type had a DAY bucket, which made
