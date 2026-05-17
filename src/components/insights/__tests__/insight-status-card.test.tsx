@@ -89,4 +89,22 @@ describe("<InsightStatusCard>", () => {
     const html = render(<InsightStatusCard {...baseProps} text={null} />);
     expect(html).toContain("No analysis yet.");
   });
+
+  it("renders the structured skeleton (v1.4.37) when loading instead of a centred spinner", () => {
+    const html = render(
+      <InsightStatusCard {...baseProps} text={null} loading />,
+    );
+    // The skeleton mounts the same icon dot, title bar, prose lines,
+    // and footer that the loaded card paints so the loading state
+    // previews the final geometry instead of pinning the card to a
+    // single centred spinner row. The aria-busy + sr-only label
+    // preserve the accessible "loading" semantics for assistive
+    // tech.
+    expect(html).toContain('aria-busy="true"');
+    expect(html).toContain('data-testid="insight-status-card-loading"');
+    expect(html).toContain("Loading");
+    // The classic Loader2 + visible "common.loading" copy retired so
+    // we do not double-paint the announcement.
+    expect(html).not.toContain("animate-spin");
+  });
 });

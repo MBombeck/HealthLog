@@ -3,7 +3,6 @@
 import { useState } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { stripChartTokens } from "@/lib/insights/chart-tokens";
 import { cn } from "@/lib/utils";
@@ -40,13 +39,30 @@ export function InsightStatusCard({
   if (!flags.insightStatus) return null;
 
   if (loading) {
+    // v1.4.37 — structured skeleton over the centred spinner. When the
+    // per-metric status route had to fall back to the 20 s provider
+    // race the user used to stare at a single centred spinner with
+    // "Lade…" copy, which gave no sense of progress and pinned the
+    // card to a flat dot. The skeleton paints the actual rendered
+    // geometry (icon dot, title bar, three text lines, footer) so the
+    // loading state previews where the assessment will land. Heights
+    // mirror `<CardTitle>` (`text-base` → 1 rem) and the prose
+    // (`text-sm` → 0.875 rem) so the post-load swap reflows by less
+    // than a row.
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="text-dracula-purple h-5 w-5 animate-spin motion-reduce:animate-none" />
-          <span className="text-muted-foreground ml-2 text-sm">
-            {t("common.loading")}
-          </span>
+      <Card aria-busy="true" aria-live="polite" data-testid="insight-status-card-loading">
+        <CardHeader className="pb-2">
+          <div className="flex items-center gap-2">
+            <div className="bg-muted h-5 w-5 animate-pulse rounded motion-reduce:animate-none" />
+            <div className="bg-muted h-4 w-32 animate-pulse rounded motion-reduce:animate-none" />
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="bg-muted h-3.5 w-full animate-pulse rounded motion-reduce:animate-none" />
+          <div className="bg-muted h-3.5 w-11/12 animate-pulse rounded motion-reduce:animate-none" />
+          <div className="bg-muted h-3.5 w-9/12 animate-pulse rounded motion-reduce:animate-none" />
+          <div className="bg-muted/70 h-3 w-1/3 animate-pulse rounded motion-reduce:animate-none" />
+          <span className="sr-only">{t("common.loading")}</span>
         </CardContent>
       </Card>
     );
