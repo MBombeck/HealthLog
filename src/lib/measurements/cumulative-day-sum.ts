@@ -63,6 +63,7 @@ export function pickCumulativeDaySum<T extends CumulativeRow>(
 }
 
 import type { MeasurementType } from "@/generated/prisma/client";
+import type { SourcePriorityMetricKey } from "@/lib/validations/source-priority";
 import { CUMULATIVE_HK_TYPES } from "./apple-health-mapping";
 
 /**
@@ -95,4 +96,38 @@ export function isCumulativeDaySumType(
   type: string,
 ): type is CumulativeDaySumType {
   return (CUMULATIVE_DAY_SUM_TYPES as readonly string[]).includes(type);
+}
+
+/**
+ * v1.4.36 W4c / v1.4.37 W10 — cumulative MeasurementType →
+ * SourcePriorityMetricKey lookup for `pickCanonicalSourceRows`.
+ *
+ * Returns `null` for types without a dedicated priority ladder
+ * (e.g. TIME_IN_DAYLIGHT, which lacks a clinical-grade competitor
+ * to Apple Health for daylight minutes today). The picker treats a
+ * `null` ladder as the "no priority — pass through every row"
+ * branch, so the bucket-and-sum runs over every source.
+ *
+ * Hoisted out of `src/app/api/analytics/route.ts` so adding a new
+ * cumulative metric is a single-line edit here rather than a
+ * route-level switch that drifts from the `SourcePriorityMetricKey`
+ * enum + `CUMULATIVE_HK_TYPES` set. A parity test pins the contract:
+ * every member of `CUMULATIVE_HK_TYPES` either resolves to a real
+ * `SourcePriorityMetricKey` or is explicitly mapped to `null`.
+ */
+export function cumulativeMetricKey(
+  type: MeasurementType,
+): SourcePriorityMetricKey | null {
+  switch (type) {
+    case "ACTIVITY_STEPS":
+      return "steps";
+    case "ACTIVE_ENERGY_BURNED":
+      return "activeEnergy";
+    case "WALKING_RUNNING_DISTANCE":
+      return "walkingRunningDistance";
+    case "FLIGHTS_CLIMBED":
+      return "flightsClimbed";
+    default:
+      return null;
+  }
 }

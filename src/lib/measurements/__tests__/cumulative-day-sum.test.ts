@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+import { SOURCE_PRIORITY_METRIC_KEYS } from "@/lib/validations/source-priority";
 import { CUMULATIVE_HK_TYPES } from "../apple-health-mapping";
 import {
   CUMULATIVE_DAY_SUM_TYPES,
+  cumulativeMetricKey,
   isCumulativeDaySumType,
   pickCumulativeDaySum,
 } from "../cumulative-day-sum";
@@ -117,5 +119,40 @@ describe("CUMULATIVE_DAY_SUM_TYPES / CUMULATIVE_HK_TYPES parity", () => {
   // would trip this assertion before shipping.
   it("matches CUMULATIVE_HK_TYPES membership exactly", () => {
     expect(new Set(CUMULATIVE_DAY_SUM_TYPES)).toEqual(CUMULATIVE_HK_TYPES);
+  });
+});
+
+describe("cumulativeMetricKey", () => {
+  // v1.4.37 W10 — pinned mapping from MeasurementType →
+  // SourcePriorityMetricKey for the cumulative analytics fast-path.
+  // Every member of CUMULATIVE_HK_TYPES must resolve either to a real
+  // SourcePriorityMetricKey (so the canonical-source picker fires) or
+  // to `null` (so the picker's no-ladder pass-through branch runs).
+  // A new cumulative HK type without an explicit map entry falls
+  // through to the default branch (returns null) — that's the
+  // intended escape hatch for types like TIME_IN_DAYLIGHT that have
+  // no clinical competitor; pin the audit here so the operator is
+  // forced to think about it.
+  it("returns a known SourcePriorityMetricKey or null for every CUMULATIVE_HK_TYPES member", () => {
+    const validKeys = new Set<string>(SOURCE_PRIORITY_METRIC_KEYS);
+    for (const type of CUMULATIVE_HK_TYPES) {
+      const key = cumulativeMetricKey(type);
+      if (key !== null) {
+        expect(validKeys.has(key)).toBe(true);
+      }
+    }
+  });
+
+  it("explicitly maps the four metrics that own a SourcePriorityMetricKey ladder", () => {
+    expect(cumulativeMetricKey("ACTIVITY_STEPS")).toBe("steps");
+    expect(cumulativeMetricKey("ACTIVE_ENERGY_BURNED")).toBe("activeEnergy");
+    expect(cumulativeMetricKey("WALKING_RUNNING_DISTANCE")).toBe(
+      "walkingRunningDistance",
+    );
+    expect(cumulativeMetricKey("FLIGHTS_CLIMBED")).toBe("flightsClimbed");
+  });
+
+  it("returns null for TIME_IN_DAYLIGHT (no clinical competitor today)", () => {
+    expect(cumulativeMetricKey("TIME_IN_DAYLIGHT")).toBeNull();
   });
 });

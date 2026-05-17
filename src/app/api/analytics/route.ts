@@ -14,41 +14,18 @@ import type {
 } from "@/generated/prisma/client";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
-import type { SourcePriorityMetricKey } from "@/lib/validations/source-priority";
 import { ensureUserRollupsFresh } from "@/lib/measurements/rollups";
 import { probeRollupCoverage } from "@/lib/measurements/rollup-coverage";
 import { computeBpInTargetFastPath } from "@/lib/analytics/bp-in-target-fast-path";
 import { computeUserHealthScoreFastPath } from "@/lib/analytics/health-score-fast-path";
 import { computeCorrelationHypothesesFastPath } from "@/lib/analytics/correlations-fast-path";
 import {
+  cumulativeMetricKey,
   isCumulativeDaySumType,
   pickCumulativeDaySum,
 } from "@/lib/measurements/cumulative-day-sum";
 
 export const dynamic = "force-dynamic";
-
-/**
- * v1.4.36 W4c — cumulative MeasurementType → SourcePriorityMetricKey
- * for `pickCanonicalSourceRows`. Returns `null` for types without a
- * dedicated priority ladder (e.g. TIME_IN_DAYLIGHT), which fall
- * through the picker's "no ladder" pass-through branch.
- */
-function cumulativeMetricKey(
-  type: MeasurementType,
-): SourcePriorityMetricKey | null {
-  switch (type) {
-    case "ACTIVITY_STEPS":
-      return "steps";
-    case "ACTIVE_ENERGY_BURNED":
-      return "activeEnergy";
-    case "WALKING_RUNNING_DISTANCE":
-      return "walkingRunningDistance";
-    case "FLIGHTS_CLIMBED":
-      return "flightsClimbed";
-    default:
-      return null;
-  }
-}
 
 /**
  * v1.4.33 C1 — pull `?slice=…` from either a NextRequest (the
