@@ -393,7 +393,7 @@ export async function sendViaApns(
         alert: { title: payload.title, body: stripHtml(payload.message) },
         data: {
           eventType: payload.eventType,
-          ...(payload.metadata ?? {}),
+          ...pickIosMetadata(payload.metadata),
         },
         threadId: payload.eventType,
         // The iOS app registers a `UNNotificationCategory` per event-type
@@ -454,4 +454,37 @@ export async function sendViaApns(
 
 function stripHtml(s: string): string {
   return s.replace(/<[^>]*>/g, "");
+}
+
+/**
+ * Whitelist the metadata keys we send through to iOS. The dispatcher
+ * payload's `metadata` field is shared across every channel — Telegram
+ * stuffs an `replyMarkup` keyboard in there, future channels will add
+ * their own extras — and forwarding the lot to APNs leaks
+ * channel-specific payload structures into the APNs userInfo Apple
+ * sees plus the iOS app's notification handler.
+ *
+ * Allowed keys are the ones the iOS app actually reads. Add a new key
+ * here as iOS gains support for it.
+ */
+const IOS_METADATA_ALLOWLIST = new Set([
+  "scheduledAt",
+  "localDate",
+  "medicationId",
+  "scheduleId",
+  "phase",
+  "date",
+]);
+
+function pickIosMetadata(
+  metadata: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  if (!metadata) return {};
+  const out: Record<string, unknown> = {};
+  for (const key of Object.keys(metadata)) {
+    if (IOS_METADATA_ALLOWLIST.has(key)) {
+      out[key] = metadata[key];
+    }
+  }
+  return out;
 }

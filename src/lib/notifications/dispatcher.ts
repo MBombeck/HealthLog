@@ -36,9 +36,21 @@ import { getEvent } from "@/lib/logging/context";
  * Also handles legacy Telegram config stored on the User model by
  * auto-migrating it to a NotificationChannel record on first dispatch.
  */
+export interface DispatchOutcome {
+  /** True when at least one channel reported a successful delivery. */
+  dispatched: boolean;
+  /** Channels considered after enable / cooldown / preference filtering. */
+  channelsAttempted: number;
+  /** Subset of attempted channels that returned ok. */
+  channelsSucceeded: number;
+}
+
 export async function dispatchNotification(
   payload: NotificationPayload,
-): Promise<void> {
+): Promise<DispatchOutcome> {
+  let channelsAttempted = 0;
+  let channelsSucceeded = 0;
+
   try {
     const channels = await prisma.notificationChannel.findMany({
       where: { userId: payload.userId, enabled: true },
@@ -143,6 +155,8 @@ export async function dispatchNotification(
         continue;
       }
 
+      channelsAttempted += 1;
+
       try {
         const outcome = await sendToChannel(
           channel.type as ChannelType,
@@ -156,6 +170,7 @@ export async function dispatchNotification(
             userId: channel.userId,
             type: channel.type as ChannelType,
           });
+          channelsSucceeded += 1;
           continue;
         }
 
@@ -209,6 +224,12 @@ export async function dispatchNotification(
   } catch (err) {
     getEvent()?.addWarning(`Notification dispatcher error: ${err}`);
   }
+
+  return {
+    dispatched: channelsSucceeded > 0,
+    channelsAttempted,
+    channelsSucceeded,
+  };
 }
 
 async function sendToChannel(
