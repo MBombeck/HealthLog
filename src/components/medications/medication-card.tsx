@@ -10,6 +10,7 @@ import { MedicationCardHeader } from "@/components/medications/MedicationCardHea
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
 import { formatDateTime, formatTime } from "@/lib/format";
+import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import {
   parseTimeToMinutes,
   reduceCurrentWindowStatus,
@@ -172,21 +173,7 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
   const rate7 = compliance?.compliance7?.rate ?? 0;
   const rate30 = compliance?.compliance30?.rate ?? 0;
   const streak = compliance?.compliance7?.streak ?? 0;
-  const categoryLabels: Record<string, string> = {
-    BLOOD_PRESSURE: t("medications.categoryBloodPressure"),
-    VITAMIN: t("medications.categoryVitamin"),
-    SUPPLEMENT: t("medications.categorySupplement"),
-    PAIN_RELIEF: t("medications.categoryPainRelief"),
-    ALLERGY: t("medications.categoryAllergy"),
-    DIGESTIVE: t("medications.categoryDigestive"),
-    THYROID: t("medications.categoryThyroid"),
-    HORMONE: t("medications.categoryHormone"),
-    SKIN: t("medications.categorySkin"),
-    SLEEP_AID: t("medications.categorySleepAid"),
-    OTHER: t("medications.categoryOther"),
-  };
-  const categoryLabel =
-    categoryLabels[medication.category] ?? t("medications.categoryOther");
+  const categoryLabel = getMedicationCategoryLabel(medication.category, t);
   const sortedSchedules = [...medication.schedules].sort(
     (a, b) =>
       a.windowStart.localeCompare(b.windowStart) ||

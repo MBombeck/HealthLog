@@ -164,10 +164,13 @@ beforeEach(() => {
 
 describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
   it("renders the GLP-1 variant when treatmentClass === 'GLP1' is active", () => {
-    // Headline differentiator: the GLP-1 card stamps the
-    // `medications.treatmentClassGlp1` badge ("GLP-1 injection")
-    // which the generic card never renders. Presence of the badge is
-    // the contract pin for "GLP-1 variant is showing".
+    // v1.4.37 W4b — the category-label slot now mirrors the generic
+    // card (real `medication.category` lookup) so Ramipril and
+    // Mounjaro share the same row shape. The variant differentiator
+    // moved into the GLP-1-specific rows below the header (last/next
+    // injection, rotation hint). We verify the GLP-1 card no longer
+    // hard-codes the treatment-class label into the category slot,
+    // and that the actual category lookup wins.
     const client = makeClient();
     seedCompliance(client, med7p5.id);
     seedGlp1Details(client, med7p5.id, {});
@@ -177,7 +180,9 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
       client,
     );
 
-    expect(html).toContain("GLP-1 injection");
+    // Category is OTHER → "Other" badge wins.
+    expect(html).toContain("Other");
+    expect(html).not.toContain("GLP-1 injection");
     // v1.4.28 FB-G1 — the Syringe glyph + middle-dot separator on the
     // list row are gone. The list row reads as the canonical two-line
     // shape: `{name} {dose}` on line 1, class label on line 2.
@@ -468,7 +473,12 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
       "de",
     );
 
-    expect(html).toContain("GLP-1-Injektion");
+    // v1.4.37 W4b — the German category badge now comes from the
+    // shared category-label lookup (Sonstiges for OTHER) instead of
+    // the hard-coded "GLP-1-Injektion" label, so the GLP-1 card stays
+    // visually symmetric with the generic card on the medications list.
+    expect(html).toContain("Sonstiges");
+    expect(html).not.toContain("GLP-1-Injektion");
     expect(html).toContain("Letzter Termin:");
     expect(html).toContain("Bauch, unten links");
     // v1.4.28 retired the "Dosis-Historie" disclosure on the GLP-1 card.

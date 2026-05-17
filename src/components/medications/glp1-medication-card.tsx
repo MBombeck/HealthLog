@@ -21,6 +21,7 @@ import { Progress } from "@/components/ui/progress";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { invalidateKeys, medicationDependentKeys } from "@/lib/query-keys";
 import { formatDateTime, formatTime } from "@/lib/format";
+import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import {
   describeInjectionSite,
   nextInjectionSite,
@@ -283,12 +284,14 @@ export function Glp1MedicationCard({
     </>
   );
 
+  const categoryLabel = getMedicationCategoryLabel(medication.category, t);
+
   return (
     <Card className={medication.active ? "" : "opacity-60"}>
       <MedicationCardHeader
         name={medication.name}
         dose={medication.dose}
-        categoryLabel={t("medications.treatmentClassGlp1")}
+        categoryLabel={categoryLabel}
         stateBadges={stateBadges}
         actions={headerActions}
       />
