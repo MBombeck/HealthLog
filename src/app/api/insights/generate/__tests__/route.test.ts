@@ -80,9 +80,16 @@ vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
 }));
 
-vi.mock("@/lib/insights/features", () => ({
-  extractFeatures: vi.fn(async () => ({ stub: true })),
-}));
+vi.mock("@/lib/insights/features", async () => {
+  const actual =
+    await vi.importActual<typeof import("@/lib/insights/features")>(
+      "@/lib/insights/features",
+    );
+  return {
+    ...actual,
+    extractFeatures: vi.fn(async () => ({ stub: true })),
+  };
+});
 
 vi.mock("@/lib/insights/prompt", () => ({
   buildUserPrompt: vi.fn(() => "user"),
@@ -97,6 +104,11 @@ import { resolveProvider } from "@/lib/ai/provider";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
 import { clearLastWorkingProviderCache } from "@/lib/ai/provider-runner";
+import {
+  extractFeatures,
+  FeaturesPayloadTooLargeError,
+} from "@/lib/insights/features";
+import { annotate } from "@/lib/logging/context";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -342,5 +354,53 @@ describe("POST /api/insights/generate — per-status cache eviction (A7.2)", () 
     const body = (await res.json()) as { data: { cached: boolean } };
     expect(body.data.cached).toBe(true);
     expect(prisma.auditLog.deleteMany).not.toHaveBeenCalled();
+  });
+});
+
+// v1.4.36 QA H1 — when both the raw-mode extraction AND the aggregated
+// retry cross the 5 MB ceiling, the route used to throw uncaught → 500.
+// It now wraps the retry, downgrades further via the exclude filter,
+// and on a third failure returns 422 with an annotate event for ops.
+describe("POST /api/insights/generate — payload-size hard downgrade (H1)", () => {
+  it("returns 422 with an annotate event when every fallback shape is oversized", async () => {
+    makeWorkingProvider();
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+      // Raw mode so the route's first extractFeatures call is the
+      // wide shape; the retry asks for the aggregated shape.
+      insightsPrivacyMode: "raw",
+      insightsCachedAt: null,
+      insightsCachedText: null,
+      insightsExcludeMetrics: [],
+      locale: "en",
+    } as never);
+
+    // Each call mimics features.ts blowing past the ceiling. Three
+    // shots: raw, aggregated retry, hard-downgrade aggregated.
+    vi.mocked(extractFeatures).mockReset();
+    vi.mocked(extractFeatures)
+      .mockRejectedValueOnce(
+        new FeaturesPayloadTooLargeError(6_000_000, 5_242_880),
+      )
+      .mockRejectedValueOnce(
+        new FeaturesPayloadTooLargeError(5_500_000, 5_242_880),
+      )
+      .mockRejectedValueOnce(
+        new FeaturesPayloadTooLargeError(5_300_000, 5_242_880),
+      );
+
+    const res = await POST(jsonRequest({ force: true }) as never);
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as ApiErrorEnvelope;
+    expect(body.error).toMatch(/payload size/i);
+
+    // The annotate event fires with insights_payload_too_large so ops
+    // can spot the regression in the wide-event pipeline.
+    const calls = vi.mocked(annotate).mock.calls;
+    const annotated = calls.find(
+      (call) =>
+        (call[0] as { meta?: Record<string, unknown> })?.meta
+          ?.insights_payload_too_large === true,
+    );
+    expect(annotated, "annotate event with insights_payload_too_large").toBeTruthy();
   });
 });

@@ -286,13 +286,65 @@ export const POST = apiHandler(async (request: NextRequest) => {
   let features: Awaited<ReturnType<typeof extractFeatures>>;
   let payloadDowngraded = false;
   let payloadOversizeBytes: number | null = null;
+  // v1.4.36 QA H1 — extra fallback when even the aggregated shape
+  // crosses the 5 MB ceiling (very large medication history + multi-
+  // year context). Strips anthropometrics + medications + every other
+  // exclude-token-mapped block and tries one more time. On a third
+  // failure we return 422 with an annotate event for ops visibility
+  // rather than 500-ing out of an uncaught throw.
+  const MAX_DOWNGRADE_TOKENS: ReadonlyArray<string> = [
+    "anthropometrics",
+    "medications",
+    "compliance",
+    "sleep",
+    "steps",
+    "hrv",
+    "resting_hr",
+  ];
+  let payloadHardDowngraded = false;
   try {
     features = await extractFeatures(userId, includeRaw);
   } catch (err) {
     if (err instanceof FeaturesPayloadTooLargeError) {
       payloadDowngraded = true;
       payloadOversizeBytes = err.sizeBytes;
-      features = await extractFeatures(userId, false);
+      try {
+        features = await extractFeatures(userId, false);
+      } catch (retryErr) {
+        if (retryErr instanceof FeaturesPayloadTooLargeError) {
+          // Aggregated shape ALSO crossed the ceiling. Drop optional
+          // context blocks (anthropometrics, medications, sleep,
+          // steps, hrv, resting_hr) via the existing exclude filter
+          // and try once more.
+          payloadHardDowngraded = true;
+          payloadOversizeBytes = retryErr.sizeBytes;
+          try {
+            const aggregated = await extractFeatures(userId, false);
+            features = applyInsightsExcludeFilter(
+              aggregated,
+              MAX_DOWNGRADE_TOKENS,
+            );
+          } catch (finalErr) {
+            // Even the aggregated read itself blew up. Annotate and
+            // return 422 rather than let the uncaught throw 500 out.
+            annotate({
+              meta: {
+                insights_payload_too_large: true,
+                insights_payload_oversize_bytes:
+                  finalErr instanceof FeaturesPayloadTooLargeError
+                    ? finalErr.sizeBytes
+                    : payloadOversizeBytes,
+              },
+            });
+            return apiError(
+              "Your data exceeds the AI payload size limit. Reduce the data window or exclude optional blocks in Settings > AI.",
+              422,
+            );
+          }
+        } else {
+          throw retryErr;
+        }
+      }
     } else {
       throw err;
     }
@@ -315,6 +367,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       meta: {
         insights_features_downgraded: true,
         insights_features_oversize_bytes: payloadOversizeBytes,
+        insights_features_hard_downgraded: payloadHardDowngraded,
       },
     });
   }
