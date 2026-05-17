@@ -56,7 +56,9 @@ describe("coachPrefsSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("caps excludeMetrics at 9 entries", () => {
+  it("caps excludeMetrics at 11 entries", () => {
+    // v1.4.36 W3 T2 — cap raised from 9 to 11 to admit the two new
+    // optional-context toggles (medications, anthropometrics).
     const result = coachPrefsSchema.safeParse({
       excludeMetrics: [
         "bp",
@@ -68,10 +70,19 @@ describe("coachPrefsSchema", () => {
         "sleep",
         "resting_hr",
         "steps",
+        "medications",
+        "anthropometrics",
         "bp",
       ],
     });
     expect(result.success).toBe(false);
+  });
+
+  it("accepts the new medications + anthropometrics tokens", () => {
+    const out = coachPrefsSchema.parse({
+      excludeMetrics: ["medications", "anthropometrics"],
+    });
+    expect(out.excludeMetrics).toEqual(["medications", "anthropometrics"]);
   });
 });
 

@@ -1081,7 +1081,9 @@
         "flights": "Flights climbed",
         "distance": "Distance",
         "vo2_max": "VO₂ max",
-        "body_temp": "Body temperature"
+        "body_temp": "Body temperature",
+        "medications": "Medications",
+        "anthropometrics": "Profile (height, age, gender)"
       },
       "window": {
         "last7days": "last 7 days",
@@ -1104,6 +1106,8 @@
       "settingsVerbosityDetailed": "Detailed",
       "settingsExcludeLabel": "Exclude metrics",
       "settingsExcludeHint": "The Coach will not see data for selected metrics.",
+      "settingsContextLabel": "Include context",
+      "settingsContextHint": "Optional blocks the Coach can lean on. Switch one off and the block is dropped from every turn.",
       "settingsEvidenceLabel": "Show evidence by default",
       "settingsEvidenceHint": "Open the disclosure under every reply automatically.",
       "settingsDefaultWindowLabel": "Default analysis window",

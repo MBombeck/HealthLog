@@ -1081,7 +1081,9 @@
         "flights": "Flights climbed",
         "distance": "Distance",
         "vo2_max": "VO₂ max",
-        "body_temp": "Body temperature"
+        "body_temp": "Body temperature",
+        "medications": "Medications",
+        "anthropometrics": "Profile (height, age, gender)"
       },
       "window": {
         "last7days": "Ostatnie 7 dni",
@@ -1117,7 +1119,9 @@
       "dailyLimitTitle": "Daily limit reached",
       "dailyLimitBody": "Daily limit reached; resets at 00:00 UTC.",
       "providerRateLimitTitle": "Provider rate-limited",
-      "providerRateLimitBody": "Provider temporarily rate-limited; retry in ~5 min."
+      "providerRateLimitBody": "Provider temporarily rate-limited; retry in ~5 min.",
+      "settingsContextLabel": "Include context",
+      "settingsContextHint": "Optional blocks the Coach can lean on. Switch one off and the block is dropped from every turn."
     },
     "relativeJustNow": "just now",
     "relativeMinutesAgo": "{count} minutes ago",

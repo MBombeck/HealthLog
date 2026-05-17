@@ -395,14 +395,29 @@ async function buildCoachSnapshotImpl(
   const prefs = parseCoachPrefs(prefsRow?.coachPrefsJson);
   const userTz = prefsRow?.timezone ?? DEFAULT_TIMEZONE;
   const excluded = new Set<CoachExcludeMetric>(prefs.excludeMetrics);
+  // v1.4.36 W3 T2 — `medications` and `anthropometrics` are
+  // exclude-only toggles (not in `CoachScopeSource`); they gate the
+  // GLP-1 weeklyContext / compliance branch and the anthropometrics
+  // block respectively. The mapping below treats them as additive to
+  // the existing source-level exclusions.
+  const excludesMedications = excluded.has("medications");
+  const excludesAnthropometrics = excluded.has("anthropometrics");
   const sources = new Set<CoachScopeSource>();
   for (const src of scopedSources) {
-    // The `excludeMetrics` enum is a strict subset of `CoachScopeSource`
-    // (every excludable key is also a valid scope source); this cast is
-    // safe and the runtime check is just defence-in-depth.
+    // The `excludeMetrics` enum is a superset of `CoachScopeSource` now
+    // (medications + anthropometrics live on the exclude-only side);
+    // the cast was safe before v1.4.36 because the enums matched 1:1,
+    // and the runtime `excluded.has` check still only catches the
+    // overlapping members.
     if (!excluded.has(src as unknown as CoachExcludeMetric)) {
       sources.add(src);
     }
+  }
+  // `medications` exclusion also drops the compliance source so the
+  // intake-event branch below short-circuits — keeps the contract
+  // consistent (excluding medications == no medication data at all).
+  if (excludesMedications) {
+    sources.delete("compliance");
   }
 
   const windowDays = windowToDays(window);
@@ -756,10 +771,37 @@ async function buildCoachSnapshotImpl(
   // Coach's GROUND RULE 9 forbids dose prescriptions — this block
   // exists so the reply can SAY "your Mounjaro 7.5 mg" instead of
   // "your medication", never to make recommendations.
-  const glp1Block = await buildGlp1SnapshotBlock(userId, now);
-  if (glp1Block) {
-    snapshot.weeklyContext = { glp1: glp1Block };
-    metrics.add("compliance");
+  // v1.4.36 W3 T2 — gated on `medications` exclusion. When excluded
+  // we skip the Prisma lookup entirely so the read cost vanishes too.
+  if (!excludesMedications) {
+    const glp1Block = await buildGlp1SnapshotBlock(userId, now);
+    if (glp1Block) {
+      snapshot.weeklyContext = { glp1: glp1Block };
+      metrics.add("compliance");
+    }
+  }
+
+  // v1.4.36 W3 T2 — anthropometrics block (height / age / gender).
+  // Sourced from `features.context`, which already reads
+  // `User.heightCm / dateOfBirth / gender`. Gated on the
+  // `anthropometrics` exclusion AND on at least one non-null field
+  // — accounts with no profile info never see an empty block. The
+  // `ctx?` guard tolerates mocked feature shapes in the test suite
+  // that don't populate the `context` object.
+  if (!excludesAnthropometrics) {
+    const ctx = features.context;
+    if (
+      ctx &&
+      (ctx.heightCm !== null ||
+        ctx.ageYears !== null ||
+        ctx.gender !== null)
+    ) {
+      snapshot.anthropometrics = {
+        heightCm: ctx.heightCm,
+        ageYears: ctx.ageYears,
+        gender: ctx.gender,
+      };
+    }
   }
 
   if (Object.keys(snapshot).length === 0) {

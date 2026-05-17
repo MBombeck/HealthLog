@@ -170,6 +170,65 @@ describe("buildCoachSnapshot", () => {
     expect(parsed.scope.window).toBe("last30days");
   });
 
+  // v1.4.36 W3 T2 — `medications` exclusion drops the GLP-1 weeklyContext
+  // block + the compliance source so no medication data reaches the
+  // prompt. Empty-data behaviour: when the user has no GLP-1 medication
+  // the block is absent anyway (this test only proves the toggle path).
+  it("omits weeklyContext.glp1 when excludeMetrics contains 'medications'", async () => {
+    prismaMock.user.findUnique.mockResolvedValue({
+      coachPrefsJson: { excludeMetrics: ["medications"] },
+      timezone: "Europe/Berlin",
+    });
+    const out = await buildCoachSnapshot("user-1");
+    const parsed = JSON.parse(out.snapshotJson);
+    expect(parsed.weeklyContext).toBeUndefined();
+    expect(parsed.compliance).toBeUndefined();
+    expect(parsed.scope.sources).not.toContain("compliance");
+  });
+
+  // v1.4.36 W3 T2 — `anthropometrics` exclusion drops the profile
+  // block even when features.context has populated fields.
+  it("omits anthropometrics when excludeMetrics contains 'anthropometrics'", async () => {
+    featuresMock.mockResolvedValue({
+      context: { heightCm: 180, ageYears: 45, gender: "MALE" },
+    });
+    prismaMock.user.findUnique.mockResolvedValue({
+      coachPrefsJson: { excludeMetrics: ["anthropometrics"] },
+      timezone: "Europe/Berlin",
+    });
+    const out = await buildCoachSnapshot("user-1");
+    const parsed = JSON.parse(out.snapshotJson);
+    expect(parsed.anthropometrics).toBeUndefined();
+  });
+
+  // v1.4.36 W3 T2 — anthropometrics block is added when features.context
+  // has at least one non-null field AND the exclusion is off.
+  it("includes anthropometrics when context has data and exclusion is off", async () => {
+    featuresMock.mockResolvedValue({
+      context: { heightCm: 180, ageYears: 45, gender: "MALE" },
+    });
+    const out = await buildCoachSnapshot("user-1");
+    const parsed = JSON.parse(out.snapshotJson);
+    expect(parsed.anthropometrics).toEqual({
+      heightCm: 180,
+      ageYears: 45,
+      gender: "MALE",
+    });
+  });
+
+  // v1.4.36 W3 T2 — empty-block omit: when every anthropometric field
+  // is null the block is dropped entirely, not emitted as a labelled
+  // null-trio that would render as `Hier sind die Profildaten: [keine]`
+  // in the eventual prompt.
+  it("drops anthropometrics when every field is null", async () => {
+    featuresMock.mockResolvedValue({
+      context: { heightCm: null, ageYears: null, gender: null },
+    });
+    const out = await buildCoachSnapshot("user-1");
+    const parsed = JSON.parse(out.snapshotJson);
+    expect(parsed.anthropometrics).toBeUndefined();
+  });
+
   it("scope-only-mood pulls just mood data, no measurements query", async () => {
     featuresMock.mockResolvedValue({
       mood: { avg30: 4.2, coverage: { count: 12 } },

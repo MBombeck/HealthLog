@@ -1081,7 +1081,9 @@
         "flights": "Stockwerke",
         "distance": "Strecke",
         "vo2_max": "VO₂ max",
-        "body_temp": "Körpertemperatur"
+        "body_temp": "Körpertemperatur",
+        "medications": "Medikamente",
+        "anthropometrics": "Profil (Größe, Alter, Geschlecht)"
       },
       "window": {
         "last7days": "letzte 7 Tage",
@@ -1104,6 +1106,8 @@
       "settingsVerbosityDetailed": "Ausführlich",
       "settingsExcludeLabel": "Metriken ausschließen",
       "settingsExcludeHint": "Der Coach sieht keine Daten der ausgewählten Metriken.",
+      "settingsContextLabel": "Kontext mitschicken",
+      "settingsContextHint": "Optionale Blöcke, auf die sich der Coach stützen kann. Schalte einen ab, wird der Block in jeder Antwort weggelassen.",
       "settingsEvidenceLabel": "Belege standardmäßig zeigen",
       "settingsEvidenceHint": "Die Belege-Box unter jeder Antwort automatisch öffnen.",
       "settingsDefaultWindowLabel": "Standard-Analysezeitraum",

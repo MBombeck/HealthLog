@@ -75,6 +75,18 @@ const EXCLUDE_OPTIONS: CoachExcludeMetric[] = [
   "steps",
 ];
 
+// v1.4.36 W3 T2 — optional context blocks the user can opt out of.
+// Surfaced as a separate group below the per-metric exclude list so
+// the intent ("don't ship my profile / medication context to the
+// model") reads distinctly from the per-metric data toggles above.
+// Each row gates a single labelled block at the snapshot/feature layer
+// so empty blocks never reach the prompt.
+const CONTEXT_OPTIONS: CoachExcludeMetric[] = [
+  "sleep",
+  "medications",
+  "anthropometrics",
+];
+
 // v1.4.25 W5 — picker options for the new `defaultWindow` preference.
 // Mirrors `CoachScopeWindow` so the chat route can fold the selection
 // straight into `scope.window` when the client didn't supply one.
@@ -340,6 +352,47 @@ export function CoachSettingsSheet({
                       <Switch
                         id={id}
                         data-slot={`coach-prefs-exclude-${metric}`}
+                        checked={checked}
+                        onCheckedChange={(next) => toggleExclude(metric, next)}
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            {/* v1.4.36 W3 T2 — optional context blocks. Mirrors the
+                EXCLUDE_OPTIONS list mechanically (same on/off switch
+                pattern, same toggleExclude handler) but groups the
+                profile / medication context toggles in their own
+                section so the intent reads distinctly. Empty blocks
+                are dropped at the snapshot/feature layer when the
+                toggle is on. */}
+            <div className="flex flex-col gap-2">
+              <Label className="text-xs font-medium">
+                {t("insights.coach.settingsContextLabel")}
+              </Label>
+              <p className="text-muted-foreground text-[11px] leading-relaxed">
+                {t("insights.coach.settingsContextHint")}
+              </p>
+              <ul
+                data-slot="coach-prefs-context-list"
+                className="border-border/60 divide-border/50 mt-1 flex flex-col divide-y rounded-md border"
+              >
+                {CONTEXT_OPTIONS.map((metric) => {
+                  const id = `coach-prefs-context-${metric}`;
+                  const checked = draft.excludeMetrics.includes(metric);
+                  return (
+                    <li
+                      key={metric}
+                      className="flex items-center justify-between gap-3 px-3 py-2"
+                    >
+                      <Label htmlFor={id} className="cursor-pointer text-xs">
+                        {t(`insights.coach.metric.${metric}`)}
+                      </Label>
+                      <Switch
+                        id={id}
+                        data-slot={`coach-prefs-context-${metric}`}
                         checked={checked}
                         onCheckedChange={(next) => toggleExclude(metric, next)}
                       />

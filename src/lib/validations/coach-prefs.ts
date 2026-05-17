@@ -55,6 +55,14 @@ export const coachExcludeMetricEnum = z.enum([
   "sleep",
   "resting_hr",
   "steps",
+  // v1.4.36 W3 T2 — optional context blocks the user can opt out of.
+  // `medications` covers the snapshot's compliance + GLP-1 weeklyContext;
+  // `anthropometrics` covers height / age / gender on `context`. Each
+  // gates a single labelled block at the snapshot/feature layer, so an
+  // excluded block never lands in the prompt at all (not even as a
+  // labelled-empty key).
+  "medications",
+  "anthropometrics",
 ]);
 export type CoachExcludeMetric = z.infer<typeof coachExcludeMetricEnum>;
 
@@ -83,7 +91,7 @@ export type CoachDefaultWindow = z.infer<typeof coachDefaultWindowEnum>;
 export const coachPrefsSchema = z.object({
   tone: coachToneEnum.default("warm"),
   verbosity: coachVerbosityEnum.default("default"),
-  excludeMetrics: z.array(coachExcludeMetricEnum).max(9).default([]),
+  excludeMetrics: z.array(coachExcludeMetricEnum).max(11).default([]),
   showEvidenceByDefault: z.boolean().default(false),
   defaultWindow: coachDefaultWindowEnum.default("allTime"),
 });

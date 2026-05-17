@@ -353,8 +353,10 @@ components:
                   - sleep
                   - resting_hr
                   - steps
+                  - medications
+                  - anthropometrics
                 type: string
-              maxItems: 9
+              maxItems: 11
               type: array
             showEvidenceByDefault:
               default: false
@@ -1076,8 +1078,10 @@ components:
                   - sleep
                   - resting_hr
                   - steps
+                  - medications
+                  - anthropometrics
                 type: string
-              maxItems: 9
+              maxItems: 11
               type: array
             showEvidenceByDefault:
               default: false
@@ -1880,8 +1884,10 @@ paths:
                       - sleep
                       - resting_hr
                       - steps
+                      - medications
+                      - anthropometrics
                     type: string
-                  maxItems: 9
+                  maxItems: 11
                   type: array
                 showEvidenceByDefault:
                   default: false
