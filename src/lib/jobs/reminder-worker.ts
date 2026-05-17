@@ -1188,10 +1188,32 @@ async function handleFeedbackAggregator(
  * provider unreachable) and re-resolves them through the now-bundled
  * resolver chain. The helper is idempotent and capped per pass so
  * the hourly cadence cannot starve a live login spike.
+ *
+ * v1.4.38 — in-process singleton guard. pg-boss already coalesces
+ * concurrent cron ticks across multiple worker containers via the
+ * shared queue lease, but a single container that takes longer than
+ * one cron interval can pick up two jobs back-to-back when the
+ * second tick fires while the first pass is still running. The
+ * in-process `geoBackfillRunning` flag fans the second invocation
+ * out as a no-op log line instead of stacking two concurrent passes
+ * inside the same Node process — the next cron tick after the first
+ * completes will catch up the work the skipped pass would have done.
  */
+let geoBackfillRunning = false;
 async function handleGeoBackfill(jobs: Job<GeoBackfillPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.geo_backfill", async (evt) => {
+    if (geoBackfillRunning) {
+      // Earlier pass still in flight; skip this tick. Idempotent + the
+      // next tick after the in-flight pass completes will pick up
+      // anything we miss here.
+      evt.addWarning(
+        "geo-backfill skipped — earlier pass still in flight inside the same worker process",
+      );
+      evt.addMeta("geo_backfill_skipped", true);
+      return;
+    }
+    geoBackfillRunning = true;
     const p = getWorkerPrisma();
     try {
       const summary = await runGeoBackfill(p);
@@ -1204,6 +1226,8 @@ async function handleGeoBackfill(jobs: Job<GeoBackfillPayload>[]) {
       // log and move on so a one-off resolver hiccup does not poison
       // the queue and block the next pass.
       evt.addWarning(`geo-backfill failed: ${err}`);
+    } finally {
+      geoBackfillRunning = false;
     }
   });
 }
