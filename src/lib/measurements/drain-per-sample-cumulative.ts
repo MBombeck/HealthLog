@@ -310,6 +310,13 @@ export async function drainPerSampleCumulative(
     const tz = user.timezone && user.timezone.length > 0 ? user.timezone : "Europe/Berlin";
     log(`[drain] user=${user.id} tz=${tz}${dryRun ? " (dry-run)" : ""}`);
 
+    // v1.4.38 — per-user counters that mirror the existing aggregate
+    // totals. Lets the per-user COMPLETE log line carry useful
+    // numbers without re-walking the summary list later.
+    const beforeBucketsCollapsed = summary.totals.bucketsCollapsed;
+    const beforePerSampleDeleted = summary.totals.perSampleRowsDeleted;
+    const beforeDailyUpserted = summary.totals.dailyRowsUpserted;
+
     for (const type of CUMULATIVE_HK_TYPES) {
       const hkIdentifier = hkIdentifierForType(type);
       if (!hkIdentifier) continue;
@@ -417,6 +424,22 @@ export async function drainPerSampleCumulative(
         }
       }
     }
+
+    // v1.4.38 — per-user COMPLETE log line. Mirrors the START line on
+    // line 311 so an operator scanning the worker log can pair
+    // "drain started for user X" with "drain finished for user X"
+    // without scrolling through every per-type bucket. Counts are
+    // computed as the delta against the snapshot taken before the
+    // per-type loop started.
+    const userBucketsCollapsed =
+      summary.totals.bucketsCollapsed - beforeBucketsCollapsed;
+    const userPerSampleDeleted =
+      summary.totals.perSampleRowsDeleted - beforePerSampleDeleted;
+    const userDailyUpserted =
+      summary.totals.dailyRowsUpserted - beforeDailyUpserted;
+    log(
+      `[drain] user=${user.id} complete bucketsCollapsed=${userBucketsCollapsed} perSampleRowsDeleted=${userPerSampleDeleted} dailyRowsUpserted=${userDailyUpserted}${dryRun ? " (dry-run)" : ""}`,
+    );
   }
 
   log(
