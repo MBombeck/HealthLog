@@ -105,7 +105,15 @@ export function InsightStatusCard({
   }
 
   return (
-    <Card className="animate-insight-in border-l-dracula-purple border-l-2">
+    // v1.4.38 W-D P2-2 — `aria-live="polite"` so screen readers
+    // announce the assessment when it swaps into the same slot the
+    // structured skeleton occupied. The skeleton card already carries
+    // `aria-busy="true" aria-live="polite"`; mirroring the live region
+    // on the success card closes the load→loaded transition signal.
+    <Card
+      aria-live="polite"
+      className="animate-insight-in border-l-dracula-purple border-l-2"
+    >
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
