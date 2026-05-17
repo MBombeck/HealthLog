@@ -13,6 +13,7 @@ import type { NextRequest } from "next/server";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
+import { requireAssistantSurface } from "@/lib/feature-flags";
 
 import {
   deleteConversation,
@@ -25,6 +26,10 @@ interface RouteCtx {
 
 export const GET = apiHandler(async (_request: NextRequest, ctx: RouteCtx) => {
   const auth = await requireAuth();
+  // v1.4.38 W-C M6 — operator can hide the Coach surface app-wide;
+  // the conversation reader is part of the Coach stack (encrypted
+  // assistant prose), so a disabled surface must 403 here too.
+  await requireAssistantSurface("coach");
   const { id } = await ctx.params;
   if (!id) return apiError("coach.conversation.notFound", 404);
 
@@ -44,6 +49,10 @@ export const GET = apiHandler(async (_request: NextRequest, ctx: RouteCtx) => {
 export const DELETE = apiHandler(
   async (_request: NextRequest, ctx: RouteCtx) => {
     const auth = await requireAuth();
+    // v1.4.38 W-C M6 — same gate as GET; a disabled Coach surface
+    // means the user can't reach the conversation list anyway, so the
+    // delete affordance must stay behind the same kill-switch.
+    await requireAssistantSurface("coach");
     const { id } = await ctx.params;
     if (!id) return apiError("coach.conversation.notFound", 404);
 
