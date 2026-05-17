@@ -77,6 +77,20 @@ export interface DrainOptions {
   dryRun?: boolean;
   /** Logger sink — defaults to `console.log`. */
   log?: (line: string) => void;
+  /**
+   * v1.4.37 W7c — protect recent per-sample rows from collapse so late
+   * watch syncs still surface in real time before the list view shows
+   * the day's total. When set, rows whose `measuredAt` is newer than
+   * `now() - cutoffHours` are excluded from the scan; the drain only
+   * acts on completed days that have had enough time to stabilise.
+   *
+   * The scheduled nightly call passes `36` so the previous day's
+   * trailing sync window (Apple Watch reconciliations land up to a few
+   * hours after midnight when the watch wasn't worn) is fully covered.
+   * The CLI + admin endpoint default to `undefined` (drain everything
+   * the operator points at) for explicit one-shot use.
+   */
+  cutoffHours?: number;
 }
 
 /**
@@ -190,6 +204,14 @@ export async function drainPerSampleCumulative(
 ): Promise<DrainSummary> {
   const dryRun = options.dryRun ?? false;
   const log = options.log ?? ((line) => console.log(line));
+  // v1.4.37 W7c — when the scheduler passes a cutoff window we leave
+  // rows newer than the cutoff alone so the user's "today" view keeps
+  // updating in real time. Cutoff is computed once per invocation so
+  // every per-user-type scan uses the same boundary instant.
+  const cutoffAt =
+    typeof options.cutoffHours === "number" && options.cutoffHours > 0
+      ? new Date(Date.now() - options.cutoffHours * 60 * 60 * 1000)
+      : null;
 
   const users = options.userId
     ? await prismaClient.user.findMany({
@@ -224,6 +246,10 @@ export async function drainPerSampleCumulative(
           userId: user.id,
           source: "APPLE_HEALTH",
           type,
+          // v1.4.37 W7c — exclude rows that fall inside the grace
+          // window so the nightly scheduled drain never collapses
+          // today's still-in-flight watch syncs.
+          ...(cutoffAt ? { measuredAt: { lt: cutoffAt } } : {}),
         },
         select: {
           id: true,
