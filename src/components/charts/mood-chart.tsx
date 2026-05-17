@@ -544,13 +544,22 @@ export function MoodChart({
       // visibly heavier corner radius than BP / weight in the same
       // row. Align to the `rounded-md` shell so the three trend
       // tiles share one corner radius.
+      //
+      // v1.4.37 W4a item 5 — collapse the Card's inter-row gap to
+      // 0 so the only space between the title and the chart strip
+      // is the CardHeader's own `pb-1` (4 px), matching the
+      // `mb-1` HealthChart paints below its plain `<div>` title.
+      // Pre-fix Mood's `gap-1` (4 px) on top of the header `pb-1`
+      // stacked an extra 4 px below the title, which read as a
+      // ~12-16 px taller card than the BP/weight siblings inside
+      // the trends row.
       className={
-        mini ? "gap-1 rounded-md py-2 shadow-none" : undefined
+        mini ? "gap-0 rounded-md py-2 shadow-none" : undefined
       }
     >
       <CardHeader
         className={
-          mini ? "px-2 pb-1 [&]:gap-0.5" : "pb-2"
+          mini ? "px-2 pb-1 [&]:gap-0" : "pb-2"
         }
       >
         {/* v1.4.19 A2 — mobile-first header: stack title row above
