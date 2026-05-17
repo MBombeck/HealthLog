@@ -17,6 +17,12 @@ export const EVENT_TYPES = [
   // below) so a multi-year Apple Health backfill doesn't fire hundreds
   // of pushes during initial sync.
   "PERSONAL_RECORD",
+  // v0.5.4 ios-coord — daily mood-reminder nudge. Default OFF on the
+  // per-event policy (see DEFAULT_EVENT_PREFS) and additionally gated
+  // on the per-user `moodReminderEnabled` flag, so a user has to opt
+  // in twice before the server starts nudging them about an
+  // emotionally-loaded surface.
+  "MOOD_REMINDER",
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
@@ -38,6 +44,11 @@ export const EVENT_DEFAULT_ENABLED: Record<EventType, boolean> = {
   WITHINGS_SYNC_FAILED: true,
   SYSTEM_ALERT: true,
   PERSONAL_RECORD: false,
+  // v0.5.4 ios-coord — see note above on `EVENT_TYPES`. Default OFF
+  // is the safer posture: even if a future surface forgets to gate on
+  // `User.moodReminderEnabled`, this per-event default also has to be
+  // flipped on before the dispatcher will surface the channel.
+  MOOD_REMINDER: false,
 };
 
 export const CHANNEL_TYPE_LABELS: Record<ChannelType, string> = {

@@ -83,6 +83,7 @@ import {
   getPhaseMessage,
   getPhaseKeyboard,
 } from "@/lib/jobs/reminder-phases";
+import { runMoodReminderTick } from "@/lib/jobs/mood-reminder";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { assertSubsystemEnabled } from "@/lib/process-type";
 import { runOffhostBackup } from "@/lib/jobs/offhost-backup";
@@ -179,6 +180,17 @@ const FEEDBACK_AGGREGATOR_CRON = "0 4 * * *";
 // fall to the drain.
 const DRAIN_CUMULATIVE_QUEUE = "drain-per-sample-cumulative";
 const DRAIN_CUMULATIVE_CRON = "45 3 * * *";
+// v0.5.4 ios-coord — daily mood-reminder cron.
+//
+// Runs every 15 minutes so the handler can pick up users whose local
+// time has just crossed 22:00 across any IANA timezone without having
+// to schedule one cron entry per zone. The handler short-circuits when
+// the user's local hour isn't 22, so the 15-min cadence translates to
+// ~4 ticks-per-hour × 1 actual-dispatch-window-per-user = at most one
+// push per user per day. Idempotency is enforced by the
+// `MoodReminderDispatch` ledger inside the handler.
+const MOOD_REMINDER_QUEUE = "mood-reminder-check";
+const MOOD_REMINDER_CRON = "*/15 * * * *";
 // v1.4.38 — the per-sample cutoff hours constant now lives on the
 // helper module so the worker, the admin route, and the CLI all read
 // the same source of truth. Re-export pulled in alongside
@@ -278,6 +290,10 @@ interface FeedbackAggregatorPayload {
 }
 
 interface GeoBackfillPayload {
+  triggeredAt: string;
+}
+
+interface MoodReminderPayload {
   triggeredAt: string;
 }
 
@@ -559,6 +575,17 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
               med.user.locale,
             );
 
+            // v0.5.4 — surface the window-start as an ISO 8601 string so
+            // the iOS notification handler can pin a "snooze 15 min"
+            // action against the actual schedule slot rather than the
+            // wall-clock moment APNs delivered. Computed in UTC from the
+            // user's localised window-start; mirrors the RED-phase
+            // `scheduledFor` field on the intake event.
+            const [winH, winM] = schedule.windowStart.split(":").map(Number);
+            const scheduledAtIso = new Date(
+              todayStart.getTime() + winH * 3600000 + winM * 60000,
+            ).toISOString();
+
             evt.addMeta(
               "notification_phase",
               `${currentPhase}:${med.name}:${schedule.windowStart}-${schedule.windowEnd}`,
@@ -575,6 +602,7 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
                   scheduleId: schedule.id,
                   phase: currentPhase,
                   date: localDateStr,
+                  scheduledAt: scheduledAtIso,
                   replyMarkup: keyboard,
                 },
               });
@@ -717,9 +745,7 @@ async function handleWithingsActivitySync(
  * activity handler: per-user when the webhook fires, full-iteration
  * when the cron ticks.
  */
-async function handleWithingsSleepSync(
-  jobs: Job<WithingsSleepSyncPayload>[],
-) {
+async function handleWithingsSleepSync(jobs: Job<WithingsSleepSyncPayload>[]) {
   await withBackgroundEvent("job.withings_sleep_sync", async (evt) => {
     const prisma = getWorkerPrisma();
     try {
@@ -1107,6 +1133,39 @@ async function handleMoodLogSync(jobs: Job<MoodLogSyncPayload>[]) {
   });
 }
 
+/**
+ * v0.5.4 ios-coord — daily mood-reminder dispatcher.
+ *
+ * Delegates the dispatch decision to `runMoodReminderTick` in
+ * `mood-reminder.ts` so the unit tests can exercise the logic without
+ * spinning up pg-boss. The handler is a thin shim that wires the worker
+ * Prisma singleton + the wide-event sink to the pure function.
+ */
+async function handleMoodReminderCheck(jobs: Job<MoodReminderPayload>[]) {
+  void jobs;
+  await withBackgroundEvent("job.mood_reminder", async (evt) => {
+    const prisma = getWorkerPrisma();
+    try {
+      const summary = await runMoodReminderTick(prisma, new Date());
+      evt.setBackground({
+        task_name: "job.mood_reminder",
+        result: {
+          candidates_scanned: summary.candidatesScanned,
+          in_window: summary.inWindow,
+          dispatched: summary.dispatched,
+          skipped_already_logged: summary.skippedAlreadyLogged,
+          skipped_already_dispatched: summary.skippedAlreadyDispatched,
+          skipped_outside_window: summary.skippedOutsideWindow,
+        },
+      });
+    } catch (err) {
+      evt.setError(err);
+      recordError();
+      throw err;
+    }
+  });
+}
+
 async function handleRateLimitCleanup(jobs: Job<RateLimitCleanupPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.rate_limit_cleanup", async (evt) => {
@@ -1248,8 +1307,10 @@ async function handlePrDetection(
       // users in that case. The push-suppression flag is irrelevant
       // for the cron path (the dispatcher's per-user opt-in handles
       // the loud/quiet decision once the row is written).
-      const payloadUserId = (job.data as PrDetectionPayload | undefined)?.userId;
-      const silent = (job.data as PrDetectionPayload | undefined)?.silent ?? false;
+      const payloadUserId = (job.data as PrDetectionPayload | undefined)
+        ?.userId;
+      const silent =
+        (job.data as PrDetectionPayload | undefined)?.silent ?? false;
       const userIds: string[] = payloadUserId
         ? [payloadUserId]
         : (await p.user.findMany({ select: { id: true } })).map((u) => u.id);
@@ -1560,6 +1621,11 @@ export async function startReminderWorker() {
     // this entry the drain schedule silently no-ops and the
     // per-sample APPLE_HEALTH rows never collapse.
     DRAIN_CUMULATIVE_QUEUE,
+    // v0.5.4 ios-coord — mood-reminder cron tick. Same pg-boss v12
+    // createQueue contract as the drain queue above; without this
+    // entry the every-15-min schedule silently no-ops and the
+    // dispatcher never fires.
+    MOOD_REMINDER_QUEUE,
   ];
 
   for (const q of allQueues) {
@@ -1573,11 +1639,7 @@ export async function startReminderWorker() {
   try {
     await reconcileOrphanImportJobs();
   } catch (err) {
-    workerLog(
-      "error",
-      "Failed to reconcile orphan ImportJob rows",
-      err,
-    );
+    workerLog("error", "Failed to reconcile orphan ImportJob rows", err);
   }
 
   // Schedule recurring cron jobs
@@ -1620,6 +1682,11 @@ export async function startReminderWorker() {
     // rows into one row per day per type. Slots between the
     // audit-log cleanup (03:15) and the feedback aggregator (04:00).
     [DRAIN_CUMULATIVE_QUEUE, DRAIN_CUMULATIVE_CRON],
+    // v0.5.4 ios-coord — every-15-min tick for the daily mood reminder.
+    // The handler short-circuits unless the candidate user's local
+    // time is the 22:00 hour, so the cron costs ~one user-row scan
+    // per tick for the entire opted-in cohort.
+    [MOOD_REMINDER_QUEUE, MOOD_REMINDER_CRON],
   ];
 
   for (const [name, cron] of schedules) {
@@ -1726,6 +1793,15 @@ export async function startReminderWorker() {
     GEO_BACKFILL_QUEUE,
     { localConcurrency: 1 },
     handleGeoBackfill,
+  );
+  // v0.5.4 ios-coord — single-flight worker. localConcurrency=1 keeps
+  // two reminder ticks from interleaving against the same user row;
+  // the dedup ledger would still save us, but skipping the race here
+  // avoids spurious P2002 errors in the wide-event log.
+  await boss.work<MoodReminderPayload>(
+    MOOD_REMINDER_QUEUE,
+    { localConcurrency: 1 },
+    handleMoodReminderCheck,
   );
   await boss.work<PrDetectionPayload>(
     PR_DETECTION_QUEUE,
