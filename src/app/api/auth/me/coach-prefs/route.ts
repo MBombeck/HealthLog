@@ -57,9 +57,18 @@ export const PUT = apiHandler(async (req: Request) => {
 
   // Persist the canonical defaulted form so the column shape stays
   // stable regardless of which subset of keys the caller supplied.
+  //
+  // v1.4.36 W3 T3 — mirror the excludeMetrics list onto the dedicated
+  // `insightsExcludeMetrics` column so the Insights generator and
+  // Coach snapshot share a single source of truth. Keeps the user's
+  // privacy contract symmetric across the two surfaces without
+  // requiring a separate Insights settings sheet.
   await prisma.user.update({
     where: { id: user.id },
-    data: { coachPrefsJson: parsed.data },
+    data: {
+      coachPrefsJson: parsed.data,
+      insightsExcludeMetrics: parsed.data.excludeMetrics,
+    },
   });
 
   annotate({

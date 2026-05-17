@@ -36,6 +36,12 @@ model User {
   insightsPrivacyMode        String    @default("aggregated") @map("insights_privacy_mode") // "aggregated" | "raw"
   insightsCachedAt           DateTime? @map("insights_cached_at")
   insightsCachedText         String?   @map("insights_cached_text") // cached JSON output
+  // v1.4.36 W3 T3 — per-user AI Insights exclude-metrics list, mirrors
+  // `coachPrefsJson.excludeMetrics`. The /api/insights/generate route
+  // filters matching keys off `features` before JSON.stringify so the
+  // model never sees data the user opted out of. Default `[]` = legacy
+  // behaviour for every existing row.
+  insightsExcludeMetrics     String[]  @default([]) @map("insights_exclude_metrics")
 
   // Telegram notifications (per-user)
   telegramBotToken String? @map("telegram_bot_token") // AES-256-GCM encrypted

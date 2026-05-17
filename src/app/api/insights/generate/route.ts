@@ -5,6 +5,7 @@ import {
   extractFeatures,
   FeaturesPayloadTooLargeError,
 } from "@/lib/insights/features";
+import { applyInsightsExcludeFilter } from "@/lib/insights/exclude-filter";
 import {
   detectGlp1Plateau,
   buildGlp1PlateauPrompt,
@@ -191,6 +192,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
       insightsPrivacyMode: true,
       insightsCachedAt: true,
       insightsCachedText: true,
+      // v1.4.36 W3 T3 — per-user opt-out list mirroring the Coach
+      // settings. Filtered off `features` before serialisation so the
+      // LLM never sees the excluded blocks.
+      insightsExcludeMetrics: true,
       locale: true,
     },
   });
@@ -291,6 +296,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
       throw err;
     }
   }
+  // v1.4.36 W3 T3 — apply the user's exclude-metrics opt-out list
+  // BEFORE serialisation so the model never sees the dropped blocks.
+  const excludeList = dbUser?.insightsExcludeMetrics ?? [];
+  features = applyInsightsExcludeFilter(features, excludeList);
   const featuresJson = JSON.stringify(features, null, 2);
   if (payloadDowngraded) {
     annotate({
