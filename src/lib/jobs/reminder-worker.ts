@@ -62,6 +62,7 @@ import {
   type RollupFullBackfillPayload,
   type RollupRecomputePayload,
 } from "@/lib/measurements/rollups";
+import { drainPerSampleCumulative } from "@/lib/measurements/drain-per-sample-cumulative";
 import { expireStaleInUseItems } from "@/lib/medications/inventory/service";
 import { rotateLegacyMoodLogSecrets } from "@/lib/moodlog-secret";
 import { deleteMessage } from "@/lib/telegram";
@@ -157,6 +158,20 @@ const HOST_METRIC_CRON = "* * * * *";
 // audit-log) so the previous-day's noise is gone before we aggregate.
 const FEEDBACK_AGGREGATOR_QUEUE = "feedback-aggregator";
 const FEEDBACK_AGGREGATOR_CRON = "0 4 * * *";
+// v1.4.37 W7c — nightly drain of per-sample APPLE_HEALTH cumulative
+// rows. Collapses each user × cumulative-type × calendar-day bucket
+// into one `stats:…` row so the list view stops painting hundreds of
+// step chunks per day. 03:45 Europe/Berlin slots in between the
+// 03:15 audit-log cleanup and the 04:00 feedback aggregator. The
+// 36-hour grace window keeps today + the trailing watch-sync window
+// intact for real-time visibility; only completed-and-stable days
+// fall to the drain.
+const DRAIN_CUMULATIVE_QUEUE = "drain-per-sample-cumulative";
+const DRAIN_CUMULATIVE_CRON = "45 3 * * *";
+const DRAIN_CUMULATIVE_CUTOFF_HOURS = 36;
+interface DrainCumulativePayload {
+  triggeredAt: string;
+}
 
 interface ReminderCheckPayload {
   triggeredAt: string;
@@ -1522,6 +1537,10 @@ export async function startReminderWorker() {
     // EXPIRED at 03:30 Europe/Berlin (in the existing 02:xx–03:xx
     // maintenance window, right after idempotency-cleanup).
     [MEDICATION_INVENTORY_EXPIRE_QUEUE, MEDICATION_INVENTORY_EXPIRE_CRON],
+    // v1.4.37 W7c — nightly fold of per-sample APPLE_HEALTH cumulative
+    // rows into one row per day per type. Slots between the
+    // audit-log cleanup (03:15) and the feedback aggregator (04:00).
+    [DRAIN_CUMULATIVE_QUEUE, DRAIN_CUMULATIVE_CRON],
   ];
 
   for (const [name, cron] of schedules) {
@@ -1687,6 +1706,36 @@ export async function startReminderWorker() {
           "info",
           `[rollup-full-backfill] user=${userId} rows=${rowsUpserted} duration=${durationMs}ms`,
         );
+      }
+    },
+  );
+
+  // v1.4.37 W7c — nightly drain worker. Walks every user × cumulative
+  // type and folds per-sample APPLE_HEALTH rows older than the cutoff
+  // into one `stats:…` row per calendar day. Idempotent — a second run
+  // collapses zero buckets once every day is in the `stats:` shape.
+  // Concurrency-1 so the drain never crowds the dashboard request pool
+  // and a long backfill on Marc's account (300 k+ measurement rows)
+  // stays a single sequential walk.
+  await boss.work<DrainCumulativePayload>(
+    DRAIN_CUMULATIVE_QUEUE,
+    { localConcurrency: 1 },
+    async (jobs) => {
+      for (const job of jobs) {
+        try {
+          const summary = await drainPerSampleCumulative(getWorkerPrisma(), {
+            dryRun: false,
+            cutoffHours: DRAIN_CUMULATIVE_CUTOFF_HOURS,
+            log: (line) => workerLog("info", line),
+          });
+          workerLog(
+            "info",
+            `[drain-cumulative] triggeredAt=${job.data.triggeredAt} usersScanned=${summary.totals.usersScanned} bucketsCollapsed=${summary.totals.bucketsCollapsed} perSampleRowsDeleted=${summary.totals.perSampleRowsDeleted} dailyRowsUpserted=${summary.totals.dailyRowsUpserted}`,
+          );
+        } catch (err) {
+          recordError();
+          workerLog("error", "[drain-cumulative] run failed", err);
+        }
       }
     },
   );
