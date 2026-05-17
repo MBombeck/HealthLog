@@ -1,6 +1,6 @@
-# v1.4.34.4 + v1.4.34.5 + v1.4.35 + v1.4.35.1 + v1.4.36 — Audit-Marathon Closure (extended)
+# v1.4.34.4 + v1.4.34.5 + v1.4.35 + v1.4.35.1 + v1.4.36 + v1.4.37 — Audit-Marathon Closure (extended)
 
-Shipped: 2026-05-17 (five consecutive releases on the same date as v1.4.34.3).
+Shipped: 2026-05-17 (six consecutive releases on the same date as v1.4.34.3).
 
 | Tag | Highlights | Release |
 | --- | --- | --- |
@@ -9,6 +9,7 @@ Shipped: 2026-05-17 (five consecutive releases on the same date as v1.4.34.3).
 | v1.4.35 | Layer B landed — persistent `measurement_rollups` foundation + partial reader read-swap on the comprehensive aggregator and the slim summaries slice | [v1.4.35](https://github.com/MBombeck/HealthLog/releases/tag/v1.4.35) |
 | v1.4.35.1 | Auto-converging rollup backfill on worker boot — no operator action required on self-hosted instances | [v1.4.35.1](https://github.com/MBombeck/HealthLog/releases/tag/v1.4.35.1) |
 | v1.4.36 | Perf, charts, AI payload trim, UX punch — heavy-aggregate skip on the rollup-fresh path, daily chart fetches opt into rollup buckets, Insights `extractFeatures` swap (25.9 MB → 30,096 tokens, **−99.5 %**), page-blocking call 10.88 s → 4.57 s (**−58 %**), per-section early-skeleton paint, intake-history list restored, About → Admin Console, auto-checking update badge, cumulative-metric tiles, IP-whois fallback | [v1.4.36](https://github.com/MBombeck/HealthLog/releases/tag/v1.4.36) |
+| v1.4.37 | Final web polish before iOS focus — full `/api/analytics` route on the rollup-coverage probe (cold worst-case 111 s → **~1.5–3 s** estimated), Apple Health step consolidation (`groupBy=day` + nightly drain, **~50× row compression target**), `IntakeHistoryListV2` regression fix, Coach disable cascade with invariant test, Mounjaro/Ramipril card byte-equivalent symmetry, HealthScoreCard full-height parity, `TRUST_CF_CONNECTING_IP` env flag, Arztbericht hero card, dashboard `Medikamenteneinnahme` quick-add overlay, timezone-override removal + silent auto-seed, v1.4.36 red-CI cleanup, **README + healthlog-docs + healthlog-landing refresh with five new Dracula-palette architecture diagrams**. Unit suite 4354 → 4486 passing. | [v1.4.37](https://github.com/MBombeck/HealthLog/releases/tag/v1.4.37) |
 
 ## Audit waves
 
