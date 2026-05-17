@@ -132,16 +132,17 @@ describe("settings sections — SSR smoke", () => {
     expect(html).not.toContain("onboarding.tour.");
   });
 
-  it("<AboutSection> renders version + license + check-for-updates button", () => {
+  it("<AboutSection> renders version + license + sources/docs cards (no Updates panel)", () => {
     const html = render(<AboutSection />);
     expect(html).toContain("About");
-    // The new about.* keys resolve. v1.4.3 split the page into three
-    // titled cards (HealthLog identity, Sources & docs, Updates) and
-    // shortened the button label from "Check for updates" to "Check now"
-    // because the surrounding heading already names the section.
-    expect(html).toContain("Updates");
+    // v1.4.36 W4f — the dedicated "Updates" card with its manual
+    // "Check now" button is gone. The 24 h auto-check still runs and
+    // surfaces a subtle ArrowUpCircle badge next to the version line
+    // when a newer release is available. The Sources & docs card
+    // stays put.
     expect(html).toContain("Sources &amp; docs");
-    expect(html).toContain("Check now");
+    expect(html).not.toContain(">Check now<");
+    expect(html).not.toContain(">Check for updates<");
     expect(html).not.toContain("settings.about.");
   });
 
@@ -198,11 +199,12 @@ describe("settings sections — SSR smoke", () => {
 
   it("<AboutSection> resolves about.* keys in German", () => {
     const html = render(<AboutSection />, "de");
-    // v1.4.3: button label shortened to "Jetzt prüfen" because the
-    // section heading "Updates" already provides context.
-    expect(html).toContain("Updates");
-    expect(html).toContain("Jetzt prüfen");
+    // v1.4.36 W4f — "Updates" panel + "Jetzt prüfen" button removed;
+    // the surviving German copy is the section title + the Sources
+    // & docs heading + the version line.
+    expect(html).toContain("Über");
     expect(html).toContain("Quellen &amp; Dokumentation");
+    expect(html).not.toContain(">Jetzt prüfen<");
   });
 
   it("<ThresholdsSection> renders heading and embeds both editors (v1.4.34 IW-D merge)", () => {
