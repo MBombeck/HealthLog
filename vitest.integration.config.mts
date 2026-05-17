@@ -23,7 +23,18 @@ export default defineConfig({
     // level (the old `poolOptions.forks.singleFork` was removed).
     pool: "forks",
     fileParallelism: false,
-    isolate: false,
+    // v1.4.37 W-CI — switched from `isolate: false` to `isolate: true`.
+    // The previous setting reused the module graph across files inside
+    // one fork; mock declarations (`vi.mock("@/lib/notifications/...")`,
+    // `vi.mock("@parse/node-apn")`) registered in `apns-dispatch.test.ts`
+    // and `integration-status.test.ts` lost to whichever earlier file
+    // had already pulled the real dispatcher / sender modules into the
+    // shared graph, so the in-suite run showed flaky 0-call mocks while
+    // each file passed in isolation. Re-isolating module state per file
+    // costs ~10 s of import-rebuild on a 56-file run; the Postgres
+    // testcontainer + migrations still live in `globalSetup` so the
+    // expensive boot cost is unaffected.
+    isolate: true,
     // One container for the whole run; tests truncate between them.
     globalSetup: ["./tests/integration/global-setup.ts"],
   },

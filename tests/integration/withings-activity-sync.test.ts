@@ -11,6 +11,15 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// Crypto reads `ENCRYPTION_KEY` lazily on first encrypt(). Under the
+// previous `isolate: false` suite the env from any sibling that seeded
+// the key leaked into this file; per-file isolation (v1.4.37 W-CI)
+// reveals that this spec never seeded its own key. Pin a deterministic
+// 32-byte test key before any `@/lib/crypto` import so the spec stays
+// self-contained.
+process.env.ENCRYPTION_KEY ??=
+  "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
 import { encrypt } from "@/lib/crypto";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
