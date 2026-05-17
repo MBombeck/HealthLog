@@ -1,11 +1,12 @@
-# v1.4.34.4 + v1.4.34.5 — Audit-Marathon Closure
+# v1.4.34.4 + v1.4.34.5 + v1.4.35 — Audit-Marathon Closure (extended)
 
-Shipped: 2026-05-17 (consecutive releases on the same date as v1.4.34.3).
+Shipped: 2026-05-17 (three consecutive releases on the same date as v1.4.34.3).
 
 | Tag | Highlights | Release |
 | --- | --- | --- |
 | v1.4.34.4 | Audit-driven hotfix bundle across security, UX, code quality, mobile-deep, docs, GitHub metadata | [v1.4.34.4](https://github.com/MBombeck/HealthLog/releases/tag/v1.4.34.4) |
 | v1.4.34.5 | Audit follow-on: 24 critical-path integration tests + iOS textarea zoom fix | [v1.4.34.5](https://github.com/MBombeck/HealthLog/releases/tag/v1.4.34.5) |
+| v1.4.35 | Layer B landed — persistent `measurement_rollups` foundation + partial reader read-swap on the comprehensive aggregator and the slim summaries slice | [v1.4.35](https://github.com/MBombeck/HealthLog/releases/tag/v1.4.35) |
 
 ## Audit waves
 
@@ -142,3 +143,14 @@ These remain environment-side, unchanged by v1.4.34.4/.5:
 - **31 new unit tests + 24 new integration tests** = 55 net test gain
 
 End of audit marathon. The next layer of findings (perf fan-out queries, prompt-factory refactor, version-tag sweep, JSDoc gap, plural-i18n) is captured per-file in the audit reports for a future v1.5.x pass.
+
+## v1.4.35 addendum — Layer B landed
+
+The v1.4.34.1/.2 closure flagged "Layer B (`measurement_rollups` table)" as deferred to v1.5.x. That deferral is reversed — Layer B shipped in two stages on 2026-05-17:
+
+- **Foundation** (commit `9872081d` on develop) — additive `measurement_rollups` table + `RollupGranularity` enum, populator (`recomputeBucketsForMeasurement` sync DAY + pg-boss WEEK/MONTH/YEAR, `recomputeUserRollups` full range, `ensureUserRollupsFresh` warm-on-read), write hooks on all 6 measurement mutation endpoints, Apple-Health-import end-of-job backfill, `scripts/backfill-rollups.ts`, pg-boss `rollup-recompute` worker subscription, +14 unit + 3 integration tests.
+- **Partial read-swap** (commit `67ccd553` on develop, shipped as v1.4.35) — the comprehensive insights aggregator and the slim analytics summaries slice now source `count / min / max / mean` per type from the DAY rollup buckets via `aggregateBuckets`, plus the comprehensive `dailyByType` correlation feed straight from the bucket means. Slope / R² / standard deviation / anomaly counts continue to run against live SQL — they don't compose across DAY buckets. A defensive parity check against the live aggregate's `COUNT(*)` falls back to live SQL when divergence is detected.
+
+Tests: 4280 unit + 228 integration (+14 unit + 6 integration on the rollup path). `pnpm typecheck` + `pnpm lint` clean. Migration `0067_v1434_measurement_rollups` is idempotent.
+
+A full read-swap across every remaining analytics surface is planned for a follow-up release once the partial swap has proven itself in production.
