@@ -116,15 +116,18 @@ describe("buildComprehensiveAggregate", () => {
         },
       ]);
 
-      FIND_MANY.mockResolvedValueOnce([]) // sys
-        .mockResolvedValueOnce([]); // dia
+      // v1.4.38 W-F — sys + dia merged into a single `findMany`
+      // (`type: { in: [...] }`) → one mock call carrying both rows
+      // (empty here since the rollup-fresh fixture doesn't exercise
+      // the BP pairing). The aggregator partitions by type in JS so
+      // the bpRawRows.sys / .dia byte-shape is preserved.
+      FIND_MANY.mockResolvedValueOnce([]);
 
       const result = await buildComprehensiveAggregate("user-rollup-fresh");
       const weight = result.summaries.WEIGHT;
 
       // count/min/max/mean composed from buckets — the test asserts the
       // bucket-derived values are present even though we never wired up
-      // a heavy aggregate row for the parity check.
       expect(weight.count).toBe(42);
       expect(weight.min).toBe(79.2);
       expect(weight.max).toBe(84.1);
@@ -154,7 +157,8 @@ describe("buildComprehensiveAggregate", () => {
       // count + by checking that the narrow projection (no min_value /
       // max_value / mean_value cols) is what landed.
       expect(RAW).toHaveBeenCalledTimes(4);
-      expect(FIND_MANY).toHaveBeenCalledTimes(2);
+      // v1.4.38 W-F — sys + dia merged into a single round-trip.
+      expect(FIND_MANY).toHaveBeenCalledTimes(1);
       expect(ROLLUP_FIND_MANY).toHaveBeenCalledTimes(1);
     });
   });
@@ -168,8 +172,8 @@ describe("buildComprehensiveAggregate", () => {
       RAW.mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
-      FIND_MANY.mockResolvedValueOnce([]) // sys
-        .mockResolvedValueOnce([]); // dia
+      // v1.4.38 W-F — sys + dia merged into one `findMany`.
+      FIND_MANY.mockResolvedValueOnce([]);
 
       const result = await buildComprehensiveAggregate("user-empty");
 
@@ -180,7 +184,8 @@ describe("buildComprehensiveAggregate", () => {
       expect(result.firstMeasurementAt).toBeNull();
       expect(result.totalMeasurements).toBe(0);
       expect(RAW).toHaveBeenCalledTimes(3);
-      expect(FIND_MANY).toHaveBeenCalledTimes(2);
+      // v1.4.38 W-F — sys + dia merged → single findMany.
+      expect(FIND_MANY).toHaveBeenCalledTimes(1);
       // The cold path's rollup.findMany still fires (in case some
       // buckets exist for a subset of types post-race), but returns [].
       expect(ROLLUP_FIND_MANY).toHaveBeenCalledTimes(1);
@@ -219,8 +224,8 @@ describe("buildComprehensiveAggregate", () => {
         .mockResolvedValueOnce([
           { first_at: new Date(now.getTime() - 86400000) },
         ]);
-      FIND_MANY.mockResolvedValueOnce([]) // sys
-        .mockResolvedValueOnce([]); // dia
+      // v1.4.38 W-F — sys + dia merged into one round-trip.
+      FIND_MANY.mockResolvedValueOnce([]);
 
       const result = await buildComprehensiveAggregate("user-cold");
       const weight = result.summaries.WEIGHT;
@@ -293,9 +298,13 @@ describe("buildComprehensiveAggregate", () => {
         },
       ])
       .mockResolvedValueOnce([{ first_at: measuredAt }]);
+    // v1.4.38 W-F — single merged `findMany` returning both sys + dia
+    // rows tagged by `type`. The aggregator partitions in JS, so the
+    // bpRawRows.sys / .dia shape stays byte-identical.
     FIND_MANY.mockResolvedValueOnce([
-      { measuredAt, value: 120 },
-    ]).mockResolvedValueOnce([{ measuredAt, value: 80 }]);
+      { type: "BLOOD_PRESSURE_SYS", measuredAt, value: 120 },
+      { type: "BLOOD_PRESSURE_DIA", measuredAt, value: 80 },
+    ]);
 
     const result = await buildComprehensiveAggregate("user-bp");
     expect(result.bpRawRows.sys).toEqual([{ measuredAt, value: 120 }]);

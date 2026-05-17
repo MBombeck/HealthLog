@@ -99,6 +99,7 @@
  */
 import { prisma } from "@/lib/db";
 import type { DataSummary } from "@/lib/analytics/trends";
+import { annotate } from "@/lib/logging/context";
 import { ensureUserRollupsFresh } from "@/lib/measurements/rollups";
 import { aggregateBuckets } from "@/lib/measurements/rollup-read";
 import {
@@ -233,6 +234,12 @@ export async function buildComprehensiveAggregate(
 ): Promise<ComprehensiveAggregate> {
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
+  // v1.4.38 W-F — per-sub-query wall-clock timing. Emitted under
+  // `meta.insights.sub_*_ms` so the next perf-verify can attribute
+  // a regression to a specific aggregate (narrow, latests, day-buckets,
+  // bp-raw, first-at, coverage-probe) without re-instrumenting.
+  const timings: Record<string, number> = {};
+
   // v1.4.37.1 hotfix — fire-and-forget. See `src/app/api/analytics/route.ts`
   // for the full rationale: awaiting this on the read path can stall
   // the event loop for 30–60 s on power-user accounts whose iOS step
@@ -252,11 +259,71 @@ export async function buildComprehensiveAggregate(
   // and only take the rollup path when EVERY type the user has logged
   // is covered. Partial coverage falls back to the live aggregate so
   // a fresh-type measurement doesn't break its summary card.
+  const probeStart = Date.now();
   const coverage = await probeRollupCoverage(userId);
-  if (isFullyCovered(coverage)) {
-    return buildFromRollups(userId, ninetyDaysAgo);
+  timings["insights.sub_coverage_ms"] = Date.now() - probeStart;
+
+  const result = isFullyCovered(coverage)
+    ? await buildFromRollups(userId, ninetyDaysAgo, timings)
+    : await buildFromLiveAggregate(userId, ninetyDaysAgo, timings);
+
+  annotate({ meta: timings });
+  return result;
+}
+
+/**
+ * v1.4.38 W-F — tiny timing helper. Wraps a promise-returning sub-query
+ * builder so each Promise.all slot lands a wall-clock observation under
+ * `meta.insights.sub_<label>_ms`. The helper itself never throws — the
+ * builder's rejection propagates unchanged so the existing error
+ * handling stays intact.
+ */
+function timeSubquery<T>(
+  timings: Record<string, number>,
+  label: string,
+  builder: () => Promise<T>,
+): Promise<T> {
+  const t0 = Date.now();
+  return builder().then((value) => {
+    timings[`insights.sub_${label}_ms`] = Date.now() - t0;
+    return value;
+  });
+}
+
+/**
+ * v1.4.38 W-F — fetch the trailing-90d sys + dia raw rows in a single
+ * `findMany` (`type: { in: [...] }`) rather than two parallel queries.
+ * Saves one round-trip + lets Postgres consolidate the index scan.
+ * Partitioning by type in JS preserves the byte-shape of the legacy
+ * sys / dia arrays (ASC by measuredAt — already enforced by the SQL
+ * ORDER BY).
+ */
+async function fetchBpRawRows(
+  userId: string,
+  ninetyDaysAgo: Date,
+): Promise<{
+  sys: Array<{ measuredAt: Date; value: number }>;
+  dia: Array<{ measuredAt: Date; value: number }>;
+}> {
+  const rows = await prisma.measurement.findMany({
+    where: {
+      userId,
+      type: { in: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"] },
+      measuredAt: { gte: ninetyDaysAgo },
+    },
+    orderBy: { measuredAt: "asc" },
+    select: { type: true, measuredAt: true, value: true },
+  });
+  const sys: Array<{ measuredAt: Date; value: number }> = [];
+  const dia: Array<{ measuredAt: Date; value: number }> = [];
+  for (const r of rows) {
+    if (r.type === "BLOOD_PRESSURE_SYS") {
+      sys.push({ measuredAt: r.measuredAt, value: r.value });
+    } else if (r.type === "BLOOD_PRESSURE_DIA") {
+      dia.push({ measuredAt: r.measuredAt, value: r.value });
+    }
   }
-  return buildFromLiveAggregate(userId, ninetyDaysAgo);
+  return { sys, dia };
 }
 
 /**
@@ -267,9 +334,12 @@ export async function buildComprehensiveAggregate(
 async function buildFromRollups(
   userId: string,
   ninetyDaysAgo: Date,
+  timings: Record<string, number>,
 ): Promise<ComprehensiveAggregate> {
-  const [narrows, latests, dayBuckets, sysRaw, diaRaw, firstRows] = await Promise.all([
-    prisma.$queryRaw<NarrowAggregateRow[]>`
+  // v1.4.38 W-F — bp sys + dia consolidated into one `findMany`
+  // (`type: { in: [...] }`) plus per-sub-query wall-clock timings.
+  const [narrows, latests, dayBuckets, bpRawRows, firstRows] = await Promise.all([
+    timeSubquery(timings, "narrow", () => prisma.$queryRaw<NarrowAggregateRow[]>`
       WITH window_stats AS (
         SELECT
           m."type",
@@ -345,8 +415,8 @@ async function buildFromRollups(
       WHERE m."user_id" = ${userId}
         AND m."measured_at" >= ${ninetyDaysAgo}
       GROUP BY m."type", ws.stddev_value
-    `,
-    prisma.$queryRaw<LatestRow[]>`
+    `),
+    timeSubquery(timings, "latests", () => prisma.$queryRaw<LatestRow[]>`
       SELECT DISTINCT ON (m."type")
         m."type"::text AS type,
         m."value"::double precision AS value,
@@ -355,45 +425,32 @@ async function buildFromRollups(
       WHERE m."user_id" = ${userId}
         AND m."measured_at" >= ${ninetyDaysAgo}
       ORDER BY m."type", m."measured_at" DESC
-    `,
+    `),
     // v1.4.35 — DAY rollup buckets for the trailing 90 days, every
     // type. Drives both the per-type `count / min / max / mean`
     // composition (via `aggregateBuckets`) and the `dailyByType`
     // correlation feed below. Replaces the legacy
     // `date_trunc('day', m."measured_at")` GROUP BY query and the
     // per-type AVG/MIN/MAX/COUNT columns the live aggregate kept.
-    prisma.measurementRollup.findMany({
+    timeSubquery(timings, "buckets", () => prisma.measurementRollup.findMany({
       where: {
         userId,
         granularity: "DAY",
         bucketStart: { gte: ninetyDaysAgo },
       },
       orderBy: [{ type: "asc" }, { bucketStart: "asc" }],
-    }),
-    prisma.measurement.findMany({
-      where: {
-        userId,
-        type: "BLOOD_PRESSURE_SYS",
-        measuredAt: { gte: ninetyDaysAgo },
-      },
-      orderBy: { measuredAt: "asc" },
-      select: { measuredAt: true, value: true },
-    }),
-    prisma.measurement.findMany({
-      where: {
-        userId,
-        type: "BLOOD_PRESSURE_DIA",
-        measuredAt: { gte: ninetyDaysAgo },
-      },
-      orderBy: { measuredAt: "asc" },
-      select: { measuredAt: true, value: true },
-    }),
-    prisma.$queryRaw<Array<{ first_at: Date | null }>>`
+    })),
+    // v1.4.38 W-F — bp sys + dia merged into one round-trip. Halves
+    // the bp-raw cost on accounts whose iOS Health source spams BP
+    // readings; the per-type partition in `fetchBpRawRows` preserves
+    // the legacy `bpRawRows.sys` / `bpRawRows.dia` byte-shape.
+    timeSubquery(timings, "bpRaw", () => fetchBpRawRows(userId, ninetyDaysAgo)),
+    timeSubquery(timings, "firstAt", () => prisma.$queryRaw<Array<{ first_at: Date | null }>>`
       SELECT MIN(m."measured_at") AS first_at
       FROM measurements m
       WHERE m."user_id" = ${userId}
         AND m."measured_at" >= ${ninetyDaysAgo}
-    `,
+    `),
   ]);
 
   const latestByType = new Map<string, { value: number; measuredAt: Date }>();
@@ -447,10 +504,7 @@ async function buildFromRollups(
 
   return {
     summaries,
-    bpRawRows: {
-      sys: sysRaw.map((r) => ({ measuredAt: r.measuredAt, value: r.value })),
-      dia: diaRaw.map((r) => ({ measuredAt: r.measuredAt, value: r.value })),
-    },
+    bpRawRows,
     dailyByType: buildDailyByType(bucketsByType),
     firstMeasurementAt,
     totalMeasurements,
@@ -467,9 +521,13 @@ async function buildFromRollups(
 async function buildFromLiveAggregate(
   userId: string,
   ninetyDaysAgo: Date,
+  timings: Record<string, number>,
 ): Promise<ComprehensiveAggregate> {
-  const [aggregates, latests, dayBuckets, sysRaw, diaRaw] = await Promise.all([
-    prisma.$queryRaw<HeavyAggregateRow[]>`
+  // v1.4.38 W-F — same sub-query timing + consolidated bp-raw read as
+  // the rollup-fresh path so the prod observability covers cold mounts
+  // too.
+  const [aggregates, latests, dayBuckets, bpRawRows] = await Promise.all([
+    timeSubquery(timings, "heavy", () => prisma.$queryRaw<HeavyAggregateRow[]>`
       WITH window_stats AS (
         SELECT
           m."type",
@@ -545,8 +603,8 @@ async function buildFromLiveAggregate(
       WHERE m."user_id" = ${userId}
         AND m."measured_at" >= ${ninetyDaysAgo}
       GROUP BY m."type", ws.stddev_value
-    `,
-    prisma.$queryRaw<LatestRow[]>`
+    `),
+    timeSubquery(timings, "latests", () => prisma.$queryRaw<LatestRow[]>`
       SELECT DISTINCT ON (m."type")
         m."type"::text AS type,
         m."value"::double precision AS value,
@@ -555,37 +613,21 @@ async function buildFromLiveAggregate(
       WHERE m."user_id" = ${userId}
         AND m."measured_at" >= ${ninetyDaysAgo}
       ORDER BY m."type", m."measured_at" DESC
-    `,
+    `),
     // Buckets may exist for some types even when the COUNT probe came
     // back zero (race window between the probe and a sibling
     // populator); the cold-path read still honours them for the
     // `dailyByType` feed.
-    prisma.measurementRollup.findMany({
+    timeSubquery(timings, "buckets", () => prisma.measurementRollup.findMany({
       where: {
         userId,
         granularity: "DAY",
         bucketStart: { gte: ninetyDaysAgo },
       },
       orderBy: [{ type: "asc" }, { bucketStart: "asc" }],
-    }),
-    prisma.measurement.findMany({
-      where: {
-        userId,
-        type: "BLOOD_PRESSURE_SYS",
-        measuredAt: { gte: ninetyDaysAgo },
-      },
-      orderBy: { measuredAt: "asc" },
-      select: { measuredAt: true, value: true },
-    }),
-    prisma.measurement.findMany({
-      where: {
-        userId,
-        type: "BLOOD_PRESSURE_DIA",
-        measuredAt: { gte: ninetyDaysAgo },
-      },
-      orderBy: { measuredAt: "asc" },
-      select: { measuredAt: true, value: true },
-    }),
+    })),
+    // v1.4.38 W-F — bp sys + dia in one round-trip (see `fetchBpRawRows`).
+    timeSubquery(timings, "bpRaw", () => fetchBpRawRows(userId, ninetyDaysAgo)),
   ]);
 
   const latestByType = new Map<string, { value: number; measuredAt: Date }>();
@@ -624,12 +666,14 @@ async function buildFromLiveAggregate(
   }
 
   if (totalMeasurements > 0) {
-    const firstRows = await prisma.$queryRaw<Array<{ first_at: Date | null }>>`
-      SELECT MIN(m."measured_at") AS first_at
-      FROM measurements m
-      WHERE m."user_id" = ${userId}
-        AND m."measured_at" >= ${ninetyDaysAgo}
-    `;
+    const firstRows = await timeSubquery(timings, "firstAt", () =>
+      prisma.$queryRaw<Array<{ first_at: Date | null }>>`
+        SELECT MIN(m."measured_at") AS first_at
+        FROM measurements m
+        WHERE m."user_id" = ${userId}
+          AND m."measured_at" >= ${ninetyDaysAgo}
+      `,
+    );
     firstMeasurementAt = firstRows[0]?.first_at
       ? new Date(firstRows[0].first_at)
       : null;
@@ -637,10 +681,7 @@ async function buildFromLiveAggregate(
 
   return {
     summaries,
-    bpRawRows: {
-      sys: sysRaw.map((r) => ({ measuredAt: r.measuredAt, value: r.value })),
-      dia: diaRaw.map((r) => ({ measuredAt: r.measuredAt, value: r.value })),
-    },
+    bpRawRows,
     dailyByType: buildDailyByType(bucketsByType),
     firstMeasurementAt,
     totalMeasurements,
