@@ -256,7 +256,16 @@ export function HealthScoreCard({
         "flex h-full flex-col",
       )}
     >
-      <div className="flex flex-1 flex-col gap-3">
+      {/* v1.4.37 W4a item 1 — swap the inner column from `flex
+          flex-col` to a 7-row grid so the recovered vertical slack
+          (when the parent hero-row stretches the card past the
+          natural content height) collects on row 6 (the provenance
+          accordion) instead of clumping under the disclaimer. The
+          score number stays anchored at the top, the disclaimer at
+          the bottom, and the card fills the row down to the
+          "Wirkt mein Medikament?" chip — closing Marc's "Karte hört
+          bei der Trennlinie auf" report against v1.4.36. */}
+      <div className="grid flex-1 grid-rows-[auto_auto_auto_auto_auto_1fr_auto] gap-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             <p
