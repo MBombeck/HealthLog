@@ -252,7 +252,7 @@ export function IntakeHistoryListV2({
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
+                    className="min-h-11 sm:min-h-9"
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
                     disabled={page === 0}
                   >
@@ -261,7 +261,7 @@ export function IntakeHistoryListV2({
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
+                    className="min-h-11 sm:min-h-9"
                     onClick={() =>
                       setPage((p) => Math.min(totalPages - 1, p + 1))
                     }

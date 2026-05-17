@@ -241,6 +241,10 @@ describe("<IntakeHistoryListV2> — sort indicators", () => {
     );
     expect(html).toContain("Previous");
     expect(html).toContain("Next");
+    // a11y: pagination buttons clear the 44 px mobile touch floor and
+    // collapse to 36 px from sm+ so the row stays compact on desktop.
+    expect(html).toContain("min-h-11");
+    expect(html).toContain("sm:min-h-9");
   });
 
   it("hides pagination when total ≤ pageSize", () => {
