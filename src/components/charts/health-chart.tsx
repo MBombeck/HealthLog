@@ -585,8 +585,20 @@ export function HealthChart({
         // Recharts paint cost ~50× on continuous-monitoring accounts.
         // Short windows keep raw fetching so hour-by-hour detail
         // stays visible.
+        //
+        // v1.4.36 W1 — also route the daily aggregate through the
+        // persistent rollup buckets via `source=rollup`. The route
+        // reads from `measurement_rollups` instead of running a live
+        // `date_trunc` scan over the raw measurements table; the
+        // three parallel daily fetches on the Insights trends row
+        // (BP_SYS / BP_DIA / WEIGHT) drop from ~3 s each to a small
+        // indexed read against the ~5 k-row rollup table. The server
+        // falls back to live SQL when the rollup is empty for the
+        // requested window so brand-new accounts still see a chart
+        // on their first render.
         if (fetchWindow.windowDays > 7) {
           typeParams.set("aggregate", "daily");
+          typeParams.set("source", "rollup");
         }
 
         const res = await fetch(`/api/measurements?${typeParams}`);

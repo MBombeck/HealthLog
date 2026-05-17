@@ -42,7 +42,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return apiError(parsed.error.issues[0].message, 422);
   }
 
-  const { type, from, to, limit, offset, sortBy, sortDir, aggregate } =
+  const { type, from, to, limit, offset, sortBy, sortDir, aggregate, source } =
     parsed.data;
 
   const where = {
@@ -77,6 +77,91 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // The route's response is bounded by the `BUCKET_CAP` ceiling per
   // grain (monthly: 24, weekly: 105, daily: 365) so a multi-decade
   // account never paints an unbounded series.
+  // v1.4.36 W1 — rollup-table read for daily aggregates.
+  //
+  // The Insights trends row fires three parallel
+  // `GET /api/measurements?type=…&aggregate=daily&limit=5000` requests
+  // (BP_SYS / BP_DIA / WEIGHT). The legacy `date_trunc('day', …)`
+  // path scanned the measurements table each time — a full year window
+  // on Marc's account hit 3 × ~3 s on the v1.4.35 HAR. Reading from
+  // the persistent `measurement_rollups` DAY buckets drops each call
+  // to a small indexed read against the ~5 k-row rollup table.
+  //
+  // Gating:
+  //   - `source=rollup` is an explicit client opt-in (`@/lib/validations/measurement`
+  //     constrains the enum to `["rollup"]`).
+  //   - We require `aggregate=daily` because the rollup populator only
+  //     keeps DAY buckets on the synchronous write hook; the WEEK /
+  //     MONTH paths still depend on the async pg-boss recomputes which
+  //     may lag behind a recent write.
+  //   - `type` is mandatory so the response shape mirrors the per-type
+  //     ask the chart code makes.
+  //   - When the rollup window returns zero rows we fall through to
+  //     the live `date_trunc` path so a brand-new account whose
+  //     populator hasn't caught up still sees a correct chart on its
+  //     first render.
+  if (
+    source === "rollup" &&
+    aggregate === "daily" &&
+    type &&
+    from &&
+    to
+  ) {
+    const cap = Math.min(limit, BUCKET_CAP.daily);
+    const rollupRows = await prisma.measurementRollup.findMany({
+      where: {
+        userId: user.id,
+        type: type as MeasurementType,
+        granularity: "DAY",
+        bucketStart: { gte: from, lte: to },
+      },
+      orderBy: { bucketStart: "asc" },
+      take: cap,
+      select: {
+        type: true,
+        bucketStart: true,
+        mean: true,
+        count: true,
+      },
+    });
+    if (rollupRows.length > 0) {
+      // Cumulative metrics (steps, active energy, distance, flights,
+      // daylight) store `mean` per bucket but the chart needs the
+      // daily SUM. Reconstruct as `mean * count` — algebraically
+      // equivalent to SUM(value) for a single-source day because
+      // AVG = SUM / COUNT.
+      const useSum =
+        type != null && CUMULATIVE_HK_TYPES.has(type as MeasurementType);
+      const measurements = rollupRows.map((r) => ({
+        type: r.type,
+        value: useSum ? r.mean * r.count : r.mean,
+        measuredAt: r.bucketStart.toISOString(),
+        count: r.count,
+      }));
+      annotate({
+        action: { name: "measurement.list" },
+        meta: {
+          total: measurements.length,
+          type,
+          aggregate: "daily",
+          source: "rollup",
+        },
+      });
+      return apiSuccess({
+        measurements,
+        meta: {
+          total: measurements.length,
+          limit: cap,
+          offset: 0,
+          aggregate: "daily",
+        },
+      });
+    }
+    // Fall through to the live aggregate path when the rollup is
+    // empty for the requested window — covers brand-new accounts +
+    // the race between a recent write hook and the read.
+  }
+
   if (aggregate && aggregate !== "raw" && from && to) {
     const grain: AggregateGrain = aggregate;
     const cap = Math.min(limit, BUCKET_CAP[grain]);

@@ -20,6 +20,9 @@ vi.mock("@/lib/db", () => ({
       findMany: vi.fn(),
       count: vi.fn(),
     },
+    measurementRollup: {
+      findMany: vi.fn(),
+    },
     $queryRaw: vi.fn(),
   },
 }));
@@ -191,6 +194,71 @@ describe("GET /api/measurements — all-time semantics (SD-H1)", () => {
       json.data.measurements.map((m) => m.measuredAt.slice(0, 7)),
     );
     expect(months.size).toBe(24);
+  });
+
+  it("source=rollup + aggregate=daily reads measurement_rollups without firing the heavy date_trunc query", async () => {
+    // v1.4.36 W1 — Insights trends row routes the three daily chart
+    // fetches through the persistent DAY buckets via `source=rollup`.
+    // The heavy `date_trunc` $queryRaw must NOT fire on the happy
+    // path where the rollup has rows for the requested window.
+    const buckets = Array.from({ length: 30 }, (_, i) => ({
+      type: "WEIGHT",
+      bucketStart: new Date(Date.UTC(2026, 3, 16 + i, 0, 0, 0)),
+      mean: 81 + i * 0.05,
+      count: 5,
+    }));
+    vi.mocked(prisma.measurementRollup.findMany).mockResolvedValue(
+      buckets as never,
+    );
+
+    const res = await GET(
+      getRequest(
+        "type=WEIGHT&from=2026-04-15T00:00:00Z&to=2026-05-15T00:00:00Z&aggregate=daily&source=rollup&limit=5000",
+      ),
+    );
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as {
+      data: {
+        measurements: Array<{ type: string; value: number; count: number }>;
+        meta: { aggregate?: string };
+      };
+    };
+    expect(prisma.measurementRollup.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+    expect(json.data.measurements.length).toBe(30);
+    // First bucket reflects the rollup mean — round-trip-stable.
+    expect(json.data.measurements[0].type).toBe("WEIGHT");
+    expect(json.data.measurements[0].value).toBeCloseTo(81, 5);
+    expect(json.data.measurements[0].count).toBe(5);
+    expect(json.data.meta.aggregate).toBe("daily");
+  });
+
+  it("falls back to live date_trunc when source=rollup returns zero buckets", async () => {
+    // Empty rollup ⇒ heavy aggregate runs so brand-new accounts still
+    // see a correct chart on their first render.
+    vi.mocked(prisma.measurementRollup.findMany).mockResolvedValue(
+      [] as never,
+    );
+    const liveBuckets = Array.from({ length: 7 }, (_, i) => ({
+      type: "WEIGHT",
+      bucket_start: new Date(Date.UTC(2026, 4, 8 + i, 0, 0, 0)),
+      avg: 81 + i * 0.05,
+      cnt: 2,
+    }));
+    vi.mocked(prisma.$queryRaw).mockResolvedValue(liveBuckets as never);
+
+    const res = await GET(
+      getRequest(
+        "type=WEIGHT&from=2026-05-08T00:00:00Z&to=2026-05-15T00:00:00Z&aggregate=daily&source=rollup&limit=5000",
+      ),
+    );
+    expect(res.status).toBe(200);
+    expect(prisma.measurementRollup.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    const json = (await res.json()) as {
+      data: { measurements: Array<unknown> };
+    };
+    expect(json.data.measurements.length).toBe(7);
   });
 
   it("returns a weekly series when the all-time window is under two years", async () => {

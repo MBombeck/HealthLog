@@ -2492,6 +2492,12 @@ paths:
               - weekly
               - monthly
             type: string
+        - in: query
+          name: source
+          schema:
+            enum:
+              - rollup
+            type: string
       responses:
         "200":
           content:

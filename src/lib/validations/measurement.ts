@@ -262,6 +262,16 @@ export const listMeasurementsSchema = z.object({
   // Omitting `aggregate` keeps the raw wire shape (iOS contract); the
   // chart-data client must opt in explicitly.
   aggregate: z.enum(["raw", "daily", "weekly", "monthly"]).optional(),
+  // v1.4.36 W1 — opt-in source switch for daily-aggregate reads. When
+  // `source=rollup` + `aggregate=daily`, the route reads from the
+  // persistent `measurement_rollups` DAY buckets instead of running a
+  // live `date_trunc` GROUP BY scan over the raw `measurements` table.
+  // The chart-data client opts in for the trends-row strip + every
+  // sub-page chart so the three parallel daily-aggregate requests stop
+  // burning a full table scan each. The route falls back to live SQL
+  // when the rollup bucket set is empty for the requested window so
+  // brand-new accounts still see correct data on their first chart.
+  source: z.enum(["rollup"]).optional(),
 });
 
 export const createBatchMeasurementSchema = z.object({
