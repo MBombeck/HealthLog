@@ -152,13 +152,33 @@ function warnTrustViolationOnce(hops: number, chainLength: number): void {
   );
 }
 
-export function getClientIp(request: Request): string | null {
+/**
+ * Tagged return shape so a caller can apply a tighter universal
+ * rate-limit when the trust chain is misconfigured. F-6 (mobile security
+ * audit, 2026-05-16): callers today fall back to a literal `"unknown"`
+ * string, collapsing every anonymous request into one bucket. New
+ * callers should branch on `trustViolation === true` and route the
+ * request to a tighter global rate-limit instead of the per-IP one.
+ *
+ * Existing callers using `getClientIp(request) ?? "unknown"` keep
+ * working unchanged; this helper is additive.
+ *
+ * v1.4.37 — also the single resolver for the CF / XFF / x-real-ip
+ * ladder. `getClientIp` projects this helper's `.ip` so the rotation-
+ * attack guard, the Cloudflare opt-in and the one-shot trust-violation
+ * warning live in one place.
+ */
+export function getClientIpOrTrustWarning(request: Request): {
+  ip: string | null;
+  trustViolation: boolean;
+} {
   // v1.4.37 — Cloudflare's `cf-connecting-ip` takes precedence when
-  // the env flag opts in. The header carries the visitor IP the edge
-  // observed; without consulting it first, every request behind
-  // Cloudflare lands with the Caddy loopback as the resolved IP.
+  // the env flag opts in. The header is operator-controlled (Cloudflare
+  // re-sets it on every request hitting its edge) so trusting it
+  // bypasses the XFF trust-violation accounting entirely — there is no
+  // chain to violate.
   const cfIp = readCfConnectingIp(request);
-  if (cfIp) return cfIp;
+  if (cfIp) return { ip: cfIp, trustViolation: false };
 
   const hops = parseTrustProxyHops(process.env.TRUST_PROXY_HOPS);
 
@@ -175,54 +195,12 @@ export function getClientIp(request: Request): string | null {
       // attacker-controlled) entry would re-introduce the very rotation
       // attack TRUST_PROXY_HOPS was meant to close. Refuse to read XFF.
       if (chain.length >= hops) {
-        return chain[chain.length - hops];
+        return { ip: chain[chain.length - hops], trustViolation: false };
       }
       // F-6 (mobile security audit, 2026-05-16): emit a one-shot
       // operator signal when the chain shape doesn't match the
       // configured trust. Without this warning the silent degrade was
       // invisible until rate-limits visibly misfired in production.
-      warnTrustViolationOnce(hops, chain.length);
-    }
-  }
-  const realIp = request.headers.get("x-real-ip");
-  return realIp && looksLikeIp(realIp) ? realIp : null;
-}
-
-/**
- * Tagged return shape so a caller can apply a tighter universal
- * rate-limit when the trust chain is misconfigured. F-6 (mobile security
- * audit, 2026-05-16): callers today fall back to a literal `"unknown"`
- * string, collapsing every anonymous request into one bucket. New
- * callers should branch on `trustViolation === true` and route the
- * request to a tighter global rate-limit instead of the per-IP one.
- *
- * Existing callers using `getClientIp(request) ?? "unknown"` keep
- * working unchanged; this helper is additive.
- */
-export function getClientIpOrTrustWarning(request: Request): {
-  ip: string | null;
-  trustViolation: boolean;
-} {
-  // v1.4.37 — same CF preference as `getClientIp`. The Cloudflare
-  // header is the operator-controlled signal; trusting it bypasses
-  // the XFF trust-violation accounting entirely because Cloudflare's
-  // edge re-sets the value on every request, so there is no chain to
-  // violate.
-  const cfIp = readCfConnectingIp(request);
-  if (cfIp) return { ip: cfIp, trustViolation: false };
-
-  const hops = parseTrustProxyHops(process.env.TRUST_PROXY_HOPS);
-
-  if (hops > 0) {
-    const forwarded = request.headers.get("x-forwarded-for");
-    if (forwarded) {
-      const chain = forwarded
-        .split(",")
-        .map((s) => s.trim())
-        .filter(looksLikeIp);
-      if (chain.length >= hops) {
-        return { ip: chain[chain.length - hops], trustViolation: false };
-      }
       warnTrustViolationOnce(hops, chain.length);
       const realIp = request.headers.get("x-real-ip");
       return {
@@ -236,4 +214,8 @@ export function getClientIpOrTrustWarning(request: Request): {
     ip: realIp && looksLikeIp(realIp) ? realIp : null,
     trustViolation: false,
   };
+}
+
+export function getClientIp(request: Request): string | null {
+  return getClientIpOrTrustWarning(request).ip;
 }
