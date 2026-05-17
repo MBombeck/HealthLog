@@ -39,6 +39,7 @@ import {
   reduceCurrentWindowStatus,
   toBerlinDate,
 } from "@/lib/medications/window-status";
+
 /**
  * v1.4.25 W4d — GLP-1 medication card variant.
  *
