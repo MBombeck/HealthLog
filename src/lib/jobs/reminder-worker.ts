@@ -53,9 +53,13 @@ import {
   type AppleHealthImportPayload,
 } from "@/lib/jobs/apple-health-import-worker";
 import {
+  ROLLUP_FULL_BACKFILL_QUEUE,
+  ROLLUP_FULL_BACKFILL_CONCURRENCY,
   ROLLUP_RECOMPUTE_QUEUE,
   ROLLUP_RECOMPUTE_CONCURRENCY,
+  enqueueBootTimeRollupBackfill,
   recomputeUserRollups,
+  type RollupFullBackfillPayload,
   type RollupRecomputePayload,
 } from "@/lib/measurements/rollups";
 import { expireStaleInUseItems } from "@/lib/medications/inventory/service";
@@ -1466,6 +1470,7 @@ export async function startReminderWorker() {
     MEDICATION_INVENTORY_EXPIRE_QUEUE,
     APPLE_HEALTH_IMPORT_QUEUE,
     ROLLUP_RECOMPUTE_QUEUE,
+    ROLLUP_FULL_BACKFILL_QUEUE,
   ];
 
   for (const q of allQueues) {
@@ -1665,6 +1670,54 @@ export async function startReminderWorker() {
       }
     },
   );
+
+  // v1.4.35.1 — boot-time full-fold worker. The boot enqueue helper
+  // below sends one job per uncovered user; this handler runs the
+  // full `recomputeUserRollups` against the default 5-year window
+  // across every granularity. Serial concurrency so the populator
+  // never crowds the dashboard request pool.
+  await boss.work<RollupFullBackfillPayload>(
+    ROLLUP_FULL_BACKFILL_QUEUE,
+    { localConcurrency: ROLLUP_FULL_BACKFILL_CONCURRENCY },
+    async (jobs) => {
+      for (const job of jobs) {
+        const { userId } = job.data;
+        const { rowsUpserted, durationMs } = await recomputeUserRollups(userId);
+        workerLog(
+          "info",
+          `[rollup-full-backfill] user=${userId} rows=${rowsUpserted} duration=${durationMs}ms`,
+        );
+      }
+    },
+  );
+
+  // v1.4.35.1 — fire-and-forget boot-time backfill discovery. Finds
+  // every user with measurements but no rollup coverage and enqueues
+  // a full-fold per account. Idempotent across reboots: the discovery
+  // query only matches accounts with zero rollup rows, so once a
+  // fold completes the user drops off the list. Errors are returned
+  // through the helper's result value — the worker boot never fails
+  // because of a backfill miss.
+  try {
+    const { enqueued, skipped, error } = await enqueueBootTimeRollupBackfill();
+    if (error) {
+      workerLog(
+        "error",
+        `[rollup-full-backfill] boot discovery failed: ${error}`,
+      );
+    } else if (enqueued > 0 || skipped > 0) {
+      workerLog(
+        "info",
+        `[rollup-full-backfill] boot discovery: enqueued=${enqueued} skipped=${skipped}`,
+      );
+    }
+  } catch (err) {
+    workerLog(
+      "error",
+      "[rollup-full-backfill] boot discovery threw an unexpected error",
+      err,
+    );
+  }
 
   return boss;
 }

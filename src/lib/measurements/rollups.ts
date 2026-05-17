@@ -68,6 +68,28 @@ export interface RollupRecomputePayload {
   enqueuedAt: string;
 }
 
+/**
+ * v1.4.35.1 — boot-time full-fold queue. The write-path hooks keep
+ * the DAY bucket current per measurement, and `ensureUserRollupsFresh`
+ * warm-on-read covers the trailing 90-day DAY window on cold mount,
+ * but neither path folds the deep WEEK / MONTH / YEAR history for an
+ * account that has measurements pre-dating the v1.4.35 deploy. This
+ * queue exists so the worker boot can enqueue one full
+ * `recomputeUserRollups(userId)` per uncovered user — no operator
+ * action needed on self-hosted instances.
+ */
+export const ROLLUP_FULL_BACKFILL_QUEUE = "rollup-full-backfill";
+
+/** Boot-fold worker concurrency. Serial so we don't crowd the pool. */
+export const ROLLUP_FULL_BACKFILL_CONCURRENCY = 1;
+
+/** Payload the boot-time backfill helper enqueues. */
+export interface RollupFullBackfillPayload {
+  userId: string;
+  /** Wall-clock kick-off for debugging only. */
+  enqueuedAt: string;
+}
+
 /** Postgres `date_trunc` unit per granularity. */
 const DATE_TRUNC_UNIT: Record<RollupGranularity, string> = {
   DAY: "day",
@@ -597,6 +619,85 @@ export async function ensureUserRollupsFresh(
   } catch {
     // Best-effort — never block the read path on a populator failure.
     return { recomputed: false };
+  }
+}
+
+/**
+ * v1.4.35.1 — boot-time enqueue helper. Finds users with measurements
+ * but zero rollup coverage and enqueues one full-fold job per account
+ * onto `ROLLUP_FULL_BACKFILL_QUEUE`. Designed to be called once at
+ * worker boot so every self-hosted instance auto-converges on the
+ * persistent rollup tier without operator intervention.
+ *
+ * Idempotent across reboots:
+ *   - the discovery query only matches accounts with no rollup rows at
+ *     all, so once the fold completes the user drops off the list and
+ *     subsequent boots skip them
+ *   - pg-boss `singletonKey` coalesces duplicate sends within the
+ *     queue, so a fast restart while a backfill is queued doesn't
+ *     double up
+ *
+ * Best-effort: errors are swallowed and reported through the return
+ * value so the worker boot never fails because of a backfill miss.
+ */
+export async function enqueueBootTimeRollupBackfill(): Promise<{
+  enqueued: number;
+  skipped: number;
+  error: string | null;
+}> {
+  const boss = getGlobalBoss();
+  if (!boss) {
+    return { enqueued: 0, skipped: 0, error: null };
+  }
+
+  try {
+    // Users with at least one measurement but no rollup row yet. The
+    // `LIMIT 1` inside each `EXISTS` keeps the planner from materialising
+    // the full child relation just to answer existence — important on
+    // power-user accounts with 100k+ measurements.
+    const users = await prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT u."id"
+      FROM users u
+      WHERE EXISTS (
+        SELECT 1 FROM measurements m WHERE m."user_id" = u."id" LIMIT 1
+      )
+        AND NOT EXISTS (
+          SELECT 1 FROM measurement_rollups r WHERE r."user_id" = u."id" LIMIT 1
+        )
+    `;
+
+    if (users.length === 0) {
+      return { enqueued: 0, skipped: 0, error: null };
+    }
+
+    let enqueued = 0;
+    let skipped = 0;
+    for (const { id } of users) {
+      const payload: RollupFullBackfillPayload = {
+        userId: id,
+        enqueuedAt: new Date().toISOString(),
+      };
+      const jobId = await boss.send(ROLLUP_FULL_BACKFILL_QUEUE, payload, {
+        retryLimit: 3,
+        retryDelay: 60,
+        retryBackoff: true,
+        // Coalesce: if a backfill for this user is already queued and
+        // we restart, pg-boss returns null instead of duplicating.
+        singletonKey: `boot-backfill|${id}`,
+      });
+      if (jobId) {
+        enqueued += 1;
+      } else {
+        skipped += 1;
+      }
+    }
+    return { enqueued, skipped, error: null };
+  } catch (err) {
+    return {
+      enqueued: 0,
+      skipped: 0,
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
 }
 

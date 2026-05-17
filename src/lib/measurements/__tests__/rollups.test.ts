@@ -72,8 +72,10 @@ void mocks.findMany;
 void queryRaw;
 
 import {
+  ROLLUP_FULL_BACKFILL_QUEUE,
   ROLLUP_RECOMPUTE_QUEUE,
   collapseToTypeDayKeys,
+  enqueueBootTimeRollupBackfill,
   enqueueRollupRecompute,
   ensureUserRollupsFresh,
   recomputeBucketsForMeasurement,
@@ -278,5 +280,72 @@ describe("ensureUserRollupsFresh", () => {
     findFirstMeasurement.mockRejectedValueOnce(new Error("pool exhausted"));
     const result = await ensureUserRollupsFresh("user-1");
     expect(result.recomputed).toBe(false);
+  });
+});
+
+describe("enqueueBootTimeRollupBackfill", () => {
+  it("is a silent no-op when no boss is attached", async () => {
+    getGlobalBossMock.mockReturnValue(null);
+    const result = await enqueueBootTimeRollupBackfill();
+    expect(result).toEqual({ enqueued: 0, skipped: 0, error: null });
+    expect(queryRaw).not.toHaveBeenCalled();
+    expect(bossSend).not.toHaveBeenCalled();
+  });
+
+  it("enqueues one full-fold job per user who has measurements but no rollups", async () => {
+    getGlobalBossMock.mockReturnValue({ send: bossSend });
+    queryRaw.mockResolvedValueOnce([
+      { id: "user-a" },
+      { id: "user-b" },
+      { id: "user-c" },
+    ]);
+    bossSend
+      .mockResolvedValueOnce("job-a")
+      .mockResolvedValueOnce("job-b")
+      .mockResolvedValueOnce("job-c");
+
+    const result = await enqueueBootTimeRollupBackfill();
+
+    expect(result).toEqual({ enqueued: 3, skipped: 0, error: null });
+    expect(bossSend).toHaveBeenCalledTimes(3);
+    // The queue name is the boot-fold queue, not the per-bucket queue.
+    for (const call of bossSend.mock.calls) {
+      expect(call[0]).toBe(ROLLUP_FULL_BACKFILL_QUEUE);
+    }
+    // Singleton key per user — coalesces across rapid reboots.
+    expect(bossSend.mock.calls[0][2].singletonKey).toBe("boot-backfill|user-a");
+    expect(bossSend.mock.calls[1][2].singletonKey).toBe("boot-backfill|user-b");
+    expect(bossSend.mock.calls[2][2].singletonKey).toBe("boot-backfill|user-c");
+  });
+
+  it("counts a `boss.send` returning null as 'skipped' (singleton coalesce)", async () => {
+    getGlobalBossMock.mockReturnValue({ send: bossSend });
+    queryRaw.mockResolvedValueOnce([{ id: "user-a" }, { id: "user-b" }]);
+    bossSend.mockResolvedValueOnce(null).mockResolvedValueOnce("job-b");
+
+    const result = await enqueueBootTimeRollupBackfill();
+
+    expect(result).toEqual({ enqueued: 1, skipped: 1, error: null });
+  });
+
+  it("returns the error message when the discovery query throws", async () => {
+    getGlobalBossMock.mockReturnValue({ send: bossSend });
+    queryRaw.mockRejectedValueOnce(new Error("pool exhausted"));
+
+    const result = await enqueueBootTimeRollupBackfill();
+
+    expect(result.enqueued).toBe(0);
+    expect(result.error).toBe("pool exhausted");
+    expect(bossSend).not.toHaveBeenCalled();
+  });
+
+  it("returns { enqueued: 0 } when no users need backfill", async () => {
+    getGlobalBossMock.mockReturnValue({ send: bossSend });
+    queryRaw.mockResolvedValueOnce([]);
+
+    const result = await enqueueBootTimeRollupBackfill();
+
+    expect(result).toEqual({ enqueued: 0, skipped: 0, error: null });
+    expect(bossSend).not.toHaveBeenCalled();
   });
 });

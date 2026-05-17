@@ -27,6 +27,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import {
+  ROLLUP_FULL_BACKFILL_QUEUE,
+  enqueueBootTimeRollupBackfill,
   recomputeBucketsForMeasurement,
   recomputeUserRollups,
   ALL_GRANULARITIES,
@@ -38,12 +40,25 @@ vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
 }));
 
+// Stub boss-instance with a vi.fn so we can swap the return per test.
+// The integration suite runs with `isolate: false`, so the mock state
+// is shared with sibling files (e.g. admin-backups-audit.test.ts also
+// mocks boss-instance). Re-setting the implementation inside
+// beforeEach restores our default before each case.
 vi.mock("@/lib/jobs/boss-instance", () => ({
-  getGlobalBoss: () => null, // no pg-boss in the test container
+  getGlobalBoss: vi.fn(() => null),
 }));
+
+import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+
+const bossSend = vi.fn();
 
 beforeEach(async () => {
   await truncateAllTables(getPrismaClient());
+  bossSend.mockReset();
+  // Default: pg-boss not attached. Individual tests that exercise the
+  // enqueue path override this with a stub that records sends.
+  vi.mocked(getGlobalBoss).mockReturnValue(null as never);
 });
 
 afterEach(() => {
@@ -502,5 +517,117 @@ describe("measurement rollups — integration", () => {
     // Weighted mean across the 3 buckets (each count=1): (80+81+84)/3
     // = 81.6667 → round2 = 81.67.
     expect(after.summaries.WEIGHT.mean).toBe(81.67);
+  });
+
+  // ─── v1.4.35.1 boot-time backfill ──────────────────────────
+  //
+  // Self-hosted instances upgrading to v1.4.35 onwards must auto-
+  // converge on the persistent rollup tier without operator action.
+  // The discovery query matches users with measurements but zero
+  // rollup rows; one full-fold job is enqueued per such account.
+
+  it("enqueues one full-fold job per user with measurements but no rollups", async () => {
+    const prisma = getPrismaClient();
+    // Three users: two with measurements (one already-folded, one
+    // uncovered), one with no measurements at all (skipped entirely).
+    const covered = await prisma.user.create({
+      data: {
+        username: "boot-backfill-covered",
+        email: "boot-backfill-covered@example.test",
+        role: "USER",
+      },
+    });
+    const uncovered = await prisma.user.create({
+      data: {
+        username: "boot-backfill-uncovered",
+        email: "boot-backfill-uncovered@example.test",
+        role: "USER",
+      },
+    });
+    const empty = await prisma.user.create({
+      data: {
+        username: "boot-backfill-empty",
+        email: "boot-backfill-empty@example.test",
+        role: "USER",
+      },
+    });
+    void empty;
+
+    const measuredAt = new Date("2026-04-01T08:00:00.000Z");
+    await prisma.measurement.createMany({
+      data: [
+        {
+          userId: covered.id,
+          type: "WEIGHT",
+          value: 80,
+          unit: "kg",
+          source: "MANUAL",
+          measuredAt,
+        },
+        {
+          userId: uncovered.id,
+          type: "WEIGHT",
+          value: 80,
+          unit: "kg",
+          source: "MANUAL",
+          measuredAt,
+        },
+      ],
+    });
+
+    // Pre-fold the covered user so the discovery query skips them.
+    await recomputeUserRollups(covered.id, { granularities: ["DAY"] });
+
+    bossSend.mockResolvedValue("job-id");
+    vi.mocked(getGlobalBoss).mockReturnValue({ send: bossSend } as never);
+
+    const result = await enqueueBootTimeRollupBackfill();
+
+    // Only the uncovered user lands on the queue. The covered user
+    // already has DAY rollups; the empty user has no measurements.
+    expect(result.enqueued).toBe(1);
+    expect(result.skipped).toBe(0);
+    expect(result.error).toBeNull();
+    expect(bossSend).toHaveBeenCalledTimes(1);
+    expect(bossSend.mock.calls[0][0]).toBe(ROLLUP_FULL_BACKFILL_QUEUE);
+    expect(bossSend.mock.calls[0][1]).toMatchObject({ userId: uncovered.id });
+    expect(bossSend.mock.calls[0][2].singletonKey).toBe(
+      `boot-backfill|${uncovered.id}`,
+    );
+
+    // Reset boss stub for downstream tests.
+    vi.mocked(getGlobalBoss).mockReturnValue(null as never);
+  });
+
+  it("returns { enqueued: 0 } when every user is already covered", async () => {
+    const prisma = getPrismaClient();
+    const user = await prisma.user.create({
+      data: {
+        username: "boot-backfill-allcovered",
+        email: "boot-backfill-allcovered@example.test",
+        role: "USER",
+      },
+    });
+    await prisma.measurement.create({
+      data: {
+        userId: user.id,
+        type: "WEIGHT",
+        value: 80,
+        unit: "kg",
+        source: "MANUAL",
+        measuredAt: new Date("2026-04-01T08:00:00.000Z"),
+      },
+    });
+    await recomputeUserRollups(user.id, { granularities: ["DAY"] });
+
+    bossSend.mockResolvedValue("job-id");
+    vi.mocked(getGlobalBoss).mockReturnValue({ send: bossSend } as never);
+
+    const result = await enqueueBootTimeRollupBackfill();
+
+    expect(result.enqueued).toBe(0);
+    expect(bossSend).not.toHaveBeenCalled();
+
+    vi.mocked(getGlobalBoss).mockReturnValue(null as never);
   });
 });

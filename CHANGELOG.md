@@ -1,5 +1,45 @@
 # Changelog
 
+## [1.4.35.1] — 2026-05-17 — Auto-converging rollup backfill on worker boot
+
+Follow-on to v1.4.35. Removes the operator action that was implicit
+in the foundation release: instead of self-hosters having to run
+`pnpm tsx scripts/backfill-rollups.ts` after upgrading, the worker
+boot now discovers any account with measurements but no rollup
+coverage and enqueues a one-shot full fold via pg-boss. Idempotent
+across reboots (the discovery query only matches uncovered users) and
+zero reader-path impact (serial concurrency, runs in the background).
+
+### Boot-time backfill
+
+- **New `rollup-full-backfill` queue** (`ROLLUP_FULL_BACKFILL_QUEUE`,
+  concurrency = 1) carrying `{ userId, enqueuedAt }`. The handler
+  invokes `recomputeUserRollups(userId)` with the default 5-year
+  window across all four granularities — equivalent to the manual
+  CLI run, but inside the worker process so no `tsx` install
+  gymnastics in production images.
+- **`enqueueBootTimeRollupBackfill`** runs once at
+  `startReminderWorker` boot after every `boss.work` subscription is
+  in place. The discovery query finds users with at least one row in
+  `measurements` and zero rows in `measurement_rollups`, then sends
+  one job per uncovered account with `singletonKey:
+  boot-backfill|{userId}` so a fast restart while a fold is queued
+  doesn't pile up duplicates.
+- **Best-effort:** any error during discovery is captured in the
+  return value and logged through `workerLog`; the worker boot never
+  fails because the backfill missed.
+
+### Tests
+
+- 5 new unit cases pin the helper's contract (silent no-op without
+  boss, one job per uncovered user, singleton-key coalesce counted
+  as `skipped`, error surfacing, zero-users path). 2 new integration
+  cases verify against the real testcontainer: only the uncovered
+  user lands on the queue when a third already-folded user co-exists;
+  zero jobs enqueued when every account is already covered.
+- Unit suite 4280 → 4285. Integration suite 228 → 230. `pnpm
+  typecheck` + `pnpm lint` clean.
+
 ## [1.4.35] — 2026-05-17 — Persistent measurement rollups + partial read-swap
 
 Foundation release for the persistent `measurement_rollups` cache
