@@ -4,7 +4,10 @@ import { useEffect, useReducer, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import {
+  AlertCircle,
+  AlertTriangle,
   Check,
+  CircleCheck,
   Flame,
   History,
   Loader2,
@@ -395,13 +398,28 @@ export function Glp1MedicationCard({
           <p className="text-sm">
             <span
               className={
-                currentWindowStatus.status === "in_window"
-                  ? "text-success font-medium"
+                "inline-flex items-center gap-1 font-medium " +
+                (currentWindowStatus.status === "in_window"
+                  ? "text-success"
                   : currentWindowStatus.status === "late"
-                    ? "text-dracula-yellow font-medium"
-                    : "text-warning font-medium"
+                    ? "text-dracula-yellow"
+                    : "text-warning")
               }
             >
+              {/* v1.4.38 W-D P2-3 — pair the colour with a Lucide
+                  glyph so colour-blind users (red-green) can
+                  disambiguate take-now from late from very-late.
+                  WCAG 1.4.1 (Use of Color). */}
+              {currentWindowStatus.status === "in_window" ? (
+                <CircleCheck className="size-3.5 shrink-0" aria-hidden="true" />
+              ) : currentWindowStatus.status === "late" ? (
+                <AlertCircle className="size-3.5 shrink-0" aria-hidden="true" />
+              ) : (
+                <AlertTriangle
+                  className="size-3.5 shrink-0"
+                  aria-hidden="true"
+                />
+              )}
               {currentWindowStatus.status === "in_window"
                 ? t("medications.takeNow")
                 : currentWindowStatus.status === "late"
