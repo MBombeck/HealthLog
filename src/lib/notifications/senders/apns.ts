@@ -40,6 +40,25 @@ export interface ApnsPayload {
   data?: Record<string, unknown>;
   /** APNs `aps.thread-id` — groups related alerts in Notification Center. */
   threadId?: string;
+  /**
+   * APNs `aps.category` — names a `UNNotificationCategory` registered by
+   * the iOS app at launch. The category drives the action-button row on
+   * the lock-screen / Notification Center entry. iOS HealthLog v0.5.3
+   * registers `MEDICATION_REMINDER` (Take / Snooze 15 / Skip) and
+   * `MOOD_REMINDER` (Log mood). Omit the field for plain alerts without
+   * actions.
+   */
+  category?: string;
+  /**
+   * Sets `aps.mutable-content = 1`. iOS routes the payload through the
+   * app's Notification Service Extension before the system renders it,
+   * giving the extension a chance to enrich the alert (e.g. download a
+   * thumbnail, decrypt a body). HealthLog doesn't ship an NSE yet, but
+   * the flag is cheap to set and a no-op without one — wiring it now
+   * means the iOS team can drop in an NSE later without a server-side
+   * roundtrip.
+   */
+  mutableContent?: boolean;
 }
 
 export interface ApnsSendInput {
@@ -229,6 +248,27 @@ export async function sendApnsPush(
   if (input.payload.threadId) {
     note.threadId = input.payload.threadId;
   }
+  if (input.payload.category) {
+    // node-apn's `category` setter writes through to `aps.category` —
+    // that's the key the iOS notification system reads to look up a
+    // `UNNotificationCategory` and render its action-button row. The
+    // category name is a plain string that must match an identifier
+    // registered by the iOS app at launch (see iOS HealthLog v0.5.3
+    // `NotificationCategories`).
+    //
+    // The cast is because node-apn 8.1's d.ts file omits the public
+    // setter (it only documents the matching `aps.category` field on
+    // the `Aps` interface), but the runtime setter on
+    // `apsProperties.js` writes the value through unchanged. We assign
+    // via the `category` setter rather than poking `note.aps.category`
+    // directly so we stay forward-compatible with future d.ts fixes.
+    (note as unknown as { category: string }).category = input.payload.category;
+  }
+  if (input.payload.mutableContent) {
+    // node-apn writes this through to `aps.mutable-content = 1`, which
+    // unlocks the iOS Notification Service Extension hook.
+    note.mutableContent = true;
+  }
   if (input.collapseId) {
     note.collapseId = input.collapseId;
   }
@@ -356,6 +396,17 @@ export async function sendViaApns(
           ...(payload.metadata ?? {}),
         },
         threadId: payload.eventType,
+        // The iOS app registers a `UNNotificationCategory` per event-type
+        // so the same string doubles as the category identifier. iOS
+        // ignores categories it doesn't know about, so adding the key
+        // here is safe for event-types that don't have an actionable
+        // category registered yet — they fall back to a plain alert.
+        category: payload.eventType,
+        // Future-proof for an iOS Notification Service Extension. iOS
+        // ignores the flag when no extension is registered, so it's a
+        // no-op on today's binary but unblocks NSE work without a
+        // server-side change.
+        mutableContent: true,
       },
       collapseId: payload.eventType,
     });
