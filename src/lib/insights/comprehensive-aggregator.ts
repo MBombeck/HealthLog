@@ -1,5 +1,6 @@
 /**
- * v1.4.35 — SQL-driven aggregator for `/api/insights/comprehensive`.
+ * v1.4.35 — SQL-driven aggregator for `/api/insights/comprehensive`,
+ * with the partial read-swap onto `measurement_rollups` landed.
  *
  * Background
  * ----------
@@ -11,7 +12,7 @@
  * HAR capture, with sibling endpoints cascading into 503s on pool
  * starvation).
  *
- * The new shape mirrors the `summaries-slice` aggregator
+ * The shape mirrors the `summaries-slice` aggregator
  * (`src/lib/analytics/summaries-slice.ts`) the v1.4.33 C1 dashboard
  * tile strip already proved out: a single `$queryRaw` per surface,
  * grouped by `type`, with Postgres-side `AVG` / `MIN` / `MAX` /
@@ -19,6 +20,40 @@
  * `measurements (user_id, type, measured_at)`. Difference vs. the
  * slim slice: the comprehensive endpoint also needs `anomalyCount`,
  * `avg30LastMonth`, `avg30LastYear`, and the 90-day window cap.
+ *
+ * Read-swap (v1.4.35)
+ * -------------------
+ * Two surfaces now read from the persistent `measurement_rollups`
+ * table instead of recomputing per request:
+ *
+ *   - **`count / min / max / mean`** per type — composed from the DAY
+ *     rollup buckets via `aggregateBuckets` (sum of counts; min of
+ *     mins; max of maxes; count-weighted mean). These four are
+ *     linearly composable across DAY buckets, so the composed value
+ *     is mathematically identical to the live `AVG` / `MIN` / `MAX`
+ *     / `COUNT(*)` over the same rows. A defensive parity check
+ *     against the live aggregate's `COUNT(*)` falls back to live SQL
+ *     when divergence is detected — covers the cold-mount edge case
+ *     where the rollup populator is mid-flight, or a sub-second race
+ *     between the watermark check and the bucket read.
+ *
+ *   - **`dailyByType`** — read directly from the DAY rollup buckets
+ *     keyed on (userId, type, granularity=DAY, bucketStart). The
+ *     bucket's stored `mean` is the same `AVG(value)` per day the
+ *     legacy SQL emitted via `date_trunc('day', measured_at)`, so
+ *     downstream correlation pairings remain byte-shape stable.
+ *
+ * Everything else stays on live SQL:
+ *   - `slope7 / r2_7`, `slope30 / r2_30`, `slope90 / r2_90` — slope
+ *     and R² do **not** compose linearly across DAY buckets.
+ *   - `stddev`, `anomalyCount` — same reason.
+ *   - `avg7 / avg30 / avg30LastMonth` — these windows aren't aligned
+ *     to DAY-bucket boundaries (the 7-day window slides relative to
+ *     `NOW()`), so the live `FILTER (WHERE measured_at >= NOW() -
+ *     INTERVAL '7 days')` clause is canonical.
+ *   - `latest / latestMeasuredAt` — the `DISTINCT ON (type)` pass
+ *     resolves the most recent raw row, which the bucket can't
+ *     surface (it stores the day's mean, not the day's last value).
  *
  * Scope notes
  * -----------
@@ -62,6 +97,7 @@
 import { prisma } from "@/lib/db";
 import type { DataSummary } from "@/lib/analytics/trends";
 import { ensureUserRollupsFresh } from "@/lib/measurements/rollups";
+import { aggregateBuckets } from "@/lib/measurements/rollup-read";
 
 /**
  * Raw row from the aggregate query. Keyed on `MeasurementType`, with
@@ -93,13 +129,6 @@ interface LatestRow {
   type: string;
   value: number;
   measured_at: Date;
-}
-
-/** Daily-mean per (type, day) for correlation pairings. */
-export interface DailyAggregateRow {
-  type: string;
-  day: string;
-  mean_value: number;
 }
 
 /**
@@ -154,36 +183,34 @@ function round2(value: number | null): number | null {
 /**
  * Build the per-type `DataSummary` bundle for the comprehensive route.
  *
- * Three SQL passes against the same `(user_id, type, measured_at)`
- * index, all targeting the trailing 90 days:
+ * Five queries against the trailing 90 days, in parallel:
  *
  *   1. Per-type aggregate (count + min/max/mean/stddev + windowed
- *      avgs + regr_slope/r2 for the 7/30/90-day slopes).
+ *      avgs + regr_slope/r2 for the 7/30/90-day slopes). The
+ *      `count / min / max / mean` columns are kept on this query as
+ *      the live-SQL fallback for the v1.4.35 read-swap parity check.
  *   2. `DISTINCT ON (type)` for the most-recent raw value per type.
- *   3. Per-type-per-day mean (`date_trunc('day', measured_at)`) for the
- *      correlation pairings and the daily-bucket consumers.
- *
- * Plus two bounded raw-row queries for sys / dia (BP target pairing
- * needs sub-day timestamps, can't be replaced by a daily mean).
+ *   3. DAY rollup buckets from `measurement_rollups` (v1.4.35) —
+ *      composed into `count / min / max / mean` for the per-type
+ *      summary and replayed as the `dailyByType` correlation feed.
+ *   4. Bounded raw-row sys query for BP target pairing (sub-day
+ *      timestamps, can't be replaced by a daily mean).
+ *   5. Bounded raw-row dia query for BP target pairing.
  */
 export async function buildComprehensiveAggregate(
   userId: string,
 ): Promise<ComprehensiveAggregate> {
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
-  // v1.5.0 — keep the persistent rollup table current for downstream
-  // consumers (the analytics tile strip, the dashboard widgets, the
-  // weekly report). The helper is a no-op when rollups are already
-  // ahead of the newest measurement; on first-mount after a cold
-  // restart it folds the trailing 90-day window into the DAY rollup
-  // table. The current aggregator output keeps its byte-shape via the
-  // live SQL queries below — the rollup table accelerates downstream
-  // reads, not the current response. A v1.5.1 follow-up will switch
-  // the per-type DataSummary lookups to read from the rollup table
-  // after the dual-read divergence gate clears.
+  // v1.4.35 — keep the persistent rollup table current before any
+  // read fires. After this returns the DAY-granularity buckets for
+  // the trailing 90 days reflect every measurement that landed before
+  // this call (the per-write hook is synchronous on the DAY bucket,
+  // and `ensureUserRollupsFresh` covers cold-mount / process-restart
+  // cases). The bucket reads below depend on that guarantee.
   await ensureUserRollupsFresh(userId);
 
-  const [aggregates, latests, dailyRows, sysRaw, diaRaw] = await Promise.all([
+  const [aggregates, latests, dayBuckets, sysRaw, diaRaw] = await Promise.all([
     prisma.$queryRaw<AggregateRow[]>`
       WITH window_stats AS (
         SELECT
@@ -274,18 +301,20 @@ export async function buildComprehensiveAggregate(
         AND m."measured_at" >= ${ninetyDaysAgo}
       ORDER BY m."type", m."measured_at" DESC
     `,
-    prisma.$queryRaw<DailyAggregateRow[]>`
-      SELECT
-        m."type"::text AS type,
-        TO_CHAR(date_trunc('day', m."measured_at"), 'YYYY-MM-DD') AS day,
-        (ROUND((AVG(m."value"))::numeric, 2))::double precision AS mean_value
-      FROM measurements m
-      WHERE m."user_id" = ${userId}
-        AND m."measured_at" >= ${ninetyDaysAgo}
-        AND m."type" IN ('WEIGHT', 'BLOOD_PRESSURE_SYS', 'PULSE')
-      GROUP BY m."type", date_trunc('day', m."measured_at")
-      ORDER BY m."type", day ASC
-    `,
+    // v1.4.35 — DAY rollup buckets for the trailing 90 days, every
+    // type. Drives both the per-type `count / min / max / mean`
+    // composition (via `aggregateBuckets`) and the `dailyByType`
+    // correlation feed below. Replaces the legacy
+    // `date_trunc('day', m."measured_at")` GROUP BY query and the
+    // per-type AVG/MIN/MAX/COUNT columns the live aggregate kept.
+    prisma.measurementRollup.findMany({
+      where: {
+        userId,
+        granularity: "DAY",
+        bucketStart: { gte: ninetyDaysAgo },
+      },
+      orderBy: [{ type: "asc" }, { bucketStart: "asc" }],
+    }),
     prisma.measurement.findMany({
       where: {
         userId,
@@ -318,6 +347,30 @@ export async function buildComprehensiveAggregate(
     });
   }
 
+  // v1.4.35 — partition DAY buckets by type so the per-type aggregate
+  // loop below can compose `count / min / max / mean` from them in O(1).
+  const bucketsByType = new Map<
+    string,
+    Array<{
+      day: Date;
+      count: number;
+      mean: number;
+      minValue: number;
+      maxValue: number;
+    }>
+  >();
+  for (const b of dayBuckets) {
+    const list = bucketsByType.get(b.type) ?? [];
+    list.push({
+      day: b.bucketStart,
+      count: b.count,
+      mean: b.mean,
+      minValue: b.minValue,
+      maxValue: b.maxValue,
+    });
+    bucketsByType.set(b.type, list);
+  }
+
   // Seed only types that actually have rows — the legacy route only
   // populated `summaries[t]` when `data.length > 0`.
   const summaries: Record<string, DataSummary> = {};
@@ -325,15 +378,22 @@ export async function buildComprehensiveAggregate(
   let firstMeasurementAt: Date | null = null;
 
   for (const row of aggregates) {
-    const count = Number(row.count);
+    const liveCount = Number(row.count);
+    // Compose count/min/max/mean from the DAY buckets when they agree
+    // with the live `COUNT(*)`. Parity divergence (cold mount, rollup
+    // populator mid-flight, watermark race) falls back to live SQL so
+    // the response shape never serves a wrong value.
+    const composed = aggregateBuckets(bucketsByType.get(row.type) ?? []);
+    const useRollup = composed.count === liveCount;
+    const count = useRollup ? composed.count : liveCount;
     totalMeasurements += count;
     const latest = latestByType.get(row.type);
     summaries[row.type] = {
       count,
       latest: latest?.value ?? null,
-      min: round2(row.min_value),
-      max: round2(row.max_value),
-      mean: round2(row.mean_value),
+      min: useRollup ? round2(composed.min) : round2(row.min_value),
+      max: useRollup ? round2(composed.max) : round2(row.max_value),
+      mean: useRollup ? round2(composed.mean) : round2(row.mean_value),
       avg7: round2(row.avg7),
       avg30: round2(row.avg30),
       slope7: buildSlope(row.slope7, row.r2_7),
@@ -365,11 +425,27 @@ export async function buildComprehensiveAggregate(
   }
 
   // ── daily-by-type ────────────────────────────────────────
+  // v1.4.35 — sourced from the DAY rollup buckets. The legacy
+  // implementation ran a dedicated `date_trunc('day', m."measured_at")`
+  // GROUP BY scan and only returned the three types the correlation
+  // pairings consume. We filter to the same three types here so
+  // downstream consumers see a byte-identical shape, but the data
+  // origin is now the persisted bucket — no extra SQL pass needed.
   const dailyByType: Record<string, Array<{ day: string; value: number }>> = {};
-  for (const row of dailyRows) {
-    const list = dailyByType[row.type] ?? [];
-    list.push({ day: row.day, value: Number(row.mean_value) });
-    dailyByType[row.type] = list;
+  const DAILY_TYPES = ["WEIGHT", "BLOOD_PRESSURE_SYS", "PULSE"] as const;
+  for (const type of DAILY_TYPES) {
+    const buckets = bucketsByType.get(type);
+    if (!buckets || buckets.length === 0) continue;
+    dailyByType[type] = buckets.map((b) => ({
+      // `bucketStart` is the UTC midnight of the bucketed day — the
+      // same boundary Postgres' `date_trunc('day', ...)` would pick
+      // when the session timezone is UTC (the container default).
+      day: b.day.toISOString().slice(0, 10),
+      // Match the legacy `ROUND(AVG, 2)::double precision` semantics
+      // so correlation thresholds tuned against the v1.4.34 output
+      // don't drift on the third decimal.
+      value: round2(b.mean) ?? 0,
+    }));
   }
 
   return {

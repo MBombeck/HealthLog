@@ -9,6 +9,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/db", () => ({
   prisma: {
     $queryRaw: vi.fn(),
+    // v1.4.35 — slim slice now reads DAY buckets from
+    // `measurement_rollups` for the parity-checked composition. The
+    // freshness watermark inside `ensureUserRollupsFresh` also pokes
+    // `measurementRollup.findFirst`; mock both so the helper runs
+    // without a container.
+    measurementRollup: {
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+    },
   },
 }));
 
@@ -20,9 +29,20 @@ import { prisma } from "@/lib/db";
 import { computeSummariesSlice } from "../summaries-slice";
 
 const RAW = prisma.$queryRaw as unknown as ReturnType<typeof vi.fn>;
+const ROLLUP_FIND_MANY =
+  prisma.measurementRollup.findMany as unknown as ReturnType<typeof vi.fn>;
+const ROLLUP_FIND_FIRST =
+  prisma.measurementRollup.findFirst as unknown as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   RAW.mockReset();
+  ROLLUP_FIND_MANY.mockReset();
+  ROLLUP_FIND_FIRST.mockReset();
+  // Defaults: empty rollup buckets so the parity check falls back to
+  // live SQL (the pre-backfill behaviour). Individual tests opt in
+  // to rollup-derived values by overriding the mock.
+  ROLLUP_FIND_MANY.mockResolvedValue([]);
+  ROLLUP_FIND_FIRST.mockResolvedValue(null);
 });
 
 afterEach(() => {
@@ -32,6 +52,7 @@ afterEach(() => {
 describe("computeSummariesSlice", () => {
   it("returns the empty-summary skeleton when the user has no rows", async () => {
     // Pass 1 (aggregates) returns empty, pass 2 (latest) returns empty.
+    // Pass 3 (rollup.findMany) is defaulted to [] in beforeEach.
     RAW.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
     const result = await computeSummariesSlice("user-1");

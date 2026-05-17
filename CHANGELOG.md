@@ -1,5 +1,80 @@
 # Changelog
 
+## [1.4.35] — 2026-05-17 — Persistent measurement rollups + partial read-swap
+
+Foundation release for the persistent `measurement_rollups` cache
+tier. Adds a new additive table, populates it from every write path,
+and switches two reader surfaces (the comprehensive insights
+aggregator and the slim analytics summaries slice) onto it for the
+linearly-composable stats. Slope / R² / standard deviation / anomaly
+counts continue to run against live SQL — they don't compose across
+DAY buckets and stay on the canonical aggregate. A full read-swap
+across every analytics surface is planned for a follow-up.
+
+### Schema
+
+- **New table `measurement_rollups`** keyed on
+  `(user_id, type, granularity, bucket_start)` with
+  `count / mean / min_value / max_value / sd / slope / r2 /
+  computed_at`. Backed by a composite-descending index on
+  `(user_id, type, granularity, bucket_start DESC)`. Additive only —
+  no `ALTER` on existing tables. Migration
+  `0067_v1434_measurement_rollups` is idempotent under re-run.
+- **New enum `measurement_rollup_granularity`** with `DAY`, `WEEK`,
+  `MONTH`, `YEAR` granularities. The DAY grain is recomputed inline
+  on every measurement write; the wider grains queue onto pg-boss.
+
+### Write hooks
+
+- Every measurement create / update / delete endpoint now calls
+  `recomputeBucketsForMeasurement` inside a `try / catch` after its
+  successful commit. The DAY bucket is folded synchronously so the
+  next read is correct; WEEK / MONTH / YEAR follow on the pg-boss
+  `rollup-recompute` queue (concurrency = 2, singleton-keyed per
+  bucket to coalesce burst writes onto a single worker run).
+- The Apple Health import worker calls `recomputeUserRollups` once
+  at completion instead of per-row, scoped to the import's date
+  range, so a 100k-sample backfill no longer spawns 100k write hooks.
+
+### Reads
+
+- `comprehensive-aggregator` (the engine behind
+  `/api/insights/comprehensive`) sources `count / min / max / mean`
+  per type from the DAY buckets via `aggregateBuckets`, plus the
+  `dailyByType` correlation feed straight from the bucket means. A
+  defensive parity check against the live aggregate's `COUNT(*)`
+  falls back to live SQL when divergence is detected — covers the
+  cold-mount edge case where the rollup populator is mid-flight.
+- `summaries-slice` (the slim slice behind `?slice=summaries`) does
+  the same. The all-time window degrades cleanly on accounts that
+  never ran the explicit backfill: the rollup covers only what the
+  warm-on-read populator pre-folded, the parity check diverges, and
+  the live SQL values take over — no semantics break.
+- `ensureUserRollupsFresh` is a cheap watermark query that runs
+  before every read; on a warm process it's a single indexed lookup,
+  on cold mount it folds the trailing 90-day window into the DAY
+  rollup before the bucket read fires.
+
+### Backfill
+
+- New `scripts/backfill-rollups.ts` walks every user (or one
+  account via `--user <id>`) and folds their measurement history
+  into all four granularities. Single-user serial so the Prisma
+  pool stays out of contention. Idempotent — every run upserts
+  under the composite primary key.
+
+### Tests
+
+- Three new integration cases in
+  `tests/integration/measurement-rollups.test.ts` pin the parity
+  contract end-to-end against a real Postgres testcontainer: the
+  aggregator's `count / min / max / mean` matches live SQL
+  byte-for-byte, `dailyByType` matches a parallel
+  `date_trunc('day', …)` GROUP BY query, and a freshly-written
+  measurement is reflected on the next read.
+- Unit suite up by 31 cases (4249 → 4280); integration suite up by 6
+  cases (222 → 228). `pnpm typecheck` + `pnpm lint` clean.
+
 ## [1.4.34.5] — 2026-05-17 — Audit follow-on: critical-path tests + iOS textarea zoom
 
 Follow-on to v1.4.34.4. Two batches: the missing critical-path

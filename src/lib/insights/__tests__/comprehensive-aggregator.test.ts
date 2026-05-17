@@ -13,6 +13,13 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     $queryRaw: vi.fn(),
     measurement: { findMany: vi.fn() },
+    // v1.4.35 — the rollup read inside the Promise.all + the
+    // freshness watermark inside `ensureUserRollupsFresh`. We mock
+    // both so the unit test doesn't need a real container.
+    measurementRollup: {
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+    },
   },
 }));
 
@@ -26,10 +33,23 @@ import { buildComprehensiveAggregate } from "../comprehensive-aggregator";
 const RAW = prisma.$queryRaw as unknown as ReturnType<typeof vi.fn>;
 const FIND_MANY =
   prisma.measurement.findMany as unknown as ReturnType<typeof vi.fn>;
+const ROLLUP_FIND_MANY =
+  prisma.measurementRollup.findMany as unknown as ReturnType<typeof vi.fn>;
+const ROLLUP_FIND_FIRST =
+  prisma.measurementRollup.findFirst as unknown as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   RAW.mockReset();
   FIND_MANY.mockReset();
+  ROLLUP_FIND_MANY.mockReset();
+  ROLLUP_FIND_FIRST.mockReset();
+  // `ensureUserRollupsFresh` calls `prisma.measurement.findFirst`;
+  // we don't have it on the mock above, so it throws and the helper
+  // swallows + returns `{ recomputed: false }`. The bucket read
+  // proceeds against whatever we mock on `measurementRollup.findMany`.
+  // We default both to empty so individual tests opt in to data.
+  ROLLUP_FIND_MANY.mockResolvedValue([]);
+  ROLLUP_FIND_FIRST.mockResolvedValue(null);
 });
 
 afterEach(() => {
@@ -38,11 +58,12 @@ afterEach(() => {
 
 describe("buildComprehensiveAggregate", () => {
   it("returns an empty bundle for a user with no measurements", async () => {
-    // Pass order: aggregates, latests, daily, sysRaw, diaRaw. The
-    // `firstMeasurementAt` query is skipped when totalMeasurements === 0.
+    // v1.4.35 pass order: aggregates ($queryRaw), latests ($queryRaw),
+    // dayBuckets (rollup.findMany — defaulted to [] in beforeEach),
+    // sysRaw (findMany), diaRaw (findMany). The `firstMeasurementAt`
+    // $queryRaw is skipped when totalMeasurements === 0.
     RAW.mockResolvedValueOnce([]) // aggregates
-      .mockResolvedValueOnce([]) // latests
-      .mockResolvedValueOnce([]); // daily
+      .mockResolvedValueOnce([]); // latests
     FIND_MANY.mockResolvedValueOnce([]) // sys
       .mockResolvedValueOnce([]); // dia
 
@@ -54,10 +75,11 @@ describe("buildComprehensiveAggregate", () => {
     expect(result.dailyByType).toEqual({});
     expect(result.firstMeasurementAt).toBeNull();
     expect(result.totalMeasurements).toBe(0);
-    // 3 $queryRaw calls (aggregates, latests, daily) + 2 findMany.
+    // 2 $queryRaw (aggregates, latests) + 2 findMany + 1 rollup.findMany.
     // No firstMeasurementAt query when total === 0.
-    expect(RAW).toHaveBeenCalledTimes(3);
+    expect(RAW).toHaveBeenCalledTimes(2);
     expect(FIND_MANY).toHaveBeenCalledTimes(2);
+    expect(ROLLUP_FIND_MANY).toHaveBeenCalledTimes(1);
   });
 
   it("maps a populated WEIGHT aggregate into the DataSummary shape", async () => {
@@ -83,11 +105,32 @@ describe("buildComprehensiveAggregate", () => {
       },
     ])
       .mockResolvedValueOnce([{ type: "WEIGHT", value: 81.4, measured_at: now }])
-      .mockResolvedValueOnce([
-        { type: "WEIGHT", day: "2026-05-10", mean_value: 82.0 },
-        { type: "WEIGHT", day: "2026-05-11", mean_value: 82.2 },
-      ])
       .mockResolvedValueOnce([{ first_at: new Date(now.getTime() - 86400000) }]);
+    // v1.4.35 — DAY buckets feed both the per-type count/min/max/mean
+    // composition AND `dailyByType`. The two buckets compose to a
+    // count of 42 → matches the live aggregate's BigInt(42) → the
+    // parity check elects the rollup-derived values, which equal the
+    // live values byte-for-byte (chosen on purpose so the assertions
+    // exercise the rollup path while keeping the previous expected
+    // numbers stable).
+    ROLLUP_FIND_MANY.mockResolvedValueOnce([
+      {
+        type: "WEIGHT",
+        bucketStart: new Date("2026-05-10T00:00:00.000Z"),
+        count: 20,
+        mean: 81.0,
+        minValue: 79.2,
+        maxValue: 82.5,
+      },
+      {
+        type: "WEIGHT",
+        bucketStart: new Date("2026-05-11T00:00:00.000Z"),
+        count: 22,
+        mean: 83.0,
+        minValue: 80.0,
+        maxValue: 84.1,
+      },
+    ]);
     FIND_MANY.mockResolvedValueOnce([]) // sys
       .mockResolvedValueOnce([]); // dia
 
@@ -96,8 +139,11 @@ describe("buildComprehensiveAggregate", () => {
 
     expect(weight.count).toBe(42);
     expect(weight.latest).toBe(81.4);
+    // Composed from buckets: min(79.2, 80.0) = 79.2; max(82.5, 84.1) = 84.1.
     expect(weight.min).toBe(79.2);
     expect(weight.max).toBe(84.1);
+    // Weighted mean = (20 * 81 + 22 * 83) / 42 = 3446 / 42 = 82.0476…,
+    // round2 → 82.05. Matches the live `AVG` value of 82.05.
     expect(weight.mean).toBe(82.05);
     expect(weight.avg7).toBe(81.9);
     expect(weight.avg30).toBe(82.1);
@@ -127,9 +173,12 @@ describe("buildComprehensiveAggregate", () => {
 
     expect(result.totalMeasurements).toBe(42);
     expect(result.firstMeasurementAt).toBeInstanceOf(Date);
+    // `dailyByType` is sourced from the same DAY buckets; the entries
+    // are the bucket means rounded to 2 decimals, keyed on the UTC
+    // bucket-start date.
     expect(result.dailyByType.WEIGHT).toEqual([
-      { day: "2026-05-10", value: 82.0 },
-      { day: "2026-05-11", value: 82.2 },
+      { day: "2026-05-10", value: 81 },
+      { day: "2026-05-11", value: 83 },
     ]);
   });
 
@@ -162,7 +211,6 @@ describe("buildComprehensiveAggregate", () => {
           measured_at: measuredAt,
         },
       ])
-      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ first_at: measuredAt }]);
     FIND_MANY.mockResolvedValueOnce([
       { measuredAt, value: 120 },

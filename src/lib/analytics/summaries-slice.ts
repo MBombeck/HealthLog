@@ -10,19 +10,27 @@
  * it ever paints — yet the user waits on the full chunked walk.
  *
  * This helper resolves the same `DataSummary` shape (per-type) with
- * two SQL passes:
+ * three passes (two SQL + one rollup-table read):
  *
  *   1. **`groupBy` + windowed aggregates** — one `$queryRaw` carrying
  *      `COUNT`/`MIN`/`MAX`/`AVG`, the 7-day and 30-day `AVG` slices
  *      via `FILTER`, plus `regr_slope` + `regr_r2` for the slope
  *      tuples at 7d / 30d / 90d windows. Postgres folds all of this
  *      into one index scan over `measurements WHERE user_id = …`.
+ *      The `COUNT / MIN / MAX / AVG` columns stay on this pass as
+ *      the live-SQL fallback for the v1.4.35 rollup parity check.
  *
  *   2. **`DISTINCT ON (type)` latest read** — one `$queryRaw`
  *      returning the most-recent `(type, value)` pair per type so the
  *      slim shape can populate `latest`. `MAX(value)` would not do —
  *      we need the value of the row at `MAX(measured_at)`, not the
  *      largest value ever recorded.
+ *
+ *   3. **`measurement_rollups` DAY-bucket read** (v1.4.35) — folded
+ *      into `count / min / max / mean` via `aggregateBuckets`. Used
+ *      when the composed count agrees byte-for-byte with the live
+ *      `COUNT(*)`; falls back to live for accounts that never ran
+ *      the explicit backfill or that are mid-flight on the populator.
  *
  * Fields the slim shape intentionally omits (the dashboard never
  * reads them on first paint):
@@ -44,6 +52,7 @@ import type { DataSummary } from "@/lib/analytics/trends";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { annotate } from "@/lib/logging/context";
 import { ensureUserRollupsFresh } from "@/lib/measurements/rollups";
+import { aggregateBuckets } from "@/lib/measurements/rollup-read";
 
 interface AggregateRow {
   type: string;
@@ -137,19 +146,19 @@ export interface SummariesSlice {
 export async function computeSummariesSlice(
   userId: string,
 ): Promise<SummariesSlice> {
-  // v1.5.0 — keep the persistent rollup table current as a side
-  // effect of the dashboard tile strip mount. No-op when fresh; one
-  // bounded DAY-granularity recompute on first cold-mount after a
-  // process restart. The slim slice's response shape is untouched —
-  // the rollup table accelerates downstream consumers (the v1.5.1
-  // read-path swap will route this surface through the rollup once
-  // dual-read parity is established).
+  // v1.4.35 — keep the persistent rollup table current before the
+  // bucket read fires. On a warm process this is a single watermark
+  // query; on a cold mount it folds the trailing 90-day window into
+  // the DAY rollup so the bucket read below has something to compose.
   await ensureUserRollupsFresh(userId);
 
-  // The two passes run in parallel — they target the same index path
-  // (`measurements (user_id, type, measured_at)`) but Postgres can
-  // serve them off the buffer cache concurrently.
-  const [aggregates, latests] = await Promise.all([
+  // Three passes in parallel. The first two target the same
+  // `measurements (user_id, type, measured_at)` index path; the third
+  // hits the much smaller `measurement_rollups` table (one row per
+  // bucket, not per row). On users with a complete backfill the
+  // bucket scan dominates only marginally; on un-backfilled users it
+  // returns a short list and the parity check falls back to live.
+  const [aggregates, latests, dayBuckets] = await Promise.all([
     prisma.$queryRaw<AggregateRow[]>`
       SELECT
         m."type"::text                                                AS type,
@@ -212,6 +221,24 @@ export async function computeSummariesSlice(
       WHERE m."user_id" = ${userId}
       ORDER BY m."type", m."measured_at" DESC
     `,
+    // v1.4.35 — every DAY rollup bucket for the user. The slim slice's
+    // `count / min / max / mean` is all-time, so we read the bucket
+    // table without a `bucketStart` window. The defensive parity
+    // check below uses the live aggregate's `COUNT(*)` to decide
+    // whether the rollup is complete for this account (post-backfill
+    // → composed) or partial (pre-backfill → falls back to live).
+    prisma.measurementRollup.findMany({
+      where: { userId, granularity: "DAY" },
+      orderBy: [{ type: "asc" }, { bucketStart: "asc" }],
+      select: {
+        type: true,
+        bucketStart: true,
+        count: true,
+        mean: true,
+        minValue: true,
+        maxValue: true,
+      },
+    }),
   ]);
 
   const latestByType = new Map<string, number>();
@@ -250,17 +277,50 @@ export async function computeSummariesSlice(
     };
   }
 
+  // v1.4.35 — partition the DAY buckets by type so the per-type loop
+  // can compose `count / min / max / mean` from them in O(1).
+  const bucketsByType = new Map<
+    string,
+    Array<{
+      day: Date;
+      count: number;
+      mean: number;
+      minValue: number;
+      maxValue: number;
+    }>
+  >();
+  for (const b of dayBuckets) {
+    const list = bucketsByType.get(b.type) ?? [];
+    list.push({
+      day: b.bucketStart,
+      count: b.count,
+      mean: b.mean,
+      minValue: b.minValue,
+      maxValue: b.maxValue,
+    });
+    bucketsByType.set(b.type, list);
+  }
+
   let totalRows = 0;
   for (const row of aggregates) {
-    const count = Number(row.count);
+    const liveCount = Number(row.count);
+    // Compose count/min/max/mean from the DAY buckets when the
+    // composed count agrees with the live `COUNT(*)`. The slim slice's
+    // window is all-time, so a divergent count signals either an
+    // un-backfilled account (rollup only covers the trailing 90d
+    // `ensureUserRollupsFresh` warmed up) or a mid-flight populator —
+    // both cases want the live SQL values, which we already have.
+    const composed = aggregateBuckets(bucketsByType.get(row.type) ?? []);
+    const useRollup = composed.count === liveCount;
+    const count = useRollup ? composed.count : liveCount;
     totalRows += count;
     const latest = latestByType.get(row.type) ?? null;
     summaries[row.type] = {
       count,
       latest,
-      min: round2(row.min_value),
-      max: round2(row.max_value),
-      mean: round2(row.mean_value),
+      min: useRollup ? round2(composed.min) : round2(row.min_value),
+      max: useRollup ? round2(composed.max) : round2(row.max_value),
+      mean: useRollup ? round2(composed.mean) : round2(row.mean_value),
       avg7: round2(row.avg7),
       avg30: round2(row.avg30),
       slope7: buildSlope(row.slope7, row.r2_7),

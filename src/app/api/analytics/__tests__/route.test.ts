@@ -25,6 +25,14 @@ vi.mock("@/lib/db", () => ({
     medication: { findMany: vi.fn() },
     // v1.4.33 C1 — slim summaries slice runs through `$queryRaw`.
     $queryRaw: vi.fn(),
+    // v1.4.35 — slim slice also reads DAY buckets; the freshness
+    // watermark inside `ensureUserRollupsFresh` pokes `findFirst`.
+    // Default both to empty so the parity check falls back to live
+    // SQL and the slim slice assertions stay byte-shape stable.
+    measurementRollup: {
+      findMany: vi.fn().mockResolvedValue([]),
+      findFirst: vi.fn().mockResolvedValue(null),
+    },
   },
 }));
 
@@ -100,6 +108,17 @@ beforeEach(() => {
     [] as never,
   );
   vi.mocked(prisma.medication.findMany).mockResolvedValue([] as never);
+  // v1.4.35 — rollup table defaults. `resetAllMocks` clears the
+  // module-level implementations, so we re-seed both per test. Empty
+  // findMany + null findFirst means the slim slice's parity check
+  // diverges and falls back to live SQL (preserves the pre-v1.4.35
+  // assertions in this file).
+  vi.mocked(prisma.measurementRollup.findMany).mockResolvedValue(
+    [] as never,
+  );
+  vi.mocked(prisma.measurementRollup.findFirst).mockResolvedValue(
+    null as never,
+  );
 });
 
 afterEach(() => {
