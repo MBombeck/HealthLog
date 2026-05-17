@@ -1,5 +1,198 @@
 # Changelog
 
+## [1.4.37] — 2026-05-17 — Final web polish before iOS focus
+
+The closing web release before the v1.5 iOS-app sprint. Carries the
+v1.4.36 perf carry-over for the full `/api/analytics` route (cold
+worst-case 111 s → ~1.5–3 s on power-user accounts), consolidates
+Apple Health step samples into a one-row-per-day list view with
+chevron drill-down and a nightly drain, restores `IntakeHistoryListV2`
+to match the pre-v1.4.28 contract (hides planned and skipped rows by
+default), converges every Coach affordance behind a single feature
+gate, lifts the medication-detail Mounjaro card to byte-equivalent
+parity with Ramipril, brings the Insights overview hero row to
+height parity, hardens the `getClientIp` source chain behind a
+`TRUST_CF_CONNECTING_IP` env flag, and ships the Arztbericht hero
+card on the Settings → Export page. Documentation refreshed across
+all three repos (README, healthlog-docs, healthlog-landing) with
+five new architecture diagrams in the Dracula palette.
+
+### Performance
+
+- **`/api/analytics` full slice on the rollup-coverage probe.**
+  `correlations`, `healthScore` and `bp_in_target` each gained a
+  rollup-fast-path that fires whenever every logged type has DAY
+  coverage. Live SQL fallback remains the source of truth for
+  partial-coverage accounts. The route emits a per-branch
+  `meta.<branch>.path: "rollup"|"live"` annotate so production logs
+  prove the branch selection. Correlation window tightened
+  30 → 28 days with `CORRELATION_WINDOW_DAYS` constant + sentinel
+  annotate.
+- **Apple Health step consolidation.** New `groupBy=day` + `dayKey`
+  modes on `GET /api/measurements` collapse the per-sample step rows
+  into one daily total per row (sum + sample count); a chevron
+  reveals the per-sample drill-down on demand. Server-side
+  aggregation reads from `pickCumulativeDaySum`, which is
+  source-priority-aware. A nightly `drainPerSampleCumulative`
+  pg-boss job at 03:45 Europe/Berlin (36 h grace window so late
+  Watch syncs surface in real time) shrinks the underlying table by
+  the same factor. Power-user accounts should see roughly 50× row
+  compression once the drain catches up.
+
+### AI Insights
+
+- `IntakeHistoryListV2` on the medication detail page no longer
+  surfaces planned/scheduled or skipped rows by default; the API
+  gains an explicit `?status=completed` filter and the V2 component
+  pins it. Skipped rows render distinctly when explicitly requested.
+  Empty-state copy added for medications with only planned-no-taken
+  entries.
+
+### UX
+
+- **HealthScoreCard** stretches to the full height of the Insights
+  overview hero row via a grid layout with `1fr` on the provenance
+  accordion; the right-column card now ends at the left-column
+  baseline instead of clipping at the divider.
+- **TopBar overflow menu** + **sidebar dropdown** keep menu items
+  on a single line. Container widened to `w-60` on both surfaces so
+  "Benachrichtigungs-Center" no longer wraps and German labels in
+  the top-bar user menu no longer clip without ellipsis.
+- **Targets page** card gap tightened (`gap-3 md:gap-4` + `pb-0` on
+  the CardHeader) to kill the ~36 px dead band below each metric
+  label.
+- **Select chevron** right-margin matches the date-picker icon
+  gutter at every size.
+- **Mood mini chart** wrapper collapsed to render byte-aligned with
+  the BP and Weight minis in the trends row.
+- **Dashboard "Hinzufügen" button** centre-aligns with the title on
+  mobile (`items-center sm:items-start`) so it no longer floats
+  next to a 2-line heading.
+- **Medication detail card symmetry** — the Mounjaro card now
+  carries the same status pill (take-now / overdue / very-overdue),
+  the same purple dose accent, the same category-map label, and the
+  same primary-action row as Ramipril. GLP-1-specific data
+  (injection-site, rotation hint, side-effect quick-log) lives in
+  the header-actions kebab so the visual shape stays identical
+  across medication kinds.
+- **Coach disable cascade** — when the global Coach feature flag is
+  OFF, every Coach affordance vanishes (FAB, snapshot button,
+  HeroStrip CTA, SuggestedPrompts chips, `/targets` CoachDrawer,
+  TargetCard CTA, personal-dropdown entry). A new invariant test
+  pins six in-band surfaces; cross-cut gates carry sibling tests.
+- **Onboarding checklist** toggle + dismiss button raised to the
+  44 px mobile touch floor (uncovered while wiring the e2e fix).
+- **Settings — Timezone override** removed. The page now silently
+  seeds the browser's IANA zone on first detect; the "Übernehmen"
+  button and its i18n keys are gone.
+- **Settings → Export — Arztbericht hero card** promotes the doctor
+  report to a prominent CTA at the top of the page with a one-line
+  value statement. Existing export options stay below in a
+  "Weitere Export-Optionen" section.
+- **Dashboard quick-add — Medikamenteneinnahme** new action in the
+  "Hinzufügen" menu opens a ResponsiveSheet with a smart medication
+  picker (auto-selects the medication with an open dosing window,
+  falls back to alphabetical), pre-filled dose (read-only for now,
+  marked informational), and a time field defaulting to now. Cache
+  invalidation fans out to medications, analytics, insights, intake
+  summary, achievements and the per-medication compliance chart.
+- **Insights BMI status** persists a sentinel cache row on the
+  20 s LLM timeout path so the spinner stops re-firing on every
+  cold mount; a structured 4-line skeleton replaces the bare
+  centred spinner.
+- **Trend annotation tri-state contract** carried over from v1.4.36
+  works correctly under the new chart-slot heights.
+
+### Security
+
+- **`TRUST_CF_CONNECTING_IP` env flag** (default off) lets
+  Cloudflare-fronted deployments read `cf-connecting-ip` so the
+  rate-limit bucket key and `audit_logs.ipAddress` column reflect
+  the real client IP instead of the proxy. `.env.example`
+  documents the security implications explicitly: only set behind
+  Cloudflare; nginx / Caddy / direct deployments must leave it off.
+- **Hourly geo-backfill** pg-boss job backfills city + country +
+  carrier on existing `audit_log` rows that landed without
+  resolution (e.g. the v1.4.36 UI fix surfaced gaps the backfill
+  now closes).
+
+### Refactor
+
+- New shared modules under `src/lib/medications/`
+  (`window-status.ts`, `category-label.ts`) collapse two previously
+  duplicated helpers used by both the Ramipril and Mounjaro card
+  paths.
+- `CUMULATIVE_DAY_SUM_TYPES` derives from `CUMULATIVE_HK_TYPES` so
+  the cumulative-type registry is a single source of truth across
+  the importer, the drain, the route, the UI and the analytics
+  metric-key mapping.
+- `cumulativeMetricKey` mapping hoisted out of the analytics route
+  into the same shared module.
+- `getClientIp` and `getClientIpOrTrustWarning` share one ladder
+  via the trust-warning helper.
+
+### Schema
+
+- No new migrations.
+
+### Validation
+
+- `dayKey` now rejects impossible calendar values (e.g.
+  `2026-02-30`) so the drill-down can't silently shift to a
+  neighbouring day via `Date` overflow.
+- `groupBy=day` / `dayKey` requests with `offset > 0` are rejected
+  upfront; real pagination on the collapsed branch lands in
+  v1.4.38.
+- `dayKey` drill-down window now honours DST transitions in the
+  user's IANA zone (Berlin Mar 30 + Oct 26 stop showing wrong
+  hour-overlap counts).
+
+### CI
+
+- Vitest 4 timeout-option signature corrected on the 5 MB payload
+  guard test.
+- Integration suite `isolate:true` for the mock-state-sensitive
+  notification dispatch tests.
+- e2e mobile-touch-target assertions updated to the v1.4.34.5
+  44 px floor.
+
+### Documentation
+
+- README rewrite with a hero section, status block, "How it works"
+  walkthrough, and four architecture diagrams referenced inline.
+- `healthlog-docs` site refresh: three new integration mirrors
+  (Apple Health, Withings, AI providers), three placeholder pages
+  filled, two new concepts/self-hosting pages added.
+- `healthlog-landing` value-statement upgrade with two new
+  sections (How-it-works, AI Coach) and the new diagrams.
+- Five new SVG diagrams in `docs/diagrams/` (Dracula palette,
+  hand-authored to match the existing landing-page aesthetic):
+  data flow, Coach pipeline, self-hosting topology, source-priority
+  ladder, security model.
+
+### Tests
+
+- Unit suite 4354 → 4486 passing (1 skipped). `pnpm typecheck` +
+  `pnpm lint` clean. Integration suite stable at 230 passing; the
+  two pre-existing mock-isolation flakes (`apns-dispatch` /
+  `integration-status`) are now stabilised by the `isolate:true`
+  fix shipped in this release.
+
+### Deferred to v1.4.38
+
+See `.planning/round-v1438-backlog.md` for the full triage table
+(~50 items across the six W10 reviewer axes). Headline:
+
+- Cross-tz fragility in the rollup fast-paths (UTC-anchored
+  buckets vs user-local-day pairing) — Berlin-only today, must
+  land before the iOS user base broadens.
+- Real pagination on the collapsed `groupBy=day` branch.
+- BP fast-path window day-edges (cosmetic ~3 % drift today).
+- Per-process singleton-guard on the hourly geo-backfill for
+  multi-worker deployments.
+- Several smaller drift-risk and dead-branch cleanups identified
+  by the code-review pass.
+
 ## [1.4.36] — 2026-05-17 — Perf, charts, AI payload trim, UX punch
 
 Builds on the v1.4.35 rollup foundation. The aggregator hot paths now
