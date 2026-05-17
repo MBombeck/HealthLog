@@ -96,10 +96,7 @@ describe("<IntakeHistoryListV2> — empty state", () => {
   it("renders the empty-state title and CTA in English", () => {
     const client = makeClient();
     seedIntake(client, "med-1", []);
-    const html = render(
-      <IntakeHistoryListV2 medicationId="med-1" />,
-      client,
-    );
+    const html = render(<IntakeHistoryListV2 medicationId="med-1" />, client);
     expect(html).toContain("No intakes recorded yet");
     expect(html).toContain("Open daily intake");
     expect(html).toContain('href="/medications"');
@@ -141,10 +138,7 @@ describe("<IntakeHistoryListV2> — populated rows", () => {
         createdAt: "2026-05-14T20:00:00.000Z",
       },
     ]);
-    const html = render(
-      <IntakeHistoryListV2 medicationId="med-1" />,
-      client,
-    );
+    const html = render(<IntakeHistoryListV2 medicationId="med-1" />, client);
     expect(html).toContain("Taken");
     expect(html).toContain("Skipped");
     expect(html).toContain("Website");
@@ -238,10 +232,7 @@ describe("<IntakeHistoryListV2> — populated rows", () => {
   it("renders the section title across both locales", () => {
     const client = makeClient();
     seedIntake(client, "med-1", []);
-    const enHtml = render(
-      <IntakeHistoryListV2 medicationId="med-1" />,
-      client,
-    );
+    const enHtml = render(<IntakeHistoryListV2 medicationId="med-1" />, client);
     expect(enHtml).toContain("Intake history");
 
     const deClient = makeClient();
@@ -269,10 +260,7 @@ describe("<IntakeHistoryListV2> — sort indicators", () => {
         createdAt: "2026-05-15T08:02:00.000Z",
       },
     ]);
-    const html = render(
-      <IntakeHistoryListV2 medicationId="med-1" />,
-      client,
-    );
+    const html = render(<IntakeHistoryListV2 medicationId="med-1" />, client);
     // Default sort = takenAt desc, so the "taken" header carries the
     // arrow-down icon and the "scheduled" header carries the neutral
     // dual-arrow icon.
@@ -322,10 +310,7 @@ describe("<IntakeHistoryListV2> — sort indicators", () => {
       ],
       50,
     );
-    const html = render(
-      <IntakeHistoryListV2 medicationId="med-2" />,
-      client,
-    );
+    const html = render(<IntakeHistoryListV2 medicationId="med-2" />, client);
     expect(html).toContain("Previous");
     expect(html).toContain("Next");
     // a11y: pagination buttons clear the 44 px mobile touch floor and
@@ -352,10 +337,7 @@ describe("<IntakeHistoryListV2> — sort indicators", () => {
       ],
       1,
     );
-    const html = render(
-      <IntakeHistoryListV2 medicationId="med-3" />,
-      client,
-    );
+    const html = render(<IntakeHistoryListV2 medicationId="med-3" />, client);
     expect(html).not.toContain(">Previous<");
     expect(html).not.toContain(">Next<");
   });

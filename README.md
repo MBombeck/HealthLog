@@ -62,6 +62,24 @@ Most health apps lock your data behind proprietary clouds, push subscriptions, a
 
 ---
 
+## How it works
+
+<p align="center">
+  <img src="docs/diagrams/01-data-flow.svg" alt="Five-stage data pipeline: sources to ingest to Postgres + rollups to reads to surfaces" width="900" />
+</p>
+
+Every reading walks the same five-stage pipeline. **Sources** (Withings webhook, an Apple Health `export.zip`, the iPhone HealthKit batch from the v1.5 native client, manual entry, the moodLog.app webhook) reach a small set of **ingest** endpoints, which dedup against the source-priority resolver before persisting into Postgres. **Storage** keeps two shapes — a `Measurement` row per sample plus pre-aggregated DAY / WEEK / MONTH `MeasurementRollup` buckets. **Reads** probe the rollups first and fall back to live SQL when the ask is too slope-heavy or the bucket is cold. **Surfaces** — dashboard tiles, Insights cards, the AI Coach, the doctor-report PDF — all consume the same read path, so a number on a tile is always the same number the Coach cites.
+
+Three more diagrams cover the pieces that matter most when you're evaluating the project:
+
+- [`02-coach-pipeline.svg`](docs/diagrams/02-coach-pipeline.svg) — how the AI Coach grounds every reply in your own data via the snapshot builder + provider chain + Zod-validated parser.
+- [`04-source-priority.svg`](docs/diagrams/04-source-priority.svg) — why steps logged simultaneously by Apple Watch, a Withings ScanWatch and the iPhone don't triple-count.
+- [`05-security-model.svg`](docs/diagrams/05-security-model.svg) — the three concentric perimeters (auth, session, encrypted core) plus rate-limiter, audit-log and SSRF rails.
+
+The deployment topology lives further down under [Deployment](#deployment).
+
+---
+
 ## Key Features
 
 **Health Metrics** -- Track weight, blood pressure, pulse, body fat, sleep, steps, blood glucose (fasting/postprandial/random/bedtime, mg/dL ↔ mmol/L), total body water, bone mass, and pulse oximetry (SpO₂) with interactive trend charts, moving averages, and traffic-light ranges based on ESC/ESH 2018, ADA 2024, and consensus pulse-oximeter guidance (NICE NG115). Body-composition + SpO₂ metrics sync automatically from Withings Body+ scales and ScanWatch devices.
@@ -145,6 +163,7 @@ Open **http://localhost:3000**. The first registered user becomes admin.
 | PDF           | jsPDF (client-side generation)                    |
 | Testing       | Vitest 4                                          |
 | Deployment    | Docker (multi-stage Alpine)                       |
+| Native client | SwiftUI iOS app (separate repo, active for v1.5)  |
 
 ---
 
@@ -456,6 +475,24 @@ pnpm db:studio        # Prisma Studio GUI
 The included `docker-compose.yml` runs the app and PostgreSQL. The entrypoint automatically waits for the database, runs pending migrations, and starts the server.
 
 The app listens on port **3000**. Place it behind Nginx, Caddy, or Traefik for TLS termination. Works out of the box with [Coolify](https://coolify.io/).
+
+<p align="center">
+  <img src="docs/diagrams/03-self-hosting-topology.svg" alt="Self-hosting topology: internet → reverse proxy → Next.js app + pg-boss worker → PostgreSQL, with GHCR image pull and optional Coolify autodeploy and S3 backup" width="900" />
+</p>
+
+For a single-process default the same container hosts both the web and worker (`HEALTHLOG_PROCESS_TYPE=all`, the default). Split them via `HEALTHLOG_PROCESS_TYPE=web` and `HEALTHLOG_PROCESS_TYPE=worker` for horizontal scale. Off-host AES-GCM weekly backups to any S3-compatible bucket (R2, B2, MinIO, AWS) are opt-in via the admin panel. See [`docs/self-hosting/`](docs/self-hosting/) and [`docs/ops/`](docs/ops/) for the full operator manual.
+
+---
+
+## Roadmap
+
+| Release line | Focus |
+| ------------ | ----- |
+| **v1.4.x** (current) | Web maturity — Apple Health import, AI Coach, persistent rollup tier, multi-provider AI, doctor PDF, encryption-key rotation, Coolify autodeploy. Roughly weekly cadence. |
+| **v1.5** (in active development) | Native iOS client (SwiftUI). The backend contract is already locked in [`docs/api/openapi.yaml`](docs/api/openapi.yaml); the iOS app lives in a separate repository and ingests via the same `/api/measurements/batch` and `/api/auth/refresh` surfaces the web uses. |
+| **v2.x** (planned) | Multi-tenant hardening, expanded device passthrough (Garmin / Polar), opt-in cross-user aggregate research mode (off by default; never enabled without explicit consent). |
+
+The detailed changelog lives in [`CHANGELOG.md`](CHANGELOG.md); per-release audit summaries live under [`docs/audit/`](docs/audit/).
 
 ---
 

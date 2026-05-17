@@ -160,8 +160,12 @@ export const updateInventoryItemSchema = z.object({
   notes: z.string().max(200).nullable().optional(),
 });
 
-export type CreateInventoryItemInput = z.infer<typeof createInventoryItemSchema>;
-export type UpdateInventoryItemInput = z.infer<typeof updateInventoryItemSchema>;
+export type CreateInventoryItemInput = z.infer<
+  typeof createInventoryItemSchema
+>;
+export type UpdateInventoryItemInput = z.infer<
+  typeof updateInventoryItemSchema
+>;
 
 /**
  * v1.4.25 W21 Fix-K — `POST /api/medications/[id]/glp1` body validators.
@@ -200,11 +204,7 @@ export const glp1DoseChangePostSchema = z.object({
     .refine((d) => d.getTime() <= Date.now() + FIVE_YEARS_MS, {
       message: "effectiveFrom must be within 5 years of now",
     }),
-  doseValue: z
-    .number()
-    .finite()
-    .min(0)
-    .max(MAX_DOSE_MG),
+  doseValue: z.number().finite().min(0).max(MAX_DOSE_MG),
   doseUnit: z.string().min(1).max(10),
   note: z.string().max(MAX_NOTE_CHARS).nullable().optional(),
 });
@@ -225,10 +225,9 @@ export const glp1PostBodySchema = z
     doseChange: glp1DoseChangePostSchema.optional(),
     inventory: glp1InventoryPostSchema.optional(),
   })
-  .refine(
-    (b) => Boolean(b.doseChange) !== Boolean(b.inventory),
-    { message: "Body must carry exactly one of doseChange or inventory" },
-  );
+  .refine((b) => Boolean(b.doseChange) !== Boolean(b.inventory), {
+    message: "Body must carry exactly one of doseChange or inventory",
+  });
 
 export type Glp1DoseChangePostInput = z.infer<typeof glp1DoseChangePostSchema>;
 export type Glp1InventoryPostInput = z.infer<typeof glp1InventoryPostSchema>;

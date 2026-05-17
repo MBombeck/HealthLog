@@ -2498,6 +2498,17 @@ paths:
             enum:
               - rollup
             type: string
+        - in: query
+          name: groupBy
+          schema:
+            enum:
+              - day
+            type: string
+        - in: query
+          name: dayKey
+          schema:
+            pattern: ^\d{4}-\d{2}-\d{2}$
+            type: string
       responses:
         "200":
           content:

@@ -17,12 +17,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
@@ -233,8 +228,12 @@ export function IntakeHistoryListV2({
                       {sortIndicator("scheduledFor")}
                     </button>
                   </TableHead>
-                  <TableHead>{t("medications.intakeHistoryColStatus")}</TableHead>
-                  <TableHead>{t("medications.intakeHistoryColSource")}</TableHead>
+                  <TableHead>
+                    {t("medications.intakeHistoryColStatus")}
+                  </TableHead>
+                  <TableHead>
+                    {t("medications.intakeHistoryColSource")}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -264,10 +263,7 @@ export function IntakeHistoryListV2({
                             variant="secondary"
                             className="gap-1 bg-green-500/20 text-xs text-green-400"
                           >
-                            <Check
-                              aria-hidden="true"
-                              className="h-3 w-3"
-                            />
+                            <Check aria-hidden="true" className="h-3 w-3" />
                             {t("medications.intakeHistoryStatusTaken")}
                           </Badge>
                         ) : isSkipped ? (

@@ -134,10 +134,7 @@ describe("GET /api/medications/[id]/intake — status filter", () => {
     expect(where).toEqual({
       medicationId: "med-1",
       userId: "user-1",
-      OR: [
-        { takenAt: { not: null }, skipped: false },
-        { skipped: true },
-      ],
+      OR: [{ takenAt: { not: null }, skipped: false }, { skipped: true }],
     });
   });
 
@@ -154,10 +151,7 @@ describe("GET /api/medications/[id]/intake — status filter", () => {
     expect(countArgs?.where).toEqual({
       medicationId: "med-1",
       userId: "user-1",
-      OR: [
-        { takenAt: { not: null }, skipped: false },
-        { skipped: true },
-      ],
+      OR: [{ takenAt: { not: null }, skipped: false }, { skipped: true }],
     });
   });
 });
