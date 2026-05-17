@@ -31,6 +31,11 @@ export function invalidateUserMeasurements(userId: string): void {
   caches.analytics.deleteByPrefix(`${userId}|`);
   caches.achievements.deleteByPrefix(userId);
   caches.workouts.deleteByPrefix(`${userId}|`);
+  // v1.4.36 W1 — measurement writes change the per-target consistency
+  // strips, the in-range rates and the streak counters that
+  // `/api/insights/targets` computes. Evict the user's bucket so the
+  // next mount paints fresh data.
+  caches.insightsTargets.deleteByPrefix(userId);
 }
 
 /**
@@ -44,6 +49,9 @@ export function invalidateUserMood(userId: string): void {
   caches.moodAnalytics.deleteByPrefix(userId);
   caches.achievements.deleteByPrefix(userId);
   caches.analytics.deleteByPrefix(`${userId}|`);
+  // v1.4.36 W1 — mood writes change the mood target rows on the
+  // insights/targets response (MOOD_SCORE, MOOD_STABILITY).
+  caches.insightsTargets.deleteByPrefix(userId);
 }
 
 /**
@@ -56,6 +64,9 @@ export function invalidateUserMedications(userId: string): void {
   caches.medications.deleteByPrefix(userId);
   caches.medicationsIntake.deleteByPrefix(`${userId}|`);
   caches.achievements.deleteByPrefix(userId);
+  // v1.4.36 W1 — medication writes change the MEDICATION_COMPLIANCE
+  // target rollup (compliance7 / compliance30 / consistency strip).
+  caches.insightsTargets.deleteByPrefix(userId);
 }
 
 /**

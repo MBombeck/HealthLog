@@ -247,6 +247,19 @@ export const caches = {
     maxEntries: 1000,
     ttlMs: 60_000,
   }),
+  /**
+   * v1.4.36 W1 — `/api/insights/targets` is read on every Insights
+   * mount and runs >1 s cold (it pulls 30-day measurements for every
+   * type + medications + intakes + mood + glucose). 60 s TTL matches
+   * the analytics cache so multiple sub-page mounts inside a minute
+   * all hit a warm cache. Invalidated alongside the analytics bucket
+   * on measurement / mood / medication writes.
+   */
+  insightsTargets: new ServerCache<unknown>({
+    name: "insightsTargets",
+    maxEntries: 1000,
+    ttlMs: 60_000,
+  }),
 } as const;
 
 /**

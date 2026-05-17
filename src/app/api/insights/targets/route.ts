@@ -25,6 +25,8 @@ import type {
 } from "@/generated/prisma/client";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
+import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
+import { NO_STORE_BUT_BFCACHE } from "@/lib/http/cache-headers";
 import {
   getEffectiveRange,
   type ThresholdOverridesJson,
@@ -105,9 +107,32 @@ interface TargetPageSummary {
   streakHighlight: { metric: string; days: number } | null;
 }
 
+/**
+ * v1.4.36 W1 — `/api/insights/targets` body, lifted out of the route
+ * handler so `cached()` can wrap it. The handler attaches the
+ * bfcache-friendly Cache-Control header afterward. 60 s TTL keyed on
+ * the user id matches the analytics cache so multiple Insights mounts
+ * inside a minute all hit a warm cache. Invalidated alongside the
+ * analytics bucket on measurement / mood / medication writes.
+ */
+type AuthedUser = Awaited<ReturnType<typeof requireAuth>>["user"];
+
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
+  const body = await cached(
+    caches.insightsTargets as ServerCache<
+      Awaited<ReturnType<typeof buildTargetsResponse>>
+    >,
+    user.id,
+    () => buildTargetsResponse(user),
+    annotate,
+  );
+  const response = apiSuccess(body);
+  response.headers.set("Cache-Control", NO_STORE_BUT_BFCACHE);
+  return response;
+});
 
+async function buildTargetsResponse(user: AuthedUser) {
   const userId = user.id;
 
   // v1.4.25 W7b — every per-day bucket key in this route resolves
@@ -1179,7 +1204,7 @@ export const GET = apiHandler(async () => {
     },
   });
 
-  return apiSuccess({
+  return {
     targets,
     pageSummary,
     // Extra diastolic data for BP display
@@ -1194,5 +1219,5 @@ export const GET = apiHandler(async () => {
       gender,
       glucoseUnit,
     },
-  });
-});
+  };
+}
