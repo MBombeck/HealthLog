@@ -194,4 +194,83 @@ describe("computeCorrelationHypothesesFastPath", () => {
       expect(PROBE).toHaveBeenCalledWith("user-fresh");
     });
   });
+
+  describe("cross-tz runtime guard (v1.4.38 W-A)", () => {
+    it("takes the rollup path for a Berlin user (near-UTC)", async () => {
+      const coverage = new Map<string, boolean>([
+        ["BLOOD_PRESSURE_SYS", true],
+        ["PULSE", true],
+        ["WEIGHT", true],
+      ]);
+      FULLY_COVERED.mockReturnValue(true);
+      PROBE.mockResolvedValue(coverage);
+      ROLLUP_FIND_MANY.mockResolvedValue([]);
+
+      const result = await computeCorrelationHypothesesFastPath({
+        userId: "user-berlin",
+        userTz: "Europe/Berlin",
+        now: new Date("2026-05-17T12:00:00.000Z"),
+        coverage,
+      });
+
+      expect(result.path).toBe("rollup");
+      expect(ROLLUP_FIND_MANY).toHaveBeenCalledTimes(3);
+      expect(MEASUREMENT_FIND_MANY).not.toHaveBeenCalled();
+
+      const calls = ANNOTATE.mock.calls.map((c) => c[0]);
+      const corrCall = calls.find((c) => c?.meta?.correlations !== undefined);
+      expect(corrCall?.meta.correlations.tz_guard).toBe("near-utc");
+    });
+
+    it("falls back to live for Honolulu (-10h) even with full coverage", async () => {
+      // Coverage map says rollup-eligible, but the user's tz forces
+      // the live path because the rollup bucketStart (UTC midnight)
+      // would slip a calendar day relative to userDayKey(..., Honolulu).
+      const coverage = new Map<string, boolean>([
+        ["BLOOD_PRESSURE_SYS", true],
+        ["PULSE", true],
+        ["WEIGHT", true],
+      ]);
+      FULLY_COVERED.mockReturnValue(true);
+      PROBE.mockResolvedValue(coverage);
+      MEASUREMENT_FIND_MANY.mockResolvedValue([]);
+
+      const result = await computeCorrelationHypothesesFastPath({
+        userId: "user-honolulu",
+        userTz: "Pacific/Honolulu",
+        now: new Date("2026-05-17T12:00:00.000Z"),
+        coverage,
+      });
+
+      expect(result.path).toBe("live");
+      expect(MEASUREMENT_FIND_MANY).toHaveBeenCalledTimes(3);
+      expect(ROLLUP_FIND_MANY).not.toHaveBeenCalled();
+
+      const calls = ANNOTATE.mock.calls.map((c) => c[0]);
+      const corrCall = calls.find((c) => c?.meta?.correlations !== undefined);
+      expect(corrCall?.meta.correlations.tz_guard).toBe("non-utc-live-fallback");
+      expect(corrCall?.meta.correlations.path).toBe("live");
+    });
+
+    it("falls back to live for Tokyo (+9h) even with full coverage", async () => {
+      const coverage = new Map<string, boolean>([
+        ["BLOOD_PRESSURE_SYS", true],
+        ["PULSE", true],
+        ["WEIGHT", true],
+      ]);
+      FULLY_COVERED.mockReturnValue(true);
+      PROBE.mockResolvedValue(coverage);
+      MEASUREMENT_FIND_MANY.mockResolvedValue([]);
+
+      const result = await computeCorrelationHypothesesFastPath({
+        userId: "user-tokyo",
+        userTz: "Asia/Tokyo",
+        now: new Date("2026-05-17T12:00:00.000Z"),
+        coverage,
+      });
+
+      expect(result.path).toBe("live");
+      expect(ROLLUP_FIND_MANY).not.toHaveBeenCalled();
+    });
+  });
 });
