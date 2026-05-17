@@ -89,6 +89,24 @@ export const listIntakeEventsSchema = z.object({
     .optional()
     .default("scheduledFor"),
   sortDir: z.enum(["asc", "desc"]).optional().default("desc"),
+  /**
+   * v1.4.37 W3 — server-side status filter so the medication detail
+   * page (IntakeHistoryListV2) can hide unconfirmed / planned rows.
+   *
+   *  - "all" (default): every event, preserves the byte-stable contract
+   *    the iOS Swift client and existing dashboard consumers depend on.
+   *  - "taken": only rows where the dose was confirmed taken
+   *    (`takenAt IS NOT NULL AND skipped = false`).
+   *  - "skipped": only rows the user explicitly skipped (`skipped = true`).
+   *  - "completed": taken OR skipped — anything the user actually
+   *    actioned. Excludes the ambiguous "missed / never confirmed"
+   *    rows (`takenAt IS NULL AND skipped = false`) that the v1 list
+   *    rendered as "verpasst" before the v1 component retired.
+   */
+  status: z
+    .enum(["all", "taken", "skipped", "completed"])
+    .optional()
+    .default("all"),
 });
 
 export const updateIntakeEventSchema = z.object({

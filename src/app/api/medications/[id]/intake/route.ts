@@ -177,8 +177,31 @@ export const GET = apiHandler(
       return apiError(parsed.error.issues[0].message, 422);
     }
 
-    const { limit, offset, sortBy, sortDir } = parsed.data;
-    const where = { medicationId: id, userId: user.id };
+    const { limit, offset, sortBy, sortDir, status } = parsed.data;
+
+    // v1.4.37 W3 — translate the optional `status` filter into a Prisma
+    // `where` fragment. Default `status:"all"` keeps the contract
+    // byte-stable for the iOS Swift client and the dashboard tiles that
+    // were on the wire before this knob existed. The detail-page
+    // IntakeHistoryListV2 component opts into `status:"completed"` so
+    // ambiguous "missed / never confirmed" rows
+    // (`takenAt IS NULL AND skipped = false`) stay out of the user-facing
+    // table — they were the source of the v1.4.36 regression where rows
+    // with no takenAt rendered an "Eingenommen" chip.
+    const statusFilter =
+      status === "taken"
+        ? { takenAt: { not: null }, skipped: false }
+        : status === "skipped"
+          ? { skipped: true }
+          : status === "completed"
+            ? {
+                OR: [
+                  { takenAt: { not: null }, skipped: false },
+                  { skipped: true },
+                ],
+              }
+            : {};
+    const where = { medicationId: id, userId: user.id, ...statusFilter };
 
     const [events, total] = await Promise.all([
       prisma.medicationIntakeEvent.findMany({
@@ -192,7 +215,7 @@ export const GET = apiHandler(
 
     annotate({
       action: { name: "medication.intake.list" },
-      meta: { medication_id: id, total },
+      meta: { medication_id: id, total, status },
     });
 
     return apiSuccess({ events, meta: { total, limit, offset } });
