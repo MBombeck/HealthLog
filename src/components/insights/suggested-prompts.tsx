@@ -2,6 +2,7 @@
 
 import { Quote } from "lucide-react";
 import { useTranslations } from "@/lib/i18n/context";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { cn } from "@/lib/utils";
 
 /**
@@ -47,6 +48,15 @@ export function SuggestedPrompts({
   className,
 }: SuggestedPromptsProps) {
   const { t } = useTranslations();
+  // v1.4.37 W5 — every chip is a Coach affordance: clicking one seeds
+  // the Coach drawer's composer and opens it. When the operator turns
+  // the global Coach flag off the strip must vanish along with the
+  // hero action button and the drawer mount. The HeroStrip caller
+  // already guards on `flags.coach`; the in-component gate is
+  // defence-in-depth so a future caller that mounts <SuggestedPrompts>
+  // outside the hero band can never leak a Coach surface.
+  const flags = useFeatureFlags();
+  if (!flags.coach) return null;
   const items =
     prompts ??
     DEFAULT_PROMPT_KEYS.map((key) => t(`insights.suggestedPrompts.${key}`));
