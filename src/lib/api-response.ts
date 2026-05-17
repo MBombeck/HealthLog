@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import { NextResponse } from "next/server";
 
 export function apiSuccess<T>(data: T, status = 200) {
@@ -86,8 +87,18 @@ export async function safeJson<T = unknown>(
  *
  * Returns the resolved IP or null when no trusted source is available.
  */
+/**
+ * v1.4.38 — strict IP validation via Node's built-in `net.isIP`. The
+ * earlier regex `/^[0-9a-fA-F.:]+$/` matched any structurally-broken
+ * input the character set accepted (`:::`, `1.2`, `1.2.3`, `gg:hh::`).
+ * The cf-connecting-ip flow trusts the header under the env flag and
+ * the trusted-proxy XFF chain forwards the rightmost entry straight
+ * to the rate-limiter + audit log; a malformed value would land
+ * downstream unchanged. `isIP` returns 4 / 6 for valid v4 / v6 and 0
+ * for anything else — invert to a boolean for the helper's surface.
+ */
 function looksLikeIp(s: string): boolean {
-  return /^[0-9a-fA-F.:]+$/.test(s) && s.length >= 3 && s.length <= 45;
+  return isIP(s) !== 0;
 }
 
 /**

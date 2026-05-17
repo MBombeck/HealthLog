@@ -101,6 +101,40 @@ describe("getClientIp trusted-proxy semantics (V3 audit)", () => {
     expect(ip).toBe("5.6.7.8");
   });
 
+  // v1.4.38 — looksLikeIp now defers to node:net's `isIP` instead of
+  // a hex/dot character-class regex. Structurally invalid candidates
+  // (`:::`, `1.2`, `gg:hh::1`) used to slip through the regex and
+  // pollute the rate-limit / audit log with non-IP strings; they are
+  // now rejected at the helper.
+  it("rejects structurally invalid IPv4 candidates (1.2)", () => {
+    const ip = getClientIp(
+      makeRequest({ "x-forwarded-for": "1.2, 5.6.7.8" }),
+    );
+    expect(ip).toBe("5.6.7.8");
+  });
+
+  it("rejects structurally invalid IPv6 candidates (:::)", () => {
+    const ip = getClientIp(
+      makeRequest({ "x-forwarded-for": ":::, 5.6.7.8" }),
+    );
+    expect(ip).toBe("5.6.7.8");
+  });
+
+  it("rejects hex-but-not-IPv6 chains", () => {
+    const ip = getClientIp(
+      makeRequest({ "x-forwarded-for": "gg:hh::1, 5.6.7.8" }),
+    );
+    expect(ip).toBe("5.6.7.8");
+  });
+
+  it("accepts well-formed IPv6 addresses", () => {
+    process.env.TRUST_PROXY_HOPS = "1";
+    const ip = getClientIp(
+      makeRequest({ "x-forwarded-for": "2001:db8::1" }),
+    );
+    expect(ip).toBe("2001:db8::1");
+  });
+
   it("falls back to x-real-ip if XFF missing", () => {
     const ip = getClientIp(makeRequest({ "x-real-ip": "5.6.7.8" }));
     expect(ip).toBe("5.6.7.8");
