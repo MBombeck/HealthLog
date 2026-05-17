@@ -2790,6 +2790,16 @@
     },
     "user": {
       "telegramTestBody": "HealthLog: connexion réussie. Les notifications Telegram sont actives."
+    },
+    "moodReminder": {
+      "title": "Rappel quotidien d’humeur",
+      "description": "Petit rappel à 22:00 si tu n’as pas encore noté ton humeur du jour. Utilise uniquement les canaux déjà configurés (Telegram, ntfy, Web Push, Apple Push) et reste silencieux dès que tu as noté ton humeur aujourd’hui.",
+      "toggleAria": "Activer / désactiver le rappel quotidien d’humeur",
+      "statusOn": "Actif à 22:00 heure locale",
+      "statusOff": "Désactivé",
+      "enabledToast": "Rappel d’humeur activé.",
+      "disabledToast": "Rappel d’humeur désactivé.",
+      "saveError": "Échec de l’enregistrement. Réessayez."
     }
   },
   "i18n": {
@@ -2990,6 +3000,6 @@
   },
   "moodReminders": {
     "dailyTitle": "Enregistrer votre humeur",
-    "dailyBody": "Comment vous sentez-vous aujourdhui ?"
+    "dailyBody": "Comment vous sentez-vous aujourd’hui ?"
   }
 }
