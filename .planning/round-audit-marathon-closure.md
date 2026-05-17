@@ -1,12 +1,13 @@
-# v1.4.34.4 + v1.4.34.5 + v1.4.35 — Audit-Marathon Closure (extended)
+# v1.4.34.4 + v1.4.34.5 + v1.4.35 + v1.4.35.1 — Audit-Marathon Closure (extended)
 
-Shipped: 2026-05-17 (three consecutive releases on the same date as v1.4.34.3).
+Shipped: 2026-05-17 (four consecutive releases on the same date as v1.4.34.3).
 
 | Tag | Highlights | Release |
 | --- | --- | --- |
 | v1.4.34.4 | Audit-driven hotfix bundle across security, UX, code quality, mobile-deep, docs, GitHub metadata | [v1.4.34.4](https://github.com/MBombeck/HealthLog/releases/tag/v1.4.34.4) |
 | v1.4.34.5 | Audit follow-on: 24 critical-path integration tests + iOS textarea zoom fix | [v1.4.34.5](https://github.com/MBombeck/HealthLog/releases/tag/v1.4.34.5) |
 | v1.4.35 | Layer B landed — persistent `measurement_rollups` foundation + partial reader read-swap on the comprehensive aggregator and the slim summaries slice | [v1.4.35](https://github.com/MBombeck/HealthLog/releases/tag/v1.4.35) |
+| v1.4.35.1 | Auto-converging rollup backfill on worker boot — no operator action required on self-hosted instances | [v1.4.35.1](https://github.com/MBombeck/HealthLog/releases/tag/v1.4.35.1) |
 
 ## Audit waves
 
@@ -154,3 +155,15 @@ The v1.4.34.1/.2 closure flagged "Layer B (`measurement_rollups` table)" as defe
 Tests: 4280 unit + 228 integration (+14 unit + 6 integration on the rollup path). `pnpm typecheck` + `pnpm lint` clean. Migration `0067_v1434_measurement_rollups` is idempotent.
 
 A full read-swap across every remaining analytics surface is planned for a follow-up release once the partial swap has proven itself in production.
+
+## v1.4.35.1 addendum — auto-converge on worker boot
+
+Discovered post-deploy: `scripts/backfill-rollups.ts` is unrunnable inside the Next.js standalone production image (`tsx` is a devDep and the Prisma client lives under pnpm's symlink-store layout, not the top-level `node_modules/@prisma`). A working manual run required `pnpm dlx tsx` plus an ad-hoc `ln -s` into the pnpm store — fine for one Coolify host with SSH, but it would block every self-hoster.
+
+v1.4.35.1 moves the backfill onto the worker boot so the activation path is zero-touch:
+
+- **New `rollup-full-backfill` queue** + handler folds one user per job at serial concurrency. The handler invokes `recomputeUserRollups(userId)` with the default 5-year window across all four granularities — equivalent to the manual CLI run, but inside the worker process so no `tsx` install gymnastics in production images.
+- **`enqueueBootTimeRollupBackfill`** runs once at `startReminderWorker` boot after every `boss.work` subscription is in place. Discovery query: users with at least one `measurements` row and zero `measurement_rollups` rows. Idempotent across reboots (the discovery query only matches uncovered users; once a fold completes the user drops off the list) and resilient to fast restarts (pg-boss `singletonKey: boot-backfill|{userId}`).
+- **Best-effort:** discovery errors surface through the helper's return value and are logged via `workerLog`; the worker boot never fails because the backfill missed.
+
+Tests: 4285 unit + 230 integration. tsc + lint clean. Production verify: `pgboss.queue` row for `rollup-full-backfill` created at `2026-05-17T09:36:25Z` (worker started 09:36:24Z), confirming the registration + helper-call path executed cleanly.
