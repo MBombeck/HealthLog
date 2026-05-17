@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" font-family="ui-sans-serif, -apple-system, Segoe UI, Roboto, sans-serif" role="img" aria-labelledby="title desc">
+  <title id="title">HealthLog data flow — device to insight</title>
+  <desc id="desc">Five-stage pipeline: sources (Withings, Apple Health export, iPhone HealthKit, manual entry, moodLog.app) feed ingest endpoints, which write to Postgres Measurement and MeasurementRollup tables, then surface on Dashboard tiles, Insights cards, the AI Coach, and the Doctor PDF.</desc>
+
+  <!-- Dracula background -->
+  <rect x="0" y="0" width="1200" height="620" fill="#282a36" />
+
+  <!-- Title -->
+  <text x="600" y="40" fill="#f8f8f2" font-size="22" font-weight="700" text-anchor="middle">From device to insight</text>
+  <text x="600" y="64" fill="#6272a4" font-size="13" text-anchor="middle">Every reading walks the same five-stage pipeline: source → ingest → store → read → surface</text>
+
+  <!-- Lane headers -->
+  <g font-size="12" fill="#6272a4" font-weight="600" letter-spacing="1">
+    <text x="120" y="105" text-anchor="middle">SOURCES</text>
+    <text x="360" y="105" text-anchor="middle">INGEST</text>
+    <text x="600" y="105" text-anchor="middle">STORE</text>
+    <text x="840" y="105" text-anchor="middle">READ</text>
+    <text x="1080" y="105" text-anchor="middle">SURFACE</text>
+  </g>
+
+  <!-- Lane separators -->
+  <g stroke="#44475a" stroke-dasharray="4 6" stroke-width="1">
+    <line x1="240" y1="120" x2="240" y2="560" />
+    <line x1="480" y1="120" x2="480" y2="560" />
+    <line x1="720" y1="120" x2="720" y2="560" />
+    <line x1="960" y1="120" x2="960" y2="560" />
+  </g>
+
+  <!-- SOURCES (cyan #8be9fd) -->
+  <g font-size="13" fill="#f8f8f2">
+    <rect x="30" y="140" width="180" height="56" rx="10" fill="#44475a" stroke="#8be9fd" stroke-width="1.5" />
+    <text x="120" y="165" text-anchor="middle" font-weight="600">Withings devices</text>
+    <text x="120" y="183" text-anchor="middle" fill="#bd93f9" font-size="11">Scales · BPM · ScanWatch</text>
+
+    <rect x="30" y="216" width="180" height="56" rx="10" fill="#44475a" stroke="#8be9fd" stroke-width="1.5" />
+    <text x="120" y="241" text-anchor="middle" font-weight="600">Apple Health export</text>
+    <text x="120" y="259" text-anchor="middle" fill="#bd93f9" font-size="11">export.zip · multi-GB</text>
+
+    <rect x="30" y="292" width="180" height="56" rx="10" fill="#44475a" stroke="#8be9fd" stroke-width="1.5" />
+    <text x="120" y="317" text-anchor="middle" font-weight="600">iPhone HealthKit</text>
+    <text x="120" y="335" text-anchor="middle" fill="#bd93f9" font-size="11">native batch (v1.5)</text>
+
+    <rect x="30" y="368" width="180" height="56" rx="10" fill="#44475a" stroke="#8be9fd" stroke-width="1.5" />
+    <text x="120" y="393" text-anchor="middle" font-weight="600">Manual entry</text>
+    <text x="120" y="411" text-anchor="middle" fill="#bd93f9" font-size="11">PWA · iOS Shortcuts</text>
+
+    <rect x="30" y="444" width="180" height="56" rx="10" fill="#44475a" stroke="#8be9fd" stroke-width="1.5" />
+    <text x="120" y="469" text-anchor="middle" font-weight="600">moodLog.app</text>
+    <text x="120" y="487" text-anchor="middle" fill="#bd93f9" font-size="11">webhook</text>
+  </g>
+
+  <!-- INGEST (orange #ffb86c) -->
+  <g font-size="13" fill="#f8f8f2">
+    <rect x="270" y="170" width="180" height="56" rx="10" fill="#44475a" stroke="#ffb86c" stroke-width="1.5" />
+    <text x="360" y="195" text-anchor="middle" font-weight="600">/api/withings/webhook</text>
+    <text x="360" y="213" text-anchor="middle" fill="#bd93f9" font-size="11">+ /sync</text>
+
+    <rect x="270" y="246" width="180" height="56" rx="10" fill="#44475a" stroke="#ffb86c" stroke-width="1.5" />
+    <text x="360" y="271" text-anchor="middle" font-weight="600">/import/apple-health-export</text>
+    <text x="360" y="289" text-anchor="middle" fill="#bd93f9" font-size="11">streaming · idempotent</text>
+
+    <rect x="270" y="322" width="180" height="56" rx="10" fill="#44475a" stroke="#ffb86c" stroke-width="1.5" />
+    <text x="360" y="347" text-anchor="middle" font-weight="600">/api/measurements/batch</text>
+    <text x="360" y="365" text-anchor="middle" fill="#bd93f9" font-size="11">native batch ingest</text>
+
+    <rect x="270" y="398" width="180" height="56" rx="10" fill="#44475a" stroke="#ffb86c" stroke-width="1.5" />
+    <text x="360" y="423" text-anchor="middle" font-weight="600">Dedup + source-priority</text>
+    <text x="360" y="441" text-anchor="middle" fill="#bd93f9" font-size="11">resolver</text>
+  </g>
+
+  <!-- STORE (pink #ff79c6) -->
+  <g font-size="13" fill="#f8f8f2">
+    <rect x="510" y="200" width="180" height="76" rx="10" fill="#44475a" stroke="#ff79c6" stroke-width="1.5" />
+    <text x="600" y="227" text-anchor="middle" font-weight="600">Measurement</text>
+    <text x="600" y="247" text-anchor="middle" fill="#bd93f9" font-size="11">one row per sample</text>
+    <text x="600" y="264" text-anchor="middle" fill="#6272a4" font-size="11">(userId, type, source, t)</text>
+
+    <rect x="510" y="296" width="180" height="76" rx="10" fill="#44475a" stroke="#ff79c6" stroke-width="1.5" />
+    <text x="600" y="323" text-anchor="middle" font-weight="600">MeasurementRollup</text>
+    <text x="600" y="343" text-anchor="middle" fill="#bd93f9" font-size="11">DAY · WEEK · MONTH</text>
+    <text x="600" y="360" text-anchor="middle" fill="#6272a4" font-size="11">pre-aggregated buckets</text>
+
+    <rect x="510" y="392" width="180" height="56" rx="10" fill="#44475a" stroke="#ff79c6" stroke-width="1.5" />
+    <text x="600" y="417" text-anchor="middle" font-weight="600">PostgreSQL 16</text>
+    <text x="600" y="435" text-anchor="middle" fill="#bd93f9" font-size="11">encrypted at rest</text>
+  </g>
+
+  <!-- READ (green #50fa7b) -->
+  <g font-size="13" fill="#f8f8f2">
+    <rect x="750" y="200" width="180" height="56" rx="10" fill="#44475a" stroke="#50fa7b" stroke-width="1.5" />
+    <text x="840" y="225" text-anchor="middle" font-weight="600">Rollup probe</text>
+    <text x="840" y="243" text-anchor="middle" fill="#bd93f9" font-size="11">DAY-bucket fast path</text>
+
+    <rect x="750" y="276" width="180" height="56" rx="10" fill="#44475a" stroke="#50fa7b" stroke-width="1.5" />
+    <text x="840" y="301" text-anchor="middle" font-weight="600">Live SQL fallback</text>
+    <text x="840" y="319" text-anchor="middle" fill="#bd93f9" font-size="11">slope · r² · sd</text>
+
+    <rect x="750" y="352" width="180" height="56" rx="10" fill="#44475a" stroke="#50fa7b" stroke-width="1.5" />
+    <text x="840" y="377" text-anchor="middle" font-weight="600">Wide-event cache</text>
+    <text x="840" y="395" text-anchor="middle" fill="#bd93f9" font-size="11">cache.&lt;name&gt;.outcome</text>
+  </g>
+
+  <!-- SURFACES (purple #bd93f9) -->
+  <g font-size="13" fill="#f8f8f2">
+    <rect x="990" y="170" width="180" height="56" rx="10" fill="#44475a" stroke="#bd93f9" stroke-width="1.5" />
+    <text x="1080" y="195" text-anchor="middle" font-weight="600">Dashboard tiles</text>
+    <text x="1080" y="213" text-anchor="middle" fill="#bd93f9" font-size="11">trends · ranges</text>
+
+    <rect x="990" y="246" width="180" height="56" rx="10" fill="#44475a" stroke="#bd93f9" stroke-width="1.5" />
+    <text x="1080" y="271" text-anchor="middle" font-weight="600">Insights cards</text>
+    <text x="1080" y="289" text-anchor="middle" fill="#bd93f9" font-size="11">evidence-grounded</text>
+
+    <rect x="990" y="322" width="180" height="56" rx="10" fill="#44475a" stroke="#bd93f9" stroke-width="1.5" />
+    <text x="1080" y="347" text-anchor="middle" font-weight="600">AI Coach</text>
+    <text x="1080" y="365" text-anchor="middle" fill="#bd93f9" font-size="11">cited replies</text>
+
+    <rect x="990" y="398" width="180" height="56" rx="10" fill="#44475a" stroke="#bd93f9" stroke-width="1.5" />
+    <text x="1080" y="423" text-anchor="middle" font-weight="600">Doctor PDF</text>
+    <text x="1080" y="441" text-anchor="middle" fill="#bd93f9" font-size="11">client-side jsPDF</text>
+  </g>
+
+  <!-- Arrows: sources → ingest -->
+  <g stroke="#8be9fd" stroke-width="1.5" fill="none" marker-end="url(#arr-cyan)">
+    <path d="M210 168 C 235 168, 245 198, 270 198" />
+    <path d="M210 244 C 235 244, 245 274, 270 274" />
+    <path d="M210 320 C 235 320, 245 350, 270 350" />
+    <path d="M210 396 C 235 396, 245 426, 270 426" />
+    <path d="M210 472 C 235 472, 245 426, 270 426" />
+  </g>
+
+  <!-- Arrows: ingest → store (all funnel into priority resolver, then to tables) -->
+  <g stroke="#ffb86c" stroke-width="1.5" fill="none" marker-end="url(#arr-orange)">
+    <path d="M450 198 C 480 198, 490 238, 510 238" />
+    <path d="M450 274 C 480 274, 490 238, 510 238" />
+    <path d="M450 350 C 480 350, 490 238, 510 238" />
+    <path d="M450 426 C 480 426, 490 334, 510 334" />
+  </g>
+
+  <!-- Arrow: Measurement → Rollup (worker) -->
+  <g stroke="#ff79c6" stroke-width="1.5" fill="none" marker-end="url(#arr-pink)">
+    <path d="M600 276 C 600 286, 600 286, 600 296" />
+  </g>
+  <text x="612" y="290" fill="#6272a4" font-size="10">pg-boss worker</text>
+
+  <!-- Arrows: store → read -->
+  <g stroke="#50fa7b" stroke-width="1.5" fill="none" marker-end="url(#arr-green)">
+    <path d="M690 334 C 720 334, 730 228, 750 228" />
+    <path d="M690 238 C 720 238, 730 304, 750 304" />
+    <path d="M690 420 C 720 420, 730 380, 750 380" />
+  </g>
+
+  <!-- Arrows: read → surfaces -->
+  <g stroke="#bd93f9" stroke-width="1.5" fill="none" marker-end="url(#arr-purple)">
+    <path d="M930 228 C 960 228, 970 198, 990 198" />
+    <path d="M930 228 C 960 228, 970 274, 990 274" />
+    <path d="M930 304 C 960 304, 970 350, 990 350" />
+    <path d="M930 380 C 960 380, 970 426, 990 426" />
+  </g>
+
+  <!-- Footnote -->
+  <text x="600" y="590" fill="#6272a4" font-size="11" text-anchor="middle">Source-priority ladder runs at ingest. Live SQL is the safety net when the rollup is cold or the metric ask is too slope/variance-heavy for a DAY bucket.</text>
+
+  <defs>
+    <marker id="arr-cyan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8be9fd" /></marker>
+    <marker id="arr-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ffb86c" /></marker>
+    <marker id="arr-pink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ff79c6" /></marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#50fa7b" /></marker>
+    <marker id="arr-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#bd93f9" /></marker>
+  </defs>
+</svg>

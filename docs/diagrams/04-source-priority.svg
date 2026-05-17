@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" font-family="ui-sans-serif, -apple-system, Segoe UI, Roboto, sans-serif" role="img" aria-labelledby="title desc">
+  <title id="title">Source-priority ladder</title>
+  <desc id="desc">Three sources (Apple Watch via HealthKit, Withings device, manual entry) can all submit a reading for the same metric. The resolver picks one canonical value per user-day based on metric type — cumulative metrics (steps, energy, distance) prefer Apple Health, point measurements (weight, BP, SpO₂) prefer Withings. Losing rows stay in the audit trail but drop out of aggregation.</desc>
+
+  <rect x="0" y="0" width="1200" height="620" fill="#282a36" />
+
+  <text x="600" y="40" fill="#f8f8f2" font-size="22" font-weight="700" text-anchor="middle">Source-priority ladder</text>
+  <text x="600" y="64" fill="#6272a4" font-size="13" text-anchor="middle">Why your steps don't triple-count when an iPhone, a Withings watch and a manual entry all log the same day.</text>
+
+  <!-- Day strip background -->
+  <g>
+    <rect x="60" y="100" width="280" height="440" rx="14" fill="#21222c" stroke="#44475a" stroke-width="1" stroke-dasharray="4 4" />
+    <text x="200" y="124" text-anchor="middle" fill="#6272a4" font-size="13" font-weight="600">Same day · same metric · three sources</text>
+  </g>
+
+  <!-- Source 1: Apple Health (cyan) -->
+  <g>
+    <rect x="90" y="150" width="220" height="80" rx="10" fill="#44475a" stroke="#8be9fd" stroke-width="1.5" />
+    <text x="200" y="178" text-anchor="middle" fill="#f8f8f2" font-size="14" font-weight="600">Apple Watch (HK)</text>
+    <text x="200" y="198" text-anchor="middle" fill="#bd93f9" font-size="11">10 432 steps · 76 kg · 132/81 mmHg</text>
+    <text x="200" y="214" text-anchor="middle" fill="#6272a4" font-size="11">source = APPLE_HEALTH</text>
+  </g>
+
+  <!-- Source 2: Withings (orange) -->
+  <g>
+    <rect x="90" y="250" width="220" height="80" rx="10" fill="#44475a" stroke="#ffb86c" stroke-width="1.5" />
+    <text x="200" y="278" text-anchor="middle" fill="#f8f8f2" font-size="14" font-weight="600">Withings scale + BPM</text>
+    <text x="200" y="298" text-anchor="middle" fill="#bd93f9" font-size="11">9 870 steps · 75.8 kg · 134/82 mmHg</text>
+    <text x="200" y="314" text-anchor="middle" fill="#6272a4" font-size="11">source = WITHINGS</text>
+  </g>
+
+  <!-- Source 3: Manual (pink) -->
+  <g>
+    <rect x="90" y="350" width="220" height="80" rx="10" fill="#44475a" stroke="#ff79c6" stroke-width="1.5" />
+    <text x="200" y="378" text-anchor="middle" fill="#f8f8f2" font-size="14" font-weight="600">Manual entry</text>
+    <text x="200" y="398" text-anchor="middle" fill="#bd93f9" font-size="11">76.0 kg (after-shower weigh-in)</text>
+    <text x="200" y="414" text-anchor="middle" fill="#6272a4" font-size="11">source = MANUAL</text>
+  </g>
+
+  <!-- Source 4: Import (purple, dim) -->
+  <g>
+    <rect x="90" y="450" width="220" height="60" rx="10" fill="#44475a" stroke="#bd93f9" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.7" />
+    <text x="200" y="476" text-anchor="middle" fill="#f8f8f2" font-size="13" font-weight="600">Legacy CSV / JSON import</text>
+    <text x="200" y="494" text-anchor="middle" fill="#6272a4" font-size="11">source = IMPORT (lowest rank)</text>
+  </g>
+
+  <!-- Resolver -->
+  <g>
+    <rect x="420" y="220" width="200" height="200" rx="14" fill="#44475a" stroke="#bd93f9" stroke-width="2" />
+    <text x="520" y="248" text-anchor="middle" fill="#f8f8f2" font-size="14" font-weight="700">Source-priority resolver</text>
+    <text x="520" y="270" text-anchor="middle" fill="#6272a4" font-size="11">src/lib/validations/source-priority.ts</text>
+
+    <text x="520" y="298" text-anchor="middle" fill="#bd93f9" font-size="11" font-weight="600">Cumulative metrics</text>
+    <text x="520" y="316" text-anchor="middle" fill="#f8f8f2" font-size="11">APPLE_HEALTH ≻ WITHINGS</text>
+    <text x="520" y="332" text-anchor="middle" fill="#f8f8f2" font-size="11">≻ MANUAL ≻ IMPORT</text>
+
+    <text x="520" y="360" text-anchor="middle" fill="#bd93f9" font-size="11" font-weight="600">Point measurements</text>
+    <text x="520" y="378" text-anchor="middle" fill="#f8f8f2" font-size="11">WITHINGS ≻ APPLE_HEALTH</text>
+    <text x="520" y="394" text-anchor="middle" fill="#f8f8f2" font-size="11">≻ MANUAL ≻ IMPORT</text>
+  </g>
+
+  <!-- Override box -->
+  <g>
+    <rect x="420" y="450" width="200" height="80" rx="10" fill="#44475a" stroke="#8be9fd" stroke-width="1.5" stroke-dasharray="3 3" />
+    <text x="520" y="476" text-anchor="middle" fill="#f8f8f2" font-size="13" font-weight="600">Per-user override</text>
+    <text x="520" y="494" text-anchor="middle" fill="#bd93f9" font-size="11">User.sourcePriorityJson</text>
+    <text x="520" y="510" text-anchor="middle" fill="#6272a4" font-size="11">/settings/thresholds → Sources</text>
+  </g>
+
+  <!-- Output swimlane: kept -->
+  <g>
+    <rect x="700" y="150" width="450" height="160" rx="14" fill="#21222c" stroke="#50fa7b" stroke-width="1.5" />
+    <text x="925" y="174" text-anchor="middle" fill="#50fa7b" font-size="13" font-weight="700">Kept — counted in aggregation</text>
+
+    <rect x="720" y="190" width="200" height="50" rx="8" fill="#44475a" stroke="#50fa7b" stroke-width="1" />
+    <text x="820" y="210" text-anchor="middle" fill="#f8f8f2" font-size="12" font-weight="600">Steps → Apple Health</text>
+    <text x="820" y="226" text-anchor="middle" fill="#bd93f9" font-size="11">10 432 (cumulative winner)</text>
+
+    <rect x="940" y="190" width="200" height="50" rx="8" fill="#44475a" stroke="#50fa7b" stroke-width="1" />
+    <text x="1040" y="210" text-anchor="middle" fill="#f8f8f2" font-size="12" font-weight="600">Weight → Withings</text>
+    <text x="1040" y="226" text-anchor="middle" fill="#bd93f9" font-size="11">75.8 kg (point winner)</text>
+
+    <rect x="720" y="250" width="200" height="50" rx="8" fill="#44475a" stroke="#50fa7b" stroke-width="1" />
+    <text x="820" y="270" text-anchor="middle" fill="#f8f8f2" font-size="12" font-weight="600">BP → Withings</text>
+    <text x="820" y="286" text-anchor="middle" fill="#bd93f9" font-size="11">134/82 mmHg (point winner)</text>
+  </g>
+
+  <!-- Output swimlane: dropped -->
+  <g>
+    <rect x="700" y="340" width="450" height="190" rx="14" fill="#21222c" stroke="#ff5555" stroke-width="1.5" stroke-dasharray="4 4" />
+    <text x="925" y="364" text-anchor="middle" fill="#ff5555" font-size="13" font-weight="700">Dropped from aggregation — audit trail kept</text>
+
+    <rect x="720" y="380" width="200" height="40" rx="8" fill="#44475a" stroke="#ff5555" stroke-width="1" opacity="0.85" />
+    <text x="820" y="404" text-anchor="middle" fill="#f8f8f2" font-size="11">9 870 steps (Withings)</text>
+
+    <rect x="940" y="380" width="200" height="40" rx="8" fill="#44475a" stroke="#ff5555" stroke-width="1" opacity="0.85" />
+    <text x="1040" y="404" text-anchor="middle" fill="#f8f8f2" font-size="11">76 kg (Apple Health)</text>
+
+    <rect x="720" y="430" width="200" height="40" rx="8" fill="#44475a" stroke="#ff5555" stroke-width="1" opacity="0.85" />
+    <text x="820" y="454" text-anchor="middle" fill="#f8f8f2" font-size="11">132/81 mmHg (Apple Health)</text>
+
+    <rect x="940" y="430" width="200" height="40" rx="8" fill="#44475a" stroke="#ff5555" stroke-width="1" opacity="0.85" />
+    <text x="1040" y="454" text-anchor="middle" fill="#f8f8f2" font-size="11">76 kg (Manual)</text>
+
+    <text x="925" y="500" text-anchor="middle" fill="#6272a4" font-size="11">All rows visible in /measurements list. None feed dashboard, insights, or Coach for the conflict day.</text>
+  </g>
+
+  <!-- Arrows from sources to resolver -->
+  <g stroke="#8be9fd" stroke-width="1.5" fill="none" marker-end="url(#a4-c)"><path d="M310 190 C 370 190, 380 280, 420 280" /></g>
+  <g stroke="#ffb86c" stroke-width="1.5" fill="none" marker-end="url(#a4-o)"><path d="M310 290 L 420 310" /></g>
+  <g stroke="#ff79c6" stroke-width="1.5" fill="none" marker-end="url(#a4-p)"><path d="M310 390 C 370 390, 380 350, 420 350" /></g>
+  <g stroke="#bd93f9" stroke-width="1.5" fill="none" marker-end="url(#a4-pu)" opacity="0.7"><path d="M310 480 C 370 480, 380 400, 420 400" /></g>
+
+  <!-- Arrows from resolver to swimlanes -->
+  <g stroke="#50fa7b" stroke-width="1.5" fill="none" marker-end="url(#a4-g)"><path d="M620 270 C 660 240, 670 220, 700 220" /></g>
+  <g stroke="#ff5555" stroke-width="1.5" fill="none" marker-end="url(#a4-r)"><path d="M620 380 C 660 410, 670 420, 700 420" /></g>
+
+  <defs>
+    <marker id="a4-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8be9fd" /></marker>
+    <marker id="a4-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ffb86c" /></marker>
+    <marker id="a4-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ff79c6" /></marker>
+    <marker id="a4-pu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#bd93f9" /></marker>
+    <marker id="a4-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#50fa7b" /></marker>
+    <marker id="a4-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ff5555" /></marker>
+  </defs>
+</svg>

@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" font-family="ui-sans-serif, -apple-system, Segoe UI, Roboto, sans-serif" role="img" aria-labelledby="title desc">
+  <title id="title">AI Coach prompt pipeline</title>
+  <desc id="desc">A user question feeds the snapshot builder, which pulls the recent metric, medication and mood windows. The system prompt assembler combines them with a locale-aware structured-output schema, then the provider chain (ChatGPT OAuth, OpenAI, Anthropic, Local) tries each entry in order. The response parser extracts claims plus citations, validates against the schema, and renders a cited reply with mini-charts.</desc>
+
+  <rect x="0" y="0" width="1200" height="620" fill="#282a36" />
+
+  <text x="600" y="40" fill="#f8f8f2" font-size="22" font-weight="700" text-anchor="middle">AI Coach prompt pipeline</text>
+  <text x="600" y="64" fill="#6272a4" font-size="13" text-anchor="middle">Why every reply cites the measurement it came from — not just an LLM call.</text>
+
+  <!-- USER QUESTION (cyan) -->
+  <g>
+    <rect x="40" y="120" width="200" height="80" rx="10" fill="#44475a" stroke="#8be9fd" stroke-width="1.5" />
+    <text x="140" y="148" text-anchor="middle" fill="#f8f8f2" font-size="14" font-weight="600">User question</text>
+    <text x="140" y="170" text-anchor="middle" fill="#bd93f9" font-size="11">/insights drawer</text>
+    <text x="140" y="186" text-anchor="middle" fill="#6272a4" font-size="11">"Why is my BP higher this week?"</text>
+  </g>
+
+  <!-- SNAPSHOT BUILDER (orange) -->
+  <g>
+    <rect x="280" y="100" width="220" height="120" rx="10" fill="#44475a" stroke="#ffb86c" stroke-width="1.5" />
+    <text x="390" y="128" text-anchor="middle" fill="#f8f8f2" font-size="14" font-weight="600">Snapshot builder</text>
+    <text x="390" y="152" text-anchor="middle" fill="#bd93f9" font-size="11">last-N days metrics</text>
+    <text x="390" y="170" text-anchor="middle" fill="#bd93f9" font-size="11">+ medication schedule</text>
+    <text x="390" y="188" text-anchor="middle" fill="#bd93f9" font-size="11">+ mood + targets</text>
+    <text x="390" y="208" text-anchor="middle" fill="#6272a4" font-size="11">60s LRU per (userId, scope)</text>
+  </g>
+
+  <!-- PROMPT ASSEMBLER (pink) -->
+  <g>
+    <rect x="540" y="100" width="220" height="120" rx="10" fill="#44475a" stroke="#ff79c6" stroke-width="1.5" />
+    <text x="650" y="128" text-anchor="middle" fill="#f8f8f2" font-size="14" font-weight="600">Prompt assembler</text>
+    <text x="650" y="152" text-anchor="middle" fill="#bd93f9" font-size="11">system prompt</text>
+    <text x="650" y="170" text-anchor="middle" fill="#bd93f9" font-size="11">+ locale (en/de)</text>
+    <text x="650" y="188" text-anchor="middle" fill="#bd93f9" font-size="11">+ Zod citation schema</text>
+    <text x="650" y="208" text-anchor="middle" fill="#6272a4" font-size="11">PROMPT_VERSION 4.36.0</text>
+  </g>
+
+  <!-- PROVIDER CHAIN (purple) -->
+  <g>
+    <rect x="800" y="100" width="360" height="280" rx="10" fill="#44475a" stroke="#bd93f9" stroke-width="1.5" />
+    <text x="980" y="128" text-anchor="middle" fill="#f8f8f2" font-size="14" font-weight="600">Provider chain</text>
+    <text x="980" y="148" text-anchor="middle" fill="#6272a4" font-size="11">first non-error wins · hard fail cascades</text>
+
+    <!-- Entries -->
+    <g font-size="12" fill="#f8f8f2">
+      <rect x="820" y="170" width="320" height="38" rx="8" fill="#282a36" stroke="#bd93f9" stroke-width="1" />
+      <text x="840" y="194" font-weight="600">1.</text>
+      <text x="870" y="194">ChatGPT OAuth (Codex)</text>
+      <text x="1120" y="194" text-anchor="end" fill="#50fa7b" font-size="11">subscription</text>
+
+      <rect x="820" y="216" width="320" height="38" rx="8" fill="#282a36" stroke="#bd93f9" stroke-width="1" />
+      <text x="840" y="240" font-weight="600">2.</text>
+      <text x="870" y="240">OpenAI direct (BYOK)</text>
+      <text x="1120" y="240" text-anchor="end" fill="#ffb86c" font-size="11">per-token</text>
+
+      <rect x="820" y="262" width="320" height="38" rx="8" fill="#282a36" stroke="#bd93f9" stroke-width="1" />
+      <text x="840" y="286" font-weight="600">3.</text>
+      <text x="870" y="286">Anthropic Claude (BYOK)</text>
+      <text x="1120" y="286" text-anchor="end" fill="#ffb86c" font-size="11">per-token</text>
+
+      <rect x="820" y="308" width="320" height="38" rx="8" fill="#282a36" stroke="#bd93f9" stroke-width="1" />
+      <text x="840" y="332" font-weight="600">4.</text>
+      <text x="870" y="332">Local (Ollama · LM Studio · vLLM)</text>
+      <text x="1120" y="332" text-anchor="end" fill="#50fa7b" font-size="11">on network</text>
+
+      <rect x="820" y="354" width="320" height="20" rx="6" fill="#282a36" stroke="#6272a4" stroke-width="1" stroke-dasharray="3 3" />
+      <text x="980" y="368" text-anchor="middle" fill="#6272a4" font-size="11">5. Admin-shared OpenAI (fallback)</text>
+    </g>
+  </g>
+
+  <!-- RESPONSE PARSER (green) -->
+  <g>
+    <rect x="540" y="420" width="220" height="120" rx="10" fill="#44475a" stroke="#50fa7b" stroke-width="1.5" />
+    <text x="650" y="448" text-anchor="middle" fill="#f8f8f2" font-size="14" font-weight="600">Response parser</text>
+    <text x="650" y="472" text-anchor="middle" fill="#bd93f9" font-size="11">Zod schema validate</text>
+    <text x="650" y="490" text-anchor="middle" fill="#bd93f9" font-size="11">extract claims + cites</text>
+    <text x="650" y="508" text-anchor="middle" fill="#bd93f9" font-size="11">server-computed score</text>
+    <text x="650" y="528" text-anchor="middle" fill="#ff5555" font-size="11">corrective retry on 422</text>
+  </g>
+
+  <!-- CITED REPLY (pink) -->
+  <g>
+    <rect x="280" y="420" width="220" height="120" rx="10" fill="#44475a" stroke="#ff79c6" stroke-width="1.5" />
+    <text x="390" y="448" text-anchor="middle" fill="#f8f8f2" font-size="14" font-weight="600">Cited reply</text>
+    <text x="390" y="472" text-anchor="middle" fill="#bd93f9" font-size="11">prose first</text>
+    <text x="390" y="490" text-anchor="middle" fill="#bd93f9" font-size="11">collapsible evidence</text>
+    <text x="390" y="508" text-anchor="middle" fill="#bd93f9" font-size="11">mini-charts</text>
+    <text x="390" y="528" text-anchor="middle" fill="#bd93f9" font-size="11">ESH/ESC/WHO/DGE link</text>
+  </g>
+
+  <!-- DRAWER (cyan) -->
+  <g>
+    <rect x="40" y="430" width="200" height="80" rx="10" fill="#44475a" stroke="#8be9fd" stroke-width="1.5" />
+    <text x="140" y="458" text-anchor="middle" fill="#f8f8f2" font-size="14" font-weight="600">/insights drawer</text>
+    <text x="140" y="480" text-anchor="middle" fill="#bd93f9" font-size="11">streaming render</text>
+    <text x="140" y="498" text-anchor="middle" fill="#6272a4" font-size="11">source chips · feedback</text>
+  </g>
+
+  <!-- CACHE box -->
+  <g>
+    <rect x="40" y="280" width="200" height="80" rx="10" fill="#44475a" stroke="#ff5555" stroke-width="1.5" stroke-dasharray="4 4" />
+    <text x="140" y="308" text-anchor="middle" fill="#f8f8f2" font-size="14" font-weight="600">24h insight cache</text>
+    <text x="140" y="330" text-anchor="middle" fill="#bd93f9" font-size="11">snapshot hash + version</text>
+    <text x="140" y="346" text-anchor="middle" fill="#6272a4" font-size="11">short-circuits provider call</text>
+  </g>
+
+  <!-- Arrows -->
+  <g stroke="#8be9fd" stroke-width="1.5" fill="none" marker-end="url(#a-c)">
+    <path d="M240 160 L 280 160" />
+  </g>
+  <g stroke="#ffb86c" stroke-width="1.5" fill="none" marker-end="url(#a-o)">
+    <path d="M500 160 L 540 160" />
+  </g>
+  <g stroke="#ff79c6" stroke-width="1.5" fill="none" marker-end="url(#a-p)">
+    <path d="M760 160 L 800 160" />
+  </g>
+  <g stroke="#bd93f9" stroke-width="1.5" fill="none" marker-end="url(#a-pu)">
+    <!-- provider chain → parser -->
+    <path d="M820 320 C 780 320, 760 420, 760 480" />
+  </g>
+  <g stroke="#50fa7b" stroke-width="1.5" fill="none" marker-end="url(#a-g)">
+    <path d="M540 480 L 500 480" />
+  </g>
+  <g stroke="#ff79c6" stroke-width="1.5" fill="none" marker-end="url(#a-pi)">
+    <path d="M280 480 L 240 470" />
+  </g>
+
+  <!-- cache loop -->
+  <g stroke="#ff5555" stroke-width="1.5" stroke-dasharray="4 4" fill="none" marker-end="url(#a-r)">
+    <path d="M390 220 L 200 280" />
+    <path d="M200 360 C 250 380, 280 410, 300 420" />
+  </g>
+  <text x="220" y="395" fill="#ff5555" font-size="10">hit → render</text>
+  <text x="290" y="252" fill="#ff5555" font-size="10">miss → assemble</text>
+
+  <!-- Footnote -->
+  <text x="600" y="580" fill="#6272a4" font-size="11" text-anchor="middle">Every claim renders with its source chip (metric · window · n) so the user can audit which slice of data backed each sentence.</text>
+
+  <defs>
+    <marker id="a-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8be9fd" /></marker>
+    <marker id="a-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ffb86c" /></marker>
+    <marker id="a-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ff79c6" /></marker>
+    <marker id="a-pu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#bd93f9" /></marker>
+    <marker id="a-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#50fa7b" /></marker>
+    <marker id="a-pi" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ff79c6" /></marker>
+    <marker id="a-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ff5555" /></marker>
+  </defs>
+</svg>
