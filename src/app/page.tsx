@@ -526,7 +526,14 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      {/* v1.4.37 W4a item 7 — centre-align the Hinzufügen button
+          against the 2-line title block on mobile (< sm). The
+          `welcomeText` line wraps under the title at < 380 px so the
+          button used to float at the top of the row without a
+          baseline anchor; `items-center sm:items-start` keeps the
+          mobile vertical centre while preserving the original
+          top-aligned posture on sm+ (where the title is one line). */}
+      <div className="flex items-center justify-between gap-4 sm:items-start">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
             {t("dashboard.title")}
