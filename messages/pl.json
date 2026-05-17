@@ -1940,6 +1940,7 @@
       "version": "App version",
       "gitSha": "Build",
       "builtAt": "Built {time}",
+      "builtAtLabel": "Built",
       "license": "License",
       "repository": "Source code",
       "changelog": "Changelog",

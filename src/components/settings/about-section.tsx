@@ -260,8 +260,7 @@ export function AboutSection() {
             {version.builtAt && (
               <div className="flex items-baseline gap-2">
                 <dt className="text-muted-foreground text-xs tracking-wide uppercase">
-                  {t("settings.about.builtAt", { time: "" }).trim() ||
-                    t("settings.about.gitSha")}
+                  {t("settings.about.builtAtLabel")}
                 </dt>
                 <dd className="text-muted-foreground">
                   {fmt.date(version.builtAt)}

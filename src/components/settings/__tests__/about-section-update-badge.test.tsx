@@ -99,6 +99,17 @@ describe("<AboutSection> — update badge", () => {
     const html = render(<AboutSection />);
     expect(html).toContain("Sources &amp; docs");
   });
+
+  it("uses a dedicated 'Built' label for the build-time row rather than the gitSha fallback", () => {
+    const html = render(<AboutSection />);
+    // Distinct label keeps the dt copy separate from the "Build" gitSha
+    // header above it; the prior `t('builtAt', { time: '' }).trim()`
+    // pattern silently leaked the gitSha key as a fallback.
+    expect(html).toContain(">Built<");
+    // Only ONE column should ever read "Build" — the gitSha header.
+    const buildOccurrences = html.match(/>Build</g) ?? [];
+    expect(buildOccurrences.length).toBe(1);
+  });
 });
 
 describe("<UpdateBadge> — a11y contract", () => {
