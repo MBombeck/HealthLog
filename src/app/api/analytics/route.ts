@@ -353,6 +353,15 @@ async function buildAnalyticsResponse(user: AuthedUser) {
    */
   let bpInTargetPctPriorMonth: number | null = null;
   let bpInTargetPctPriorYear: number | null = null;
+  /**
+   * v1.4.38 — prior-week BP-in-target pct so the Health-Score
+   * week-over-week delta reflects BP movement. Pre-v1.4.38 the
+   * Health-Score helper pinned both windows to the same value, so the
+   * BP pillar always zeroed out of the delta. Computed by running a
+   * second `computeBpInTargetFastPath` against `now - 7d` and reading
+   * the resulting `last30Days.pct`.
+   */
+  let bpInTargetPctPriorWeek: number | null = null;
   const bpTargets = getBpTargets(user.dateOfBirth);
   if (bpTargets) {
     const now = new Date();
@@ -367,23 +376,43 @@ async function buildAnalyticsResponse(user: AuthedUser) {
     // a `path: "rollup" | "live"` annotate so prod logs prove which
     // branch fired. See `bp-in-target-fast-path.ts` for the
     // documented per-day-mean approximation.
-    const windows = await computeBpInTargetFastPath({
-      userId: user.id,
-      targets: bpTargets,
-      now,
-      coverage,
-      // v1.4.38 W-A — cross-tz runtime guard. The helper falls back
-      // to the live SQL path when the user is more than 3 hours from
-      // UTC, where the rollup table's UTC-midnight day-key would slip
-      // a calendar day relative to the live aggregator's window cuts.
-      userTz,
-    });
+    //
+    // v1.4.38 — two parallel runs: one anchored at `now` for the
+    // standard windows, one anchored at `now - 7d` so the Health-Score
+    // helper has a real prior-week BP pct to feed into its previous-
+    // window snapshot. The two probes share the coverage map and the
+    // same rollup / live branch decision; the extra call is one extra
+    // pair of `readRollupBuckets` reads on the rollup path and is a
+    // no-op when the user has no BP rows at all.
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const [windows, windowsPriorWeek] = await Promise.all([
+      computeBpInTargetFastPath({
+        userId: user.id,
+        targets: bpTargets,
+        now,
+        coverage,
+        // v1.4.38 W-A — cross-tz runtime guard. The helper falls back
+        // to the live SQL path when the user is more than 3 hours
+        // from UTC, where the rollup table's UTC-midnight day-key
+        // would slip a calendar day relative to the live aggregator's
+        // window cuts.
+        userTz,
+      }),
+      computeBpInTargetFastPath({
+        userId: user.id,
+        targets: bpTargets,
+        now: sevenDaysAgo,
+        coverage,
+        userTz,
+      }),
+    ]);
     bpInTargetPct = windows.last30Days?.pct ?? null;
     bpInTargetPct7d = windows.last7Days?.pct ?? null;
     bpInTargetPct30d = windows.last30Days?.pct ?? null;
     bpInTargetPctAllTime = windows.allTime?.pct ?? null;
     bpInTargetPctPriorMonth = windows.priorMonth?.pct ?? null;
     bpInTargetPctPriorYear = windows.priorYear?.pct ?? null;
+    bpInTargetPctPriorWeek = windowsPriorWeek.last30Days?.pct ?? null;
   }
 
   // Per-context glucose summaries (canonical mg/dL).
@@ -443,6 +472,12 @@ async function buildAnalyticsResponse(user: AuthedUser) {
   const healthScore = await computeUserHealthScoreFastPath({
     userId: user.id,
     bpInTargetPct,
+    // v1.4.38 — feed the prior-week BP pct into the Health-Score
+    // helper's previous-window snapshot so the week-over-week delta
+    // reflects BP movement instead of zeroing out of the BP pillar.
+    // Computed alongside the current windows via a second
+    // `computeBpInTargetFastPath` run anchored at `now - 7d`.
+    bpInTargetPctPriorWeek,
     heightCm: user.heightCm ?? null,
     now: new Date(),
     coverage,

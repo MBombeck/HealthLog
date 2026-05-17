@@ -98,6 +98,17 @@ function uniqueComponentSources(
 export interface HealthScoreFastPathInput {
   userId: string;
   bpInTargetPct: number | null;
+  /**
+   * v1.4.38 — prior-week BP-in-target pct so the week-over-week delta
+   * reflects BP movement instead of always landing at zero for the
+   * pillar. The caller is expected to run a second
+   * `computeBpInTargetFastPath` against `now - 7d` and pass the
+   * resulting `last30Days.pct` through. When omitted (legacy callers
+   * predating v1.4.38) the helper falls back to `bpInTargetPct` —
+   * preserves the pre-v1.4.38 behaviour exactly so the bump is
+   * additive.
+   */
+  bpInTargetPctPriorWeek?: number | null;
   heightCm: number | null;
   now: Date;
   /**
@@ -120,6 +131,16 @@ export async function computeUserHealthScoreFastPath(
 ): Promise<HealthScoreResult | null> {
   const DAY_MS = 24 * 60 * 60 * 1000;
   const { userId, bpInTargetPct, heightCm, now } = input;
+  // v1.4.38 — prior-week BP fallback. When the caller omits the field
+  // we pin to the current value (pre-v1.4.38 behaviour) so the helper
+  // stays a drop-in replacement for legacy callers; when the caller
+  // supplies it we feed it into the previous-window snapshot so the
+  // delta reflects week-over-week BP movement instead of always
+  // zeroing the BP pillar.
+  const bpInTargetPctPriorWeek =
+    input.bpInTargetPctPriorWeek === undefined
+      ? bpInTargetPct
+      : input.bpInTargetPctPriorWeek;
   const since30d = new Date(now.getTime() - 30 * DAY_MS);
   const prevSince30d = new Date(now.getTime() - 37 * DAY_MS);
   const prevUntil = new Date(now.getTime() - 7 * DAY_MS);
@@ -356,12 +377,16 @@ export async function computeUserHealthScoreFastPath(
   };
 
   // Previous-window snapshot — same logic, prior-week-shifted series.
-  // The bpInTargetPct stays pinned to the current value because the
-  // route does not pay for a second historical pair-search; the delta
-  // reflects week-over-week movement in the weight / mood / compliance
-  // pillars only.
+  //
+  // v1.4.38 — when the caller supplies `bpInTargetPctPriorWeek` we
+  // use it so the delta reflects week-over-week BP movement. Legacy
+  // callers that omit the field keep the pre-v1.4.38 behaviour where
+  // BP cancels out of the delta because the helper pins both windows
+  // to the same value. Re-computing the prior-week BP costs one
+  // extra rollup-coverage read on the route side; the helper itself
+  // stays single-pass.
   const previous: HealthScoreInput = {
-    bpInTargetRate: bpInTargetPct,
+    bpInTargetRate: bpInTargetPctPriorWeek,
     weightSeriesLast30d: weightSeriesPrev30d,
     weightTargetKg: fallbackTarget,
     moodEntriesLast30d: moodSeriesPrev30d,
