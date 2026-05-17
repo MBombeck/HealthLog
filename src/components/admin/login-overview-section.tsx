@@ -452,13 +452,17 @@ export function LoginOverviewSection() {
                           </span>
                           {/*
                           v1.4.27 B3 — carrier chip below the auth-provider
-                          chip. Only renders when the GeoLite2-ASN lookup
-                          found an organisation string for the audit-row's
-                          IP; private/loopback IPs and offline-miss rows
-                          keep the original single-chip layout. The chip
-                          carries the short DACH label ("Telekom",
-                          "Vodafone", "1&1", "O2"); unknown organisations
-                          fall through to the raw GeoLite2 string.
+                          chip. v1.4.36 W4g — fall back to the city + country
+                          string with a "carrier unavailable" qualifier when
+                          the GeoLite2-ASN offline lookup miss (free-tier
+                          ipwho.is does not expose ASN) leaves `entry.carrier`
+                          null but the location lookup populated
+                          `entry.location`. Private/loopback IPs and offline-
+                          miss rows on BOTH columns keep the original
+                          single-chip layout. ASN-known chip carries the
+                          short DACH label ("Telekom", "Vodafone", "1&1",
+                          "O2") with unknown organisations falling through
+                          to the raw GeoLite2 string.
                         */}
                           {entry.carrier ? (
                             <span
@@ -466,6 +470,16 @@ export function LoginOverviewSection() {
                               data-slot="login-overview-carrier"
                             >
                               {carrierShortLabel(entry.carrier)}
+                            </span>
+                          ) : entry.location ? (
+                            <span
+                              className="text-muted-foreground/80 mt-0.5 block text-[10px] leading-tight"
+                              data-slot="login-overview-carrier"
+                              data-source="geo-fallback"
+                            >
+                              {t("admin.carrierUnavailableGeoFallback", {
+                                location: entry.location,
+                              })}
                             </span>
                           ) : null}
                         </td>

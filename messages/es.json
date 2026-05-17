@@ -2445,7 +2445,8 @@
       }
     },
     "carrier": "Operador",
-    "carrierUnknown": "Operador desconocido"
+    "carrierUnknown": "Operador desconocido",
+    "carrierUnavailableGeoFallback": "{location} — carrier unavailable"
   },
   "achievements": {
     "title": "Achievements",

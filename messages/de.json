@@ -2445,7 +2445,8 @@
       }
     },
     "carrier": "Anbieter",
-    "carrierUnknown": "Unbekannter Anbieter"
+    "carrierUnknown": "Unbekannter Anbieter",
+    "carrierUnavailableGeoFallback": "{location} — Anbieter nicht verfügbar"
   },
   "achievements": {
     "title": "Erfolge",

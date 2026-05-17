@@ -2445,7 +2445,8 @@
       }
     },
     "carrier": "Carrier",
-    "carrierUnknown": "Unknown carrier"
+    "carrierUnknown": "Unknown carrier",
+    "carrierUnavailableGeoFallback": "{location} — carrier unavailable"
   },
   "achievements": {
     "title": "Achievements",
