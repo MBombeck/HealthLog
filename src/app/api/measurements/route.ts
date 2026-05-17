@@ -22,6 +22,7 @@ import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
 import {
   canonicalDailyTimestamp,
   dayKeyForUserTz,
+  localDayWindow,
 } from "@/lib/measurements/drain-per-sample-cumulative";
 import { withIdempotency } from "@/lib/idempotency";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
@@ -85,16 +86,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
         ? user.timezone
         : "Europe/Berlin";
     // Resolve `[dayStart, dayEnd)` for the requested calendar day in
-    // the user's local zone. We piggy-back on `canonicalDailyTimestamp`
-    // (which returns the local-noon instant) and shift ±12 h to land
-    // on the day boundary. Works for every IANA offset — including
-    // sub-half-hour zones like Asia/Kathmandu (UTC+5:45) and
-    // Pacific/Chatham (UTC+12:45) — because the noon instant already
-    // carries the zone's offset and the ±12 h shift is independent
-    // of it.
-    const noonLocal = canonicalDailyTimestamp(dayKey, tz);
-    const dayStart = new Date(noonLocal.getTime() - 12 * 60 * 60 * 1000);
-    const dayEnd = new Date(noonLocal.getTime() + 12 * 60 * 60 * 1000);
+    // the user's local zone. v1.4.37 W10 — `localDayWindow` honours
+    // DST: the previous shape (`canonicalDailyTimestamp ± 12 h`)
+    // silently leaked or hid one hour of samples on spring-forward
+    // (23-h day) and fall-back (25-h day) by always spanning exactly
+    // 24 h. Works for every IANA offset including sub-half-hour
+    // zones (Asia/Kathmandu UTC+5:45, Pacific/Chatham UTC+12:45).
+    const { dayStart, dayEnd } = localDayWindow(dayKey, tz);
     const samples = await prisma.measurement.findMany({
       where: {
         userId: user.id,

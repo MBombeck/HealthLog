@@ -104,6 +104,30 @@ export function dayKeyForUserTz(date: Date, tz: string): string {
 }
 
 /**
+ * Read the IANA-zone offset (in minutes east of UTC) at a given
+ * instant. Returns 0 for UTC and any zone the shortOffset formatter
+ * can't resolve (defensive — Node 22's full-icu build covers every
+ * zone we care about).
+ */
+function tzOffsetMinutesAt(instant: Date, tz: string): number {
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    hour12: false,
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "shortOffset",
+  });
+  const parts = fmt.formatToParts(instant);
+  const tzPart = parts.find((p) => p.type === "timeZoneName")?.value ?? "GMT";
+  const match = tzPart.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+  if (!match) return 0;
+  const sign = match[1] === "+" ? 1 : -1;
+  const hours = Number.parseInt(match[2], 10);
+  const minutes = match[3] ? Number.parseInt(match[3], 10) : 0;
+  return sign * (hours * 60 + minutes);
+}
+
+/**
  * Compute the canonical timestamp for a calendar-day key in the user's
  * timezone. Returns the JS-Date instant at the user's local 12:00 noon
  * — matches the Withings activity sync convention (one daily row per
@@ -119,29 +143,64 @@ export function canonicalDailyTimestamp(
   // build "12:00 UTC of the day", read what wall-clock that shows in
   // the target zone, then shift by the resulting offset.
   const utcNoon = new Date(`${dateKey}T12:00:00.000Z`);
-  const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: tz,
-    hour12: false,
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZoneName: "shortOffset",
-  });
-  // The shortOffset entry looks like "GMT+2", "GMT-5:30", or "GMT".
-  const parts = fmt.formatToParts(utcNoon);
-  const tzPart = parts.find((p) => p.type === "timeZoneName")?.value ?? "GMT";
-  const match = tzPart.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
-  if (!match) {
-    // UTC — noon UTC is noon local.
-    return utcNoon;
-  }
-  const sign = match[1] === "+" ? 1 : -1;
-  const hours = Number.parseInt(match[2], 10);
-  const minutes = match[3] ? Number.parseInt(match[3], 10) : 0;
-  const offsetMinutes = sign * (hours * 60 + minutes);
+  const offsetMinutes = tzOffsetMinutesAt(utcNoon, tz);
   // utcNoon represents 12:00 UTC. The user's local clock reads
   // 12:00 + offsetMinutes at that instant. To anchor at local 12:00,
   // subtract the offset.
   return new Date(utcNoon.getTime() - offsetMinutes * 60 * 1000);
+}
+
+/**
+ * v1.4.37 W10 — Compute the JS-Date instant at the user's local 00:00
+ * for a calendar-day key. Robust on DST transitions because the offset
+ * is read at the UTC-midnight instant of the day, and EU/US DST
+ * transitions happen at local 02:00 / 03:00 — so the offset at UTC
+ * midnight is unambiguous on every day of the year.
+ *
+ * Used by the W7c drill-down branch to resolve [dayStart, dayEnd) on
+ * a 23-h spring-forward or 25-h fall-back day; the previous shape
+ * (`canonicalDailyTimestamp ± 12h`) silently leaked or hid an hour
+ * of samples on two days per year.
+ *
+ * Pair with `localStartOfDay(nextDayKey, tz)` for the right bound so
+ * the returned window covers the true local-day span — 23 h on
+ * spring-forward, 24 h on a regular day, 25 h on fall-back.
+ */
+export function localStartOfDay(dateKey: string, tz: string): Date {
+  // Anchor at 00:00 UTC of the day; the offset read at that instant
+  // is the same offset the local clock uses at midnight (DST
+  // transitions in EU/US happen at 02:00 / 03:00 local, not at the
+  // 00:00 boundary). For sub-half-hour zones (Asia/Kathmandu UTC+5:45,
+  // Pacific/Chatham UTC+12:45) the minute component is preserved.
+  const utcMidnight = new Date(`${dateKey}T00:00:00.000Z`);
+  const offsetMinutes = tzOffsetMinutesAt(utcMidnight, tz);
+  // Local 00:00 at this date = UTC midnight - offset.
+  return new Date(utcMidnight.getTime() - offsetMinutes * 60 * 1000);
+}
+
+/**
+ * v1.4.37 W10 — Resolve the [dayStart, dayEnd) UTC window for a
+ * calendar-day key in the user's IANA timezone. The window honours
+ * DST so the drill-down branch returns the correct 23 / 24 / 25-hour
+ * span for transition days.
+ *
+ * Returns a tuple where `dayEnd` is the local 00:00 of the FOLLOWING
+ * calendar day — `< dayEnd` is the canonical half-open bound used by
+ * the route's `measuredAt: { gte: dayStart, lt: dayEnd }` predicate.
+ */
+export function localDayWindow(
+  dateKey: string,
+  tz: string,
+): { dayStart: Date; dayEnd: Date } {
+  const dayStart = localStartOfDay(dateKey, tz);
+  // Add ONE day to dateKey using UTC arithmetic on a noon anchor (noon
+  // sidesteps every DST edge case for the calendar increment). Then
+  // re-extract the ISO date slice — guaranteed to be the next-day key.
+  const nextUtcNoon = new Date(`${dateKey}T12:00:00.000Z`);
+  nextUtcNoon.setUTCDate(nextUtcNoon.getUTCDate() + 1);
+  const nextDateKey = nextUtcNoon.toISOString().slice(0, 10);
+  const dayEnd = localStartOfDay(nextDateKey, tz);
+  return { dayStart, dayEnd };
 }
 
 /**

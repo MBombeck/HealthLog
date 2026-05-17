@@ -233,9 +233,49 @@ describe("GET /api/measurements — dayKey drill-down (W7c)", () => {
       .measuredAt as { gte?: Date; lt?: Date };
     expect(measuredAt.gte).toBeInstanceOf(Date);
     expect(measuredAt.lt).toBeInstanceOf(Date);
-    // Window is exactly 24 hours wide for any whole-hour-offset zone.
+    // Window is exactly 24 hours wide on a non-DST-transition day for
+    // a whole-hour-offset zone. The DST-aware drill-down test below
+    // pins the 23-/25-hour shape on the two transition days per year.
     expect(measuredAt.lt!.getTime() - measuredAt.gte!.getTime()).toBe(
       24 * 60 * 60 * 1000,
+    );
+  });
+
+  // v1.4.37 W10 H-1 — DST awareness. The drill-down window must honour
+  // the day's true local span (23 h on spring-forward, 25 h on
+  // fall-back) so the row count matches what the collapsed daily row
+  // displays. Previous shape (`canonicalDailyTimestamp ± 12h`) leaked
+  // an hour from the previous day on spring-forward and hid the first
+  // hour of `today` on fall-back.
+  it("returns a 23-hour window on the Berlin spring-forward day (2025-03-30)", async () => {
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
+    const res = await GET(
+      getRequest("type=ACTIVITY_STEPS&dayKey=2025-03-30"),
+    );
+    expect(res.status).toBe(200);
+    const call = vi.mocked(prisma.measurement.findMany).mock.calls[0]?.[0];
+    const measuredAt = (call as { where: { measuredAt?: unknown } }).where
+      .measuredAt as { gte?: Date; lt?: Date };
+    expect(measuredAt.gte!.toISOString()).toBe("2025-03-29T23:00:00.000Z");
+    expect(measuredAt.lt!.toISOString()).toBe("2025-03-30T22:00:00.000Z");
+    expect(measuredAt.lt!.getTime() - measuredAt.gte!.getTime()).toBe(
+      23 * 60 * 60 * 1000,
+    );
+  });
+
+  it("returns a 25-hour window on the Berlin fall-back day (2025-10-26)", async () => {
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
+    const res = await GET(
+      getRequest("type=ACTIVITY_STEPS&dayKey=2025-10-26"),
+    );
+    expect(res.status).toBe(200);
+    const call = vi.mocked(prisma.measurement.findMany).mock.calls[0]?.[0];
+    const measuredAt = (call as { where: { measuredAt?: unknown } }).where
+      .measuredAt as { gte?: Date; lt?: Date };
+    expect(measuredAt.gte!.toISOString()).toBe("2025-10-25T22:00:00.000Z");
+    expect(measuredAt.lt!.toISOString()).toBe("2025-10-26T23:00:00.000Z");
+    expect(measuredAt.lt!.getTime() - measuredAt.gte!.getTime()).toBe(
+      25 * 60 * 60 * 1000,
     );
   });
 
