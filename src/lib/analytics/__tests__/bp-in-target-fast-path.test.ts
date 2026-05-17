@@ -279,4 +279,114 @@ describe("computeBpInTargetFastPath", () => {
       expect(result.path).toBe("live");
     });
   });
+
+  describe("cross-tz runtime guard (v1.4.38 W-A)", () => {
+    it("takes the rollup path for a Berlin user (near-UTC)", async () => {
+      const coverage = new Map<string, boolean>([
+        ["BLOOD_PRESSURE_SYS", true],
+        ["BLOOD_PRESSURE_DIA", true],
+      ]);
+      FULLY_COVERED.mockReturnValue(true);
+      PROBE.mockResolvedValue(coverage);
+      ROLLUP_FIND_MANY.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+      const result = await computeBpInTargetFastPath({
+        userId: "user-berlin",
+        targets: TARGETS_UNDER_65,
+        now: new Date("2026-05-17T12:00:00.000Z"),
+        coverage,
+        userTz: "Europe/Berlin",
+      });
+
+      expect(result.path).toBe("rollup");
+      expect(MEASUREMENT_FIND_MANY).not.toHaveBeenCalled();
+
+      const calls = ANNOTATE.mock.calls.map((c) => c[0]);
+      const bpCall = calls.find(
+        (c) => c?.meta?.analytics?.bp_in_target !== undefined,
+      );
+      expect(bpCall?.meta.analytics.bp_in_target.tz_guard).toBe("near-utc");
+      expect(bpCall?.meta.analytics.bp_in_target.path).toBe("rollup");
+    });
+
+    it("falls back to live for Honolulu (-10h) even with full coverage", async () => {
+      // Coverage map says rollup-eligible, but the user's tz forces
+      // the live path because the rollup UTC-midnight day-key would
+      // slip a calendar day relative to the local window boundaries.
+      const coverage = new Map<string, boolean>([
+        ["BLOOD_PRESSURE_SYS", true],
+        ["BLOOD_PRESSURE_DIA", true],
+      ]);
+      FULLY_COVERED.mockReturnValue(true);
+      PROBE.mockResolvedValue(coverage);
+      MEASUREMENT_FIND_MANY.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+      const result = await computeBpInTargetFastPath({
+        userId: "user-honolulu",
+        targets: TARGETS_UNDER_65,
+        now: new Date("2026-05-17T12:00:00.000Z"),
+        coverage,
+        userTz: "Pacific/Honolulu",
+      });
+
+      expect(result.path).toBe("live");
+      expect(ROLLUP_FIND_MANY).not.toHaveBeenCalled();
+      expect(MEASUREMENT_FIND_MANY).toHaveBeenCalledTimes(2);
+
+      const calls = ANNOTATE.mock.calls.map((c) => c[0]);
+      const bpCall = calls.find(
+        (c) => c?.meta?.analytics?.bp_in_target !== undefined,
+      );
+      expect(bpCall?.meta.analytics.bp_in_target.tz_guard).toBe(
+        "non-utc-live-fallback",
+      );
+      expect(bpCall?.meta.analytics.bp_in_target.path).toBe("live");
+    });
+
+    it("falls back to live for Tokyo (+9h) even with full coverage", async () => {
+      const coverage = new Map<string, boolean>([
+        ["BLOOD_PRESSURE_SYS", true],
+        ["BLOOD_PRESSURE_DIA", true],
+      ]);
+      FULLY_COVERED.mockReturnValue(true);
+      PROBE.mockResolvedValue(coverage);
+      MEASUREMENT_FIND_MANY.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+      const result = await computeBpInTargetFastPath({
+        userId: "user-tokyo",
+        targets: TARGETS_UNDER_65,
+        now: new Date("2026-05-17T12:00:00.000Z"),
+        coverage,
+        userTz: "Asia/Tokyo",
+      });
+
+      expect(result.path).toBe("live");
+      expect(ROLLUP_FIND_MANY).not.toHaveBeenCalled();
+    });
+
+    it("defaults to near-UTC when the caller omits userTz (legacy compat)", async () => {
+      const coverage = new Map<string, boolean>([
+        ["BLOOD_PRESSURE_SYS", true],
+        ["BLOOD_PRESSURE_DIA", true],
+      ]);
+      FULLY_COVERED.mockReturnValue(true);
+      PROBE.mockResolvedValue(coverage);
+      ROLLUP_FIND_MANY.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+      const result = await computeBpInTargetFastPath({
+        userId: "user-legacy",
+        targets: TARGETS_UNDER_65,
+        now: new Date("2026-05-17T12:00:00.000Z"),
+        coverage,
+      });
+
+      expect(result.path).toBe("rollup");
+
+      const calls = ANNOTATE.mock.calls.map((c) => c[0]);
+      const bpCall = calls.find(
+        (c) => c?.meta?.analytics?.bp_in_target !== undefined,
+      );
+      expect(bpCall?.meta.analytics.bp_in_target.tz_guard).toBe("near-utc");
+    });
+  });
 });
