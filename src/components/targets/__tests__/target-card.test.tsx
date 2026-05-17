@@ -3,6 +3,24 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { TargetCard, type TargetCardData } from "../target-card";
+import { DEFAULT_ASSISTANT_FLAGS } from "@/hooks/use-feature-flags";
+
+// v1.4.37 W4a item 9 — when the operator disables the Coach feature
+// flag globally, the per-card CTA must disappear. The hook reads from
+// QueryClientContext but falls back to the all-on default in SSR;
+// the flag-off path needs an explicit mock so the test can drive the
+// negative case without a QueryClientProvider.
+vi.mock("@/hooks/use-feature-flags", async () => {
+  const actual = await vi.importActual<
+    typeof import("@/hooks/use-feature-flags")
+  >("@/hooks/use-feature-flags");
+  return {
+    ...actual,
+    useFeatureFlags: vi.fn(() => actual.DEFAULT_ASSISTANT_FLAGS),
+  };
+});
+
+const { useFeatureFlags } = await import("@/hooks/use-feature-flags");
 
 /**
  * v1.4.25 W3e — `<TargetCard>` composition. Three load-bearing cases:
@@ -98,6 +116,35 @@ describe("<TargetCard>", () => {
       onAskCoach: vi.fn(),
     });
     expect(html).not.toContain('data-slot="target-coach-cta"');
+  });
+
+  // v1.4.37 W4a item 9 — operator-level feature flag.
+  it("suppresses the Coach CTA when the global Coach flag is OFF", () => {
+    // Swap the mock for this case only — flag-off should hide the
+    // CTA regardless of the user-level aiEnabled state. Restore the
+    // all-on default so the rest of the suite doesn't see a leaked
+    // mock state.
+    vi.mocked(useFeatureFlags).mockReturnValueOnce({
+      ...DEFAULT_ASSISTANT_FLAGS,
+      coach: false,
+    });
+    const html = render({
+      target: fullDataTarget,
+      aiEnabled: true,
+      onAskCoach: vi.fn(),
+    });
+    expect(html).not.toContain('data-slot="target-coach-cta"');
+  });
+
+  it("renders the Coach CTA when both aiEnabled AND the global Coach flag are ON", () => {
+    // Positive control: the default-mock returns the all-on flag set,
+    // so the CTA should mount when aiEnabled is also true.
+    const html = render({
+      target: fullDataTarget,
+      aiEnabled: true,
+      onAskCoach: vi.fn(),
+    });
+    expect(html).toContain('data-slot="target-coach-cta"');
   });
 
   it("renders MOOD_STABILITY headline as a verbal label, not the σ value", () => {
