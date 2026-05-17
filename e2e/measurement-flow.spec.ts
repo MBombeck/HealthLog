@@ -45,12 +45,18 @@ test.describe("add measurement flow", () => {
         value?: number;
         measuredAt?: string;
       } | null;
+      // The list-page `Measurement` shape requires `unit` and `source`
+      // — without them the row crashes the render and the e2e poll
+      // never sees "78.4". Mock with the same fields a real reading
+      // carries.
       const measurements = body
         ? [
             {
               id: "m_e2e_1",
               type: body.type,
               value: body.value,
+              unit: body.type === "WEIGHT" ? "kg" : "",
+              source: "MANUAL",
               measuredAt: body.measuredAt,
               notes: null,
             },

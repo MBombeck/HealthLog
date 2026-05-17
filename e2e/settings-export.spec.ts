@@ -22,8 +22,11 @@ test.describe("Settings → Export", () => {
     page,
   }) => {
     await page.goto("/settings/export", { waitUntil: "domcontentloaded" });
+    // v1.4.37 lifted the doctor-report card to a hero block with the
+    // `export-hero-*` testid prefix; the four CSV/backup tiles keep
+    // the `export-card-*` shape.
     for (const id of [
-      "export-card-doctor-report",
+      "export-hero-doctor-report",
       "export-card-measurements-csv",
       "export-card-medications-csv",
       "export-card-mood-csv",

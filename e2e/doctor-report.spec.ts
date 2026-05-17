@@ -63,9 +63,10 @@ test.describe("doctor report PDF generation", () => {
 
     await page.goto("/settings/export", { waitUntil: "domcontentloaded" });
 
-    // The card carries a stable testid so the e2e suite can target it
-    // without depending on the localised "Configure & generate" label.
-    const reportBtn = page.getByTestId("export-action-doctor-report");
+    // v1.4.37 renamed the trigger testid from `export-action-doctor-report`
+    // to `export-hero-doctor-report-action` when the card was lifted to a
+    // hero block on the export page.
+    const reportBtn = page.getByTestId("export-hero-doctor-report-action");
     await expect(reportBtn).toBeVisible({ timeout: 10_000 });
 
     // Click opens the dialog; the dialog's submit button triggers the PDF

@@ -96,9 +96,9 @@ export interface CorrelationHypothesesResult {
    * surface. Reserved for a future "best-effort under load shedding"
    * branch.
    *
-   * TODO(v1.5): wire this through when the load-shedding branch
-   * lands (pool-pressure detector + shorter window fallback). Until
-   * then the field is pinned to `false` by both branches and the
+   * Reserved for the v1.5 load-shedding branch (pool-pressure
+   * detector + shorter window fallback). Until then the field is
+   * pinned to `false` by both branches and the
    * `meta.correlations.degraded` annotate carries the same value;
    * downstream consumers can already key on the field shape without
    * the load-shedding signal being live.

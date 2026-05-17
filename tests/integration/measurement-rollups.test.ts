@@ -419,6 +419,13 @@ describe("measurement rollups — integration", () => {
     }
     await prisma.measurement.createMany({ data: rows });
 
+    // v1.4.37.1 — the aggregator now fires `ensureUserRollupsFresh`
+    // and-forgets; on a cold testcontainer that means the rollups are
+    // not yet present when the aggregate reads. Force a synchronous
+    // recompute here so the rollup-driven `dailyByType` branch is
+    // exercised (matches the production warm-cache path).
+    await recomputeUserRollups(user.id);
+
     const aggregate = await buildComprehensiveAggregate(user.id);
 
     // Parallel live aggregation — same shape the legacy SQL emitted.

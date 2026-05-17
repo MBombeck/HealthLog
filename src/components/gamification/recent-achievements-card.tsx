@@ -99,7 +99,7 @@ export function RecentAchievementsCard() {
         </div>
         <Link
           href="/achievements"
-          className="text-primary hover:text-primary/80 text-xs font-medium underline-offset-4 hover:underline"
+          className="text-primary hover:text-primary/80 inline-flex min-h-11 items-center text-xs font-medium underline-offset-4 hover:underline"
         >
           {t("achievements.dashboardCard.viewAll")}
         </Link>

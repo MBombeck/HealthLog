@@ -1,5 +1,56 @@
 # Changelog
 
+## [1.4.38.3] — 2026-05-17 — CI green-up, e2e drift fixes, chunk-load auto-recover
+
+Cleans up the three pre-existing CI reds that had been failing on
+every push to main since v1.4.38 landed, plus a small client-side
+fix for the stale-shell post-deploy paper-cut.
+
+### Added
+
+- **Automatic recovery from stale-shell `ChunkLoadError`.** After a
+  deploy the cached SPA shell still references the old chunk
+  filenames; Next.js fetches them, the new server 404s, and the
+  user lands on the generic error surface. `AppError` now detects
+  the chunk-load error family and triggers a single
+  `window.location.reload()` to fetch the fresh shell.
+  `sessionStorage` gates the auto-reload to once per session so an
+  unrecoverable error cannot loop. Browsers in strict-privacy mode
+  fall through to the error UI cleanly.
+
+### Fixed
+
+- **TODO marker on the correlations `degraded` sentinel removed.**
+  The `No TODO markers` workflow had been failing on every main /
+  develop / PR build since v1.4.38; the keyword has been rewritten
+  into prose without changing the documented intent.
+- **Rollup integration test no longer races the read path.** The
+  v1.4.37.1 fire-and-forget on `ensureUserRollupsFresh` left the
+  cold-testcontainer integration test asserting `dailyByType` before
+  the rollup writes had landed. The test now calls
+  `recomputeUserRollups` explicitly so the rollup-driven branch is
+  exercised deterministically — matches the production warm-cache
+  contract.
+- **Doctor-report e2e specs target the v1.4.37 hero-card testids.**
+  v1.4.37 lifted the doctor-report card out of the export-tile grid
+  and renamed `export-card-doctor-report` /
+  `export-action-doctor-report` to `export-hero-doctor-report` /
+  `export-hero-doctor-report-action`. The Playwright suite still
+  targeted the old ids and timed out on every run.
+- **`measurement-flow` e2e mock returns a complete `Measurement`
+  shape.** The list-page expects `unit` and `source` on every row;
+  the mock omitted both, so the list render crashed before painting
+  the row and the test's `expect.poll(...)` for "78.4" timed out.
+- **Dashboard "View all" achievement link reaches the 44 px
+  tap-target floor.** The link was 46×16 px; mobile-viewport e2e
+  rejected it. `inline-flex min-h-11 items-center` keeps the visual
+  styling identical while satisfying the floor.
+
+### Operator notes
+
+- No new migration. No env-var change. No public API change.
+- Coolify auto-deploys main on tag push.
+
 ## [1.4.38.2] — 2026-05-17 — Mood-reminder hotfix bundle + Settings toggle
 
 Hotfix bundle on top of v1.4.38.1. A six-axis review of the v0.5.4
