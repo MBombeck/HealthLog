@@ -365,7 +365,11 @@ export function GettingStartedChecklist() {
           // few primary buttons rendered above the fold on the
           // onboarded-user dashboard so the regression was visible to
           // the touch-target spec.
-          className="text-muted-foreground hover:text-foreground min-h-11 sm:min-h-10"
+          // v1.4.38 W-D P3-3 — align the desktop floor with the
+          // dashboard +Hinzufügen pattern (`sm:min-h-9`); the
+          // `sm:min-h-10` here was a no-op against the Button default
+          // of `h-10`.
+          className="text-muted-foreground hover:text-foreground min-h-11 sm:min-h-9"
           onClick={() => setDismissedAll(true)}
         >
           {t("gettingStarted.dismissAll")}

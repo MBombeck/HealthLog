@@ -163,7 +163,11 @@ export function ArztberichtHeroCard() {
             // `min-h-11` (44 px) is the WCAG 2.5.5 touch-target floor;
             // we override the default `<Button>` height on mobile and
             // fall back to the compact `sm:h-10` on pointer devices.
-            className="h-11 px-5 text-sm font-medium sm:h-10"
+            // v1.4.38 W-D P3-2 — pair the explicit `h-11` with a
+            // `min-h-11` floor (and a `sm:min-h-9` desktop floor) so a
+            // future className override can't accidentally re-lift the
+            // mobile minimum below the touch-target contract.
+            className="h-11 min-h-11 px-5 text-sm font-medium sm:h-10 sm:min-h-9"
             onClick={() => setOpen(true)}
             disabled={busy}
             aria-describedby={valueStatementId}
