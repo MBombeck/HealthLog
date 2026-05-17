@@ -30,6 +30,7 @@
  */
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { annotate } from "@/lib/logging/context";
 import type {
   MeasurementType,
   RollupGranularity,
@@ -616,8 +617,21 @@ export async function ensureUserRollupsFresh(
       to: new Date(),
     });
     return { recomputed: true };
-  } catch {
+  } catch (err) {
     // Best-effort — never block the read path on a populator failure.
+    // v1.4.36 QA H3 — surface the failure so ops can spot a silent
+    // populator regression. `annotate` is a no-op when there's no
+    // request context (worker calls, tests); `console.error` carries
+    // the same shape through the worker log pipeline so the regression
+    // is visible regardless of caller surface.
+    const message = err instanceof Error ? err.message : String(err);
+    annotate({
+      meta: {
+        rollup_refresh_failed: true,
+        rollup_refresh_error: message,
+      },
+    });
+    console.error("[rollups] ensureUserRollupsFresh failed:", message);
     return { recomputed: false };
   }
 }

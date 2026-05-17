@@ -52,6 +52,15 @@ vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: () => mocks.getGlobalBossMock(),
 }));
 
+// v1.4.36 QA H3 — `ensureUserRollupsFresh` now annotates + console-
+// errors on populator failures so silent regressions show up in ops.
+// Mock the annotate boundary so the test can assert the meta payload.
+vi.mock("@/lib/logging/context", () => ({
+  annotate: vi.fn(),
+}));
+
+import { annotate } from "@/lib/logging/context";
+
 const {
   queryRaw,
   queryRawUnsafe,
@@ -280,6 +289,40 @@ describe("ensureUserRollupsFresh", () => {
     findFirstMeasurement.mockRejectedValueOnce(new Error("pool exhausted"));
     const result = await ensureUserRollupsFresh("user-1");
     expect(result.recomputed).toBe(false);
+  });
+
+  it("annotates the failure when the inner recompute throws (H3)", async () => {
+    // Stale watermark — rollup older than the newest measurement so
+    // the inner recompute branch fires.
+    const rollupAt = new Date("2026-05-10T10:00:00.000Z");
+    const measurementAt = new Date("2026-05-10T12:00:00.000Z");
+    findFirst.mockResolvedValueOnce({ computedAt: rollupAt });
+    findFirstMeasurement.mockResolvedValueOnce({
+      updatedAt: measurementAt,
+      measuredAt: measurementAt,
+    });
+    // The recompute aggregate query throws — simulates a populator
+    // regression (pool exhausted, deadlock, etc).
+    queryRawUnsafe.mockRejectedValueOnce(new Error("deadlock detected"));
+
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await ensureUserRollupsFresh("user-1");
+
+    // The read path still gets a clean `{ recomputed: false }`.
+    expect(result.recomputed).toBe(false);
+    // The annotate event fires with the documented shape so ops can
+    // spot the silent populator regression in the wide-event pipeline.
+    expect(annotate).toHaveBeenCalledWith({
+      meta: {
+        rollup_refresh_failed: true,
+        rollup_refresh_error: "deadlock detected",
+      },
+    });
+    // And the console.error fallback fires so the worker log path
+    // surfaces the failure even when there's no request context.
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
   });
 });
 
