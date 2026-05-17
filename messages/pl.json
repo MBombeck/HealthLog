@@ -155,7 +155,7 @@
   },
   "errorBoundary": {
     "title": "Coś poszło nie tak",
-    "description": "An unexpected error occurred. You can retry, copy the technical details, or open a bug report."
+    "description": "Wystąpił nieoczekiwany błąd. Możesz spróbować ponownie, skopiować szczegóły techniczne lub otworzyć zgłoszenie błędu."
   },
   "nav": {
     "dashboard": "Panel",
@@ -165,7 +165,7 @@
     "targets": "Cele",
     "achievements": "Osiągnięcia",
     "settings": "Ustawienia",
-    "bugreport": "Bug Report",
+    "bugreport": "Zgłoszenie błędu",
     "admin": "Konsola administratora",
     "logout": "Wyloguj",
     "login": "Zaloguj",
@@ -175,18 +175,18 @@
     "themeSystem": "Systemowy",
     "themeDark": "Ciemny",
     "themeLight": "Jasny",
-    "collapseSidebar": "Collapse",
-    "userMenu": "User menu",
+    "collapseSidebar": "Zwiń",
+    "userMenu": "Menu użytkownika",
     "mood": "Nastrój",
-    "skipToContent": "Skip to content",
-    "sidebar": "Sidebar",
-    "mainNavigation": "Main navigation",
-    "mobileNavigation": "Mobile navigation",
+    "skipToContent": "Przejdź do treści",
+    "sidebar": "Pasek boczny",
+    "mainNavigation": "Nawigacja główna",
+    "mobileNavigation": "Nawigacja mobilna",
     "breadcrumb": "Nawigacja okruszkami",
-    "loadingScreen": "Loading…",
-    "more": "More",
-    "moreSheetTitle": "More",
-    "moreSheetDescription": "Pages that don't fit the bottom bar."
+    "loadingScreen": "Ładowanie…",
+    "more": "Więcej",
+    "moreSheetTitle": "Więcej",
+    "moreSheetDescription": "Strony, które nie mieszczą się w dolnym pasku."
   },
   "auth": {
     "login": "Zaloguj się",
@@ -1400,36 +1400,36 @@
     "unsetExplanation": "Brak własnej wartości — aktywna jest wartość domyślna."
   },
   "onboarding": {
-    "errorGeneric": "Something went wrong while finishing setup. Please try again.",
+    "errorGeneric": "Coś poszło nie tak podczas kończenia konfiguracji. Spróbuj ponownie.",
     "tour": {
       "stepOf": "Krok {current} z {total}",
       "next": "Dalej",
       "back": "Wstecz",
-      "skip": "Skip tour",
-      "done": "Got it",
-      "restart": "Restart onboarding tour",
-      "restartHint": "Replay the dashboard walkthrough from the start.",
-      "restartConfirmation": "Tour will restart on your next dashboard visit.",
+      "skip": "Pomiń tour",
+      "done": "Rozumiem",
+      "restart": "Uruchom tour ponownie",
+      "restartHint": "Pokaż tour panelu przy następnym wejściu.",
+      "restartConfirmation": "Tour ruszy ponownie przy twojej następnej wizycie w panelu.",
       "steps": {
         "tileStrip": {
-          "title": "Your daily numbers",
-          "body": "The tile strip shows the latest reading and a 7-day trend for every metric you log — weight, blood pressure, pulse, mood. Hide what you don't need from Settings → Dashboard."
+          "title": "Twoje wartości dzienne",
+          "body": "Pasek kafelków pokazuje ostatnią wartość i 7-dniowy trend dla każdej metryki — waga, ciśnienie, tętno, nastrój. Niepotrzebne wyłączysz w Ustawienia → Panel."
         },
         "quickAdd": {
-          "title": "Log anything in two taps",
-          "body": "Use the Add button to drop a measurement or mood entry without leaving the dashboard. The form remembers your last context and tags."
+          "title": "Zarejestrowane w dwóch stuknięciach",
+          "body": "Przyciskiem Dodaj zapisujesz pomiary lub nastroje bez opuszczania panelu. Formularz zapamiętuje ostatni kontekst i tagi."
         },
         "insights": {
-          "title": "Automatic insights",
-          "body": "Insights turns your readings into a plain-English health summary, with classifications for blood pressure, weight trend and mood. Bring your own provider key or use the built-in default."
+          "title": "Automatyczne insights",
+          "body": "Insights zamienia twoje wartości w przejrzysty przegląd zdrowia, z oceną ciśnienia, wagi i nastroju. Własny klucz lub domyślny — ty decydujesz."
         },
         "integrations": {
-          "title": "Connect your devices",
-          "body": "Open Settings to link Withings (auto-sync weight, BP and pulse), moodLog, or your Insights provider. Everything stays optional and encrypted."
+          "title": "Połącz urządzenia",
+          "body": "W ustawieniach łączysz Withings (auto-sync wagi, ciśnienia i tętna), moodLog lub dostawcę analizy. Wszystko zostaje opcjonalne i zaszyfrowane."
         },
         "achievements": {
-          "title": "Earn streaks and badges",
-          "body": "The Achievements page tracks daily logging streaks, blood-pressure milestones and consistency badges. A small nudge to keep going."
+          "title": "Zbieraj serie i odznaki",
+          "body": "Strona Osiągnięć śledzi codzienne serie zapisów, kamienie milowe ciśnienia i odznaki konsekwencji. Drobna motywacja do trzymania się planu."
         }
       }
     },
@@ -1502,27 +1502,27 @@
     }
   },
   "gettingStarted": {
-    "title": "Getting started",
-    "subtitle": "Quick wins to get the most out of HealthLog.",
-    "progress": "{done} z {total} ukończone",
-    "dismissAll": "Hide checklist",
-    "dismissTooltip": "Hide this item",
+    "title": "Pierwsze kroki",
+    "subtitle": "Szybkie zwycięstwa, aby wycisnąć z HealthLog maksimum.",
+    "progress": "{done} z {total} wykonanych",
+    "dismissAll": "Ukryj listę",
+    "dismissTooltip": "Ukryj ten punkt",
     "items": {
-      "profileTitle": "Set your profile",
-      "profileDescription": "Height, date of birth and gender unlock personalised targets.",
-      "profileCta": "Open profile",
-      "measurementTitle": "Log your first measurement",
-      "measurementDescription": "One reading is enough to draw your first trend tile.",
-      "measurementCta": "Add measurement",
-      "medicationTitle": "Add a medication",
-      "medicationDescription": "Track compliance and get reminders right when you need them.",
-      "medicationCta": "Add medication",
-      "withingsTitle": "Connect Withings (optional)",
-      "withingsDescription": "Auto-sync weight, BP and pulse from your Withings devices.",
-      "withingsCta": "Connect",
-      "notificationsTitle": "Configure notifications",
-      "notificationsDescription": "Choose how HealthLog should remind you — Telegram, ntfy or Web Push.",
-      "notificationsCta": "Open notifications"
+      "profileTitle": "Skonfiguruj profil",
+      "profileDescription": "Wzrost, data urodzenia i płeć odblokowują spersonalizowane cele.",
+      "profileCta": "Otwórz profil",
+      "measurementTitle": "Zarejestruj pierwszy pomiar",
+      "measurementDescription": "Jeden pomiar wystarczy, aby narysować pierwszy kafelek trendu.",
+      "measurementCta": "Dodaj pomiar",
+      "medicationTitle": "Dodaj lek",
+      "medicationDescription": "Śledź przestrzeganie i otrzymuj przypomnienia dokładnie wtedy, kiedy ich potrzebujesz.",
+      "medicationCta": "Dodaj lek",
+      "withingsTitle": "Połącz Withings (opcjonalnie)",
+      "withingsDescription": "Automatycznie synchronizuj wagę, ciśnienie i tętno z urządzeń Withings.",
+      "withingsCta": "Połącz",
+      "notificationsTitle": "Skonfiguruj powiadomienia",
+      "notificationsDescription": "Wybierz, jak HealthLog ma ci przypominać — Telegram, ntfy lub Web Push.",
+      "notificationsCta": "Otwórz powiadomienia"
     }
   },
   "trendHints": {
@@ -2746,22 +2746,22 @@
     }
   },
   "bugreport": {
-    "title": "Bug Report",
-    "subtitle": "Send a bug report, feature request, or question. The server administrator will see your submission.",
-    "loginRequired": "Please sign in to report a bug.",
-    "bugTitle": "Title",
+    "title": "Zgłoszenie błędu",
+    "subtitle": "Wyślij zgłoszenie błędu, sugestię funkcji lub pytanie. Administrator serwera zobaczy twoje zgłoszenie.",
+    "loginRequired": "Zaloguj się, aby zgłosić błąd.",
+    "bugTitle": "Tytuł",
     "description": "Opis",
-    "submit": "Send",
-    "success": "Thank you! Your bug report has been submitted successfully.",
-    "errorCreating": "Error creating report",
-    "category": "Typ",
-    "categoryBug": "Bug report",
-    "categoryFeature": "Feature request",
-    "categoryQuestion": "Question",
-    "categoryOther": "Other feedback",
-    "bugTitlePlaceholder": "Short summary (optional)",
-    "githubEscalationNote": "Your feedback is stored locally. If the admin enables GitHub integration, it can be promoted to a public issue on request.",
-    "internalOnlyNote": "Your feedback is stored locally and only visible to the administrator of this server.",
+    "submit": "Wyślij",
+    "success": "Dziękujemy! Twoje zgłoszenie zostało wysłane.",
+    "errorCreating": "Błąd tworzenia",
+    "category": "Rodzaj",
+    "categoryBug": "Błąd",
+    "categoryFeature": "Propozycja funkcji",
+    "categoryQuestion": "Pytanie",
+    "categoryOther": "Inna opinia",
+    "bugTitlePlaceholder": "Krótkie podsumowanie (opcjonalnie)",
+    "githubEscalationNote": "Twoja opinia zapisuje się lokalnie. Jeśli administrator włączy integrację z GitHubem, może zostać opublikowana jako publiczne issue na życzenie.",
+    "internalOnlyNote": "Twoja opinia zapisuje się lokalnie i jest widoczna tylko dla administratora tego serwera.",
     "disabledTitle": "Bug reports are turned off",
     "disabledBody": "The administrator has disabled bug reports on this server."
   },
@@ -2771,10 +2771,10 @@
     "breadcrumbChannels": "Kanały powiadomień",
     "breadcrumbSettings": "Ustawienia",
     "eventColumn": "Zdarzenie",
-    "subtitle": "Choose which notifications you want to receive through which channel.",
-    "loadError": "Notification preferences could not be loaded.",
-    "noChannels": "Configure a notification channel in Settings first.",
-    "goToSettings": "Go to channel settings",
+    "subtitle": "Wybierz, które powiadomienia chcesz otrzymywać i którym kanałem.",
+    "loadError": "Nie udało się załadować ustawień powiadomień.",
+    "noChannels": "Najpierw skonfiguruj kanał powiadomień w ustawieniach.",
+    "goToSettings": "Przejdź do ustawień kanału",
     "channelDisabled": "Wyłączone",
     "admin": {
       "deployFailedTitle": "Wdrożenie nie powiodło się: {application}",
@@ -2952,24 +2952,24 @@
     "minLength": "Wymagane co najmniej {count} znaków."
   },
   "telegram": {
-    "errorInvalidAction": "Invalid action.",
-    "errorMedicationNotFound": "Medication not found.",
-    "errorMedicationInactive": "Medication not found or inactive.",
-    "errorUnknownAction": "Unknown action.",
-    "snoozeOneHour": "1 hour",
-    "snoozeThreeHours": "3 hours",
-    "snoozedFor": "{name} snoozed for {duration}.",
-    "skipped": "{name} Pominięte.",
-    "alreadyRecorded": "{name} was already recorded.",
-    "recordedAsTaken": "{name} recorded as taken.",
-    "confirmed": "{name} confirmed.",
-    "genericConfirmed": "Confirmed.",
-    "cancelled": "Cancelled.",
-    "noActiveMedications": "No active medications found.",
-    "whichMedication": "<b>Which medication did you take?</b>",
+    "errorInvalidAction": "Nieprawidłowa akcja.",
+    "errorMedicationNotFound": "Nie znaleziono leku.",
+    "errorMedicationInactive": "Nie znaleziono leku lub jest nieaktywny.",
+    "errorUnknownAction": "Nieznana akcja.",
+    "snoozeOneHour": "1 godzina",
+    "snoozeThreeHours": "3 godziny",
+    "snoozedFor": "{name} odłożone o {duration}.",
+    "skipped": "{name} pominięte.",
+    "alreadyRecorded": "{name} było już zarejestrowane.",
+    "recordedAsTaken": "{name} zarejestrowane jako przyjęte.",
+    "confirmed": "{name} potwierdzone.",
+    "genericConfirmed": "Potwierdzone.",
+    "cancelled": "Anulowane.",
+    "noActiveMedications": "Nie znaleziono aktywnych leków.",
+    "whichMedication": "<b>Który lek został przyjęty?</b>",
     "cancelButton": "Anuluj",
-    "askMedicationName": "Please specify a medication, e.g. <b>taken Ramipril</b>.",
-    "medicationNotFoundExact": "Medication not found. Please send the name exactly as in HealthLog.",
+    "askMedicationName": "Podaj lek, np. <b>przyjęty Ramipril</b>.",
+    "medicationNotFoundExact": "Nie znaleziono leku. Wyślij nazwę dokładnie tak, jak w HealthLog.",
     "helpHeader": "<b>Available commands:</b>",
     "helpBody": "/help — show this help\n/add — record an intake\n/start — start the bot\n\n<b>Text commands:</b>\ntaken &lt;name&gt; — confirm an intake\n\n<b>Buttons in reminders:</b>\n• Taken — confirm intake\n• 🕐 1h / 🕐 3h — postpone reminder\n• ⏭ Skip — skip intake\n• ✓ Confirm — confirm a missed intake"
   },
