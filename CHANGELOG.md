@@ -1,5 +1,53 @@
 # Changelog
 
+## [1.4.38.1] — 2026-05-17 — iOS v0.5.4 push-notification coordination
+
+Coordinates the server side of the iOS v0.5.4 release. Two strictly
+additive patches that unblock the new push-notification surface
+without changing existing behaviour.
+
+### Added
+
+- **APNs category on med-reminder pushes.** `sendViaApns` now sets
+  `aps.category = "MEDICATION_REMINDER"` on every medication-reminder
+  payload so iOS renders the three action-buttons (Genommen / Snooze
+  15 min / Übersprungen) wired up in iOS v0.5.3. `aps.mutable-content
+  = 1` is set by default so a future Notification Service Extension
+  can hook the payload without a server-side change. The med-reminder
+  metadata gains `scheduledAt` (ISO 8601) so the iOS "snooze 15 min"
+  action pins to the schedule slot rather than wall-clock delivery
+  time.
+- **Optional `MOOD_REMINDER` daily event.** New per-user opt-in flag
+  (`users.mood_reminder_enabled`, default off) and a 15-minutely
+  worker cron that fires a single `MOOD_REMINDER` push at the user's
+  local 22:00 when no mood has been logged for the local date.
+  Idempotency anchored by the unique `(userId, date)` constraint on
+  the new `mood_reminder_dispatches` ledger — safe under cron
+  re-ticks inside the same 22:00 window and under concurrent workers.
+  Default-off via `EVENT_DEFAULT_ENABLED`; users who never opt in
+  see no behavioural change.
+
+### Compatibility
+
+- Older iOS builds that don't register the `MEDICATION_REMINDER`
+  category render the push as a plain alert (iOS ignores unknown
+  category identifiers). Backward-safe.
+- `0069_v054_mood_reminder` migration uses `IF NOT EXISTS` +
+  `DO $$ ... EXCEPTION WHEN duplicate_object` guards mirroring the
+  idempotent pattern from `0061_audit_log_carrier` and
+  `0068_v1436_insights_exclude_metrics`.
+
+### Tests
+
+- Unit suite 4524 → 4565 (+41 new in `mood-reminder.test.ts` +
+  `apns.test.ts`).
+
+### Operator notes
+
+- Migration applies cleanly on deploy. No schema downtime.
+- No env-var change. The cron entry is registered at worker boot.
+- Coolify auto-deploys main on tag push.
+
 ## [1.4.38] — 2026-05-17 — Robustness sweep, perf hotspots, full localization
 
 Closes the web punch-list before the v1.5 iOS sprint. The release
