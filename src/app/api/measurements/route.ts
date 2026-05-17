@@ -19,6 +19,10 @@ import {
   type AggregateGrain,
 } from "@/lib/measurements/range-aggregation";
 import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
+import {
+  canonicalDailyTimestamp,
+  dayKeyForUserTz,
+} from "@/lib/measurements/drain-per-sample-cumulative";
 import { withIdempotency } from "@/lib/idempotency";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import {
@@ -42,8 +46,19 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return apiError(parsed.error.issues[0].message, 422);
   }
 
-  const { type, from, to, limit, offset, sortBy, sortDir, aggregate, source } =
-    parsed.data;
+  const {
+    type,
+    from,
+    to,
+    limit,
+    offset,
+    sortBy,
+    sortDir,
+    aggregate,
+    source,
+    groupBy,
+    dayKey,
+  } = parsed.data;
 
   const where = {
     userId: user.id,
@@ -57,6 +72,150 @@ export const GET = apiHandler(async (request: NextRequest) => {
         }
       : {}),
   };
+
+  // v1.4.37 W7c — list-view drill-down to per-sample rows for a single
+  // calendar day in the user's IANA timezone. Resolves the day's UTC
+  // bounds against `User.timezone`, then runs a plain `findMany` so the
+  // expandable list row shows every per-sample chunk the daily collapse
+  // hid. Gated to cumulative HK types — the spot-sample types render
+  // one-row-per-event already and have nothing to drill into.
+  if (dayKey && type && CUMULATIVE_HK_TYPES.has(type as MeasurementType)) {
+    const tz =
+      user.timezone && user.timezone.length > 0
+        ? user.timezone
+        : "Europe/Berlin";
+    // Resolve `[dayStart, dayEnd)` for the requested calendar day in
+    // the user's local zone. We piggy-back on `canonicalDailyTimestamp`
+    // (which returns the local-noon instant) and shift ±12 h to land
+    // on the day boundary — works for whole-hour and half-hour zones.
+    const noonLocal = canonicalDailyTimestamp(dayKey, tz);
+    const dayStart = new Date(noonLocal.getTime() - 12 * 60 * 60 * 1000);
+    const dayEnd = new Date(noonLocal.getTime() + 12 * 60 * 60 * 1000);
+    const samples = await prisma.measurement.findMany({
+      where: {
+        userId: user.id,
+        type: type as MeasurementType,
+        measuredAt: { gte: dayStart, lt: dayEnd },
+      },
+      orderBy: { measuredAt: sortDir },
+      // Cap the drill-down — a phone-only stepCount day can hit a few
+      // hundred rows; the route ceiling keeps a pathological day bounded.
+      take: Math.min(limit, 1000),
+    });
+    annotate({
+      action: { name: "measurement.list" },
+      meta: { total: samples.length, type, dayKey, mode: "drill-down" },
+    });
+    return apiSuccess({
+      measurements: samples,
+      meta: { total: samples.length, limit, offset: 0, dayKey },
+    });
+  }
+
+  // v1.4.37 W7c — collapsed "one row per day" mode for cumulative
+  // types. The list page renders the day's SUM as a single synthesised
+  // row with a `sampleCount` chevron that drills back into the
+  // per-sample rows via the `dayKey=…` branch above.
+  if (
+    groupBy === "day" &&
+    type &&
+    CUMULATIVE_HK_TYPES.has(type as MeasurementType)
+  ) {
+    const tz =
+      user.timezone && user.timezone.length > 0
+        ? user.timezone
+        : "Europe/Berlin";
+    const rows = await prisma.measurement.findMany({
+      where,
+      orderBy: { measuredAt: "asc" },
+      // Per-sample row scan within the requested window — bounded by
+      // the existing `limit` cap (default 100, max 5000) so a wide
+      // multi-year window can still walk the whole range when the
+      // chart explicitly asks for it.
+      take: limit,
+      select: {
+        id: true,
+        type: true,
+        value: true,
+        unit: true,
+        source: true,
+        measuredAt: true,
+        notes: true,
+      },
+    });
+
+    // Group by the user's calendar day, sum values, keep a representative
+    // unit/source from the bucket's first row so the rendered row carries
+    // a sensible label even when the bucket mixes sources.
+    type Bucket = {
+      dayKey: string;
+      total: number;
+      sampleCount: number;
+      latest: Date;
+      unit: string;
+      source: string;
+    };
+    const buckets = new Map<string, Bucket>();
+    for (const row of rows) {
+      const key = dayKeyForUserTz(row.measuredAt, tz);
+      const slot = buckets.get(key);
+      if (!slot) {
+        buckets.set(key, {
+          dayKey: key,
+          total: row.value,
+          sampleCount: 1,
+          latest: row.measuredAt,
+          unit: row.unit,
+          source: row.source,
+        });
+      } else {
+        slot.total += row.value;
+        slot.sampleCount += 1;
+        if (row.measuredAt > slot.latest) slot.latest = row.measuredAt;
+      }
+    }
+
+    const measurements = Array.from(buckets.values())
+      .map((b) => ({
+        // Synthetic id so the list-row key stays stable across pages
+        // and the row never collides with a real `Measurement.id`.
+        id: `day:${type}:${b.dayKey}`,
+        type,
+        value: b.total,
+        unit: b.unit,
+        source: b.source,
+        // Anchor the row's timestamp to local noon so the row sorts
+        // cleanly between same-day spot samples — matches the
+        // `canonicalDailyTimestamp` convention used by the drain.
+        measuredAt: canonicalDailyTimestamp(b.dayKey, tz).toISOString(),
+        notes: null,
+        dayKey: b.dayKey,
+        sampleCount: b.sampleCount,
+      }))
+      .sort((a, b) => {
+        const cmp = a.dayKey < b.dayKey ? -1 : a.dayKey > b.dayKey ? 1 : 0;
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+
+    annotate({
+      action: { name: "measurement.list" },
+      meta: {
+        total: measurements.length,
+        type,
+        groupBy: "day",
+        rowsScanned: rows.length,
+      },
+    });
+    return apiSuccess({
+      measurements,
+      meta: {
+        total: measurements.length,
+        limit,
+        offset: 0,
+        groupBy: "day",
+      },
+    });
+  }
 
   // v1.4.28 FB-D2 — server-side aggregation. Gated on an explicit
   // `aggregate` param so the iOS contract (raw `MeasurementWireDTO`
