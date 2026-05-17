@@ -50,4 +50,15 @@ describe("reminder-worker — drainPerSampleCumulative nightly schedule", () => 
       /\[DRAIN_CUMULATIVE_QUEUE,\s*DRAIN_CUMULATIVE_CRON\]/,
     );
   });
+
+  it("registers the drain queue in the allQueues createQueue loop", () => {
+    // pg-boss v12 requires explicit createQueue before scheduling. The
+    // allQueues array drives the boot-time `for (const q of allQueues)`
+    // loop; missing the entry silently no-ops the schedule below.
+    const allQueuesMatch = source.match(
+      /const allQueues\s*=\s*\[([\s\S]*?)\];/,
+    );
+    expect(allQueuesMatch).not.toBeNull();
+    expect(allQueuesMatch![1]).toMatch(/\bDRAIN_CUMULATIVE_QUEUE\b/);
+  });
 });

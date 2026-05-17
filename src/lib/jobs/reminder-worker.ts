@@ -1525,6 +1525,11 @@ export async function startReminderWorker() {
     APPLE_HEALTH_IMPORT_QUEUE,
     ROLLUP_RECOMPUTE_QUEUE,
     ROLLUP_FULL_BACKFILL_QUEUE,
+    // v1.4.37 W7c — explicit createQueue is required before the
+    // nightly schedule below registers (pg-boss v12 contract). Without
+    // this entry the drain schedule silently no-ops and the
+    // per-sample APPLE_HEALTH rows never collapse.
+    DRAIN_CUMULATIVE_QUEUE,
   ];
 
   for (const q of allQueues) {
