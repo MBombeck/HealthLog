@@ -87,7 +87,11 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // Resolve `[dayStart, dayEnd)` for the requested calendar day in
     // the user's local zone. We piggy-back on `canonicalDailyTimestamp`
     // (which returns the local-noon instant) and shift ±12 h to land
-    // on the day boundary — works for whole-hour and half-hour zones.
+    // on the day boundary. Works for every IANA offset — including
+    // sub-half-hour zones like Asia/Kathmandu (UTC+5:45) and
+    // Pacific/Chatham (UTC+12:45) — because the noon instant already
+    // carries the zone's offset and the ±12 h shift is independent
+    // of it.
     const noonLocal = canonicalDailyTimestamp(dayKey, tz);
     const dayStart = new Date(noonLocal.getTime() - 12 * 60 * 60 * 1000);
     const dayEnd = new Date(noonLocal.getTime() + 12 * 60 * 60 * 1000);
