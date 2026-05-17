@@ -65,11 +65,11 @@ describe("buildComprehensiveAggregate", () => {
   describe("rollup-fresh happy path", () => {
     it("skips the heavy live aggregate when the rollup table is populated", async () => {
       const now = new Date();
-      // 1. rollup-count probe — returns 2 (non-zero ⇒ happy path).
+      // 1. per-type coverage probe — WEIGHT fully covered ⇒ happy path.
       // 2. narrow aggregate ($queryRaw) — windowed/regression columns only.
       // 3. latests ($queryRaw).
       // 4. firstMeasurementAt ($queryRaw).
-      RAW.mockResolvedValueOnce([{ n: BigInt(2) }])
+      RAW.mockResolvedValueOnce([{ type: "WEIGHT", has_buckets: true }])
         .mockResolvedValueOnce([
           {
             type: "WEIGHT",
@@ -161,11 +161,11 @@ describe("buildComprehensiveAggregate", () => {
 
   describe("cold fallback when no rollup buckets exist", () => {
     it("returns an empty bundle for a user with no measurements and no rollups", async () => {
-      // 1. rollup-count probe — zero rows ⇒ cold path.
+      // 1. per-type coverage probe — empty (no measurements) ⇒ cold path.
       // 2. heavy aggregate ($queryRaw) — empty.
       // 3. latests ($queryRaw) — empty.
       // No firstMeasurementAt query when totalMeasurements === 0.
-      RAW.mockResolvedValueOnce([{ n: BigInt(0) }])
+      RAW.mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
       FIND_MANY.mockResolvedValueOnce([]) // sys
@@ -188,11 +188,11 @@ describe("buildComprehensiveAggregate", () => {
 
     it("runs the heavy aggregate when no rollup rows exist yet", async () => {
       const now = new Date();
-      // 1. rollup-count probe — zero rows ⇒ cold path.
+      // 1. per-type coverage probe — WEIGHT measured but no buckets ⇒ cold path.
       // 2. heavy aggregate ($queryRaw) — populated.
       // 3. latests ($queryRaw) — populated.
       // 4. firstMeasurementAt ($queryRaw).
-      RAW.mockResolvedValueOnce([{ n: BigInt(0) }])
+      RAW.mockResolvedValueOnce([{ type: "WEIGHT", has_buckets: false }])
         .mockResolvedValueOnce([
           {
             type: "WEIGHT",
@@ -263,8 +263,8 @@ describe("buildComprehensiveAggregate", () => {
 
   it("threads sys/dia raw rows through bpRawRows so 5-min pairing survives", async () => {
     const measuredAt = new Date("2026-05-10T08:00:00Z");
-    // Cold path so the heavy aggregate fires (no rollup count).
-    RAW.mockResolvedValueOnce([{ n: BigInt(0) }])
+    // Cold path so the heavy aggregate fires (BP type lacks coverage).
+    RAW.mockResolvedValueOnce([{ type: "BLOOD_PRESSURE_SYS", has_buckets: false }])
       .mockResolvedValueOnce([
         {
           type: "BLOOD_PRESSURE_SYS",

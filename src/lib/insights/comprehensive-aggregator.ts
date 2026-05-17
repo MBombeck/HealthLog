@@ -101,6 +101,10 @@ import { prisma } from "@/lib/db";
 import type { DataSummary } from "@/lib/analytics/trends";
 import { ensureUserRollupsFresh } from "@/lib/measurements/rollups";
 import { aggregateBuckets } from "@/lib/measurements/rollup-read";
+import {
+  isFullyCovered,
+  probeRollupCoverage,
+} from "@/lib/measurements/rollup-coverage";
 
 /**
  * Heavy aggregate row — count/min/max/mean alongside the non-composable
@@ -236,20 +240,18 @@ export async function buildComprehensiveAggregate(
   // `ensureUserRollupsFresh` covers cold-mount / process-restart).
   await ensureUserRollupsFresh(userId);
 
-  // Cheap existence check — one indexed COUNT against the rollup
-  // table. A non-zero count means there's at least one DAY bucket to
-  // compose against, so the heavy live aggregate is unnecessary. When
-  // it's zero we fall through to the live aggregate so the response
-  // shape stays correct on a cold mount.
-  const rollupCountRows = await prisma.$queryRaw<Array<{ n: bigint }>>`
-    SELECT COUNT(*) AS n
-    FROM measurement_rollups
-    WHERE user_id = ${userId}
-      AND granularity = 'DAY'
-  `;
-  const hasRollupCoverage = Number(rollupCountRows[0]?.n ?? 0) > 0;
-
-  if (hasRollupCoverage) {
+  // v1.4.36 QA C1 — per-type coverage probe. The legacy global COUNT
+  // returned true as soon as any one type had a DAY bucket, which made
+  // the bucket-derived path swallow a brand-new type's all-time history
+  // (the per-write hook upserts a single bucket for the new type, the
+  // probe flips to true, the comprehensive response then iterates only
+  // bucket-bearing types and the trailing-90d narrow aggregate becomes
+  // the new "all-time" total for that type). We now decide per type
+  // and only take the rollup path when EVERY type the user has logged
+  // is covered. Partial coverage falls back to the live aggregate so
+  // a fresh-type measurement doesn't break its summary card.
+  const coverage = await probeRollupCoverage(userId);
+  if (isFullyCovered(coverage)) {
     return buildFromRollups(userId, ninetyDaysAgo);
   }
   return buildFromLiveAggregate(userId, ninetyDaysAgo);

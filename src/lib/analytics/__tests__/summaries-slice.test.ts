@@ -54,10 +54,10 @@ afterEach(() => {
 describe("computeSummariesSlice", () => {
   describe("cold fallback — empty rollup table", () => {
     it("returns the empty-summary skeleton when the user has no rows", async () => {
-      // 1. rollup-count probe — zero ⇒ cold path.
+      // 1. per-type coverage probe — empty ⇒ cold path.
       // 2. heavy aggregate ($queryRaw) — empty.
       // 3. latests ($queryRaw) — empty.
-      RAW.mockResolvedValueOnce([{ n: BigInt(0) }])
+      RAW.mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
 
@@ -83,7 +83,8 @@ describe("computeSummariesSlice", () => {
     });
 
     it("maps a populated heavy aggregate row into the DataSummary shape on cold path", async () => {
-      RAW.mockResolvedValueOnce([{ n: BigInt(0) }])
+      // Coverage probe returns WEIGHT with no buckets → cold path.
+      RAW.mockResolvedValueOnce([{ type: "WEIGHT", has_buckets: false }])
         .mockResolvedValueOnce([
           {
             type: "WEIGHT",
@@ -136,7 +137,7 @@ describe("computeSummariesSlice", () => {
     });
 
     it("returns a null slope tuple when the SQL slope is null (insufficient rows)", async () => {
-      RAW.mockResolvedValueOnce([{ n: BigInt(0) }])
+      RAW.mockResolvedValueOnce([{ type: "PULSE", has_buckets: false }])
         .mockResolvedValueOnce([
           {
             type: "PULSE",
@@ -166,7 +167,7 @@ describe("computeSummariesSlice", () => {
 
     it("surfaces lastSeenByType from the DISTINCT ON pass's measured_at", async () => {
       const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
-      RAW.mockResolvedValueOnce([{ n: BigInt(0) }])
+      RAW.mockResolvedValueOnce([{ type: "WEIGHT", has_buckets: false }])
         .mockResolvedValueOnce([
           {
             type: "WEIGHT",
@@ -198,7 +199,7 @@ describe("computeSummariesSlice", () => {
     });
 
     it("seeds the latest value from the DISTINCT ON pass per type", async () => {
-      RAW.mockResolvedValueOnce([{ n: BigInt(0) }])
+      RAW.mockResolvedValueOnce([{ type: "PULSE", has_buckets: false }])
         .mockResolvedValueOnce([
           {
             type: "PULSE",
@@ -228,10 +229,10 @@ describe("computeSummariesSlice", () => {
 
   describe("rollup-fresh happy path", () => {
     it("composes count/min/max/mean from DAY buckets without running the heavy aggregate", async () => {
-      // 1. rollup-count probe — non-zero ⇒ happy path.
+      // 1. per-type coverage probe — WEIGHT fully covered ⇒ happy path.
       // 2. narrow aggregate ($queryRaw) — windowed/regression only.
       // 3. latests ($queryRaw).
-      RAW.mockResolvedValueOnce([{ n: BigInt(2) }])
+      RAW.mockResolvedValueOnce([{ type: "WEIGHT", has_buckets: true }])
         .mockResolvedValueOnce([
           {
             type: "WEIGHT",

@@ -59,6 +59,10 @@ import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { annotate } from "@/lib/logging/context";
 import { ensureUserRollupsFresh } from "@/lib/measurements/rollups";
 import { aggregateBuckets } from "@/lib/measurements/rollup-read";
+import {
+  isFullyCovered,
+  probeRollupCoverage,
+} from "@/lib/measurements/rollup-coverage";
 
 /**
  * Heavy aggregate row — used on the cold-mount fallback path where the
@@ -181,18 +185,20 @@ export async function computeSummariesSlice(
   // rollup so the bucket read below has something to compose.
   await ensureUserRollupsFresh(userId);
 
-  // Cheap existence probe — one indexed COUNT against the rollup
-  // table. A non-zero count means there's at least one DAY bucket we
-  // can compose from, so the heavy live aggregate is unnecessary.
-  const rollupCountRows = await prisma.$queryRaw<Array<{ n: bigint }>>`
-    SELECT COUNT(*) AS n
-    FROM measurement_rollups
-    WHERE user_id = ${userId}
-      AND granularity = 'DAY'
-  `;
-  const hasRollupCoverage = Number(rollupCountRows[0]?.n ?? 0) > 0;
-
-  if (hasRollupCoverage) {
+  // v1.4.36 QA C1 — per-type coverage probe replaces the legacy global
+  // COUNT. The previous gate returned true as soon as ANY type had at
+  // least one DAY bucket. Pathology: a user with BP fully rolled up
+  // logs their first WEIGHT measurement → the sync write-hook upserts
+  // one WEIGHT DAY bucket → the global probe stayed >0 → the route
+  // flipped to the bucket-derived path for WEIGHT as well → all-time
+  // count collapsed to whatever the trailing window covers because the
+  // narrow aggregate's windowed columns + the single fresh bucket
+  // can't reconstruct the prior history. We now decide per type and
+  // only take the rollup path when EVERY type the user has logged is
+  // covered. Partial coverage falls back to the live aggregate so the
+  // brand-new-type case stays correct.
+  const coverage = await probeRollupCoverage(userId);
+  if (isFullyCovered(coverage)) {
     return computeFromRollups(userId);
   }
   return computeFromLiveAggregate(userId);
