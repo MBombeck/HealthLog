@@ -246,7 +246,10 @@ export default function InsightsPage() {
         <CorrelationRow results={analytics.correlations} />
       )}
 
-      <TrendsRow annotations={advisor.payload?.trendAnnotations ?? null} />
+      <TrendsRow
+        annotations={advisor.payload?.trendAnnotations ?? null}
+        loading={advisor.isLoading || advisor.isRegenerating}
+      />
     </div>
   );
 }

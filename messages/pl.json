@@ -1004,7 +1004,8 @@
       "emptyMood": "Awaiting more data to annotate this trend.",
       "confidenceHigh": "High confidence",
       "confidenceModerate": "Moderate confidence",
-      "confidenceLow": "Low confidence"
+      "confidenceLow": "Low confidence",
+      "pendingLabel": "Generating trend commentary"
     },
     "correlationRow": {
       "title": "Relationships",

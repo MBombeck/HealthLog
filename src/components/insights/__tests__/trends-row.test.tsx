@@ -128,6 +128,37 @@ describe("<TrendsRow>", () => {
     expect(matches.length).toBe(3);
   });
 
+  it("loading=true paints the pending shimmer for every metric (no 'mehr Daten' flash)", () => {
+    // v1.4.36 W2 T3 — pre-fix the row painted "Awaiting more data"
+    // across all three metrics whenever the advisor query was in
+    // flight. The loading flag now propagates to each annotation
+    // slot so the user reads a generating-state shimmer instead.
+    const html = render(<TrendsRow loading />);
+    const pending =
+      html.match(/data-slot="trend-annotation-pending"/g) ?? [];
+    expect(pending.length).toBe(3);
+    expect(html).not.toContain("Awaiting more data");
+  });
+
+  it("loading=true keeps the shimmer even when annotations are supplied (regenerate-in-flight)", () => {
+    const html = render(
+      <TrendsRow
+        loading
+        annotations={{
+          bp: "stale BP",
+          weight: "stale weight",
+          mood: "stale mood",
+        }}
+      />,
+    );
+    expect(html).not.toContain("stale BP");
+    expect(html).not.toContain("stale weight");
+    expect(html).not.toContain("stale mood");
+    const pending =
+      html.match(/data-slot="trend-annotation-pending"/g) ?? [];
+    expect(pending.length).toBe(3);
+  });
+
   it("propagates per-metric confidence chips", () => {
     const html = render(
       <TrendsRow

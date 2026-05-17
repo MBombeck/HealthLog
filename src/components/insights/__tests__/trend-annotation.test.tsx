@@ -116,4 +116,88 @@ describe("<TrendAnnotation>", () => {
       /<p[^>]*data-slot="trend-annotation-empty"[^>]*class="[^"]*line-clamp-3[^"]*"[^>]*>/,
     );
   });
+
+  // ── v1.4.36 W2 T3 — render-state contract ──────────────────────────
+  // Pre-fix the component derived "empty" purely from
+  // `annotation == null`, which painted "Mehr Daten nötig" on every
+  // cold mount and every regenerate-in-flight even though the advisor
+  // was about to deliver an annotation. The tri-state `status` prop
+  // distinguishes pending / needs_data / generated.
+
+  it("status='pending' renders a shimmer block (not the empty hint)", () => {
+    const html = render(
+      <TrendAnnotation metric="bp" annotation={null} status="pending" />,
+    );
+    expect(html).toMatch(/data-slot="trend-annotation-pending"/);
+    expect(html).toContain("animate-pulse");
+    // Empty hint and filled prose MUST be absent during pending.
+    expect(html).not.toContain('data-slot="trend-annotation-empty"');
+    expect(html).not.toContain('data-slot="trend-annotation"');
+    expect(html).not.toContain("Awaiting more data");
+  });
+
+  it("status='pending' announces a busy state for assistive tech", () => {
+    const html = render(
+      <TrendAnnotation metric="mood" annotation={null} status="pending" />,
+    );
+    expect(html).toMatch(/role="status"/);
+    expect(html).toMatch(/aria-busy="true"/);
+  });
+
+  it("status='pending' keeps painting the shimmer even when an annotation is supplied (regenerate-in-flight)", () => {
+    // During a forced regenerate the previous annotation is still in
+    // cache. We surface the pending state so the user doesn't read
+    // stale prose alongside a freshly-fired generation.
+    const html = render(
+      <TrendAnnotation
+        metric="weight"
+        annotation="stale annotation from a previous generation"
+        status="pending"
+      />,
+    );
+    expect(html).toMatch(/data-slot="trend-annotation-pending"/);
+    expect(html).not.toContain("stale annotation");
+  });
+
+  it("status='needs_data' renders the empty hint regardless of annotation presence", () => {
+    const html = render(
+      <TrendAnnotation
+        metric="bp"
+        annotation="this should be ignored"
+        status="needs_data"
+      />,
+    );
+    expect(html).toMatch(/data-slot="trend-annotation-empty"/);
+    expect(html).toContain("Awaiting more data");
+    expect(html).not.toContain("this should be ignored");
+  });
+
+  it("status='generated' renders the prose + confidence chip", () => {
+    const html = render(
+      <TrendAnnotation
+        metric="bp"
+        annotation="BP trending down 4 mmHg over 30 days."
+        status="generated"
+        confidence="high"
+      />,
+    );
+    expect(html).toMatch(/data-slot="trend-annotation"/);
+    expect(html).toContain("BP trending down 4 mmHg");
+    expect(html).toMatch(/data-slot="trend-annotation-confidence"/);
+    expect(html).not.toContain("Awaiting more data");
+  });
+
+  it("omitting status falls back to the legacy annotation==null mapping (back-compat)", () => {
+    // Old call sites that don't pass `status` must still see the
+    // previous two-state behaviour: filled prose when supplied, empty
+    // hint when null.
+    const filled = render(
+      <TrendAnnotation metric="bp" annotation="BP trending down." />,
+    );
+    expect(filled).toMatch(/data-slot="trend-annotation"/);
+    expect(filled).toContain("BP trending down");
+
+    const empty = render(<TrendAnnotation metric="bp" annotation={null} />);
+    expect(empty).toMatch(/data-slot="trend-annotation-empty"/);
+  });
 });

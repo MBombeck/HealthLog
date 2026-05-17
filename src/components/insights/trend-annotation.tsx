@@ -19,17 +19,44 @@ import { CONFIDENCE_BADGE_CLASS } from "./confidence-badge";
  * Confidence band is optional — surfaced as a small `Badge` chip when
  * a backing correlation gives us one. The chip is purely visual and
  * never adds new copy beyond the `low / moderate / high` translation.
+ *
+ * v1.4.36 W2 T3 — render-state contract (`status`). Pre-fix the
+ * component derived empty vs filled from `annotation == null` alone,
+ * which painted "Mehr Daten nötig" on every cold mount and every
+ * regenerate-in-flight, even when the advisor was about to deliver an
+ * annotation. The status prop now distinguishes:
+ *
+ *   - `"pending"`     — advisor query in flight or regenerate firing.
+ *                       Renders a 3-line shimmer block matching the
+ *                       filled-state row contract.
+ *   - `"needs_data"`  — advisor returned `annotation = null`. Renders
+ *                       the "Mehr Daten nötig" hint.
+ *   - `"generated"`   — advisor returned a string. Renders the prose +
+ *                       optional confidence chip.
+ *
+ * Back-compat: when `status` is omitted, the legacy
+ * `annotation == null → empty` mapping still applies so existing call
+ * sites that don't pass the prop keep their current behaviour.
  */
 
 export type TrendAnnotationConfidenceBand = "low" | "moderate" | "high";
 
+export type TrendAnnotationStatus = "pending" | "needs_data" | "generated";
+
 interface TrendAnnotationProps {
   /** The metric this annotation describes. Drives the empty-state copy. */
   metric: "bp" | "weight" | "mood";
-  /** AI-authored sentence. `null` renders the empty-state hint. */
+  /** AI-authored sentence. `null` renders the empty-state hint (legacy path). */
   annotation: string | null;
   /** Optional discrete confidence band. */
   confidence?: TrendAnnotationConfidenceBand;
+  /**
+   * Tri-state render contract. When supplied, drives the branch
+   * directly (and overrides the legacy `annotation == null` empty
+   * fallback). Default `undefined` keeps the legacy two-state mapping
+   * for back-compat with existing call sites.
+   */
+  status?: TrendAnnotationStatus;
 }
 
 const CONFIDENCE_LABEL_KEY: Record<TrendAnnotationConfidenceBand, string> = {
@@ -48,10 +75,36 @@ export function TrendAnnotation({
   metric,
   annotation,
   confidence,
+  status,
 }: TrendAnnotationProps) {
   const { t } = useTranslations();
 
-  if (!annotation) {
+  // v1.4.36 W2 T3 — render-state contract. When `status` is supplied
+  // it drives the branch directly; otherwise we fall back on the
+  // legacy `annotation == null → empty` mapping so existing callers
+  // (tests, isolated mounts) keep their previous behaviour.
+  const resolvedStatus: TrendAnnotationStatus =
+    status ?? (annotation ? "generated" : "needs_data");
+
+  if (resolvedStatus === "pending") {
+    return (
+      <div
+        data-slot="trend-annotation-pending"
+        data-metric={metric}
+        role="status"
+        aria-busy="true"
+        aria-live="polite"
+        className="border-border/60 bg-card/40 space-y-1.5 rounded-md border p-3 motion-reduce:animate-none"
+        aria-label={t("insights.trendAnnotation.pendingLabel")}
+      >
+        <div className="bg-muted/60 h-2.5 w-11/12 animate-pulse rounded" />
+        <div className="bg-muted/60 h-2.5 w-9/12 animate-pulse rounded" />
+        <div className="bg-muted/60 h-2.5 w-7/12 animate-pulse rounded" />
+      </div>
+    );
+  }
+
+  if (resolvedStatus === "needs_data" || !annotation) {
     return (
       <p
         data-slot="trend-annotation-empty"

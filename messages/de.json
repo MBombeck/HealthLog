@@ -1004,7 +1004,8 @@
       "emptyMood": "Mehr Daten nötig, um diesen Trend zu kommentieren.",
       "confidenceHigh": "Hohe Konfidenz",
       "confidenceModerate": "Mittlere Konfidenz",
-      "confidenceLow": "Geringe Konfidenz"
+      "confidenceLow": "Geringe Konfidenz",
+      "pendingLabel": "Trend-Kommentar wird generiert"
     },
     "correlationRow": {
       "title": "Zusammenhänge",

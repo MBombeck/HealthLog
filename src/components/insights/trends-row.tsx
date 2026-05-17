@@ -8,6 +8,7 @@ import { HealthChartDynamicMini } from "@/components/charts/health-chart-dynamic
 import {
   TrendAnnotation,
   type TrendAnnotationConfidenceBand,
+  type TrendAnnotationStatus,
 } from "./trend-annotation";
 
 /**
@@ -56,15 +57,35 @@ interface TrendsRowProps {
     weight?: TrendAnnotationConfidenceBand;
     mood?: TrendAnnotationConfidenceBand;
   };
+  /**
+   * v1.4.36 W2 T3 — advisor query / mutation in flight. When true,
+   * every per-metric annotation slot paints a pending shimmer instead
+   * of the "Mehr Daten nötig" empty hint. Resolves the recurring
+   * complaint where the empty hint flashed across all three metrics
+   * while the advisor was generating fresh annotations.
+   */
+  loading?: boolean;
 }
 
-export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
+export function TrendsRow({
+  annotations,
+  confidence,
+  loading = false,
+}: TrendsRowProps) {
   const { t } = useTranslations();
   const { user } = useAuth();
   const userTimezone = user?.timezone;
   const bpAnnotation = annotations?.bp ?? null;
   const weightAnnotation = annotations?.weight ?? null;
   const moodAnnotation = annotations?.mood ?? null;
+  // v1.4.36 W2 T3 — derive the tri-state status per metric from the
+  // advisor's loading flag + the annotation presence. Pending wins
+  // over needs_data so a mid-generation regenerate doesn't flash the
+  // empty hint between the spinner and the new prose.
+  const statusFor = (annotation: string | null): TrendAnnotationStatus => {
+    if (loading) return "pending";
+    return annotation ? "generated" : "needs_data";
+  };
 
   return (
     <section
@@ -132,6 +153,7 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
             metric="bp"
             annotation={bpAnnotation}
             confidence={confidence?.bp}
+            status={statusFor(bpAnnotation)}
           />
         </div>
         <div
@@ -153,6 +175,7 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
             metric="weight"
             annotation={weightAnnotation}
             confidence={confidence?.weight}
+            status={statusFor(weightAnnotation)}
           />
         </div>
         <div
@@ -171,6 +194,7 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
             metric="mood"
             annotation={moodAnnotation}
             confidence={confidence?.mood}
+            status={statusFor(moodAnnotation)}
           />
         </div>
       </div>
