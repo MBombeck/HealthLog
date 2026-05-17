@@ -525,6 +525,11 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                     const isExpanded = isGrouped
                       ? expandedDayKeys.has(m.dayKey as string)
                       : false;
+                    // v1.4.38 W-D P1-1 — stable drill-down id so the
+                    // disclosure chevron can thread aria-controls to the
+                    // expanded panel. dayKey is unique per row when
+                    // grouped; fall back to m.id otherwise.
+                    const drilldownId = `drilldown-desktop-${m.dayKey ?? m.id}`;
                     return (
                       <Fragment key={m.id}>
                         <TableRow>
@@ -585,6 +590,7 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                                     toggleExpand(m.dayKey as string)
                                   }
                                   aria-expanded={isExpanded}
+                                  aria-controls={drilldownId}
                                   aria-label={
                                     isExpanded
                                       ? t("measurements.collapseDay")
@@ -617,7 +623,7 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                           </TableCell>
                         </TableRow>
                         {isGrouped && isExpanded && (
-                          <TableRow>
+                          <TableRow id={drilldownId}>
                             <TableCell colSpan={6} className="p-0">
                               <DayDrillDown
                                 type={m.type}
@@ -644,6 +650,8 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                 const isExpanded = isGrouped
                   ? expandedDayKeys.has(m.dayKey as string)
                   : false;
+                // v1.4.38 W-D P1-1 — see desktop counterpart.
+                const drilldownId = `drilldown-mobile-${m.dayKey ?? m.id}`;
                 return (
                   <div
                     key={m.id}
@@ -712,6 +720,7 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                             data-testid="measurement-day-expand"
                             onClick={() => toggleExpand(m.dayKey as string)}
                             aria-expanded={isExpanded}
+                            aria-controls={drilldownId}
                             aria-label={
                               isExpanded
                                 ? t("measurements.collapseDay")
@@ -742,12 +751,14 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                       </div>
                     </div>
                     {isGrouped && isExpanded && (
-                      <DayDrillDown
-                        type={m.type}
-                        dayKey={m.dayKey as string}
-                        unit={m.unit}
-                        layout="mobile"
-                      />
+                      <div id={drilldownId}>
+                        <DayDrillDown
+                          type={m.type}
+                          dayKey={m.dayKey as string}
+                          unit={m.unit}
+                          layout="mobile"
+                        />
+                      </div>
                     )}
                   </div>
                 );
