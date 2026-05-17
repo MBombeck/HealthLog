@@ -297,9 +297,18 @@ export function MedicationIntakeQuickAdd({
   );
 
   // Empty-state branch: the user has no active medications. Render a
-  // hint + CTA into the body so the user has a single tap into the
-  // medication-creation surface. The form itself is suppressed so we
-  // don't ship an unusable Save button.
+  // hint into the body and promote the "Medikament anlegen" CTA into
+  // the sheet footer slot so the primary action lives where the user
+  // expects it (matches the populated form's Save-button slot). The
+  // form itself is suppressed so we don't ship an unusable Save
+  // button.
+  //
+  // v1.4.38 W-D P2-1 — symmetry fix. The previous shape rendered the
+  // CTA in the body and a footer with only the Close button, which
+  // read as the dialog losing a save button. Now the body carries the
+  // hint and the footer carries `<Cancel> <Link asChild>Medikament
+  // anlegen</Link>` so the footer-slot promise holds across both
+  // branches.
   if (!medicationsLoading && medications.length === 0) {
     const emptyFooter = (
       <div className="flex w-full items-center justify-end gap-2">
@@ -310,9 +319,14 @@ export function MedicationIntakeQuickAdd({
             onClick={onCancel}
             className="min-h-11 sm:min-h-9"
           >
-            {t("common.close")}
+            {t("common.cancel")}
           </Button>
         )}
+        <Button asChild className="min-h-11 sm:min-h-9">
+          <Link href="/medications">
+            {t("dashboard.medicationIntakeQuickAdd.emptyCta")}
+          </Link>
+        </Button>
       </div>
     );
     return (
@@ -332,16 +346,6 @@ export function MedicationIntakeQuickAdd({
               {t("dashboard.medicationIntakeQuickAdd.emptyDescription")}
             </p>
           </div>
-          <Button
-            asChild
-            size="sm"
-            variant="outline"
-            className="min-h-11 sm:min-h-9"
-          >
-            <Link href="/medications">
-              {t("dashboard.medicationIntakeQuickAdd.emptyCta")}
-            </Link>
-          </Button>
         </div>
         {footerSlot ? createPortal(emptyFooter, footerSlot) : emptyFooter}
       </>
