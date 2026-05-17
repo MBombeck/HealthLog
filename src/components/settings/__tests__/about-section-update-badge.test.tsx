@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { I18nProvider } from "@/lib/i18n/context";
-import { AboutSection } from "../about-section";
+import { AboutSection, UpdateBadge } from "../about-section";
 
 /**
  * v1.4.36 W4f — AboutSection update-badge contract.
@@ -98,5 +98,39 @@ describe("<AboutSection> — update badge", () => {
   it("preserves the Sources & docs panel", () => {
     const html = render(<AboutSection />);
     expect(html).toContain("Sources &amp; docs");
+  });
+});
+
+describe("<UpdateBadge> — a11y contract", () => {
+  it("renders an anchor with aria-label, focus-visible ring, and 44 px hit target when a URL is known", () => {
+    const html = renderToStaticMarkup(
+      <UpdateBadge
+        latestTag="v1.4.99"
+        htmlUrl="https://example.test/releases/v1.4.99"
+        ariaLabel="A newer version is available: v1.4.99"
+      />,
+    );
+    expect(html).toContain('aria-label="A newer version is available: v1.4.99"');
+    expect(html).toContain("min-h-11");
+    expect(html).toContain("min-w-11");
+    expect(html).toContain("focus-visible:ring-ring");
+    expect(html).toContain("focus-visible:ring-2");
+    expect(html).toContain("focus-visible:ring-offset-2");
+    expect(html).toContain("text-primary");
+    expect(html).toContain('href="https://example.test/releases/v1.4.99"');
+  });
+
+  it("falls back to a span with role=img + aria-label when no URL is known", () => {
+    const html = renderToStaticMarkup(
+      <UpdateBadge
+        latestTag="v1.4.99"
+        htmlUrl={null}
+        ariaLabel="A newer version is available: v1.4.99"
+      />,
+    );
+    expect(html).toContain('role="img"');
+    expect(html).toContain('aria-label="A newer version is available: v1.4.99"');
+    expect(html).toContain("min-h-11");
+    expect(html).toContain("min-w-11");
   });
 });

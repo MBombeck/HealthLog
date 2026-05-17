@@ -67,6 +67,51 @@ function writeLastCheckedISO(iso: string): void {
   }
 }
 
+/**
+ * v1.4.36 QA H7 — keyboard- and touch-accessible update badge.
+ *
+ * Renders as a 44 px-square hit target (anchor when a release URL is
+ * known, span fallback otherwise) with a focus-visible ring, semantic
+ * `text-primary` colour, and a real `aria-label` describing the
+ * available version. Exported so the SSR test can pin the contract
+ * without driving the parent's auto-check effect.
+ */
+export function UpdateBadge({
+  latestTag,
+  htmlUrl,
+  ariaLabel,
+}: {
+  latestTag: string;
+  htmlUrl: string | null;
+  ariaLabel: string;
+}) {
+  if (htmlUrl) {
+    return (
+      <a
+        href={htmlUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={ariaLabel}
+        title={ariaLabel}
+        className="text-primary focus-visible:ring-ring inline-flex min-h-11 min-w-11 items-center justify-center rounded-md hover:opacity-80 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+      >
+        <ArrowUpCircle className="h-4 w-4" />
+        <span className="sr-only">{latestTag}</span>
+      </a>
+    );
+  }
+  return (
+    <span
+      role="img"
+      aria-label={ariaLabel}
+      title={ariaLabel}
+      className="text-primary inline-flex min-h-11 min-w-11 items-center justify-center"
+    >
+      <ArrowUpCircle className="h-4 w-4" />
+    </span>
+  );
+}
+
 export function AboutSection() {
   const { t } = useTranslations();
   const fmt = useFormatters();
@@ -185,35 +230,15 @@ export function AboutSection() {
                   the link copy on mobile). No bouncing, no badge
                   counter, no manual recheck button — the badge is
                   the entire surface. */}
-              {updateResult?.status === "newer_available" &&
-                (updateResult.html_url ? (
-                  <a
-                    href={updateResult.html_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={t("settings.about.newerAvailable", {
-                      tag: updateResult.latest_tag,
-                    })}
-                    title={t("settings.about.newerAvailable", {
-                      tag: updateResult.latest_tag,
-                    })}
-                    className="text-dracula-purple inline-flex items-baseline hover:opacity-80"
-                  >
-                    <ArrowUpCircle className="h-4 w-4 self-center" />
-                  </a>
-                ) : (
-                  <span
-                    aria-label={t("settings.about.newerAvailable", {
-                      tag: updateResult.latest_tag,
-                    })}
-                    title={t("settings.about.newerAvailable", {
-                      tag: updateResult.latest_tag,
-                    })}
-                    className="text-dracula-purple inline-flex items-baseline"
-                  >
-                    <ArrowUpCircle className="h-4 w-4 self-center" />
-                  </span>
-                ))}
+              {updateResult?.status === "newer_available" && (
+                <UpdateBadge
+                  latestTag={updateResult.latest_tag}
+                  htmlUrl={updateResult.html_url}
+                  ariaLabel={t("settings.about.newerAvailable", {
+                    tag: updateResult.latest_tag,
+                  })}
+                />
+              )}
             </div>
 
             <div className="flex items-baseline gap-2">
