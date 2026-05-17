@@ -45,6 +45,7 @@ import { locales, localeLabels, type Locale } from "@/lib/i18n/config";
 import { useTranslations } from "@/lib/i18n/context";
 import { describePasskeyError } from "@/lib/passkey-errors";
 import { TimezonePicker } from "@/components/settings/timezone-picker";
+import { detectBrowserTimezone, DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 interface PasskeyInfo {
   id: string;
@@ -58,6 +59,46 @@ interface PasskeyInfo {
 // retired; the shared `<NativeSelect>` primitive owns the visual
 // contract now. Existing `<select className={NATIVE_SELECT_CLASS}>`
 // call sites in this file swapped to `<NativeSelect>` below.
+
+/**
+ * v1.4.37 — silent browser-zone auto-seed for the timezone picker.
+ *
+ * Until v1.4.37 the picker carried a "Browser-Zeitzone übernehmen" /
+ * "Use browser timezone" button so the user could overwrite the
+ * Europe/Berlin seed with their detected zone on demand. The button
+ * was visually noisy next to the picker on mobile and almost every
+ * user wants the browser zone anyway, so the affordance retired and
+ * the bootstrap effect seeds the form for them.
+ *
+ * Rules:
+ *
+ *   - If the stored value is anything other than the Europe/Berlin
+ *     default, respect it. The user explicitly picked it.
+ *   - If the stored value is the Europe/Berlin default but the
+ *     browser actually IS in Berlin, leave it alone — the picker
+ *     stays on Berlin and the next save is a no-op.
+ *   - If the stored value is the default AND the browser reports a
+ *     non-Berlin zone, pre-fill the picker with the detected zone.
+ *     The form's existing submit handler persists the change on the
+ *     next save; no toast, no banner, no opt-in.
+ *
+ * The bootstrap deliberately runs inline during render (the strict
+ * `react-hooks/set-state-in-effect` rule outlaws setState in an
+ * effect for this hydration shape), so this helper has to stay
+ * pure — no DOM access, no `useState`. The detected browser zone is
+ * passed in by the caller via `detectBrowserTimezone()`.
+ */
+export function resolveInitialTimezone(
+  storedTimezone: string | null | undefined,
+  detectedBrowserTimezone: string,
+): string {
+  const stored = storedTimezone || DEFAULT_TIMEZONE;
+  const shouldAutoSeed =
+    stored === DEFAULT_TIMEZONE &&
+    detectedBrowserTimezone.length > 0 &&
+    detectedBrowserTimezone !== DEFAULT_TIMEZONE;
+  return shouldAutoSeed ? detectedBrowserTimezone : stored;
+}
 
 export function AccountSection() {
   const { t, locale, setLocale } = useTranslations();
@@ -130,7 +171,7 @@ export function AccountSection() {
         : "",
     );
     setGender(user.gender ?? "");
-    setTimezone(user.timezone || "Europe/Berlin");
+    setTimezone(resolveInitialTimezone(user.timezone, detectBrowserTimezone()));
   }
 
   async function handleSaveProfile(e: React.FormEvent) {
