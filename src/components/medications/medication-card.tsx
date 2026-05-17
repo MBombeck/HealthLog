@@ -11,6 +11,11 @@ import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
 import { formatDateTime, formatTime } from "@/lib/format";
 import {
+  parseTimeToMinutes,
+  reduceCurrentWindowStatus,
+  toBerlinDate,
+} from "@/lib/medications/window-status";
+import {
   Check,
   SkipForward,
   Flame,
@@ -71,33 +76,6 @@ interface MedicationCardProps {
   onEdit: (med: Medication) => void;
 }
 
-function parseTimeToMinutes(value: string): number {
-  const [h, m] = value.split(":").map(Number);
-  if (
-    !Number.isFinite(h) ||
-    !Number.isFinite(m) ||
-    h < 0 ||
-    h > 23 ||
-    m < 0 ||
-    m > 59
-  ) {
-    return 0;
-  }
-  return h * 60 + m;
-}
-
-function toBerlinDate(date: Date): Date {
-  // Intentionally en-US: this is not user-facing display — it produces a
-  // parseable string ("1/2/2026, 3:04:05 PM") that we feed back into Date
-  // to shift the *value* from UTC to Berlin-local for arithmetic. Display
-  // formatting goes through useFormatters() elsewhere.
-  return new Date(
-    date.toLocaleString("en-US", {
-      timeZone: "Europe/Berlin",
-    }),
-  );
-}
-
 function getNextOccurrenceTimestamp(
   schedule: Schedule,
   nowBerlin: Date,
@@ -137,67 +115,6 @@ function getNextOccurrenceTimestamp(
   }
 
   return null;
-}
-
-type MedicationWindowStatus = "in_window" | "late" | "very_late" | null;
-
-function getWindowStatus(
-  schedule: Schedule,
-  nowBerlin: Date,
-  lateMinutes: number,
-  missedMinutes: number,
-): MedicationWindowStatus {
-  const nowMins = nowBerlin.getHours() * 60 + nowBerlin.getMinutes();
-  const startMins = parseTimeToMinutes(schedule.windowStart);
-  let endMins = parseTimeToMinutes(schedule.windowEnd);
-
-  // Handle overnight windows
-  if (endMins <= startMins) endMins += 24 * 60;
-  const adjustedNow =
-    nowMins < startMins && endMins > 24 * 60 ? nowMins + 24 * 60 : nowMins;
-
-  // Currently in window
-  if (adjustedNow >= startMins && adjustedNow <= endMins) return "in_window";
-
-  // Past window end: check late thresholds
-  const minutesPastEnd = adjustedNow - endMins;
-  if (minutesPastEnd > 0 && minutesPastEnd <= lateMinutes) return "late";
-  if (minutesPastEnd > lateMinutes && minutesPastEnd <= missedMinutes)
-    return "very_late";
-
-  return null;
-}
-
-function isLastIntakeInCurrentWindow(
-  lastTakenAt: string | null,
-  schedule: Schedule,
-  nowBerlin: Date,
-): boolean {
-  if (!lastTakenAt) return false;
-
-  const intake = toBerlinDate(new Date(lastTakenAt));
-
-  // Must be same calendar day
-  if (
-    intake.getFullYear() !== nowBerlin.getFullYear() ||
-    intake.getMonth() !== nowBerlin.getMonth() ||
-    intake.getDate() !== nowBerlin.getDate()
-  ) {
-    return false;
-  }
-
-  const intakeMins = intake.getHours() * 60 + intake.getMinutes();
-  const startMins = parseTimeToMinutes(schedule.windowStart);
-  let endMins = parseTimeToMinutes(schedule.windowEnd);
-
-  // Handle overnight windows
-  if (endMins <= startMins) endMins += 24 * 60;
-  const adjustedIntake =
-    intakeMins < startMins && endMins > 24 * 60
-      ? intakeMins + 24 * 60
-      : intakeMins;
-
-  return adjustedIntake >= startMins && adjustedIntake <= endMins;
 }
 
 export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
@@ -293,55 +210,15 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
   const lateMinutes = thresholds?.lateMinutes ?? 120;
   const missedMinutes = thresholds?.missedMinutes ?? 240;
 
-  // Count schedules that are past their window (overdue today)
-  const passedScheduleCount = medication.active
-    ? sortedSchedules.filter((s) => {
-        const recurrence = parseScheduleRecurrence(s.daysOfWeek);
-        if (
-          recurrence.daysOfWeek.length > 0 &&
-          !recurrence.daysOfWeek.includes(nowBerlin.getDay())
-        ) {
-          return false;
-        }
-        const endMins = parseTimeToMinutes(s.windowEnd);
-        const nowMins = nowBerlin.getHours() * 60 + nowBerlin.getMinutes();
-        return nowMins > endMins;
-      }).length
-    : 0;
-
-  const todayEvents = medication.todayEventCount ?? 0;
-  const hasUncoveredOverdue = todayEvents < passedScheduleCount;
-
-  const currentWindowStatus = medication.active
-    ? sortedSchedules.reduce<{
-        status: MedicationWindowStatus;
-        schedule: Schedule | null;
-      }>(
-        (best, s) => {
-          const status = getWindowStatus(
-            s,
-            nowBerlin,
-            lateMinutes,
-            missedMinutes,
-          );
-          if (!status) return best;
-          // Don't show late/very_late if all overdue schedules are covered by events
-          if (status !== "in_window" && !hasUncoveredOverdue) return best;
-          // Don't show in_window if last intake is already within this window today
-          if (
-            status === "in_window" &&
-            isLastIntakeInCurrentWindow(medication.lastTakenAt, s, nowBerlin)
-          )
-            return best;
-          const priority = { in_window: 3, late: 2, very_late: 1 };
-          if (!best.status || priority[status] > priority[best.status]) {
-            return { status, schedule: s };
-          }
-          return best;
-        },
-        { status: null, schedule: null },
-      )
-    : { status: null, schedule: null };
+  const currentWindowStatus = reduceCurrentWindowStatus({
+    schedules: sortedSchedules,
+    nowBerlin,
+    lateMinutes,
+    missedMinutes,
+    active: medication.active,
+    lastTakenAt: medication.lastTakenAt,
+    todayEventCount: medication.todayEventCount ?? 0,
+  });
 
   function formatLastTakenAt(value: string): string {
     // Intentionally en-CA: gives YYYY-MM-DD which is locale-independent and
