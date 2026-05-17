@@ -4,6 +4,7 @@ import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
 import { formatRelativeTime } from "@/lib/i18n/relative-time";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { cn } from "@/lib/utils";
 import { SuggestedPrompts } from "./suggested-prompts";
 import {
@@ -118,6 +119,14 @@ export function HeroStrip({
   healthScore,
 }: HeroStripProps) {
   const { t } = useTranslations();
+  // v1.4.37 W5 — operator-level Coach gate. When the global Coach flag
+  // is off every Coach affordance must vanish from this band (the
+  // action-row button, the suggested-prompts chip strip, and the
+  // HealthScoreCard's `onAskCoach` prop). The button and chips both
+  // open the Coach drawer, so leaving them visible while the drawer
+  // mount is suppressed would surface dead controls.
+  const flags = useFeatureFlags();
+  const coachEnabled = flags.coach;
   const greetingKey = resolveGreetingKey(now ?? new Date());
   const greetingBase = t(greetingKey);
   const greeting = userName ? `${greetingBase}, ${userName}` : greetingBase;
@@ -207,45 +216,61 @@ export function HeroStrip({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {/* B2b wires this into the Coach drawer. The button is
-              enabled whenever the parent supplies an `onAskCoach`
-              handler; older parents that haven't adopted B2b yet
-              still get the disabled "Coming soon" affordance so the
-              hero doesn't break. v1.4.28 retired the weekly-report
-              button, leaving Coach as the only hero-row action. */}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onAskCoach ? () => onAskCoach() : undefined}
-              disabled={!onAskCoach}
-              title={onAskCoach ? undefined : comingSoon}
-              data-slot="insights-hero-strip-action-coach"
-              className="gap-1.5"
-            >
-              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>{t("insights.heroActionAskCoach")}</span>
-            </Button>
-            {/*
-             * v1.4.25 W3 — the regenerate button moved to the new
-             * `<InsightsTabStrip>` (icon-only RefreshCw, sticky next
-             * to the pill nav) so the user can re-run the analysis
-             * without scrolling back to the hero band.
-             */}
-          </div>
+          {/*
+           * v1.4.37 W5 — the action row only carries the Coach button
+           * today (v1.4.28 retired the weekly-report affordance). When
+           * the operator turns the global Coach flag off the whole row
+           * disappears rather than collapsing to an empty flex shell.
+           */}
+          {coachEnabled && (
+            <div className="flex flex-wrap items-center gap-2">
+              {/* B2b wires this into the Coach drawer. The button is
+                enabled whenever the parent supplies an `onAskCoach`
+                handler; older parents that haven't adopted B2b yet
+                still get the disabled "Coming soon" affordance so the
+                hero doesn't break. v1.4.28 retired the weekly-report
+                button, leaving Coach as the only hero-row action. */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onAskCoach ? () => onAskCoach() : undefined}
+                disabled={!onAskCoach}
+                title={onAskCoach ? undefined : comingSoon}
+                data-slot="insights-hero-strip-action-coach"
+                className="gap-1.5"
+              >
+                <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>{t("insights.heroActionAskCoach")}</span>
+              </Button>
+              {/*
+               * v1.4.25 W3 — the regenerate button moved to the new
+               * `<InsightsTabStrip>` (icon-only RefreshCw, sticky next
+               * to the pill nav) so the user can re-run the analysis
+               * without scrolling back to the hero band.
+               */}
+            </div>
+          )}
 
-          <div
-            data-slot="insights-hero-strip-prompts"
-            className="border-border/50 border-t pt-4"
-          >
-            {/*
-             * v1.4.20 phase B2b — chip clicks open the Coach drawer
-             * with the localised prompt pre-filled in the composer.
-             * The parent owns drawer state so the chip strip stays
-             * presentational.
-             */}
-            <SuggestedPrompts onPick={onPickPrompt ?? (() => undefined)} />
-          </div>
+          {coachEnabled && (
+            <div
+              data-slot="insights-hero-strip-prompts"
+              className="border-border/50 border-t pt-4"
+            >
+              {/*
+               * v1.4.20 phase B2b — chip clicks open the Coach drawer
+               * with the localised prompt pre-filled in the composer.
+               * The parent owns drawer state so the chip strip stays
+               * presentational.
+               *
+               * v1.4.37 W5 — the strip is a Coach-only affordance
+               * (every chip seeds a Coach turn), so it is gated on the
+               * same flag as the action-row button above. Without the
+               * gate the chips would still paint while the drawer is
+               * suppressed, leaving inert controls in the band.
+               */}
+              <SuggestedPrompts onPick={onPickPrompt ?? (() => undefined)} />
+            </div>
+          )}
         </div>
 
         {healthScore && (
@@ -255,7 +280,14 @@ export function HeroStrip({
             components={healthScore.components}
             delta={healthScore.delta}
             onAskCoach={
-              onAskCoach ? (prefill: string) => onAskCoach(prefill) : undefined
+              // v1.4.37 W5 — short-circuit the prop drilling even
+              // though `HealthScoreCard` retired its inline button in
+              // v1.4.27. A future re-addition can't accidentally
+              // surface a Coach affordance from this card while the
+              // operator has the flag off.
+              coachEnabled && onAskCoach
+                ? (prefill: string) => onAskCoach(prefill)
+                : undefined
             }
           />
         )}
