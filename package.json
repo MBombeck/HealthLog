@@ -85,7 +85,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",
     "@next/bundle-analyzer": "^16.2.6",
-    "@playwright/test": "^1.59.1",
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
     "@testcontainers/postgresql": "^11.14.0",
     "@types/node": "^25",
