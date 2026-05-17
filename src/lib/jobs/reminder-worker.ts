@@ -90,6 +90,7 @@ import { runOffhostBackup } from "@/lib/jobs/offhost-backup";
 import {
   getUserTodayBounds as getUserTodayBoundsUtil,
   getDayOfWeekInTz as getDayOfWeekInTzUtil,
+  localHmAsUtc,
 } from "@/lib/timezone";
 
 function parseTimeToMinutes(value: string): number {
@@ -191,6 +192,14 @@ const DRAIN_CUMULATIVE_CRON = "45 3 * * *";
 // `MoodReminderDispatch` ledger inside the handler.
 const MOOD_REMINDER_QUEUE = "mood-reminder-check";
 const MOOD_REMINDER_CRON = "*/15 * * * *";
+// v1.4.38.2 — daily retention sweep for the mood-reminder dispatch
+// ledger. Rows older than 90 days are behavioural footprints of
+// mood-log gaps; we keep them long enough to debug a duplicate-push
+// report (~one billing cycle) but no longer. Slots between the
+// audit-log cleanup (03:15) and the drain (03:45).
+const MOOD_REMINDER_CLEANUP_QUEUE = "mood-reminder-cleanup";
+const MOOD_REMINDER_CLEANUP_CRON = "25 3 * * *";
+const MOOD_REMINDER_RETENTION_DAYS = 90;
 // v1.4.38 — the per-sample cutoff hours constant now lives on the
 // helper module so the worker, the admin route, and the CLI all read
 // the same source of truth. Re-export pulled in alongside
@@ -525,9 +534,12 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
           // RED phase: create missed intake event
           if (currentPhase === "RED") {
             const [h, m] = schedule.windowStart.split(":").map(Number);
-            const scheduledFor = new Date(
-              todayStart.getTime() + h * 3600000 + m * 60000,
-            );
+            // DST-safe: re-derive the offset at the target local time so
+            // the UTC instant is correct on spring-forward / fall-back
+            // days. `todayStart + h * 3.6e6` drifts by an hour twice a
+            // year — the iOS snooze action would otherwise pin against
+            // the wrong baseline.
+            const scheduledFor = localHmAsUtc(now, med.user.timezone, h, m);
 
             const existingMissed = await prisma.medicationIntakeEvent.count({
               where: {
@@ -578,12 +590,15 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
             // v0.5.4 — surface the window-start as an ISO 8601 string so
             // the iOS notification handler can pin a "snooze 15 min"
             // action against the actual schedule slot rather than the
-            // wall-clock moment APNs delivered. Computed in UTC from the
-            // user's localised window-start; mirrors the RED-phase
-            // `scheduledFor` field on the intake event.
+            // wall-clock moment APNs delivered. DST-safe via
+            // `localHmAsUtc` so spring-forward / fall-back days don't
+            // drift the baseline by an hour.
             const [winH, winM] = schedule.windowStart.split(":").map(Number);
-            const scheduledAtIso = new Date(
-              todayStart.getTime() + winH * 3600000 + winM * 60000,
+            const scheduledAtIso = localHmAsUtc(
+              now,
+              med.user.timezone,
+              winH,
+              winM,
             ).toISOString();
 
             evt.addMeta(
@@ -1141,6 +1156,30 @@ async function handleMoodLogSync(jobs: Job<MoodLogSyncPayload>[]) {
  * spinning up pg-boss. The handler is a thin shim that wires the worker
  * Prisma singleton + the wide-event sink to the pure function.
  */
+interface MoodReminderCleanupPayload {
+  triggeredAt: string;
+}
+
+async function handleMoodReminderCleanup(
+  jobs: Job<MoodReminderCleanupPayload>[],
+) {
+  void jobs;
+  await withBackgroundEvent("job.mood_reminder_cleanup", async (evt) => {
+    const p = getWorkerPrisma();
+    try {
+      const cutoff = new Date();
+      cutoff.setUTCDate(cutoff.getUTCDate() - MOOD_REMINDER_RETENTION_DAYS);
+      const cutoffIso = cutoff.toISOString().slice(0, 10);
+      const deleted = await p.moodReminderDispatch.deleteMany({
+        where: { date: { lt: cutoffIso } },
+      });
+      evt.addMeta("mood_reminder_cleanup_deleted", deleted.count);
+    } catch (err) {
+      evt.addWarning(`mood-reminder-cleanup failed: ${err}`);
+    }
+  });
+}
+
 async function handleMoodReminderCheck(jobs: Job<MoodReminderPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.mood_reminder", async (evt) => {
@@ -1626,6 +1665,7 @@ export async function startReminderWorker() {
     // entry the every-15-min schedule silently no-ops and the
     // dispatcher never fires.
     MOOD_REMINDER_QUEUE,
+    MOOD_REMINDER_CLEANUP_QUEUE,
   ];
 
   for (const q of allQueues) {
@@ -1687,6 +1727,7 @@ export async function startReminderWorker() {
     // time is the 22:00 hour, so the cron costs ~one user-row scan
     // per tick for the entire opted-in cohort.
     [MOOD_REMINDER_QUEUE, MOOD_REMINDER_CRON],
+    [MOOD_REMINDER_CLEANUP_QUEUE, MOOD_REMINDER_CLEANUP_CRON],
   ];
 
   for (const [name, cron] of schedules) {
@@ -1802,6 +1843,11 @@ export async function startReminderWorker() {
     MOOD_REMINDER_QUEUE,
     { localConcurrency: 1 },
     handleMoodReminderCheck,
+  );
+  await boss.work<MoodReminderCleanupPayload>(
+    MOOD_REMINDER_CLEANUP_QUEUE,
+    { localConcurrency: 1 },
+    handleMoodReminderCleanup,
   );
   await boss.work<PrDetectionPayload>(
     PR_DETECTION_QUEUE,

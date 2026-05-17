@@ -104,3 +104,36 @@ export function getUserTodayBounds(
 export function getDayOfWeekInTz(now: Date, tz: string): number {
   return getLocalDateParts(now, tz).dayOfWeek;
 }
+
+/**
+ * Compute the UTC instant of local `hh:mm` on the local calendar day
+ * implied by `now` in `tz`. DST-safe — `todayStart.getTime() + h * 3.6e6`
+ * drifts by an hour on spring-forward / fall-back days because raw UTC
+ * arithmetic ignores the DST jump between local midnight and local
+ * `hh:mm`. This helper re-derives the offset at the target local time
+ * so the returned instant always represents local `hh:mm`.
+ */
+export function localHmAsUtc(
+  now: Date,
+  tz: string,
+  hour: number,
+  minute: number,
+): Date {
+  const parts = getLocalDateParts(now, tz);
+  const localAtTargetAsUtc = new Date(
+    Date.UTC(parts.year, parts.month - 1, parts.day, hour, minute, 0, 0),
+  );
+  const localNowAsUtc = new Date(
+    Date.UTC(
+      parts.year,
+      parts.month - 1,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      parts.second,
+    ),
+  );
+  const offsetMs =
+    Math.round((localNowAsUtc.getTime() - now.getTime()) / 60000) * 60000;
+  return new Date(localAtTargetAsUtc.getTime() - offsetMs);
+}
