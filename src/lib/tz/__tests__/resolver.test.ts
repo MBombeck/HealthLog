@@ -23,6 +23,7 @@ import {
   formatInUserTz,
   invalidateServerDefaultTimezone,
   invalidateUserTimezone,
+  isNearUtc,
   isValidTimezone,
   resolveServerDefaultTimezone,
   resolveUserTimezone,
@@ -258,6 +259,51 @@ describe("userDayKey", () => {
     const instant = new Date("2026-05-10T14:50:00Z"); // 23:50 Tokyo
     expect(userDayKey(instant, "Asia/Tokyo")).toBe("2026-05-10");
     expect(userDayKey(instant, "Pacific/Auckland")).toBe("2026-05-11");
+  });
+});
+
+describe("isNearUtc", () => {
+  // Pin a summer-side instant so DST is on for Berlin (+2) and off for
+  // most southern-hemisphere zones — keeps the assertions readable.
+  const summer = new Date("2026-07-15T12:00:00.000Z");
+  // Winter-side instant so Berlin is on CET (+1).
+  const winter = new Date("2026-01-15T12:00:00.000Z");
+
+  it("returns true for UTC", () => {
+    expect(isNearUtc("UTC", summer)).toBe(true);
+  });
+
+  it("returns true for Europe/Berlin in both summer and winter", () => {
+    expect(isNearUtc("Europe/Berlin", summer)).toBe(true);
+    expect(isNearUtc("Europe/Berlin", winter)).toBe(true);
+  });
+
+  it("returns true for the ±3h boundary zones", () => {
+    // Europe/Moscow = +3 year-round.
+    expect(isNearUtc("Europe/Moscow", summer)).toBe(true);
+    // Atlantic/Azores = -1 in winter, 0 in summer.
+    expect(isNearUtc("Atlantic/Azores", summer)).toBe(true);
+  });
+
+  it("returns false for zones more than 3 hours from UTC", () => {
+    // Pacific/Honolulu = -10 year-round.
+    expect(isNearUtc("Pacific/Honolulu", summer)).toBe(false);
+    // Asia/Tokyo = +9 year-round.
+    expect(isNearUtc("Asia/Tokyo", summer)).toBe(false);
+    // America/New_York = -4 in summer, -5 in winter.
+    expect(isNearUtc("America/New_York", summer)).toBe(false);
+    // Pacific/Auckland = +13 in southern summer (Jan), +12 in May.
+    expect(isNearUtc("Pacific/Auckland", winter)).toBe(false);
+  });
+
+  it("defaults to near-UTC when the zone string is invalid", () => {
+    // Invalid zones fall back to Europe/Berlin, which is near-UTC.
+    expect(isNearUtc("Mars/Olympus_Mons", summer)).toBe(true);
+  });
+
+  it("uses the current instant when `now` is omitted", () => {
+    // Pure smoke — exercises the default parameter branch.
+    expect(typeof isNearUtc("Europe/Berlin")).toBe("boolean");
   });
 });
 

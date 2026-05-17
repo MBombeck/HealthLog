@@ -67,6 +67,38 @@ export function detectBrowserTimezone(): string {
   }
 }
 
+/**
+ * v1.4.38 W-A — cross-tz fast-path runtime guard.
+ *
+ * Returns `true` when the supplied IANA zone is within ±3 hours of UTC
+ * at the supplied instant. Used by the analytics fast-paths
+ * (`bp-in-target-fast-path`, `correlations-fast-path`) to gate the
+ * rollup read-swap: those helpers key rollup rows on UTC-midnight
+ * `bucketStart` and pair them with per-event streams keyed in the
+ * user's local timezone. For Berlin (+1/+2) the day-key on the rollup
+ * and the day-key on the per-event row line up; for Honolulu (-10)
+ * they slip by a calendar day. Three hours is a conservative pin —
+ * the worst-case slip inside the window is the wall-clock hour-of-day
+ * the user happens to log at, and three hours covers every European
+ * zone plus the western edge of Mid-Atlantic / eastern edge of the
+ * Americas.
+ *
+ * Falls back to "near-UTC" (i.e. returns `true`) when the zone string
+ * is invalid — the resolver layer is already defensive about junk
+ * values, and a `true` here means the caller takes the rollup
+ * fast-path which is the safer default for the canonical Berlin
+ * tenant.
+ *
+ * The `now` argument lets callers honour DST transitions; the offset
+ * of `Europe/Berlin` is +1 in January and +2 in July. Defaults to
+ * "now" so most callers can `isNearUtc(userTz)`.
+ */
+export function isNearUtc(tz: string, now: Date = new Date()): boolean {
+  const safeTz = isValidTimezone(tz) ? tz : DEFAULT_TIMEZONE;
+  const offsetMinutes = tzOffsetMinutes(now, safeTz);
+  return Math.abs(offsetMinutes) <= 3 * 60;
+}
+
 export type FormatInUserTzShape =
   | "iso-with-offset"
   | "wall-clock"
