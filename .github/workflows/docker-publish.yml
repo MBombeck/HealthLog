@@ -188,7 +188,7 @@ jobs:
       # arm64 layer never poisons an amd64 build).
       - name: Build & push by digest
         id: build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
