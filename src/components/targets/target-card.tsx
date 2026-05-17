@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { moodStabilityLabel } from "@/lib/targets/mood-stability-label";
 import { ConsistencyStrip } from "./consistency-strip";
 import { RangeBar } from "./range-bar";
@@ -343,6 +344,13 @@ export function TargetCard({
   sourceLink,
 }: TargetCardProps) {
   const { t, locale } = useTranslations();
+  // v1.4.37 W4a item 9 — when the operator disables the Coach
+  // feature flag globally, every per-card "Ask the coach" CTA must
+  // disappear (not greyed-out, not a placeholder). The card's
+  // existing `aiEnabled` gate guards on the user-level provider
+  // chain; this flag guards on the operator-level feature switch.
+  // Both must be ON for the CTA to mount.
+  const flags = useFeatureFlags();
 
   // v1.4.25 W3f — per-card edit affordance. Cog top-right of every
   // card opens the edit dialog; the dialog handles the read-only path
@@ -668,7 +676,7 @@ export function TargetCard({
             source link right. `mt-auto` pins to card bottom so grid
             cells align. */}
         <div className="mt-auto flex flex-row items-center justify-between gap-3 pt-1">
-          {aiEnabled && (
+          {aiEnabled && flags.coach && (
             <TargetCoachButton
               prefill={coachPrefill}
               sources={coachSources}
