@@ -39,6 +39,8 @@ vi.mock("@parse/node-apn", () => {
     public threadId: string | undefined;
     public collapseId: string | undefined;
     public payload: unknown;
+    public category: string | undefined;
+    public mutableContent: boolean | undefined;
     constructor() {
       notificationCtorMock();
     }
@@ -418,5 +420,69 @@ describe("sendViaApns — dispatcher fan-out", () => {
     });
     const note = sendMock.mock.calls[0][0];
     expect(note.alert.body).toBe("take meds");
+  });
+
+  it("forwards eventType as aps.category so iOS renders action buttons", async () => {
+    // Wires the v0.5.4 contract: MEDICATION_REMINDER on the server must
+    // surface as `aps.category = "MEDICATION_REMINDER"` so iOS looks up
+    // the UNNotificationCategory the app registered at launch and
+    // renders Take / Snooze 15 / Skip on the lock-screen.
+    vi.mocked(prisma.device.findMany).mockResolvedValueOnce([
+      { id: "d1", apnsToken: "tok-a", apnsEnvironment: "sandbox" },
+    ] as never);
+    sendMock.mockResolvedValueOnce({ sent: [{ device: "tok-a" }], failed: [] });
+    await sendViaApns("u-1", {
+      title: "t",
+      message: "m",
+      eventType: "MEDICATION_REMINDER",
+      metadata: { medicationId: "med-1", scheduleId: "sched-1" },
+    });
+    const note = sendMock.mock.calls[0][0];
+    expect(note.category).toBe("MEDICATION_REMINDER");
+    expect(note.mutableContent).toBe(true);
+    expect(note.threadId).toBe("MEDICATION_REMINDER");
+    expect(note.payload.medicationId).toBe("med-1");
+    expect(note.payload.scheduleId).toBe("sched-1");
+    expect(note.payload.eventType).toBe("MEDICATION_REMINDER");
+  });
+
+  it("forwards MOOD_REMINDER eventType as aps.category too", async () => {
+    // SR-2 contract: the mood-reminder daily job emits this event-type;
+    // the iOS app registers a `MOOD_REMINDER` category whose only
+    // action opens the mood-entry sheet.
+    vi.mocked(prisma.device.findMany).mockResolvedValueOnce([
+      { id: "d1", apnsToken: "tok-a", apnsEnvironment: "sandbox" },
+    ] as never);
+    sendMock.mockResolvedValueOnce({ sent: [{ device: "tok-a" }], failed: [] });
+    await sendViaApns("u-1", {
+      title: "Stimmung erfassen",
+      message: "Wie geht es dir heute?",
+      eventType: "MOOD_REMINDER",
+      metadata: { scheduledAt: "2026-05-17T20:00:00.000Z" },
+    });
+    const note = sendMock.mock.calls[0][0];
+    expect(note.category).toBe("MOOD_REMINDER");
+    expect(note.threadId).toBe("MOOD_REMINDER");
+    expect(note.payload.scheduledAt).toBe("2026-05-17T20:00:00.000Z");
+  });
+
+  it("forwards explicit category override on sendApnsPush", async () => {
+    // Lower-level entry — directly setting `payload.category` must
+    // propagate to `note.category` so callers that bypass `sendViaApns`
+    // (e.g. an admin test endpoint) keep full control.
+    setEnv(VALID_ENV);
+    sendMock.mockResolvedValueOnce({ sent: [{ device: "abc" }], failed: [] });
+    await sendApnsPush({
+      deviceToken: "abc",
+      environment: "sandbox",
+      payload: {
+        alert: { title: "t", body: "b" },
+        category: "CUSTOM_CATEGORY",
+        mutableContent: true,
+      },
+    });
+    const note = sendMock.mock.calls[0][0];
+    expect(note.category).toBe("CUSTOM_CATEGORY");
+    expect(note.mutableContent).toBe(true);
   });
 });

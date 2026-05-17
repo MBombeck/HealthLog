@@ -198,6 +198,17 @@ model User {
   // a full refresh on the next pair".
   lastSyncedAt DateTime? @map("last_synced_at")
 
+  // v0.5.4 ios-coord — daily mood-reminder opt-in.
+  //
+  // When `true` the reminder worker dispatches a `MOOD_REMINDER`
+  // notification at 22:00 in the user's local timezone if no
+  // `MoodEntry` row exists for the local date yet. Default `false`
+  // because mood capture is an emotional surface — the user has to
+  // explicitly opt in from Settings → Notifications before the
+  // server starts nudging them. The dedup is handled by the
+  // `MoodReminderDispatch` table (one row per user + local date).
+  moodReminderEnabled Boolean @default(false) @map("mood_reminder_enabled")
+
   // v1.4.25 W6c — Doctor-report section toggles.
   // Shape:
   //   { "bp": boolean,
@@ -267,6 +278,12 @@ model User {
   // granularity from the measurement write hooks; WEEK/MONTH/YEAR
   // are enqueued through pg-boss for the worker to fold.
   measurementRollups     MeasurementRollup[]
+  // v0.5.4 ios-coord — per-day dedup ledger for MOOD_REMINDER pushes.
+  // One row per (user, local date) the worker has nudged. Prevents
+  // a second push when the cron rechecks the same hour later in the
+  // 22:00 window (the cron fires every 15 min — without the ledger
+  // a user could see three pushes back-to-back).
+  moodReminderDispatches MoodReminderDispatch[]
 
   @@map("users")
 }
@@ -1171,6 +1188,27 @@ model MoodEntry {
   @@unique([userId, date, moodLoggedAt])
   @@index([userId, date])
   @@map("mood_entries")
+}
+
+// ─── Mood Reminder Dispatch Ledger (v0.5.4 ios-coord) ─────
+//
+// Idempotency guard for the daily 22:00 MOOD_REMINDER push. The
+// reminder cron fires every 15 min — when it lands inside the 22:00
+// window the handler looks up `(userId, date)` here and bails if a row
+// already exists, so the user sees exactly one nudge per local day.
+// `date` is a YYYY-MM-DD string anchored to the user's timezone at
+// dispatch time (same encoding convention as MoodEntry.date).
+model MoodReminderDispatch {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  date         String // YYYY-MM-DD anchored to user.timezone
+  dispatchedAt DateTime @default(now()) @map("dispatched_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, dispatchedAt])
+  @@map("mood_reminder_dispatches")
 }
 
 // ─── Integration Status (v1.4.15) ─────────────────────────

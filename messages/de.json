@@ -2987,5 +2987,9 @@
     "buttonSnoozeOneHour": "🕐 1h",
     "buttonSnoozeThreeHours": "🕐 3h",
     "buttonSkip": "⏭ Überspringen"
+  },
+  "moodReminders": {
+    "dailyTitle": "Stimmung erfassen",
+    "dailyBody": "Wie geht es dir heute?"
   }
 }

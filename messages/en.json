@@ -2987,5 +2987,9 @@
     "buttonSnoozeOneHour": "🕐 1h",
     "buttonSnoozeThreeHours": "🕐 3h",
     "buttonSkip": "⏭ Skip"
+  },
+  "moodReminders": {
+    "dailyTitle": "Log your mood",
+    "dailyBody": "How are you feeling today?"
   }
 }
