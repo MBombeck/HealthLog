@@ -272,6 +272,7 @@ export function MedicationIntakeQuickAdd({
           variant="outline"
           onClick={onCancel}
           disabled={loading}
+          className="min-h-11 sm:min-h-9"
         >
           {t("common.cancel")}
         </Button>
@@ -280,6 +281,7 @@ export function MedicationIntakeQuickAdd({
         type="submit"
         form={formId}
         disabled={loading || !medicationId || medications.length === 0}
+        className="min-h-11 sm:min-h-9"
       >
         {loading ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
@@ -299,7 +301,12 @@ export function MedicationIntakeQuickAdd({
     const emptyFooter = (
       <div className="flex w-full items-center justify-end gap-2">
         {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="min-h-11 sm:min-h-9"
+          >
             {t("common.close")}
           </Button>
         )}
@@ -322,7 +329,12 @@ export function MedicationIntakeQuickAdd({
               {t("dashboard.medicationIntakeQuickAdd.emptyDescription")}
             </p>
           </div>
-          <Button asChild size="sm" variant="outline">
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            className="min-h-11 sm:min-h-9"
+          >
             <Link href="/medications">
               {t("dashboard.medicationIntakeQuickAdd.emptyCta")}
             </Link>

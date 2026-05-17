@@ -144,6 +144,11 @@ describe("<MedicationIntakeQuickAdd> — SSR contract", () => {
     expect(html).not.toContain(
       'data-testid="medication-intake-quick-add-form"',
     );
+    // v1.4.37 W10 — the empty-state CTA must clear the 44 px touch
+    // floor that W-CI raised on the onboarding checklist. The
+    // `size="sm"` default would land at 32 px without an explicit
+    // `min-h-11 sm:min-h-9` override.
+    expect(html).toContain("min-h-11");
   });
 
   it("renders the populated form with picker + dose + time fields", () => {
@@ -164,8 +169,10 @@ describe("<MedicationIntakeQuickAdd> — SSR contract", () => {
     expect(html).toContain(
       'data-testid="medication-intake-quick-add-taken-at"',
     );
-    // 44 px touch floor on every interactive field (WCAG 2.5.5).
-    expect(html.match(/min-h-11/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
+    // 44 px touch floor on every interactive field + the footer Save
+    // button (WCAG 2.5.5). v1.4.37 W10 added the floor to the footer
+    // buttons; the form fields already carried it.
+    expect(html.match(/min-h-11/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
   });
 
   it("does not leak raw i18n keys in either locale", () => {
