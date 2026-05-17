@@ -48,15 +48,17 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
   MoreHorizontal,
 } from "lucide-react";
-import { useId, useState } from "react";
+import { Fragment, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import { CUMULATIVE_DAY_SUM_TYPES } from "@/lib/measurements/cumulative-day-sum";
 import { invalidateKeys, measurementDependentKeys } from "@/lib/query-keys";
 import { DateTimeInput } from "@/components/ui/date-input";
 import {
@@ -64,6 +66,15 @@ import {
   MEASUREMENT_TYPE_ICONS as TYPE_ICONS,
   MEASUREMENT_TYPE_COLORS as TYPE_COLORS,
 } from "./measurement-list-meta";
+
+/**
+ * v1.4.37 W7c — cumulative HK types whose list view collapses to one
+ * row per user-TZ day with an expand-chevron drill-down to the
+ * per-sample chunks. Mirrors the server-side
+ * `CUMULATIVE_DAY_SUM_TYPES` so the route's `groupBy=day` branch and
+ * the client's filter-detection agree on the same five identifiers.
+ */
+const CUMULATIVE_TYPES = new Set<string>(CUMULATIVE_DAY_SUM_TYPES);
 
 interface Measurement {
   id: string;
@@ -73,6 +84,13 @@ interface Measurement {
   source: string;
   measuredAt: string;
   notes: string | null;
+  /**
+   * v1.4.37 W7c — present only on collapsed daily rows returned by
+   * `?type=…&groupBy=day`. Drives the expand chevron + the drill-down
+   * fetch keyed by the user's calendar day.
+   */
+  dayKey?: string;
+  sampleCount?: number;
 }
 
 interface MeasurementListProps {
@@ -140,6 +158,21 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
   const [sortBy, setSortBy] = useState<string>("measuredAt");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
+  // v1.4.37 W7c — set of dayKeys whose drill-down is currently
+  // expanded. Each key maps to a one-shot query that lazy-fetches
+  // the per-sample rows for that calendar day on first open.
+  const [expandedDayKeys, setExpandedDayKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
+  function toggleExpand(dayKey: string) {
+    setExpandedDayKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(dayKey)) next.delete(dayKey);
+      else next.add(dayKey);
+      return next;
+    });
+  }
+
   const [editing, setEditing] = useState<Measurement | null>(null);
   const [editValue, setEditValue] = useState("");
   const [editMeasuredAt, setEditMeasuredAt] = useState("");
@@ -172,6 +205,16 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
     setPage(1);
   }
 
+  // v1.4.37 W7c — when the type filter is a cumulative HK type
+  // (steps, active energy, distance, flights, daylight) the list
+  // collapses to one row per user-TZ day via the route's
+  // `groupBy=day` mode. The chevron in the row drills back into the
+  // per-sample chunks via a separate `dayKey=…` query. Matches the
+  // Apple Health.app / Garmin / Withings pattern documented in
+  // `.planning/research/v1437-step-aggregation.md` §"How the leaders
+  // do it" — never list per-sample chunks as the default view.
+  const isCumulativeFilter = CUMULATIVE_TYPES.has(typeFilter);
+
   const { data, isLoading } = useQuery({
     queryKey: [
       "measurements",
@@ -179,6 +222,7 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
       page,
       sortBy,
       sortDir,
+      isCumulativeFilter ? "groupBy=day" : "raw",
     ],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -187,6 +231,14 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
       params.set("offset", String((page - 1) * PAGE_SIZE));
       params.set("sortBy", sortBy);
       params.set("sortDir", sortDir);
+      if (isCumulativeFilter) {
+        params.set("groupBy", "day");
+        // The collapsed mode synthesises one row per day from the
+        // window of raw samples — bump the per-page row scan so a
+        // wide history can render a full page of daily rows without
+        // missing back-fill from a chatty Apple-Watch day.
+        params.set("limit", String(Math.max(PAGE_SIZE * 50, 1000)));
+      }
       const res = await fetch(`/api/measurements?${params}`);
       if (!res.ok) throw new Error("Failed to fetch");
       const json = await res.json();
@@ -450,62 +502,118 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.measurements.map((m) => (
-                    <TableRow key={m.id}>
-                      <TableCell className="pl-4">
-                        <Badge
-                          variant="secondary"
-                          className={TYPE_COLORS[m.type] ?? ""}
-                        >
-                          {TYPE_LABEL_KEYS[m.type]
-                            ? t(TYPE_LABEL_KEYS[m.type])
-                            : m.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-semibold tabular-nums">
-                        {m.value} {m.unit}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {formatDateTime(m.measuredAt)}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {m.notes ? (
-                          <span title={m.notes}>
-                            {truncateComment(m.notes)}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
+                  {data.measurements.map((m) => {
+                    const isGrouped =
+                      m.dayKey !== undefined && m.sampleCount !== undefined;
+                    const isExpanded = isGrouped
+                      ? expandedDayKeys.has(m.dayKey as string)
+                      : false;
+                    return (
+                      <Fragment key={m.id}>
+                        <TableRow>
+                          <TableCell className="pl-4">
+                            <Badge
+                              variant="secondary"
+                              className={TYPE_COLORS[m.type] ?? ""}
+                            >
+                              {TYPE_LABEL_KEYS[m.type]
+                                ? t(TYPE_LABEL_KEYS[m.type])
+                                : m.type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="font-semibold tabular-nums">
+                            {fmt.integer(m.value)} {m.unit}
+                            {isGrouped && (
+                              <span className="text-muted-foreground ml-2 text-xs font-normal">
+                                {t("measurements.dailyTotalCaption", {
+                                  count: fmt.integer(
+                                    m.sampleCount as number,
+                                  ),
+                                })}
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {formatDateTime(m.measuredAt)}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {m.notes ? (
+                              <span title={m.notes}>
+                                {truncateComment(m.notes)}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {m.source !== "MANUAL" && (
+                              <Badge
+                                variant="outline"
+                                data-testid="measurement-source-badge"
+                                className={`text-xs ${sourceBadgeClass(m.source)}`.trim()}
+                              >
+                                {formatMeasurementSource(m.source, t)}
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="pr-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              {isGrouped ? (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-10 w-10"
+                                  data-testid="measurement-day-expand"
+                                  onClick={() =>
+                                    toggleExpand(m.dayKey as string)
+                                  }
+                                  aria-expanded={isExpanded}
+                                  aria-label={
+                                    isExpanded
+                                      ? t("measurements.collapseDay")
+                                      : t("measurements.expandDay")
+                                  }
+                                >
+                                  <ChevronDown
+                                    className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                                  />
+                                </Button>
+                              ) : (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-10 w-10"
+                                    onClick={() => startEdit(m)}
+                                    aria-label={t("common.edit")}
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <DeleteButton
+                                    onConfirm={() =>
+                                      deleteMutation.mutate(m.id)
+                                    }
+                                  />
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        {isGrouped && isExpanded && (
+                          <TableRow>
+                            <TableCell colSpan={6} className="p-0">
+                              <DayDrillDown
+                                type={m.type}
+                                dayKey={m.dayKey as string}
+                                unit={m.unit}
+                                layout="desktop"
+                              />
+                            </TableCell>
+                          </TableRow>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        {m.source !== "MANUAL" && (
-                          <Badge
-                            variant="outline"
-                            data-testid="measurement-source-badge"
-                            className={`text-xs ${sourceBadgeClass(m.source)}`.trim()}
-                          >
-                            {formatMeasurementSource(m.source, t)}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="pr-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-10 w-10"
-                            onClick={() => startEdit(m)}
-                            aria-label={t("common.edit")}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <DeleteButton
-                            onConfirm={() => deleteMutation.mutate(m.id)}
-                          />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                      </Fragment>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -514,75 +622,116 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
             <div className="space-y-2 md:hidden">
               {data.measurements.map((m) => {
                 const Icon = TYPE_ICONS[m.type];
+                const isGrouped =
+                  m.dayKey !== undefined && m.sampleCount !== undefined;
+                const isExpanded = isGrouped
+                  ? expandedDayKeys.has(m.dayKey as string)
+                  : false;
                 return (
                   <div
                     key={m.id}
-                    className="bg-card border-border flex items-center justify-between rounded-lg border p-3"
+                    className="bg-card border-border rounded-lg border p-3"
                   >
-                    <div className="flex items-center gap-2.5 overflow-hidden">
-                      {Icon && (
-                        <div
-                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${TYPE_COLORS[m.type] ?? ""}`}
-                        >
-                          <Icon className="h-4 w-4" />
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        {/* v1.4.27 MB7 / CF-76 — bump the metadata
-                            badges from `text-[10px]` to `text-[11px]`
-                            so the legibility floor (12 px is the
-                            mobile baseline; 11 px is the lowest
-                            tolerated value for non-primary chrome)
-                            holds across the row. The badge heights
-                            stay at `h-5` / `h-4` since the type-
-                            preface badge owns vertical real estate
-                            inside the headline line. */}
-                        {(m.type === "BLOOD_PRESSURE_SYS" ||
-                          m.type === "BLOOD_PRESSURE_DIA") && (
-                          <Badge
-                            variant="outline"
-                            className="mr-1.5 h-5 px-1 text-[11px]"
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5 overflow-hidden">
+                        {Icon && (
+                          <div
+                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${TYPE_COLORS[m.type] ?? ""}`}
                           >
-                            {t(TYPE_LABEL_KEYS[m.type])}
-                          </Badge>
+                            <Icon className="h-4 w-4" />
+                          </div>
                         )}
-                        <span className="font-semibold tabular-nums">
-                          {m.value} {m.unit}
-                        </span>
-                        <p className="text-muted-foreground truncate text-xs">
-                          <span>{formatDateTime(m.measuredAt)}</span>
-                          {m.source !== "MANUAL" && (
+                        <div className="min-w-0">
+                          {/* v1.4.27 MB7 / CF-76 — bump the metadata
+                              badges from `text-[10px]` to `text-[11px]`
+                              so the legibility floor (12 px is the
+                              mobile baseline; 11 px is the lowest
+                              tolerated value for non-primary chrome)
+                              holds across the row. */}
+                          {(m.type === "BLOOD_PRESSURE_SYS" ||
+                            m.type === "BLOOD_PRESSURE_DIA") && (
                             <Badge
                               variant="outline"
-                              data-testid="measurement-source-badge"
-                              className={`ml-1.5 h-4 px-1 text-[11px] ${sourceBadgeClass(m.source)}`.trim()}
+                              className="mr-1.5 h-5 px-1 text-[11px]"
                             >
-                              {formatMeasurementSource(m.source, t)}
+                              {t(TYPE_LABEL_KEYS[m.type])}
                             </Badge>
                           )}
-                        </p>
-                        {m.notes && (
+                          <span className="font-semibold tabular-nums">
+                            {fmt.integer(m.value)} {m.unit}
+                          </span>
+                          {isGrouped && (
+                            <span className="text-muted-foreground ml-1.5 text-[11px]">
+                              {t("measurements.dailyTotalCaption", {
+                                count: fmt.integer(m.sampleCount as number),
+                              })}
+                            </span>
+                          )}
                           <p className="text-muted-foreground truncate text-xs">
-                            {truncateComment(m.notes)}
+                            <span>{formatDateTime(m.measuredAt)}</span>
+                            {m.source !== "MANUAL" && (
+                              <Badge
+                                variant="outline"
+                                data-testid="measurement-source-badge"
+                                className={`ml-1.5 h-4 px-1 text-[11px] ${sourceBadgeClass(m.source)}`.trim()}
+                              >
+                                {formatMeasurementSource(m.source, t)}
+                              </Badge>
+                            )}
                           </p>
+                          {m.notes && (
+                            <p className="text-muted-foreground truncate text-xs">
+                              {truncateComment(m.notes)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        {isGrouped ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-11"
+                            data-testid="measurement-day-expand"
+                            onClick={() => toggleExpand(m.dayKey as string)}
+                            aria-expanded={isExpanded}
+                            aria-label={
+                              isExpanded
+                                ? t("measurements.collapseDay")
+                                : t("measurements.expandDay")
+                            }
+                          >
+                            <ChevronDown
+                              className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                            />
+                          </Button>
+                        ) : (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-11"
+                              onClick={() => startEdit(m)}
+                              aria-label={t("common.edit")}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <DeleteButton
+                              className="size-11"
+                              onConfirm={() => deleteMutation.mutate(m.id)}
+                            />
+                          </>
                         )}
                       </div>
                     </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-11"
-                        onClick={() => startEdit(m)}
-                        aria-label={t("common.edit")}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <DeleteButton
-                        className="size-11"
-                        onConfirm={() => deleteMutation.mutate(m.id)}
+                    {isGrouped && isExpanded && (
+                      <DayDrillDown
+                        type={m.type}
+                        dayKey={m.dayKey as string}
+                        unit={m.unit}
+                        layout="mobile"
                       />
-                    </div>
+                    )}
                   </div>
                 );
               })}
@@ -804,6 +953,106 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
           )}
       </ResponsiveSheet>
     </>
+  );
+}
+
+/**
+ * v1.4.37 W7c — lazy drill-down for a collapsed cumulative-type day.
+ * Fires a separate `GET /api/measurements?type=…&dayKey=…` only when
+ * the row is expanded; the result is rendered as a nested list of the
+ * per-sample chunks that summed into the parent row's daily total.
+ */
+function DayDrillDown({
+  type,
+  dayKey,
+  unit,
+  layout,
+}: {
+  type: string;
+  dayKey: string;
+  unit: string;
+  layout: "desktop" | "mobile";
+}) {
+  const { t } = useTranslations();
+  const { isAuthenticated } = useAuth();
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["measurement-drilldown", type, dayKey],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.set("type", type);
+      params.set("dayKey", dayKey);
+      params.set("sortDir", "asc");
+      const res = await fetch(`/api/measurements?${params}`);
+      if (!res.ok) throw new Error("Failed to fetch drill-down");
+      const json = await res.json();
+      return json.data as { measurements: Measurement[] };
+    },
+    enabled: isAuthenticated,
+    // The drill-down is per-day — once fetched it rarely needs to
+    // re-fetch (the underlying day has already stabilised for
+    // anything older than the drain's 36 h cutoff). Keep it cached
+    // for the session.
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="text-muted-foreground flex items-center gap-2 py-2 text-xs">
+        <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+        {t("common.loading")}
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="text-destructive py-2 text-xs">
+        {t("measurements.saveError")}
+      </div>
+    );
+  }
+  const rows = data?.measurements ?? [];
+  if (rows.length === 0) {
+    return (
+      <div className="text-muted-foreground py-2 text-xs">
+        {t("measurements.emptyDescription")}
+      </div>
+    );
+  }
+  if (layout === "desktop") {
+    return (
+      <div className="bg-muted/40 space-y-1 p-2">
+        {rows.map((s) => (
+          <div
+            key={s.id}
+            className="flex items-center justify-between gap-3 px-2 py-1 text-xs"
+          >
+            <span className="text-muted-foreground tabular-nums">
+              {formatDateTime(s.measuredAt)}
+            </span>
+            <span className="font-medium tabular-nums">
+              {s.value} {unit}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="bg-muted/40 mt-2 space-y-1 rounded-md p-2">
+      {rows.map((s) => (
+        <div
+          key={s.id}
+          className="flex items-center justify-between gap-2 px-1 py-1 text-xs"
+        >
+          <span className="text-muted-foreground tabular-nums">
+            {formatDateTime(s.measuredAt)}
+          </span>
+          <span className="font-medium tabular-nums">
+            {s.value} {unit}
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }
 
