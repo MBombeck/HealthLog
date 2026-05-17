@@ -328,6 +328,36 @@ describe("<HealthScoreCard>", () => {
     expect(disclaimerOpen?.[0]).toContain("mt-auto");
   });
 
+  // v1.4.37 W4a item 1 — the inner column switched from `flex
+  // flex-col gap-3` to a 7-row grid so the slack collects on row 6
+  // (the provenance accordion) instead of clumping under the
+  // disclaimer. Pin both the grid switch and the `1fr` slack row so
+  // a future refactor can't silently revert to flex and re-introduce
+  // the "Karte hört bei der Trennlinie auf" Marc-reported bug.
+  it("uses a 7-row grid on the inner column so slack distributes on the accordion row", () => {
+    const html = ssr(
+      <HealthScoreCard
+        score={86}
+        band="green"
+        components={baseComponents}
+        delta={null}
+      />,
+    );
+    // The inner column lives directly after the card wrapper. Match
+    // the first <div> that opens after the wrapper and assert the
+    // grid + grid-rows-[...1fr...] contract.
+    const innerColumn = html.match(
+      /<div[^>]*data-slot="health-score-card"[^>]*>\s*(?:<!--[\s\S]*?-->\s*)?<div([^>]*)>/,
+    );
+    expect(innerColumn).not.toBeNull();
+    const innerAttrs = innerColumn?.[1] ?? "";
+    expect(innerAttrs).toContain("grid");
+    expect(innerAttrs).toContain("flex-1");
+    expect(innerAttrs).toContain(
+      "grid-rows-[auto_auto_auto_auto_auto_1fr_auto]",
+    );
+  });
+
   it("exposes the progressbar role + ARIA values for screen readers", () => {
     const html = ssr(
       <HealthScoreCard
