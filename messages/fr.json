@@ -1946,14 +1946,7 @@
       "changelog": "Changelog",
       "docs": "Documentation",
       "linksHeading": "Sources & docs",
-      "updatesHeading": "Updates",
-      "checkUpdates": "Check now",
-      "checking": "Checking…",
-      "lastChecked": "Last checked: {time}",
-      "lastCheckedNever": "Not checked yet",
-      "upToDate": "You are up to date",
-      "newerAvailable": "Newer version: {tag}",
-      "checkFailed": "Could not reach GitHub — try again later"
+      "newerAvailable": "Newer version: {tag}"
     },
     "testConnection": {
       "test": "Test connection",
