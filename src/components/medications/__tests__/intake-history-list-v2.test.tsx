@@ -193,6 +193,29 @@ describe("<IntakeHistoryListV2> — sort indicators", () => {
     expect(html).toContain("arrow-up-down");
   });
 
+  it("applies focus-visible ring + min-h-11 to sort header buttons", () => {
+    const client = makeClient();
+    seedIntake(client, "med-a11y", [
+      {
+        id: "evt-1",
+        medicationId: "med-a11y",
+        scheduledFor: "2026-05-15T08:00:00.000Z",
+        takenAt: "2026-05-15T08:02:00.000Z",
+        skipped: false,
+        source: "WEB",
+        createdAt: "2026-05-15T08:02:00.000Z",
+      },
+    ]);
+    const html = render(
+      <IntakeHistoryListV2 medicationId="med-a11y" />,
+      client,
+    );
+    expect(html).toContain("focus-visible:ring-ring");
+    expect(html).toContain("focus-visible:ring-2");
+    expect(html).toContain("focus-visible:ring-offset-2");
+    expect(html).toContain("min-h-11");
+  });
+
   it("renders pagination controls only when more than one page", () => {
     const client = makeClient();
     // 50 total > pageSize 25 → pagination should render

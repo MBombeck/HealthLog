@@ -188,7 +188,7 @@ export function IntakeHistoryListV2({
                     <button
                       type="button"
                       onClick={() => toggleSort("takenAt")}
-                      className="inline-flex items-center font-medium hover:underline"
+                      className="focus-visible:ring-ring inline-flex min-h-11 items-center rounded-md font-medium hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none sm:min-h-9"
                       aria-label={t("medications.intakeHistorySortByTaken")}
                     >
                       {t("medications.intakeHistoryColTaken")}
@@ -199,7 +199,7 @@ export function IntakeHistoryListV2({
                     <button
                       type="button"
                       onClick={() => toggleSort("scheduledFor")}
-                      className="inline-flex items-center font-medium hover:underline"
+                      className="focus-visible:ring-ring inline-flex min-h-11 items-center rounded-md font-medium hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none sm:min-h-9"
                       aria-label={t("medications.intakeHistorySortByScheduled")}
                     >
                       {t("medications.intakeHistoryColScheduled")}
