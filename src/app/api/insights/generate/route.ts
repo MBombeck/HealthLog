@@ -1,7 +1,10 @@
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
-import { extractFeatures } from "@/lib/insights/features";
+import {
+  extractFeatures,
+  FeaturesPayloadTooLargeError,
+} from "@/lib/insights/features";
 import {
   detectGlp1Plateau,
   buildGlp1PlateauPrompt,
@@ -266,8 +269,37 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   const includeRaw = dbUser?.insightsPrivacyMode === "raw";
-  const features = await extractFeatures(userId, includeRaw);
+  // v1.4.36 W3 T1 — `extractFeatures` enforces a 5 MB ceiling on the
+  // serialised payload. If the raw (bucketed) shape ever blows past
+  // it (regression watch — the v1.4.35 rawMeasurements shape hit
+  // 25.9 MB on Marc's account), the helper throws
+  // `FeaturesPayloadTooLargeError`. We downgrade to the aggregated
+  // shape rather than 500-ing so the user still gets an insight; the
+  // annotate event surfaces the regression to ops via the Logflare
+  // pipeline.
+  let features: Awaited<ReturnType<typeof extractFeatures>>;
+  let payloadDowngraded = false;
+  let payloadOversizeBytes: number | null = null;
+  try {
+    features = await extractFeatures(userId, includeRaw);
+  } catch (err) {
+    if (err instanceof FeaturesPayloadTooLargeError) {
+      payloadDowngraded = true;
+      payloadOversizeBytes = err.sizeBytes;
+      features = await extractFeatures(userId, false);
+    } else {
+      throw err;
+    }
+  }
   const featuresJson = JSON.stringify(features, null, 2);
+  if (payloadDowngraded) {
+    annotate({
+      meta: {
+        insights_features_downgraded: true,
+        insights_features_oversize_bytes: payloadOversizeBytes,
+      },
+    });
+  }
 
   // v1.4.16 phase B8 — pick up the user's persisted comparison toggle
   // and, when active, build a compact prior-period snapshot from the

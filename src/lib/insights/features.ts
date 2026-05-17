@@ -15,6 +15,11 @@ import {
   type CorrelationResult,
 } from "@/lib/analytics/correlations";
 import { getMedicationCategories } from "@/lib/medication-category";
+import { readRollupBuckets } from "@/lib/measurements/rollups";
+import type {
+  MeasurementType,
+  RollupGranularity,
+} from "@/generated/prisma/client";
 
 interface DataCoverage {
   count: number;
@@ -166,13 +171,99 @@ export interface AggregatedFeatures {
   };
 }
 
-export interface RawFeatures extends AggregatedFeatures {
-  rawMeasurements: Array<{
-    type: string;
-    value: number;
-    dayOffset: number; // days ago (anonymized — no exact date)
+/**
+ * One bucketed series. `granularity` decides the bucket width (DAY for
+ * the trailing 90-day window, WEEK for 90→365 days, MONTH for the
+ * 365→1825-day deep history). `bucketStart` is an ISO-8601 UTC
+ * timestamp anchored to the start of the bucket — Postgres
+ * `date_trunc()` semantics, same as the rollup populator.
+ *
+ * Replaces v1.4.35.x `rawMeasurements` (which appended every
+ * measurement row and blew the 10 MB Codex prompt ceiling on power
+ * users with multi-year imports — 25.9 MB observed on Marc's account
+ * with 311 775 rows). Reading from `measurement_rollups` instead caps
+ * the payload at O(types × buckets) regardless of underlying row
+ * count.
+ */
+export interface BucketedSeries {
+  type: string;
+  granularity: RollupGranularity;
+  buckets: Array<{
+    bucketStart: string;
+    mean: number;
+    count: number;
   }>;
 }
+
+export interface RawFeatures extends AggregatedFeatures {
+  bucketedMeasurements: BucketedSeries[];
+}
+
+/**
+ * v1.4.36 W3 T1 — payload size ceiling. The Codex provider rejects
+ * any prompt-string above 10 MB; the features payload is roughly half
+ * the eventual prompt (the JSON dump plus the system + comparison
+ * blocks), so a 5 MB feature payload sits comfortably below the
+ * ceiling even after locale-prefix expansion. Throwing here lets the
+ * route handler downgrade to the non-raw payload + annotate so we
+ * catch the regression instead of blowing the upstream call.
+ */
+export const FEATURES_MAX_BYTES = 5 * 1024 * 1024;
+
+export class FeaturesPayloadTooLargeError extends Error {
+  readonly code = "FEATURES_PAYLOAD_TOO_LARGE";
+  readonly sizeBytes: number;
+  readonly limitBytes: number;
+
+  constructor(sizeBytes: number, limitBytes: number) {
+    super(
+      `Features payload too large: ${sizeBytes} bytes exceeds ${limitBytes} byte cap`,
+    );
+    this.name = "FeaturesPayloadTooLargeError";
+    this.sizeBytes = sizeBytes;
+    this.limitBytes = limitBytes;
+  }
+}
+
+/**
+ * v1.4.36 W3 T1 — bucket-window definitions for the
+ * `bucketedMeasurements` payload. Mirrors the rollup populator's
+ * granularity ladder so the read-side picks up whatever the persistent
+ * table holds without a recompute round-trip.
+ *
+ * The 90 / 365 / 1825-day windows are non-overlapping: each row of
+ * `measurement_rollups` lives at exactly one granularity, and the
+ * downstream model reads the union of the three series per type.
+ * Total volume per type for a Marc-scale power user (5 years of daily
+ * data): 90 DAY + 39 WEEK + 50 MONTH = 179 buckets × ~40 bytes JSON
+ * each ≈ 7 KB. Eight metric types lands at ~56 KB — well under the
+ * 5 MB cap above, vs 25.9 MB for the v1.4.35 rawMeasurements shape.
+ */
+const BUCKET_WINDOWS: Array<{
+  granularity: RollupGranularity;
+  fromDays: number;
+  toDays: number;
+}> = [
+  { granularity: "DAY", fromDays: 0, toDays: 90 },
+  { granularity: "WEEK", fromDays: 90, toDays: 365 },
+  { granularity: "MONTH", fromDays: 365, toDays: 1825 },
+];
+
+/**
+ * Types the bucketed payload covers. Mirrors the aggregate branches
+ * above so the model never sees a bucket for a metric whose aggregate
+ * block was suppressed. New `MeasurementType` enum values flow in by
+ * adding one row; the rollup populator already covers every type.
+ */
+const BUCKETED_TYPES: MeasurementType[] = [
+  "WEIGHT",
+  "BLOOD_PRESSURE_SYS",
+  "BLOOD_PRESSURE_DIA",
+  "PULSE",
+  "BODY_FAT",
+  "SLEEP_DURATION",
+  "ACTIVITY_STEPS",
+];
 
 function stdDev(values: number[]): number | null {
   if (values.length < 2) return null;
@@ -764,20 +855,75 @@ export async function extractFeatures(
     });
   }
 
-  // Raw mode: add anonymized raw data points
+  // v1.4.36 W3 T1 — "raw" mode no longer dumps every measurement row
+  // into the prompt. Instead we attach DAY / WEEK / MONTH bucket means
+  // from `measurement_rollups` so the model gets the same temporal
+  // shape (granular near-term, coarser deep history) at O(buckets)
+  // instead of O(rows). The v1.4.35 shape blew past Codex's 10 MB
+  // string limit on power users (~25.9 MB observed); the bucketed
+  // shape lands at ~50–500 KB per account.
   if (includeRaw) {
+    const bucketedMeasurements = await readBucketedSeries(userId, now);
     const rawFeatures: RawFeatures = {
       ...features,
-      rawMeasurements: measurements.map((m) => ({
-        type: m.type,
-        value: m.value,
-        dayOffset: Math.round(
-          (now - m.measuredAt.getTime()) / (24 * 60 * 60 * 1000),
-        ),
-      })),
+      bucketedMeasurements,
     };
+    enforceSizeGuard(rawFeatures);
     return rawFeatures;
   }
 
+  enforceSizeGuard(features);
   return features;
+}
+
+/**
+ * Read every BUCKETED_TYPES × BUCKET_WINDOWS combination from the
+ * persistent rollup table and project to the wire shape. Empty
+ * (type, granularity) combinations are dropped so the payload never
+ * carries a labelled-but-empty series.
+ */
+async function readBucketedSeries(
+  userId: string,
+  now: number,
+): Promise<BucketedSeries[]> {
+  const series: BucketedSeries[] = [];
+  for (const type of BUCKETED_TYPES) {
+    for (const window of BUCKET_WINDOWS) {
+      const from = new Date(now - window.toDays * 24 * 60 * 60 * 1000);
+      const to = new Date(now - window.fromDays * 24 * 60 * 60 * 1000);
+      const rows = await readRollupBuckets(
+        userId,
+        type,
+        window.granularity,
+        from,
+        to,
+      );
+      if (rows.length === 0) continue;
+      series.push({
+        type,
+        granularity: window.granularity,
+        buckets: rows.map((r) => ({
+          bucketStart: r.bucketStart.toISOString(),
+          mean: Math.round(r.mean * 100) / 100,
+          count: r.count,
+        })),
+      });
+    }
+  }
+  return series;
+}
+
+/**
+ * Hard ceiling on the serialised payload. Throws
+ * `FeaturesPayloadTooLargeError` (tagged with `code` so the route
+ * handler can pattern-match) when the JSON dump crosses
+ * `FEATURES_MAX_BYTES`. The route handler downgrades to the non-raw
+ * shape and annotates so the regression is observable; the model
+ * call still succeeds.
+ */
+function enforceSizeGuard(payload: AggregatedFeatures | RawFeatures): void {
+  const sizeBytes = Buffer.byteLength(JSON.stringify(payload), "utf8");
+  if (sizeBytes > FEATURES_MAX_BYTES) {
+    throw new FeaturesPayloadTooLargeError(sizeBytes, FEATURES_MAX_BYTES);
+  }
 }
