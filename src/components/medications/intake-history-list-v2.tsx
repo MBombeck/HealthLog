@@ -1,0 +1,280 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import Link from "next/link";
+import { Loader2, ArrowUp, ArrowDown, ArrowUpDown, History } from "lucide-react";
+
+import { useAuth } from "@/hooks/use-auth";
+import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+/**
+ * v1.4.36 W4a — Lite intake-history surface.
+ *
+ * The 886-LoC v1 was retired in v1.4.28 (commit 8c81af10) with the
+ * note "no other consumer". The standalone medication-history page
+ * lost its dose timeline as a side effect — Marc reported the page
+ * now shows only the heading for non-GLP-1 meds. This v2 restores a
+ * read-only timeline for ALL medication kinds without the inline CRUD
+ * the v1 carried (edit / delete still happen through the regular
+ * medication-intake routes elsewhere).
+ *
+ * Contract:
+ *  - Paginated 25/page via the existing `?limit=&offset=` query on
+ *    `GET /api/medications/[id]/intake`. The route already supports
+ *    `sortBy=takenAt|scheduledFor|createdAt|source` + `sortDir=asc|desc`.
+ *  - Sortable by `takenAt` (default) and `scheduledFor`. Click the
+ *    header to toggle the direction; switching column resets to desc.
+ *  - Source badge surfaces WEB / API / REMINDER / IMPORT using the
+ *    existing `medications.source*` keys.
+ *  - Empty state copy + CTA back to the daily intake page.
+ *  - No edit-in-row, no delete buttons.
+ */
+
+type IntakeSource = "WEB" | "API" | "REMINDER" | "IMPORT";
+
+interface IntakeEvent {
+  id: string;
+  medicationId: string;
+  scheduledFor: string;
+  takenAt: string | null;
+  skipped: boolean;
+  source: IntakeSource;
+  createdAt: string;
+}
+
+interface IntakeListResponse {
+  events: IntakeEvent[];
+  meta: { total: number; limit: number; offset: number };
+}
+
+interface IntakeHistoryListV2Props {
+  medicationId: string;
+  /** Override the default page size — primarily for tests. */
+  pageSize?: number;
+}
+
+type SortKey = "takenAt" | "scheduledFor";
+
+const DEFAULT_PAGE_SIZE = 25;
+
+export function IntakeHistoryListV2({
+  medicationId,
+  pageSize = DEFAULT_PAGE_SIZE,
+}: IntakeHistoryListV2Props) {
+  const { isAuthenticated } = useAuth();
+  const { t } = useTranslations();
+  const formatters = useFormatters();
+
+  const [sortBy, setSortBy] = useState<SortKey>("takenAt");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(0);
+
+  const offset = page * pageSize;
+
+  const { data, isLoading, isError } = useQuery<IntakeListResponse>({
+    queryKey: [
+      "medications",
+      medicationId,
+      "intake",
+      "list",
+      { sortBy, sortDir, limit: pageSize, offset },
+    ],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        sortBy,
+        sortDir,
+        limit: String(pageSize),
+        offset: String(offset),
+      });
+      const res = await fetch(
+        `/api/medications/${medicationId}/intake?${params.toString()}`,
+      );
+      if (!res.ok) throw new Error("Failed to load intake history");
+      return (await res.json()).data as IntakeListResponse;
+    },
+    enabled: isAuthenticated,
+  });
+
+  const sourceLabels: Record<IntakeSource, string> = useMemo(
+    () => ({
+      WEB: t("medications.sourceWeb"),
+      API: t("medications.sourceApi"),
+      REMINDER: t("medications.sourceReminder"),
+      IMPORT: t("medications.sourceImport"),
+    }),
+    [t],
+  );
+
+  const total = data?.meta.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const events = data?.events ?? [];
+
+  const toggleSort = (key: SortKey) => {
+    if (key === sortBy) {
+      setSortDir((d) => (d === "desc" ? "asc" : "desc"));
+    } else {
+      setSortBy(key);
+      setSortDir("desc");
+    }
+    setPage(0);
+  };
+
+  const sortIndicator = (key: SortKey) => {
+    if (key !== sortBy) {
+      return <ArrowUpDown className="ml-1 inline h-3 w-3 opacity-50" />;
+    }
+    return sortDir === "desc" ? (
+      <ArrowDown className="ml-1 inline h-3 w-3" />
+    ) : (
+      <ArrowUp className="ml-1 inline h-3 w-3" />
+    );
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">
+          {t("medications.intakeHistory")}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pb-4 md:pb-6">
+        {isLoading ? (
+          <div className="flex h-24 items-center justify-center">
+            <Loader2 className="text-muted-foreground h-5 w-5 animate-spin motion-reduce:animate-none" />
+          </div>
+        ) : isError ? (
+          <p className="text-destructive text-sm">
+            {t("medications.loadFailed")}
+          </p>
+        ) : events.length === 0 ? (
+          <EmptyState
+            variant="plain"
+            size="compact"
+            icon={<History className="size-6" />}
+            title={t("medications.intakeHistoryEmptyTitle")}
+            description={t("medications.intakeHistoryEmptyDescription")}
+            action={
+              <Button asChild size="sm">
+                <Link href="/medications">
+                  {t("medications.intakeHistoryEmptyAction")}
+                </Link>
+              </Button>
+            }
+          />
+        ) : (
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("takenAt")}
+                      className="inline-flex items-center font-medium hover:underline"
+                      aria-label={t("medications.intakeHistorySortByTaken")}
+                    >
+                      {t("medications.intakeHistoryColTaken")}
+                      {sortIndicator("takenAt")}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("scheduledFor")}
+                      className="inline-flex items-center font-medium hover:underline"
+                      aria-label={t("medications.intakeHistorySortByScheduled")}
+                    >
+                      {t("medications.intakeHistoryColScheduled")}
+                      {sortIndicator("scheduledFor")}
+                    </button>
+                  </TableHead>
+                  <TableHead>{t("medications.intakeHistoryColStatus")}</TableHead>
+                  <TableHead>{t("medications.intakeHistoryColSource")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {events.map((event) => (
+                  <TableRow key={event.id}>
+                    <TableCell className="text-sm">
+                      {event.takenAt ? formatters.dateTime(event.takenAt) : "—"}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {formatters.dateTime(event.scheduledFor)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={event.skipped ? "outline" : "secondary"}
+                        className="text-xs"
+                      >
+                        {event.skipped
+                          ? t("medications.intakeHistoryStatusSkipped")
+                          : t("medications.intakeHistoryStatusTaken")}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">
+                        {sourceLabels[event.source] ?? event.source}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {totalPages > 1 && (
+              <div className="text-muted-foreground mt-3 flex items-center justify-between text-xs">
+                <span>
+                  {t("medications.intakeHistoryPageInfo", {
+                    page: page + 1,
+                    total: totalPages,
+                    count: total,
+                  })}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                  >
+                    {t("medications.intakeHistoryPrev")}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setPage((p) => Math.min(totalPages - 1, p + 1))
+                    }
+                    disabled={page >= totalPages - 1}
+                  >
+                    {t("medications.intakeHistoryNext")}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

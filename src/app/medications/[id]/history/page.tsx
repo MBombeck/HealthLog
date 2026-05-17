@@ -9,6 +9,7 @@ import { DrugLevelChart } from "@/components/medications/DrugLevelChart";
 import { SideEffectsSection } from "@/components/medications/SideEffectsSection";
 import { SchedulingSection } from "@/components/medications/SchedulingSection";
 import { TitrationSection } from "@/components/medications/TitrationSection";
+import { IntakeHistoryListV2 } from "@/components/medications/intake-history-list-v2";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "@/lib/i18n/context";
@@ -133,6 +134,14 @@ export default function IntakeHistoryPage({
       {medication?.treatmentClass === "GLP1" && (
         <TitrationSection medicationId={id} />
       )}
+
+      {/* v1.4.36 W4a — Lite intake-history table mounted for ALL
+          medication kinds. v1.4.28 dropped the v1 component on the
+          assumption it had no other consumer; the standalone history
+          page lost its dose timeline as a side-effect. The v2 is
+          read-only (no inline CRUD) — edit/delete still flow through
+          the regular intake routes. */}
+      {medication && <IntakeHistoryListV2 medicationId={id} />}
     </div>
   );
 }
