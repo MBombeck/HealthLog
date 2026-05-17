@@ -1,5 +1,92 @@
 # Changelog
 
+## [1.4.38.2] — 2026-05-17 — Mood-reminder hotfix bundle + Settings toggle
+
+Hotfix bundle on top of v1.4.38.1. A six-axis review of the v0.5.4
+iOS-coordination patch surfaced enough real bugs that the
+mood-reminder feature could not have been used safely as shipped:
+the locale resolver demoted four of six supported locales to
+English, the dedup ledger committed before delivery (so a transient
+APNs blip silently nuked the day's nudge), the daily-22:00 timestamp
+drifted by an hour on DST days, the APNs payload forwarded
+channel-specific structures (the Telegram `replyMarkup` keyboard) to
+Apple, and there was no Settings surface for the user to opt in.
+v1.4.38.2 closes all of the above and ships the missing toggle.
+
+### Added
+
+- **Settings toggle for the daily mood reminder.** New card under
+  `/settings/notifications` with a single Switch wired to the user
+  profile flag. Six-locale copy (de/en/es/fr/it/pl) for the card
+  title, description, status text, and toasts. Without this surface
+  the feature shipped in v1.4.38.1 was unreachable for end users.
+- **`DispatchOutcome` return type** on `dispatchNotification` so
+  callers can decide whether the send is committed to their own
+  ledger. Existing callers ignore the return and keep working —
+  the function remains best-effort and never throws.
+- **`localHmAsUtc` helper** in `@/lib/timezone` returns the UTC
+  instant of local `hh:mm` on the local calendar day implied by
+  `now`. Re-derives the offset at the target local time so the
+  result is correct on DST transition days.
+- **Daily 03:25 Europe/Berlin retention cron** for the
+  `mood_reminder_dispatches` ledger: deletes rows older than 90
+  days. Slots between the audit-log cleanup and the cumulative
+  drain.
+
+### Fixed
+
+- **Mood-reminder ledger now writes only after the dispatcher
+  confirms delivery.** A `dispatched = false` outcome (no channel
+  succeeded) leaves the slot empty so the next tick is free to
+  retry once the user adds a channel or upstream recovers.
+- **Mood-reminder locale resolver honours every supported locale.**
+  v1.4.38.1 shipped translations for es/fr/it/pl but the resolver
+  silently demoted those users to English copy.
+- **Mood-reminder FR body restores the apostrophe in `aujourd'hui`.**
+  v1.4.38.1 shipped without it; VoiceOver reads the lockscreen
+  body aloud, so the typo was audible.
+- **Medication-reminder `scheduledFor` and the iOS-snooze
+  `scheduledAt` ISO are now DST-safe.** The previous arithmetic
+  added raw UTC hours to local midnight, which drifted by an hour
+  on spring-forward / fall-back days. The iOS "snooze 15 min"
+  action would otherwise anchor against the wrong baseline twice a
+  year.
+- **Per-user `try` wrapper around the mood-reminder tick.** A
+  single bad row (corrupt timezone, dispatcher exception) used to
+  abort the whole 22:00 candidate pass; now the wide-event records
+  a per-user failure counter and the rest of the cohort is
+  unaffected.
+- **APNs payload whitelists iOS-relevant metadata keys.** The
+  dispatcher's `metadata` is shared across every channel and was
+  forwarding channel-specific payload structures (Telegram's
+  `replyMarkup` inline-keyboard object, ad-hoc extras) into the
+  APNs `userInfo` Apple sees and the iOS notification handler.
+  Allowlist now covers only what iOS actually reads.
+
+### Refactor
+
+- Removed an unused `MoodReminderCandidate` interface and the
+  redundant `moodReminderEnabled` select field from the
+  mood-reminder candidate query (the `where` clause already filters
+  to opted-in users).
+- CHANGELOG entry for v1.4.38.1 rewritten to drop the
+  `EVENT_DEFAULT_ENABLED` identifier reference and describe the
+  default-off posture in user-readable language.
+
+### Tests
+
+- Unit suite 4565 → 4551 (rewrote `mood-reminder.test.ts` for the
+  new contract; net delta is a rewrite, not a coverage loss).
+  Added tests for the ledger-after-delivery semantics, the
+  per-user try wrapper, the P2002-race "lost the race but
+  delivered" path, the six-locale dispatch, and the FR apostrophe
+  regression.
+
+### Operator notes
+
+- No new migration. No env-var change.
+- Coolify auto-deploys main on tag push.
+
 ## [1.4.38.1] — 2026-05-17 — iOS v0.5.4 push-notification coordination
 
 Coordinates the server side of the iOS v0.5.4 release. Two strictly
@@ -17,15 +104,13 @@ without changing existing behaviour.
   metadata gains `scheduledAt` (ISO 8601) so the iOS "snooze 15 min"
   action pins to the schedule slot rather than wall-clock delivery
   time.
-- **Optional `MOOD_REMINDER` daily event.** New per-user opt-in flag
-  (`users.mood_reminder_enabled`, default off) and a 15-minutely
-  worker cron that fires a single `MOOD_REMINDER` push at the user's
-  local 22:00 when no mood has been logged for the local date.
-  Idempotency anchored by the unique `(userId, date)` constraint on
-  the new `mood_reminder_dispatches` ledger — safe under cron
-  re-ticks inside the same 22:00 window and under concurrent workers.
-  Default-off via `EVENT_DEFAULT_ENABLED`; users who never opt in
-  see no behavioural change.
+- **Optional daily mood-reminder event.** New per-user opt-in flag
+  (default off) and a 15-minutely worker cron that fires a single
+  push at the user's local 22:00 when no mood has been logged for
+  the local date. Idempotency is anchored by a unique (user, date)
+  ledger row, so a re-tick inside the same 22:00 window and
+  concurrent workers cannot double-fire. Users who never opt in see
+  no behavioural change.
 
 ### Compatibility
 
