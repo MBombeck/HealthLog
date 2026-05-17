@@ -89,6 +89,22 @@ describe("<TrendsRow>", () => {
     expect(slots.length).toBe(3);
   });
 
+  it("pins every chart slot to h-[140px] so Recharts mounts with a known size (CLS fix)", () => {
+    // v1.4.36 W2 — without an explicit height the Recharts
+    // ResponsiveContainer mounts with width=-1 height=-1 and emits a
+    // console warning per chart. The mood card also drifted taller
+    // than BP / weight on hydration. Pinning the wrapper at 140 px
+    // matches the mini-chart's internal default; the row paints with
+    // zero layout shift.
+    const html = render(<TrendsRow />);
+    const slots =
+      html.match(/data-slot="trends-row-chart-slot"[^>]*class="[^"]*"/g) ?? [];
+    expect(slots.length).toBe(3);
+    for (const slot of slots) {
+      expect(slot).toMatch(/h-\[140px\]/);
+    }
+  });
+
   it("renders annotations when supplied", () => {
     const html = render(
       <TrendsRow

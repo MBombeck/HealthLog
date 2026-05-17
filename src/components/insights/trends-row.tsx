@@ -117,7 +117,7 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
               wrapper (which carries a heavier shell on a default
               shadcn Card) lines up with the BP/weight tiles' lighter
               shell. Both chart types ship the same data-slot now. */}
-          <div data-slot="trends-row-chart-slot" className="shrink-0">
+          <div data-slot="trends-row-chart-slot" className="h-[140px] shrink-0">
             <HealthChartDynamic
               types={["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"]}
               title={t("charts.bloodPressure")}
@@ -139,7 +139,7 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
           data-metric="weight"
           className="flex h-full flex-col gap-2 md:min-h-[300px]"
         >
-          <div data-slot="trends-row-chart-slot" className="shrink-0">
+          <div data-slot="trends-row-chart-slot" className="h-[140px] shrink-0">
             <HealthChartDynamic
               types={["WEIGHT"]}
               title={t("charts.weight")}
@@ -160,7 +160,7 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
           data-metric="mood"
           className="flex h-full flex-col gap-2 md:min-h-[300px]"
         >
-          <div data-slot="trends-row-chart-slot" className="shrink-0">
+          <div data-slot="trends-row-chart-slot" className="h-[140px] shrink-0">
             <MoodChart
               title={t("charts.mood")}
               mini
