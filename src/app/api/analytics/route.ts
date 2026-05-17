@@ -7,7 +7,6 @@ import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
 import { computeSummariesSlice } from "@/lib/analytics/summaries-slice";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
-import { computeBpInTargetWindows } from "@/lib/analytics/bp-in-target";
 import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import { calculateCompliance } from "@/lib/analytics/compliance";
 import {
@@ -31,6 +30,8 @@ import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
 import type { SourcePriorityMetricKey } from "@/lib/validations/source-priority";
 import { ensureUserRollupsFresh } from "@/lib/measurements/rollups";
+import { probeRollupCoverage } from "@/lib/measurements/rollup-coverage";
+import { computeBpInTargetFastPath } from "@/lib/analytics/bp-in-target-fast-path";
 import {
   isCumulativeDaySumType,
   pickCumulativeDaySum,
@@ -154,6 +155,15 @@ async function buildAnalyticsResponse(user: AuthedUser) {
   // warm rollup table on their next read. The route's response
   // shape is untouched.
   await ensureUserRollupsFresh(user.id);
+
+  // v1.4.37 W2 — single per-type coverage probe shared by the
+  // bp_in_target / healthScore / correlations branches below. The
+  // probe is one indexed query against `measurement_rollups`; the
+  // three downstream branches each reuse the resulting `coverage`
+  // map to decide between the rollup-fast-path and the live
+  // fallback. Probing once instead of per-branch keeps the fan-out
+  // cost flat across the three branches.
+  const coverage = await probeRollupCoverage(user.id);
 
   // v1.4.25 W7b — every day-bucket call inside this route now honours
   // the user's display timezone. The legacy `berlinDayKey()` import
@@ -333,57 +343,23 @@ async function buildAnalyticsResponse(user: AuthedUser) {
   const bpTargets = getBpTargets(user.dateOfBirth);
   if (bpTargets) {
     const now = new Date();
-    // v1.4.22 A1 — re-anchor the BD-Zielbereich tile headline to the
-    // last-30-day window. Up to v1.4.19 the headline pinned to the
-    // 30-day average (so 7d / 30d / total all read 50 %). v1.4.19 A1
-    // flipped the headline to all-time, which made the tile correct
-    // but emotionally wrong: the headline was the slowest-moving
-    // aggregate possible, punishing recent improvement. v1.4.22 A1
-    // re-routes the headline to last-30-days and surfaces 7d / 30d /
-    // all-time as a 3-line sub-row so power users still see the
-    // long-arc number without it dominating. The helper still returns
-    // every window — only the headline pick changed.
-    //
-    // v1.4.23 H2 — chunked aggregation replaces an unbounded findMany.
-    // The W2-of-v1.4.20 fix did the right thing semantically (all-time
-    // window for the headline) but read the entire BP table into one
-    // array per type. A 5-year power user holds ~9 000 rows × 2; the
-    // single-shot fetch produced a 50-100 ms Prisma round-trip plus a
-    // ~2 MB allocation per request. Page through in 5 000-row chunks
-    // so the working set stays bounded; accumulate into the same
-    // `BpReading[]` shape the existing helper expects. The
-    // `analytics.bp_in_target.row_count` wide-event meta lets ops
-    // attribute slow requests to specific outlier users.
-    // v1.4.29 M1 — bound the BP-in-target reads to the trailing
-    // 365 days. `computeBpInTargetWindows` only needs the last
-    // year (the longest sub-window it computes is `priorYear`);
-    // pre-bound, each chunked walk pulled the entire BP history
-    // every dashboard mount.
-    const bpInTargetSince = new Date(
-      now.getTime() - 365 * 24 * 60 * 60 * 1000,
-    );
-    const [sysData, diaData] = await Promise.all([
-      fetchMeasurementSeriesChunked(user.id, "BLOOD_PRESSURE_SYS", {
-        since: bpInTargetSince,
-      }),
-      fetchMeasurementSeriesChunked(user.id, "BLOOD_PRESSURE_DIA", {
-        since: bpInTargetSince,
-      }),
-    ]);
-
-    annotate({
-      meta: {
-        analytics: {
-          bp_in_target: {
-            row_count: sysData.length + diaData.length,
-            sys_rows: sysData.length,
-            dia_rows: diaData.length,
-          },
-        },
-      },
+    // v1.4.37 W2 — probe-gated dispatcher replaces the inline chunked
+    // read. When BOTH BP types have DAY-bucket coverage the helper
+    // pairs the per-day MEAN SYS + MEAN DIA from `measurement_rollups`
+    // and counts in-target days against the five reporting windows,
+    // skipping the heavy 365-day chunked walk against `measurements`.
+    // Falls back to the legacy `computeBpInTargetWindows` over a
+    // chunked read when coverage is partial so a brand-new account
+    // (no buckets yet) still sees per-event numbers. The helper emits
+    // a `path: "rollup" | "live"` annotate so prod logs prove which
+    // branch fired. See `bp-in-target-fast-path.ts` for the
+    // documented per-day-mean approximation.
+    const windows = await computeBpInTargetFastPath({
+      userId: user.id,
+      targets: bpTargets,
+      now,
+      coverage,
     });
-
-    const windows = computeBpInTargetWindows(sysData, diaData, bpTargets, now);
     bpInTargetPct = windows.last30Days?.pct ?? null;
     bpInTargetPct7d = windows.last7Days?.pct ?? null;
     bpInTargetPct30d = windows.last30Days?.pct ?? null;
