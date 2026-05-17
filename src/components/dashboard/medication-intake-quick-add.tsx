@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, Pill, Plus } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { useTranslations } from "@/lib/i18n/context";
 import {
@@ -44,15 +45,16 @@ import {
  *      due. Disabled when the user has no active medications — the
  *      sheet body renders an EmptyState-style hint instead of an
  *      unusable form.
- *   2. Dose. Pre-filled from the medication's default dose; editable
- *      for the "took half / took double" cases. Free text (the
- *      medication catalogue stores dose as a free string), so we ship
- *      it as a notes-style append on the intake event via the
- *      existing API — the intake POST itself does not persist a dose
- *      override yet (the event references the medication's current
- *      dose), so a non-default value surfaces as a sonner toast hint
- *      only. Keeping the field editable preserves Marc's "few taps"
- *      contract for the common case while documenting the boundary.
+ *   2. Dose. Pre-filled from the medication's catalogue dose for
+ *      visual confirmation ("this is the strength I'm logging"); the
+ *      field is editable but the POST body does NOT carry the dose
+ *      override yet — the intake event always references the
+ *      medication's current catalogue dose. The boundary lives in the
+ *      `intakeSchema` (no `dose` field), so when the user wants to
+ *      record a half/double dose they still edit the medication
+ *      itself on `/medications`. Keeping the input editable preserves
+ *      the visual contract Marc asked for ("show me what I'm
+ *      logging") without misrepresenting the wire shape.
  *   3. Time taken. Defaults to `now` (local datetime-local format
  *      shaped the same as `MoodForm`).
  *
@@ -321,9 +323,9 @@ export function MedicationIntakeQuickAdd({
             </p>
           </div>
           <Button asChild size="sm" variant="outline">
-            <a href="/medications">
+            <Link href="/medications">
               {t("dashboard.medicationIntakeQuickAdd.emptyCta")}
-            </a>
+            </Link>
           </Button>
         </div>
         {footerSlot ? createPortal(emptyFooter, footerSlot) : emptyFooter}
