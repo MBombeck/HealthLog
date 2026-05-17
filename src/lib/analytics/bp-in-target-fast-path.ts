@@ -174,10 +174,27 @@ async function computeFromRollups(
   tzGuard: "near-utc" | "non-utc-live-fallback",
 ): Promise<BpInTargetEnvelope> {
   // v1.4.22 W5 reconcile (Code-H2) — the priorYear window starts 395
-  // days ago. We read 396 days so the boundary day rolls cleanly into
-  // the prior-year bucket without being dropped.
+  // days ago. We read one extra day so the boundary day rolls cleanly
+  // into the prior-year bucket without being dropped.
+  //
+  // v1.4.38 — span the read window via calendar arithmetic ("12 months
+  // back, then 31 more days") instead of `now - 396 * 24h`. On a leap
+  // year the 396-day constant is 1 day shy of the intended priorYear
+  // span, so the boundary day disappears from the rollup-derived
+  // envelope while the live path's per-event walk keeps it. Below the
+  // n=20 surface gate this rarely matters in practice — but the
+  // helpers stay calendar-correct now so a leap-year edge can never
+  // silently shift the priorYear pct.
   const DAY_MS = 24 * 60 * 60 * 1000;
-  const readSince = new Date(now.getTime() - 396 * DAY_MS);
+  const readSince = (() => {
+    const d = new Date(now.getTime());
+    d.setUTCFullYear(d.getUTCFullYear() - 1);
+    // 31 days past the 12-months mark covers the priorYear 395-day
+    // boundary plus the same one-day cushion the original 396-day
+    // constant provided.
+    d.setUTCDate(d.getUTCDate() - 31);
+    return d;
+  })();
 
   const [sysBuckets, diaBuckets] = await Promise.all([
     readRollupBuckets(
