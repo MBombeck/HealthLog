@@ -171,7 +171,11 @@ export function AdminShell({ active, children }: AdminShellProps) {
     if (!activeChip) return;
     activeChip.scrollIntoView({
       block: "nearest",
-      inline: "center",
+      // v1.4.36 W4b — `inline: "start"` pins the active chip to the
+      // left edge of the scroller. `inline: "center"` over-scrolled
+      // and the first one or two chips were unreachable on narrow
+      // viewports.
+      inline: "start",
       behavior: "smooth",
     });
   }, [activeSlug]);
