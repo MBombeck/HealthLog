@@ -252,7 +252,7 @@
       "medicationPlaceholder": "Select a medication",
       "doseLabel": "Dose",
       "dosePlaceholder": "e.g. 5 mg",
-      "doseHint": "Pre-filled with the default dose. Adjust if needed.",
+      "doseHint": "Currently the standard dose is recorded. Variable doses are coming in a later version.",
       "timeLabel": "Time taken",
       "saveError": "Could not save medication intake.",
       "emptyTitle": "No medications yet",

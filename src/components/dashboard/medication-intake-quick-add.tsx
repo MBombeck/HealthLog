@@ -46,15 +46,14 @@ import {
  *      sheet body renders an EmptyState-style hint instead of an
  *      unusable form.
  *   2. Dose. Pre-filled from the medication's catalogue dose for
- *      visual confirmation ("this is the strength I'm logging"); the
- *      field is editable but the POST body does NOT carry the dose
- *      override yet — the intake event always references the
- *      medication's current catalogue dose. The boundary lives in the
- *      `intakeSchema` (no `dose` field), so when the user wants to
- *      record a half/double dose they still edit the medication
- *      itself on `/medications`. Keeping the input editable preserves
- *      the visual contract Marc asked for ("show me what I'm
- *      logging") without misrepresenting the wire shape.
+ *      visual confirmation ("this is the strength I'm logging").
+ *      v1.4.37 W10 — rendered read-only because the POST body has no
+ *      `dose` field; any user edit would be silently dropped. When
+ *      the user wants to record a half/double dose they still edit
+ *      the medication itself on `/medications` until the v1.4.38
+ *      schema grows a `doseOverride` slot. Hint copy below the
+ *      field warns about the constraint so the user's mental model
+ *      tracks what the server persists.
  *   3. Time taken. Defaults to `now` (local datetime-local format
  *      shaped the same as `MoodForm`).
  *
@@ -190,11 +189,13 @@ export function MedicationIntakeQuickAdd({
   const [medicationOverride, setMedicationOverride] = useState<string | null>(
     null,
   );
-  // User-driven dose override; `null` means "use the medication's
-  // default". The picker auto-prefills the dose input by deriving it
-  // from the selected medication during render — keeping it state-free
-  // until the user actually types so we don't fight the linter's
-  // `react-hooks/set-state-in-effect` guard.
+  // v1.4.37 W10 — the dose field is informational only. The intake
+  // POST body has no `dose` slot, so any user edit would be silently
+  // dropped on submit. Until the v1.4.38 schema grows a `doseOverride`
+  // field, render the input as read-only so the user's mental model
+  // tracks what the server actually persists. The state holder is
+  // kept (as `null`) so the medication-switch handler still resets
+  // the slot cleanly if the schema ever grows the field.
   const [doseOverride, setDoseOverride] = useState<string | null>(null);
   const [takenAt, setTakenAt] = useState<string>(getDefaultIntakeAtValue);
   const [loading, setLoading] = useState(false);
@@ -215,8 +216,10 @@ export function MedicationIntakeQuickAdd({
   function handleMedicationChange(value: string) {
     setMedicationOverride(value);
     // Reset the dose override when the medication changes so the new
-    // default flows through on the next render. The user can still
-    // override it after the selection by typing into the dose field.
+    // default flows through on the next render. The dose field is
+    // currently read-only (see v1.4.37 W10 note above), but the reset
+    // stays in place so the slot is ready to switch back to editable
+    // when the v1.4.38 doseOverride schema lands.
     setDoseOverride(null);
   }
 
@@ -401,14 +404,15 @@ export function MedicationIntakeQuickAdd({
           id="medication-intake-dose"
           data-testid="medication-intake-quick-add-dose"
           value={dose}
-          onChange={(e) => setDoseOverride(e.target.value)}
+          readOnly
+          aria-readonly="true"
+          tabIndex={-1}
           placeholder={
             selectedMedication?.dose ??
             t("dashboard.medicationIntakeQuickAdd.dosePlaceholder")
           }
-          enterKeyHint="done"
           autoComplete="off"
-          className="min-h-11"
+          className="min-h-11 bg-muted/40"
         />
         <p className="text-muted-foreground text-xs">
           {t("dashboard.medicationIntakeQuickAdd.doseHint")}

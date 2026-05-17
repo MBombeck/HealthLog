@@ -252,7 +252,7 @@
       "medicationPlaceholder": "Medikament auswählen",
       "doseLabel": "Dosis",
       "dosePlaceholder": "z. B. 5 mg",
-      "doseHint": "Vorbelegt mit der Standarddosis. Bei Bedarf anpassen.",
+      "doseHint": "Aktuell wird die Standarddosis erfasst. Abweichende Dosen kommen in einer kommenden Version.",
       "timeLabel": "Zeitpunkt",
       "saveError": "Einnahme konnte nicht gespeichert werden.",
       "emptyTitle": "Noch keine Medikamente angelegt",
