@@ -525,7 +525,7 @@
     "glp1DosesPerUnitHelp": "Optionnel — Mounjaro KwikPen = 4, Ozempic 0,25/0,5 mg = 4, Wegovy stylo à usage unique = 1. Laisse vide si tu ne veux pas suivre la dose par stylo.",
     "glp1LastInjection": "Dernier rendez-vous : {label}",
     "glp1LastInjectionWithSite": "Dernier rendez-vous : {label} · {site}",
-    "glp1NextInjectionDays": "Suivant:{label} (in {days} days)",
+    "glp1NextInjectionDays": "Suivant : {label} (dans {days} jours)",
     "glp1NextInjectionToday": "Prochain rendez-vous : aujourd’hui",
     "glp1NextInjectionTomorrow": "Prochain rendez-vous : demain",
     "glp1RotationLast": "Dernier site : {site}",
@@ -724,7 +724,7 @@
     "intakeHistoryStatusSkipped": "Ignorée",
     "intakeHistorySortByTaken": "Trier par heure de prise",
     "intakeHistorySortByScheduled": "Trier par heure programmée",
-    "intakeHistoryPageInfo": "Page {page} sur {total}",
+    "intakeHistoryPageInfo": "Page {page} sur {total} · {count} entrées",
     "intakeHistoryPrev": "Précédent",
     "intakeHistoryNext": "Suivant",
     "unitDrops": "gouttes",
@@ -735,8 +735,8 @@
     "dosePlaceholder": "p. ex. 5 mg",
     "labelPlaceholder": "p. ex. Le matin",
     "defaultDose": "Dose standard",
-    "dayDeactivate": "Désactiver le jour",
-    "dayActivate": "Activer le jour",
+    "dayDeactivate": "Désactiver {day}",
+    "dayActivate": "Activer {day}",
     "glp1": {
       "drug": {
         "tirzepatide": {

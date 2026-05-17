@@ -525,7 +525,7 @@
     "glp1DosesPerUnitHelp": "Opcjonalne — Mounjaro KwikPen = 4, Ozempic 0,25/0,5 mg = 4, Wegovy pen jednorazowy = 1. Zostaw puste, jeśli nie chcesz śledzić dawek na pen.",
     "glp1LastInjection": "Ostatni termin: {label}",
     "glp1LastInjectionWithSite": "Ostatni termin: {label} · {site}",
-    "glp1NextInjectionDays": "Dalej:{label} (in {days} days)",
+    "glp1NextInjectionDays": "Następnie: {label} (za {days} dni)",
     "glp1NextInjectionToday": "Następny termin: dziś",
     "glp1NextInjectionTomorrow": "Następny termin: jutro",
     "glp1RotationLast": "Ostatnie miejsce: {site}",
@@ -724,7 +724,7 @@
     "intakeHistoryStatusSkipped": "Pominięty",
     "intakeHistorySortByTaken": "Sortuj wg czasu przyjęcia",
     "intakeHistorySortByScheduled": "Sortuj wg czasu zaplanowanego",
-    "intakeHistoryPageInfo": "Strona {page} z {total}",
+    "intakeHistoryPageInfo": "Strona {page} z {total} · {count} wpisów",
     "intakeHistoryPrev": "Poprzednia",
     "intakeHistoryNext": "Następna",
     "unitDrops": "kropli",
@@ -735,8 +735,8 @@
     "dosePlaceholder": "np. 5 mg",
     "labelPlaceholder": "np. Rano",
     "defaultDose": "Dawka standardowa",
-    "dayDeactivate": "Wyłącz dzień",
-    "dayActivate": "Włącz dzień",
+    "dayDeactivate": "Wyłącz {day}",
+    "dayActivate": "Włącz {day}",
     "glp1": {
       "drug": {
         "tirzepatide": {
