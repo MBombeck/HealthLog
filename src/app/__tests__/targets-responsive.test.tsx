@@ -98,6 +98,22 @@ vi.mock("@/hooks/use-auth", () => ({
   }),
 }));
 
+// v1.4.37 W5 — `/targets/page.tsx` now reads `useFeatureFlags` to gate
+// the Coach drawer + per-card CTAs. The hook resolves QueryClientContext
+// from `@tanstack/react-query`, and this test mocks the library
+// without exposing that context. Mock the hook directly so the page
+// runs with the all-on default (CTAs + drawer mount visible) the
+// responsive assertions below pin.
+vi.mock("@/hooks/use-feature-flags", async () => {
+  const actual = await vi.importActual<
+    typeof import("@/hooks/use-feature-flags")
+  >("@/hooks/use-feature-flags");
+  return {
+    ...actual,
+    useFeatureFlags: () => actual.DEFAULT_ASSISTANT_FLAGS,
+  };
+});
+
 import { I18nProvider } from "@/lib/i18n/context";
 import TargetsPage from "../targets/page";
 

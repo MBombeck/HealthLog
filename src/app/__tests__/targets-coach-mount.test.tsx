@@ -1,23 +1,38 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
  * v1.4.25 W3e — Coach drawer mount + per-card CTA gate.
  *
- * Two scenarios:
+ * Three scenarios:
  *   1. AI provider configured → per-card "Ask Coach" CTAs render
  *      alongside each card; the drawer is mounted at the page level.
  *   2. AI provider NOT configured → CTAs are completely absent (no
- *      broken-button state) but the drawer mount stays present (it's
- *      controlled by the parent regardless; no harm in mounting it
- *      collapsed, and it costs ~0 since closed Sheets render only the
- *      portal root).
+ *      broken-button state).
+ *   3. v1.4.37 W5 — operator's global Coach flag off → both the CTAs
+ *      and the page-level drawer mount vanish. The flag default is
+ *      all-on for fresh installs and on any fetch error, so the path
+ *      stays open by default (mocked via `useFeatureFlags` below).
  */
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
   usePathname: () => "/targets",
 }));
+
+let coachFlag = true;
+vi.mock("@/hooks/use-feature-flags", async () => {
+  const actual = await vi.importActual<
+    typeof import("@/hooks/use-feature-flags")
+  >("@/hooks/use-feature-flags");
+  return {
+    ...actual,
+    useFeatureFlags: () => ({
+      ...actual.DEFAULT_ASSISTANT_FLAGS,
+      coach: coachFlag,
+    }),
+  };
+});
 
 const sampleData = {
   targets: [
@@ -110,6 +125,10 @@ function render() {
 }
 
 describe("/targets page — Coach drawer mount + CTA gate", () => {
+  beforeEach(() => {
+    coachFlag = true;
+  });
+
   it("renders the per-card Coach CTA when an AI provider is configured", () => {
     providerChainResponse = { activeProvider: "openai" };
     const html = render();
@@ -129,5 +148,28 @@ describe("/targets page — Coach drawer mount + CTA gate", () => {
     // Same as the "no provider" branch — until we know the provider is
     // configured we don't render a CTA whose click would 404.
     expect(html).not.toContain('data-slot="target-coach-cta"');
+  });
+
+  // v1.4.37 W5 — Marc directive: when the operator turns off the
+  // global Coach flag, every Coach affordance on /targets must vanish.
+  // That is BOTH the per-card CTAs (currently gated through `aiEnabled`)
+  // AND the page-level <CoachDrawer> mount — so the SSE machinery,
+  // Sheet portal and source-chip thread never load.
+  it("hides every per-card Coach CTA when the global Coach flag is off", () => {
+    coachFlag = false;
+    providerChainResponse = { activeProvider: "openai" };
+    const html = render();
+    expect(html).not.toContain('data-slot="target-coach-cta"');
+  });
+
+  it("does not mount the CoachDrawer when the global Coach flag is off", () => {
+    coachFlag = false;
+    providerChainResponse = { activeProvider: "openai" };
+    const html = render();
+    // The drawer renders a Sheet that the body markup exposes via a
+    // role + the i18n key it carries. We grep on the localised
+    // composer label that the drawer always paints.
+    expect(html).not.toContain('data-slot="coach-drawer"');
+    expect(html).not.toContain('data-slot="coach-drawer-composer"');
   });
 });

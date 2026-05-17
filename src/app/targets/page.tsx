@@ -15,6 +15,7 @@ import {
 import { TargetsSummaryHeader } from "@/components/targets/targets-summary-header";
 import { CoachDrawer } from "@/components/insights/coach-panel/coach-drawer";
 import { useCoachHandoff } from "@/hooks/use-coach-handoff";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 
 type TargetData = TargetCardData;
 
@@ -154,7 +155,15 @@ export default function TargetsPage() {
     },
     enabled: isAuthenticated,
   });
-  const aiEnabled = chainStatus?.activeProvider != null;
+  // v1.4.37 W5 — operator's global Coach flag layered on top of the
+  // per-user provider chain. Either gate disables every Coach
+  // affordance on this page: the per-card CTAs (via `aiEnabled`
+  // threaded into <TargetCard>) and the page-level <CoachDrawer> mount
+  // below. The flag default is all-on for fresh installs and on any
+  // fetch error, so the path stays open by default.
+  const flags = useFeatureFlags();
+  const coachEnabled = flags.coach;
+  const aiEnabled = coachEnabled && chainStatus?.activeProvider != null;
 
   // v1.4.25 W3e — Coach drawer state owned by the page. The per-card
   // CTA + summary header both feed the same drawer so the user only
@@ -281,13 +290,20 @@ export default function TargetsPage() {
 
       {/* v1.4.25 W3e — Coach drawer mounted at the page level. The
           drawer is fully-controlled; per-card CTAs flip `coachOpen`
-          and seed `coachPrefill` via the `askCoach()` hook callback. */}
-      <CoachDrawer
-        open={coachOpen}
-        onOpenChange={setCoachOpen}
-        prefill={coachPrefill}
-        key={`coach-drawer-${coachScope?.sources?.join(",") ?? "default"}`}
-      />
+          and seed `coachPrefill` via the `askCoach()` hook callback.
+          v1.4.37 W5 — short-circuit when the operator turned the
+          global Coach flag off so the SSE machinery + Sheet portal
+          never mount. The per-card CTAs already hide via `aiEnabled`
+          above, so the drawer can never be triggered with the flag
+          off; the gate is defence-in-depth. */}
+      {coachEnabled && (
+        <CoachDrawer
+          open={coachOpen}
+          onOpenChange={setCoachOpen}
+          prefill={coachPrefill}
+          key={`coach-drawer-${coachScope?.sources?.join(",") ?? "default"}`}
+        />
+      )}
     </div>
   );
 }
