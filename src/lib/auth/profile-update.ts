@@ -6,12 +6,18 @@
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { profileSchema } from "@/lib/validations/auth";
+import { isValidTimezone } from "@/lib/tz/format";
 import { z } from "zod/v4";
 
 const extendedProfileSchema = profileSchema.extend({
   displayName: z.string().min(1).max(80).nullable().optional(),
   locale: z.enum(["de", "en"]).nullable().optional(),
-  timezone: z.string().min(1).max(64).optional(),
+  timezone: z
+    .string()
+    .min(1)
+    .max(64)
+    .refine(isValidTimezone, "Invalid IANA timezone")
+    .optional(),
 });
 
 export type ApplyProfileInput = z.infer<typeof extendedProfileSchema>;
