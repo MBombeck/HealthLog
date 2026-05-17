@@ -326,7 +326,12 @@ export function GettingStartedChecklist() {
           onClick={() => setExpanded((prev) => !prev)}
           aria-expanded={expanded}
           aria-controls="getting-started-body"
-          className="hover:text-foreground -m-1 flex min-w-0 flex-1 items-center gap-2 rounded-md p-1 text-left transition-colors"
+          // v1.4.37 W-CI — lift the toggle to clear the WCAG 2.5.5 mobile
+          // tap-target floor on Pixel-5 (Marc's iOS-textarea-zoom sweep
+          // pinned the floor at 44 px; the previous `p-1` padding left
+          // the toggle at 32 px). `sm:min-h-10` returns to the desktop
+          // 40 px tier so the dashboard header rhythm is unchanged.
+          className="hover:text-foreground -m-1 flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-md p-1 text-left transition-colors sm:min-h-10"
         >
           <ChevronDown
             aria-hidden="true"
@@ -353,7 +358,14 @@ export function GettingStartedChecklist() {
         <Button
           type="button"
           variant="ghost"
-          className="text-muted-foreground hover:text-foreground"
+          // v1.4.37 W-CI — the shadcn `default` Button is `h-10` (40 px)
+          // across breakpoints; lift to 44 px on mobile to clear the
+          // WCAG 2.5.5 floor that the rest of the input primitives
+          // follow via `h-11 sm:h-10`. The dismiss CTA is one of the
+          // few primary buttons rendered above the fold on the
+          // onboarded-user dashboard so the regression was visible to
+          // the touch-target spec.
+          className="text-muted-foreground hover:text-foreground min-h-11 sm:min-h-10"
           onClick={() => setDismissedAll(true)}
         >
           {t("gettingStarted.dismissAll")}

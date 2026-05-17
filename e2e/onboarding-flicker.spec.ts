@@ -59,7 +59,15 @@ test.describe("dashboard onboarding card flicker guard", () => {
     // would be unmistakable to the visibility probes below; the fix
     // works by NOT rendering until this resolves, so even with the
     // delay the card stays invisible the whole time.
-    await page.route("**/api/analytics", async (route) => {
+    //
+    // v1.4.37 W-CI — match `/api/analytics` AND any sliced variant
+    // (`?slice=summaries`). The previous string glob `**/api/analytics`
+    // missed the IW1 slim-slice URL so the checklist hook's analytics
+    // query fell through to the real route in CI; on a fresh seed user
+    // the real route returns 0 measurements which flipped the
+    // `stillInSetup` branch true and made the card visible — exactly
+    // the regression this spec exists to catch.
+    await page.route(/\/api\/analytics(\?|$)/, async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 250));
       await route.fulfill({
         status: 200,
@@ -174,7 +182,7 @@ test.describe("dashboard onboarding card flicker guard", () => {
         }),
       }),
     );
-    await page.route("**/api/analytics", (route) =>
+    await page.route(/\/api\/analytics(\?|$)/, (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
