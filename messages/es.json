@@ -2790,6 +2790,16 @@
     },
     "user": {
       "telegramTestBody": "HealthLog: conexión correcta. Las notificaciones de Telegram están activas."
+    },
+    "moodReminder": {
+      "title": "Recordatorio diario de ánimo",
+      "description": "Aviso suave a las 22:00 si aún no has registrado el ánimo del día. Se envía solo por canales ya configurados (Telegram, ntfy, Web Push, Apple Push) y permanece en silencio una vez que has registrado el ánimo hoy.",
+      "toggleAria": "Alternar recordatorio diario de ánimo",
+      "statusOn": "Activo a las 22:00 hora local",
+      "statusOff": "Desactivado",
+      "enabledToast": "Recordatorio de ánimo activado.",
+      "disabledToast": "Recordatorio de ánimo desactivado.",
+      "saveError": "No se pudo guardar. Inténtalo de nuevo."
     }
   },
   "i18n": {

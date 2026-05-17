@@ -2790,6 +2790,16 @@
     },
     "user": {
       "telegramTestBody": "HealthLog: Verbindung hergestellt. Telegram-Benachrichtigungen sind aktiv."
+    },
+    "moodReminder": {
+      "title": "Tägliche Stimmungs-Erinnerung",
+      "description": "Sanfter Anstoß um 22:00 Uhr, falls du heute noch keine Stimmung erfasst hast. Greift nur auf bereits eingerichtete Kanäle (Telegram, ntfy, Web Push, Apple Push) zurück und schweigt, sobald du heute geloggt hast.",
+      "toggleAria": "Tägliche Stimmungs-Erinnerung umschalten",
+      "statusOn": "Aktiv um 22:00 deiner Zeit",
+      "statusOff": "Aus",
+      "enabledToast": "Stimmungs-Erinnerung aktiviert.",
+      "disabledToast": "Stimmungs-Erinnerung deaktiviert.",
+      "saveError": "Speichern fehlgeschlagen. Bitte später erneut versuchen."
     }
   },
   "i18n": {

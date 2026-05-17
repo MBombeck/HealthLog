@@ -2790,6 +2790,16 @@
     },
     "user": {
       "telegramTestBody": "HealthLog: połączenie udane. Powiadomienia Telegram są aktywne."
+    },
+    "moodReminder": {
+      "title": "Codzienne przypomnienie o nastroju",
+      "description": "Delikatne przypomnienie o 22:00, jeśli dziś jeszcze nie zapisano nastroju. Wysyłane tylko skonfigurowanymi już kanałami (Telegram, ntfy, Web Push, Apple Push) i milknie, gdy dziś zapisano nastrój.",
+      "toggleAria": "Włącz lub wyłącz codzienne przypomnienie o nastroju",
+      "statusOn": "Aktywne o 22:00 czasu lokalnego",
+      "statusOff": "Wyłączone",
+      "enabledToast": "Przypomnienie o nastroju włączone.",
+      "disabledToast": "Przypomnienie o nastroju wyłączone.",
+      "saveError": "Zapis nieudany. Spróbuj ponownie."
     }
   },
   "i18n": {

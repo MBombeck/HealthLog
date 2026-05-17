@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
+import { MoodReminderCard } from "@/components/settings/mood-reminder-card";
 import { NotificationStatusCard } from "@/components/settings/notification-status-card";
 import { NtfyCard } from "@/components/settings/ntfy-card";
 import { TelegramCard } from "@/components/settings/telegram-card";
@@ -105,6 +106,9 @@ export function NotificationsSection() {
           <WebPushCard />
         </div>
       )}
+      <div id="mood-reminder" className="scroll-mt-28">
+        <MoodReminderCard isAuthenticated={isAuthenticated} />
+      </div>
     </section>
   );
 }

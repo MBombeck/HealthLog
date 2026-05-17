@@ -2790,6 +2790,16 @@
     },
     "user": {
       "telegramTestBody": "HealthLog: connessione riuscita. Le notifiche Telegram sono attive."
+    },
+    "moodReminder": {
+      "title": "Promemoria quotidiano dell’umore",
+      "description": "Promemoria leggero alle 22:00 se non hai ancora registrato l’umore di oggi. Usa solo i canali già configurati (Telegram, ntfy, Web Push, Apple Push) e tace una volta registrato l’umore di oggi.",
+      "toggleAria": "Attiva o disattiva il promemoria quotidiano dell’umore",
+      "statusOn": "Attivo alle 22:00 ora locale",
+      "statusOff": "Disattivato",
+      "enabledToast": "Promemoria dell’umore attivato.",
+      "disabledToast": "Promemoria dell’umore disattivato.",
+      "saveError": "Salvataggio non riuscito. Riprova."
     }
   },
   "i18n": {

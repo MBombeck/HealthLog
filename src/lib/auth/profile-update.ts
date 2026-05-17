@@ -18,6 +18,7 @@ const extendedProfileSchema = profileSchema.extend({
     .max(64)
     .refine(isValidTimezone, "Invalid IANA timezone")
     .optional(),
+  moodReminderEnabled: z.boolean().optional(),
 });
 
 export type ApplyProfileInput = z.infer<typeof extendedProfileSchema>;
@@ -35,6 +36,7 @@ export interface ApplyProfileResult {
     gender: string | null;
     timezone: string;
     locale: string | null;
+    moodReminderEnabled: boolean;
   };
 }
 
@@ -91,6 +93,9 @@ export async function applyProfileUpdate(
   }
   if (data.locale !== undefined) updates.locale = data.locale;
   if (data.timezone !== undefined) updates.timezone = data.timezone;
+  if (data.moodReminderEnabled !== undefined) {
+    updates.moodReminderEnabled = data.moodReminderEnabled;
+  }
 
   // v1.4.18 — capture the prior locale so we can emit a separate
   // `settings.locale.update` audit row when the locale actually
@@ -138,6 +143,7 @@ export async function applyProfileUpdate(
       gender: updatedUser.gender,
       timezone: updatedUser.timezone,
       locale: updatedUser.locale,
+      moodReminderEnabled: updatedUser.moodReminderEnabled,
     },
   };
 }

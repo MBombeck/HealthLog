@@ -35,6 +35,7 @@ export const GET = apiHandler(async () => {
       heightCm: true,
       locale: true,
       timezone: true,
+      moodReminderEnabled: true,
     },
   });
 
@@ -47,6 +48,7 @@ export const GET = apiHandler(async () => {
     heightCm: dbUser?.heightCm ?? null,
     locale: dbUser?.locale ?? null,
     timezone: dbUser?.timezone ?? "Europe/Berlin",
+    moodReminderEnabled: dbUser?.moodReminderEnabled ?? false,
   });
 });
 
@@ -72,5 +74,6 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     heightCm: result.user.heightCm,
     locale: result.user.locale,
     timezone: result.user.timezone,
+    moodReminderEnabled: result.user.moodReminderEnabled,
   });
 });
