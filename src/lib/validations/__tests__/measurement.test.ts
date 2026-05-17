@@ -235,4 +235,40 @@ describe("measurement validation", () => {
       expect(parsed.success).toBe(false);
     });
   });
+
+  // v1.4.38 — the per-day drill-down branch always returns at most
+  // 1000 rows (one pathological phone-only stepCount day). Push the
+  // cap into the validator so a caller asking for more sees a 422
+  // instead of a silent server-side Math.min clamp.
+  describe("listMeasurementsSchema — v1.4.38 dayKey limit ceiling", () => {
+    it("accepts limit=1000 alongside a dayKey", () => {
+      const parsed = listMeasurementsSchema.safeParse({
+        type: "ACTIVITY_STEPS",
+        dayKey: "2026-05-15",
+        limit: 1000,
+      });
+      expect(parsed.success).toBe(true);
+    });
+
+    it("rejects limit=1001 when dayKey is set (drill-down hard cap)", () => {
+      const parsed = listMeasurementsSchema.safeParse({
+        type: "ACTIVITY_STEPS",
+        dayKey: "2026-05-15",
+        limit: 1001,
+      });
+      expect(parsed.success).toBe(false);
+      if (!parsed.success) {
+        expect(parsed.error.issues[0].message).toMatch(/<=\s*1000/);
+        expect(parsed.error.issues[0].path).toEqual(["limit"]);
+      }
+    });
+
+    it("accepts limit=5000 when dayKey is omitted (legacy ceiling)", () => {
+      const parsed = listMeasurementsSchema.safeParse({
+        type: "ACTIVITY_STEPS",
+        limit: 5000,
+      });
+      expect(parsed.success).toBe(true);
+    });
+  });
 });

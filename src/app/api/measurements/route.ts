@@ -100,9 +100,11 @@ export const GET = apiHandler(async (request: NextRequest) => {
         measuredAt: { gte: dayStart, lt: dayEnd },
       },
       orderBy: { measuredAt: sortDir },
-      // Cap the drill-down — a phone-only stepCount day can hit a few
-      // hundred rows; the route ceiling keeps a pathological day bounded.
-      take: Math.min(limit, 1000),
+      // v1.4.38 — the 1000-row cap now lives on the validator (refine
+      // on `(limit, dayKey)` returning 422 when a caller asks for
+      // more). The route reads `limit` straight through because the
+      // validator has already clamped it.
+      take: limit,
     });
     annotate({
       action: { name: "measurement.list" },

@@ -325,7 +325,19 @@ export const listMeasurementsSchema = z
         "offset is not supported with groupBy=day or dayKey; use a smaller window or omit offset",
       path: ["offset"],
     },
-  );
+  )
+  // v1.4.38 — surface the drill-down cap on the validator so a caller
+  // asking for more than 1000 rows on a per-day branch sees a 422
+  // instead of a silent `Math.min(limit, 1000)` clamp inside the
+  // route. The drill-down returns at most one phone-only stepCount
+  // day's worth of per-sample chunks; 1000 covers the pathological
+  // case with room to spare. Callers that want a wider window should
+  // omit `dayKey` and use `from` / `to` instead.
+  .refine(({ limit, dayKey }) => !(dayKey != null && limit > 1000), {
+    message:
+      "limit must be <= 1000 when dayKey is set; drill-down responses are capped at 1000 rows",
+    path: ["limit"],
+  });
 
 export const createBatchMeasurementSchema = z.object({
   measurements: z.array(createMeasurementSchema).min(1).max(5),
