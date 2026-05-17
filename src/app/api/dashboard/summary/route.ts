@@ -8,6 +8,34 @@
  * The shape is fixed for the iOS client and intentionally normalised —
  * `kind` is iOS-friendly (camelCase), unlike the canonical Prisma enum
  * (BLOOD_PRESSURE_SYS etc.).
+ *
+ * Cold-mount performance (v1.4.38 W-F)
+ * ------------------------------------
+ * The legacy shape ran an unbounded `prisma.measurement.findMany` over
+ * the trailing 7 days plus a second unbounded `findMany` over the
+ * trailing 365 days for the streak-day set. On a power-user account
+ * (Apple Health step samples ≈ thousands per day) those two queries
+ * dominated the wall-clock at ~4.6 s cold even though the DOWNSTREAM
+ * JS code only ever needed:
+ *   - the latest value per type within the 7-day window
+ *   - a small sparkline (≤7 daily aggregates) per type
+ *   - the set of YYYY-MM-DD day-keys with any activity in 365 days
+ *
+ * v1.4.38 swaps the two unbounded reads for SQL aggregates:
+ *   - `DISTINCT ON (type)` over the 7-day window → one row per type
+ *     carrying the latest value + measuredAt (≤ N_metrics rows).
+ *   - `measurement_rollups` DAY buckets keyed `(user_id, granularity,
+ *     bucketStart)` → at most 7 buckets per metric × N_metrics rows.
+ *     Sparkline points become the bucket means rather than individual
+ *     raw samples, which is a *smoother* trend signal for high-volume
+ *     metrics like ACTIVITY_STEPS and bounded for every other metric.
+ *   - `SELECT DISTINCT date_trunc('day', measured_at)::date` over the
+ *     365-day window → at most 365 dates (vs. up to 100k raw rows).
+ *
+ * The whole response is wrapped in the 60 s analytics LRU cache so
+ * subsequent iOS polls inside the window hit memory. Invalidation runs
+ * via the existing `invalidateUserMeasurements` + the v1.4.38-extended
+ * `invalidateUserMedications` hooks.
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
@@ -18,6 +46,7 @@ import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { defaultLocale, type Locale } from "@/lib/i18n/config";
 import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
+import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
 
 const SPARK_DAYS = 7;
 const STREAK_WINDOW_DAYS = 365;
@@ -161,6 +190,34 @@ function computeStreak(activityDays: Set<string>, userTz: string): StreakInfo {
   return { currentDays, longest };
 }
 
+/** v1.4.38 W-F — `DISTINCT ON (type)` row for the most recent reading
+ *  per measurement type inside the 7-day window. One row per metric
+ *  the user touched in the window; replaces the legacy unbounded
+ *  `prisma.measurement.findMany`. */
+interface LatestIn7dRow {
+  type: MeasurementType;
+  value: number;
+  measured_at: Date;
+}
+
+/** v1.4.38 W-F — per-day measurement_rollup bucket inside the 7-day
+ *  window. At most 7 buckets per metric × N metrics — bounded by
+ *  `SPARK_DAYS * |measurementTypes|` rather than the raw row count. */
+interface SparklineRow {
+  type: MeasurementType;
+  bucket_start: Date;
+  mean: number;
+}
+
+/** v1.4.38 W-F — distinct activity day-keys from the streak window.
+ *  The route only needs YYYY-MM-DD strings, so the aggregate runs
+ *  `date_trunc('day', m.measured_at AT TIME ZONE $userTz)` and returns
+ *  the day-keys directly. At most 365 rows; vs. the legacy `findMany`
+ *  which could return tens of thousands. */
+interface ActivityDayRow {
+  day_key: string;
+}
+
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
   annotate({ action: { name: "dashboard.summary" } });
@@ -171,6 +228,42 @@ export const GET = apiHandler(async () => {
   // it).
   const userTz = user.timezone ?? DEFAULT_TIMEZONE;
 
+  // v1.4.38 W-F — wrap the whole response in the 60 s analytics LRU.
+  // Subsequent iOS polls inside the TTL hit memory; measurement /
+  // mood / medication writes invalidate the user-bucket via the
+  // existing `invalidateUserMeasurements` + the v1.4.38-extended
+  // `invalidateUserMedications` hooks.
+  const body = await cached(
+    caches.analytics as ServerCache<Awaited<
+      ReturnType<typeof buildDashboardSummary>
+    >>,
+    `${user.id}|dashboard-summary`,
+    () => buildDashboardSummary(user.id, userTz, buildContext(user)),
+    annotate,
+  );
+
+  return apiSuccess(body);
+});
+
+interface SummaryBuilderContext {
+  greetingName: string;
+  locale: Locale;
+}
+
+function buildContext(
+  user: { displayName: string | null; username: string; locale: string | null },
+): SummaryBuilderContext {
+  const greetingName = user.displayName ?? user.username;
+  const locale: Locale =
+    user.locale === "de" || user.locale === "en" ? user.locale : defaultLocale;
+  return { greetingName, locale };
+}
+
+async function buildDashboardSummary(
+  userId: string,
+  userTz: string,
+  ctx: SummaryBuilderContext,
+) {
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - SPARK_DAYS * 86_400_000);
   const streakWindowStart = new Date(
@@ -186,46 +279,107 @@ export const GET = apiHandler(async () => {
     ...measurementTypeEnum.options,
   ] as MeasurementType[];
 
-  // v1.4.33 maintainer-item-1 — pull per-type all-time counts + latest
-  // timestamps alongside the 7-day sparkline window so the iOS tile
-  // can keep rendering when the recent window is empty but the user
-  // has logged the metric before. `groupBy` with `_count._all` +
-  // `_max(measuredAt)` is a single Postgres aggregate round-trip; no
-  // additional row materialisation beyond the aggregate values
-  // themselves.
-  const [recentMeasurements, allTimeAggregate, todaysIntakes, streakActivity] =
-    await Promise.all([
-      prisma.measurement.findMany({
-        where: {
-          userId: user.id,
-          type: { in: measurementTypes },
-          measuredAt: { gte: sevenDaysAgo },
-        },
-        orderBy: { measuredAt: "asc" },
-        select: { type: true, value: true, measuredAt: true },
-      }),
+  // v1.4.38 W-F — per-sub-query wall-clock timing for prod observability.
+  // Captured on the cache-miss path; the cache-hit path skips this whole
+  // builder. Reported under `meta.dashboard.sub_*_ms` so the next
+  // perf-verify can attribute a regression to a specific sub-query
+  // without re-instrumenting the route.
+  const timings: Record<string, number> = {};
+  const time = async <T>(label: string, builder: () => Promise<T>): Promise<T> => {
+    const t0 = Date.now();
+    const result = await builder();
+    timings[`dashboard.sub_${label}_ms`] = Date.now() - t0;
+    return result;
+  };
+
+  // v1.4.38 W-F — six bounded sub-queries replace the legacy 4
+  // unbounded ones. Row counts are now:
+  //   - latestIn7d: ≤ N metric types (one row per type via DISTINCT ON)
+  //   - sparkBuckets: ≤ SPARK_DAYS × N metric types (typically <80)
+  //   - allTimeAggregate: ≤ N metric types (unchanged)
+  //   - todaysIntakes: ≤ daily intake schedule count (unchanged)
+  //   - streakActivity: ≤ daily intake count × 365 (unchanged)
+  //   - measurementStreakDays: ≤ 365 (was: every raw row in 365d)
+  const [
+    latestIn7d,
+    sparkBuckets,
+    allTimeAggregate,
+    todaysIntakes,
+    streakActivity,
+    measurementStreakDays,
+  ] = await Promise.all([
+    time("latest7d", () =>
+      prisma.$queryRaw<LatestIn7dRow[]>`
+        SELECT DISTINCT ON (m."type")
+          m."type"                                  AS type,
+          m."value"::double precision               AS value,
+          m."measured_at"                           AS measured_at
+        FROM measurements m
+        WHERE m."user_id" = ${userId}
+          AND m."measured_at" >= ${sevenDaysAgo}
+        ORDER BY m."type", m."measured_at" DESC
+      `,
+    ),
+    time("sparkline", () =>
+      prisma.$queryRaw<SparklineRow[]>`
+        SELECT
+          r."type"                                  AS type,
+          r."bucket_start"                          AS bucket_start,
+          r."mean"::double precision                AS mean
+        FROM measurement_rollups r
+        WHERE r."user_id" = ${userId}
+          AND r."granularity" = 'DAY'
+          AND r."bucket_start" >= ${sevenDaysAgo}
+        ORDER BY r."type", r."bucket_start" ASC
+      `,
+    ),
+    time("allTime", () =>
       prisma.measurement.groupBy({
         by: ["type"],
-        where: { userId: user.id, type: { in: measurementTypes } },
+        where: { userId, type: { in: measurementTypes } },
         _count: { _all: true },
         _max: { measuredAt: true },
       }),
+    ),
+    time("todaysIntakes", () =>
       prisma.medicationIntakeEvent.findMany({
         where: {
-          userId: user.id,
+          userId,
           scheduledFor: { gte: todayStart, lt: todayEnd },
         },
         select: { id: true, takenAt: true, skipped: true },
       }),
+    ),
+    time("streakIntakes", () =>
       prisma.medicationIntakeEvent.findMany({
         where: {
-          userId: user.id,
+          userId,
           scheduledFor: { gte: streakWindowStart },
           OR: [{ takenAt: { not: null } }, { skipped: true }],
         },
         select: { takenAt: true, scheduledFor: true },
       }),
-    ]);
+    ),
+    // v1.4.38 W-F — replaces the legacy 365-day `measurement.findMany`
+    // that pulled every raw row in the window only to collapse them to
+    // day-keys in JS. The SQL `date_trunc` returns at most 365 rows
+    // even on accounts with millions of step samples. The `userTz`
+    // conversion is folded server-side so the day boundary matches
+    // `userDayKey`'s output (it formats the timestamp in the user's
+    // tz before slicing YYYY-MM-DD).
+    time("streakDays", () =>
+      prisma.$queryRaw<ActivityDayRow[]>`
+        SELECT DISTINCT
+          to_char(
+            (m."measured_at" AT TIME ZONE ${userTz}),
+            'YYYY-MM-DD'
+          ) AS day_key
+        FROM measurements m
+        WHERE m."user_id" = ${userId}
+          AND m."measured_at" >= ${streakWindowStart}
+      `,
+    ),
+  ]);
 
   // Per-type metadata lookup — typed Map so a metric with no readings
   // at all falls through `metaForType` to the `{ allTimeCount: 0,
@@ -253,20 +407,13 @@ export const GET = apiHandler(async () => {
     };
   }
 
+  // v1.4.38 W-F — activity-day set assembled from the bounded streak
+  // queries. The measurement side already arrives as YYYY-MM-DD keys
+  // from the SQL `date_trunc + AT TIME ZONE` aggregate, byte-identical
+  // to what `userDayKey(measuredAt, userTz)` would produce in JS.
   const activityDays = new Set<string>();
-  for (const m of recentMeasurements)
-    activityDays.add(userDayKey(m.measuredAt, userTz));
-  // Pull a wider measurement window for the streak so it isn't capped by
-  // SPARK_DAYS — but only if the user has any data at all.
-  if (recentMeasurements.length > 0) {
-    const wider = await prisma.measurement.findMany({
-      where: {
-        userId: user.id,
-        measuredAt: { gte: streakWindowStart },
-      },
-      select: { measuredAt: true },
-    });
-    for (const m of wider) activityDays.add(userDayKey(m.measuredAt, userTz));
+  for (const row of measurementStreakDays) {
+    if (row.day_key) activityDays.add(row.day_key);
   }
   for (const e of streakActivity) {
     activityDays.add(userDayKey(e.takenAt ?? e.scheduledFor, userTz));
@@ -274,24 +421,28 @@ export const GET = apiHandler(async () => {
 
   const streak = computeStreak(activityDays, userTz);
 
-  // Per-type latest + sparkline.
-  const byType = new Map<MeasurementType, { value: number; at: Date }[]>();
-  for (const m of recentMeasurements) {
-    const list = byType.get(m.type) ?? [];
-    list.push({ value: m.value, at: m.measuredAt });
-    byType.set(m.type, list);
+  // v1.4.38 W-F — per-type latest (one row per type) + sparkline
+  // (bucket means per day) assembled from the two new SQL aggregates.
+  const latestByType = new Map<MeasurementType, { value: number; at: Date }>();
+  for (const row of latestIn7d) {
+    latestByType.set(row.type, {
+      value: Number(row.value),
+      at: new Date(row.measured_at),
+    });
+  }
+  const sparkByType = new Map<MeasurementType, number[]>();
+  for (const row of sparkBuckets) {
+    const list = sparkByType.get(row.type) ?? [];
+    list.push(Number(row.mean));
+    sparkByType.set(row.type, list);
   }
 
   function latestOf(type: MeasurementType): { value: number; at: Date } | null {
-    const list = byType.get(type);
-    if (!list || list.length === 0) return null;
-    return list[list.length - 1];
+    return latestByType.get(type) ?? null;
   }
 
   function sparkOf(type: MeasurementType): number[] {
-    const list = byType.get(type);
-    if (!list) return [];
-    return list.map((p) => p.value);
+    return sparkByType.get(type) ?? [];
   }
 
   const metrics: MetricCard[] = [];
@@ -324,10 +475,9 @@ export const GET = apiHandler(async () => {
 
   // Blood pressure (paired sys/dia)
   {
-    const sysList = byType.get("BLOOD_PRESSURE_SYS") ?? [];
-    const diaList = byType.get("BLOOD_PRESSURE_DIA") ?? [];
-    const latestSys = sysList[sysList.length - 1] ?? null;
-    const latestDia = diaList[diaList.length - 1] ?? null;
+    const latestSys = latestOf("BLOOD_PRESSURE_SYS");
+    const latestDia = latestOf("BLOOD_PRESSURE_DIA");
+    const sysSpark = sparkOf("BLOOD_PRESSURE_SYS");
     const sysMeta = metaForType("BLOOD_PRESSURE_SYS");
     const diaMeta = metaForType("BLOOD_PRESSURE_DIA");
     // BP is a paired metric — the tile is "alive" whenever either side
@@ -349,8 +499,8 @@ export const GET = apiHandler(async () => {
       latestValue: latestSys?.value ?? null,
       secondaryValue: latestDia?.value ?? null,
       unit: METRIC_UNITS.bloodPressure,
-      trend: trendOf(sysList.map((p) => p.value)),
-      sparkline: sysList.map((p) => p.value),
+      trend: trendOf(sysSpark),
+      sparkline: sysSpark,
       updatedAt:
         latestSys?.at?.toISOString() ??
         latestDia?.at?.toISOString() ??
@@ -443,14 +593,13 @@ export const GET = apiHandler(async () => {
     (e) => e.takenAt !== null && !e.skipped,
   ).length;
 
-  const greetingName = user.displayName ?? user.username;
-  const locale: Locale =
-    user.locale === "de" || user.locale === "en" ? user.locale : defaultLocale;
-  const t = getServerTranslator(locale).t;
+  const t = getServerTranslator(ctx.locale).t;
 
-  return apiSuccess({
+  annotate({ meta: timings });
+
+  return {
     greeting: {
-      salutation: t("dashboard.greetingSalutation", { name: greetingName }),
+      salutation: t("dashboard.greetingSalutation", { name: ctx.greetingName }),
       date: now.toISOString(),
     },
     streak: {
@@ -465,5 +614,5 @@ export const GET = apiHandler(async () => {
     highlightInsight: null,
     metrics,
     lastUpdated: now.toISOString(),
-  });
-});
+  };
+}

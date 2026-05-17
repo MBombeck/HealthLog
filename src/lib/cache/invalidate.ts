@@ -67,6 +67,11 @@ export function invalidateUserMedications(userId: string): void {
   // v1.4.36 W1 — medication writes change the MEDICATION_COMPLIANCE
   // target rollup (compliance7 / compliance30 / consistency strip).
   caches.insightsTargets.deleteByPrefix(userId);
+  // v1.4.38 W-F — `/api/dashboard/summary` lives under the analytics
+  // cache and reads `medicationIntakeEvent` for both today's compliance
+  // tally and the 365-day streak feed. A taken / skipped event must
+  // evict the user-bucket so the next iOS poll reflects the change.
+  caches.analytics.deleteByPrefix(`${userId}|`);
 }
 
 /**

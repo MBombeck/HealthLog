@@ -3,8 +3,13 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    measurement: { findMany: vi.fn(), groupBy: vi.fn() },
+    measurement: { groupBy: vi.fn() },
     medicationIntakeEvent: { findMany: vi.fn() },
+    // v1.4.38 W-F — the route now uses `$queryRaw` for the per-type
+    // latest reading, the 7-day rollup-bucket sparkline, and the
+    // 365-day distinct-day streak set. Three raw calls per request,
+    // in the order the Promise.all dispatches them.
+    $queryRaw: vi.fn(),
   },
 }));
 
@@ -32,6 +37,7 @@ vi.mock("next/headers", () => ({
 import { GET } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -53,7 +59,12 @@ function makeReq(): NextRequest {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
+  // v1.4.38 W-F — three `$queryRaw` invocations land inside the
+  // Promise.all in the order [latest7d, sparkline, streakDays]. The
+  // analytics-cache wrap is also process-local, so we must reset it
+  // between tests to keep cross-test isolation.
+  __resetAllCachesForTests();
+  vi.mocked(prisma.$queryRaw).mockResolvedValue([] as never);
   // v1.4.33 maintainer-item-1 — the route now issues a `groupBy` for
   // per-type all-time count + most-recent timestamp. Default to an
   // empty aggregate so legacy tests keep their "no data" expectations.
