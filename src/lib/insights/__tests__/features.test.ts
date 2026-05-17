@@ -126,26 +126,36 @@ describe("extractFeatures — v1.4.36 W3 bucketed payload", () => {
     expect(features.context.ageYears).toBeGreaterThan(40);
   });
 
-  it("throws FeaturesPayloadTooLargeError when the serialised payload exceeds the 5 MB cap", async () => {
-    // Fabricate an absurdly long bucket list so the JSON dump crosses
-    // the ceiling. ~200 KB per series × 28 series ≈ ~5.6 MB.
-    const giant = new Array(200_000).fill(null).map((_, i) => ({
-      bucketStart: new Date(Date.now() - i * dayMs),
-      count: i,
-      mean: i,
-      minValue: i,
-      maxValue: i,
-      sd: 0,
-      slope: 0,
-      r2: 0,
-      computedAt: new Date(),
-    }));
-    prismaMock.measurementRollup.findMany.mockResolvedValue(giant);
+  // Constructs a ~5.6 MB rollup payload and runs the whole serialiser
+  // pipeline; the slower GitHub-Actions runners cross the default 5 s
+  // budget. Raise this single test only — the rest of the suite stays
+  // on the default timeout. Vitest 4 takes the timeout as a numeric
+  // second argument (the old `it(name, fn, options)` signature was
+  // removed in v4).
+  it(
+    "throws FeaturesPayloadTooLargeError when the serialised payload exceeds the 5 MB cap",
+    { timeout: 30_000 },
+    async () => {
+      // Fabricate an absurdly long bucket list so the JSON dump crosses
+      // the ceiling. ~200 KB per series × 28 series ≈ ~5.6 MB.
+      const giant = new Array(200_000).fill(null).map((_, i) => ({
+        bucketStart: new Date(Date.now() - i * dayMs),
+        count: i,
+        mean: i,
+        minValue: i,
+        maxValue: i,
+        sd: 0,
+        slope: 0,
+        r2: 0,
+        computedAt: new Date(),
+      }));
+      prismaMock.measurementRollup.findMany.mockResolvedValue(giant);
 
-    await expect(extractFeatures("user-1", true)).rejects.toThrow(
-      FeaturesPayloadTooLargeError,
-    );
-  });
+      await expect(extractFeatures("user-1", true)).rejects.toThrow(
+        FeaturesPayloadTooLargeError,
+      );
+    },
+  );
 
   it("exposes the size cap as a public constant", () => {
     expect(FEATURES_MAX_BYTES).toBe(5 * 1024 * 1024);
