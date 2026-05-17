@@ -284,4 +284,23 @@ describe("GET /api/measurements — schema rejections (W10 reconcile)", () => {
     expect(prisma.measurement.findMany).not.toHaveBeenCalled();
   });
 
+  // v1.4.37 W10 H2 — `2026-02-30` is a YYYY-MM-DD string but not a
+  // real calendar date. `new Date()` silently overflows it to March
+  // 2, so the drill-down would point at the wrong day. The validator
+  // refine must reject it at parse time.
+  it("rejects impossible calendar dates on dayKey (2026-02-30)", async () => {
+    const res = await GET(
+      getRequest("type=ACTIVITY_STEPS&dayKey=2026-02-30"),
+    );
+    expect(res.status).toBe(422);
+    expect(prisma.measurement.findMany).not.toHaveBeenCalled();
+  });
+
+  it("rejects impossible month on dayKey (2026-13-01)", async () => {
+    const res = await GET(
+      getRequest("type=ACTIVITY_STEPS&dayKey=2026-13-01"),
+    );
+    expect(res.status).toBe(422);
+    expect(prisma.measurement.findMany).not.toHaveBeenCalled();
+  });
 });

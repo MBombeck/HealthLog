@@ -299,6 +299,22 @@ export const listMeasurementsSchema = z
     dayKey: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "dayKey must be YYYY-MM-DD")
+      // v1.4.37 W10 — a `YYYY-MM-DD` string can satisfy the regex while
+      // still being an impossible calendar date (`2026-02-30`,
+      // `2026-13-01`). `new Date("2026-02-30T00:00:00Z")` silently
+      // overflows to March 2, so the drill-down would return rows from
+      // a different day than the user asked for. The same helper feeds
+      // the admin drain route, so a malformed CLI invocation has the
+      // same blast radius. Reject the impossible shapes at the
+      // validator instead.
+      .refine(
+        (s) => {
+          const parsed = new Date(`${s}T00:00:00Z`);
+          if (Number.isNaN(parsed.getTime())) return false;
+          return s === parsed.toISOString().slice(0, 10);
+        },
+        "dayKey must be a real calendar date (YYYY-MM-DD)",
+      )
       .optional(),
   })
   .refine(
