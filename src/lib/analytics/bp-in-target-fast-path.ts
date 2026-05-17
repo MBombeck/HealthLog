@@ -215,7 +215,7 @@ async function computeFromRollups(
 
   const sysByDay = new Map<string, DayBucketReading>();
   for (const r of sysBuckets) {
-    sysByDay.set(dayKey(r.bucketStart), {
+    sysByDay.set(bucketDayKey(r.bucketStart), {
       day: r.bucketStart,
       meanValue: r.mean,
       perDayCount: r.count,
@@ -223,7 +223,7 @@ async function computeFromRollups(
   }
   const diaByDay = new Map<string, DayBucketReading>();
   for (const r of diaBuckets) {
-    diaByDay.set(dayKey(r.bucketStart), {
+    diaByDay.set(bucketDayKey(r.bucketStart), {
       day: r.bucketStart,
       meanValue: r.mean,
       perDayCount: r.count,
@@ -343,7 +343,25 @@ function bucketWindow(
   };
 }
 
-function dayKey(d: Date): string {
+/**
+ * v1.4.38 — UTC-slice bucket key for the rollup pairing.
+ *
+ * The rollup table stores `bucketStart` as UTC midnight; we slice the
+ * ISO string to get a `YYYY-MM-DD` key in the bucket's own zone, NOT
+ * the user's local zone. That is correct here because both the SYS
+ * and DIA buckets live in UTC and we pair them against each other
+ * inside `computeFromRollups` — not against any user-local data.
+ *
+ * Renamed from the generic `dayKey` to make the UTC nature explicit.
+ * Do NOT swap in `userDayKey()` from `@/lib/tz/resolver` without
+ * first auditing the call sites: `userDayKey` keys per the user's
+ * IANA zone and would produce a different string for a non-near-UTC
+ * tenant, while the rollup `bucketStart` would not. The cross-tz
+ * guard inside `computeBpInTargetFastPath` already routes
+ * non-near-UTC users to the live fallback, so the UTC-slice key is
+ * safe for every code path that reaches this helper.
+ */
+function bucketDayKey(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
