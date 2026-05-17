@@ -22,6 +22,7 @@ import {
   type CoachExcludeMetric,
 } from "@/lib/validations/coach-prefs";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
+import { compactSections } from "@/lib/insights/prompt-compact";
 import { buildGlp1SnapshotBlock } from "./glp1-snapshot";
 import type {
   CoachProvenance,
@@ -817,8 +818,15 @@ async function buildCoachSnapshotImpl(
     timelineRecentDays: DAILY_TIMELINE_DAYS,
   };
 
+  // v1.4.36 W3 T4 — compactSections drops any zero-row block before
+  // serialisation so the prompt never carries a labelled-empty key.
+  // The snapshot is built conditionally above so most empty paths are
+  // already skipped, but the helper catches future regressions and
+  // matches the contract the /insights/generate route applies on its
+  // side of the prompt.
+  const compactSnapshot = compactSections(snapshot);
   return {
-    snapshotJson: JSON.stringify(snapshot, null, 2),
+    snapshotJson: JSON.stringify(compactSnapshot, null, 2),
     provenance: {
       windows: Array.from(windows),
       metrics: Array.from(metrics),

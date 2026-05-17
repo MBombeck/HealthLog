@@ -6,6 +6,7 @@ import {
   FeaturesPayloadTooLargeError,
 } from "@/lib/insights/features";
 import { applyInsightsExcludeFilter } from "@/lib/insights/exclude-filter";
+import { compactSections } from "@/lib/insights/prompt-compact";
 import {
   detectGlp1Plateau,
   buildGlp1PlateauPrompt,
@@ -300,7 +301,15 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // BEFORE serialisation so the model never sees the dropped blocks.
   const excludeList = dbUser?.insightsExcludeMetrics ?? [];
   features = applyInsightsExcludeFilter(features, excludeList);
-  const featuresJson = JSON.stringify(features, null, 2);
+  // v1.4.36 W3 T4 — drop zero-row blocks so the prompt never carries
+  // labelled-empty sections (`"sleep": []`, `"medications": []`,
+  // etc.). Prevents the model from narrating "there are no
+  // medications in your data" when the user explicitly excluded the
+  // block.
+  const compactFeatures = compactSections(
+    features as unknown as Record<string, unknown>,
+  );
+  const featuresJson = JSON.stringify(compactFeatures, null, 2);
   if (payloadDowngraded) {
     annotate({
       meta: {
