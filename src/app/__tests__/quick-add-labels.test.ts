@@ -29,6 +29,13 @@ interface Messages {
   dashboard: {
     quickAddMeasurement: string;
     quickAddMood: string;
+    /**
+     * v1.4.37 W7b — third quick-add row: medication intake. Same
+     * contract as the other two: distinct from siblings and from the
+     * trigger label, otherwise the screen-reader hears "Hinzufügen,
+     * Hinzufügen, Hinzufügen, Hinzufügen" with no way to discriminate.
+     */
+    quickAddMedicationIntake: string;
   };
 }
 
@@ -47,21 +54,26 @@ describe("dashboard quick-add submenu labels", () => {
 
       const measurement = messages.dashboard.quickAddMeasurement;
       const mood = messages.dashboard.quickAddMood;
+      const medicationIntake = messages.dashboard.quickAddMedicationIntake;
       const trigger = messages.common.add;
 
       // Non-empty
       expect(measurement.trim().length).toBeGreaterThan(0);
       expect(mood.trim().length).toBeGreaterThan(0);
+      expect(medicationIntake.trim().length).toBeGreaterThan(0);
 
       // Distinct from each other — the icon is decorative (aria-hidden),
-      // so the only thing distinguishing the two rows is the visible text.
+      // so the only thing distinguishing the rows is the visible text.
       expect(measurement).not.toBe(mood);
+      expect(measurement).not.toBe(medicationIntake);
+      expect(mood).not.toBe(medicationIntake);
 
       // Distinct from the trigger label. The trigger sits ABOVE the menu
       // and announces itself first; if a menu item then repeats the same
       // word, screen-readers / users get no signal which row does what.
       expect(measurement).not.toBe(trigger);
       expect(mood).not.toBe(trigger);
+      expect(medicationIntake).not.toBe(trigger);
     },
   );
 });
