@@ -8,10 +8,16 @@ import { STORAGE_STATE_PATH } from "./setup/global-setup";
  * (`h-10`) on `Input`, `Select` trigger, and the native `<select>`
  * primitives per the WCAG 2.5.5 tap-target sweep (MB2). The
  * Dashboard Compare-to trigger followed the same path.
+ * v1.4.34.5 — mobile input floor lifted again from 40 px (`h-10`) to
+ * 44 px (`h-11`) to clear the WCAG 2.5.5 touch-target minimum on
+ * iOS Safari (textarea-zoom sweep). The `sm:h-10` desktop tier is
+ * unchanged; this spec runs at the Pixel 5 viewport so the mobile
+ * 44 px floor is what we lock in.
  *
  * The fixes that still apply:
  *
- *   - 40 px (`h-10`) is the canonical input height across Settings.
+ *   - 44 px (`h-11` on mobile, `sm:h-10` on >=sm) is the canonical
+ *     input height across Settings.
  *   - Title + action rows use `flex-col` on `<sm` and `flex-row` on
  *     `>=sm` so the action button stacks below on mobile.
  *   - Sprache pairs with date-of-birth in a single `sm:grid-cols-2`
@@ -28,7 +34,7 @@ test.describe("Settings mobile consistency (Pixel 5)", () => {
     test.skip(testInfo.project.name !== "chromium-mobile", "mobile-only spec");
   });
 
-  test("/settings/account: every form input renders at 40 px", async ({
+  test("/settings/account: every form input renders at 44 px", async ({
     page,
   }) => {
     await page.goto("/settings/account", { waitUntil: "networkidle" });
@@ -50,7 +56,7 @@ test.describe("Settings mobile consistency (Pixel 5)", () => {
 
     expect(formInputs.length).toBeGreaterThan(0);
     for (const inp of formInputs) {
-      expect.soft(inp.height, `${inp.tag}#${inp.id} (${inp.type})`).toBe(40);
+      expect.soft(inp.height, `${inp.tag}#${inp.id} (${inp.type})`).toBe(44);
     }
   });
 
@@ -132,7 +138,7 @@ test.describe("Settings mobile consistency (Pixel 5)", () => {
     );
   });
 
-  test("/settings/dashboard: Compare-to trigger renders at 40 px", async ({
+  test("/settings/dashboard: Compare-to trigger renders at 44 px", async ({
     page,
   }) => {
     await page.goto("/settings/dashboard", { waitUntil: "networkidle" });
@@ -141,10 +147,10 @@ test.describe("Settings mobile consistency (Pixel 5)", () => {
     const trigger = page.locator("#comparison-baseline");
     await expect(trigger).toBeVisible();
     const h = await trigger.evaluate((el) => el.getBoundingClientRect().height);
-    expect(Math.round(h)).toBe(40);
+    expect(Math.round(h)).toBe(44);
   });
 
-  test("/settings/ai: every native select renders at 40 px", async ({
+  test("/settings/ai: every native select renders at 44 px", async ({
     page,
   }) => {
     await page.goto("/settings/ai", { waitUntil: "networkidle" });
@@ -158,7 +164,7 @@ test.describe("Settings mobile consistency (Pixel 5)", () => {
 
     expect(heights.length).toBeGreaterThan(0);
     for (const h of heights) {
-      expect.soft(h).toBe(40);
+      expect.soft(h).toBe(44);
     }
   });
 });
