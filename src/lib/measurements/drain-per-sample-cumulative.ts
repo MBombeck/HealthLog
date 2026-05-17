@@ -40,6 +40,20 @@ import {
   hkIdentifierForType,
 } from "./apple-health-mapping";
 
+/**
+ * v1.4.38 — canonical cutoff for the nightly scheduled drain. Rows
+ * whose `measuredAt` is newer than `now() - DRAIN_CUMULATIVE_CUTOFF_HOURS`
+ * are excluded so today's still-in-flight Apple Watch syncs stay as
+ * per-sample rows in the user's "today" view. 36 hours covers the
+ * previous calendar day plus a generous trailing sync window for
+ * watches that weren't worn at midnight. The CLI and the admin route
+ * import the constant for visibility but deliberately pass `undefined`
+ * by default so an explicit one-shot drain collapses every row the
+ * operator points it at; pass the constant explicitly when mirroring
+ * the nightly behaviour from an interactive shell.
+ */
+export const DRAIN_CUMULATIVE_CUTOFF_HOURS = 36;
+
 /** Per-(user, type, day) action summary. */
 export interface DrainBucket {
   userId: string;

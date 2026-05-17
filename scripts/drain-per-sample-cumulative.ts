@@ -32,7 +32,18 @@
 import "dotenv/config";
 
 import { prisma } from "@/lib/db";
-import { drainPerSampleCumulative } from "@/lib/measurements/drain-per-sample-cumulative";
+import {
+  drainPerSampleCumulative,
+  DRAIN_CUMULATIVE_CUTOFF_HOURS,
+} from "@/lib/measurements/drain-per-sample-cumulative";
+
+// v1.4.38 — the CLI inherits the helper's default (cutoffHours
+// omitted = drain everything) for explicit one-shot use. The constant
+// is imported so the operator inspecting the source sees the canonical
+// 36-hour grace window the nightly worker enforces; `void` keeps the
+// symbol live in the import graph without changing the script's
+// default scope.
+void DRAIN_CUMULATIVE_CUTOFF_HOURS;
 
 interface ParsedArgs {
   userId?: string;

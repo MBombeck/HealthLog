@@ -30,7 +30,10 @@ import {
   safeJson,
 } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
-import { drainPerSampleCumulative } from "@/lib/measurements/drain-per-sample-cumulative";
+import {
+  drainPerSampleCumulative,
+  DRAIN_CUMULATIVE_CUTOFF_HOURS,
+} from "@/lib/measurements/drain-per-sample-cumulative";
 
 interface DrainBody {
   userId?: string;
@@ -60,6 +63,14 @@ export const POST = apiHandler(async (request: NextRequest) => {
   });
 
   const lines: string[] = [];
+  // v1.4.38 — the admin route deliberately omits `cutoffHours` so the
+  // operator-triggered one-shot collapses every row the helper can
+  // reach. `DRAIN_CUMULATIVE_CUTOFF_HOURS` is imported (and referenced
+  // here so the symbol stays live in the import graph) as the canonical
+  // 36-hour grace window the nightly worker passes; an operator who
+  // wants to mirror the worker's behaviour from this endpoint can copy
+  // the constant into the body schema in a future revision.
+  void DRAIN_CUMULATIVE_CUTOFF_HOURS;
   const summary = await drainPerSampleCumulative(prisma, {
     userId,
     dryRun,

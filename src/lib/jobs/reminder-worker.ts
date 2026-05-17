@@ -67,7 +67,10 @@ import {
   type RollupFullBackfillPayload,
   type RollupRecomputePayload,
 } from "@/lib/measurements/rollups";
-import { drainPerSampleCumulative } from "@/lib/measurements/drain-per-sample-cumulative";
+import {
+  drainPerSampleCumulative,
+  DRAIN_CUMULATIVE_CUTOFF_HOURS,
+} from "@/lib/measurements/drain-per-sample-cumulative";
 import { expireStaleInUseItems } from "@/lib/medications/inventory/service";
 import { rotateLegacyMoodLogSecrets } from "@/lib/moodlog-secret";
 import { deleteMessage } from "@/lib/telegram";
@@ -176,7 +179,10 @@ const FEEDBACK_AGGREGATOR_CRON = "0 4 * * *";
 // fall to the drain.
 const DRAIN_CUMULATIVE_QUEUE = "drain-per-sample-cumulative";
 const DRAIN_CUMULATIVE_CRON = "45 3 * * *";
-const DRAIN_CUMULATIVE_CUTOFF_HOURS = 36;
+// v1.4.38 — the per-sample cutoff hours constant now lives on the
+// helper module so the worker, the admin route, and the CLI all read
+// the same source of truth. Re-export pulled in alongside
+// `drainPerSampleCumulative` above.
 interface DrainCumulativePayload {
   triggeredAt: string;
 }

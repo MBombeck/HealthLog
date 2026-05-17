@@ -28,15 +28,23 @@ describe("reminder-worker — drainPerSampleCumulative nightly schedule", () => 
     expect(source).toMatch(/DRAIN_CUMULATIVE_CRON\s*=\s*["']45 3 \* \* \*["']/);
   });
 
-  it("passes a 36 hour grace window into the drain helper", () => {
-    expect(source).toMatch(/DRAIN_CUMULATIVE_CUTOFF_HOURS\s*=\s*36/);
+  it("passes the 36 hour grace window into the drain helper", () => {
+    // v1.4.38 — the literal `36` lives in the helper module so the
+    // worker, the admin route, and the CLI all read one source of
+    // truth. The worker still references the constant by name in the
+    // cutoffHours slot so the cron's behaviour is unchanged.
     expect(source).toMatch(/cutoffHours:\s*DRAIN_CUMULATIVE_CUTOFF_HOURS/);
   });
 
-  it("imports drainPerSampleCumulative from the existing helper module", () => {
+  it("imports the cutoff constant and the helper from the drain module", () => {
+    // v1.4.38 — the import is now a multi-symbol form. Match the helper
+    // and the constant separately so a future contributor who adds a
+    // third symbol does not break the assertion.
     expect(source).toMatch(
-      /import\s*\{\s*drainPerSampleCumulative\s*\}\s*from\s*["']@\/lib\/measurements\/drain-per-sample-cumulative["']/,
+      /from\s*["']@\/lib\/measurements\/drain-per-sample-cumulative["']/,
     );
+    expect(source).toMatch(/\bdrainPerSampleCumulative\b/);
+    expect(source).toMatch(/\bDRAIN_CUMULATIVE_CUTOFF_HOURS\b/);
   });
 
   it("registers a boss.work handler against the drain queue", () => {
