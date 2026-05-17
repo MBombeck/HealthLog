@@ -1,6 +1,5 @@
 "use client";
 
-import { Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -219,19 +218,18 @@ export default function InsightsPage() {
   const briefingPayload = advisor.payload?.dailyBriefing ?? null;
   const heroStripUpdatedAt = advisor.payload?.cachedAt ?? null;
 
-  // Skeleton fallbacks for each Suspense boundary. Match the loaded-
-  // chunk height so the layout doesn't shift when the lazy import
-  // resolves. The TrendsRow skeleton mirrors the chart-strip shell so
-  // the equal-height contract survives the streamed paint.
-  const briefingFallback = (
-    <div className="bg-card border-border h-48 animate-pulse rounded-xl border" />
-  );
-  const correlationFallback = (
-    <div className="bg-card border-border h-32 animate-pulse rounded-xl border" />
-  );
-  const trendsFallback = (
-    <div className="bg-card border-border h-64 animate-pulse rounded-xl border" />
-  );
+  // v1.4.36 QA C2 — no `<Suspense>` wrappers below. The mother page is
+  // `"use client"`, the below-the-fold blocks load via `next/dynamic`
+  // with `{ ssr: false }` (no Promise-throw on hydrate), and the
+  // TanStack Query hooks each return their own loading state without
+  // ever throwing a thenable. Wrapping these in `<Suspense>` would be
+  // dead code — Suspense never engages and the `loading` props inside
+  // each section already drive the skeleton. The perceptual win we
+  // ship is "early-skeleton paint": the page-level `isLoading` gate is
+  // gone, the hero + each section's own loader skeleton paints inside
+  // the first paint budget while data fills in. Genuinely streamed
+  // server children would require a Server-Component refactor; that's
+  // a v1.5.x track.
 
   return (
     <div className="space-y-8">
@@ -253,29 +251,23 @@ export default function InsightsPage() {
       />
 
       {flags.briefing && (
-        <Suspense fallback={briefingFallback}>
-          <DailyBriefing
-            briefing={briefingPayload}
-            updatedAt={heroStripUpdatedAt}
-            loading={advisor.isLoading}
-            onRegenerate={advisor.regenerate}
-            regenerating={advisor.isRegenerating}
-          />
-        </Suspense>
+        <DailyBriefing
+          briefing={briefingPayload}
+          updatedAt={heroStripUpdatedAt}
+          loading={advisor.isLoading}
+          onRegenerate={advisor.regenerate}
+          regenerating={advisor.isRegenerating}
+        />
       )}
 
       {flags.correlations && analytics?.correlations && (
-        <Suspense fallback={correlationFallback}>
-          <CorrelationRow results={analytics.correlations} />
-        </Suspense>
+        <CorrelationRow results={analytics.correlations} />
       )}
 
-      <Suspense fallback={trendsFallback}>
-        <TrendsRow
-          annotations={advisor.payload?.trendAnnotations ?? null}
-          loading={advisor.isLoading || advisor.isRegenerating}
-        />
-      </Suspense>
+      <TrendsRow
+        annotations={advisor.payload?.trendAnnotations ?? null}
+        loading={advisor.isLoading || advisor.isRegenerating}
+      />
     </div>
   );
 }
