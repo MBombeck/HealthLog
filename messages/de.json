@@ -244,7 +244,7 @@
     "medications": "Medikamente",
     "quickAddMeasurement": "Messung erfassen",
     "quickAddMood": "Stimmung erfassen",
-    "quickAddMedicationIntake": "Medikamenteneinnahme erfassen",
+    "quickAddMedicationIntake": "Einnahme erfassen",
     "medicationIntakeQuickAdd": {
       "sheetTitle": "Medikamenteneinnahme erfassen",
       "sheetDescription": "Dosis, Zeitpunkt und Medikament in wenigen Tipps protokollieren.",

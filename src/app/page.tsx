@@ -572,7 +572,10 @@ export default function DashboardPage() {
                 {t("common.add")}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent
+              align="end"
+              className="max-w-[calc(100vw-2rem)]"
+            >
               {/* Menu items must each carry a self-contained verb-phrase
                   ("Log measurement", "Log mood") — the trigger above already
                   says "Add", and the icon is `aria-hidden`, so the visible

@@ -58,6 +58,7 @@ import {
   probeRollupCoverage,
   type RollupCoverageMap,
 } from "@/lib/measurements/rollup-coverage";
+import { isNearUtc } from "@/lib/tz/resolver";
 import {
   computeBpInTargetWindows,
   isBpReadingInTarget,
@@ -114,23 +115,51 @@ export async function computeBpInTargetFastPath(input: {
   targets: BpTargets;
   now: Date;
   coverage?: RollupCoverageMap;
+  /**
+   * v1.4.38 W-A — optional user timezone for the cross-tz runtime
+   * guard. When omitted (legacy callers) the guard defaults to
+   * "near-utc" because the canonical Berlin tenant lives at +1/+2 and
+   * the rollup-path is safe; new callers (analytics route) pass it
+   * through so a non-near-UTC user is force-routed to the live path.
+   */
+  userTz?: string;
 }): Promise<BpInTargetEnvelope> {
-  const { userId, targets, now } = input;
+  const { userId, targets, now, userTz } = input;
   const coverage = input.coverage ?? (await probeRollupCoverage(userId));
 
   const sysCovered = coverage.get("BLOOD_PRESSURE_SYS") === true;
   const diaCovered = coverage.get("BLOOD_PRESSURE_DIA") === true;
 
+  // v1.4.38 W-A — cross-tz runtime guard. The rollup path keys rows on
+  // `d.toISOString().slice(0, 10)` (UTC slice) and compares them
+  // against `now - N*DAY_MS` boundaries. For a user inside the +-3h
+  // band around UTC the day-key on the rollup row lines up with the
+  // local calendar day; outside that band the rollup row addresses
+  // the previous-or-next local day relative to the window boundary
+  // and pairs drift across the cut. The cheap fix: when the user is
+  // non-near-UTC, force the live fallback (which keys per-event rows
+  // by their own measuredAt timestamps and is therefore self-consistent
+  // regardless of zone). A v1.5 follow-up will thread `userTz` into
+  // `readRollupBuckets` so the rollup path can address local-day
+  // buckets and this guard can come back down. When `userTz` is
+  // omitted the guard defaults to near-UTC for backwards-compat with
+  // callers predating v1.4.38.
+  const userNearUtc = userTz === undefined ? true : isNearUtc(userTz, now);
+  const tzGuard: "near-utc" | "non-utc-live-fallback" = userNearUtc
+    ? "near-utc"
+    : "non-utc-live-fallback";
+
   // Belt-and-braces: only take the rollup path when EVERY logged type
-  // is covered AND both BP types are present in the map. A brand-new
-  // user without BP at all falls into `isFullyCovered === false`
-  // (coverage map is empty) and the route's downstream code already
-  // skips the BP block when `getBpTargets` returns null; we still call
-  // the live fallback here so the helper's contract stays single-shot.
-  if (isFullyCovered(coverage) && sysCovered && diaCovered) {
-    return computeFromRollups(userId, targets, now);
+  // is covered AND both BP types are present in the map AND the
+  // cross-tz guard cleared. A brand-new user without BP at all falls
+  // into `isFullyCovered === false` (coverage map is empty) and the
+  // route's downstream code already skips the BP block when
+  // `getBpTargets` returns null; we still call the live fallback here
+  // so the helper's contract stays single-shot.
+  if (userNearUtc && isFullyCovered(coverage) && sysCovered && diaCovered) {
+    return computeFromRollups(userId, targets, now, tzGuard);
   }
-  return computeFromLive(userId, targets, now);
+  return computeFromLive(userId, targets, now, tzGuard);
 }
 
 /**
@@ -142,6 +171,7 @@ async function computeFromRollups(
   userId: string,
   targets: BpTargets,
   now: Date,
+  tzGuard: "near-utc" | "non-utc-live-fallback",
 ): Promise<BpInTargetEnvelope> {
   // v1.4.22 W5 reconcile (Code-H2) — the priorYear window starts 395
   // days ago. We read 396 days so the boundary day rolls cleanly into
@@ -242,6 +272,9 @@ async function computeFromRollups(
           sys_rows: sysBuckets.reduce((s, b) => s + b.count, 0),
           dia_rows: diaBuckets.reduce((s, b) => s + b.count, 0),
           path: "rollup",
+          // v1.4.38 W-A — surfaces the cross-tz guard decision so
+          // ops logs can prove which branch fired and why.
+          tz_guard: tzGuard,
         },
       },
     },
@@ -307,6 +340,7 @@ async function computeFromLive(
   userId: string,
   targets: BpTargets,
   now: Date,
+  tzGuard: "near-utc" | "non-utc-live-fallback",
 ): Promise<BpInTargetEnvelope> {
   const DAY_MS = 24 * 60 * 60 * 1000;
   const bpInTargetSince = new Date(now.getTime() - 365 * DAY_MS);
@@ -325,6 +359,9 @@ async function computeFromLive(
           sys_rows: sysData.length,
           dia_rows: diaData.length,
           path: "live",
+          // v1.4.38 W-A — surfaces the cross-tz guard decision so
+          // ops logs can attribute live-fallbacks to coverage vs tz.
+          tz_guard: tzGuard,
         },
       },
     },

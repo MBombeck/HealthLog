@@ -18,9 +18,16 @@
  *     window typically belong to deleted users or have aged out of
  *     the operational triage window where the `location` chip
  *     matters.
- *   - Capped at 5 000 rows per pass. Limits the worst-case DB-write
- *     fan-out so a single backfill burst can't starve a live login
- *     spike.
+ *   - Capped at 500 rows per pass. Each row spends up to 3 s on the
+ *     `lookupIpLocation` online fallback (offline MMDB miss → ipwho.is
+ *     timeout), so 500 rows × 3 s caps the worst-case pass at ~25 min
+ *     and keeps the hourly cron from stacking. Earlier passes ran at
+ *     5 000 rows, which let a single backfill burst block for ~4 h and
+ *     starve the next scheduled run. The trade-off: a tenant with a
+ *     large null-`location` backlog now drains over multiple hourly
+ *     passes instead of one mega-pass — fine because the helper is
+ *     idempotent and the admin sign-in overview tolerates a stale
+ *     Standort cell for the few hours convergence takes.
  *
  * Idempotent: a row that the resolver still cannot match (private IP
  * sneaking through CF egress, freshly-allocated range the GeoLite2
@@ -35,7 +42,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { lookupIpAsn, lookupIpLocation } from "@/lib/geo";
 
-export const GEO_BACKFILL_BATCH_CAP = 5000;
+export const GEO_BACKFILL_BATCH_CAP = 500;
 export const GEO_BACKFILL_WINDOW_DAYS = 30;
 
 /**

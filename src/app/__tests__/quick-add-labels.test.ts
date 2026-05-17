@@ -23,6 +23,10 @@ import { join } from "node:path";
 const ROOT = join(__dirname, "../../..");
 const EN_PATH = join(ROOT, "messages/en.json");
 const DE_PATH = join(ROOT, "messages/de.json");
+const ES_PATH = join(ROOT, "messages/es.json");
+const FR_PATH = join(ROOT, "messages/fr.json");
+const IT_PATH = join(ROOT, "messages/it.json");
+const PL_PATH = join(ROOT, "messages/pl.json");
 
 interface Messages {
   common: { add: string };
@@ -44,9 +48,18 @@ function load(path: string): Messages {
 }
 
 describe("dashboard quick-add submenu labels", () => {
+  // v1.4.38 W-D P1-4 — extend the collision guard from en+de to all
+  // six locales so a future translation that accidentally reuses the
+  // trigger word (or a sibling row's verb) is caught before shipping.
+  // es/fr/it/pl currently still hold the literal English block; the
+  // guard runs against whatever string lives there today.
   it.each([
     ["en", EN_PATH],
     ["de", DE_PATH],
+    ["es", ES_PATH],
+    ["fr", FR_PATH],
+    ["it", IT_PATH],
+    ["pl", PL_PATH],
   ])(
     "%s: measurement and mood entries have distinct labels and neither equals the trigger label",
     (_locale, path) => {

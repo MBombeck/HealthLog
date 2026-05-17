@@ -71,8 +71,8 @@ describe("runGeoBackfill", () => {
     expect(args?.take).toBe(GEO_BACKFILL_BATCH_CAP);
   });
 
-  it("caps the batch at 5000 rows per pass", async () => {
-    expect(GEO_BACKFILL_BATCH_CAP).toBe(5000);
+  it("caps the batch at 500 rows per pass (v1.4.38 — tightened from 5000 to bound the worst-case ipwho.is fallback budget)", async () => {
+    expect(GEO_BACKFILL_BATCH_CAP).toBe(500);
   });
 
   it("updates a row with location only when ASN resolver misses", async () => {

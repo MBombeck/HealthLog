@@ -328,6 +328,11 @@ async function buildAnalyticsResponse(user: AuthedUser) {
       targets: bpTargets,
       now,
       coverage,
+      // v1.4.38 W-A — cross-tz runtime guard. The helper falls back
+      // to the live SQL path when the user is more than 3 hours from
+      // UTC, where the rollup table's UTC-midnight day-key would slip
+      // a calendar day relative to the live aggregator's window cuts.
+      userTz,
     });
     bpInTargetPct = windows.last30Days?.pct ?? null;
     bpInTargetPct7d = windows.last7Days?.pct ?? null;
