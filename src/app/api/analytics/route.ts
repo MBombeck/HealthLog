@@ -29,6 +29,7 @@ import type {
 } from "@/generated/prisma/client";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
+import { ensureUserRollupsFresh } from "@/lib/measurements/rollups";
 
 export const dynamic = "force-dynamic";
 
@@ -117,6 +118,15 @@ type AuthedUser = Awaited<ReturnType<typeof requireAuth>>["user"];
  * `buildCoachSnapshotImpl` shape.
  */
 async function buildAnalyticsResponse(user: AuthedUser) {
+  // v1.5.0 — warm the persistent rollup table as a side effect of
+  // the analytics fan-out. No-op when rollups are already ahead of
+  // the newest measurement; on first cold-mount after a process
+  // restart it folds the trailing 90-day window so downstream
+  // consumers (Coach drawer, weekly report, admin analytics) see a
+  // warm rollup table on their next read. The route's response
+  // shape is untouched.
+  await ensureUserRollupsFresh(user.id);
+
   // v1.4.25 W7b — every day-bucket call inside this route now honours
   // the user's display timezone. The legacy `berlinDayKey()` import
   // remains for sleep-stage and correlation paths that share their

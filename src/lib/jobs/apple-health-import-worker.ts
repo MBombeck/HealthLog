@@ -36,6 +36,7 @@ import {
   type ImportJobProgress,
   type ImportJobResult,
 } from "@/lib/measurements/import-apple-health-export";
+import { recomputeUserRollups } from "@/lib/measurements/rollups";
 
 /** Queue name for the Apple Health export ingest. */
 export const APPLE_HEALTH_IMPORT_QUEUE = "apple-health-import";
@@ -196,6 +197,37 @@ export async function handleAppleHealthImport(
         result: toJson(result),
       },
     });
+
+    // v1.5.0 — fold the persistent rollup table for the imported
+    // user. The per-row write hooks are intentionally skipped on the
+    // streaming-ingest path (a 100k-row import would otherwise pay
+    // 100k DAY-recompute round-trips); we run the rollup once at
+    // the end, scoped to the user's full measurement span, so
+    // post-import reads of the analytics + comprehensive surfaces
+    // hit the warm rollup table on first paint.
+    try {
+      const span = await prisma.measurement.aggregate({
+        where: { userId },
+        _min: { measuredAt: true },
+        _max: { measuredAt: true },
+      });
+      if (span._min.measuredAt && span._max.measuredAt) {
+        // Add a small tail buffer to `to` so the upper bound is
+        // exclusive-safe under the rollup aggregator's `< to` filter.
+        const to = new Date(span._max.measuredAt.getTime() + 1);
+        await recomputeUserRollups(userId, {
+          from: span._min.measuredAt,
+          to,
+        });
+      }
+    } catch (rollupErr) {
+      // Rollup failure is non-fatal — the next read falls through to
+      // live aggregation. Log but don't poison the import.
+      console.warn(
+        `[apple-health-import] Rollup recompute failed for user ${userId}`,
+        rollupErr,
+      );
+    }
 
     // Best-effort cleanup. A failed unlink is not fatal — `/tmp` is
     // periodically swept on the host.

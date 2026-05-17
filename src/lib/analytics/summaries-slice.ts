@@ -43,6 +43,7 @@ import { prisma } from "@/lib/db";
 import type { DataSummary } from "@/lib/analytics/trends";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { annotate } from "@/lib/logging/context";
+import { ensureUserRollupsFresh } from "@/lib/measurements/rollups";
 
 interface AggregateRow {
   type: string;
@@ -136,6 +137,15 @@ export interface SummariesSlice {
 export async function computeSummariesSlice(
   userId: string,
 ): Promise<SummariesSlice> {
+  // v1.5.0 — keep the persistent rollup table current as a side
+  // effect of the dashboard tile strip mount. No-op when fresh; one
+  // bounded DAY-granularity recompute on first cold-mount after a
+  // process restart. The slim slice's response shape is untouched —
+  // the rollup table accelerates downstream consumers (the v1.5.1
+  // read-path swap will route this surface through the rollup once
+  // dual-read parity is established).
+  await ensureUserRollupsFresh(userId);
+
   // The two passes run in parallel — they target the same index path
   // (`measurements (user_id, type, measured_at)`) but Postgres can
   // serve them off the buffer cache concurrently.

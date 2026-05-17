@@ -32,6 +32,10 @@ import {
   safeJson,
 } from "@/lib/api-response";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
+import {
+  recomputeBucketsForMeasurement,
+  collapseToTypeDayKeys,
+} from "@/lib/measurements/rollups";
 
 const MAX_BATCH_ENTRIES = 500;
 
@@ -83,9 +87,18 @@ async function deleteByExternalIds(request: NextRequest): Promise<Response> {
 
   // Prisma `deleteMany` with the userId predicate is the cross-user
   // 404 guard: rows belonging to other users are simply not matched.
-  // No need for a pre-flight findMany — the unique index on
-  // `(userId, type, source, externalId)` keeps the matching set small
-  // even when the user has overlapping HealthKit history.
+  // We pre-fetch the (type, measuredAt) tuples so the rollup recompute
+  // step below knows which buckets to refresh after the deletion.
+  // The unique index on `(userId, type, source, externalId)` keeps
+  // the matched set small even with overlapping HealthKit history.
+  const affectedRows = await prisma.measurement.findMany({
+    where: {
+      userId: user.id,
+      externalId: { in: externalIds },
+    },
+    select: { type: true, measuredAt: true },
+  });
+
   const result = await prisma.measurement.deleteMany({
     where: {
       userId: user.id,
@@ -109,6 +122,19 @@ async function deleteByExternalIds(request: NextRequest): Promise<Response> {
   // reconciliation. A 0-delete batch is a no-op and skips the eviction.
   if (result.count > 0) {
     invalidateUserMeasurements(user.id);
+
+    // v1.5.0 — refresh the rollup row for every distinct (type, day)
+    // tuple the deletion touched. Collapsed by day so the same
+    // morning's deletes fold into one recompute per type. Best-
+    // effort — a populator hiccup never fails the user's reconciliation.
+    try {
+      const keys = collapseToTypeDayKeys(affectedRows);
+      for (const k of keys) {
+        await recomputeBucketsForMeasurement(user.id, k.type, k.measuredAt);
+      }
+    } catch (err) {
+      console.warn("[measurements] rollup recompute failed", err);
+    }
   }
 
   return apiSuccess({ deletedCount: result.count });

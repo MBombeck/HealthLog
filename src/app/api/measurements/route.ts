@@ -21,6 +21,10 @@ import {
 import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
 import { withIdempotency } from "@/lib/idempotency";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
+import {
+  recomputeBucketsForMeasurement,
+  collapseToTypeDayKeys,
+} from "@/lib/measurements/rollups";
 import { NextRequest } from "next/server";
 import type {
   MeasurementType,
@@ -219,6 +223,23 @@ async function postMeasurement(request: NextRequest) {
     // measurement set so the next read paints the new rows.
     invalidateUserMeasurements(user.id);
 
+    // v1.5.0 — refresh the persistent rollup table for every distinct
+    // (type, day) the batch touched so the next analytics / coach read
+    // hits the cache rather than falling through to live aggregation.
+    // Collapsed by day so a multi-entry batch on the same morning fires
+    // one DAY recompute per type instead of one per row. Best-effort
+    // — a populator hiccup never fails the user's write.
+    try {
+      const keys = collapseToTypeDayKeys(
+        results.map((r) => ({ type: r.type, measuredAt: r.measuredAt })),
+      );
+      for (const k of keys) {
+        await recomputeBucketsForMeasurement(user.id, k.type, k.measuredAt);
+      }
+    } catch (err) {
+      console.warn("[measurements] rollup recompute failed", err);
+    }
+
     return apiSuccess(results, 201);
   }
 
@@ -278,6 +299,22 @@ async function postMeasurement(request: NextRequest) {
   // v1.4.34 IW-G — flush every cache that reflects this user's
   // measurement set so the next read paints the new row.
   invalidateUserMeasurements(user.id);
+
+  // v1.5.0 — refresh the persistent rollup row for the affected
+  // (type, day) tuple. Runs inline so the next read of the
+  // comprehensive / analytics surface is correct without waiting on
+  // pg-boss; WEEK / MONTH / YEAR recomputes are enqueued under the
+  // hood. Best-effort — a populator hiccup never fails the user's
+  // write.
+  try {
+    await recomputeBucketsForMeasurement(
+      user.id,
+      measurement.type,
+      measurement.measuredAt,
+    );
+  } catch (err) {
+    console.warn("[measurements] rollup recompute failed", err);
+  }
 
   return apiSuccess(measurement, 201);
 }

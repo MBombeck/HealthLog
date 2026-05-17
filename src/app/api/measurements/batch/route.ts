@@ -38,7 +38,11 @@ import { deviceTypeEnum } from "@/lib/validations/source-priority";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { enqueuePrDetection } from "@/lib/jobs/pr-detection";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
-import { Prisma } from "@/generated/prisma/client";
+import {
+  recomputeBucketsForMeasurement,
+  collapseToTypeDayKeys,
+} from "@/lib/measurements/rollups";
+import { Prisma, type MeasurementType } from "@/generated/prisma/client";
 
 // v1.4.25 W16c — historical-backfill threshold for PR push
 // suppression. A batch larger than this fires the detection job with
@@ -373,6 +377,31 @@ async function postBatch(request: NextRequest): Promise<Response> {
   // gate the invalidation on `insertedCount > 0`.
   if (insertedCount > 0) {
     invalidateUserMeasurements(user.id);
+
+    // v1.5.0 — refresh the persistent rollup table for every distinct
+    // (type, day) the batch touched. We use the `prepared` rows
+    // because `createMany` does not return the inserted rows; the
+    // (type, measuredAt) tuples on `prepared` are exactly the row
+    // shape we need. Collapsed by day so a 500-row Apple Health
+    // batch fires N recomputes (typically <30, one per type-day
+    // pair) instead of one per row. Best-effort — a populator hiccup
+    // never fails the user's ingest.
+    try {
+      const insertedKeys = collapseToTypeDayKeys(
+        prepared.map((p) => ({
+          type: p.row.type as MeasurementType,
+          measuredAt:
+            p.row.measuredAt instanceof Date
+              ? p.row.measuredAt
+              : new Date(p.row.measuredAt as string),
+        })),
+      );
+      for (const k of insertedKeys) {
+        await recomputeBucketsForMeasurement(user.id, k.type, k.measuredAt);
+      }
+    } catch (err) {
+      console.warn("[measurements] rollup recompute failed", err);
+    }
   }
 
   return apiSuccess({

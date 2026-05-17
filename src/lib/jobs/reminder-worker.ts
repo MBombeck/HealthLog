@@ -52,6 +52,12 @@ import {
   reconcileOrphanImportJobs,
   type AppleHealthImportPayload,
 } from "@/lib/jobs/apple-health-import-worker";
+import {
+  ROLLUP_RECOMPUTE_QUEUE,
+  ROLLUP_RECOMPUTE_CONCURRENCY,
+  recomputeUserRollups,
+  type RollupRecomputePayload,
+} from "@/lib/measurements/rollups";
 import { expireStaleInUseItems } from "@/lib/medications/inventory/service";
 import { rotateLegacyMoodLogSecrets } from "@/lib/moodlog-secret";
 import { deleteMessage } from "@/lib/telegram";
@@ -1459,6 +1465,7 @@ export async function startReminderWorker() {
     PR_DETECTION_QUEUE,
     MEDICATION_INVENTORY_EXPIRE_QUEUE,
     APPLE_HEALTH_IMPORT_QUEUE,
+    ROLLUP_RECOMPUTE_QUEUE,
   ];
 
   for (const q of allQueues) {
@@ -1634,6 +1641,27 @@ export async function startReminderWorker() {
       // process each job sequentially.
       for (const job of jobs) {
         await handleAppleHealthImport(job);
+      }
+    },
+  );
+
+  // v1.5.0 — persistent measurement rollup worker. Folds the
+  // WEEK / MONTH / YEAR buckets that the write-path hooks enqueue;
+  // the DAY bucket is already recomputed synchronously by the hook
+  // itself. Concurrency-2 keeps two recomputes in flight without
+  // crowding the dashboard request pool.
+  await boss.work<RollupRecomputePayload>(
+    ROLLUP_RECOMPUTE_QUEUE,
+    { localConcurrency: ROLLUP_RECOMPUTE_CONCURRENCY },
+    async (jobs) => {
+      for (const job of jobs) {
+        const payload = job.data;
+        await recomputeUserRollups(payload.userId, {
+          types: [payload.type],
+          granularities: [payload.granularity],
+          from: new Date(payload.from),
+          to: new Date(payload.to),
+        });
       }
     },
   );

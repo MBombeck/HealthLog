@@ -253,6 +253,14 @@ model User {
   // pg-boss job state so the polling endpoint can read live per-
   // phase progress without round-tripping through pg-boss internals.
   importJobs             ImportJob[]
+  // v1.5.0 — persistent measurement rollup table. Carries the
+  // count/min/max/mean/sd/slope/r2 stats per (type, granularity,
+  // bucketStart) so the analytics + comprehensive read paths bypass
+  // the trailing-window row walk and survive process restarts +
+  // multi-instance fan-out. Populated synchronously on the DAY
+  // granularity from the measurement write hooks; WEEK/MONTH/YEAR
+  // are enqueued through pg-boss for the worker to fold.
+  measurementRollups     MeasurementRollup[]
 
   @@map("users")
 }
@@ -452,6 +460,52 @@ model Measurement {
   @@index([userId, type, measuredAt])
   @@index([externalId])
   @@map("measurements")
+}
+
+// ─── Measurement rollups (v1.5.0) ──────────────────────────
+//
+// Persistent rollup table — second cache tier behind the 60-s LRU.
+// One row per `(userId, type, granularity, bucketStart)`. The DAY
+// granularity is recomputed inline with every measurement write so
+// the next read is correct; WEEK / MONTH / YEAR granularities are
+// recomputed via the pg-boss `rollup-recompute` queue so the write
+// path stays sub-ms. The Apple Health import worker skips the per-
+// row hook and calls `recomputeUserRollups` once at the end of the
+// import to avoid quadratic write costs on 100k-row backfills.
+//
+// Stats semantics mirror the v1.4.34.1 comprehensive aggregator:
+//   - `sd`     = `STDDEV_POP(value)` (population SD, /N)
+//   - `slope`  = `REGR_SLOPE(value, EXTRACT(EPOCH FROM measured_at) / 86400.0)`
+//   - `r2`     = `REGR_R2(value,   EXTRACT(EPOCH FROM measured_at) / 86400.0)`
+// so cached + live aggregates agree byte-for-byte.
+enum RollupGranularity {
+  DAY
+  WEEK
+  MONTH
+  YEAR
+
+  @@map("measurement_rollup_granularity")
+}
+
+model MeasurementRollup {
+  userId      String            @map("user_id")
+  type        MeasurementType
+  granularity RollupGranularity
+  bucketStart DateTime          @map("bucket_start") @db.Timestamptz(3)
+  count       Int
+  mean        Float
+  minValue    Float             @map("min_value")
+  maxValue    Float             @map("max_value")
+  sd          Float?
+  slope       Float?
+  r2          Float?
+  computedAt  DateTime          @default(now()) @map("computed_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, type, granularity, bucketStart])
+  @@index([userId, type, granularity, bucketStart(sort: Desc)])
+  @@map("measurement_rollups")
 }
 
 // ─── Workouts (v1.4.25 W8d) ────────────────────────────────

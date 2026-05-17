@@ -61,6 +61,7 @@
  */
 import { prisma } from "@/lib/db";
 import type { DataSummary } from "@/lib/analytics/trends";
+import { ensureUserRollupsFresh } from "@/lib/measurements/rollups";
 
 /**
  * Raw row from the aggregate query. Keyed on `MeasurementType`, with
@@ -169,6 +170,18 @@ export async function buildComprehensiveAggregate(
   userId: string,
 ): Promise<ComprehensiveAggregate> {
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+
+  // v1.5.0 — keep the persistent rollup table current for downstream
+  // consumers (the analytics tile strip, the dashboard widgets, the
+  // weekly report). The helper is a no-op when rollups are already
+  // ahead of the newest measurement; on first-mount after a cold
+  // restart it folds the trailing 90-day window into the DAY rollup
+  // table. The current aggregator output keeps its byte-shape via the
+  // live SQL queries below — the rollup table accelerates downstream
+  // reads, not the current response. A v1.5.1 follow-up will switch
+  // the per-type DataSummary lookups to read from the rollup table
+  // after the dual-read divergence gate clears.
+  await ensureUserRollupsFresh(userId);
 
   const [aggregates, latests, dailyRows, sysRaw, diaRaw] = await Promise.all([
     prisma.$queryRaw<AggregateRow[]>`

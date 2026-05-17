@@ -198,6 +198,74 @@ async function ensureEnumCompatibility() {
   `);
 }
 
+/**
+ * v1.5.0 — fresh container bootstrap for the persistent measurement-
+ * rollup table. Mirrors `prisma/migrations/0067_v1434_measurement_rollups`
+ * so a container that came up against a database which skipped the
+ * migration still self-heals before the app takes traffic.
+ *
+ * Idempotent: `CREATE TYPE` is guarded with a `pg_type` lookup
+ * (Postgres rejects `CREATE TYPE IF NOT EXISTS`), `CREATE TABLE` /
+ * `CREATE INDEX` carry `IF NOT EXISTS`. The FK is added via the
+ * `pg_constraint` lookup so re-running the bootstrap on a populated
+ * DB is a no-op.
+ */
+async function ensureMeasurementRollupsSchema() {
+  await prisma.$executeRawUnsafe(`
+    DO $$
+    BEGIN
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_type
+            WHERE typname = 'measurement_rollup_granularity'
+        ) THEN
+            CREATE TYPE "measurement_rollup_granularity"
+                AS ENUM ('DAY', 'WEEK', 'MONTH', 'YEAR');
+        END IF;
+    END
+    $$;
+  `);
+
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "measurement_rollups" (
+      "user_id"      TEXT                              NOT NULL,
+      "type"         "measurement_type"                NOT NULL,
+      "granularity"  "measurement_rollup_granularity"  NOT NULL,
+      "bucket_start" TIMESTAMPTZ(3)                    NOT NULL,
+      "count"        INTEGER                           NOT NULL,
+      "mean"         DOUBLE PRECISION                  NOT NULL,
+      "min_value"    DOUBLE PRECISION                  NOT NULL,
+      "max_value"    DOUBLE PRECISION                  NOT NULL,
+      "sd"           DOUBLE PRECISION,
+      "slope"        DOUBLE PRECISION,
+      "r2"           DOUBLE PRECISION,
+      "computed_at"  TIMESTAMPTZ(3)                    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "measurement_rollups_pkey"
+        PRIMARY KEY ("user_id", "type", "granularity", "bucket_start")
+    );
+  `);
+
+  await prisma.$executeRawUnsafe(`
+    CREATE INDEX IF NOT EXISTS "measurement_rollups_user_type_granularity_bucket_desc_idx"
+      ON "measurement_rollups" ("user_id", "type", "granularity", "bucket_start" DESC);
+  `);
+
+  await prisma.$executeRawUnsafe(`
+    DO $$
+    BEGIN
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'measurement_rollups_user_id_fkey'
+        ) THEN
+            ALTER TABLE "measurement_rollups"
+              ADD CONSTRAINT "measurement_rollups_user_id_fkey"
+              FOREIGN KEY ("user_id") REFERENCES "users"("id")
+              ON DELETE CASCADE ON UPDATE CASCADE;
+        END IF;
+    END
+    $$;
+  `);
+}
+
 export async function ensureDbCompatibility() {
   if (!dbCompatibilityPromise) {
     dbCompatibilityPromise = Promise.all([
@@ -206,6 +274,7 @@ export async function ensureDbCompatibility() {
       ensureMedicationSchema(),
       ensureMedicationScheduleSchema(),
       ensureEnumCompatibility(),
+      ensureMeasurementRollupsSchema(),
     ])
       .then(() => undefined)
       .catch((error) => {

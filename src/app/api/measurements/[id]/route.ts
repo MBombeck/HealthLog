@@ -10,6 +10,7 @@ import {
 } from "@/lib/api-response";
 import { updateMeasurementSchema } from "@/lib/validations/measurement";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
+import { recomputeBucketsForMeasurement } from "@/lib/measurements/rollups";
 import { Prisma } from "@/generated/prisma/client";
 import { NextRequest } from "next/server";
 
@@ -112,6 +113,30 @@ export const PUT = apiHandler(
     // caches so subsequent reads reflect the edited row.
     invalidateUserMeasurements(user.id);
 
+    // v1.5.0 — refresh the rollup row for the affected day. When the
+    // measuredAt moved across day boundaries (or the row was re-typed)
+    // both the old and the new bucket need a recompute. Best-effort
+    // — a populator hiccup never fails the user's edit.
+    try {
+      await recomputeBucketsForMeasurement(
+        user.id,
+        measurement.type,
+        measurement.measuredAt,
+      );
+      if (
+        existing.measuredAt.getTime() !== measurement.measuredAt.getTime() ||
+        existing.type !== measurement.type
+      ) {
+        await recomputeBucketsForMeasurement(
+          user.id,
+          existing.type,
+          existing.measuredAt,
+        );
+      }
+    } catch (err) {
+      console.warn("[measurements] rollup recompute failed", err);
+    }
+
     return apiSuccess(measurement);
   },
 );
@@ -149,6 +174,20 @@ export const DELETE = apiHandler(
     // v1.4.34 IW-G — bust per-user analytics + achievements + workouts
     // caches so subsequent reads reflect the deletion.
     invalidateUserMeasurements(user.id);
+
+    // v1.5.0 — refresh the rollup row for the affected day (the
+    // recompute drops the row when the day's measurement count goes
+    // to zero). Best-effort — a populator hiccup never fails the
+    // user's delete.
+    try {
+      await recomputeBucketsForMeasurement(
+        user.id,
+        existing.type,
+        existing.measuredAt,
+      );
+    } catch (err) {
+      console.warn("[measurements] rollup recompute failed", err);
+    }
 
     return apiSuccess({ deleted: true });
   },
