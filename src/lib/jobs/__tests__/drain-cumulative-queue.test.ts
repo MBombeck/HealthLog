@@ -1,0 +1,53 @@
+/**
+ * v1.4.37 W7c — pg-boss queue registration for the nightly drain of
+ * per-sample APPLE_HEALTH cumulative rows. The drain helper exists
+ * since v1.4.30 but only ran via the admin endpoint / CLI; the
+ * scheduled wrapper closes the loop so the list view stops painting
+ * hundreds of step chunks per day.
+ *
+ * Same source-text-grep approach as the Withings queue regression
+ * guard so we never have to boot pg-boss + Prisma to assert the
+ * scheduler wiring stays intact.
+ */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+import { describe, expect, it } from "vitest";
+
+const REMINDER_WORKER_PATH = join(__dirname, "..", "reminder-worker.ts");
+const source = readFileSync(REMINDER_WORKER_PATH, "utf8");
+
+describe("reminder-worker — drainPerSampleCumulative nightly schedule", () => {
+  it("declares the drain queue at the documented Berlin cadence", () => {
+    expect(source).toMatch(
+      /DRAIN_CUMULATIVE_QUEUE\s*=\s*["']drain-per-sample-cumulative["']/,
+    );
+    // 03:45 Europe/Berlin — between audit-log cleanup (03:15) and the
+    // feedback aggregator (04:00). Keep the slot stable so an operator
+    // staring at the cron table can find the job easily.
+    expect(source).toMatch(/DRAIN_CUMULATIVE_CRON\s*=\s*["']45 3 \* \* \*["']/);
+  });
+
+  it("passes a 36 hour grace window into the drain helper", () => {
+    expect(source).toMatch(/DRAIN_CUMULATIVE_CUTOFF_HOURS\s*=\s*36/);
+    expect(source).toMatch(/cutoffHours:\s*DRAIN_CUMULATIVE_CUTOFF_HOURS/);
+  });
+
+  it("imports drainPerSampleCumulative from the existing helper module", () => {
+    expect(source).toMatch(
+      /import\s*\{\s*drainPerSampleCumulative\s*\}\s*from\s*["']@\/lib\/measurements\/drain-per-sample-cumulative["']/,
+    );
+  });
+
+  it("registers a boss.work handler against the drain queue", () => {
+    expect(source).toMatch(
+      /boss\.work[\s\S]{0,200}DRAIN_CUMULATIVE_QUEUE[\s\S]{0,400}drainPerSampleCumulative/,
+    );
+  });
+
+  it("schedules the drain cron via boss.schedule (allQueues + schedules)", () => {
+    expect(source).toMatch(
+      /\[DRAIN_CUMULATIVE_QUEUE,\s*DRAIN_CUMULATIVE_CRON\]/,
+    );
+  });
+});

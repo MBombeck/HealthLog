@@ -1,11 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   bucketRowsByUserDay,
   canonicalDailyTimestamp,
   dayKeyForUserTz,
+  drainPerSampleCumulative,
   sumBucketValues,
 } from "../drain-per-sample-cumulative";
+import type { PrismaClient } from "@/generated/prisma/client";
 
 describe("dayKeyForUserTz", () => {
   it("anchors the calendar day to the user's IANA zone", () => {
@@ -150,5 +152,85 @@ describe("sumBucketValues", () => {
       { id: "2", type: "ACTIVE_ENERGY_BURNED" as const, value: 7.6, measuredAt: new Date(), externalId: null },
     ];
     expect(sumBucketValues(rows)).toBeCloseTo(20.0);
+  });
+});
+
+// v1.4.37 W7c — the scheduled nightly drain passes a 36 h grace
+// window so today + the trailing watch-sync reconciliation period
+// stay per-sample for the list view. The test below pins that the
+// cutoffHours option filters by `measuredAt: { lt: cutoff }` rather
+// than collapsing every row in sight.
+describe("drainPerSampleCumulative — cutoffHours", () => {
+  function buildPrismaMock() {
+    const findManyUser = vi.fn();
+    const findManyMeasurement = vi.fn().mockResolvedValue([]);
+    return {
+      user: { findMany: findManyUser },
+      measurement: { findMany: findManyMeasurement },
+      $transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) =>
+        cb({}),
+      ),
+    } as unknown as PrismaClient & {
+      user: { findMany: ReturnType<typeof vi.fn> };
+      measurement: { findMany: ReturnType<typeof vi.fn> };
+    };
+  }
+
+  it("passes a measuredAt cutoff into the per-sample findMany when cutoffHours is set", async () => {
+    const prismaMock = buildPrismaMock();
+    prismaMock.user.findMany.mockResolvedValue([
+      { id: "user-1", timezone: "Europe/Berlin" },
+    ]);
+
+    const beforeAt = Date.now();
+    await drainPerSampleCumulative(prismaMock, {
+      cutoffHours: 36,
+      log: () => {},
+    });
+    const afterAt = Date.now();
+
+    // The helper iterates every cumulative type — assert the first
+    // findMany call carries the expected cutoff filter shape.
+    const call = prismaMock.measurement.findMany.mock.calls[0]?.[0];
+    expect(call).toBeDefined();
+    expect(call.where.source).toBe("APPLE_HEALTH");
+    expect(call.where.measuredAt?.lt).toBeInstanceOf(Date);
+
+    const cutoff = call.where.measuredAt!.lt as Date;
+    const expectedMin = beforeAt - 36 * 60 * 60 * 1000;
+    const expectedMax = afterAt - 36 * 60 * 60 * 1000;
+    expect(cutoff.getTime()).toBeGreaterThanOrEqual(expectedMin);
+    expect(cutoff.getTime()).toBeLessThanOrEqual(expectedMax);
+  });
+
+  it("omits the cutoff filter when cutoffHours is not provided (CLI / admin one-shot)", async () => {
+    const prismaMock = buildPrismaMock();
+    prismaMock.user.findMany.mockResolvedValue([
+      { id: "user-1", timezone: "Europe/Berlin" },
+    ]);
+
+    await drainPerSampleCumulative(prismaMock, { log: () => {} });
+
+    const call = prismaMock.measurement.findMany.mock.calls[0]?.[0];
+    expect(call).toBeDefined();
+    expect(call.where.source).toBe("APPLE_HEALTH");
+    // Legacy callers (CLI, admin endpoint) must keep the all-rows
+    // behaviour so a backfill drains everything the operator asked for.
+    expect(call.where.measuredAt).toBeUndefined();
+  });
+
+  it("ignores a zero cutoffHours value (treat 0 as not-set)", async () => {
+    const prismaMock = buildPrismaMock();
+    prismaMock.user.findMany.mockResolvedValue([
+      { id: "user-1", timezone: "Europe/Berlin" },
+    ]);
+
+    await drainPerSampleCumulative(prismaMock, {
+      cutoffHours: 0,
+      log: () => {},
+    });
+
+    const call = prismaMock.measurement.findMany.mock.calls[0]?.[0];
+    expect(call.where.measuredAt).toBeUndefined();
   });
 });
