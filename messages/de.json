@@ -356,7 +356,10 @@
     "deleteConfirmDescription": "Dieser Messwert wird unwiderruflich gelöscht.",
     "pageInfo": "Seite {page} von {total}",
     "previousPage": "Vorherige Seite",
-    "nextPage": "Nächste Seite"
+    "nextPage": "Nächste Seite",
+    "dailyTotalCaption": "({count} Einzelwerte)",
+    "expandDay": "Einzelwerte dieses Tages anzeigen",
+    "collapseDay": "Einzelwerte dieses Tages ausblenden"
   },
   "mood": {
     "title": "Stimmung",
@@ -1616,6 +1619,13 @@
       "export": {
         "title": "Export",
         "description": "Lade deine Gesundheitsdaten als PDF, CSV oder vollständiges JSON-Backup herunter.",
+        "otherOptionsHeading": "Weitere Export-Optionen",
+        "hero": {
+          "eyebrow": "Arzttermin",
+          "valueStatement": "Ein druckbarer PDF-Bericht für den Arzttermin — Vitalwerte, BMI, Blutdruck-Klassifikation, Medikamenten-Compliance und (optional) Stimmungsverlauf, alles auf wenigen Seiten.",
+          "cta": "Bericht konfigurieren & generieren",
+          "formatHint": "PDF · druckfertig"
+        },
         "actions": {
           "download": "Herunterladen"
         },
@@ -1626,8 +1636,7 @@
         "cards": {
           "doctorReport": {
             "title": "Arztbericht",
-            "description": "Druckbares PDF für den Arzttermin — Vitalwerte, BMI, BD-Klassifikation, Medikamenten-Compliance, Stimmung.",
-            "action": "Konfigurieren & generieren"
+            "description": "Druckbares PDF für den Arzttermin — Vitalwerte, BMI, BD-Klassifikation, Medikamenten-Compliance, Stimmung."
           },
           "measurementsCsv": {
             "title": "Messwerte",

@@ -356,7 +356,10 @@
     "deleteConfirmDescription": "This measurement will be permanently deleted.",
     "pageInfo": "Strona {page} z {total}",
     "previousPage": "Previous page",
-    "nextPage": "Next page"
+    "nextPage": "Next page",
+    "dailyTotalCaption": "({count} samples)",
+    "expandDay": "Show samples for this day",
+    "collapseDay": "Hide samples for this day"
   },
   "mood": {
     "title": "Nastrój",
@@ -1616,6 +1619,13 @@
       "export": {
         "title": "Eksportuj",
         "description": "Download your health data as PDF, CSV, or a full JSON backup.",
+        "otherOptionsHeading": "Inne opcje eksportu",
+        "hero": {
+          "eyebrow": "Wizyta u lekarza",
+          "valueStatement": "Raport PDF do druku na wizytę u lekarza — parametry życiowe, BMI, klasyfikacja ciśnienia, przestrzeganie leczenia oraz (opcjonalnie) zapis nastroju, na kilku stronach.",
+          "cta": "Skonfiguruj i wygeneruj raport",
+          "formatHint": "PDF · gotowe do druku"
+        },
         "actions": {
           "download": "Download"
         },
@@ -1626,8 +1636,7 @@
         "cards": {
           "doctorReport": {
             "title": "Doctor Report",
-            "description": "Printable PDF for the doctor's appointment — vitals, BMI, BP classification, medication compliance, mood.",
-            "action": "Configure & generate"
+            "description": "Printable PDF for the doctor's appointment — vitals, BMI, BP classification, medication compliance, mood."
           },
           "measurementsCsv": {
             "title": "Measurements",
