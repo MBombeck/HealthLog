@@ -11,6 +11,7 @@ import {
   Heart,
   Moon,
   Percent,
+  Pill,
   Plus,
   Smile,
   Target,
@@ -38,6 +39,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MeasurementForm } from "@/components/measurements/measurement-form";
 import { MoodForm } from "@/components/mood/mood-form";
+import { MedicationIntakeQuickAdd } from "@/components/dashboard/medication-intake-quick-add";
 import { TrendCard } from "@/components/charts/trend-card";
 import { TrendHint } from "@/components/charts/trend-hint";
 import { summaryToTrend7Delta } from "@/lib/analytics/trend-delta";
@@ -196,13 +198,19 @@ export default function DashboardPage() {
   const { t } = useTranslations();
   const fmt = useFormatters();
   const [quickEntryDialog, setQuickEntryDialog] = useState<
-    "measurement" | "mood" | null
+    "measurement" | "mood" | "medicationIntake" | null
   >(null);
   // v1.4.27 R4 RC2 — DOM handles for the form action-row portal target
   // on each quick-entry sheet. The Sheet branch sticky-pins this slot.
   const [measurementFooterEl, setMeasurementFooterEl] =
     useState<HTMLDivElement | null>(null);
   const [moodFooterEl, setMoodFooterEl] = useState<HTMLDivElement | null>(null);
+  // v1.4.37 W7b — medication-intake quick-add lives on the same Sheet
+  // primitive as the other two quick-entries; the form's action row is
+  // portalled into this slot so Save / Cancel stay reachable above the
+  // mobile soft keyboard.
+  const [medicationIntakeFooterEl, setMedicationIntakeFooterEl] =
+    useState<HTMLDivElement | null>(null);
 
   // v1.4.29 M5 — the three inline dashboard queries default to a
   // 0-ms `staleTime`, so a tab-focus-and-return triggered a refetch
@@ -582,6 +590,17 @@ export default function DashboardPage() {
                 <Waves className="mr-2 h-4 w-4" aria-hidden="true" />
                 {t("dashboard.quickAddMood")}
               </DropdownMenuItem>
+              {/* v1.4.37 W7b — third quick-add row: medication intake.
+                  Same Sheet-on-mobile / Dialog-on-desktop primitive as
+                  the other two; the menu label is a self-contained
+                  verb-phrase so it doesn't collide with the trigger or
+                  the sibling rows (cf. quick-add-labels.test.ts). */}
+              <DropdownMenuItem
+                onClick={() => setQuickEntryDialog("medicationIntake")}
+              >
+                <Pill className="mr-2 h-4 w-4" aria-hidden="true" />
+                {t("dashboard.quickAddMedicationIntake")}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -628,6 +647,25 @@ export default function DashboardPage() {
           onSuccess={() => setQuickEntryDialog(null)}
           onCancel={() => setQuickEntryDialog(null)}
           footerSlot={moodFooterEl}
+        />
+      </ResponsiveSheet>
+      {/* v1.4.37 W7b — third Sheet: medication intake. Same
+          ResponsiveSheet contract as the two above; the form's footer
+          (Cancel + Save) portals into the sticky-pinned slot so it
+          stays reachable above the soft keyboard on mobile. */}
+      <ResponsiveSheet
+        open={quickEntryDialog === "medicationIntake"}
+        onOpenChange={(open) => !open && setQuickEntryDialog(null)}
+        title={t("dashboard.medicationIntakeQuickAdd.sheetTitle")}
+        description={t("dashboard.medicationIntakeQuickAdd.sheetDescription")}
+        footer={
+          <div ref={setMedicationIntakeFooterEl} className="flex w-full" />
+        }
+      >
+        <MedicationIntakeQuickAdd
+          onSuccess={() => setQuickEntryDialog(null)}
+          onCancel={() => setQuickEntryDialog(null)}
+          footerSlot={medicationIntakeFooterEl}
         />
       </ResponsiveSheet>
 
