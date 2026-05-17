@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import {
@@ -21,12 +21,17 @@ import { Progress } from "@/components/ui/progress";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { invalidateKeys, medicationDependentKeys } from "@/lib/query-keys";
 import { formatDateTime, formatTime } from "@/lib/format";
+import { formatTimeWindowRange } from "@/lib/time-window-format";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import {
   describeInjectionSite,
   nextInjectionSite,
   type InjectionSiteKey,
 } from "@/lib/medications/injection-sites";
+import {
+  reduceCurrentWindowStatus,
+  toBerlinDate,
+} from "@/lib/medications/window-status";
 /**
  * v1.4.25 W4d — GLP-1 medication card variant.
  *
@@ -78,6 +83,7 @@ export interface Glp1Medication {
   notificationsEnabled: boolean;
   pausedAt: string | null;
   lastTakenAt: string | null;
+  todayEventCount?: number;
   schedules: ScheduleLite[];
 }
 
@@ -156,9 +162,10 @@ export function Glp1MedicationCard({
   onLogSideEffect,
 }: Glp1MedicationCardProps) {
   const queryClient = useQueryClient();
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const fmt = useFormatters();
   const [intakeLoading, setIntakeLoading] = useState<string | null>(null);
+  const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
 
   const { data: compliance } = useQuery({
     queryKey: ["medications", medication.id, "compliance"],
@@ -170,6 +177,20 @@ export function Glp1MedicationCard({
     },
     staleTime: 30 * 1000,
     enabled: medication.active,
+  });
+
+  // v1.4.37 W4b — same reminder-thresholds source as the generic
+  // medication card so the take-now / overdue / very-overdue pill
+  // tiers identically on both surfaces.
+  const { data: thresholds } = useQuery({
+    queryKey: ["settings", "reminder-thresholds"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings/reminder-thresholds");
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json.data as { lateMinutes: number; missedMinutes: number };
+    },
+    staleTime: 5 * 60 * 1000,
   });
 
   // Pull GLP-1-specific extras (dose history + recent injection sites +
@@ -185,6 +206,14 @@ export function Glp1MedicationCard({
     },
     staleTime: 60 * 1000,
   });
+
+  // Re-render once a minute so the in-window / overdue pill tracks
+  // wall-clock progress without a route reload — mirrors the generic
+  // medication card's tick cadence.
+  useEffect(() => {
+    const interval = setInterval(forceUpdate, 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   async function recordIntake(skipped: boolean) {
     const key = skipped ? "skip" : "take";
@@ -209,6 +238,28 @@ export function Glp1MedicationCard({
   const rate7 = compliance?.compliance7?.rate ?? 0;
   const rate30 = compliance?.compliance30?.rate ?? 0;
   const streak = compliance?.compliance7?.streak ?? 0;
+
+  // v1.4.37 W4b — symmetric take-now / overdue pill with the generic
+  // card. Sort schedules by `windowStart` so the most-actionable
+  // earliest window wins when multiple GLP-1 windows overlap (rare
+  // today; the parity is what matters).
+  const sortedSchedules = [...medication.schedules].sort(
+    (a, b) =>
+      a.windowStart.localeCompare(b.windowStart) ||
+      a.windowEnd.localeCompare(b.windowEnd),
+  );
+  const nowBerlin = toBerlinDate(now);
+  const lateMinutes = thresholds?.lateMinutes ?? 120;
+  const missedMinutes = thresholds?.missedMinutes ?? 240;
+  const currentWindowStatus = reduceCurrentWindowStatus({
+    schedules: sortedSchedules,
+    nowBerlin,
+    lateMinutes,
+    missedMinutes,
+    active: medication.active,
+    lastTakenAt: medication.lastTakenAt,
+    todayEventCount: medication.todayEventCount ?? 0,
+  });
 
   const recentInjections = details?.recentIntakes ?? [];
   const lastSite =
@@ -297,6 +348,41 @@ export function Glp1MedicationCard({
       />
 
       <CardContent className="space-y-3.5">
+        {/* v1.4.37 W4b — take-now / overdue / very-overdue pill,
+            byte-equivalent with the generic medication card. The
+            GLP-1 card historically omitted this row, which made
+            Mounjaro feel different from Ramipril on the medications
+            grid even though the underlying schedule contract is
+            the same shape. */}
+        {currentWindowStatus.status && (
+          <p className="text-sm">
+            <span
+              className={
+                currentWindowStatus.status === "in_window"
+                  ? "text-success font-medium"
+                  : currentWindowStatus.status === "late"
+                    ? "text-dracula-yellow font-medium"
+                    : "text-warning font-medium"
+              }
+            >
+              {currentWindowStatus.status === "in_window"
+                ? t("medications.takeNow")
+                : currentWindowStatus.status === "late"
+                  ? t("medications.overdue")
+                  : t("medications.veryOverdue")}
+            </span>
+            <span className="text-muted-foreground hidden sm:inline">
+              {" "}
+              —{" "}
+              {formatTimeWindowRange(
+                currentWindowStatus.schedule!.windowStart,
+                currentWindowStatus.schedule!.windowEnd,
+                locale,
+              )}
+            </span>
+          </p>
+        )}
+
         {/* Injection state — last + next */}
         <div className="space-y-1 text-sm">
           {medication.lastTakenAt && (
