@@ -272,6 +272,22 @@ export const listMeasurementsSchema = z.object({
   // when the rollup bucket set is empty for the requested window so
   // brand-new accounts still see correct data on their first chart.
   source: z.enum(["rollup"]).optional(),
+  // v1.4.37 W7c — list-view "one row per day" mode for cumulative
+  // types (steps, active energy, distance, flights, daylight). When
+  // `groupBy=day` is set and `type` is a cumulative HK type, the route
+  // returns one synthesised row per user-TZ day with `value` = SUM
+  // and `sampleCount` = number of per-sample rows behind the bucket.
+  // Omitted = legacy per-sample list behaviour (iOS contract stable).
+  groupBy: z.enum(["day"]).optional(),
+  // v1.4.37 W7c — drill-down to per-sample rows for a single day in
+  // the user's IANA timezone. Format `YYYY-MM-DD`; the route resolves
+  // the day boundary against the user's `User.timezone`. Used by the
+  // expandable list row to reveal the chunks that contributed to the
+  // collapsed daily total.
+  dayKey: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "dayKey must be YYYY-MM-DD")
+    .optional(),
 });
 
 export const createBatchMeasurementSchema = z.object({

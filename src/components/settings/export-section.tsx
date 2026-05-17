@@ -9,16 +9,23 @@
  * per export type, each with its own filter inputs and a clear
  * "Download" / "Generate" button.
  *
- *   1. Doctor Report (PDF)        — date range + practice name dialog
+ *   1. Doctor Report (PDF)        — hero card at the top of the page
+ *                                   (v1.4.37 W7a, see
+ *                                   `<ArztberichtHeroCard>`)
  *   2. Measurements CSV           — optional `since`/`until`
  *   3. Medications CSV            — optional intake-history toggle
  *   4. Mood CSV                   — optional `since`/`until`
  *   5. Full JSON Backup           — single-file user-scoped dump
  *
+ * v1.4.37 W7a — the doctor-report card was promoted to the page hero so
+ * the flagship "PDF for the doctor" flow no longer competes for visual
+ * weight with the secondary CSV/JSON exports. The remaining four cards
+ * live under a "Weitere Export-Optionen" sub-heading.
+ *
  * Mobile-first: cards stack on `<md`, two-column grid on `>=md`.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Download,
   FileJson,
@@ -26,7 +33,6 @@ import {
   FileText,
   Loader2,
   Pill,
-  Stethoscope,
   Waves,
 } from "lucide-react";
 
@@ -34,13 +40,10 @@ import { Button } from "@/components/ui/button";
 import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  DoctorReportDialog,
-  type DoctorReportSubmitPayload,
-} from "@/components/doctor-report/doctor-report-dialog";
+import { ArztberichtHeroCard } from "@/components/settings/arztbericht-hero-card";
 import { useTranslations } from "@/lib/i18n/context";
 
-type ExportFormat = "PDF" | "CSV" | "JSON";
+type ExportFormat = "CSV" | "JSON";
 
 /**
  * Trigger a browser download for a given URL by spinning up an anchor
@@ -82,14 +85,33 @@ export function ExportSection() {
         </p>
       </header>
 
-      {/* Mobile: single column. Desktop (md+): 2-column grid. */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <DoctorReportCard />
-        <MeasurementsCsvCard />
-        <MedicationsCsvCard />
-        <MoodCsvCard />
-        <FullBackupCard />
-      </div>
+      {/* v1.4.37 W7a — Arztbericht hero. The doctor-report PDF is the
+          flagship "data out" path; the previous grid layout buried it
+          alongside the four CSV/JSON exports. The hero now sits at the
+          top of the page; the same generation flow runs underneath. */}
+      <ArztberichtHeroCard />
+
+      {/* v1.4.37 W7a — secondary export options. The doctor-report
+          card moved into the hero above, so this group renders the
+          four remaining destinations under a dedicated sub-heading.
+          Mobile: single column. Desktop (md+): 2-column grid. */}
+      <section
+        aria-labelledby="settings-section-export-other-title"
+        className="space-y-3"
+      >
+        <h2
+          id="settings-section-export-other-title"
+          className="text-base font-semibold tracking-tight"
+        >
+          {t("settings.sections.export.otherOptionsHeading")}
+        </h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          <MeasurementsCsvCard />
+          <MedicationsCsvCard />
+          <MoodCsvCard />
+          <FullBackupCard />
+        </div>
+      </section>
     </section>
   );
 }
@@ -137,110 +159,6 @@ function ExportCardShell({
       {children && <div className="mt-3 space-y-3">{children}</div>}
       <div className="mt-4 flex flex-wrap items-center gap-3">{footer}</div>
     </div>
-  );
-}
-
-// ─────────────────────────── Doctor Report ───────────────────────────
-
-function DoctorReportCard() {
-  const { t, locale } = useTranslations();
-  const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [defaultPracticeName, setDefaultPracticeName] = useState<string | null>(
-    null,
-  );
-  const [error, setError] = useState<string | null>(null);
-
-  // Pre-fill the practice name from the user profile so the dialog opens
-  // ready-to-submit. Best-effort: if the request fails, the dialog still
-  // works without a pre-fill.
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/auth/me", { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (cancelled || !json) return;
-        const name = json?.data?.lastReportPracticeName;
-        if (typeof name === "string") setDefaultPracticeName(name);
-      })
-      .catch(() => {
-        // ignore — pre-fill is a UX nicety
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  async function handleSubmit(payload: DoctorReportSubmitPayload) {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/doctor-report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          startDate: payload.startDate,
-          endDate: payload.endDate,
-          practiceName: payload.practiceName,
-          // v1.4.25 W6c — per-section toggles. The aggregator drops
-          // disabled sections (mood is filtered server-side so the
-          // data never leaves the DB row).
-          sections: payload.sections,
-        }),
-      });
-      if (!res.ok) {
-        setError(`${res.status}`);
-        return;
-      }
-      const json = await res.json();
-      const { generateDoctorReportPDF } =
-        await import("@/lib/doctor-report-pdf");
-      const doc = generateDoctorReportPDF(json.data, { t, locale });
-      const fileSlug = locale === "de" ? "gesundheitsbericht" : "health-report";
-      doc.save(`${fileSlug}-${new Date().toISOString().slice(0, 10)}.pdf`);
-      if (payload.practiceName) setDefaultPracticeName(payload.practiceName);
-      setOpen(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <ExportCardShell
-      testId="export-card-doctor-report"
-      icon={Stethoscope}
-      title={t("settings.sections.export.cards.doctorReport.title")}
-      description={t("settings.sections.export.cards.doctorReport.description")}
-      format="PDF"
-      outerClassName="md:col-span-2"
-      footer={
-        <Button
-          data-testid="export-action-doctor-report"
-          variant="default"
-          size="sm"
-          onClick={() => setOpen(true)}
-          disabled={busy}
-        >
-          {busy && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />}
-          {t("settings.sections.export.cards.doctorReport.action")}
-        </Button>
-      }
-    >
-      {error && (
-        <p role="alert" className="text-destructive text-xs">
-          {error}
-        </p>
-      )}
-      <DoctorReportDialog
-        open={open}
-        onOpenChange={setOpen}
-        defaultPracticeName={defaultPracticeName}
-        onSubmit={handleSubmit}
-      />
-    </ExportCardShell>
   );
 }
 

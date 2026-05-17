@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createMeasurementSchema,
   getUnitForType,
+  listMeasurementsSchema,
   validateMeasurementRange,
 } from "../measurement";
 
@@ -171,6 +172,67 @@ describe("measurement validation", () => {
       if (parsed.success) {
         expect(parsed.data.deviceType).toBeUndefined();
       }
+    });
+  });
+
+  // v1.4.37 W7c — list-view "one row per day" mode for cumulative
+  // types. The schema pins the optional `groupBy` enum + `dayKey`
+  // shape; the route gates each branch on whether the resolved type
+  // is in `CUMULATIVE_HK_TYPES`. Tests below pin the parser surface.
+  describe("listMeasurementsSchema — v1.4.37 W7c groupBy + dayKey", () => {
+    it("accepts an omitted groupBy + dayKey (legacy per-sample list)", () => {
+      const parsed = listMeasurementsSchema.safeParse({});
+      expect(parsed.success).toBe(true);
+      if (parsed.success) {
+        expect(parsed.data.groupBy).toBeUndefined();
+        expect(parsed.data.dayKey).toBeUndefined();
+      }
+    });
+
+    it("accepts groupBy=day", () => {
+      const parsed = listMeasurementsSchema.safeParse({
+        type: "ACTIVITY_STEPS",
+        groupBy: "day",
+      });
+      expect(parsed.success).toBe(true);
+      if (parsed.success) {
+        expect(parsed.data.groupBy).toBe("day");
+      }
+    });
+
+    it("rejects an unknown groupBy value", () => {
+      const parsed = listMeasurementsSchema.safeParse({
+        type: "ACTIVITY_STEPS",
+        groupBy: "week",
+      });
+      expect(parsed.success).toBe(false);
+    });
+
+    it("accepts a well-formed YYYY-MM-DD dayKey", () => {
+      const parsed = listMeasurementsSchema.safeParse({
+        type: "ACTIVITY_STEPS",
+        dayKey: "2026-05-15",
+      });
+      expect(parsed.success).toBe(true);
+      if (parsed.success) {
+        expect(parsed.data.dayKey).toBe("2026-05-15");
+      }
+    });
+
+    it("rejects a malformed dayKey (DD.MM.YYYY)", () => {
+      const parsed = listMeasurementsSchema.safeParse({
+        type: "ACTIVITY_STEPS",
+        dayKey: "15.05.2026",
+      });
+      expect(parsed.success).toBe(false);
+    });
+
+    it("rejects a partial dayKey (missing day component)", () => {
+      const parsed = listMeasurementsSchema.safeParse({
+        type: "ACTIVITY_STEPS",
+        dayKey: "2026-05",
+      });
+      expect(parsed.success).toBe(false);
     });
   });
 });
