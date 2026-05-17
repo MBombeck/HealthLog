@@ -101,7 +101,7 @@ jobs:
 
       - name: Compute image labels
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.IMAGE_REF }}
           labels: |
@@ -266,7 +266,7 @@ jobs:
 
       - name: Compute image tags & labels
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.IMAGE_REF }}
           tags: |
