@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { CUMULATIVE_HK_TYPES } from "../apple-health-mapping";
 import {
   CUMULATIVE_DAY_SUM_TYPES,
   isCumulativeDaySumType,
@@ -103,5 +104,18 @@ describe("isCumulativeDaySumType", () => {
     expect(isCumulativeDaySumType("WEIGHT")).toBe(false);
     expect(isCumulativeDaySumType("SLEEP_DURATION")).toBe(false);
     expect(isCumulativeDaySumType("MOOD")).toBe(false);
+  });
+});
+
+describe("CUMULATIVE_DAY_SUM_TYPES / CUMULATIVE_HK_TYPES parity", () => {
+  // v1.4.37 W10 — single source of truth. The day-sum array is derived
+  // from `CUMULATIVE_HK_TYPES` so adding a sixth cumulative HK type to
+  // the mapping module automatically flows through every downstream
+  // consumer (analytics route, exports, chart). The set equivalence
+  // guard pins the contract — divergence is impossible at runtime, but
+  // a future refactor that flips the derivation back to a literal
+  // would trip this assertion before shipping.
+  it("matches CUMULATIVE_HK_TYPES membership exactly", () => {
+    expect(new Set(CUMULATIVE_DAY_SUM_TYPES)).toEqual(CUMULATIVE_HK_TYPES);
   });
 });
