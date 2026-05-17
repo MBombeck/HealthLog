@@ -1,5 +1,5 @@
 /**
- * v1.4.33 C1 — slim `summaries` slice for `/api/analytics?slice=summaries`.
+ * v1.4.36 — slim `summaries` slice for `/api/analytics?slice=summaries`.
  *
  * The default `/api/analytics` path fans out 30+ `Promise.all`-wrapped
  * chunked findMany reads (one per `MeasurementType`) so it can hand
@@ -9,28 +9,34 @@
  * three slope tuples — every other field gets `null`-coalesced before
  * it ever paints — yet the user waits on the full chunked walk.
  *
- * This helper resolves the same `DataSummary` shape (per-type) with
- * three passes (two SQL + one rollup-table read):
+ * Read shape (v1.4.36)
+ * --------------------
+ * v1.4.35 partially read-swapped onto the persistent `measurement_rollups`
+ * table but kept the full-fat `$queryRaw` running in parallel as a
+ * parity check. The heavy COUNT/MIN/MAX/AVG aggregate scanned the
+ * measurements table every request even on warm rollups.
  *
- *   1. **`groupBy` + windowed aggregates** — one `$queryRaw` carrying
- *      `COUNT`/`MIN`/`MAX`/`AVG`, the 7-day and 30-day `AVG` slices
- *      via `FILTER`, plus `regr_slope` + `regr_r2` for the slope
- *      tuples at 7d / 30d / 90d windows. Postgres folds all of this
- *      into one index scan over `measurements WHERE user_id = …`.
- *      The `COUNT / MIN / MAX / AVG` columns stay on this pass as
- *      the live-SQL fallback for the v1.4.35 rollup parity check.
+ * v1.4.36 promotes the rollup table to the canonical source on the
+ * happy path: a single cheap COUNT against `measurement_rollups`
+ * decides whether to read the composable stats from buckets or fall
+ * back to the heavy live aggregate. When the rollup is populated:
  *
- *   2. **`DISTINCT ON (type)` latest read** — one `$queryRaw`
- *      returning the most-recent `(type, value)` pair per type so the
- *      slim shape can populate `latest`. `MAX(value)` would not do —
- *      we need the value of the row at `MAX(measured_at)`, not the
- *      largest value ever recorded.
+ *   1. **DAY-bucket read** — composes `count / min / max / mean` per
+ *      type via `aggregateBuckets`. The four are linearly composable
+ *      across DAY buckets so the composed value is mathematically
+ *      identical to the live aggregate over the same rows.
  *
- *   3. **`measurement_rollups` DAY-bucket read** (v1.4.35) — folded
- *      into `count / min / max / mean` via `aggregateBuckets`. Used
- *      when the composed count agrees byte-for-byte with the live
- *      `COUNT(*)`; falls back to live for accounts that never ran
- *      the explicit backfill or that are mid-flight on the populator.
+ *   2. **Narrow `$queryRaw`** — carries only the non-composable
+ *      windowed columns (`avg7`, `avg30`, and the slope tuples). The
+ *      heavy COUNT/MIN/MAX/AVG columns are NOT projected.
+ *
+ *   3. **`DISTINCT ON (type)` latest read** — most-recent `(type,
+ *      value, measured_at)` triplet per type for the `latest` field
+ *      and the `lastSeenByType` freshness map.
+ *
+ * On the cold fallback (no rollup rows yet) the slim slice runs the
+ * legacy heavy aggregate so the response shape is correct on the very
+ * first request.
  *
  * Fields the slim shape intentionally omits (the dashboard never
  * reads them on first paint):
@@ -54,12 +60,35 @@ import { annotate } from "@/lib/logging/context";
 import { ensureUserRollupsFresh } from "@/lib/measurements/rollups";
 import { aggregateBuckets } from "@/lib/measurements/rollup-read";
 
-interface AggregateRow {
+/**
+ * Heavy aggregate row — used on the cold-mount fallback path where the
+ * rollup table is empty and we need every per-type column out of one
+ * SQL pass for the very first request.
+ */
+interface HeavyAggregateRow {
   type: string;
   count: bigint;
   min_value: number | null;
   max_value: number | null;
   mean_value: number | null;
+  avg7: number | null;
+  avg30: number | null;
+  slope7: number | null;
+  r2_7: number | null;
+  slope30: number | null;
+  r2_30: number | null;
+  slope90: number | null;
+  r2_90: number | null;
+}
+
+/**
+ * Narrow aggregate row — only the columns DAY buckets can't compose
+ * linearly. The heavy `COUNT / MIN / MAX / AVG` columns are dropped
+ * so the rollup-fresh read path's SQL projection is half as wide as
+ * the legacy aggregate's.
+ */
+interface NarrowAggregateRow {
+  type: string;
   avg7: number | null;
   avg30: number | null;
   slope7: number | null;
@@ -146,26 +175,39 @@ export interface SummariesSlice {
 export async function computeSummariesSlice(
   userId: string,
 ): Promise<SummariesSlice> {
-  // v1.4.35 — keep the persistent rollup table current before the
-  // bucket read fires. On a warm process this is a single watermark
-  // query; on a cold mount it folds the trailing 90-day window into
-  // the DAY rollup so the bucket read below has something to compose.
+  // Keep the persistent rollup table current before the bucket read
+  // fires. On a warm process this is a single watermark query; on a
+  // cold mount it folds the trailing 90-day window into the DAY
+  // rollup so the bucket read below has something to compose.
   await ensureUserRollupsFresh(userId);
 
-  // Three passes in parallel. The first two target the same
-  // `measurements (user_id, type, measured_at)` index path; the third
-  // hits the much smaller `measurement_rollups` table (one row per
-  // bucket, not per row). On users with a complete backfill the
-  // bucket scan dominates only marginally; on un-backfilled users it
-  // returns a short list and the parity check falls back to live.
-  const [aggregates, latests, dayBuckets] = await Promise.all([
-    prisma.$queryRaw<AggregateRow[]>`
+  // Cheap existence probe — one indexed COUNT against the rollup
+  // table. A non-zero count means there's at least one DAY bucket we
+  // can compose from, so the heavy live aggregate is unnecessary.
+  const rollupCountRows = await prisma.$queryRaw<Array<{ n: bigint }>>`
+    SELECT COUNT(*) AS n
+    FROM measurement_rollups
+    WHERE user_id = ${userId}
+      AND granularity = 'DAY'
+  `;
+  const hasRollupCoverage = Number(rollupCountRows[0]?.n ?? 0) > 0;
+
+  if (hasRollupCoverage) {
+    return computeFromRollups(userId);
+  }
+  return computeFromLiveAggregate(userId);
+}
+
+/**
+ * Happy path — DAY buckets carry `count / min / max / mean`; a narrow
+ * `$queryRaw` carries only the windowed avgs + regression columns the
+ * buckets cannot reconstruct.
+ */
+async function computeFromRollups(userId: string): Promise<SummariesSlice> {
+  const [narrows, latests, dayBuckets] = await Promise.all([
+    prisma.$queryRaw<NarrowAggregateRow[]>`
       SELECT
         m."type"::text                                                AS type,
-        COUNT(*)                                                      AS count,
-        MIN(m."value")::double precision                              AS min_value,
-        MAX(m."value")::double precision                              AS max_value,
-        AVG(m."value")::double precision                              AS mean_value,
         AVG(m."value") FILTER (
           WHERE m."measured_at" >= NOW() - INTERVAL '7 days'
         )::double precision                                           AS avg7,
@@ -301,26 +343,165 @@ export async function computeSummariesSlice(
     bucketsByType.set(b.type, list);
   }
 
+  const narrowByType = new Map<string, NarrowAggregateRow>();
+  for (const row of narrows) {
+    narrowByType.set(row.type, row);
+  }
+
+  let totalRows = 0;
+  for (const [type, buckets] of bucketsByType.entries()) {
+    const composed = aggregateBuckets(buckets);
+    if (composed.count === 0) continue;
+    totalRows += composed.count;
+    const narrow = narrowByType.get(type);
+    const latest = latestByType.get(type) ?? null;
+    summaries[type] = {
+      count: composed.count,
+      latest,
+      min: round2(composed.min),
+      max: round2(composed.max),
+      mean: round2(composed.mean),
+      avg7: round2(narrow?.avg7 ?? null),
+      avg30: round2(narrow?.avg30 ?? null),
+      slope7: buildSlope(narrow?.slope7 ?? null, narrow?.r2_7 ?? null),
+      slope30: buildSlope(narrow?.slope30 ?? null, narrow?.r2_30 ?? null),
+      slope90: buildSlope(narrow?.slope90 ?? null, narrow?.r2_90 ?? null),
+      anomalyCount: 0,
+      avg30LastMonth: null,
+      avg30LastYear: null,
+    };
+  }
+
+  annotate({
+    action: { name: "analytics.get.slim" },
+    meta: {
+      analytics: {
+        slim_summaries: {
+          row_count: totalRows,
+          type_count: bucketsByType.size,
+          path: "rollup",
+        },
+      },
+    },
+  });
+
+  return { summaries, bmi: null, lastSeenByType };
+}
+
+/**
+ * Cold fallback — runs the legacy heavy aggregate when the rollup
+ * table is empty for this user. Subsequent reads pick up the populated
+ * rollup on `computeFromRollups`.
+ */
+async function computeFromLiveAggregate(
+  userId: string,
+): Promise<SummariesSlice> {
+  const [aggregates, latests] = await Promise.all([
+    prisma.$queryRaw<HeavyAggregateRow[]>`
+      SELECT
+        m."type"::text                                                AS type,
+        COUNT(*)                                                      AS count,
+        MIN(m."value")::double precision                              AS min_value,
+        MAX(m."value")::double precision                              AS max_value,
+        AVG(m."value")::double precision                              AS mean_value,
+        AVG(m."value") FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '7 days'
+        )::double precision                                           AS avg7,
+        AVG(m."value") FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '30 days'
+        )::double precision                                           AS avg30,
+        REGR_SLOPE(
+          m."value",
+          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
+        ) FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '7 days'
+        )::double precision                                           AS slope7,
+        REGR_R2(
+          m."value",
+          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
+        ) FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '7 days'
+        )::double precision                                           AS r2_7,
+        REGR_SLOPE(
+          m."value",
+          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
+        ) FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '30 days'
+        )::double precision                                           AS slope30,
+        REGR_R2(
+          m."value",
+          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
+        ) FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '30 days'
+        )::double precision                                           AS r2_30,
+        REGR_SLOPE(
+          m."value",
+          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
+        ) FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '90 days'
+        )::double precision                                           AS slope90,
+        REGR_R2(
+          m."value",
+          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
+        ) FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '90 days'
+        )::double precision                                           AS r2_90
+      FROM measurements m
+      WHERE m."user_id" = ${userId}
+      GROUP BY m."type"
+    `,
+    prisma.$queryRaw<LatestRow[]>`
+      SELECT DISTINCT ON (m."type")
+        m."type"::text AS type,
+        m."value"::double precision AS value,
+        m."measured_at" AS measured_at
+      FROM measurements m
+      WHERE m."user_id" = ${userId}
+      ORDER BY m."type", m."measured_at" DESC
+    `,
+  ]);
+
+  const latestByType = new Map<string, number>();
+  const lastSeenAtByType = new Map<string, Date>();
+  for (const row of latests) {
+    latestByType.set(row.type, Number(row.value));
+    if (row.measured_at) {
+      lastSeenAtByType.set(row.type, new Date(row.measured_at));
+    }
+  }
+
+  const summaries: Record<string, DataSummary> = {};
+  const lastSeenByType: Record<
+    string,
+    { lastSeenAt: string; daysAgo: number } | null
+  > = {};
+  for (const type of measurementTypeEnum.options) {
+    summaries[type] = emptySummary();
+    lastSeenByType[type] = null;
+  }
+
+  const nowForStaleness = Date.now();
+  for (const [type, measuredAt] of lastSeenAtByType.entries()) {
+    const daysAgo = Math.floor(
+      (nowForStaleness - measuredAt.getTime()) / (24 * 60 * 60 * 1000),
+    );
+    lastSeenByType[type] = {
+      lastSeenAt: measuredAt.toISOString(),
+      daysAgo,
+    };
+  }
+
   let totalRows = 0;
   for (const row of aggregates) {
-    const liveCount = Number(row.count);
-    // Compose count/min/max/mean from the DAY buckets when the
-    // composed count agrees with the live `COUNT(*)`. The slim slice's
-    // window is all-time, so a divergent count signals either an
-    // un-backfilled account (rollup only covers the trailing 90d
-    // `ensureUserRollupsFresh` warmed up) or a mid-flight populator —
-    // both cases want the live SQL values, which we already have.
-    const composed = aggregateBuckets(bucketsByType.get(row.type) ?? []);
-    const useRollup = composed.count === liveCount;
-    const count = useRollup ? composed.count : liveCount;
+    const count = Number(row.count);
     totalRows += count;
     const latest = latestByType.get(row.type) ?? null;
     summaries[row.type] = {
       count,
       latest,
-      min: useRollup ? round2(composed.min) : round2(row.min_value),
-      max: useRollup ? round2(composed.max) : round2(row.max_value),
-      mean: useRollup ? round2(composed.mean) : round2(row.mean_value),
+      min: round2(row.min_value),
+      max: round2(row.max_value),
+      mean: round2(row.mean_value),
       avg7: round2(row.avg7),
       avg30: round2(row.avg30),
       slope7: buildSlope(row.slope7, row.r2_7),
@@ -339,6 +520,7 @@ export async function computeSummariesSlice(
         slim_summaries: {
           row_count: totalRows,
           type_count: aggregates.length,
+          path: "live",
         },
       },
     },

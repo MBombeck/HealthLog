@@ -1,6 +1,6 @@
 /**
- * v1.4.35 — SQL-driven aggregator for `/api/insights/comprehensive`,
- * with the partial read-swap onto `measurement_rollups` landed.
+ * v1.4.36 — SQL-driven aggregator for `/api/insights/comprehensive`,
+ * rollup-first read with live-SQL fallback on cold mounts.
  *
  * Background
  * ----------
@@ -21,39 +21,42 @@
  * slim slice: the comprehensive endpoint also needs `anomalyCount`,
  * `avg30LastMonth`, `avg30LastYear`, and the 90-day window cap.
  *
- * Read-swap (v1.4.35)
- * -------------------
- * Two surfaces now read from the persistent `measurement_rollups`
- * table instead of recomputing per request:
+ * Read-swap (v1.4.35 → v1.4.36)
+ * -----------------------------
+ * v1.4.35 landed a partial read-swap that ran both the live aggregate
+ * AND the rollup read in parallel, then preferred the rollup-derived
+ * values when the count matched. That left the regression intact: the
+ * heavy `$queryRaw` over `measurements` still ran on every request,
+ * still scanning the 311k-row table on a power-user account.
  *
- *   - **`count / min / max / mean`** per type — composed from the DAY
- *     rollup buckets via `aggregateBuckets` (sum of counts; min of
- *     mins; max of maxes; count-weighted mean). These four are
- *     linearly composable across DAY buckets, so the composed value
- *     is mathematically identical to the live `AVG` / `MIN` / `MAX`
- *     / `COUNT(*)` over the same rows. A defensive parity check
- *     against the live aggregate's `COUNT(*)` falls back to live SQL
- *     when divergence is detected — covers the cold-mount edge case
- *     where the rollup populator is mid-flight, or a sub-second race
- *     between the watermark check and the bucket read.
+ * v1.4.36 promotes the rollup table to the canonical source on the
+ * happy path:
  *
- *   - **`dailyByType`** — read directly from the DAY rollup buckets
- *     keyed on (userId, type, granularity=DAY, bucketStart). The
- *     bucket's stored `mean` is the same `AVG(value)` per day the
- *     legacy SQL emitted via `date_trunc('day', measured_at)`, so
- *     downstream correlation pairings remain byte-shape stable.
+ *   - On entry we call `ensureUserRollupsFresh` (warm-on-read populator
+ *     for the trailing 90-day DAY window) and then probe the rollup
+ *     table with a single COUNT.
  *
- * Everything else stays on live SQL:
- *   - `slope7 / r2_7`, `slope30 / r2_30`, `slope90 / r2_90` — slope
- *     and R² do **not** compose linearly across DAY buckets.
- *   - `stddev`, `anomalyCount` — same reason.
- *   - `avg7 / avg30 / avg30LastMonth` — these windows aren't aligned
- *     to DAY-bucket boundaries (the 7-day window slides relative to
- *     `NOW()`), so the live `FILTER (WHERE measured_at >= NOW() -
- *     INTERVAL '7 days')` clause is canonical.
- *   - `latest / latestMeasuredAt` — the `DISTINCT ON (type)` pass
- *     resolves the most recent raw row, which the bucket can't
- *     surface (it stores the day's mean, not the day's last value).
+ *   - When the DAY rollup table has rows for this user the **heavy**
+ *     `$queryRaw` over `measurements` is skipped. `count / min / max /
+ *     mean` per type compose from the persisted DAY buckets via
+ *     `aggregateBuckets`; `dailyByType` reads the same buckets keyed
+ *     on `(type, bucketStart)`.
+ *
+ *   - A **narrow** `$queryRaw` still fires for the non-composable
+ *     fields: `stddev`, `anomalyCount`, `avg7 / avg30 / avg30LastMonth`,
+ *     and the `slope7 / slope30 / slope90` tuples. These don't compose
+ *     linearly across DAY buckets so live SQL stays canonical, but the
+ *     query no longer carries the redundant `COUNT(*)` / `MIN` / `MAX`
+ *     / `AVG` columns that duplicated the bucket-derived values.
+ *
+ *   - `latest / latestMeasuredAt` keep their dedicated `DISTINCT ON
+ *     (type)` pass; the bucket stores the day's mean rather than the
+ *     last reading.
+ *
+ *   - Fallback path — when the COUNT probe returns zero rows
+ *     (post-restart cold mount or a brand-new account whose boot-time
+ *     backfill is mid-flight) we run the legacy heavy aggregate so the
+ *     response shape is correct on the very first request.
  *
  * Scope notes
  * -----------
@@ -100,17 +103,40 @@ import { ensureUserRollupsFresh } from "@/lib/measurements/rollups";
 import { aggregateBuckets } from "@/lib/measurements/rollup-read";
 
 /**
- * Raw row from the aggregate query. Keyed on `MeasurementType`, with
- * windowed AVG/SLOPE/R2 expressions plus anomaly-detection inputs
- * (window-wide mean + stddev so we can compute the |z| > 2 count
- * client-side without a second pass over the raw rows).
+ * Heavy aggregate row — count/min/max/mean alongside the non-composable
+ * windowed columns. Used on the cold-mount fallback path where the
+ * rollup table is empty (the populator hasn't caught up yet) so the
+ * response shape is correct on the very first request.
  */
-interface AggregateRow {
+interface HeavyAggregateRow {
   type: string;
   count: bigint;
   min_value: number | null;
   max_value: number | null;
   mean_value: number | null;
+  stddev_value: number | null;
+  anomaly_count: bigint;
+  avg7: number | null;
+  avg30: number | null;
+  avg30_last_month: number | null;
+  slope7: number | null;
+  r2_7: number | null;
+  slope30: number | null;
+  r2_30: number | null;
+  slope90: number | null;
+  r2_90: number | null;
+}
+
+/**
+ * Narrow aggregate row — only the columns the DAY rollup buckets cannot
+ * compose linearly. `count` rides along so the anomaly z-score loop
+ * knows the divisor for the window-wide mean / stddev; the per-type
+ * count exposed on `DataSummary` still comes from the bucket
+ * composition.
+ */
+interface NarrowAggregateRow {
+  type: string;
+  count: bigint;
   stddev_value: number | null;
   anomaly_count: bigint;
   avg7: number | null;
@@ -183,35 +209,63 @@ function round2(value: number | null): number | null {
 /**
  * Build the per-type `DataSummary` bundle for the comprehensive route.
  *
- * Five queries against the trailing 90 days, in parallel:
+ * Two read shapes:
  *
- *   1. Per-type aggregate (count + min/max/mean/stddev + windowed
- *      avgs + regr_slope/r2 for the 7/30/90-day slopes). The
- *      `count / min / max / mean` columns are kept on this query as
- *      the live-SQL fallback for the v1.4.35 read-swap parity check.
- *   2. `DISTINCT ON (type)` for the most-recent raw value per type.
- *   3. DAY rollup buckets from `measurement_rollups` (v1.4.35) —
- *      composed into `count / min / max / mean` for the per-type
- *      summary and replayed as the `dailyByType` correlation feed.
- *   4. Bounded raw-row sys query for BP target pairing (sub-day
- *      timestamps, can't be replaced by a daily mean).
- *   5. Bounded raw-row dia query for BP target pairing.
+ *   - **Rollup-fresh path** (the happy path on every warm request):
+ *     `count / min / max / mean` + `dailyByType` compose from the
+ *     persisted DAY buckets; a narrow `$queryRaw` carries only the
+ *     non-composable windowed columns. The heavy COUNT/MIN/MAX/AVG
+ *     aggregate is **not** executed.
+ *
+ *   - **Live fallback path** (cold mount before the populator catches
+ *     up, or a brand-new account whose backfill is mid-flight): the
+ *     legacy heavy aggregate runs so the response shape stays correct
+ *     on the very first request. Subsequent requests fall back to the
+ *     rollup-fresh path once `ensureUserRollupsFresh` has written
+ *     buckets.
  */
 export async function buildComprehensiveAggregate(
   userId: string,
 ): Promise<ComprehensiveAggregate> {
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
-  // v1.4.35 — keep the persistent rollup table current before any
-  // read fires. After this returns the DAY-granularity buckets for
-  // the trailing 90 days reflect every measurement that landed before
-  // this call (the per-write hook is synchronous on the DAY bucket,
-  // and `ensureUserRollupsFresh` covers cold-mount / process-restart
-  // cases). The bucket reads below depend on that guarantee.
+  // Keep the persistent rollup table current before any read fires.
+  // After this returns the DAY-granularity buckets for the trailing
+  // 90 days reflect every measurement that landed before this call
+  // (the per-write hook is synchronous on the DAY bucket, and
+  // `ensureUserRollupsFresh` covers cold-mount / process-restart).
   await ensureUserRollupsFresh(userId);
 
-  const [aggregates, latests, dayBuckets, sysRaw, diaRaw] = await Promise.all([
-    prisma.$queryRaw<AggregateRow[]>`
+  // Cheap existence check — one indexed COUNT against the rollup
+  // table. A non-zero count means there's at least one DAY bucket to
+  // compose against, so the heavy live aggregate is unnecessary. When
+  // it's zero we fall through to the live aggregate so the response
+  // shape stays correct on a cold mount.
+  const rollupCountRows = await prisma.$queryRaw<Array<{ n: bigint }>>`
+    SELECT COUNT(*) AS n
+    FROM measurement_rollups
+    WHERE user_id = ${userId}
+      AND granularity = 'DAY'
+  `;
+  const hasRollupCoverage = Number(rollupCountRows[0]?.n ?? 0) > 0;
+
+  if (hasRollupCoverage) {
+    return buildFromRollups(userId, ninetyDaysAgo);
+  }
+  return buildFromLiveAggregate(userId, ninetyDaysAgo);
+}
+
+/**
+ * Happy path — DAY buckets carry the composable stats; a narrow
+ * `$queryRaw` carries only the windowed / regression columns the
+ * buckets cannot reconstruct.
+ */
+async function buildFromRollups(
+  userId: string,
+  ninetyDaysAgo: Date,
+): Promise<ComprehensiveAggregate> {
+  const [narrows, latests, dayBuckets, sysRaw, diaRaw, firstRows] = await Promise.all([
+    prisma.$queryRaw<NarrowAggregateRow[]>`
       WITH window_stats AS (
         SELECT
           m."type",
@@ -225,9 +279,6 @@ export async function buildComprehensiveAggregate(
       SELECT
         m."type"::text                                                AS type,
         COUNT(*)                                                      AS count,
-        MIN(m."value")::double precision                              AS min_value,
-        MAX(m."value")::double precision                              AS max_value,
-        AVG(m."value")::double precision                              AS mean_value,
         ws.stddev_value::double precision                             AS stddev_value,
         -- |z| > 2 anomaly count over the 90-day window. STDDEV_POP
         -- matches the JS helper which divides by n (not n-1).
@@ -333,11 +384,13 @@ export async function buildComprehensiveAggregate(
       orderBy: { measuredAt: "asc" },
       select: { measuredAt: true, value: true },
     }),
+    prisma.$queryRaw<Array<{ first_at: Date | null }>>`
+      SELECT MIN(m."measured_at") AS first_at
+      FROM measurements m
+      WHERE m."user_id" = ${userId}
+        AND m."measured_at" >= ${ninetyDaysAgo}
+    `,
   ]);
-
-  // ── avg30LastYear ─────────────────────────────────────────
-  // The 90-day window guarantees this is null (no rows >= 365 days
-  // old will appear) — preserves legacy semantics.
 
   const latestByType = new Map<string, { value: number; measuredAt: Date }>();
   for (const row of latests) {
@@ -347,53 +400,214 @@ export async function buildComprehensiveAggregate(
     });
   }
 
-  // v1.4.35 — partition DAY buckets by type so the per-type aggregate
-  // loop below can compose `count / min / max / mean` from them in O(1).
-  const bucketsByType = new Map<
-    string,
-    Array<{
-      day: Date;
-      count: number;
-      mean: number;
-      minValue: number;
-      maxValue: number;
-    }>
-  >();
-  for (const b of dayBuckets) {
-    const list = bucketsByType.get(b.type) ?? [];
-    list.push({
-      day: b.bucketStart,
-      count: b.count,
-      mean: b.mean,
-      minValue: b.minValue,
-      maxValue: b.maxValue,
-    });
-    bucketsByType.set(b.type, list);
+  const bucketsByType = partitionBucketsByType(dayBuckets);
+  const narrowByType = new Map<string, NarrowAggregateRow>();
+  for (const row of narrows) {
+    narrowByType.set(row.type, row);
   }
 
-  // Seed only types that actually have rows — the legacy route only
-  // populated `summaries[t]` when `data.length > 0`.
+  const summaries: Record<string, DataSummary> = {};
+  let totalMeasurements = 0;
+
+  // Seed every type that has buckets — the bucket set is the source of
+  // truth on this path. The narrow aggregate provides the non-composable
+  // windowed columns alongside.
+  for (const [type, buckets] of bucketsByType.entries()) {
+    const composed = aggregateBuckets(buckets);
+    if (composed.count === 0) continue;
+    totalMeasurements += composed.count;
+    const latest = latestByType.get(type);
+    const narrow = narrowByType.get(type);
+    summaries[type] = {
+      count: composed.count,
+      latest: latest?.value ?? null,
+      min: round2(composed.min),
+      max: round2(composed.max),
+      mean: round2(composed.mean),
+      avg7: round2(narrow?.avg7 ?? null),
+      avg30: round2(narrow?.avg30 ?? null),
+      slope7: buildSlope(narrow?.slope7 ?? null, narrow?.r2_7 ?? null),
+      slope30: buildSlope(narrow?.slope30 ?? null, narrow?.r2_30 ?? null),
+      slope90: buildSlope(narrow?.slope90 ?? null, narrow?.r2_90 ?? null),
+      anomalyCount: Number(narrow?.anomaly_count ?? 0),
+      avg30LastMonth: round2(narrow?.avg30_last_month ?? null),
+      // Legacy semantics: the 90-day window guarantees no rows from a
+      // year ago. Always null.
+      avg30LastYear: null,
+    };
+  }
+
+  const firstMeasurementAt = firstRows[0]?.first_at
+    ? new Date(firstRows[0].first_at)
+    : null;
+
+  return {
+    summaries,
+    bpRawRows: {
+      sys: sysRaw.map((r) => ({ measuredAt: r.measuredAt, value: r.value })),
+      dia: diaRaw.map((r) => ({ measuredAt: r.measuredAt, value: r.value })),
+    },
+    dailyByType: buildDailyByType(bucketsByType),
+    firstMeasurementAt,
+    totalMeasurements,
+  };
+}
+
+/**
+ * Cold fallback — the rollup table is empty for this user (e.g. brand-
+ * new account, or post-restart before the boot-time backfill landed).
+ * Runs the legacy heavy aggregate so the response shape is correct on
+ * the very first request; subsequent requests will see the rollup
+ * populator catch up and route through `buildFromRollups`.
+ */
+async function buildFromLiveAggregate(
+  userId: string,
+  ninetyDaysAgo: Date,
+): Promise<ComprehensiveAggregate> {
+  const [aggregates, latests, dayBuckets, sysRaw, diaRaw] = await Promise.all([
+    prisma.$queryRaw<HeavyAggregateRow[]>`
+      WITH window_stats AS (
+        SELECT
+          m."type",
+          AVG(m."value") AS mean_value,
+          STDDEV_POP(m."value") AS stddev_value
+        FROM measurements m
+        WHERE m."user_id" = ${userId}
+          AND m."measured_at" >= ${ninetyDaysAgo}
+        GROUP BY m."type"
+      )
+      SELECT
+        m."type"::text                                                AS type,
+        COUNT(*)                                                      AS count,
+        MIN(m."value")::double precision                              AS min_value,
+        MAX(m."value")::double precision                              AS max_value,
+        AVG(m."value")::double precision                              AS mean_value,
+        ws.stddev_value::double precision                             AS stddev_value,
+        COUNT(*) FILTER (
+          WHERE ws.stddev_value IS NOT NULL
+            AND ws.stddev_value > 0
+            AND ABS(
+              (ROUND(((m."value" - ws.mean_value) / ws.stddev_value)::numeric, 2))
+            ) > 2
+        )                                                             AS anomaly_count,
+        AVG(m."value") FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '7 days'
+        )::double precision                                           AS avg7,
+        AVG(m."value") FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '30 days'
+        )::double precision                                           AS avg30,
+        AVG(m."value") FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '60 days'
+            AND m."measured_at" <  NOW() - INTERVAL '30 days'
+        )::double precision                                           AS avg30_last_month,
+        REGR_SLOPE(
+          m."value",
+          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
+        ) FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '7 days'
+        )::double precision                                           AS slope7,
+        REGR_R2(
+          m."value",
+          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
+        ) FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '7 days'
+        )::double precision                                           AS r2_7,
+        REGR_SLOPE(
+          m."value",
+          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
+        ) FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '30 days'
+        )::double precision                                           AS slope30,
+        REGR_R2(
+          m."value",
+          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
+        ) FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '30 days'
+        )::double precision                                           AS r2_30,
+        REGR_SLOPE(
+          m."value",
+          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
+        ) FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '90 days'
+        )::double precision                                           AS slope90,
+        REGR_R2(
+          m."value",
+          EXTRACT(EPOCH FROM m."measured_at") / 86400.0
+        ) FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '90 days'
+        )::double precision                                           AS r2_90
+      FROM measurements m
+      JOIN window_stats ws ON ws."type" = m."type"
+      WHERE m."user_id" = ${userId}
+        AND m."measured_at" >= ${ninetyDaysAgo}
+      GROUP BY m."type", ws.stddev_value
+    `,
+    prisma.$queryRaw<LatestRow[]>`
+      SELECT DISTINCT ON (m."type")
+        m."type"::text AS type,
+        m."value"::double precision AS value,
+        m."measured_at" AS measured_at
+      FROM measurements m
+      WHERE m."user_id" = ${userId}
+        AND m."measured_at" >= ${ninetyDaysAgo}
+      ORDER BY m."type", m."measured_at" DESC
+    `,
+    // Buckets may exist for some types even when the COUNT probe came
+    // back zero (race window between the probe and a sibling
+    // populator); the cold-path read still honours them for the
+    // `dailyByType` feed.
+    prisma.measurementRollup.findMany({
+      where: {
+        userId,
+        granularity: "DAY",
+        bucketStart: { gte: ninetyDaysAgo },
+      },
+      orderBy: [{ type: "asc" }, { bucketStart: "asc" }],
+    }),
+    prisma.measurement.findMany({
+      where: {
+        userId,
+        type: "BLOOD_PRESSURE_SYS",
+        measuredAt: { gte: ninetyDaysAgo },
+      },
+      orderBy: { measuredAt: "asc" },
+      select: { measuredAt: true, value: true },
+    }),
+    prisma.measurement.findMany({
+      where: {
+        userId,
+        type: "BLOOD_PRESSURE_DIA",
+        measuredAt: { gte: ninetyDaysAgo },
+      },
+      orderBy: { measuredAt: "asc" },
+      select: { measuredAt: true, value: true },
+    }),
+  ]);
+
+  const latestByType = new Map<string, { value: number; measuredAt: Date }>();
+  for (const row of latests) {
+    latestByType.set(row.type, {
+      value: Number(row.value),
+      measuredAt: new Date(row.measured_at),
+    });
+  }
+
+  const bucketsByType = partitionBucketsByType(dayBuckets);
+
   const summaries: Record<string, DataSummary> = {};
   let totalMeasurements = 0;
   let firstMeasurementAt: Date | null = null;
 
   for (const row of aggregates) {
-    const liveCount = Number(row.count);
-    // Compose count/min/max/mean from the DAY buckets when they agree
-    // with the live `COUNT(*)`. Parity divergence (cold mount, rollup
-    // populator mid-flight, watermark race) falls back to live SQL so
-    // the response shape never serves a wrong value.
-    const composed = aggregateBuckets(bucketsByType.get(row.type) ?? []);
-    const useRollup = composed.count === liveCount;
-    const count = useRollup ? composed.count : liveCount;
+    const count = Number(row.count);
     totalMeasurements += count;
     const latest = latestByType.get(row.type);
     summaries[row.type] = {
       count,
       latest: latest?.value ?? null,
-      min: useRollup ? round2(composed.min) : round2(row.min_value),
-      max: useRollup ? round2(composed.max) : round2(row.max_value),
-      mean: useRollup ? round2(composed.mean) : round2(row.mean_value),
+      min: round2(row.min_value),
+      max: round2(row.max_value),
+      mean: round2(row.mean_value),
       avg7: round2(row.avg7),
       avg30: round2(row.avg30),
       slope7: buildSlope(row.slope7, row.r2_7),
@@ -401,17 +615,10 @@ export async function buildComprehensiveAggregate(
       slope90: buildSlope(row.slope90, row.r2_90),
       anomalyCount: Number(row.anomaly_count),
       avg30LastMonth: round2(row.avg30_last_month),
-      // Legacy semantics: the 90-day findMany window guarantees no
-      // rows from a year ago. Always null.
       avg30LastYear: null,
     };
   }
 
-  // ── firstMeasurementAt ───────────────────────────────────
-  // Take the earliest `measuredAt` across the user's 90-day rows.
-  // One extra cheap aggregate query keeps the route's `dataSpanDays`
-  // truthful. Run lazily: skip when no aggregate rows came back
-  // (totalMeasurements === 0).
   if (totalMeasurements > 0) {
     const firstRows = await prisma.$queryRaw<Array<{ first_at: Date | null }>>`
       SELECT MIN(m."measured_at") AS first_at
@@ -424,13 +631,84 @@ export async function buildComprehensiveAggregate(
       : null;
   }
 
-  // ── daily-by-type ────────────────────────────────────────
-  // v1.4.35 — sourced from the DAY rollup buckets. The legacy
-  // implementation ran a dedicated `date_trunc('day', m."measured_at")`
-  // GROUP BY scan and only returned the three types the correlation
-  // pairings consume. We filter to the same three types here so
-  // downstream consumers see a byte-identical shape, but the data
-  // origin is now the persisted bucket — no extra SQL pass needed.
+  return {
+    summaries,
+    bpRawRows: {
+      sys: sysRaw.map((r) => ({ measuredAt: r.measuredAt, value: r.value })),
+      dia: diaRaw.map((r) => ({ measuredAt: r.measuredAt, value: r.value })),
+    },
+    dailyByType: buildDailyByType(bucketsByType),
+    firstMeasurementAt,
+    totalMeasurements,
+  };
+}
+
+/**
+ * Partition DAY buckets by type so the per-type aggregator can compose
+ * `count / min / max / mean` from them in O(1) and the daily-by-type
+ * builder can replay them as the correlation feed.
+ */
+function partitionBucketsByType(
+  rows: ReadonlyArray<{
+    type: string;
+    bucketStart: Date;
+    count: number;
+    mean: number;
+    minValue: number;
+    maxValue: number;
+  }>,
+): Map<
+  string,
+  Array<{
+    day: Date;
+    count: number;
+    mean: number;
+    minValue: number;
+    maxValue: number;
+  }>
+> {
+  const map = new Map<
+    string,
+    Array<{
+      day: Date;
+      count: number;
+      mean: number;
+      minValue: number;
+      maxValue: number;
+    }>
+  >();
+  for (const b of rows) {
+    const list = map.get(b.type) ?? [];
+    list.push({
+      day: b.bucketStart,
+      count: b.count,
+      mean: b.mean,
+      minValue: b.minValue,
+      maxValue: b.maxValue,
+    });
+    map.set(b.type, list);
+  }
+  return map;
+}
+
+/**
+ * `dailyByType` is sourced from DAY rollup buckets, filtered to the
+ * three types the correlation pairings consume so downstream consumers
+ * see a byte-identical shape with the legacy
+ * `date_trunc('day', m."measured_at")` GROUP BY query.
+ */
+function buildDailyByType(
+  bucketsByType: Map<
+    string,
+    Array<{
+      day: Date;
+      count: number;
+      mean: number;
+      minValue: number;
+      maxValue: number;
+    }>
+  >,
+): Record<string, Array<{ day: string; value: number }>> {
   const dailyByType: Record<string, Array<{ day: string; value: number }>> = {};
   const DAILY_TYPES = ["WEIGHT", "BLOOD_PRESSURE_SYS", "PULSE"] as const;
   for (const type of DAILY_TYPES) {
@@ -447,16 +725,6 @@ export async function buildComprehensiveAggregate(
       value: round2(b.mean) ?? 0,
     }));
   }
-
-  return {
-    summaries,
-    bpRawRows: {
-      sys: sysRaw.map((r) => ({ measuredAt: r.measuredAt, value: r.value })),
-      dia: diaRaw.map((r) => ({ measuredAt: r.measuredAt, value: r.value })),
-    },
-    dailyByType,
-    firstMeasurementAt,
-    totalMeasurements,
-  };
+  return dailyByType;
 }
 

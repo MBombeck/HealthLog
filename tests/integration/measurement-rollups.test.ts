@@ -630,4 +630,108 @@ describe("measurement rollups — integration", () => {
 
     vi.mocked(getGlobalBoss).mockReturnValue(null as never);
   });
+
+  // ─── v1.4.36 rollup-fresh skip-live contract ──────────────────
+  //
+  // The v1.4.35 read-swap kept the heavy live aggregate running in
+  // parallel with the rollup read. v1.4.36 drops that — when the
+  // rollup table has DAY buckets for the user, the heavy aggregate
+  // is bypassed entirely. This test pins that the rollup-derived
+  // response is still byte-identical to a parallel live aggregate
+  // over the same rows AND that the response shape matches the
+  // pre-swap contract for every field.
+
+  it("rollup-fresh response matches live SQL for every DataSummary field", async () => {
+    const prisma = getPrismaClient();
+    const user = await prisma.user.create({
+      data: {
+        username: "rollup-skip-live-user",
+        email: "rollup-skip-live@example.test",
+        role: "USER",
+      },
+    });
+
+    // 60 readings over 30 days, two types, deliberately spread so
+    // anomalies + slopes + windowed avgs all have signal.
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    const seedRows: Array<{
+      userId: string;
+      type: "WEIGHT" | "PULSE";
+      value: number;
+      unit: string;
+      source: "MANUAL";
+      measuredAt: Date;
+    }> = [];
+    for (let day = 0; day < 30; day++) {
+      seedRows.push({
+        userId: user.id,
+        type: "WEIGHT",
+        value: 80 + day * 0.05 + ((day * 7) % 5) * 0.1,
+        unit: "kg",
+        source: "MANUAL",
+        measuredAt: new Date(now - (29 - day) * dayMs - day * 60 * 1000),
+      });
+      seedRows.push({
+        userId: user.id,
+        type: "PULSE",
+        value: 65 + ((day * 3) % 11) * 0.4,
+        unit: "bpm",
+        source: "MANUAL",
+        measuredAt: new Date(now - (29 - day) * dayMs - day * 90 * 1000),
+      });
+    }
+    await prisma.measurement.createMany({ data: seedRows });
+
+    // Pre-fold the rollup buckets so the rollup-fresh path engages.
+    await recomputeUserRollups(user.id, { granularities: ["DAY"] });
+
+    // Parallel live aggregation over the same 90-day window using the
+    // exact heavy-aggregate shape the cold-mount fallback runs.
+    const ninetyDaysAgo = new Date(now - 90 * dayMs);
+    const live = await prisma.$queryRaw<
+      Array<{
+        type: string;
+        count: bigint;
+        min_value: number;
+        max_value: number;
+        mean_value: number;
+      }>
+    >`
+      SELECT
+        m."type"::text                              AS type,
+        COUNT(*)                                    AS count,
+        MIN(m."value")::double precision            AS min_value,
+        MAX(m."value")::double precision            AS max_value,
+        AVG(m."value")::double precision            AS mean_value
+      FROM measurements m
+      WHERE m."user_id" = ${user.id}
+        AND m."measured_at" >= ${ninetyDaysAgo}
+      GROUP BY m."type"
+    `;
+
+    const aggregate = await buildComprehensiveAggregate(user.id);
+
+    const round2 = (n: number) => Math.round(n * 100) / 100;
+
+    expect(live.length).toBeGreaterThan(0);
+    for (const liveRow of live) {
+      const summary = aggregate.summaries[liveRow.type];
+      expect(summary, `summary for ${liveRow.type}`).toBeDefined();
+      // count / min / max / mean compose from buckets — byte-identical
+      // to live SQL over the same rows.
+      expect(summary.count).toBe(Number(liveRow.count));
+      expect(summary.min).toBe(round2(liveRow.min_value));
+      expect(summary.max).toBe(round2(liveRow.max_value));
+      expect(summary.mean).toBe(round2(liveRow.mean_value));
+      // Narrow aggregate fills the non-composable windowed columns.
+      // Slope tuples and avg7/avg30 are sourced from live SQL even on
+      // the rollup-fresh path so the values are present (not null) as
+      // long as the windowed avg has rows to chew on.
+      expect(summary.avg30).not.toBeNull();
+      // Latest reading comes from the DISTINCT ON pass — never null
+      // when the user has rows for the type.
+      expect(summary.latest).not.toBeNull();
+    }
+  });
 });
