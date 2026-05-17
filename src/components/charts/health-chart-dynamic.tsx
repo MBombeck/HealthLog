@@ -27,3 +27,21 @@ export const HealthChartDynamic = dynamic(
     })),
   { ssr: false, loading: () => <ChartSkeleton /> },
 );
+
+/**
+ * v1.4.36 W2 — mini variant for the trends-row 140 px chart slot. Same
+ * underlying `<HealthChart>` import, but the loading shell renders the
+ * `mini` `<ChartSkeleton>` so the loading box matches the painted
+ * chart's footprint instead of inflating past the row contract.
+ *
+ * Consumers inside a fixed-height row (BP + weight cards in
+ * `trends-row.tsx`) pass `mini` on the chart itself; this wrapper
+ * ensures the next/dynamic loader paints the matching skeleton.
+ */
+export const HealthChartDynamicMini = dynamic(
+  () =>
+    import("@/components/charts/health-chart").then((mod) => ({
+      default: mod.HealthChart,
+    })),
+  { ssr: false, loading: () => <ChartSkeleton mini /> },
+);

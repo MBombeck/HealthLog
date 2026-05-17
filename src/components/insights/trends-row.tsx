@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useTranslations } from "@/lib/i18n/context";
 import { useAuth } from "@/hooks/use-auth";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
-import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
+import { HealthChartDynamicMini } from "@/components/charts/health-chart-dynamic";
 import {
   TrendAnnotation,
   type TrendAnnotationConfidenceBand,
@@ -32,7 +32,7 @@ const MoodChart = dynamic(
     import("@/components/charts/mood-chart").then((mod) => ({
       default: mod.MoodChart,
     })),
-  { ssr: false, loading: () => <ChartSkeleton /> },
+  { ssr: false, loading: () => <ChartSkeleton mini /> },
 );
 
 interface TrendsRowProps {
@@ -118,7 +118,7 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
               shadcn Card) lines up with the BP/weight tiles' lighter
               shell. Both chart types ship the same data-slot now. */}
           <div data-slot="trends-row-chart-slot" className="h-[140px] shrink-0">
-            <HealthChartDynamic
+            <HealthChartDynamicMini
               types={["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"]}
               title={t("charts.bloodPressure")}
               colors={["#ff79c6", "#8be9fd"]}
@@ -140,7 +140,7 @@ export function TrendsRow({ annotations, confidence }: TrendsRowProps) {
           className="flex h-full flex-col gap-2 md:min-h-[300px]"
         >
           <div data-slot="trends-row-chart-slot" className="h-[140px] shrink-0">
-            <HealthChartDynamic
+            <HealthChartDynamicMini
               types={["WEIGHT"]}
               title={t("charts.weight")}
               colors={["#bd93f9"]}

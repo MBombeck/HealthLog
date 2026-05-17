@@ -23,12 +23,46 @@ import { useTranslations } from "@/lib/i18n/context";
  * The cumulative box matches the loaded chart's height to within a
  * pixel so the page does not jump on hydration.
  *
+ * v1.4.36 W2 — `mini` variant for the trends-row 140 px chart slot.
+ * The default skeleton's rounded-xl border + p-4/p-6 padding inflated
+ * past the 140 px wrapper and pushed the row taller than the loaded
+ * chart, re-introducing the very layout shift the wrapper now
+ * eliminates. The mini variant trades the card chrome for
+ * `rounded-md p-2` and pins the inner band at 140 px so the loading
+ * shell occupies the same visible box as the painted chart.
+ *
  * `prefers-reduced-motion` is honoured automatically — the `<Skeleton>`
  * primitive's `animate-pulse` is suppressed via Tailwind's
  * `motion-reduce:animate-none` modifier.
  */
-export function ChartSkeleton({ className }: { className?: string }) {
+export function ChartSkeleton({
+  className,
+  mini = false,
+}: {
+  className?: string;
+  /**
+   * When true, render the compact variant used inside the trends-row
+   * chart slot (140 px band, lighter chrome). Defaults to false for
+   * the dashboard hero / sub-page charts.
+   */
+  mini?: boolean;
+}) {
   const { t } = useTranslations();
+  if (mini) {
+    return (
+      <div
+        data-slot="chart-skeleton"
+        data-mini="true"
+        role="status"
+        aria-busy="true"
+        aria-live="polite"
+        className={cn("bg-card border-border rounded-md border p-2", className)}
+      >
+        <span className="sr-only">{t("charts.loadingLabel")}</span>
+        <Skeleton className="h-[140px] w-full" />
+      </div>
+    );
+  }
   return (
     <div
       data-slot="chart-skeleton"
