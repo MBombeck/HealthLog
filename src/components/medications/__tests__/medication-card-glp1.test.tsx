@@ -362,13 +362,15 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     expect(html).not.toContain("Low stock");
   });
 
-  it("side-effect quick-log button hands off the medication object", () => {
-    // SSR can't fire DOM clicks, so we smoke-check the contract:
-    //   - the button renders when onLogSideEffect is supplied
-    //   - invoking the handler synchronously delivers the GLP-1
-    //     medication object the parent will then prefill MoodEntry with
-    //     (the parent's MoodEntry mutation reads med.name to build the
-    //     pre-tagged side-effect entry).
+  it("side-effect quick-log moves into the header actions overflow", () => {
+    // v1.4.37 W4b — the side-effect quick-log no longer sits in the
+    // primary actions row (which used to read as a three-button row
+    // and broke symmetry with the generic Ramipril card). It now
+    // lives behind a kebab overflow in the header `actions` slot.
+    // SSR doesn't open Radix Portal content, so we assert the trigger
+    // surfaces with the localised `common.moreOptions` aria-label and
+    // smoke-check that invoking the handler delivers the GLP-1
+    // medication object the parent prefills MoodEntry with.
     const client = makeClient();
     seedCompliance(client, med7p5.id);
     seedGlp1Details(client, med7p5.id, {});
@@ -383,21 +385,27 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
       client,
     );
 
-    // Button renders with the localised label.
-    expect(html).toContain("Log side effect");
+    // Kebab trigger renders with the localised aria-label.
+    expect(html).toContain('aria-label="More options"');
+    // The side-effect button must no longer ride alongside
+    // Eingenommen / Übersprungen in the primary actions row.
+    expect(html).not.toMatch(
+      /class="[^"]*flex[^"]*gap-2[^"]*"[^>]*>[\s\S]*?Log side effect/,
+    );
 
-    // Invoke the supplied handler the way the button's onClick would —
-    // pins the prefill payload contract for MoodEntry.
+    // Invoke the supplied handler the way the menu item's onClick
+    // would — pins the prefill payload contract for MoodEntry.
     handler(med7p5);
     expect(handler).toHaveBeenCalledWith(
       expect.objectContaining({ name: "Mounjaro", treatmentClass: "GLP1" }),
     );
   });
 
-  it("omits the side-effect button when onLogSideEffect is not supplied", () => {
-    // Back-compat: the button is opt-in via the prop. Pages that
-    // haven't wired the MoodEntry hand-off yet should still render
-    // the card without a dead button.
+  it("omits the overflow kebab when onLogSideEffect is not supplied", () => {
+    // Back-compat: the overflow is opt-in via the prop. Pages that
+    // haven't wired the MoodEntry hand-off yet render Mounjaro with
+    // exactly the same header-actions shape as Ramipril (history +
+    // edit, no kebab) so the medications list stays symmetric.
     const client = makeClient();
     seedCompliance(client, med7p5.id);
     seedGlp1Details(client, med7p5.id, {});
@@ -407,7 +415,7 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
       client,
     );
 
-    expect(html).not.toContain("Log side effect");
+    expect(html).not.toContain('aria-label="More options"');
   });
 
   it("AI-disabled state: no Coach hand-off button is rendered today", () => {
@@ -451,8 +459,11 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     expect(html).toContain("opacity-60");
     expect(html).toContain("Paused since");
     // Primary actions ("Taken" / "Skipped") are suppressed for
-    // inactive medications.
-    expect(html).not.toContain("Log side effect");
+    // inactive medications. The header-actions overflow trigger is
+    // unconditionally absent when `onLogSideEffect` is not supplied
+    // (this test fixture doesn't wire it), so Mounjaro and Ramipril
+    // headers stay shape-equivalent in the paused state.
+    expect(html).not.toContain('aria-label="More options"');
   });
 
   it("renders German copy under the 'de' locale", () => {

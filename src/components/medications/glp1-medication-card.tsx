@@ -8,6 +8,7 @@ import {
   Flame,
   History,
   Loader2,
+  MoreVertical,
   Pencil,
   SkipForward,
   Stethoscope,
@@ -16,6 +17,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { MedicationCardHeader } from "@/components/medications/MedicationCardHeader";
 import { Progress } from "@/components/ui/progress";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
@@ -332,6 +339,35 @@ export function Glp1MedicationCard({
       >
         <Pencil className="h-4 w-4" />
       </Button>
+      {/* v1.4.37 W4b — GLP-1 specifics (side-effect quick-log etc.)
+          live in the header actions overflow so the primary action
+          row stays the canonical two-button shape (Eingenommen /
+          Übersprungen) shared with the generic medication card. The
+          kebab only renders when at least one overflow item is wired
+          for this medication kind. */}
+      {onLogSideEffect && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="min-h-11 min-w-11"
+              aria-label={t("common.moreOptions")}
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem
+              onClick={() => onLogSideEffect(medication)}
+              className="whitespace-nowrap"
+            >
+              <Stethoscope className="mr-2 h-4 w-4" />
+              {t("medications.glp1LogSideEffect")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </>
   );
 
@@ -482,18 +518,20 @@ export function Glp1MedicationCard({
           </div>
         )}
 
-        {/* Primary actions row — matches the generic card's
-            min-h-11 tap-target rule. The third button opens the
-            side-effect log pre-tagged with the GLP-1 drug name. */}
+        {/* Primary actions row — byte-equivalent with the generic
+            medication card. v1.4.37 W4b moved the GLP-1-specific
+            side-effect quick-log out of this row and into the
+            header-actions overflow (kebab) so Mounjaro and Ramipril
+            share the canonical two-button primary row. */}
         {medication.active && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2">
             <Button
               className="min-h-11 flex-1"
               onClick={() => recordIntake(false)}
               disabled={!!intakeLoading}
             >
               {intakeLoading === "take" ? (
-                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-1 h-4 w-4 animate-spin motion-reduce:animate-none" />
               ) : (
                 <Check className="mr-1 h-4 w-4" />
               )}
@@ -506,22 +544,12 @@ export function Glp1MedicationCard({
               disabled={!!intakeLoading}
             >
               {intakeLoading === "skip" ? (
-                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-1 h-4 w-4 animate-spin motion-reduce:animate-none" />
               ) : (
                 <SkipForward className="mr-1 h-4 w-4" />
               )}
               {t("medications.skipped")}
             </Button>
-            {onLogSideEffect && (
-              <Button
-                variant="ghost"
-                className="min-h-11"
-                onClick={() => onLogSideEffect(medication)}
-              >
-                <Stethoscope className="mr-1 h-4 w-4" />
-                {t("medications.glp1LogSideEffect")}
-              </Button>
-            )}
           </div>
         )}
       </CardContent>
