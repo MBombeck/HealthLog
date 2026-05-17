@@ -235,60 +235,81 @@ export const updateMeasurementSchema = z.object({
     .optional(),
 });
 
-export const listMeasurementsSchema = z.object({
-  type: measurementTypeEnum.optional(),
-  from: z.iso
-    .datetime({ offset: true })
-    .transform((s) => new Date(s))
-    .optional(),
-  to: z.iso
-    .datetime({ offset: true })
-    .transform((s) => new Date(s))
-    .optional(),
-  // v1.4.28 FB-D2 — when the chart sends an explicit from/to window the
-  // payload is already bounded; lift the per-request ceiling to 5000
-  // (still cheaper than the legacy unbounded `while (true)` walk).
-  // Callers that omit from/to keep the historical 500-row cap.
-  limit: z.coerce.number().int().min(1).max(5000).optional().default(100),
-  offset: z.coerce.number().int().min(0).optional().default(0),
-  sortBy: z
-    .enum(["type", "value", "measuredAt", "source"])
-    .optional()
-    .default("measuredAt"),
-  sortDir: z.enum(["asc", "desc"]).optional().default("desc"),
-  // v1.4.28 FB-D2 — bucket hint for range-aware queries. When set the
-  // GET handler runs a server-side `date_trunc` aggregation and returns
-  // one row per bucket per type rather than the raw measurement rows.
-  // Omitting `aggregate` keeps the raw wire shape (iOS contract); the
-  // chart-data client must opt in explicitly.
-  aggregate: z.enum(["raw", "daily", "weekly", "monthly"]).optional(),
-  // v1.4.36 W1 — opt-in source switch for daily-aggregate reads. When
-  // `source=rollup` + `aggregate=daily`, the route reads from the
-  // persistent `measurement_rollups` DAY buckets instead of running a
-  // live `date_trunc` GROUP BY scan over the raw `measurements` table.
-  // The chart-data client opts in for the trends-row strip + every
-  // sub-page chart so the three parallel daily-aggregate requests stop
-  // burning a full table scan each. The route falls back to live SQL
-  // when the rollup bucket set is empty for the requested window so
-  // brand-new accounts still see correct data on their first chart.
-  source: z.enum(["rollup"]).optional(),
-  // v1.4.37 W7c — list-view "one row per day" mode for cumulative
-  // types (steps, active energy, distance, flights, daylight). When
-  // `groupBy=day` is set and `type` is a cumulative HK type, the route
-  // returns one synthesised row per user-TZ day with `value` = SUM
-  // and `sampleCount` = number of per-sample rows behind the bucket.
-  // Omitted = legacy per-sample list behaviour (iOS contract stable).
-  groupBy: z.enum(["day"]).optional(),
-  // v1.4.37 W7c — drill-down to per-sample rows for a single day in
-  // the user's IANA timezone. Format `YYYY-MM-DD`; the route resolves
-  // the day boundary against the user's `User.timezone`. Used by the
-  // expandable list row to reveal the chunks that contributed to the
-  // collapsed daily total.
-  dayKey: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "dayKey must be YYYY-MM-DD")
-    .optional(),
-});
+export const listMeasurementsSchema = z
+  .object({
+    type: measurementTypeEnum.optional(),
+    from: z.iso
+      .datetime({ offset: true })
+      .transform((s) => new Date(s))
+      .optional(),
+    to: z.iso
+      .datetime({ offset: true })
+      .transform((s) => new Date(s))
+      .optional(),
+    // v1.4.28 FB-D2 — when the chart sends an explicit from/to window the
+    // payload is already bounded; lift the per-request ceiling to 5000
+    // (still cheaper than the legacy unbounded `while (true)` walk).
+    // Callers that omit from/to keep the historical 500-row cap.
+    limit: z.coerce.number().int().min(1).max(5000).optional().default(100),
+    offset: z.coerce.number().int().min(0).optional().default(0),
+    sortBy: z
+      .enum(["type", "value", "measuredAt", "source"])
+      .optional()
+      .default("measuredAt"),
+    sortDir: z.enum(["asc", "desc"]).optional().default("desc"),
+    // v1.4.28 FB-D2 — bucket hint for range-aware queries. When set the
+    // GET handler runs a server-side `date_trunc` aggregation and returns
+    // one row per bucket per type rather than the raw measurement rows.
+    // Omitting `aggregate` keeps the raw wire shape (iOS contract); the
+    // chart-data client must opt in explicitly.
+    aggregate: z.enum(["raw", "daily", "weekly", "monthly"]).optional(),
+    // v1.4.36 W1 — opt-in source switch for daily-aggregate reads. When
+    // `source=rollup` + `aggregate=daily`, the route reads from the
+    // persistent `measurement_rollups` DAY buckets instead of running a
+    // live `date_trunc` GROUP BY scan over the raw `measurements` table.
+    // The chart-data client opts in for the trends-row strip + every
+    // sub-page chart so the three parallel daily-aggregate requests stop
+    // burning a full table scan each. The route falls back to live SQL
+    // when the rollup bucket set is empty for the requested window so
+    // brand-new accounts still see correct data on their first chart.
+    source: z.enum(["rollup"]).optional(),
+    // v1.4.37 W7c — list-view "one row per day" mode for cumulative
+    // types (steps, active energy, distance, flights, daylight). When
+    // `groupBy=day` is set and `type` is a cumulative HK type, the route
+    // returns one synthesised row per user-TZ day with `value` = SUM
+    // and `sampleCount` = number of per-sample rows behind the bucket.
+    // Omitted = legacy per-sample list behaviour (iOS contract stable).
+    //
+    // v1.4.37 W10 — the route's groupBy=day branch hard-codes `offset:0`
+    // in the meta because the collapse runs after the per-sample scan;
+    // real pagination would require Postgres-side `date_trunc` grouping
+    // and a separate `prisma.count({ distinct: ["dayKey"] })`. Until
+    // that lands, reject any caller threading a non-zero offset so the
+    // pagination contract isn't silently dropped.
+    groupBy: z.enum(["day"]).optional(),
+    // v1.4.37 W7c — drill-down to per-sample rows for a single day in
+    // the user's IANA timezone. Format `YYYY-MM-DD`; the route resolves
+    // the day boundary against the user's `User.timezone`. Used by the
+    // expandable list row to reveal the chunks that contributed to the
+    // collapsed daily total.
+    //
+    // v1.4.37 W10 — same offset restriction as `groupBy=day`; the
+    // drill-down branch returns a single bounded page rather than a
+    // cursor.
+    dayKey: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "dayKey must be YYYY-MM-DD")
+      .optional(),
+  })
+  .refine(
+    ({ offset, groupBy, dayKey }) =>
+      !(offset > 0 && (groupBy === "day" || dayKey != null)),
+    {
+      message:
+        "offset is not supported with groupBy=day or dayKey; use a smaller window or omit offset",
+      path: ["offset"],
+    },
+  );
 
 export const createBatchMeasurementSchema = z.object({
   measurements: z.array(createMeasurementSchema).min(1).max(5),

@@ -259,3 +259,29 @@ describe("GET /api/measurements — dayKey drill-down (W7c)", () => {
     expect(json.data.meta.dayKey).toBeUndefined();
   });
 });
+
+describe("GET /api/measurements — schema rejections (W10 reconcile)", () => {
+  // v1.4.37 W10 H1 — the groupBy=day collapsed path runs the collapse
+  // AFTER the per-sample scan, so it can't honour a non-zero offset
+  // without a Postgres-side date_trunc grouping that's a v1.4.38
+  // backlog item. The validator must reject the combination instead
+  // of silently rendering "showing 1-25 of N" with the wrong N.
+  it("rejects offset>0 when groupBy=day is set", async () => {
+    const res = await GET(
+      getRequest("type=ACTIVITY_STEPS&groupBy=day&offset=25"),
+    );
+    expect(res.status).toBe(422);
+    expect(prisma.measurement.findMany).not.toHaveBeenCalled();
+  });
+
+  // v1.4.37 W10 H1 — same restriction for the drill-down branch; it
+  // returns a single bounded page per dayKey, not a cursor.
+  it("rejects offset>0 when dayKey is set", async () => {
+    const res = await GET(
+      getRequest("type=ACTIVITY_STEPS&dayKey=2026-05-15&offset=25"),
+    );
+    expect(res.status).toBe(422);
+    expect(prisma.measurement.findMany).not.toHaveBeenCalled();
+  });
+
+});
