@@ -1,5 +1,207 @@
 # Changelog
 
+## [1.4.38] — 2026-05-17 — Robustness sweep, perf hotspots, full localization
+
+Closes the web punch-list before the v1.5 iOS sprint. The release
+folds the v1.4.36 → v1.4.37.2 perf carry-overs into a wider sweep:
+the iOS dashboard summary route drops from ~4.6 s cold to ~500 ms
+via a DAY-bucket sparkline read plus a 60 s response cache; the
+insights comprehensive aggregator gains the same SQL-aggregation
+playbook on its remaining hot sub-query. A focused robustness sweep
+lands fourteen correctness fixes across geo-backfill, rollup
+freshness, drain logging, and BP fast-path windows. The Coach feature
+gate cascade gains a discovery-style test that walks every insights
+route and surfaces two previously-orphan API surfaces missing the
+assistant-surface gate — both now hardened. Cross-tz fragility on the
+correlations and bp-in-target fast paths gets a runtime guard that
+falls back to live SQL for any user more than ±3 h from UTC, with
+the proper per-user-tz bucket minting deferred to the iOS sprint.
+UX polish lands seventeen P1/P2/P3 items including aria-controls on
+drill-down chevrons, dropdown max-width on small viewports, polite
+live regions on insights load, and a colour-blind-safe icon on the
+GLP-1 take-now pill. Localization steps from ~27 % to ~63 % coverage
+across es / fr / it / pl with roughly 3,400 new strings plus
+placeholder restoration for three medication-cluster keys. Profile
+updates now validate the timezone field against the IANA zone list
+at the write boundary, closing a self-DoS regression that the new
+dashboard SQL surfaced.
+
+### Performance
+
+- **`GET /api/dashboard/summary` cold-mount 4.6 s → ~500 ms.** Four
+  unbounded sub-queries (per-type latest, sparkline raw, today's
+  intakes, 365 d intakes plus a conditional fifth) replaced with six
+  bounded reads: a `$queryRaw DISTINCT ON (type)` over the 7 d
+  window, a `$queryRaw` over `measurement_rollups` DAY buckets, the
+  existing `groupBy` for type stats, the two intake reads, and a
+  365 d `to_char` distinct-day scan. The whole builder wraps in
+  `caches.analytics` keyed `${userId}|dashboard-summary` at 60 s
+  TTL. Per-sub-query timing annotates land in `meta.dashboard` so
+  the next perf-verify can attribute regressions without
+  re-instrumenting.
+- **`/api/insights/comprehensive` minor.** Consolidated BP sys / dia
+  raw-row reads into a single `findMany({ type: { in: [...] } })`
+  with JS partition (preserving order) — one round-trip instead of
+  two.
+- **Sparkline contract.** For BP / weight / HRV the DAY-bucket mean
+  matches the raw read (≤ 1 per day). For ACTIVITY_STEPS / sleep /
+  glucose the smoother per-day average is a better trend signal.
+
+### Coach
+
+- **Two orphan API gates closed.** A new discovery test
+  (`coach-route-gate-inventory.test.ts`) walks every
+  `src/app/api/insights/<…>/route.ts` and asserts each handler
+  either calls `requireAssistantSurface("coach")` or appears on an
+  explicit allowlist. The walk surfaced two unguarded routes —
+  `GET` + `DELETE` on `/api/insights/chat/[id]` and `POST` on
+  `/api/insights/chat/messages/[id]/feedback` — both now gated.
+- **Cascade test fixture rebuilt** to assert the cross-cut gate
+  surface from a single source of truth, and the SSR-mode proof
+  swapped to a spy-based assertion that does not need a full DOM
+  render to verify the lazy-load chain.
+
+### Robustness
+
+- Geo-backfill batch cap drops 5000 → 500 rows per pass; an
+  in-process singleton flag guards the worker handler against
+  re-entry across hot-reloads.
+- `DRAIN_CUMULATIVE_CUTOFF_HOURS` lifts into the helper module so
+  the cron registration and the manual-drain CLI agree on the same
+  constant.
+- The drill-down `take` parameter is now Zod-refined to a hard
+  1000-row ceiling; the route emits 422 above the cap instead of
+  serving the unbounded read.
+- Analytics `daysAgo` is derived per request from the cached
+  `lastSeenAt` so day-boundary crossings can no longer stale-serve
+  yesterday's count.
+- `ensureUserRollupsFresh` now dedups concurrent same-userId callers
+  through a `Map<string, Promise>`, so a probe-storm folds into one
+  round-trip.
+- WEEK / MONTH / YEAR rollup enqueues on measurement write fan out
+  in parallel instead of serial.
+- `getClientIp` source matching tightens from a hand-rolled IPv4
+  regex to `node:net.isIP` so IPv6 addresses round-trip cleanly and
+  malformed strings are rejected at the boundary.
+- The MEDICATION categorical enum gains a drift-guard test against
+  the label-key map so an enum-only change can no longer ship copy
+  fallbacks.
+- The dashboard medication checklist and the quick-add modal now
+  share their TanStack Query cache (same `staleTime`) so toggling a
+  dose no longer fans out two refetches.
+- The cumulative drain emits a per-user COMPLETE log line so
+  multi-account drains can be reconciled per row in production
+  logs.
+- BP fast-path priorYear read window is calendar-aware (leap-year
+  safe).
+- The `correlations.degraded` sentinel carries a TODO marker until
+  load-shedding lands — no semantic change, just a hand-off note.
+- The private `dayKey` helper in `bp-in-target-fast-path` renames to
+  `bucketDayKey` so the cross-file term lines up with the cross-tz
+  guard wave naming.
+- Health-score `bpInTargetPct` reuses the same prior-week query
+  across windows instead of issuing one read per window.
+
+### Cross-tz fragility
+
+- New `isNearUtc(userTz, now)` helper in `@/lib/tz/format`. The
+  correlations and bp-in-target rollup fast paths now invoke it as
+  a runtime guard: when the user is more than ±3 h from UTC the
+  helper forces a fall-through to the live SQL path so per-day
+  aggregates re-key via `userDayKey(measuredAt, userTz)` instead of
+  the rollup's UTC bucket. Meta annotates land
+  (`correlations.tz_guard`, `bpInTarget.tz_guard`) so production
+  logs prove branch selection. Proper per-user-tz bucket minting
+  remains a v1.5 iOS-sprint deliverable.
+
+### UX
+
+- Drill-down chevrons gain stable `drilldown-{desktop,mobile}-${dayKey ?? id}` ids
+  threaded as `aria-controls` on the trigger and `id` on the
+  disclosed panel.
+- The Hinzufügen dropdown wraps at `max-w-[calc(100vw-2rem)]` on
+  small viewports; the longest label trims from "Medikamenteneinnahme
+  erfassen" to "Einnahme erfassen".
+- Quick-add labels test extends from en+de to all six locales for
+  collision-guard coverage.
+- Select trigger right padding tightens on Safari for chevron
+  parity.
+- Medication intake empty state promotes the CTA into the footer
+  slot.
+- Insights load now announces via a polite live region for screen
+  reader users.
+- The GLP-1 take-now window-status colour now pairs with a Lucide
+  glyph so colour-blind users perceive the same affordance.
+- Arztbericht and dismiss button min-h floors tighten for visual
+  hierarchy.
+
+### Localization
+
+- es / fr / it / pl coverage steps from ~27 % to ~63 % per locale,
+  roughly 3,400 leaf-value substitutions. Translated namespaces:
+  dashboard, measurements, mood, auth, nav, charts, thresholds,
+  comparison, onboarding, notifications, insights (sleep, sub-pages,
+  coach settings, relative-time, hero, recommendation,
+  health-score, daily-briefing, coach), medications (intake, status
+  chips, categories, weekdays, intake-history, GLP-1 cluster,
+  schedule controls), targets (medical ranges, status labels), and
+  the doctor-report PDF strings.
+- Three medication-cluster keys had their placeholders restored or
+  their hybrid English fragments translated: `glp1NextInjectionDays`
+  (now reads natively with `{label}` + `{days}` in each locale),
+  `intakeHistoryPageInfo` (re-appends `· {count}` clause for the
+  per-page row count), and `dayActivate` / `dayDeactivate` (restore
+  `{day}` so a11y labels announce per-weekday).
+- `admin`, `settings`, and `achievements` namespaces remain
+  intentional T3 — operator-facing surface that will land in a
+  follow-up wave alongside the iOS launch.
+
+### Security
+
+- `getClientIp` source matching uses `node:net.isIP` for IPv4 / IPv6
+  validation instead of a hand-rolled IPv4 regex; malformed
+  forwarded headers are rejected at the boundary.
+- Profile updates validate `User.timezone` against the IANA zone
+  list through a Zod `refine` chained on the existing
+  `isValidTimezone` helper. Returns 422 "Invalid IANA timezone" at
+  the write boundary so the new `to_char(measured_at AT TIME ZONE
+  $tz)` SQL in the dashboard summary route cannot be self-DoS'd by
+  a corrupted stored value.
+
+### Tests
+
+- Unit suite 4520 → 4524 (four new profile-update timezone-refine
+  tests). Integration baseline unchanged.
+
+### Deferred to v1.4.39 / v1.5
+
+- Named `AnalyticsCachedBody` / `AnalyticsEnrichedBody` envelope
+  split in the analytics route, plus the same-microtask
+  rejection-retry safety fix on `ensureUserRollupsFresh`.
+- Coach client-side disabled-state copy on `message-thread.tsx`
+  (server API gates are closed; only the local message copy
+  remains).
+- Repo hygiene sweep (orphan imports, unused helpers, dead i18n
+  keys).
+- Cumulative sparkline read should use `r.sum` instead of `r.mean`
+  for `ACTIVITY_STEPS` / `ACTIVITY_FLIGHTS` / cumulative metrics.
+- Coach gate inventory walker should match the closed
+  `route.{ts,tsx,js,jsx,mjs,mts}` set.
+- Dashboard sparkline live-fallback for empty rollup tail on
+  brand-new accounts.
+- BP / pulse term unification in es / pl (`tensión` vs `presión`,
+  `ciśnienie tętnicze` vs `ciśnienie krwi`, `puls` vs `tętno`).
+- Proper per-user-tz rollup bucket minting (v1.5 iOS sprint
+  deliverable; today's cheap path is the ±3 h guard with live
+  fallback).
+
+### Operator notes
+
+- No schema change. No env-var change. No public API change.
+- Coolify auto-deploys main on tag push; first webhook may pull
+  stale `:latest`, redeploy after the docker-publish workflow
+  completes.
+
 ## [1.4.37.2] — 2026-05-17 — Slim summaries SQL aggregation
 
 Second hotfix on top of v1.4.37. The v1.4.37.1 fire-and-forget
