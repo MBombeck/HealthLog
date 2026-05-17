@@ -8,6 +8,8 @@ vi.mock("@/lib/geo", () => ({
 
 import {
   GEO_BACKFILL_BATCH_CAP,
+  GEO_BACKFILL_CRON,
+  GEO_BACKFILL_QUEUE,
   GEO_BACKFILL_WINDOW_DAYS,
   runGeoBackfill,
 } from "../geo-backfill";
@@ -215,5 +217,41 @@ describe("runGeoBackfill", () => {
     });
     expect(lookupIpLocation).not.toHaveBeenCalled();
     expect(prisma.auditLog.update).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * v1.4.37 — the helper is now scheduled via pg-boss at the hourly
+ * :40 slot. The schedule constants live in the helper module so the
+ * reminder-worker boot pulls them by import; this test pins both
+ * shapes so a regression that drops the cadence or drifts the queue
+ * name lands here, not in production.
+ */
+describe("geo-backfill scheduling contract (v1.4.37)", () => {
+  it("exports the pg-boss queue name", () => {
+    expect(GEO_BACKFILL_QUEUE).toBe("geo-backfill");
+  });
+
+  it("schedules on the :40 slot every hour to avoid colliding with the existing crons", () => {
+    expect(GEO_BACKFILL_CRON).toBe("40 * * * *");
+  });
+
+  it("reminder-worker imports both the runner and the schedule constants", async () => {
+    // Source-text probe avoids importing the worker module (which
+    // would drag pg-boss + a live Postgres connection). The contract
+    // is binary: the worker either registers the queue + cron or it
+    // does not; both presence checks pin the v1.4.37 scheduling
+    // shape end-to-end.
+    const fs = await import("node:fs/promises");
+    const path = await import("node:path");
+    const workerSrc = await fs.readFile(
+      path.resolve(__dirname, "..", "reminder-worker.ts"),
+      "utf-8",
+    );
+    expect(workerSrc).toContain(
+      "import {\n  runGeoBackfill,\n  GEO_BACKFILL_QUEUE,\n  GEO_BACKFILL_CRON,\n} from \"@/lib/jobs/geo-backfill\";",
+    );
+    expect(workerSrc).toContain("GEO_BACKFILL_QUEUE, GEO_BACKFILL_CRON");
+    expect(workerSrc).toContain("handleGeoBackfill");
   });
 });

@@ -34,6 +34,11 @@ import { cleanupOldAuditLogs } from "@/lib/jobs/audit-log-cleanup";
 import { runHostMetricTick } from "@/lib/jobs/host-metric-sampler";
 import { aggregateRecommendationFeedback } from "@/lib/jobs/feedback-aggregator";
 import {
+  runGeoBackfill,
+  GEO_BACKFILL_QUEUE,
+  GEO_BACKFILL_CRON,
+} from "@/lib/jobs/geo-backfill";
+import {
   PR_DETECTION_QUEUE,
   PR_DETECTION_CONCURRENCY,
   PR_DETECTION_FALLBACK_CRON,
@@ -158,6 +163,9 @@ const HOST_METRIC_CRON = "* * * * *";
 // audit-log) so the previous-day's noise is gone before we aggregate.
 const FEEDBACK_AGGREGATOR_QUEUE = "feedback-aggregator";
 const FEEDBACK_AGGREGATOR_CRON = "0 4 * * *";
+// v1.4.37 — hourly geo backfill. Queue name + cron expression live
+// in `@/lib/jobs/geo-backfill` so a unit test can pin the scheduling
+// contract without importing this worker boot file.
 // v1.4.37 W7c — nightly drain of per-sample APPLE_HEALTH cumulative
 // rows. Collapses each user × cumulative-type × calendar-day bucket
 // into one `stats:…` row so the list view stops painting hundreds of
@@ -260,6 +268,10 @@ interface HostMetricSamplePayload {
 }
 
 interface FeedbackAggregatorPayload {
+  triggeredAt: string;
+}
+
+interface GeoBackfillPayload {
   triggeredAt: string;
 }
 
@@ -1170,6 +1182,32 @@ async function handleFeedbackAggregator(
   });
 }
 
+/**
+ * v1.4.37 — geo-backfill worker. Walks `audit_logs` rows that landed
+ * with a null `location` (offline MMDB missing at write time, online
+ * provider unreachable) and re-resolves them through the now-bundled
+ * resolver chain. The helper is idempotent and capped per pass so
+ * the hourly cadence cannot starve a live login spike.
+ */
+async function handleGeoBackfill(jobs: Job<GeoBackfillPayload>[]) {
+  void jobs;
+  await withBackgroundEvent("job.geo_backfill", async (evt) => {
+    const p = getWorkerPrisma();
+    try {
+      const summary = await runGeoBackfill(p);
+      evt.addMeta("geo_backfill_scanned", summary.scanned);
+      evt.addMeta("geo_backfill_located", summary.located);
+      evt.addMeta("geo_backfill_carrier_resolved", summary.carrierResolved);
+      evt.addMeta("geo_backfill_still_unresolved", summary.stillUnresolved);
+    } catch (err) {
+      // The admin sign-in overview tolerates a stale Standort cell —
+      // log and move on so a one-off resolver hiccup does not poison
+      // the queue and block the next pass.
+      evt.addWarning(`geo-backfill failed: ${err}`);
+    }
+  });
+}
+
 async function handlePrDetection(
   jobs: Job<PrDetectionPayload | { userId?: undefined }>[],
 ) {
@@ -1481,6 +1519,7 @@ export async function startReminderWorker() {
     OFFHOST_BACKUP_QUEUE,
     HOST_METRIC_QUEUE,
     FEEDBACK_AGGREGATOR_QUEUE,
+    GEO_BACKFILL_QUEUE,
     PR_DETECTION_QUEUE,
     MEDICATION_INVENTORY_EXPIRE_QUEUE,
     APPLE_HEALTH_IMPORT_QUEUE,
@@ -1526,6 +1565,11 @@ export async function startReminderWorker() {
     [OFFHOST_BACKUP_QUEUE, OFFHOST_BACKUP_CRON],
     [HOST_METRIC_QUEUE, HOST_METRIC_CRON],
     [FEEDBACK_AGGREGATOR_QUEUE, FEEDBACK_AGGREGATOR_CRON],
+    // v1.4.37 — hourly geo backfill. The helper is idempotent + capped
+    // at 5 000 rows per pass; running it at :40 every hour catches the
+    // long tail of audit rows that landed with the offline MMDB
+    // missing or the online provider unreachable.
+    [GEO_BACKFILL_QUEUE, GEO_BACKFILL_CRON],
     // Fallback rescan every 30 minutes — protects against ingest paths
     // that ship measurements without enqueueing a per-user job. The
     // cron payload deliberately omits a `userId` so the handler iterates
@@ -1642,6 +1686,11 @@ export async function startReminderWorker() {
     FEEDBACK_AGGREGATOR_QUEUE,
     { localConcurrency: 1 },
     handleFeedbackAggregator,
+  );
+  await boss.work<GeoBackfillPayload>(
+    GEO_BACKFILL_QUEUE,
+    { localConcurrency: 1 },
+    handleGeoBackfill,
   );
   await boss.work<PrDetectionPayload>(
     PR_DETECTION_QUEUE,
