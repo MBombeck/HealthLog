@@ -1676,8 +1676,6 @@
     "genderHint": "Used for gender-specific target values.",
     "timezone": "Fuseau horaire",
     "timezoneHint": "Used for chart axis labels, reminder times, export timestamps, and Coach context. Stored data is unchanged.",
-    "timezoneDetect": "Use browser timezone",
-    "timezoneDetectAria": "Use browser timezone {tz}",
     "timezoneInvalid": "Not a valid IANA timezone.",
     "profileSaved": "Profile saved",
     "changePassword": "Change password",

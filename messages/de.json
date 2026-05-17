@@ -1676,8 +1676,6 @@
     "genderHint": "Wird für geschlechtsspezifische Zielwerte verwendet.",
     "timezone": "Zeitzone",
     "timezoneHint": "Wird für Diagrammachsen, Erinnerungszeiten, Export-Zeitstempel und den Coach-Kontext verwendet. Gespeicherte Daten bleiben unverändert.",
-    "timezoneDetect": "Browser-Zeitzone übernehmen",
-    "timezoneDetectAria": "Browser-Zeitzone {tz} übernehmen",
     "timezoneInvalid": "Keine gültige IANA-Zeitzone.",
     "profileSaved": "Profil gespeichert",
     "changePassword": "Passwort ändern",
