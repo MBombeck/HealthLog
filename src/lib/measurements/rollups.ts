@@ -199,16 +199,25 @@ export async function recomputeBucketsForMeasurement(
   // WEEK / MONTH / YEAR — enqueue. Each granularity covers a range
   // around the affected day so the worker only re-aggregates the
   // bucket(s) the write could have changed.
-  for (const granularity of ASYNC_GRANULARITIES) {
-    const { from, to } = bucketSpan(measuredAt, granularity);
-    await enqueueRollupRecompute({
-      userId,
-      type,
-      granularity,
-      from,
-      to,
-    });
-  }
+  //
+  // v1.4.38 — the three `enqueueRollupRecompute` calls are independent
+  // (different singletonKey per granularity inside `enqueueRollupRecompute`)
+  // so fan them out via `Promise.all` instead of sequencing them with
+  // `await`. Halves the post-write critical path on every measurement
+  // create / update / delete; matters on iOS batch imports that fire
+  // hundreds of hooks back-to-back.
+  await Promise.all(
+    ASYNC_GRANULARITIES.map((granularity) => {
+      const { from, to } = bucketSpan(measuredAt, granularity);
+      return enqueueRollupRecompute({
+        userId,
+        type,
+        granularity,
+        from,
+        to,
+      });
+    }),
+  );
 }
 
 /**
