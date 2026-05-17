@@ -70,6 +70,23 @@ const COACH_GATE_NEEDLE = 'requireAssistantSurface("coach")';
 const ANY_GATE_NEEDLE = "requireAssistantSurface(";
 
 /**
+ * Return true when the file contains the needle on a line that is NOT
+ * a pure comment. A documentation comment that mentions the gate
+ * (`// requireAssistantSurface("coach") protects this surface`) must
+ * not satisfy the gate-presence check — otherwise a contributor who
+ * deletes the actual call but leaves the docstring would slip through.
+ */
+function fileHasGateCall(text: string, needle: string): boolean {
+  return text.split("\n").some((line) => {
+    if (!line.includes(needle)) return false;
+    const trimmed = line.trim();
+    if (trimmed.startsWith("//")) return false;
+    if (trimmed.startsWith("*")) return false;
+    return true;
+  });
+}
+
+/**
  * Walk every `route.ts` under `src/app/api/insights/` (including
  * dynamic segments under `[id]`). Returns POSIX-style paths relative
  * to the repo root.
@@ -115,8 +132,8 @@ describe("Coach API route gate inventory", () => {
     for (const path of routes) {
       const full = resolve(repoRoot, path);
       const text = readFileSync(full, "utf8");
-      const hasCoachGate = text.includes(COACH_GATE_NEEDLE);
-      const hasAnyGate = text.includes(ANY_GATE_NEEDLE);
+      const hasCoachGate = fileHasGateCall(text, COACH_GATE_NEEDLE);
+      const hasAnyGate = fileHasGateCall(text, ANY_GATE_NEEDLE);
 
       if (hasCoachGate) continue;
 
@@ -153,7 +170,6 @@ describe("Coach API route gate inventory", () => {
   });
 
   it("allowlists do not reference deleted route files", () => {
-    const repoRoot = resolve(__dirname, "..", "..", "..", "..", "..");
     const known = new Set(findInsightsRouteFiles());
 
     const stale = [...NON_COACH_GATED_ROUTES, ...NOT_COACH_OWNED_ROUTES].filter(
@@ -169,9 +185,5 @@ describe("Coach API route gate inventory", () => {
         ...stale.map((p) => `  - ${p}`),
       ].join("\n"),
     ).toEqual([]);
-
-    // Silence "repoRoot declared and not used" if the loop above
-    // returns empty — reference it explicitly.
-    expect(repoRoot.length).toBeGreaterThan(0);
   });
 });
