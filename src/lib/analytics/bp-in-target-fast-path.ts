@@ -147,21 +147,21 @@ async function computeFromRollups(
   // days ago. We read 396 days so the boundary day rolls cleanly into
   // the prior-year bucket without being dropped.
   const DAY_MS = 24 * 60 * 60 * 1000;
-  const ninetyFiveDaysAgo = new Date(now.getTime() - 396 * DAY_MS);
+  const readSince = new Date(now.getTime() - 396 * DAY_MS);
 
   const [sysBuckets, diaBuckets] = await Promise.all([
     readRollupBuckets(
       userId,
       "BLOOD_PRESSURE_SYS",
       "DAY",
-      ninetyFiveDaysAgo,
+      readSince,
       now,
     ),
     readRollupBuckets(
       userId,
       "BLOOD_PRESSURE_DIA",
       "DAY",
-      ninetyFiveDaysAgo,
+      readSince,
       now,
     ),
   ]);

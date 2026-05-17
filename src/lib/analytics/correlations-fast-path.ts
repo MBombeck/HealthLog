@@ -137,6 +137,17 @@ export async function computeCorrelationHypothesesFastPath(
   if (measurementsOnRollups) {
     // Rollup-fast-path. One indexed read per type against
     // `measurement_rollups`, projecting the per-day mean directly.
+    //
+    // The rollup table buckets at UTC midnight (`date_trunc('day', …)`
+    // in Postgres). For a user whose display tz sits more than a few
+    // hours from UTC the bucket's `bucketStart` can land on the
+    // previous local calendar day relative to the same wall-clock
+    // reading on the live path. Today the production tenant is
+    // Berlin-centric (UTC+1/+2 → midnight UTC = 01:00/02:00 Berlin,
+    // same calendar day) so the shift is benign. A v1.5 follow-up
+    // could mint per-user-tz buckets if the discrepancy materialises
+    // on a non-Berlin account; the n >= 20 surface gate absorbs the
+    // single-day phase shift either way.
     const [sysBuckets, pulseBuckets, weightBuckets] = await Promise.all([
       readRollupBuckets(userId, "BLOOD_PRESSURE_SYS", "DAY", since, now),
       readRollupBuckets(userId, "PULSE", "DAY", since, now),
