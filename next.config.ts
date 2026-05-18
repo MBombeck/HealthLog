@@ -1,9 +1,20 @@
 import type { NextConfig } from "next";
 import bundleAnalyzer from "@next/bundle-analyzer";
 
+import { version as PKG_VERSION } from "./package.json";
+
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  // v1.4.38.4 — expose the package.json version to the client bundle
+  // so the `<VersionPoller>` can compare the shell-baked version
+  // against the live `/api/version` response and trigger a self-heal
+  // (SW unregister + cache wipe + hard reload) when the server moves
+  // ahead of the running shell after a deploy. Without this the user
+  // had to discover "pull-to-refresh" themselves after every release.
+  env: {
+    NEXT_PUBLIC_APP_VERSION: PKG_VERSION,
+  },
   // v1.4.33 IW2 — strip `console.*` calls from the production bundle
   // (keep `console.error` + `console.warn` so the GlitchTip reporter
   // and prod-side debug rails still surface). The Lighthouse audit

@@ -1,5 +1,47 @@
 # Changelog
 
+## [1.4.38.4] — 2026-05-18 — Self-healing stale-shell after every deploy
+
+v1.4.38.3 closed the stale-shell case where the user trips
+`ChunkLoadError` mid-navigation — but the reload only fired AFTER
+the error surfaced. Users sitting on the dashboard or insights
+overview rode out the staleness until they clicked something. The
+PWA shell could silently drift across several deploys, surfacing
+nothing visible to the user until a click happened to lazy-load a
+missing chunk.
+
+### Added
+
+- **`<VersionPoller>` client component** mounted inside
+  `<Providers>`. Polls `/api/version` every 60 s. If the live
+  version moves ahead of the shell-baked version it unregisters
+  every active service worker, wipes CacheStorage, and triggers
+  `window.location.reload()`. `sessionStorage` gates the reload to
+  once per session so a mid-deploy webhook race that briefly serves
+  a stale image cannot loop the page.
+- **`NEXT_PUBLIC_APP_VERSION`** is now injected from `package.json`
+  at build time (via `next.config.ts`) so the running shell knows
+  which release it was built against. Available to any client
+  component that needs to compare against the live server version.
+
+### Changed
+
+- **Service worker `CACHE_VERSION` now keys to the release tag**
+  (`v1.4.38.4`). The `activate` step already evicts any cache name
+  outside the current pair, so bumping the string at release time
+  guarantees the precached root HTML and the precached
+  `/_next/static/*` chunks from the previous deploy are dropped on
+  the next SW install. The string is now part of the release
+  routine alongside the `package.json` bump.
+
+### Operator notes
+
+- No new migration. No env-var change.
+- Coolify auto-deploys main on tag push.
+- Users on the pre-v1.4.38.4 shell still need a single manual
+  refresh to pick up the new poller; from v1.4.38.4 onwards every
+  future release self-heals.
+
 ## [1.4.38.3] — 2026-05-17 — CI green-up, e2e drift fixes, chunk-load auto-recover
 
 Cleans up the three pre-existing CI reds that had been failing on

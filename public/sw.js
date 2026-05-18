@@ -3,7 +3,17 @@
  * Handles Web Push notifications and offline caching.
  */
 
-const CACHE_VERSION = "v1";
+// v1.4.38.4 — `CACHE_VERSION` now tracks the app release tag.
+// Bumped on every release so the `activate` step evicts every
+// pre-release cache entry. Without this the precached root HTML and
+// the cached `/_next/static/*` chunks survived across deploys,
+// stale-shell-served the old chunk graph, and the running app then
+// hit `ChunkLoadError` on the first lazy navigation. Pair with the
+// `<VersionPoller>` client component (mounted in `<Providers>`) that
+// polls `/api/version`, compares against `NEXT_PUBLIC_APP_VERSION`,
+// and triggers an SW-unregister + cache-wipe + hard reload when the
+// server moves ahead of the running shell.
+const CACHE_VERSION = "v1.4.38.4";
 const STATIC_CACHE = `healthlog-static-${CACHE_VERSION}`;
 const PAGE_CACHE = `healthlog-pages-${CACHE_VERSION}`;
 const MAX_STATIC_ENTRIES = 150;
