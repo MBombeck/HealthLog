@@ -284,6 +284,17 @@ model User {
   // 22:00 window (the cron fires every 15 min — without the ledger
   // a user could see three pushes back-to-back).
   moodReminderDispatches MoodReminderDispatch[]
+  // v1.4.39 W-MOOD — per-(user, granularity, bucket) mood rollup. New
+  // tier behind the mood-analytics read path; per-write hooks fold
+  // MoodEntry mutations into the DAY granularity inline so the next
+  // read serves from this table instead of the unbounded
+  // MoodEntry.findMany walk.
+  moodEntryRollups       MoodEntryRollup[]
+  // v1.4.39 W-MED — per-(user, medication, day) compliance rollup.
+  // Per-write hook on MedicationIntakeEvent mutations + the scheduler
+  // keep the row in sync so `/api/medications/intake?scope=compliance`
+  // and `computeUserHealthScoreFastPath` skip the per-event findMany.
+  medicationComplianceRollups MedicationComplianceRollup[]
 
   @@map("users")
 }
@@ -522,6 +533,13 @@ model MeasurementRollup {
   sd          Float?
   slope       Float?
   r2          Float?
+  /// v1.4.39 W-SUM — cumulative-metric sum for the bucket. Populated
+  /// alongside `mean / count` for every type; cumulative read paths
+  /// (steps, flights, distance, daylight, active-energy) consume this
+  /// directly instead of re-deriving from raw measurements. Nullable
+  /// to keep the migration additive — the boot backfill fills NULLs
+  /// for existing rows; new rows always carry the sum.
+  sumValue    Float?            @map("sum_value")
   computedAt  DateTime          @default(now()) @map("computed_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -723,6 +741,10 @@ model Medication {
   /// roll-up (GI / METABOLIC / INJECTION_SITE / COGNITIVE /
   /// GLP1_SPECIFIC) and 1-5 Likert severity per entry.
   sideEffects      MedicationSideEffect[]
+  /// v1.4.39 W-MED — per-(medication, day) compliance rollup. Mutations
+  /// on the linked MedicationIntakeEvent rows refresh the row inline;
+  /// the read paths consume this instead of the per-event findMany.
+  complianceRollups MedicationComplianceRollup[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1209,6 +1231,79 @@ model MoodReminderDispatch {
   @@unique([userId, date])
   @@index([userId, dispatchedAt])
   @@map("mood_reminder_dispatches")
+}
+
+// ─── Mood Entry Rollup (v1.4.39 W-MOOD) ───────────────────────
+//
+// Second cache tier behind the 60-s LRU on `/api/mood/analytics`.
+// One row per `(userId, granularity, bucketStart)` carrying the
+// `count` + `mean` + min/max + population SD over the bucket window.
+// `RollupGranularity` from the measurement rollup tier is reused so
+// the worker / future cross-granularity readers share a single enum.
+//
+// Write path: every MoodEntry create/update/delete fires
+// `recomputeMoodBucketsForEntry` which upserts the DAY bucket for
+// the entry's `(userId, dayKey)` inline. WEEK / MONTH / YEAR are
+// enqueued through pg-boss for the worker to fold so the write path
+// stays sub-ms.
+//
+// Read path: `/api/mood/analytics` reads `prisma.moodEntryRollup.
+// findMany({ where: { userId, granularity: 'DAY' } })` and runs the
+// existing summarize() logic against the rollup instead of pulling
+// every MoodEntry into Node.
+//
+// Stats semantics (population, not sample): `sd = STDDEV_POP(score)`
+// over the bucket window so two-tier cached / live reads agree
+// byte-for-byte the same way the MeasurementRollup tier does.
+model MoodEntryRollup {
+  userId      String            @map("user_id")
+  granularity RollupGranularity
+  bucketStart DateTime          @map("bucket_start") @db.Timestamptz(3)
+  count       Int
+  mean        Float
+  minScore    Int               @map("min_score")
+  maxScore    Int               @map("max_score")
+  sd          Float?
+  computedAt  DateTime          @default(now()) @map("computed_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, granularity, bucketStart])
+  @@index([userId, granularity, bucketStart(sort: Desc)])
+  @@map("mood_entry_rollups")
+}
+
+// ─── Medication Compliance Rollup (v1.4.39 W-MED) ─────────────
+//
+// Per-(userId, medicationId, day) compliance ledger. Replaces the
+// unbounded MedicationIntakeEvent findMany on
+// `/api/medications/intake?scope=compliance` and the equivalent
+// fan-out inside `computeUserHealthScoreFastPath`.
+//
+// Day-key is anchored to the user's IANA timezone (TEXT, encoded as
+// `YYYY-MM-DD`) so the read path can collapse a date range into a
+// straight WHERE clause without re-deriving the boundary per row.
+//
+// Write path: every MedicationIntakeEvent create / update / delete
+// (and the scheduler that mints fresh `scheduledFor` rows) fires
+// `recomputeMedicationComplianceForDay` which upserts the
+// `(user, medication, day)` row. Worker handles weekly / monthly
+// re-fold off the hot path.
+model MedicationComplianceRollup {
+  userId       String   @map("user_id")
+  medicationId String   @map("medication_id")
+  day          String // YYYY-MM-DD anchored to user.timezone
+  scheduled    Int
+  taken        Int
+  skipped      Int
+  computedAt   DateTime @default(now()) @map("computed_at") @db.Timestamptz(3)
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  @@id([userId, medicationId, day])
+  @@index([userId, day(sort: Desc)])
+  @@map("medication_compliance_rollups")
 }
 
 // ─── Integration Status (v1.4.15) ─────────────────────────
