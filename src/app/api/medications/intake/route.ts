@@ -30,7 +30,7 @@ import {
   readMedicationCompliance,
   hasMedicationComplianceCoverage,
   recomputeMedicationComplianceForEvent,
-  enqueueBootTimeMedicationComplianceBackfill,
+  enqueueUserMedicationComplianceBackfill,
   type ComplianceBucket as RollupComplianceBucket,
 } from "@/lib/medications/compliance-rollups";
 
@@ -169,10 +169,16 @@ async function readComplianceBucketsWithFallback(
   }
 
   // Coverage miss — the legacy aggregator stays correct over an empty
-  // rollup window. Fire the boot backfill in the background so the
-  // next request lands on the rollup tier; the current request still
-  // returns the live-derived buckets.
-  void enqueueBootTimeMedicationComplianceBackfill();
+  // rollup window. Fire a user-scoped backfill in the background so
+  // the next request lands on the rollup tier; the current request
+  // still returns the live-derived buckets.
+  //
+  // QA F-SEC-M-01 (v1.4.39): pre-fix this fired the cluster-wide
+  // `enqueueBootTimeMedicationComplianceBackfill` on every coverage-
+  // miss request, opening a soft-DoS amplifier (every authenticated
+  // user could drive a multi-tenant `LEFT JOIN` scan on each hit).
+  // The user-scoped helper enqueues exactly the caller's account.
+  void enqueueUserMedicationComplianceBackfill(userId);
   annotate({
     meta: {
       medication_compliance_path: "live-fallback",

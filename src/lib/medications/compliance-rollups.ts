@@ -517,6 +517,53 @@ export async function ensureUserMedicationComplianceFresh(
 }
 
 /**
+ * v1.4.39 hotfix (QA F-SEC-M-01) — user-scoped enqueue helper for the
+ * request-path coverage-miss fallback.
+ *
+ * Mirrors `ensureUserMoodRollupsFresh`: the route fires this when its
+ * coverage probe returned false so the caller's account picks up a
+ * targeted boot-backfill job, instead of running a cluster-wide
+ * `LEFT JOIN` over `medication_intake_events × medication_compliance_rollups`
+ * on every authenticated coverage-miss request. The cluster-wide scan
+ * was a soft DoS amplifier — an authenticated user iterating
+ * coverage-miss requests could drive a multi-tenant table scan on
+ * every hit.
+ *
+ * The boot-time discovery helper below stays cluster-wide (it runs
+ * once per worker boot, not per request).
+ */
+export async function enqueueUserMedicationComplianceBackfill(
+  userId: string,
+): Promise<{ enqueued: boolean; error: string | null }> {
+  const boss = getGlobalBoss();
+  if (!boss) {
+    return { enqueued: false, error: null };
+  }
+  try {
+    const payload: MedicationComplianceBackfillPayload = {
+      userId,
+      enqueuedAt: new Date().toISOString(),
+    };
+    const jobId = await boss.send(
+      MEDICATION_COMPLIANCE_BACKFILL_QUEUE,
+      payload,
+      {
+        retryLimit: 3,
+        retryDelay: 60,
+        retryBackoff: true,
+        singletonKey: `medication-compliance-boot-backfill|${userId}`,
+      },
+    );
+    return { enqueued: jobId !== null && jobId !== undefined, error: null };
+  } catch (err) {
+    return {
+      enqueued: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+/**
  * Boot-time enqueue helper — mirrors v1.4.35.1
  * `enqueueBootTimeRollupBackfill`. Finds users with intake events but
  * zero compliance-rollup coverage for the trailing window and enqueues

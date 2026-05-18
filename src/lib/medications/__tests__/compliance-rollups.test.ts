@@ -54,6 +54,7 @@ import {
   hasMedicationComplianceCoverage,
   recomputeUserMedicationCompliance,
   enqueueBootTimeMedicationComplianceBackfill,
+  enqueueUserMedicationComplianceBackfill,
   MEDICATION_COMPLIANCE_BACKFILL_QUEUE,
 } from "../compliance-rollups";
 
@@ -432,5 +433,43 @@ describe("enqueueBootTimeMedicationComplianceBackfill", () => {
         singletonKey: "medication-compliance-boot-backfill|user-1",
       }),
     );
+  });
+});
+
+describe("enqueueUserMedicationComplianceBackfill", () => {
+  it("is a no-op when no boss is attached", async () => {
+    getGlobalBossMock.mockReturnValue(null);
+    const result = await enqueueUserMedicationComplianceBackfill("user-1");
+    expect(result).toEqual({ enqueued: false, error: null });
+    // Critically: no `$queryRaw` cluster-wide LEFT JOIN scan.
+    expect(queryRaw).not.toHaveBeenCalled();
+  });
+
+  it("enqueues exactly one job for the caller's user and never touches the cluster-wide LEFT JOIN", async () => {
+    // QA F-SEC-M-01 (v1.4.39): pre-fix the request-path coverage-miss
+    // path called `enqueueBootTimeMedicationComplianceBackfill` which
+    // issued a cluster-wide `LEFT JOIN medication_intake_events ×
+    // medication_compliance_rollups` on every hit. The user-scoped
+    // helper sends one targeted job and never runs the discovery scan.
+    getGlobalBossMock.mockReturnValue({ send: bossSend });
+    bossSend.mockResolvedValueOnce("job-1");
+    const result = await enqueueUserMedicationComplianceBackfill("user-1");
+    expect(result).toEqual({ enqueued: true, error: null });
+    expect(queryRaw).not.toHaveBeenCalled();
+    expect(bossSend).toHaveBeenCalledTimes(1);
+    expect(bossSend).toHaveBeenCalledWith(
+      MEDICATION_COMPLIANCE_BACKFILL_QUEUE,
+      expect.objectContaining({ userId: "user-1" }),
+      expect.objectContaining({
+        singletonKey: "medication-compliance-boot-backfill|user-1",
+      }),
+    );
+  });
+
+  it("reports a coalesced enqueue as `enqueued:false`", async () => {
+    getGlobalBossMock.mockReturnValue({ send: bossSend });
+    bossSend.mockResolvedValueOnce(null);
+    const result = await enqueueUserMedicationComplianceBackfill("user-2");
+    expect(result).toEqual({ enqueued: false, error: null });
   });
 });
