@@ -9,8 +9,18 @@ vi.mock("@/lib/db", () => ({
       update: vi.fn(),
     },
     medication: { update: vi.fn() },
+    medicationComplianceRollup: {
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
+      upsert: vi.fn(),
+      deleteMany: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
+}));
+
+vi.mock("@/lib/jobs/boss-instance", () => ({
+  getGlobalBoss: () => null,
 }));
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
@@ -50,6 +60,15 @@ beforeEach(() => {
   // observes a cold cache.
   __resetAllCachesForTests();
   vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
+    [] as never,
+  );
+  // v1.4.39 W-MED — default the coverage probe to "uncovered" so the
+  // legacy compliance test still exercises the live-fallback branch
+  // and finds the legacy mocked intake events.
+  vi.mocked(prisma.medicationComplianceRollup.findFirst).mockResolvedValue(
+    null,
+  );
+  vi.mocked(prisma.medicationComplianceRollup.findMany).mockResolvedValue(
     [] as never,
   );
 });
@@ -154,6 +173,7 @@ describe("POST /api/medications/intake", () => {
       id: "e1",
       userId: "user-1",
       medicationId: "m1",
+      scheduledFor: new Date("2026-05-18T10:00:00.000Z"),
     } as never);
     vi.mocked(prisma.medicationIntakeEvent.update).mockResolvedValue({
       id: "e1",
@@ -166,5 +186,58 @@ describe("POST /api/medications/intake", () => {
       where: { id: "e1" },
       data: { takenAt: null, skipped: true },
     });
+  });
+});
+
+describe("v1.4.39 W-MED — compliance rollup read swap", () => {
+  it("reads the rollup tier when coverage is present", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    // Coverage probe returns "at least one row" so the route reads
+    // from the rollup tier rather than falling back to the live
+    // aggregator.
+    vi.mocked(prisma.medicationComplianceRollup.findFirst).mockResolvedValue({
+      day: "2026-05-18",
+    } as never);
+    vi.mocked(prisma.medicationComplianceRollup.findMany).mockResolvedValue([
+      { day: "2026-05-18", scheduled: 3, taken: 2, skipped: 1 },
+    ] as never);
+
+    const res = await GET(
+      new NextRequest(
+        "http://localhost/api/medications/intake?scope=compliance&days=7",
+      ),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: Array<{ date: string; scheduled: number; taken: number }>;
+    };
+    expect(body.data).toHaveLength(7);
+    const today = body.data[body.data.length - 1];
+    expect(today.scheduled).toBe(3);
+    expect(today.taken).toBe(2);
+    // The legacy live aggregator must not have run when coverage is hot.
+    expect(prisma.medicationIntakeEvent.findMany).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the live aggregator on coverage miss", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.medicationComplianceRollup.findFirst).mockResolvedValue(
+      null,
+    );
+    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue([
+      {
+        scheduledFor: new Date(),
+        takenAt: new Date(),
+        skipped: false,
+      },
+    ] as never);
+
+    const res = await GET(
+      new NextRequest(
+        "http://localhost/api/medications/intake?scope=compliance&days=7",
+      ),
+    );
+    expect(res.status).toBe(200);
+    expect(prisma.medicationIntakeEvent.findMany).toHaveBeenCalled();
   });
 });
