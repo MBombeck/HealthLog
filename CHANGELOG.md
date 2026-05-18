@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.4.38.5] — 2026-05-18 — Analytics fast-path restored on long-running accounts
+
+Hotfix on top of v1.4.38.4. `/api/analytics` and the dashboard
+summary route were timing out at 30-75 s on power-user accounts
+after every container restart — the cold-cache miss fanned out to
+the live SQL aggregator across the full measurement table instead
+of riding the rollup-fast-path that v1.4.36 / v1.4.37 had landed.
+
+### Fixed
+
+- **Boot-backfill discovery now widens to per-type missing
+  coverage.** v1.4.35.1 introduced
+  `enqueueBootTimeRollupBackfill` with a discovery query that only
+  matched users with ZERO rollup rows. Any account that had ever
+  been folded (every long-running user) silently stranded once a
+  brand-new measurement type landed: the existing rollup buckets
+  kept the user invisible to discovery, but the new type's empty
+  DAY partition kept `isFullyCovered(coverage)` at `false` forever.
+  Every analytics / dashboard read then fanned out to the live
+  aggregator across the full measurement table.
+
+  Discovery now joins `(user, distinct measurement type)` against
+  `measurement_rollups` on the DAY granularity and surfaces users
+  where any partition is unmatched. The v1.4.35.1 zero-rollup case
+  is still covered (the LEFT JOIN of an empty rollup table emits a
+  row for every type the user has logged). Integration test pins
+  the regression: a user with WEIGHT rolled up + a brand-new PULSE
+  row now lands on the queue.
+
+### Operator notes
+
+- On first boot after deploy, the rollup-full-backfill queue picks
+  up users with any missing type-coverage and folds them. Power-
+  user accounts may see one slow `/api/analytics` cold-mount
+  before the next request lands on the restored fast path.
+- No new migration. No env-var change.
+
 ## [1.4.38.4] — 2026-05-18 — Self-healing stale-shell after every deploy
 
 v1.4.38.3 closed the stale-shell case where the user trips
