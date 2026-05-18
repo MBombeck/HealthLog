@@ -43,6 +43,7 @@ import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
+import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { defaultLocale, type Locale } from "@/lib/i18n/config";
 import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
@@ -202,11 +203,19 @@ interface LatestIn7dRow {
 
 /** v1.4.38 W-F — per-day measurement_rollup bucket inside the 7-day
  *  window. At most 7 buckets per metric × N metrics — bounded by
- *  `SPARK_DAYS * |measurementTypes|` rather than the raw row count. */
+ *  `SPARK_DAYS * |measurementTypes|` rather than the raw row count.
+ *
+ *  v1.4.39 W-SUM — `sum_value` rides along so the cumulative tile
+ *  (ACTIVITY_STEPS) renders the daily SUM rather than the per-bucket
+ *  MEAN. Spot metrics ignore the column; cumulative tiles fall back to
+ *  `mean * count` when the legacy NULL hits (boot-backfill convergence
+ *  window). */
 interface SparklineRow {
   type: MeasurementType;
   bucket_start: Date;
   mean: number;
+  count: number;
+  sum_value: number | null;
 }
 
 /** v1.4.38 W-F — distinct activity day-keys from the streak window.
@@ -325,7 +334,9 @@ async function buildDashboardSummary(
         SELECT
           r."type"                                  AS type,
           r."bucket_start"                          AS bucket_start,
-          r."mean"::double precision                AS mean
+          r."mean"::double precision                AS mean,
+          r."count"::int                            AS count,
+          r."sum_value"::double precision           AS sum_value
         FROM measurement_rollups r
         WHERE r."user_id" = ${userId}
           AND r."granularity" = 'DAY'
@@ -430,10 +441,21 @@ async function buildDashboardSummary(
       at: new Date(row.measured_at),
     });
   }
+  // v1.4.39 W-SUM — cumulative tiles paint the daily SUM; spot tiles
+  // keep the daily MEAN. Reading `sum_value` directly off the rollup
+  // row eliminates the legacy `mean * count` reconstruction; the
+  // fallback covers pre-v1.4.39 NULL rows during the boot-backfill
+  // convergence window.
   const sparkByType = new Map<MeasurementType, number[]>();
   for (const row of sparkBuckets) {
     const list = sparkByType.get(row.type) ?? [];
-    list.push(Number(row.mean));
+    const useSum = CUMULATIVE_HK_TYPES.has(row.type);
+    const point = useSum
+      ? (row.sum_value !== null
+          ? Number(row.sum_value)
+          : Number(row.mean) * Number(row.count))
+      : Number(row.mean);
+    list.push(point);
     sparkByType.set(row.type, list);
   }
 
