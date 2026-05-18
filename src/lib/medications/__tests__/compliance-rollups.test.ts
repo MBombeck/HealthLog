@@ -312,8 +312,10 @@ describe("readMedicationCompliance", () => {
 });
 
 describe("hasMedicationComplianceCoverage", () => {
-  it("returns true when at least one row exists inside the window", async () => {
-    rollupFindFirst.mockResolvedValue({ day: "2026-05-17" });
+  it("returns true when rolled-day count meets the event-day count in window", async () => {
+    queryRaw.mockResolvedValue([
+      { rolled_days: BigInt(7), event_days: BigInt(7) },
+    ]);
     await expect(
       hasMedicationComplianceCoverage(
         "user-1",
@@ -324,8 +326,40 @@ describe("hasMedicationComplianceCoverage", () => {
     ).resolves.toBe(true);
   });
 
-  it("returns false when the window is empty", async () => {
-    rollupFindFirst.mockResolvedValue(null);
+  it("returns true when the user has zero events in window (trivially covered)", async () => {
+    // Zero events → the read path returns a trailing-window zero-fill
+    // from an empty rollup table; covered semantically.
+    queryRaw.mockResolvedValue([
+      { rolled_days: BigInt(0), event_days: BigInt(0) },
+    ]);
+    await expect(
+      hasMedicationComplianceCoverage("user-1", 7, "Europe/Berlin"),
+    ).resolves.toBe(true);
+  });
+
+  it("returns false on partial coverage (boot backfill mid-fold)", async () => {
+    // QA F-H-01 (v1.4.39): the legacy "any row exists" probe would
+    // flip true here and serve zero-filled buckets for days N..days-1
+    // that the backfill hasn't reached yet. With the tightened probe
+    // partial coverage forces the route into the legacy aggregator
+    // until the fold completes.
+    queryRaw.mockResolvedValue([
+      { rolled_days: BigInt(2), event_days: BigInt(7) },
+    ]);
+    await expect(
+      hasMedicationComplianceCoverage(
+        "user-1",
+        7,
+        "Europe/Berlin",
+        new Date("2026-05-18T12:00:00.000Z"),
+      ),
+    ).resolves.toBe(false);
+  });
+
+  it("returns false on zero rollups when events exist (legacy account cold start)", async () => {
+    queryRaw.mockResolvedValue([
+      { rolled_days: BigInt(0), event_days: BigInt(7) },
+    ]);
     await expect(
       hasMedicationComplianceCoverage("user-1", 7, "Europe/Berlin"),
     ).resolves.toBe(false);

@@ -363,12 +363,18 @@ export async function readMedicationCompliance(
 }
 
 /**
- * Returns true when the user has at least one
- * `medication_compliance_rollups` row inside the trailing `days`
- * window. The route uses this as the coverage probe — when the
- * trailing window is empty but the live `medication_intake_events`
- * table has rows, the read path falls through to the legacy live
- * aggregator + fires a boot backfill in the background.
+ * Returns true when the rollup tier covers every day inside the
+ * trailing `days` window that has at least one intake event. Coverage
+ * is full when the count of DISTINCT rolled days equals the count of
+ * DISTINCT days that hold a `medication_intake_events` row in window —
+ * partial coverage (boot backfill mid-fold on a multi-medication
+ * account) returns false so the route falls through to the legacy
+ * aggregator instead of serving zero-filled tiles for un-rolled days.
+ *
+ * v1.4.39 hotfix (QA F-H-01): the previous "any row exists" probe
+ * could short-circuit to the rollup path while only the first few days
+ * had been backfilled, exposing zero-filled tiles for the un-rolled
+ * days until the boot fold completed.
  */
 export async function hasMedicationComplianceCoverage(
   userId: string,
@@ -381,11 +387,37 @@ export async function hasMedicationComplianceCoverage(
     new Date(now.getTime() - (days - 1) * 86_400_000),
     safeTz,
   );
-  const row = await prisma.medicationComplianceRollup.findFirst({
-    where: { userId, day: { gte: oldestKey } },
-    select: { day: true },
-  });
-  return row !== null;
+  const oldestStart = startOfDayUtcInTz(oldestKey, safeTz);
+
+  // Single SQL aggregate: count DISTINCT rolled days vs DISTINCT
+  // event-days in window. The event side is anchored on the same
+  // user-tz day-key (`to_char(... AT TIME ZONE $tz, 'YYYY-MM-DD')`) so
+  // the comparison stays apples-to-apples even on DST boundaries.
+  const result = await prisma.$queryRaw<
+    Array<{ rolled_days: bigint; event_days: bigint }>
+  >`
+    SELECT
+      (
+        SELECT COUNT(DISTINCT "day")::bigint
+        FROM "medication_compliance_rollups"
+        WHERE "user_id" = ${userId}
+          AND "day" >= ${oldestKey}
+      ) AS rolled_days,
+      (
+        SELECT COUNT(DISTINCT to_char("scheduled_for" AT TIME ZONE ${safeTz}, 'YYYY-MM-DD'))::bigint
+        FROM "medication_intake_events"
+        WHERE "user_id" = ${userId}
+          AND "scheduled_for" >= ${oldestStart}
+      ) AS event_days
+  `;
+  if (result.length === 0) return true;
+  const { rolled_days, event_days } = result[0];
+  const rolled = Number(rolled_days);
+  const events = Number(event_days);
+  // Zero events in window → trivially covered (the read path produces
+  // a zero-filled trailing window from the empty rollup table).
+  if (events === 0) return true;
+  return rolled >= events;
 }
 
 /**
