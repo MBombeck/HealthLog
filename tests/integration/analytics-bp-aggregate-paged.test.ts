@@ -110,25 +110,31 @@ describe("GET /api/analytics — chunked per-type reads (Sr-H1)", () => {
     // sequence that `summarize()` consumes the same way it would have
     // consumed a single-shot read.
     //
-    // v1.4.39 W-SINCE — the route now caps the live-fallback per-type
-    // read at the trailing 90 days. To keep this paging contract test
-    // exercising both chunks the rows are seeded backwards from `now`
-    // at 15-minute intervals (6 000 × 15 min = 62.5 days, comfortably
-    // inside the 90-day floor).
+    // v1.4.39 W-SINCE — the route caps the live-fallback per-type read
+    // at the trailing 425 days. The seed packs 6 000 rows × 15 min ≈
+    // 62.5 days backwards from a fixed anchor; QA F-M-04 (v1.4.39):
+    // re-anchor the youngest row to `nowMs - 30 * 86_400_000` so the
+    // seed lives ~30-92 days ago regardless of when the test runs.
+    // Pre-fix the seed used `nowMs` directly so 28 days from now the
+    // 90-day cap would expire it — now 425-day, but the same anchor
+    // makes the test stable across long-running CI gaps.
     const ROW_COUNT = 6000;
     const STEP_MS = 15 * 60 * 1000;
     const nowMs = Date.now();
+    const youngestRowAtMs = nowMs - 30 * 86_400_000;
     const rows = Array.from({ length: ROW_COUNT }, (_, i) => ({
       userId: user.id,
       type: "PULSE" as const,
       value: 60 + (i % 40), // deterministic 60..99
       unit: "bpm",
       source: "MANUAL" as const,
-      // i = ROW_COUNT - 1 is the freshest row (just before `now`);
+      // i = ROW_COUNT - 1 is the freshest row (30 days before `now`);
       // i = 0 is the oldest. The chunked helper reads
       // `(measuredAt asc, id asc)` so the latest value is the last
       // entry in the sorted stream — which the test asserts below.
-      measuredAt: new Date(nowMs - (ROW_COUNT - i) * STEP_MS),
+      measuredAt: new Date(
+        youngestRowAtMs - (ROW_COUNT - 1 - i) * STEP_MS,
+      ),
     }));
     // createMany batches efficiently; default Postgres parameter limit
     // accommodates this volume in a single statement.
