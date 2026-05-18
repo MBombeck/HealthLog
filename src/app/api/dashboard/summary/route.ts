@@ -449,11 +449,17 @@ async function buildDashboardSummary(
   const sparkByType = new Map<MeasurementType, number[]>();
   for (const row of sparkBuckets) {
     const list = sparkByType.get(row.type) ?? [];
-    const useSum = CUMULATIVE_HK_TYPES.has(row.type);
-    const point = useSum
-      ? (row.sum_value !== null
-          ? Number(row.sum_value)
-          : Number(row.mean) * Number(row.count))
+    // QA Simplifier (v1.4.39): flatten the cumulative-vs-spot ternary
+    // into a named branch per the CLAUDE.md "no nested ternaries"
+    // rule. Cumulative tiles paint the daily SUM; spot tiles keep the
+    // daily MEAN. The legacy NULL fallback covers pre-v1.4.39 rollup
+    // rows the boot-backfill hasn't refreshed yet.
+    const cumulativePoint =
+      row.sum_value !== null
+        ? Number(row.sum_value)
+        : Number(row.mean) * Number(row.count);
+    const point = CUMULATIVE_HK_TYPES.has(row.type)
+      ? cumulativePoint
       : Number(row.mean);
     list.push(point);
     sparkByType.set(row.type, list);
