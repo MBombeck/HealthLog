@@ -155,6 +155,10 @@ describe("recomputeBucketsForMeasurement", () => {
         mean: 82.5,
         min_value: 80.0,
         max_value: 85.0,
+        // v1.4.39 W-SUM — writer always populates `sum_value` (AVG
+        // and SUM compose in the same $queryRaw aggregate). 3 * 82.5
+        // = 247.5 so the round-trips line up with `mean * count`.
+        sum_value: 247.5,
         sd: 2.0,
         slope: -0.1,
         r2: 0.9,
@@ -184,6 +188,11 @@ describe("recomputeBucketsForMeasurement", () => {
     ).toBe("DAY");
     expect(upsertArg.create.count).toBe(3);
     expect(upsertArg.create.mean).toBe(82.5);
+    // v1.4.39 W-SUM — sumValue flows through on both create + update
+    // halves of the upsert. Cumulative read paths (steps, flights,
+    // distance, daylight, active-energy) consume this directly.
+    expect(upsertArg.create.sumValue).toBe(247.5);
+    expect(upsertArg.update.sumValue).toBe(247.5);
 
     // WEEK / MONTH / YEAR — three enqueues against the worker queue.
     expect(bossSend).toHaveBeenCalledTimes(3);
@@ -193,6 +202,73 @@ describe("recomputeBucketsForMeasurement", () => {
       expect(call[1].type).toBe("WEIGHT");
       expect(["WEEK", "MONTH", "YEAR"]).toContain(call[1].granularity);
     }
+  });
+
+  it("writes sum_value for cumulative ACTIVITY_STEPS buckets", async () => {
+    // 5 step samples in a day summing to 12480: emulates an iOS
+    // batch of HealthKit slices reaching the rollup aggregator.
+    queryRawUnsafe.mockResolvedValueOnce([
+      {
+        type: "ACTIVITY_STEPS",
+        bucket_start: new Date("2026-05-10T00:00:00.000Z"),
+        count: BigInt(5),
+        mean: 2496,
+        min_value: 100,
+        max_value: 9000,
+        // 100 + 2500 + 9000 + 500 + 380 = 12480
+        sum_value: 12480,
+        sd: 3200,
+        slope: null,
+        r2: null,
+      },
+    ]);
+    getGlobalBossMock.mockReturnValue(null);
+
+    await recomputeBucketsForMeasurement(
+      "user-7",
+      "ACTIVITY_STEPS",
+      new Date("2026-05-10T14:30:00.000Z"),
+    );
+
+    expect(upsert).toHaveBeenCalledTimes(1);
+    const arg = upsert.mock.calls[0][0];
+    expect(arg.create.sumValue).toBe(12480);
+    // mean × count algebraic equivalence — the writer carries SUM
+    // directly because the aggregator computed it once. Asserting
+    // both gives parity coverage for the consumer-side fallback.
+    expect(arg.create.mean * arg.create.count).toBe(12480);
+  });
+
+  it("passes through null sum_value when the aggregator returns NULL", async () => {
+    // Defensive: an empty WHERE-clause window would NEVER return a
+    // row here (the route filters by day boundaries), but a future
+    // aggregator change that adds a HAVING clause should still
+    // surface NULL cleanly rather than coercing to 0.
+    queryRawUnsafe.mockResolvedValueOnce([
+      {
+        type: "WEIGHT",
+        bucket_start: new Date("2026-05-10T00:00:00.000Z"),
+        count: BigInt(1),
+        mean: 82.5,
+        min_value: 82.5,
+        max_value: 82.5,
+        sum_value: null,
+        sd: null,
+        slope: null,
+        r2: null,
+      },
+    ]);
+    getGlobalBossMock.mockReturnValue(null);
+
+    await recomputeBucketsForMeasurement(
+      "user-1",
+      "WEIGHT",
+      new Date("2026-05-10T14:30:00.000Z"),
+    );
+
+    const arg = upsert.mock.calls[0][0];
+    expect(arg.create.sumValue).toBeNull();
+    expect(arg.update.sumValue).toBeNull();
   });
 
   it("deletes the DAY row when the post-mutation aggregate is empty", async () => {
@@ -465,5 +541,29 @@ describe("enqueueBootTimeRollupBackfill", () => {
 
     expect(result).toEqual({ enqueued: 0, skipped: 0, error: null });
     expect(bossSend).not.toHaveBeenCalled();
+  });
+
+  // v1.4.39 W-SUM — the discovery query now unions in users whose
+  // existing DAY rollup rows carry `sum_value IS NULL`. Re-folding
+  // converges those rows because `persistRollupRows` always writes the
+  // new column on upsert; the union keeps the per-type missing-coverage
+  // gap (v1.4.38.5) and the legacy-NULL backfill on the same indexed
+  // pass.
+  it("includes the sum_value IS NULL branch in the discovery query", async () => {
+    getGlobalBossMock.mockReturnValue({ send: bossSend });
+    queryRaw.mockResolvedValueOnce([{ id: "user-with-legacy-rollups" }]);
+    bossSend.mockResolvedValueOnce("job-id");
+
+    const result = await enqueueBootTimeRollupBackfill();
+
+    expect(result).toEqual({ enqueued: 1, skipped: 0, error: null });
+    // The discovery SQL surfaces both per-type missing coverage AND
+    // legacy NULL sum_value rows under one UNION. The text-anchor is
+    // the only durable assertion at the unit level — the integration
+    // suite covers the planner shape on real Postgres.
+    const sqlParts = queryRaw.mock.calls[0][0] as TemplateStringsArray;
+    const sqlText = Array.isArray(sqlParts) ? sqlParts.join("?") : "";
+    expect(sqlText).toContain("sum_value");
+    expect(sqlText).toContain("UNION");
   });
 });

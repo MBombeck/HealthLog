@@ -233,6 +233,65 @@ describe("GET /api/measurements — all-time semantics (SD-H1)", () => {
     expect(json.data.meta.aggregate).toBe("daily");
   });
 
+  it("source=rollup cumulative path reads sum_value directly (v1.4.39 W-SUM)", async () => {
+    // ACTIVITY_STEPS rollup row with sum_value populated. The route
+    // must consume sumValue directly — NOT reconstruct from mean *
+    // count. Use a sum that is NOT mean × count so the test
+    // distinguishes the two paths.
+    const buckets = Array.from({ length: 3 }, (_, i) => ({
+      type: "ACTIVITY_STEPS",
+      bucketStart: new Date(Date.UTC(2026, 4, 1 + i, 0, 0, 0)),
+      mean: 2000, // would yield 10000 if multiplied by count=5
+      count: 5,
+      sumValue: 11000 + i * 250, // distinct from mean × count
+    }));
+    vi.mocked(prisma.measurementRollup.findMany).mockResolvedValue(
+      buckets as never,
+    );
+
+    const res = await GET(
+      getRequest(
+        "type=ACTIVITY_STEPS&from=2026-05-01T00:00:00Z&to=2026-05-05T00:00:00Z&aggregate=daily&source=rollup&limit=5000",
+      ),
+    );
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as {
+      data: { measurements: Array<{ value: number }> };
+    };
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+    expect(json.data.measurements.map((m) => m.value)).toEqual([
+      11000, 11250, 11500,
+    ]);
+  });
+
+  it("source=rollup cumulative path falls back to mean*count when sum_value is NULL (v1.4.39 W-SUM)", async () => {
+    // Pre-v1.4.39 row — boot-backfill hasn't converged yet. The
+    // route falls back to mean × count so the chart never paints
+    // a hole during the convergence window.
+    const buckets = [
+      {
+        type: "ACTIVITY_STEPS",
+        bucketStart: new Date(Date.UTC(2026, 4, 1)),
+        mean: 2000,
+        count: 5,
+        sumValue: null,
+      },
+    ];
+    vi.mocked(prisma.measurementRollup.findMany).mockResolvedValue(
+      buckets as never,
+    );
+
+    const res = await GET(
+      getRequest(
+        "type=ACTIVITY_STEPS&from=2026-05-01T00:00:00Z&to=2026-05-05T00:00:00Z&aggregate=daily&source=rollup&limit=5000",
+      ),
+    );
+    const json = (await res.json()) as {
+      data: { measurements: Array<{ value: number }> };
+    };
+    expect(json.data.measurements[0].value).toBe(10000);
+  });
+
   it("falls back to live date_trunc when source=rollup returns zero buckets", async () => {
     // Empty rollup ⇒ heavy aggregate runs so brand-new accounts still
     // see a correct chart on their first render.

@@ -206,6 +206,93 @@ describe("GET /api/dashboard/summary", () => {
     expect(glucose?.lastSeenAt).toBe(tenDaysAgo.toISOString());
   });
 
+  it("paints the steps sparkline from rollup sum_value, not mean (v1.4.39 W-SUM)", async () => {
+    // The ACTIVITY_STEPS tile renders the per-day SUM, not the
+    // per-bucket MEAN. The sparkline query feeds the SQL aggregate
+    // directly off the `measurement_rollups` row; pinning the
+    // returned shape proves the route hands `sum_value` through
+    // instead of reconstructing from `mean * count`.
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
+      {
+        type: "ACTIVITY_STEPS",
+        _count: { _all: 7 },
+        _max: { measuredAt: new Date() },
+      },
+    ] as never);
+    // First call: latest7d. Second call: sparkline. Third call:
+    // streakDays. Matches the Promise.all order documented in the
+    // route's perf-comment.
+    vi.mocked(prisma.$queryRaw)
+      .mockResolvedValueOnce([
+        {
+          type: "ACTIVITY_STEPS",
+          value: 9999,
+          measured_at: new Date(),
+        },
+      ] as never)
+      .mockResolvedValueOnce([
+        {
+          type: "ACTIVITY_STEPS",
+          bucket_start: new Date(),
+          mean: 2000,
+          count: 4,
+          // 8000 ≠ mean × count (4 × 2000 = 8000) but the SUM is the
+          // direct rollup column; the fallback path would also hit
+          // 8000 here. Use 8120 to prove the route did NOT reconstruct
+          // from mean × count.
+          sum_value: 8120,
+        },
+      ] as never)
+      .mockResolvedValueOnce([] as never);
+
+    const res = await callGet(makeReq());
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: { metrics: Array<{ id: string; sparkline: number[] }> };
+    };
+    const steps = body.data.metrics.find((m) => m.id === "steps");
+    expect(steps?.sparkline).toEqual([8120]);
+  });
+
+  it("falls back to mean * count when the legacy sum_value is null (v1.4.39 W-SUM)", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
+      {
+        type: "ACTIVITY_STEPS",
+        _count: { _all: 7 },
+        _max: { measuredAt: new Date() },
+      },
+    ] as never);
+    vi.mocked(prisma.$queryRaw)
+      .mockResolvedValueOnce([
+        {
+          type: "ACTIVITY_STEPS",
+          value: 9999,
+          measured_at: new Date(),
+        },
+      ] as never)
+      .mockResolvedValueOnce([
+        {
+          type: "ACTIVITY_STEPS",
+          bucket_start: new Date(),
+          mean: 2000,
+          count: 4,
+          sum_value: null,
+        },
+      ] as never)
+      .mockResolvedValueOnce([] as never);
+
+    const res = await callGet(makeReq());
+    const body = (await res.json()) as {
+      data: { metrics: Array<{ id: string; sparkline: number[] }> };
+    };
+    const steps = body.data.metrics.find((m) => m.id === "steps");
+    // 4 × 2000 — legacy fallback for the boot-backfill convergence
+    // window keeps the chart non-empty for pre-v1.4.39 rows.
+    expect(steps?.sparkline).toEqual([8000]);
+  });
+
   it("computes intake compliance for today", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.medicationIntakeEvent.findMany).mockImplementation(((

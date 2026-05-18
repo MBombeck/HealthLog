@@ -53,6 +53,8 @@
  * 100`. Slope `direction` is derived from `slope`'s sign with the
  * same 0.01-units-per-day "stable" threshold the JS helper uses.
  */
+import type { MeasurementType, RollupGranularity } from "@/generated/prisma/client";
+
 import { prisma } from "@/lib/db";
 import type { DataSummary } from "@/lib/analytics/trends";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
@@ -62,6 +64,11 @@ import {
   isFullyCovered,
   probeRollupCoverage,
 } from "@/lib/measurements/rollup-coverage";
+import {
+  aggregateWmyBuckets,
+  readBestGranularityRollups,
+  type RollupBucketRow,
+} from "@/lib/measurements/rollup-read-wmy";
 
 /**
  * Heavy aggregate row — used on the cold-mount fallback path where the
@@ -559,4 +566,97 @@ async function computeFromLiveAggregate(
   });
 
   return { summaries, bmi: null, lastSeenByType };
+}
+
+/**
+ * v1.4.39 W-WMY — long-window summary for a single `(userId, type)`
+ * pair, served from the WEEK / MONTH / YEAR rollup tier when the
+ * window justifies it.
+ *
+ * Why this helper exists
+ * ----------------------
+ * The slim `computeSummariesSlice` caps its windowed columns at 90 d
+ * (`slope7 / slope30 / slope90`). The v1.5 multi-year trend feature
+ * + the Coach drawer's "history" tile need linearly composable stats
+ * (count / min / max / mean / sum) over much larger windows — 1 y,
+ * 2 y, 3 y. Hitting the live `measurements` table for a 3-year span
+ * walks every row the user has ever logged for that type, which on
+ * Marc's tenant is tens of thousands of rows per type.
+ *
+ * The WMY rollup tier already carries the per-bucket stats we need:
+ * the writer mints WEEK / MONTH / YEAR buckets via pg-boss on every
+ * measurement write and the boot backfill fills the long tail. This
+ * helper routes the requested window into the largest granularity
+ * that still resolves it (via `readBestGranularityRollups`) and
+ * composes the trailing-window aggregate in JS — typically 3-15
+ * bucket rows on a multi-year window, vs the thousands of raw rows
+ * the live aggregator would scan.
+ *
+ * Compositional caveats
+ * ---------------------
+ * `count / min / max / mean / sum` are mathematically exact across
+ * any granularity (linearly composable). `sd / slope / r2` are NOT
+ * exact across coarser buckets — this helper deliberately omits them
+ * so callers cannot accidentally consume stale slope data. The v1.5
+ * multi-year trend card derives its slope from the per-bucket `mean`
+ * series instead.
+ *
+ * Coverage-miss policy
+ * --------------------
+ * `readBestGranularityRollups` falls back from YEAR → MONTH → WEEK
+ * → DAY on per-tier coverage miss. Returns `null` only when the
+ * user has zero buckets in the entire window — the caller treats
+ * that as "no data" rather than "stale rollup". The route is
+ * intentionally NOT wired to live SQL fallback here; the all-time
+ * aggregate path inside `computeSummariesSlice` already covers the
+ * "rollup tier empty" cold-mount case, and v1.5's multi-year card
+ * accepts a `null` "no data yet" state.
+ */
+export async function computeLongWindowSummary(
+  userId: string,
+  type: MeasurementType,
+  windowDays: number,
+): Promise<{
+  granularity: RollupGranularity;
+  bucketStart: Date | null;
+  bucketEnd: Date | null;
+  bucketCount: number;
+  count: number;
+  min: number | null;
+  max: number | null;
+  mean: number | null;
+  sum: number | null;
+} | null> {
+  const resolved = await readBestGranularityRollups(userId, type, windowDays);
+  if (!resolved) return null;
+  const rows: RollupBucketRow[] = resolved.rows;
+  const aggregate = aggregateWmyBuckets(rows);
+  // Annotate which granularity served the window so the operator can
+  // verify the routing in production wide-events without redeploying
+  // instrumentation. Mirrors the `slim_summaries.path` annotate
+  // shape inside `computeFromRollups` / `computeFromLiveAggregate`.
+  annotate({
+    meta: {
+      analytics: {
+        long_window_summary: {
+          type,
+          window_days: windowDays,
+          granularity: resolved.granularity,
+          bucket_count: rows.length,
+          row_count: aggregate.count,
+        },
+      },
+    },
+  });
+  return {
+    granularity: resolved.granularity,
+    bucketStart: rows[0]?.bucketStart ?? null,
+    bucketEnd: rows[rows.length - 1]?.bucketStart ?? null,
+    bucketCount: rows.length,
+    count: aggregate.count,
+    min: aggregate.min,
+    max: aggregate.max,
+    mean: aggregate.mean,
+    sum: aggregate.sum,
+  };
 }

@@ -27,7 +27,10 @@ vi.mock("@/lib/logging/context", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { computeSummariesSlice } from "../summaries-slice";
+import {
+  computeLongWindowSummary,
+  computeSummariesSlice,
+} from "../summaries-slice";
 
 const RAW = prisma.$queryRaw as unknown as ReturnType<typeof vi.fn>;
 const MEASUREMENT_FIND_FIRST =
@@ -290,5 +293,139 @@ describe("computeSummariesSlice", () => {
       expect(RAW).toHaveBeenCalledTimes(4);
       expect(ROLLUP_FIND_MANY).toHaveBeenCalledTimes(0);
     });
+  });
+});
+
+/**
+ * v1.4.39 W-WMY — long-window summary helper. Pins:
+ *   - the helper routes a 365-day window through MONTH buckets,
+ *   - the linearly-composable aggregate (count / min / max / mean /
+ *     sum) lands at the same numbers `aggregateWmyBuckets` produces
+ *     directly, so the rollup math survives round-tripping through
+ *     the summaries-slice entry point,
+ *   - a coverage miss surfaces as a `null` return instead of a
+ *     partial-shape leak.
+ */
+describe("computeLongWindowSummary", () => {
+  it("routes a 365-day window through MONTH buckets and composes the aggregate", async () => {
+    // The first findMany call is the per-tier probe inside
+    // `readBestGranularityRollups`. With windowDays=365 the router
+    // walks YEAR (skipped, floor=731) → MONTH (floor=181, matched).
+    // The MONTH call returns two buckets; the helper composes the
+    // window aggregate from them.
+    ROLLUP_FIND_MANY.mockResolvedValueOnce([
+      {
+        bucketStart: new Date("2026-04-01T00:00:00.000Z"),
+        count: 10,
+        mean: 82,
+        sd: 1,
+        slope: -0.01,
+        r2: 0.3,
+        sumValue: null,
+        minValue: 79,
+        maxValue: 84,
+      },
+      {
+        bucketStart: new Date("2026-05-01T00:00:00.000Z"),
+        count: 20,
+        mean: 80,
+        sd: 1.5,
+        slope: 0.02,
+        r2: 0.4,
+        sumValue: null,
+        minValue: 77,
+        maxValue: 83,
+      },
+    ]);
+
+    const result = await computeLongWindowSummary("user-1", "WEIGHT", 365);
+
+    expect(result).not.toBeNull();
+    expect(result?.granularity).toBe("MONTH");
+    expect(result?.bucketCount).toBe(2);
+    expect(result?.count).toBe(30);
+    expect(result?.min).toBe(77);
+    expect(result?.max).toBe(84);
+    // Σ(count × mean) / Σcount = (10×82 + 20×80) / 30 = 80.6666…
+    expect(result?.mean).toBeCloseTo((10 * 82 + 20 * 80) / 30, 5);
+    expect(result?.sum).toBeNull(); // no sumValue on these buckets
+
+    // The router asked MONTH first (365 d clears the 181-day MONTH
+    // floor and falls short of the 731-day YEAR floor).
+    expect(ROLLUP_FIND_MANY).toHaveBeenCalledTimes(1);
+    expect(ROLLUP_FIND_MANY.mock.calls[0][0].where.granularity).toBe("MONTH");
+  });
+
+  it("routes a 1095-day window through YEAR with a fall-through to MONTH on miss", async () => {
+    // YEAR coverage miss → router falls back to MONTH.
+    ROLLUP_FIND_MANY.mockResolvedValueOnce([]) // YEAR miss
+      .mockResolvedValueOnce([
+        {
+          bucketStart: new Date("2024-06-01T00:00:00.000Z"),
+          count: 100,
+          mean: 81,
+          sd: 1.2,
+          slope: 0.005,
+          r2: 0.15,
+          sumValue: null,
+          minValue: 76,
+          maxValue: 86,
+        },
+      ]);
+
+    const result = await computeLongWindowSummary("user-1", "WEIGHT", 1095);
+
+    expect(result?.granularity).toBe("MONTH");
+    expect(result?.bucketCount).toBe(1);
+    expect(result?.count).toBe(100);
+    expect(ROLLUP_FIND_MANY).toHaveBeenCalledTimes(2);
+  });
+
+  it("composes the cumulative sum when every bucket carries sumValue", async () => {
+    ROLLUP_FIND_MANY.mockResolvedValueOnce([
+      {
+        bucketStart: new Date("2026-04-01T00:00:00.000Z"),
+        count: 28,
+        mean: 8_200,
+        sd: 1_000,
+        slope: 0,
+        r2: 0,
+        sumValue: 229_600,
+        minValue: 5_000,
+        maxValue: 12_000,
+      },
+      {
+        bucketStart: new Date("2026-05-01T00:00:00.000Z"),
+        count: 30,
+        mean: 9_100,
+        sd: 1_100,
+        slope: 0,
+        r2: 0,
+        sumValue: 273_000,
+        minValue: 6_000,
+        maxValue: 12_500,
+      },
+    ]);
+
+    const result = await computeLongWindowSummary(
+      "user-1",
+      "ACTIVITY_STEPS",
+      365,
+    );
+
+    expect(result?.sum).toBe(229_600 + 273_000);
+  });
+
+  it("returns null when every granularity misses", async () => {
+    ROLLUP_FIND_MANY.mockResolvedValue([]);
+    const result = await computeLongWindowSummary("user-1", "WEIGHT", 1095);
+    expect(result).toBeNull();
+  });
+
+  it("returns null on a zero / negative / NaN window without hitting the DB", async () => {
+    expect(await computeLongWindowSummary("user-1", "WEIGHT", 0)).toBeNull();
+    expect(await computeLongWindowSummary("user-1", "WEIGHT", -10)).toBeNull();
+    expect(await computeLongWindowSummary("user-1", "WEIGHT", NaN)).toBeNull();
+    expect(ROLLUP_FIND_MANY).not.toHaveBeenCalled();
   });
 });
