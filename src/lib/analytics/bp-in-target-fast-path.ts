@@ -54,7 +54,6 @@ import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { readRollupBuckets } from "@/lib/measurements/rollups";
 import {
-  isFullyCovered,
   probeRollupCoverage,
   type RollupCoverageMap,
 } from "@/lib/measurements/rollup-coverage";
@@ -149,14 +148,16 @@ export async function computeBpInTargetFastPath(input: {
     ? "near-utc"
     : "non-utc-live-fallback";
 
-  // Belt-and-braces: only take the rollup path when EVERY logged type
-  // is covered AND both BP types are present in the map AND the
-  // cross-tz guard cleared. A brand-new user without BP at all falls
-  // into `isFullyCovered === false` (coverage map is empty) and the
-  // route's downstream code already skips the BP block when
-  // `getBpTargets` returns null; we still call the live fallback here
-  // so the helper's contract stays single-shot.
-  if (userNearUtc && isFullyCovered(coverage) && sysCovered && diaCovered) {
+  // v1.4.38.8 — gate only on the types the helper actually reads.
+  // The previous `isFullyCovered(coverage) && sysCovered && diaCovered`
+  // shape poisoned the BP fast-path with any unrelated brand-new
+  // measurement type the user had logged (e.g. iOS pushed a new
+  // ACTIVITY_FLIGHTS reading without a rollup row yet) — even though
+  // SYS + DIA are fully covered. The cold-mount then fanned out to the
+  // live aggregator over the full measurement table. Coverage probe is
+  // already keyed per type, so trusting the per-type entries directly
+  // is the correct gate.
+  if (userNearUtc && sysCovered && diaCovered) {
     return computeFromRollups(userId, targets, now, tzGuard);
   }
   return computeFromLive(userId, targets, now, tzGuard);

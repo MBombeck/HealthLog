@@ -1,5 +1,99 @@
 # Changelog
 
+## [1.4.38.8] — 2026-05-18 — Analytics fast-path gates per-type only
+
+The v1.4.38.5–.7 chain confirmed the rollup-fast-path was bouncing
+to the live SQL aggregator even when the helper's own types were
+fully covered — every fast-path stacked `isFullyCovered(coverage)
+&& specificTypes` and a single unrelated uncovered type (e.g. an
+iOS-pushed brand-new ACTIVITY_FLIGHTS reading) flipped the AND
+false and stranded the whole helper on live SQL across the full
+347 k-row measurement table.
+
+### Fixed
+
+- **`correlations-fast-path` gates only on `BLOOD_PRESSURE_SYS +
+  PULSE + WEIGHT`** — the three types the helper actually reads.
+  `isFullyCovered(coverage)` AND-term dropped.
+- **`bp-in-target-fast-path` gates only on `BLOOD_PRESSURE_SYS +
+  BLOOD_PRESSURE_DIA`**. Same fix.
+- **`health-score-fast-path` gates only on `WEIGHT`**. Same fix.
+
+Coverage-probe semantics unchanged. Each helper now consults the
+per-type entries directly; a brand-new uncovered metric type no
+longer poisons unrelated cards.
+
+### Operator notes
+
+- No new migration. No env-var change.
+- Expected: cold-mount `/api/analytics` on Marc-sized accounts
+  drops from 30-75 s to ~3-5 s.
+
+## [1.4.38.7] — 2026-05-18 — Rollup recompute observability + admin trigger
+
+The v1.4.38.5 / v1.4.38.6 chain promised a fast-path recovery for
+power-user accounts but gave the operator no way to confirm whether
+the boot-time discovery had actually found a stranded user — the
+success log only fired when `enqueued > 0 || skipped > 0`, so the
+silent "found nothing" case looked identical to the silent "boot hook
+never ran" case. And once the worker was up there was no way to
+re-trigger discovery short of bouncing the container.
+
+### Added
+
+- **`POST /api/admin/rollups/recompute`** — operator-triggered ad-hoc
+  rollup recompute. Body `{ userId: string }` synchronously folds
+  one user (`recomputeUserRollups` awaited inside the request). Body
+  `{}` re-runs `enqueueBootTimeRollupBackfill()` to kick the
+  boot-discovery loop across every user. Admin gate via
+  `requireAdmin()` (cookie-only, never Bearer).
+- **`fallback_reason` + `missing_types` annotate** on the
+  `slim_summaries` live-fallback path. When the rollup-fast-path
+  declines, the wide-event now reports exactly which measurement
+  types are missing DAY-bucket coverage so the operator can match
+  a slow `/api/analytics` cold-mount to the responsible type without
+  touching the DB.
+
+### Changed
+
+- **Boot-backfill discovery now logs every result, including the
+  silent "no users to backfill" case.** The line cost is one row per
+  worker boot; the operator gain is the ability to tell discovery
+  ran cleanly from discovery silently no-op'd.
+
+### Operator notes
+
+- No new migration. No env-var change.
+
+## [1.4.38.6] — 2026-05-18 — Boot-backfill discovery SQL fix
+
+The v1.4.38.5 discovery rewrite filtered the LEFT JOIN with
+`WHERE r."id" IS NULL` — but `measurement_rollups` has a composite
+primary key `(user_id, type, granularity, bucket_start)` and no
+surrogate `id` column. Postgres rejected the query with
+`column r.id does not exist` (SQL state 42703), the worker boot
+swallowed the error per the helper's best-effort contract, and the
+queue stayed empty. Net effect: v1.4.38.5 deployed cleanly but
+delivered none of its promised fast-path recovery.
+
+### Fixed
+
+- **Boot-backfill discovery now filters on `r."bucket_start" IS NULL`**
+  — any column from the right side of the LEFT JOIN serves as the
+  "no matching row" sentinel; `bucket_start` is part of the composite
+  primary key so the planner already touches the column. Verified
+  against the live schema: `42703` no longer raised on worker boot,
+  and the discovery query returns the expected per-type-missing
+  candidate set.
+
+### Operator notes
+
+- No new migration. No env-var change.
+- On first boot after deploy the rollup-full-backfill queue picks
+  up users with any missing type-coverage and folds them. Power-
+  user accounts may see one slow `/api/analytics` cold-mount before
+  the next request lands on the restored fast path.
+
 ## [1.4.38.5] — 2026-05-18 — Analytics fast-path restored on long-running accounts
 
 Hotfix on top of v1.4.38.4. `/api/analytics` and the dashboard

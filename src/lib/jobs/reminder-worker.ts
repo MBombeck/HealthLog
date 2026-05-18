@@ -1960,7 +1960,13 @@ export async function startReminderWorker() {
         "error",
         `[rollup-full-backfill] boot discovery failed: ${error}`,
       );
-    } else if (enqueued > 0 || skipped > 0) {
+    } else {
+      // v1.4.38.7 — log the discovery result on every boot, including
+      // the silent `enqueued=0 skipped=0` case. Without this, an
+      // operator chasing "analytics is slow" cannot tell whether the
+      // discovery query ran successfully (and found nothing to fold)
+      // vs. silently no-op'd. The line is one row per worker boot, so
+      // the log cost is negligible.
       workerLog(
         "info",
         `[rollup-full-backfill] boot discovery: enqueued=${enqueued} skipped=${skipped}`,

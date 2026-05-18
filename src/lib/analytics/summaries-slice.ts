@@ -217,6 +217,26 @@ export async function computeSummariesSlice(
   if (isFullyCovered(coverage)) {
     return computeFromRollups(userId);
   }
+  // v1.4.38.7 — annotate the live fallback with the per-type
+  // coverage map so the operator can see WHICH type stranded the
+  // request on the live aggregator. Without this the wide-event only
+  // says `path:"live"`, and "why" requires shell access to the DB.
+  const missing: string[] = [];
+  for (const [type, hasBuckets] of coverage.entries()) {
+    if (!hasBuckets) missing.push(type);
+  }
+  annotate({
+    meta: {
+      analytics: {
+        slim_summaries: {
+          fallback_reason: "partial_rollup_coverage",
+          missing_types: missing,
+          covered_count: coverage.size - missing.length,
+          total_types: coverage.size,
+        },
+      },
+    },
+  });
   return computeFromLiveAggregate(userId);
 }
 

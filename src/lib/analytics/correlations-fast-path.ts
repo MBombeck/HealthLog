@@ -47,7 +47,6 @@ import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { readRollupBuckets } from "@/lib/measurements/rollups";
 import {
-  isFullyCovered,
   probeRollupCoverage,
   type RollupCoverageMap,
 } from "@/lib/measurements/rollup-coverage";
@@ -140,14 +139,13 @@ export async function computeCorrelationHypothesesFastPath(
   // local-day buckets and this guard can come back down.
   const userNearUtc = isNearUtc(userTz, now);
 
-  // The three measurement-derived streams ride the rollup-fast-path
-  // only when EVERY type the user has logged is covered AND each of
-  // SYS / PULSE / WEIGHT is in the coverage map. Partial coverage
-  // falls back to the live path so a brand-new metric type doesn't
-  // make the correlation card vanish.
+  // v1.4.38.8 — gate only on the three types this helper actually
+  // reads (SYS / PULSE / WEIGHT). The prior `isFullyCovered &&` AND
+  // poisoned the correlations fast-path with any unrelated brand-new
+  // type the user had logged, even when SYS + PULSE + WEIGHT were
+  // fully covered. Per-type coverage is the correct gate.
   const measurementsOnRollups =
     userNearUtc &&
-    isFullyCovered(coverage) &&
     coverage.get("BLOOD_PRESSURE_SYS") === true &&
     coverage.get("PULSE") === true &&
     coverage.get("WEIGHT") === true;

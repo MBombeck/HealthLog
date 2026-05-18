@@ -42,7 +42,6 @@ import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { readRollupBuckets } from "@/lib/measurements/rollups";
 import {
-  isFullyCovered,
   probeRollupCoverage,
   type RollupCoverageMap,
 } from "@/lib/measurements/rollup-coverage";
@@ -146,8 +145,11 @@ export async function computeUserHealthScoreFastPath(
   const prevUntil = new Date(now.getTime() - 7 * DAY_MS);
 
   const coverage = input.coverage ?? (await probeRollupCoverage(userId));
-  const weightCovered =
-    isFullyCovered(coverage) && coverage.get("WEIGHT") === true;
+  // v1.4.38.8 — gate only on the WEIGHT type this helper reads. The
+  // prior `isFullyCovered &&` AND poisoned the score fast-path with
+  // any unrelated brand-new type that lacked rollup coverage. Per-
+  // type coverage is the correct gate.
+  const weightCovered = coverage.get("WEIGHT") === true;
 
   // Weight series — rollup-fast-path when fully covered, raw findMany
   // otherwise. The raw read selects only the columns the slope helper

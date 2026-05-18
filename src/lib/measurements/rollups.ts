@@ -736,10 +736,11 @@ export async function enqueueBootTimeRollupBackfill(): Promise<{
     // planner uses the `(user_id, type, measured_at)` index path; the
     // LEFT JOIN onto `measurement_rollups` uses the
     // `(user_id, type, granularity, bucket_start)` composite primary
-    // key. `r."id" IS NULL` filters the unmatched partitions. A user
-    // surfaces here when ANY type is missing — including the brand-
-    // new-type case that v1.4.35.1's zero-rollup-only shape silently
-    // stranded.
+    // key. `measurement_rollups` has no surrogate `id` column —
+    // `r."bucket_start" IS NULL` (any column from the right side of
+    // the LEFT JOIN) marks the unmatched partitions. A user surfaces
+    // here when ANY type is missing — including the brand-new-type
+    // case that v1.4.35.1's zero-rollup-only shape silently stranded.
     const users = await prisma.$queryRaw<Array<{ id: string }>>`
       SELECT DISTINCT mt."user_id" AS id
       FROM (
@@ -750,7 +751,7 @@ export async function enqueueBootTimeRollupBackfill(): Promise<{
         ON  r."user_id"     = mt."user_id"
         AND r."type"        = mt."type"
         AND r."granularity" = 'DAY'
-      WHERE r."id" IS NULL
+      WHERE r."bucket_start" IS NULL
     `;
 
     if (users.length === 0) {
