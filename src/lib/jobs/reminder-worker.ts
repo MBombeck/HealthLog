@@ -78,6 +78,14 @@ import {
   type MoodRollupRecomputePayload,
 } from "@/lib/mood/rollups";
 import {
+  MEDICATION_COMPLIANCE_BACKFILL_QUEUE,
+  MEDICATION_COMPLIANCE_BACKFILL_CONCURRENCY,
+  recomputeMedicationComplianceForEvent,
+  recomputeUserMedicationCompliance,
+  enqueueBootTimeMedicationComplianceBackfill,
+  type MedicationComplianceBackfillPayload,
+} from "@/lib/medications/compliance-rollups";
+import {
   drainPerSampleCumulative,
   DRAIN_CUMULATIVE_CUTOFF_HOURS,
 } from "@/lib/measurements/drain-per-sample-cumulative";
@@ -577,6 +585,17 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
                 "missed_dose",
                 `${med.name}:${schedule.windowStart}-${schedule.windowEnd}`,
               );
+
+              // v1.4.39 W-MED — the worker just minted a fresh
+              // `scheduledFor` row with `takenAt: null`; refresh the
+              // compliance rollup so the per-day `scheduled` count
+              // increments before any read sees the user's tile.
+              await recomputeMedicationComplianceForEvent({
+                userId: med.user.id,
+                medicationId: med.id,
+                scheduledFor,
+                tz: med.user.timezone,
+              });
             }
           }
 
@@ -1676,6 +1695,10 @@ export async function startReminderWorker() {
     // entries but no rollup rows; the user drops off the list once
     // the fold completes.
     MOOD_ROLLUP_FULL_BACKFILL_QUEUE,
+    // v1.4.39 W-MED — boot-time fold for the medication-compliance
+    // rollup tier. Discovery enqueues one job per user with intake
+    // events but no rollup coverage; idempotent across reboots.
+    MEDICATION_COMPLIANCE_BACKFILL_QUEUE,
     // v1.4.37 W7c — explicit createQueue is required before the
     // nightly schedule below registers (pg-boss v12 contract). Without
     // this entry the drain schedule silently no-ops and the
@@ -1989,6 +2012,37 @@ export async function startReminderWorker() {
     },
   );
 
+  // v1.4.39 W-MED — medication-compliance boot-backfill worker. The
+  // discovery helper below sends one job per user with intake events
+  // but zero rollup coverage; this handler folds the trailing 90-day
+  // window per account. Concurrency-1 so the populator never crowds
+  // the request pool.
+  await boss.work<MedicationComplianceBackfillPayload>(
+    MEDICATION_COMPLIANCE_BACKFILL_QUEUE,
+    { localConcurrency: MEDICATION_COMPLIANCE_BACKFILL_CONCURRENCY },
+    async (jobs) => {
+      for (const job of jobs) {
+        const { userId } = job.data;
+        try {
+          const { rowsUpserted, durationMs } =
+            await recomputeUserMedicationCompliance(userId);
+          workerLog(
+            "info",
+            `[medication-compliance-backfill] user=${userId} rows=${rowsUpserted} duration=${durationMs}ms`,
+          );
+        } catch (err) {
+          recordError();
+          workerLog(
+            "error",
+            `[medication-compliance-backfill] user=${userId} failed`,
+            err,
+          );
+          throw err;
+        }
+      }
+    },
+  );
+
   // v1.4.37 W7c — nightly drain worker. Walks every user × cumulative
   // type and folds per-sample APPLE_HEALTH rows older than the cutoff
   // into one `stats:…` row per calendar day. Idempotent — a second run
@@ -2076,6 +2130,32 @@ export async function startReminderWorker() {
     workerLog(
       "error",
       "[mood-rollup-full-backfill] boot discovery threw an unexpected error",
+      err,
+    );
+  }
+
+  // v1.4.39 W-MED — fire-and-forget boot discovery for the medication
+  // compliance rollup tier. Mirrors the v1.4.35.1 pattern: one job per
+  // user with intake events but no rollup coverage. Idempotent across
+  // reboots and singleton-keyed inside pg-boss.
+  try {
+    const { enqueued, skipped, error } =
+      await enqueueBootTimeMedicationComplianceBackfill();
+    if (error) {
+      workerLog(
+        "error",
+        `[medication-compliance-backfill] boot discovery failed: ${error}`,
+      );
+    } else {
+      workerLog(
+        "info",
+        `[medication-compliance-backfill] boot discovery: enqueued=${enqueued} skipped=${skipped}`,
+      );
+    }
+  } catch (err) {
+    workerLog(
+      "error",
+      "[medication-compliance-backfill] boot discovery threw an unexpected error",
       err,
     );
   }
