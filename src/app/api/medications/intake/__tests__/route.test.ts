@@ -16,6 +16,9 @@ vi.mock("@/lib/db", () => ({
       deleteMany: vi.fn(),
     },
     $transaction: vi.fn(),
+    // v1.4.39 QA F-H-01 — coverage probe + atomic upsert use raw SQL.
+    $queryRaw: vi.fn(),
+    $executeRaw: vi.fn().mockResolvedValue(0),
   },
 }));
 
@@ -71,6 +74,13 @@ beforeEach(() => {
   vi.mocked(prisma.medicationComplianceRollup.findMany).mockResolvedValue(
     [] as never,
   );
+  // v1.4.39 QA F-H-01 — the coverage probe is now a single `$queryRaw`
+  // aggregate returning `{ rolled_days, event_days }`. Default to
+  // "zero rollups, zero events" (covered/trivial-empty) so tests that
+  // don't care about coverage land on the rollup path.
+  vi.mocked(prisma.$queryRaw).mockResolvedValue([
+    { rolled_days: BigInt(0), event_days: BigInt(0) },
+  ] as never);
 });
 
 describe("GET /api/medications/intake", () => {
@@ -192,12 +202,12 @@ describe("POST /api/medications/intake", () => {
 describe("v1.4.39 W-MED — compliance rollup read swap", () => {
   it("reads the rollup tier when coverage is present", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    // Coverage probe returns "at least one row" so the route reads
-    // from the rollup tier rather than falling back to the live
-    // aggregator.
-    vi.mocked(prisma.medicationComplianceRollup.findFirst).mockResolvedValue({
-      day: "2026-05-18",
-    } as never);
+    // QA F-H-01 (v1.4.39): coverage probe returns
+    // `{ rolled_days >= event_days }` so the route lands on the
+    // rollup tier. Match the trailing-7-day window.
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([
+      { rolled_days: BigInt(7), event_days: BigInt(7) },
+    ] as never);
     vi.mocked(prisma.medicationComplianceRollup.findMany).mockResolvedValue([
       { day: "2026-05-18", scheduled: 3, taken: 2, skipped: 1 },
     ] as never);
@@ -221,9 +231,11 @@ describe("v1.4.39 W-MED — compliance rollup read swap", () => {
 
   it("falls back to the live aggregator on coverage miss", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(prisma.medicationComplianceRollup.findFirst).mockResolvedValue(
-      null,
-    );
+    // QA F-H-01 (v1.4.39): partial coverage — events present but
+    // rollups missing — forces fall-through to the live aggregator.
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([
+      { rolled_days: BigInt(0), event_days: BigInt(7) },
+    ] as never);
     vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue([
       {
         scheduledFor: new Date(),
