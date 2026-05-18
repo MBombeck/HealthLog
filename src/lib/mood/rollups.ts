@@ -115,7 +115,7 @@ interface MoodRollupRow {
  */
 type PrismaTxOrClient = Pick<
   PrismaClient,
-  "$queryRawUnsafe" | "moodEntryRollup"
+  "$queryRawUnsafe" | "$executeRaw" | "moodEntryRollup"
 >;
 
 /**
@@ -176,37 +176,86 @@ export async function recomputeMoodBucketsForEntry(
   tx?: PrismaTxOrClient,
 ): Promise<void> {
   const client = tx ?? prisma;
-  // DAY pass — synchronous. Aggregate over the affected day window.
+  // DAY pass — synchronous. v1.4.39 hotfix (QA F-H-02): one atomic SQL
+  // statement re-aggregates inside the upsert subquery, closing the
+  // race window where two concurrent writes for the same (user, day)
+  // could interleave A-SELECT → B-SELECT → B-UPSERT (correct) →
+  // A-UPSERT (stale N-1). The trailing DELETE handles the "all entries
+  // for the day were removed" case in the same shot.
   const dayStart = startOfUtcDay(moodLoggedAt);
   const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
-  const rows = await runMoodRollupAggregate(client, {
-    userId,
-    granularity: "DAY",
-    from: dayStart,
-    to: dayEnd,
-  });
-  if (rows.length === 0) {
-    // No mood rows in this day after the mutation (e.g. the DELETE
-    // path removed the last entry) — drop the rollup row if it exists.
-    await client.moodEntryRollup.deleteMany({
-      where: {
-        userId,
-        granularity: "DAY",
-        bucketStart: dayStart,
-      },
-    });
-  } else {
-    await persistMoodRollupRows(client, userId, "DAY", rows);
-  }
+  await client.$executeRaw`
+    WITH aggregate AS (
+      SELECT
+        COUNT(*)::int                                AS count,
+        AVG(m."score")::double precision             AS mean,
+        MIN(m."score")::integer                      AS min_score,
+        MAX(m."score")::integer                      AS max_score,
+        STDDEV_POP(m."score")::double precision      AS sd
+      FROM "mood_entries" m
+      WHERE m."user_id"        = ${userId}
+        AND m."mood_logged_at" >= ${dayStart}
+        AND m."mood_logged_at" <  ${dayEnd}
+    )
+    INSERT INTO "mood_entry_rollups"
+      ("user_id", "granularity", "bucket_start", "count", "mean", "min_score", "max_score", "sd", "computed_at")
+    SELECT
+      ${userId},
+      'DAY',
+      ${dayStart},
+      aggregate.count,
+      aggregate.mean,
+      aggregate.min_score,
+      aggregate.max_score,
+      aggregate.sd,
+      NOW()
+    FROM aggregate
+    WHERE aggregate.count > 0
+    ON CONFLICT ("user_id", "granularity", "bucket_start") DO UPDATE
+      SET "count"       = EXCLUDED."count",
+          "mean"        = EXCLUDED."mean",
+          "min_score"   = EXCLUDED."min_score",
+          "max_score"   = EXCLUDED."max_score",
+          "sd"          = EXCLUDED."sd",
+          "computed_at" = EXCLUDED."computed_at"
+  `;
+  await client.$executeRaw`
+    DELETE FROM "mood_entry_rollups"
+    WHERE "user_id"      = ${userId}
+      AND "granularity"  = 'DAY'
+      AND "bucket_start" = ${dayStart}
+      AND NOT EXISTS (
+        SELECT 1
+        FROM "mood_entries" m
+        WHERE m."user_id"        = ${userId}
+          AND m."mood_logged_at" >= ${dayStart}
+          AND m."mood_logged_at" <  ${dayEnd}
+      )
+  `;
 
-  // WEEK / MONTH / YEAR — enqueue. Each granularity covers the bucket
-  // that contains `moodLoggedAt` so the worker only re-aggregates the
-  // bucket the write could have changed. Fan-out in parallel — the
-  // singleton key per granularity prevents duplicate jobs.
-  await Promise.all(
+  // WEEK / MONTH / YEAR — fire-and-forget enqueue. QA F-H-03 (v1.4.39):
+  // the outer await on this Promise.all used to serialise the write-path
+  // response on pg-boss latency. The DAY pass the read path depends on
+  // has already committed synchronously above; the queue is a hint, not
+  // a write-path invariant, so dropping the await keeps the response
+  // off the pg-boss critical path. Errors stay caught inside
+  // `enqueueMoodRollupRecompute` so the unhandled-rejection logger
+  // captures any pg-boss failure.
+  void Promise.all(
     ASYNC_GRANULARITIES.map((granularity) => {
       const { from, to } = bucketSpan(moodLoggedAt, granularity);
-      return enqueueMoodRollupRecompute({ userId, granularity, from, to });
+      return enqueueMoodRollupRecompute({ userId, granularity, from, to }).catch(
+        (err: unknown) => {
+          const message = err instanceof Error ? err.message : String(err);
+          annotate({
+            meta: {
+              mood_rollup_enqueue_failed: true,
+              mood_rollup_enqueue_error: message,
+            },
+          });
+          console.error("[mood-rollups] async enqueue failed:", message);
+        },
+      );
     }),
   );
 }

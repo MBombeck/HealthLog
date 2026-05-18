@@ -21,6 +21,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   queryRaw: vi.fn(),
   queryRawUnsafe: vi.fn(),
+  executeRaw: vi.fn(),
   upsert: vi.fn(),
   deleteMany: vi.fn(),
   findFirst: vi.fn(),
@@ -34,6 +35,7 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     $queryRaw: mocks.queryRaw,
     $queryRawUnsafe: mocks.queryRawUnsafe,
+    $executeRaw: mocks.executeRaw,
     moodEntryRollup: {
       upsert: mocks.upsert,
       deleteMany: mocks.deleteMany,
@@ -59,6 +61,7 @@ import { annotate } from "@/lib/logging/context";
 const {
   queryRaw,
   queryRawUnsafe,
+  executeRaw,
   upsert,
   deleteMany,
   findFirst,
@@ -85,6 +88,8 @@ import {
 beforeEach(() => {
   queryRaw.mockReset();
   queryRawUnsafe.mockReset();
+  executeRaw.mockReset();
+  executeRaw.mockResolvedValue(0);
   upsert.mockReset();
   deleteMany.mockReset();
   findFirst.mockReset();
@@ -102,17 +107,15 @@ afterEach(() => {
 });
 
 describe("recomputeMoodBucketsForEntry", () => {
-  it("upserts the DAY rollup synchronously and enqueues WEEK/MONTH/YEAR", async () => {
-    queryRawUnsafe.mockResolvedValueOnce([
-      {
-        bucket_start: new Date("2026-05-10T00:00:00.000Z"),
-        count: BigInt(3),
-        mean: 4.0,
-        min_score: 3,
-        max_score: 5,
-        sd: 0.82,
-      },
-    ]);
+  function bindValues(call: unknown[]): unknown[] {
+    return call.slice(1);
+  }
+
+  it("runs the atomic DAY upsert + DELETE pair and fires WEEK/MONTH/YEAR enqueues", async () => {
+    // QA F-H-02 (v1.4.39): the DAY pass is now a single atomic SQL
+    // statement (INSERT … SELECT … ON CONFLICT) plus a paired DELETE
+    // that gates on NOT EXISTS. No JS-side aggregate, no per-row
+    // upsert through the Prisma client.
     getGlobalBossMock.mockReturnValue({ send: bossSend });
     bossSend.mockResolvedValue("job-id");
 
@@ -121,22 +124,23 @@ describe("recomputeMoodBucketsForEntry", () => {
       new Date("2026-05-10T14:30:00.000Z"),
     );
 
-    // DAY pass — single upsert against the rollup table.
-    expect(upsert).toHaveBeenCalledTimes(1);
-    const upsertArg = upsert.mock.calls[0][0];
-    expect(upsertArg.where.userId_granularity_bucketStart.userId).toBe(
-      "user-1",
-    );
-    expect(upsertArg.where.userId_granularity_bucketStart.granularity).toBe(
-      "DAY",
-    );
-    expect(upsertArg.create.count).toBe(3);
-    expect(upsertArg.create.mean).toBe(4);
-    expect(upsertArg.create.minScore).toBe(3);
-    expect(upsertArg.create.maxScore).toBe(5);
-    expect(upsertArg.create.sd).toBeCloseTo(0.82);
+    expect(executeRaw).toHaveBeenCalledTimes(2);
+    const insertBinds = bindValues(executeRaw.mock.calls[0]);
+    expect(insertBinds).toContain("user-1");
+    // bucket_start is bound twice (INSERT row + INSERT SELECT predicate
+    // are both inside the same CTE shape via the same parameter).
+    const dayStart = new Date("2026-05-10T00:00:00.000Z");
+    expect(
+      (insertBinds.filter((b) => b instanceof Date) as Date[]).some(
+        (d) => d.getTime() === dayStart.getTime(),
+      ),
+    ).toBe(true);
 
-    // WEEK / MONTH / YEAR — three enqueues against the worker queue.
+    // QA F-H-03 — the enqueue is fire-and-forget; the response path
+    // never awaits the boss.send call. Wait a tick for the
+    // floating promise to flush before asserting.
+    await new Promise((r) => setImmediate(r));
+
     expect(bossSend).toHaveBeenCalledTimes(3);
     for (const call of bossSend.mock.calls) {
       expect(call[0]).toBe(MOOD_ROLLUP_RECOMPUTE_QUEUE);
@@ -145,9 +149,7 @@ describe("recomputeMoodBucketsForEntry", () => {
     }
   });
 
-  it("deletes the DAY row when the post-mutation aggregate is empty", async () => {
-    // Post-delete recompute: the day now has zero mood rows.
-    queryRawUnsafe.mockResolvedValueOnce([]);
+  it("issues the paired DELETE so a fully-cleared day removes its row", async () => {
     getGlobalBossMock.mockReturnValue(null);
 
     await recomputeMoodBucketsForEntry(
@@ -155,30 +157,16 @@ describe("recomputeMoodBucketsForEntry", () => {
       new Date("2026-05-10T14:30:00.000Z"),
     );
 
-    expect(deleteMany).toHaveBeenCalledTimes(1);
-    expect(deleteMany.mock.calls[0][0].where.userId).toBe("user-1");
-    expect(deleteMany.mock.calls[0][0].where.granularity).toBe("DAY");
+    // The DELETE always fires; its NOT EXISTS predicate matches zero
+    // rows on the populated-day branch and matches the row on the
+    // emptied-day branch. We can only assert the second statement
+    // fired here.
+    expect(executeRaw).toHaveBeenCalledTimes(2);
+    expect(deleteMany).not.toHaveBeenCalled();
     expect(upsert).not.toHaveBeenCalled();
   });
 
   it("is idempotent under re-run for the same (user, day)", async () => {
-    // Two consecutive calls with the same aggregate output should
-    // result in two upserts that both carry the same payload — the
-    // composite PK absorbs the second write into a no-op refresh on
-    // the database side, but the populator must keep firing the
-    // upsert each time (no in-memory dedup) so a real Postgres-side
-    // change is picked up on the next call.
-    const aggregate = [
-      {
-        bucket_start: new Date("2026-05-10T00:00:00.000Z"),
-        count: BigInt(2),
-        mean: 4.5,
-        min_score: 4,
-        max_score: 5,
-        sd: 0.5,
-      },
-    ];
-    queryRawUnsafe.mockResolvedValue(aggregate);
     getGlobalBossMock.mockReturnValue(null);
 
     await recomputeMoodBucketsForEntry(
@@ -190,13 +178,64 @@ describe("recomputeMoodBucketsForEntry", () => {
       new Date("2026-05-10T14:30:00.000Z"),
     );
 
-    expect(upsert).toHaveBeenCalledTimes(2);
-    const firstPayload = upsert.mock.calls[0][0].create;
-    const secondPayload = upsert.mock.calls[1][0].create;
-    expect(firstPayload.count).toBe(secondPayload.count);
-    expect(firstPayload.mean).toBe(secondPayload.mean);
-    expect(firstPayload.minScore).toBe(secondPayload.minScore);
-    expect(firstPayload.maxScore).toBe(secondPayload.maxScore);
+    expect(executeRaw).toHaveBeenCalledTimes(4);
+    // Bind values for the INSERT statement match across both runs.
+    expect(bindValues(executeRaw.mock.calls[0])).toEqual(
+      bindValues(executeRaw.mock.calls[2]),
+    );
+    // Bind values for the DELETE statement match across both runs.
+    expect(bindValues(executeRaw.mock.calls[1])).toEqual(
+      bindValues(executeRaw.mock.calls[3]),
+    );
+  });
+
+  it("commits the strictest aggregate under concurrent recompute calls", async () => {
+    // QA F-H-02 race pin: two concurrent recomputes for the same
+    // (user, day) must both go through the atomic SQL path so each
+    // statement re-aggregates a snapshot taken after the prior commit
+    // released its row lock.
+    getGlobalBossMock.mockReturnValue(null);
+
+    await Promise.all([
+      recomputeMoodBucketsForEntry(
+        "user-1",
+        new Date("2026-05-10T14:30:00.000Z"),
+      ),
+      recomputeMoodBucketsForEntry(
+        "user-1",
+        new Date("2026-05-10T14:30:00.000Z"),
+      ),
+    ]);
+    // 2 callers × 2 statements (INSERT + DELETE) each.
+    expect(executeRaw).toHaveBeenCalledTimes(4);
+    // No legacy JS-side aggregate ($queryRawUnsafe) fired on the DAY
+    // pass; no Prisma-API upsert / deleteMany were issued either.
+    expect(queryRawUnsafe).not.toHaveBeenCalled();
+    expect(upsert).not.toHaveBeenCalled();
+    expect(deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("does not await the WEEK/MONTH/YEAR enqueue on the write-path response", async () => {
+    // QA F-H-03 (v1.4.39): the outer Promise.all is fire-and-forget so
+    // a slow pg-boss send never serialises the user's mood-write
+    // response. Pin that the helper resolves before the enqueue
+    // promise settles.
+    let resolveEnqueue: (() => void) | null = null;
+    const enqueueGate = new Promise<string>((resolve) => {
+      resolveEnqueue = () => resolve("job-late");
+    });
+    getGlobalBossMock.mockReturnValue({ send: () => enqueueGate });
+
+    await recomputeMoodBucketsForEntry(
+      "user-1",
+      new Date("2026-05-10T14:30:00.000Z"),
+    );
+
+    // The helper has resolved even though the boss.send promise is
+    // still pending. Resolve it after the assertion so the test does
+    // not leak a pending promise across the suite.
+    resolveEnqueue!();
+    await enqueueGate;
   });
 });
 

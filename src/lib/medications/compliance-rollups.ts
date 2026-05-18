@@ -198,57 +198,64 @@ export async function recomputeMedicationComplianceForDay(
   const dstSafeEnd = startOfDayUtcInTz(nextDayKey, safeTz);
   const windowEnd = dstSafeEnd.getTime() > start.getTime() ? dstSafeEnd : end;
 
-  const events = await client.medicationIntakeEvent.findMany({
-    where: {
-      userId,
-      medicationId,
-      scheduledFor: { gte: start, lt: windowEnd },
-    },
-    select: { takenAt: true, skipped: true },
-  });
-
-  let scheduled = 0;
-  let taken = 0;
-  let skipped = 0;
-  for (const evt of events) {
-    scheduled += 1;
-    if (evt.skipped) {
-      skipped += 1;
-    } else if (evt.takenAt) {
-      taken += 1;
-    }
-  }
-
-  if (scheduled === 0) {
-    // No events landed inside the user-day window after the mutation —
-    // the row would otherwise stay around with a stale (1, 1, 0) tuple
-    // from a now-deleted intake event. Delete the rollup row so the
-    // reader returns the trailing-window zero-default for this day.
-    await client.medicationComplianceRollup.deleteMany({
-      where: { userId, medicationId, day: dayKey },
-    });
-    return;
-  }
-
-  await client.medicationComplianceRollup.upsert({
-    where: {
-      userId_medicationId_day: { userId, medicationId, day: dayKey },
-    },
-    update: {
-      scheduled,
-      taken,
-      skipped,
-      computedAt: new Date(),
-    },
-    create: {
-      userId,
-      medicationId,
-      day: dayKey,
-      scheduled,
-      taken,
-      skipped,
-    },
-  });
+  // v1.4.39 hotfix (QA F-H-02): atomic upsert closes the race window
+  // between the prior `SELECT … aggregate then UPSERT` pattern. Two
+  // concurrent writes for the same (user, medication, day) used to
+  // interleave A-SELECT → B-SELECT → B-UPSERT (correct) → A-UPSERT
+  // (stale N-1). The INSERT … SELECT re-aggregates inside the upsert
+  // statement so each write commits with a snapshot taken after the
+  // prior commit released its row lock; the trailing DELETE handles
+  // the "all events for the day were removed" case in the same shot.
+  //
+  // Both statements key on (user_id, medication_id, day) so they
+  // serialise behind the row lock the rollup table's primary key
+  // provides. The DELETE runs second so it cannot clobber a row the
+  // INSERT just wrote — when the day still has events the
+  // `WHERE NOT EXISTS` predicate matches zero rows.
+  await client.$executeRaw`
+    WITH aggregate AS (
+      SELECT
+        COUNT(*)::int                                                    AS scheduled,
+        SUM(CASE WHEN "skipped" THEN 0 WHEN "taken_at" IS NOT NULL THEN 1 ELSE 0 END)::int AS taken,
+        SUM(CASE WHEN "skipped" THEN 1 ELSE 0 END)::int                  AS skipped
+      FROM "medication_intake_events"
+      WHERE "user_id"        = ${userId}
+        AND "medication_id"  = ${medicationId}
+        AND "scheduled_for" >= ${start}
+        AND "scheduled_for" <  ${windowEnd}
+    )
+    INSERT INTO "medication_compliance_rollups"
+      ("user_id", "medication_id", "day", "scheduled", "taken", "skipped", "computed_at")
+    SELECT
+      ${userId},
+      ${medicationId},
+      ${dayKey},
+      aggregate.scheduled,
+      aggregate.taken,
+      aggregate.skipped,
+      NOW()
+    FROM aggregate
+    WHERE aggregate.scheduled > 0
+    ON CONFLICT ("user_id", "medication_id", "day") DO UPDATE
+      SET "scheduled"   = EXCLUDED."scheduled",
+          "taken"       = EXCLUDED."taken",
+          "skipped"     = EXCLUDED."skipped",
+          "computed_at" = EXCLUDED."computed_at"
+  `;
+  await client.$executeRaw`
+    DELETE FROM "medication_compliance_rollups"
+    WHERE "user_id"       = ${userId}
+      AND "medication_id" = ${medicationId}
+      AND "day"           = ${dayKey}
+      AND NOT EXISTS (
+        SELECT 1
+        FROM "medication_intake_events"
+        WHERE "user_id"        = ${userId}
+          AND "medication_id"  = ${medicationId}
+          AND "scheduled_for" >= ${start}
+          AND "scheduled_for" <  ${windowEnd}
+      )
+  `;
 }
 
 /**

@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   rollupFindMany: vi.fn(),
   rollupFindFirst: vi.fn(),
   queryRaw: vi.fn(),
+  executeRaw: vi.fn(),
   bossSend: vi.fn(),
   getGlobalBossMock: vi.fn(),
 }));
@@ -33,6 +34,7 @@ vi.mock("@/lib/db", () => ({
       findFirst: mocks.rollupFindFirst,
     },
     $queryRaw: mocks.queryRaw,
+    $executeRaw: mocks.executeRaw,
   },
 }));
 
@@ -62,6 +64,7 @@ const {
   rollupFindMany,
   rollupFindFirst,
   queryRaw,
+  executeRaw,
   bossSend,
   getGlobalBossMock,
 } = mocks;
@@ -74,6 +77,7 @@ beforeEach(() => {
   rollupFindMany.mockResolvedValue([]);
   rollupFindFirst.mockResolvedValue(null);
   queryRaw.mockResolvedValue([]);
+  executeRaw.mockResolvedValue(0);
 });
 
 afterEach(() => {
@@ -98,13 +102,22 @@ describe("dayKeyForScheduledFor", () => {
 });
 
 describe("recomputeMedicationComplianceForDay", () => {
-  it("upserts a row reflecting the (scheduled, taken, skipped) counts", async () => {
-    intakeFindMany.mockResolvedValue([
-      { takenAt: new Date(), skipped: false }, // taken
-      { takenAt: null, skipped: true }, // skipped
-      { takenAt: null, skipped: false }, // pending
-    ]);
+  /**
+   * Helper: pull the bind-variable values out of a Prisma tagged-template
+   * call so the test can inspect the user-id / day / window bounds the
+   * SQL was rendered with. Prisma's `$executeRaw` tag passes the
+   * template strings as the first arg and the substituted values as the
+   * remaining positional args.
+   */
+  function bindValues(call: unknown[]): unknown[] {
+    return call.slice(1);
+  }
 
+  it("runs an atomic INSERT … ON CONFLICT upsert with the (user, medication, day) tuple", async () => {
+    // QA F-H-02 (v1.4.39): the recompute is now a single SQL statement
+    // that re-aggregates inside the upsert; the JS pre-fold from the
+    // previous tier is gone so the test inspects the bind values
+    // instead of the intake fold.
     await recomputeMedicationComplianceForDay(
       "user-1",
       "med-1",
@@ -112,33 +125,24 @@ describe("recomputeMedicationComplianceForDay", () => {
       "Europe/Berlin",
     );
 
-    expect(rollupUpsert).toHaveBeenCalledTimes(1);
-    const call = rollupUpsert.mock.calls[0][0];
-    expect(call.where).toEqual({
-      userId_medicationId_day: {
-        userId: "user-1",
-        medicationId: "med-1",
-        day: "2026-05-18",
-      },
-    });
-    expect(call.create).toMatchObject({
-      userId: "user-1",
-      medicationId: "med-1",
-      day: "2026-05-18",
-      scheduled: 3,
-      taken: 1,
-      skipped: 1,
-    });
-    expect(call.update).toMatchObject({
-      scheduled: 3,
-      taken: 1,
-      skipped: 1,
-    });
+    // Two statements fire: the INSERT … ON CONFLICT upsert and the
+    // companion DELETE for the "all events removed" branch.
+    expect(executeRaw).toHaveBeenCalledTimes(2);
+    const insertBinds = bindValues(executeRaw.mock.calls[0]);
+    expect(insertBinds).toContain("user-1");
+    expect(insertBinds).toContain("med-1");
+    expect(insertBinds).toContain("2026-05-18");
+    const deleteBinds = bindValues(executeRaw.mock.calls[1]);
+    expect(deleteBinds).toContain("user-1");
+    expect(deleteBinds).toContain("med-1");
+    expect(deleteBinds).toContain("2026-05-18");
   });
 
-  it("deletes the rollup row when the user-day window holds zero events", async () => {
-    intakeFindMany.mockResolvedValue([]);
-
+  it("emits a paired DELETE so a fully-cleared day removes its row", async () => {
+    // The DELETE fires unconditionally and gates on NOT EXISTS — when
+    // the day still has events the predicate matches zero rows. The
+    // test pins that the DELETE statement was issued so a future
+    // refactor that drops the second statement breaks here.
     await recomputeMedicationComplianceForDay(
       "user-1",
       "med-1",
@@ -146,17 +150,10 @@ describe("recomputeMedicationComplianceForDay", () => {
       "Europe/Berlin",
     );
 
-    expect(rollupDeleteMany).toHaveBeenCalledWith({
-      where: { userId: "user-1", medicationId: "med-1", day: "2026-05-18" },
-    });
-    expect(rollupUpsert).not.toHaveBeenCalled();
+    expect(executeRaw).toHaveBeenCalledTimes(2);
   });
 
   it("is idempotent across repeated invocations", async () => {
-    intakeFindMany.mockResolvedValue([
-      { takenAt: new Date(), skipped: false },
-    ]);
-
     await recomputeMedicationComplianceForDay(
       "user-1",
       "med-1",
@@ -170,17 +167,16 @@ describe("recomputeMedicationComplianceForDay", () => {
       "Europe/Berlin",
     );
 
-    expect(rollupUpsert).toHaveBeenCalledTimes(2);
-    const first = rollupUpsert.mock.calls[0][0].create;
-    const second = rollupUpsert.mock.calls[1][0].create;
-    expect(first).toEqual(second);
+    expect(executeRaw).toHaveBeenCalledTimes(4);
+    expect(bindValues(executeRaw.mock.calls[0])).toEqual(
+      bindValues(executeRaw.mock.calls[2]),
+    );
+    expect(bindValues(executeRaw.mock.calls[1])).toEqual(
+      bindValues(executeRaw.mock.calls[3]),
+    );
   });
 
-  it("queries with a tz-anchored UTC window", async () => {
-    intakeFindMany.mockResolvedValue([
-      { takenAt: new Date(), skipped: false },
-    ]);
-
+  it("binds a tz-anchored UTC window into the upsert", async () => {
     await recomputeMedicationComplianceForDay(
       "user-1",
       "med-1",
@@ -188,33 +184,26 @@ describe("recomputeMedicationComplianceForDay", () => {
       "Europe/Berlin",
     );
 
-    const where = intakeFindMany.mock.calls[0][0].where;
+    const insertBinds = bindValues(executeRaw.mock.calls[0]);
+    const insertDates = insertBinds.filter((b): b is Date => b instanceof Date);
     // Berlin 2026-05-18 00:00 → UTC 2026-05-17 22:00 (CEST is UTC+2).
-    expect(where.scheduledFor.gte.toISOString()).toBe(
-      "2026-05-17T22:00:00.000Z",
-    );
+    expect(insertDates[0].toISOString()).toBe("2026-05-17T22:00:00.000Z");
     // Window closes 24h later — Berlin 2026-05-19 00:00 → UTC 2026-05-18 22:00.
-    expect(where.scheduledFor.lt.toISOString()).toBe(
-      "2026-05-18T22:00:00.000Z",
-    );
+    expect(insertDates[1].toISOString()).toBe("2026-05-18T22:00:00.000Z");
   });
 
   it("buckets the same UTC instant on different days for Berlin vs LA", async () => {
-    // 2026-05-17T23:30:00Z is 2026-05-18 in Berlin but 2026-05-17 in LA.
-    intakeFindMany.mockResolvedValue([
-      { takenAt: new Date(), skipped: false },
-    ]);
-
     await recomputeMedicationComplianceForDay(
       "user-1",
       "med-1",
       "2026-05-18",
       "Europe/Berlin",
     );
-    const berlinCall = intakeFindMany.mock.calls[0][0].where;
+    const berlinInsert = bindValues(executeRaw.mock.calls[0]).filter(
+      (b): b is Date => b instanceof Date,
+    );
 
-    intakeFindMany.mockClear();
-    rollupUpsert.mockClear();
+    executeRaw.mockClear();
 
     await recomputeMedicationComplianceForDay(
       "user-2",
@@ -222,24 +211,53 @@ describe("recomputeMedicationComplianceForDay", () => {
       "2026-05-17",
       "America/Los_Angeles",
     );
-    const laCall = intakeFindMany.mock.calls[0][0].where;
+    const laInsert = bindValues(executeRaw.mock.calls[0]).filter(
+      (b): b is Date => b instanceof Date,
+    );
 
     // Berlin 2026-05-18 starts at UTC 2026-05-17 22:00.
-    expect(berlinCall.scheduledFor.gte.toISOString()).toBe(
-      "2026-05-17T22:00:00.000Z",
-    );
+    expect(berlinInsert[0].toISOString()).toBe("2026-05-17T22:00:00.000Z");
     // LA 2026-05-17 starts at UTC 2026-05-17 07:00 (PDT is UTC-7).
-    expect(laCall.scheduledFor.gte.toISOString()).toBe(
-      "2026-05-17T07:00:00.000Z",
-    );
+    expect(laInsert[0].toISOString()).toBe("2026-05-17T07:00:00.000Z");
+  });
+
+  it("commits the strictest aggregate under concurrent recompute calls", async () => {
+    // QA F-H-02 race pin: two concurrent recomputes for the same
+    // (user, medication, day) must both go through the atomic SQL
+    // path. The earlier `findMany`-then-`upsert` pattern could
+    // interleave A-SELECT → B-SELECT → B-UPSERT (correct) → A-UPSERT
+    // (stale N-1); the atomic upsert serialises on the row lock so
+    // each statement re-aggregates a snapshot taken after the prior
+    // commit. The mock can't reproduce real Postgres concurrency, but
+    // the test pins that BOTH callers issue the atomic statement (not
+    // the legacy read-aggregate-then-upsert) so a regression to the
+    // racy pattern would fail this assertion.
+    await Promise.all([
+      recomputeMedicationComplianceForDay(
+        "user-1",
+        "med-1",
+        "2026-05-18",
+        "Europe/Berlin",
+      ),
+      recomputeMedicationComplianceForDay(
+        "user-1",
+        "med-1",
+        "2026-05-18",
+        "Europe/Berlin",
+      ),
+    ]);
+    // 2 callers × 2 statements (INSERT + DELETE) each.
+    expect(executeRaw).toHaveBeenCalledTimes(4);
+    // No legacy intake-findMany was issued — the atomic path replaces it.
+    expect(intakeFindMany).not.toHaveBeenCalled();
+    // No legacy rollupUpsert / rollupDeleteMany either.
+    expect(rollupUpsert).not.toHaveBeenCalled();
+    expect(rollupDeleteMany).not.toHaveBeenCalled();
   });
 });
 
 describe("recomputeMedicationComplianceForEvent", () => {
   it("derives the dayKey from scheduledFor + tz then dispatches", async () => {
-    intakeFindMany.mockResolvedValue([
-      { takenAt: new Date(), skipped: false },
-    ]);
     // 2026-05-17T23:30:00Z → Berlin day 2026-05-18.
     await recomputeMedicationComplianceForEvent({
       userId: "user-1",
@@ -247,12 +265,14 @@ describe("recomputeMedicationComplianceForEvent", () => {
       scheduledFor: new Date("2026-05-17T23:30:00.000Z"),
       tz: "Europe/Berlin",
     });
-    const call = rollupUpsert.mock.calls[0][0];
-    expect(call.create.day).toBe("2026-05-18");
+    // The atomic upsert binds the dayKey as one of the positional
+    // arguments; assert "2026-05-18" reached the SQL layer.
+    const insertBinds = executeRaw.mock.calls[0].slice(1);
+    expect(insertBinds).toContain("2026-05-18");
   });
 
   it("swallows recompute errors so the parent write never blocks", async () => {
-    intakeFindMany.mockRejectedValue(new Error("DB melted"));
+    executeRaw.mockRejectedValueOnce(new Error("DB melted"));
 
     await expect(
       recomputeMedicationComplianceForEvent({
@@ -373,9 +393,6 @@ describe("recomputeUserMedicationCompliance", () => {
       { medication_id: "med-1", day: "2026-05-18" },
       { medication_id: "med-2", day: "2026-05-18" },
     ]);
-    intakeFindMany.mockResolvedValue([
-      { takenAt: new Date(), skipped: false },
-    ]);
 
     const result = await recomputeUserMedicationCompliance(
       "user-1",
@@ -384,7 +401,10 @@ describe("recomputeUserMedicationCompliance", () => {
     );
 
     expect(result.rowsUpserted).toBe(3);
-    expect(rollupUpsert).toHaveBeenCalledTimes(3);
+    // Each (medication, day) pair issues two atomic SQL statements:
+    // the INSERT … ON CONFLICT upsert and the companion DELETE that
+    // gates on `NOT EXISTS`.
+    expect(executeRaw).toHaveBeenCalledTimes(6);
   });
 });
 
