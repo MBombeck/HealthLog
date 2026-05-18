@@ -13,6 +13,7 @@ import { apiHandler } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { locales, type Locale } from "@/lib/i18n/config";
+import { recomputeMedicationComplianceForEvent } from "@/lib/medications/compliance-rollups";
 
 interface TelegramUpdate {
   update_id: number;
@@ -115,6 +116,9 @@ async function findTelegramUser(chatId: string) {
       id: true,
       telegramBotToken: true,
       locale: true,
+      // v1.4.39 W-MED — pulled into the select so the post-write
+      // compliance-rollup hook can anchor the user-day bucket.
+      timezone: true,
     },
   });
 }
@@ -124,6 +128,7 @@ async function markMedicationTaken(
   medicationId: string,
   idempotencyKey: string,
   locale: Locale,
+  userTz: string | null,
 ): Promise<{ ok: boolean; message: string; medicationName?: string }> {
   const { t } = getServerTranslator(locale);
   const medication = await prisma.medication.findFirst({
@@ -139,14 +144,16 @@ async function markMedicationTaken(
     select: { id: true },
   });
 
+  let scheduledFor: Date | null = null;
   if (!existing) {
+    scheduledFor = new Date();
     await prisma.$transaction([
       prisma.medicationIntakeEvent.create({
         data: {
           userId,
           medicationId: medication.id,
-          scheduledFor: new Date(),
-          takenAt: new Date(),
+          scheduledFor,
+          takenAt: scheduledFor,
           skipped: false,
           source: "REMINDER",
           idempotencyKey,
@@ -157,6 +164,18 @@ async function markMedicationTaken(
         data: { snoozedUntil: null },
       }),
     ]);
+  }
+
+  // v1.4.39 W-MED — refresh the compliance rollup for the
+  // affected day so the next read after the cache miss reflects the
+  // new dose. Only fires when the create-path landed a new row.
+  if (scheduledFor) {
+    await recomputeMedicationComplianceForEvent({
+      userId,
+      medicationId: medication.id,
+      scheduledFor,
+      tz: userTz,
+    });
   }
 
   return {
@@ -205,6 +224,7 @@ async function handleCallback(update: TelegramUpdate) {
       medicationId,
       idempotencyKey,
       locale,
+      user.timezone,
     );
     await answerTelegramCallbackQuery(botToken, callback.id, result.message);
     if (messageId) {
@@ -289,16 +309,18 @@ async function handleCallback(update: TelegramUpdate) {
       select: { id: true },
     });
 
+    let skippedScheduledFor: Date | null = null;
     if (!existing) {
       const endOfDay = new Date();
       endOfDay.setHours(23, 59, 59, 999);
+      skippedScheduledFor = new Date();
 
       await prisma.$transaction([
         prisma.medicationIntakeEvent.create({
           data: {
             userId: user.id,
             medicationId: medication.id,
-            scheduledFor: new Date(),
+            scheduledFor: skippedScheduledFor,
             takenAt: null,
             skipped: true,
             source: "REMINDER",
@@ -310,6 +332,18 @@ async function handleCallback(update: TelegramUpdate) {
           data: { snoozedUntil: endOfDay },
         }),
       ]);
+    }
+
+    // v1.4.39 W-MED — refresh the compliance rollup for the skipped
+    // event's user-day so the next read sees the (scheduled, skipped)
+    // counts incremented.
+    if (skippedScheduledFor) {
+      await recomputeMedicationComplianceForEvent({
+        userId: user.id,
+        medicationId: medication.id,
+        scheduledFor: skippedScheduledFor,
+        tz: user.timezone,
+      });
     }
 
     await answerTelegramCallbackQuery(
@@ -372,6 +406,7 @@ async function handleCallback(update: TelegramUpdate) {
       medicationId,
       idempotencyKey,
       locale,
+      user.timezone,
     );
     await answerTelegramCallbackQuery(botToken, callback.id, result.message);
     if (messageId) {
@@ -477,6 +512,7 @@ async function handleTextMessage(update: TelegramUpdate) {
         meds[0].id,
         idempotencyKey,
         locale,
+        user.timezone,
       );
       const resp = await sendTelegramMessage(
         botToken,
@@ -611,6 +647,7 @@ async function handleTextMessage(update: TelegramUpdate) {
     medicationId,
     idempotencyKey,
     locale,
+    user.timezone,
   );
   const resp = await sendTelegramMessage(
     botToken,

@@ -21,6 +21,13 @@ export const DELETE = apiHandler(
       where: { medicationId: id, userId: user.id },
     });
 
+    // v1.4.39 W-MED — drop every rollup row for this medication so the
+    // next compliance read returns zero-filled buckets rather than the
+    // last-known scheduled / taken totals for now-deleted events.
+    await prisma.medicationComplianceRollup.deleteMany({
+      where: { medicationId: id, userId: user.id },
+    });
+
     await auditLog("medication.intake.purge", {
       userId: user.id,
       ipAddress: getClientIp(request),

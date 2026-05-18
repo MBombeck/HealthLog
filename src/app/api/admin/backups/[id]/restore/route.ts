@@ -44,6 +44,10 @@ import {
   type BackupSummary,
 } from "@/lib/validations/backup";
 import { recomputeUserMoodRollups } from "@/lib/mood/rollups";
+import {
+  recomputeUserMedicationCompliance,
+  MEDICATION_COMPLIANCE_BACKFILL_DAYS,
+} from "@/lib/medications/compliance-rollups";
 
 export const dynamic = "force-dynamic";
 

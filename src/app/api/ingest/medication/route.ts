@@ -12,6 +12,7 @@ import { hashToken } from "@/lib/auth/hmac";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { externalIntakeSchema } from "@/lib/validations/medication";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
+import { recomputeMedicationComplianceForEvent } from "@/lib/medications/compliance-rollups";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -151,6 +152,20 @@ export const POST = apiHandler(async (request: NextRequest) => {
   });
 
   annotate({ meta: { medication_id: medication.id, event_id: event.id } });
+
+  // v1.4.39 W-MED — refresh the compliance rollup for the ingested
+  // event's user-day. The external ingest path runs without a User
+  // record in scope; resolve the tz once for the recompute.
+  const ingestUser = await prisma.user.findUnique({
+    where: { id: apiToken.userId },
+    select: { timezone: true },
+  });
+  await recomputeMedicationComplianceForEvent({
+    userId: apiToken.userId,
+    medicationId: medication.id,
+    scheduledFor: event.scheduledFor,
+    tz: ingestUser?.timezone ?? null,
+  });
 
   return apiSuccess(event, 201);
 });

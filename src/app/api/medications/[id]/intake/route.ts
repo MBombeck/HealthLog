@@ -16,6 +16,7 @@ import { withIdempotency } from "@/lib/idempotency";
 import { consumeOneDose } from "@/lib/medications/inventory/service";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
+import { recomputeMedicationComplianceForEvent } from "@/lib/medications/compliance-rollups";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -158,6 +159,16 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
   // v1.4.34 IW-G — bust per-user medications + compliance + achievement
   // caches so the next read reflects the dose event.
   invalidateUserMedications(user.id);
+
+  // v1.4.39 W-MED — refresh the persistent compliance rollup for the
+  // affected day. The hook is best-effort; failures annotate but never
+  // block the user's POST response.
+  await recomputeMedicationComplianceForEvent({
+    userId: user.id,
+    medicationId: id,
+    scheduledFor: event.scheduledFor,
+    tz: user.timezone,
+  });
 
   return apiSuccess(event, 201);
 }

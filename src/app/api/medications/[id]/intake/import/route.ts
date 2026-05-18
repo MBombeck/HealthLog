@@ -8,6 +8,10 @@ import {
   getClientIp,
   safeJson,
 } from "@/lib/api-response";
+import {
+  recomputeMedicationComplianceForDay,
+  dayKeyForScheduledFor,
+} from "@/lib/medications/compliance-rollups";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
@@ -51,6 +55,9 @@ export const POST = apiHandler(
     let imported = 0;
     let skippedDuplicates = 0;
     let skippedInvalid = 0;
+    // v1.4.39 W-MED — collect distinct day-keys touched by the import
+    // so the rollup pass fires once per day rather than once per row.
+    const touchedDays = new Set<string>();
 
     for (const entry of entries) {
       // Parse as local datetime first; if invalid, fall back to CET offset.
@@ -88,6 +95,30 @@ export const POST = apiHandler(
         },
       });
       imported++;
+      touchedDays.add(dayKeyForScheduledFor(takenAt, user.timezone));
+    }
+
+    // v1.4.39 W-MED — fold the touched days into rollup rows after the
+    // insert loop completes. Best-effort: a populator failure logs but
+    // never rolls back the imported events.
+    for (const dayKey of touchedDays) {
+      try {
+        await recomputeMedicationComplianceForDay(
+          user.id,
+          id,
+          dayKey,
+          user.timezone,
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        annotate({
+          meta: {
+            medication_compliance_rollup_import_failed: true,
+            medication_compliance_rollup_import_error: message,
+            medication_compliance_rollup_day: dayKey,
+          },
+        });
+      }
     }
 
     await auditLog("medication.intake.import", {

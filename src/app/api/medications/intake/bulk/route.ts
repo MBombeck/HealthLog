@@ -41,6 +41,10 @@ import {
 import { withIdempotency } from "@/lib/idempotency";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
+import {
+  recomputeMedicationComplianceForDay,
+  dayKeyForScheduledFor,
+} from "@/lib/medications/compliance-rollups";
 
 const MAX_ENTRIES_PER_BATCH = 500;
 const BATCH_RATE_LIMIT_MAX = 60;
@@ -126,6 +130,11 @@ async function postBulk(request: NextRequest): Promise<Response> {
   let inserted = 0;
   let duplicates = 0;
   const skipped: Array<{ index: number; reason: string }> = [];
+  // v1.4.39 W-MED — collect distinct `(medicationId, dayKey)` pairs
+  // touched by the batch so one rollup recompute fires per pair after
+  // all inserts complete. Per-row recompute would balloon a 500-entry
+  // batch into 500 sequential rollup hits.
+  const touchedDays = new Map<string, { medicationId: string; dayKey: string }>();
 
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
@@ -155,6 +164,11 @@ async function postBulk(request: NextRequest): Promise<Response> {
       });
       inserted += 1;
       results.push({ index: i, status: "inserted", id: row.id });
+      const dayKey = dayKeyForScheduledFor(scheduledFor, user.timezone);
+      touchedDays.set(`${entry.medicationId}|${dayKey}`, {
+        medicationId: entry.medicationId,
+        dayKey,
+      });
     } catch (err: unknown) {
       // P2002 = unique-constraint violation; the idempotencyKey
       // already exists → "duplicate", not an error.
@@ -211,6 +225,32 @@ async function postBulk(request: NextRequest): Promise<Response> {
   // ingested batch.
   if (inserted > 0) {
     invalidateUserMedications(user.id);
+  }
+
+  // v1.4.39 W-MED — refresh one rollup row per distinct
+  // `(medicationId, dayKey)` touched by the batch. Best-effort: failures
+  // are swallowed by the helper's `recomputeMedicationComplianceForEvent`
+  // wrapper, but bulk callers wrap recompute directly to keep the
+  // tight ingest loop unaffected by populator issues.
+  for (const { medicationId, dayKey } of touchedDays.values()) {
+    try {
+      await recomputeMedicationComplianceForDay(
+        user.id,
+        medicationId,
+        dayKey,
+        user.timezone,
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      annotate({
+        meta: {
+          medication_compliance_rollup_bulk_failed: true,
+          medication_compliance_rollup_bulk_error: message,
+          medication_compliance_rollup_medication: medicationId,
+          medication_compliance_rollup_day: dayKey,
+        },
+      });
+    }
   }
 
   return apiSuccess({

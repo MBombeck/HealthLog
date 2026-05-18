@@ -10,6 +10,7 @@ import {
 } from "@/lib/api-response";
 import { updateIntakeEventSchema } from "@/lib/validations/medication";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
+import { recomputeMedicationComplianceForEvent } from "@/lib/medications/compliance-rollups";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string; eventId: string }> };
@@ -67,6 +68,28 @@ export const PUT = apiHandler(
     // caches so the next read reflects the edited event.
     invalidateUserMedications(user.id);
 
+    // v1.4.39 W-MED — refresh the rollup row for both the old + new
+    // scheduledFor day-keys when the timestamp moved across a day
+    // boundary; if only takenAt / skipped changed the second call
+    // collapses to a no-op upsert.
+    await recomputeMedicationComplianceForEvent({
+      userId: user.id,
+      medicationId: id,
+      scheduledFor: event.scheduledFor,
+      tz: user.timezone,
+    });
+    if (
+      data.scheduledFor !== undefined &&
+      data.scheduledFor.getTime() !== event.scheduledFor.getTime()
+    ) {
+      await recomputeMedicationComplianceForEvent({
+        userId: user.id,
+        medicationId: id,
+        scheduledFor: data.scheduledFor,
+        tz: user.timezone,
+      });
+    }
+
     return apiSuccess(updated);
   },
 );
@@ -106,6 +129,16 @@ export const DELETE = apiHandler(
     // v1.4.34 IW-G — bust per-user medications + compliance + achievement
     // caches so the next read reflects the deletion.
     invalidateUserMedications(user.id);
+
+    // v1.4.39 W-MED — refresh the rollup row for the day the deleted
+    // event sat on. When that day now holds zero events the helper
+    // drops the rollup row entirely.
+    await recomputeMedicationComplianceForEvent({
+      userId: user.id,
+      medicationId: id,
+      scheduledFor: event.scheduledFor,
+      tz: user.timezone,
+    });
 
     return apiSuccess({ deleted: true });
   },
