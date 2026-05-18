@@ -285,19 +285,29 @@ export const GET = apiHandler(async (request: NextRequest) => {
         bucketStart: true,
         mean: true,
         count: true,
+        // v1.4.39 W-SUM — the writer now populates `sum_value` on
+        // every fold. The cumulative metric path consumes the column
+        // directly instead of reconstructing `mean * count`; the
+        // legacy fallback below covers the boot-backfill convergence
+        // window when an existing bucket pre-dates v1.4.39.
+        sumValue: true,
       },
     });
     if (rollupRows.length > 0) {
       // Cumulative metrics (steps, active energy, distance, flights,
       // daylight) store `mean` per bucket but the chart needs the
-      // daily SUM. Reconstruct as `mean * count` — algebraically
-      // equivalent to SUM(value) for a single-source day because
-      // AVG = SUM / COUNT.
+      // daily SUM. v1.4.39 W-SUM — read `sumValue` directly; fall back
+      // to `mean * count` only when the legacy NULL surfaces (pre-
+      // v1.4.39 rows still waiting for the boot-time backfill to
+      // converge). `mean * count` is algebraically equivalent to
+      // SUM(value) for a single-source day because AVG = SUM / COUNT.
       const useSum =
         type != null && CUMULATIVE_HK_TYPES.has(type as MeasurementType);
       const measurements = rollupRows.map((r) => ({
         type: r.type,
-        value: useSum ? r.mean * r.count : r.mean,
+        value: useSum
+          ? (r.sumValue ?? r.mean * r.count)
+          : r.mean,
         measuredAt: r.bucketStart.toISOString(),
         count: r.count,
       }));
