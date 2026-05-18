@@ -15,6 +15,7 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { moodDateKey, DEFAULT_TIMEZONE } from "@/lib/mood/date-key";
 import { invalidateUserMood } from "@/lib/cache/invalidate";
+import { recomputeMoodBucketsForEntry } from "@/lib/mood/rollups";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -112,6 +113,31 @@ export const PUT = apiHandler(
     // v1.4.34 IW-G — bust per-user mood + achievements + analytics caches.
     invalidateUserMood(user.id);
 
+    // v1.4.39 W-MOOD — refresh the persisted rollup for the new
+    // bucket AND the old bucket when the entry's `moodLoggedAt`
+    // changed. The two recomputes are independent (different
+    // (user, day) tuples) so we fan them out in parallel. Best-
+    // effort: rollup failures must not surface as 5xx.
+    try {
+      const targets = new Set<number>([entry.moodLoggedAt.getTime()]);
+      if (existing.moodLoggedAt.getTime() !== entry.moodLoggedAt.getTime()) {
+        targets.add(existing.moodLoggedAt.getTime());
+      }
+      await Promise.all(
+        Array.from(targets).map((t) =>
+          recomputeMoodBucketsForEntry(user.id, new Date(t)),
+        ),
+      );
+    } catch (rollupErr) {
+      annotate({
+        meta: {
+          mood_rollup_write_failed: true,
+          mood_rollup_write_error:
+            rollupErr instanceof Error ? rollupErr.message : String(rollupErr),
+        },
+      });
+    }
+
     return apiSuccess({ ...entry, tags: parseTags(entry.tags) });
   },
 );
@@ -143,6 +169,21 @@ export const DELETE = apiHandler(
 
     // v1.4.34 IW-G — bust per-user mood + achievements + analytics caches.
     invalidateUserMood(user.id);
+
+    // v1.4.39 W-MOOD — refresh the persisted rollup for the
+    // deleted entry's bucket; the recompute helper handles the
+    // "now-empty day → drop the rollup row" branch internally.
+    try {
+      await recomputeMoodBucketsForEntry(user.id, existing.moodLoggedAt);
+    } catch (rollupErr) {
+      annotate({
+        meta: {
+          mood_rollup_write_failed: true,
+          mood_rollup_write_error:
+            rollupErr instanceof Error ? rollupErr.message : String(rollupErr),
+        },
+      });
+    }
 
     return apiSuccess({ deleted: true });
   },

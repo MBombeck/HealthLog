@@ -8,6 +8,7 @@ import { moodLogCredentialsSchema } from "@/lib/validations/moodlog";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { markDisconnected, markReconnected } from "@/lib/integrations/status";
+import { invalidateUserMood } from "@/lib/cache/invalidate";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +74,13 @@ export const DELETE = apiHandler(async () => {
   await prisma.moodEntry.deleteMany({
     where: { userId: user.id },
   });
+
+  // v1.4.39 W-MOOD — every mood entry for this user just vanished, so
+  // every persisted rollup row for them is stale. Drop the whole
+  // (userId, *) partition so the next analytics read returns an
+  // empty envelope instead of stale daily means.
+  await prisma.moodEntryRollup.deleteMany({ where: { userId: user.id } });
+  invalidateUserMood(user.id);
 
   // Clear credentials
   await prisma.user.update({

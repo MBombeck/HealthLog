@@ -43,6 +43,7 @@ import {
 } from "@/lib/validations/moodlog";
 import { moodDateKey, DEFAULT_TIMEZONE } from "@/lib/mood/date-key";
 import { invalidateUserMood } from "@/lib/cache/invalidate";
+import { recomputeMoodBucketsForEntry } from "@/lib/mood/rollups";
 
 const MAX_ENTRIES_PER_BATCH = 500;
 const BATCH_RATE_LIMIT_MAX = 60;
@@ -216,6 +217,42 @@ async function postBulk(request: NextRequest): Promise<Response> {
   // batch. Skipped / duplicate-only ingests are no-ops.
   if (inserted > 0) {
     invalidateUserMood(user.id);
+  }
+
+  // v1.4.39 W-MOOD — refresh the rollup tier for every distinct day
+  // touched by this batch. The bulk endpoint is an iOS one-shot
+  // backfill so the batch can span many days; we collapse to the
+  // unique `(user, dayStart)` set first to bound the recompute count.
+  // Best-effort: rollup failures must not surface as 5xx.
+  if (inserted > 0 || duplicates > 0) {
+    const touchedDayStarts = new Set<number>();
+    for (let i = 0; i < entries.length; i++) {
+      const status = results[i]?.status;
+      if (status === "inserted" || status === "duplicate") {
+        const d = entries[i].moodLoggedAt;
+        const dayStart = Date.UTC(
+          d.getUTCFullYear(),
+          d.getUTCMonth(),
+          d.getUTCDate(),
+        );
+        touchedDayStarts.add(dayStart);
+      }
+    }
+    try {
+      await Promise.all(
+        Array.from(touchedDayStarts).map((t) =>
+          recomputeMoodBucketsForEntry(user.id, new Date(t)),
+        ),
+      );
+    } catch (rollupErr) {
+      annotate({
+        meta: {
+          mood_rollup_write_failed: true,
+          mood_rollup_write_error:
+            rollupErr instanceof Error ? rollupErr.message : String(rollupErr),
+        },
+      });
+    }
   }
 
   return apiSuccess({

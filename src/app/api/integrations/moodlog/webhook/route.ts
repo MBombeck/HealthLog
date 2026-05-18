@@ -8,6 +8,7 @@ import { moodLogWebhookPayloadSchema } from "@/lib/validations/moodlog";
 import { readMoodLogSecret } from "@/lib/moodlog-secret";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
+import { recomputeMoodBucketsForEntry } from "@/lib/mood/rollups";
 
 export const dynamic = "force-dynamic";
 
@@ -123,6 +124,19 @@ export const POST = apiHandler(async (request: NextRequest) => {
           moodLoggedAt,
         },
       });
+    }
+
+    // v1.4.39 W-MOOD — refresh the persisted rollup for the entry's
+    // bucket. Inline best-effort: a failure here must not block the
+    // webhook 200 response (the rollup is a cache tier, the source-of-
+    // truth is the mood_entries write that already committed).
+    try {
+      await recomputeMoodBucketsForEntry(user.id, moodLoggedAt);
+    } catch (rollupErr) {
+      getEvent()?.addWarning(
+        "Mood rollup recompute failed: " +
+          (rollupErr instanceof Error ? rollupErr.message : String(rollupErr)),
+      );
     }
   } catch (err) {
     getEvent()?.addWarning("DB operation failed: " + err);

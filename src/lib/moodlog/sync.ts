@@ -7,6 +7,7 @@ import {
   recordSyncFailure,
   recordSyncSuccess,
 } from "@/lib/integrations/status";
+import { recomputeUserMoodRollups } from "@/lib/mood/rollups";
 
 /**
  * Sync mood entries from a user's moodLog instance.
@@ -243,6 +244,21 @@ export async function syncMoodLogEntries(
     data: { moodLogLastSyncedAt: now },
   });
   await recordSyncSuccess(userId, "moodlog");
+
+  // v1.4.39 W-MOOD — re-fold the rollup tier after a sync. The
+  // sync upserts a batch spanning many days; one bounded
+  // recompute is cheaper than firing N per-row hooks. Best-effort:
+  // a rollup failure here must not bubble up and undo the
+  // recordSyncSuccess we just committed.
+  if (imported > 0) {
+    try {
+      await recomputeUserMoodRollups(userId, { granularities: ["DAY"] });
+    } catch (err) {
+      getEvent()?.addWarning(
+        `Mood rollup recompute failed after sync: ${err}`,
+      );
+    }
+  }
 
   return imported;
 }

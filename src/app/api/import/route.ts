@@ -17,6 +17,7 @@ import {
   measurementTypeEnum,
   glucoseContextEnum,
 } from "@/lib/validations/measurement";
+import { recomputeUserMoodRollups } from "@/lib/mood/rollups";
 
 // Derived from canonical enum so round-trip export → import covers every
 // type. Previous hardcoded subset silently dropped 4 of 11 types
@@ -125,6 +126,25 @@ export const POST = apiHandler(async (request: NextRequest) => {
         // Unique constraint violation — skip duplicate
         stats.skipped++;
       }
+    }
+  }
+
+  // v1.4.39 W-MOOD — one bounded re-fold per import is cheaper than
+  // firing N per-row hooks. The mood rollup tier is keyed on the
+  // user + day; the fold materialises every touched day from the
+  // entries we just wrote. Best-effort: an importer hiccup must not
+  // surface as a 5xx, the rollup is a cache tier.
+  if (stats.moodEntries > 0) {
+    try {
+      await recomputeUserMoodRollups(userId, { granularities: ["DAY"] });
+    } catch (err) {
+      annotate({
+        meta: {
+          mood_rollup_import_failed: true,
+          mood_rollup_import_error:
+            err instanceof Error ? err.message : String(err),
+        },
+      });
     }
   }
 

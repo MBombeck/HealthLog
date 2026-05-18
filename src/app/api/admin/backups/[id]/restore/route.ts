@@ -43,6 +43,7 @@ import {
   summarizeBackup,
   type BackupSummary,
 } from "@/lib/validations/backup";
+import { recomputeUserMoodRollups } from "@/lib/mood/rollups";
 
 export const dynamic = "force-dynamic";
 
@@ -281,6 +282,11 @@ const handler = apiHandler(
         const moods = await tx.moodEntry.deleteMany({
           where: { userId: ownerId },
         });
+        // v1.4.39 W-MOOD — wipe the persisted mood rollup partition
+        // for this owner so the next analytics read doesn't surface
+        // pre-restore daily means. The fold below mints fresh rows
+        // from the restored mood entries.
+        await tx.moodEntryRollup.deleteMany({ where: { userId: ownerId } });
         const channels = await tx.notificationChannel.deleteMany({
           where: { userId: ownerId },
         });
@@ -408,6 +414,52 @@ const handler = apiHandler(
       });
       annotate({ meta: { restoreFailReason: verbose } });
       return apiError("Restore failed", 500);
+    }
+
+    // v1.4.39 W-MOOD — re-fold the mood rollup tier from the just-
+    // restored entries. Runs outside the transaction so the (5-year)
+    // fold can't hold a long write lock; best-effort so a populator
+    // hiccup doesn't undo the restore. The boot-time backfill is the
+    // safety net — if this fails the next worker boot mints the rows.
+    if (payload.moodEntries.length > 0) {
+      try {
+        await recomputeUserMoodRollups(ownerId, { granularities: ["DAY"] });
+      } catch (err) {
+        annotate({
+          meta: {
+            mood_rollup_restore_failed: true,
+            mood_rollup_restore_error:
+              err instanceof Error ? err.message : String(err),
+          },
+        });
+      }
+    }
+
+    // v1.4.39 W-MED — re-fold the medication-compliance rollup tier
+    // from the restored intake events. The medication delete inside the
+    // transaction already cascaded the existing rollup partition for
+    // this owner via the FK, so the fold mints fresh rows. Boot-time
+    // backfill is the safety net if this best-effort call fails.
+    if (payload.intakeEvents.length > 0) {
+      try {
+        const restoreUser = await prisma.user.findUnique({
+          where: { id: ownerId },
+          select: { timezone: true },
+        });
+        await recomputeUserMedicationCompliance(
+          ownerId,
+          MEDICATION_COMPLIANCE_BACKFILL_DAYS,
+          restoreUser?.timezone ?? null,
+        );
+      } catch (err) {
+        annotate({
+          meta: {
+            medication_compliance_rollup_restore_failed: true,
+            medication_compliance_rollup_restore_error:
+              err instanceof Error ? err.message : String(err),
+          },
+        });
+      }
     }
 
     const summary = summarizeBackup(payload);

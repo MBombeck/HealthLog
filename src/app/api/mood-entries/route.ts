@@ -18,6 +18,7 @@ import { annotate } from "@/lib/logging/context";
 import { withIdempotency } from "@/lib/idempotency";
 import { moodDateKey, DEFAULT_TIMEZONE } from "@/lib/mood/date-key";
 import { invalidateUserMood } from "@/lib/cache/invalidate";
+import { recomputeMoodBucketsForEntry } from "@/lib/mood/rollups";
 
 function parseTags(tags: string | null): string[] {
   if (!tags) return [];
@@ -128,6 +129,22 @@ async function postMoodEntry(request: NextRequest) {
 
     // v1.4.34 IW-G — bust per-user mood + achievements + analytics caches.
     invalidateUserMood(user.id);
+
+    // v1.4.39 W-MOOD — refresh the persisted DAY rollup for the
+    // entry's bucket and enqueue the WEEK / MONTH / YEAR folds.
+    // Best-effort: a failure here must not surface as a 5xx to the
+    // user, the rollup is a cache tier, not a write-path invariant.
+    try {
+      await recomputeMoodBucketsForEntry(user.id, moodLoggedAt);
+    } catch (rollupErr) {
+      annotate({
+        meta: {
+          mood_rollup_write_failed: true,
+          mood_rollup_write_error:
+            rollupErr instanceof Error ? rollupErr.message : String(rollupErr),
+        },
+      });
+    }
 
     return apiSuccess({ ...entry, tags: parseTags(entry.tags) }, 201);
   } catch (err) {

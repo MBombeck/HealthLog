@@ -40,6 +40,9 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
     const moodEntries = await tx.moodEntry.deleteMany({
       where: { userId },
     });
+    // v1.4.39 W-MOOD — wipe the persisted rollup partition for this
+    // user so the next analytics read returns an empty envelope.
+    await tx.moodEntryRollup.deleteMany({ where: { userId } });
     const apiTokens = await tx.apiToken.deleteMany({
       where: { userId },
     });
