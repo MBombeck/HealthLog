@@ -205,6 +205,43 @@ async function buildAnalyticsResponse(user: AuthedUser) {
   // when the column is null or malformed.
   const sourcePriorityJson = user.sourcePriorityJson;
 
+  // v1.4.39 W-SINCE — defense-in-depth row cap on the per-type live
+  // read. The v1.4.38.8 per-type fast-path gate (commit 8a8150d2)
+  // narrowed `isFullyCovered` from "all types covered" to "these
+  // specific types covered" inside the three downstream fast-paths
+  // (bp_in_target / health_score / correlations). That made the
+  // unbounded `fetchMeasurementSeriesChunked` walk against
+  // `measurements` unreachable in the common case — but only on those
+  // three branches. This per-type loop (A2 in the v1.4.38 perf audit)
+  // has no fast-path gate at all; it always runs live SQL.
+  //
+  // Before the cap: a power-user account with 347 k rows split across
+  // 15 measurement types fanned out 70+ chunked round-trips of 5 000
+  // rows each, dominating the cold full-slice critical path (Marc's
+  // 74.6 s cold mount).
+  //
+  // After the cap: the trailing 90 days mirror the comprehensive
+  // aggregator + summaries-slice windows; the worst case drops to
+  // roughly the same row count those paths already absorb (~5 k
+  // estimated on Marc's account). Cumulative HealthKit types
+  // (ACTIVITY_STEPS, ACTIVE_ENERGY, …) collapse to one-row-per-day
+  // after the per-day-sum pass downstream so the 90-day window is
+  // ample for every consumer summarise() feeds.
+  //
+  // Trade-off: `summarize().avg30LastYear` (points 365-395 days ago)
+  // returns null on this fall-through path; the dashboard tile's
+  // year-over-year overlay shows "no prior data" until the rollup
+  // tier warms. This is acceptable because the live-fallback is
+  // already a degraded path — users hit it only when the per-type
+  // coverage gate flips false, which v1.4.38.8 made rare. The slim
+  // slice (`?slice=summaries`) and the rollup-backed comprehensive
+  // aggregator already operate on the 90-day window, so the cap
+  // brings the full slice into line with the slim slice's contract.
+  const ANALYTICS_LIVE_WINDOW_DAYS = 90;
+  const liveSince = new Date(
+    Date.now() - ANALYTICS_LIVE_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+  );
+
   // v1.4.34 IW-B — capture the most-recent `measuredAt` per type so the
   // dashboard tile strip can render an "Letzter Wert vor Xd" caption on
   // tiles whose latest reading is older than a week. The series read
@@ -225,6 +262,11 @@ async function buildAnalyticsResponse(user: AuthedUser) {
     types.map((type) =>
       fetchMeasurementSeriesChunked(user.id, type, {
         includeSleepStage: true,
+        // v1.4.39 W-SINCE — trailing 90-day floor for the live read.
+        // Mirrors the comprehensive-aggregator + summaries-slice
+        // windows so the full slice stops over-reading on the
+        // fall-through path. See comment block above.
+        since: liveSince,
       }).then((measurements) => {
         totalRowsReadForAggregate += measurements.length;
         // v1.4.34 IW-B — record the freshest `measuredAt` for this type
@@ -317,10 +359,19 @@ async function buildAnalyticsResponse(user: AuthedUser) {
   // v1.4.23 Sr-H1 — slow-query attribution. Total rows pulled across
   // every per-type chunked read so ops can spot outlier users whose
   // analytics requests dominate the route's tail latency.
+  //
+  // v1.4.39 W-SINCE — also surface `live_since` (ISO) so the next
+  // perf-verify can see how far back the live-fallback read actually
+  // went. With the 90-day cap in place this should be ~now-90d on
+  // every full-slice request; an older value would signal that a
+  // future refactor accidentally widened the window again.
   annotate({
     meta: {
       analytics: {
-        bp_aggregate: { row_count: totalRowsReadForAggregate },
+        bp_aggregate: {
+          row_count: totalRowsReadForAggregate,
+          live_since: liveSince.toISOString(),
+        },
       },
     },
   });

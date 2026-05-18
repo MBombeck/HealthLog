@@ -109,16 +109,26 @@ describe("GET /api/analytics — chunked per-type reads (Sr-H1)", () => {
     // `(measuredAt, id)` order produces a deterministic chronological
     // sequence that `summarize()` consumes the same way it would have
     // consumed a single-shot read.
+    //
+    // v1.4.39 W-SINCE — the route now caps the live-fallback per-type
+    // read at the trailing 90 days. To keep this paging contract test
+    // exercising both chunks the rows are seeded backwards from `now`
+    // at 15-minute intervals (6 000 × 15 min = 62.5 days, comfortably
+    // inside the 90-day floor).
     const ROW_COUNT = 6000;
-    const baseMs = new Date("2025-01-01T00:00:00.000Z").getTime();
-    const HOUR_MS = 60 * 60 * 1000;
+    const STEP_MS = 15 * 60 * 1000;
+    const nowMs = Date.now();
     const rows = Array.from({ length: ROW_COUNT }, (_, i) => ({
       userId: user.id,
       type: "PULSE" as const,
       value: 60 + (i % 40), // deterministic 60..99
       unit: "bpm",
       source: "MANUAL" as const,
-      measuredAt: new Date(baseMs + i * HOUR_MS),
+      // i = ROW_COUNT - 1 is the freshest row (just before `now`);
+      // i = 0 is the oldest. The chunked helper reads
+      // `(measuredAt asc, id asc)` so the latest value is the last
+      // entry in the sorted stream — which the test asserts below.
+      measuredAt: new Date(nowMs - (ROW_COUNT - i) * STEP_MS),
     }));
     // createMany batches efficiently; default Postgres parameter limit
     // accommodates this volume in a single statement.
