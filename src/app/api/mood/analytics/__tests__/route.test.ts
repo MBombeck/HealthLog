@@ -246,6 +246,61 @@ describe("GET /api/mood/analytics", () => {
     expect(secondBody).toEqual(firstBody);
   });
 
+  it("pre-aggregates the live fallback through daily averages so multi-entry days match the rollup-path summarize semantics", async () => {
+    // QA UX-H1 (v1.4.39): two entries on the same day (score 3 + 5)
+    // must produce identical `summary.count / latest / min / max /
+    // mean` on the rollup tier (one DataPoint with mean=4) AND on the
+    // live-fallback path (which used to pass per-entry points).
+    const moodLoggedAt = new Date("2026-05-10T12:00:00.000Z");
+
+    // Live-fallback first: two entries on the same day.
+    vi.mocked(prisma.moodEntryRollup.findMany).mockResolvedValue([] as never);
+    vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([
+      { date: "2026-05-10", score: 3, moodLoggedAt },
+      { date: "2026-05-10", score: 5, moodLoggedAt },
+    ] as never);
+    const liveRes = await callGet();
+    const liveBody = (await liveRes.json()) as MoodAnalyticsBody;
+
+    __resetAllCachesForTests();
+
+    // Rollup tier: one DAY row with count=2 / mean=4.
+    vi.mocked(prisma.moodEntryRollup.findMany).mockResolvedValue([
+      {
+        userId: "user-mood-1",
+        granularity: "DAY",
+        bucketStart: new Date("2026-05-10T00:00:00.000Z"),
+        count: 2,
+        mean: 4,
+        minScore: 3,
+        maxScore: 5,
+        sd: 1,
+        computedAt: new Date(),
+      },
+    ] as never);
+    const rollupRes = await callGet();
+    const rollupBody = (await rollupRes.json()) as MoodAnalyticsBody;
+
+    // Both branches emit a single daily-average entry with score=4.
+    expect(liveBody.data.entries).toEqual([
+      { date: "2026-05-10", score: 4, samples: 2 },
+    ]);
+    expect(rollupBody.data.entries).toEqual([
+      { date: "2026-05-10", score: 4, samples: 2 },
+    ]);
+
+    // Summary stats now match across both branches — pre-v1.4.39 the
+    // live path passed per-entry points so `count` was 2 (per entry)
+    // and `mean` was the unweighted average over entries. After the
+    // pre-aggregate the live path emits one DataPoint per day (mean=4)
+    // exactly as the rollup tier does.
+    expect(liveBody.data.summary.count).toBe(rollupBody.data.summary.count);
+    expect(liveBody.data.summary.latest).toBe(rollupBody.data.summary.latest);
+    expect(liveBody.data.summary.min).toBe(rollupBody.data.summary.min);
+    expect(liveBody.data.summary.max).toBe(rollupBody.data.summary.max);
+    expect(liveBody.data.summary.mean).toBe(rollupBody.data.summary.mean);
+  });
+
   it("emits byte-identical entries + summary shape between rollup tier and live fallback for the same canonical data", async () => {
     // Same one-entry-per-day series, surfaced once via the rollup
     // tier and once via the legacy live walk. Response shape is

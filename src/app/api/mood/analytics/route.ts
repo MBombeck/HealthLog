@@ -123,8 +123,17 @@ async function buildMoodAnalyticsResponse(
     moodEntries.map((e) => ({ date: e.date, score: e.score })),
   );
 
-  const dataPoints: DataPoint[] = moodEntries.map((e) => ({
-    date: e.moodLoggedAt,
+  // QA UX-H1 (v1.4.39): feed `summarize()` per-day means, not per-entry
+  // scores. The rollup fast-path emits one DataPoint per calendar day
+  // (the rollup's `mean`); the live fallback used to pass every raw
+  // entry, which silently shifted `summary.count / latest / min / max
+  // / mean / avg7 / avg30 / slope30` on power-user multi-entry days.
+  // Pre-aggregating through `aggregateDailyAverages` keeps the two
+  // branches byte-identical on multi-entry days too. Date anchor is
+  // local-noon for the day so the slope x-axis spans whole-day units —
+  // mirrors the dashboard tile's intuition (one number per day).
+  const dataPoints: DataPoint[] = entries.map((e) => ({
+    date: new Date(`${e.date}T12:00:00.000Z`),
     value: e.score,
   }));
 
