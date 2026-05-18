@@ -220,24 +220,24 @@ async function buildAnalyticsResponse(user: AuthedUser) {
   // rows each, dominating the cold full-slice critical path (Marc's
   // 74.6 s cold mount).
   //
-  // After the cap: the trailing 90 days mirror the comprehensive
-  // aggregator + summaries-slice windows; the worst case drops to
-  // roughly the same row count those paths already absorb (~5 k
-  // estimated on Marc's account). Cumulative HealthKit types
-  // (ACTIVITY_STEPS, ACTIVE_ENERGY, …) collapse to one-row-per-day
-  // after the per-day-sum pass downstream so the 90-day window is
-  // ample for every consumer summarise() feeds.
+  // After the cap: the trailing 425 days bound the per-type walk
+  // while preserving `summarize().avg30LastYear` (points 365-395 days
+  // ago) and `summarize().avg30LastMonth` (30-60 days ago) for the
+  // dashboard's year-over-year and month-over-month comparison tiles.
+  // Cumulative HealthKit types (ACTIVITY_STEPS, ACTIVE_ENERGY, …)
+  // collapse to one-row-per-day after the per-day-sum pass downstream
+  // so a 425-day window stays bounded (≤ ~25 k rows per type on a
+  // saturated tenant).
   //
-  // Trade-off: `summarize().avg30LastYear` (points 365-395 days ago)
-  // returns null on this fall-through path; the dashboard tile's
-  // year-over-year overlay shows "no prior data" until the rollup
-  // tier warms. This is acceptable because the live-fallback is
-  // already a degraded path — users hit it only when the per-type
-  // coverage gate flips false, which v1.4.38.8 made rare. The slim
-  // slice (`?slice=summaries`) and the rollup-backed comprehensive
-  // aggregator already operate on the 90-day window, so the cap
-  // brings the full slice into line with the slim slice's contract.
-  const ANALYTICS_LIVE_WINDOW_DAYS = 90;
+  // QA Specialist-H2 (v1.4.39): the original 90-day cap stripped the
+  // year-ago window so `summary.avg30LastYear` returned null on every
+  // fall-through path, making the "vs last year" tile render "no
+  // prior data" on every cold mount. The 425-day cap (365 + 30 + 30
+  // buffer) keeps the year-ago window populated; the slim slice
+  // (`?slice=summaries`) and the rollup-backed comprehensive
+  // aggregator already operate on tighter windows so this cap only
+  // affects the legacy live-fallback path the fast-path gate misses.
+  const ANALYTICS_LIVE_WINDOW_DAYS = 425;
   const liveSince = new Date(
     Date.now() - ANALYTICS_LIVE_WINDOW_DAYS * 24 * 60 * 60 * 1000,
   );
@@ -262,10 +262,10 @@ async function buildAnalyticsResponse(user: AuthedUser) {
     types.map((type) =>
       fetchMeasurementSeriesChunked(user.id, type, {
         includeSleepStage: true,
-        // v1.4.39 W-SINCE — trailing 90-day floor for the live read.
-        // Mirrors the comprehensive-aggregator + summaries-slice
-        // windows so the full slice stops over-reading on the
-        // fall-through path. See comment block above.
+        // v1.4.39 W-SINCE — trailing 425-day floor for the live read.
+        // Wide enough to populate `summarize().avg30LastYear` (the
+        // year-ago comparison tile) while still bounding the per-type
+        // row count. See comment block above.
         since: liveSince,
       }).then((measurements) => {
         totalRowsReadForAggregate += measurements.length;
@@ -362,7 +362,7 @@ async function buildAnalyticsResponse(user: AuthedUser) {
   //
   // v1.4.39 W-SINCE — also surface `live_since` (ISO) so the next
   // perf-verify can see how far back the live-fallback read actually
-  // went. With the 90-day cap in place this should be ~now-90d on
+  // went. With the 425-day cap in place this should be ~now-425d on
   // every full-slice request; an older value would signal that a
   // future refactor accidentally widened the window again.
   annotate({

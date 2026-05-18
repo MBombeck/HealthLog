@@ -13,11 +13,13 @@
  *
  * This file pins:
  *
- *   1. **The 90-day floor reaches `prisma.measurement.findMany`.**
+ *   1. **The 425-day floor reaches `prisma.measurement.findMany`.**
  *      Every per-type read inside the default slice carries
- *      `where.measuredAt.gte` ≈ now − 90 days. If a future refactor
- *      drops the `since` option from the chunked helper this test
- *      breaks loudly.
+ *      `where.measuredAt.gte` ≈ now − 425 days. QA Specialist-H2
+ *      (v1.4.39) widened the original 90-day cap to 425 days so
+ *      `summarize().avg30LastYear` (year-ago tile) stays populated
+ *      on the live-fallback path. If a future refactor drops the
+ *      `since` option from the chunked helper this test breaks loudly.
  *
  *   2. **The `meta.analytics.bp_aggregate.live_since` annotate fires.**
  *      Lets the next perf-verify see how far back the live-fallback
@@ -26,7 +28,7 @@
  *
  *   3. **The slim slice (`?slice=summaries`) is unaffected.** That
  *      branch never hit the per-type loop in the first place and
- *      keeps its own 90-day SQL aggregator.
+ *      keeps its own SQL aggregator.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -193,7 +195,7 @@ beforeEach(async () => {
 });
 
 describe("GET /api/analytics — live-fallback `since` cap (W-SINCE)", () => {
-  it("passes a trailing-90-day `where.measuredAt.gte` to every per-type findMany", async () => {
+  it("passes a trailing-425-day `where.measuredAt.gte` to every per-type findMany", async () => {
     const before = Date.now();
     const response = await callGet(
       new Request("http://localhost/api/analytics"),
@@ -204,9 +206,11 @@ describe("GET /api/analytics — live-fallback `since` cap (W-SINCE)", () => {
     const findMany = prisma.measurement.findMany as ReturnType<typeof vi.fn>;
     expect(findMany.mock.calls.length).toBeGreaterThan(0);
 
-    const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
-    const expectedMinSince = before - NINETY_DAYS_MS;
-    const expectedMaxSince = after - NINETY_DAYS_MS;
+    // QA Specialist-H2 (v1.4.39): 425 days = 365 (year-ago window) +
+    // 30 (avg30LastYear bucket span) + 30 (cache-aging buffer).
+    const FOUR_TWENTY_FIVE_DAYS_MS = 425 * 24 * 60 * 60 * 1000;
+    const expectedMinSince = before - FOUR_TWENTY_FIVE_DAYS_MS;
+    const expectedMaxSince = after - FOUR_TWENTY_FIVE_DAYS_MS;
 
     // The per-type loop (A2) issues chunked reads with an `orderBy`
     // *array* (`(measuredAt asc, id asc)`); the 30-day glucose and
@@ -232,7 +236,7 @@ describe("GET /api/analytics — live-fallback `since` cap (W-SINCE)", () => {
     }
   });
 
-  it("annotates `meta.analytics.bp_aggregate.live_since` with the 90-day cutoff ISO", async () => {
+  it("annotates `meta.analytics.bp_aggregate.live_since` with the 425-day cutoff ISO", async () => {
     const before = Date.now();
     await callGet(new Request("http://localhost/api/analytics"));
     const after = Date.now();
@@ -256,10 +260,12 @@ describe("GET /api/analytics — live-fallback `since` cap (W-SINCE)", () => {
     const bpAggregate = fields.meta.analytics.bp_aggregate;
     expect(typeof bpAggregate.live_since).toBe("string");
 
-    const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
+    const FOUR_TWENTY_FIVE_DAYS_MS = 425 * 24 * 60 * 60 * 1000;
     const liveSinceMs = new Date(bpAggregate.live_since).getTime();
-    expect(liveSinceMs).toBeGreaterThanOrEqual(before - NINETY_DAYS_MS);
-    expect(liveSinceMs).toBeLessThanOrEqual(after - NINETY_DAYS_MS);
+    expect(liveSinceMs).toBeGreaterThanOrEqual(
+      before - FOUR_TWENTY_FIVE_DAYS_MS,
+    );
+    expect(liveSinceMs).toBeLessThanOrEqual(after - FOUR_TWENTY_FIVE_DAYS_MS);
   });
 
   it("does not invoke the per-type loop on the slim `?slice=summaries` branch", async () => {
