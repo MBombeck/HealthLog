@@ -107,6 +107,7 @@ interface RollupRow {
   mean: number | null;
   min_value: number | null;
   max_value: number | null;
+  sum_value: number | null;
   sd: number | null;
   slope: number | null;
   r2: number | null;
@@ -387,6 +388,7 @@ async function runRollupAggregate(input: {
         AVG(m."value")::double precision                          AS mean,
         MIN(m."value")::double precision                          AS min_value,
         MAX(m."value")::double precision                          AS max_value,
+        SUM(m."value")::double precision                          AS sum_value,
         STDDEV_POP(m."value")::double precision                   AS sd,
         REGR_SLOPE(
           m."value",
@@ -419,6 +421,7 @@ async function runRollupAggregate(input: {
       AVG(m."value")::double precision                          AS mean,
       MIN(m."value")::double precision                          AS min_value,
       MAX(m."value")::double precision                          AS max_value,
+      SUM(m."value")::double precision                          AS sum_value,
       STDDEV_POP(m."value")::double precision                   AS sd,
       REGR_SLOPE(
         m."value",
@@ -483,6 +486,12 @@ async function persistRollupRows(
             mean: row.mean ?? 0,
             minValue: row.min_value ?? 0,
             maxValue: row.max_value ?? 0,
+            // v1.4.39 W-SUM — populate for every type. Cumulative read
+            // paths (steps, flights, distance, daylight, active-energy)
+            // consume this column directly; spot metrics carry it for
+            // free because the underlying SUM aggregator runs in the
+            // same query as AVG / MIN / MAX.
+            sumValue: row.sum_value ?? null,
             sd: row.sd,
             slope: row.slope,
             r2: row.r2,
@@ -493,6 +502,7 @@ async function persistRollupRows(
             mean: row.mean ?? 0,
             minValue: row.min_value ?? 0,
             maxValue: row.max_value ?? 0,
+            sumValue: row.sum_value ?? null,
             sd: row.sd,
             slope: row.slope,
             r2: row.r2,
@@ -741,17 +751,32 @@ export async function enqueueBootTimeRollupBackfill(): Promise<{
     // the LEFT JOIN) marks the unmatched partitions. A user surfaces
     // here when ANY type is missing — including the brand-new-type
     // case that v1.4.35.1's zero-rollup-only shape silently stranded.
+    //
+    // v1.4.39 W-SUM — the discovery also surfaces users whose existing
+    // DAY rollup rows carry `sum_value IS NULL`. Those rows pre-date
+    // the v1.4.39 writer change; re-folding the user converges them
+    // because `persistRollupRows` always writes the new column on
+    // upsert. The union runs in one query so the existing per-type
+    // coverage gap and the legacy-NULL backfill share a single planner
+    // pass.
     const users = await prisma.$queryRaw<Array<{ id: string }>>`
-      SELECT DISTINCT mt."user_id" AS id
-      FROM (
-        SELECT DISTINCT m."user_id", m."type"
-        FROM measurements m
-      ) mt
-      LEFT JOIN measurement_rollups r
-        ON  r."user_id"     = mt."user_id"
-        AND r."type"        = mt."type"
-        AND r."granularity" = 'DAY'
-      WHERE r."bucket_start" IS NULL
+      SELECT DISTINCT id FROM (
+        SELECT DISTINCT mt."user_id" AS id
+        FROM (
+          SELECT DISTINCT m."user_id", m."type"
+          FROM measurements m
+        ) mt
+        LEFT JOIN measurement_rollups r
+          ON  r."user_id"     = mt."user_id"
+          AND r."type"        = mt."type"
+          AND r."granularity" = 'DAY'
+        WHERE r."bucket_start" IS NULL
+        UNION
+        SELECT DISTINCT r2."user_id" AS id
+        FROM measurement_rollups r2
+        WHERE r2."granularity" = 'DAY'
+          AND r2."sum_value"   IS NULL
+      ) discovery
     `;
 
     if (users.length === 0) {
