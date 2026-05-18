@@ -638,6 +638,65 @@ describe("measurement rollups — integration", () => {
     vi.mocked(getGlobalBoss).mockReturnValue(null as never);
   });
 
+  // ─── v1.4.38.5 regression — partial coverage discovery ──────
+  //
+  // The v1.4.35.1 shape only matched users with ZERO rollup rows
+  // anywhere. That silently stranded users who logged a brand-new
+  // type after the initial fold: their existing WEIGHT bucket made
+  // them invisible to discovery, but the brand-new PULSE type still
+  // had no DAY bucket → `isFullyCovered` stayed `false` → every read
+  // fanned out to the live aggregator (10s of seconds on power-user
+  // accounts). v1.4.38.5 widens discovery to per-type-missing.
+
+  it("v1.4.38.5 — enqueues a user with rollups for one type but a brand-new uncovered type", async () => {
+    const prisma = getPrismaClient();
+    const user = await prisma.user.create({
+      data: {
+        username: "boot-backfill-partial",
+        email: "boot-backfill-partial@example.test",
+        role: "USER",
+      },
+    });
+    await prisma.measurement.create({
+      data: {
+        userId: user.id,
+        type: "WEIGHT",
+        value: 80,
+        unit: "kg",
+        source: "MANUAL",
+        measuredAt: new Date("2026-04-01T08:00:00.000Z"),
+      },
+    });
+    // Fold WEIGHT — this is the state a long-running account is in
+    // after the initial v1.4.35.1 boot-time backfill landed.
+    await recomputeUserRollups(user.id, { granularities: ["DAY"] });
+
+    // Now log a brand-new type. The v1.4.35.1 discovery saw "user
+    // has at least one rollup row" and skipped them; v1.4.38.5
+    // discovery checks per-type coverage and surfaces them.
+    await prisma.measurement.create({
+      data: {
+        userId: user.id,
+        type: "PULSE",
+        value: 65,
+        unit: "bpm",
+        source: "MANUAL",
+        measuredAt: new Date("2026-04-02T08:00:00.000Z"),
+      },
+    });
+
+    bossSend.mockResolvedValue("job-id");
+    vi.mocked(getGlobalBoss).mockReturnValue({ send: bossSend } as never);
+
+    const result = await enqueueBootTimeRollupBackfill();
+
+    expect(result.enqueued).toBe(1);
+    expect(bossSend).toHaveBeenCalledTimes(1);
+    expect(bossSend.mock.calls[0][1]).toMatchObject({ userId: user.id });
+
+    vi.mocked(getGlobalBoss).mockReturnValue(null as never);
+  });
+
   // ─── v1.4.36 rollup-fresh skip-live contract ──────────────────
   //
   // The v1.4.35 read-swap kept the heavy live aggregate running in

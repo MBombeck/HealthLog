@@ -703,9 +703,16 @@ async function ensureUserRollupsFreshImpl(
  * persistent rollup tier without operator intervention.
  *
  * Idempotent across reboots:
- *   - the discovery query only matches accounts with no rollup rows at
- *     all, so once the fold completes the user drops off the list and
- *     subsequent boots skip them
+ *   - the discovery query matches accounts that either have zero
+ *     rollup coverage at all OR have at least one measurement type
+ *     whose DAY-rollup partition is empty. Once every type the user
+ *     has logged has at least one DAY bucket, the user drops off the
+ *     list and subsequent boots skip them. The v1.4.35.1 shape (zero-
+ *     rollups only) silently stranded users who logged a brand-new
+ *     type after the initial fold — their `isFullyCovered` probe stays
+ *     `false`, every read fans out to the live SQL aggregator, and
+ *     `/api/analytics` cold-mounts in tens of seconds instead of
+ *     1.5-3 s. v1.4.38.5 widens discovery to per-type missing coverage.
  *   - pg-boss `singletonKey` coalesces duplicate sends within the
  *     queue, so a fast restart while a backfill is queued doesn't
  *     double up
@@ -724,19 +731,26 @@ export async function enqueueBootTimeRollupBackfill(): Promise<{
   }
 
   try {
-    // Users with at least one measurement but no rollup row yet. The
-    // `LIMIT 1` inside each `EXISTS` keeps the planner from materialising
-    // the full child relation just to answer existence — important on
-    // power-user accounts with 100k+ measurements.
+    // Users where at least one measurement type lacks DAY-rollup
+    // coverage. Anchored on the per-user `DISTINCT type` set so the
+    // planner uses the `(user_id, type, measured_at)` index path; the
+    // LEFT JOIN onto `measurement_rollups` uses the
+    // `(user_id, type, granularity, bucket_start)` composite primary
+    // key. `r."id" IS NULL` filters the unmatched partitions. A user
+    // surfaces here when ANY type is missing — including the brand-
+    // new-type case that v1.4.35.1's zero-rollup-only shape silently
+    // stranded.
     const users = await prisma.$queryRaw<Array<{ id: string }>>`
-      SELECT u."id"
-      FROM users u
-      WHERE EXISTS (
-        SELECT 1 FROM measurements m WHERE m."user_id" = u."id" LIMIT 1
-      )
-        AND NOT EXISTS (
-          SELECT 1 FROM measurement_rollups r WHERE r."user_id" = u."id" LIMIT 1
-        )
+      SELECT DISTINCT mt."user_id" AS id
+      FROM (
+        SELECT DISTINCT m."user_id", m."type"
+        FROM measurements m
+      ) mt
+      LEFT JOIN measurement_rollups r
+        ON  r."user_id"     = mt."user_id"
+        AND r."type"        = mt."type"
+        AND r."granularity" = 'DAY'
+      WHERE r."id" IS NULL
     `;
 
     if (users.length === 0) {
