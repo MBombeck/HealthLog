@@ -68,6 +68,16 @@ import {
   type RollupRecomputePayload,
 } from "@/lib/measurements/rollups";
 import {
+  MOOD_ROLLUP_FULL_BACKFILL_QUEUE,
+  MOOD_ROLLUP_FULL_BACKFILL_CONCURRENCY,
+  MOOD_ROLLUP_RECOMPUTE_QUEUE,
+  MOOD_ROLLUP_RECOMPUTE_CONCURRENCY,
+  enqueueBootTimeMoodRollupBackfill,
+  recomputeUserMoodRollups,
+  type MoodRollupFullBackfillPayload,
+  type MoodRollupRecomputePayload,
+} from "@/lib/mood/rollups";
+import {
   drainPerSampleCumulative,
   DRAIN_CUMULATIVE_CUTOFF_HOURS,
 } from "@/lib/measurements/drain-per-sample-cumulative";
@@ -1655,6 +1665,17 @@ export async function startReminderWorker() {
     APPLE_HEALTH_IMPORT_QUEUE,
     ROLLUP_RECOMPUTE_QUEUE,
     ROLLUP_FULL_BACKFILL_QUEUE,
+    // v1.4.39 W-MOOD — per-bucket WEEK/MONTH/YEAR fold queue for the
+    // mood rollup tier. The DAY pass runs inline in the write hook;
+    // these enqueue paths cover the cross-granularity buckets the
+    // worker materialises off the request path.
+    MOOD_ROLLUP_RECOMPUTE_QUEUE,
+    // v1.4.39 W-MOOD — boot-time fold queue for the mood rollup tier.
+    // Mirrors the measurement-rollup full-backfill semantics: the
+    // discovery query enqueues one full-fold per user with mood
+    // entries but no rollup rows; the user drops off the list once
+    // the fold completes.
+    MOOD_ROLLUP_FULL_BACKFILL_QUEUE,
     // v1.4.37 W7c — explicit createQueue is required before the
     // nightly schedule below registers (pg-boss v12 contract). Without
     // this entry the drain schedule silently no-ops and the
@@ -1916,6 +1937,58 @@ export async function startReminderWorker() {
     },
   );
 
+  // v1.4.39 W-MOOD — mood-rollup per-bucket worker. Folds the
+  // WEEK / MONTH / YEAR buckets that the mood-entry write hooks
+  // enqueue; the DAY bucket runs synchronously in the hook itself.
+  // No current read path consumes these buckets — they exist so a
+  // future cross-granularity reader can ship without a backfill
+  // step. Concurrency-2 mirrors the measurement-rollup worker.
+  await boss.work<MoodRollupRecomputePayload>(
+    MOOD_ROLLUP_RECOMPUTE_QUEUE,
+    { localConcurrency: MOOD_ROLLUP_RECOMPUTE_CONCURRENCY },
+    async (jobs) => {
+      for (const job of jobs) {
+        const payload = job.data;
+        await recomputeUserMoodRollups(payload.userId, {
+          granularities: [payload.granularity],
+          from: new Date(payload.from),
+          to: new Date(payload.to),
+        });
+      }
+    },
+  );
+
+  // v1.4.39 W-MOOD — mood-rollup boot-time fold worker. The boot
+  // discovery helper below sends one job per user with mood entries
+  // but zero rollup rows; this handler folds the full 5-year window
+  // across every granularity. Concurrency-1 so the populator never
+  // crowds the request pool.
+  await boss.work<MoodRollupFullBackfillPayload>(
+    MOOD_ROLLUP_FULL_BACKFILL_QUEUE,
+    { localConcurrency: MOOD_ROLLUP_FULL_BACKFILL_CONCURRENCY },
+    async (jobs) => {
+      for (const job of jobs) {
+        const { userId } = job.data;
+        try {
+          const { rowsUpserted, durationMs } =
+            await recomputeUserMoodRollups(userId);
+          workerLog(
+            "info",
+            `[mood-rollup-full-backfill] user=${userId} rows=${rowsUpserted} duration=${durationMs}ms`,
+          );
+        } catch (err) {
+          recordError();
+          workerLog(
+            "error",
+            `[mood-rollup-full-backfill] user=${userId} failed`,
+            err,
+          );
+          throw err;
+        }
+      }
+    },
+  );
+
   // v1.4.37 W7c — nightly drain worker. Walks every user × cumulative
   // type and folds per-sample APPLE_HEALTH rows older than the cutoff
   // into one `stats:…` row per calendar day. Idempotent — a second run
@@ -1976,6 +2049,33 @@ export async function startReminderWorker() {
     workerLog(
       "error",
       "[rollup-full-backfill] boot discovery threw an unexpected error",
+      err,
+    );
+  }
+
+  // v1.4.39 W-MOOD — fire-and-forget boot discovery for the mood
+  // rollup tier. Mirrors the v1.4.35.1 measurement-rollup pattern:
+  // one job per user with mood entries but no rollup coverage.
+  // Idempotent across reboots and singleton-keyed inside pg-boss so
+  // a fast restart while a backfill is queued doesn't double up.
+  try {
+    const { enqueued, skipped, error } =
+      await enqueueBootTimeMoodRollupBackfill();
+    if (error) {
+      workerLog(
+        "error",
+        `[mood-rollup-full-backfill] boot discovery failed: ${error}`,
+      );
+    } else {
+      workerLog(
+        "info",
+        `[mood-rollup-full-backfill] boot discovery: enqueued=${enqueued} skipped=${skipped}`,
+      );
+    }
+  } catch (err) {
+    workerLog(
+      "error",
+      "[mood-rollup-full-backfill] boot discovery threw an unexpected error",
       err,
     );
   }
