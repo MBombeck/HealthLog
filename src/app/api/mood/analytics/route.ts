@@ -56,6 +56,16 @@ interface MoodAnalyticsResult {
  * (Berlin year-round) the two labels agree on every entry whose
  * timestamp doesn't straddle the UTC boundary — i.e. every realistic
  * mood log, which a human submits during waking hours.
+ *
+ * Trade-off (QA Specialist-H1, v1.4.39): on DST fall-back nights the
+ * UTC anchor and the user's local wall-clock day-key can diverge by
+ * one calendar day. Example: `2025-10-25T23:30:00Z` is 00:30 local
+ * in Europe/Berlin on `2025-10-26` (one hour after the fall-back
+ * transition); the rollup row is keyed on `2025-10-25` (UTC) while
+ * the legacy live-fallback path would emit `2025-10-26`. This is
+ * pinned by the route-parity DST test. v1.5 per-user-tz bucketing
+ * (audit P7) anchors the rollup on the same day-key the legacy path
+ * uses, closing the gap.
  */
 function utcDayLabel(d: Date): string {
   const yyyy = d.getUTCFullYear();

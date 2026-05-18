@@ -216,6 +216,48 @@ describe("GET /api/mood/analytics", () => {
     expect(body.data.summary.latest).toBe(5);
   });
 
+  it("pins the DST fall-back Berlin midnight slip — UTC bucket vs local day diverge by one calendar day", async () => {
+    // QA Specialist-H1 (v1.4.39): 2025-10-25T23:30:00Z is 00:30 local
+    // in Europe/Berlin on 2025-10-26 (one hour AFTER the fall-back
+    // transition). The mood rollup writer anchors `bucketStart` on
+    // UTC midnight (mirroring the measurement-rollup convention), so
+    // a write logged at this instant materialises a rollup row keyed
+    // on `2025-10-25T00:00:00Z` — the UTC-anchored day — even though
+    // the user's local wall clock reads 2025-10-26. The route's
+    // `utcDayLabel` emits the same day-key the rollup row carries.
+    //
+    // This pins the documented behaviour. The legacy live-fallback
+    // path uses `MoodEntry.date` (TZ-anchored) and therefore emits
+    // `2025-10-26` for the same instant — a slip we document in the
+    // route's header comment as the cost of the cache-tier semantics.
+    // The v1.5 per-user-tz bucketing (P7 in the v1.4.38 perf audit)
+    // closes the gap by anchoring the rollup table on the same day-
+    // key the legacy path uses. Until then this is the contract.
+    vi.mocked(prisma.moodEntryRollup.findMany).mockResolvedValue([
+      {
+        userId: "user-mood-1",
+        granularity: "DAY",
+        bucketStart: new Date("2025-10-25T00:00:00.000Z"),
+        count: 1,
+        mean: 4,
+        minScore: 4,
+        maxScore: 4,
+        sd: null,
+        computedAt: new Date(),
+      },
+    ] as never);
+
+    const res = await callGet();
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as MoodAnalyticsBody;
+    // The rollup tier pins the entry on the UTC-anchored day-key,
+    // NOT the user's local 2025-10-26 — same convention as the
+    // measurement-rollup tier.
+    expect(body.data.entries).toEqual([
+      { date: "2025-10-25", score: 4, samples: 1 },
+    ]);
+  });
+
   it("serves the cached envelope on a warm read without touching the DB", async () => {
     // First read populates the cache.
     vi.mocked(prisma.moodEntryRollup.findMany).mockResolvedValue([
