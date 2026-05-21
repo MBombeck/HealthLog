@@ -287,7 +287,7 @@ export async function syncUserMeasurements(
  * `Error` instances (e.g. a pg-boss job retry that lost the prototype
  * during the JSON round-trip).
  */
-async function recordWithingsSyncFailure(
+export async function recordWithingsSyncFailure(
   userId: string,
   err: unknown,
 ): Promise<void> {

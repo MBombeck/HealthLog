@@ -48,11 +48,7 @@ import {
   WithingsApiError,
   classifyWithingsResponse,
 } from "./response-classifier";
-import {
-  extractWithingsStatus,
-  isWithingsRefreshReauthFailure,
-} from "./sync";
-import { getValidToken } from "./sync";
+import { getValidToken, recordWithingsSyncFailure } from "./sync";
 import {
   isReauthRequired,
   parkIntegrationAtReauth,
@@ -278,24 +274,37 @@ export async function syncUserActivity(
       ymd(now),
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    const status = extractWithingsStatus(message);
-    // v1.4.26 defence-in-depth — a 403 from a scope-gated endpoint
-    // always means scope-missing or token-revoked. Park at
-    // `error_reauth` rather than `transient` so pg-boss stops
-    // retrying and the 3-strike alert doesn't fire. The early
-    // scope-skip above covers the common case; this catches the
-    // race where Withings revokes scope between OAuth and the next
-    // sync without invalidating the refresh token.
-    const isReauth =
-      isWithingsRefreshReauthFailure(message) || status === "403";
-    await recordSyncFailure({
-      userId,
-      integration: "withings",
-      kind: isReauth ? "reauth_required" : "transient",
-      message,
-      errorCode: status,
-    });
+    // v1.4.43 W7-B3 — typed-classification path. The thrown
+    // `WithingsApiError` from `fetchWithingsActivity` carries the
+    // verdict + `withingsStatus` directly; `recordWithingsSyncFailure`
+    // routes it through `classifyError`, which falls back to the regex
+    // parse for plain `Error` instances (e.g. a pg-boss retry that lost
+    // the prototype during JSON round-trip). Pre-v1.4.43 this branch
+    // re-parsed the message via `extractWithingsStatus` +
+    // `isWithingsRefreshReauthFailure`, duplicating logic the
+    // response-classifier already owns.
+    //
+    // BL-P3-2 defence-in-depth — a Withings 403 on this scope-gated
+    // endpoint always means scope-missing or token-revoked; force the
+    // verdict to `reauth_required` so pg-boss stops retrying and the
+    // 3-strike alert still pages on the unexpected case. The
+    // response-classifier's body-status taxonomy doesn't list 403
+    // (Withings emits 403 only through the HTTP layer for scope-gated
+    // resources), so the override has to live at the call site rather
+    // than in the shared classifier.
+    const withingsStatus =
+      err instanceof WithingsApiError ? err.withingsStatus : undefined;
+    if (withingsStatus === 403) {
+      await recordSyncFailure({
+        userId,
+        integration: "withings",
+        kind: "reauth_required",
+        message: err instanceof Error ? err.message : String(err),
+        errorCode: "403",
+      });
+      throw err;
+    }
+    await recordWithingsSyncFailure(userId, err);
     throw err;
   }
 
