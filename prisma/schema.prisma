@@ -295,6 +295,13 @@ model User {
   // keep the row in sync so `/api/medications/intake?scope=compliance`
   // and `computeUserHealthScoreFastPath` skip the per-event findMany.
   medicationComplianceRollups MedicationComplianceRollup[]
+  // v1.4.40 SB-10 — AI consent receipts the iOS app POSTs when the user
+  // grants AI processing during onboarding. Persisted audit trail
+  // covers App-Store Guideline 5.1.2(i) ("data-collection consent must
+  // be verifiable") plus the operator's GDPR Art. 7 documentation
+  // burden. Append-only — a user revoking + re-granting consent mints
+  // a fresh row so the timeline reads chronologically.
+  consentReceipts        ConsentReceipt[]
 
   @@map("users")
 }
@@ -1916,4 +1923,40 @@ model CoachUsage {
   @@unique([userId, dateKey])
   @@index([userId, dateKey])
   @@map("coach_usage")
+}
+
+// ─── Consent Receipts (v1.4.40 SB-10) ─────────────────────────
+//
+// Per-user audit trail of AI-processing consent grants. The iOS app
+// posts a fresh row whenever the user opts in to off-device AI flows
+// during onboarding or via Settings; append-only so a revoke + re-grant
+// cycle reads chronologically. Persists the raw signed artefact (PDF
+// receipt OR signed JWT — caller's choice) the App-Store Guideline
+// 5.1.2(i) audit needs to be verifiable. The latest row per user is
+// the source of truth for "is AI active right now" decisions; older
+// rows are kept for the GDPR Art. 7 burden of proof.
+//
+// `kind` is a free-text discriminator the iOS / web client uses to
+// distinguish "ai_full" / "ai_insights_only" / future scopes without
+// requiring a schema migration per new tier.
+model ConsentReceipt {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  kind        String
+  /// Raw consent artefact — either a base64-encoded PDF or a signed
+  /// JWT. The server does not parse this payload; the audit trail is
+  /// the storage itself plus the `signedAt` timestamp.
+  artefact    String   @db.Text
+  /// Wall-clock the client recorded the user's tap. UTC ISO-8601.
+  signedAt    DateTime @map("signed_at")
+  /// Optional revocation marker — set when a follow-up "revoke" row
+  /// is minted so the latest-per-user lookup can shortcut to "no
+  /// active consent" without diffing the kind discriminator.
+  revokedAt   DateTime? @map("revoked_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("consent_receipts")
 }
