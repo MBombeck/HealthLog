@@ -1136,8 +1136,8 @@
       "feedbackThanks": "Danke für das Signal.",
       "dailyLimitTitle": "Heute-Limit erreicht",
       "dailyLimitBody": "Heute-Limit erreicht; Reset um 00:00 UTC.",
-      "providerRateLimitTitle": "Provider rate-limited",
-      "providerRateLimitBody": "Provider ist temporär überlastet; Reset in ~5 min."
+      "providerRateLimitTitle": "Anbieter gedrosselt",
+      "providerRateLimitBody": "Anbieter ist temporär überlastet; wieder verfügbar in ~5 min."
     },
     "relativeJustNow": "gerade eben",
     "relativeMinutesAgo": "vor {count} Minuten",
@@ -1619,7 +1619,7 @@
       },
       "ai": {
         "title": "Auswertungen",
-        "description": "Provider, Modell, API-Key."
+        "description": "Anbieter, Modell, API-Schlüssel."
       },
       "api": {
         "title": "API & Tokens",
@@ -1757,9 +1757,9 @@
     "codexDisconnected": "ChatGPT-Verbindung getrennt.",
     "codexConnectionFailed": "ChatGPT-Verbindung fehlgeschlagen. Bitte versuche es erneut.",
     "rawData": "Rohdaten mitsenden",
-    "rawDataOnDescription": "Es werden aggregierte Kennzahlen plus anonymisierte Rohdaten der letzten 30 Tage gesendet. Dazu zählen einzelne Messpunkte je Bereich (z. B. Gewicht, Blutdruck, Puls) mit Zeitbezug, damit der Provider zeitliche Muster, Ausreißer und Zusammenhänge zuverlässiger erkennen kann. Nicht übertragen werden Name, E-Mail oder direkte Kontodaten.",
-    "rawDataOffDescription": "Es werden nur zusammengefasste Werte gesendet (z. B. Durchschnitt, Trend, Minimum/Maximum). Keine einzelnen Messpunkte und keine exakten Zeitbezüge. Das ist datensparsamer, der Provider kann dafür aber weniger fein auf Muster und kurzfristige Schwankungen eingehen.",
-    "rawDataWarning": "Rohdaten aktiv: Der Provider erhält zusätzlich anonymisierte Messpunkte der letzten 30 Tage für eine präzisere Auswertung.",
+    "rawDataOnDescription": "Es werden aggregierte Kennzahlen plus anonymisierte Rohdaten der letzten 30 Tage gesendet. Dazu zählen einzelne Messpunkte je Bereich (z. B. Gewicht, Blutdruck, Puls) mit Zeitbezug, damit der Anbieter zeitliche Muster, Ausreißer und Zusammenhänge zuverlässiger erkennen kann. Nicht übertragen werden Name, E-Mail oder direkte Kontodaten.",
+    "rawDataOffDescription": "Es werden nur zusammengefasste Werte gesendet (z. B. Durchschnitt, Trend, Minimum/Maximum). Keine einzelnen Messpunkte und keine exakten Zeitbezüge. Das ist datensparsamer, der Anbieter kann dafür aber weniger fein auf Muster und kurzfristige Schwankungen eingehen.",
+    "rawDataWarning": "Rohdaten aktiv: Der Anbieter erhält zusätzlich anonymisierte Messpunkte der letzten 30 Tage für eine präzisere Auswertung.",
     "regenerateInsights": "Reports neu generieren",
     "regenerateSuccess": "Reports wurden neu generiert",
     "regenerateRateLimit": "Bitte warte — du hast das stündliche Limit für Analysen erreicht.",
