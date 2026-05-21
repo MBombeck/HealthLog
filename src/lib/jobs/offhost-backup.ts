@@ -216,6 +216,9 @@ export async function runOffhostBackup(
     try {
       const [measurements, medications, intakeEvents, moodEntries] =
         await Promise.all([
+          // includes soft-deleted rows because this is the DR snapshot,
+          // not a user-facing export — see
+          // `/api/export/full-backup/route.ts` for the symmetric exclusion.
           prisma.measurement.findMany({ where: { userId: user.id } }),
           prisma.medication.findMany({
             where: { userId: user.id },

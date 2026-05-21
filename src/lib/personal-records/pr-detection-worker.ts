@@ -217,7 +217,7 @@ export async function detectPersonalRecordsForUser(
     // Warm-up gate. Cheap count first so we don't pull a 30k-row
     // scan on a brand-new account.
     const sampleCount = await prisma.measurement.count({
-      where: { userId, type: metricType },
+      where: { userId, type: metricType, deletedAt: null },
     });
     if (sampleCount < PR_DETECTION_WARMUP_THRESHOLD) continue;
 
@@ -400,7 +400,7 @@ async function findBestMeasurement(
   direction: PersonalRecordDirection,
 ): Promise<MeasurementCandidate | null> {
   const row = await prisma.measurement.findFirst({
-    where: { userId, type },
+    where: { userId, type, deletedAt: null },
     orderBy:
       direction === PersonalRecordDirection.MAX
         ? { value: "desc" }
