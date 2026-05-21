@@ -18,6 +18,10 @@ import {
   recordSyncFailure,
   recordSyncSuccess,
 } from "@/lib/integrations/status";
+import {
+  collapseToTypeDayKeys,
+  recomputeBucketsForMeasurement,
+} from "@/lib/measurements/rollups";
 
 /**
  * Build the callback URL handed to Withings at `Notify.subscribe` time.
@@ -194,6 +198,18 @@ export async function syncUserMeasurements(
   }
 
   let imported = 0;
+  // v1.4.39.1 — track every (type, measuredAt) we touched so the
+  // persistent rollup tier can be re-folded at the end of the sync.
+  // Pre-fix, Withings-ingested BP / weight / pulse / body-fat rows
+  // skipped the rollup write hook entirely: subsequent dashboard chart
+  // fetches with `source=rollup` saw fewer DAY buckets than the live
+  // measurements table, painting the "Noch nicht genug Daten" empty
+  // state for the 30-day range on accounts whose recent data only came
+  // through Withings. We collect first, fold once at the end so a 100-
+  // row monthly catch-up costs at most ~N (type, day) recomputes rather
+  // than N per-row hooks. Best-effort: a populator hiccup never fails
+  // the user's sync.
+  const touched: Array<{ type: MeasurementType; measuredAt: Date }> = [];
 
   for (const m of measures) {
     const measType = m.type as MeasurementType;
@@ -233,10 +249,27 @@ export async function syncUserMeasurements(
           },
         });
       }
+      touched.push({ type: measType, measuredAt: m.measuredAt });
       imported++;
     } catch (err) {
       getEvent()?.addWarning(`Failed to upsert measure: ${err}`);
     }
+  }
+
+  // v1.4.39.1 — refresh the persistent rollup table for every distinct
+  // (type, day) the sync touched. The chart-data + analytics read paths
+  // consume these buckets via `source=rollup`; without this hook,
+  // Withings-only metrics stayed off the rollup tier and the dashboard
+  // chart at the 30-day range under-counted recent days.
+  try {
+    const keys = collapseToTypeDayKeys(touched);
+    for (const k of keys) {
+      await recomputeBucketsForMeasurement(userId, k.type, k.measuredAt);
+    }
+  } catch (err) {
+    getEvent()?.addWarning(
+      `withings: rollup recompute failed for ${userId}: ${err}`,
+    );
   }
 
   // Update last synced timestamp

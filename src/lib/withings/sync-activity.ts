@@ -38,6 +38,10 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
 import { getUnitForType } from "@/lib/validations/measurement";
+import {
+  collapseToTypeDayKeys,
+  recomputeBucketsForMeasurement,
+} from "@/lib/measurements/rollups";
 
 import { hasActivityScope } from "./client";
 import {
@@ -285,6 +289,11 @@ export async function syncUserActivity(
   }
 
   let imported = 0;
+  // v1.4.39.1 — track every (type, measuredAt) we touched so the
+  // persistent rollup tier can be re-folded at the end of the sync.
+  // See sync.ts header for the full rationale; the chart's
+  // `source=rollup` fast-path otherwise misses Withings activity days.
+  const touched: Array<{ type: MeasurementType; measuredAt: Date }> = [];
   for (const entry of entries) {
     if (!entry.date) continue;
     const measuredAt = activityMeasuredAt(entry.date);
@@ -323,6 +332,7 @@ export async function syncUserActivity(
             },
           });
         }
+        touched.push({ type, measuredAt });
         imported++;
       } catch (err) {
         getEvent()?.addWarning(
@@ -330,6 +340,20 @@ export async function syncUserActivity(
         );
       }
     }
+  }
+
+  // v1.4.39.1 — refresh the persistent rollup table for every distinct
+  // (type, day) the sync touched. Collapsed so a multi-day Withings
+  // catch-up costs at most ~N (type, day) recomputes.
+  try {
+    const keys = collapseToTypeDayKeys(touched);
+    for (const k of keys) {
+      await recomputeBucketsForMeasurement(userId, k.type, k.measuredAt);
+    }
+  } catch (err) {
+    getEvent()?.addWarning(
+      `withings activity: rollup recompute failed for ${userId}: ${err}`,
+    );
   }
 
   await recordSyncSuccess(userId, "withings");

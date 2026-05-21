@@ -44,12 +44,27 @@ vi.mock("@/lib/logging/context", () => ({
   })),
 }));
 
+// v1.4.39.1 — the sleep sync now folds the persistent measurement
+// rollup tier for each touched SLEEP_DURATION day so the dashboard
+// chart's `source=rollup` fast-path sees the new segments. The mock
+// surfaces the call args for the regression test below.
+vi.mock("@/lib/measurements/rollups", async () => {
+  const actual = await vi.importActual<
+    typeof import("@/lib/measurements/rollups")
+  >("@/lib/measurements/rollups");
+  return {
+    ...actual,
+    recomputeBucketsForMeasurement: vi.fn().mockResolvedValue(undefined),
+  };
+});
+
 import { prisma } from "@/lib/db";
 import {
   parkIntegrationAtReauth,
   recordSyncFailure,
   recordSyncSuccess,
 } from "@/lib/integrations/status";
+import { recomputeBucketsForMeasurement } from "@/lib/measurements/rollups";
 
 import {
   fetchWithingsSleep,
@@ -350,5 +365,49 @@ describe("syncUserSleep — scope-skip guard (v1.4.26)", () => {
       }),
     );
     expect(parkIntegrationAtReauth).not.toHaveBeenCalled();
+  });
+});
+
+describe("syncUserSleep — measurement rollup hook (v1.4.39.1)", () => {
+  it("folds the persistent rollup table once per night the sync touched", async () => {
+    // Two distinct nights, each with multiple stage segments. The
+    // sync should collapse the per-night segments to one rollup
+    // recompute per night via `collapseToTypeDayKeys`. Pre-v1.4.39.1
+    // the rollup tier never heard about Withings sleep at all.
+    const nightA = Math.floor(Date.UTC(2026, 4, 12, 22) / 1000); // 2026-05-12 22:00 UTC
+    const nightB = Math.floor(Date.UTC(2026, 4, 13, 22) / 1000); // 2026-05-13 22:00 UTC
+    installFetchMock([
+      { startdate: nightA, enddate: nightA + 3600, state: 1, id: 1 },
+      { startdate: nightA + 3600, enddate: nightA + 5400, state: 2, id: 1 },
+      { startdate: nightA + 5400, enddate: nightA + 7200, state: 3, id: 1 },
+      { startdate: nightB, enddate: nightB + 3600, state: 1, id: 2 },
+      { startdate: nightB + 3600, enddate: nightB + 5400, state: 2, id: 2 },
+    ]);
+    vi.mocked(prisma.measurement.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.measurement.create).mockResolvedValue({} as never);
+
+    await syncUserSleep("user-1");
+
+    // Both segments of night A land in the same UTC day; night B in
+    // the next. Distinct (SLEEP_DURATION, dayStart) tuples = 2.
+    expect(recomputeBucketsForMeasurement).toHaveBeenCalledTimes(2);
+    const types = vi
+      .mocked(recomputeBucketsForMeasurement)
+      .mock.calls.map((c) => c[1]);
+    expect(new Set(types)).toEqual(new Set(["SLEEP_DURATION"]));
+  });
+
+  it("swallows a populator failure so the sync still returns its imported count", async () => {
+    installFetchMock([
+      { startdate: 1715000000, enddate: 1715003600, state: 2, id: 1 },
+    ]);
+    vi.mocked(prisma.measurement.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.measurement.create).mockResolvedValue({} as never);
+    vi.mocked(recomputeBucketsForMeasurement).mockRejectedValueOnce(
+      new Error("simulated rollup failure"),
+    );
+
+    const imported = await syncUserSleep("user-1");
+    expect(imported).toBe(1);
   });
 });

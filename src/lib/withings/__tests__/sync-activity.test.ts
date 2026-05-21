@@ -45,12 +45,27 @@ vi.mock("@/lib/logging/context", () => ({
   })),
 }));
 
+// v1.4.39.1 — the sync now hands its touched (type, day) keys to the
+// measurement rollup writer so the dashboard chart's `source=rollup`
+// fast-path sees the new buckets. The mock collects the call args so
+// the regression test below can assert the hook fired.
+vi.mock("@/lib/measurements/rollups", async () => {
+  const actual = await vi.importActual<
+    typeof import("@/lib/measurements/rollups")
+  >("@/lib/measurements/rollups");
+  return {
+    ...actual,
+    recomputeBucketsForMeasurement: vi.fn().mockResolvedValue(undefined),
+  };
+});
+
 import { prisma } from "@/lib/db";
 import {
   parkIntegrationAtReauth,
   recordSyncFailure,
   recordSyncSuccess,
 } from "@/lib/integrations/status";
+import { recomputeBucketsForMeasurement } from "@/lib/measurements/rollups";
 
 import { fetchWithingsActivity, syncUserActivity } from "../sync-activity";
 
@@ -361,5 +376,68 @@ describe("syncUserActivity — scope-skip guard (v1.4.26)", () => {
     );
     // The park helper is NOT used for the catch — only the scope-skip.
     expect(parkIntegrationAtReauth).not.toHaveBeenCalled();
+  });
+});
+
+describe("syncUserActivity — measurement rollup hook (v1.4.39.1)", () => {
+  it("folds the persistent rollup table for each (type, day) the sync touched", async () => {
+    // Two distinct calendar days × three activity metrics each = 6
+    // writes; the rollup hook should be called once per distinct
+    // `(type, dayStart)` so the dashboard chart's `source=rollup` fast-
+    // path lights up the Withings-ingested days. Pre-v1.4.39.1 the
+    // sync skipped the hook entirely, leaving the rollup tier blind to
+    // Withings activity.
+    installFetchMock([
+      { date: "2026-05-12", steps: 8420, distance: 6720, calories: 412 },
+      { date: "2026-05-13", steps: 9100, distance: 7100, calories: 430 },
+    ]);
+    vi.mocked(prisma.measurement.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.measurement.create).mockResolvedValue({} as never);
+
+    await syncUserActivity("user-1");
+
+    expect(recomputeBucketsForMeasurement).toHaveBeenCalledTimes(6);
+    const calls = vi
+      .mocked(recomputeBucketsForMeasurement)
+      .mock.calls.map((c) => ({
+        userId: c[0],
+        type: c[1],
+        measuredAtIso: (c[2] as Date).toISOString(),
+      }));
+    // Distinct (type, day) pairs the sync touched, derived from the two
+    // dates × three metrics × `collapseToTypeDayKeys`.
+    const distinct = new Set(calls.map((c) => `${c.type}|${c.measuredAtIso}`));
+    expect(distinct.size).toBe(6);
+    expect(calls.every((c) => c.userId === "user-1")).toBe(true);
+  });
+
+  it("collapses multiple writes for the same (type, day) into a single rollup recompute", async () => {
+    // A single-date entry exercises the existing day-collapse helper —
+    // three metric rows for 2026-05-12 must fold into three rollup
+    // calls (one per type), not nine.
+    installFetchMock([
+      { date: "2026-05-12", steps: 8420, distance: 6720, calories: 412 },
+    ]);
+    vi.mocked(prisma.measurement.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.measurement.create).mockResolvedValue({} as never);
+
+    await syncUserActivity("user-1");
+
+    expect(recomputeBucketsForMeasurement).toHaveBeenCalledTimes(3);
+  });
+
+  it("swallows a populator failure so the sync still returns its imported count", async () => {
+    // The rollup recompute is a best-effort cache tier — a populator
+    // hiccup must never fail the user's sync. The sync's `imported`
+    // return value should still reflect the rows written.
+    installFetchMock([{ date: "2026-05-12", steps: 8420 }]);
+    vi.mocked(prisma.measurement.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.measurement.create).mockResolvedValue({} as never);
+    vi.mocked(recomputeBucketsForMeasurement).mockRejectedValueOnce(
+      new Error("simulated rollup failure"),
+    );
+
+    const imported = await syncUserActivity("user-1");
+    expect(imported).toBe(1);
   });
 });

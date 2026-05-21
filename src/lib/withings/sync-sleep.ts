@@ -36,6 +36,10 @@ import type { MeasurementType, SleepStage } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
 import { getUnitForType } from "@/lib/validations/measurement";
+import {
+  collapseToTypeDayKeys,
+  recomputeBucketsForMeasurement,
+} from "@/lib/measurements/rollups";
 
 import { hasActivityScope } from "./client";
 import {
@@ -223,6 +227,10 @@ export async function syncUserSleep(
 
   let imported = 0;
   let segmentIndex = 0;
+  // v1.4.39.1 — track every (type, measuredAt) we touched so the
+  // persistent rollup tier can be re-folded at the end. See sync.ts for
+  // the full rationale.
+  const touched: Array<{ type: MeasurementType; measuredAt: Date }> = [];
   for (const segment of segments) {
     const stage = mapWithingsSleepState(segment.state);
     if (!stage) {
@@ -270,6 +278,7 @@ export async function syncUserSleep(
           },
         });
       }
+      touched.push({ type: SLEEP_TYPE, measuredAt });
       imported++;
     } catch (err) {
       getEvent()?.addWarning(
@@ -277,6 +286,20 @@ export async function syncUserSleep(
       );
     }
     segmentIndex++;
+  }
+
+  // v1.4.39.1 — refresh the persistent rollup table for every distinct
+  // (type, day) the sync touched. Sleep segments collapse heavily —
+  // ~10 stage rows per night land in one DAY recompute.
+  try {
+    const keys = collapseToTypeDayKeys(touched);
+    for (const k of keys) {
+      await recomputeBucketsForMeasurement(userId, k.type, k.measuredAt);
+    }
+  } catch (err) {
+    getEvent()?.addWarning(
+      `withings sleep: rollup recompute failed for ${userId}: ${err}`,
+    );
   }
 
   await recordSyncSuccess(userId, "withings");
