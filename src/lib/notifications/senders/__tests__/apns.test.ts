@@ -41,6 +41,8 @@ vi.mock("@parse/node-apn", () => {
     public payload: unknown;
     public category: string | undefined;
     public mutableContent: boolean | undefined;
+    public interruptionLevel: string | undefined;
+    public priority: number | undefined;
     constructor() {
       notificationCtorMock();
     }
@@ -464,6 +466,72 @@ describe("sendViaApns — dispatcher fan-out", () => {
     expect(note.category).toBe("MOOD_REMINDER");
     expect(note.threadId).toBe("MOOD_REMINDER");
     expect(note.payload.scheduledAt).toBe("2026-05-17T20:00:00.000Z");
+  });
+
+  it("MEDICATION_REMINDER sets interruption-level=time-sensitive + priority=10", async () => {
+    // SB-5 v1.4.40 — medication reminders are the one category the user
+    // explicitly opts into Focus-bypass for. The aps payload must carry
+    // BOTH `interruption-level: time-sensitive` AND `apns-priority: 10`
+    // per Apple's push best-practices doc; otherwise APNs may downgrade
+    // delivery and the Focus-bypass intent is silently lost.
+    vi.mocked(prisma.device.findMany).mockResolvedValueOnce([
+      { id: "d1", apnsToken: "tok-a", apnsEnvironment: "sandbox" },
+    ] as never);
+    sendMock.mockResolvedValueOnce({ sent: [{ device: "tok-a" }], failed: [] });
+    await sendViaApns("u-1", {
+      title: "Take Mounjaro",
+      message: "10mg, weekly dose",
+      eventType: "MEDICATION_REMINDER",
+    });
+    const note = sendMock.mock.calls[0][0];
+    expect(note.interruptionLevel).toBe("time-sensitive");
+    expect(note.priority).toBe(10);
+  });
+
+  it.each([
+    "MOOD_REMINDER",
+    "MEASUREMENT_ANOMALY",
+    "COMPLIANCE_LOW",
+    "WITHINGS_SYNC_FAILED",
+    "SYSTEM_ALERT",
+    "PERSONAL_RECORD",
+  ])("eventType %s does NOT set interruption-level (Focus respected)", async (eventType) => {
+    // Every non-MEDICATION_REMINDER event-type must omit the
+    // interruption-level so the system default (`active`) lets Focus
+    // modes — Sleep, Do-Not-Disturb, Personal — silence the alert as
+    // the user expects.
+    vi.mocked(prisma.device.findMany).mockResolvedValueOnce([
+      { id: "d1", apnsToken: "tok-a", apnsEnvironment: "sandbox" },
+    ] as never);
+    sendMock.mockResolvedValueOnce({ sent: [{ device: "tok-a" }], failed: [] });
+    await sendViaApns("u-1", {
+      title: "t",
+      message: "m",
+      eventType,
+    });
+    const note = sendMock.mock.calls[0][0];
+    expect(note.interruptionLevel).toBeUndefined();
+    // priority too — only opt in for time-sensitive deliveries.
+    expect(note.priority).toBeUndefined();
+  });
+
+  it("forwards explicit interruptionLevel on sendApnsPush", async () => {
+    // Lower-level entry should round-trip the explicit flag — caller
+    // controls the level when bypassing `sendViaApns`.
+    setEnv(VALID_ENV);
+    sendMock.mockResolvedValueOnce({ sent: [{ device: "abc" }], failed: [] });
+    await sendApnsPush({
+      deviceToken: "abc",
+      environment: "sandbox",
+      payload: {
+        alert: { title: "t", body: "b" },
+        interruptionLevel: "time-sensitive",
+        priority: 10,
+      },
+    });
+    const note = sendMock.mock.calls[0][0];
+    expect(note.interruptionLevel).toBe("time-sensitive");
+    expect(note.priority).toBe(10);
   });
 
   it("forwards explicit category override on sendApnsPush", async () => {

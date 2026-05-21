@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { queryKeys } from "@/lib/query-keys";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -541,8 +542,12 @@ export function HealthChart({
   }, [rangePoints, effectiveCompareBaseline]);
 
   const { data, isLoading } = useQuery({
-    queryKey: [
-      "chart-data",
+    // v1.4.40 W-RSC — route the chart-data key through `queryKeys.chartData`
+    // so the `["chart-data"]` prefix lands in `measurementDependentKeys`
+    // and a fresh measurement evicts every per-chart daily cache in one
+    // pass (audit C2). The factory-packed tuple is byte-identical with
+    // the pre-v1.4.40 inline literal so the cache layout stays stable.
+    queryKey: queryKeys.chartData(
       types.join(","),
       valueMode,
       bmiDivisor ?? "no-bmi",
@@ -555,7 +560,7 @@ export function HealthChart({
       // re-running the unbounded walk.
       fetchWindow.from,
       fetchWindow.to,
-    ],
+    ),
     // v1.4.28 FB-D2 — cache the bounded window for a minute so tab
     // navigation between insights sub-pages does not re-fire every
     // chart's fetch. `gcTime` keeps the inactive cache for five

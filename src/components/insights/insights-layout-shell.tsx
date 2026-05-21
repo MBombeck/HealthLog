@@ -9,6 +9,7 @@ import { useWorkouts } from "@/hooks/use-workouts";
 import { InsightsTabStrip } from "@/components/insights/insights-tab-strip";
 import { useInsightsAdvisorQuery } from "@/components/insights/use-insights-advisor";
 import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
+import { queryKeys } from "@/lib/query-keys";
 import type { InsightInputs } from "@/lib/insights/metric-availability";
 
 /**
@@ -66,7 +67,7 @@ export function InsightsLayoutShell({ children }: { children: ReactNode }) {
   // event-driven gating branches. Sub-pages read the same key so the
   // payload lands once per route.
   const comprehensiveQuery = useQuery({
-    queryKey: ["insights", "comprehensive"],
+    queryKey: queryKeys.insightsComprehensive(),
     queryFn: async () => {
       const res = await fetch("/api/insights/comprehensive");
       if (!res.ok) throw new Error("Failed");

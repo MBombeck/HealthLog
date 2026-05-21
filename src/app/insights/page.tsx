@@ -6,6 +6,7 @@ import Link from "next/link";
 import { TrendingUp } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
+import { queryKeys } from "@/lib/query-keys";
 import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { useScrollResetOnRoute } from "@/hooks/use-scroll-reset-on-route";
 import { useTranslations } from "@/lib/i18n/context";
@@ -168,7 +169,7 @@ export default function InsightsPage() {
   // reported zero measurements; while it's in-flight the page paints
   // the regular shell and the tiles fill in as their data lands.
   const { data, isLoading, isFetched } = useQuery({
-    queryKey: ["insights", "comprehensive"],
+    queryKey: queryKeys.insightsComprehensive(),
     queryFn: async () => {
       const res = await fetch("/api/insights/comprehensive");
       if (!res.ok) throw new Error(t("insights.loadError"));

@@ -11,7 +11,24 @@ import type { QueryClient, QueryKey } from "@tanstack/react-query";
 
 export const queryKeys = {
   auth: () => ["auth"] as const,
+  /**
+   * v1.4.40 W-RSC — the `useAuth` hook's `["auth", "me"]` shape was a
+   * recurring source of factory drift (audit H1 — "`useAuth` uses
+   * `["auth", "me"]` but `queryKeys.auth()` returns `["auth"]`"). Both
+   * shapes share the `["auth"]` prefix so existing prefix-invalidations
+   * still match, but the centralised name makes the call site
+   * obviously factory-routed.
+   */
+  authMe: () => ["auth", "me"] as const,
   authRegistrationStatus: () => ["auth", "registration-status"] as const,
+  /**
+   * v1.4.40 W-RSC — Settings → AI surfaces and the targets editor
+   * subscribe to the user-thresholds API. Centralise the key so a
+   * future rename (e.g. `["user","limits"]`) doesn't drift across the
+   * three call sites (settings/thresholds-editor-section,
+   * settings/ai-section, targets/target-edit-sheet).
+   */
+  userThresholds: () => ["user", "thresholds"] as const,
 
   measurements: () => ["measurements"] as const,
   moodEntries: () => ["mood-entries"] as const,
@@ -56,6 +73,18 @@ export const queryKeys = {
   medicationDetail: (id: string) => ["medications", id] as const,
   medicationComplianceChart: (medicationId: string) =>
     ["compliance-chart-inline", medicationId] as const,
+  /**
+   * v1.4.40 W-RSC — the dashboard-level compliance chart (aggregate
+   * across every scheduled medication) was a bare `["medication-
+   * compliance-chart", days]` key; route it through the factory so
+   * `medicationDependentKeys` invalidates it on intake-mutation just
+   * like the per-medication compliance-chart-inline tile. `days` is the
+   * range (7 / 30 / 90); kept as the only param so the prefix
+   * `["dashboard-medication-compliance"]` invalidates every range at
+   * once.
+   */
+  dashboardMedicationCompliance: (days: number) =>
+    ["dashboard-medication-compliance", days] as const,
   medicationPhaseConfig: (medicationId: string) =>
     ["phase-config", medicationId] as const,
   medicationIntakeSummary: () => ["medications", "intake-summary"] as const,
@@ -107,11 +136,51 @@ export const queryKeys = {
    * immediately.
    */
   sourcePriority: () => ["auth", "source-priority"] as const,
+
+  /**
+   * v1.4.40 W-RSC — per-chart daily-aggregate fetch from the dashboard
+   * + insights chart row. Pre-fix the key was bare `["chart-data", …]`
+   * across the codebase, which excluded it from
+   * `measurementDependentKeys` and left chart caches stale for up to
+   * 60 s after a measurement save (audit-C2). Routing through the
+   * factory pulls every variant under a single
+   * `["chart-data"]` invalidation prefix so a mutation refreshes the
+   * tile strip + the chart row in lockstep.
+   *
+   * The shape carries the heavy parameter list because the chart query
+   * is bounded by metric set, value mode, BMI divisor, timezone, and
+   * fetch window; the factory packs those into a single tuple to keep
+   * the cache layout byte-identical with the pre-v1.4.40 layout.
+   */
+  chartData: (
+    types: string,
+    valueMode: string,
+    bmiDivisor: string | number,
+    timezone: string,
+    fromIso: string,
+    toIso: string,
+  ) =>
+    [
+      "chart-data",
+      types,
+      valueMode,
+      bmiDivisor,
+      timezone,
+      fromIso,
+      toIso,
+    ] as const,
 };
 
 /**
  * Keys that should be invalidated when a measurement is created, updated or
  * deleted. Kept here so dashboards, insights, and targets always stay in sync.
+ *
+ * v1.4.40 W-RSC — `["chart-data"]` prefix now lives in the bundle so a
+ * fresh measurement evicts every per-chart daily-aggregate cache. The
+ * prefix matches every key returned from `queryKeys.chartData(…)` via
+ * TanStack's hierarchical-prefix semantics — adding a measurement now
+ * refreshes the tile strip *and* the chart row in lockstep instead of
+ * leaving the chart row 60 s stale (audit C2).
  */
 export const measurementDependentKeys = [
   queryKeys.measurements(),
@@ -119,6 +188,7 @@ export const measurementDependentKeys = [
   queryKeys.insightsRoot(),
   queryKeys.insightsTargets(),
   queryKeys.gamificationAchievements(),
+  ["chart-data"] as const,
 ];
 
 /**
@@ -135,6 +205,12 @@ export const moodDependentKeys = [
 
 /**
  * Keys invalidated when medications change (CRUD or intake).
+ *
+ * v1.4.40 W-RSC — the dashboard's aggregate compliance chart now
+ * rides the factory under `dashboardMedicationCompliance`. The prefix
+ * `["dashboard-medication-compliance"]` lands in the bundle so an
+ * intake POST refreshes the chart immediately rather than waiting for
+ * `staleTime` (audit L4).
  */
 export const medicationDependentKeys = [
   queryKeys.medications(),
@@ -143,6 +219,7 @@ export const medicationDependentKeys = [
   queryKeys.insightsTargets(),
   queryKeys.medicationIntakeSummary(),
   queryKeys.gamificationAchievements(),
+  ["dashboard-medication-compliance"] as const,
 ];
 
 /**

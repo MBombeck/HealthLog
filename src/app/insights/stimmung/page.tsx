@@ -7,6 +7,7 @@ import { Smile } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useInsightStatus } from "@/hooks/use-insight-status";
+import { queryKeys } from "@/lib/query-keys";
 import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
 import { Button } from "@/components/ui/button";
@@ -48,7 +49,7 @@ export default function InsightsStimmungPage() {
   // Reuse the mother-page comprehensive query — TanStack Query
   // dedups so this is a free cache read for the common case.
   const { data: comprehensive } = useQuery({
-    queryKey: ["insights", "comprehensive"],
+    queryKey: queryKeys.insightsComprehensive(),
     queryFn: async () => {
       const res = await fetch("/api/insights/comprehensive");
       if (!res.ok) throw new Error("Failed");

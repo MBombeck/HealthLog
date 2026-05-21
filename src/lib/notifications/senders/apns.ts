@@ -59,6 +59,26 @@ export interface ApnsPayload {
    * roundtrip.
    */
   mutableContent?: boolean;
+  /**
+   * APNs `aps.interruption-level` (iOS 15+). Controls whether the alert
+   * bypasses Focus modes:
+   *  - `passive`        — silent, no banner; lives in Notification Center.
+   *  - `active`         — default; banner + sound; honours Focus.
+   *  - `time-sensitive` — breaks through Focus modes (per-app opt-in by
+   *    the user on iOS); used for things the user explicitly asked to be
+   *    interrupted for. **Restricted to MEDICATION_REMINDER** in the
+   *    dispatcher; other categories must NOT bypass Focus.
+   *  - `critical`       — entitlement-gated, ignores DND completely; not
+   *    used by HealthLog.
+   * Omit for the iOS default (`active`).
+   */
+  interruptionLevel?: "passive" | "active" | "time-sensitive" | "critical";
+  /**
+   * APNs `apns-priority` header. `10` = immediate delivery (required for
+   * time-sensitive interruption-level per Apple's push best-practices),
+   * `5` = power-conserving. Omit to let node-apn default to `10`.
+   */
+  priority?: 5 | 10;
 }
 
 export interface ApnsSendInput {
@@ -269,6 +289,30 @@ export async function sendApnsPush(
     // unlocks the iOS Notification Service Extension hook.
     note.mutableContent = true;
   }
+  if (input.payload.interruptionLevel) {
+    // node-apn's `interruptionLevel` setter writes through to
+    // `aps.interruption-level`. iOS 15+ reads it to decide whether the
+    // alert breaks through Focus modes — `time-sensitive` is the level
+    // that does so, gated on a per-app toggle the user grants on
+    // install. Older iOS versions ignore the key, so this is safe to
+    // send unconditionally.
+    //
+    // The cast mirrors the `category` setter above — node-apn 8.1's
+    // d.ts omits the public setter (the runtime setter on
+    // `apsProperties.js` writes the value through to
+    // `aps.interruption-level` unchanged), so we assign via a typed
+    // cast rather than poking `note.aps` directly. Forward-compatible
+    // with future d.ts fixes.
+    (note as unknown as { interruptionLevel: string }).interruptionLevel =
+      input.payload.interruptionLevel;
+  }
+  if (typeof input.payload.priority === "number") {
+    // node-apn writes this through to the `apns-priority` HTTP header.
+    // Apple's push best-practices doc requires priority 10 alongside
+    // `time-sensitive` interruption-level — otherwise APNs may downgrade
+    // delivery and the Focus-bypass intent is lost.
+    note.priority = input.payload.priority;
+  }
   if (input.collapseId) {
     note.collapseId = input.collapseId;
   }
@@ -386,6 +430,14 @@ export async function sendViaApns(
     const env =
       device.apnsEnvironment === "production" ? "production" : "sandbox";
 
+    // SB-5 v1.4.40 — only MEDICATION_REMINDER opts in to Focus-bypass.
+    // The user explicitly asked the server to nudge them about a dose;
+    // a missed dose is the textbook "time-sensitive" use case Apple
+    // sanctions. Every other event-type (mood nudges, anomaly alerts,
+    // PRs, system messages) must stay on the default `active` level so
+    // Focus modes — including Sleep — silence them as the user expects.
+    const isTimeSensitive = payload.eventType === "MEDICATION_REMINDER";
+
     const result = await sendApnsPush({
       deviceToken: device.apnsToken,
       environment: env,
@@ -407,6 +459,12 @@ export async function sendViaApns(
         // no-op on today's binary but unblocks NSE work without a
         // server-side change.
         mutableContent: true,
+        ...(isTimeSensitive
+          ? {
+              interruptionLevel: "time-sensitive" as const,
+              priority: 10 as const,
+            }
+          : {}),
       },
       collapseId: payload.eventType,
     });

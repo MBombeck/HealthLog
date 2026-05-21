@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { queryKeys } from "@/lib/query-keys";
 
 export interface AuthUser {
   id: string;
@@ -33,7 +34,11 @@ async function fetchMe(): Promise<AuthUser> {
 
 export function useAuth() {
   const query = useQuery({
-    queryKey: ["auth", "me"],
+    // v1.4.40 W-RSC — factory-routed to `queryKeys.authMe()`. Pre-fix
+    // the literal `["auth", "me"]` was the canonical example in
+    // audit-H1 of factory drift. The prefix `["auth"]` still matches
+    // `queryKeys.auth()` invalidations.
+    queryKey: queryKeys.authMe(),
     queryFn: fetchMe,
     retry: false,
     staleTime: 5 * 60 * 1000,
@@ -57,8 +62,8 @@ export function useLogout() {
       await fetch("/api/auth/logout", { method: "POST" });
     },
     onSuccess: () => {
-      queryClient.setQueryData(["auth", "me"], null);
-      queryClient.invalidateQueries({ queryKey: ["auth"] });
+      queryClient.setQueryData(queryKeys.authMe(), null);
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth() });
       router.push("/auth/login");
     },
   });

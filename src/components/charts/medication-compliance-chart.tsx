@@ -34,6 +34,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { queryKeys } from "@/lib/query-keys";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -226,8 +227,12 @@ export function MedicationComplianceChart({
   // room of the weight / BMI charts.
   const viewportWidth = useViewportWidth();
 
+  // v1.4.40 W-RSC — factory-routed key so the prefix
+  // `["dashboard-medication-compliance"]` lands in
+  // `medicationDependentKeys` and an intake POST refreshes the chart
+  // immediately rather than waiting for `staleTime` (audit L4).
   const { data, isLoading } = useQuery({
-    queryKey: ["medication-compliance-chart", days],
+    queryKey: queryKeys.dashboardMedicationCompliance(days),
     queryFn: async (): Promise<DailyCompliancePoint[]> => {
       const res = await fetch(
         `/api/medications/intake?scope=compliance&days=${days}`,

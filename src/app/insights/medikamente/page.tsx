@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Loader2, Pill } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
+import { queryKeys } from "@/lib/query-keys";
 import { useTranslations } from "@/lib/i18n/context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,7 +77,7 @@ export default function InsightsMedikamentePage() {
   const { t, locale } = useTranslations();
 
   const { data: comprehensive, isLoading: isComprehensiveLoading } = useQuery({
-    queryKey: ["insights", "comprehensive"],
+    queryKey: queryKeys.insightsComprehensive(),
     queryFn: async () => {
       const res = await fetch("/api/insights/comprehensive");
       if (!res.ok) throw new Error("Failed");
@@ -87,7 +88,7 @@ export default function InsightsMedikamentePage() {
   });
 
   const { data: status, isLoading: isStatusLoading } = useQuery({
-    queryKey: ["insights", "medication-compliance-status", locale],
+    queryKey: queryKeys.insightsMedicationComplianceStatus(locale),
     queryFn: async () => {
       const res = await fetch(
         `/api/insights/medication-compliance-status?locale=${locale}`,
@@ -261,7 +262,7 @@ function MedicationComplianceCalendar({
 }) {
   const { t } = useTranslations();
   const { data, isLoading } = useQuery({
-    queryKey: ["compliance-chart-inline", medicationId],
+    queryKey: queryKeys.medicationComplianceChart(medicationId),
     queryFn: async () => {
       const res = await fetch(`/api/medications/${medicationId}/compliance`);
       if (!res.ok) return null;
