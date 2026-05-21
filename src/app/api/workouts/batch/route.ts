@@ -68,7 +68,8 @@ import {
   createBatchWorkoutSchema,
   MAX_WORKOUTS_PER_BATCH,
 } from "@/lib/validations/workout";
-import { Prisma } from "@/generated/prisma/client";
+import { pickCanonicalWorkoutRows } from "@/lib/workouts/canonical-rows";
+import { Prisma, type MeasurementSource } from "@/generated/prisma/client";
 
 // v1.4.25 W16c — push-suppression threshold for workout PRs. A batch
 // larger than this fires the detection job with `silent: true` so a
@@ -254,11 +255,56 @@ async function postBatch(request: NextRequest): Promise<Response> {
     };
   });
 
+  // v1.4.42 W5 — write-time cross-source dedup. The v1.5 iOS app
+  // drains a HealthKit observer queue that frequently carries the
+  // SAME logical workout from two paired sensors (Apple Watch +
+  // Withings ScanWatch). Without this pass, both rows persist (their
+  // `externalId`s differ → the `(userId, source, externalId)` unique
+  // index never fires) and the read-time canonical-picker has to
+  // carry the duplicate forward on every dashboard render.
+  //
+  // The helper is pure (no Prisma, no user lookups). It groups by
+  // `(userId, activityType, startedAt ± 90 s)`, prefers the canonical
+  // source ladder (APPLE_HEALTH > WITHINGS > MANUAL > IMPORT), and
+  // breaks ties on calories > earliest createdAt > input order. Rows
+  // dropped here surface to the iOS client as `duplicate` so the
+  // sync cursor advances past them identically to the externalId
+  // case below.
+  const canonicalPrepared = pickCanonicalWorkoutRows(
+    prepared.map((p) => ({
+      userId: p.row.userId,
+      activityType: p.row.sportType,
+      startedAt: p.row.startedAt as Date,
+      // Zod's `measurementSourceEnum.optional().default("MANUAL")`
+      // guarantees `source` is set post-parse, but Prisma's
+      // `WorkoutCreateManyInput` types it optional. Default through
+      // the same fallback the validator uses so the picker's source
+      // ladder still resolves on the rare row where TypeScript
+      // can't prove the union.
+      source: (p.row.source ?? "MANUAL") as MeasurementSource,
+      caloriesKcal: p.row.totalEnergyKcal ?? null,
+      // No createdAt yet — the row is pre-insert; the tie-breaker
+      // falls through to input order via the `index` field below.
+      index: p.index,
+    })),
+  );
+  const survivingIndices = new Set(canonicalPrepared.map((r) => r.index ?? -1));
+  const droppedByWriteDedup: number[] = [];
+  for (const p of prepared) {
+    if (!survivingIndices.has(p.index)) {
+      results[p.index] = { index: p.index, status: "duplicate" };
+      droppedByWriteDedup.push(p.index);
+    }
+  }
+  const survivors = prepared.filter((p) => survivingIndices.has(p.index));
+  let duplicateCount = droppedByWriteDedup.length;
   let insertedCount = 0;
-  let duplicateCount = 0;
 
-  if (prepared.length > 0) {
-    const dedupCandidates = prepared
+  if (survivors.length > 0) {
+    // v1.4.42 W5 — only the write-time dedup survivors are probed
+    // against existing rows; the dropped twins already carry a
+    // `duplicate` status and never reach the DB.
+    const dedupCandidates = survivors
       .map((p) => p.dedupKey)
       .filter((k): k is { source: string; externalId: string } => k !== null);
 
@@ -280,7 +326,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
     );
 
     const toInsert: Prepared[] = [];
-    for (const p of prepared) {
+    for (const p of survivors) {
       const keyTuple = p.dedupKey
         ? `${p.dedupKey.source}::${p.dedupKey.externalId}`
         : null;
@@ -461,7 +507,10 @@ async function postBatch(request: NextRequest): Promise<Response> {
       const racedDuplicates = toInsert.length - insertedCount;
       if (racedDuplicates > 0) {
         let downgraded = 0;
-        for (const p of prepared) {
+        // v1.4.42 W5 — walk `survivors` (not `prepared`) so the
+        // already-downgraded-by-write-dedup losers don't get
+        // double-counted toward the race-reconcile budget.
+        for (const p of survivors) {
           if (downgraded >= racedDuplicates) break;
           if (results[p.index]?.status === "inserted") {
             results[p.index] = { index: p.index, status: "duplicate" };

@@ -225,8 +225,17 @@ describe("POST /api/workouts/batch — per-entry status envelope", () => {
     const res = await POST(
       makeRequest({
         workouts: [
+          // Two distinct runs separated by 2 h so the v1.4.42 W5
+          // write-time canonical-row picker treats them as separate
+          // workouts. Without the spacing the picker would collapse
+          // them to one survivor (same userId + sportType + startedAt
+          // inside the 90 s dedup window) and the envelope-count
+          // assertion would mask the per-entry status pin.
           validWorkout("uuid-fresh-1"),
-          validWorkout("uuid-fresh-2"),
+          validWorkout("uuid-fresh-2", {
+            startedAt: "2026-05-14T08:30:00.000Z",
+            endedAt: "2026-05-14T09:15:00.000Z",
+          }),
         ],
       }),
     );
@@ -253,8 +262,14 @@ describe("POST /api/workouts/batch — per-entry status envelope", () => {
     const res = await POST(
       makeRequest({
         workouts: [
+          // Same spacing rationale as the prior test — keep the two
+          // entries' `startedAt` outside the W5 dedup window so the
+          // pre-`createMany` pass doesn't collapse them.
           validWorkout("uuid-existing"),
-          validWorkout("uuid-fresh"),
+          validWorkout("uuid-fresh", {
+            startedAt: "2026-05-14T08:30:00.000Z",
+            endedAt: "2026-05-14T09:15:00.000Z",
+          }),
         ],
       }),
     );
@@ -284,8 +299,15 @@ describe("POST /api/workouts/batch — per-entry status envelope", () => {
     const res = await POST(
       makeRequest({
         workouts: [
+          // Same spacing rationale as the per-entry tests — keep both
+          // entries outside the W5 dedup window so the race-reconcile
+          // contract is exercised directly without the write-time
+          // canonical-picker absorbing one of the rows first.
           validWorkout("uuid-race-1"),
-          validWorkout("uuid-race-2"),
+          validWorkout("uuid-race-2", {
+            startedAt: "2026-05-14T08:30:00.000Z",
+            endedAt: "2026-05-14T09:15:00.000Z",
+          }),
         ],
       }),
     );
