@@ -68,7 +68,7 @@ import {
   createBatchWorkoutSchema,
   MAX_WORKOUTS_PER_BATCH,
 } from "@/lib/validations/workout";
-import { pickCanonicalWorkoutRows } from "@/lib/workouts/canonical-rows";
+import { dedupeWorkoutBatch } from "@/lib/workouts/canonical-rows";
 import { Prisma, type MeasurementSource } from "@/generated/prisma/client";
 
 // v1.4.25 W16c — push-suppression threshold for workout PRs. A batch
@@ -270,7 +270,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
   // dropped here surface to the iOS client as `duplicate` so the
   // sync cursor advances past them identically to the externalId
   // case below.
-  const canonicalPrepared = pickCanonicalWorkoutRows(
+  const canonicalPrepared = dedupeWorkoutBatch(
     prepared.map((p) => ({
       userId: p.row.userId,
       activityType: p.row.sportType,

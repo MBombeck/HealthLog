@@ -12,7 +12,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  pickCanonicalWorkoutRows,
+  dedupeWorkoutBatch,
   WORKOUT_DEDUP_WINDOW_MS,
   type WorkoutRow,
 } from "../canonical-rows";
@@ -37,9 +37,9 @@ function row(partial: Partial<TestRow> & { id: string }): TestRow {
   };
 }
 
-describe("pickCanonicalWorkoutRows", () => {
+describe("dedupeWorkoutBatch", () => {
   it("returns an empty array on empty input", () => {
-    expect(pickCanonicalWorkoutRows([])).toEqual([]);
+    expect(dedupeWorkoutBatch([])).toEqual([]);
   });
 
   it("collapses exact duplicates from the same source", () => {
@@ -61,7 +61,7 @@ describe("pickCanonicalWorkoutRows", () => {
       createdAt: new Date("2026-05-21T08:31:00Z"),
     });
 
-    const out = pickCanonicalWorkoutRows([a, b]);
+    const out = dedupeWorkoutBatch([a, b]);
     expect(out).toHaveLength(1);
     // Same calories → earliest createdAt wins (`a`).
     expect(out[0]!.id).toBe("a");
@@ -85,7 +85,7 @@ describe("pickCanonicalWorkoutRows", () => {
       caloriesKcal: 500,
     });
 
-    const out = pickCanonicalWorkoutRows([apple, withings]);
+    const out = dedupeWorkoutBatch([apple, withings]);
     expect(out).toHaveLength(1);
     // Source-axis wins outright — APPLE_HEALTH beats WITHINGS even
     // when WITHINGS has higher calories. The calories tie-break only
@@ -106,7 +106,7 @@ describe("pickCanonicalWorkoutRows", () => {
       startedAt: new Date("2026-05-21T08:10:00Z"),
     });
 
-    const out = pickCanonicalWorkoutRows([first, second]);
+    const out = dedupeWorkoutBatch([first, second]);
     expect(out.map((r) => r.id)).toEqual(["first", "second"]);
   });
 
@@ -125,7 +125,7 @@ describe("pickCanonicalWorkoutRows", () => {
       startedAt: new Date("2026-05-21T08:00:00Z"),
     });
 
-    const out = pickCanonicalWorkoutRows([u1, u2]);
+    const out = dedupeWorkoutBatch([u1, u2]);
     expect(out.map((r) => r.id).sort()).toEqual(["u1", "u2"]);
   });
 
@@ -144,7 +144,7 @@ describe("pickCanonicalWorkoutRows", () => {
       startedAt: new Date("2026-05-21T08:00:00Z"),
     });
 
-    const out = pickCanonicalWorkoutRows([walk, strength]);
+    const out = dedupeWorkoutBatch([walk, strength]);
     expect(out.map((r) => r.id).sort()).toEqual(["strength", "walk"]);
   });
 
@@ -173,12 +173,12 @@ describe("pickCanonicalWorkoutRows", () => {
     });
 
     // Pair 1: hi vs lo → hi wins on calories.
-    expect(pickCanonicalWorkoutRows([lo, hi]).map((r) => r.id)).toEqual(["hi"]);
+    expect(dedupeWorkoutBatch([lo, hi]).map((r) => r.id)).toEqual(["hi"]);
 
     // Pair 2: hi vs lo-early → hi STILL wins because calories trump
     // createdAt.
     expect(
-      pickCanonicalWorkoutRows([loWithEarlierCreated, hi]).map((r) => r.id),
+      dedupeWorkoutBatch([loWithEarlierCreated, hi]).map((r) => r.id),
     ).toEqual(["hi"]);
   });
 
@@ -198,7 +198,7 @@ describe("pickCanonicalWorkoutRows", () => {
       createdAt: new Date("2026-05-21T08:45:00Z"),
     });
 
-    expect(pickCanonicalWorkoutRows([late, early]).map((r) => r.id)).toEqual([
+    expect(dedupeWorkoutBatch([late, early]).map((r) => r.id)).toEqual([
       "early",
     ]);
   });
@@ -211,13 +211,13 @@ describe("pickCanonicalWorkoutRows", () => {
     const first = row({ id: "first", source: "MANUAL" });
     const second = row({ id: "second", source: "MANUAL" });
 
-    expect(pickCanonicalWorkoutRows([first, second]).map((r) => r.id)).toEqual([
+    expect(dedupeWorkoutBatch([first, second]).map((r) => r.id)).toEqual([
       "first",
     ]);
     // Reversed input → reversed survivor. Confirms the tie-breaker
     // genuinely consults input order rather than a hidden field
     // (e.g. `id` lexicographic).
-    expect(pickCanonicalWorkoutRows([second, first]).map((r) => r.id)).toEqual([
+    expect(dedupeWorkoutBatch([second, first]).map((r) => r.id)).toEqual([
       "second",
     ]);
   });
@@ -247,12 +247,12 @@ describe("pickCanonicalWorkoutRows", () => {
 
     // anchor + onBoundary → one group; APPLE_HEALTH wins.
     expect(
-      pickCanonicalWorkoutRows([anchor, onBoundary]).map((r) => r.id),
+      dedupeWorkoutBatch([anchor, onBoundary]).map((r) => r.id),
     ).toEqual(["anchor"]);
 
     // anchor + justOutside → two distinct groups, both survive.
     expect(
-      pickCanonicalWorkoutRows([anchor, justOutside]).map((r) => r.id),
+      dedupeWorkoutBatch([anchor, justOutside]).map((r) => r.id),
     ).toEqual(["anchor", "outside"]);
   });
 
@@ -275,7 +275,7 @@ describe("pickCanonicalWorkoutRows", () => {
       }),
     );
 
-    expect(pickCanonicalWorkoutRows(rows).map((r) => r.id)).toEqual([
+    expect(dedupeWorkoutBatch(rows).map((r) => r.id)).toEqual([
       "APPLE_HEALTH",
     ]);
   });
@@ -287,7 +287,7 @@ describe("pickCanonicalWorkoutRows", () => {
     const a = row({ id: "a", source: "APPLE_HEALTH", caloriesKcal: 100 });
     const b = row({ id: "b", source: "WITHINGS", caloriesKcal: 100 });
     const before = JSON.stringify([a, b]);
-    pickCanonicalWorkoutRows([a, b]);
+    dedupeWorkoutBatch([a, b]);
     expect(JSON.stringify([a, b])).toBe(before);
   });
 });

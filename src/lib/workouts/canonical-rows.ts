@@ -14,8 +14,12 @@
  *     filters the read result so the dashboard tile shows one row per
  *     logical workout.
  *
- *   - This helper (v1.4.42) — WRITE-time picker invoked by
- *     `POST /api/workouts/batch` BEFORE `prisma.workout.createMany`.
+ *   - This helper (`dedupeWorkoutBatch`, v1.4.42) — WRITE-time picker
+ *     invoked by `POST /api/workouts/batch` BEFORE
+ *     `prisma.workout.createMany`. The name intentionally diverges
+ *     from the read-time picker to make the auto-completion path
+ *     unambiguous (write-time payload-internal dedup vs. read-time
+ *     cross-batch dedup with user-priority resolution).
  *     The v1.5 iOS sprint will ingest `HKWorkoutType` data in batches
  *     against `/api/workouts/batch`; Apple Watch + Withings ScanWatch
  *     paired to the same iPhone frequently capture the same workout
@@ -189,7 +193,7 @@ function compareCandidates<T extends WorkoutRow>(a: T, b: T): number {
  * within-window-of-neighbour rows. This is O(n²) worst case but
  * a typical batch is ≤ 100 entries so the constant is fine.
  */
-export function pickCanonicalWorkoutRows<T extends WorkoutRow>(
+export function dedupeWorkoutBatch<T extends WorkoutRow>(
   rows: readonly T[],
 ): T[] {
   if (rows.length === 0) return [];
