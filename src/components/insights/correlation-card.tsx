@@ -31,7 +31,12 @@ const ScatterCorrelationChart = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="bg-muted/40 h-[180px] w-full animate-pulse rounded-md motion-reduce:animate-none" />
+      // v1.4.43 W11 — mirror the loaded chart's responsive aspect-
+      // ratio classes (`scatter-correlation-chart.tsx:100`) so the
+      // skeleton reserves the same space across breakpoints. The
+      // legacy `h-[180px]` was ~60 px shorter than the painted chart
+      // at `sm+` and caused a visible CLS shift on insights mount.
+      <div className="bg-muted/40 aspect-square min-h-[180px] w-full animate-pulse rounded-md motion-reduce:animate-none sm:aspect-[3/2] sm:h-auto" />
     ),
   },
 );
