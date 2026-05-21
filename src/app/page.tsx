@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { Suspense, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -47,6 +47,16 @@ import { GettingStartedChecklist } from "@/components/onboarding/getting-started
 import { TourLauncher } from "@/components/onboarding/tour-launcher";
 import { RecentAchievementsCard } from "@/components/gamification/recent-achievements-card";
 import { RecentWorkoutsTile } from "@/components/dashboard/recent-workouts-tile";
+
+// v1.4.40 W-RSC — module-scope so the option object is stable across
+// renders (audit-M2). Pre-fix the same literal was declared inside the
+// component body, so every render created a fresh `{}` reference;
+// TanStack does a shallow compare and shrugs at the equivalent values,
+// but the slot is one future-callback-field away from cache poisoning.
+const DASHBOARD_QUERY_OPTS = {
+  staleTime: 60_000,
+  refetchOnWindowFocus: false,
+} as const;
 
 const MoodChart = dynamic(
   () =>
@@ -218,10 +228,9 @@ export default function DashboardPage() {
   // storm. None of these are real-time data; minute-scale staleness
   // is fine and the dashboard's chart queries already match this
   // cadence.
-  const DASHBOARD_QUERY_OPTS = {
-    staleTime: 60_000,
-    refetchOnWindowFocus: false,
-  } as const;
+  //
+  // v1.4.40 W-RSC — `DASHBOARD_QUERY_OPTS` hoisted to module scope
+  // (audit-M2 — stable reference across renders).
 
   // v1.4.39.2 — split the dashboard's analytics consumption so the
   // tile-strip paints from the slim slice and the BD-Zielbereich +
@@ -559,7 +568,15 @@ export default function DashboardPage() {
       upperBound: 55,
     },
   );
-  const hour = user?.timezone ? getHourForTimeZone(user.timezone) : null;
+  // v1.4.40 W-RSC — memoise the per-render `Intl.DateTimeFormat`
+  // instantiation (audit-H4). The greeting derived from the hour only
+  // changes when the user's timezone changes; recomputing it every
+  // render churned the parts-array and walked the format ICU twice per
+  // render across a 1 400-line component body.
+  const hour = useMemo(
+    () => (user?.timezone ? getHourForTimeZone(user.timezone) : null),
+    [user?.timezone],
+  );
   const timeGreeting =
     hour == null
       ? t("dashboard.greeting.day")
@@ -1421,14 +1438,51 @@ export default function DashboardPage() {
               >
                 {trendCards.map((entry) => (
                   <div key={entry.id} className="flex min-w-0">
-                    {entry.node}
+                    {/*
+                     * v1.4.40 W-RSC — per-tile `<Suspense>` boundary.
+                     * The tile body is synchronous today (every tile
+                     * reads from the merged `data` memo which already
+                     * gates on the slim/thick analytics queries on the
+                     * parent), so this fallback never paints in the
+                     * current composition. The structural boundary
+                     * matches the chart-row layer below so the entire
+                     * dashboard composition reads as a streaming-ready
+                     * grid of independently suspending cells — and
+                     * future RSC hoists of any tile slot won't need a
+                     * second pass to add the fallback infrastructure.
+                     */}
+                    <Suspense fallback={null}>{entry.node}</Suspense>
                   </div>
                 ))}
               </div>
             )}
             {charts.map((entry) => (
               <div key={entry.id} className="space-y-2">
-                {entry.node}
+                {/*
+                 * v1.4.40 W-RSC — per-tile `<Suspense>` boundary so each
+                 * chart paints independently rather than the row blocking
+                 * on the slowest fetch (audit-H2 + brief C1). The
+                 * `next/dynamic({ ssr: false })` lazy-load contract on
+                 * `HealthChartDynamic` / `MoodChart` /
+                 * `MedicationComplianceChart` already paints a
+                 * `<ChartSkeleton>` while the JS chunk is in flight; this
+                 * Suspense layer lifts the same skeleton to a streaming-
+                 * compatible boundary so a future migration to
+                 * `useSuspenseQuery` (when we replace the per-chart
+                 * `["chart-data", …]` fetches with the slim-analytics-
+                 * derived store) automatically buckets each chart's
+                 * loading state to its own cell, with no further
+                 * call-site changes.
+                 *
+                 * Today, the boundary is a structural no-op for the
+                 * dynamic-loaded charts because their loading skeleton
+                 * lives inside the dynamic factory. The benefit is
+                 * future-proofing the composition: any descendant that
+                 * later suspends (e.g. an RSC migration of a static
+                 * legend, or a server-streamed sparkline) gets its own
+                 * fallback without re-architecting the row.
+                 */}
+                <Suspense fallback={<ChartSkeleton />}>{entry.node}</Suspense>
                 {entry.count != null ? <TrendHint count={entry.count} /> : null}
               </div>
             ))}
