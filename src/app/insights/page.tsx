@@ -40,7 +40,7 @@ const DailyBriefing = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="bg-card border-border h-48 animate-pulse rounded-xl border" />
+      <div className="bg-card border-border h-[24rem] animate-pulse rounded-xl border motion-reduce:animate-none" />
     ),
   },
 );
@@ -52,7 +52,7 @@ const CorrelationRow = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="bg-card border-border h-32 animate-pulse rounded-xl border" />
+      <div className="bg-card border-border h-[20rem] animate-pulse rounded-xl border motion-reduce:animate-none" />
     ),
   },
 );
@@ -64,7 +64,7 @@ const TrendsRow = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="bg-card border-border h-64 animate-pulse rounded-xl border" />
+      <div className="bg-card border-border h-[20rem] animate-pulse rounded-xl border motion-reduce:animate-none" />
     ),
   },
 );
