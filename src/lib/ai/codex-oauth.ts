@@ -53,20 +53,6 @@ export function generateState(): string {
   return base64url(randomBytes(32));
 }
 
-/**
- * Backwards-compatible no-op type. Older callers that imported the error
- * type continue to compile. Codex OAuth always considers itself
- * configured because we ship the public client ID as the default.
- */
-export class CodexOAuthNotConfiguredError extends Error {
-  constructor() {
-    super(
-      "Codex OAuth is not configured on this instance — set CODEX_OAUTH_CLIENT_ID",
-    );
-    this.name = "CodexOAuthNotConfiguredError";
-  }
-}
-
 export function getCodexClientId(): string {
   return process.env.CODEX_OAUTH_CLIENT_ID?.trim() || DEFAULT_CLIENT_ID;
 }

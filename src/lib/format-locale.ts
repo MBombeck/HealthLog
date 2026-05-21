@@ -29,7 +29,7 @@ export const DISPLAY_TIMEZONE = "Europe/Berlin";
  * `Intl.*`. When we add locales, extend this map — do not rely on the short
  * tag directly since browsers differ in how they handle "en" vs "en-US".
  */
-export const INTL_LOCALE_MAP: Record<Locale, string> = {
+const INTL_LOCALE_MAP: Record<Locale, string> = {
   de: "de-DE",
   en: "en-US",
   fr: "fr-FR",

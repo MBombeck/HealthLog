@@ -124,7 +124,7 @@ function isLastIntakeInCurrentWindow<Schedule extends ScheduleWindowInput>(
  * to suppress "overdue" pills once the user has already covered every
  * passed schedule with intake events for the day.
  */
-export function countPassedSchedules<Schedule extends ScheduleWindowInput>(
+function countPassedSchedules<Schedule extends ScheduleWindowInput>(
   schedules: Schedule[],
   nowBerlin: Date,
 ): number {

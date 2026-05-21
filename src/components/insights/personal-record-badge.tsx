@@ -52,14 +52,12 @@ interface PersonalRecordBadgeProps {
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 /**
- * Pure freshness check — exported for unit testing so the component
- * itself stays free of clock calls (the React purity linter rejects
- * `Date.now()` inside a component body or hook initializer). Callers
- * pass a `now` reference; consumers in production read it from the
- * surrounding query refetch boundary where one stale-time tick =
- * one new clock reading.
+ * Pure freshness check kept out of the component body so the React
+ * purity linter doesn't trip on the `Date.now()` reference; callers
+ * pass `now` from the surrounding query refetch boundary where one
+ * stale-time tick = one new clock reading.
  */
-export function isPRWithin30Days(achievedAtIso: string, now: number): boolean {
+function isPRWithin30Days(achievedAtIso: string, now: number): boolean {
   const ts = new Date(achievedAtIso).getTime();
   return Number.isFinite(ts) && now - ts <= THIRTY_DAYS_MS;
 }

@@ -40,7 +40,7 @@ export const SIDE_EFFECT_ENTRY_VALUES = Object.values(
   MedicationSideEffectEntry,
 ) as readonly MedicationSideEffectEntry[];
 
-export const SIDE_EFFECT_NOTES_MAX = 280;
+const SIDE_EFFECT_NOTES_MAX = 280;
 
 /**
  * v1.4.25 W21 Fix-N (code-M6) — `category` was dropped from the wire

@@ -91,7 +91,7 @@ export interface DashboardWidgetConfig {
 export const COMPARISON_BASELINES = ["none", "lastMonth", "lastYear"] as const;
 export type ComparisonBaseline = (typeof COMPARISON_BASELINES)[number];
 
-export function isComparisonBaseline(
+function isComparisonBaseline(
   value: unknown,
 ): value is ComparisonBaseline {
   return (
@@ -196,7 +196,7 @@ export interface DashboardLayout {
   chartOverlayPrefs?: ChartOverlayPrefsMap;
 }
 
-export const DASHBOARD_LAYOUT_VERSION = 1;
+const DASHBOARD_LAYOUT_VERSION = 1;
 
 /**
  * Default layout mirrors v1.1 behavior: core vitals always on, mood +

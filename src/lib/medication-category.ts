@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { MEDICATION_CATEGORY_VALUES } from "@/lib/validations/medication";
 
-export const MEDICATION_CATEGORIES = MEDICATION_CATEGORY_VALUES;
+const MEDICATION_CATEGORIES = MEDICATION_CATEGORY_VALUES;
 
 export type MedicationCategory = (typeof MEDICATION_CATEGORIES)[number];
 

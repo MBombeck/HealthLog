@@ -51,7 +51,7 @@ import type {
 const ASYNC_GRANULARITIES: RollupGranularity[] = ["WEEK", "MONTH", "YEAR"];
 
 /** All granularities the rollup table tracks. */
-export const ALL_MOOD_GRANULARITIES: RollupGranularity[] = [
+const ALL_MOOD_GRANULARITIES: RollupGranularity[] = [
   "DAY",
   "WEEK",
   "MONTH",

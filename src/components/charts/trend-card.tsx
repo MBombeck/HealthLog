@@ -64,7 +64,7 @@ export type TrendDirectionSentiment = "up-good" | "up-bad" | "neutral";
  */
 export type TrendSentimentDirection = "positive" | "negative" | "neutral";
 
-export function getTrendSentiment(
+function getTrendSentiment(
   change: number | null | undefined,
   sentiment: TrendDirectionSentiment,
 ): TrendSentimentDirection {

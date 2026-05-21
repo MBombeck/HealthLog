@@ -37,7 +37,7 @@ export class GithubPublishError extends Error {
  * Resolves the configured GitHub token + repo from AppSettings (or env).
  * Returns null if no configuration is present (caller should treat as 503).
  */
-export async function getGithubConfig(): Promise<{
+async function getGithubConfig(): Promise<{
   token: string;
   repo: string;
 } | null> {

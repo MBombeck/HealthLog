@@ -26,7 +26,7 @@ import { createDocument, type ZodOpenApiObject } from "zod-openapi";
 
 import { openApiPaths, openApiComponents } from "./routes";
 
-export const openApiBase: Pick<
+const openApiBase: Pick<
   ZodOpenApiObject,
   "openapi" | "info" | "servers" | "tags"
 > = {

@@ -15,10 +15,8 @@
  * stay consistent with the server-rendered locale.
  */
 
-import { makeFormatters, DISPLAY_TIMEZONE } from "./format-locale";
+import { makeFormatters } from "./format-locale";
 import type { Locale } from "./i18n/config";
-
-export { DISPLAY_TIMEZONE };
 
 function activeLocale(): Locale {
   if (typeof document === "undefined") return "en";
