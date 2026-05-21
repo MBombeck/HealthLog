@@ -44,7 +44,7 @@ import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import {
   recomputeMedicationComplianceForDay,
   dayKeyForScheduledFor,
-} from "@/lib/medications/compliance-rollups";
+} from "@/lib/rollups/medication-compliance-rollups";
 
 const MAX_ENTRIES_PER_BATCH = 500;
 const BATCH_RATE_LIMIT_MAX = 60;

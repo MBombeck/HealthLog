@@ -56,7 +56,7 @@ import {
   enqueueBootTimeMedicationComplianceBackfill,
   enqueueUserMedicationComplianceBackfill,
   MEDICATION_COMPLIANCE_BACKFILL_QUEUE,
-} from "../compliance-rollups";
+} from "../medication-compliance-rollups";
 
 const {
   intakeFindMany,

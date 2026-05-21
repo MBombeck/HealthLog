@@ -16,7 +16,7 @@ import { withIdempotency } from "@/lib/idempotency";
 import { consumeOneDose } from "@/lib/medications/inventory/service";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
-import { recomputeMedicationComplianceForEvent } from "@/lib/medications/compliance-rollups";
+import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };

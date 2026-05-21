@@ -11,7 +11,7 @@ import {
 import {
   recomputeMedicationComplianceForDay,
   dayKeyForScheduledFor,
-} from "@/lib/medications/compliance-rollups";
+} from "@/lib/rollups/medication-compliance-rollups";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 

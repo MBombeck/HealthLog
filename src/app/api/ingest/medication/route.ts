@@ -12,7 +12,7 @@ import { hashToken } from "@/lib/auth/hmac";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { externalIntakeSchema } from "@/lib/validations/medication";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
-import { recomputeMedicationComplianceForEvent } from "@/lib/medications/compliance-rollups";
+import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
 import { NextRequest, NextResponse } from "next/server";
 
 /**

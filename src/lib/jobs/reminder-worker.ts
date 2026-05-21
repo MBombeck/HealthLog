@@ -84,7 +84,7 @@ import {
   recomputeUserMedicationCompliance,
   enqueueBootTimeMedicationComplianceBackfill,
   type MedicationComplianceBackfillPayload,
-} from "@/lib/medications/compliance-rollups";
+} from "@/lib/rollups/medication-compliance-rollups";
 import {
   drainPerSampleCumulative,
   DRAIN_CUMULATIVE_CUTOFF_HOURS,

@@ -10,7 +10,7 @@ import {
 } from "@/lib/api-response";
 import { updateIntakeEventSchema } from "@/lib/validations/medication";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
-import { recomputeMedicationComplianceForEvent } from "@/lib/medications/compliance-rollups";
+import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string; eventId: string }> };

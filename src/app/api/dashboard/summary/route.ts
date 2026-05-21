@@ -49,7 +49,7 @@ import { defaultLocale, type Locale } from "@/lib/i18n/config";
 import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { expandTodayIntakes } from "@/lib/medication-schedule";
-import { recomputeMedicationComplianceForEvent } from "@/lib/medications/compliance-rollups";
+import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
 
 const SPARK_DAYS = 7;
 const STREAK_WINDOW_DAYS = 365;

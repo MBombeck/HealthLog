@@ -32,7 +32,7 @@ import {
   recomputeMedicationComplianceForEvent,
   enqueueUserMedicationComplianceBackfill,
   type ComplianceBucket as RollupComplianceBucket,
-} from "@/lib/medications/compliance-rollups";
+} from "@/lib/rollups/medication-compliance-rollups";
 import { expandTodayIntakes } from "@/lib/medication-schedule";
 
 const querySchema = z.object({

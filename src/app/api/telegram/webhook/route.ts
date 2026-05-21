@@ -13,7 +13,7 @@ import { apiHandler } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { locales, type Locale } from "@/lib/i18n/config";
-import { recomputeMedicationComplianceForEvent } from "@/lib/medications/compliance-rollups";
+import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
 
 interface TelegramUpdate {
   update_id: number;
