@@ -342,7 +342,7 @@ async function fetchSeriesChunked(
   let cursorId: string | undefined;
   for (let page = 0; page < 1000; page++) {
     const chunk = await prisma.measurement.findMany({
-      where: { userId, type, measuredAt: { gte: since } },
+      where: { userId, type, measuredAt: { gte: since }, deletedAt: null },
       orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
       select: { id: true, measuredAt: true, value: true },
       take: CHUNK,
