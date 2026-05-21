@@ -13,6 +13,7 @@ import {
   withTimeout,
   STATUS_PROVIDER_TIMEOUT_MS,
 } from "@/lib/insights/with-timeout";
+import { persistTimeoutStubAndReturn } from "@/lib/insights/persist-timeout-stub";
 import { annotate } from "@/lib/logging/context";
 
 const BERLIN_DAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
@@ -294,49 +295,15 @@ export async function generateBmiStatusForUser(
     // v1.4.37 — persist a sentinel row keyed to today so the next
     // mount short-circuits at the cache lookup above instead of
     // re-racing the same 20 s provider call on every cold visit.
-    // Without this, a single stall (provider hiccup, network blip,
-    // model warm-up) leaves the user staring at the loading state
-    // on every reload until the daily 02:20 pre-warm job runs.
-    // The body is the same no-key fallback the caller returned
-    // before, so the user-facing UI is identical; only the
-    // re-fire frequency drops to zero for the rest of the day.
-    // `meta.timeout` is set so the daily pg-boss pre-warm worker
-    // (the same job that originally seeded the cache) can
-    // recognise and overwrite the stub rather than respect it as
-    // a real assessment.
-    const stubText = getNoKeyBmiStatusText(locale);
-    let stubUpdatedAt: string | null = null;
-    try {
-      const stub = await prisma.auditLog.create({
-        data: {
-          userId,
-          action: cacheAction,
-          details: JSON.stringify({
-            dateKey: todayKey,
-            locale,
-            text: stubText,
-            providerType: provider.type,
-            model: "timeout-stub",
-            tokensUsed: null,
-            timeout: true,
-          }),
-        },
-        select: { createdAt: true },
-      });
-      stubUpdatedAt = stub.createdAt.toISOString();
-    } catch {
-      // The persist is best-effort — if the row write fails the
-      // caller still sees the deterministic fallback text and the
-      // next mount falls back to the (still expensive) race. Do
-      // not surface the error: the user does not care that the
-      // cache write missed, only that the page rendered.
-    }
-    return {
-      hasProvider: true,
-      text: stubText,
-      cached: true,
-      updatedAt: stubUpdatedAt,
-    };
+    // See `persistTimeoutStubAndReturn` for the full rationale.
+    return persistTimeoutStubAndReturn({
+      userId,
+      cacheAction,
+      todayKey,
+      locale,
+      providerType: provider.type,
+      stubText: getNoKeyBmiStatusText(locale),
+    });
   }
 
   const result = raced.value;
