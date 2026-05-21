@@ -45,7 +45,7 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
-import { PUT } from "../route";
+import { PUT, __resetAuditDedupMemoForTests } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
@@ -73,6 +73,7 @@ function makeReq(body: unknown): NextRequest {
 beforeEach(() => {
   vi.resetAllMocks();
   __resetAllCachesForTests();
+  __resetAuditDedupMemoForTests();
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
 });
@@ -142,6 +143,26 @@ describe("PUT /api/dashboard/widgets — 422 multi-issue envelope (v1.4.42 W2)",
       // hits the ledger either.
       expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
     }
+  });
+
+  it("dedups the audit-ledger write across two sequential 422s for the same user (v1.4.43 B2)", async () => {
+    // First 422 writes one row; the second 422 inside the 60 s window
+    // returns the same envelope but skips the audit insert.
+    const res1 = await callPut(makeReq({ version: 2, widgets: [] }));
+    expect(res1.status).toBe(422);
+    const res2 = await callPut(makeReq({ version: 2, widgets: [] }));
+    expect(res2.status).toBe(422);
+
+    await new Promise((r) => setTimeout(r, 5));
+
+    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
+
+    // The full multi-issue envelope still rides on every 422 — the
+    // dedup only suppresses the breadcrumb write, never the response.
+    const body2 = (await res2.json()) as {
+      details: { issues: Array<unknown> };
+    };
+    expect(body2.details.issues.length).toBe(2);
   });
 
   it("does not block the 422 response when the audit-row write rejects", async () => {
