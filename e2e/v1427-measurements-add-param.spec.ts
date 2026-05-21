@@ -25,7 +25,9 @@ test.describe("v1.4.27 — /measurements?add= consumer", () => {
   test.use({ storageState: STORAGE_STATE_PATH });
 
   test.beforeEach(async ({ page }) => {
-    await page.route("**/api/analytics", (route) =>
+    // v1.4.39.3 — regex form matches the slim slice the v1.4.39.2
+    // dashboard split fires alongside the thick request.
+    await page.route(/\/api\/analytics(\?|$)/, (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",

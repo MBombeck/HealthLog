@@ -22,7 +22,9 @@ test.describe("v1.4.27 — ResponsiveSheet branch", () => {
 
   test.beforeEach(async ({ page }) => {
     // Empty analytics + list keeps the page fast and deterministic.
-    await page.route("**/api/analytics", (route) =>
+    // v1.4.39.3 — regex form matches `/api/analytics` AND any sliced
+    // variant (`?slice=summaries`) the v1.4.39.2 dashboard split fires.
+    await page.route(/\/api\/analytics(\?|$)/, (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",

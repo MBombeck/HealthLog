@@ -21,7 +21,13 @@ test.describe("chart overlay controls", () => {
   test.beforeEach(async ({ page }) => {
     // Mock analytics + measurements so the dashboard paints at least
     // one chart card. Same seed shape the dashboard.spec.ts uses.
-    await page.route("**/api/analytics", (route) =>
+    //
+    // v1.4.39.3 — match `/api/analytics` AND any sliced variant
+    // (`?slice=summaries`). See the comment on dashboard.spec.ts for
+    // the underlying minimatch-vs-query-string gap; the regex form
+    // catches both the thick and slim slice URLs the dashboard now
+    // mounts in parallel.
+    await page.route(/\/api\/analytics(\?|$)/, (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",

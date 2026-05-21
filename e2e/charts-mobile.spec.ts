@@ -33,7 +33,13 @@ test.describe("charts — mobile-viewport regression", () => {
 
     // Mock analytics + measurements so the chart wrappers all clear
     // their data-floor gates. Same pattern as `dashboard.spec.ts`.
-    await page.route("**/api/analytics", (route) =>
+    //
+    // v1.4.39.3 — match `/api/analytics` AND any sliced variant
+    // (`?slice=summaries`). The v1.4.39.2 dashboard split mounts the
+    // slim slice in parallel; the literal `**/api/analytics` glob
+    // misses the query-string form and dropped the request through to
+    // the real route, blanking the tile strip + chart cards.
+    await page.route(/\/api\/analytics(\?|$)/, (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",

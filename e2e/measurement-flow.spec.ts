@@ -74,7 +74,14 @@ test.describe("add measurement flow", () => {
 
     // Dashboard's analytics fetch — empty summaries are fine; we only
     // need the page to render so we can click "Add".
-    await page.route("**/api/analytics", (route) =>
+    //
+    // v1.4.39.3 — match `/api/analytics` AND any sliced variant
+    // (`?slice=summaries`). The v1.4.39.2 dashboard split fires both
+    // requests in parallel; the previous string glob missed the slim
+    // variant which then fell through to the real route and slowed
+    // the page paint enough that the post-mutation list query never
+    // surfaced inside the 10 s window.
+    await page.route(/\/api\/analytics(\?|$)/, (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",

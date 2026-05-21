@@ -24,7 +24,9 @@ test.describe("v1.4.27 — insights empty-state with metric gating", () => {
   test.beforeEach(async ({ page }) => {
     // Zero-count summaries — every gated sub-page short-circuits to
     // its EmptyState branch.
-    await page.route("**/api/analytics", (route) =>
+    // v1.4.39.3 — regex form matches the slim slice the v1.4.39.2
+    // dashboard split fires alongside the thick request.
+    await page.route(/\/api\/analytics(\?|$)/, (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",

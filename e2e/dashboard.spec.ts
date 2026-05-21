@@ -23,7 +23,18 @@ test.describe("authenticated dashboard render", () => {
     // Mock analytics with a populated weight summary so the weight tile
     // and chart render. `count` must be >0 for the tile to clear the
     // data-floor gate in `src/app/page.tsx`.
-    await page.route("**/api/analytics", (route) =>
+    //
+    // v1.4.39.3 — match `/api/analytics` AND any sliced variant
+    // (`?slice=summaries`). The v1.4.39.2 dashboard split mounts two
+    // parallel `useAnalyticsQuery` calls; the slim variant carries a
+    // `?slice=summaries` query string that the literal string glob
+    // `**/api/analytics` (Playwright minimatch) refuses to match,
+    // dropping the request to the real route. The seeded test user has
+    // no measurements so the real route returns empty summaries, and
+    // the dashboard's slim-first merge then blanked the tile strip.
+    // The same trap bit `onboarding-flicker` and `mobile-viewport` in
+    // v1.4.37 W-CI; the regex form is the durable fix.
+    await page.route(/\/api\/analytics(\?|$)/, (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",

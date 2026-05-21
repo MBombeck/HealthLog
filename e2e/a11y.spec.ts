@@ -70,7 +70,11 @@ test.describe("axe-core authenticated surfaces", () => {
   // need fully-painted DOM, and a flaky API would otherwise stall the
   // analyse() call until the 30s test timeout.
   test.beforeEach(async ({ page }) => {
-    await page.route("**/api/analytics", (route) =>
+    // v1.4.39.3 — match `/api/analytics` AND any sliced variant
+    // (`?slice=summaries`); the v1.4.39.2 dashboard split fires both
+    // in parallel and the literal string glob misses the query-
+    // string form.
+    await page.route(/\/api\/analytics(\?|$)/, (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",

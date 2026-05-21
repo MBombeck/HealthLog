@@ -31,7 +31,9 @@ test.describe("v1.4.27 — Coach reachability on insights sub-pages", () => {
     // Populated analytics so each sub-page paints the data branch
     // (`hasMetricData` true) — the Coach button is mounted at the
     // bottom of the data tree.
-    await page.route("**/api/analytics", (route) =>
+    // v1.4.39.3 — regex form matches the slim slice the v1.4.39.2
+    // dashboard split fires alongside the thick request.
+    await page.route(/\/api\/analytics(\?|$)/, (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
