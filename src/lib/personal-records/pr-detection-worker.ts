@@ -38,10 +38,12 @@
  * ingest surface.
  */
 import { prisma as defaultPrisma } from "@/lib/db";
+import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { getPRDirection, isPRTrackable } from "./pr-direction";
 import {
   PersonalRecordDirection,
+  Prisma,
   type MeasurementType,
   type PrismaClient,
 } from "@/generated/prisma/client";
@@ -399,6 +401,34 @@ async function findBestMeasurement(
   type: MeasurementType,
   direction: PersonalRecordDirection,
 ): Promise<MeasurementCandidate | null> {
+  // REG-9 (v1.4.46): cumulative HealthKit kinds (ACTIVITY_STEPS,
+  // ACTIVE_ENERGY_BURNED, FLIGHTS_CLIMBED, WALKING_RUNNING_DISTANCE,
+  // TIME_IN_DAYLIGHT) ingest as per-hour or per-minute fragments. The
+  // legacy `findFirst orderBy value desc` returned the largest single
+  // slice — a 4 000-step hour during a hike — and locked it in as the
+  // user's "best" step count. The user's actual daily total (those
+  // 4 000 steps plus every other slice on the same calendar day) was
+  // ignored.
+  //
+  // For cumulative kinds we instead bucket-and-sum per calendar day
+  // (UTC for now — analytics surfaces still day-bucket in UTC; the
+  // dashboard tile already runs the same shape via
+  // `pickCumulativeDaySum`). The picked row's `measuredAt` is the
+  // latest slice on the winning day so the PR's `achievedAt`
+  // timestamp still points at a real ingested sample (the unique
+  // index `(userId, metricType, metricSlot, achievedAt)` needs a
+  // stable timestamp). For MAX-direction cumulative kinds — which is
+  // every cumulative type today per `pr-direction.ts` — we pick the
+  // day with the largest sum. The MIN branch is wired symmetrically
+  // for future-proofing; if a MIN cumulative kind ever lands the
+  // worker will pick the day with the smallest sum.
+  //
+  // Spot kinds (resting HR, VO2 max, HRV, body composition) keep the
+  // existing per-row pick — each row is already the day's measurement.
+  if (CUMULATIVE_HK_TYPES.has(type)) {
+    return findBestCumulativeDay(prisma, userId, type, direction);
+  }
+
   const row = await prisma.measurement.findFirst({
     where: { userId, type, deletedAt: null },
     orderBy:
@@ -422,6 +452,87 @@ async function findBestMeasurement(
     measuredAt: row.measuredAt,
     source: row.source,
     externalId: row.externalId,
+  };
+}
+
+/**
+ * REG-9 (v1.4.46): day-bucket SUM picker for cumulative HK kinds.
+ *
+ * Postgres `date_trunc('day', measured_at)` groups every slice on the
+ * same UTC calendar day. The outer `ORDER BY day_sum {DESC|ASC} LIMIT 1`
+ * picks the winning day; the inner `MAX(measured_at)` returns a
+ * stable timestamp for the PR's `achievedAt`. The latest slice on the
+ * winning day also carries the row's `unit / source / externalId` —
+ * we re-read it as a separate `findFirst` so the response shape
+ * stays identical to the spot-kind path (the caller's downstream
+ * `personalRecord.create` reaches for the original row's metadata).
+ *
+ * Order of operations:
+ *   1. Sum-per-day aggregate via `$queryRaw` (one round-trip).
+ *   2. Re-read the slice at `MAX(measured_at)` on the winning day
+ *      to recover the row's metadata.
+ * The unique-index contract is unaffected — a re-run picks the same
+ * day and the same MAX-slice, so `achievedAt` is stable.
+ */
+async function findBestCumulativeDay(
+  prisma: PrismaClient,
+  userId: string,
+  type: MeasurementType,
+  direction: PersonalRecordDirection,
+): Promise<MeasurementCandidate | null> {
+  const orderDir =
+    direction === PersonalRecordDirection.MAX
+      ? Prisma.sql`DESC`
+      : Prisma.sql`ASC`;
+
+  const rows = await prisma.$queryRaw<
+    Array<{ day_total: number; max_measured_at: Date }>
+  >(
+    Prisma.sql`
+      SELECT
+        SUM(m."value")::double precision  AS day_total,
+        MAX(m."measured_at")              AS max_measured_at
+      FROM measurements m
+      WHERE m."user_id" = ${userId}
+        AND m."type"::text = ${type}
+        AND m."deleted_at" IS NULL
+      GROUP BY date_trunc('day', m."measured_at")
+      ORDER BY day_total ${orderDir}
+      LIMIT 1
+    `,
+  );
+
+  const winner = rows[0];
+  if (!winner) return null;
+
+  // Re-read the latest slice on the winning day so the PR row carries
+  // a real row's unit/source/externalId. The slice's `value` is the
+  // single-slice value (not the day-sum) — we override `value` with
+  // the day-sum below so the PR `value` represents the day's total.
+  const slice = await prisma.measurement.findFirst({
+    where: {
+      userId,
+      type,
+      deletedAt: null,
+      measuredAt: winner.max_measured_at,
+    },
+    select: {
+      id: true,
+      unit: true,
+      measuredAt: true,
+      source: true,
+      externalId: true,
+    },
+  });
+  if (!slice) return null;
+
+  return {
+    id: slice.id,
+    value: winner.day_total,
+    unit: slice.unit,
+    measuredAt: slice.measuredAt,
+    source: slice.source,
+    externalId: slice.externalId,
   };
 }
 

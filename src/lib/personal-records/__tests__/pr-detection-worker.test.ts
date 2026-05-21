@@ -19,6 +19,7 @@ import {
   detectPersonalRecordsForUser,
 } from "../pr-detection-worker";
 import { isPRTrackable } from "../pr-direction";
+import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import {
   PersonalRecordDirection,
@@ -77,6 +78,7 @@ interface FakeWhere {
   totalDistanceM?: { gte: number };
   durationSec?: { gt: number } | { gte: number };
   achievedAt?: Date;
+  measuredAt?: Date;
 }
 
 function makeFakePrisma(state: {
@@ -90,7 +92,20 @@ function makeFakePrisma(state: {
   ): boolean {
     if (where.userId !== undefined && row.userId !== where.userId) return false;
     if (where.type !== undefined && row.type !== where.type) return false;
+    if (
+      where.measuredAt !== undefined &&
+      row.measuredAt.getTime() !== where.measuredAt.getTime()
+    )
+      return false;
     return true;
+  }
+
+  // REG-9 day bucket key. Mirrors `date_trunc('day', measured_at)` on
+  // UTC — the production query and this fake share the same bucket
+  // contract so a day-sum test exercises the same partitioning the
+  // SQL aggregate performs.
+  function dayKey(d: Date): string {
+    return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
   }
 
   function matchesWorkoutWhere(
@@ -131,7 +146,71 @@ function makeFakePrisma(state: {
     return true;
   }
 
+  // REG-9 (v1.4.46): the cumulative-kind path runs a `$queryRaw`
+  // template that SUMs each `(user_id, type)` partition by
+  // `date_trunc('day', measured_at)` and `ORDER BY day_total {DESC|ASC}`.
+  // The fake re-implements the same shape against the in-memory rows
+  // so the worker-level tests exercise the real day-bucket reducer
+  // logic, not a stub.
+  function runCumulativeDaySum(
+    userId: string,
+    type: MeasurementType,
+    direction: "desc" | "asc",
+  ): Array<{ day_total: number; max_measured_at: Date }> {
+    const matches = state.measurements.filter(
+      (r) => r.userId === userId && r.type === type,
+    );
+    if (matches.length === 0) return [];
+
+    const byDay = new Map<
+      string,
+      { day_total: number; max_measured_at: Date }
+    >();
+    for (const r of matches) {
+      const key = dayKey(r.measuredAt);
+      const slot = byDay.get(key) ?? {
+        day_total: 0,
+        max_measured_at: r.measuredAt,
+      };
+      slot.day_total += r.value;
+      if (r.measuredAt > slot.max_measured_at) {
+        slot.max_measured_at = r.measuredAt;
+      }
+      byDay.set(key, slot);
+    }
+
+    const sorted = Array.from(byDay.values()).sort((a, b) =>
+      direction === "desc" ? b.day_total - a.day_total : a.day_total - b.day_total,
+    );
+    return [sorted[0]];
+  }
+
   return {
+    $queryRaw: vi.fn(async (sql: { strings: string[]; values: unknown[]; sql?: string }) => {
+      // Prisma.sql flattens nested fragments at construction time —
+      // the ASC/DESC fragment is inlined into `strings`, only the
+      // userId + type land in the bound `values` list. We detect the
+      // cumulative day-sum probe by the SQL preamble and read the
+      // direction off the flattened SQL text.
+      const fullSql = sql.sql ?? sql.strings.join("?");
+      if (!fullSql.includes("date_trunc('day', m.\"measured_at\")")) {
+        throw new Error(
+          `Unhandled $queryRaw in fake Prisma:\n${fullSql}`,
+        );
+      }
+      const [userIdVal, typeVal] = sql.values as [string, string];
+      // The ORDER BY direction was interpolated as a literal — recover
+      // it from the flattened SQL so the fake exercises the same
+      // direction the worker asked for.
+      const dirMatch = /ORDER BY day_total\s+(ASC|DESC)/i.exec(fullSql);
+      const direction: "asc" | "desc" =
+        dirMatch?.[1]?.toUpperCase() === "ASC" ? "asc" : "desc";
+      return runCumulativeDaySum(
+        userIdVal,
+        typeVal as MeasurementType,
+        direction,
+      );
+    }),
     measurement: {
       count: vi.fn(async ({ where }: { where: FakeWhere }) => {
         return state.measurements.filter((r) =>
@@ -666,6 +745,154 @@ describe("detectPersonalRecordsForUser — flags + drift guard", () => {
       isPRTrackable(t as MeasurementType),
     );
     expect(result.scanned).toBeGreaterThanOrEqual(trackable.length);
+  });
+});
+
+describe("detectPersonalRecordsForUser — REG-9 cumulative day-sum (v1.4.46)", () => {
+  // REG-9 (v1.4.46): cumulative HK kinds (steps / active energy /
+  // flights climbed / walking-running distance / time in daylight)
+  // ingest as per-hour slices. The pre-fix `findFirst orderBy value
+  // desc` returned the largest single slice — the largest single-hour
+  // step bucket — and locked it in as the user's PR. The fix buckets
+  // each user's history by calendar day, SUMs the slices in each
+  // bucket, then picks the day with the largest sum. This test pins
+  // the contract: when one day has eight legitimate slices (~3 000
+  // steps each → 24 000 total) and another day has a single noisy
+  // hour-bucket fragment (8 000 steps), the PR must come from the
+  // larger day-sum, not from the larger single slice.
+  it("picks the day with the largest SUM of slices, not the largest single slice", async () => {
+    const samples: FakeMeasurementRow[] = [];
+    // Day -10 .. -4: 7 seed days, each with one ~5 000-step row,
+    // clears the warm-up gate.
+    for (let i = 0; i < PR_DETECTION_WARMUP_THRESHOLD; i++) {
+      samples.push({
+        id: `m-seed-${i}`,
+        type: "ACTIVITY_STEPS",
+        value: 5000 + i * 100,
+        unit: "x",
+        measuredAt: new Date(Date.UTC(2026, 4, 4 + i, 12, 0, 0)),
+        source: "APPLE_HEALTH",
+        externalId: null,
+        userId: USER,
+      });
+    }
+    // Day -3: a single noisy fragment of 8 000 steps. Under the pre-
+    // fix worker this would be the "best" because it has the highest
+    // single-row value.
+    samples.push({
+      id: "m-noisy",
+      type: "ACTIVITY_STEPS",
+      value: 8000,
+      unit: "x",
+      measuredAt: new Date(Date.UTC(2026, 4, 11, 14, 30, 0)),
+      source: "APPLE_HEALTH",
+      externalId: null,
+      userId: USER,
+    });
+    // Day -1: eight legitimate slices summing to 24 000 — every
+    // individual slice is smaller than the day -3 fragment, but the
+    // day's total is what the user actually walked.
+    for (let h = 0; h < 8; h++) {
+      samples.push({
+        id: `m-best-h${h}`,
+        type: "ACTIVITY_STEPS",
+        value: 3000,
+        unit: "x",
+        measuredAt: new Date(Date.UTC(2026, 4, 13, 8 + h, 0, 0)),
+        source: "APPLE_HEALTH",
+        externalId: null,
+        userId: USER,
+      });
+    }
+
+    const state = {
+      measurements: samples,
+      workouts: [],
+      personalRecords: [] as FakePersonalRecordRow[],
+    };
+    const prisma = makeFakePrisma(state);
+
+    await detectPersonalRecordsForUser(USER, { prisma });
+
+    const stepsPR = state.personalRecords.find(
+      (r) => r.metricType === "ACTIVITY_STEPS" && r.metricSlot === null,
+    );
+    expect(stepsPR).toBeDefined();
+    // The PR's value is the winning day's SUM (24 000), not the
+    // largest single slice (8 000).
+    expect(stepsPR?.value).toBe(24000);
+    // The achievedAt must point at the latest slice on the winning
+    // day (the unique-index contract relies on a stable timestamp).
+    expect(stepsPR?.achievedAt.getTime()).toBe(
+      new Date(Date.UTC(2026, 4, 13, 15, 0, 0)).getTime(),
+    );
+  });
+
+  it("routes every cumulative HK type through the day-sum picker", async () => {
+    // Drift guard: every member of `CUMULATIVE_HK_TYPES` must use the
+    // bucket-and-sum path. A new cumulative type added to the set
+    // without the corresponding PR-direction branch will silently
+    // skip this assertion's coverage but the per-type loop ensures
+    // the day-sum picker is at least invoked for each one. The PR
+    // direction lookup short-circuits null-direction types upstream;
+    // we filter to the PR-trackable subset for the loop.
+    const trackableCumulative = Array.from(CUMULATIVE_HK_TYPES).filter((t) =>
+      isPRTrackable(t),
+    );
+    expect(trackableCumulative.length).toBeGreaterThan(0);
+
+    for (const type of trackableCumulative) {
+      const samples: FakeMeasurementRow[] = [];
+      // Warm-up seed: 7 days at value 100.
+      for (let i = 0; i < PR_DETECTION_WARMUP_THRESHOLD; i++) {
+        samples.push({
+          id: `m-${type}-seed-${i}`,
+          type,
+          value: 100,
+          unit: "x",
+          measuredAt: new Date(Date.UTC(2026, 4, 4 + i, 12, 0, 0)),
+          source: "APPLE_HEALTH",
+          externalId: null,
+          userId: USER,
+        });
+      }
+      // Best day: two slices summing to 500.
+      samples.push({
+        id: `m-${type}-best-am`,
+        type,
+        value: 200,
+        unit: "x",
+        measuredAt: new Date(Date.UTC(2026, 4, 13, 9, 0, 0)),
+        source: "APPLE_HEALTH",
+        externalId: null,
+        userId: USER,
+      });
+      samples.push({
+        id: `m-${type}-best-pm`,
+        type,
+        value: 300,
+        unit: "x",
+        measuredAt: new Date(Date.UTC(2026, 4, 13, 18, 0, 0)),
+        source: "APPLE_HEALTH",
+        externalId: null,
+        userId: USER,
+      });
+
+      const state = {
+        measurements: samples,
+        workouts: [],
+        personalRecords: [] as FakePersonalRecordRow[],
+      };
+      const prisma = makeFakePrisma(state);
+
+      await detectPersonalRecordsForUser(USER, { prisma });
+
+      const pr = state.personalRecords.find(
+        (r) => r.metricType === type && r.metricSlot === null,
+      );
+      expect(pr, `expected PR for ${type}`).toBeDefined();
+      expect(pr?.value, `${type} day-sum`).toBe(500);
+    }
   });
 });
 
