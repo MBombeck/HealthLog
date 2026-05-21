@@ -793,6 +793,7 @@
   },
   "charts": {
     "loadingLabel": "Cargando la gráfica…",
+    "loadingSlowHint": "Calculando los análisis — puede tardar un momento.",
     "weight": "Peso",
     "bloodPressure": "Tensión arterial",
     "pulse": "Pulso",

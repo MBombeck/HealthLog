@@ -793,6 +793,7 @@
   },
   "charts": {
     "loadingLabel": "Ładowanie wykresu…",
+    "loadingSlowHint": "Obliczanie analiz — to może chwilę potrwać.",
     "weight": "Waga",
     "bloodPressure": "Ciśnienie tętnicze",
     "pulse": "Tętno",

@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
@@ -31,10 +33,21 @@ import { useTranslations } from "@/lib/i18n/context";
  * `rounded-md p-2` and pins the inner band at 140 px so the loading
  * shell occupies the same visible box as the painted chart.
  *
+ * v1.4.43 QoL (L4) — when the skeleton is still painted three seconds
+ * in, surface a small caption ("Computing analytics — this can take
+ * a moment") so the user understands the chart is being computed
+ * rather than broken. Today the `/api/analytics` correlations branch
+ * can sit on the skeleton for ~9 s; the caption sets expectation.
+ * Only fires on the full variant — the mini-skeleton sits in a
+ * dashboard row strip where a multi-line caption would overflow.
+ *
  * `prefers-reduced-motion` is honoured automatically — the `<Skeleton>`
  * primitive's `animate-pulse` is suppressed via Tailwind's
  * `motion-reduce:animate-none` modifier.
  */
+
+const SLOW_HINT_DELAY_MS = 3_000;
+
 export function ChartSkeleton({
   className,
   mini = false,
@@ -48,6 +61,21 @@ export function ChartSkeleton({
   mini?: boolean;
 }) {
   const { t } = useTranslations();
+  // v1.4.43 QoL (L4) — `showSlowHint` flips true 3 s into the load so
+  // the caption only appears for genuinely slow renders. Using a
+  // `useEffect` keeps the SSR markup identical (caption absent) so
+  // hydration never mismatches; the timer kicks in client-side once
+  // the skeleton actually paints.
+  const [showSlowHint, setShowSlowHint] = useState(false);
+  useEffect(() => {
+    if (mini) return undefined;
+    const handle = setTimeout(
+      () => setShowSlowHint(true),
+      SLOW_HINT_DELAY_MS,
+    );
+    return () => clearTimeout(handle);
+  }, [mini]);
+
   if (mini) {
     return (
       <div
@@ -93,6 +121,15 @@ export function ChartSkeleton({
       {/* Chart band — mirrors the same `h-[var(--chart-height,…)]`
           contract `health-chart.tsx` paints at line 1087-1089. */}
       <Skeleton className="h-[var(--chart-height,240px)] w-full md:h-[var(--chart-height-md,280px)]" />
+
+      {showSlowHint && (
+        <p
+          data-slot="chart-skeleton-slow-hint"
+          className="text-muted-foreground mt-3 text-xs"
+        >
+          {t("charts.loadingSlowHint")}
+        </p>
+      )}
     </div>
   );
 }

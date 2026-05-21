@@ -793,6 +793,7 @@
   },
   "charts": {
     "loadingLabel": "Diagramm wird geladen…",
+    "loadingSlowHint": "Auswertungen werden berechnet — das kann einen Moment dauern.",
     "weight": "Gewicht",
     "bloodPressure": "Blutdruck",
     "pulse": "Puls",

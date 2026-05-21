@@ -793,6 +793,7 @@
   },
   "charts": {
     "loadingLabel": "Loading chart…",
+    "loadingSlowHint": "Computing analytics — this can take a moment.",
     "weight": "Weight",
     "bloodPressure": "Blood Pressure",
     "pulse": "Pulse",
