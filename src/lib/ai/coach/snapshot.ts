@@ -497,6 +497,7 @@ async function buildCoachSnapshotImpl(
             userId,
             type: { in: wantedTypes as never[] },
             measuredAt: { gte: cutoff },
+            deletedAt: null,
           },
           orderBy: { measuredAt: "asc" },
           select: { type: true, value: true, measuredAt: true },
