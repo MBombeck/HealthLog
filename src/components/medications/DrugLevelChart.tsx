@@ -228,8 +228,10 @@ export function DrugLevelChart({ medication, asOf }: DrugLevelChartProps) {
       knownState={researchMode}
     />
   ) : isLoading ? (
+    // v1.4.43 W11-L6 — match the loaded chart height (240 px) so the
+    // dashboard tile doesn't reflow when the levels render.
     <div
-      className="flex h-[220px] items-center justify-center"
+      className="flex h-[240px] min-h-[240px] items-center justify-center"
       data-slot="drug-level-chart-loading"
     >
       <Loader2 className="text-primary h-6 w-6 animate-spin motion-reduce:animate-none" />

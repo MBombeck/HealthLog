@@ -123,9 +123,12 @@ export function RecentWorkoutsTile() {
       </div>
 
       {isLoading ? (
+        // v1.4.43 W11-L6 — reserve roughly the loaded tile height
+        // (3 workouts × ~3 rem rows + spacing) so the surrounding
+        // dashboard layout doesn't reflow once the data lands.
         <p
           data-slot="recent-workouts-loading"
-          className="text-muted-foreground text-xs"
+          className="text-muted-foreground min-h-[10rem] text-xs"
         >
           {t("dashboard.recentWorkouts.loading")}
         </p>
