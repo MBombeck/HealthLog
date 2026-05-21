@@ -237,6 +237,96 @@ describe("PUT /api/dashboard/widgets — Save persists full layouts", () => {
     expect(res.status).toBe(200);
   });
 
+  // v1.4.42 W2 — the route used to return only `issues[0].message`,
+  // which forced one round-trip per wrong field during iOS contract
+  // debugging. The route now returns every issue under `details.issues`
+  // AND writes a `dashboard.widgets.validation-failed` row to the
+  // append-only audit ledger so the operator can grep `/api/admin/audit`.
+  describe("PUT 422 — multi-issue envelope (v1.4.42 W2)", () => {
+    it("surfaces TWO simultaneous validation errors", async () => {
+      const { userId } = await seedUser();
+      const { PUT } = await import("@/app/api/dashboard/widgets/route");
+
+      // version=2 (literal mismatch) + widgets=[] (min(1) violation).
+      const res = await (PUT as (req: Request) => Promise<Response>)(
+        new Request("http://localhost/api/dashboard/widgets", {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ version: 2, widgets: [] }),
+        }),
+      );
+      expect(res.status).toBe(422);
+      const body = (await res.json()) as {
+        data: null;
+        error: string;
+        details: { issues: Array<{ path: string; code: string; message: string }> };
+      };
+      expect(body.data).toBeNull();
+      expect(body.error).toBe("Validation failed");
+      expect(body.details.issues.length).toBe(2);
+      const paths = body.details.issues.map((i) => i.path).sort();
+      expect(paths).toEqual(["version", "widgets"]);
+
+      // Audit-ledger breadcrumb. The route emits the row fire-and-forget,
+      // so we may need a tick before the row materialises.
+      await new Promise((r) => setTimeout(r, 25));
+      const audit = await getPrismaClient().auditLog.findFirst({
+        where: { userId, action: "dashboard.widgets.validation-failed" },
+      });
+      expect(audit).not.toBeNull();
+      const details = JSON.parse(audit?.details ?? "{}") as {
+        issues: Array<{ path: string }>;
+      };
+      expect(details.issues.length).toBe(2);
+    });
+
+    it("surfaces THREE simultaneous validation errors", async () => {
+      await seedUser();
+      const { PUT } = await import("@/app/api/dashboard/widgets/route");
+
+      // version wrong literal + widgets empty + comparisonBaseline not in enum.
+      const res = await (PUT as (req: Request) => Promise<Response>)(
+        new Request("http://localhost/api/dashboard/widgets", {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            version: 99,
+            widgets: [],
+            comparisonBaseline: "tomorrow",
+          }),
+        }),
+      );
+      expect(res.status).toBe(422);
+      const body = (await res.json()) as {
+        details: { issues: Array<{ path: string; code: string }> };
+      };
+      expect(body.details.issues.length).toBe(3);
+      const paths = body.details.issues.map((i) => i.path).sort();
+      expect(paths).toEqual(["comparisonBaseline", "version", "widgets"]);
+    });
+
+    it("does not echo issue.params (privacy)", async () => {
+      await seedUser();
+      const { PUT } = await import("@/app/api/dashboard/widgets/route");
+
+      const res = await (PUT as (req: Request) => Promise<Response>)(
+        new Request("http://localhost/api/dashboard/widgets", {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ version: 1, widgets: [] }),
+        }),
+      );
+      expect(res.status).toBe(422);
+      const body = (await res.json()) as {
+        details: { issues: Array<Record<string, unknown>> };
+      };
+      for (const issue of body.details.issues) {
+        expect(issue).not.toHaveProperty("params");
+        expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+      }
+    });
+  });
+
   it("widget toggle changes round-trip end-to-end", async () => {
     const { userId } = await seedUser();
     const { PUT, GET } = await import("@/app/api/dashboard/widgets/route");

@@ -6,7 +6,12 @@
  * to default.
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
+import {
+  apiSuccess,
+  safeJson,
+  returnAllZodIssues,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { prisma, toJson } from "@/lib/db";
 import {
@@ -126,7 +131,31 @@ export const PUT = apiHandler(async (request: NextRequest) => {
 
   const parsed = layoutSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 422);
+    // v1.4.42 W2 — the legacy `issues[0].message` envelope dropped
+    // every issue past the first. iOS contract debugging hit one
+    // round-trip per wrong field; the new helper surfaces every
+    // issue under `details.issues`. We additionally emit an
+    // append-only audit-ledger row so the operator can grep
+    // `/api/admin/audit` for these without combing the iOS dev
+    // console.
+    const issues = sanitiseZodIssues(parsed.error.issues);
+    annotate({
+      action: { name: "dashboard.widgets.validation-failed" },
+      meta: { issue_count: issues.length },
+    });
+    // Best-effort breadcrumb — never block the 422 on a write miss.
+    prisma.auditLog
+      .create({
+        data: {
+          userId: user.id,
+          action: "dashboard.widgets.validation-failed",
+          details: JSON.stringify({ issues }),
+        },
+      })
+      .catch(() => {
+        /* swallow — validation response is the contract, audit row is best-effort */
+      });
+    return returnAllZodIssues(parsed.error, 422);
   }
 
   // v1.4.18 — preserve any per-chart overlay prefs that the client
