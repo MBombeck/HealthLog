@@ -838,6 +838,15 @@ model MedicationIntakeEvent {
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
 
+  /// v1.4.39 W-SERVER-FIX-2 — both the intake route and the dashboard
+  /// summary route project active schedules through `expandTodayIntakes`
+  /// and idempotently `createMany`-backfill missing rows. Without a
+  /// unique constraint the two reads could race a duplicate REMINDER
+  /// row in for the same `(medicationId, scheduledFor)` between the
+  /// existence probe and the insert. `source` is in the key so the
+  /// reminder worker (REMINDER) doesn't collide with manual user
+  /// inserts (WEB / TELEGRAM / IMPORT) on the same slot.
+  @@unique([userId, medicationId, scheduledFor, source])
   @@index([userId, medicationId, scheduledFor])
   @@map("medication_intake_events")
 }
