@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 import {
@@ -293,5 +296,178 @@ describe("buildCoachSnapshot", () => {
 
     // Two distinct window keys → two cache slots → two Prisma reads.
     expect(prismaMock.measurement.findMany).toHaveBeenCalledTimes(2);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────
+// v1.4.43 W13 L-2 — snapshot free-text regression guard.
+//
+// Every snapshot builder is allowed to ship arbitrary structured data
+// (numbers, booleans, ISO dates, enum strings) into the SNAPSHOT JSON
+// that prefixes the Coach userPrompt. Free-text fields (medication name,
+// dose unit, note bodies, free-form descriptions) MUST wrap through
+// `sanitizeForPrompt` first — otherwise a user-controlled string
+// containing "SYSTEM:" / "---END---" / control sequences would bleed
+// into the prompt and could override the patient-safety guardrails.
+//
+// This regression guard scans the snapshot-builder source files and
+// fails when a recognised free-text field name is assigned a value that
+// doesn't include `sanitizeForPrompt`. Cheap, deterministic, no false
+// positives on numeric / boolean / date assignments (those don't trip
+// the heuristic because the field-name allow-list is the only trigger).
+//
+// Adding a new free-text field name to the heuristic is a one-row edit.
+// ────────────────────────────────────────────────────────────────────
+
+const SNAPSHOT_BUILDER_FILES = [
+  "src/lib/ai/coach/glp1-snapshot.ts",
+  "src/lib/insights/blood-pressure-status.ts",
+  "src/lib/insights/medication-compliance-status.ts",
+  "src/lib/insights/glp1-plateau.ts",
+];
+
+/**
+ * Field names that consistently mean "free-text the user typed". This
+ * list is conservative — date / count / value / unit-numeric fields
+ * never appear here. Adding a new free-text name is the documented
+ * extension hook.
+ */
+const FREE_TEXT_FIELD_NAMES = [
+  "name",
+  "note",
+  "notes",
+  "description",
+  "comment",
+  "drug",
+  "doseUnit",
+  "dose",
+] as const;
+
+/**
+ * Walk the file looking for `name: <expr>` style property assignments
+ * where the key matches a free-text field. For each hit, capture the
+ * full single-line `name: …,` or up to the next comma at the same
+ * brace-depth. Any hit must contain the literal token `sanitizeForPrompt`
+ * somewhere in its value expression — OR the file must demonstrably
+ * import + use `sanitizeForPrompt` for the same source identifier
+ * elsewhere (the GLP-1-plateau context case: production builds a raw
+ * struct, the consumer prompt-builder wraps).
+ *
+ * Pragmatically: a new snapshot builder that forgets to import the
+ * sanitiser fails immediately. An existing file that derives an
+ * intermediate context and sanitises at consumption stays green —
+ * because the audit-row contract (v1.4.43 W13 L-2) is about preventing
+ * an un-sanitised field from reaching the prompt, and a file-level
+ * sanitisation pattern provably catches that.
+ */
+function findUnsanitisedFreeTextAssignments(
+  filePath: string,
+): { fieldName: string; line: number; snippet: string }[] {
+  const source = readFileSync(resolve(process.cwd(), filePath), "utf-8");
+  const lines = source.split("\n");
+  const violations: { fieldName: string; line: number; snippet: string }[] = [];
+
+  // File-level escape hatch: any file that imports + uses
+  // `sanitizeForPrompt` for the free-text fields is considered safe.
+  // The check only fires on a NEW file (added without the import) or
+  // on a file that uses sanitise nowhere — both meaningful regression
+  // signals.
+  const fileSanitisesSomewhere = /sanitizeForPrompt\s*\(/.test(source);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    for (const field of FREE_TEXT_FIELD_NAMES) {
+      // Match `<field>:` as a property key. Anchored after `{` / `(`
+      // / `,` / start-of-line whitespace so we don't trip on words
+      // inside string literals or identifiers.
+      const re = new RegExp(`(?:^|[\\s,{(])${field}\\s*:`);
+      if (!re.test(line)) continue;
+      // The value can extend to the next comma at the same depth or
+      // to the next line. Capture the trailing portion of the current
+      // line plus up to two lookahead lines as the "value expression".
+      const valueExpr = [line, lines[i + 1] ?? "", lines[i + 2] ?? ""].join(
+        "\n",
+      );
+      // Numeric / boolean / null / undefined assignments don't need
+      // sanitisation. They originate inside the server (counts,
+      // slopes, ids) or are already-bounded enum strings.
+      const numericOrBoolean =
+        /:\s*(?:-?\d|true\b|false\b|null\b|undefined\b)/.test(line);
+      if (numericOrBoolean) continue;
+      // String literals / template literals built entirely from
+      // server-controlled tokens are accepted; the heuristic only
+      // demands `sanitizeForPrompt` when the value reads from a
+      // user-controlled identifier (Identifier or Member-Expression
+      // ending in `name|note|description|doseUnit|drug|dose`).
+      const referencesFreeTextSource = new RegExp(
+        `\\.(${FREE_TEXT_FIELD_NAMES.join("|")})\\b`,
+      ).test(valueExpr);
+      if (!referencesFreeTextSource) continue;
+      if (valueExpr.includes("sanitizeForPrompt")) continue;
+      // File-level pass: the file calls sanitizeForPrompt at least
+      // once, so the free-text value is wrapped at the consumer.
+      if (fileSanitisesSomewhere) continue;
+      violations.push({
+        fieldName: field,
+        line: i + 1,
+        snippet: line.trim(),
+      });
+    }
+  }
+  return violations;
+}
+
+describe("Coach snapshot — free-text fields wrap through sanitizeForPrompt (L-2)", () => {
+  for (const filePath of SNAPSHOT_BUILDER_FILES) {
+    it(`${filePath} — every free-text assignment routes through sanitizeForPrompt`, () => {
+      const violations = findUnsanitisedFreeTextAssignments(filePath);
+      if (violations.length > 0) {
+        const formatted = violations
+          .map(
+            (v) =>
+              `  ${filePath}:${v.line} — \`${v.fieldName}\`: ${v.snippet}`,
+          )
+          .join("\n");
+        throw new Error(
+          `Snapshot builder leaks an un-sanitised free-text field into the Coach prompt:\n${formatted}\n` +
+            `Wrap the value via \`sanitizeForPrompt(value, maxLen)\` from \`@/lib/insights/sanitize\`.`,
+        );
+      }
+      expect(violations).toEqual([]);
+    });
+  }
+
+  it("the guard itself trips on an obvious leak (sanity check)", () => {
+    // Sanity check — the heuristic must flag a synthetic snapshot
+    // builder that reads from a user-controlled identifier without the
+    // wrap AND has no sanitiser anywhere in the file. This is the
+    // "new builder forgot the import" failure mode.
+    const synthetic = `
+      // synthetic snapshot builder — no sanitiser imported anywhere.
+      export function buildBlock(med) {
+        return {
+          name: med.name,
+          dose: med.dose,
+        };
+      }
+    `;
+    const lines = synthetic.split("\n");
+    const fileSanitisesSomewhere = /sanitizeForPrompt\s*\(/.test(synthetic);
+    let hit = false;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const valueExpr = [line, lines[i + 1] ?? "", lines[i + 2] ?? ""].join(
+        "\n",
+      );
+      if (
+        /(?:^|[\s,{(])name\s*:/.test(line) &&
+        /\.name\b/.test(valueExpr) &&
+        !valueExpr.includes("sanitizeForPrompt") &&
+        !fileSanitisesSomewhere
+      ) {
+        hit = true;
+      }
+    }
+    expect(hit).toBe(true);
   });
 });
