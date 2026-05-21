@@ -37,7 +37,15 @@ export const dynamic = "force-dynamic";
  * first use.
  */
 export const GET = apiHandler(async () => {
-  const version = packageJson.version;
+  // v1.4.43 B11 — prefer the build-arg-injected env var so the runtime
+  // version cannot drift from the CI release tag. The Dockerfile takes
+  // `NEXT_PUBLIC_APP_VERSION` as a build arg from the docker-publish
+  // workflow (`build-args: NEXT_PUBLIC_APP_VERSION=${{ github.ref_name
+  // }}`); when present it wins over the package.json fallback so a
+  // BuildKit-layer cache hit on `pnpm build` can never re-ship the
+  // prior release's version string. Local `pnpm dev` (env unset) falls
+  // through to package.json as before.
+  const version = process.env.NEXT_PUBLIC_APP_VERSION?.trim() || packageJson.version;
   const buildSha = process.env.NEXT_PUBLIC_APP_BUILD_SHA?.trim() || null;
   const builtAt = process.env.NEXT_PUBLIC_APP_BUILT_AT?.trim() || null;
   const offlineGeoEnabled = offlineGeoReady();

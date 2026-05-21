@@ -194,6 +194,15 @@ jobs:
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
+          # v1.4.43 B11 — thread the tag ref into the build as
+          # NEXT_PUBLIC_APP_VERSION. The Dockerfile picks it up as an
+          # ARG/ENV and /api/version reads it at runtime. The build-arg
+          # becomes part of the BuildKit layer cache key, so a release
+          # tag bump invalidates every downstream layer that depends on
+          # it (`pnpm build`) and the prior release's version string
+          # can never survive a cache hit into the new image.
+          build-args: |
+            NEXT_PUBLIC_APP_VERSION=${{ github.ref_name }}
           outputs: |
             type=image,name=${{ env.IMAGE_REF }},push-by-digest=true,name-canonical=true,push=${{ github.event_name != 'pull_request' }}
           cache-from: |

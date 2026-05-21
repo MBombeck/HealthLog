@@ -11,6 +11,17 @@ FROM node:22-alpine AS builder
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
+# v1.4.43 B11 — version build-arg threaded into the layer cache key.
+# Pre-v1.4.43 the docker-publish workflow shipped a stale package.json
+# version baked into the bundle because BuildKit reused the `pnpm build`
+# layer across releases (the COPY . . layer key was content-stable when
+# only the version string had changed and the next pnpm install layer
+# was warm). Passing the tag as a build-arg forces a per-release cache
+# miss on this layer and forwards the value into the runtime env so
+# /api/version reads from $NEXT_PUBLIC_APP_VERSION first.
+ARG NEXT_PUBLIC_APP_VERSION
+ENV NEXT_PUBLIC_APP_VERSION=$NEXT_PUBLIC_APP_VERSION
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
@@ -34,6 +45,14 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_PATH="/opt/pg-boss/node_modules"
 ENV TZ=Europe/Berlin
+
+# v1.4.43 B11 — forward NEXT_PUBLIC_APP_VERSION from the builder stage
+# into the runner so /api/version reads the build-arg value instead of
+# the package.json fallback. The variable is keyed to the CI tag ref
+# (`v1.4.43`, etc.), so a release that bumps the tag but cache-reuses
+# the prior `pnpm build` layer still surfaces the right runtime version.
+ARG NEXT_PUBLIC_APP_VERSION
+ENV NEXT_PUBLIC_APP_VERSION=$NEXT_PUBLIC_APP_VERSION
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
