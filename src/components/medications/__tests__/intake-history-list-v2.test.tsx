@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { IntakeHistoryListV2 } from "@/components/medications/intake-history-list-v2";
+import { queryKeys } from "@/lib/query-keys";
 
 /**
  * v1.4.36 W4a — IntakeHistoryListV2 SSR smoke tests.
@@ -62,16 +63,17 @@ function seedIntake(
   const limit = opts.limit ?? 25;
   const offset = opts.offset ?? 0;
   // v1.4.37 W3 — the component pins `status:"completed"` on the
-  // server-side query and threads it through the cache key, so the
-  // seed mirrors that shape verbatim.
+  // server-side query and threads it through the cache key. The seed
+  // routes through the canonical factory so the params shape stays in
+  // lockstep with the component's read.
   client.setQueryData(
-    [
-      "medications",
-      medId,
-      "intake",
-      "list",
-      { sortBy, sortDir, limit, offset, status: "completed" },
-    ],
+    queryKeys.medicationIntakeList(medId, {
+      sortBy,
+      sortDir,
+      limit,
+      offset,
+      status: "completed",
+    }),
     { events: rows, meta: { total, limit, offset } },
   );
 }

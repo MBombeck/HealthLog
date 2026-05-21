@@ -104,7 +104,18 @@ export const queryKeys = {
       offset: number;
       status: string;
     },
-  ) => ["medications", medicationId, "intake", "list", params] as const,
+  ) =>
+    [
+      "medications",
+      medicationId,
+      "intake",
+      "list",
+      params.sortBy,
+      params.sortDir,
+      params.limit,
+      params.offset,
+      params.status,
+    ] as const,
   /**
    * v1.4.40 W-RSC — the dashboard-level compliance chart (aggregate
    * across every scheduled medication) was a bare `["medication-

@@ -137,10 +137,17 @@ describe("queryKeys factory", () => {
       offset: 0,
       status: "completed",
     });
-    expect(listKey[0]).toBe("medications");
-    expect(listKey[1]).toBe("med1");
-    expect(listKey[2]).toBe("intake");
-    expect(listKey[3]).toBe("list");
+    expect(listKey).toEqual([
+      "medications",
+      "med1",
+      "intake",
+      "list",
+      "takenAt",
+      "desc",
+      25,
+      0,
+      "completed",
+    ]);
   });
 
   it("exposes withingsStatus under the withings prefix", () => {
