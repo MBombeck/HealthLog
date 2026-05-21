@@ -440,11 +440,50 @@ export async function generateWeightStatusForUser(
   );
 
   if (raced.timedOut || raced.value === null) {
+    // v1.4.41 — parity with bmi-status: persist a sentinel row keyed
+    // to today so the next mount short-circuits at the cache lookup
+    // above instead of re-racing the same 20 s provider call on every
+    // cold visit. Without this, a single stall (provider hiccup,
+    // network blip, model warm-up) left iOS users staring at the
+    // loading state on every dashboard open for the rest of the day.
+    // The body is the same no-key fallback the caller returned
+    // before, so the user-facing UI is identical; only the re-fire
+    // frequency drops to zero until the daily pre-warm job overwrites
+    // the stub. `meta.timeout` is set so the pre-warm worker can
+    // recognise and replace it rather than respect it as a real
+    // assessment.
+    const stubText = getNoKeyWeightStatusText(locale);
+    let stubUpdatedAt: string | null = null;
+    try {
+      const stub = await prisma.auditLog.create({
+        data: {
+          userId,
+          action: cacheAction,
+          details: JSON.stringify({
+            dateKey: todayKey,
+            locale,
+            text: stubText,
+            providerType: provider.type,
+            model: "timeout-stub",
+            tokensUsed: null,
+            timeout: true,
+          }),
+        },
+        select: { createdAt: true },
+      });
+      stubUpdatedAt = stub.createdAt.toISOString();
+    } catch {
+      // Best-effort persist — if the row write fails the caller still
+      // sees the deterministic fallback text and the next mount falls
+      // back to the (still expensive) race. Do not surface the error:
+      // the user does not care that the cache write missed, only that
+      // the page rendered.
+    }
     return {
       hasProvider: true,
-      text: getNoKeyWeightStatusText(locale),
+      text: stubText,
       cached: true,
-      updatedAt: null,
+      updatedAt: stubUpdatedAt,
     };
   }
 
