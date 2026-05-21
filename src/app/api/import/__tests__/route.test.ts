@@ -27,9 +27,29 @@ vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
 }));
 
+// v1.4.39.1 — surface the rollup hook so the new regression test can
+// assert that the import path now folds the persistent rollup tier
+// for each touched (type, day). Mood rollup mock stays no-op because
+// the existing v1.4.39 W-MOOD hook already covers the moodlog branch.
+vi.mock("@/lib/measurements/rollups", async () => {
+  const actual = await vi.importActual<
+    typeof import("@/lib/measurements/rollups")
+  >("@/lib/measurements/rollups");
+  return {
+    ...actual,
+    recomputeBucketsForMeasurement: vi.fn().mockResolvedValue(undefined),
+  };
+});
+
+vi.mock("@/lib/mood/rollups", () => ({
+  recomputeUserMoodRollups: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { NextRequest } from "next/server";
 import { POST } from "../route";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { prisma } from "@/lib/db";
+import { recomputeBucketsForMeasurement } from "@/lib/measurements/rollups";
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -105,5 +125,104 @@ describe("POST /api/import — rate-limit guard", () => {
     const body = (await response.json()) as ApiErrorEnvelope;
     expect(body.data).toBeNull();
     expect(body.error).toBeTruthy();
+  });
+});
+
+// v1.4.39.1 — the import path used to write measurements without
+// firing the rollup hook, so the dashboard chart's `source=rollup`
+// fast-path silently under-counted any imported days until the next
+// worker boot ran the backfill discovery. Cover the wiring with a
+// regression test so a future refactor can't silently drop it again.
+describe("POST /api/import — measurement rollup hook (v1.4.39.1)", () => {
+  it("folds the persistent rollup table for each (type, day) the import touched", async () => {
+    vi.mocked(checkRateLimit).mockResolvedValue({
+      allowed: true,
+      remaining: 4,
+      resetAt: new Date(Date.now() + 1000),
+    } as never);
+    vi.mocked(prisma.measurement.create).mockResolvedValue({} as never);
+
+    const response = await POST(
+      new NextRequest("http://localhost/api/import", {
+        method: "POST",
+        body: JSON.stringify({
+          measurements: [
+            {
+              type: "BLOOD_PRESSURE_SYS",
+              value: 124,
+              unit: "mmHg",
+              measuredAt: "2026-05-12T07:30:00.000Z",
+            },
+            {
+              type: "BLOOD_PRESSURE_SYS",
+              value: 121,
+              unit: "mmHg",
+              measuredAt: "2026-05-12T19:30:00.000Z",
+            },
+            {
+              type: "BLOOD_PRESSURE_SYS",
+              value: 119,
+              unit: "mmHg",
+              measuredAt: "2026-05-14T08:00:00.000Z",
+            },
+            {
+              type: "WEIGHT",
+              value: 82.4,
+              unit: "kg",
+              measuredAt: "2026-05-14T07:00:00.000Z",
+            },
+          ],
+        }),
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    expect(response.status).toBeLessThan(400);
+    // Two BP rows on 2026-05-12 collapse to one rollup call; one BP
+    // row on 2026-05-14 is its own call; one WEIGHT row on 2026-05-14
+    // is a separate (type, day) pair. Total = 3 distinct rollup folds.
+    expect(recomputeBucketsForMeasurement).toHaveBeenCalledTimes(3);
+    const calls = vi
+      .mocked(recomputeBucketsForMeasurement)
+      .mock.calls.map((c) => `${c[1]}|${(c[2] as Date).toISOString()}`);
+    expect(new Set(calls)).toEqual(
+      new Set([
+        "BLOOD_PRESSURE_SYS|2026-05-12T00:00:00.000Z",
+        "BLOOD_PRESSURE_SYS|2026-05-14T00:00:00.000Z",
+        "WEIGHT|2026-05-14T00:00:00.000Z",
+      ]),
+    );
+  });
+
+  it("does not call the rollup hook when no measurements were written", async () => {
+    vi.mocked(checkRateLimit).mockResolvedValue({
+      allowed: true,
+      remaining: 4,
+      resetAt: new Date(Date.now() + 1000),
+    } as never);
+    vi.mocked(prisma.measurement.create).mockRejectedValue(
+      new Error("P2002 duplicate"),
+    );
+
+    const response = await POST(
+      new NextRequest("http://localhost/api/import", {
+        method: "POST",
+        body: JSON.stringify({
+          measurements: [
+            {
+              type: "WEIGHT",
+              value: 82.4,
+              unit: "kg",
+              measuredAt: "2026-05-14T07:00:00.000Z",
+            },
+          ],
+        }),
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    expect(response.status).toBeLessThan(400);
+    // Every measurement raised a duplicate — no rollup fold needed.
+    expect(recomputeBucketsForMeasurement).not.toHaveBeenCalled();
   });
 });

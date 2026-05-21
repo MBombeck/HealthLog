@@ -48,6 +48,7 @@ import {
   recomputeUserMedicationCompliance,
   MEDICATION_COMPLIANCE_BACKFILL_DAYS,
 } from "@/lib/medications/compliance-rollups";
+import { recomputeUserRollups } from "@/lib/measurements/rollups";
 
 export const dynamic = "force-dynamic";
 
@@ -291,6 +292,14 @@ const handler = apiHandler(
         // pre-restore daily means. The fold below mints fresh rows
         // from the restored mood entries.
         await tx.moodEntryRollup.deleteMany({ where: { userId: ownerId } });
+        // v1.4.39.1 — wipe the persisted measurement rollup partition
+        // for the same reason. Pre-fix the partition kept the previous
+        // owner's daily means even after the underlying measurements
+        // were replaced — the chart's `source=rollup` fast-path could
+        // surface a stale 30-day mean built from rows that no longer
+        // existed. The fold below mints fresh rows from the restored
+        // measurement set.
+        await tx.measurementRollup.deleteMany({ where: { userId: ownerId } });
         const channels = await tx.notificationChannel.deleteMany({
           where: { userId: ownerId },
         });
@@ -418,6 +427,29 @@ const handler = apiHandler(
       });
       annotate({ meta: { restoreFailReason: verbose } });
       return apiError("Restore failed", 500);
+    }
+
+    // v1.4.39.1 — re-fold the persistent measurement rollup tier from
+    // the just-restored measurements. Pre-fix the restore left the
+    // rollup table empty for the owner, so the dashboard chart's
+    // `source=rollup` fast-path silently returned zero buckets until
+    // the next worker boot ran the backfill discovery — multi-hour
+    // window of empty charts for the operator-restored account. Runs
+    // outside the transaction (the 5-year fold would otherwise hold a
+    // long write lock) and is best-effort so a populator hiccup never
+    // undoes the restore. The boot-time backfill is the safety net.
+    if (payload.measurements.length > 0) {
+      try {
+        await recomputeUserRollups(ownerId);
+      } catch (err) {
+        annotate({
+          meta: {
+            measurement_rollup_restore_failed: true,
+            measurement_rollup_restore_error:
+              err instanceof Error ? err.message : String(err),
+          },
+        });
+      }
     }
 
     // v1.4.39 W-MOOD — re-fold the mood rollup tier from the just-

@@ -18,6 +18,11 @@ import {
   glucoseContextEnum,
 } from "@/lib/validations/measurement";
 import { recomputeUserMoodRollups } from "@/lib/mood/rollups";
+import {
+  collapseToTypeDayKeys,
+  recomputeBucketsForMeasurement,
+} from "@/lib/measurements/rollups";
+import type { MeasurementType } from "@/generated/prisma/client";
 
 // Derived from canonical enum so round-trip export → import covers every
 // type. Previous hardcoded subset silently dropped 4 of 11 types
@@ -82,9 +87,19 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const stats = { measurements: 0, moodEntries: 0, skipped: 0 };
 
   // Import measurements
+  // v1.4.39.1 — track each (type, measuredAt) we wrote so we can re-
+  // fold the persistent rollup tier at the end. Pre-fix, the import
+  // path bypassed the rollup write hook entirely, so a CSV / JSON
+  // restore left the user's `source=rollup` chart paths under-counting
+  // the imported days until the next worker boot re-ran the backfill.
+  const touchedMeasurements: Array<{
+    type: MeasurementType;
+    measuredAt: Date;
+  }> = [];
   if (data.measurements?.length) {
     for (const m of data.measurements) {
       try {
+        const measuredAt = new Date(m.measuredAt);
         await prisma.measurement.create({
           data: {
             userId,
@@ -92,10 +107,14 @@ export const POST = apiHandler(async (request: NextRequest) => {
             value: m.value,
             unit: m.unit,
             source: "IMPORT",
-            measuredAt: new Date(m.measuredAt),
+            measuredAt,
             notes: m.notes || null,
             glucoseContext: m.glucoseContext ?? null,
           },
+        });
+        touchedMeasurements.push({
+          type: m.type as MeasurementType,
+          measuredAt,
         });
         stats.measurements++;
       } catch {
@@ -142,6 +161,28 @@ export const POST = apiHandler(async (request: NextRequest) => {
         meta: {
           mood_rollup_import_failed: true,
           mood_rollup_import_error:
+            err instanceof Error ? err.message : String(err),
+        },
+      });
+    }
+  }
+
+  // v1.4.39.1 — refresh the persistent measurement rollup table for
+  // every distinct (type, day) the import touched. Collapsed so a
+  // 10 000-row CSV restore pays at most ~N (type, day) recomputes
+  // rather than 10 000 per-row hooks. Best-effort: a populator hiccup
+  // never fails the importer.
+  if (touchedMeasurements.length > 0) {
+    try {
+      const keys = collapseToTypeDayKeys(touchedMeasurements);
+      for (const k of keys) {
+        await recomputeBucketsForMeasurement(userId, k.type, k.measuredAt);
+      }
+    } catch (err) {
+      annotate({
+        meta: {
+          measurement_rollup_import_failed: true,
+          measurement_rollup_import_error:
             err instanceof Error ? err.message : String(err),
         },
       });
