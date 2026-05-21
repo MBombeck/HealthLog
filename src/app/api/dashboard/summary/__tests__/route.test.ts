@@ -116,20 +116,29 @@ describe("GET /api/dashboard/summary", () => {
     expect(body.data.greeting.salutation).toBe("Hi, marc");
     expect(body.data.streak.currentDays).toBe(0);
     expect(body.data.compliance.scheduledToday).toBe(0);
+    // REG-11 (v1.4.44): weight is the only always-emitted base metric.
+    // BP + pulse + bodyFat + optional kinds gate on `latest ||
+    // allTimeCount > 0` so accounts that have never logged a kind don't
+    // get an empty placeholder tile.
     expect(body.data.metrics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: "weight" }),
-        expect.objectContaining({ id: "bp" }),
-        expect.objectContaining({ id: "pulse" }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ id: "weight" })]),
     );
+    expect(
+      body.data.metrics.find((m) => m.id === "bp"),
+      "bp must not emit when allTimeCount === 0 (REG-11)",
+    ).toBeUndefined();
+    expect(
+      body.data.metrics.find((m) => m.id === "pulse"),
+      "pulse must not emit when allTimeCount === 0 (REG-11)",
+    ).toBeUndefined();
   });
 
-  it("emits allTimeCount + lastSeenAt for every base metric (v1.4.33 maintainer-item-1)", async () => {
-    // Empty-data path — every metric card still ships the new fields
-    // so the iOS client can render a tile + "Letzter Wert vor Xd"
-    // hint regardless of whether the route saw any rows in the 7-day
-    // window.
+  it("emits allTimeCount + lastSeenAt for the weight card on empty data (v1.4.33 maintainer-item-1)", async () => {
+    // REG-11 (v1.4.44): the always-emitted base set shrank to just
+    // `weight` — BP + pulse now gate on `latest || allTimeCount > 0`
+    // so an account that has never logged either doesn't get a noisy
+    // empty tile. Weight still ships unconditionally because the
+    // onboarding flow expects the tile as a primary CTA.
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     const res = await callGet(makeReq());
     const body = (await res.json()) as {
@@ -142,11 +151,9 @@ describe("GET /api/dashboard/summary", () => {
       };
     };
     const baseIds = body.data.metrics.map((m) => m.id);
-    for (const required of ["weight", "bp", "pulse"]) {
-      expect(baseIds, `${required} card missing from metrics list`).toContain(
-        required,
-      );
-    }
+    expect(baseIds, "weight card missing from metrics list").toContain(
+      "weight",
+    );
     for (const card of body.data.metrics) {
       expect(card.allTimeCount, `${card.id} missing allTimeCount`).toBe(0);
       expect(card.lastSeenAt, `${card.id} missing lastSeenAt`).toBeNull();
@@ -190,6 +197,200 @@ describe("GET /api/dashboard/summary", () => {
     // build the relative-age caption from a single field.
     expect(weight?.latestValue).toBeNull();
     expect(weight?.updatedAt).toBe(twoWeeksAgo.toISOString());
+  });
+
+  it("emits the BP tile with the historical value when the last reading is 60 days old (REG-11)", async () => {
+    // The original 7-day calendar filter in the latest-reading SQL
+    // dropped any row outside the trailing-7-day window, so a BP
+    // measurement logged 60 days ago surfaced as `latestValue: null`
+    // and `sparkline: []` — the iOS tile then had nothing to render.
+    // Post-REG-11 the `latestEver` aggregate carries the row + the
+    // `ROW_NUMBER`-windowed sparkline carries the trailing 7 daily
+    // rollup buckets regardless of how old they are.
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 86_400_000);
+    const sixtyOneDaysAgo = new Date(Date.now() - 61 * 86_400_000);
+    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
+      {
+        type: "BLOOD_PRESSURE_SYS",
+        _count: { _all: 14 },
+        _max: { measuredAt: sixtyDaysAgo },
+      },
+      {
+        type: "BLOOD_PRESSURE_DIA",
+        _count: { _all: 14 },
+        _max: { measuredAt: sixtyDaysAgo },
+      },
+    ] as never);
+    // Promise.all order: [latestEver, sparkline, streakDays].
+    vi.mocked(prisma.$queryRaw)
+      .mockResolvedValueOnce([
+        {
+          type: "BLOOD_PRESSURE_SYS",
+          value: 132,
+          measured_at: sixtyDaysAgo,
+        },
+        {
+          type: "BLOOD_PRESSURE_DIA",
+          value: 84,
+          measured_at: sixtyDaysAgo,
+        },
+      ] as never)
+      .mockResolvedValueOnce([
+        {
+          type: "BLOOD_PRESSURE_SYS",
+          bucket_start: sixtyOneDaysAgo,
+          mean: 130,
+          count: 1,
+          sum_value: null,
+        },
+        {
+          type: "BLOOD_PRESSURE_SYS",
+          bucket_start: sixtyDaysAgo,
+          mean: 132,
+          count: 1,
+          sum_value: null,
+        },
+      ] as never)
+      .mockResolvedValueOnce([] as never);
+
+    const res = await callGet(makeReq());
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: {
+        metrics: Array<{
+          id: string;
+          latestValue: number | null;
+          secondaryValue: number | null;
+          sparkline: number[];
+          allTimeCount: number;
+          lastSeenAt: string | null;
+        }>;
+      };
+    };
+    const bp = body.data.metrics.find((m) => m.id === "bp");
+    expect(bp, "bp tile must be emitted for stale-but-valid history").toBeDefined();
+    expect(bp?.latestValue).toBe(132);
+    expect(bp?.secondaryValue).toBe(84);
+    expect(bp?.allTimeCount).toBe(28);
+    expect(bp?.lastSeenAt).toBe(sixtyDaysAgo.toISOString());
+    expect(bp?.sparkline).toEqual([130, 132]);
+  });
+
+  it("does NOT emit the BP tile when the account has zero readings ever (REG-11)", async () => {
+    // Accounts that have never logged BP should not get an empty
+    // placeholder tile. Mirrors the bodyFat gate that's been in place
+    // since v1.4.33.
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const res = await callGet(makeReq());
+    const body = (await res.json()) as {
+      data: { metrics: Array<{ id: string }> };
+    };
+    expect(
+      body.data.metrics.find((m) => m.id === "bp"),
+      "bp tile must not emit when no BP reading exists",
+    ).toBeUndefined();
+    expect(
+      body.data.metrics.find((m) => m.id === "pulse"),
+      "pulse tile must not emit when no pulse reading exists",
+    ).toBeUndefined();
+  });
+
+  it("keeps the weight tile fresh when the latest reading is within 7d (REG-11 regression guard)", async () => {
+    // The post-REG-11 SQL drops the calendar filter — the recent-path
+    // (last reading <7d) must still produce identical output so we
+    // don't accidentally regress the fresh-data case.
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000);
+    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
+      {
+        type: "WEIGHT",
+        _count: { _all: 200 },
+        _max: { measuredAt: twoDaysAgo },
+      },
+    ] as never);
+    vi.mocked(prisma.$queryRaw)
+      .mockResolvedValueOnce([
+        { type: "WEIGHT", value: 82.4, measured_at: twoDaysAgo },
+      ] as never)
+      .mockResolvedValueOnce([
+        {
+          type: "WEIGHT",
+          bucket_start: twoDaysAgo,
+          mean: 82.4,
+          count: 1,
+          sum_value: null,
+        },
+      ] as never)
+      .mockResolvedValueOnce([] as never);
+
+    const res = await callGet(makeReq());
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: {
+        metrics: Array<{
+          id: string;
+          latestValue: number | null;
+          sparkline: number[];
+          allTimeCount: number;
+        }>;
+      };
+    };
+    const weight = body.data.metrics.find((m) => m.id === "weight");
+    expect(weight?.latestValue).toBe(82.4);
+    expect(weight?.sparkline).toEqual([82.4]);
+    expect(weight?.allTimeCount).toBe(200);
+  });
+
+  it("sparkline window takes the last 7 daily buckets even when they're all older than 7 days (REG-11)", async () => {
+    // The new `ROW_NUMBER() OVER (PARTITION BY type ORDER BY
+    // bucket_start DESC)` window guarantees the route asks the DB for
+    // exactly the trailing `SPARK_DAYS` buckets per type. Because the
+    // SQL runs in Postgres, the mock here only proves the route hands
+    // the buckets through in chronological order without dropping any
+    // for age. The asserted order matches the SQL `ORDER BY type,
+    // bucket_start ASC` so the iOS chart paints left-to-right with the
+    // oldest bucket first.
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const days = (n: number) => new Date(Date.now() - n * 86_400_000);
+    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
+      {
+        type: "PULSE",
+        _count: { _all: 42 },
+        _max: { measuredAt: days(30) },
+      },
+    ] as never);
+    vi.mocked(prisma.$queryRaw)
+      .mockResolvedValueOnce([
+        { type: "PULSE", value: 71, measured_at: days(30) },
+      ] as never)
+      .mockResolvedValueOnce([
+        { type: "PULSE", bucket_start: days(36), mean: 68, count: 3, sum_value: null },
+        { type: "PULSE", bucket_start: days(35), mean: 70, count: 3, sum_value: null },
+        { type: "PULSE", bucket_start: days(34), mean: 69, count: 3, sum_value: null },
+        { type: "PULSE", bucket_start: days(33), mean: 71, count: 3, sum_value: null },
+        { type: "PULSE", bucket_start: days(32), mean: 73, count: 3, sum_value: null },
+        { type: "PULSE", bucket_start: days(31), mean: 72, count: 3, sum_value: null },
+        { type: "PULSE", bucket_start: days(30), mean: 71, count: 3, sum_value: null },
+      ] as never)
+      .mockResolvedValueOnce([] as never);
+
+    const res = await callGet(makeReq());
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: {
+        metrics: Array<{
+          id: string;
+          latestValue: number | null;
+          sparkline: number[];
+        }>;
+      };
+    };
+    const pulse = body.data.metrics.find((m) => m.id === "pulse");
+    expect(pulse, "pulse tile must emit for stale history").toBeDefined();
+    expect(pulse?.latestValue).toBe(71);
+    expect(pulse?.sparkline).toEqual([68, 70, 69, 71, 73, 72, 71]);
+    expect(pulse?.sparkline).toHaveLength(7);
   });
 
   it("emits optional cards when allTimeCount > 0 but the 7-day window is empty", async () => {

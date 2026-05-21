@@ -22,13 +22,21 @@
  *   - the set of YYYY-MM-DD day-keys with any activity in 365 days
  *
  * v1.4.38 swaps the two unbounded reads for SQL aggregates:
- *   - `DISTINCT ON (type)` over the 7-day window → one row per type
- *     carrying the latest value + measuredAt (≤ N_metrics rows).
+ *   - `DISTINCT ON (type)` → one row per type carrying the latest
+ *     value + measuredAt (≤ N_metrics rows). REG-11 (v1.4.44) dropped
+ *     the trailing-7-day window from the WHERE clause; the tile now
+ *     surfaces the all-time-latest reading per type so a 60-day-old BP
+ *     measurement still feeds the tile (paired with the stale-caption
+ *     hint built off `lastSeenAt`).
  *   - `measurement_rollups` DAY buckets keyed `(user_id, granularity,
  *     bucketStart)` → at most 7 buckets per metric × N_metrics rows.
  *     Sparkline points become the bucket means rather than individual
  *     raw samples, which is a *smoother* trend signal for high-volume
  *     metrics like ACTIVITY_STEPS and bounded for every other metric.
+ *     REG-11 (v1.4.44) switched the calendar-window filter for a
+ *     `ROW_NUMBER() OVER (PARTITION BY type ORDER BY bucket_start
+ *     DESC)` window so the sparkline takes the last `SPARK_DAYS`
+ *     buckets per type regardless of age.
  *   - `SELECT DISTINCT date_trunc('day', measured_at)::date` over the
  *     365-day window → at most 365 dates (vs. up to 100k raw rows).
  *
@@ -192,25 +200,40 @@ function computeStreak(activityDays: Set<string>, userTz: string): StreakInfo {
   return { currentDays, longest };
 }
 
-/** v1.4.38 W-F — `DISTINCT ON (type)` row for the most recent reading
- *  per measurement type inside the 7-day window. One row per metric
- *  the user touched in the window; replaces the legacy unbounded
- *  `prisma.measurement.findMany`. */
-interface LatestIn7dRow {
+/** v1.4.38 W-F — `DISTINCT ON (type)` row for the single most recent
+ *  reading per measurement type, irrespective of age. One row per
+ *  metric the user has ever touched; replaces the legacy unbounded
+ *  `prisma.measurement.findMany`.
+ *
+ *  REG-11 (v1.4.44): dropped the trailing-7-day window from the WHERE
+ *  clause. The old shape returned `latestValue: null` + an empty
+ *  sparkline for accounts whose last BP / pulse reading was older than
+ *  7 days, leaving the iOS tile blank even though the historical row
+ *  was still in the database. The all-time aggregate (`groupBy` on
+ *  `measurements`) already proves the row exists; the row count is
+ *  still bounded by `|measurementTypes|` via `DISTINCT ON`. */
+interface LatestEverRow {
   type: MeasurementType;
   value: number;
   measured_at: Date;
 }
 
-/** v1.4.38 W-F — per-day measurement_rollup bucket inside the 7-day
- *  window. At most 7 buckets per metric × N metrics — bounded by
+/** v1.4.38 W-F — per-day measurement_rollup bucket feeding the dashboard
+ *  sparkline. At most 7 buckets per metric × N metrics — bounded by
  *  `SPARK_DAYS * |measurementTypes|` rather than the raw row count.
  *
  *  v1.4.39 W-SUM — `sum_value` rides along so the cumulative tile
  *  (ACTIVITY_STEPS) renders the daily SUM rather than the per-bucket
  *  MEAN. Spot metrics ignore the column; cumulative tiles fall back to
  *  `mean * count` when the legacy NULL hits (boot-backfill convergence
- *  window). */
+ *  window).
+ *
+ *  REG-11 (v1.4.44): switched from a calendar-window filter
+ *  (`bucket_start >= sevenDaysAgo`) to a `ROW_NUMBER() OVER (PARTITION
+ *  BY type ORDER BY bucket_start DESC)` window so the sparkline takes
+ *  the last `SPARK_DAYS` daily buckets per type regardless of age. An
+ *  account whose last BP reading is 60 days old now still gets the
+ *  trailing 7 days of historical buckets feeding the tile chart. */
 interface SparklineRow {
   type: MeasurementType;
   bucket_start: Date;
@@ -308,7 +331,10 @@ async function buildDashboardSummary(
   ctx: SummaryBuilderContext,
 ) {
   const now = new Date();
-  const sevenDaysAgo = new Date(now.getTime() - SPARK_DAYS * 86_400_000);
+  // REG-11 (v1.4.44): the trailing-7-day pivot used to anchor the
+  // latest-reading + sparkline filters is gone — both sub-queries now
+  // take the most recent N rows per type regardless of age. Only the
+  // streak window still anchors on a calendar slice.
   const streakWindowStart = new Date(
     now.getTime() - STREAK_WINDOW_DAYS * 86_400_000,
   );
@@ -337,46 +363,56 @@ async function buildDashboardSummary(
 
   // v1.4.38 W-F — six bounded sub-queries replace the legacy 4
   // unbounded ones. Row counts are now:
-  //   - latestIn7d: ≤ N metric types (one row per type via DISTINCT ON)
-  //   - sparkBuckets: ≤ SPARK_DAYS × N metric types (typically <80)
+  //   - latestEver: ≤ N metric types (one row per type via DISTINCT ON,
+  //                 REG-11: dropped the 7-day window so a stale-but-
+  //                 valid historical reading still feeds the tile)
+  //   - sparkBuckets: ≤ SPARK_DAYS × N metric types (typically <80,
+  //                  REG-11: taken via ROW_NUMBER window, no calendar
+  //                  filter, so a 60-day-old metric still paints a chart)
   //   - allTimeAggregate: ≤ N metric types (unchanged)
   //   - todaysIntakes: ≤ daily intake schedule count (unchanged)
   //   - streakActivity: ≤ daily intake count × 365 (unchanged)
   //   - measurementStreakDays: ≤ 365 (was: every raw row in 365d)
   const [
-    latestIn7d,
+    latestEver,
     sparkBuckets,
     allTimeAggregate,
     todaysIntakes,
     streakActivity,
     measurementStreakDays,
   ] = await Promise.all([
-    time("latest7d", () =>
-      prisma.$queryRaw<LatestIn7dRow[]>`
+    time("latestEver", () =>
+      prisma.$queryRaw<LatestEverRow[]>`
         SELECT DISTINCT ON (m."type")
           m."type"                                  AS type,
           m."value"::double precision               AS value,
           m."measured_at"                           AS measured_at
         FROM measurements m
         WHERE m."user_id" = ${userId}
-          AND m."measured_at" >= ${sevenDaysAgo}
           AND m."deleted_at" IS NULL
         ORDER BY m."type", m."measured_at" DESC
       `,
     ),
     time("sparkline", () =>
       prisma.$queryRaw<SparklineRow[]>`
-        SELECT
-          r."type"                                  AS type,
-          r."bucket_start"                          AS bucket_start,
-          r."mean"::double precision                AS mean,
-          r."count"::int                            AS count,
-          r."sum_value"::double precision           AS sum_value
-        FROM measurement_rollups r
-        WHERE r."user_id" = ${userId}
-          AND r."granularity" = 'DAY'
-          AND r."bucket_start" >= ${sevenDaysAgo}
-        ORDER BY r."type", r."bucket_start" ASC
+        SELECT type, bucket_start, mean, count, sum_value
+        FROM (
+          SELECT
+            r."type"                                  AS type,
+            r."bucket_start"                          AS bucket_start,
+            r."mean"::double precision                AS mean,
+            r."count"::int                            AS count,
+            r."sum_value"::double precision           AS sum_value,
+            ROW_NUMBER() OVER (
+              PARTITION BY r."type"
+              ORDER BY r."bucket_start" DESC
+            ) AS rn
+          FROM measurement_rollups r
+          WHERE r."user_id" = ${userId}
+            AND r."granularity" = 'DAY'
+        ) sub
+        WHERE rn <= ${SPARK_DAYS}
+        ORDER BY type, bucket_start ASC
       `,
     ),
     time("allTime", () =>
@@ -474,8 +510,11 @@ async function buildDashboardSummary(
 
   // v1.4.38 W-F — per-type latest (one row per type) + sparkline
   // (bucket means per day) assembled from the two new SQL aggregates.
+  // REG-11 (v1.4.44): `latestEver` carries the most recent reading
+  // regardless of age — the iOS tile shows the historical value plus a
+  // muted "Letzter Wert vor Xd" caption rather than nothing at all.
   const latestByType = new Map<MeasurementType, { value: number; at: Date }>();
-  for (const row of latestIn7d) {
+  for (const row of latestEver) {
     latestByType.set(row.type, {
       value: Number(row.value),
       at: new Date(row.measured_at),
@@ -541,7 +580,10 @@ async function buildDashboardSummary(
     });
   }
 
-  // Blood pressure (paired sys/dia)
+  // Blood pressure (paired sys/dia) — REG-11 (v1.4.44): gate the emit
+  // on `latestSys || latestDia || bpAllTimeCount > 0` so an account
+  // that has never logged BP doesn't get an empty placeholder tile.
+  // Mirrors the body-fat gate below.
   {
     const latestSys = latestOf("BLOOD_PRESSURE_SYS");
     const latestDia = latestOf("BLOOD_PRESSURE_DIA");
@@ -560,42 +602,48 @@ async function buildDashboardSummary(
       if (!diaAt) return sysAt;
       return sysAt >= diaAt ? sysAt : diaAt;
     })();
-    metrics.push({
-      id: "bp",
-      kind: "bloodPressure",
-      title: METRIC_TITLES.bloodPressure,
-      latestValue: latestSys?.value ?? null,
-      secondaryValue: latestDia?.value ?? null,
-      unit: METRIC_UNITS.bloodPressure,
-      trend: trendOf(sysSpark),
-      sparkline: sysSpark,
-      updatedAt:
-        latestSys?.at?.toISOString() ??
-        latestDia?.at?.toISOString() ??
-        bpLastSeenAt,
-      allTimeCount: bpAllTimeCount,
-      lastSeenAt: bpLastSeenAt,
-    });
+    if (latestSys || latestDia || bpAllTimeCount > 0) {
+      metrics.push({
+        id: "bp",
+        kind: "bloodPressure",
+        title: METRIC_TITLES.bloodPressure,
+        latestValue: latestSys?.value ?? null,
+        secondaryValue: latestDia?.value ?? null,
+        unit: METRIC_UNITS.bloodPressure,
+        trend: trendOf(sysSpark),
+        sparkline: sysSpark,
+        updatedAt:
+          latestSys?.at?.toISOString() ??
+          latestDia?.at?.toISOString() ??
+          bpLastSeenAt,
+        allTimeCount: bpAllTimeCount,
+        lastSeenAt: bpLastSeenAt,
+      });
+    }
   }
 
-  // Pulse
+  // Pulse — REG-11 (v1.4.44): gate the emit on `latest || allTimeCount
+  // > 0` so an account that has never logged pulse doesn't get an empty
+  // placeholder tile. Mirrors the body-fat gate below.
   {
     const latest = latestOf("PULSE");
     const spark = sparkOf("PULSE");
     const meta = metaForType("PULSE");
-    metrics.push({
-      id: "pulse",
-      kind: "pulse",
-      title: METRIC_TITLES.pulse,
-      latestValue: latest?.value ?? null,
-      secondaryValue: null,
-      unit: METRIC_UNITS.pulse,
-      trend: trendOf(spark),
-      sparkline: spark,
-      updatedAt: latest?.at?.toISOString() ?? meta.lastSeenAt,
-      allTimeCount: meta.allTimeCount,
-      lastSeenAt: meta.lastSeenAt,
-    });
+    if (latest || meta.allTimeCount > 0) {
+      metrics.push({
+        id: "pulse",
+        kind: "pulse",
+        title: METRIC_TITLES.pulse,
+        latestValue: latest?.value ?? null,
+        secondaryValue: null,
+        unit: METRIC_UNITS.pulse,
+        trend: trendOf(spark),
+        sparkline: spark,
+        updatedAt: latest?.at?.toISOString() ?? meta.lastSeenAt,
+        allTimeCount: meta.allTimeCount,
+        lastSeenAt: meta.lastSeenAt,
+      });
+    }
   }
 
   // Body fat — v1.4.33 widens the emit gate from `latestOf` (only
