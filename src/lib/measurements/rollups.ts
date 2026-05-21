@@ -741,35 +741,46 @@ export async function enqueueBootTimeRollupBackfill(): Promise<{
   }
 
   try {
-    // Users where at least one measurement type lacks DAY-rollup
-    // coverage. Anchored on the per-user `DISTINCT type` set so the
-    // planner uses the `(user_id, type, measured_at)` index path; the
-    // LEFT JOIN onto `measurement_rollups` uses the
-    // `(user_id, type, granularity, bucket_start)` composite primary
-    // key. `measurement_rollups` has no surrogate `id` column —
-    // `r."bucket_start" IS NULL` (any column from the right side of
-    // the LEFT JOIN) marks the unmatched partitions. A user surfaces
-    // here when ANY type is missing — including the brand-new-type
-    // case that v1.4.35.1's zero-rollup-only shape silently stranded.
+    // Users where at least one (type, day) pair in `measurements`
+    // has no matching DAY rollup row.
+    //
+    // v1.4.39.1 — tightened from per-type to per-day. The legacy shape
+    // matched users where ANY type had zero rollup rows. That stranded
+    // accounts whose Withings sync / `/api/import` / admin restore
+    // wrote measurements without firing the rollup write hook: as soon
+    // as ONE rollup row existed for the type (even from a prior boot
+    // backfill), the LEFT JOIN found a match and the user dropped off
+    // the discovery list — leaving the dashboard chart's
+    // `source=rollup` fast-path under-counting the missing days.
+    // Switching the join to `(user, type, bucketStart)` surfaces every
+    // per-day gap. Cost: the inner DISTINCT widens from
+    // `(user_id, type)` (≈15 rows/user) to
+    // `(user_id, type, day)` (≈5 k rows/user on a 5-year power user),
+    // which is still bounded by the `(user_id, type, measured_at)`
+    // index path. The LEFT JOIN walks `measurement_rollups` against
+    // its composite primary key.
     //
     // v1.4.39 W-SUM — the discovery also surfaces users whose existing
     // DAY rollup rows carry `sum_value IS NULL`. Those rows pre-date
     // the v1.4.39 writer change; re-folding the user converges them
     // because `persistRollupRows` always writes the new column on
-    // upsert. The union runs in one query so the existing per-type
-    // coverage gap and the legacy-NULL backfill share a single planner
-    // pass.
+    // upsert. The union runs in one query so the per-day coverage gap
+    // and the legacy-NULL backfill share a single planner pass.
     const users = await prisma.$queryRaw<Array<{ id: string }>>`
       SELECT DISTINCT id FROM (
         SELECT DISTINCT mt."user_id" AS id
         FROM (
-          SELECT DISTINCT m."user_id", m."type"
+          SELECT DISTINCT
+            m."user_id",
+            m."type",
+            date_trunc('day', m."measured_at") AS bucket_start
           FROM measurements m
         ) mt
         LEFT JOIN measurement_rollups r
           ON  r."user_id"     = mt."user_id"
           AND r."type"        = mt."type"
           AND r."granularity" = 'DAY'
+          AND r."bucket_start" = mt."bucket_start"
         WHERE r."bucket_start" IS NULL
         UNION
         SELECT DISTINCT r2."user_id" AS id
