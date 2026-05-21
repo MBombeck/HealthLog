@@ -208,8 +208,20 @@ describe("v1.4.39 W-MED — compliance rollup read swap", () => {
     vi.mocked(prisma.$queryRaw).mockResolvedValue([
       { rolled_days: BigInt(7), event_days: BigInt(7) },
     ] as never);
+    // v1.4.39.1 — anchor the seed row on the runtime's "today" so the
+    // test stays green across the calendar regardless of when it
+    // runs. The pre-fix shape hard-coded `2026-05-18`, which fell out
+    // of the trailing-7-day window on every subsequent wall-clock
+    // day and silently shifted the body.data tail off the seed.
+    const todayKey = (() => {
+      const now = new Date();
+      const y = now.getUTCFullYear();
+      const m = String(now.getUTCMonth() + 1).padStart(2, "0");
+      const d = String(now.getUTCDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    })();
     vi.mocked(prisma.medicationComplianceRollup.findMany).mockResolvedValue([
-      { day: "2026-05-18", scheduled: 3, taken: 2, skipped: 1 },
+      { day: todayKey, scheduled: 3, taken: 2, skipped: 1 },
     ] as never);
 
     const res = await GET(
