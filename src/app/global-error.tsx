@@ -3,7 +3,9 @@
 /**
  * Root-level error boundary. Renders when even the root layout itself fails,
  * so it cannot rely on any providers (i18n, query, auth). Keep it static,
- * in English, and self-contained.
+ * self-contained, and bilingual: both English and German appear side by side
+ * so a German visitor never lands on an all-English last-resort screen, and
+ * an English visitor can still read it.
  */
 export default function GlobalError({
   error,
@@ -28,7 +30,7 @@ export default function GlobalError({
     try {
       await navigator.clipboard.writeText(text);
     } catch {
-      window.prompt("Copy details", text);
+      window.prompt("Details kopieren · Copy details", text);
     }
   }
 
@@ -55,11 +57,13 @@ export default function GlobalError({
       >
         <div style={{ maxWidth: 560 }}>
           <h1 style={{ fontSize: 20, marginBottom: 12 }}>
-            Something went wrong
+            Etwas ist schiefgegangen · Something went wrong
           </h1>
           <p style={{ color: "#d0d0d0", marginBottom: 16, fontSize: 14 }}>
-            A critical error occurred. You can retry or copy the details for
-            support.
+            Ein kritischer Fehler ist aufgetreten. Du kannst es erneut versuchen
+            oder die Details kopieren.
+            <br />A critical error occurred. You can retry or copy the details
+            for support.
           </p>
           <pre
             style={{
@@ -72,7 +76,7 @@ export default function GlobalError({
               border: "1px solid #44475a",
             }}
           >
-            {error.message || "Unknown error"}
+            {error.message || "Unbekannter Fehler · Unknown error"}
           </pre>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button
@@ -92,7 +96,7 @@ export default function GlobalError({
                 fontWeight: 500,
               }}
             >
-              Retry
+              Erneut versuchen · Retry
             </button>
             <button
               onClick={handleCopy}
@@ -107,7 +111,7 @@ export default function GlobalError({
                 fontSize: 14,
               }}
             >
-              Copy details
+              Details kopieren · Copy details
             </button>
           </div>
         </div>
