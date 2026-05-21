@@ -55,6 +55,7 @@ export async function probeRollupCoverage(
       SELECT DISTINCT "type"
       FROM measurements
       WHERE user_id = ${userId}
+        AND "deleted_at" IS NULL
     ) m
     LEFT JOIN measurement_rollups r
       ON  r.user_id     = ${userId}
