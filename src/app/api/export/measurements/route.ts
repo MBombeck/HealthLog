@@ -89,9 +89,21 @@ function safeDate(value: string): Date | undefined {
 function buildWhere(
   userId: string,
   range: { since?: Date; until?: Date },
-): { userId: string; measuredAt?: { gte?: Date; lte?: Date } } {
-  const where: { userId: string; measuredAt?: { gte?: Date; lte?: Date } } = {
+): {
+  userId: string;
+  deletedAt: null;
+  measuredAt?: { gte?: Date; lte?: Date };
+} {
+  // v1.4.41 W-DELETED-2 — soft-deleted measurements stay out of every
+  // per-type CSV download so an undo or pending-sync row never reaches
+  // the user's local file.
+  const where: {
+    userId: string;
+    deletedAt: null;
+    measuredAt?: { gte?: Date; lte?: Date };
+  } = {
     userId,
+    deletedAt: null,
   };
   if (range.since || range.until) {
     where.measuredAt = {};

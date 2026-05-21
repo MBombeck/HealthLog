@@ -55,7 +55,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   if (type === "measurements" || type === "all") {
     const measurements = await prisma.measurement.findMany({
-      where: { userId },
+      // v1.4.41 W-DELETED-2 — exclude soft-deleted measurements from
+      // the legacy /api/export endpoint so CSV + JSON downloads stay
+      // consistent with the live measurement reads.
+      where: { userId, deletedAt: null },
       orderBy: { measuredAt: "desc" },
     });
     data.measurements =

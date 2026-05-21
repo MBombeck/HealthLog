@@ -36,7 +36,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const [measurements, medications, intakeEvents, moodEntries] =
     await Promise.all([
       prisma.measurement.findMany({
-        where: { userId: user.id },
+        // v1.4.41 W-DELETED-2 — soft-deleted rows are excluded from the
+        // user-initiated backup bundle so the round-trip via admin
+        // restore does not resurrect deleted measurements.
+        where: { userId: user.id, deletedAt: null },
         orderBy: { measuredAt: "desc" },
       }),
       // Explicit `select` on the schedule columns — see the matching
