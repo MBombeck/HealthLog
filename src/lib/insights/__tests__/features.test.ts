@@ -5,11 +5,27 @@ vi.mock("@/lib/db", () => ({
     user: { findUnique: vi.fn() },
     measurement: { findMany: vi.fn() },
     measurementRollup: { findMany: vi.fn() },
-    moodEntry: { findMany: vi.fn() },
+    moodEntry: { findMany: vi.fn(), findFirst: vi.fn() },
+    moodEntryRollup: { findMany: vi.fn(), findFirst: vi.fn() },
     medication: { findMany: vi.fn() },
     medicationIntakeEvent: { findMany: vi.fn() },
+    $queryRawUnsafe: vi.fn(),
   },
 }));
+
+// Stub the mood-rollup warm-up so test runs don't fire the real
+// recompute aggregate. The warm-up is fire-and-forget on the route.
+vi.mock("@/lib/mood/rollups", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/mood/rollups")>(
+    "@/lib/mood/rollups",
+  );
+  return {
+    ...actual,
+    ensureUserMoodRollupsFresh: vi
+      .fn()
+      .mockResolvedValue({ recomputed: false }),
+  };
+});
 
 vi.mock("@/lib/medication-category", () => ({
   getMedicationCategories: vi.fn(async () => ({})),
@@ -27,7 +43,14 @@ const prismaMock = prisma as unknown as {
   user: { findUnique: ReturnType<typeof vi.fn> };
   measurement: { findMany: ReturnType<typeof vi.fn> };
   measurementRollup: { findMany: ReturnType<typeof vi.fn> };
-  moodEntry: { findMany: ReturnType<typeof vi.fn> };
+  moodEntry: {
+    findMany: ReturnType<typeof vi.fn>;
+    findFirst: ReturnType<typeof vi.fn>;
+  };
+  moodEntryRollup: {
+    findMany: ReturnType<typeof vi.fn>;
+    findFirst: ReturnType<typeof vi.fn>;
+  };
   medication: { findMany: ReturnType<typeof vi.fn> };
   medicationIntakeEvent: { findMany: ReturnType<typeof vi.fn> };
 };
@@ -58,6 +81,9 @@ beforeEach(() => {
   prismaMock.measurement.findMany.mockResolvedValue([]);
   prismaMock.measurementRollup.findMany.mockResolvedValue([]);
   prismaMock.moodEntry.findMany.mockResolvedValue([]);
+  prismaMock.moodEntry.findFirst.mockResolvedValue(null);
+  prismaMock.moodEntryRollup.findMany.mockResolvedValue([]);
+  prismaMock.moodEntryRollup.findFirst.mockResolvedValue(null);
   prismaMock.medication.findMany.mockResolvedValue([]);
   prismaMock.medicationIntakeEvent.findMany.mockResolvedValue([]);
 });

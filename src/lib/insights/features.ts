@@ -16,6 +16,10 @@ import {
 } from "@/lib/analytics/correlations";
 import { getMedicationCategories } from "@/lib/medication-category";
 import { readRollupBuckets } from "@/lib/measurements/rollups";
+import {
+  ensureUserMoodRollupsFresh,
+  readMoodDayRollups,
+} from "@/lib/mood/rollups";
 import type {
   MeasurementType,
   RollupGranularity,
@@ -583,24 +587,104 @@ export async function extractFeatures(
   }
 
   // Mood
-  const moodEntries = await prisma.moodEntry.findMany({
-    where: { userId },
-    orderBy: { moodLoggedAt: "asc" },
-  });
+  //
+  // v1.4.40 — swap the unbounded `prisma.moodEntry.findMany` for the
+  // persistent mood-rollup DAY tier (audit Critical Finding #2). The
+  // feature block downstream consumes:
+  //   - `avg7` / `avg30` over recent rollup means
+  //   - `trend30` from first-half vs second-half of last 30 days
+  //   - `latest` = newest individual entry score (one bounded row)
+  //   - `totalEntries` = sum of rollup `count` across all DAY rows
+  //   - `oldest` / `newest` = first and last rollup `bucketStart`
+  //   - `moodPoints` for cross-metric correlations (one per-day mean
+  //     DataPoint — same resolution as the legacy raw-score series for
+  //     single-entry-per-day power users, slightly different on
+  //     multi-entry days, which is the rollup-tier semantic the
+  //     v1.4.39 `/api/mood/analytics` already shipped)
+  //
+  // Coverage-fallback: when raw entries exist but the rollup tier is
+  // still empty (legacy account before boot-time backfill caught up),
+  // we fall back to a bounded 1-year raw walk and fire the warm-up so
+  // the next request lands on the rollup tier. Same posture as
+  // `/api/mood/analytics`.
+  void ensureUserMoodRollupsFresh(userId);
+  // Five-year window mirrors the mood-rollup writer default; covers
+  // every realistic user history span without an unbounded scan.
+  const moodSince = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000);
+  const moodRollupDayRows = await readMoodDayRollups(userId, moodSince);
 
-  if (moodEntries.length > 0) {
+  type MoodDayPoint = {
+    measuredAt: Date;
+    value: number;
+    count: number;
+  };
+  let moodDailyPoints: MoodDayPoint[] = [];
+  let moodLatestScore: number | null = null;
+  let moodTotalEntries = 0;
+
+  if (moodRollupDayRows.length > 0) {
+    moodDailyPoints = moodRollupDayRows.map((r) => ({
+      measuredAt: r.bucketStart,
+      value: r.mean,
+      count: r.count,
+    }));
+    moodTotalEntries = moodRollupDayRows.reduce((s, r) => s + r.count, 0);
+    // Latest score = newest individual entry (one bounded row).
+    const latestEntry = await prisma.moodEntry.findFirst({
+      where: { userId },
+      orderBy: { moodLoggedAt: "desc" },
+      select: { score: true },
+    });
+    moodLatestScore = latestEntry?.score ?? null;
+  } else {
+    // Coverage-fallback. Bounded 1-year walk (instead of the legacy
+    // unbounded `findMany`) so even a cache miss is capped.
+    const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+    const moodEntriesRaw = await prisma.moodEntry.findMany({
+      where: { userId, moodLoggedAt: { gte: oneYearAgo } },
+      orderBy: { moodLoggedAt: "asc" },
+      select: { score: true, moodLoggedAt: true, date: true },
+    });
+    if (moodEntriesRaw.length > 0) {
+      // Bucket per `date` (TZ-anchored YYYY-MM-DD label, same key the
+      // rollup tier would emit for Berlin-anchored single-entry days)
+      // so the fallback shape matches the rollup-tier shape.
+      const byDay = new Map<string, { sum: number; count: number; ts: Date }>();
+      for (const e of moodEntriesRaw) {
+        const k = e.date;
+        const cur = byDay.get(k) ?? { sum: 0, count: 0, ts: e.moodLoggedAt };
+        cur.sum += e.score;
+        cur.count += 1;
+        // Pin the bucket's measuredAt to the latest entry's timestamp
+        // — close enough for the trailing-window filters below.
+        if (e.moodLoggedAt > cur.ts) cur.ts = e.moodLoggedAt;
+        byDay.set(k, cur);
+      }
+      moodDailyPoints = Array.from(byDay.values())
+        .map((b) => ({
+          measuredAt: b.ts,
+          value: b.sum / b.count,
+          count: b.count,
+        }))
+        .sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime());
+      moodTotalEntries = moodEntriesRaw.length;
+      moodLatestScore = moodEntriesRaw[moodEntriesRaw.length - 1].score;
+    }
+  }
+
+  if (moodDailyPoints.length > 0) {
     const moodNow = Date.now();
-    const last7 = moodEntries.filter(
-      (e) => moodNow - e.moodLoggedAt.getTime() < 7 * 24 * 60 * 60 * 1000,
+    const last7 = moodDailyPoints.filter(
+      (e) => moodNow - e.measuredAt.getTime() < 7 * 24 * 60 * 60 * 1000,
     );
-    const last30 = moodEntries.filter(
-      (e) => moodNow - e.moodLoggedAt.getTime() < 30 * 24 * 60 * 60 * 1000,
+    const last30 = moodDailyPoints.filter(
+      (e) => moodNow - e.measuredAt.getTime() < 30 * 24 * 60 * 60 * 1000,
     );
 
-    const avg = (entries: typeof moodEntries) =>
-      entries.length > 0
+    const avg = (points: MoodDayPoint[]) =>
+      points.length > 0
         ? Math.round(
-            (entries.reduce((s, e) => s + e.score, 0) / entries.length) * 100,
+            (points.reduce((s, e) => s + e.value, 0) / points.length) * 100,
           ) / 100
         : null;
 
@@ -608,10 +692,10 @@ export async function extractFeatures(
     let trend30: "improving" | "declining" | "stable" | null = null;
     if (last30.length >= 4) {
       const firstHalf = last30.filter(
-        (e) => moodNow - e.moodLoggedAt.getTime() >= 15 * 24 * 60 * 60 * 1000,
+        (e) => moodNow - e.measuredAt.getTime() >= 15 * 24 * 60 * 60 * 1000,
       );
       const secondHalf = last30.filter(
-        (e) => moodNow - e.moodLoggedAt.getTime() < 15 * 24 * 60 * 60 * 1000,
+        (e) => moodNow - e.measuredAt.getTime() < 15 * 24 * 60 * 60 * 1000,
       );
       if (firstHalf.length >= 2 && secondHalf.length >= 2) {
         const avgFirst = avg(firstHalf)!;
@@ -623,25 +707,25 @@ export async function extractFeatures(
       }
     }
 
-    const oldest = moodEntries[0].moodLoggedAt;
-    const newest = moodEntries[moodEntries.length - 1].moodLoggedAt;
+    const oldest = moodDailyPoints[0].measuredAt;
+    const newest = moodDailyPoints[moodDailyPoints.length - 1].measuredAt;
     const spanDays = Math.round(
       (newest.getTime() - oldest.getTime()) / (24 * 60 * 60 * 1000),
     );
     const avgDaysBetween =
-      moodEntries.length > 1
-        ? Math.round((spanDays / (moodEntries.length - 1)) * 10) / 10
+      moodTotalEntries > 1
+        ? Math.round((spanDays / (moodTotalEntries - 1)) * 10) / 10
         : null;
 
     features.mood = {
       scale: "1=LAUSIG, 2=SCHLECHT, 3=OKAY, 4=GUT, 5=SUPER_GUT",
       avg7: avg(last7),
       avg30: avg(last30),
-      latest: moodEntries[moodEntries.length - 1].score,
+      latest: moodLatestScore,
       trend30,
-      totalEntries: moodEntries.length,
+      totalEntries: moodTotalEntries,
       coverage: {
-        count: moodEntries.length,
+        count: moodTotalEntries,
         spanDays,
         avgDaysBetween,
         oldestDaysAgo: Math.round(
@@ -659,9 +743,9 @@ export async function extractFeatures(
   const sysPoints = toDataPoints(sysData);
   const diaPoints = toDataPoints(diaData);
   const pulsePoints = toDataPoints(pulseData);
-  const moodPoints: DataPoint[] = moodEntries.map((e) => ({
-    date: e.moodLoggedAt,
-    value: e.score,
+  const moodPoints: DataPoint[] = moodDailyPoints.map((e) => ({
+    date: e.measuredAt,
+    value: e.value,
   }));
 
   const computeCorr = (a: DataPoint[], b: DataPoint[]) =>
