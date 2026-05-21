@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.39.4] — 2026-05-21 — Dashboard symmetry for daily-schedule intake projection
+
+v1.4.39.3 fixed `/api/medications/intake?scope=today` to project active schedules through the new `expandTodayIntakes` helper and idempotently backfill missing rows for daily meds (`daysOfWeek: null`). `/api/dashboard/summary` reads the same today-window for its compliance tile but had no projection step, so the iOS Dashboard tile fell to "Heute nichts geplant" even when the intake route surfaced the same meds correctly.
+
+### Fixed
+
+- **`/api/dashboard/summary` compliance tile** now mirrors the intake route's projection. Reuses the canonical `expandTodayIntakes` helper plus an idempotent `createMany({ skipDuplicates: true })` that survives a concurrent intake-route hit racing the same `(userId, medicationId, scheduledFor, REMINDER)` row in before the existence probe converges.
+
+### Operator notes
+
+- No migration. No env-var change. No API contract break.
+- Daily meds with `daysOfWeek: null` (DB convention for "every day") now surface in the iOS Dashboard tile + Erfassen sheet the moment the user opens the app, instead of waiting for the reminder worker to enter RED phase at the end of the dose window.
+
 ## [1.4.39.3] — 2026-05-21 — Dashboard slim/thick merge robustness and list-page value precision
 
 The post-deploy CI for v1.4.39.2 surfaced eight e2e failures across two
