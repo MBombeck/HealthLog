@@ -1,8 +1,73 @@
 import { isIP } from "node:net";
 import { NextResponse } from "next/server";
+import type { ZodError, ZodIssue } from "zod/v4";
 
 export function apiSuccess<T>(data: T, status = 200) {
   return NextResponse.json({ data, error: null }, { status });
+}
+
+/**
+ * Sanitised view of a single Zod issue. We surface `path`, `code` and
+ * `message` only — `issue.params` may echo the offending user input
+ * (e.g. a too-long string, a regex source) and we do not want that
+ * round-tripped to mobile callers or persisted into the audit ledger.
+ */
+export interface SanitisedZodIssue {
+  path: string;
+  code: string;
+  message: string;
+}
+
+/**
+ * v1.4.42 W2 — multi-issue Zod error envelope.
+ *
+ * Historic pattern was `apiError(parsed.error.issues[0].message, 422)`
+ * which dropped every issue past the first. The iOS contract debug
+ * loop hit this hard: a single PUT with three wrong fields produced
+ * one error, the client fixed it, re-sent, hit the next error, and
+ * so on — three round-trips for one stack of mistakes.
+ *
+ * Shape kept additive with `apiError` so existing clients that only
+ * read `error` keep working; new callers branch on `details.issues`.
+ *
+ * Privacy: only `path`, `code` and `message` are echoed. `issue.params`
+ * (which can carry the raw rejected value for some Zod issue codes)
+ * stays server-side.
+ */
+export function sanitiseZodIssues(
+  issues: readonly ZodIssue[],
+): SanitisedZodIssue[] {
+  return issues.map((issue) => ({
+    path: issue.path.join("."),
+    code: issue.code,
+    message: issue.message,
+  }));
+}
+
+export function returnAllZodIssues(
+  error: ZodError,
+  status: number = 422,
+  meta?: {
+    errorCode?: string;
+    headers?: Record<string, string>;
+  } & Record<string, unknown>,
+): NextResponse {
+  const { headers, ...rest } = meta ?? {};
+  const metaKeys = Object.keys(rest);
+  return NextResponse.json(
+    {
+      data: null,
+      error: "Validation failed",
+      details: {
+        issues: sanitiseZodIssues(error.issues),
+      },
+      ...(metaKeys.length > 0 ? { meta: rest } : {}),
+    },
+    {
+      status,
+      ...(headers ? { headers } : {}),
+    },
+  );
 }
 
 /**
