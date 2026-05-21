@@ -45,6 +45,7 @@ import {
   probeRollupCoverage,
   type RollupCoverageMap,
 } from "@/lib/measurements/rollup-coverage";
+import { readBestGranularityRollups } from "@/lib/measurements/rollup-read-wmy";
 import { calculateCompliance } from "./compliance";
 import {
   computeHealthScore,
@@ -159,19 +160,38 @@ export async function computeUserHealthScoreFastPath(
   let weightSeriesPrev30d: Array<{ date: string; kg: number }>;
   let weightSourcesIn30d: ReadonlyArray<ContributingSource>;
   let latestWeightAsOf: string | null;
+  // v1.4.40 W-WMY-WIRE — long-window weight baseline served from the
+  // WEEK / MONTH / YEAR rollup tier. Used for the diagnostic annotate
+  // so operators can verify the WMY readers actually serve production
+  // traffic instead of sitting as dead write amplification (see
+  // `.planning/round-v1438-perf-analysis.md` §2 + §5 P6). The score
+  // shape stays unchanged; the long-window mean is annotate-only so
+  // the v1.5 Coach drawer can opt into it later without breaking the
+  // current contract.
+  let weightLongWindowGranularity: string | null = null;
+  let weightLongWindowMean: number | null = null;
+  let weightLongWindowBucketCount = 0;
 
   if (weightCovered) {
     // Rollup-fast-path — per-day MEAN weight from `measurement_rollups`.
     // Linear regression on per-day means produces a slope equivalent
     // to per-event regression for a series with consistent sampling
     // cadence (one weigh-in per day is the canonical pattern).
-    const dayBuckets = await readRollupBuckets(
-      userId,
-      "WEIGHT",
-      "DAY",
-      prevSince30d,
-      now,
-    );
+    //
+    // v1.4.40 W-WMY-WIRE — the long-window weight read runs in
+    // parallel with the canonical DAY-bucket read so the wall-clock
+    // cost stays flat. `readBestGranularityRollups(..., 365)` routes
+    // the trailing-year window through MONTH (floor 181 d) by default
+    // — typically 12 monthly buckets vs the ~365 DAY rows the live
+    // path would scan. count / mean are linearly composable across
+    // MONTH buckets so the derived mean is mathematically equivalent
+    // to the per-row average over the same year-long window.
+    // Coverage-fallback in the helper means a tenant with WEEK or DAY
+    // coverage but no MONTH buckets still resolves to a usable mean.
+    const [dayBuckets, longWindow] = await Promise.all([
+      readRollupBuckets(userId, "WEIGHT", "DAY", prevSince30d, now),
+      readBestGranularityRollups(userId, "WEIGHT", 365),
+    ]);
     weightSeriesLast30d = dayBuckets
       .filter((b) => b.bucketStart >= since30d)
       .map((b) => ({
@@ -184,6 +204,19 @@ export async function computeUserHealthScoreFastPath(
         date: b.bucketStart.toISOString(),
         kg: b.mean,
       }));
+    if (longWindow && longWindow.rows.length > 0) {
+      weightLongWindowGranularity = longWindow.granularity;
+      weightLongWindowBucketCount = longWindow.rows.length;
+      let totalCount = 0;
+      let weighted = 0;
+      for (const row of longWindow.rows) {
+        totalCount += row.count;
+        weighted += row.count * row.mean;
+      }
+      if (totalCount > 0) {
+        weightLongWindowMean = weighted / totalCount;
+      }
+    }
     // Source attribution still needs the raw rows — only the raw table
     // carries the `source` enum. Pull the narrow 30-day window with a
     // 2-column projection so the round-trip stays minimal.
@@ -338,6 +371,14 @@ export async function computeUserHealthScoreFastPath(
           score: null,
           reason: "no_components_available",
           path: weightCovered ? "rollup" : "live",
+          weightLongWindow:
+            weightLongWindowMean !== null
+              ? {
+                  mean: Math.round(weightLongWindowMean * 100) / 100,
+                  granularity: weightLongWindowGranularity,
+                  buckets: weightLongWindowBucketCount,
+                }
+              : null,
         },
       },
     });
@@ -406,6 +447,20 @@ export async function computeUserHealthScoreFastPath(
         band: result.band,
         delta: result.delta,
         path: weightCovered ? "rollup" : "live",
+        // v1.4.40 W-WMY-WIRE — the long-window weight baseline drawn
+        // from the WEEK / MONTH / YEAR rollup tier. `null` when the
+        // user lacks long-tail coverage or when the live fallback
+        // branch ran (no probe issued). Surfaces the granularity the
+        // router landed on so operators can see "rollup tier served
+        // the year-long mean from MONTH buckets" in the wide-event.
+        weightLongWindow:
+          weightLongWindowMean !== null
+            ? {
+                mean: Math.round(weightLongWindowMean * 100) / 100,
+                granularity: weightLongWindowGranularity,
+                buckets: weightLongWindowBucketCount,
+              }
+            : null,
       },
     },
   });

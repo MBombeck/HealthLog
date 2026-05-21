@@ -102,6 +102,11 @@ describe("computeUserHealthScoreFastPath", () => {
           computedAt: now,
         },
       ]);
+      // v1.4.40 W-WMY-WIRE — the parallel long-window read fires
+      // alongside the DAY-bucket read; mock its `findMany` to return
+      // a coverage miss so the annotate carries `weightLongWindow:
+      // null` and the score shape is unchanged.
+      ROLLUP_FIND_MANY.mockResolvedValueOnce([]);
       // Weight source-attribution read (narrow 2-column).
       MEASUREMENT_FIND_MANY
         .mockResolvedValueOnce([
@@ -144,6 +149,170 @@ describe("computeUserHealthScoreFastPath", () => {
       // Weight pillar value should reflect the downward slope from
       // bucket means (helper reports a numeric weight value).
       expect(result?.components.weight.value).not.toBeNull();
+    });
+  });
+
+  /**
+   * v1.4.40 W-WMY-WIRE — pin the long-window weight wiring through
+   * `readBestGranularityRollups`. The score shape is unchanged; the
+   * weightLongWindow annotate makes the rollup-tier consumption
+   * verifiable in production wide-events.
+   */
+  describe("long-window weight wiring (W-WMY-WIRE)", () => {
+    it("surfaces a MONTH-granularity weightLongWindow mean on the rollup branch", async () => {
+      const coverage = new Map<string, boolean>([["WEIGHT", true]]);
+      FULLY_COVERED.mockReturnValue(true);
+      PROBE.mockResolvedValue(coverage);
+
+      const now = new Date("2026-05-17T12:00:00.000Z");
+      // DAY-bucket read (trailing 37 days) — single bucket, irrelevant
+      // for the long-window assertion.
+      ROLLUP_FIND_MANY.mockResolvedValueOnce([
+        {
+          bucketStart: new Date("2026-05-10T00:00:00.000Z"),
+          count: 1,
+          mean: 82.5,
+          minValue: 82.5,
+          maxValue: 82.5,
+          sd: null,
+          slope: null,
+          r2: null,
+          computedAt: now,
+        },
+      ]);
+      // readBestGranularityRollups(WEIGHT, 365) — first call is the
+      // MONTH probe (floor 181 d). Two MONTH buckets, count-weighted
+      // mean = (12*82 + 18*80) / 30 = 80.8.
+      ROLLUP_FIND_MANY.mockResolvedValueOnce([
+        {
+          bucketStart: new Date("2025-08-01T00:00:00.000Z"),
+          count: 12,
+          mean: 82,
+          minValue: 80,
+          maxValue: 84,
+          sd: 1,
+          slope: 0,
+          r2: 0,
+          sumValue: null,
+        },
+        {
+          bucketStart: new Date("2025-09-01T00:00:00.000Z"),
+          count: 18,
+          mean: 80,
+          minValue: 78,
+          maxValue: 83,
+          sd: 1,
+          slope: 0,
+          r2: 0,
+          sumValue: null,
+        },
+      ]);
+      // Source attribution + BP-SYS attribution reads.
+      MEASUREMENT_FIND_MANY.mockResolvedValueOnce([
+        {
+          measuredAt: new Date("2026-05-10T08:00:00.000Z"),
+          source: "WITHINGS",
+        },
+      ]).mockResolvedValueOnce([]);
+
+      await computeUserHealthScoreFastPath({
+        userId: "user-longwindow",
+        bpInTargetPct: 85,
+        heightCm: 178,
+        now,
+        coverage,
+      });
+
+      const calls = ANNOTATE.mock.calls.map((c) => c[0]);
+      const pathCall = calls.find(
+        (c) => c?.meta?.healthScore?.path === "rollup",
+      );
+      expect(pathCall).toBeDefined();
+      const longWindow = pathCall?.meta?.healthScore?.weightLongWindow;
+      expect(longWindow).not.toBeNull();
+      expect(longWindow?.granularity).toBe("MONTH");
+      expect(longWindow?.buckets).toBe(2);
+      // Σ(count*mean) / Σcount = (12*82 + 18*80) / 30 = 80.8 → rounded.
+      expect(longWindow?.mean).toBeCloseTo(80.8, 5);
+    });
+
+    it("emits weightLongWindow:null when the WMY tier carries no buckets", async () => {
+      const coverage = new Map<string, boolean>([["WEIGHT", true]]);
+      FULLY_COVERED.mockReturnValue(true);
+      PROBE.mockResolvedValue(coverage);
+
+      const now = new Date("2026-05-17T12:00:00.000Z");
+      // DAY-bucket read.
+      ROLLUP_FIND_MANY.mockResolvedValueOnce([
+        {
+          bucketStart: new Date("2026-05-10T00:00:00.000Z"),
+          count: 1,
+          mean: 82.5,
+          minValue: 82.5,
+          maxValue: 82.5,
+          sd: null,
+          slope: null,
+          r2: null,
+          computedAt: now,
+        },
+      ]);
+      // Long-window read — every granularity returns empty (router
+      // walks MONTH → WEEK → DAY; 365 d skips YEAR floor).
+      ROLLUP_FIND_MANY.mockResolvedValue([]);
+      MEASUREMENT_FIND_MANY.mockResolvedValueOnce([
+        {
+          measuredAt: new Date("2026-05-10T08:00:00.000Z"),
+          source: "WITHINGS",
+        },
+      ]).mockResolvedValueOnce([]);
+
+      await computeUserHealthScoreFastPath({
+        userId: "user-no-longwindow",
+        bpInTargetPct: 85,
+        heightCm: 178,
+        now,
+        coverage,
+      });
+
+      const calls = ANNOTATE.mock.calls.map((c) => c[0]);
+      const pathCall = calls.find(
+        (c) => c?.meta?.healthScore?.path === "rollup",
+      );
+      expect(pathCall?.meta?.healthScore?.weightLongWindow).toBeNull();
+    });
+
+    it("omits the long-window read on the live fallback branch", async () => {
+      const coverage = new Map<string, boolean>([["WEIGHT", false]]);
+      FULLY_COVERED.mockReturnValue(false);
+      PROBE.mockResolvedValue(coverage);
+
+      const now = new Date("2026-05-17T12:00:00.000Z");
+      // Weight live read + BP source attribution.
+      MEASUREMENT_FIND_MANY.mockResolvedValueOnce([
+        {
+          measuredAt: new Date("2026-05-10T08:00:00.000Z"),
+          value: 82.5,
+          source: "MANUAL",
+        },
+      ]).mockResolvedValueOnce([]);
+
+      await computeUserHealthScoreFastPath({
+        userId: "user-live-nowmy",
+        bpInTargetPct: 80,
+        heightCm: 178,
+        now,
+        coverage,
+      });
+
+      // The live branch never issues the long-window probe — guards
+      // against accidentally double-reading on cold mounts where the
+      // raw weight findMany is already doing the work.
+      expect(ROLLUP_FIND_MANY).not.toHaveBeenCalled();
+      const calls = ANNOTATE.mock.calls.map((c) => c[0]);
+      const pathCall = calls.find(
+        (c) => c?.meta?.healthScore?.path === "live",
+      );
+      expect(pathCall?.meta?.healthScore?.weightLongWindow).toBeNull();
     });
   });
 
