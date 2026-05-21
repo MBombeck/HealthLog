@@ -4,7 +4,20 @@ import { NextRequest } from "next/server";
 vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: { groupBy: vi.fn() },
-    medicationIntakeEvent: { findMany: vi.fn() },
+    medicationIntakeEvent: {
+      findMany: vi.fn(),
+      // v1.4.39 W-SERVER-FIX-2 — the dashboard route now backfills
+      // missing today-rows for daily schedules (parity with the
+      // intake route's `expandTodayIntakes` projection) so the iOS
+      // Dashboard compliance tile leaves "Heute nichts geplant" the
+      // moment a daily med is configured.
+      createMany: vi.fn(),
+    },
+    medication: {
+      // v1.4.39 W-SERVER-FIX-2 — projection source for the today's-
+      // intakes backfill.
+      findMany: vi.fn(),
+    },
     // v1.4.38 W-F — the route now uses `$queryRaw` for the per-type
     // latest reading, the 7-day rollup-bucket sparkline, and the
     // 365-day distinct-day streak set. Three raw calls per request,
@@ -72,6 +85,13 @@ beforeEach(() => {
   vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
     [] as never,
   );
+  // v1.4.39 W-SERVER-FIX-2 — default the projection prisma reads to
+  // "no active medications" so the legacy tests stay in their original
+  // branch (empty today bucket, no backfill firing).
+  vi.mocked(prisma.medication.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.medicationIntakeEvent.createMany).mockResolvedValue({
+    count: 0,
+  } as never);
 });
 
 describe("GET /api/dashboard/summary", () => {
@@ -291,6 +311,140 @@ describe("GET /api/dashboard/summary", () => {
     // 4 × 2000 — legacy fallback for the boot-backfill convergence
     // window keeps the chart non-empty for pre-v1.4.39 rows.
     expect(steps?.sparkline).toEqual([8000]);
+  });
+
+  it("backfills today's intakes for daily meds (v1.4.39 W-SERVER-FIX-2)", async () => {
+    // The dashboard compliance tile is fed by `todaysIntakes`, the
+    // same window the intake route covers. Pre-fix this only read the
+    // pre-existing `MedicationIntakeEvent` rows, so a daily med
+    // (`daysOfWeek: null`) had `scheduledToday=0` until the reminder
+    // worker minted the RED-phase row at the end of the dose window.
+    // Post-fix the route projects active schedules through
+    // `expandTodayIntakes` + idempotently backfills missing rows, so
+    // the iOS Dashboard tile leaves "Heute nichts geplant" the moment
+    // a daily med is configured.
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.medication.findMany).mockResolvedValue([
+      {
+        id: "med-ramipril",
+        schedules: [
+          {
+            id: "sched-morgens",
+            medicationId: "med-ramipril",
+            windowStart: "07:00",
+            windowEnd: "09:00",
+            daysOfWeek: null,
+          },
+        ],
+      },
+    ] as never);
+    // The dashboard route now issues three findMany calls in the
+    // today path:
+    //   1. existence probe (no `OR`) → empty (no rows yet)
+    //   2. final read after backfill (no `OR`) → one minted row
+    //   3. streak fetch (with `OR`) → empty
+    vi.mocked(prisma.medicationIntakeEvent.findMany).mockImplementation(((
+      args: unknown,
+    ) => {
+      const a = args as {
+        where: { OR?: unknown };
+        select?: { id?: boolean };
+      };
+      if (a.where.OR) return Promise.resolve([]) as never;
+      // No `id` field on the existence-probe `select` → the route
+      // only asked for `(medicationId, scheduledFor)`.
+      if (!a.select?.id) return Promise.resolve([]) as never;
+      return Promise.resolve([
+        {
+          id: "e-new",
+          takenAt: null,
+          skipped: false,
+        },
+      ]) as never;
+    }) as never);
+    vi.mocked(prisma.medicationIntakeEvent.createMany).mockResolvedValue({
+      count: 1,
+    } as never);
+
+    const res = await callGet(makeReq());
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: { compliance: { scheduledToday: number; takenToday: number } };
+    };
+    expect(body.data.compliance.scheduledToday).toBe(1);
+    expect(body.data.compliance.takenToday).toBe(0);
+    expect(prisma.medicationIntakeEvent.createMany).toHaveBeenCalledTimes(1);
+    // Race-defense backstop: the createMany call must pass
+    // `skipDuplicates: true` so a concurrent intake-route hit can't
+    // race a duplicate row in before the existence probe converges.
+    const createManyArgs = vi.mocked(prisma.medicationIntakeEvent.createMany)
+      .mock.calls[0][0] as {
+      data: Array<{
+        userId: string;
+        medicationId: string;
+        skipped: boolean;
+        source: string;
+      }>;
+      skipDuplicates?: boolean;
+    };
+    expect(createManyArgs.skipDuplicates).toBe(true);
+    expect(createManyArgs.data).toEqual([
+      expect.objectContaining({
+        userId: "user-1",
+        medicationId: "med-ramipril",
+        skipped: false,
+        source: "REMINDER",
+      }),
+    ]);
+  });
+
+  it("is idempotent on a second pass (v1.4.39 W-SERVER-FIX-2)", async () => {
+    // When the existence probe already sees a row for the projected
+    // slot (e.g. the intake route or the reminder worker minted it
+    // first), the dashboard route's backfill `createMany` must not
+    // fire — the route simply re-reads + returns.
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const scheduledFor = new Date("2026-05-21T05:00:00.000Z");
+    vi.mocked(prisma.medication.findMany).mockResolvedValue([
+      {
+        id: "med-ramipril",
+        schedules: [
+          {
+            id: "sched-morgens",
+            medicationId: "med-ramipril",
+            windowStart: "07:00",
+            windowEnd: "09:00",
+            daysOfWeek: null,
+          },
+        ],
+      },
+    ] as never);
+    vi.mocked(prisma.medicationIntakeEvent.findMany).mockImplementation(((
+      args: unknown,
+    ) => {
+      const a = args as {
+        where: { OR?: unknown };
+        select?: { id?: boolean };
+      };
+      if (a.where.OR) return Promise.resolve([]) as never;
+      if (!a.select?.id) {
+        // Existence probe — the projected slot already exists.
+        return Promise.resolve([
+          { medicationId: "med-ramipril", scheduledFor },
+        ]) as never;
+      }
+      return Promise.resolve([
+        { id: "e-existing", takenAt: null, skipped: false },
+      ]) as never;
+    }) as never);
+
+    const res = await callGet(makeReq());
+    expect(res.status).toBe(200);
+    expect(prisma.medicationIntakeEvent.createMany).not.toHaveBeenCalled();
+    const body = (await res.json()) as {
+      data: { compliance: { scheduledToday: number; takenToday: number } };
+    };
+    expect(body.data.compliance.scheduledToday).toBe(1);
   });
 
   it("computes intake compliance for today", async () => {

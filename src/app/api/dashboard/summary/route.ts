@@ -48,6 +48,7 @@ import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { defaultLocale, type Locale } from "@/lib/i18n/config";
 import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
+import { expandTodayIntakes } from "@/lib/medication-schedule";
 
 const SPARK_DAYS = 7;
 const STREAK_WINDOW_DAYS = 365;
@@ -268,6 +269,98 @@ function buildContext(
   return { greetingName, locale };
 }
 
+/**
+ * v1.4.39 W-SERVER-FIX-2 — project today's active schedules through
+ * the canonical `expandTodayIntakes` helper, idempotently backfill any
+ * missing `MedicationIntakeEvent` rows, and re-read the today-window
+ * so the caller sees both pre-existing rows + the freshly minted ones.
+ *
+ * Mirrors the post-fix behaviour of `/api/medications/intake?scope=
+ * today` so the iOS Dashboard tile (fed by this route) and the iOS
+ * Erfassen sheet (fed by the intake route) converge on the same row
+ * set the moment a daily med becomes active. Without this projection
+ * the dashboard route returned `[]` for daily meds (`daysOfWeek = null`)
+ * even after the intake route's projection landed, leaving the iOS
+ * Dashboard tile in its "Heute nichts geplant" empty state all
+ * morning.
+ *
+ * `skipDuplicates: true` guards against a concurrent intake-route hit
+ * minting the same `(userId, medicationId, scheduledFor, REMINDER)`
+ * row in the gap between the existence probe and the `createMany`.
+ * The schema-level `@@unique` is the structural backstop; this flag
+ * is the defense-in-depth that keeps the route returning 2xx instead
+ * of bubbling a constraint violation during the race window.
+ */
+async function projectAndReadTodaysIntakes(
+  userId: string,
+  userTz: string,
+  todayStart: Date,
+  todayEnd: Date,
+): Promise<Array<{ id: string; takenAt: Date | null; skipped: boolean }>> {
+  const activeMedications = await prisma.medication.findMany({
+    where: { userId, active: true },
+    select: {
+      id: true,
+      schedules: {
+        select: {
+          id: true,
+          medicationId: true,
+          windowStart: true,
+          windowEnd: true,
+          daysOfWeek: true,
+        },
+      },
+    },
+  });
+  const projected = expandTodayIntakes(
+    activeMedications.flatMap((m) => m.schedules),
+    new Date(),
+    userTz,
+  );
+
+  if (projected.length > 0) {
+    const existing = await prisma.medicationIntakeEvent.findMany({
+      where: {
+        userId,
+        scheduledFor: { gte: todayStart, lt: todayEnd },
+      },
+      select: { medicationId: true, scheduledFor: true },
+    });
+    const existingKey = new Set(
+      existing.map((e) => `${e.medicationId}|${e.scheduledFor.toISOString()}`),
+    );
+    const missing = projected.filter(
+      (p) =>
+        !existingKey.has(`${p.medicationId}|${p.scheduledFor.toISOString()}`),
+    );
+    if (missing.length > 0) {
+      await prisma.medicationIntakeEvent.createMany({
+        data: missing.map((m) => ({
+          userId,
+          medicationId: m.medicationId,
+          scheduledFor: m.scheduledFor,
+          takenAt: null,
+          skipped: false,
+          // `REMINDER` mirrors the intake-route projection — the same
+          // `IntakeSource` literal the reminder worker uses for
+          // RED-phase rows. Doctor-report + analytics filters stay
+          // byte-stable across both code paths.
+          source: "REMINDER",
+        })),
+        skipDuplicates: true,
+      });
+    }
+  }
+
+  return prisma.medicationIntakeEvent.findMany({
+    where: {
+      userId,
+      scheduledFor: { gte: todayStart, lt: todayEnd },
+    },
+    select: { id: true, takenAt: true, skipped: true },
+  });
+}
+
 async function buildDashboardSummary(
   userId: string,
   userTz: string,
@@ -352,14 +445,18 @@ async function buildDashboardSummary(
         _max: { measuredAt: true },
       }),
     ),
+    // v1.4.39 W-SERVER-FIX-2 — the dashboard compliance tile pulled
+    // `MedicationIntakeEvent` rows for the today-window only. Daily
+    // schedules (`daysOfWeek: null`) had no row to read until the
+    // reminder worker entered the RED phase at the end of the dose
+    // window, so the iOS Dashboard tile fell to "Heute nichts geplant"
+    // even when the intake route (post-`expandTodayIntakes` fix) was
+    // already projecting + backfilling correctly. Re-uses the same
+    // helper + idempotent `createMany` (with `skipDuplicates: true`
+    // so a concurrent intake-route hit can't race a duplicate row in
+    // before the existence probe converges).
     time("todaysIntakes", () =>
-      prisma.medicationIntakeEvent.findMany({
-        where: {
-          userId,
-          scheduledFor: { gte: todayStart, lt: todayEnd },
-        },
-        select: { id: true, takenAt: true, skipped: true },
-      }),
+      projectAndReadTodaysIntakes(userId, userTz, todayStart, todayEnd),
     ),
     time("streakIntakes", () =>
       prisma.medicationIntakeEvent.findMany({
