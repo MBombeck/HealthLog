@@ -185,6 +185,13 @@ interface ChartDataPoint {
 interface MeasurementApiRow {
   measuredAt: string;
   value: number;
+  // v1.4.43 W2-CHART-GATE — the rollup / daily-aggregate paths return
+  // the underlying raw-row count per bucket. Used downstream to gate
+  // the "more days needed" empty-state copy on the actual measurement
+  // count rather than the number of distinct calendar days. Optional
+  // because the short-window raw-row path does not populate it (each
+  // row already represents one measurement, count = 1).
+  count?: number;
 }
 
 interface VisibleTargetZone {
@@ -576,6 +583,14 @@ export function HealthChart({
         }
       >();
 
+      // v1.4.43 W2-CHART-GATE — accumulate the raw measurement count
+      // across every fetched type so the empty-state copy can
+      // distinguish "user logged < 3 measurements" from "user logged
+      // many measurements but on < 3 distinct days". The chartData
+      // length collapses to daily buckets and would otherwise paint
+      // the "log more" hint even when the user already logged 50
+      // entries on 2 days.
+      let rawMeasurementCount = 0;
       async function fetchMeasurementsByType(type: string) {
         const typeParams = new URLSearchParams();
         typeParams.set("type", type);
@@ -625,6 +640,12 @@ export function HealthChart({
             continue;
           }
 
+          // v1.4.43 W2-CHART-GATE — rollup / server-aggregated rows
+          // carry the underlying `count`; raw rows do not, so each
+          // counts as one. Sum across types since the gate is the
+          // total user-logged measurements in the window.
+          rawMeasurementCount += measurement.count ?? 1;
+
           const dayKey = toDayKey(measurement.measuredAt, dayKeyFormatter);
           const bucket = dailyAggregates.get(dayKey) ?? {
             timestamp: dayKeyToTimestamp(dayKey),
@@ -664,10 +685,29 @@ export function HealthChart({
         })
         .sort((a, b) => a.timestamp - b.timestamp);
 
+      // v1.4.43 W2-CHART-GATE — stash the raw measurement count on
+      // the returned array as a non-enumerable property so the gate
+      // logic can distinguish "few measurements" from "few days" in
+      // the empty-state copy. Non-enumerable keeps the array shape
+      // intact for every downstream consumer that iterates / spreads.
+      Object.defineProperty(allData, "rawCount", {
+        value: rawMeasurementCount,
+        enumerable: false,
+        configurable: false,
+        writable: false,
+      });
+
       return allData;
     },
     enabled: isAuthenticated,
   });
+
+  // v1.4.43 W2-CHART-GATE — surface the stashed raw count.
+  const rawCount = useMemo<number>(() => {
+    if (!data) return 0;
+    const value = (data as ChartDataPoint[] & { rawCount?: number }).rawCount;
+    return typeof value === "number" ? value : 0;
+  }, [data]);
 
   const chartData = useMemo(() => {
     if (!data?.length) return data;
@@ -1252,10 +1292,25 @@ export function HealthChart({
         // v1.4.16 B1a — sparse-data placeholder. <3 daily points is too
         // few to render a meaningful trend; paint a friendly hint
         // instead so the dashboard doesn't look broken.
-        <ChartEmptyState
-          title={t("charts.emptyStateTitle")}
-          description={t("charts.emptyStateDescription")}
-        />
+        //
+        // v1.4.43 W2-CHART-GATE — split the copy on the raw measurement
+        // count. A user with 50 BP readings on 2 calendar days has
+        // `chartData.length = 2` (daily-aggregated) but `rawCount = 50`,
+        // so the legacy "log more measurements" hint was misleading.
+        // When the user has logged enough raw measurements but only
+        // hit < 3 distinct days, paint the "need more days" copy
+        // instead so the next action is clear.
+        rawCount >= 3 ? (
+          <ChartEmptyState
+            title={t("charts.needMoreDistinctDaysTitle")}
+            description={t("charts.needMoreDistinctDaysDescription")}
+          />
+        ) : (
+          <ChartEmptyState
+            title={t("charts.emptyStateTitle")}
+            description={t("charts.emptyStateDescription")}
+          />
+        )
       ) : (
         <div className={`relative ${chartHeightClass}`}>
           {visibleBands.length > 0 ? (
