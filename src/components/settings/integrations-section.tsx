@@ -74,6 +74,11 @@ interface IntegrationStatusViewModel {
   lastAttemptAt: string | null;
   lastError: string | null;
   consecutiveFailures: number;
+  consecutiveFailuresByKind?: {
+    transient: number;
+    reauth_required: number;
+    persistent: number;
+  } | null;
   configured?: boolean;
   connected?: boolean;
   connectedAt?: string | null;
@@ -132,6 +137,18 @@ function pillStateFor(
     case "connected":
       return "connected";
     case "error_transient":
+      // v1.4.43 W4 H3 — a `persistent` failure-kind streak (Withings
+      // rate-limit 601 / contract-mismatch 293/294) maps to the same
+      // `error_transient` DB state as a normal retryable failure but
+      // tells the user a different story: the access token still
+      // works, the upstream is responding with a non-recoverable
+      // status. Surfacing it as a "warning" pill (orange) instead of
+      // the red "Fehler — neu verbinden" stops the user from clicking
+      // reconnect ten times when reconnect can't fix it.
+      if ((status.consecutiveFailuresByKind?.persistent ?? 0) > 0) {
+        return "warning";
+      }
+      return "error";
     case "error_reauth":
       return "error";
     case "parked":
