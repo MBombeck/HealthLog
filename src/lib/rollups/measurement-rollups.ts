@@ -752,35 +752,26 @@ export async function enqueueBootTimeRollupBackfill(): Promise<{
     // index path. The LEFT JOIN walks `measurement_rollups` against
     // its composite primary key.
     //
-    // v1.4.39 W-SUM — the discovery also surfaces users whose existing
-    // DAY rollup rows carry `sum_value IS NULL`. Those rows pre-date
-    // the v1.4.39 writer change; re-folding the user converges them
-    // because `persistRollupRows` always writes the new column on
-    // upsert. The union runs in one query so the per-day coverage gap
-    // and the legacy-NULL backfill share a single planner pass.
+    // v1.4.41 — the v1.4.39 W-SUM legacy-NULL `sum_value` UNION arm
+    // has been retired. Marc's tenant converged at v1.4.40, so the
+    // arm was a permanent no-op seq scan over `measurement_rollups`.
+    // Per-day missing coverage remains the sole discovery anchor.
     const users = await prisma.$queryRaw<Array<{ id: string }>>`
-      SELECT DISTINCT id FROM (
-        SELECT DISTINCT mt."user_id" AS id
-        FROM (
-          SELECT DISTINCT
-            m."user_id",
-            m."type",
-            date_trunc('day', m."measured_at") AS bucket_start
-          FROM measurements m
-          WHERE m."deleted_at" IS NULL
-        ) mt
-        LEFT JOIN measurement_rollups r
-          ON  r."user_id"     = mt."user_id"
-          AND r."type"        = mt."type"
-          AND r."granularity" = 'DAY'
-          AND r."bucket_start" = mt."bucket_start"
-        WHERE r."bucket_start" IS NULL
-        UNION
-        SELECT DISTINCT r2."user_id" AS id
-        FROM measurement_rollups r2
-        WHERE r2."granularity" = 'DAY'
-          AND r2."sum_value"   IS NULL
-      ) discovery
+      SELECT DISTINCT mt."user_id" AS id
+      FROM (
+        SELECT DISTINCT
+          m."user_id",
+          m."type",
+          date_trunc('day', m."measured_at") AS bucket_start
+        FROM measurements m
+        WHERE m."deleted_at" IS NULL
+      ) mt
+      LEFT JOIN measurement_rollups r
+        ON  r."user_id"     = mt."user_id"
+        AND r."type"        = mt."type"
+        AND r."granularity" = 'DAY'
+        AND r."bucket_start" = mt."bucket_start"
+      WHERE r."bucket_start" IS NULL
     `;
 
     if (users.length === 0) {

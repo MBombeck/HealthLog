@@ -543,30 +543,6 @@ describe("enqueueBootTimeRollupBackfill", () => {
     expect(bossSend).not.toHaveBeenCalled();
   });
 
-  // v1.4.39 W-SUM — the discovery query now unions in users whose
-  // existing DAY rollup rows carry `sum_value IS NULL`. Re-folding
-  // converges those rows because `persistRollupRows` always writes the
-  // new column on upsert; the union keeps the per-day missing-coverage
-  // gap (v1.4.39.1) and the legacy-NULL backfill on the same indexed
-  // pass.
-  it("includes the sum_value IS NULL branch in the discovery query", async () => {
-    getGlobalBossMock.mockReturnValue({ send: bossSend });
-    queryRaw.mockResolvedValueOnce([{ id: "user-with-legacy-rollups" }]);
-    bossSend.mockResolvedValueOnce("job-id");
-
-    const result = await enqueueBootTimeRollupBackfill();
-
-    expect(result).toEqual({ enqueued: 1, skipped: 0, error: null });
-    // The discovery SQL surfaces both per-day missing coverage AND
-    // legacy NULL sum_value rows under one UNION. The text-anchor is
-    // the only durable assertion at the unit level — the integration
-    // suite covers the planner shape on real Postgres.
-    const sqlParts = queryRaw.mock.calls[0][0] as TemplateStringsArray;
-    const sqlText = Array.isArray(sqlParts) ? sqlParts.join("?") : "";
-    expect(sqlText).toContain("sum_value");
-    expect(sqlText).toContain("UNION");
-  });
-
   // v1.4.39.1 — the discovery anchor moved from per-type to per-day so
   // accounts whose Withings sync / `/api/import` / admin restore wrote
   // measurements without firing the rollup write hook get re-enqueued
