@@ -47,15 +47,16 @@ describe("v1.4.40 — dashboard per-cell Suspense boundaries", () => {
     );
   });
 
-  it("wraps each tile-strip cell in a `<Suspense>` boundary", () => {
+  it("wraps each tile-strip cell in a `<Suspense>` boundary with a layout-stable placeholder", () => {
     const src = load(PAGE_PATH);
-    // `<Suspense fallback={null}>{entry.node}</Suspense>` — the tile
-    // body is synchronous today so a `null` fallback never paints,
-    // but the boundary primes the row for a future RSC hoist of any
-    // tile slot. Pinning the literal keeps the structural contract
-    // visible in CI.
+    // v1.4.41 W-FRONTEND-FACTORY (UX M1) swapped the prior `null`
+    // fallback for an `aria-hidden` placeholder div that mirrors the
+    // trend-card chrome. The tile body is synchronous today so the
+    // fallback rarely paints, but a future RSC hoist of any tile slot
+    // would otherwise leave the grid track empty and trigger CLS as
+    // the cell paints in. The structural pin guards the contract.
     expect(src).toMatch(
-      /<Suspense\s+fallback=\{null\}>\s*\{entry\.node\}\s*<\/Suspense>/,
+      /<Suspense\s+fallback=\{[\s\S]*?aria-hidden="true"[\s\S]*?\}\s*>\s*\{entry\.node\}\s*<\/Suspense>/,
     );
   });
 
