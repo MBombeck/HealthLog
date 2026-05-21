@@ -29,6 +29,13 @@ export type ConsentKind = z.infer<typeof consentKindEnum>;
  * under 32 KB; a signed JWT is a few hundred bytes. The cap exists so
  * a misbehaving client (or a malicious one) can't fill the audit table
  * with multi-megabyte rows.
+ *
+ * v1.4.40 security M1 — the cap is enforced via `Buffer.byteLength(...,
+ * "utf8")` because `z.string().max()` counts JavaScript string units
+ * (UTF-16 code units), not bytes. A UTF-8 artefact full of multi-byte
+ * code points (CJK, emoji) would otherwise be allowed past the 64 KB
+ * row budget — the database stores bytes, not code units, and the
+ * audit-table guarantee is byte-bounded.
  */
 const ARTEFACT_MAX_BYTES = 64 * 1024;
 
@@ -37,7 +44,10 @@ export const consentPostBody = z.object({
   artefact: z
     .string()
     .min(1, "artefact must not be empty")
-    .max(ARTEFACT_MAX_BYTES, "artefact exceeds 64 KB cap"),
+    .refine(
+      (value) => Buffer.byteLength(value, "utf8") <= ARTEFACT_MAX_BYTES,
+      { message: "artefact exceeds 64 KB cap (UTF-8 byte length)" },
+    ),
   signedAt: z.iso
     .datetime({ offset: true })
     .transform((s) => new Date(s)),
