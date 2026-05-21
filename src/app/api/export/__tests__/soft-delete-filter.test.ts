@@ -37,6 +37,9 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/rate-limit", () => ({ checkRateLimit: vi.fn() }));
+vi.mock("@/lib/auth", () => ({
+  requireAuth: vi.fn().mockResolvedValue({ user: { id: "user-1" } }),
+}));
 vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
 }));
@@ -113,5 +116,49 @@ describe("v1.4.41 W-DELETED-2 — soft-delete invisibility", () => {
         where: expect.objectContaining({ deletedAt: null }),
       }),
     );
+  });
+
+  it("/api/gamification/achievements scopes the measurement read to deletedAt: null", async () => {
+    vi.mocked(prisma.userAchievement.findMany).mockResolvedValue([] as never);
+    const { GET } = await import(
+      "../../gamification/achievements/route"
+    );
+    await GET(mkReq("http://localhost/api/gamification/achievements"));
+    const calls = vi.mocked(prisma.measurement.findMany).mock.calls;
+    // The achievement aggregator reads recent measurements via
+    // findMany — a tombstoned row must never count toward a streak
+    // or PR badge.
+    expect(calls.length).toBeGreaterThan(0);
+    for (const [arg] of calls) {
+      expect(arg).toMatchObject({
+        where: expect.objectContaining({ deletedAt: null }),
+      });
+    }
+  });
+
+  it("/api/doctor-report/availability scopes every measurement count to deletedAt: null", async () => {
+    const { POST } = await import(
+      "../../doctor-report/availability/route"
+    );
+    const req = new NextRequest(
+      "http://localhost/api/doctor-report/availability",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({}),
+      },
+    );
+    await POST(req);
+    const calls = vi.mocked(prisma.measurement.count).mock.calls;
+    // The probe runs four parallel measurement.count queries (BP /
+    // weight / pulse / sleep). All must filter tombstoned rows so a
+    // soft-deleted history does not light up a section the user has
+    // since wiped.
+    expect(calls.length).toBeGreaterThanOrEqual(4);
+    for (const [arg] of calls) {
+      expect(arg).toMatchObject({
+        where: expect.objectContaining({ deletedAt: null }),
+      });
+    }
   });
 });
