@@ -27,6 +27,22 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+// v1.4.39.2 — the rollup branch's coverage-mismatch fallback may call
+// `recomputeUserRollups` inline. Mock it so tests can assert whether
+// the inline fold fired without exercising the real populator.
+vi.mock("@/lib/measurements/rollups", async () => {
+  const actual = await vi.importActual<
+    typeof import("@/lib/measurements/rollups")
+  >("@/lib/measurements/rollups");
+  return {
+    ...actual,
+    recomputeBucketsForMeasurement: vi.fn().mockResolvedValue(undefined),
+    recomputeUserRollups: vi
+      .fn()
+      .mockResolvedValue({ rowsUpserted: 0, durationMs: 0 }),
+  };
+});
+
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/auth/audit", () => ({ auditLog: vi.fn() }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
@@ -45,6 +61,7 @@ vi.mock("next/headers", () => ({
 import { GET } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+import { recomputeUserRollups } from "@/lib/measurements/rollups";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -318,6 +335,186 @@ describe("GET /api/measurements — all-time semantics (SD-H1)", () => {
       data: { measurements: Array<unknown> };
     };
     expect(json.data.measurements.length).toBe(7);
+  });
+
+  it("source=rollup folds the partition inline and re-reads when the rollup is under-converged (v1.4.39.2)", async () => {
+    // Marc's pre-fix production trace: 30-day BP_SYS window returned
+    // `total: 2` from the rollup branch even though `measurements`
+    // carried ~30 distinct days. The chart tripped its `< 3 daily
+    // points` empty-state because the route short-circuited on
+    // `rollupRows.length > 0` and never reconciled with the live
+    // table. The coverage-mismatch fallback runs an inline
+    // `recomputeUserRollups` for the (user, type, DAY, window)
+    // partition and re-reads so the request returns the converged
+    // rows.
+    const sparseRollup = [
+      {
+        type: "BLOOD_PRESSURE_SYS",
+        bucketStart: new Date(Date.UTC(2026, 4, 1, 0, 0, 0)),
+        mean: 128,
+        count: 1,
+        sumValue: null,
+      },
+      {
+        type: "BLOOD_PRESSURE_SYS",
+        bucketStart: new Date(Date.UTC(2026, 4, 10, 0, 0, 0)),
+        mean: 132,
+        count: 1,
+        sumValue: null,
+      },
+    ];
+    const convergedRollup = Array.from({ length: 28 }, (_, i) => ({
+      type: "BLOOD_PRESSURE_SYS",
+      bucketStart: new Date(Date.UTC(2026, 4, 1 + i, 0, 0, 0)),
+      mean: 128 + (i % 5),
+      count: 2,
+      sumValue: null,
+    }));
+    // First read returns the sparse rows; second (post-fold) read
+    // returns the converged rows.
+    vi.mocked(prisma.measurementRollup.findMany)
+      .mockResolvedValueOnce(sparseRollup as never)
+      .mockResolvedValueOnce(convergedRollup as never);
+    // Coverage probe — live `measurements` has 28 distinct days.
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([
+      { days: BigInt(28) },
+    ] as never);
+
+    const res = await GET(
+      getRequest(
+        "type=BLOOD_PRESSURE_SYS&from=2026-04-30T00:00:00Z&to=2026-05-30T00:00:00Z&aggregate=daily&source=rollup&limit=5000",
+      ),
+    );
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as {
+      data: { measurements: Array<unknown> };
+    };
+    // The inline fold fired exactly once with the (type, DAY, window)
+    // bound so the partition write stays small.
+    expect(recomputeUserRollups).toHaveBeenCalledTimes(1);
+    expect(recomputeUserRollups).toHaveBeenCalledWith(
+      "user-1",
+      expect.objectContaining({
+        types: ["BLOOD_PRESSURE_SYS"],
+        granularities: ["DAY"],
+      }),
+    );
+    // The route re-read the rollup after the fold so the response
+    // carries the converged 28 buckets — well above the chart's
+    // `< 3 daily points` empty-state threshold.
+    expect(prisma.measurementRollup.findMany).toHaveBeenCalledTimes(2);
+    expect(json.data.measurements.length).toBe(28);
+  });
+
+  it("source=rollup skips the coverage probe on a covered window (v1.4.39.2 hot-path)", async () => {
+    // Happy case: 30-day window, 28 rollup rows present. The route
+    // must short-circuit on the first read and skip the probe so the
+    // covered-tenant hot path stays a single indexed read.
+    const buckets = Array.from({ length: 28 }, (_, i) => ({
+      type: "WEIGHT",
+      bucketStart: new Date(Date.UTC(2026, 3, 16 + i, 0, 0, 0)),
+      mean: 81 + i * 0.05,
+      count: 2,
+      sumValue: null,
+    }));
+    vi.mocked(prisma.measurementRollup.findMany).mockResolvedValue(
+      buckets as never,
+    );
+
+    const res = await GET(
+      getRequest(
+        "type=WEIGHT&from=2026-04-15T00:00:00Z&to=2026-05-15T00:00:00Z&aggregate=daily&source=rollup&limit=5000",
+      ),
+    );
+    expect(res.status).toBe(200);
+    expect(prisma.measurementRollup.findMany).toHaveBeenCalledTimes(1);
+    expect(recomputeUserRollups).not.toHaveBeenCalled();
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+  });
+
+  it("source=rollup skips the coverage fallback on short windows (v1.4.39.2)", async () => {
+    // A 5-day window with 2 rollup rows is plausibly genuine sparsity
+    // for a user who measures BP every other day. The coverage
+    // fallback gates on `windowDays >= 7` so the probe + inline fold
+    // never fire on these short windows.
+    const sparseRollup = [
+      {
+        type: "BLOOD_PRESSURE_SYS",
+        bucketStart: new Date(Date.UTC(2026, 4, 1, 0, 0, 0)),
+        mean: 128,
+        count: 1,
+        sumValue: null,
+      },
+      {
+        type: "BLOOD_PRESSURE_SYS",
+        bucketStart: new Date(Date.UTC(2026, 4, 3, 0, 0, 0)),
+        mean: 132,
+        count: 1,
+        sumValue: null,
+      },
+    ];
+    vi.mocked(prisma.measurementRollup.findMany).mockResolvedValue(
+      sparseRollup as never,
+    );
+
+    const res = await GET(
+      getRequest(
+        "type=BLOOD_PRESSURE_SYS&from=2026-05-01T00:00:00Z&to=2026-05-06T00:00:00Z&aggregate=daily&source=rollup&limit=5000",
+      ),
+    );
+    expect(res.status).toBe(200);
+    expect(recomputeUserRollups).not.toHaveBeenCalled();
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+    const json = (await res.json()) as {
+      data: { measurements: Array<unknown> };
+    };
+    expect(json.data.measurements.length).toBe(2);
+  });
+
+  it("source=rollup keeps the sparse rollup when live `measurements` agrees (v1.4.39.2)", async () => {
+    // Genuine sparsity: the user measured BP twice in 30 days. The
+    // probe finds the same 2 distinct days in `measurements` so the
+    // route returns the 2 rollup rows without firing the inline
+    // fold. The chart's `< 3 daily points` empty-state is the right
+    // surface for this case — the data really is sparse.
+    const sparseRollup = [
+      {
+        type: "BLOOD_PRESSURE_SYS",
+        bucketStart: new Date(Date.UTC(2026, 4, 1, 0, 0, 0)),
+        mean: 128,
+        count: 1,
+        sumValue: null,
+      },
+      {
+        type: "BLOOD_PRESSURE_SYS",
+        bucketStart: new Date(Date.UTC(2026, 4, 10, 0, 0, 0)),
+        mean: 132,
+        count: 1,
+        sumValue: null,
+      },
+    ];
+    vi.mocked(prisma.measurementRollup.findMany).mockResolvedValue(
+      sparseRollup as never,
+    );
+    // Probe agrees — 2 distinct days in `measurements` too.
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([
+      { days: BigInt(2) },
+    ] as never);
+
+    const res = await GET(
+      getRequest(
+        "type=BLOOD_PRESSURE_SYS&from=2026-04-30T00:00:00Z&to=2026-05-30T00:00:00Z&aggregate=daily&source=rollup&limit=5000",
+      ),
+    );
+    expect(res.status).toBe(200);
+    // Probe fired (suspicious-low rollup) but the inline fold did
+    // not (live and rollup agree).
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(recomputeUserRollups).not.toHaveBeenCalled();
+    const json = (await res.json()) as {
+      data: { measurements: Array<unknown> };
+    };
+    expect(json.data.measurements.length).toBe(2);
   });
 
   it("returns a weekly series when the all-time window is under two years", async () => {

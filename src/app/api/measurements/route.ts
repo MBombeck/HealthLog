@@ -29,6 +29,7 @@ import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import {
   recomputeBucketsForMeasurement,
   collapseToTypeDayKeys,
+  recomputeUserRollups,
 } from "@/lib/measurements/rollups";
 import { NextRequest } from "next/server";
 import type {
@@ -293,7 +294,113 @@ export const GET = apiHandler(async (request: NextRequest) => {
         sumValue: true,
       },
     });
-    if (rollupRows.length > 0) {
+    // v1.4.39.2 — coverage-mismatch fallback. v1.4.39.1 wired the
+    // rollup write hook into the previously-bypassed Withings sync,
+    // /api/import, and admin-restore paths, and widened the boot-time
+    // backfill discovery to per-(user, type, day). Together those
+    // changes ensure new writes and post-deploy restarts converge the
+    // rollup tier for every measurement type the user has logged. They
+    // do NOT, however, guarantee convergence inside a single request
+    // when the boot backfill has not yet finished folding the user's
+    // historic rows: a chart query lands first, the rollup table still
+    // carries 2 rows for a 30-day BP_SYS window, and the route's pre-
+    // v1.4.39.2 "rollup wins on length > 0" short-circuit returns the
+    // sparse rollup. The chart trips its `< 3 daily points` empty-state
+    // even though `measurements` holds the full 30 days.
+    //
+    // This branch closes that gap. When the rollup row count is
+    // suspiciously low for the requested window (≥ 7 days asked and
+    // < 3 rollup rows present), we probe `measurements` for the actual
+    // distinct-day count over the same window. If `measurements`
+    // carries strictly more days than the rollup, the rollup is
+    // under-converged: we fold the (user, type, DAY, [from, to])
+    // partition inline, re-read the rollup, and return the refreshed
+    // rows. The inline fold is bounded by the window + type so it is
+    // small (~30 buckets × one type for the dashboard chart's 30-day
+    // window) and finishes well inside the request budget.
+    //
+    // The probe runs only on suspicious rollups so the covered-tenant
+    // happy path stays a single indexed read. Marc's tenant on a 30-day
+    // BP_SYS window pre-fix returned 2 rollup rows and hit `total: 2`
+    // in the live trace; post-fix the probe finds ~30 distinct days in
+    // `measurements`, folds them, and the chart paints all 30.
+    const windowMs = to.getTime() - from.getTime();
+    const windowDays = Math.ceil(windowMs / 86_400_000);
+    const SUSPICIOUS_ROW_FLOOR = 3;
+    const SUSPICIOUS_WINDOW_DAYS = 7;
+    let effectiveRows = rollupRows;
+    let coverageFallbackFired = false;
+    if (
+      rollupRows.length > 0 &&
+      rollupRows.length < SUSPICIOUS_ROW_FLOOR &&
+      windowDays >= SUSPICIOUS_WINDOW_DAYS
+    ) {
+      // Cheap probe — one indexed range scan over
+      // `(user_id, type, measured_at)`. Returns the count of distinct
+      // calendar days the live table holds for the window.
+      const liveDayCountRows = await prisma.$queryRaw<
+        Array<{ days: bigint }>
+      >`
+        SELECT COUNT(DISTINCT date_trunc('day', m."measured_at"))::bigint AS days
+        FROM measurements m
+        WHERE m."user_id"     = ${user.id}
+          AND m."type"        = ${type}::measurement_type
+          AND m."measured_at" >= ${from}
+          AND m."measured_at" <= ${to}
+      `;
+      const liveDays = Number(liveDayCountRows[0]?.days ?? BigInt(0));
+      if (liveDays > rollupRows.length) {
+        coverageFallbackFired = true;
+        try {
+          // Inline fold of the (user, type, DAY, window) partition.
+          // Bounded by the window so it stays small even on a
+          // power-user account; the upsert is idempotent against the
+          // composite primary key.
+          await recomputeUserRollups(user.id, {
+            types: [type as MeasurementType],
+            granularities: ["DAY"],
+            from,
+            to,
+          });
+          // Re-read so this request returns the converged rows. The
+          // next chart paint hits the same warm rollup without paying
+          // the fallback cost.
+          effectiveRows = await prisma.measurementRollup.findMany({
+            where: {
+              userId: user.id,
+              type: type as MeasurementType,
+              granularity: "DAY",
+              bucketStart: { gte: from, lte: to },
+            },
+            orderBy: { bucketStart: "asc" },
+            take: cap,
+            select: {
+              type: true,
+              bucketStart: true,
+              mean: true,
+              count: true,
+              sumValue: true,
+            },
+          });
+        } catch (err) {
+          // Best-effort — fall back to the legacy live aggregate path
+          // below if the fold itself failed so the chart paints
+          // something sensible regardless. `annotate` carries the
+          // surface so ops can spot a silent populator regression.
+          const message = err instanceof Error ? err.message : String(err);
+          annotate({
+            meta: {
+              rollup_coverage_fallback_failed: true,
+              rollup_coverage_fallback_error: message,
+              type,
+            },
+          });
+          // Drop into the live `date_trunc` branch below.
+          effectiveRows = [];
+        }
+      }
+    }
+    if (effectiveRows.length > 0) {
       // Cumulative metrics (steps, active energy, distance, flights,
       // daylight) store `mean` per bucket but the chart needs the
       // daily SUM. v1.4.39 W-SUM — read `sumValue` directly; fall back
@@ -303,7 +410,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       // SUM(value) for a single-source day because AVG = SUM / COUNT.
       const useSum =
         type != null && CUMULATIVE_HK_TYPES.has(type as MeasurementType);
-      const measurements = rollupRows.map((r) => ({
+      const measurements = effectiveRows.map((r) => ({
         type: r.type,
         value: useSum
           ? (r.sumValue ?? r.mean * r.count)
@@ -318,6 +425,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
           type,
           aggregate: "daily",
           source: "rollup",
+          coverage_fallback: coverageFallbackFired,
         },
       });
       return apiSuccess({
@@ -332,7 +440,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
     }
     // Fall through to the live aggregate path when the rollup is
     // empty for the requested window — covers brand-new accounts +
-    // the race between a recent write hook and the read.
+    // the race between a recent write hook and the read, and the
+    // coverage-fallback inline-fold-failed branch above.
   }
 
   if (aggregate && aggregate !== "raw" && from && to) {
