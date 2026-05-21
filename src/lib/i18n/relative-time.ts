@@ -7,6 +7,11 @@
  * lift the body here so a future i18n key change lands once.
  *
  * Buckets: <1m → just-now, <1h → minutes, <24h → hours, else days.
+ *
+ * v1.4.43 H6 — pluralisation. Each bucket now branches on `count === 1`
+ * to read the *One key (singular) or *Other key (plural), matching the
+ * dashboard.staleHintWeeksOne / Other pattern already in the bundle.
+ * Eliminates the "vor 1 Minuten" grammar bug a German user spotted.
  */
 export function formatRelativeTime(
   iso: string,
@@ -17,9 +22,28 @@ export function formatRelativeTime(
   const diffMs = Date.now() - target;
   if (diffMs < 60_000) return t("insights.relativeJustNow");
   const minutes = Math.floor(diffMs / 60_000);
-  if (minutes < 60) return t("insights.relativeMinutesAgo", { count: minutes });
+  if (minutes < 60) {
+    return t(
+      minutes === 1
+        ? "insights.relativeMinutesAgoOne"
+        : "insights.relativeMinutesAgoOther",
+      { count: minutes },
+    );
+  }
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return t("insights.relativeHoursAgo", { count: hours });
+  if (hours < 24) {
+    return t(
+      hours === 1
+        ? "insights.relativeHoursAgoOne"
+        : "insights.relativeHoursAgoOther",
+      { count: hours },
+    );
+  }
   const days = Math.floor(hours / 24);
-  return t("insights.relativeDaysAgo", { count: days });
+  return t(
+    days === 1
+      ? "insights.relativeDaysAgoOne"
+      : "insights.relativeDaysAgoOther",
+    { count: days },
+  );
 }
