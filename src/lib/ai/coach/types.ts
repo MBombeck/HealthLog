@@ -97,8 +97,6 @@ export const coachChatRequestSchema = z.object({
   scope: coachScopeSchema.optional(),
 });
 
-export type CoachChatRequest = z.infer<typeof coachChatRequestSchema>;
-
 /**
  * SSE event shapes emitted by the streaming endpoint.
  *

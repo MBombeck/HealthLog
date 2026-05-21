@@ -73,5 +73,3 @@ export const listSideEffectsSchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).optional().default(50),
 });
 
-export type CreateSideEffectInput = z.infer<typeof createSideEffectSchema>;
-export type ListSideEffectsInput = z.infer<typeof listSideEffectsSchema>;

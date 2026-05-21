@@ -42,13 +42,6 @@ export type ThresholdMetric =
   | "BONE_MASS"
   | "OXYGEN_SATURATION";
 
-export interface ThresholdOverride {
-  min: number;
-  max: number;
-  /** Set true when the value was entered by the user (not the computed default). */
-  isOverride?: boolean;
-}
-
 /**
  * Shape persisted in User.thresholdsJson. Any metric missing = use default.
  */

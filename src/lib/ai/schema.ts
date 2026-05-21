@@ -67,8 +67,6 @@ export const metricSourceSchema = z.object({
   n: z.number().int().nonnegative().optional(),
 });
 
-export type MetricSource = z.infer<typeof metricSourceSchema>;
-
 /**
  * Set of valid `referenceId` values, derived from
  * `MEDICAL_REFERENCES` so the two cannot drift. Validated lazily
@@ -117,10 +115,6 @@ export const aiRecommendationRationaleSchema = z.object({
    */
   deviation: z.string().min(1, "rationale.deviation required"),
 });
-
-export type AIRecommendationRationale = z.infer<
-  typeof aiRecommendationRationaleSchema
->;
 
 export const aiRecommendationSchema = z
   .object({
@@ -191,8 +185,6 @@ export const aiRecommendationSchema = z
     }
   });
 
-export type AIRecommendation = z.infer<typeof aiRecommendationSchema>;
-
 export const aiCitationSchema = z.object({
   /** Snapshot key being cited. */
   type: z.string().min(1, "citation.type required"),
@@ -202,8 +194,6 @@ export const aiCitationSchema = z.object({
   summary: z.string().min(1, "citation.summary required"),
 });
 
-export type AICitation = z.infer<typeof aiCitationSchema>;
-
 export const aiWarningSchema = z.object({
   /** Topic — "blood_pressure", "pulse", etc. */
   topic: z.string().min(1, "warning.topic required"),
@@ -212,8 +202,6 @@ export const aiWarningSchema = z.object({
   /** Severity tag for downstream filtering. */
   severity: recommendationSeveritySchema.optional(),
 });
-
-export type AIWarning = z.infer<typeof aiWarningSchema>;
 
 /**
  * v1.4.20 phase B1 — Daily Briefing block.
@@ -418,8 +406,6 @@ export const storyboardAnnotationSchema = z.object({
     .min(1, "storyboardAnnotation.detail required")
     .max(400, "storyboardAnnotation.detail must be <= 400 chars"),
 });
-
-export type StoryboardAnnotation = z.infer<typeof storyboardAnnotationSchema>;
 
 export const storyboardAnnotationsSchema = z
   .array(storyboardAnnotationSchema)

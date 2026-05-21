@@ -5,7 +5,6 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
 import type { DataSummary } from "@/lib/analytics/trends";
-import type { SubPageAnalyticsData } from "@/types/analytics";
 
 /**
  * v1.4.33 IW2 — single TanStack-Query wrapper for `/api/analytics`.
@@ -38,15 +37,6 @@ import type { SubPageAnalyticsData } from "@/types/analytics";
  * reads `bpInTargetPct*` and `glucoseByContext` — those slots stay
  * stubbed on the slim path per the IW1 follow-up.
  */
-
-/**
- * Strict structural subset shared between the slim slice and the thick
- * default payload. Consumers that only read `summaries` should type
- * the hook return as `AnalyticsSlicePayload` (or import
- * `SubPageAnalyticsData` directly — same shape, kept aliased for
- * call-site clarity).
- */
-export type AnalyticsSlicePayload = SubPageAnalyticsData;
 
 /**
  * Discriminator for the server-side slice. `undefined` (the default)

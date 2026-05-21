@@ -71,22 +71,6 @@ export interface NtfyChannelConfig {
   authToken?: string;
 }
 
-export type WebPushChannelConfig = Record<string, never>;
-
-/**
- * APNs channel config is empty by design — the per-device APNs token +
- * environment live on the `Device` model, not on the channel row. The
- * channel row exists so per-event preference toggles in
- * `NotificationPreference` apply uniformly across all four channels.
- */
-export type ApnsChannelConfig = Record<string, never>;
-
-export type ChannelConfig =
-  | TelegramChannelConfig
-  | NtfyChannelConfig
-  | WebPushChannelConfig
-  | ApnsChannelConfig;
-
 // ── Notification payload ──
 
 export interface NotificationPayload {

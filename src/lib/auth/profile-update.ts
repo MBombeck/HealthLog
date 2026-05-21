@@ -21,8 +21,6 @@ const extendedProfileSchema = profileSchema.extend({
   moodReminderEnabled: z.boolean().optional(),
 });
 
-export type ApplyProfileInput = z.infer<typeof extendedProfileSchema>;
-
 export interface ApplyProfileResult {
   ok: true;
   user: {

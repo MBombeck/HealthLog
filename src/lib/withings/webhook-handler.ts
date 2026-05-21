@@ -43,10 +43,6 @@ const WITHINGS_SLEEP_APPLI = 44;
 const WITHINGS_ACTIVITY_QUEUE = "withings-activity-sync";
 const WITHINGS_SLEEP_QUEUE = "withings-sleep-sync";
 
-export type WithingsWebhookAuthOutcome =
-  | { ok: true }
-  | { ok: false; reason: "missing_secret" | "mismatch" | "not_configured" };
-
 /**
  * Constant-time comparison helper. Returns false unless both inputs have
  * the same byte length AND match exactly.

@@ -99,7 +99,6 @@ export const insightResultSchema = z.object({
 });
 
 export type InsightResult = z.infer<typeof insightResultSchema>;
-export type InsightFinding = z.infer<typeof insightFindingSchema>;
 
 // ─── Provider Types ────────────────────────────────────────
 
