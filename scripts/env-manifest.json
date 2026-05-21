@@ -1,0 +1,106 @@
+{
+  "$schema": "./env-manifest.schema.json",
+  "description": "Manifest of env vars required by a HealthLog production deployment. Used by `pnpm check-env` to catch missing/empty vars BEFORE a deploy ships. v1.4.42 W6 — born out of the v1.4.40 AP-2 .p8 install gap that shipped silently for 3 days.",
+  "groups": [
+    {
+      "name": "Core",
+      "description": "Database, app URL, encryption keys. The app refuses to boot without these.",
+      "required": true,
+      "variables": [
+        {
+          "name": "DATABASE_URL",
+          "purpose": "Postgres connection string. App boot fails if missing.",
+          "example": "postgresql://healthlog:<pw>@db:5432/healthlog?schema=public"
+        },
+        {
+          "name": "POSTGRES_PASSWORD",
+          "purpose": "Database password for the bundled `db` service in docker-compose.yml.",
+          "example": "<openssl rand -base64 24>"
+        },
+        {
+          "name": "NEXT_PUBLIC_APP_URL",
+          "purpose": "Public URL embedded in OAuth redirects, webhook callbacks, APNs deep-links."
+        },
+        {
+          "name": "APP_URL",
+          "purpose": "Server-side mirror of NEXT_PUBLIC_APP_URL; used by background workers."
+        },
+        {
+          "name": "ENCRYPTION_KEY",
+          "purpose": "AES-256-GCM key for at-rest encryption of provider tokens. 64 hex chars (32 bytes). Required unless ENCRYPTION_KEYS is set."
+        },
+        {
+          "name": "API_TOKEN_HMAC_KEY",
+          "purpose": "HMAC-SHA256 key for hashing external Bearer tokens. 64 hex chars."
+        }
+      ]
+    },
+    {
+      "name": "Withings OAuth",
+      "description": "Required to enable the Withings integration. App boots without these but Withings sync stays disabled.",
+      "required": false,
+      "variables": [
+        {
+          "name": "WITHINGS_CLIENT_ID",
+          "purpose": "Withings OAuth client_id from https://developer.withings.com."
+        },
+        {
+          "name": "WITHINGS_CLIENT_SECRET",
+          "purpose": "Withings OAuth client_secret."
+        },
+        {
+          "name": "WITHINGS_WEBHOOK_SECRET",
+          "purpose": "Random secret carried as a path segment in the Withings webhook callback URL. Generate with `openssl rand -hex 32`."
+        }
+      ]
+    },
+    {
+      "name": "APNs (iOS push)",
+      "description": "All four core APNS_* vars together. Missing any disables APNs silently — the v1.4.40 AP-2 gap that motivated this manifest.",
+      "required": false,
+      "variables": [
+        {
+          "name": "APNS_KEY_ID",
+          "purpose": "10-char Key ID from Apple Developer."
+        },
+        {
+          "name": "APNS_TEAM_ID",
+          "purpose": "10-char Team ID from Apple Developer."
+        },
+        {
+          "name": "APNS_BUNDLE_ID",
+          "purpose": "iOS app bundle id, e.g. dev.healthlog.ios."
+        },
+        {
+          "name": "APNS_KEY",
+          "purpose": "APNs auth key (.p8 contents). Use APNS_KEY for 12-factor env-block deploys; APNS_KEY_FILE is the filesystem alternative — at least one of the two must be set.",
+          "anyOf": ["APNS_KEY", "APNS_KEY_FILE"]
+        }
+      ]
+    },
+    {
+      "name": "Deploy webhook",
+      "description": "Coolify -> HealthLog deploy-result webhook. Without this, the auto-deploy success/failure feedback loop is broken.",
+      "required": false,
+      "variables": [
+        {
+          "name": "DEPLOY_WEBHOOK_SECRET",
+          "purpose": "Shared secret for the X-Deploy-Webhook-Secret header on POST /api/internal/deploy-webhook. 64 hex chars."
+        }
+      ]
+    },
+    {
+      "name": "Off-host backups",
+      "description": "Required ALL-OR-NONE: any of these without the rest disables backups silently.",
+      "required": false,
+      "allOrNone": true,
+      "variables": [
+        { "name": "BACKUP_S3_ENDPOINT", "purpose": "S3-compatible endpoint URL." },
+        { "name": "BACKUP_S3_BUCKET", "purpose": "Bucket name." },
+        { "name": "BACKUP_S3_ACCESS_KEY", "purpose": "S3 access key." },
+        { "name": "BACKUP_S3_SECRET_KEY", "purpose": "S3 secret key." },
+        { "name": "BACKUP_ENCRYPTION_KEY", "purpose": "Separate AES key for the backup body — MUST NOT match ENCRYPTION_KEY." }
+      ]
+    }
+  ]
+}

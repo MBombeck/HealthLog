@@ -44,7 +44,8 @@
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "openapi:generate": "npx tsx scripts/generate-openapi.ts",
-    "openapi:check": "npx tsx scripts/check-openapi.ts"
+    "openapi:check": "npx tsx scripts/check-openapi.ts",
+    "check-env": "npx tsx scripts/check-env.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1048.0",
