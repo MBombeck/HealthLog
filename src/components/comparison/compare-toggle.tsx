@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
+import { queryKeys } from "@/lib/query-keys";
 import {
   COMPARISON_BASELINES,
   resolveDashboardLayout,
@@ -26,7 +27,7 @@ export function CompareToggle({ className }: { className?: string }) {
   const queryClient = useQueryClient();
 
   const { data: layoutData } = useQuery({
-    queryKey: ["user", "dashboardWidgets"],
+    queryKey: queryKeys.dashboardWidgets(),
     queryFn: async () => {
       const res = await fetch("/api/dashboard/widgets");
       if (!res.ok) throw new Error("failed");
@@ -52,15 +53,14 @@ export function CompareToggle({ className }: { className?: string }) {
     },
     onMutate: async (next) => {
       await queryClient.cancelQueries({
-        queryKey: ["user", "dashboardWidgets"],
+        queryKey: queryKeys.dashboardWidgets(),
       });
-      const prev = queryClient.getQueryData<DashboardLayout>([
-        "user",
-        "dashboardWidgets",
-      ]);
+      const prev = queryClient.getQueryData<DashboardLayout>(
+        queryKeys.dashboardWidgets(),
+      );
       if (prev) {
         queryClient.setQueryData<DashboardLayout>(
-          ["user", "dashboardWidgets"],
+          queryKeys.dashboardWidgets(),
           { ...prev, comparisonBaseline: next },
         );
       }
@@ -68,11 +68,13 @@ export function CompareToggle({ className }: { className?: string }) {
     },
     onError: (_err, _next, ctx) => {
       if (ctx?.prev) {
-        queryClient.setQueryData(["user", "dashboardWidgets"], ctx.prev);
+        queryClient.setQueryData(queryKeys.dashboardWidgets(), ctx.prev);
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["user", "dashboardWidgets"] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboardWidgets(),
+      });
     },
   });
 

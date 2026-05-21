@@ -172,6 +172,7 @@ describe("queryKey factory enforcement", () => {
   // guard's scope until a follow-up wave routes those keys.
   const guardedRoots = [
     join(repoRoot, "src", "components", "charts"),
+    join(repoRoot, "src", "components", "comparison"),
     join(repoRoot, "src", "app", "page.tsx"),
     join(repoRoot, "src", "hooks", "use-auth.ts"),
   ];
