@@ -22,6 +22,10 @@ import { annotate } from "@/lib/logging/context";
 import { requireAssistantSurface } from "@/lib/feature-flags";
 import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { buildComprehensiveAggregate } from "@/lib/insights/comprehensive-aggregator";
+import {
+  ensureUserMoodRollupsFresh,
+  readMoodDayRollups,
+} from "@/lib/mood/rollups";
 
 export const dynamic = "force-dynamic";
 
@@ -82,39 +86,73 @@ export async function buildComprehensiveResponse(user: AuthedUser) {
   // buckets for the correlation pairings.
   const aggregate = await buildComprehensiveAggregate(userId);
 
-  // Mood entries are user-recorded; the table is small and the
-  // `moodSummary` field requires raw scores (`summarize()` over the
-  // raw score series). The findMany stays.
-  const moodEntries = await prisma.moodEntry.findMany({
-    where: { userId, moodLoggedAt: { gte: ninetyDaysAgo } },
-    orderBy: { moodLoggedAt: "asc" },
-    select: { date: true, score: true, moodLoggedAt: true },
-  });
-
-  // Aggregate mood to daily averages (drives the mood × metric
-  // correlations). Bucket key matches the legacy code's `date` column
-  // semantics (YYYY-MM-DD anchored to the user's tz at write time).
-  const moodByDay = new Map<string, { sum: number; count: number }>();
-  for (const entry of moodEntries) {
-    const current = moodByDay.get(entry.date) ?? { sum: 0, count: 0 };
-    current.sum += entry.score;
-    current.count += 1;
-    moodByDay.set(entry.date, current);
-  }
-  const dailyMoodEntries = Array.from(moodByDay.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([day, stats]) => ({
-      day,
-      value: Math.round((stats.sum / stats.count) * 100) / 100,
+  // v1.4.40 — swap the 90-day unbounded `prisma.moodEntry.findMany`
+  // for the persistent mood-rollup DAY tier (audit Critical Finding
+  // #2). The two consumers downstream — `dailyMoodEntries` for the
+  // mood × metric correlations and `moodSummary` for the dashboard
+  // mood block — read at a per-day resolution, which is precisely the
+  // shape the rollup writer emits.
+  //
+  // Coverage-fallback: when the user has mood entries but zero rollup
+  // rows yet (legacy account before the boot-time backfill has caught
+  // up), fall back to a bounded 90-day raw walk once and fire the
+  // warm-up so the next request lands on the rollup tier. Same posture
+  // as `/api/mood/analytics`.
+  //
+  // The bucket key shape change is documented in the route-parity test
+  // for `/api/mood/analytics`: rollup `bucketStart` is UTC-anchored
+  // YYYY-MM-DD; the legacy `MoodEntry.date` column is TZ-anchored
+  // (write-time). For Berlin tenants whose mood log timestamps don't
+  // straddle the UTC boundary the two labels agree on every realistic
+  // entry — the v1.5 per-user-tz bucketing closes the residual DST
+  // edge.
+  void ensureUserMoodRollupsFresh(userId);
+  const moodRollupDayRows = await readMoodDayRollups(userId, ninetyDaysAgo);
+  let dailyMoodEntries: Array<{ day: string; value: number }>;
+  let moodDataPoints: DataPoint[];
+  let moodEntryCount: number;
+  if (moodRollupDayRows.length > 0) {
+    dailyMoodEntries = moodRollupDayRows.map((r) => ({
+      day: r.bucketStart.toISOString().slice(0, 10),
+      value: Math.round(r.mean * 100) / 100,
     }));
+    moodDataPoints = moodRollupDayRows.map((r) => ({
+      date: r.bucketStart,
+      value: r.mean,
+    }));
+    moodEntryCount = moodRollupDayRows.reduce((s, r) => s + r.count, 0);
+  } else {
+    // Coverage-fallback: legacy account with mood entries but no
+    // rollup coverage yet. Bounded by the 90-day window so the walk is
+    // capped even when the rollup miss happens.
+    const moodEntries = await prisma.moodEntry.findMany({
+      where: { userId, moodLoggedAt: { gte: ninetyDaysAgo } },
+      orderBy: { moodLoggedAt: "asc" },
+      select: { date: true, score: true, moodLoggedAt: true },
+    });
+    const moodByDay = new Map<string, { sum: number; count: number }>();
+    for (const entry of moodEntries) {
+      const current = moodByDay.get(entry.date) ?? { sum: 0, count: 0 };
+      current.sum += entry.score;
+      current.count += 1;
+      moodByDay.set(entry.date, current);
+    }
+    dailyMoodEntries = Array.from(moodByDay.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([day, stats]) => ({
+        day,
+        value: Math.round((stats.sum / stats.count) * 100) / 100,
+      }));
+    // Feed per-day means into `summarize()` so the live-fallback path
+    // shares the rollup-tier semantic (one DataPoint per day, the
+    // daily mean) — mirrors the v1.4.39 mood/analytics QA UX-H1 fix.
+    moodDataPoints = dailyMoodEntries.map((e) => ({
+      date: new Date(`${e.day}T12:00:00.000Z`),
+      value: e.value,
+    }));
+    moodEntryCount = moodEntries.length;
+  }
 
-  // moodSummary uses the same `summarize()` helper over raw scores —
-  // the table is bounded by user-recorded entries so the in-JS path
-  // is safe.
-  const moodDataPoints: DataPoint[] = moodEntries.map((e) => ({
-    date: e.moodLoggedAt,
-    value: e.score,
-  }));
   const moodSummary =
     moodDataPoints.length > 0 ? summarize(moodDataPoints) : null;
 
@@ -369,7 +407,7 @@ export async function buildComprehensiveResponse(user: AuthedUser) {
     action: { name: "insights.comprehensive" },
     meta: {
       totalMeasurements: aggregate.totalMeasurements,
-      moodEntries: moodEntries.length,
+      moodEntries: moodEntryCount,
       medications: medications.length,
     },
   });

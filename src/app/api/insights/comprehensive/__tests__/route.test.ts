@@ -20,14 +20,29 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     user: { findUnique: vi.fn() },
     measurement: { findMany: vi.fn() },
-    moodEntry: { findMany: vi.fn() },
+    moodEntry: { findMany: vi.fn(), findFirst: vi.fn() },
+    moodEntryRollup: { findMany: vi.fn(), findFirst: vi.fn() },
     medication: { findMany: vi.fn() },
     medicationIntakeEvent: { findMany: vi.fn() },
     appSettings: { findUnique: vi.fn() },
     auditLog: { create: vi.fn() },
     $queryRaw: vi.fn(),
+    $queryRawUnsafe: vi.fn(),
   },
 }));
+
+// v1.4.40 — stub the mood-rollup warm-up so test runs don't fire the
+// real recompute against the mocked Prisma. The route fires the
+// warm-up as fire-and-forget; the return value is irrelevant.
+vi.mock("@/lib/mood/rollups", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/mood/rollups")>(
+    "@/lib/mood/rollups",
+  );
+  return {
+    ...actual,
+    ensureUserMoodRollupsFresh: vi.fn().mockResolvedValue({ recomputed: false }),
+  };
+});
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 
@@ -98,6 +113,9 @@ beforeEach(() => {
     dateOfBirth: new Date("1985-01-01"),
   });
   (prisma.moodEntry.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+  (
+    prisma.moodEntryRollup.findMany as ReturnType<typeof vi.fn>
+  ).mockResolvedValue([]);
   (prisma.medication.findMany as ReturnType<typeof vi.fn>).mockResolvedValue(
     [],
   );
@@ -265,6 +283,109 @@ describe("GET /api/insights/comprehensive — envelope shape", () => {
     expect(body.data.bpPctInTarget).toBe(100);
     // avg30 sys=125, dia=75 → ESH "Normal" band.
     expect(body.data.bpClassification?.category).toBe("Normal");
+  });
+
+  it("consumes the mood-rollup tier and skips the raw findMany when DAY rows exist", async () => {
+    // v1.4.40 W-INSIGHTS — rollup-tier read swap parity. Three DAY rows
+    // populated → the route reads them directly and never touches the
+    // raw `moodEntry.findMany`. `moodSummary` is computed over per-day
+    // mean DataPoints, matching the rollup-tier convention shipped by
+    // `/api/mood/analytics` post-v1.4.39.
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    (
+      buildComprehensiveAggregate as ReturnType<typeof vi.fn>
+    ).mockResolvedValue({
+      summaries: {},
+      bpRawRows: { sys: [], dia: [] },
+      dailyByType: {},
+      firstMeasurementAt: new Date(),
+      totalMeasurements: 0,
+    });
+    (
+      prisma.moodEntryRollup.findMany as ReturnType<typeof vi.fn>
+    ).mockResolvedValue([
+      {
+        userId: "user-comp-1",
+        granularity: "DAY",
+        bucketStart: new Date("2026-05-08T00:00:00.000Z"),
+        count: 1,
+        mean: 4,
+        minScore: 4,
+        maxScore: 4,
+        sd: null,
+        computedAt: new Date(),
+      },
+      {
+        userId: "user-comp-1",
+        granularity: "DAY",
+        bucketStart: new Date("2026-05-09T00:00:00.000Z"),
+        count: 2,
+        mean: 4.5,
+        minScore: 4,
+        maxScore: 5,
+        sd: 0.5,
+        computedAt: new Date(),
+      },
+    ]);
+
+    const res = await callGet(makeReq());
+    expect(res.status).toBe(200);
+
+    // Raw findMany must not fire on the rollup-tier fast path.
+    expect(prisma.moodEntry.findMany).not.toHaveBeenCalled();
+
+    const body = (await res.json()) as {
+      data: { moodSummary: { count: number; mean: number | null } | null };
+    };
+    // `summarize()` is called over two DataPoints (one per day).
+    expect(body.data.moodSummary).not.toBeNull();
+    expect(body.data.moodSummary?.count).toBe(2);
+    // Mean of (4 + 4.5) / 2 = 4.25
+    expect(body.data.moodSummary?.mean).toBeCloseTo(4.25, 2);
+  });
+
+  it("falls back to the bounded live walk when the rollup tier is empty but raw mood entries exist", async () => {
+    // v1.4.40 W-INSIGHTS — coverage-fallback parity. Legacy account
+    // with raw entries but no rollup coverage yet. The route runs the
+    // legacy bounded walk once; the warm-up helper (stubbed) is
+    // supposed to fire fire-and-forget so the next request lands on
+    // the rollup tier.
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    (
+      buildComprehensiveAggregate as ReturnType<typeof vi.fn>
+    ).mockResolvedValue({
+      summaries: {},
+      bpRawRows: { sys: [], dia: [] },
+      dailyByType: {},
+      firstMeasurementAt: new Date(),
+      totalMeasurements: 0,
+    });
+    (
+      prisma.moodEntryRollup.findMany as ReturnType<typeof vi.fn>
+    ).mockResolvedValue([]);
+    (prisma.moodEntry.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([
+      {
+        date: "2026-05-08",
+        score: 4,
+        moodLoggedAt: new Date("2026-05-08T12:00:00.000Z"),
+      },
+      {
+        date: "2026-05-09",
+        score: 5,
+        moodLoggedAt: new Date("2026-05-09T12:00:00.000Z"),
+      },
+    ]);
+
+    const res = await callGet(makeReq());
+    expect(res.status).toBe(200);
+
+    expect(prisma.moodEntry.findMany).toHaveBeenCalledTimes(1);
+
+    const body = (await res.json()) as {
+      data: { moodSummary: { count: number } | null };
+    };
+    expect(body.data.moodSummary).not.toBeNull();
+    expect(body.data.moodSummary?.count).toBe(2);
   });
 
   it("derives weight × BP scatter from daily-bucketed series", async () => {
