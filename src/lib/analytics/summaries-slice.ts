@@ -53,6 +53,8 @@
  * 100`. Slope `direction` is derived from `slope`'s sign with the
  * same 0.01-units-per-day "stable" threshold the JS helper uses.
  */
+import pLimit from "p-limit";
+
 import type { MeasurementType } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/db";
@@ -724,24 +726,41 @@ async function computeAvg30LastYearForType(
  * in parallel so the long-tail of types doesn't serialise into a
  * per-type round-trip stack.
  *
+ * v1.4.43 — cap concurrent per-type WMY reads at 4.
+ *
+ * Pre-fix this helper ran an unbounded Promise.all over every type the
+ * user has data for. On a 15-type tenant the burst held 15+ Prisma
+ * slots simultaneously, and with the slim and thick analytics slices
+ * firing in parallel on dashboard mount the combined fan-out drowned
+ * the pg.Pool max=20 even after the v1.4.40 W-POOL raise. The cap
+ * mirrors the W-POOL `p-limit(4)` discipline v1.4.40 applied to the
+ * thick route's per-type live walk (`ANALYTICS_TYPE_FETCH_CONCURRENCY`
+ * in `src/app/api/analytics/route.ts`) so both slices behave the same
+ * way under burst.
+ *
  * Returns a `type → mean | null` map; types with no coverage at any
  * granularity (or no buckets in the year-ago slice) map to `null` so
  * the caller can blanket-assign without per-type null-checking.
  */
-async function computeAvg30LastYearMap(
+export const WMY_FANOUT_CONCURRENCY = 4;
+
+export async function computeAvg30LastYearMap(
   userId: string,
   types: ReadonlyArray<string>,
 ): Promise<Map<string, number | null>> {
   const out = new Map<string, number | null>();
   if (types.length === 0) return out;
+  const limit = pLimit(WMY_FANOUT_CONCURRENCY);
   const results = await Promise.all(
-    types.map(async (type) => {
-      const value = await computeAvg30LastYearForType(
-        userId,
-        type as MeasurementType,
-      );
-      return [type, value] as const;
-    }),
+    types.map((type) =>
+      limit(async () => {
+        const value = await computeAvg30LastYearForType(
+          userId,
+          type as MeasurementType,
+        );
+        return [type, value] as const;
+      }),
+    ),
   );
   for (const [type, value] of results) {
     out.set(type, value);
