@@ -40,6 +40,8 @@ import { prisma } from "@/lib/db";
 import { apiSuccess, apiError, safeJson, getClientIp } from "@/lib/api-response";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
+import { auditLog } from "@/lib/auth/audit";
+import { hashToken } from "@/lib/auth/hmac";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -92,8 +94,21 @@ export const POST = apiHandler(async (request: NextRequest) => {
     },
   });
 
+  // v1.4.43 W13 M-1 — persist a hashed-identifier audit row so an admin
+  // can later answer "did anyone enumerate accounts last week?". The
+  // wide-event `annotate()` log is sampled and short-retention; the
+  // audit ledger is durable. We hash the identifier (same shape as the
+  // `auth.login.failed` row) so the literal email/username never lands
+  // in `AuditLog.details` — the v1.4.20 retroactive PII directive bars
+  // raw user-typed strings from operator-readable artefacts.
+  const identifierHash = hashToken(identifier);
+
   if (!user) {
     annotate({ action: { name: "auth.check-user" }, meta: { branch: "not_found" } });
+    await auditLog("auth.check-user", {
+      ipAddress: ip,
+      details: { branch: "not_found", identifier_hash: identifierHash },
+    });
     return apiSuccess({
       branch: "not_found" satisfies CheckUserBranch,
       hasPasskey: false,
@@ -110,5 +125,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   else branch = "exists";
 
   annotate({ action: { name: "auth.check-user" }, meta: { branch } });
+  await auditLog("auth.check-user", {
+    userId: user.id,
+    ipAddress: ip,
+    details: { branch, identifier_hash: identifierHash },
+  });
   return apiSuccess({ branch, hasPasskey, hasPassword });
 });
