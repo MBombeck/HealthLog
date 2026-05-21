@@ -1,5 +1,122 @@
 # Changelog
 
+## [1.4.39] — 2026-05-21 — Mood, medication-compliance, and cumulative-sum rollup tiers
+
+The v1.4.38 chain settled the measurement-rollup fast-path. v1.4.39
+extends the same "raw data stays untouched, a derived second layer
+serves the read path" posture to two more endpoints that still walked
+the source table on every cold mount — `/api/mood/analytics` and
+`/api/medications/intake?scope=compliance` — and folds a cumulative
+`sum_value` column into the existing `measurement_rollups` tier so
+step / flight / distance / daylight / active-energy sparklines no
+longer re-derive their daily totals in Node.
+
+Raw `measurements`, `mood_entries`, `medication_intake_events` tables
+are byte-unchanged. The three new tiers are derived caches that
+self-heal via boot-time backfill on first reach.
+
+### Added
+
+- **`mood_entry_rollups`** — per-(user, granularity, bucket) mood
+  stats. Reuses the existing `RollupGranularity` enum so the worker
+  shares one type across mood and measurement tiers. Synchronous
+  DAY-tier write hook on every `MoodEntry` create / update / delete;
+  WEEK / MONTH / YEAR folded asynchronously through pg-boss. Boot-time
+  backfill queue (`mood-rollup-full-backfill`) discovers legacy
+  accounts and converges on first worker boot.
+- **`medication_compliance_rollups`** — per-(user, medication, day)
+  scheduled / taken / skipped ledger. `day` is a user-timezone-anchored
+  `YYYY-MM-DD` string so multi-instance reads do not re-derive
+  boundaries. Hook fires on every intake-event mutation plus the
+  reminder-worker mint path. Boot-time backfill queue
+  (`medication-compliance-full-backfill`) handles legacy accounts.
+- **`measurement_rollups.sum_value`** — nullable cumulative-metric
+  column populated alongside `mean / count` in every rollup fold.
+  Existing rows backfill on next reach via the extended
+  `rollup-full-backfill` discovery query.
+- **`rollup-read-wmy.ts`** — `readWeekRollups` / `readMonthRollups` /
+  `readYearRollups` / `readBestGranularityRollups` reader helpers. The
+  auto-router picks the largest granularity that resolves the
+  requested window (90 d → DAY, 365 d → MONTH, 1 095 d → YEAR) with
+  coverage-miss fall-through. Ready for the v1.5 multi-year trend
+  card; not exposed via any route yet.
+- **`computeLongWindowSummary(userId, type, windowDays)`** in
+  `summaries-slice.ts` — granularity-routed `count / min / max /
+  mean / sum` aggregate for long-window consumers.
+- **`rollup-read-cumulative.ts`** — `readCumulativeDaySums` /
+  `readCumulativeDaySumsBatch` / `resolveBucketSum` helpers with
+  legacy-NULL fallback.
+
+### Performance
+
+Expected on Marc-sized accounts; numbers anchored on the
+`.planning/round-v1438-perf-analysis.md` audit and confirmed by the
+unit-test fixture suite. Live perf-verify rides the post-deploy
+window.
+
+- **`/api/mood/analytics` cold mount: 12.7 s → ~200 ms.** Was an
+  unbounded `MoodEntry.findMany` walk + JS aggregation; now a bounded
+  rollup read. 5-year `since` ceiling on the rollup branch keeps the
+  query plan stable on multi-year tenants. Live-fallback retained for
+  coverage misses and pre-aggregates daily means before `summarize()`
+  so `summary.mean / latest / min / max / avg7 / avg30 / slope30` stay
+  byte-identical between the two branches on multi-entry days.
+- **`/api/medications/intake?scope=compliance` cold mount: 3.2 s → ~200 ms.**
+  Was an unbounded intake-event findMany + per-day JS bucketing; now a
+  per-day rollup read. Coverage probe counts rolled days vs days with
+  intake events (partial-coverage cases route to the live fallback,
+  not the rollup). Race-safe atomic upsert closes the
+  read-aggregate-then-upsert window under concurrent reminder-worker
+  and Telegram intake.
+- **`/api/dashboard/summary` cumulative sparkline: ~500 ms → ~300 ms.**
+  Reads `sum_value` directly instead of recomputing via `mean × count`.
+- **`/api/measurements?groupBy=day` cumulative path:** consumes
+  `sum_value` directly; eliminates per-type JS aggregation on
+  `ACTIVITY_STEPS / FLIGHTS_CLIMBED / WALKING_RUNNING_DISTANCE /
+  TIME_IN_DAYLIGHT / ACTIVE_ENERGY`.
+- **`/api/analytics` live-fallback row cap: 347 k → ~5 k.** Trailing
+  425-day `since` cap on the `fetchMeasurementSeriesChunked` per-type
+  loop. Defense-in-depth — the v1.4.38.8 per-type fast-path gate makes
+  this path unreachable in the common case, but a regression that
+  re-triggers it can no longer pull the entire row history. The 425 d
+  window preserves `summary.avg30LastYear` (year-ago baseline tile);
+  the rollup fast-path stays untouched.
+
+### Fixed
+
+- **Mood + medication-compliance DAY recompute race.** Concurrent
+  writes for the same `(user, day)` could interleave their SELECT and
+  UPSERT and leave a stale row until the next write. Both helpers
+  now use a single atomic `INSERT … SELECT … ON CONFLICT DO UPDATE`
+  that re-aggregates inside the upsert subquery.
+- **Mood rollup async worker enqueue blocked the user response.** The
+  WEEK / MONTH / YEAR pg-boss enqueue is now fire-and-forget; the
+  read-critical DAY pass commits synchronously above so the cold-mount
+  cost no longer drags pg-boss latency into mood-write responses.
+- **Partial-coverage zero-fill on `/api/medications/intake?scope=compliance`.**
+  The coverage probe used to flip to the rollup path on a single
+  rollup row in the window — legacy accounts with a mid-deploy
+  in-progress backfill saw zero-filled tiles for the un-rolled days.
+  Probe now compares rolled-day count to days-with-events.
+- **Coverage-miss backfill enqueue scoped to the caller's user.** The
+  request-path warm-up no longer kicks off a cluster-wide discovery
+  scan on every cache-miss; cluster discovery stays on the worker
+  boot path. Mirrors the mood-rollup pattern.
+- **`dashboard-summary` nested ternary** in the sparkline branch
+  flattened per the project's no-nested-ternaries rule.
+
+### Operator notes
+
+- Migrations `0070`, `0071`, `0072` are additive only. `0072` adds a
+  nullable `DOUBLE PRECISION` column with no default — catalog-only
+  DDL on PostgreSQL 11+, no table rewrite, writes resume in
+  milliseconds.
+- No environment-variable change. No API contract break. No iOS
+  contract change.
+- Boot-time backfills converge automatically on first reach. Operator
+  trigger remains available via `POST /api/admin/rollups/recompute`.
+- Tests: 4 524 → 4 640 unit (+116). Integration suite green.
+
 ## [1.4.38.8] — 2026-05-18 — Analytics fast-path gates per-type only
 
 The v1.4.38.5–.7 chain confirmed the rollup-fast-path was bouncing
