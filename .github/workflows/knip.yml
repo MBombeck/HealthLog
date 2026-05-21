@@ -29,15 +29,8 @@ jobs:
 
       - run: pnpm db:generate
 
-      # v1.4.41 W-PROCESS-DOCS — exports + types tier staged for
-      # promotion to enforcing. The W-SIMPLIFIER and W-INSIGHTS-HOT
-      # cleanup waves have not yet landed on develop at the time this
-      # comment was written (48 unused exports + 52 unused exported
-      # types still in the tree), so the gate remains scoped to
-      # files,dependencies,binaries,unlisted. Once those cleanup waves
-      # merge and `pnpm knip --reporter compact` reports zero unused
-      # exports + zero unused types, drop the `--include` flag below
-      # to flip exports + types to enforcing. See
-      # `.planning/phase-W-PROCESS-DOCS-v1441-report.md` for the
-      # promotion checklist and the rollback path.
-      - run: pnpm knip --reporter compact --include files,dependencies,binaries,unlisted
+      # v1.4.42 — exports + types tiers promoted to enforcing. The
+      # `knip.json` ignore-block carries the shadcn UI surface and the
+      # `src/lib/validations/**` contract types; everything else has
+      # to clear or get justified there.
+      - run: pnpm knip --reporter compact
