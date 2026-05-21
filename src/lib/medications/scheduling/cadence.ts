@@ -28,6 +28,7 @@
  */
 
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
+import { wallClockInTz } from "@/lib/tz/wall-clock";
 
 export interface ScheduleLike {
   /** "HH:mm" 24h, user-tz reference (per existing schema). */
@@ -78,69 +79,9 @@ const WEEK_MS = 7 * DAY_MS;
  */
 const PAIR_RADIUS_MS = 12 * 60 * 60 * 1000;
 
-interface WallClockParts {
-  year: number;
-  month: number; // 1-12
-  day: number;
-  hour: number;
-  minute: number;
-  second: number;
-  weekday: number; // 0 = Sunday
-}
-
-const WEEKDAY_MAP: Record<string, number> = {
-  Sun: 0,
-  Mon: 1,
-  Tue: 2,
-  Wed: 3,
-  Thu: 4,
-  Fri: 5,
-  Sat: 6,
-};
-
-/**
- * Compute the wall-clock parts of `date` interpreted in the user's
- * timezone. When `tz` is omitted, falls back to the system-local
- * representation so the legacy single-tz callers keep their existing
- * shape (the v1.4.25 W19e callers were system-local by construction).
- */
-function wallClockInTz(date: Date, tz: string | undefined): WallClockParts {
-  if (!tz) {
-    return {
-      year: date.getFullYear(),
-      month: date.getMonth() + 1,
-      day: date.getDate(),
-      hour: date.getHours(),
-      minute: date.getMinutes(),
-      second: date.getSeconds(),
-      weekday: date.getDay(),
-    };
-  }
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: tz,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-    weekday: "short",
-  }).formatToParts(date);
-  const get = (type: Intl.DateTimeFormatPartTypes): string =>
-    parts.find((p) => p.type === type)?.value ?? "0";
-  let hour = Number(get("hour"));
-  if (hour === 24) hour = 0;
-  return {
-    year: Number(get("year")),
-    month: Number(get("month")),
-    day: Number(get("day")),
-    hour,
-    minute: Number(get("minute")),
-    second: Number(get("second")),
-    weekday: WEEKDAY_MAP[get("weekday")] ?? 0,
-  };
-}
+// WallClockParts + wallClockInTz live in `@/lib/tz/wall-clock` as the
+// canonical helper — see the file-level comment there for the v1.4.40
+// consolidation rationale.
 
 /**
  * Compute the UTC offset (in minutes) of `tz` at the given instant.

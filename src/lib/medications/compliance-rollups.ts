@@ -26,6 +26,7 @@ import {
   isValidTimezone,
   userDayKey,
 } from "@/lib/tz/format";
+import { wallClockInTz } from "@/lib/tz/wall-clock";
 
 /**
  * pg-boss queue name for the boot-time medication compliance backfill.
@@ -64,30 +65,6 @@ export interface ComplianceBucket {
  * methods we touch.
  */
 type PrismaLike = typeof prisma | Prisma.TransactionClient;
-
-/**
- * Compute the wall-clock components of `date` interpreted in `tz`.
- * Same shape as the cadence helper's `wallClockInTz`, lifted here so
- * the compliance module doesn't depend on a sibling-folder helper.
- */
-function wallClockInTz(
-  date: Date,
-  tz: string,
-): { year: number; month: number; day: number } {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: tz,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const get = (type: Intl.DateTimeFormatPartTypes): string =>
-    parts.find((p) => p.type === type)?.value ?? "0";
-  return {
-    year: Number(get("year")),
-    month: Number(get("month")),
-    day: Number(get("day")),
-  };
-}
 
 /**
  * UTC offset (in minutes) of `tz` at the given instant. Positive east
