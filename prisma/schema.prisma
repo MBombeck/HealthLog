@@ -1342,17 +1342,19 @@ model MedicationComplianceRollup {
 // `integration` values are bare strings ("withings", "moodlog") rather
 // than an enum so future integrations don't require a migration.
 model IntegrationStatus {
-  id                  String    @id @default(cuid())
-  userId              String    @map("user_id")
-  integration         String // "withings" | "moodlog"
-  state               String    @default("connected") // "connected" | "error_reauth" | "error_transient" | "disconnected"
-  lastSuccessAt       DateTime? @map("last_success_at")
-  lastAttemptAt       DateTime? @map("last_attempt_at")
-  lastError           String?   @map("last_error") // AES-256-GCM encrypted (may contain token-fragment metadata)
-  consecutiveFailures Int       @default(0) @map("consecutive_failures")
-  alertedAt           DateTime? @map("alerted_at") // last time admin Telegram alert fired (idempotency guard)
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
+  id                         String    @id @default(cuid())
+  userId                     String    @map("user_id")
+  integration                String // "withings" | "moodlog"
+  state                      String    @default("connected") // "connected" | "error_reauth" | "error_transient" | "disconnected" | "parked"
+  lastSuccessAt              DateTime? @map("last_success_at")
+  lastAttemptAt              DateTime? @map("last_attempt_at")
+  lastError                  String?   @map("last_error") // AES-256-GCM encrypted (may contain token-fragment metadata)
+  consecutiveFailures        Int       @default(0) @map("consecutive_failures") // v1.4.44 will drop; per-kind counter below is the source of truth
+  consecutiveFailuresByKind  Json?     @map("consecutive_failures_by_kind") // v1.4.43 W14 — { transient, reauth_required, persistent }
+  persistentFailureStartedAt DateTime? @map("persistent_failure_started_at") // v1.4.43 W14 — start of the current persistent streak (drives >24h park)
+  alertedAt                  DateTime? @map("alerted_at") // last time admin Telegram alert fired (idempotency guard)
+  createdAt                  DateTime  @default(now()) @map("created_at")
+  updatedAt                  DateTime  @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
