@@ -340,6 +340,20 @@ export function MoodChart({
     refetchOnWindowFocus: false,
   });
 
+  // v1.4.43 W2-CHART-GATE — raw mood-entry count across every day in
+  // the window. `entries[].samples` carries the per-day raw count
+  // straight from the analytics endpoint; summing it produces the
+  // total entries the user logged, independent of how many calendar
+  // days they hit. Used by the empty-state gate to distinguish "few
+  // entries" from "few days".
+  const rawCount = useMemo<number>(() => {
+    if (!data?.entries?.length) return 0;
+    return data.entries.reduce(
+      (acc, entry) => acc + (Number.isFinite(entry.samples) ? entry.samples : 0),
+      0,
+    );
+  }, [data]);
+
   const chartData = useMemo((): ChartDataPoint[] | undefined => {
     if (!data?.entries?.length) return undefined;
 
@@ -682,11 +696,25 @@ export function MoodChart({
           // shared CHART_HEIGHT_PX so the empty state preserves the
           // trend-row rhythm (v1.4.27 — was 280, now 240 to match every
           // other dashboard chart card).
-          <ChartEmptyState
-            title={t("charts.emptyStateTitle")}
-            description={t("charts.emptyStateDescription")}
-            height={CHART_HEIGHT_PX}
-          />
+          //
+          // v1.4.43 W2-CHART-GATE — split the copy on the raw mood-entry
+          // count. A user with 50 mood entries across 2 calendar days
+          // sees `chartData.length = 2` (daily-aggregated) but the raw
+          // count (sum of `samples`) is 50. Surface "need more days"
+          // in that scenario so the call-to-action matches reality.
+          rawCount >= 3 ? (
+            <ChartEmptyState
+              title={t("charts.needMoreDistinctDaysTitle")}
+              description={t("charts.needMoreDistinctDaysDescription")}
+              height={CHART_HEIGHT_PX}
+            />
+          ) : (
+            <ChartEmptyState
+              title={t("charts.emptyStateTitle")}
+              description={t("charts.emptyStateDescription")}
+              height={CHART_HEIGHT_PX}
+            />
+          )
         ) : (
           <div
             className={`${
