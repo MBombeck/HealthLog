@@ -662,10 +662,13 @@ describe("recordSyncFailure — v1.4.43 W14 per-kind buckets", () => {
     // The 3 legacy failures get bucketed into the CURRENT failure's
     // kind (reauth_required) — that's the kind the row was last
     // tagged with, and back-filling into a different kind would
-    // under-count the existing streak.
+    // under-count the existing streak. v1.4.43 W10 senior-dev M-1 —
+    // the back-fill branch additionally increments the bucket so the
+    // post-write bucket count matches the legacy column's post-write
+    // value (legacy: 3 → 4, bucket: 0 → 3 → 4).
     expect(upsertArgs.update.consecutiveFailuresByKind).toEqual({
       transient: 0,
-      reauth_required: 3,
+      reauth_required: 4,
       persistent: 0,
     });
   });

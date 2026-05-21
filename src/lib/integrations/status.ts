@@ -381,18 +381,24 @@ export async function recordSyncFailure(
   // Increment only the bucket matching this failure's kind.
   // The other two buckets stay at their current value so a persistent
   // streak isn't reset by an intervening transient hiccup.
+  //
+  // v1.4.43 W10 senior-dev M-1 — back-fill branch also increments. The
+  // legacy column writes `{ increment: 1 }` to advance from N → N+1; the
+  // back-fill seed sets `buckets[kind] = legacyCount` (= N), so without
+  // the +1 here the bucket would land at N while the legacy column reads
+  // N+1. When v1.4.44 drops the legacy column, every back-filled row
+  // would page exactly one failure too late.
   if (startingBuckets) {
     // Post-migration row — increment the actual bucket.
     buckets[kind] = (buckets[kind] ?? 0) + 1;
   } else if (!existing) {
     // First-ever write — bucket starts at zero, this failure makes 1.
     buckets[kind] = 1;
+  } else {
+    // Back-fill path — seeded with the legacy count; this failure is
+    // the +1 that brings both the legacy column AND the bucket to N+1.
+    buckets[kind] = (buckets[kind] ?? 0) + 1;
   }
-  // else: back-fill path already seeded `buckets[kind]` with the legacy
-  // count; the current failure IS counted in that seed so no second
-  // increment is needed (a row at 4 failures sitting in error_reauth
-  // back-fills to reauth_required: 4 and this 5th failure makes the
-  // legacy +1 path bring the bucket to 5 below).
 
   // Track the persistent-streak start so the >24h park check has a
   // wall-clock anchor. Only stamped on the FIRST persistent failure of
