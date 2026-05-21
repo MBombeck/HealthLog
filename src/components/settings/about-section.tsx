@@ -14,6 +14,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 
 interface VersionPayload {
   version: string;
@@ -117,7 +118,7 @@ export function AboutSection() {
   const fmt = useFormatters();
 
   const { data: version, isLoading } = useQuery({
-    queryKey: ["api", "version"],
+    queryKey: queryKeys.apiVersion(),
     queryFn: async () => {
       const res = await fetch("/api/version");
       if (!res.ok) throw new Error("version-fetch-failed");

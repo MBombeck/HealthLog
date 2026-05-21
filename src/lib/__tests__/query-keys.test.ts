@@ -49,6 +49,25 @@ describe("queryKeys factory", () => {
     expect(queryKeys.userThresholds()).toEqual(["user", "thresholds"]);
   });
 
+  // v1.4.41 W-FRONTEND-FACTORY — pin the shapes that auth/login + the
+  // notifications surface migrated to so a future rename can't drift
+  // the cache layout silently.
+  it("exposes auth + notifications keys for the factory-migrated surfaces", () => {
+    expect(queryKeys.authRegistrationStatus()).toEqual([
+      "auth",
+      "registration-status",
+    ]);
+    expect(queryKeys.notificationsPreferences()).toEqual([
+      "notifications",
+      "preferences",
+    ]);
+    expect(queryKeys.notificationsStatus()).toEqual([
+      "notifications",
+      "status",
+    ]);
+    expect(queryKeys.apiVersion()).toEqual(["api", "version"]);
+  });
+
   it("packs chartData params into a stable tuple prefixed by chart-data", () => {
     const key = queryKeys.chartData(
       "WEIGHT",
@@ -175,6 +194,12 @@ describe("queryKey factory enforcement", () => {
     join(repoRoot, "src", "components", "comparison"),
     join(repoRoot, "src", "app", "page.tsx"),
     join(repoRoot, "src", "hooks", "use-auth.ts"),
+    // v1.4.41 W-FRONTEND-FACTORY — auth, notifications, and the
+    // about-section migrated to the factory. Future waves extend
+    // this list as they migrate their own surface.
+    join(repoRoot, "src", "app", "auth"),
+    join(repoRoot, "src", "app", "notifications"),
+    join(repoRoot, "src", "components", "settings", "about-section.tsx"),
   ];
 
   function collect(): string[] {

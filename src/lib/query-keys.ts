@@ -93,9 +93,56 @@ export const queryKeys = {
   passkeys: () => ["passkeys"] as const,
 
   notificationsPreferences: () => ["notifications", "preferences"] as const,
+  notificationsStatus: () => ["notifications", "status"] as const,
 
   settingsGlobalServices: () => ["settings", "global-services"] as const,
   settingsNtfy: () => ["settings", "ntfy"] as const,
+  settingsReminderThresholds: () =>
+    ["settings", "reminder-thresholds"] as const,
+
+  /**
+   * v1.4.41 W-FRONTEND-FACTORY — Settings → AI surfaces (provider chain,
+   * insights settings, user provider preference) and the targets editor
+   * all read these endpoints; centralising the keys keeps invalidation
+   * symmetrical with the user-thresholds + auth surfaces.
+   */
+  insightsSettings: () => ["insights", "settings"] as const,
+  insightsProviderChain: () => ["insights", "provider-chain"] as const,
+  insightsGlp1Timeline: (limit: number | string) =>
+    ["insights", "glp1-timeline", limit] as const,
+  userAiProvider: () => ["user", "ai-provider"] as const,
+  userProfile: () => ["user", "profile"] as const,
+
+  apiVersion: () => ["api", "version"] as const,
+  publicVersion: () => ["public", "version"] as const,
+  researchMode: () => ["research-mode"] as const,
+  moodlogStatus: () => ["moodlog-status"] as const,
+  integrationsStatus: () => ["integrations", "status"] as const,
+  featureFlags: () => ["feature-flags"] as const,
+  coachPrefs: () => ["coach-prefs"] as const,
+
+  /**
+   * v1.4.41 — admin surfaces. Pre-fix every admin section declared its
+   * own bare-literal `["admin", "<name>"]`. Routing through the factory
+   * lets a single rename change every consumer in lockstep.
+   */
+  adminAiQuality: () => ["admin", "ai-quality"] as const,
+  adminAppLogs: (
+    traceId: string | undefined,
+    action: string | undefined,
+    level: string | undefined,
+    range: string | undefined,
+  ) =>
+    ["admin", "app-logs", traceId, action, level, range] as const,
+  adminAssistantFlags: () => ["admin", "settings", "assistant-flags"] as const,
+  adminBackups: () => ["admin", "backups"] as const,
+  adminCoachFeedback: () => ["admin", "coach-feedback"] as const,
+  adminFeedback: (status: string) => ["admin", "feedback", status] as const,
+  adminFeedbackRoot: () => ["admin", "feedback"] as const,
+  adminHostMetrics: (window: string) =>
+    ["admin", "host-metrics", window] as const,
+  adminAuditActions: () => ["admin", "audit-log", "actions"] as const,
+  adminAuditOverview: () => ["admin", "audit-log", "overview-preview"] as const,
 
   tokens: () => ["tokens"] as const,
   telegram: () => ["telegram"] as const,

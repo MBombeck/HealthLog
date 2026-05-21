@@ -1413,7 +1413,25 @@ export default function DashboardPage() {
                      * future RSC hoists of any tile slot won't need a
                      * second pass to add the fallback infrastructure.
                      */}
-                    <Suspense fallback={null}>{entry.node}</Suspense>
+                    {/*
+                     * v1.4.41 W-FRONTEND-FACTORY (UX M1) — swap the
+                     * `null` fallback for a layout-stable placeholder
+                     * that mirrors the trend-card chrome. The body
+                     * stays synchronous today so the fallback rarely
+                     * paints, but a future RSC hoist of any tile slot
+                     * would otherwise leave the grid track empty and
+                     * trigger CLS as the cell paints in.
+                     */}
+                    <Suspense
+                      fallback={
+                        <div
+                          aria-hidden="true"
+                          className="bg-card border-border h-full w-full rounded-xl border p-4 md:p-6"
+                        />
+                      }
+                    >
+                      {entry.node}
+                    </Suspense>
                   </div>
                 ))}
               </div>

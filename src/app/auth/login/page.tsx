@@ -85,7 +85,7 @@ export default function LoginPage() {
         return;
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["auth"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.auth() });
       router.push(getRedirectTarget());
     } catch (err) {
       const { key, params } = describePasskeyError(err);
@@ -114,7 +114,7 @@ export default function LoginPage() {
         return;
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["auth"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.auth() });
       router.push(getRedirectTarget());
     } catch {
       setError(t("auth.loginFailed"));

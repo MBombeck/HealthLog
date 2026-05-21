@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { PasswordStrength } from "@/components/ui/password-strength";
 import { useTranslations } from "@/lib/i18n/context";
 import { detectBrowserTimezone } from "@/lib/tz/format";
+import { queryKeys } from "@/lib/query-keys";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function RegisterPage() {
         return;
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["auth"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.auth() });
       router.push("/");
     } catch {
       setError(t("auth.registerFailed"));

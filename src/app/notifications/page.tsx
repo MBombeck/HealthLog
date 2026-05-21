@@ -12,6 +12,7 @@ import {
   EVENT_DEFAULT_ENABLED,
   type EventType,
 } from "@/lib/notifications/types";
+import { queryKeys } from "@/lib/query-keys";
 
 interface ChannelInfo {
   id: string;
@@ -86,7 +87,7 @@ export default function NotificationsPage() {
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["notifications", "preferences"],
+    queryKey: queryKeys.notificationsPreferences(),
     queryFn: async () => {
       const res = await fetch("/api/notifications/preferences");
       if (!res.ok) throw new Error("Failed to load preferences");
@@ -112,12 +113,11 @@ export default function NotificationsPage() {
     },
     onMutate: async ({ channelId, eventType, enabled }) => {
       await queryClient.cancelQueries({
-        queryKey: ["notifications", "preferences"],
+        queryKey: queryKeys.notificationsPreferences(),
       });
-      const prev = queryClient.getQueryData<PreferencesData>([
-        "notifications",
-        "preferences",
-      ]);
+      const prev = queryClient.getQueryData<PreferencesData>(
+        queryKeys.notificationsPreferences(),
+      );
       if (prev) {
         const existing = prev.preferences.find(
           (p) => p.channelId === channelId && p.eventType === eventType,
@@ -130,7 +130,7 @@ export default function NotificationsPage() {
             )
           : [...prev.preferences, { channelId, eventType, enabled }];
         queryClient.setQueryData<PreferencesData>(
-          ["notifications", "preferences"],
+          queryKeys.notificationsPreferences(),
           { ...prev, preferences: newPreferences },
         );
       }
@@ -139,14 +139,14 @@ export default function NotificationsPage() {
     onError: (_err, _vars, context) => {
       if (context?.prev) {
         queryClient.setQueryData(
-          ["notifications", "preferences"],
+          queryKeys.notificationsPreferences(),
           context.prev,
         );
       }
     },
     onSettled: () => {
       queryClient.invalidateQueries({
-        queryKey: ["notifications", "preferences"],
+        queryKey: queryKeys.notificationsPreferences(),
       });
     },
   });
