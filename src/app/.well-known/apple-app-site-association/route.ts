@@ -6,14 +6,15 @@ import { NextResponse } from "next/server";
  * Apple fetches `/.well-known/apple-app-site-association` over HTTPS
  * without credentials, with no extension and with a strict
  * `application/json` Content-Type expectation. iOS uses the body to:
+ *   - Wire Universal Links so HealthLog URLs open straight in the iOS
+ *     app instead of Safari (SB-4, v1.4.40). The `["*"]` matcher accepts
+ *     every path on the host — the iOS side decides which routes it
+ *     actually handles via its scene delegate.
  *   - Wire Web Credentials so the website origin and the iOS bundle
  *     share passkey ceremonies (HealthLog passkeys live at
  *     `/api/auth/passkey/*`, so the origins must match the same App ID).
- *   - Wire Universal Links — out of scope for the first cut, hence the
- *     empty `applinks.details` array. Future entries here pick up
- *     deep-linking once the iOS side opts in.
  *
- * The `webcredentials.apps` entry is the App ID prefix
+ * The `appID` / `webcredentials.apps` entry is the App ID prefix
  * (`<TeamID>.<BundleID>`) for the HealthLog iOS app. Apple bundles the
  * file on its CDN proxy
  * (`https://app-site-association.cdn-apple.com/a/v1/<host>`) and serves
@@ -23,13 +24,19 @@ import { NextResponse } from "next/server";
  * Both `healthlog.bombeck.io` (maintainer prod) and `demo.healthlog.dev`
  * (demo) share this handler — the response is host-independent.
  */
+const AASA_APP_ID = "S8WDX4W5KX.dev.healthlog.app";
+
 const AASA = {
   applinks: {
-    apps: [],
-    details: [],
+    details: [
+      {
+        appID: AASA_APP_ID,
+        paths: ["*"],
+      },
+    ],
   },
   webcredentials: {
-    apps: ["S8WDX4W5KX.dev.healthlog.app"],
+    apps: [AASA_APP_ID],
   },
 };
 
