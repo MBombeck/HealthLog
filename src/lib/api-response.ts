@@ -44,29 +44,51 @@ export function sanitiseZodIssues(
   }));
 }
 
-export function returnAllZodIssues(
-  error: ZodError,
-  status: number = 422,
-  meta?: {
-    errorCode?: string;
-    headers?: Record<string, string>;
-  } & Record<string, unknown>,
+type ErrorMeta = {
+  errorCode?: string;
+  headers?: Record<string, string>;
+} & Record<string, unknown>;
+
+/**
+ * Shared builder for every `{ data: null, error, ... }` JSON envelope.
+ * Strips `headers` from the meta passthrough (it lands on the
+ * NextResponse constructor, not in the JSON body) and omits the `meta`
+ * key entirely when no non-header fields remain — so the unchanged
+ * `{ data: null, error: <string> }` envelope still serialises byte-
+ * identically when the caller passes no extras.
+ */
+function buildJsonErrorResponse(
+  body: Record<string, unknown>,
+  status: number,
+  meta: ErrorMeta | undefined,
 ): NextResponse {
   const { headers, ...rest } = meta ?? {};
   const metaKeys = Object.keys(rest);
   return NextResponse.json(
     {
-      data: null,
-      error: "Validation failed",
-      details: {
-        issues: sanitiseZodIssues(error.issues),
-      },
+      ...body,
       ...(metaKeys.length > 0 ? { meta: rest } : {}),
     },
     {
       status,
       ...(headers ? { headers } : {}),
     },
+  );
+}
+
+export function returnAllZodIssues(
+  error: ZodError,
+  status: number = 422,
+  meta?: ErrorMeta,
+): NextResponse {
+  return buildJsonErrorResponse(
+    {
+      data: null,
+      error: "Validation failed",
+      details: { issues: sanitiseZodIssues(error.issues) },
+    },
+    status,
+    meta,
   );
 }
 
@@ -86,24 +108,9 @@ export function returnAllZodIssues(
 export function apiError(
   message: string,
   status = 400,
-  meta?: {
-    errorCode?: string;
-    headers?: Record<string, string>;
-  } & Record<string, unknown>,
+  meta?: ErrorMeta,
 ) {
-  const { headers, ...rest } = meta ?? {};
-  const metaKeys = Object.keys(rest);
-  return NextResponse.json(
-    {
-      data: null,
-      error: message,
-      ...(metaKeys.length > 0 ? { meta: rest } : {}),
-    },
-    {
-      status,
-      ...(headers ? { headers } : {}),
-    },
-  );
+  return buildJsonErrorResponse({ data: null, error: message }, status, meta);
 }
 
 /**
