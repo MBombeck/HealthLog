@@ -6,7 +6,9 @@ import {
   apiSuccess,
   apiError,
   getClientIp,
+  returnAllZodIssues,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import { updateIntakeEventSchema } from "@/lib/validations/medication";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
@@ -34,7 +36,34 @@ export const PUT = apiHandler(
     if (jsonError) return jsonError;
     const parsed = updateIntakeEventSchema.safeParse(body);
     if (!parsed.success) {
-      return apiError(parsed.error.issues[0].message, 422);
+      // v1.4.43 W6 — per-event update hot path; multi-issue 422 +
+      // audit breadcrumb keyed
+      // `medications.intake.event.update.validation-failed`.
+      const issues = sanitiseZodIssues(parsed.error.issues);
+      annotate({
+        action: { name: "medications.intake.event.update.validation-failed" },
+        meta: {
+          issue_count: issues.length,
+          medication_id: id,
+          event_id: eventId,
+        },
+      });
+      prisma.auditLog
+        .create({
+          data: {
+            userId: user.id,
+            action: "medications.intake.event.update.validation-failed",
+            details: JSON.stringify({
+              issues,
+              medicationId: id,
+              eventId,
+            }),
+          },
+        })
+        .catch(() => {
+          /* swallow — 422 response is the contract */
+        });
+      return returnAllZodIssues(parsed.error, 422);
     }
 
     const data = parsed.data;

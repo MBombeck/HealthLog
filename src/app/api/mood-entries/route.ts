@@ -4,7 +4,9 @@ import {
   apiSuccess,
   apiError,
   getClientIp,
+  returnAllZodIssues,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import {
   createMoodEntrySchema,
@@ -35,7 +37,25 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const params = Object.fromEntries(request.nextUrl.searchParams);
   const parsed = listMoodEntriesSchema.safeParse(params);
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 422);
+    // v1.4.43 W6 — surface every Zod issue + audit breadcrumb keyed
+    // `mood-entries.list.validation-failed`.
+    const issues = sanitiseZodIssues(parsed.error.issues);
+    annotate({
+      action: { name: "mood-entries.list.validation-failed" },
+      meta: { issue_count: issues.length },
+    });
+    prisma.auditLog
+      .create({
+        data: {
+          userId: user.id,
+          action: "mood-entries.list.validation-failed",
+          details: JSON.stringify({ issues }),
+        },
+      })
+      .catch(() => {
+        /* swallow — 422 response is the contract */
+      });
+    return returnAllZodIssues(parsed.error, 422);
   }
 
   const { mood, from, to, limit, offset, sortBy, sortDir } = parsed.data;
@@ -89,7 +109,25 @@ async function postMoodEntry(request: NextRequest) {
   if (jsonError) return jsonError;
   const parsed = createMoodEntrySchema.safeParse(body);
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 422);
+    // v1.4.43 W6 — iOS mood log hot path; multi-issue 422 + audit
+    // breadcrumb keyed `mood-entries.create.validation-failed`.
+    const issues = sanitiseZodIssues(parsed.error.issues);
+    annotate({
+      action: { name: "mood-entries.create.validation-failed" },
+      meta: { issue_count: issues.length },
+    });
+    prisma.auditLog
+      .create({
+        data: {
+          userId: user.id,
+          action: "mood-entries.create.validation-failed",
+          details: JSON.stringify({ issues }),
+        },
+      })
+      .catch(() => {
+        /* swallow — 422 response is the contract */
+      });
+    return returnAllZodIssues(parsed.error, 422);
   }
 
   const { mood, tags, note, moodLoggedAt, source } = parsed.data;

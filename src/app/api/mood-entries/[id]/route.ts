@@ -4,7 +4,9 @@ import {
   apiSuccess,
   apiError,
   getClientIp,
+  returnAllZodIssues,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import {
   updateMoodEntrySchema,
@@ -66,7 +68,25 @@ export const PUT = apiHandler(
     if (jsonError) return jsonError;
     const parsed = updateMoodEntrySchema.safeParse(body);
     if (!parsed.success) {
-      return apiError(parsed.error.issues[0].message, 422);
+      // v1.4.43 W6 — mood edit hot path; multi-issue 422 + audit
+      // breadcrumb keyed `mood-entries.update.validation-failed`.
+      const issues = sanitiseZodIssues(parsed.error.issues);
+      annotate({
+        action: { name: "mood-entries.update.validation-failed" },
+        meta: { issue_count: issues.length, moodEntryId: id },
+      });
+      prisma.auditLog
+        .create({
+          data: {
+            userId: user.id,
+            action: "mood-entries.update.validation-failed",
+            details: JSON.stringify({ issues, moodEntryId: id }),
+          },
+        })
+        .catch(() => {
+          /* swallow — 422 response is the contract */
+        });
+      return returnAllZodIssues(parsed.error, 422);
     }
 
     const data = parsed.data;

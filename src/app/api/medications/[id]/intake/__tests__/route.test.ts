@@ -27,9 +27,36 @@ vi.mock("@/lib/db", () => ({
     medication: { findUnique: vi.fn() },
     medicationIntakeEvent: {
       findMany: vi.fn(),
+      findFirst: vi.fn(),
       count: vi.fn(),
+      create: vi.fn(),
     },
+    auditLog: { create: vi.fn() },
+    $transaction: vi.fn(),
   },
+}));
+
+vi.mock("@/lib/idempotency", () => ({
+  withIdempotency:
+    <Args extends unknown[]>(fn: (...args: Args) => Promise<Response>) =>
+    (...args: Args) =>
+      fn(...args),
+}));
+
+vi.mock("@/lib/medications/inventory/service", () => ({
+  consumeOneDose: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("@/lib/medications/route-guards", () => ({
+  assertMedicationOwnership: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("@/lib/cache/invalidate", () => ({
+  invalidateUserMedications: vi.fn(),
+}));
+
+vi.mock("@/lib/rollups/medication-compliance-rollups", () => ({
+  recomputeMedicationComplianceForEvent: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
@@ -53,7 +80,7 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
-import { GET } from "../route";
+import { GET, POST } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 
@@ -80,6 +107,8 @@ beforeEach(() => {
     [] as never,
   );
   vi.mocked(prisma.medicationIntakeEvent.count).mockResolvedValue(0);
+  // v1.4.43 W6 — default the audit-row write to resolve.
+  vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
 });
 
 describe("GET /api/medications/[id]/intake — status filter", () => {
@@ -153,5 +182,87 @@ describe("GET /api/medications/[id]/intake — status filter", () => {
       userId: "user-1",
       OR: [{ takenAt: { not: null }, skipped: false }, { skipped: true }],
     });
+  });
+});
+
+describe("v1.4.43 W6 — multi-issue 422 envelope", () => {
+  function postReq(body: unknown): NextRequest {
+    return new NextRequest("http://localhost/api/medications/med-1/intake", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
+  it("GET surfaces TWO simultaneous validation errors", async () => {
+    const res = await GET(makeRequest("status=junk&sortBy=garbage"), ROUTE_PARAMS);
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      data: null;
+      error: string;
+      details: {
+        issues: Array<{ path: string; code: string; message: string }>;
+      };
+    };
+    expect(body.data).toBeNull();
+    expect(body.error).toBe("Validation failed");
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
+    for (const issue of body.details.issues) {
+      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+    }
+  });
+
+  it("POST surfaces TWO simultaneous validation errors", async () => {
+    // Schema requires takenAt iso + skipped boolean.
+    const res = await POST(
+      postReq({ takenAt: "not-iso", skipped: "string" }),
+      ROUTE_PARAMS,
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      details: {
+        issues: Array<{ path: string; code: string; message: string }>;
+      };
+    };
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
+    for (const issue of body.details.issues) {
+      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+    }
+  });
+
+  it("POST surfaces THREE simultaneous validation errors", async () => {
+    const res = await POST(
+      postReq({
+        takenAt: "not-iso",
+        skipped: "string",
+        scheduledFor: "also-not-iso",
+      }),
+      ROUTE_PARAMS,
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      details: { issues: Array<unknown> };
+    };
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("writes audit-ledger rows for both GET and POST validation failures", async () => {
+    await GET(makeRequest("status=junk"), ROUTE_PARAMS);
+    await POST(postReq({ takenAt: "junk" }), ROUTE_PARAMS);
+    await new Promise((r) => setTimeout(r, 5));
+    expect(prisma.auditLog.create).toHaveBeenCalled();
+    const actions = vi
+      .mocked(prisma.auditLog.create)
+      .mock.calls.map((c) => (c[0] as { data: { action: string } }).data.action);
+    expect(actions).toContain("medications.intake.list.validation-failed");
+    expect(actions).toContain("medications.intake.create.validation-failed");
+  });
+
+  it("POST does not block the 422 when the audit-row write rejects", async () => {
+    vi.mocked(prisma.auditLog.create).mockRejectedValueOnce(
+      new Error("db down"),
+    );
+    const res = await POST(postReq({ takenAt: "junk" }), ROUTE_PARAMS);
+    expect(res.status).toBe(422);
   });
 });

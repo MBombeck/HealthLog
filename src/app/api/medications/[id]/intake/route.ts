@@ -4,9 +4,10 @@ import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import {
   apiSuccess,
-  apiError,
   getClientIp,
+  returnAllZodIssues,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import {
   intakeSchema,
@@ -41,7 +42,25 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
     medicationId: id,
   });
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 422);
+    // v1.4.43 W6 — per-med intake POST hot path; multi-issue 422 +
+    // audit breadcrumb keyed `medications.intake.create.validation-failed`.
+    const issues = sanitiseZodIssues(parsed.error.issues);
+    annotate({
+      action: { name: "medications.intake.create.validation-failed" },
+      meta: { issue_count: issues.length, medication_id: id },
+    });
+    prisma.auditLog
+      .create({
+        data: {
+          userId: user.id,
+          action: "medications.intake.create.validation-failed",
+          details: JSON.stringify({ issues, medicationId: id }),
+        },
+      })
+      .catch(() => {
+        /* swallow — 422 response is the contract */
+      });
+    return returnAllZodIssues(parsed.error, 422);
   }
 
   const { scheduledFor, takenAt, skipped, idempotencyKey } = parsed.data;
@@ -185,7 +204,25 @@ export const GET = apiHandler(
     const searchParams = Object.fromEntries(request.nextUrl.searchParams);
     const parsed = listIntakeEventsSchema.safeParse(searchParams);
     if (!parsed.success) {
-      return apiError(parsed.error.issues[0].message, 422);
+      // v1.4.43 W6 — multi-issue 422 + audit breadcrumb keyed
+      // `medications.intake.list.validation-failed`.
+      const issues = sanitiseZodIssues(parsed.error.issues);
+      annotate({
+        action: { name: "medications.intake.list.validation-failed" },
+        meta: { issue_count: issues.length, medication_id: id },
+      });
+      prisma.auditLog
+        .create({
+          data: {
+            userId: user.id,
+            action: "medications.intake.list.validation-failed",
+            details: JSON.stringify({ issues, medicationId: id }),
+          },
+        })
+        .catch(() => {
+          /* swallow — 422 response is the contract */
+        });
+      return returnAllZodIssues(parsed.error, 422);
     }
 
     const { limit, offset, sortBy, sortDir, status } = parsed.data;

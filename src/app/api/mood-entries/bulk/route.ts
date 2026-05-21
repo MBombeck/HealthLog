@@ -32,7 +32,9 @@ import {
   apiError,
   apiSuccess,
   getClientIp,
+  returnAllZodIssues,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import { withIdempotency } from "@/lib/idempotency";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -111,7 +113,27 @@ async function postBulk(request: NextRequest): Promise<Response> {
 
   const parsed = bulkPayloadSchema.safeParse(rawBody);
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 422, {
+    // v1.4.43 W6 — bulk mood ingest; keep the `mood.bulk.invalid`
+    // errorCode meta intact so the iOS Sync engine's retry classifier
+    // still branches on it. Adds the audit-ledger breadcrumb keyed
+    // `mood.bulk.validation-failed`.
+    const issues = sanitiseZodIssues(parsed.error.issues);
+    annotate({
+      action: { name: "mood.bulk.validation-failed" },
+      meta: { issue_count: issues.length },
+    });
+    prisma.auditLog
+      .create({
+        data: {
+          userId: user.id,
+          action: "mood.bulk.validation-failed",
+          details: JSON.stringify({ issues }),
+        },
+      })
+      .catch(() => {
+        /* swallow — 422 response is the contract */
+      });
+    return returnAllZodIssues(parsed.error, 422, {
       errorCode: "mood.bulk.invalid",
     });
   }

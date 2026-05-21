@@ -1,7 +1,13 @@
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiError,
+  returnAllZodIssues,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { hashToken } from "@/lib/auth/hmac";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
 import { randomBytes } from "node:crypto";
@@ -51,7 +57,26 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (jsonError) return jsonError;
   const parsed = createTokenSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 422);
+    // v1.4.43 W6 — multi-issue 422 + audit-ledger breadcrumb so an
+    // operator can grep `tokens.create.validation-failed` when a
+    // device sends a malformed mint payload.
+    const issues = sanitiseZodIssues(parsed.error.issues);
+    annotate({
+      action: { name: "tokens.create.validation-failed" },
+      meta: { issue_count: issues.length },
+    });
+    prisma.auditLog
+      .create({
+        data: {
+          userId: user.id,
+          action: "tokens.create.validation-failed",
+          details: JSON.stringify({ issues }),
+        },
+      })
+      .catch(() => {
+        /* swallow — 422 response is the contract */
+      });
+    return returnAllZodIssues(parsed.error, 422);
   }
 
   const { name, expiresInDays } = parsed.data;

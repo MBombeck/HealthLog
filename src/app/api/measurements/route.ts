@@ -6,7 +6,9 @@ import {
   apiSuccess,
   apiError,
   getClientIp,
+  returnAllZodIssues,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import {
   createMeasurementSchema,
@@ -45,7 +47,27 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const params = Object.fromEntries(request.nextUrl.searchParams);
   const parsed = listMeasurementsSchema.safeParse(params);
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 422);
+    // v1.4.43 W6 — surface every Zod issue under `details.issues` so a
+    // multi-field iOS query (chart loader bug, drill-down regression)
+    // doesn't iterate one error per round-trip. Best-effort audit-
+    // ledger breadcrumb keyed `measurements.list.validation-failed`.
+    const issues = sanitiseZodIssues(parsed.error.issues);
+    annotate({
+      action: { name: "measurements.list.validation-failed" },
+      meta: { issue_count: issues.length },
+    });
+    prisma.auditLog
+      .create({
+        data: {
+          userId: user.id,
+          action: "measurements.list.validation-failed",
+          details: JSON.stringify({ issues }),
+        },
+      })
+      .catch(() => {
+        /* swallow — 422 response is the contract */
+      });
+    return returnAllZodIssues(parsed.error, 422);
   }
 
   const {
@@ -553,7 +575,26 @@ async function postMeasurement(request: NextRequest) {
       measurements: body,
     });
     if (!parsed.success) {
-      return apiError(parsed.error.issues[0].message, 422);
+      // v1.4.43 W6 — iOS batch ingest (BP + Pulse, combined BG) needs
+      // every issue echoed back so a one-shot retry can fix the full
+      // payload rather than walk it field-by-field.
+      const issues = sanitiseZodIssues(parsed.error.issues);
+      annotate({
+        action: { name: "measurements.create.batch.validation-failed" },
+        meta: { issue_count: issues.length },
+      });
+      prisma.auditLog
+        .create({
+          data: {
+            userId: user.id,
+            action: "measurements.create.batch.validation-failed",
+            details: JSON.stringify({ issues }),
+          },
+        })
+        .catch(() => {
+          /* swallow — 422 response is the contract */
+        });
+      return returnAllZodIssues(parsed.error, 422);
     }
 
     const results = await prisma.$transaction(
@@ -622,7 +663,26 @@ async function postMeasurement(request: NextRequest) {
   // Single mode (existing behavior)
   const parsed = createMeasurementSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 422);
+    // v1.4.43 W6 — single-row POST is the iOS fallback path; one
+    // round-trip per stale-field bug was the v1.4.41 iOS-contract
+    // pain point. Multi-issue envelope + audit breadcrumb.
+    const issues = sanitiseZodIssues(parsed.error.issues);
+    annotate({
+      action: { name: "measurements.create.validation-failed" },
+      meta: { issue_count: issues.length },
+    });
+    prisma.auditLog
+      .create({
+        data: {
+          userId: user.id,
+          action: "measurements.create.validation-failed",
+          details: JSON.stringify({ issues }),
+        },
+      })
+      .catch(() => {
+        /* swallow — 422 response is the contract */
+      });
+    return returnAllZodIssues(parsed.error, 422);
   }
 
   const { type, value, measuredAt, notes, source, glucoseContext, deviceType } =

@@ -6,7 +6,9 @@ import {
   apiSuccess,
   apiError,
   getClientIp,
+  returnAllZodIssues,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import { updateMeasurementSchema } from "@/lib/validations/measurement";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
@@ -61,7 +63,25 @@ export const PUT = apiHandler(
     if (jsonError) return jsonError;
     const parsed = updateMeasurementSchema.safeParse(body);
     if (!parsed.success) {
-      return apiError(parsed.error.issues[0].message, 422);
+      // v1.4.43 W6 — measurement edit hot path; multi-issue 422 +
+      // audit breadcrumb keyed `measurements.update.validation-failed`.
+      const issues = sanitiseZodIssues(parsed.error.issues);
+      annotate({
+        action: { name: "measurements.update.validation-failed" },
+        meta: { issue_count: issues.length, measurement_id: id },
+      });
+      prisma.auditLog
+        .create({
+          data: {
+            userId: user.id,
+            action: "measurements.update.validation-failed",
+            details: JSON.stringify({ issues, measurementId: id }),
+          },
+        })
+        .catch(() => {
+          /* swallow — 422 response is the contract */
+        });
+      return returnAllZodIssues(parsed.error, 422);
     }
 
     const data = parsed.data;

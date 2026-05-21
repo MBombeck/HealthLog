@@ -4,6 +4,8 @@ import { NextRequest } from "next/server";
 vi.mock("@/lib/db", () => ({
   prisma: {
     user: { findUnique: vi.fn(), update: vi.fn() },
+    // v1.4.43 W6 — audit-ledger breadcrumb for validation-failed paths.
+    auditLog: { create: vi.fn() },
   },
   toJson: <T,>(v: T) => v,
 }));
@@ -45,6 +47,7 @@ beforeEach(() => {
     healthKitLastSyncedAt: null,
   } as never);
   vi.mocked(prisma.user.update).mockResolvedValue({} as never);
+  vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
 });
 
 const callGet = GET as unknown as (req: NextRequest) => Promise<Response>;
@@ -114,5 +117,85 @@ describe("PATCH /api/integrations/healthkit", () => {
     const ids = updateArgs.data.healthKitConfigJson.entries.map((e) => e.id);
     expect(ids).toContain("bodyMass");
     expect(ids).not.toContain("totallyUnknown");
+  });
+});
+
+describe("PATCH /api/integrations/healthkit — 422 multi-issue (v1.4.43 W6)", () => {
+  function patchReq(body: unknown): NextRequest {
+    return new NextRequest("http://localhost/api/integrations/healthkit", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
+  it("surfaces TWO simultaneous validation errors", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    // Two bad entries: first with bad direction, second with empty id.
+    const res = await PATCH(
+      patchReq({
+        entries: [
+          { id: "bodyMass", direction: "JUNK" },
+          { id: "", direction: "readOnly" },
+        ],
+      }),
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      data: null;
+      error: string;
+      details: {
+        issues: Array<{ path: string; code: string; message: string }>;
+      };
+    };
+    expect(body.data).toBeNull();
+    expect(body.error).toBe("Validation failed");
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
+    for (const issue of body.details.issues) {
+      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+    }
+  });
+
+  it("surfaces THREE simultaneous validation errors", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const res = await PATCH(
+      patchReq({
+        entries: [
+          { id: "bodyMass", direction: "JUNK1" },
+          { id: "", direction: "JUNK2" },
+          { id: "weight", direction: "JUNK3" },
+        ],
+      }),
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      details: { issues: Array<unknown> };
+    };
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("writes the audit-ledger row keyed integrations.healthkit.validation-failed", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const res = await PATCH(
+      patchReq({ entries: [{ id: "bodyMass", direction: "JUNK" }] }),
+    );
+    expect(res.status).toBe(422);
+    await new Promise((r) => setTimeout(r, 5));
+    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
+    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
+      data: { userId: string; action: string };
+    };
+    expect(call.data.action).toBe("integrations.healthkit.validation-failed");
+  });
+
+  it("does not block the 422 when the audit-row write rejects", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.auditLog.create).mockRejectedValueOnce(
+      new Error("db down"),
+    );
+    const res = await PATCH(
+      patchReq({ entries: [{ id: "bodyMass", direction: "JUNK" }] }),
+    );
+    expect(res.status).toBe(422);
   });
 });

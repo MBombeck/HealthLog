@@ -12,6 +12,9 @@ vi.mock("@/lib/db", () => ({
     notificationChannel: {
       upsert: vi.fn(),
     },
+    auditLog: {
+      create: vi.fn(),
+    },
   },
 }));
 
@@ -67,6 +70,7 @@ beforeEach(() => {
   vi.mocked(prisma.notificationChannel.upsert).mockResolvedValue({
     id: "ch-1",
   } as never);
+  vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
 });
 
 describe("POST /api/devices", () => {
@@ -229,5 +233,76 @@ describe("POST /api/devices", () => {
       }),
     );
     expect(res.status).toBe(201);
+  });
+});
+
+describe("POST /api/devices — 422 multi-issue envelope (v1.4.43 W6)", () => {
+  it("surfaces TWO simultaneous validation errors under details.issues", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    // Missing `token` (required) + invalid `apnsEnvironment` enum.
+    const res = await POST(
+      req({ bundleId: "io.healthlog.app", apnsEnvironment: "tomorrow" }),
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      data: null;
+      error: string;
+      details: {
+        issues: Array<{ path: string; code: string; message: string }>;
+      };
+    };
+    expect(body.data).toBeNull();
+    expect(body.error).toBe("Validation failed");
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
+    for (const issue of body.details.issues) {
+      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+    }
+  });
+
+  it("surfaces THREE simultaneous validation errors", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    // Missing `token` + invalid `apnsToken` (non-hex) + invalid `bundleId` (number, not string).
+    const res = await POST(
+      req({
+        bundleId: 42,
+        apnsToken: "not-hex-z",
+        apnsEnvironment: "sandbox",
+      }),
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      details: { issues: Array<{ path: string; code: string }> };
+    };
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("writes one audit-ledger row keyed devices.register.validation-failed", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const res = await POST(
+      req({ bundleId: "io.healthlog.app", apnsEnvironment: "tomorrow" }),
+    );
+    expect(res.status).toBe(422);
+    await new Promise((r) => setTimeout(r, 5));
+    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
+    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
+      data: { userId: string; action: string; details: string };
+    };
+    expect(call.data.userId).toBe("user-1");
+    expect(call.data.action).toBe("devices.register.validation-failed");
+  });
+
+  it("does not block the 422 when the audit-row write rejects", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.auditLog.create).mockRejectedValueOnce(
+      new Error("db down"),
+    );
+    const res = await POST(
+      req({ bundleId: "io.healthlog.app", apnsEnvironment: "tomorrow" }),
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      details: { issues: Array<unknown> };
+    };
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
   });
 });

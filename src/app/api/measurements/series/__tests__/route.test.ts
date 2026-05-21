@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db", () => ({
-  prisma: { measurement: { findMany: vi.fn() } },
+  prisma: {
+    measurement: { findMany: vi.fn() },
+    auditLog: { create: vi.fn() },
+  },
 }));
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
@@ -38,6 +41,7 @@ function req(query: string): NextRequest {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
 });
 
 describe("GET /api/measurements/series", () => {
@@ -101,5 +105,64 @@ describe("GET /api/measurements/series", () => {
       data: { points: Array<{ secondary: number | null }> };
     };
     expect(body.data.points[0].secondary).toBeNull();
+  });
+});
+
+describe("GET /api/measurements/series — 422 multi-issue (v1.4.43 W6)", () => {
+  it("surfaces TWO simultaneous validation errors", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    // bad `kind` (invalid enum) + `days=0` (below min 1).
+    const res = await GET(req("kind=garbage&days=0"));
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      data: null;
+      error: string;
+      details: {
+        issues: Array<{ path: string; code: string; message: string }>;
+      };
+    };
+    expect(body.data).toBeNull();
+    expect(body.error).toBe("Validation failed");
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
+    for (const issue of body.details.issues) {
+      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+    }
+  });
+
+  it("surfaces multiple simultaneous validation errors (≥2)", async () => {
+    // The series schema has only two knobs (kind + days), so a strict
+    // 3-issue case is not natural. We pin the multi-issue contract on
+    // ≥ 2 here — the helper's 3-issue path is exhaustively covered by
+    // `src/lib/__tests__/api-response-zod.test.ts` and the routes with
+    // wider schemas (measurements, devices, mood-entries).
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const res = await GET(req("kind=junk&days=-999"));
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      details: { issues: Array<{ path: string }> };
+    };
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("writes a measurements.series.validation-failed audit row", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const res = await GET(req("kind=garbage&days=0"));
+    expect(res.status).toBe(422);
+    await new Promise((r) => setTimeout(r, 5));
+    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
+    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
+      data: { userId: string; action: string };
+    };
+    expect(call.data.userId).toBe("user-1");
+    expect(call.data.action).toBe("measurements.series.validation-failed");
+  });
+
+  it("does not block the 422 when the audit-row write rejects", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.auditLog.create).mockRejectedValueOnce(
+      new Error("db down"),
+    );
+    const res = await GET(req("kind=garbage&days=0"));
+    expect(res.status).toBe(422);
   });
 });

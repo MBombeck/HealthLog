@@ -6,7 +6,9 @@ import {
   apiSuccess,
   apiError,
   getClientIp,
+  returnAllZodIssues,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import {
   recomputeMedicationComplianceForDay,
@@ -48,7 +50,32 @@ export const POST = apiHandler(
 
     const parsed = importSchema.safeParse(payload);
     if (!parsed.success) {
-      return apiError(`Invalid format: ${parsed.error.issues[0].message}`, 422);
+      // v1.4.43 W6 — CSV import; preserve the `Invalid format:` prefix
+      // semantics for the existing client-side branch by setting the
+      // `errorCode: "medication.intake.import.invalid_format"` meta.
+      // The client UI can now branch on `meta.errorCode` while every
+      // Zod issue is also surfaced under `details.issues`. Bulk-import
+      // path → audit breadcrumb keyed
+      // `medications.intake.import.validation-failed`.
+      const issues = sanitiseZodIssues(parsed.error.issues);
+      annotate({
+        action: { name: "medications.intake.import.validation-failed" },
+        meta: { issue_count: issues.length, medication_id: id },
+      });
+      prisma.auditLog
+        .create({
+          data: {
+            userId: user.id,
+            action: "medications.intake.import.validation-failed",
+            details: JSON.stringify({ issues, medicationId: id }),
+          },
+        })
+        .catch(() => {
+          /* swallow — 422 response is the contract */
+        });
+      return returnAllZodIssues(parsed.error, 422, {
+        errorCode: "medication.intake.import.invalid_format",
+      });
     }
 
     const entries = parsed.data;

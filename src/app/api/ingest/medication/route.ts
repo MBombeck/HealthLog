@@ -6,7 +6,9 @@ import {
   apiSuccess,
   apiError,
   getClientIp,
+  returnAllZodIssues,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import { hashToken } from "@/lib/auth/hmac";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -92,7 +94,27 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (jsonError) return jsonError;
   const parsed = externalIntakeSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 422);
+    // v1.4.43 W6 — external native ingest is a bulk-source; surface
+    // every Zod issue so a Telegram-bridge or HomeAssistant
+    // integration sees the full validation shape at once. Audit
+    // breadcrumb keyed `ingest.medication.validation-failed`.
+    const issues = sanitiseZodIssues(parsed.error.issues);
+    annotate({
+      action: { name: "ingest.medication.validation-failed" },
+      meta: { issue_count: issues.length },
+    });
+    prisma.auditLog
+      .create({
+        data: {
+          userId: apiToken.userId,
+          action: "ingest.medication.validation-failed",
+          details: JSON.stringify({ issues }),
+        },
+      })
+      .catch(() => {
+        /* swallow — 422 response is the contract */
+      });
+    return returnAllZodIssues(parsed.error, 422);
   }
 
   const { medicationName, takenAt, idempotencyKey } = parsed.data;

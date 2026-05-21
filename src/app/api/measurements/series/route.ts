@@ -12,7 +12,11 @@ import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiError, apiSuccess } from "@/lib/api-response";
+import {
+  apiSuccess,
+  returnAllZodIssues,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
 import type { MeasurementType } from "@/generated/prisma/client";
@@ -70,7 +74,25 @@ export const GET = apiHandler(async (request: NextRequest) => {
     Object.fromEntries(request.nextUrl.searchParams),
   );
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 422);
+    // v1.4.43 W6 — iOS chart loader hot path; multi-issue 422 +
+    // audit breadcrumb keyed `measurements.series.validation-failed`.
+    const issues = sanitiseZodIssues(parsed.error.issues);
+    annotate({
+      action: { name: "measurements.series.validation-failed" },
+      meta: { issue_count: issues.length },
+    });
+    prisma.auditLog
+      .create({
+        data: {
+          userId: user.id,
+          action: "measurements.series.validation-failed",
+          details: JSON.stringify({ issues }),
+        },
+      })
+      .catch(() => {
+        /* swallow — 422 response is the contract */
+      });
+    return returnAllZodIssues(parsed.error, 422);
   }
 
   const { kind, days } = parsed.data;

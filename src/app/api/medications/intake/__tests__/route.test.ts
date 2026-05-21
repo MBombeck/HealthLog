@@ -24,6 +24,8 @@ vi.mock("@/lib/db", () => ({
       upsert: vi.fn(),
       deleteMany: vi.fn(),
     },
+    // v1.4.43 W6 — audit-ledger breadcrumb for validation-failed paths.
+    auditLog: { create: vi.fn() },
     $transaction: vi.fn(),
     // v1.4.39 QA F-H-01 — coverage probe + atomic upsert use raw SQL.
     $queryRaw: vi.fn(),
@@ -97,6 +99,8 @@ beforeEach(() => {
   vi.mocked(prisma.$queryRaw).mockResolvedValue([
     { rolled_days: BigInt(0), event_days: BigInt(0) },
   ] as never);
+  // v1.4.43 W6 — default the audit-row write to resolve.
+  vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
 });
 
 describe("GET /api/medications/intake", () => {
@@ -394,5 +398,91 @@ describe("v1.4.39 W-MED — compliance rollup read swap", () => {
     );
     expect(res.status).toBe(200);
     expect(prisma.medicationIntakeEvent.findMany).toHaveBeenCalled();
+  });
+});
+
+describe("v1.4.43 W6 — multi-issue 422 envelope", () => {
+  function postReq(body: unknown): NextRequest {
+    return new NextRequest("http://localhost/api/medications/intake", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
+  it("GET surfaces TWO simultaneous validation errors", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    // Bad `scope` + bad `days` (NaN-coercible string).
+    const res = await GET(
+      new NextRequest(
+        "http://localhost/api/medications/intake?scope=junk&days=notanumber",
+      ),
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      data: null;
+      error: string;
+      details: {
+        issues: Array<{ path: string; code: string; message: string }>;
+      };
+    };
+    expect(body.data).toBeNull();
+    expect(body.error).toBe("Validation failed");
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
+    for (const issue of body.details.issues) {
+      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+    }
+  });
+
+  it("POST surfaces TWO simultaneous validation errors", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    // Missing `intakeId` (min 1) + bad `status` enum.
+    const res = await POST(postReq({ status: "broken" }));
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      details: {
+        issues: Array<{ path: string; code: string; message: string }>;
+      };
+    };
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
+    for (const issue of body.details.issues) {
+      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+    }
+  });
+
+  it("POST surfaces THREE simultaneous validation errors", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    // Bad intakeId (empty) + bad status + bad takenAt iso.
+    const res = await POST(
+      postReq({ intakeId: "", status: "broken", takenAt: "not-iso" }),
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      details: { issues: Array<unknown> };
+    };
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("writes the audit-ledger row keyed medications.intake.update.validation-failed", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const res = await POST(postReq({ status: "broken" }));
+    expect(res.status).toBe(422);
+    await new Promise((r) => setTimeout(r, 5));
+    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
+    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
+      data: { userId: string; action: string };
+    };
+    expect(call.data.action).toBe(
+      "medications.intake.update.validation-failed",
+    );
+  });
+
+  it("does not block the 422 when the audit-row write rejects", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.auditLog.create).mockRejectedValueOnce(
+      new Error("db down"),
+    );
+    const res = await POST(postReq({ status: "broken" }));
+    expect(res.status).toBe(422);
   });
 });

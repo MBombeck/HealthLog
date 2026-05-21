@@ -11,7 +11,12 @@
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiError, apiSuccess, safeJson } from "@/lib/api-response";
+import {
+  apiSuccess,
+  returnAllZodIssues,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { prisma, toJson } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
@@ -139,7 +144,26 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
 
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 422);
+    // v1.4.43 W6 — iOS HealthKit ingest is a hot path. Multi-issue
+    // 422 + audit breadcrumb so the iOS Sync engine sees the full
+    // diff and stops iterating one field at a time.
+    const issues = sanitiseZodIssues(parsed.error.issues);
+    annotate({
+      action: { name: "integrations.healthkit.validation-failed" },
+      meta: { issue_count: issues.length },
+    });
+    prisma.auditLog
+      .create({
+        data: {
+          userId: user.id,
+          action: "integrations.healthkit.validation-failed",
+          details: JSON.stringify({ issues }),
+        },
+      })
+      .catch(() => {
+        /* swallow — 422 response is the contract */
+      });
+    return returnAllZodIssues(parsed.error, 422);
   }
 
   const row = await prisma.user.findUnique({

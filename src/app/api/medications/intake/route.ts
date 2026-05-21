@@ -18,7 +18,9 @@ import {
   apiError,
   apiSuccess,
   getClientIp,
+  returnAllZodIssues,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
@@ -73,7 +75,25 @@ export const GET = apiHandler(async (request: NextRequest) => {
     Object.fromEntries(request.nextUrl.searchParams),
   );
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 422);
+    // v1.4.43 W6 — multi-issue 422 + audit breadcrumb keyed
+    // `medications.intake.list.validation-failed`.
+    const issues = sanitiseZodIssues(parsed.error.issues);
+    annotate({
+      action: { name: "medications.intake.list.validation-failed" },
+      meta: { issue_count: issues.length },
+    });
+    prisma.auditLog
+      .create({
+        data: {
+          userId: user.id,
+          action: "medications.intake.list.validation-failed",
+          details: JSON.stringify({ issues }),
+        },
+      })
+      .catch(() => {
+        /* swallow — 422 response is the contract */
+      });
+    return returnAllZodIssues(parsed.error, 422);
   }
 
   const { scope, days } = parsed.data;
@@ -261,7 +281,25 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 422);
+    // v1.4.43 W6 — intake-event update hot path; multi-issue 422 +
+    // audit breadcrumb keyed `medications.intake.update.validation-failed`.
+    const issues = sanitiseZodIssues(parsed.error.issues);
+    annotate({
+      action: { name: "medications.intake.update.validation-failed" },
+      meta: { issue_count: issues.length },
+    });
+    prisma.auditLog
+      .create({
+        data: {
+          userId: user.id,
+          action: "medications.intake.update.validation-failed",
+          details: JSON.stringify({ issues }),
+        },
+      })
+      .catch(() => {
+        /* swallow — 422 response is the contract */
+      });
+    return returnAllZodIssues(parsed.error, 422);
   }
 
   const { intakeId, status, takenAt, snoozedUntil } = parsed.data;
