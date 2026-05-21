@@ -93,6 +93,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
         userId: user.id,
         measuredAt: { gte: start, lte: end },
         type: "SLEEP_DURATION",
+        deletedAt: null,
       },
     }),
     prisma.user.findUnique({
