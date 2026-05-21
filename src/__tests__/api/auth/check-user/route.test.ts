@@ -30,7 +30,25 @@ vi.mock("@/lib/rate-limit", () => ({
     remaining: 29,
     resetAt: Date.now() + 15 * 60 * 1000,
   }),
+  // v1.4.43 W13 M-4 — the route now routes through the auth-surface
+  // wrapper. Default to a clean per-IP result.
+  checkAuthSurfaceRateLimit: vi.fn().mockResolvedValue({
+    allowed: true,
+    remaining: 29,
+    resetAt: Date.now() + 15 * 60 * 1000,
+    ip: "203.0.113.1",
+  }),
   rateLimitHeaders: vi.fn(() => ({})),
+}));
+
+vi.mock("@/lib/auth/hmac", () => ({
+  hashToken: vi.fn(
+    (raw: string) =>
+      `hash-${Buffer.from(raw, "utf-8")
+        .toString("hex")
+        .slice(0, 16)
+        .padStart(16, "0")}`,
+  ),
 }));
 
 vi.mock("next/headers", () => ({
@@ -44,7 +62,10 @@ vi.mock("next/headers", () => ({
 
 import { POST } from "@/app/api/auth/check-user/route";
 import { prisma } from "@/lib/db";
-import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  checkRateLimit,
+  checkAuthSurfaceRateLimit,
+} from "@/lib/rate-limit";
 
 interface CheckUserBody {
   data: {
@@ -69,6 +90,12 @@ beforeEach(() => {
     remaining: 29,
     resetAt: Date.now() + 15 * 60 * 1000,
   });
+  vi.mocked(checkAuthSurfaceRateLimit).mockResolvedValue({
+    allowed: true,
+    remaining: 29,
+    resetAt: Date.now() + 15 * 60 * 1000,
+    ip: "203.0.113.1",
+  } as never);
 });
 
 afterEach(() => {
@@ -149,11 +176,12 @@ describe("POST /api/auth/check-user", () => {
   });
 
   it("returns 429 when the per-IP rate-limit is exhausted", async () => {
-    vi.mocked(checkRateLimit).mockResolvedValueOnce({
+    vi.mocked(checkAuthSurfaceRateLimit).mockResolvedValueOnce({
       allowed: false,
       remaining: 0,
       resetAt: Date.now() + 15 * 60 * 1000,
-    });
+      ip: "203.0.113.1",
+    } as never);
     const res = await POST(makeRequest({ identifier: "anyone@example.com" }));
     expect(res.status).toBe(429);
     expect(prisma.user.findFirst).not.toHaveBeenCalled();
