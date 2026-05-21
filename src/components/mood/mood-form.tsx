@@ -140,7 +140,7 @@ export function MoodForm({ onSuccess, onCancel, footerSlot }: MoodFormProps) {
             type="button"
             variant="outline"
             size="icon"
-            className="h-9 w-9"
+            className="h-11 w-11"
             disabled={loading}
             aria-label={t("common.moreOptions")}
           >

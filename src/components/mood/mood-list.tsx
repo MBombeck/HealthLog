@@ -613,7 +613,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                             type="button"
                             variant="outline"
                             size="icon"
-                            className="h-9 w-9"
+                            className="h-11 w-11"
                             disabled={
                               updateMutation.isPending ||
                               deleteMutation.isPending
