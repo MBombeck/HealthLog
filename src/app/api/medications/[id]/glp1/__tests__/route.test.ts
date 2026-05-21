@@ -335,3 +335,55 @@ describe("POST /api/medications/[id]/glp1", () => {
     );
   });
 });
+
+describe("POST /api/medications/[id]/glp1 — 422 multi-issue (v1.4.43 W6)", () => {
+  it("surfaces TWO simultaneous validation errors", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.medication.findUnique).mockResolvedValue(MED_OK as never);
+    const res = await POST(
+      jsonReq({
+        doseChange: {
+          effectiveFrom: "not-iso",
+          doseValue: "string",
+          doseUnit: "mg",
+        },
+      }),
+      { params: Promise.resolve({ id: "med-1" }) },
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      data: null;
+      error: string;
+      details: {
+        issues: Array<{ path: string; code: string; message: string }>;
+      };
+    };
+    expect(body.data).toBeNull();
+    expect(body.error).toBe("Validation failed");
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
+    for (const issue of body.details.issues) {
+      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+    }
+  });
+
+  it("surfaces THREE simultaneous validation errors", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.medication.findUnique).mockResolvedValue(MED_OK as never);
+    const res = await POST(
+      jsonReq({
+        doseChange: {
+          effectiveFrom: "not-iso",
+          doseValue: "string",
+          doseUnit: 999,
+          note: 123,
+        },
+      }),
+      { params: Promise.resolve({ id: "med-1" }) },
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      details: { issues: Array<unknown> };
+    };
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(3);
+  });
+});

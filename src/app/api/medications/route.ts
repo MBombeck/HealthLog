@@ -4,8 +4,8 @@ import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import {
   apiSuccess,
-  apiError,
   getClientIp,
+  returnAllZodIssues,
   safeJson,
 } from "@/lib/api-response";
 import { createMedicationSchema } from "@/lib/validations/medication";
@@ -110,7 +110,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (jsonError) return jsonError;
   const parsed = createMedicationSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 422);
+    // v1.4.43 W6 — multi-issue 422.
+    return returnAllZodIssues(parsed.error, 422);
   }
 
   const { name, dose, category, treatmentClass, dosesPerUnit, schedules } =

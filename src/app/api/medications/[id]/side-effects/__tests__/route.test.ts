@@ -350,3 +350,70 @@ describe("DELETE /api/medications/[id]/side-effects/[logId]", () => {
     });
   });
 });
+
+describe("/api/medications/[id]/side-effects — 422 multi-issue (v1.4.43 W6)", () => {
+  it("GET surfaces TWO simultaneous validation errors", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.medication.findUnique).mockResolvedValue(MED_OK as never);
+    // Bad `from` iso + bad `limit` (out of bounds).
+    const res = await GET(
+      new NextRequest(
+        "http://localhost/api/medications/med-1/side-effects?from=not-iso&limit=99999",
+      ),
+      { params: Promise.resolve({ id: "med-1" }) },
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      data: null;
+      error: string;
+      details: {
+        issues: Array<{ path: string; code: string; message: string }>;
+      };
+    };
+    expect(body.data).toBeNull();
+    expect(body.error).toBe("Validation failed");
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
+    for (const issue of body.details.issues) {
+      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+    }
+  });
+
+  it("POST surfaces TWO simultaneous validation errors", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.medication.findUnique).mockResolvedValue(MED_OK as never);
+    // Missing `entry` + bad `severity`.
+    const res = await POST(
+      jsonReq("http://localhost/api/medications/med-1/side-effects", {
+        severity: "junk",
+        notes: "x".repeat(2000),
+      }),
+      { params: Promise.resolve({ id: "med-1" }) },
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      details: {
+        issues: Array<{ path: string; code: string; message: string }>;
+      };
+    };
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("POST surfaces THREE simultaneous validation errors", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.medication.findUnique).mockResolvedValue(MED_OK as never);
+    const res = await POST(
+      jsonReq("http://localhost/api/medications/med-1/side-effects", {
+        entry: 999,
+        severity: "junk",
+        occurredAt: "not-iso",
+        notes: "x".repeat(5000),
+      }),
+      { params: Promise.resolve({ id: "med-1" }) },
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      details: { issues: Array<unknown> };
+    };
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(3);
+  });
+});

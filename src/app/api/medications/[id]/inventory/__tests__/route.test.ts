@@ -349,3 +349,50 @@ describe("DELETE /api/medications/[id]/inventory/[itemId]", () => {
     });
   });
 });
+
+describe("POST /api/medications/[id]/inventory — 422 multi-issue (v1.4.43 W6)", () => {
+  it("surfaces TWO simultaneous validation errors", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.medication.findUnique).mockResolvedValue(MED_OK as never);
+    const res = await POST(
+      jsonReq("http://localhost/api/medications/med-1/inventory", {
+        dosesTotal: "string",
+        printedExpiry: "not-iso",
+      }),
+      { params: Promise.resolve({ id: "med-1" }) },
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      data: null;
+      error: string;
+      details: {
+        issues: Array<{ path: string; code: string; message: string }>;
+      };
+    };
+    expect(body.data).toBeNull();
+    expect(body.error).toBe("Validation failed");
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
+    for (const issue of body.details.issues) {
+      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+    }
+  });
+
+  it("surfaces THREE simultaneous validation errors", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.medication.findUnique).mockResolvedValue(MED_OK as never);
+    const res = await POST(
+      jsonReq("http://localhost/api/medications/med-1/inventory", {
+        dosesTotal: "string",
+        printedExpiry: "not-iso",
+        purchasedAt: "also-not-iso",
+        notes: 123,
+      }),
+      { params: Promise.resolve({ id: "med-1" }) },
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      details: { issues: Array<unknown> };
+    };
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(3);
+  });
+});

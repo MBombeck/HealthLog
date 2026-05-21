@@ -20,7 +20,11 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { apiError, apiSuccess } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  returnAllZodIssues,
+} from "@/lib/api-response";
 import {
   buildCadenceTimeline,
   computeNextDose,
@@ -57,7 +61,8 @@ export const GET = apiHandler(
       days: url.searchParams.get("days") ?? undefined,
     });
     if (!parsed.success) {
-      return apiError(parsed.error.issues[0].message, 422);
+      // v1.4.43 W6 — multi-issue 422.
+      return returnAllZodIssues(parsed.error, 422);
     }
     const windowDays = parsed.data.days ?? 30;
     const asOf = new Date();

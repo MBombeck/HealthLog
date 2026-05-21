@@ -6,6 +6,7 @@ import {
   apiSuccess,
   apiError,
   getClientIp,
+  returnAllZodIssues,
   safeJson,
 } from "@/lib/api-response";
 import { updateMedicationSchema } from "@/lib/validations/medication";
@@ -69,7 +70,8 @@ export const PUT = apiHandler(
     if (jsonError) return jsonError;
     const parsed = updateMedicationSchema.safeParse(body);
     if (!parsed.success) {
-      return apiError(parsed.error.issues[0].message, 422);
+      // v1.4.43 W6 — multi-issue 422.
+      return returnAllZodIssues(parsed.error, 422);
     }
 
     const {

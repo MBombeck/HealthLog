@@ -22,6 +22,7 @@ import {
   apiError,
   apiSuccess,
   getClientIp,
+  returnAllZodIssues,
   safeJson,
 } from "@/lib/api-response";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -145,7 +146,8 @@ export const POST = apiHandler(
 
     const parsed = glp1PostBodySchema.safeParse(body);
     if (!parsed.success) {
-      return apiError(parsed.error.issues[0].message, 422);
+      // v1.4.43 W6 — multi-issue 422.
+      return returnAllZodIssues(parsed.error, 422);
     }
 
     const ip = getClientIp(request);

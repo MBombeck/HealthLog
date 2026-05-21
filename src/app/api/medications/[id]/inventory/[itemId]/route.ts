@@ -23,6 +23,7 @@ import {
   apiError,
   apiSuccess,
   getClientIp,
+  returnAllZodIssues,
   safeJson,
 } from "@/lib/api-response";
 import { updateInventoryItemSchema } from "@/lib/validations/medication";
@@ -60,7 +61,8 @@ export const PATCH = apiHandler(
 
     const parsed = updateInventoryItemSchema.safeParse(body);
     if (!parsed.success) {
-      return apiError(parsed.error.issues[0].message, 422);
+      // v1.4.43 W6 — multi-issue 422.
+      return returnAllZodIssues(parsed.error, 422);
     }
 
     const { markAsFirstUseAt, markAsUsedUp, printedExpiry, notes } =
