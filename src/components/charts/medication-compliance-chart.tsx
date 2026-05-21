@@ -252,6 +252,21 @@ export function MedicationComplianceChart({
     [data, tzFmt],
   );
 
+  // v1.4.43 W2-CHART-GATE — raw scheduled-dose count across every day
+  // in the window. The chart bucket aggregates per-day compliance, so
+  // a user with 20 scheduled doses on 2 calendar days collapses to
+  // `chartData.length = 2`. Sum the `scheduled` field across the raw
+  // daily points so the empty-state gate can distinguish "no doses
+  // tracked" from "doses tracked but on too few days".
+  const rawCount = useMemo<number>(() => {
+    if (!data?.length) return 0;
+    return data.reduce(
+      (acc, point) =>
+        acc + (Number.isFinite(point.scheduled) ? point.scheduled : 0),
+      0,
+    );
+  }, [data]);
+
   // v1.4.16 A6 — 7-day trend chip. Computed off the *full* range so a
   // user toggled to "7 days" still sees a trend (which would otherwise
   // be empty if we only used the visible window). The 14-day cap inside
@@ -391,10 +406,23 @@ export function MedicationComplianceChart({
       ) : chartData.length < 3 ? (
         // v1.4.16 B1a — sparse-data placeholder consistent with the
         // BP/weight/pulse/mood charts.
-        <ChartEmptyState
-          title={t("charts.emptyStateTitle")}
-          description={t("charts.emptyStateDescription")}
-        />
+        //
+        // v1.4.43 W2-CHART-GATE — split the copy on the raw scheduled-
+        // dose count. A user with 20 scheduled doses on 2 calendar
+        // days has `chartData.length = 2`; the legacy "log more" hint
+        // misled — they logged plenty, just on too few days. Surface
+        // "need more days" when the raw count is already enough.
+        rawCount >= 3 ? (
+          <ChartEmptyState
+            title={t("charts.needMoreDistinctDaysTitle")}
+            description={t("charts.needMoreDistinctDaysDescription")}
+          />
+        ) : (
+          <ChartEmptyState
+            title={t("charts.emptyStateTitle")}
+            description={t("charts.emptyStateDescription")}
+          />
+        )
       ) : (
         <div className="h-[var(--chart-height,240px)] md:h-[var(--chart-height-md,280px)] touch-pan-y">
           <ResponsiveContainer width="100%" height="100%">
