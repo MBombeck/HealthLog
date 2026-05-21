@@ -183,7 +183,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
           }),
         );
       }
-      await Promise.all(recomputeJobs);
+      // Defence in depth (specialist H1): the helper swallows internally
+      // today, but any future refactor that lets a throw escape would
+      // turn the intake POST into a 5xx. `allSettled` keeps the
+      // best-effort contract explicit at the call site so the request
+      // stays 200-OK regardless of helper behaviour.
+      await Promise.allSettled(recomputeJobs);
     }
 
     const events = await prisma.medicationIntakeEvent.findMany({
