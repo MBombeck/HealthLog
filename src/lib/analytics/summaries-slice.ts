@@ -53,7 +53,7 @@
  * 100`. Slope `direction` is derived from `slope`'s sign with the
  * same 0.01-units-per-day "stable" threshold the JS helper uses.
  */
-import type { MeasurementType, RollupGranularity } from "@/generated/prisma/client";
+import type { MeasurementType } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/db";
 import type { DataSummary } from "@/lib/analytics/trends";
@@ -64,11 +64,7 @@ import {
   isFullyCovered,
   probeRollupCoverage,
 } from "@/lib/rollups/measurement-coverage";
-import {
-  aggregateWmyBuckets,
-  readBestGranularityRollups,
-  type RollupBucketRow,
-} from "@/lib/rollups/measurement-read-wmy";
+import { readBestGranularityRollups } from "@/lib/rollups/measurement-read-wmy";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

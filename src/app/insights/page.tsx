@@ -16,8 +16,6 @@ import { HeroStrip } from "@/components/insights/hero-strip";
 import { useInsightsAdvisorQuery } from "@/components/insights/use-insights-advisor";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
 import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
-import type { CorrelationResult } from "@/lib/insights/correlations";
-import type { DataSummary } from "@/lib/analytics/trends";
 
 /**
  * v1.4.33 IW2 — defer the three below-the-fold mother-page blocks
