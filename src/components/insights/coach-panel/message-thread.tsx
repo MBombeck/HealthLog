@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { scrollBehaviorForUser } from "@/lib/motion";
 import { useTranslations } from "@/lib/i18n/context";
 import { stripChartTokens } from "@/lib/insights/chart-tokens";
 import { useAuth } from "@/hooks/use-auth";
@@ -194,7 +195,8 @@ export function MessageThread({
     const el = scrollerRef.current;
     if (!el) return;
     if (wasPinnedRef.current) {
-      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      // v1.4.43 W5-H5 — respect `prefers-reduced-motion`.
+      el.scrollTo({ top: el.scrollHeight, behavior: scrollBehaviorForUser() });
     }
   }, [messages.length, streaming?.content, optimisticUser?.localId]);
 

@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { scrollBehaviorForUser } from "@/lib/motion";
 import { useTranslations } from "@/lib/i18n/context";
 import { isAdminSectionSlug, type AdminSectionSlug } from "./section-slugs";
 
@@ -183,7 +184,8 @@ export function AdminShell({ active, children }: AdminShellProps) {
       // and the first one or two chips were unreachable on narrow
       // viewports.
       inline: "start",
-      behavior: "smooth",
+      // v1.4.43 W5-H5 — respect `prefers-reduced-motion`.
+      behavior: scrollBehaviorForUser(),
     });
   }, [activeSlug]);
 
