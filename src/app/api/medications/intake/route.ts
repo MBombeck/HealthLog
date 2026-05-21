@@ -146,6 +146,15 @@ export const GET = apiHandler(async (request: NextRequest) => {
           // keeps the doctor-report + analytics filters byte-stable.
           source: "REMINDER",
         })),
+        // v1.4.39 W-SERVER-FIX-2 — paired with the schema-level
+        // @@unique([userId, medicationId, scheduledFor, source]). A
+        // concurrent dashboard-summary hit (the second route that now
+        // runs the same projection) can race a duplicate row in
+        // between this route's existence probe and createMany; the
+        // flag tells Postgres to swallow the rejected rows so the
+        // request still returns 2xx. The unique constraint is the
+        // structural backstop, this is the defense-in-depth.
+        skipDuplicates: true,
       });
     }
 
