@@ -1,0 +1,73 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/app/**/page.tsx",
+    "src/app/**/layout.tsx",
+    "src/app/**/route.ts",
+    "src/app/**/loading.tsx",
+    "src/app/**/not-found.tsx",
+    "src/app/**/error.tsx",
+    "src/app/**/global-error.tsx",
+    "src/app/**/template.tsx",
+    "src/app/**/opengraph-image.tsx",
+    "src/app/**/twitter-image.tsx",
+    "src/app/**/icon.tsx",
+    "src/app/**/apple-icon.tsx",
+    "src/app/**/manifest.ts",
+    "src/app/**/robots.ts",
+    "src/app/**/sitemap.ts",
+    "src/app/**/default.tsx",
+    "src/middleware.ts",
+    "src/instrumentation.ts",
+    "src/lib/jobs/**/*.ts",
+    "src/lib/health/**/*.ts",
+    "scripts/**/*.ts",
+    "scripts/**/*.mjs",
+    "e2e/**/*.spec.ts",
+    "e2e/**/*.test.ts",
+    "tests/**/*.test.ts",
+    "tests/**/setup.ts",
+    "vitest.config.ts",
+    "vitest.config.integration.ts",
+    "playwright.config.ts",
+    "next.config.ts",
+    "eslint.config.*",
+    "knip.json"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "scripts/**/*.{ts,mjs}",
+    "tests/**/*.ts",
+    "e2e/**/*.ts"
+  ],
+  "ignore": [
+    "src/generated/**",
+    "prisma/**",
+    "public/**",
+    ".next/**",
+    "**/__mocks__/**",
+    "e2e/setup/test-helpers.ts",
+    "src/components/charts/compliance-line-chart.tsx",
+    "src/lib/logging/index.ts"
+  ],
+  "ignoreDependencies": [
+    "@types/node",
+    "@types/react",
+    "@types/react-dom",
+    "@hookform/resolvers",
+    "react-hook-form",
+    "@prisma/client",
+    "next-themes",
+    "@vitejs/plugin-react",
+    "shadcn",
+    "tailwindcss",
+    "testcontainers",
+    "tw-animate-css"
+  ],
+  "ignoreBinaries": [
+    "docker",
+    "docker-compose",
+    "pg_isready",
+    "tsx"
+  ]
+}

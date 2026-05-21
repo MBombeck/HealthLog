@@ -1,0 +1,40 @@
+name: Knip
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  knip:
+    name: Dead-code gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm db:generate
+
+      # v1.4.40 W-INFRA — fail the build when knip surfaces a new dead
+      # module, an unused production dependency, an unused devDependency,
+      # or an unlisted binary. Unused exports + types are intentionally
+      # left informational while the existing surface is cleaned wave by
+      # wave (487 exports / 52 types on the v1.4.40 baseline). The
+      # baseline carve-outs live in `knip.json` under `ignore` +
+      # `ignoreDependencies` + `ignoreBinaries` with the rationale
+      # captured in `.planning/phase-W-INFRA-v1440-report.md`.
+      - run: pnpm knip --reporter compact --include files,dependencies,binaries,unlisted
