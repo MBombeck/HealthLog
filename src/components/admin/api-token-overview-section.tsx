@@ -166,7 +166,7 @@ export function ApiTokenOverviewSection() {
       <div className="mt-4">
         {isLoading ? (
           <div className="flex justify-center py-4">
-            <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
+            <Loader2 className="text-muted-foreground h-5 w-5 animate-spin motion-reduce:animate-none" />
           </div>
         ) : !tokens?.length ? (
           // v1.4.15 phase-C5: empty state explains where tokens come

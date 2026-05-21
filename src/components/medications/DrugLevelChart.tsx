@@ -232,7 +232,7 @@ export function DrugLevelChart({ medication, asOf }: DrugLevelChartProps) {
       className="flex h-[220px] items-center justify-center"
       data-slot="drug-level-chart-loading"
     >
-      <Loader2 className="text-primary h-6 w-6 animate-spin" />
+      <Loader2 className="text-primary h-6 w-6 animate-spin motion-reduce:animate-none" />
     </div>
   ) : !hasDoses ? (
     <EmptyState />

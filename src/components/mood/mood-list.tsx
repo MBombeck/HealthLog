@@ -301,7 +301,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
 
         {isLoading ? (
           <div className="flex h-32 items-center justify-center">
-            <Loader2 className="text-primary h-6 w-6 animate-spin" />
+            <Loader2 className="text-primary h-6 w-6 animate-spin motion-reduce:animate-none" />
           </div>
         ) : !data?.entries?.length ? (
           // v1.4.15 phase-C5: replace bare-text empty rectangle with

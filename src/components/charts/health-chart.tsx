@@ -1286,7 +1286,7 @@ export function HealthChart({
 
       {isLoading ? (
         <div className="flex h-48 items-center justify-center">
-          <Loader2 className="text-primary h-6 w-6 animate-spin" />
+          <Loader2 className="text-primary h-6 w-6 animate-spin motion-reduce:animate-none" />
         </div>
       ) : !chartData?.length ? null : (chartData?.length ?? 0) < 3 ? (
         // v1.4.16 B1a — sparse-data placeholder. <3 daily points is too

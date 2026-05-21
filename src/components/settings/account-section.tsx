@@ -359,7 +359,7 @@ export function AccountSection() {
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="text-primary h-8 w-8 animate-spin" />
+        <Loader2 className="text-primary h-8 w-8 animate-spin motion-reduce:animate-none" />
       </div>
     );
   }
@@ -617,7 +617,7 @@ export function AccountSection() {
             className="w-full shrink-0 sm:w-auto"
           >
             {tourRestarting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
             ) : (
               <Compass className="mr-2 h-4 w-4" />
             )}
@@ -708,7 +708,7 @@ export function AccountSection() {
 
             <Button type="submit" variant="outline" disabled={passwordSaving}>
               {passwordSaving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
               ) : (
                 <Save className="mr-2 h-4 w-4" />
               )}

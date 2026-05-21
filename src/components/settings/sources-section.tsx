@@ -592,7 +592,7 @@ export function SourcesSection({ mode = "standalone" }: SourcesSectionProps = {}
               disabled={saveMutation.isPending}
             >
               {saveMutation.isPending && (
-                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
               )}
               {t("common.save")}
             </Button>

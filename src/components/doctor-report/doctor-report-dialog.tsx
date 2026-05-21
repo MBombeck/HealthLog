@@ -483,7 +483,7 @@ export function DoctorReportDialog({
             </Button>
             <Button type="submit" disabled={submitting || !validation.ok}>
               {submitting && (
-                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
               )}
               {t("doctorReport.dialog.submit")}
             </Button>
@@ -572,7 +572,7 @@ function SectionToggles({
           {t("doctorReport.sections.title")}
         </p>
         {availabilityLoading && (
-          <Loader2 className="text-muted-foreground h-3 w-3 animate-spin" />
+          <Loader2 className="text-muted-foreground h-3 w-3 animate-spin motion-reduce:animate-none" />
         )}
       </div>
       <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">

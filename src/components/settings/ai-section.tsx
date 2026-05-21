@@ -639,7 +639,7 @@ function CodexProviderForm({
           disabled={disconnecting}
         >
           {disconnecting ? (
-            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-1 h-4 w-4 animate-spin motion-reduce:animate-none" />
           ) : (
             <Trash2 className="mr-1 h-4 w-4" />
           )}
@@ -682,7 +682,7 @@ function CodexProviderForm({
           <div className="flex items-center gap-3 text-xs">
             {devicePolling && (
               <span className="text-muted-foreground inline-flex items-center gap-1">
-                <Loader2 className="h-3 w-3 animate-spin" />
+                <Loader2 className="h-3 w-3 animate-spin motion-reduce:animate-none" />
                 {t("settings.ai.deviceCodeWaiting")}
               </span>
             )}
@@ -703,7 +703,7 @@ function CodexProviderForm({
           className="w-full sm:w-auto"
         >
           {devicePolling ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
           ) : (
             <Sparkles className="mr-2 h-4 w-4" />
           )}

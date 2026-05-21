@@ -228,7 +228,7 @@ export function SystemStatusSection() {
               data-testid="system-status-retry"
             >
               {isFetching ? (
-                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
               ) : (
                 <RotateCw className="mr-1 h-3.5 w-3.5" />
               )}
@@ -237,7 +237,7 @@ export function SystemStatusSection() {
           </div>
         ) : (
           <div className="mt-4 flex items-center gap-2">
-            <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
+            <Loader2 className="text-muted-foreground h-4 w-4 animate-spin motion-reduce:animate-none" />
             <span className="text-muted-foreground text-sm">
               {t("admin.loadingStatus")}
             </span>

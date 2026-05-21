@@ -362,7 +362,7 @@ export function BackupsSection() {
           className="min-h-11"
         >
           {runBackup.isPending ? (
-            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
           ) : (
             <PlayCircle className="mr-1 h-3.5 w-3.5" />
           )}
@@ -418,7 +418,7 @@ export function BackupsSection() {
             className="min-h-11"
           >
             {upload.isPending ? (
-              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
             ) : (
               <Upload className="mr-1 h-3.5 w-3.5" />
             )}
@@ -429,7 +429,7 @@ export function BackupsSection() {
 
       {isLoading ? (
         <div className="mt-4 flex items-center gap-2">
-          <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
+          <Loader2 className="text-muted-foreground h-4 w-4 animate-spin motion-reduce:animate-none" />
           <span className="text-muted-foreground text-sm">
             {t("admin.section.backups.loading")}
           </span>
@@ -459,7 +459,7 @@ export function BackupsSection() {
                 className="min-h-11"
               >
                 {runBackup.isPending ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
                 ) : (
                   <PlayCircle className="mr-1 h-3.5 w-3.5" />
                 )}
@@ -518,7 +518,7 @@ export function BackupsSection() {
                         className="min-h-11"
                       >
                         {downloadingId === row.id ? (
-                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
                         ) : (
                           <Download className="mr-1 h-3.5 w-3.5" />
                         )}
