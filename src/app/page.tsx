@@ -1400,26 +1400,14 @@ export default function DashboardPage() {
                 {trendCards.map((entry) => (
                   <div key={entry.id} className="flex min-w-0">
                     {/*
-                     * v1.4.40 W-RSC — per-tile `<Suspense>` boundary.
-                     * The tile body is synchronous today (every tile
-                     * reads from the merged `data` memo which already
-                     * gates on the slim/thick analytics queries on the
-                     * parent), so this fallback never paints in the
-                     * current composition. The structural boundary
-                     * matches the chart-row layer below so the entire
-                     * dashboard composition reads as a streaming-ready
-                     * grid of independently suspending cells — and
-                     * future RSC hoists of any tile slot won't need a
-                     * second pass to add the fallback infrastructure.
-                     */}
-                    {/*
-                     * v1.4.41 W-FRONTEND-FACTORY (UX M1) — swap the
-                     * `null` fallback for a layout-stable placeholder
-                     * that mirrors the trend-card chrome. The body
-                     * stays synchronous today so the fallback rarely
+                     * Per-tile `<Suspense>` boundary with a layout-stable
+                     * placeholder that mirrors the trend-card chrome. Tile
+                     * bodies are synchronous today so the fallback rarely
                      * paints, but a future RSC hoist of any tile slot
                      * would otherwise leave the grid track empty and
                      * trigger CLS as the cell paints in.
+                     *
+                     * v1.4.40 W-RSC — boundary added; v1.4.41 W-FRONTEND-FACTORY — fallback hoisted to layout-stable placeholder.
                      */}
                     <Suspense
                       fallback={
