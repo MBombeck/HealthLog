@@ -1,5 +1,52 @@
 # Changelog
 
+## [1.4.39.1] — 2026-05-21 — Rollup tier catches Withings + import + admin-restore write paths
+
+The v1.4.39 dashboard chart "Noch nicht genug Daten" empty-state on
+the 30-point range traced to three measurement write paths bypassing
+the rollup table's per-write hook: Withings sync (BP / weight / pulse /
+body-fat / activity / sleep), the JSON / CSV `/api/import` endpoint,
+and the admin backup restore. Once the chart's `source=rollup` fast-
+path landed in v1.4.36, those days never reached the chart at 30 / 90
+days — the live raw fetch at 7 days kept showing data, the rollup
+fast-path at 30 / 90 days under-counted distinct days, and the chart
+tripped its `< 3 daily points` empty-state. v1.4.39.1 wires the rollup
+write hook into every remaining ingest path and tightens the boot-time
+backfill discovery so any stranded accounts re-converge on the next
+worker boot.
+
+### Fixed
+
+- **Withings sync** (`sync.ts` / `sync-activity.ts` / `sync-sleep.ts`):
+  every (type, day) pair the sync touched is now handed to
+  `recomputeBucketsForMeasurement` after the row writes. Collapsed
+  via `collapseToTypeDayKeys` so a 30-day catch-up costs at most ~N
+  (type, day) recomputes rather than one per row. Best-effort: a
+  populator hiccup never fails the user's sync.
+- **`/api/import` endpoint**: measurement creates now track touched
+  `(type, day)` pairs and fold the rollup tier at the end of the
+  batch. Mirrors the v1.4.39 mood-rollup hook on the same route.
+- **Admin backup restore**: the transaction now wipes the user's
+  `measurement_rollups` partition alongside `mood_entry_rollups`, and
+  the post-transaction step kicks a full `recomputeUserRollups` so
+  the restored dataset paints fresh tiles instead of carrying the
+  previous owner's daily means forward.
+- **Boot-time backfill discovery** (`enqueueBootTimeRollupBackfill`):
+  the missing-coverage join moved from per-type to per-day, so an
+  account whose Withings sync wrote 27 days of BP without ever firing
+  the rollup hook now re-surfaces on the next worker boot even when
+  one prior rollup row already existed for the same type. The legacy
+  `sum_value IS NULL` branch is preserved on the same UNION.
+
+### Notes
+
+- No schema migration. Additive write-hook plumbing only.
+- `pnpm test --run` green at 4648 / 4649 (1 long-standing skip).
+- The dashboard chart's read-side `source=rollup` short-circuit stays
+  put — once every write path folds the rollup tier on touch, the
+  short-circuit is always correct. A defensive coverage-mismatch
+  fallback is on the v1.4.40 backlog.
+
 ## [1.4.39] — 2026-05-21 — Mood, medication-compliance, and cumulative-sum rollup tiers
 
 The v1.4.38 chain settled the measurement-rollup fast-path. v1.4.39
