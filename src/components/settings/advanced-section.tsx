@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, BookOpenCheck, Loader2, Trash2 } from "lucide-react";
+import { BookOpenCheck, Loader2, Trash2 } from "lucide-react";
 
 import {
   AlertDialog,
@@ -68,6 +68,7 @@ export function AdvancedSection() {
 
       <ResearchModeCard />
       <DataResetCard />
+      <AccountDeleteCard />
     </section>
   );
 }
@@ -266,13 +267,18 @@ function DataResetCard() {
   }
 
   return (
-    <div className="bg-card border-border rounded-xl border p-6">
-      <div className="flex items-center gap-2">
-        <AlertTriangle className="text-destructive h-5 w-5" />
-        <h2 className="text-destructive text-lg font-semibold">
-          {t("settings.dangerZone")}
-        </h2>
-      </div>
+    <div
+      className="bg-card border-border rounded-xl border p-6"
+      data-slot="settings-data-reset-card"
+    >
+      {/* v1.4.43 QoL (L5) — dropped the `AlertTriangle` icon and
+          neutralised the title colour so the danger-zone shaping is
+          GitHub-style (red CTA only) rather than red-on-red-on-red.
+          The protective gate (confirmation dialog) is unchanged; this
+          is purely a visual-tone fix per the v1.4.43 audit. */}
+      <h2 className="text-foreground text-lg font-semibold">
+        {t("settings.dangerZone")}
+      </h2>
       <p className="text-muted-foreground mt-1 text-xs">
         {t("settings.dangerZoneDescription")}
       </p>
@@ -305,6 +311,125 @@ function DataResetCard() {
                 onClick={handleDeleteAllData}
               >
                 {t("settings.finalDelete")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+
+      {msg && (
+        <p
+          role="alert"
+          className={`mt-3 text-sm ${msgType === "success" ? "text-dracula-green" : "text-destructive"}`}
+        >
+          {msg}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * v1.4.43 QoL (M3) — separate destructive action for the full account
+ * delete. Pre-fix, the only "danger zone" CTA wiped the user's health
+ * data but left the user row, passkeys, audit log, and sessions
+ * intact — half of what a user reading "Danger Zone" expects per
+ * GDPR Article 17. The route `DELETE /api/settings/account` already
+ * cascades User + passkeys + audit log + sessions (and is rate-limited
+ * by the API handler); this card is its UI front door.
+ *
+ * Visually the card mirrors the data-reset shaping (neutral title,
+ * red CTA only) but the dialog copy is explicit: this deletes the
+ * account, not just the data, and the user will be signed out
+ * immediately.
+ */
+function AccountDeleteCard() {
+  const { t } = useTranslations();
+  const [deleting, setDeleting] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
+
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    setMsg(null);
+    setMsgType(null);
+    try {
+      const res = await fetch("/api/settings/account", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: "DELETE_ACCOUNT" }),
+      });
+      if (!res.ok) {
+        try {
+          const json = await res.json();
+          setMsg(json.error || t("settings.deleteAccountFailed"));
+        } catch {
+          setMsg(t("settings.deleteAccountFailed"));
+        }
+        setMsgType("error");
+        return;
+      }
+      setMsg(t("settings.deleteAccountSuccess"));
+      setMsgType("success");
+      // The route destroyed every session before deleting the row;
+      // give the toast a beat to paint, then bounce to the login page.
+      setTimeout(() => {
+        window.location.href = "/auth/login";
+      }, 1_500);
+    } catch {
+      setMsg(t("settings.deleteAccountFailed"));
+      setMsgType("error");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <div
+      className="bg-card border-border rounded-xl border p-6"
+      data-slot="settings-account-delete-card"
+    >
+      <h2 className="text-foreground text-lg font-semibold">
+        {t("settings.deleteAccountCardTitle")}
+      </h2>
+      <p className="text-muted-foreground mt-1 text-xs">
+        {t("settings.deleteAccountCardDescription")}
+      </p>
+
+      <div className="mt-4">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={deleting}
+              data-slot="settings-account-delete-trigger"
+            >
+              {deleting ? (
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+              ) : (
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+              )}
+              {t("settings.deleteAccountCta")}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {t("settings.deleteAccountConfirmTitle")}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {t("settings.deleteAccountConfirmDescription")}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={handleDeleteAccount}
+                data-slot="settings-account-delete-confirm"
+              >
+                {t("settings.deleteAccountFinal")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
