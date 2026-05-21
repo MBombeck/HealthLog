@@ -109,53 +109,6 @@ export async function readCumulativeDaySums(
 }
 
 /**
- * Batch read DAY buckets for several cumulative types in one round
- * trip. Eliminates the per-type chunked-findMany loop in
- * `/api/analytics` A2 for the five highest-row-count metrics on
- * Marc's tenant.
- *
- * Returns a Map keyed on `MeasurementType` so the caller can route
- * each type's rows back into the per-metric branch without scanning
- * the flat list.
- */
-export async function readCumulativeDaySumsBatch(
-  userId: string,
-  types: readonly CumulativeType[],
-  since: Date,
-): Promise<Map<CumulativeType, CumulativeDaySumRow[]>> {
-  if (types.length === 0) return new Map();
-  const rows = await prisma.measurementRollup.findMany({
-    where: {
-      userId,
-      type: { in: types as unknown as MeasurementType[] },
-      granularity: "DAY",
-      bucketStart: { gte: since },
-    },
-    orderBy: [{ type: "asc" }, { bucketStart: "asc" }],
-    select: {
-      type: true,
-      bucketStart: true,
-      sumValue: true,
-      count: true,
-      mean: true,
-    },
-  });
-  const out = new Map<CumulativeType, CumulativeDaySumRow[]>();
-  for (const t of types) out.set(t, []);
-  for (const row of rows) {
-    const bucket = out.get(row.type as CumulativeType);
-    if (!bucket) continue;
-    bucket.push({
-      bucketStart: row.bucketStart,
-      sumValue: row.sumValue,
-      count: row.count,
-      mean: row.mean,
-    });
-  }
-  return out;
-}
-
-/**
  * Resolve a per-bucket cumulative total. Reads `sumValue` when the
  * v1.4.39 writer has populated it; falls back to `mean * count` for
  * legacy NULL rows so the chart never paints a hole during the boot-

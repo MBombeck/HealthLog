@@ -24,7 +24,6 @@ import { prisma } from "@/lib/db";
 import {
   isCumulativeType,
   readCumulativeDaySums,
-  readCumulativeDaySumsBatch,
   resolveBucketSum,
 } from "../rollup-read-cumulative";
 
@@ -109,64 +108,6 @@ describe("readCumulativeDaySums", () => {
     // a usable daily total during the boot-backfill convergence
     // window.
     expect(resolveBucketSum(row)).toBe(4500);
-  });
-});
-
-describe("readCumulativeDaySumsBatch", () => {
-  it("groups by type and seeds empty arrays for missing types", async () => {
-    const since = new Date("2026-04-15T00:00:00.000Z");
-    mocks.findMany.mockResolvedValueOnce([
-      {
-        type: "ACTIVITY_STEPS",
-        bucketStart: new Date("2026-04-15T00:00:00.000Z"),
-        sumValue: 8120,
-        count: 4,
-        mean: 2030,
-      },
-      {
-        type: "ACTIVITY_STEPS",
-        bucketStart: new Date("2026-04-16T00:00:00.000Z"),
-        sumValue: 12480,
-        count: 5,
-        mean: 2496,
-      },
-      {
-        type: "FLIGHTS_CLIMBED",
-        bucketStart: new Date("2026-04-15T00:00:00.000Z"),
-        sumValue: 22,
-        count: 3,
-        mean: 7.33,
-      },
-    ]);
-
-    const out = await readCumulativeDaySumsBatch(
-      "user-1",
-      ["ACTIVITY_STEPS", "FLIGHTS_CLIMBED", "TIME_IN_DAYLIGHT"],
-      since,
-    );
-
-    expect(out.get("ACTIVITY_STEPS")).toHaveLength(2);
-    expect(out.get("FLIGHTS_CLIMBED")).toHaveLength(1);
-    // Type with zero rollup rows still surfaces as an empty array so
-    // the caller can avoid a `.get(...) ?? []` fallback per branch.
-    expect(out.get("TIME_IN_DAYLIGHT")).toEqual([]);
-    // Single findMany over the IN-list — replaces the per-type loop
-    // that drove the A2 cold path on Marc's tenant.
-    expect(prisma.measurementRollup.findMany).toHaveBeenCalledTimes(1);
-    const args = mocks.findMany.mock.calls[0][0];
-    expect(args.where.type).toEqual({
-      in: ["ACTIVITY_STEPS", "FLIGHTS_CLIMBED", "TIME_IN_DAYLIGHT"],
-    });
-  });
-
-  it("returns an empty map without querying when types is empty", async () => {
-    const out = await readCumulativeDaySumsBatch(
-      "user-1",
-      [],
-      new Date("2026-04-15T00:00:00.000Z"),
-    );
-    expect(out.size).toBe(0);
-    expect(prisma.measurementRollup.findMany).not.toHaveBeenCalled();
   });
 });
 

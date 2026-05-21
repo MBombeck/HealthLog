@@ -71,19 +71,6 @@ export async function probeRollupCoverage(
 }
 
 /**
- * Returns the set of types the user has logged that do NOT yet have
- * DAY-rollup coverage. The bucket-fresh read paths use this to decide
- * which types still need the live aggregator branch.
- */
-export function typesMissingCoverage(coverage: RollupCoverageMap): string[] {
-  const missing: string[] = [];
-  for (const [type, hasBuckets] of coverage.entries()) {
-    if (!hasBuckets) missing.push(type);
-  }
-  return missing;
-}
-
-/**
  * Convenience — `true` when the user has at least one measurement and
  * every type with measurements also has DAY-bucket coverage. The read
  * path can skip the live aggregate entirely.
