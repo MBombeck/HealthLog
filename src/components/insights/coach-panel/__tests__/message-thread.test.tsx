@@ -528,11 +528,18 @@ describe("errorCodeToI18nKey", () => {
       "coach.provider.unavailable",
       "coach.provider.empty",
       "coach.provider.none",
-      "coach.network",
       "coach.stream",
     ]) {
       expect(errorCodeToI18nKey(code)).toBe("insights.coach.errorProvider");
     }
+  });
+
+  // v1.4.43 QoL (M6) — `coach.network` no longer collapses to the
+  // generic provider copy; the user needs the actionable offline hint.
+  it("maps coach.network to the dedicated offline key", () => {
+    expect(errorCodeToI18nKey("coach.network")).toBe(
+      "insights.coach.errorNetwork",
+    );
   });
 
   it("forward-compats unknown codes with the namespaced key", () => {

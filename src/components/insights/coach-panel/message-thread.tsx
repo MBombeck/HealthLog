@@ -82,10 +82,15 @@ export function errorCodeToI18nKey(code: string): string {
       return "insights.coach.dailyLimitBody";
     case "coach.provider.rate_limited":
       return "insights.coach.providerRateLimitBody";
+    case "coach.network":
+      // v1.4.43 QoL (M6) — a dropped network is the user's local
+      // problem and needs a different next action ("come back online")
+      // than a provider failure ("try again in a moment"). Split out
+      // so the user sees the actionable copy in the offline branch.
+      return "insights.coach.errorNetwork";
     case "coach.provider.unavailable":
     case "coach.provider.empty":
     case "coach.provider.none":
-    case "coach.network":
     case "coach.stream":
       return "insights.coach.errorProvider";
     default:
