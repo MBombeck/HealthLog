@@ -85,7 +85,7 @@ function SheetContent({
           // header out of proportion on the bottom-sheet branch.
           <SheetPrimitive.Close
             data-slot="sheet-close-button"
-            className="ring-offset-background focus-visible:border-ring focus-visible:ring-ring/50 text-muted-foreground hover:bg-accent hover:text-foreground absolute top-3 right-4 inline-flex min-h-9 min-w-9 items-center justify-center rounded-md transition-colors focus-visible:ring-[3px] focus-visible:outline-none disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+            className="ring-offset-background focus-visible:border-ring focus-visible:ring-ring/50 text-muted-foreground hover:bg-accent hover:text-foreground absolute top-3 right-4 inline-flex min-h-11 min-w-11 sm:min-h-9 sm:min-w-9 items-center justify-center rounded-md transition-colors focus-visible:ring-[3px] focus-visible:outline-none disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
           >
             <XIcon />
             {/* v1.4.34 IW-G — read `common.close` so screen readers
