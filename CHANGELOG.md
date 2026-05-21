@@ -1,5 +1,74 @@
 # Changelog
 
+## [1.4.39.3] — 2026-05-21 — Dashboard slim/thick merge robustness and list-page value precision
+
+The post-deploy CI for v1.4.39.2 surfaced eight e2e failures across two
+viewport profiles (chart-overlay-controls, dashboard, charts-mobile,
+measurement-flow) that were all downstream of two narrow regressions
+introduced — or, in one case, surfaced — by the v1.4.39.2 dashboard
+split. v1.4.39.3 fixes the root causes, hardens the merge contract with
+a pure helper + unit coverage, and brings the e2e route-mock patterns
+in line with the v1.4.37 W-CI lesson so the regression class cannot
+recur.
+
+### Fixed
+
+- **Dashboard slim/thick merge no longer blanks the tile strip when
+  the slim slice resolves empty.** The v1.4.39.2 inline merge used
+  `slim?.summaries ?? thick?.summaries`. JavaScript treats a populated
+  `{}` as truthy, so a zero-data slim resolve short-circuited the
+  thick fallback even when thick carried the full per-type payload —
+  the tile strip painted blank, the chart row never mounted, and the
+  range tabs / overlay-controls trigger downstream of the strip
+  cascaded into eight test failures. The merge now extracts to
+  `mergeSlimAndThickAnalytics` (`src/lib/analytics/merge-slim-thick.ts`)
+  which uses object emptiness as the discriminator: a populated slim
+  still wins on overlapping fields (the v1.4.39.2 progressive-paint
+  contract is preserved), an empty slim falls through to thick, and
+  both empty leaves the dashboard's data-floor gates to render the
+  appropriate empty state.
+- **`MeasurementList` no longer truncates non-grouped readings to
+  integers.** The v1.4.37 W7c collapsed-list view passed every value
+  through `fmt.integer`, which kept the per-day step / activity
+  aggregates correct but silently truncated single weight / body-fat /
+  body-temperature readings — 78.4 kg rendered as "78 kg" on both the
+  desktop table and the mobile card. Grouped rows (`isGrouped === true`,
+  the daily aggregate row for cumulative HK types) keep `fmt.integer`
+  because the underlying readings are integer-only by definition;
+  non-grouped rows now use `fmt.number` which honours up to three
+  fraction digits without forcing a minimum (so 78 stays "78" and
+  78.4 stays "78.4" / "78,4" depending on locale).
+
+### Changed
+
+- **Playwright route mocks for `/api/analytics` migrate to the regex
+  pattern across every authenticated spec** (`dashboard`,
+  `chart-overlay-controls`, `measurement-flow`, `charts-mobile`,
+  `a11y`, `v1427-responsive-sheet`, `v1427-coach-launch`,
+  `v1427-measurements-add-param`, `v1427-insights-empty-state`,
+  `onboarding-tour-passthrough`). The literal `**/api/analytics` glob
+  Playwright minimatch-compiles does not match the sliced URL form
+  `/api/analytics?slice=summaries` that the v1.4.39.2 dashboard split
+  fires alongside the thick request, so the slim request fell through
+  to the real route and on the seeded test user that returns empty
+  summaries — exactly the failure mode the v1.4.39.3 production fix
+  guards against, but the regex form is the durable test-side
+  alignment with the v1.4.37 W-CI lesson that already swept
+  `onboarding-flicker.spec.ts` and `mobile-viewport.spec.ts`.
+
+### Notes
+
+- No schema migration. Runtime + test-fixture-only changes.
+- `pnpm test --run` green at 4662 / 4663 (1 long-standing skip); the
+  new `mergeSlimAndThickAnalytics` helper carries eight behaviour-
+  level unit tests covering the empty-slim, slim-only, thick-only,
+  both-empty, and `lastSeenByType` precedence cases.
+- Full Playwright suite green at 116 passing / 36 skipped / 152 total
+  on both `chromium-desktop` and `chromium-mobile` profiles, locally
+  against the production Next.js build (`pnpm build && pnpm e2e`).
+  Closing every one of the eight failures from CI run
+  `26213226723`.
+
 ## [1.4.39.2] — 2026-05-21 — Per-request rollup convergence and progressive dashboard paint
 
 v1.4.39.1 wired the rollup write hook into the previously-bypassed
