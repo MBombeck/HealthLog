@@ -41,11 +41,52 @@ import { dispatchNotification } from "@/lib/notifications/dispatcher";
 
 export type IntegrationKey = "withings" | "moodlog";
 
+/**
+ * Failure kinds carried into `recordSyncFailure`.
+ *
+ *   - `transient`        : retry on the next sync; user not blocked.
+ *   - `reauth_required`  : permanent revoke / invalid_grant; park at
+ *                          `error_reauth` until the user reconnects.
+ *   - `persistent`       : contract mismatch (invalid params, missing
+ *                          field, unknown action). Surfaces in the
+ *                          integration-status card AND audit log so an
+ *                          operator can investigate, but does NOT skip
+ *                          future sync attempts — those may succeed
+ *                          once the upstream side resolves. v1.4.43
+ *                          W14: after 24h of unbroken persistent
+ *                          failures the row is `parked` and the
+ *                          integration stops attempting until the user
+ *                          / operator reconnects.
+ *
+ * v1.4.42 W6 extended this union from `transient | reauth_required` to
+ * the three-state taxonomy above; the state-mapping function turns
+ * `persistent` into `error_transient` for now (a Withings 293 still
+ * lets the next sync run), but the audit detail carries the explicit
+ * kind so operations can filter.
+ */
+export type FailureKind = "transient" | "reauth_required" | "persistent";
+
+/**
+ * Recognised IntegrationStatus states.
+ *
+ * `parked` (v1.4.43 W14) is set when an integration's persistent
+ * failure streak has exceeded `PARK_PERSISTENT_FAILURE_AFTER_MS` (24h
+ * by default). A parked integration STOPS RETRYING — the next
+ * scheduled sync skips, and the Settings UI surfaces a "Paused —
+ * reconnect manually" pill with a "Wieder verbinden" CTA that POSTs
+ * to `/api/integrations/withings/resume` to clear the park. This is
+ * intentionally heavier than `error_transient`: a contract-mismatch
+ * that's been failing for a full day is no longer "the upstream might
+ * recover on its own" — it's an operator-shaped problem, and
+ * retrying every 15 minutes for another week just buries the audit
+ * trail.
+ */
 export type IntegrationState =
   | "connected"
   | "error_transient"
   | "error_reauth"
-  | "disconnected";
+  | "disconnected"
+  | "parked";
 
 /**
  * The ladder at which a streak of failures escalates from "user-visible
@@ -73,6 +114,16 @@ export function getPersistentFailureThreshold(): number {
  */
 const ALERT_REPEAT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * v1.4.43 W14 — once a `persistent` failure streak has been running
+ * for this long without a single intervening success, flip the
+ * integration to `parked`. 24h matches the same window the alert
+ * ladder uses for re-paging and gives the operator a full business
+ * day to notice a 293/294 surge before the integration disables
+ * itself.
+ */
+const PARK_PERSISTENT_FAILURE_AFTER_MS = 24 * 60 * 60 * 1000;
+
 export interface IntegrationStatusSnapshot {
   integration: IntegrationKey;
   state: IntegrationState;
@@ -80,6 +131,72 @@ export interface IntegrationStatusSnapshot {
   lastAttemptAt: string | null;
   lastError: string | null;
   consecutiveFailures: number;
+  /** v1.4.43 W14 — per-kind bucketed counters; `null` for rows
+   *  that predate the migration (back-filled on next write). */
+  consecutiveFailuresByKind: ConsecutiveFailuresByKind | null;
+}
+
+/**
+ * Bucketed consecutive-failure counters keyed by `FailureKind`.
+ * v1.4.43 W14 — exposed so the response shape stays explicit and
+ * tests can pin the bucket increments.
+ */
+export type ConsecutiveFailuresByKind = Record<FailureKind, number>;
+
+/**
+ * Type guard for the JSON payload Prisma returns for the
+ * `consecutiveFailuresByKind` column. Anything that's not a plain
+ * object with three numeric keys is treated as "no value yet" so the
+ * back-fill path runs on the next write.
+ */
+function isFailureBucketObject(
+  value: unknown,
+): value is ConsecutiveFailuresByKind {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  const obj = value as Record<string, unknown>;
+  return (
+    typeof obj.transient === "number" &&
+    typeof obj.reauth_required === "number" &&
+    typeof obj.persistent === "number"
+  );
+}
+
+/**
+ * Read the JSON `consecutiveFailuresByKind` column off the Prisma row
+ * with a typed view. Returns `null` when the row predates the
+ * migration so callers can back-fill from the legacy
+ * `consecutiveFailures` integer.
+ */
+function readBucketColumn(value: unknown): ConsecutiveFailuresByKind | null {
+  return isFailureBucketObject(value) ? value : null;
+}
+
+/**
+ * Zero-bucket envelope. Inlined where we need the literal so eslint
+ * doesn't flag a re-assignment of the shared constant.
+ */
+function zeroBuckets(): ConsecutiveFailuresByKind {
+  return { transient: 0, reauth_required: 0, persistent: 0 };
+}
+
+/**
+ * Back-fill the per-kind buckets for a legacy row that predates the
+ * v1.4.43 W14 migration. We bucket the existing
+ * `consecutiveFailures` count into the kind matching the CURRENT
+ * failure (so a row sitting at `error_reauth` with 4 failures
+ * back-fills into `reauth_required: 4`). Subsequent failures of a
+ * different kind then increment their own bucket without losing the
+ * legacy count.
+ */
+function backfillBuckets(
+  legacyCount: number,
+  currentKind: FailureKind,
+): ConsecutiveFailuresByKind {
+  const buckets = zeroBuckets();
+  buckets[currentKind] = Math.max(0, legacyCount);
+  return buckets;
 }
 
 /**
@@ -102,6 +219,7 @@ export async function getIntegrationStatus(
       lastAttemptAt: null,
       lastError: null,
       consecutiveFailures: 0,
+      consecutiveFailuresByKind: null,
     };
   }
   return {
@@ -111,12 +229,20 @@ export async function getIntegrationStatus(
     lastAttemptAt: row.lastAttemptAt?.toISOString() ?? null,
     lastError: row.lastError ? safeDecryptError(row.lastError) : null,
     consecutiveFailures: row.consecutiveFailures,
+    consecutiveFailuresByKind: readBucketColumn(row.consecutiveFailuresByKind),
   };
 }
 
 /**
  * Read the current `state` cheaply — used by the sync entry-points
  * to short-circuit when reauth is required.
+ *
+ * v1.4.43 W14 — `parked` is treated as "reauth required" for the
+ * purpose of sync short-circuit: the user has to call `/resume` (or
+ * complete the OAuth flow again) before any further sync work
+ * happens. Returning `true` for both states means existing call sites
+ * keep their current "skip the cron tick" behaviour without churn,
+ * and the Settings UI distinguishes the two via the pill copy.
  */
 export async function isReauthRequired(
   userId: string,
@@ -126,7 +252,7 @@ export async function isReauthRequired(
     where: { userId_integration: { userId, integration } },
     select: { state: true },
   });
-  return row?.state === "error_reauth";
+  return row?.state === "error_reauth" || row?.state === "parked";
 }
 
 /**
@@ -141,6 +267,10 @@ export async function recordSyncSuccess(
   integration: IntegrationKey,
 ): Promise<void> {
   const now = new Date();
+  // v1.4.43 W14 — a success resets ALL per-kind buckets back to zero
+  // and clears the persistent-streak start timestamp. The legacy
+  // single-column `consecutiveFailures` zero stays for backward
+  // compatibility with v1.4.43 readers that haven't migrated yet.
   await prisma.integrationStatus.upsert({
     where: { userId_integration: { userId, integration } },
     create: {
@@ -150,6 +280,7 @@ export async function recordSyncSuccess(
       lastSuccessAt: now,
       lastAttemptAt: now,
       consecutiveFailures: 0,
+      consecutiveFailuresByKind: zeroBuckets(),
     },
     update: {
       state: "connected",
@@ -157,31 +288,12 @@ export async function recordSyncSuccess(
       lastAttemptAt: now,
       lastError: null,
       consecutiveFailures: 0,
+      consecutiveFailuresByKind: zeroBuckets(),
+      persistentFailureStartedAt: null,
       alertedAt: null,
     },
   });
 }
-
-/**
- * Failure kinds carried into `recordSyncFailure`.
- *
- *   - `transient`        : retry on the next sync; user not blocked.
- *   - `reauth_required`  : permanent revoke / invalid_grant; park at
- *                          `error_reauth` until the user reconnects.
- *   - `persistent`       : contract mismatch (invalid params, missing
- *                          field, unknown action). Surfaces in the
- *                          integration-status card AND audit log so an
- *                          operator can investigate, but does NOT skip
- *                          future sync attempts — those may succeed once
- *                          the upstream side resolves.
- *
- * v1.4.42 W6 extended this union from `transient | reauth_required` to
- * the three-state taxonomy above; the state-mapping function turns
- * `persistent` into `error_transient` for now (a Withings 293 still
- * lets the next sync run), but the audit detail carries the explicit
- * kind so operations can filter.
- */
-export type FailureKind = "transient" | "reauth_required" | "persistent";
 
 export interface RecordSyncFailureInput {
   userId: string;
@@ -194,36 +306,131 @@ export interface RecordSyncFailureInput {
 
 /**
  * Record a sync failure. Always:
- *   - increments `consecutive_failures`
+ *   - increments the per-kind bucket in `consecutiveFailuresByKind`
+ *     (and the legacy `consecutive_failures` integer for one release
+ *     as a fallback for un-migrated readers)
  *   - persists the encrypted error message
  *   - writes one `AuditLog` row with `integrations.sync.failed`
  *
  * If `kind === "reauth_required"` the row is parked at `error_reauth`
- * so the next scheduled sync skips. Otherwise the state is marked
- * `error_transient` and the next sync will try again.
+ * so the next scheduled sync skips. If `kind === "persistent"` and
+ * the persistent streak has been running for >24h, the row is parked
+ * at `parked` so the next sync also skips — the operator / user has
+ * to call `resumeIntegrationFromPark` to clear it. Otherwise the state
+ * is `error_transient` and the next sync will try again.
  *
- * If the post-update `consecutive_failures` count crosses the alerting
- * threshold AND the alerting window has lapsed, dispatch a Telegram
- * notification to all admins. Failures here are best-effort: a failed
- * dispatch DOES NOT swallow the audit log.
+ * If the post-update bucket max crosses the alerting threshold AND the
+ * alerting window has lapsed, dispatch a Telegram notification to all
+ * admins. Failures here are best-effort: a failed dispatch DOES NOT
+ * swallow the audit log.
+ *
+ * v1.4.43 W14 — per-kind counter migration. Each failure increments
+ * ONLY its own bucket; a transient hiccup followed by a persistent
+ * failure no longer masks the persistent streak's true age. The
+ * legacy single-column `consecutiveFailures` integer continues to be
+ * incremented so the v1.4.43 alert ladder + UI consumers keep working
+ * unchanged; v1.4.44 will drop it once every reader migrates.
  */
 export async function recordSyncFailure(
   input: RecordSyncFailureInput,
 ): Promise<void> {
   const { userId, integration, kind, message, errorCode } = input;
   const now = new Date();
+  const encryptedError = safeEncryptError(message);
+
+  // Read the current row first so we can:
+  //   (a) compute the new per-kind bucket value
+  //   (b) decide whether the persistent streak has exceeded the
+  //       park threshold
+  //   (c) back-fill `consecutiveFailuresByKind` for rows that
+  //       predate the v1.4.43 W14 migration.
+  const existing = await prisma.integrationStatus.findUnique({
+    where: { userId_integration: { userId, integration } },
+    select: {
+      consecutiveFailures: true,
+      consecutiveFailuresByKind: true,
+      persistentFailureStartedAt: true,
+      alertedAt: true,
+    },
+  });
+
+  // Resolve the starting bucket envelope:
+  //   - existing JSON value if present (post-migration row)
+  //   - back-fill from the legacy integer if the row predates the
+  //     migration (counts go into the CURRENT failure's bucket so the
+  //     persistent streak is dated from this write, not from zero)
+  //   - zero envelope for the first-ever write
+  const startingBuckets = readBucketColumn(existing?.consecutiveFailuresByKind);
+
+  // Snapshot the persistent-bucket count BEFORE we increment so the
+  // streak-anchor decision below can see the pre-increment value.
+  // Otherwise we'd inspect the freshly-incremented bucket and never
+  // recognise a "first persistent failure of a fresh streak".
+  const persistentStreakBefore = startingBuckets?.persistent ?? 0;
+
+  // Now build the new bucket envelope. `buckets` is always a fresh
+  // object so the upsert payload doesn't share a reference with the
+  // existing-row snapshot (which would couple the in-memory mutation
+  // to the audit-log read path below).
+  const buckets: ConsecutiveFailuresByKind = startingBuckets
+    ? { ...startingBuckets }
+    : existing
+      ? backfillBuckets(existing.consecutiveFailures, kind)
+      : zeroBuckets();
+
+  // Increment only the bucket matching this failure's kind.
+  // The other two buckets stay at their current value so a persistent
+  // streak isn't reset by an intervening transient hiccup.
+  if (startingBuckets) {
+    // Post-migration row — increment the actual bucket.
+    buckets[kind] = (buckets[kind] ?? 0) + 1;
+  } else if (!existing) {
+    // First-ever write — bucket starts at zero, this failure makes 1.
+    buckets[kind] = 1;
+  }
+  // else: back-fill path already seeded `buckets[kind]` with the legacy
+  // count; the current failure IS counted in that seed so no second
+  // increment is needed (a row at 4 failures sitting in error_reauth
+  // back-fills to reauth_required: 4 and this 5th failure makes the
+  // legacy +1 path bring the bucket to 5 below).
+
+  // Track the persistent-streak start so the >24h park check has a
+  // wall-clock anchor. Only stamped on the FIRST persistent failure of
+  // a streak; cleared on success or when the persistent bucket goes
+  // back to zero (which today only happens via success, but the logic
+  // is symmetric for future "transient drained the streak" rules).
+  const isPersistent = kind === "persistent";
+  let persistentFailureStartedAt: Date | null =
+    existing?.persistentFailureStartedAt ?? null;
+  if (isPersistent && persistentStreakBefore === 0) {
+    persistentFailureStartedAt = now;
+  }
+
+  // Park decision: a persistent failure whose streak has exceeded the
+  // 24h window flips the state to `parked`. This is sticky — once
+  // parked, the row stays parked until either a success arrives
+  // (unlikely, since the sync entry-point short-circuits) or the
+  // user calls `resumeIntegrationFromPark` via the API.
+  const persistentStreakAgeMs =
+    isPersistent && persistentFailureStartedAt
+      ? now.getTime() - persistentFailureStartedAt.getTime()
+      : 0;
+  const shouldPark =
+    isPersistent && persistentStreakAgeMs > PARK_PERSISTENT_FAILURE_AFTER_MS;
+
   // State mapping:
   //   reauth_required → error_reauth (sync entry-point short-circuits)
   //   transient       → error_transient (next sync still runs)
-  //   persistent      → error_transient (next sync still runs, but the
-  //                     audit detail carries `kind: "persistent"` so
-  //                     operations can grep for contract-bug bursts)
-  const newState: IntegrationState =
-    kind === "reauth_required" ? "error_reauth" : "error_transient";
-
-  // Encrypt the error before persisting. crypto.encrypt() handles all
-  // edge cases (empty string, etc.) — we just have to give it a string.
-  const encryptedError = safeEncryptError(message);
+  //   persistent      → error_transient unless we just crossed the
+  //                     24h park threshold, in which case → parked
+  //                     (sync entry-point short-circuits, audit detail
+  //                     carries the explicit kind so operations can
+  //                     grep for contract-bug bursts)
+  const newState: IntegrationState = shouldPark
+    ? "parked"
+    : kind === "reauth_required"
+      ? "error_reauth"
+      : "error_transient";
 
   const row = await prisma.integrationStatus.upsert({
     where: { userId_integration: { userId, integration } },
@@ -234,12 +441,16 @@ export async function recordSyncFailure(
       lastAttemptAt: now,
       lastError: encryptedError,
       consecutiveFailures: 1,
+      consecutiveFailuresByKind: buckets,
+      persistentFailureStartedAt: isPersistent ? now : null,
     },
     update: {
       state: newState,
       lastAttemptAt: now,
       lastError: encryptedError,
       consecutiveFailures: { increment: 1 },
+      consecutiveFailuresByKind: buckets,
+      persistentFailureStartedAt,
     },
   });
 
@@ -255,6 +466,7 @@ export async function recordSyncFailure(
       errorCode: errorCode ?? null,
       message,
       attemptNumber: row.consecutiveFailures,
+      bucketCount: buckets[kind],
       state: newState,
     },
   });
@@ -266,8 +478,19 @@ export async function recordSyncFailure(
   // Both conditions matter: (1) prevents premature paging, (2)
   // prevents loops where a flapping integration that fails once an
   // hour pages every hour.
+  //
+  // v1.4.43 W14 — the threshold check reads `Math.max(...buckets)` so
+  // a row with a 3-deep persistent streak still pages even when the
+  // transient bucket sat at 0 (the legacy integer was the running
+  // total and would have paged at the same moment).
   const threshold = getPersistentFailureThreshold();
-  if (row.consecutiveFailures >= threshold) {
+  const alertSignal = Math.max(
+    row.consecutiveFailures,
+    buckets.transient,
+    buckets.reauth_required,
+    buckets.persistent,
+  );
+  if (alertSignal >= threshold) {
     const previouslyAlerted =
       row.alertedAt &&
       now.getTime() - row.alertedAt.getTime() < ALERT_REPEAT_WINDOW_MS;
@@ -278,7 +501,7 @@ export async function recordSyncFailure(
         kind,
         message,
         errorCode,
-        consecutiveFailures: row.consecutiveFailures,
+        consecutiveFailures: alertSignal,
       }).catch((err) => {
         getEvent()?.addWarning(
           `Admin alert dispatch failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -293,6 +516,76 @@ export async function recordSyncFailure(
       });
     }
   }
+
+  // Park-event audit row — written once per transition into the
+  // `parked` state so the operations trail shows "this integration
+  // disabled itself after 24h of persistent failures" without the
+  // operator having to correlate the sync.failed rows by timestamp.
+  if (shouldPark && existing?.persistentFailureStartedAt) {
+    await auditLog("integrations.parked", {
+      userId,
+      details: {
+        integration,
+        reason: "persistent_24h",
+        persistentFailureStartedAt:
+          existing.persistentFailureStartedAt.toISOString(),
+        persistentStreakAgeMs,
+        errorCode: errorCode ?? null,
+        message,
+      },
+    });
+  }
+}
+
+/**
+ * v1.4.43 W14 — clear a `parked` integration so the next scheduled
+ * sync runs again. Used by `/api/integrations/withings/resume` and
+ * the OAuth-callback path. The state moves to `connected`; all
+ * per-kind buckets reset to zero; the persistent-streak anchor
+ * clears; the alert window resets so the next genuine 3-strike burst
+ * still pages admins.
+ *
+ * Idempotent: calling against a connected row is a no-op (same
+ * post-state, no audit row). Calling against any non-parked error
+ * state also clears the row — the resume CTA is the universal
+ * "unstick this integration" button.
+ */
+export async function resumeIntegrationFromPark(
+  userId: string,
+  integration: IntegrationKey,
+): Promise<{ wasParked: boolean }> {
+  const existing = await prisma.integrationStatus.findUnique({
+    where: { userId_integration: { userId, integration } },
+    select: { state: true },
+  });
+  const wasParked = existing?.state === "parked";
+
+  await prisma.integrationStatus.upsert({
+    where: { userId_integration: { userId, integration } },
+    create: {
+      userId,
+      integration,
+      state: "connected",
+      consecutiveFailuresByKind: zeroBuckets(),
+    },
+    update: {
+      state: "connected",
+      lastError: null,
+      consecutiveFailures: 0,
+      consecutiveFailuresByKind: zeroBuckets(),
+      persistentFailureStartedAt: null,
+      alertedAt: null,
+    },
+  });
+
+  if (wasParked) {
+    await auditLog("integrations.resumed", {
+      userId,
+      details: { integration, source: "user_resume" },
+    });
+  }
+
+  return { wasParked };
 }
 
 /**
@@ -417,11 +710,14 @@ export async function markDisconnected(
       userId,
       integration,
       state: "disconnected",
+      consecutiveFailuresByKind: zeroBuckets(),
     },
     update: {
       state: "disconnected",
       lastError: null,
       consecutiveFailures: 0,
+      consecutiveFailuresByKind: zeroBuckets(),
+      persistentFailureStartedAt: null,
       alertedAt: null,
     },
   });
@@ -442,11 +738,14 @@ export async function markReconnected(
       userId,
       integration,
       state: "connected",
+      consecutiveFailuresByKind: zeroBuckets(),
     },
     update: {
       state: "connected",
       lastError: null,
       consecutiveFailures: 0,
+      consecutiveFailuresByKind: zeroBuckets(),
+      persistentFailureStartedAt: null,
       alertedAt: null,
     },
   });
