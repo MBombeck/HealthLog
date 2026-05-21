@@ -157,6 +157,9 @@
     "title": "Esta página no existe.",
     "backToDashboard": "Volver al panel"
   },
+  "offlineBanner": {
+    "message": "Sin conexión — tus cambios se guardarán cuando vuelvas a estar en línea."
+  },
   "nav": {
     "dashboard": "Panel",
     "measurements": "Mediciones",

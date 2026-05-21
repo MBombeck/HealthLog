@@ -157,6 +157,9 @@
     "title": "This page doesn't exist.",
     "backToDashboard": "Back to dashboard"
   },
+  "offlineBanner": {
+    "message": "No connection — your changes will save once you're back online."
+  },
   "nav": {
     "dashboard": "Dashboard",
     "measurements": "Measurements",

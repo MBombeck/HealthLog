@@ -157,6 +157,9 @@
     "title": "Ta strona nie istnieje.",
     "backToDashboard": "Powrót do panelu"
   },
+  "offlineBanner": {
+    "message": "Brak połączenia — twoje zmiany zostaną zapisane, gdy ponownie pojawisz się online."
+  },
   "nav": {
     "dashboard": "Panel",
     "measurements": "Pomiary",

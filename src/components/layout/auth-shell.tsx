@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { CoachLaunchProvider } from "@/lib/insights/coach-launch-context";
 import { BottomNav } from "./bottom-nav";
+import { OfflineBanner } from "./offline-banner";
 import { SidebarNav } from "./sidebar-nav";
 import { TopBar } from "./top-bar";
 
@@ -160,6 +161,13 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       <div className="flex h-dvh flex-col md:flex-row">
         <SidebarNav />
         <div className="flex min-h-0 flex-1 flex-col">
+          {/*
+            v1.4.43 QoL (M5) — `<OfflineBanner>` paints only when
+            `navigator.onLine === false`. Sits above the maintainership
+            banner + top bar so the connection-status hint is always
+            the first chrome line a user sees in the offline branch.
+          */}
+          <OfflineBanner />
           <MaintainershipBanner />
           <TopBar />
           <main
