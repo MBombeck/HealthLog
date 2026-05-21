@@ -119,6 +119,19 @@ export const POST = apiHandler(withIdempotency<[NextRequest]>(postBatch));
 async function postBatch(request: NextRequest): Promise<Response> {
   const { user } = await requireAuth();
 
+  // v1.4.43 W9 — resolve the per-user source-priority blob once at
+  // the start of the handler so the write-time canonical-row picker
+  // walks the SAME ladder the read-time picker walks. Without this
+  // lookup a user who customised Settings → Sources (e.g. MANUAL >
+  // APPLE_HEALTH) would see their preferred row dropped at write-
+  // time before the read-time picker ever ran. One indexed
+  // findUnique per batch — well under the cost of letting the
+  // duplicate persist and carrying it forward on every read.
+  const userPriority = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { sourcePriorityJson: true },
+  });
+
   // Content-Length pre-flight. The body cap exists to bound the
   // request-pipeline cost BEFORE Node has to read the full payload —
   // a misbehaving client shipping a 50 MB body shouldn't tie up the
@@ -287,6 +300,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
       // falls through to input order via the `index` field below.
       index: p.index,
     })),
+    userPriority?.sourcePriorityJson ?? null,
   );
   const survivingIndices = new Set(canonicalPrepared.map((r) => r.index ?? -1));
   const droppedByWriteDedup: number[] = [];

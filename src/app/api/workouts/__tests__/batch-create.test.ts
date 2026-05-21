@@ -21,6 +21,9 @@ vi.mock("@/lib/db", () => ({
     workoutRoute: {
       createMany: vi.fn(),
     },
+    user: {
+      findUnique: vi.fn(),
+    },
     $transaction: vi.fn(async (fn: unknown) => {
       // Same shape as the real Prisma client — invoke the supplied
       // callback with the mocked client itself so `tx.workout.createMany`
@@ -120,6 +123,12 @@ beforeEach(() => {
   vi.mocked(prisma.workout.createMany).mockResolvedValue({ count: 0 });
   vi.mocked(prisma.workout.findFirst).mockResolvedValue(null);
   vi.mocked(prisma.workoutRoute.createMany).mockResolvedValue({ count: 0 });
+  // v1.4.43 W9 — default to no per-user source-priority override so
+  // the write-time picker walks the canonical default ladder. Tests
+  // that exercise a custom ladder override this in-line.
+  vi.mocked(prisma.user.findUnique).mockResolvedValue({
+    sourcePriorityJson: null,
+  } as never);
 });
 
 describe("POST /api/workouts/batch — auth + size + rate-limit", () => {
@@ -374,6 +383,69 @@ describe("POST /api/workouts/batch — nested route attachment", () => {
     const call = vi.mocked(prisma.workoutRoute.createMany).mock.calls[0]?.[0];
     const rows = (call as { data: Array<{ workoutId: string }> }).data;
     expect(rows[0]?.workoutId).toBe("wkt-fresh-id");
+  });
+});
+
+describe("POST /api/workouts/batch — user source-priority (v1.4.43 W9)", () => {
+  it("looks up the user's source-priority blob exactly once per batch", async () => {
+    vi.mocked(prisma.workout.createMany).mockResolvedValue({ count: 1 });
+    const res = await POST(
+      makeRequest({
+        workouts: [
+          validWorkout("uuid-prio-1"),
+          validWorkout("uuid-prio-2", {
+            startedAt: "2026-05-14T08:30:00.000Z",
+            endedAt: "2026-05-14T09:15:00.000Z",
+          }),
+        ],
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(prisma.user.findUnique).toHaveBeenCalledTimes(1);
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { id: "user-1" },
+      select: { sourcePriorityJson: true },
+    });
+  });
+
+  it("threads a custom MANUAL>APPLE_HEALTH ladder so the user's preferred row survives the write-time dedup", async () => {
+    // User has flipped the default in Settings. Two rows for the same
+    // logical run inside the 90 s write-time window — MANUAL must
+    // win because the user told us so.
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      sourcePriorityJson: {
+        steps: ["MANUAL", "APPLE_HEALTH", "WITHINGS"],
+      },
+    } as never);
+    vi.mocked(prisma.workout.createMany).mockResolvedValue({ count: 1 });
+
+    const res = await POST(
+      makeRequest({
+        workouts: [
+          validWorkout("uuid-apple", { source: "APPLE_HEALTH" }),
+          validWorkout("uuid-manual", {
+            source: "MANUAL",
+            startedAt: "2026-05-14T06:31:00.000Z",
+            endedAt: "2026-05-14T07:16:00.000Z",
+          }),
+        ],
+      }),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: {
+        inserted: number;
+        duplicates: number;
+        entries: Array<{ index: number; status: string }>;
+      };
+    };
+    // One survivor (MANUAL), one dropped twin (APPLE_HEALTH).
+    expect(body.data.inserted).toBe(1);
+    expect(body.data.duplicates).toBe(1);
+    // The Apple row at index 0 is the duplicate; the Manual row at
+    // index 1 is the survivor.
+    expect(body.data.entries[0]?.status).toBe("duplicate");
+    expect(body.data.entries[1]?.status).toBe("inserted");
   });
 });
 
