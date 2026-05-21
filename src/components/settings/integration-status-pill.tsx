@@ -26,7 +26,11 @@ import { cn } from "@/lib/utils";
  * abbreviated time form into a 12 char string at most.
  */
 
-export type IntegrationPillState = "connected" | "error" | "disconnected";
+export type IntegrationPillState =
+  | "connected"
+  | "warning"
+  | "error"
+  | "disconnected";
 
 interface IntegrationStatusPillProps {
   state: IntegrationPillState;
@@ -74,10 +78,15 @@ export function IntegrationStatusPill({
 }: IntegrationStatusPillProps) {
   const { t } = useTranslations();
 
-  // chipClass only applies to the `connected` branch — `error` falls back
-  // to `variant="destructive"` and `disconnected` to `variant="outline"`.
+  // chipClass only applies to the `connected` and `warning` branches —
+  // `error` falls back to `variant="destructive"` and `disconnected` to
+  // `variant="outline"`. The warning chip uses amber tokens to signal
+  // "connected, but the upstream just returned a contract-level error
+  // a reauth won't fix" — distinct from the red reconnect pill.
   const connectedChipClass =
     "border-dracula-green/30 bg-dracula-green/15 text-dracula-green";
+  const warningChipClass =
+    "border-dracula-yellow/30 bg-dracula-yellow/15 text-dracula-yellow";
 
   let label: string;
   let icon: React.ReactNode;
@@ -86,6 +95,10 @@ export function IntegrationStatusPill({
     case "connected":
       label = t("settings.integrationPill.connected");
       icon = <CheckCircle2 aria-hidden="true" className="h-3 w-3" />;
+      break;
+    case "warning":
+      label = t("settings.integrationPill.warningServerError");
+      icon = <AlertTriangle aria-hidden="true" className="h-3 w-3" />;
       break;
     case "error":
       label = t("settings.integrationPill.errorReconnect");
@@ -111,7 +124,7 @@ export function IntegrationStatusPill({
       data-testid="integration-status-pill"
       data-state={state}
       variant={
-        state === "connected"
+        state === "connected" || state === "warning"
           ? undefined
           : state === "error"
             ? "destructive"
@@ -121,6 +134,7 @@ export function IntegrationStatusPill({
       className={cn(
         "max-w-full whitespace-nowrap",
         state === "connected" && connectedChipClass,
+        state === "warning" && warningChipClass,
         className,
       )}
     >

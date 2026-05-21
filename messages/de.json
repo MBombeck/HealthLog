@@ -1892,6 +1892,7 @@
     "integrationPill": {
       "connected": "Verbunden",
       "errorReconnect": "Fehler — neu verbinden",
+      "warningServerError": "Verbunden, aber Serverfehler",
       "notConnected": "Nicht verbunden",
       "justNow": "gerade eben",
       "minutesAgo": "vor {count} min",
