@@ -14,6 +14,9 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+// v1.4.41 W-ORG — shared shape lives in `src/types/analytics.ts` as
+// `ChecklistAnalyticsData`; aliased back to the local name.
+import type { ChecklistAnalyticsData as AnalyticsData } from "@/types/analytics";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -69,10 +72,6 @@ const ITEM_LABEL_KEYS: Record<
     cta: "gettingStarted.items.notificationsCta",
   },
 };
-
-// v1.4.41 W-ORG — shared shape lives in `src/types/analytics.ts` as
-// `ChecklistAnalyticsData`; aliased back to the local name.
-import type { ChecklistAnalyticsData as AnalyticsData } from "@/types/analytics";
 
 interface WithingsStatus {
   connected?: boolean;

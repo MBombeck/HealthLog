@@ -24,7 +24,6 @@ import {
   resolveDashboardLayout,
   type DashboardLayout,
 } from "@/lib/dashboard-layout";
-import type { DataSummary as DataSummaryType } from "@/lib/analytics/trends";
 import type { DashboardAnalyticsData as AnalyticsData } from "@/types/analytics";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
@@ -240,7 +239,7 @@ export default function DashboardPage() {
       bpInTargetPctPriorMonth: merged.bpInTargetPctPriorMonth,
       bpInTargetPctPriorYear: merged.bpInTargetPctPriorYear,
       glucoseByContext: merged.glucoseByContext as
-        | Record<string, DataSummaryType>
+        | Record<string, DataSummary>
         | undefined,
     };
   }, [analyticsSlimQuery.data, analyticsThickQuery.data]);

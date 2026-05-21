@@ -16,6 +16,10 @@ import { HeroStrip } from "@/components/insights/hero-strip";
 import { useInsightsAdvisorQuery } from "@/components/insights/use-insights-advisor";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
 import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
+// v1.4.41 W-ORG — shared shape lives in `src/types/analytics.ts` as
+// `InsightsAnalyticsData`; aliased back to the local name to keep the
+// rest of this file readable.
+import type { InsightsAnalyticsData as AnalyticsData } from "@/types/analytics";
 
 /**
  * v1.4.33 IW2 — defer the three below-the-fold mother-page blocks
@@ -93,11 +97,6 @@ const TrendsRow = dynamic(
 interface ComprehensiveData {
   totalMeasurements: number;
 }
-
-// v1.4.41 W-ORG — shared shape lives in `src/types/analytics.ts` as
-// `InsightsAnalyticsData`; aliased back to the local name to keep the
-// rest of this file readable.
-import type { InsightsAnalyticsData as AnalyticsData } from "@/types/analytics";
 
 export default function InsightsPage() {
   const { isAuthenticated, user } = useAuth();

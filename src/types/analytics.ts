@@ -35,7 +35,6 @@
  * shape loses it.
  */
 import type { DataSummary } from "@/lib/analytics/trends";
-import type { DataSummary as DataSummaryType } from "@/lib/analytics/trends";
 import type { CorrelationResult } from "@/lib/insights/correlations";
 
 /** Shape consumed by every `/insights/<metric>/page.tsx`. */
@@ -77,7 +76,7 @@ export interface DashboardAnalyticsData {
    */
   bpInTargetPctPriorMonth?: number | null;
   bpInTargetPctPriorYear?: number | null;
-  glucoseByContext?: Record<string, DataSummaryType>;
+  glucoseByContext?: Record<string, DataSummary>;
   /**
    * v1.4.34 IW-B — per-type freshness map from `/api/analytics`. The
    * tile-strip helper reads `lastSeenByType[type]?.daysAgo` and forwards
