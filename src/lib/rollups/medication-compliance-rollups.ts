@@ -16,8 +16,6 @@
  *
  * Audit anchor: `.planning/round-v1438-perf-analysis.md` §2.5 + §5 P4.
  */
-import type { Prisma } from "@/generated/prisma/client";
-
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
@@ -57,14 +55,6 @@ export interface ComplianceBucket {
   scheduled: number;
   taken: number;
 }
-
-/**
- * Prisma client surface the helpers accept. Either the regular
- * `prisma` singleton or a `$transaction(tx)` argument — both expose
- * the `medicationIntakeEvent.findMany` + `medicationComplianceRollup.*`
- * methods we touch.
- */
-type PrismaLike = typeof prisma | Prisma.TransactionClient;
 
 /**
  * UTC offset (in minutes) of `tz` at the given instant. Positive east
@@ -147,18 +137,14 @@ export function dayKeyForScheduledFor(
  * so the read path returns the trailing-window zero-default rather
  * than a stale stub.
  *
- * `tx` accepts the `prisma.$transaction(tx)` client argument when the
- * parent write is transactional — passing the transaction client keeps
- * the rollup write inside the same transactional boundary.
  */
 export async function recomputeMedicationComplianceForDay(
   userId: string,
   medicationId: string,
   dayKey: string,
   tz: string | null | undefined,
-  tx?: PrismaLike,
 ): Promise<void> {
-  const client = (tx ?? prisma) as PrismaLike;
+  const client = prisma;
   const safeTz = safeTimezone(tz);
   const start = startOfDayUtcInTz(dayKey, safeTz);
   const end = new Date(start.getTime() + 86_400_000);
@@ -247,7 +233,6 @@ export async function recomputeMedicationComplianceForEvent(input: {
   medicationId: string;
   scheduledFor: Date;
   tz: string | null | undefined;
-  tx?: PrismaLike;
 }): Promise<void> {
   const dayKey = dayKeyForScheduledFor(input.scheduledFor, input.tz);
   try {
@@ -256,7 +241,6 @@ export async function recomputeMedicationComplianceForEvent(input: {
       input.medicationId,
       dayKey,
       input.tz,
-      input.tx,
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
