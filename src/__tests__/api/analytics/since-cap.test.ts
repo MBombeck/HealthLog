@@ -80,7 +80,7 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
   ensureUserRollupsFresh: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("@/lib/measurements/rollup-coverage", () => ({
+vi.mock("@/lib/rollups/measurement-coverage", () => ({
   probeRollupCoverage: vi.fn().mockResolvedValue(new Map()),
 }));
 
@@ -153,7 +153,7 @@ beforeEach(async () => {
     "@/lib/rollups/measurement-rollups"
   );
   const { probeRollupCoverage } = await import(
-    "@/lib/measurements/rollup-coverage"
+    "@/lib/rollups/measurement-coverage"
   );
   const { computeBpInTargetFastPath } = await import(
     "@/lib/analytics/bp-in-target-fast-path"

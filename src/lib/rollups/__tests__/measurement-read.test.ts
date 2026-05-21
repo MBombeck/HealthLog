@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { aggregateBuckets, type DailyMeanRow } from "../rollup-read";
+import { aggregateBuckets, type DailyMeanRow } from "../measurement-read";
 
 const dayA: DailyMeanRow = {
   day: new Date("2026-05-08T00:00:00.000Z"),

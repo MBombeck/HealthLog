@@ -16,7 +16,7 @@ import type {
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
 import { ensureUserRollupsFresh } from "@/lib/rollups/measurement-rollups";
-import { probeRollupCoverage } from "@/lib/measurements/rollup-coverage";
+import { probeRollupCoverage } from "@/lib/rollups/measurement-coverage";
 import { computeBpInTargetFastPath } from "@/lib/analytics/bp-in-target-fast-path";
 import { computeUserHealthScoreFastPath } from "@/lib/analytics/health-score-fast-path";
 import { computeCorrelationHypothesesFastPath } from "@/lib/analytics/correlations-fast-path";

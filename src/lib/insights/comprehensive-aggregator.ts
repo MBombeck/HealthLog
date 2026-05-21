@@ -101,11 +101,11 @@ import { prisma } from "@/lib/db";
 import type { DataSummary } from "@/lib/analytics/trends";
 import { annotate } from "@/lib/logging/context";
 import { ensureUserRollupsFresh } from "@/lib/rollups/measurement-rollups";
-import { aggregateBuckets } from "@/lib/measurements/rollup-read";
+import { aggregateBuckets } from "@/lib/rollups/measurement-read";
 import {
   isFullyCovered,
   probeRollupCoverage,
-} from "@/lib/measurements/rollup-coverage";
+} from "@/lib/rollups/measurement-coverage";
 
 /**
  * Heavy aggregate row — count/min/max/mean alongside the non-composable

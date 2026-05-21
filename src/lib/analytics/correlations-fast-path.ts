@@ -49,7 +49,7 @@ import { readRollupBuckets } from "@/lib/rollups/measurement-rollups";
 import {
   probeRollupCoverage,
   type RollupCoverageMap,
-} from "@/lib/measurements/rollup-coverage";
+} from "@/lib/rollups/measurement-coverage";
 import {
   correlateBpCompliance,
   correlateMoodPulse,

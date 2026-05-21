@@ -63,7 +63,7 @@ import { ensureUserRollupsFresh } from "@/lib/rollups/measurement-rollups";
 import {
   isFullyCovered,
   probeRollupCoverage,
-} from "@/lib/measurements/rollup-coverage";
+} from "@/lib/rollups/measurement-coverage";
 import {
   aggregateWmyBuckets,
   readBestGranularityRollups,

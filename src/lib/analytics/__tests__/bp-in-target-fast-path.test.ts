@@ -19,7 +19,7 @@ vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
 }));
 
-vi.mock("@/lib/measurements/rollup-coverage", () => ({
+vi.mock("@/lib/rollups/measurement-coverage", () => ({
   isFullyCovered: vi.fn(),
   probeRollupCoverage: vi.fn(),
 }));
@@ -29,7 +29,7 @@ import { annotate } from "@/lib/logging/context";
 import {
   isFullyCovered,
   probeRollupCoverage,
-} from "@/lib/measurements/rollup-coverage";
+} from "@/lib/rollups/measurement-coverage";
 import { computeBpInTargetFastPath } from "../bp-in-target-fast-path";
 
 const MEASUREMENT_FIND_MANY = prisma.measurement.findMany as unknown as ReturnType<typeof vi.fn>;
