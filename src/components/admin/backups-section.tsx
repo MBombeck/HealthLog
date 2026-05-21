@@ -41,7 +41,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDateTime } from "@/lib/format";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
-import type { BackupRow, BackupsList } from "@/app/api/admin/backups/route";
+import type { BackupRow, BackupsList } from "@/types/backups";
 import { getApiErrorMessage } from "./_shared";
 
 /**

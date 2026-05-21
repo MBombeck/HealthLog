@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { describePasskeyError } from "@/lib/passkey-errors";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,7 +31,7 @@ export default function LoginPage() {
   const errorId = useId();
   const errorDescriptor = error ? errorId : undefined;
   const { data: registrationEnabled } = useQuery({
-    queryKey: ["auth", "registration-status"],
+    queryKey: queryKeys.authRegistrationStatus(),
     queryFn: async () => {
       const res = await fetch("/api/auth/registration-status", {
         cache: "no-store",

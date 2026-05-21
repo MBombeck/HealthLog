@@ -60,6 +60,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
         userId: user.id,
         measuredAt: { gte: start, lte: end },
         type: { in: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"] },
+        // v1.4.41 W-DELETED-2 — hide soft-deleted rows from the
+        // section-availability probe so the dialog does not offer a
+        // section that would render an empty PDF block.
+        deletedAt: null,
       },
     }),
     prisma.measurement.count({
@@ -67,6 +71,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
         userId: user.id,
         measuredAt: { gte: start, lte: end },
         type: "WEIGHT",
+        deletedAt: null,
       },
     }),
     prisma.measurement.count({
@@ -74,6 +79,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
         userId: user.id,
         measuredAt: { gte: start, lte: end },
         type: "PULSE",
+        deletedAt: null,
       },
     }),
     prisma.moodEntry.count({

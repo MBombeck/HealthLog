@@ -10,33 +10,12 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
+// v1.4.41 W-ORG — `BackupRow` / `BackupsList` moved to `src/types/backups.ts`
+// so callers (in particular `components/admin/backups-section.tsx`) don't
+// have to reach across the component → route-handler layer boundary.
+import type { BackupRow, BackupsList } from "@/types/backups";
 
 export const dynamic = "force-dynamic";
-
-export interface BackupRow {
-  id: string;
-  userId: string;
-  username: string;
-  type: string;
-  /**
-   * Size of the encrypted blob in bytes — useful for capacity planning.
-   * The blob itself is never returned.
-   */
-  sizeBytes: number;
-  createdAt: string;
-}
-
-export interface BackupsList {
-  rows: BackupRow[];
-  /**
-   * Soft retention hint — the worker is configured for weekly backups
-   * (see `DATA_BACKUP_CRON` in `src/lib/jobs/reminder-worker.ts`), and
-   * the model upserts in-place per (userId, type), so each user has
-   * exactly one current snapshot. The frontend uses this to label the
-   * grid; no server-side enforcement.
-   */
-  retentionDays: number;
-}
 
 export const GET = apiHandler(async () => {
   await requireAdmin();
