@@ -161,7 +161,6 @@ const BMI_STATUS_CRON = "20 2 * * *"; // daily at 02:20
 const MEDICATION_COMPLIANCE_STATUS_QUEUE =
   "insights-medication-compliance-status";
 const MEDICATION_COMPLIANCE_STATUS_CRON = "25 2 * * *"; // daily at 02:25
-const TELEGRAM_CLEANUP_QUEUE = "telegram-message-cleanup";
 const MOODLOG_SYNC_QUEUE = "moodlog-sync";
 const MOODLOG_SYNC_CRON = "30 * * * *"; // every hour at :30
 const DATA_BACKUP_QUEUE = "data-backup";
@@ -276,12 +275,6 @@ interface BmiStatusPayload {
 
 interface MedicationComplianceStatusPayload {
   triggeredAt: string;
-}
-
-interface TelegramCleanupPayload {
-  userId: string;
-  chatId: string;
-  messageId: number;
 }
 
 interface MoodLogSyncPayload {
@@ -1092,37 +1085,6 @@ async function handleMedicationComplianceStatusGenerate(
 }
 
 /**
- * Delete a Telegram message after a 24h delay.
- * Scheduled by the Telegram sender when a notification is sent.
- */
-async function handleTelegramCleanup(jobs: Job<TelegramCleanupPayload>[]) {
-  await withBackgroundEvent("job.telegram_cleanup", async (evt) => {
-    const prisma = getWorkerPrisma();
-    let deleted = 0;
-    for (const job of jobs) {
-      try {
-        const { userId, chatId, messageId } = job.data;
-        const user = await prisma.user.findFirst({
-          where: { id: userId, telegramBotToken: { not: null } },
-          select: { telegramBotToken: true },
-        });
-        if (user?.telegramBotToken) {
-          const botToken = decrypt(user.telegramBotToken);
-          await deleteMessage(botToken, chatId, messageId);
-          deleted++;
-        }
-      } catch (err) {
-        evt.addWarning(`Failed to delete message: ${err}`);
-      }
-    }
-    evt.setBackground({
-      task_name: "job.telegram_cleanup",
-      result: { deleted, total: jobs.length },
-    });
-  });
-}
-
-/**
  * Fallback polling for moodLog data.
  * Syncs mood entries for all users with moodLog enabled.
  */
@@ -1669,7 +1631,6 @@ export async function startReminderWorker() {
     PULSE_STATUS_QUEUE,
     BMI_STATUS_QUEUE,
     MEDICATION_COMPLIANCE_STATUS_QUEUE,
-    TELEGRAM_CLEANUP_QUEUE,
     MOODLOG_SYNC_QUEUE,
     DATA_BACKUP_QUEUE,
     RATE_LIMIT_CLEANUP_QUEUE,
@@ -1828,11 +1789,6 @@ export async function startReminderWorker() {
     MEDICATION_COMPLIANCE_STATUS_QUEUE,
     { localConcurrency: 1 },
     handleMedicationComplianceStatusGenerate,
-  );
-  await boss.work<TelegramCleanupPayload>(
-    TELEGRAM_CLEANUP_QUEUE,
-    { localConcurrency: 1 },
-    handleTelegramCleanup,
   );
   await boss.work<MoodLogSyncPayload>(
     MOODLOG_SYNC_QUEUE,
