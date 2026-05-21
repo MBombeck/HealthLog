@@ -152,12 +152,9 @@
     "title": "Da ist etwas schiefgelaufen",
     "description": "Ein unerwarteter Fehler ist aufgetreten. Du kannst es erneut versuchen, die technischen Details kopieren oder einen Bug-Report öffnen."
   },
-  "errors": {
-    "notFound": {
-      "title": "Seite nicht gefunden",
-      "body": "Die gesuchte Seite existiert nicht oder wurde verschoben. Kehr zum Dashboard zurück, um dort weiterzumachen, wo du aufgehört hast.",
-      "backToDashboard": "Zurück zum Dashboard"
-    }
+  "notFound": {
+    "title": "Diese Seite existiert nicht.",
+    "backToDashboard": "Zurück zum Dashboard"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -353,7 +350,6 @@
     "notesPlaceholder": "z.B. nach dem Essen",
     "formReset": "Formular zurücksetzen",
     "saveError": "Fehler beim Speichern",
-    "loadError": "Fehler beim Laden",
     "duplicateTimestamp": "Zum gewählten Zeitpunkt existiert bereits ein Messwert dieses Typs.",
     "deleteError": "Fehler beim Löschen",
     "invalidValue": "Bitte einen gültigen Wert eingeben.",
@@ -860,10 +856,6 @@
     "legendMissed": "Verpasst",
     "emptyStateTitle": "Erfasse mehr Messungen, um Trends zu sehen",
     "emptyStateDescription": "Erfasse mindestens 3 Einträge, um die Trendlinie freizuschalten.",
-    "needMoreDistinctDaysTitle": "Mehr Messtage erforderlich",
-    "needMoreDistinctDaysDescription": "Erfasse an mehreren Tagen, um eine Trendlinie freizuschalten.",
-    "noDataInRangeTitle": "Keine Daten in diesem Zeitraum",
-    "noDataInRangeDescription": "Für den gewählten Bereich liegen keine Messungen vor. Wechsle den Zeitraum oder erfasse einen neuen Wert.",
     "personalBaseline": "Dein Mittel",
     "deltaVsBaseline": "{delta} vs. dein Mittel",
     "deltaUnchanged": "entspricht deinem Mittel",
@@ -1145,16 +1137,13 @@
       "feedbackThanks": "Danke für das Signal.",
       "dailyLimitTitle": "Heute-Limit erreicht",
       "dailyLimitBody": "Heute-Limit erreicht; Reset um 00:00 UTC.",
-      "providerRateLimitTitle": "Anbieter gedrosselt",
-      "providerRateLimitBody": "Anbieter ist temporär überlastet; wieder verfügbar in ~5 min."
+      "providerRateLimitTitle": "Provider rate-limited",
+      "providerRateLimitBody": "Provider ist temporär überlastet; Reset in ~5 min."
     },
     "relativeJustNow": "gerade eben",
-    "relativeMinutesAgoOne": "vor {count} Minute",
-    "relativeMinutesAgoOther": "vor {count} Minuten",
-    "relativeHoursAgoOne": "vor {count} Stunde",
-    "relativeHoursAgoOther": "vor {count} Stunden",
-    "relativeDaysAgoOne": "vor {count} Tag",
-    "relativeDaysAgoOther": "vor {count} Tagen",
+    "relativeMinutesAgo": "vor {count} Minuten",
+    "relativeHoursAgo": "vor {count} Stunden",
+    "relativeDaysAgo": "vor {count} Tagen",
     "navOverview": "Übersicht",
     "navBloodPressure": "Blutdruck",
     "navWeight": "Gewicht",
@@ -1631,7 +1620,7 @@
       },
       "ai": {
         "title": "Auswertungen",
-        "description": "Anbieter, Modell, API-Schlüssel."
+        "description": "Provider, Modell, API-Key."
       },
       "api": {
         "title": "API & Tokens",
@@ -1769,9 +1758,9 @@
     "codexDisconnected": "ChatGPT-Verbindung getrennt.",
     "codexConnectionFailed": "ChatGPT-Verbindung fehlgeschlagen. Bitte versuche es erneut.",
     "rawData": "Rohdaten mitsenden",
-    "rawDataOnDescription": "Es werden aggregierte Kennzahlen plus anonymisierte Rohdaten der letzten 30 Tage gesendet. Dazu zählen einzelne Messpunkte je Bereich (z. B. Gewicht, Blutdruck, Puls) mit Zeitbezug, damit der Anbieter zeitliche Muster, Ausreißer und Zusammenhänge zuverlässiger erkennen kann. Nicht übertragen werden Name, E-Mail oder direkte Kontodaten.",
-    "rawDataOffDescription": "Es werden nur zusammengefasste Werte gesendet (z. B. Durchschnitt, Trend, Minimum/Maximum). Keine einzelnen Messpunkte und keine exakten Zeitbezüge. Das ist datensparsamer, der Anbieter kann dafür aber weniger fein auf Muster und kurzfristige Schwankungen eingehen.",
-    "rawDataWarning": "Rohdaten aktiv: Der Anbieter erhält zusätzlich anonymisierte Messpunkte der letzten 30 Tage für eine präzisere Auswertung.",
+    "rawDataOnDescription": "Es werden aggregierte Kennzahlen plus anonymisierte Rohdaten der letzten 30 Tage gesendet. Dazu zählen einzelne Messpunkte je Bereich (z. B. Gewicht, Blutdruck, Puls) mit Zeitbezug, damit der Provider zeitliche Muster, Ausreißer und Zusammenhänge zuverlässiger erkennen kann. Nicht übertragen werden Name, E-Mail oder direkte Kontodaten.",
+    "rawDataOffDescription": "Es werden nur zusammengefasste Werte gesendet (z. B. Durchschnitt, Trend, Minimum/Maximum). Keine einzelnen Messpunkte und keine exakten Zeitbezüge. Das ist datensparsamer, der Provider kann dafür aber weniger fein auf Muster und kurzfristige Schwankungen eingehen.",
+    "rawDataWarning": "Rohdaten aktiv: Der Provider erhält zusätzlich anonymisierte Messpunkte der letzten 30 Tage für eine präzisere Auswertung.",
     "regenerateInsights": "Reports neu generieren",
     "regenerateSuccess": "Reports wurden neu generiert",
     "regenerateRateLimit": "Bitte warte — du hast das stündliche Limit für Analysen erreicht.",
@@ -1904,17 +1893,12 @@
     "integrationPill": {
       "connected": "Verbunden",
       "errorReconnect": "Fehler — neu verbinden",
-      "warningServerError": "Verbunden, aber Serverfehler",
-      "parkedReconnect": "Pausiert — manuell wieder verbinden",
       "notConnected": "Nicht verbunden",
       "justNow": "gerade eben",
       "minutesAgo": "vor {count} min",
       "hoursAgo": "vor {count} Std.",
       "daysAgo": "vor {count} d",
-      "ariaLabel": "Integrationsstatus",
-      "resumeCta": "Wieder verbinden",
-      "resumeSuccess": "Integration wieder aktiv",
-      "resumeError": "Wieder verbinden fehlgeschlagen"
+      "ariaLabel": "Integrationsstatus"
     },
     "apiTokens": "API-Tokens",
     "apiTokensDescription": "Erstelle API-Tokens für die externe Medikamenten-Einnahme (z.B. Shortcuts, Automationen).",

@@ -3,9 +3,7 @@
 /**
  * Root-level error boundary. Renders when even the root layout itself fails,
  * so it cannot rely on any providers (i18n, query, auth). Keep it static,
- * self-contained, and bilingual: both English and German appear side by side
- * so a German visitor never lands on an all-English last-resort screen, and
- * an English visitor can still read it.
+ * in English, and self-contained.
  */
 export default function GlobalError({
   error,
@@ -30,7 +28,7 @@ export default function GlobalError({
     try {
       await navigator.clipboard.writeText(text);
     } catch {
-      window.prompt("Details kopieren · Copy details", text);
+      window.prompt("Copy details", text);
     }
   }
 
@@ -56,14 +54,21 @@ export default function GlobalError({
         }}
       >
         <div style={{ maxWidth: 560 }}>
+          {/*
+            v1.4.43 QoL — bilingual lockup so a German user landing
+            in this boundary doesn't read pure English in an already-
+            bad-state moment. The root layout has failed by the time
+            this fires, so no i18n provider is available; the static
+            DE/EN pairing covers the dominant audience without a
+            runtime cost. Copy tightened per the v1.4.43 audit (L1)
+            to drop the verbose secondary sentence.
+          */}
           <h1 style={{ fontSize: 20, marginBottom: 12 }}>
-            Etwas ist schiefgegangen · Something went wrong
+            Etwas ist schiefgegangen / Something went wrong
           </h1>
           <p style={{ color: "#d0d0d0", marginBottom: 16, fontSize: 14 }}>
-            Ein kritischer Fehler ist aufgetreten. Du kannst es erneut versuchen
-            oder die Details kopieren.
-            <br />A critical error occurred. You can retry or copy the details
-            for support.
+            Ein kritischer Fehler ist aufgetreten. / A critical error
+            occurred.
           </p>
           <pre
             style={{
@@ -76,7 +81,7 @@ export default function GlobalError({
               border: "1px solid #44475a",
             }}
           >
-            {error.message || "Unbekannter Fehler · Unknown error"}
+            {error.message || "Unknown error"}
           </pre>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button
@@ -96,7 +101,7 @@ export default function GlobalError({
                 fontWeight: 500,
               }}
             >
-              Erneut versuchen · Retry
+              Retry
             </button>
             <button
               onClick={handleCopy}
@@ -111,7 +116,7 @@ export default function GlobalError({
                 fontSize: 14,
               }}
             >
-              Details kopieren · Copy details
+              Copy details
             </button>
           </div>
         </div>

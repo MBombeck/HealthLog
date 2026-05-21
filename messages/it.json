@@ -152,12 +152,9 @@
     "title": "Qualcosa è andato storto",
     "description": "Si è verificato un errore inatteso. Puoi riprovare, copiare i dettagli tecnici o aprire una segnalazione di bug."
   },
-  "errors": {
-    "notFound": {
-      "title": "Pagina non trovata",
-      "body": "La pagina che cercavi non esiste o è stata spostata. Torna alla dashboard per riprendere da dove eri rimasto.",
-      "backToDashboard": "Torna alla dashboard"
-    }
+  "notFound": {
+    "title": "Questa pagina non esiste.",
+    "backToDashboard": "Torna alla dashboard"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -353,7 +350,6 @@
     "notesPlaceholder": "es. dopo il pasto",
     "formReset": "Reimposta modulo",
     "saveError": "Errore durante il salvataggio",
-    "loadError": "Impossibile caricare le misurazioni",
     "duplicateTimestamp": "Esiste già una misurazione di questo tipo a questa marca temporale.",
     "deleteError": "Errore durante l’eliminazione",
     "invalidValue": "Inserisci un valore valido.",
@@ -860,10 +856,6 @@
     "legendMissed": "Mancata",
     "emptyStateTitle": "Registra altre misurazioni per vedere i trend",
     "emptyStateDescription": "Registra almeno 3 voci per sbloccare la linea di tendenza.",
-    "needMoreDistinctDaysTitle": "Servono più giorni distinti",
-    "needMoreDistinctDaysDescription": "Registra in più giorni per sbloccare la linea di tendenza.",
-    "noDataInRangeTitle": "Nessun dato in questo intervallo",
-    "noDataInRangeDescription": "Nessuna misurazione rientra nell'intervallo selezionato. Cambia intervallo o registra una nuova misurazione.",
     "personalBaseline": "La tua media",
     "deltaVsBaseline": "{delta} vs. la tua media",
     "deltaUnchanged": "corrisponde alla tua media",
@@ -1149,12 +1141,9 @@
       "settingsContextHint": "Blocchi opzionali su cui il coach può basarsi. Disattivandone uno, viene omesso da ogni risposta."
     },
     "relativeJustNow": "proprio ora",
-    "relativeMinutesAgoOne": "{count} minuto fa",
-    "relativeMinutesAgoOther": "{count} minuti fa",
-    "relativeHoursAgoOne": "{count} ora fa",
-    "relativeHoursAgoOther": "{count} ore fa",
-    "relativeDaysAgoOne": "{count} giorno fa",
-    "relativeDaysAgoOther": "{count} giorni fa",
+    "relativeMinutesAgo": "{count} minuti fa",
+    "relativeHoursAgo": "{count} ore fa",
+    "relativeDaysAgo": "{count} giorni fa",
     "navOverview": "Panoramica",
     "navBloodPressure": "Pressione arteriosa",
     "navWeight": "Peso",
@@ -1902,19 +1891,14 @@
       }
     },
     "integrationPill": {
-      "connected": "Connesso",
-      "errorReconnect": "Errore — riconnetti",
-      "warningServerError": "Connesso, errore del server",
-      "parkedReconnect": "In pausa — riconnettere manualmente",
-      "notConnected": "Non connesso",
+      "connected": "Connected",
+      "errorReconnect": "Error — reconnect",
+      "notConnected": "Not connected",
       "justNow": "just now",
       "minutesAgo": "{count} min ago",
       "hoursAgo": "{count} h ago",
       "daysAgo": "{count} d ago",
-      "ariaLabel": "Integration status",
-      "resumeCta": "Riconnetti",
-      "resumeSuccess": "Integrazione ripresa",
-      "resumeError": "Riconnessione fallita"
+      "ariaLabel": "Integration status"
     },
     "apiTokens": "API Tokens",
     "apiTokensDescription": "Create API tokens for external medication intake (e.g., Shortcuts, automations).",
