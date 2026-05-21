@@ -15,10 +15,6 @@ export function mgdlToMmol(mgdl: number): number {
   return Math.round((mgdl / MGDL_PER_MMOL) * 10) / 10;
 }
 
-export function mmolToMgdl(mmol: number): number {
-  return Math.round(mmol * MGDL_PER_MMOL);
-}
-
 export function convertGlucose(value: number, to: GlucoseUnit): number {
   return to === "mmol/L" ? mgdlToMmol(value) : Math.round(value);
 }

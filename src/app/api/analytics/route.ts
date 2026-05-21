@@ -208,12 +208,9 @@ async function buildAnalyticsResponse(user: AuthedUser) {
   // cost flat across the three branches.
   const coverage = await probeRollupCoverage(user.id);
 
-  // v1.4.25 W7b — every day-bucket call inside this route now honours
-  // the user's display timezone. The legacy `berlinDayKey()` import
-  // remains for sleep-stage and correlation paths that share their
-  // helper signature with non-tz-aware code (`computeSleepStageBreakdown`
-  // is called with a userId only); the per-call sites below all pass
-  // `userTz` through `userDayKey()`.
+  // v1.4.25 W7b — every day-bucket call inside this route honours the
+  // user's display timezone via `userDayKey(date, userTz)` (the legacy
+  // `berlinDayKey()` helper was retired in v1.4.40).
   const userTz = user.timezone ?? DEFAULT_TIMEZONE;
 
   // Derived from canonical enum so a new measurement type is auto-summarised

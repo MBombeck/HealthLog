@@ -121,7 +121,7 @@ export type FormatInUserTzShape =
  *     `DISPLAY_TIMEZONE`.
  *
  *   - "date" — `2026-05-11` (ISO date in the user's zone). Used as a
- *     day-bucket key parallel to the legacy `berlinDayKey()`.
+ *     stable day-bucket key for per-user aggregation.
  */
 export function formatInUserTz(
   date: Date,
@@ -151,11 +151,11 @@ export function formatInUserTz(
 }
 
 /**
- * Day-bucket key in the user's timezone. Mirrors `berlinDayKey()` but
- * parameterised. Used as a stable Map key for daily aggregation so a
- * 23:30-local reading lands on today's bucket regardless of UTC
- * offset. The legacy `berlinDayKey()` stays for surfaces that are
- * not yet user-scoped (admin tables, audit log viewer).
+ * Day-bucket key in the user's timezone. Used as a stable Map key for
+ * daily aggregation so a 23:30-local reading lands on today's bucket
+ * regardless of UTC offset. Every display surface in v1.4.40 anchors
+ * here — the legacy Berlin-only `berlinDayKey()` was retired in that
+ * release.
  */
 export function userDayKey(date: Date, tz: string): string {
   return formatInUserTz(date, tz, "date");
