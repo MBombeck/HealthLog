@@ -58,9 +58,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
   });
 
   if (!user || !user.passwordHash) {
+    // v1.4.43 W3-SECURITY (H-1): never write the typed identifier into
+    // the audit row — `reason` already tells the operator what
+    // happened, and PII must not land in operator artefacts.
     await auditLog("auth.login.failed", {
       ipAddress: ip,
-      details: { identifier, reason: "user_not_found_or_no_password" },
+      details: { reason: "user_not_found_or_no_password" },
     });
     return apiError("Invalid credentials", 401);
   }
