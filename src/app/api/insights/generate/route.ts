@@ -134,7 +134,7 @@ async function buildComparisonSnapshotForUser(
   const rows = await Promise.all(
     types.map(async (type) => {
       const measurements = await prisma.measurement.findMany({
-        where: { userId, type },
+        where: { userId, type, deletedAt: null },
         orderBy: { measuredAt: "asc" },
         select: { measuredAt: true, value: true },
       });

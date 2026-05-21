@@ -377,8 +377,8 @@ export async function extractFeatures(
       : null;
   const measurements = await prisma.measurement.findMany({
     where: sinceCutoff
-      ? { userId, measuredAt: { gte: sinceCutoff } }
-      : { userId },
+      ? { userId, measuredAt: { gte: sinceCutoff }, deletedAt: null }
+      : { userId, deletedAt: null },
     orderBy: { measuredAt: "asc" },
   });
 

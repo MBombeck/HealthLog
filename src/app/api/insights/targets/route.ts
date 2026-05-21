@@ -178,11 +178,15 @@ async function buildTargetsResponse(user: AuthedUser) {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   // Fetch all measurements in the last 30 days + the latest for each type
+  // Soft-delete filter mirrors the W-DELETED pattern: tombstoned rows
+  // must not contribute to tile averages / latest values once iOS sync
+  // starts emitting deletions.
   const recentMeasurements = await prisma.measurement.findMany({
     where: {
       userId,
       type: { in: types },
       measuredAt: { gte: thirtyDaysAgo },
+      deletedAt: null,
     },
     orderBy: { measuredAt: "desc" },
     select: { type: true, value: true, measuredAt: true },
@@ -207,6 +211,7 @@ async function buildTargetsResponse(user: AuthedUser) {
       userId,
       type: { in: types },
       measuredAt: { gte: oneYearAgo },
+      deletedAt: null,
     },
     orderBy: { measuredAt: "desc" },
     distinct: ["type"],
@@ -1193,7 +1198,7 @@ async function buildTargetsResponse(user: AuthedUser) {
   };
   const thirtyDaysAgoGlucose = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const glucoseRows = await prisma.measurement.findMany({
-    where: { userId, type: "BLOOD_GLUCOSE" },
+    where: { userId, type: "BLOOD_GLUCOSE", deletedAt: null },
     orderBy: { measuredAt: "desc" },
     select: { value: true, measuredAt: true, glucoseContext: true },
   });

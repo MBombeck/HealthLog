@@ -158,6 +158,7 @@ export async function generatePulseStatusForUser(
     where: {
       userId,
       type: "PULSE",
+      deletedAt: null,
     },
     orderBy: { measuredAt: "desc" },
     take: 365,

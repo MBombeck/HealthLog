@@ -77,6 +77,7 @@ export const GET = apiHandler(async () => {
           in: ["WEIGHT", "BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA", "PULSE"],
         },
         measuredAt: { gte: ninetyDaysAgo },
+        deletedAt: null,
       },
       orderBy: { measuredAt: "asc" },
       select: { type: true, value: true, measuredAt: true },

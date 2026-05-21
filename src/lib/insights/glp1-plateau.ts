@@ -74,6 +74,7 @@ export async function detectGlp1Plateau(
       userId,
       type: "WEIGHT",
       measuredAt: { gte: windowStart },
+      deletedAt: null,
     },
     orderBy: { measuredAt: "asc" },
     select: { value: true, measuredAt: true },
