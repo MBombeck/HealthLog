@@ -49,6 +49,7 @@ import { defaultLocale, type Locale } from "@/lib/i18n/config";
 import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { expandTodayIntakes } from "@/lib/medication-schedule";
+import { recomputeMedicationComplianceForEvent } from "@/lib/medications/compliance-rollups";
 
 const SPARK_DAYS = 7;
 const STREAK_WINDOW_DAYS = 365;
@@ -349,6 +350,30 @@ async function projectAndReadTodaysIntakes(
         })),
         skipDuplicates: true,
       });
+
+      // v1.4.40 — close the compliance-rollup hook gap from v1.4.39.4.
+      // Mirrors the intake-route call site: after a bulk projection
+      // backfill, fire one rollup recompute per distinct
+      // `(medication_id, dayKey)` so the rollup row reflects the new
+      // `scheduled` count before the next read. Best-effort: errors
+      // stay caught inside the helper so a populator hiccup doesn't
+      // surface as a 5xx on the dashboard summary.
+      const seenDayKeys = new Set<string>();
+      const recomputeJobs: Array<Promise<void>> = [];
+      for (const m of missing) {
+        const key = `${m.medicationId}|${m.scheduledFor.toISOString().slice(0, 10)}`;
+        if (seenDayKeys.has(key)) continue;
+        seenDayKeys.add(key);
+        recomputeJobs.push(
+          recomputeMedicationComplianceForEvent({
+            userId,
+            medicationId: m.medicationId,
+            scheduledFor: m.scheduledFor,
+            tz: userTz,
+          }),
+        );
+      }
+      await Promise.all(recomputeJobs);
     }
   }
 
