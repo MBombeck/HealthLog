@@ -20,36 +20,17 @@ import {
 } from "@/lib/insights/with-timeout";
 import { persistTimeoutStubAndReturn } from "@/lib/insights/persist-timeout-stub";
 import { annotate } from "@/lib/logging/context";
+import { toBerlinDayKey } from "@/lib/tz/resolver";
 
 // 360 daily days + 24 monthly windows ≈ 1080 days of intake history.
 const COMPLIANCE_HISTORY_DAYS = 360 + 24 * 30;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-const BERLIN_DAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
-  timeZone: "Europe/Berlin",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
 
 type SupportedLocale = "de" | "en";
 
 interface MedicationSummaryItem {
   medicationId: string;
   text: string;
-}
-
-function toBerlinDayKey(date: Date): string {
-  const parts = BERLIN_DAY_FORMATTER.formatToParts(date);
-  const year = parts.find((part) => part.type === "year")?.value;
-  const month = parts.find((part) => part.type === "month")?.value;
-  const day = parts.find((part) => part.type === "day")?.value;
-
-  if (!year || !month || !day) {
-    throw new Error("Could not derive Berlin day key");
-  }
-
-  return `${year}-${month}-${day}`;
 }
 
 function round(value: number, digits = 1): number {
