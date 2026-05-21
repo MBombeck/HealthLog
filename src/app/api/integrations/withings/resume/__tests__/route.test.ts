@@ -66,7 +66,7 @@ describe("POST /api/integrations/withings/resume", () => {
       wasParked: true,
     });
 
-    const response = await POST(emptyRequest() as never);
+    const response = await POST();
     expect(response.status).toBe(200);
     const body = (await response.json()) as ApiEnvelope<{
       resumed: boolean;
@@ -81,7 +81,7 @@ describe("POST /api/integrations/withings/resume", () => {
       wasParked: false,
     });
 
-    const response = await POST(emptyRequest() as never);
+    const response = await POST();
     expect(response.status).toBe(200);
     const body = (await response.json()) as ApiEnvelope<{
       resumed: boolean;
@@ -97,7 +97,7 @@ describe("POST /api/integrations/withings/resume", () => {
       resetAt: Date.now() + 60_000,
     } as never);
 
-    const response = await POST(emptyRequest() as never);
+    const response = await POST();
     expect(response.status).toBe(429);
     const body = (await response.json()) as ApiEnvelope<unknown> & {
       meta?: { errorCode?: string };
