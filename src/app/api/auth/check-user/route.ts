@@ -37,12 +37,15 @@
  */
 import { z } from "zod/v4";
 import { prisma } from "@/lib/db";
-import { apiSuccess, apiError, safeJson, getClientIp } from "@/lib/api-response";
+import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { hashToken } from "@/lib/auth/hmac";
-import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import {
+  checkAuthSurfaceRateLimit,
+  rateLimitHeaders,
+} from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -59,12 +62,14 @@ export type CheckUserBranch =
   | "exists";
 
 export const POST = apiHandler(async (request: NextRequest) => {
-  const ip = getClientIp(request) ?? "unknown";
-  const rl = await checkRateLimit(
-    `auth:check-user:${ip}`,
+  // v1.4.43 W13 M-4 — tighter shared bucket on trust-chain misconfig.
+  const rl = await checkAuthSurfaceRateLimit(
+    request,
+    "auth:check-user",
     30,
     15 * 60 * 1000,
   );
+  const ip = rl.ip ?? "unknown";
   if (!rl.allowed) {
     return NextResponse.json(
       { data: null, error: "Too many requests. Please try again later." },

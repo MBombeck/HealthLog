@@ -31,6 +31,15 @@ vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi
     .fn()
     .mockResolvedValue({ allowed: true, remaining: 30, resetAt: 0 }),
+  // v1.4.43 W13 M-4 — `check-user` now routes through the auth-surface
+  // wrapper so the trust-violation branch can swap to a tighter global
+  // bucket. Default to a clean per-IP result.
+  checkAuthSurfaceRateLimit: vi.fn().mockResolvedValue({
+    allowed: true,
+    remaining: 30,
+    resetAt: 0,
+    ip: "203.0.113.1",
+  }),
   rateLimitHeaders: vi.fn(() => ({})),
 }));
 
@@ -72,7 +81,7 @@ describe("POST /api/auth/check-user — audit-log row (M-1)", () => {
     const args = vi.mocked(auditLog).mock.calls[0];
     expect(args[0]).toBe("auth.check-user");
     expect(args[1]).toEqual({
-      ipAddress: "unknown",
+      ipAddress: "203.0.113.1",
       details: {
         branch: "not_found",
         identifier_hash: expectedHash("ghost@example.com"),
@@ -99,7 +108,7 @@ describe("POST /api/auth/check-user — audit-log row (M-1)", () => {
     expect(auditLog).toHaveBeenCalledTimes(1);
     expect(vi.mocked(auditLog).mock.calls[0][1]).toEqual({
       userId: "user-1",
-      ipAddress: "unknown",
+      ipAddress: "203.0.113.1",
       details: {
         branch: "passkey_only",
         identifier_hash: expectedHash("marc"),

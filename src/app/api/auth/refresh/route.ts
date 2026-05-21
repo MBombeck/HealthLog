@@ -7,12 +7,11 @@ import { apiHandler } from "@/lib/api-handler";
 import {
   apiSuccess,
   apiError,
-  getClientIp,
   safeJson,
 } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { annotate } from "@/lib/logging/context";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkAuthSurfaceRateLimit } from "@/lib/rate-limit";
 import { resolveTokenPolicy } from "@/lib/auth/native-client";
 import {
   rotateRefreshToken,
@@ -20,8 +19,14 @@ import {
 } from "@/lib/auth/refresh-token";
 
 export const POST = apiHandler(async (request: NextRequest) => {
-  const ip = getClientIp(request) ?? "unknown";
-  const rl = await checkRateLimit(`auth:refresh:${ip}`, 60, 15 * 60 * 1000);
+  // v1.4.43 W13 M-4 — tighter shared bucket on trust-chain misconfig.
+  const rl = await checkAuthSurfaceRateLimit(
+    request,
+    "auth:refresh",
+    60,
+    15 * 60 * 1000,
+  );
+  const ip = rl.ip ?? "unknown";
   if (!rl.allowed) {
     return apiError("Too many refresh attempts. Please retry later.", 429);
   }

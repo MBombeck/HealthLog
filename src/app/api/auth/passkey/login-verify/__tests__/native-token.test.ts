@@ -24,6 +24,9 @@ vi.mock("@/lib/auth/audit", () => ({
 
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn(),
+  // v1.4.43 W13 M-4 — passkey/login-verify now uses the auth-surface
+  // wrapper. Default to a clean per-IP result.
+  checkAuthSurfaceRateLimit: vi.fn(),
 }));
 
 vi.mock("@/lib/db-compat", () => ({
@@ -50,7 +53,10 @@ vi.mock("next/headers", () => ({
 import { POST } from "../route";
 import { prisma } from "@/lib/db";
 import { verifyAuthentication } from "@/lib/auth/passkey";
-import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  checkRateLimit,
+  checkAuthSurfaceRateLimit,
+} from "@/lib/rate-limit";
 
 const FAKE_USER = {
   id: "user-1",
@@ -80,6 +86,12 @@ beforeEach(() => {
     allowed: true,
     remaining: 9,
     reset: 0,
+  } as never);
+  vi.mocked(checkAuthSurfaceRateLimit).mockResolvedValue({
+    allowed: true,
+    remaining: 9,
+    resetAt: 0,
+    ip: "203.0.113.1",
   } as never);
   vi.mocked(verifyAuthentication).mockResolvedValue({
     verification: { verified: true },

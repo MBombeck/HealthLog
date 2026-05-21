@@ -1,14 +1,18 @@
 import { createAuthenticationOptions } from "@/lib/auth/passkey";
-import { apiSuccess, getClientIp } from "@/lib/api-response";
-import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { apiSuccess } from "@/lib/api-response";
+import {
+  checkAuthSurfaceRateLimit,
+  rateLimitHeaders,
+} from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 
 export const POST = apiHandler(async (request: Request) => {
-  const ip = getClientIp(request) ?? "unknown";
-  const rl = await checkRateLimit(
-    `auth:passkey-login-options:${ip}`,
+  // v1.4.43 W13 M-4 — tighter shared bucket on trust-chain misconfig.
+  const rl = await checkAuthSurfaceRateLimit(
+    request,
+    "auth:passkey-login-options",
     10,
     15 * 60 * 1000,
   );

@@ -4,12 +4,11 @@ import { auditLog } from "@/lib/auth/audit";
 import {
   apiSuccess,
   apiError,
-  getClientIp,
   safeJson,
 } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
 import { ensureDbCompatibility } from "@/lib/db-compat";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkAuthSurfaceRateLimit } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
@@ -23,12 +22,14 @@ import { issueAccessAndRefresh } from "@/lib/auth/refresh-token";
 export const POST = apiHandler(async (request: NextRequest) => {
   await ensureDbCompatibility();
 
-  const ip = getClientIp(request);
-  const rl = await checkRateLimit(
-    `auth:passkey-verify:${ip}`,
+  // v1.4.43 W13 M-4 — tighter shared bucket on trust-chain misconfig.
+  const rl = await checkAuthSurfaceRateLimit(
+    request,
+    "auth:passkey-verify",
     10,
     15 * 60 * 1000,
   );
+  const ip = rl.ip;
   if (!rl.allowed) {
     return apiError("Too many attempts. Please wait 15 minutes.", 429);
   }

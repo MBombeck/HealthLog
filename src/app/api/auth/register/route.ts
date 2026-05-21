@@ -6,10 +6,9 @@ import { auditLog } from "@/lib/auth/audit";
 import {
   apiSuccess,
   apiError,
-  getClientIp,
   safeJson,
 } from "@/lib/api-response";
-import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { checkAuthSurfaceRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { ensureDbCompatibility } from "@/lib/db-compat";
 import { NextRequest, NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
@@ -21,8 +20,15 @@ import {
 } from "@/lib/tz/resolver";
 
 export const POST = apiHandler(async (request: NextRequest) => {
-  const ip = getClientIp(request) ?? "unknown";
-  const rl = await checkRateLimit(`auth:register:${ip}`, 5, 15 * 60 * 1000);
+  // v1.4.43 W13 M-4 — tighten to a global bucket when the trust chain
+  // is misconfigured; otherwise byte-equivalent per-IP semantics.
+  const rl = await checkAuthSurfaceRateLimit(
+    request,
+    "auth:register",
+    5,
+    15 * 60 * 1000,
+  );
+  const ip = rl.ip ?? "unknown";
   if (!rl.allowed) {
     return NextResponse.json(
       {

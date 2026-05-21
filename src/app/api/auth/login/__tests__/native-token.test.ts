@@ -28,6 +28,15 @@ vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi
     .fn()
     .mockResolvedValue({ allowed: true, remaining: 5, reset: 0 }),
+  // v1.4.43 W13 M-4 — auth surfaces now route through the wrapper that
+  // returns `{ip, ...rate-limit-result}`. Default to a clean per-IP
+  // result so the existing tests don't need to set every IP up.
+  checkAuthSurfaceRateLimit: vi.fn().mockResolvedValue({
+    allowed: true,
+    remaining: 5,
+    resetAt: 0,
+    ip: "203.0.113.1",
+  }),
   rateLimitHeaders: vi.fn(() => ({})),
 }));
 
@@ -55,7 +64,11 @@ vi.mock("next/headers", () => ({
 import { POST } from "../route";
 import { prisma } from "@/lib/db";
 import { verifyPassword } from "@/lib/auth/password";
-import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import {
+  checkRateLimit,
+  checkAuthSurfaceRateLimit,
+  rateLimitHeaders,
+} from "@/lib/rate-limit";
 import { ensureDbCompatibility } from "@/lib/db-compat";
 import { auditLog } from "@/lib/auth/audit";
 import { createSession } from "@/lib/auth/session";
@@ -93,6 +106,12 @@ beforeEach(() => {
     allowed: true,
     remaining: 5,
     reset: 0,
+  } as never);
+  vi.mocked(checkAuthSurfaceRateLimit).mockResolvedValue({
+    allowed: true,
+    remaining: 5,
+    resetAt: 0,
+    ip: "203.0.113.1",
   } as never);
   vi.mocked(rateLimitHeaders).mockReturnValue({} as never);
   vi.mocked(ensureDbCompatibility).mockResolvedValue(undefined);

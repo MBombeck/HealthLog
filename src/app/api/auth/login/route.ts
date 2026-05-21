@@ -6,10 +6,9 @@ import { auditLog } from "@/lib/auth/audit";
 import {
   apiSuccess,
   apiError,
-  getClientIp,
   safeJson,
 } from "@/lib/api-response";
-import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { checkAuthSurfaceRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { ensureDbCompatibility } from "@/lib/db-compat";
 import { NextRequest, NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
@@ -22,8 +21,16 @@ import {
 import { issueAccessAndRefresh } from "@/lib/auth/refresh-token";
 
 export const POST = apiHandler(async (request: NextRequest) => {
-  const ip = getClientIp(request) ?? "unknown";
-  const rl = await checkRateLimit(`auth:login:${ip}`, 5, 15 * 60 * 1000);
+  // v1.4.43 W13 M-4 — `checkAuthSurfaceRateLimit` swaps to a tighter
+  // global bucket when the trust chain is misconfigured; otherwise it
+  // is byte-equivalent to the previous per-IP `auth:login:{ip}` key.
+  const rl = await checkAuthSurfaceRateLimit(
+    request,
+    "auth:login",
+    5,
+    15 * 60 * 1000,
+  );
+  const ip = rl.ip ?? "unknown";
   if (!rl.allowed) {
     return NextResponse.json(
       {
