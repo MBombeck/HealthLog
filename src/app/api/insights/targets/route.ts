@@ -33,6 +33,10 @@ import {
 } from "@/lib/analytics/effective-range";
 import { getBodyFatTargetRange } from "@/lib/analytics/value-bands";
 import { thresholdMetricForContext, resolveGlucoseUnit } from "@/lib/glucose";
+import {
+  ensureUserMoodRollupsFresh,
+  readMoodDayRollups,
+} from "@/lib/mood/rollups";
 
 export const dynamic = "force-dynamic";
 
@@ -184,12 +188,26 @@ async function buildTargetsResponse(user: AuthedUser) {
     select: { type: true, value: true, measuredAt: true },
   });
 
-  // Also get the absolute latest measurement per type (even if older than 30 days).
-  // Single grouped query replaces the previous N×findFirst loop — DISTINCT ON
-  // (Postgres) emulated via a windowed orderBy + take-1 per type would still be
-  // N round-trips, so we sort once on the wide query and pick per-type below.
+  // Absolute latest measurement per type within a one-year floor.
+  //
+  // Prisma's `distinct` does not compile to Postgres `DISTINCT ON` — the
+  // driver dedups after pulling the rows, so an unbounded scan on a
+  // 347 k-row tenant pulls every measurement back to Node only to drop
+  // all but seven (audit Critical Finding #2, v1.4.40). The 365-day
+  // floor caps the planner-side walk to the existing
+  // `(user_id, type, measured_at)` index range; the trade-off is that a
+  // user who hasn't measured a metric in over a year sees the tile's
+  // `current` value as null instead of pulling a stale year-old reading
+  // forward — which is the correct behaviour for the consistency strip
+  // (the strip already gates on "fewer than 3 readings in 30 days" →
+  // insufficientData).
+  const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
   const latestEverByType = await prisma.measurement.findMany({
-    where: { userId, type: { in: types } },
+    where: {
+      userId,
+      type: { in: types },
+      measuredAt: { gte: oneYearAgo },
+    },
     orderBy: { measuredAt: "desc" },
     distinct: ["type"],
     select: { type: true, value: true },
@@ -980,41 +998,112 @@ async function buildTargetsResponse(user: AuthedUser) {
   }
 
   // 9. Mood targets (if mood data exists)
-  const moodEntries = await prisma.moodEntry.findMany({
+  //
+  // v1.4.40 \u2014 swap the unbounded `prisma.moodEntry.findMany({ where: {
+  // userId } })` for the persistent mood-rollup DAY tier (audit Critical
+  // Finding #2). The tile reads:
+  //   - per-day mean over the trailing 30 days (avg30, trend, stability)
+  //   - the consistency strip (in/near/out band per day)
+  //   - the latest score for the "current" reading + classification
+  //
+  // Rollup row = `{bucketStart, mean, count, minScore, maxScore}` per
+  // calendar day. Per-day mean replaces the per-entry score series the
+  // legacy path passed to `rollupConsistency` \u2014 the helper buckets by
+  // day-key anyway, so feeding one row per day with the pre-computed
+  // mean is mathematically identical to feeding N raw entries that
+  // collapse to the same mean.
+  //
+  // The "latest score" needs a single raw entry (the newest one), so we
+  // pull it with `take: 1` \u2014 bounded by the index, never an unbounded
+  // scan. The "\u2265 3 entries threshold" gate uses the rollup count sum so
+  // the cold-start branch stays consistent with the legacy semantics
+  // (which counted raw entries, not raw days).
+  //
+  // Coverage-fallback: when the user has mood entries but zero rollup
+  // rows yet (legacy account before the boot-time backfill caught up)
+  // we run the legacy live walk once and fire the warm-up so the next
+  // request lands on the rollup tier. Same posture as
+  // `/api/mood/analytics`.
+  void ensureUserMoodRollupsFresh(userId);
+  const thirtyDaysAgoMood = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  // Five-year window mirrors `/api/mood/analytics` so existing rollup
+  // coverage is consulted; the trailing 30-day filter happens in JS
+  // because the consistency strip already walks per-day buckets.
+  const moodRollupWindowMs = 5 * 365 * 24 * 60 * 60 * 1000;
+  const moodSince = new Date(Date.now() - moodRollupWindowMs);
+  const moodRollups = await readMoodDayRollups(userId, moodSince);
+  const latestMoodEntry = await prisma.moodEntry.findFirst({
     where: { userId },
     orderBy: { moodLoggedAt: "desc" },
     select: { score: true, moodLoggedAt: true },
   });
 
-  if (moodEntries.length >= 3) {
-    const thirtyDaysAgoMood = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const recentMood = moodEntries.filter(
-      (entry) => entry.moodLoggedAt >= thirtyDaysAgoMood,
-    );
-    const latestMoodScore = moodEntries[0]?.score ?? null;
+  // Build a per-day event list for the consistency strip + 30-day stats.
+  // Use the rollup tier when populated; fall back to a bounded raw walk
+  // when the user has mood entries but zero rollup coverage yet.
+  let moodDailyEvents: Array<{ measuredAt: Date; value: number }>;
+  let moodEntryCount: number;
+  let moodSumScores: number;
+  let moodVarianceN: number;
+  let moodSumSquares: number;
+  if (moodRollups.length > 0) {
+    moodEntryCount = moodRollups.reduce((s, r) => s + r.count, 0);
+    moodDailyEvents = moodRollups
+      .filter((r) => r.bucketStart >= thirtyDaysAgoMood)
+      .map((r) => ({ measuredAt: r.bucketStart, value: r.mean }));
+    moodSumScores = moodDailyEvents.reduce((s, e) => s + e.value, 0);
+    moodVarianceN = moodDailyEvents.length;
+    moodSumSquares = moodDailyEvents.reduce((s, e) => s + e.value * e.value, 0);
+  } else if (latestMoodEntry !== null) {
+    // Coverage-fallback: rollups empty but raw entries exist. Pull the
+    // trailing 30-day window only (instead of every entry ever) \u2014 that's
+    // the bound the legacy code was missing.
+    const recentRawMood = await prisma.moodEntry.findMany({
+      where: { userId, moodLoggedAt: { gte: thirtyDaysAgoMood } },
+      orderBy: { moodLoggedAt: "asc" },
+      select: { score: true, moodLoggedAt: true },
+    });
+    moodEntryCount = recentRawMood.length;
+    moodDailyEvents = recentRawMood.map((e) => ({
+      measuredAt: e.moodLoggedAt,
+      value: e.score,
+    }));
+    moodSumScores = recentRawMood.reduce((s, e) => s + e.score, 0);
+    moodVarianceN = recentRawMood.length;
+    moodSumSquares = recentRawMood.reduce((s, e) => s + e.score * e.score, 0);
+  } else {
+    moodEntryCount = 0;
+    moodDailyEvents = [];
+    moodSumScores = 0;
+    moodVarianceN = 0;
+    moodSumSquares = 0;
+  }
+
+  if (moodEntryCount >= 3) {
+    const latestMoodScore = latestMoodEntry?.score ?? null;
 
     const moodAvg30 =
-      recentMood.length > 0
+      moodDailyEvents.length > 0
         ? Math.round(
-            (recentMood.reduce((sum, e) => sum + e.score, 0) /
-              recentMood.length) *
-              10,
+            (moodSumScores / moodDailyEvents.length) * 10,
           ) / 10
         : null;
 
-    // Mood trend: compare first half to second half of last 30 days
+    // Mood trend: compare first half to second half of last 30 days.
+    // The rollup tier carries one DataPoint per day (the daily mean),
+    // matching the legacy comparison semantics on single-entry days.
     let moodTrend: "up" | "down" | "stable" | null = null;
-    if (recentMood.length >= 4) {
-      const sorted = [...recentMood].sort(
-        (a, b) => a.moodLoggedAt.getTime() - b.moodLoggedAt.getTime(),
+    if (moodDailyEvents.length >= 4) {
+      const sorted = [...moodDailyEvents].sort(
+        (a, b) => a.measuredAt.getTime() - b.measuredAt.getTime(),
       );
       const mid = Math.floor(sorted.length / 2);
       const firstHalf = sorted.slice(0, mid);
       const secondHalf = sorted.slice(mid);
       const avgFirst =
-        firstHalf.reduce((s, e) => s + e.score, 0) / firstHalf.length;
+        firstHalf.reduce((s, e) => s + e.value, 0) / firstHalf.length;
       const avgSecond =
-        secondHalf.reduce((s, e) => s + e.score, 0) / secondHalf.length;
+        secondHalf.reduce((s, e) => s + e.value, 0) / secondHalf.length;
       const diff = avgSecond - avgFirst;
       if (diff > 0.2) moodTrend = "up";
       else if (diff < -0.2) moodTrend = "down";
@@ -1031,12 +1120,8 @@ async function buildTargetsResponse(user: AuthedUser) {
         : null;
 
     const moodRange = { min: 3.5, max: 5 };
-    const moodEventsForConsistency = recentMood.map((entry) => ({
-      measuredAt: entry.moodLoggedAt,
-      value: entry.score,
-    }));
     const moodConsistency = rollupConsistency(
-      moodEventsForConsistency,
+      moodDailyEvents,
       makeRangeClassifier(moodRange, { orangeMin: 2, orangeMax: 5 }),
     );
     targets.push({
@@ -1052,13 +1137,18 @@ async function buildTargetsResponse(user: AuthedUser) {
       ...moodConsistency,
     });
 
-    // Mood stability: standard deviation of recent scores (lower = more stable)
-    if (recentMood.length >= 5) {
-      const mean = moodAvg30 ?? latestMoodScore ?? 3;
-      const variance =
-        recentMood.reduce((sum, e) => sum + (e.score - mean) ** 2, 0) /
-        recentMood.length;
-      const stdDev = Math.round(Math.sqrt(variance) * 100) / 100;
+    // Mood stability: standard deviation of the recent series. The
+    // rollup tier surfaces one mean per day, which is the right
+    // resolution for "is the user's mood stable across days" \u2014 a power
+    // user logging multiple times per day with a wide intraday spread
+    // still gets a "stable" badge if the daily mean barely moves. The
+    // legacy path conflated intraday variance with day-to-day stability
+    // by passing per-entry scores; the rollup-tier semantic is closer
+    // to what the UI label suggests.
+    if (moodVarianceN >= 5) {
+      const seriesMean = moodSumScores / moodVarianceN;
+      const variance = moodSumSquares / moodVarianceN - seriesMean * seriesMean;
+      const stdDev = Math.round(Math.sqrt(Math.max(0, variance)) * 100) / 100;
 
       const stabilityClassification =
         stdDev <= 0.5
