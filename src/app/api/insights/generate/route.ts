@@ -6,7 +6,7 @@ import {
   FeaturesPayloadTooLargeError,
 } from "@/lib/insights/features";
 import { applyInsightsExcludeFilter } from "@/lib/insights/exclude-filter";
-import { compactSections } from "@/lib/insights/prompt-compact";
+import { compactSections } from "@/lib/ai/prompts/compact-sections";
 import {
   detectGlp1Plateau,
   buildGlp1PlateauPrompt,
@@ -14,7 +14,7 @@ import {
 import {
   buildUserPrompt,
   type ComparisonSnapshot,
-} from "@/lib/insights/prompt";
+} from "@/lib/ai/prompts/insight-system-prompt";
 import { getStrictInsightsSystemPrompt } from "@/lib/ai/prompts/insight-generator";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
 import {

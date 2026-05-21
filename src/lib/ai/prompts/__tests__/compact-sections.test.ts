@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { compactSections } from "../prompt-compact";
+import { compactSections } from "../compact-sections";
 
 describe("compactSections", () => {
   it("drops empty arrays", () => {

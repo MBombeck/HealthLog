@@ -37,9 +37,6 @@ vi.mock("@/lib/db", () => ({
 import {
   aggregateWmyBuckets,
   readBestGranularityRollups,
-  readMonthRollups,
-  readWeekRollups,
-  readYearRollups,
   type RollupBucketRow,
 } from "../measurement-read-wmy";
 
@@ -69,86 +66,6 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
-});
-
-describe("readWeekRollups", () => {
-  it("returns the WEEK buckets for (userId, type, since)", async () => {
-    const rows = [
-      bucket("2026-04-27T00:00:00.000Z"),
-      bucket("2026-05-04T00:00:00.000Z", { mean: 81 }),
-    ];
-    findMany.mockResolvedValueOnce(rows);
-    const since = new Date("2026-04-20T00:00:00.000Z");
-
-    const result = await readWeekRollups("user-1", "WEIGHT", since);
-
-    expect(result).not.toBeNull();
-    expect(result).toHaveLength(2);
-    expect(result?.[0].mean).toBe(82);
-    expect(result?.[1].mean).toBe(81);
-    const args = findMany.mock.calls[0][0];
-    expect(args.where.granularity).toBe("WEEK");
-    expect(args.where.userId).toBe("user-1");
-    expect(args.where.type).toBe("WEIGHT");
-    expect(args.where.bucketStart.gte).toBe(since);
-    expect(args.orderBy).toEqual({ bucketStart: "asc" });
-  });
-
-  it("returns null when the WEEK window has no coverage", async () => {
-    findMany.mockResolvedValueOnce([]);
-    const result = await readWeekRollups(
-      "user-1",
-      "WEIGHT",
-      new Date("2026-04-20T00:00:00.000Z"),
-    );
-    expect(result).toBeNull();
-  });
-});
-
-describe("readMonthRollups", () => {
-  it("returns the MONTH buckets and pins the granularity filter", async () => {
-    findMany.mockResolvedValueOnce([bucket("2026-04-01T00:00:00.000Z")]);
-    const result = await readMonthRollups(
-      "user-2",
-      "PULSE",
-      new Date("2026-01-01T00:00:00.000Z"),
-    );
-    expect(result).toHaveLength(1);
-    expect(findMany.mock.calls[0][0].where.granularity).toBe("MONTH");
-  });
-
-  it("returns null on coverage miss", async () => {
-    findMany.mockResolvedValueOnce([]);
-    const result = await readMonthRollups(
-      "user-2",
-      "PULSE",
-      new Date("2026-01-01T00:00:00.000Z"),
-    );
-    expect(result).toBeNull();
-  });
-});
-
-describe("readYearRollups", () => {
-  it("returns the YEAR buckets and pins the granularity filter", async () => {
-    findMany.mockResolvedValueOnce([bucket("2025-01-01T00:00:00.000Z")]);
-    const result = await readYearRollups(
-      "user-3",
-      "WEIGHT",
-      new Date("2023-01-01T00:00:00.000Z"),
-    );
-    expect(result).toHaveLength(1);
-    expect(findMany.mock.calls[0][0].where.granularity).toBe("YEAR");
-  });
-
-  it("returns null on coverage miss", async () => {
-    findMany.mockResolvedValueOnce([]);
-    const result = await readYearRollups(
-      "user-3",
-      "WEIGHT",
-      new Date("2023-01-01T00:00:00.000Z"),
-    );
-    expect(result).toBeNull();
-  });
 });
 
 describe("readBestGranularityRollups", () => {

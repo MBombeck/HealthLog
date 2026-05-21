@@ -22,7 +22,7 @@ import {
   type CoachExcludeMetric,
 } from "@/lib/validations/coach-prefs";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
-import { compactSections } from "@/lib/insights/prompt-compact";
+import { compactSections } from "@/lib/ai/prompts/compact-sections";
 import { buildGlp1SnapshotBlock } from "./glp1-snapshot";
 import type {
   CoachProvenance,

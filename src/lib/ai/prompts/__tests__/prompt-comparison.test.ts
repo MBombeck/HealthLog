@@ -3,7 +3,7 @@ import {
   buildUserPrompt,
   buildComparisonBlock,
   type ComparisonSnapshot,
-} from "@/lib/insights/prompt";
+} from "@/lib/ai/prompts/insight-system-prompt";
 
 /**
  * v1.4.16 phase B8 — comparison context block in the user prompt.

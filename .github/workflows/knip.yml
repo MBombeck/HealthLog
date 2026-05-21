@@ -29,12 +29,15 @@ jobs:
 
       - run: pnpm db:generate
 
-      # v1.4.40 W-INFRA — fail the build when knip surfaces a new dead
-      # module, an unused production dependency, an unused devDependency,
-      # or an unlisted binary. Unused exports + types are intentionally
-      # left informational while the existing surface is cleaned wave by
-      # wave (487 exports / 52 types on the v1.4.40 baseline). The
-      # baseline carve-outs live in `knip.json` under `ignore` +
-      # `ignoreDependencies` + `ignoreBinaries` with the rationale
-      # captured in `.planning/phase-W-INFRA-v1440-report.md`.
+      # v1.4.41 W-PROCESS-DOCS — exports + types tier staged for
+      # promotion to enforcing. The W-SIMPLIFIER and W-INSIGHTS-HOT
+      # cleanup waves have not yet landed on develop at the time this
+      # comment was written (48 unused exports + 52 unused exported
+      # types still in the tree), so the gate remains scoped to
+      # files,dependencies,binaries,unlisted. Once those cleanup waves
+      # merge and `pnpm knip --reporter compact` reports zero unused
+      # exports + zero unused types, drop the `--include` flag below
+      # to flip exports + types to enforcing. See
+      # `.planning/phase-W-PROCESS-DOCS-v1441-report.md` for the
+      # promotion checklist and the rollback path.
       - run: pnpm knip --reporter compact --include files,dependencies,binaries,unlisted

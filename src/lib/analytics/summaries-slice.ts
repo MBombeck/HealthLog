@@ -656,54 +656,6 @@ async function computeFromLiveAggregate(
  * "rollup tier empty" cold-mount case, and v1.5's multi-year card
  * accepts a `null` "no data yet" state.
  */
-export async function computeLongWindowSummary(
-  userId: string,
-  type: MeasurementType,
-  windowDays: number,
-): Promise<{
-  granularity: RollupGranularity;
-  bucketStart: Date | null;
-  bucketEnd: Date | null;
-  bucketCount: number;
-  count: number;
-  min: number | null;
-  max: number | null;
-  mean: number | null;
-  sum: number | null;
-} | null> {
-  const resolved = await readBestGranularityRollups(userId, type, windowDays);
-  if (!resolved) return null;
-  const rows: RollupBucketRow[] = resolved.rows;
-  const aggregate = aggregateWmyBuckets(rows);
-  // Annotate which granularity served the window so the operator can
-  // verify the routing in production wide-events without redeploying
-  // instrumentation. Mirrors the `slim_summaries.path` annotate
-  // shape inside `computeFromRollups` / `computeFromLiveAggregate`.
-  annotate({
-    meta: {
-      analytics: {
-        long_window_summary: {
-          type,
-          window_days: windowDays,
-          granularity: resolved.granularity,
-          bucket_count: rows.length,
-          row_count: aggregate.count,
-        },
-      },
-    },
-  });
-  return {
-    granularity: resolved.granularity,
-    bucketStart: rows[0]?.bucketStart ?? null,
-    bucketEnd: rows[rows.length - 1]?.bucketStart ?? null,
-    bucketCount: rows.length,
-    count: aggregate.count,
-    min: aggregate.min,
-    max: aggregate.max,
-    mean: aggregate.mean,
-    sum: aggregate.sum,
-  };
-}
 
 /**
  * v1.4.40 W-WMY-WIRE — year-ago 30-day baseline per type, served from

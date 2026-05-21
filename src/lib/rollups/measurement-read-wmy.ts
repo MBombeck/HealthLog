@@ -118,43 +118,6 @@ const GRANULARITY_FLOORS: Array<{
 ];
 
 /**
- * Read the trailing WEEK buckets for `(userId, type)` since `since`.
- * Returns `null` when no buckets exist in the window — the caller
- * decides whether to fall back to a finer granularity or to live SQL.
- */
-export async function readWeekRollups(
-  userId: string,
-  type: MeasurementType,
-  since: Date,
-): Promise<RollupBucketRow[] | null> {
-  return readGranularity(userId, type, "WEEK", since);
-}
-
-/**
- * Read the trailing MONTH buckets for `(userId, type)` since `since`.
- * Returns `null` on coverage miss.
- */
-export async function readMonthRollups(
-  userId: string,
-  type: MeasurementType,
-  since: Date,
-): Promise<RollupBucketRow[] | null> {
-  return readGranularity(userId, type, "MONTH", since);
-}
-
-/**
- * Read the trailing YEAR buckets for `(userId, type)` since `since`.
- * Returns `null` on coverage miss.
- */
-export async function readYearRollups(
-  userId: string,
-  type: MeasurementType,
-  since: Date,
-): Promise<RollupBucketRow[] | null> {
-  return readGranularity(userId, type, "YEAR", since);
-}
-
-/**
  * Pick the largest granularity that can still resolve the requested
  * `windowDays` window — WEEK for >14 d, MONTH for >62 d, YEAR for
  * >730 d. Falls back to a finer granularity on coverage miss so a
@@ -163,10 +126,9 @@ export async function readYearRollups(
  * series.
  *
  * Returns the granularity the helper resolved against plus the row
- * shape `readWeekRollups` / `readMonthRollups` / `readYearRollups`
- * return. `null` when no granularity yields any buckets in the
- * window — the caller is expected to short-circuit to "no data" or
- * to live SQL.
+ * shape the internal `readGranularity` reader produces. `null` when
+ * no granularity yields any buckets in the window — the caller is
+ * expected to short-circuit to "no data" or to live SQL.
  */
 export async function readBestGranularityRollups(
   userId: string,

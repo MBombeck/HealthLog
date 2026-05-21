@@ -91,7 +91,7 @@ vi.mock("@/lib/insights/features", async () => {
   };
 });
 
-vi.mock("@/lib/insights/prompt", () => ({
+vi.mock("@/lib/ai/prompts/insight-system-prompt", () => ({
   buildUserPrompt: vi.fn(() => "user"),
 }));
 

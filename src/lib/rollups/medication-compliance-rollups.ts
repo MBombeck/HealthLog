@@ -460,40 +460,6 @@ export async function recomputeUserMedicationCompliance(
 }
 
 /**
- * Fire-and-forget warm-up — kept around for symmetry with
- * `ensureUserRollupsFresh` even though the on-write hook fully owns
- * coverage in steady state. The route currently doesn't call this
- * directly; the coverage-probe + boot-backfill cascade handles the
- * cold-mount case.
- */
-export async function ensureUserMedicationComplianceFresh(
-  userId: string,
-  days: number = MEDICATION_COMPLIANCE_BACKFILL_DAYS,
-  tz: string | null | undefined = null,
-): Promise<{ recomputed: boolean }> {
-  try {
-    if (await hasMedicationComplianceCoverage(userId, days, tz)) {
-      return { recomputed: false };
-    }
-    await recomputeUserMedicationCompliance(userId, days, tz);
-    return { recomputed: true };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    annotate({
-      meta: {
-        medication_compliance_rollup_refresh_failed: true,
-        medication_compliance_rollup_refresh_error: message,
-      },
-    });
-    console.error(
-      "[medication-compliance-rollups] ensure-fresh failed:",
-      message,
-    );
-    return { recomputed: false };
-  }
-}
-
-/**
  * v1.4.39 hotfix (QA F-SEC-M-01) — user-scoped enqueue helper for the
  * request-path coverage-miss fallback.
  *
