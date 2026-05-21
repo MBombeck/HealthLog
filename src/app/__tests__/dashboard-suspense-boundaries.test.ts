@@ -73,10 +73,12 @@ describe("v1.4.40 — dashboard per-cell Suspense boundaries", () => {
   it("memoises the hour-of-day derivation against user.timezone (audit-H4)", () => {
     const src = load(PAGE_PATH);
     // The greeting hour only changes when the user's timezone changes
-    // — a `useMemo` keyed on `user?.timezone` keeps the
+    // — a `useMemo` keyed on the lifted `userTimezone` local keeps the
     // `Intl.DateTimeFormat` instantiation off the per-render hot path.
+    // Post-W-INFRA Thread 2: `user?.timezone` is lifted to a `userTimezone`
+    // local one line above the `useMemo` so the dep array stays stable.
     expect(src).toMatch(
-      /const\s+hour\s*=\s*useMemo\([\s\S]*?\[\s*user\?\.timezone\s*\][\s\S]*?\);/,
+      /const\s+hour\s*=\s*useMemo\([\s\S]*?\[\s*userTimezone\s*\][\s\S]*?\);/,
     );
   });
 });
