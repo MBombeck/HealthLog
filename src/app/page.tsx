@@ -1303,6 +1303,27 @@ export default function DashboardPage() {
 
         charts.sort((a, b) => a.order - b.order);
 
+        // v1.4.43 W11-M5 — tile-strip skeleton during slow slim-analytics
+        // fetches.
+        //
+        // `trendCards` only fills once the slim `/api/analytics` slice
+        // resolves and reports per-type `count > 0` flags. The v1.4.39.2
+        // slim/thick split keeps the strip painting fast when slim wins,
+        // but when *both* slices lag (cache eviction, cold start) the
+        // user used to see the page header + 0 tiles + then 7 tiles
+        // appear at once 9 s later. The audit recommendation is to
+        // render a layout-stable tile silhouette keyed off the user's
+        // configured tile count so the strip's footprint is reserved
+        // during the slow window. The skeleton swaps in for the real
+        // strip the moment `analyticsSlimQuery.isLoading` flips false.
+        const configuredTileCount = layout.widgets.filter(
+          (w) => w.tileVisible ?? w.visible,
+        ).length;
+        const showTileStripSkeleton =
+          trendCards.length === 0 &&
+          analyticsSlimQuery.isLoading &&
+          configuredTileCount > 0;
+
         // v1.4.15 phase-C5: dashboard fully-empty state. When no tile
         // and no chart has data the dashboard would otherwise paint a
         // 0-px tile strip with the welcome banner above it — visually
@@ -1313,7 +1334,15 @@ export default function DashboardPage() {
         // surface for very-new accounts; this empty state covers the
         // case where the checklist has been dismissed but no data was
         // logged afterwards.
-        if (trendCards.length === 0 && charts.length === 0) {
+        //
+        // v1.4.43 W11 — the empty-state only fires once the slim slice
+        // resolves with no tiles to show. While slim is in flight the
+        // skeleton strip below carries the layout footprint.
+        if (
+          trendCards.length === 0 &&
+          charts.length === 0 &&
+          !showTileStripSkeleton
+        ) {
           return (
             <EmptyState
               icon={<Activity className="size-6" />}
@@ -1357,6 +1386,30 @@ export default function DashboardPage() {
                 CSS-grid `auto-fit + minmax + auto-rows-fr` track that
                 continues to give every visible tile equal width / equal
                 height for any non-zero count. */}
+            {showTileStripSkeleton && (
+              <div
+                // v1.4.43 W11-M5 — tile-strip skeleton mirrors the real
+                // grid track (`auto-fit minmax(min(100%,11rem),1fr)`) so
+                // the layout footprint is reserved while slim-analytics
+                // is in flight. Cards are keyed off the user's
+                // configured tile count (`configuredTileCount`) — if the
+                // user trimmed the strip to 3 tiles in Settings, the
+                // skeleton shows 3 silhouettes, not 7.
+                aria-hidden="true"
+                data-slot="dashboard-tile-strip-skeleton"
+                className={cn(
+                  "grid auto-rows-fr gap-3",
+                  "[grid-template-columns:repeat(auto-fit,minmax(min(100%,11rem),1fr))]",
+                )}
+              >
+                {Array.from({ length: configuredTileCount }).map((_, idx) => (
+                  <div
+                    key={`tile-skeleton-${idx}`}
+                    className="bg-card border-border min-h-[6rem] animate-pulse rounded-xl border p-4 motion-reduce:animate-none md:p-6"
+                  />
+                ))}
+              </div>
+            )}
             {trendCards.length > 0 && (
               <div
                 // v1.4.33 A3 Win 2 + F3 — collapse the bifurcated
