@@ -31,6 +31,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
+import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { requireAssistantSurface } from "@/lib/feature-flags";
 
@@ -194,6 +195,44 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       role: m.role,
       content: m.content,
     }));
+
+    // v1.4.43 W13 M-3 — replay-injection guard. `detectRefusal` runs
+    // only on the inbound `message` per turn, so an injection that
+    // slipped past the regex bank on a previous turn would re-enter
+    // the prompt every reply. Re-run the detector against every
+    // user-turn re-loaded from DB; on a hit, short-circuit the SSE
+    // with a refusal AND drop an `audit.coach.replay-injection`
+    // row so the failure case is observable. The audit row carries
+    // the conversation id (server-owned), the turn index (no PII)
+    // and the matched reason — never the message content.
+    for (let i = 0; i < priorTurns.length; i++) {
+      const turn = priorTurns[i];
+      if (turn.role !== "user") continue;
+      const replayed = detectRefusal({ message: turn.content, locale });
+      if (!replayed.refuse) continue;
+      annotate({
+        action: { name: "insights.coach.replay_injection" },
+        meta: { reason: replayed.reason, turnIndex: i },
+      });
+      await auditLog("audit.coach.replay-injection", {
+        userId,
+        details: {
+          conversationId: existing.id,
+          turnIndex: i,
+          reason: replayed.reason,
+        },
+      });
+      return streamRefusal({
+        userId,
+        conversationId: existing.id,
+        message,
+        refusalText:
+          replayed.message ??
+          (locale === "de"
+            ? "Eine frühere Nachricht in dieser Unterhaltung enthält Anweisungen, die meine Vorgaben überschreiben sollen. Beginne bitte eine neue Unterhaltung."
+            : "An earlier message in this conversation contains wording that overrides my instructions. Please start a new conversation."),
+      });
+    }
   } else {
     const created = await createConversation({ userId, title: message });
     workingConversationId = created.id;
