@@ -66,12 +66,33 @@
  * ───────────────
  *
  * Zero Prisma imports, zero IO, zero user lookups. The helper takes
- * an array, returns an array. Testable in isolation; safely
- * invoked from a hot ingest path with no DB round-trip cost. The
- * write-time path has the user's id on every row already and the
- * source ladder is the canonical constant, so the helper doesn't
- * need to consult `User.sourcePriorityJson` (that's a read-time
- * concern: the user's display preference for the dashboard tile).
+ * an array, returns an array. Testable in isolation; safely invoked
+ * from a hot ingest path with no DB round-trip cost.
+ *
+ * Source-priority divergence vs the read-time picker
+ * ──────────────────────────────────────────────────
+ *
+ * The read-time picker resolves the per-user `sourcePriorityJson`
+ * (from `User.sourcePriorityJson`) for every read so a user who
+ * promoted MANUAL above APPLE_HEALTH in Settings → Sources sees
+ * their Manual rows surface above the Apple Watch ones. The
+ * write-time helper deliberately does NOT consult that preference:
+ * it uses the canonical `DEFAULT_WORKOUT_SOURCE_PRIORITY` constant
+ * unconditionally, so a customized user's preferred row can still
+ * be dropped at write-time before the read-time picker ever sees
+ * it. Scope-narrow today — `DEFAULT_SOURCE_PRIORITY.steps` is the
+ * Apple-first default and most paired users never override it —
+ * but the moment a user customises, this helper silently
+ * overrides them.
+ *
+ * The architecturally correct fix (v1.4.43 candidate) is option
+ * (b) from the v1.4.42 senior-dev QA M1: accept the small ingest-
+ * path cost of one indexed `User.sourcePriorityJson` lookup and
+ * thread the user's ladder into the picker. The batch route
+ * already has the userId per row; the lookup is one
+ * `prisma.user.findUnique({ where: { id }, select:
+ * { sourcePriorityJson: true }})`. Until that lands, this
+ * docstring is the load-bearing operator notice.
  */
 
 import { DEFAULT_WORKOUT_SOURCE_PRIORITY } from "@/lib/sources/pick-canonical-workout";
