@@ -33,6 +33,7 @@ import {
   enqueueUserMedicationComplianceBackfill,
   type ComplianceBucket as RollupComplianceBucket,
 } from "@/lib/medications/compliance-rollups";
+import { expandTodayIntakes } from "@/lib/medication-schedule";
 
 const querySchema = z.object({
   scope: z.enum(["today", "compliance"]),
@@ -85,6 +86,69 @@ export const GET = apiHandler(async (request: NextRequest) => {
   if (scope === "today") {
     const todayStart = startOfDayInTz(new Date(), userTz);
     const todayEnd = new Date(todayStart.getTime() + 86_400_000);
+
+    // v1.4.39 W-SERVER-FIX — project pending intake rows for every
+    // active schedule whose window opens today, then idempotently
+    // backfill any missing rows. Pre-fix the endpoint returned `[]`
+    // for daily meds (`schedule.daysOfWeek = null` in the DB) until
+    // the reminder worker entered the RED phase at the end of the
+    // dose window — leaving the iOS Dashboard tile + the "Erfassen"
+    // sheet empty for the whole morning. The projection re-uses the
+    // canonical `parseScheduleRecurrence` (null/empty = every day)
+    // so the daysOfWeek semantics stay aligned across every reader.
+    const activeMedications = await prisma.medication.findMany({
+      where: { userId: user.id, active: true },
+      select: {
+        id: true,
+        schedules: {
+          select: {
+            id: true,
+            medicationId: true,
+            windowStart: true,
+            windowEnd: true,
+            daysOfWeek: true,
+          },
+        },
+      },
+    });
+    const projected = expandTodayIntakes(
+      activeMedications.flatMap((m) => m.schedules),
+      new Date(),
+      userTz,
+    );
+
+    const existing = await prisma.medicationIntakeEvent.findMany({
+      where: {
+        userId: user.id,
+        scheduledFor: { gte: todayStart, lt: todayEnd },
+      },
+      select: { medicationId: true, scheduledFor: true },
+    });
+    const existingKey = new Set(
+      existing.map((e) => `${e.medicationId}|${e.scheduledFor.toISOString()}`),
+    );
+    const missing = projected.filter(
+      (p) =>
+        !existingKey.has(`${p.medicationId}|${p.scheduledFor.toISOString()}`),
+    );
+    if (missing.length > 0) {
+      await prisma.medicationIntakeEvent.createMany({
+        data: missing.map((m) => ({
+          userId: user.id,
+          medicationId: m.medicationId,
+          scheduledFor: m.scheduledFor,
+          takenAt: null,
+          skipped: false,
+          // `REMINDER` is the same source the reminder worker uses to
+          // mint RED-phase rows — semantically "the server projected
+          // this slot before the user logged anything". The IntakeSource
+          // enum has no separate `SCHEDULER` literal; reusing REMINDER
+          // keeps the doctor-report + analytics filters byte-stable.
+          source: "REMINDER",
+        })),
+      });
+    }
+
     const events = await prisma.medicationIntakeEvent.findMany({
       where: {
         userId: user.id,
@@ -96,7 +160,11 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
     annotate({
       action: { name: "medications.intake.today" },
-      meta: { count: events.length },
+      meta: {
+        count: events.length,
+        projected: projected.length,
+        backfilled: missing.length,
+      },
     });
 
     return apiSuccess(
