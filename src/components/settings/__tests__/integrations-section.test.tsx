@@ -285,6 +285,50 @@ describe("IntegrationsSection — single-status-display contract (A5)", () => {
     expect(html).not.toContain("Last sync:");
   });
 
+  // v1.4.43 W14 — parked-state surface check.
+  // The pill flips to `data-state="parked"` and the resume banner
+  // renders with the reconnect CTA. The legacy `error` reconnect text
+  // (red) must NOT appear because the user-facing copy is the lighter
+  // "Paused — reconnect manually" string, not "Error — reconnect".
+  it("Withings parked state surfaces the parked pill + resume CTA", () => {
+    setIntegrationStatus({
+      threshold: 3,
+      integrations: [
+        {
+          integration: "withings",
+          state: "parked",
+          lastSuccessAt: "2026-05-08T12:00:00.000Z",
+          lastAttemptAt: "2026-05-09T18:00:00.000Z",
+          lastError: "Withings activity error: 293",
+          consecutiveFailures: 30,
+        },
+        {
+          integration: "moodlog",
+          state: "connected",
+          lastSuccessAt: null,
+          lastAttemptAt: null,
+          lastError: null,
+          consecutiveFailures: 0,
+        },
+      ],
+    });
+    setWithingsStatus({
+      connected: true,
+      configured: true,
+      lastSyncedAt: "2026-05-08T12:00:00.000Z",
+    });
+
+    const html = render();
+    expect(html).toContain('data-state="parked"');
+    expect(html).toContain("Paused");
+    expect(html).toContain("reconnect manually");
+    expect(html).toContain('data-testid="withings-parked-banner"');
+    expect(html).toContain('data-testid="withings-resume-button"');
+    // The lastError is surfaced under the pill so the operator sees
+    // the contract-mismatch reason without opening Audit Log.
+    expect(html).toContain("Withings activity error: 293");
+  });
+
   it("Mood Log card carries the visual divider Withings has (consistency)", () => {
     setIntegrationStatus({
       threshold: 3,

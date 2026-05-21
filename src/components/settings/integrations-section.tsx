@@ -64,7 +64,8 @@ type IntegrationState =
   | "connected"
   | "error_transient"
   | "error_reauth"
-  | "disconnected";
+  | "disconnected"
+  | "parked";
 
 interface IntegrationStatusViewModel {
   integration: IntegrationKey;
@@ -114,11 +115,14 @@ function pickStatus(
 }
 
 /**
- * Collapse the API's four-state machine into the three states the
- * pill UI cares about: `error_transient` and `error_reauth` both
+ * Collapse the API's five-state machine into the four states the
+ * pill UI cares about. `error_transient` and `error_reauth` both
  * surface as the same "Error — reconnect" pill, the actionable
  * difference (whether the user must reconnect vs wait for the next
- * retry) is conveyed via the inline error text underneath.
+ * retry) is conveyed via the inline error text underneath. `parked`
+ * (v1.4.43 W14) is its own pill state — the integration has been
+ * disabled after 24h of persistent failures and needs an explicit
+ * "Wieder verbinden" click to resume.
  */
 function pillStateFor(
   status: IntegrationStatusViewModel | undefined,
@@ -130,6 +134,8 @@ function pillStateFor(
     case "error_transient":
     case "error_reauth":
       return "error";
+    case "parked":
+      return "parked";
     case "disconnected":
       return "disconnected";
   }
@@ -256,6 +262,28 @@ function WithingsCard({
     },
   });
 
+  // v1.4.43 W14 — clear a parked integration via the resume endpoint.
+  // The CTA is rendered inside the parked banner below; success
+  // invalidates both the per-card status (so the pill flips back to
+  // connected immediately) and the cross-integration envelope (so any
+  // other view picks up the change on its next focus).
+  const resume = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/integrations/withings/resume", {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed");
+      return (await res.json()).data as {
+        resumed: boolean;
+        wasParked: boolean;
+      };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.withings() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.integrationsStatus() });
+    },
+  });
+
   async function handleSync(fullSync = false) {
     setSyncing(true);
     setSyncMsg(null);
@@ -339,8 +367,13 @@ function WithingsCard({
     : "disconnected";
   const pillLastSyncAt =
     status?.lastSyncedAt ?? viewModel?.lastSuccessAt ?? null;
+  // v1.4.43 W14 — `parked` and `error` both want the underlying error
+  // message surfaced under the pill (the pill says "what" — the
+  // message says "why"). Other states leave the inline line off.
   const errorMessage =
-    pillState === "error" && viewModel?.lastError ? viewModel.lastError : null;
+    (pillState === "error" || pillState === "parked") && viewModel?.lastError
+      ? viewModel.lastError
+      : null;
 
   return (
     <div className="bg-card border-border rounded-xl border p-6">
@@ -387,6 +420,59 @@ function WithingsCard({
               {" →"}
             </span>
           </a>
+        )}
+        {/* v1.4.43 W14 — parked-integration resume CTA. Surfaces only
+            when the row state is `parked` (>24h of persistent
+            failures). The button POSTs to /api/integrations/withings/
+            resume which calls `resumeIntegrationFromPark`; on success
+            the per-card status invalidates and the pill flips back to
+            connected without a page refresh. The button is the
+            primary action the user can take from this card — wider
+            tap target than the inline action row so it's reachable
+            on a Pixel 5 viewport. */}
+        {pillState === "parked" && (
+          <div
+            data-testid="withings-parked-banner"
+            className="border-dracula-orange/30 bg-dracula-orange/10 flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm"
+          >
+            <span className="text-dracula-orange min-w-0 break-words text-xs">
+              {t("settings.integrationPill.parkedReconnect")}
+            </span>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => resume.mutate()}
+              disabled={resume.isPending}
+              data-testid="withings-resume-button"
+              className="min-h-[44px] sm:min-h-0"
+            >
+              {resume.isPending ? (
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+              ) : (
+                <Link2 className="mr-1 h-3.5 w-3.5" />
+              )}
+              {t("settings.integrationPill.resumeCta")}
+            </Button>
+          </div>
+        )}
+        {resume.isError && (
+          <p
+            role="alert"
+            className="text-destructive text-xs"
+            data-testid="withings-resume-error"
+          >
+            {t("settings.integrationPill.resumeError")}
+          </p>
+        )}
+        {resume.isSuccess && resume.data?.wasParked && (
+          <p
+            role="status"
+            className="text-dracula-green text-xs"
+            data-testid="withings-resume-success"
+          >
+            {t("settings.integrationPill.resumeSuccess")}
+          </p>
         )}
         <div className="space-y-3">
           <h3 className="text-sm font-semibold">

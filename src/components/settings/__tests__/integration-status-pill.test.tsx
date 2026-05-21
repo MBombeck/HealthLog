@@ -94,4 +94,27 @@ describe("IntegrationStatusPill", () => {
     // narrow on Pixel 5.
     expect(html).toMatch(/just\s+now/i);
   });
+
+  // v1.4.43 W14 — parked-state copy.
+  // Distinct from `error` (red reconnect pill) because the user can
+  // resume the integration without redoing the OAuth dance; distinct
+  // from `warning` because the persistent streak survived the alert
+  // ladder AND the 24h grace window — manual intervention required.
+  it("renders the parked state with manual-reconnect phrasing (EN)", () => {
+    const html = render(
+      <IntegrationStatusPill state="parked" lastSyncAt={null} />,
+    );
+    expect(html).toContain("Paused");
+    expect(html).toContain("reconnect manually");
+    expect(html).toContain('data-state="parked"');
+  });
+
+  it("renders the parked state with manual-reconnect phrasing (DE)", () => {
+    const html = render(
+      <IntegrationStatusPill state="parked" lastSyncAt={null} />,
+      "de",
+    );
+    expect(html).toContain("Pausiert");
+    expect(html).toContain("manuell wieder verbinden");
+  });
 });

@@ -1,6 +1,11 @@
 "use client";
 
-import { CheckCircle2, AlertTriangle, CircleSlash } from "lucide-react";
+import {
+  CheckCircle2,
+  AlertTriangle,
+  CircleSlash,
+  PauseCircle,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { useTranslations } from "@/lib/i18n/context";
@@ -26,10 +31,24 @@ import { cn } from "@/lib/utils";
  * abbreviated time form into a 12 char string at most.
  */
 
+/**
+ * Pill states.
+ *
+ *   - connected      → happy path; relative "last sync" suffix is shown.
+ *   - warning        → connected but the upstream just returned a
+ *                      contract-mismatch error (v1.4.43 W4).
+ *   - error          → reauth-required / persistent transient error;
+ *                      "Error — reconnect" copy.
+ *   - parked         → v1.4.43 W14: >24h of persistent failures put the
+ *                      integration to sleep; "Pausiert — manuell wieder
+ *                      verbinden" copy + reconnect CTA.
+ *   - disconnected   → user clicked Disconnect; "Not connected" copy.
+ */
 export type IntegrationPillState =
   | "connected"
   | "warning"
   | "error"
+  | "parked"
   | "disconnected";
 
 interface IntegrationStatusPillProps {
@@ -78,15 +97,22 @@ export function IntegrationStatusPill({
 }: IntegrationStatusPillProps) {
   const { t } = useTranslations();
 
-  // chipClass only applies to the `connected` and `warning` branches —
-  // `error` falls back to `variant="destructive"` and `disconnected` to
-  // `variant="outline"`. The warning chip uses amber tokens to signal
-  // "connected, but the upstream just returned a contract-level error
-  // a reauth won't fix" — distinct from the red reconnect pill.
+  // chipClass only applies to the `connected`, `warning`, and `parked`
+  // branches — `error` falls back to `variant="destructive"` and
+  // `disconnected` to `variant="outline"`. The warning chip uses amber
+  // tokens to signal "connected, but the upstream just returned a
+  // contract-level error a reauth won't fix" — distinct from the red
+  // reconnect pill. The parked chip uses the orange tokens to signal
+  // "we tried to keep going for 24h but the contract mismatch persists
+  // — manual intervention required" — visually heavier than warning
+  // (sustained problem), lighter than error (still recoverable without
+  // re-auth).
   const connectedChipClass =
     "border-dracula-green/30 bg-dracula-green/15 text-dracula-green";
   const warningChipClass =
     "border-dracula-yellow/30 bg-dracula-yellow/15 text-dracula-yellow";
+  const parkedChipClass =
+    "border-dracula-orange/30 bg-dracula-orange/15 text-dracula-orange";
 
   let label: string;
   let icon: React.ReactNode;
@@ -103,6 +129,10 @@ export function IntegrationStatusPill({
     case "error":
       label = t("settings.integrationPill.errorReconnect");
       icon = <AlertTriangle aria-hidden="true" className="h-3 w-3" />;
+      break;
+    case "parked":
+      label = t("settings.integrationPill.parkedReconnect");
+      icon = <PauseCircle aria-hidden="true" className="h-3 w-3" />;
       break;
     case "disconnected":
       label = t("settings.integrationPill.notConnected");
@@ -124,7 +154,7 @@ export function IntegrationStatusPill({
       data-testid="integration-status-pill"
       data-state={state}
       variant={
-        state === "connected" || state === "warning"
+        state === "connected" || state === "warning" || state === "parked"
           ? undefined
           : state === "error"
             ? "destructive"
@@ -135,6 +165,7 @@ export function IntegrationStatusPill({
         "max-w-full whitespace-nowrap",
         state === "connected" && connectedChipClass,
         state === "warning" && warningChipClass,
+        state === "parked" && parkedChipClass,
         className,
       )}
     >

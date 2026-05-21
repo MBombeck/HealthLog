@@ -1905,12 +1905,16 @@
       "connected": "Conectado",
       "errorReconnect": "Error — reconectar",
       "warningServerError": "Conectado, error del servidor",
+      "parkedReconnect": "Pausado — reconectar manualmente",
       "notConnected": "No conectado",
       "justNow": "just now",
       "minutesAgo": "{count} min ago",
       "hoursAgo": "{count} h ago",
       "daysAgo": "{count} d ago",
-      "ariaLabel": "Integration status"
+      "ariaLabel": "Integration status",
+      "resumeCta": "Reconectar",
+      "resumeSuccess": "Integración reanudada",
+      "resumeError": "Reconexión fallida"
     },
     "apiTokens": "API Tokens",
     "apiTokensDescription": "Create API tokens for external medication intake (e.g., Shortcuts, automations).",

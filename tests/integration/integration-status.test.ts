@@ -46,6 +46,7 @@ import {
   markReconnected,
   isReauthRequired,
   getIntegrationStatus,
+  resumeIntegrationFromPark,
 } from "@/lib/integrations/status";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 
@@ -242,6 +243,112 @@ describe("IntegrationStatus end-to-end", () => {
     expect(row!.state).toBe("disconnected");
     expect(row!.lastError).toBeNull();
     expect(row!.consecutiveFailures).toBe(0);
+  });
+
+  // v1.4.43 W14 — end-to-end resume flow against real Postgres.
+  //
+  // The full ladder: persistent failure × N → bucket increments only
+  // the persistent slot → wall-clock crosses 24h → next failure flips
+  // state to `parked` → resumeIntegrationFromPark clears it back to
+  // connected → every bucket zeroed → the next sync runs.
+  it("resumeIntegrationFromPark clears a parked row and zeroes every bucket", async () => {
+    // Stamp a row that's already parked. We do it through Prisma
+    // directly so the test doesn't have to wait 24h of wall clock.
+    await getPrismaClient().integrationStatus.create({
+      data: {
+        userId: TEST_USER_ID,
+        integration: "withings",
+        state: "parked",
+        consecutiveFailures: 30,
+        consecutiveFailuresByKind: {
+          transient: 2,
+          reauth_required: 0,
+          persistent: 28,
+        },
+        persistentFailureStartedAt: new Date(
+          Date.now() - 26 * 60 * 60 * 1000,
+        ),
+        lastError: "encrypted-blob-placeholder",
+        lastAttemptAt: new Date(),
+      },
+    });
+
+    const result = await resumeIntegrationFromPark(TEST_USER_ID, "withings");
+    expect(result.wasParked).toBe(true);
+
+    const row = await getPrismaClient().integrationStatus.findUnique({
+      where: {
+        userId_integration: {
+          userId: TEST_USER_ID,
+          integration: "withings",
+        },
+      },
+    });
+    expect(row).not.toBeNull();
+    expect(row!.state).toBe("connected");
+    expect(row!.consecutiveFailures).toBe(0);
+    expect(row!.consecutiveFailuresByKind).toEqual({
+      transient: 0,
+      reauth_required: 0,
+      persistent: 0,
+    });
+    expect(row!.persistentFailureStartedAt).toBeNull();
+    expect(row!.lastError).toBeNull();
+
+    // `isReauthRequired` no longer short-circuits the sync entry-point
+    // — the next cron tick will attempt the upstream call.
+    expect(await isReauthRequired(TEST_USER_ID, "withings")).toBe(false);
+  });
+
+  it("recordSyncFailure increments only the matching per-kind bucket", async () => {
+    // First write — transient bucket goes to 1.
+    await recordSyncFailure({
+      userId: TEST_USER_ID,
+      integration: "withings",
+      kind: "transient",
+      message: "Withings refresh error: 503",
+      errorCode: "503",
+    });
+    let row = await getPrismaClient().integrationStatus.findUnique({
+      where: {
+        userId_integration: {
+          userId: TEST_USER_ID,
+          integration: "withings",
+        },
+      },
+    });
+    expect(row!.consecutiveFailuresByKind).toMatchObject({
+      transient: 1,
+      reauth_required: 0,
+      persistent: 0,
+    });
+
+    // Second write — persistent failure ticks ONLY the persistent
+    // bucket. The transient bucket is preserved at 1 (this is the
+    // whole point of the per-kind counter — a transient hiccup must
+    // not mask the persistent streak's true age).
+    await recordSyncFailure({
+      userId: TEST_USER_ID,
+      integration: "withings",
+      kind: "persistent",
+      message: "Withings measure error: 293",
+      errorCode: "293",
+    });
+    row = await getPrismaClient().integrationStatus.findUnique({
+      where: {
+        userId_integration: {
+          userId: TEST_USER_ID,
+          integration: "withings",
+        },
+      },
+    });
+    expect(row!.consecutiveFailuresByKind).toMatchObject({
+      transient: 1,
+      reauth_required: 0,
+      persistent: 1,
+    });
+    // First persistent failure stamps the streak anchor.
+    expect(row!.persistentFailureStartedAt).toBeInstanceOf(Date);
   });
 
   it("CASCADE delete on User removes the IntegrationStatus row", async () => {
