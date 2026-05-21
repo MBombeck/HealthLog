@@ -13,6 +13,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // v1.4.41 — ignore Claude Code session worktrees so a mid-marathon
+    // worktree on an older commit can't poison `pnpm lint` locally.
+    // CI never sees this path; the rule is for the dev environment.
+    ".claude/**",
   ]),
   // v1.4.41 W-PROCESS-DOCS — custom rule that flags any bare-array
   // `queryKey: [ … ]` / `mutationKey: [ … ]` declaration inside the
