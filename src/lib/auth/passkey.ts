@@ -42,6 +42,31 @@ const authenticationResponseSchema = z
   })
   .loose();
 
+// v1.4.43 W10 senior-dev L-1 — symmetric Zod narrowing in front of
+// `verifyRegistration`. SimpleWebAuthn's `RegistrationResponseJSON`
+// shape: https://w3c.github.io/webauthn/#dictdef-registrationresponsejson
+// `attestationObject` replaces `authenticatorData + signature` from
+// the authentication shape; everything else mirrors the auth schema.
+const registrationResponseSchema = z
+  .object({
+    id: z.string().min(1),
+    rawId: z.string().min(1),
+    response: z
+      .object({
+        clientDataJSON: z.string().min(1),
+        attestationObject: z.string().min(1),
+        transports: z.array(z.string()).optional(),
+        publicKeyAlgorithm: z.number().optional(),
+        publicKey: z.string().optional(),
+        authenticatorData: z.string().optional(),
+      })
+      .loose(),
+    authenticatorAttachment: z.string().optional(),
+    clientExtensionResults: z.unknown().optional(),
+    type: z.literal("public-key"),
+  })
+  .loose();
+
 type Transport =
   | "ble"
   | "cable"
@@ -145,12 +170,18 @@ export async function verifyRegistration(
   }
 
   try {
-    // The caller passes a parsed JSON body without prior shape-validation —
-    // the SimpleWebAuthn verifier owns full schema validation and throws
-    // on any mismatch. We narrow at the boundary so the rest of the file
-    // sees the documented `RegistrationResponseJSON` shape.
+    // v1.4.43 W10 senior-dev L-1 — Zod narrow at the boundary before
+    // delegating to SimpleWebAuthn's full cryptographic validation.
+    // A malformed body now fails fast with a structured Zod error
+    // rather than crashing on a follow-up `.id` deref deeper in the
+    // verifier. Mirrors the v1.4.43 W13 L-3 narrowing on the
+    // authentication side.
+    const parsed = registrationResponseSchema.safeParse(response);
+    if (!parsed.success) {
+      throw new Error("Registration response shape invalid");
+    }
     const verification = await verifyRegistrationResponse({
-      response: response as RegistrationResponseJSON,
+      response: parsed.data as RegistrationResponseJSON,
       expectedChallenge: challenge.challenge,
       expectedOrigin: getExpectedOrigin(),
       expectedRPID: getRpId(),

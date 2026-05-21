@@ -447,7 +447,7 @@ describe("POST /api/insights/chat — integration", () => {
     // Audit row is the durable observable signal — assert it landed
     // with the conversation id + turn index, no message content.
     const auditRows = await prisma.auditLog.findMany({
-      where: { action: "audit.coach.replay-injection" },
+      where: { action: "insights.coach.replay_injection" },
     });
     expect(auditRows).toHaveLength(1);
     expect(auditRows[0].userId).toBe(userId);

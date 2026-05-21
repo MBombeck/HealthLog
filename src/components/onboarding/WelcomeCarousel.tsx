@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
 import { readError } from "@/lib/api/read-error";
+import { scrollBehaviorForUser } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 /**
@@ -119,11 +120,8 @@ export function WelcomeCarousel() {
       `[data-slide-index="${idx}"]`,
     );
     if (!target) return;
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
     target.scrollIntoView({
-      behavior: reduceMotion ? "auto" : "smooth",
+      behavior: scrollBehaviorForUser(),
       inline: "start",
       block: "nearest",
     });

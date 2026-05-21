@@ -22,8 +22,6 @@
  * idempotent — a second click in the same second sees the same
  * post-state and writes no extra audit row.
  */
-import type { NextRequest } from "next/server";
-
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -32,8 +30,7 @@ import { resumeIntegrationFromPark } from "@/lib/integrations/status";
 
 export const dynamic = "force-dynamic";
 
-export const POST = apiHandler(async (request: NextRequest) => {
-  void request;
+export const POST = apiHandler(async () => {
   const { user } = await requireAuth();
   annotate({ action: { name: "integrations.withings.resume" } });
 

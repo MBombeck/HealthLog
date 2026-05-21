@@ -97,9 +97,9 @@ export function TrendAnnotation({
         className="border-border/60 bg-card/40 space-y-1.5 rounded-md border p-3 motion-reduce:animate-none"
         aria-label={t("insights.trendAnnotation.pendingLabel")}
       >
-        <div className="bg-muted/60 h-2.5 w-11/12 animate-pulse rounded" />
-        <div className="bg-muted/60 h-2.5 w-9/12 animate-pulse rounded" />
-        <div className="bg-muted/60 h-2.5 w-7/12 animate-pulse rounded" />
+        <div className="bg-muted/60 h-2.5 w-11/12 animate-pulse motion-reduce:animate-none rounded" />
+        <div className="bg-muted/60 h-2.5 w-9/12 animate-pulse motion-reduce:animate-none rounded" />
+        <div className="bg-muted/60 h-2.5 w-7/12 animate-pulse motion-reduce:animate-none rounded" />
       </div>
     );
   }

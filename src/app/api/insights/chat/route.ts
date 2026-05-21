@@ -201,10 +201,12 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
     // slipped past the regex bank on a previous turn would re-enter
     // the prompt every reply. Re-run the detector against every
     // user-turn re-loaded from DB; on a hit, short-circuit the SSE
-    // with a refusal AND drop an `audit.coach.replay-injection`
+    // with a refusal AND drop an `insights.coach.replay_injection`
     // row so the failure case is observable. The audit row carries
     // the conversation id (server-owned), the turn index (no PII)
-    // and the matched reason — never the message content.
+    // and the matched reason — never the message content. v1.4.43
+    // W10 simplifier-L-2 — action name follows the `<surface>.<verb>`
+    // convention (no `audit.` prefix; no `.replay-injection` dash).
     for (let i = 0; i < priorTurns.length; i++) {
       const turn = priorTurns[i];
       if (turn.role !== "user") continue;
@@ -214,7 +216,7 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
         action: { name: "insights.coach.replay_injection" },
         meta: { reason: replayed.reason, turnIndex: i },
       });
-      await auditLog("audit.coach.replay-injection", {
+      await auditLog("insights.coach.replay_injection", {
         userId,
         details: {
           conversationId: existing.id,

@@ -571,8 +571,8 @@ export function SectionToggles({
           {t("doctorReport.sections.title")}
         </p>
         <div className="space-y-2">
-          <div className="bg-muted h-9 animate-pulse rounded-md" />
-          <div className="bg-muted h-9 animate-pulse rounded-md" />
+          <div className="bg-muted h-9 animate-pulse motion-reduce:animate-none rounded-md" />
+          <div className="bg-muted h-9 animate-pulse motion-reduce:animate-none rounded-md" />
         </div>
       </div>
     );
@@ -639,7 +639,7 @@ export function SectionToggles({
                 <span className="flex flex-col">
                   <span
                     className={`text-sm leading-tight font-medium ${
-                      isAvailable ? "" : "line-through"
+                      isAvailable ? "" : "text-muted-foreground"
                     }`}
                   >
                     {t(SECTION_LABEL_KEYS[key])}

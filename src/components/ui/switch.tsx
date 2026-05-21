@@ -20,10 +20,12 @@ function Switch({
         // v1.4.43 W5-H1 — extend the WCAG 2.5.5 hit target to 44×44 px via
         // a `::before` pseudo-element while leaving the visual track at
         // 18×32 px. The same trick is used on Input (v1.4.34 IW-G). The
-        // wrapping `relative` and `before:absolute … before:inset-[-12px]`
+        // wrapping `relative` and `before:absolute … before:inset-[-13px]`
         // pair guarantees pointer events bubble up from the larger zone
-        // without disturbing layout.
-        "peer data-[state=checked]:bg-primary data-[state=unchecked]:bg-input focus-visible:border-ring focus-visible:ring-ring/50 dark:data-[state=unchecked]:bg-input/80 group/switch relative inline-flex shrink-0 items-center rounded-full border border-transparent shadow-xs transition-all outline-none before:absolute before:inset-[-12px] before:content-[''] focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-[1.15rem] data-[size=default]:w-8 data-[size=sm]:h-3.5 data-[size=sm]:w-6",
+        // without disturbing layout. v1.4.43 W10 design-M1 — `-13px` (not
+        // `-12px`) takes the 18.4 px track + 26 px padding to 44.4 px and
+        // closes the 1.6 px vertical short fall to spec-strict 2.5.5.
+        "peer data-[state=checked]:bg-primary data-[state=unchecked]:bg-input focus-visible:border-ring focus-visible:ring-ring/50 dark:data-[state=unchecked]:bg-input/80 group/switch relative inline-flex shrink-0 items-center rounded-full border border-transparent shadow-xs transition-all outline-none before:absolute before:inset-[-13px] before:content-[''] focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-[1.15rem] data-[size=default]:w-8 data-[size=sm]:h-3.5 data-[size=sm]:w-6",
         className,
       )}
       {...props}

@@ -65,8 +65,11 @@ describe("<SectionToggles> v1.4.43 M4 disabled-row behaviour", () => {
     );
     expect(html).toMatch(/data-unavailable="true"[\s\S]*?Sleep duration/);
 
-    // The strike-through class fires for at least one disabled row.
-    expect(html).toMatch(/line-through[\s\S]*?Sleep duration/);
+    // v1.4.43 W10 design-M4 — disabled rows render with muted text
+    // colour (not strike-through, which reads as "deleted" rather
+    // than "unavailable"). The italic hint line below carries the
+    // semantic visually.
+    expect(html).toMatch(/text-muted-foreground[\s\S]*?Sleep duration/);
   });
 
   it("renders the unavailable-hint tooltip text via the title attribute", () => {

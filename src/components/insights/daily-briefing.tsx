@@ -227,10 +227,10 @@ function BriefingSkeleton() {
       aria-hidden="true"
     >
       <div className="space-y-2">
-        <div className="bg-muted/60 h-3 w-11/12 animate-pulse rounded" />
-        <div className="bg-muted/60 h-3 w-10/12 animate-pulse rounded" />
-        <div className="bg-muted/60 h-3 w-9/12 animate-pulse rounded" />
-        <div className="bg-muted/60 h-3 w-8/12 animate-pulse rounded" />
+        <div className="bg-muted/60 h-3 w-11/12 animate-pulse motion-reduce:animate-none rounded" />
+        <div className="bg-muted/60 h-3 w-10/12 animate-pulse motion-reduce:animate-none rounded" />
+        <div className="bg-muted/60 h-3 w-9/12 animate-pulse motion-reduce:animate-none rounded" />
+        <div className="bg-muted/60 h-3 w-8/12 animate-pulse motion-reduce:animate-none rounded" />
       </div>
       <div className="space-y-2">
         {[0, 1, 2].map((i) => (
@@ -238,7 +238,7 @@ function BriefingSkeleton() {
             key={i}
             className="border-border/40 bg-card/30 flex h-16 items-center rounded-md border p-3"
           >
-            <div className="bg-muted/60 h-3 w-1/3 animate-pulse rounded" />
+            <div className="bg-muted/60 h-3 w-1/3 animate-pulse motion-reduce:animate-none rounded" />
           </div>
         ))}
       </div>
