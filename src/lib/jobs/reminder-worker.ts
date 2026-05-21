@@ -51,6 +51,12 @@ import {
   type MedicationInventoryExpirePayload,
 } from "@/lib/jobs/medication-inventory-expire";
 import {
+  INTAKE_AUTO_SKIP_QUEUE,
+  INTAKE_AUTO_SKIP_CRON,
+  runIntakeAutoSkipPass,
+  type IntakeAutoSkipPayload,
+} from "@/lib/jobs/intake-auto-skip";
+import {
   APPLE_HEALTH_IMPORT_QUEUE,
   APPLE_HEALTH_IMPORT_CONCURRENCY,
   handleAppleHealthImport,
@@ -1391,6 +1397,35 @@ async function handleMedicationInventoryExpire(
   });
 }
 
+/**
+ * v1.4.46 — hourly auto-skip for stale unmarked medication intakes.
+ *
+ * Flips `MedicationIntakeEvent.skipped` to `true` for every event the
+ * user neither took nor explicitly skipped within the 24 h grace
+ * window. The pure helper lives in `@/lib/jobs/intake-auto-skip` so a
+ * unit test can drive it with an in-memory fake Prisma; this wrapper
+ * threads the worker's pg-boss + background-event plumbing.
+ */
+async function handleIntakeAutoSkip(jobs: Job<IntakeAutoSkipPayload>[]) {
+  void jobs;
+  await withBackgroundEvent("job.intake_auto_skip", async (evt) => {
+    const prisma = getWorkerPrisma();
+    try {
+      const result = await runIntakeAutoSkipPass(prisma, {
+        nowMs: Date.now(),
+      });
+      evt.addMeta("intake_auto_skip_count", result.skippedCount);
+      evt.addMeta("intake_auto_skip_cutoff", result.cutoff.toISOString());
+    } catch (err) {
+      evt.addWarning(
+        `intake-auto-skip failed: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  });
+}
+
 async function handleOffhostBackup(jobs: Job<OffhostBackupPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.offhost_backup", async (evt) => {
@@ -1642,6 +1677,11 @@ export async function startReminderWorker() {
     GEO_BACKFILL_QUEUE,
     PR_DETECTION_QUEUE,
     MEDICATION_INVENTORY_EXPIRE_QUEUE,
+    // v1.4.46 — hourly auto-skip pass for stale unmarked intakes.
+    // Same pg-boss v12 createQueue contract as the other crons; without
+    // this entry the schedule silently no-ops and pending rows older
+    // than 24 h pile up unflipped.
+    INTAKE_AUTO_SKIP_QUEUE,
     APPLE_HEALTH_IMPORT_QUEUE,
     ROLLUP_RECOMPUTE_QUEUE,
     ROLLUP_FULL_BACKFILL_QUEUE,
@@ -1723,6 +1763,11 @@ export async function startReminderWorker() {
     // EXPIRED at 03:30 Europe/Berlin (in the existing 02:xx–03:xx
     // maintenance window, right after idempotency-cleanup).
     [MEDICATION_INVENTORY_EXPIRE_QUEUE, MEDICATION_INVENTORY_EXPIRE_CRON],
+    // v1.4.46 — hourly auto-skip for medication intakes the user never
+    // marked. Cron `5 * * * *` slots off the top-of-the-hour
+    // reminder-check (:00) and the moodlog-sync (:30) so the three
+    // hourly ticks don't pile up on the same boss poll.
+    [INTAKE_AUTO_SKIP_QUEUE, INTAKE_AUTO_SKIP_CRON],
     // v1.4.37 W7c — nightly fold of per-sample APPLE_HEALTH cumulative
     // rows into one row per day per type. Slots between the
     // audit-log cleanup (03:15) and the feedback aggregator (04:00).
@@ -1858,6 +1903,15 @@ export async function startReminderWorker() {
     MEDICATION_INVENTORY_EXPIRE_QUEUE,
     { localConcurrency: 1 },
     handleMedicationInventoryExpire,
+  );
+  // v1.4.46 — hourly auto-skip for stale unmarked intakes.
+  // Single-flight: two ticks racing against the same row pile is wasted
+  // work, and the underlying `updateMany` is the canonical idempotent
+  // shape anyway.
+  await boss.work<IntakeAutoSkipPayload>(
+    INTAKE_AUTO_SKIP_QUEUE,
+    { localConcurrency: 1 },
+    handleIntakeAutoSkip,
   );
   // v1.4.34 — Apple Health export.zip ingest worker. localConcurrency
   // caps at 1 because the parse loop is CPU-bound and a concurrent
