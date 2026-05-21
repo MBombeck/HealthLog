@@ -25,6 +25,7 @@ import {
   type DashboardLayout,
 } from "@/lib/dashboard-layout";
 import type { DataSummary as DataSummaryType } from "@/lib/analytics/trends";
+import type { DashboardAnalyticsData as AnalyticsData } from "@/types/analytics";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -90,46 +91,6 @@ import {
   getAgeFromDateOfBirth,
   getPersonalizedPulseTarget,
 } from "@/lib/analytics/pulse-targets";
-
-interface AnalyticsData {
-  summaries: Record<string, DataSummary>;
-  bpInTargetPct: number | null;
-  /**
-   * v1.4.18 A1 — share of paired BP readings inside target over the
-   * last 7 / 30 days. Drive the BD-Zielbereich tile's `7T:` / `30T:`
-   * sub-values; render "—" when the field is null (no paired readings
-   * in the window).
-   */
-  bpInTargetPct7d?: number | null;
-  bpInTargetPct30d?: number | null;
-  /**
-   * v1.4.22 A1 — long-arc all-time aggregate. After the headline
-   * re-anchor to last-30-days the all-time number lives as a sub-value
-   * on the BD-Zielbereich tile (alongside `7d` and `30d`).
-   */
-  bpInTargetPctAllTime?: number | null;
-  /**
-   * v1.4.22 W5 reconcile (Code-H2) — period-aligned prior-window
-   * pcts. The BD-Zielbereich tile's comparison-overlay caption picks
-   * `priorMonth` for `comparisonBaseline === "lastMonth"` and
-   * `priorYear` for `lastYear` so the rendered "Δ X% vs. last month"
-   * stays honest. Null when the prior window has no paired readings.
-   */
-  bpInTargetPctPriorMonth?: number | null;
-  bpInTargetPctPriorYear?: number | null;
-  glucoseByContext?: Record<string, DataSummaryType>;
-  /**
-   * v1.4.34 IW-B — per-type freshness map from `/api/analytics`. The
-   * tile-strip helper reads `lastSeenByType[type]?.daysAgo` and forwards
-   * it to each `<TrendCard staleDays>` so a metric the user hasn't
-   * logged in a while keeps its tile visible (with an explicit
-   * "Letzter Wert vor …" caption) instead of disappearing.
-   */
-  lastSeenByType?: Record<
-    string,
-    { lastSeenAt: string; daysAgo: number } | null
-  >;
-}
 
 interface RangeDisplayConfig {
   range: TrafficRange | null;

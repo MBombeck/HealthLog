@@ -70,9 +70,9 @@ const ITEM_LABEL_KEYS: Record<
   },
 };
 
-interface AnalyticsData {
-  summaries?: Record<string, { count?: number } | undefined>;
-}
+// v1.4.41 W-ORG — shared shape lives in `src/types/analytics.ts` as
+// `ChecklistAnalyticsData`; aliased back to the local name.
+import type { ChecklistAnalyticsData as AnalyticsData } from "@/types/analytics";
 
 interface WithingsStatus {
   connected?: boolean;
