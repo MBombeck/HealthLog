@@ -46,11 +46,7 @@ import {
   WithingsApiError,
   classifyWithingsResponse,
 } from "./response-classifier";
-import {
-  extractWithingsStatus,
-  isWithingsRefreshReauthFailure,
-} from "./sync";
-import { getValidToken } from "./sync";
+import { getValidToken, recordWithingsSyncFailure } from "./sync";
 import {
   isReauthRequired,
   parkIntegrationAtReauth,
@@ -220,19 +216,29 @@ export async function syncUserSleep(
       endUnix,
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    const status = extractWithingsStatus(message);
-    // v1.4.26 defence-in-depth — see sync-activity.ts. A 403 on a
-    // scope-gated endpoint always means scope-missing or token-revoked.
-    const isReauth =
-      isWithingsRefreshReauthFailure(message) || status === "403";
-    await recordSyncFailure({
-      userId,
-      integration: "withings",
-      kind: isReauth ? "reauth_required" : "transient",
-      message,
-      errorCode: status,
-    });
+    // v1.4.43 W7-B3 — typed-classification path (see sync-activity.ts
+    // for the full rationale). The thrown `WithingsApiError` carries
+    // the classification verdict; `recordWithingsSyncFailure` routes
+    // it through `classifyError`, which falls back to the legacy regex
+    // for un-prototyped errors (pg-boss JSON round-trip).
+    //
+    // BL-P3-2 defence-in-depth — symmetric to sync-activity. A 403 on
+    // this scope-gated endpoint always means scope-missing or
+    // token-revoked; force `reauth_required` so the 3-strike alert
+    // still pages on the unexpected case.
+    const withingsStatus =
+      err instanceof WithingsApiError ? err.withingsStatus : undefined;
+    if (withingsStatus === 403) {
+      await recordSyncFailure({
+        userId,
+        integration: "withings",
+        kind: "reauth_required",
+        message: err instanceof Error ? err.message : String(err),
+        errorCode: "403",
+      });
+      throw err;
+    }
+    await recordWithingsSyncFailure(userId, err);
     throw err;
   }
 
