@@ -38,7 +38,6 @@ import { formatDateTime, formatTime } from "@/lib/format";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import {
-  describeInjectionSite,
   nextInjectionSite,
   type InjectionSiteKey,
 } from "@/lib/medications/injection-sites";
@@ -591,6 +590,3 @@ function siteSuffix(site: InjectionSiteKey): string {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join("");
 }
-
-/** Re-export so the parent doesn't need to import describeInjectionSite. */
-export { describeInjectionSite };

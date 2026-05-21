@@ -48,7 +48,6 @@ export {
   DEFAULT_TIMEZONE,
   isValidTimezone,
   isNearUtc,
-  listSupportedTimezones,
   detectBrowserTimezone,
   formatInUserTz,
   userDayKey,
