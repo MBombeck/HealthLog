@@ -48,8 +48,7 @@ import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { defaultLocale, type Locale } from "@/lib/i18n/config";
 import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
-import { expandTodayIntakes } from "@/lib/medication-schedule";
-import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
+import { projectTodayIntakesAndRecompute } from "@/lib/medications/scheduling/project-today-intakes";
 
 const SPARK_DAYS = 7;
 const STREAK_WINDOW_DAYS = 365;
@@ -271,26 +270,15 @@ function buildContext(
 }
 
 /**
- * v1.4.39 W-SERVER-FIX-2 — project today's active schedules through
- * the canonical `expandTodayIntakes` helper, idempotently backfill any
- * missing `MedicationIntakeEvent` rows, and re-read the today-window
- * so the caller sees both pre-existing rows + the freshly minted ones.
+ * v1.4.39 W-SERVER-FIX-2 — project today's active schedules, idempotently
+ * backfill any missing `MedicationIntakeEvent` rows via the shared
+ * helper, then re-read the today-window so the caller sees both
+ * pre-existing rows + the freshly minted ones.
  *
- * Mirrors the post-fix behaviour of `/api/medications/intake?scope=
- * today` so the iOS Dashboard tile (fed by this route) and the iOS
+ * Mirrors the behaviour of `/api/medications/intake?scope=today` (same
+ * helper) so the iOS Dashboard tile (fed by this route) and the iOS
  * Erfassen sheet (fed by the intake route) converge on the same row
- * set the moment a daily med becomes active. Without this projection
- * the dashboard route returned `[]` for daily meds (`daysOfWeek = null`)
- * even after the intake route's projection landed, leaving the iOS
- * Dashboard tile in its "Heute nichts geplant" empty state all
- * morning.
- *
- * `skipDuplicates: true` guards against a concurrent intake-route hit
- * minting the same `(userId, medicationId, scheduledFor, REMINDER)`
- * row in the gap between the existence probe and the `createMany`.
- * The schema-level `@@unique` is the structural backstop; this flag
- * is the defense-in-depth that keeps the route returning 2xx instead
- * of bubbling a constraint violation during the race window.
+ * set the moment a daily med becomes active.
  */
 async function projectAndReadTodaysIntakes(
   userId: string,
@@ -298,89 +286,12 @@ async function projectAndReadTodaysIntakes(
   todayStart: Date,
   todayEnd: Date,
 ): Promise<Array<{ id: string; takenAt: Date | null; skipped: boolean }>> {
-  const activeMedications = await prisma.medication.findMany({
-    where: { userId, active: true },
-    select: {
-      id: true,
-      schedules: {
-        select: {
-          id: true,
-          medicationId: true,
-          windowStart: true,
-          windowEnd: true,
-          daysOfWeek: true,
-        },
-      },
-    },
-  });
-  const projected = expandTodayIntakes(
-    activeMedications.flatMap((m) => m.schedules),
-    new Date(),
+  await projectTodayIntakesAndRecompute({
+    userId,
     userTz,
-  );
-
-  if (projected.length > 0) {
-    const existing = await prisma.medicationIntakeEvent.findMany({
-      where: {
-        userId,
-        scheduledFor: { gte: todayStart, lt: todayEnd },
-      },
-      select: { medicationId: true, scheduledFor: true },
-    });
-    const existingKey = new Set(
-      existing.map((e) => `${e.medicationId}|${e.scheduledFor.toISOString()}`),
-    );
-    const missing = projected.filter(
-      (p) =>
-        !existingKey.has(`${p.medicationId}|${p.scheduledFor.toISOString()}`),
-    );
-    if (missing.length > 0) {
-      await prisma.medicationIntakeEvent.createMany({
-        data: missing.map((m) => ({
-          userId,
-          medicationId: m.medicationId,
-          scheduledFor: m.scheduledFor,
-          takenAt: null,
-          skipped: false,
-          // `REMINDER` mirrors the intake-route projection — the same
-          // `IntakeSource` literal the reminder worker uses for
-          // RED-phase rows. Doctor-report + analytics filters stay
-          // byte-stable across both code paths.
-          source: "REMINDER",
-        })),
-        skipDuplicates: true,
-      });
-
-      // v1.4.40 — close the compliance-rollup hook gap from v1.4.39.4.
-      // Mirrors the intake-route call site: after a bulk projection
-      // backfill, fire one rollup recompute per distinct
-      // `(medication_id, dayKey)` so the rollup row reflects the new
-      // `scheduled` count before the next read. Best-effort: errors
-      // stay caught inside the helper so a populator hiccup doesn't
-      // surface as a 5xx on the dashboard summary.
-      const seenDayKeys = new Set<string>();
-      const recomputeJobs: Array<Promise<void>> = [];
-      for (const m of missing) {
-        const key = `${m.medicationId}|${m.scheduledFor.toISOString().slice(0, 10)}`;
-        if (seenDayKeys.has(key)) continue;
-        seenDayKeys.add(key);
-        recomputeJobs.push(
-          recomputeMedicationComplianceForEvent({
-            userId,
-            medicationId: m.medicationId,
-            scheduledFor: m.scheduledFor,
-            tz: userTz,
-          }),
-        );
-      }
-      // Defence in depth (specialist H1): the helper swallows internally
-      // today, but any future refactor that lets a throw escape would
-      // turn the dashboard summary into a 5xx. `allSettled` keeps the
-      // best-effort contract explicit at the call site so the request
-      // stays 200-OK regardless of helper behaviour.
-      await Promise.allSettled(recomputeJobs);
-    }
-  }
+    todayStart,
+    todayEnd,
+  });
 
   return prisma.medicationIntakeEvent.findMany({
     where: {
