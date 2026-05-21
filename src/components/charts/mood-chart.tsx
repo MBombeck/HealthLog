@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { queryKeys } from "@/lib/query-keys";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -312,8 +313,22 @@ export function MoodChart({
 
   const displayTitle = title ?? t("charts.mood");
 
+  // v1.4.40 W-RSC — align the chart's queryKey with the dashboard's
+  // `useQuery({ queryKey: queryKeys.moodAnalytics() })` call against the
+  // same `/api/mood/analytics` endpoint. Pre-fix the chart fetched its
+  // own copy under `["mood-chart-data"]` (audit C1) — TanStack treated
+  // the two keys as separate cache slots and the cold-mount dashboard
+  // fired the request twice (once at `app/page.tsx:291`, once here on
+  // the chart's first render). The dedup eliminates a ~22 KB round-trip
+  // and frees one pg pool slot per cold mount.
+  //
+  // `staleTime: 60_000` matches the dashboard's `DASHBOARD_QUERY_OPTS`
+  // so a route swing back to the dashboard within a minute keeps the
+  // cache fresh; the chart's own subscription becomes the cache writer
+  // for any insights / mood sub-page that mounts the chart without the
+  // dashboard parent having fetched first.
   const { data, isLoading } = useQuery({
-    queryKey: ["mood-chart-data"],
+    queryKey: queryKeys.moodAnalytics(),
     queryFn: async (): Promise<MoodAnalyticsData> => {
       const res = await fetch("/api/mood/analytics");
       if (!res.ok) throw new Error("Failed to fetch mood analytics");
@@ -321,6 +336,8 @@ export function MoodChart({
       return json.data as MoodAnalyticsData;
     },
     enabled: isAuthenticated,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const chartData = useMemo((): ChartDataPoint[] | undefined => {
