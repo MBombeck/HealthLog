@@ -41,7 +41,7 @@ import {
   readWeekRollups,
   readYearRollups,
   type RollupBucketRow,
-} from "../rollup-read-wmy";
+} from "../measurement-read-wmy";
 
 const { findMany } = mocks;
 

@@ -30,7 +30,7 @@
  */
 import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
-import { CUMULATIVE_HK_TYPES } from "./apple-health-mapping";
+import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
 
 /**
  * Cumulative measurement types the rollup `sum_value` column serves.

@@ -25,7 +25,7 @@ import {
   isCumulativeType,
   readCumulativeDaySums,
   resolveBucketSum,
-} from "../rollup-read-cumulative";
+} from "../measurement-read-cumulative";
 
 beforeEach(() => {
   mocks.findMany.mockReset();

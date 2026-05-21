@@ -68,7 +68,7 @@ import {
   aggregateWmyBuckets,
   readBestGranularityRollups,
   type RollupBucketRow,
-} from "@/lib/measurements/rollup-read-wmy";
+} from "@/lib/rollups/measurement-read-wmy";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

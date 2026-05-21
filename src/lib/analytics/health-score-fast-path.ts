@@ -45,7 +45,7 @@ import {
   probeRollupCoverage,
   type RollupCoverageMap,
 } from "@/lib/rollups/measurement-coverage";
-import { readBestGranularityRollups } from "@/lib/measurements/rollup-read-wmy";
+import { readBestGranularityRollups } from "@/lib/rollups/measurement-read-wmy";
 import { calculateCompliance } from "./compliance";
 import {
   computeHealthScore,
