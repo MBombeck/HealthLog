@@ -32,6 +32,7 @@ vi.mock("@/lib/auth/audit", () => ({
 
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn(),
+  checkAuthSurfaceRateLimit: vi.fn(),
   rateLimitHeaders: () => ({}),
 }));
 
@@ -58,7 +59,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { POST } from "../route";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit, checkAuthSurfaceRateLimit } from "@/lib/rate-limit";
 
 function postReq(body: unknown): NextRequest {
   return new NextRequest("http://localhost/api/auth/register", {
@@ -71,6 +72,10 @@ function postReq(body: unknown): NextRequest {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true } as never);
+  vi.mocked(checkAuthSurfaceRateLimit).mockResolvedValue({
+    allowed: true,
+    ip: "1.2.3.4",
+  } as never);
 });
 
 describe("POST /api/auth/register — 422 multi-issue (v1.4.43 W6)", () => {

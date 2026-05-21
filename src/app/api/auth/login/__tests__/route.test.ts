@@ -33,6 +33,12 @@ vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi
     .fn()
     .mockResolvedValue({ allowed: true, remaining: 5, reset: 0 }),
+  checkAuthSurfaceRateLimit: vi.fn().mockResolvedValue({
+    allowed: true,
+    remaining: 5,
+    reset: 0,
+    ip: "1.2.3.4",
+  }),
   rateLimitHeaders: vi.fn(() => ({})),
 }));
 
@@ -61,7 +67,11 @@ import { POST } from "../route";
 import { prisma } from "@/lib/db";
 import { verifyPassword } from "@/lib/auth/password";
 import { auditLog } from "@/lib/auth/audit";
-import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import {
+  checkRateLimit,
+  checkAuthSurfaceRateLimit,
+  rateLimitHeaders,
+} from "@/lib/rate-limit";
 import { ensureDbCompatibility } from "@/lib/db-compat";
 
 const TYPED_EMAIL = "leaked-identifier@example.com";
@@ -83,6 +93,12 @@ beforeEach(() => {
     allowed: true,
     remaining: 5,
     reset: 0,
+  } as never);
+  vi.mocked(checkAuthSurfaceRateLimit).mockResolvedValue({
+    allowed: true,
+    remaining: 5,
+    reset: 0,
+    ip: "1.2.3.4",
   } as never);
   vi.mocked(rateLimitHeaders).mockReturnValue({} as never);
   vi.mocked(ensureDbCompatibility).mockResolvedValue(undefined);
