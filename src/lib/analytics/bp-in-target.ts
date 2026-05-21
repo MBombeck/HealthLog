@@ -60,17 +60,7 @@ export interface BpReading {
 const SYS_HYPOTENSION_FLOOR = 90;
 const DIA_HYPOTENSION_FLOOR = 50;
 
-const BERLIN_DAY_FORMATTER = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Europe/Berlin",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
-
-function toBerlinDayKey(date: Date): string {
-  // en-CA gives us the YYYY-MM-DD shape directly.
-  return BERLIN_DAY_FORMATTER.format(date);
-}
+import { toBerlinDayKey } from "@/lib/tz/resolver";
 
 /**
  * Pair a systolic reading with its closest diastolic by absolute time

@@ -74,6 +74,21 @@ const BERLIN_DAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
  * stored zone.
  */
 export function toBerlinDayKey(date: Date): string {
+  const { year, month, day } = toBerlinYmd(date);
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Same formatter, but returns the numeric `{year, month, day}` parts
+ * instead of the reassembled string. Used by `bucket-series.ts` for
+ * `Date.UTC(year, month - 1, day)` arithmetic where parsing the string
+ * back would be wasted work.
+ */
+export function toBerlinYmd(date: Date): {
+  year: string;
+  month: string;
+  day: string;
+} {
   const parts = BERLIN_DAY_FORMATTER.formatToParts(date);
   const year = parts.find((part) => part.type === "year")?.value;
   const month = parts.find((part) => part.type === "month")?.value;
@@ -83,7 +98,7 @@ export function toBerlinDayKey(date: Date): string {
     throw new Error("Could not derive Berlin day key");
   }
 
-  return `${year}-${month}-${day}`;
+  return { year, month, day };
 }
 
 const TTL_MS = 60_000;

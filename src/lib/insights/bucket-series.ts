@@ -16,12 +16,7 @@
  * does not produce 360 zero-rows of noise.
  */
 
-const BERLIN_DAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
-  timeZone: "Europe/Berlin",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
+import { toBerlinYmd as toBerlinYmdStrings } from "@/lib/tz/resolver";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -65,14 +60,12 @@ interface BerlinYmd {
 }
 
 function toBerlinYmd(date: Date): BerlinYmd {
-  const parts = BERLIN_DAY_FORMATTER.formatToParts(date);
-  const year = Number(parts.find((p) => p.type === "year")?.value);
-  const month = Number(parts.find((p) => p.type === "month")?.value);
-  const day = Number(parts.find((p) => p.type === "day")?.value);
-  if (!year || !month || !day) {
-    throw new Error("Could not derive Berlin Y-M-D");
-  }
-  return { year, month, day };
+  const parts = toBerlinYmdStrings(date);
+  return {
+    year: Number(parts.year),
+    month: Number(parts.month),
+    day: Number(parts.day),
+  };
 }
 
 /** UTC midnight of the Berlin calendar day containing `date`. */
