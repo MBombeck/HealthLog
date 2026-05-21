@@ -19,7 +19,7 @@ export const localeLabels: Record<Locale, string> = {
  * know to expect rough edges and where to contribute fixes. Promoting
  * a locale here turns the banner off.
  */
-export const MAINTAINED_LOCALES: ReadonlySet<Locale> = new Set(["de", "en"]);
+const MAINTAINED_LOCALES: ReadonlySet<Locale> = new Set(["de", "en"]);
 
 export function isMaintainedLocale(locale: Locale): boolean {
   return MAINTAINED_LOCALES.has(locale);

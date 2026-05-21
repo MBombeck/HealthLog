@@ -205,10 +205,3 @@ export function tokenToMetric(token: ChartToken): string {
   return token.slice("metric:".length);
 }
 
-/** Token kinds the renderer needs to distinguish. MeasurementType tokens
- *  feed `<HealthChart>`; `metric:MOOD` mounts the dedicated, self-fetching
- *  `<MoodChart>` instead. */
-export function tokenKind(token: ChartToken): "measurement" | "mood" {
-  if (token === "metric:MOOD") return "mood";
-  return "measurement";
-}

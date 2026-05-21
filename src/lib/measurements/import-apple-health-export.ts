@@ -148,7 +148,7 @@ interface MutableTypeStat {
 }
 
 /** Tick frequency for the live `ImportJob.progress` write. */
-export const PROGRESS_TICK_RECORDS = 1_000;
+const PROGRESS_TICK_RECORDS = 1_000;
 const SPOT_FLUSH_BATCH = 500;
 const WORKOUT_FLUSH_BATCH = 100;
 

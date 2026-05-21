@@ -23,10 +23,9 @@
  *
  * Reads:
  *   - `readRollupBuckets` returns the persisted rows. The reader
- *     side (`analytics`, `comprehensive`, `summaries-slice`) calls
- *     `isRollupFresh` first to decide whether to fall through to the
- *     live aggregator + persist-on-miss. Cheap heuristic — one
- *     indexed query for the newest measurement's `measuredAt`.
+ *     side (`analytics`, `comprehensive`, `summaries-slice`) decides
+ *     whether to fall through to the live aggregator + persist-on-miss
+ *     via its own per-tier freshness probe.
  */
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -301,42 +300,6 @@ export async function readRollupBuckets(
     r2: r.r2,
     computedAt: r.computedAt,
   }));
-}
-
-/**
- * Cheap freshness heuristic — one indexed query against
- * `measurements` for the newest row per (user, type). Returns true
- * when the persisted rollup covers every measurement currently in
- * the DB, false when there's a newer measurement than the freshest
- * rollup row (the rollup needs a recompute).
- *
- * `null` newest measurement means the user has no rows of this type,
- * in which case the rollups are trivially fresh (empty == empty).
- */
-export async function isRollupFresh(
-  userId: string,
-  type: MeasurementType,
-  granularity: RollupGranularity,
-  newestComputedAt: Date | null,
-): Promise<boolean> {
-  const newest = await prisma.measurement.findFirst({
-    where: { userId, type, deletedAt: null },
-    orderBy: { measuredAt: "desc" },
-    select: { measuredAt: true, updatedAt: true },
-  });
-  if (!newest) {
-    // No measurements at all — empty rollup set is fresh by definition.
-    return true;
-  }
-  if (!newestComputedAt) {
-    // We have measurements but no rollup rows — definitely stale.
-    return false;
-  }
-  // Stale when the latest row was written / updated after the most
-  // recent rollup `computed_at` for this `(user, type, granularity)`.
-  const watermark =
-    newest.updatedAt > newest.measuredAt ? newest.updatedAt : newest.measuredAt;
-  return watermark <= newestComputedAt;
 }
 
 // ─── internals ────────────────────────────────────────────

@@ -33,17 +33,3 @@ export async function withBackgroundEvent<T>(
   });
 }
 
-/**
- * Fire-and-forget Variante: schluckt Fehler und loggt sie nur.
- * Fuer Webhook-Sends, Achievement-Checks, etc.
- */
-export async function withBackgroundEventSafe(
-  taskName: string,
-  fn: (evt: WideEventBuilder) => Promise<void>,
-): Promise<void> {
-  try {
-    await withBackgroundEvent(taskName, fn);
-  } catch {
-    // Fehler wurde bereits ins Event geschrieben und emittiert
-  }
-}

@@ -40,7 +40,7 @@
 // `gewicht`, `bmi`, `schlaf`, `stimmung`, `medikamente`, `workouts`)
 // stay flat — they predate v1.4.32 and the maintainer's audit kept
 // them as direct entries.
-export const SUB_PAGE_METRIC = {
+const SUB_PAGE_METRIC = {
   // ── vitals ──
   blutdruck: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA", "PULSE"],
   puls: ["PULSE"],

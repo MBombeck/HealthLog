@@ -10,7 +10,7 @@ export { WideEventBuilder } from "./event-builder";
 export { eventStorage, getEvent, annotate } from "./context";
 export { shouldEmit } from "./sampler";
 export { emitEvent, emitIfSampled } from "./transports";
-export { withBackgroundEvent, withBackgroundEventSafe } from "./background";
+export { withBackgroundEvent } from "./background";
 export {
   appendLogEvent,
   readLogBuffer,
