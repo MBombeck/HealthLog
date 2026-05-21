@@ -1,5 +1,60 @@
 # Changelog
 
+## [1.4.39.2] — 2026-05-21 — Per-request rollup convergence and progressive dashboard paint
+
+v1.4.39.1 wired the rollup write hook into the previously-bypassed
+Withings sync, `/api/import`, and admin-restore paths. New writes from
+those surfaces now fold the persistent rollup tier on touch, and the
+boot-time backfill discovery surfaces every per-(user, type, day) gap
+so a worker restart converges any stranded accounts. v1.4.39.2 closes
+two follow-ups Marc surfaced from the post-deploy trace: the dashboard
+chart still painted its `< 3 daily points` empty-state on the 30-point
+range for accounts whose historic rollup partition had not yet been
+folded, and the cold-mount UX waterfall left every per-type tile
+waiting on the heavy `/api/analytics` envelope.
+
+### Fixed
+
+- **`GET /api/measurements?source=rollup`** now reconciles the rollup
+  table against the live `measurements` table when the read returns
+  suspiciously few rows. A request that lands while the boot backfill
+  is still folding the historic partition would previously short-
+  circuit on the sparse rollup (`rollupRows.length > 0`) and never
+  reconcile with the live table. The route now probes
+  `COUNT(DISTINCT date_trunc('day', measured_at))` against
+  `measurements` for the requested window when the rollup carries
+  fewer than three rows on a window of at least seven days; if the
+  live table holds more distinct days than the rollup, the route folds
+  the `(user, type, DAY, [from, to])` partition inline via
+  `recomputeUserRollups` and re-reads. The chart paints the full
+  window on the same request without paying the cost on subsequent
+  requests (the rollup is now converged). The probe is gated on
+  rollup sparsity so covered-tenant hot paths stay single-read.
+
+### Changed
+
+- **Dashboard analytics fan-out** split across two parallel queries.
+  The per-type tile strip now reads from the slim `?slice=summaries`
+  branch and paints as soon as the slim slice resolves; the
+  BD-Zielbereich and glucose tiles stream in from the thick branch
+  afterwards. Pre-fix the single thick-slice query blocked every per-
+  type tile until the heavy fan-out resolved, so the mood and
+  medication tiles (separate routes) painted first and every other
+  tile arrived as one delayed burst. Both queries share the
+  `caches.analytics` 60 s LRU server-side so warm hits stay free.
+
+### Notes
+
+- No schema migration. Runtime-only fix on top of the v1.4.39.1
+  write-path hooks.
+- `pnpm test --run` green at 4651 / 4652 (1 long-standing skip);
+  targeted suites (`src/app/api/measurements`,
+  `src/lib/measurements`, `src/app/__tests__`) all clean.
+- The inline rollup fold cost is bounded by the requested window and
+  one measurement type. For the dashboard chart's 30-day BP_SYS window
+  that is a single 30-row upsert against the composite primary key —
+  well inside the request budget.
+
 ## [1.4.39.1] — 2026-05-21 — Rollup tier catches Withings + import + admin-restore write paths
 
 The v1.4.39 dashboard chart "Noch nicht genug Daten" empty-state on
