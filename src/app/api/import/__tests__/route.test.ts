@@ -41,7 +41,7 @@ vi.mock("@/lib/rollups/measurement-rollups", async () => {
   };
 });
 
-vi.mock("@/lib/mood/rollups", () => ({
+vi.mock("@/lib/rollups/mood-rollups", () => ({
   recomputeUserMoodRollups: vi.fn().mockResolvedValue(undefined),
 }));
 

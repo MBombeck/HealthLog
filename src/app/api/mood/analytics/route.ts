@@ -7,7 +7,7 @@ import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
 import {
   ensureUserMoodRollupsFresh,
   readMoodDayRollups,
-} from "@/lib/mood/rollups";
+} from "@/lib/rollups/mood-rollups";
 
 export const dynamic = "force-dynamic";
 

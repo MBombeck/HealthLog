@@ -34,9 +34,9 @@ vi.mock("@/lib/db", () => ({
 // v1.4.40 — stub the mood-rollup warm-up so test runs don't fire the
 // real recompute against the mocked Prisma. The route fires the
 // warm-up as fire-and-forget; the return value is irrelevant.
-vi.mock("@/lib/mood/rollups", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/mood/rollups")>(
-    "@/lib/mood/rollups",
+vi.mock("@/lib/rollups/mood-rollups", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/rollups/mood-rollups")>(
+    "@/lib/rollups/mood-rollups",
   );
   return {
     ...actual,

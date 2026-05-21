@@ -53,9 +53,9 @@ vi.mock("next/headers", () => ({
 // Stub the warm-up helper so test runs don't fire the real
 // `recomputeUserMoodRollups` aggregate. The warm-up is fire-and-
 // forget on the route so its return value is irrelevant for parity.
-vi.mock("@/lib/mood/rollups", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/mood/rollups")>(
-    "@/lib/mood/rollups",
+vi.mock("@/lib/rollups/mood-rollups", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/rollups/mood-rollups")>(
+    "@/lib/rollups/mood-rollups",
   );
   return {
     ...actual,

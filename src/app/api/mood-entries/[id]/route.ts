@@ -15,7 +15,7 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { moodDateKey, DEFAULT_TIMEZONE } from "@/lib/mood/date-key";
 import { invalidateUserMood } from "@/lib/cache/invalidate";
-import { recomputeMoodBucketsForEntry } from "@/lib/mood/rollups";
+import { recomputeMoodBucketsForEntry } from "@/lib/rollups/mood-rollups";
 
 type RouteParams = { params: Promise<{ id: string }> };
 

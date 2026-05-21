@@ -36,7 +36,7 @@ import { thresholdMetricForContext, resolveGlucoseUnit } from "@/lib/glucose";
 import {
   ensureUserMoodRollupsFresh,
   readMoodDayRollups,
-} from "@/lib/mood/rollups";
+} from "@/lib/rollups/mood-rollups";
 
 export const dynamic = "force-dynamic";
 

@@ -8,7 +8,7 @@ import { moodLogWebhookPayloadSchema } from "@/lib/validations/moodlog";
 import { readMoodLogSecret } from "@/lib/moodlog-secret";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
-import { recomputeMoodBucketsForEntry } from "@/lib/mood/rollups";
+import { recomputeMoodBucketsForEntry } from "@/lib/rollups/mood-rollups";
 
 export const dynamic = "force-dynamic";
 

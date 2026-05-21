@@ -76,7 +76,7 @@ import {
   recomputeUserMoodRollups,
   type MoodRollupFullBackfillPayload,
   type MoodRollupRecomputePayload,
-} from "@/lib/mood/rollups";
+} from "@/lib/rollups/mood-rollups";
 import {
   MEDICATION_COMPLIANCE_BACKFILL_QUEUE,
   MEDICATION_COMPLIANCE_BACKFILL_CONCURRENCY,

@@ -43,7 +43,7 @@ import {
 } from "@/lib/validations/moodlog";
 import { moodDateKey, DEFAULT_TIMEZONE } from "@/lib/mood/date-key";
 import { invalidateUserMood } from "@/lib/cache/invalidate";
-import { recomputeMoodBucketsForEntry } from "@/lib/mood/rollups";
+import { recomputeMoodBucketsForEntry } from "@/lib/rollups/mood-rollups";
 
 const MAX_ENTRIES_PER_BATCH = 500;
 const BATCH_RATE_LIMIT_MAX = 60;

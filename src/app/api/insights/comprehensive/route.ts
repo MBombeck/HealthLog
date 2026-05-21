@@ -25,7 +25,7 @@ import { buildComprehensiveAggregate } from "@/lib/insights/comprehensive-aggreg
 import {
   ensureUserMoodRollupsFresh,
   readMoodDayRollups,
-} from "@/lib/mood/rollups";
+} from "@/lib/rollups/mood-rollups";
 
 export const dynamic = "force-dynamic";
 

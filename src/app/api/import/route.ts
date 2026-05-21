@@ -17,7 +17,7 @@ import {
   measurementTypeEnum,
   glucoseContextEnum,
 } from "@/lib/validations/measurement";
-import { recomputeUserMoodRollups } from "@/lib/mood/rollups";
+import { recomputeUserMoodRollups } from "@/lib/rollups/mood-rollups";
 import {
   collapseToTypeDayKeys,
   recomputeBucketsForMeasurement,

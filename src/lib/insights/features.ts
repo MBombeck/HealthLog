@@ -19,7 +19,7 @@ import { readRollupBuckets } from "@/lib/rollups/measurement-rollups";
 import {
   ensureUserMoodRollupsFresh,
   readMoodDayRollups,
-} from "@/lib/mood/rollups";
+} from "@/lib/rollups/mood-rollups";
 import type {
   MeasurementType,
   RollupGranularity,

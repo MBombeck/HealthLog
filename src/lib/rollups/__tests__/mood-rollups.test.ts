@@ -83,7 +83,7 @@ import {
   enqueueMoodRollupRecompute,
   ensureUserMoodRollupsFresh,
   recomputeMoodBucketsForEntry,
-} from "../rollups";
+} from "../mood-rollups";
 
 beforeEach(() => {
   queryRaw.mockReset();

@@ -7,7 +7,7 @@ import {
   recordSyncFailure,
   recordSyncSuccess,
 } from "@/lib/integrations/status";
-import { recomputeUserMoodRollups } from "@/lib/mood/rollups";
+import { recomputeUserMoodRollups } from "@/lib/rollups/mood-rollups";
 
 /**
  * Sync mood entries from a user's moodLog instance.
