@@ -40,6 +40,7 @@
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
+import { startOfUtcDay } from "@/lib/tz/start-of-utc-day";
 import type {
   Prisma,
   PrismaClient,
@@ -609,18 +610,6 @@ async function persistMoodRollupRows(
     touched += slice.length;
   }
   return touched;
-}
-
-/**
- * Truncate a `Date` to the start of its UTC day. The rollup table
- * stores TIMESTAMPTZ values so we anchor on UTC to keep the bucket
- * key deterministic across timezone-shifting consumers — same
- * convention as `measurement-rollups`.
- */
-function startOfUtcDay(d: Date): Date {
-  return new Date(
-    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0),
-  );
 }
 
 /**
