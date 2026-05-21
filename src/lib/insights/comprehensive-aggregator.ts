@@ -310,6 +310,7 @@ async function fetchBpRawRows(
       userId,
       type: { in: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"] },
       measuredAt: { gte: ninetyDaysAgo },
+      deletedAt: null,
     },
     orderBy: { measuredAt: "asc" },
     select: { type: true, measuredAt: true, value: true },
@@ -348,6 +349,7 @@ async function buildFromRollups(
         FROM measurements m
         WHERE m."user_id" = ${userId}
           AND m."measured_at" >= ${ninetyDaysAgo}
+          AND m."deleted_at" IS NULL
         GROUP BY m."type"
       )
       SELECT
@@ -414,6 +416,7 @@ async function buildFromRollups(
       JOIN window_stats ws ON ws."type" = m."type"
       WHERE m."user_id" = ${userId}
         AND m."measured_at" >= ${ninetyDaysAgo}
+        AND m."deleted_at" IS NULL
       GROUP BY m."type", ws.stddev_value
     `),
     timeSubquery(timings, "latests", () => prisma.$queryRaw<LatestRow[]>`
@@ -424,6 +427,7 @@ async function buildFromRollups(
       FROM measurements m
       WHERE m."user_id" = ${userId}
         AND m."measured_at" >= ${ninetyDaysAgo}
+        AND m."deleted_at" IS NULL
       ORDER BY m."type", m."measured_at" DESC
     `),
     // v1.4.35 — DAY rollup buckets for the trailing 90 days, every
@@ -450,6 +454,7 @@ async function buildFromRollups(
       FROM measurements m
       WHERE m."user_id" = ${userId}
         AND m."measured_at" >= ${ninetyDaysAgo}
+        AND m."deleted_at" IS NULL
     `),
   ]);
 
@@ -536,6 +541,7 @@ async function buildFromLiveAggregate(
         FROM measurements m
         WHERE m."user_id" = ${userId}
           AND m."measured_at" >= ${ninetyDaysAgo}
+          AND m."deleted_at" IS NULL
         GROUP BY m."type"
       )
       SELECT
@@ -602,6 +608,7 @@ async function buildFromLiveAggregate(
       JOIN window_stats ws ON ws."type" = m."type"
       WHERE m."user_id" = ${userId}
         AND m."measured_at" >= ${ninetyDaysAgo}
+        AND m."deleted_at" IS NULL
       GROUP BY m."type", ws.stddev_value
     `),
     timeSubquery(timings, "latests", () => prisma.$queryRaw<LatestRow[]>`
@@ -612,6 +619,7 @@ async function buildFromLiveAggregate(
       FROM measurements m
       WHERE m."user_id" = ${userId}
         AND m."measured_at" >= ${ninetyDaysAgo}
+        AND m."deleted_at" IS NULL
       ORDER BY m."type", m."measured_at" DESC
     `),
     // Buckets may exist for some types even when the COUNT probe came
@@ -672,6 +680,7 @@ async function buildFromLiveAggregate(
         FROM measurements m
         WHERE m."user_id" = ${userId}
           AND m."measured_at" >= ${ninetyDaysAgo}
+          AND m."deleted_at" IS NULL
       `,
     );
     firstMeasurementAt = firstRows[0]?.first_at
