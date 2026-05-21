@@ -291,7 +291,164 @@ describe("computeSummariesSlice", () => {
       // probe + narrow aggregate + latests + rollup GROUP BY
       // (v1.4.37.2 — the prior `findMany` is gone). No heavy aggregate.
       expect(RAW).toHaveBeenCalledTimes(4);
-      expect(ROLLUP_FIND_MANY).toHaveBeenCalledTimes(0);
+      // v1.4.40 W-WMY-WIRE — the year-ago baseline probe runs
+      // `readBestGranularityRollups(userId, type, 395)` per
+      // type-with-data via `prisma.measurementRollup.findMany`. The
+      // 395-day window skips the YEAR floor (731 d) and walks MONTH
+      // → WEEK → DAY on full coverage miss; the default mock returns
+      // `[]` so all three reachable tiers probe.
+      expect(ROLLUP_FIND_MANY).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  /**
+   * v1.4.40 W-WMY-WIRE — pin the wiring of the WMY readers into the
+   * slim slice. The pre-v1.4.40 shape hardcoded `avg30LastYear` to
+   * `null`; we now populate it from `readBestGranularityRollups` when
+   * the YEAR / MONTH / WEEK / DAY tier carries buckets that overlap
+   * the `[now-395d, now-365d)` slice.
+   */
+  describe("year-over-year wiring (avg30LastYear)", () => {
+    it("populates avg30LastYear from MONTH buckets that overlap the year-ago slice", async () => {
+      // Coverage probe shows WEIGHT covered → rollup happy path.
+      RAW.mockResolvedValueOnce([{ type: "WEIGHT", has_buckets: true }])
+        .mockResolvedValueOnce([
+          {
+            type: "WEIGHT",
+            avg7: 82,
+            avg30: 82.5,
+            slope7: 0,
+            r2_7: 0,
+            slope30: 0,
+            r2_30: 0,
+            slope90: 0,
+            r2_90: 0,
+          },
+        ])
+        .mockResolvedValueOnce([
+          { type: "WEIGHT", value: 82.7, measured_at: new Date() },
+        ])
+        .mockResolvedValueOnce([
+          { type: "WEIGHT", count: 5, min: 82, max: 84, mean: 83 },
+        ]);
+
+      // Year-ago slice MONTH bucket — `bucketStart` placed 380 days
+      // ago so it falls inside `[now-395d, now-365d)`. Single bucket
+      // (count=10, mean=85) → weighted mean = 85.
+      const yearAgoBucketStart = new Date(
+        Date.now() - 380 * 24 * 60 * 60 * 1000,
+      );
+      ROLLUP_FIND_MANY.mockResolvedValueOnce([
+        {
+          bucketStart: yearAgoBucketStart,
+          count: 10,
+          mean: 85,
+          sd: 1,
+          slope: 0,
+          r2: 0,
+          sumValue: null,
+          minValue: 83,
+          maxValue: 87,
+        },
+      ]);
+
+      const result = await computeSummariesSlice("user-yoy");
+
+      expect(result.summaries.WEIGHT.avg30LastYear).toBe(85);
+      // Router asked MONTH first (395 > 181, 395 < 731 → skip YEAR).
+      expect(ROLLUP_FIND_MANY.mock.calls[0][0].where.granularity).toBe("MONTH");
+    });
+
+    it("leaves avg30LastYear null when no bucket overlaps the year-ago slice", async () => {
+      RAW.mockResolvedValueOnce([{ type: "WEIGHT", has_buckets: true }])
+        .mockResolvedValueOnce([
+          {
+            type: "WEIGHT",
+            avg7: 82,
+            avg30: 82.5,
+            slope7: 0,
+            r2_7: 0,
+            slope30: 0,
+            r2_30: 0,
+            slope90: 0,
+            r2_90: 0,
+          },
+        ])
+        .mockResolvedValueOnce([
+          { type: "WEIGHT", value: 82.7, measured_at: new Date() },
+        ])
+        .mockResolvedValueOnce([
+          { type: "WEIGHT", count: 5, min: 82, max: 84, mean: 83 },
+        ]);
+
+      // MONTH bucket placed 30 days ago — inside the YEAR / MONTH /
+      // WEEK 395-day window the router asks for, but outside the
+      // `[now-395d, now-365d)` slice. The helper returns null.
+      const recentBucket = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      ROLLUP_FIND_MANY.mockResolvedValueOnce([
+        {
+          bucketStart: recentBucket,
+          count: 10,
+          mean: 82,
+          sd: 1,
+          slope: 0,
+          r2: 0,
+          sumValue: null,
+          minValue: 80,
+          maxValue: 84,
+        },
+      ]);
+
+      const result = await computeSummariesSlice("user-recent");
+
+      expect(result.summaries.WEIGHT.avg30LastYear).toBeNull();
+    });
+
+    it("leaves avg30LastYear null when every granularity misses (no coverage)", async () => {
+      RAW.mockResolvedValueOnce([{ type: "WEIGHT", has_buckets: true }])
+        .mockResolvedValueOnce([
+          {
+            type: "WEIGHT",
+            avg7: 82,
+            avg30: 82.5,
+            slope7: 0,
+            r2_7: 0,
+            slope30: 0,
+            r2_30: 0,
+            slope90: 0,
+            r2_90: 0,
+          },
+        ])
+        .mockResolvedValueOnce([
+          { type: "WEIGHT", value: 82.7, measured_at: new Date() },
+        ])
+        .mockResolvedValueOnce([
+          { type: "WEIGHT", count: 5, min: 82, max: 84, mean: 83 },
+        ]);
+
+      // Default mock returns `[]` for every findMany call → router
+      // walks YEAR → MONTH → WEEK → DAY and gives up.
+      ROLLUP_FIND_MANY.mockResolvedValue([]);
+
+      const result = await computeSummariesSlice("user-empty-yoy");
+
+      expect(result.summaries.WEIGHT.avg30LastYear).toBeNull();
+      // 395d window skips YEAR (floor 731 d) → MONTH → WEEK → DAY,
+      // three reachable tiers all probed on full coverage miss.
+      expect(ROLLUP_FIND_MANY).toHaveBeenCalledTimes(3);
+    });
+
+    it("only probes types that actually have data in the current window", async () => {
+      // Coverage probe + rollup GROUP BY both report zero rows → no
+      // types-with-data, so the year-ago probe must NOT fan out.
+      RAW.mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await computeSummariesSlice("user-no-data");
+
+      expect(ROLLUP_FIND_MANY).not.toHaveBeenCalled();
     });
   });
 });

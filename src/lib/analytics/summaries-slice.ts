@@ -70,6 +70,8 @@ import {
   type RollupBucketRow,
 } from "@/lib/measurements/rollup-read-wmy";
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 /**
  * Heavy aggregate row — used on the cold-mount fallback path where the
  * rollup table is empty and we need every per-type column out of one
@@ -390,10 +392,12 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
 
   let totalRows = 0;
   let typeCount = 0;
+  const typesWithData: string[] = [];
   for (const row of dayBuckets) {
     if (!row.count || row.count <= 0) continue;
     typeCount += 1;
     totalRows += row.count;
+    typesWithData.push(row.type);
     const narrow = narrowByType.get(row.type);
     const latest = latestByType.get(row.type) ?? null;
     summaries[row.type] = {
@@ -413,6 +417,21 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
     };
   }
 
+  // v1.4.40 W-WMY-WIRE — populate `avg30LastYear` per type from the
+  // WMY rollup tier. Only types with data in the current window are
+  // probed so we don't pay the per-type round-trip on the long tail
+  // of unlogged measurement enums. Types without YEAR/MONTH coverage
+  // surface as `null` (existing behaviour) — additive only.
+  const avg30LastYearMap = await computeAvg30LastYearMap(userId, typesWithData);
+  let yearOverYearTypeCount = 0;
+  for (const [type, value] of avg30LastYearMap.entries()) {
+    if (value === null) continue;
+    const summary = summaries[type];
+    if (!summary) continue;
+    summary.avg30LastYear = round2(value);
+    yearOverYearTypeCount += 1;
+  }
+
   annotate({
     action: { name: "analytics.get.slim" },
     meta: {
@@ -421,6 +440,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
           row_count: totalRows,
           type_count: typeCount,
           path: "rollup",
+          year_over_year_types: yearOverYearTypeCount,
         },
       },
     },
@@ -535,9 +555,11 @@ async function computeFromLiveAggregate(
   }
 
   let totalRows = 0;
+  const typesWithData: string[] = [];
   for (const row of aggregates) {
     const count = Number(row.count);
     totalRows += count;
+    typesWithData.push(row.type);
     const latest = latestByType.get(row.type) ?? null;
     summaries[row.type] = {
       count,
@@ -556,6 +578,23 @@ async function computeFromLiveAggregate(
     };
   }
 
+  // v1.4.40 W-WMY-WIRE — even on the live-aggregate fallback (DAY
+  // coverage incomplete), the YEAR / MONTH rollup tier may still
+  // carry the year-ago baseline because the boot-time backfill mints
+  // all granularities once per user. Probing here means a partial-
+  // coverage cold mount still surfaces `avg30LastYear` whenever the
+  // long-tail tier is populated, instead of waiting for the next
+  // refresh cycle.
+  const avg30LastYearMap = await computeAvg30LastYearMap(userId, typesWithData);
+  let yearOverYearTypeCount = 0;
+  for (const [type, value] of avg30LastYearMap.entries()) {
+    if (value === null) continue;
+    const summary = summaries[type];
+    if (!summary) continue;
+    summary.avg30LastYear = round2(value);
+    yearOverYearTypeCount += 1;
+  }
+
   annotate({
     action: { name: "analytics.get.slim" },
     meta: {
@@ -564,6 +603,7 @@ async function computeFromLiveAggregate(
           row_count: totalRows,
           type_count: aggregates.length,
           path: "live",
+          year_over_year_types: yearOverYearTypeCount,
         },
       },
     },
@@ -663,4 +703,100 @@ export async function computeLongWindowSummary(
     mean: aggregate.mean,
     sum: aggregate.sum,
   };
+}
+
+/**
+ * v1.4.40 W-WMY-WIRE — year-ago 30-day baseline per type, served from
+ * the WEEK / MONTH / YEAR rollup tier.
+ *
+ * Why this helper exists
+ * ----------------------
+ * `DataSummary.avg30LastYear` is the mean over `[now-395d, now-365d)` —
+ * the 30-day window starting 365 days ago. The dashboard tile-strip's
+ * delta callout uses it to narrate "current avg vs same time last
+ * year". Up to v1.4.39 the slim slice (and the comprehensive
+ * aggregator's rollup branch) hardcoded the field to `null` because
+ * the 90-day windowed `$queryRaw` cannot reach back a year, and the
+ * live `measurements` table walk for a 395-day per-type window is
+ * exactly the cold-path cost we're trying to avoid.
+ *
+ * The WMY rollup tier already carries the per-bucket stats this
+ * window needs. `readBestGranularityRollups(userId, type, 395)`
+ * routes the 395-day window through YEAR (if covered) → MONTH → WEEK
+ * → DAY and returns the buckets whose `bucketStart` falls inside the
+ * window. We then keep only the buckets that overlap the
+ * `[now-395d, now-365d)` slice and compose `count / mean` linearly to
+ * produce the year-ago baseline.
+ *
+ * Compositional contract
+ * ----------------------
+ * `count / mean` are linearly composable across any granularity, so
+ * the year-ago mean derived from MONTH or YEAR buckets is
+ * mathematically equivalent to the per-row average over the same
+ * window. The bucket-overlap filter is conservative: we include only
+ * buckets whose `bucketStart` is strictly inside the slice. On a
+ * YEAR-granularity routing this collapses to at most one bucket and
+ * approximates the 30-day mean by the surrounding yearly average —
+ * acceptable for a UI hint that explicitly narrates "last year".
+ *
+ * Coverage-miss policy
+ * --------------------
+ * Returns `null` when `readBestGranularityRollups` returns null (no
+ * coverage at any granularity) OR when no buckets overlap the
+ * year-ago slice. The caller leaves the dashboard field as `null`,
+ * which the UI already handles as "no comparison available".
+ */
+async function computeAvg30LastYearForType(
+  userId: string,
+  type: MeasurementType,
+): Promise<number | null> {
+  const resolved = await readBestGranularityRollups(userId, type, 395);
+  if (!resolved) return null;
+  const now = Date.now();
+  const sliceStart = now - 395 * DAY_MS;
+  const sliceEnd = now - 365 * DAY_MS;
+  const overlapping = resolved.rows.filter((row) => {
+    const t = row.bucketStart.getTime();
+    return t >= sliceStart && t < sliceEnd;
+  });
+  if (overlapping.length === 0) return null;
+  let totalCount = 0;
+  let weighted = 0;
+  for (const row of overlapping) {
+    totalCount += row.count;
+    weighted += row.count * row.mean;
+  }
+  if (totalCount === 0) return null;
+  return weighted / totalCount;
+}
+
+/**
+ * v1.4.40 W-WMY-WIRE — fan out `computeAvg30LastYearForType` across
+ * the types the caller actually surfaces. Runs the per-type WMY reads
+ * in parallel so the long-tail of types doesn't serialise into a
+ * per-type round-trip stack.
+ *
+ * Returns a `type → mean | null` map; types with no coverage at any
+ * granularity (or no buckets in the year-ago slice) map to `null` so
+ * the caller can blanket-assign without per-type null-checking.
+ */
+async function computeAvg30LastYearMap(
+  userId: string,
+  types: ReadonlyArray<string>,
+): Promise<Map<string, number | null>> {
+  const out = new Map<string, number | null>();
+  if (types.length === 0) return out;
+  const results = await Promise.all(
+    types.map(async (type) => {
+      const value = await computeAvg30LastYearForType(
+        userId,
+        type as MeasurementType,
+      );
+      return [type, value] as const;
+    }),
+  );
+  for (const [type, value] of results) {
+    out.set(type, value);
+  }
+  return out;
 }
