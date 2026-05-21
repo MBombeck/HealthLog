@@ -69,33 +69,35 @@
  * an array, returns an array. Testable in isolation; safely invoked
  * from a hot ingest path with no DB round-trip cost.
  *
- * Source-priority divergence vs the read-time picker
- * ──────────────────────────────────────────────────
+ * Source-priority parity with the read-time picker
+ * ────────────────────────────────────────────────
  *
- * The read-time picker resolves the per-user `sourcePriorityJson`
- * (from `User.sourcePriorityJson`) for every read so a user who
- * promoted MANUAL above APPLE_HEALTH in Settings → Sources sees
- * their Manual rows surface above the Apple Watch ones. The
- * write-time helper deliberately does NOT consult that preference:
- * it uses the canonical `DEFAULT_WORKOUT_SOURCE_PRIORITY` constant
- * unconditionally, so a customized user's preferred row can still
- * be dropped at write-time before the read-time picker ever sees
- * it. Scope-narrow today — `DEFAULT_SOURCE_PRIORITY.steps` is the
- * Apple-first default and most paired users never override it —
- * but the moment a user customises, this helper silently
- * overrides them.
+ * CLOSED in v1.4.43 (W9-WORKOUTS-PRIORITY). The read-time picker
+ * resolves the per-user `sourcePriorityJson` (from
+ * `User.sourcePriorityJson`) for every read so a user who promoted
+ * MANUAL above APPLE_HEALTH in Settings → Sources sees their Manual
+ * rows surface above the Apple Watch ones. This helper now mirrors
+ * that contract — the optional `userPriorityJson` argument feeds
+ * through `parseSourcePriority()` + `getSourceLadder(..., "steps")`,
+ * the same chain the read-time picker walks, so a customised user
+ * keeps their preferred source at BOTH write- and read-time.
  *
- * The architecturally correct fix (v1.4.43 candidate) is option
- * (b) from the v1.4.42 senior-dev QA M1: accept the small ingest-
- * path cost of one indexed `User.sourcePriorityJson` lookup and
- * thread the user's ladder into the picker. The batch route
- * already has the userId per row; the lookup is one
- * `prisma.user.findUnique({ where: { id }, select:
- * { sourcePriorityJson: true }})`. Until that lands, this
- * docstring is the load-bearing operator notice.
+ * When the argument is omitted (or null/undefined) the helper falls
+ * back to the canonical `DEFAULT_WORKOUT_SOURCE_PRIORITY` ladder so
+ * callers that don't yet have the user blob handy stay on the
+ * v1.4.42 behaviour. The batch route at
+ * `src/app/api/workouts/batch/route.ts` does one indexed
+ * `User.sourcePriorityJson` lookup at the start of the handler and
+ * passes the blob through here; the cost is a single `findUnique`
+ * per batch, well under the cost of letting a customised user's
+ * preferred row drop at write-time.
  */
 
 import { DEFAULT_WORKOUT_SOURCE_PRIORITY } from "@/lib/sources/pick-canonical-workout";
+import {
+  getSourceLadder,
+  parseSourcePriority,
+} from "@/lib/validations/source-priority";
 import type { MeasurementSource } from "@/generated/prisma/client";
 
 /**
@@ -159,10 +161,18 @@ export const WORKOUT_DEDUP_WINDOW_MS = 90 * 1000;
  * array — the picker still keeps that row when no ladder-listed
  * row competes for the slot (single-source group), but loses to
  * any ladder-listed competitor.
+ *
+ * The ladder is resolved per-call (from the user's
+ * `sourcePriorityJson` or the canonical default), so the rank
+ * function is parameterised on the ladder rather than reading a
+ * module-level constant.
  */
-function sourceRank(source: MeasurementSource): number {
-  const idx = DEFAULT_WORKOUT_SOURCE_PRIORITY.indexOf(source);
-  return idx === -1 ? DEFAULT_WORKOUT_SOURCE_PRIORITY.length : idx;
+function sourceRank(
+  source: MeasurementSource,
+  ladder: readonly MeasurementSource[],
+): number {
+  const idx = ladder.indexOf(source);
+  return idx === -1 ? ladder.length : idx;
 }
 
 /**
@@ -170,8 +180,12 @@ function sourceRank(source: MeasurementSource): number {
  * Priority order: source rank → higher calories → earliest
  * createdAt → earliest input index.
  */
-function compareCandidates<T extends WorkoutRow>(a: T, b: T): number {
-  const sourceDelta = sourceRank(a.source) - sourceRank(b.source);
+function compareCandidates<T extends WorkoutRow>(
+  a: T,
+  b: T,
+  ladder: readonly MeasurementSource[],
+): number {
+  const sourceDelta = sourceRank(a.source, ladder) - sourceRank(b.source, ladder);
   if (sourceDelta !== 0) return sourceDelta;
 
   // Tie-breaker 1 — higher caloriesKcal wins (more sensor data).
@@ -216,8 +230,22 @@ function compareCandidates<T extends WorkoutRow>(a: T, b: T): number {
  */
 export function dedupeWorkoutBatch<T extends WorkoutRow>(
   rows: readonly T[],
+  userPriorityJson?: unknown,
 ): T[] {
   if (rows.length === 0) return [];
+
+  // Resolve the source ladder from the user's persisted preference
+  // when one was supplied. The read-time picker
+  // (`pickCanonicalWorkoutRows`) keys workouts off the `steps` metric
+  // ladder — the canonical-activity bucket — so both pickers consult
+  // the same per-user configuration surface. When no preference is
+  // supplied (legacy callers, tests that don't care, or a route that
+  // hasn't been wired yet), fall back to the canonical default
+  // ladder so behaviour matches the v1.4.42 baseline.
+  const ladder: readonly MeasurementSource[] =
+    userPriorityJson == null
+      ? DEFAULT_WORKOUT_SOURCE_PRIORITY
+      : getSourceLadder(parseSourcePriority(userPriorityJson), "steps");
 
   // Stamp each input with its original index so the comparator
   // has a stable tie-breaker without mutating the caller's row.
@@ -270,7 +298,7 @@ export function dedupeWorkoutBatch<T extends WorkoutRow>(
         index: entry.row.index ?? entry.origIndex,
       } as T,
     }));
-    annotated.sort((a, b) => compareCandidates(a.row, b.row));
+    annotated.sort((a, b) => compareCandidates(a.row, b.row, ladder));
     // Preserve the picker's input-order survival by remembering the
     // ORIGINAL row reference (not the annotated copy) so the caller
     // gets back exactly what it passed in.

@@ -280,6 +280,62 @@ describe("dedupeWorkoutBatch", () => {
     ]);
   });
 
+  it("honours a custom user ladder that promotes MANUAL above APPLE_HEALTH", () => {
+    // v1.4.43 W9 — when the user has customised Settings → Sources to
+    // promote MANUAL above APPLE_HEALTH, a Manual row inside the 90 s
+    // window MUST win over the Apple Watch twin. Without the
+    // user-priority wiring this helper would silently drop the
+    // user's preferred row at write-time before the read-time picker
+    // ever saw it.
+    const apple = row({
+      id: "apple",
+      source: "APPLE_HEALTH",
+      startedAt: new Date("2026-05-21T08:00:00Z"),
+      caloriesKcal: 500,
+    });
+    const manual = row({
+      id: "manual",
+      source: "MANUAL",
+      startedAt: new Date("2026-05-21T08:01:00Z"),
+      caloriesKcal: 300,
+    });
+
+    const userPriorityJson = {
+      steps: ["MANUAL", "APPLE_HEALTH", "WITHINGS"] as MeasurementSource[],
+    };
+
+    const out = dedupeWorkoutBatch([apple, manual], userPriorityJson);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.id).toBe("manual");
+  });
+
+  it("falls back to the canonical default ladder when userPriorityJson is null", () => {
+    // Null = no user preference persisted. The helper must walk the
+    // canonical `DEFAULT_WORKOUT_SOURCE_PRIORITY` ladder so existing
+    // callers that don't supply the blob keep their v1.4.42 behaviour.
+    const apple = row({
+      id: "apple",
+      source: "APPLE_HEALTH",
+      startedAt: new Date("2026-05-21T08:00:00Z"),
+    });
+    const manual = row({
+      id: "manual",
+      source: "MANUAL",
+      startedAt: new Date("2026-05-21T08:01:00Z"),
+    });
+
+    expect(
+      dedupeWorkoutBatch([apple, manual], null).map((r) => r.id),
+    ).toEqual(["apple"]);
+    expect(
+      dedupeWorkoutBatch([apple, manual], undefined).map((r) => r.id),
+    ).toEqual(["apple"]);
+    // Argument omitted entirely — same behaviour as null/undefined.
+    expect(dedupeWorkoutBatch([apple, manual]).map((r) => r.id)).toEqual([
+      "apple",
+    ]);
+  });
+
   it("does not mutate caller rows", () => {
     // The picker is pure — the caller's array reference and row
     // identity survive the call so a future audit-overlay can
