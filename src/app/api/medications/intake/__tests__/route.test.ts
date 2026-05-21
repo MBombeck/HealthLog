@@ -201,6 +201,15 @@ describe("GET /api/medications/intake", () => {
           source: "REMINDER",
         },
       ],
+      // v1.4.39 W-SERVER-FIX-2 — the createMany must ship
+      // `skipDuplicates: true` so a concurrent dashboard-summary hit
+      // can't race a duplicate `(userId, medicationId, scheduledFor,
+      // REMINDER)` row in between this route's existence probe and
+      // insert. The schema-level @@unique([userId, medicationId,
+      // scheduledFor, source]) is the structural backstop; this flag
+      // is the defense-in-depth that keeps the route returning 2xx
+      // when the constraint rejects the second mint.
+      skipDuplicates: true,
     });
   });
 
