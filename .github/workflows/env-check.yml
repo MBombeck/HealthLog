@@ -1,0 +1,73 @@
+name: Env-manifest <-> example lockstep
+
+# v1.4.43 B5 -- enforce that `.env.production.example` stays in lockstep
+# with `scripts/env-manifest.json`. A contributor adding a new required
+# variable to the manifest must also add a placeholder to the example
+# file in the same PR, otherwise the workflow fails with a grep-friendly
+# list of missing required vars. Optional vars are reported but do not
+# fail the build -- they exist for operator discovery, not deploy
+# blocking.
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  env-check:
+    name: pnpm check-env against .env.production.example
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Assert example file exists
+        run: |
+          if [ ! -f .env.production.example ]; then
+            echo "::error::.env.production.example is missing -- contributors must keep this file in lockstep with scripts/env-manifest.json. See docs/ops/env-check.md."
+            exit 1
+          fi
+
+      # The check-env script exits non-zero when at least one required
+      # variable from the manifest is missing/empty in the example file.
+      # We additionally grep the rendered output for `[MISSING-REQUIRED]`
+      # rows and surface them as GitHub Actions error annotations so the
+      # PR reviewer can see the missing var names without expanding the
+      # log.
+      - name: pnpm check-env --file .env.production.example
+        id: check
+        run: |
+          set +e
+          OUT=$(pnpm --silent check-env --file .env.production.example)
+          EC=$?
+          echo "$OUT"
+          if [ $EC -ne 0 ]; then
+            echo ""
+            echo "::group::Missing required variables"
+            echo "$OUT" | grep -E '^\s*\[MISSING-REQUIRED\]' | while IFS= read -r line; do
+              name=$(echo "$line" | sed -E 's/.*\[MISSING-REQUIRED\] ([A-Z0-9_]+).*/\1/')
+              echo "::error file=.env.production.example::Required env var $name missing from .env.production.example -- add a placeholder so the file stays in lockstep with scripts/env-manifest.json."
+            done
+            echo "::endgroup::"
+            echo ""
+            echo "::error::pnpm check-env reported missing required variables in .env.production.example. Either add a placeholder for each missing var, or downgrade the manifest entry to required:false if the variable is genuinely optional. See docs/ops/env-check.md."
+            exit $EC
+          fi
