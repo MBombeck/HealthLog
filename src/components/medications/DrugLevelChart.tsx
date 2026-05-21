@@ -52,6 +52,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import {
   computeOneCompartment,
   type DoseEvent,
@@ -129,7 +130,7 @@ export function DrugLevelChart({ medication, asOf }: DrugLevelChartProps) {
 
   const { data: researchMode, isLoading: rmLoading } =
     useQuery<ResearchModeStatus | null>({
-      queryKey: ["research-mode"],
+      queryKey: queryKeys.researchMode(),
       queryFn: async () => {
         const res = await fetch("/api/auth/me/research-mode");
         if (!res.ok) return null;
@@ -146,7 +147,7 @@ export function DrugLevelChart({ medication, asOf }: DrugLevelChartProps) {
 
   const { data: details, isLoading: detailsLoading } =
     useQuery<Glp1DetailsResponse | null>({
-      queryKey: ["medications", medication.id, "glp1-details"],
+      queryKey: queryKeys.medicationGlp1Details(medication.id),
       queryFn: async () => {
         const res = await fetch(`/api/medications/${medication.id}/glp1`);
         if (!res.ok) return null;
@@ -160,7 +161,7 @@ export function DrugLevelChart({ medication, asOf }: DrugLevelChartProps) {
     });
 
   const { data: intakeEnvelope, isLoading: intakeLoading } = useQuery({
-    queryKey: ["medications", medication.id, "intake", "drug-level-chart"],
+    queryKey: queryKeys.medicationIntakeDrugLevelChart(medication.id),
     queryFn: async () => {
       const res = await fetch(
         `/api/medications/${medication.id}/intake?limit=20&sortBy=takenAt&sortDir=desc`,

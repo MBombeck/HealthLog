@@ -22,6 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/format";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import { StatusItem, useSystemStatus } from "./_shared";
 
 interface VersionResponse {
@@ -33,7 +34,7 @@ interface VersionResponse {
 
 function useOfflineGeoState() {
   return useQuery({
-    queryKey: ["public", "version"],
+    queryKey: queryKeys.publicVersion(),
     queryFn: async () => {
       const res = await fetch("/api/version");
       if (!res.ok) throw new Error("Failed to load version");

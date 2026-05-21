@@ -37,6 +37,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 
 interface InsightsSettings {
   codexStatus: string;
@@ -186,7 +187,7 @@ function AiInsightsCard({ isAuthenticated }: { isAuthenticated: boolean }) {
   const searchParams = useSearchParams();
 
   const { data: insightsSettings } = useQuery({
-    queryKey: ["insights", "settings"],
+    queryKey: queryKeys.insightsSettings(),
     queryFn: async () => {
       const res = await fetch("/api/insights/settings");
       if (!res.ok) return null;
@@ -197,7 +198,7 @@ function AiInsightsCard({ isAuthenticated }: { isAuthenticated: boolean }) {
   });
 
   const { data: userProvider } = useQuery({
-    queryKey: ["user", "ai-provider"],
+    queryKey: queryKeys.userAiProvider(),
     queryFn: async () => {
       const res = await fetch("/api/user/ai-provider");
       if (!res.ok) return null;
@@ -208,7 +209,7 @@ function AiInsightsCard({ isAuthenticated }: { isAuthenticated: boolean }) {
   });
 
   const { data: chainData } = useQuery({
-    queryKey: ["insights", "provider-chain"],
+    queryKey: queryKeys.insightsProviderChain(),
     queryFn: async () => {
       const res = await fetch("/api/insights/provider-chain");
       if (!res.ok) return null;
@@ -296,10 +297,10 @@ function AiInsightsCard({ isAuthenticated }: { isAuthenticated: boolean }) {
         privacyMode={insightsSettings?.privacyMode ?? "aggregated"}
         lastInsightAt={insightsSettings?.lastInsightAt ?? null}
         onRegenerated={() =>
-          queryClient.invalidateQueries({ queryKey: ["insights"] })
+          queryClient.invalidateQueries({ queryKey: queryKeys.insightsRoot() })
         }
         onPrivacyChanged={() =>
-          queryClient.invalidateQueries({ queryKey: ["insights"] })
+          queryClient.invalidateQueries({ queryKey: queryKeys.insightsRoot() })
         }
       />
     </div>
@@ -479,7 +480,7 @@ function CodexProviderForm({
     url.searchParams.delete("codex_error");
     window.history.replaceState({}, "", url.toString());
     if (oauthOutcome.kind === "connected") {
-      queryClient.invalidateQueries({ queryKey: ["insights"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.insightsRoot() });
     }
   }, [oauthOutcome, queryClient]);
 
@@ -536,7 +537,7 @@ function CodexProviderForm({
           setDevicePolling(false);
           setMsg(t("settings.codexConnected"));
           setMsgType("success");
-          queryClient.invalidateQueries({ queryKey: ["insights"] });
+          queryClient.invalidateQueries({ queryKey: queryKeys.insightsRoot() });
           return;
         }
         if (!cancelled) setTimeout(tick, intervalMs);
@@ -575,7 +576,7 @@ function CodexProviderForm({
       }
       setMsg(t("settings.codexDisconnected"));
       setMsgType("success");
-      queryClient.invalidateQueries({ queryKey: ["insights"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.insightsRoot() });
     } catch (err) {
       setMsg(err instanceof Error ? err.message : t("settings.savingError"));
       setMsgType("error");
@@ -793,8 +794,8 @@ function OpenAIProviderForm({
       setOk(true);
       setMsg(t("settings.ai.saved"));
       setApiKey("");
-      queryClient.invalidateQueries({ queryKey: ["user", "ai-provider"] });
-      queryClient.invalidateQueries({ queryKey: ["insights"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.userAiProvider() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.insightsRoot() });
     },
     onError: (e) => {
       setOk(false);
@@ -979,8 +980,8 @@ function AnthropicProviderForm({
       setOk(true);
       setMsg(t("settings.ai.saved"));
       setApiKey("");
-      queryClient.invalidateQueries({ queryKey: ["user", "ai-provider"] });
-      queryClient.invalidateQueries({ queryKey: ["insights"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.userAiProvider() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.insightsRoot() });
     },
     onError: (e) => {
       setOk(false);
@@ -1135,8 +1136,8 @@ function LocalProviderForm({
       setOk(true);
       setMsg(t("settings.ai.saved"));
       setApiKey("");
-      queryClient.invalidateQueries({ queryKey: ["user", "ai-provider"] });
-      queryClient.invalidateQueries({ queryKey: ["insights"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.userAiProvider() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.insightsRoot() });
     },
     onError: (e) => {
       setOk(false);
@@ -1323,7 +1324,7 @@ function FallbackChainCard({
     onSuccess: () => {
       setOk(true);
       setMsg(t("settings.ai.providerChain.saved"));
-      queryClient.invalidateQueries({ queryKey: ["insights"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.insightsRoot() });
     },
     onError: (e) => {
       setOk(false);

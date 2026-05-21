@@ -6,6 +6,7 @@ import { AlertCircle, Loader2 } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import { Card, CardContent } from "@/components/ui/card";
 import { convertGlucose, resolveGlucoseUnit } from "@/lib/glucose";
 import {
@@ -46,9 +47,8 @@ interface TargetsResponse {
 /**
  * v1.4.25 W3e — provider-chain status used to gate the per-card Coach
  * CTA. Returns true when at least one provider is configured AND
- * enabled. The Settings → AI surface owns the same query
- * (`useQuery({ queryKey: ["insights", "provider-chain"] })`) so the
- * cache is shared.
+ * enabled. The Settings → AI surface owns the same query (via
+ * `queryKeys.insightsProviderChain()`) so the cache is shared.
  */
 interface ProviderChainStatus {
   activeProvider: string | null;
@@ -132,7 +132,7 @@ export default function TargetsPage() {
   const { isAuthenticated } = useAuth();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["insights", "targets"],
+    queryKey: queryKeys.insightsTargets(),
     queryFn: async () => {
       const res = await fetch("/api/insights/targets");
       if (!res.ok) throw new Error(t("targets.loadError"));
@@ -146,7 +146,7 @@ export default function TargetsPage() {
   // user has no configured provider, `activeProvider` is null and the
   // per-card Coach CTA hides entirely (no broken-button state).
   const { data: chainStatus } = useQuery({
-    queryKey: ["insights", "provider-chain"],
+    queryKey: queryKeys.insightsProviderChain(),
     queryFn: async () => {
       const res = await fetch("/api/insights/provider-chain");
       if (!res.ok) return null;

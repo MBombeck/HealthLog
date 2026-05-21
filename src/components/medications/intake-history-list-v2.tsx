@@ -15,6 +15,7 @@ import {
 
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -111,13 +112,13 @@ export function IntakeHistoryListV2({
   const offset = page * pageSize;
 
   const { data, isLoading, isError } = useQuery<IntakeListResponse>({
-    queryKey: [
-      "medications",
-      medicationId,
-      "intake",
-      "list",
-      { sortBy, sortDir, limit: pageSize, offset, status: STATUS_FILTER },
-    ],
+    queryKey: queryKeys.medicationIntakeList(medicationId, {
+      sortBy,
+      sortDir,
+      limit: pageSize,
+      offset,
+      status: STATUS_FILTER,
+    }),
     queryFn: async () => {
       const params = new URLSearchParams({
         sortBy,

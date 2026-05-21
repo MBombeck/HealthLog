@@ -13,7 +13,8 @@ import type { SubPageAnalyticsData } from "@/types/analytics";
  * `schlaf`) each used to declare:
  *
  *   - a private `AnalyticsData` interface,
- *   - a `useQuery({ queryKey: ["analytics"], staleTime: 60_000 })` block,
+ *   - a `useQuery` block keyed on `["analytics"]` with a 60-second
+ *     `staleTime`,
  *   - an `if (isAuthenticated && analytics && !hasMetricData(...)) { … }`
  *     short-circuit that rendered a sub-page-specific empty state.
  *

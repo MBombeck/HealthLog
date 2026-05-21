@@ -53,6 +53,13 @@ const GUARDED_DIRECTORIES = [
   // at the same boundary the unit-test walker does.
   "src/app/auth",
   "src/app/notifications",
+  // v1.4.42 W3-QUERYKEY-LONGTAIL — the settings / medications /
+  // admin / hooks surface is now factory-only. Every long-tail
+  // bare-literal flagged by audit-H1 routes through `queryKeys.<entry>()`.
+  "src/components/settings",
+  "src/components/medications",
+  "src/components/admin",
+  "src/hooks",
 ];
 
 // Individual guarded files outside the directories above.
@@ -61,6 +68,11 @@ const GUARDED_FILES = [
   "src/hooks/use-auth.ts",
   // v1.4.41 W-FRONTEND-FACTORY — about-section migrated.
   "src/components/settings/about-section.tsx",
+  // v1.4.42 W3-QUERYKEY-LONGTAIL — medications + targets pages now
+  // route every read through the factory.
+  "src/app/medications/page.tsx",
+  "src/app/medications/[id]/history/page.tsx",
+  "src/app/targets/page.tsx",
 ];
 
 function isGuarded(filename) {

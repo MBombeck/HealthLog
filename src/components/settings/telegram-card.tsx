@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { PasswordInput } from "@/components/ui/password-input";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 
 interface TelegramSettings {
   enabled: boolean;
@@ -34,7 +35,7 @@ export function TelegramCard({
   const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
 
   const { data: settings } = useQuery({
-    queryKey: ["telegram", "settings"],
+    queryKey: queryKeys.telegramSettings(),
     queryFn: async () => {
       const res = await fetch("/api/settings/telegram");
       if (!res.ok) throw new Error("Failed");
@@ -78,7 +79,7 @@ export function TelegramCard({
       setMsg(t("settings.telegramSaved"));
       setMsgType("success");
       setBotToken("");
-      queryClient.invalidateQueries({ queryKey: ["telegram"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.telegram() });
     } else {
       const json = await res.json();
       setMsg(json.error || t("settings.savingError"));

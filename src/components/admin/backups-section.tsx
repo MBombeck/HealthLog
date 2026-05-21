@@ -41,6 +41,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDateTime } from "@/lib/format";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import type { BackupRow, BackupsList } from "@/types/backups";
 import { getApiErrorMessage } from "./_shared";
 
@@ -172,7 +173,7 @@ export function BackupsSection() {
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["admin", "backups"],
+    queryKey: queryKeys.adminBackups(),
     queryFn: async () => {
       const res = await fetch("/api/admin/backups");
       if (!res.ok) throw new Error("Failed");
@@ -194,7 +195,7 @@ export function BackupsSection() {
       // shows up without leaving the user wondering whether the click
       // did anything.
       setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["admin", "backups"] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.adminBackups() });
       }, 2000);
     },
     onError: (err) => {
@@ -245,7 +246,7 @@ export function BackupsSection() {
       toast.success(
         t("admin.section.backups.uploadSuccess", { count: String(total) }),
       );
-      queryClient.invalidateQueries({ queryKey: ["admin", "backups"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminBackups() });
     },
     onError: (err) => {
       toast.error(
@@ -290,7 +291,7 @@ export function BackupsSection() {
     },
     onSuccess: () => {
       toast.success(t("admin.section.backups.restoreSuccess"));
-      queryClient.invalidateQueries({ queryKey: ["admin", "backups"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminBackups() });
       // Restore touches every personal-data table; nuke the broader
       // cache so dashboards / lists rebuild against the new state.
       queryClient.invalidateQueries();

@@ -21,6 +21,7 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import { type AdminAuditEntry, useAuthActionLabels } from "./_shared";
 
 const PREVIEW_LIMIT = 10;
@@ -34,7 +35,7 @@ export function RecentAuditPreview() {
   const { t } = useTranslations();
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["admin", "audit-log", "overview-preview"],
+    queryKey: queryKeys.adminAuditOverview(),
     queryFn: async () => {
       const res = await fetch(
         `/api/admin/audit-log?limit=${PREVIEW_LIMIT}&filter=auth`,

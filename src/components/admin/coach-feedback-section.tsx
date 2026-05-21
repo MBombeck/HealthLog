@@ -22,6 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2, Sparkles } from "lucide-react";
 
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 
 interface CoachFeedbackBucket {
   promptVersion: string;
@@ -55,7 +56,7 @@ export function CoachFeedbackSection() {
   const fmt = useFormatters();
 
   const query = useQuery({
-    queryKey: ["admin", "coach-feedback"],
+    queryKey: queryKeys.adminCoachFeedback(),
     queryFn: async () => {
       const res = await fetch("/api/admin/ai-quality");
       const json = (await res.json()) as CoachFeedbackResponse;

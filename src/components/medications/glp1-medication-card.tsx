@@ -29,7 +29,11 @@ import {
 import { MedicationCardHeader } from "@/components/medications/MedicationCardHeader";
 import { Progress } from "@/components/ui/progress";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
-import { invalidateKeys, medicationDependentKeys } from "@/lib/query-keys";
+import {
+  invalidateKeys,
+  medicationDependentKeys,
+  queryKeys,
+} from "@/lib/query-keys";
 import { formatDateTime, formatTime } from "@/lib/format";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
@@ -179,7 +183,7 @@ export function Glp1MedicationCard({
   const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
 
   const { data: compliance } = useQuery({
-    queryKey: ["medications", medication.id, "compliance"],
+    queryKey: queryKeys.medicationCompliance(medication.id),
     queryFn: async () => {
       const res = await fetch(`/api/medications/${medication.id}/compliance`);
       if (!res.ok) return null;
@@ -194,7 +198,7 @@ export function Glp1MedicationCard({
   // medication card so the take-now / overdue / very-overdue pill
   // tiers identically on both surfaces.
   const { data: thresholds } = useQuery({
-    queryKey: ["settings", "reminder-thresholds"],
+    queryKey: queryKeys.settingsReminderThresholds(),
     queryFn: async () => {
       const res = await fetch("/api/settings/reminder-thresholds");
       if (!res.ok) return null;
@@ -208,7 +212,7 @@ export function Glp1MedicationCard({
   // pen inventory). Lives behind a dedicated endpoint so the standard
   // medications grid loads in parallel without paying for it.
   const { data: details } = useQuery({
-    queryKey: ["medications", medication.id, "glp1-details"],
+    queryKey: queryKeys.medicationGlp1Details(medication.id),
     queryFn: async () => {
       const res = await fetch(`/api/medications/${medication.id}/glp1`);
       if (!res.ok) return null;

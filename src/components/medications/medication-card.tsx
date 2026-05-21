@@ -29,7 +29,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
-import { invalidateKeys, medicationDependentKeys } from "@/lib/query-keys";
+import {
+  invalidateKeys,
+  medicationDependentKeys,
+  queryKeys,
+} from "@/lib/query-keys";
 
 interface Schedule {
   id: string;
@@ -128,7 +132,7 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
   const [intakeLoading, setIntakeLoading] = useState<string | null>(null);
 
   const { data: compliance } = useQuery({
-    queryKey: ["medications", medication.id, "compliance"],
+    queryKey: queryKeys.medicationCompliance(medication.id),
     queryFn: async () => {
       const res = await fetch(`/api/medications/${medication.id}/compliance`);
       if (!res.ok) return null;
@@ -141,7 +145,7 @@ export function MedicationCard({ medication, onEdit }: MedicationCardProps) {
   const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
 
   const { data: thresholds } = useQuery({
-    queryKey: ["settings", "reminder-thresholds"],
+    queryKey: queryKeys.settingsReminderThresholds(),
     queryFn: async () => {
       const res = await fetch("/api/settings/reminder-thresholds");
       if (!res.ok) return null;

@@ -30,6 +30,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import {
   FEEDBACK_STATUS_TABS,
   type FeedbackCategoryType,
@@ -50,7 +51,7 @@ export function FeedbackInboxSection() {
   const [selected, setSelected] = useState<FeedbackItem | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin", "feedback", activeStatus],
+    queryKey: queryKeys.adminFeedback(activeStatus),
     queryFn: async () => {
       const res = await fetch(
         `/api/admin/feedback?status=${activeStatus}&limit=100`,
@@ -63,7 +64,7 @@ export function FeedbackInboxSection() {
   const counts = data?.meta?.countsByStatus ?? {};
 
   function refresh() {
-    queryClient.invalidateQueries({ queryKey: ["admin", "feedback"] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.adminFeedbackRoot() });
   }
 
   return (

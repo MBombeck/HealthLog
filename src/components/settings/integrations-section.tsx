@@ -33,7 +33,11 @@ import { IntegrationStatusPill } from "@/components/settings/integration-status-
 import type { IntegrationPillState } from "@/components/settings/integration-status-pill";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
-import { invalidateKeys, measurementDependentKeys } from "@/lib/query-keys";
+import {
+  invalidateKeys,
+  measurementDependentKeys,
+  queryKeys,
+} from "@/lib/query-keys";
 
 interface MoodLogStatus {
   configured: boolean;
@@ -91,7 +95,7 @@ interface IntegrationStatusEnvelope {
  */
 function useIntegrationStatuses(enabled: boolean) {
   return useQuery({
-    queryKey: ["integrations", "status"],
+    queryKey: queryKeys.integrationsStatus(),
     queryFn: async () => {
       const res = await fetch("/api/integrations/status");
       if (!res.ok) throw new Error("Failed");
@@ -155,7 +159,7 @@ export function IntegrationsSection() {
   const { isAuthenticated } = useAuth();
 
   const { data: globalServices } = useQuery({
-    queryKey: ["settings", "global-services"],
+    queryKey: queryKeys.settingsGlobalServices(),
     queryFn: async () => {
       const res = await fetch("/api/settings/global-services");
       if (!res.ok) throw new Error("Failed");
@@ -219,7 +223,7 @@ function WithingsCard({
   const queryClient = useQueryClient();
 
   const { data: status } = useQuery({
-    queryKey: ["withings", "status"],
+    queryKey: queryKeys.withingsStatus(),
     queryFn: async () => {
       const res = await fetch("/api/withings/status");
       if (!res.ok) throw new Error("Failed");
@@ -247,8 +251,8 @@ function WithingsCard({
       if (!res.ok) throw new Error("Failed");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["withings"] });
-      queryClient.invalidateQueries({ queryKey: ["integrations", "status"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.withings() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.integrationsStatus() });
     },
   });
 
@@ -273,7 +277,7 @@ function WithingsCard({
         );
         setSyncMsgType("success");
         void invalidateKeys(queryClient, measurementDependentKeys);
-        queryClient.invalidateQueries({ queryKey: ["integrations", "status"] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.integrationsStatus() });
       } else {
         setSyncMsg(json.error || t("settings.withingsSyncFailed"));
         setSyncMsgType("error");
@@ -307,7 +311,7 @@ function WithingsCard({
         setCredsMsgType("success");
         setClientId("");
         setClientSecret("");
-        queryClient.invalidateQueries({ queryKey: ["withings"] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.withings() });
       } else {
         try {
           const json = await res.json();
@@ -601,7 +605,7 @@ function MoodLogCard({
   const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
 
   const { data: status, refetch: refetchStatus } = useQuery({
-    queryKey: ["moodlog-status"],
+    queryKey: queryKeys.moodlogStatus(),
     queryFn: async () => {
       const res = await fetch("/api/integrations/moodlog/status");
       if (!res.ok) throw new Error("Failed");
@@ -624,7 +628,7 @@ function MoodLogCard({
       setUrl("");
       setApiKey("");
       await refetchStatus();
-      queryClient.invalidateQueries({ queryKey: ["integrations", "status"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.integrationsStatus() });
     } else {
       const json = await res.json();
       setMsg(json.error || t("settings.savingError"));
@@ -652,7 +656,7 @@ function MoodLogCard({
         );
         setMsgType("success");
         await refetchStatus();
-        queryClient.invalidateQueries({ queryKey: ["integrations", "status"] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.integrationsStatus() });
       } else {
         setMsg(t("settings.moodLogSyncFailed"));
         setMsgType("error");
@@ -670,7 +674,7 @@ function MoodLogCard({
       setMsg(t("settings.moodLogDisconnected"));
       setMsgType("success");
       await refetchStatus();
-      queryClient.invalidateQueries({ queryKey: ["integrations", "status"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.integrationsStatus() });
     }
   }
 

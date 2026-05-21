@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Cpu, Fingerprint, Globe, KeyRound } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import { PasswordInput as SharedPasswordInput } from "@/components/ui/password-input";
 
 /**
@@ -225,7 +226,7 @@ export function SettingsToggle({
 
 export function useAdminSettings() {
   return useQuery({
-    queryKey: ["admin", "settings"],
+    queryKey: queryKeys.adminSettings(),
     queryFn: async () => {
       const res = await fetch("/api/admin/settings");
       if (!res.ok) throw new Error("Failed");
@@ -249,7 +250,7 @@ export function useUpdateSettings() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "settings"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminSettings() });
       toast.success(t("common.saved"));
     },
     onError: (err) => {
@@ -523,7 +524,7 @@ export function auditLogCsvHeaderLabels(
 
 export function useSystemStatus() {
   return useQuery({
-    queryKey: ["admin", "status"],
+    queryKey: queryKeys.adminStatus(),
     queryFn: async () => {
       const res = await fetch("/api/admin/status");
       if (!res.ok) throw new Error("Failed");

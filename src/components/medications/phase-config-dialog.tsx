@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, RotateCcw } from "lucide-react";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 
 interface PhaseConfigData {
   greenValue: number;
@@ -76,7 +77,7 @@ export function PhaseConfigDialog({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["phase-config", medicationId],
+    queryKey: queryKeys.medicationPhaseConfig(medicationId),
     queryFn: async () => {
       const res = await fetch(`/api/medications/${medicationId}/phase-config`);
       const json = await res.json();
@@ -101,7 +102,7 @@ export function PhaseConfigDialog({
     onSuccess: () => {
       setLocalForm(null);
       queryClient.invalidateQueries({
-        queryKey: ["phase-config", medicationId],
+        queryKey: queryKeys.medicationPhaseConfig(medicationId),
       });
       setStatusMessage(t("medications.phaseSaved"));
       setTimeout(() => setStatusMessage(null), 2000);
@@ -119,7 +120,7 @@ export function PhaseConfigDialog({
     onSuccess: () => {
       setLocalForm(null);
       queryClient.invalidateQueries({
-        queryKey: ["phase-config", medicationId],
+        queryKey: queryKeys.medicationPhaseConfig(medicationId),
       });
       setStatusMessage(t("medications.phaseReset"));
       setTimeout(() => setStatusMessage(null), 2000);

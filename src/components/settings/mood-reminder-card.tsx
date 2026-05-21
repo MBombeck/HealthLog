@@ -7,6 +7,7 @@ import { SmilePlus } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 
 interface ProfileShape {
   moodReminderEnabled: boolean;
@@ -25,7 +26,7 @@ export function MoodReminderCard({
   const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
 
   const { data: profile } = useQuery({
-    queryKey: ["user", "profile"],
+    queryKey: queryKeys.userProfile(),
     queryFn: async () => {
       const res = await fetch("/api/user/profile");
       if (!res.ok) throw new Error("Failed to load profile");
@@ -55,7 +56,7 @@ export function MoodReminderCard({
           : t("notifications.moodReminder.disabledToast"),
       );
       setMsgType("success");
-      await queryClient.invalidateQueries({ queryKey: ["user", "profile"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.userProfile() });
       setOptimistic(null);
     } else {
       setOptimistic(null);

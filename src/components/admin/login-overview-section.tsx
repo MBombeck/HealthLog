@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import { toCSV } from "@/lib/export";
 import { formatInUserTz, DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { useAuth } from "@/hooks/use-auth";
@@ -114,10 +115,7 @@ export function LoginOverviewSection() {
   }, [page, perPage, actor, actionFilter, target, range]);
 
   const { data, isLoading } = useQuery({
-    queryKey: [
-      "admin",
-      "audit-log",
-      "filtered",
+    queryKey: queryKeys.adminAuditLogFiltered({
       filter,
       page,
       perPage,
@@ -125,7 +123,7 @@ export function LoginOverviewSection() {
       actionFilter,
       target,
       range,
-    ],
+    }),
     queryFn: async () => {
       const params = new URLSearchParams(queryParams);
       // Quick-filter pill stacks on top of the new filters.
@@ -140,7 +138,7 @@ export function LoginOverviewSection() {
 
   // Distinct actions for the dropdown — populated lazily.
   const { data: actionsData } = useQuery({
-    queryKey: ["admin", "audit-log", "actions"],
+    queryKey: queryKeys.adminAuditActions(),
     queryFn: async () => {
       const res = await fetch("/api/admin/audit-log/actions");
       if (!res.ok) throw new Error("Failed");

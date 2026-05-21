@@ -20,6 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { ResearchModeAcknowledgmentDialog } from "@/components/medications/ResearchModeAcknowledgmentDialog";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import {
   type ResearchModeStatus,
   researchModeGateState,
@@ -102,7 +103,7 @@ function ResearchModeCard() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { data: status, isLoading } = useQuery<ResearchModeStatus | null>({
-    queryKey: ["research-mode"],
+    queryKey: queryKeys.researchMode(),
     queryFn: async () => {
       const res = await fetch("/api/auth/me/research-mode");
       if (!res.ok) return null;
@@ -140,7 +141,7 @@ function ResearchModeCard() {
         setErrorMessage(t("settings.researchMode.disableError"));
         return;
       }
-      queryClient.invalidateQueries({ queryKey: ["research-mode"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.researchMode() });
     } catch {
       setErrorMessage(t("settings.researchMode.disableError"));
     } finally {

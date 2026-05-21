@@ -8,6 +8,7 @@ import { Loader2, BellRing, BellOff, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
 
 /**
@@ -92,7 +93,7 @@ export function SchedulingSection({
   const fmt = useFormatters();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["medications", medicationId, "cadence"],
+    queryKey: queryKeys.medicationCadence(medicationId),
     queryFn: async (): Promise<CadenceResponse> => {
       const res = await fetch(
         `/api/medications/${medicationId}/cadence?days=30`,

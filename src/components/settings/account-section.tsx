@@ -44,6 +44,7 @@ import { formatDate } from "@/lib/format";
 import { locales, localeLabels, type Locale } from "@/lib/i18n/config";
 import { useTranslations } from "@/lib/i18n/context";
 import { describePasskeyError } from "@/lib/passkey-errors";
+import { queryKeys } from "@/lib/query-keys";
 import { TimezonePicker } from "@/components/settings/timezone-picker";
 import { detectBrowserTimezone, DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
@@ -726,7 +727,7 @@ function PasskeyListSection({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [deleteMsg, setDeleteMsg] = useState<string | null>(null);
 
   const { data: passkeys } = useQuery({
-    queryKey: ["passkeys"],
+    queryKey: queryKeys.passkeys(),
     queryFn: async () => {
       const res = await fetch("/api/auth/passkeys");
       if (!res.ok) throw new Error("Failed");
@@ -742,7 +743,7 @@ function PasskeyListSection({ isAuthenticated }: { isAuthenticated: boolean }) {
       if (!res.ok) throw new Error(json.error || t("common.error"));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["passkeys"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.passkeys() });
       setDeleteMsg(null);
     },
     onError: (err: Error) => {

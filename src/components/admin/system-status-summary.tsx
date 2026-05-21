@@ -25,6 +25,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import { StatusItem, useSystemStatus } from "./_shared";
 
 interface VersionResponse {
@@ -36,7 +37,7 @@ interface VersionResponse {
 
 function useVersion() {
   return useQuery({
-    queryKey: ["public", "version"],
+    queryKey: queryKeys.publicVersion(),
     queryFn: async () => {
       const res = await fetch("/api/version");
       if (!res.ok) throw new Error("Failed to load version");

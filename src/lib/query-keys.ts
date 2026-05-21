@@ -74,6 +74,38 @@ export const queryKeys = {
   medicationComplianceChart: (medicationId: string) =>
     ["compliance-chart-inline", medicationId] as const,
   /**
+   * v1.4.42 W3-QUERYKEY-LONGTAIL — per-medication compliance KPI used
+   * by `medication-card` + `glp1-medication-card`. Centralising lets
+   * the intake mutation invalidate every compliance read through the
+   * `["medications"]` prefix instead of one bare-literal at a time.
+   */
+  medicationCompliance: (medicationId: string) =>
+    ["medications", medicationId, "compliance"] as const,
+  medicationTitration: (medicationId: string) =>
+    ["medications", medicationId, "titration"] as const,
+  medicationCadence: (medicationId: string) =>
+    ["medications", medicationId, "cadence"] as const,
+  medicationGlp1Details: (medicationId: string) =>
+    ["medications", medicationId, "glp1-details"] as const,
+  medicationIntakeDrugLevelChart: (medicationId: string) =>
+    ["medications", medicationId, "intake", "drug-level-chart"] as const,
+  /**
+   * v1.4.42 — intake-history list with sort / paging / status filter.
+   * The opaque params object lives at index 4 so the
+   * `["medications", id, "intake", "list"]` prefix invalidates every
+   * sort/page combination on an intake mutation.
+   */
+  medicationIntakeList: (
+    medicationId: string,
+    params: {
+      sortBy: string;
+      sortDir: string;
+      limit: number;
+      offset: number;
+      status: string;
+    },
+  ) => ["medications", medicationId, "intake", "list", params] as const,
+  /**
    * v1.4.40 W-RSC — the dashboard-level compliance chart (aggregate
    * across every scheduled medication) was a bare `["medication-
    * compliance-chart", days]` key; route it through the factory so
@@ -143,11 +175,44 @@ export const queryKeys = {
     ["admin", "host-metrics", window] as const,
   adminAuditActions: () => ["admin", "audit-log", "actions"] as const,
   adminAuditOverview: () => ["admin", "audit-log", "overview-preview"] as const,
+  /**
+   * v1.4.42 W3-QUERYKEY-LONGTAIL — paginated + filtered audit-log
+   * read used by the login-overview admin section. The `filtered`
+   * discriminator at index 2 keeps the no-arg `adminAuditLog(filter)`
+   * cache slot byte-distinct so its consumers don't collide.
+   */
+  adminAuditLogFiltered: (params: {
+    filter: string;
+    page: number;
+    perPage: number;
+    actor: string;
+    actionFilter: string;
+    target: string;
+    range: string;
+  }) =>
+    [
+      "admin",
+      "audit-log",
+      "filtered",
+      params.filter,
+      params.page,
+      params.perPage,
+      params.actor,
+      params.actionFilter,
+      params.target,
+      params.range,
+    ] as const,
 
   tokens: () => ["tokens"] as const,
   telegram: () => ["telegram"] as const,
   telegramSettings: () => ["telegram", "settings"] as const,
   withings: () => ["withings"] as const,
+  /**
+   * v1.4.42 W3-QUERYKEY-LONGTAIL — the per-card Withings status read.
+   * Shares the `["withings"]` prefix with `withings()` so a disconnect
+   * mutation invalidates both at once.
+   */
+  withingsStatus: () => ["withings", "status"] as const,
 
   // v1.4.32 — workout list + detail caches. `workouts()` is the
   // root key invalidated by the batch-ingest mutation; the recent +
@@ -155,6 +220,18 @@ export const queryKeys = {
   // detail page share a cache slot with the list page.
   workouts: () => ["workouts"] as const,
   workoutsRecent: () => ["workouts", "recent"] as const,
+  /**
+   * v1.4.42 W3-QUERYKEY-LONGTAIL — the `useWorkouts` hook used to
+   * spread `workoutsRecent()` and append an opts object inline. The
+   * factory now owns the full shape so the hook never reaches for a
+   * literal-array wrapper.
+   */
+  workoutsRecentList: (opts: {
+    limit?: number;
+    offset?: number;
+    since?: string;
+    sportType?: string;
+  }) => ["workouts", "recent", opts] as const,
   workoutDetail: (id: string) => ["workouts", id] as const,
 
   adminSettings: () => ["admin", "settings"] as const,

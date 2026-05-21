@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { PasswordInput } from "@/components/ui/password-input";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 
 interface NtfySettings {
   enabled: boolean;
@@ -31,7 +32,7 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
   );
 
   const { data: settings } = useQuery({
-    queryKey: ["settings", "ntfy"],
+    queryKey: queryKeys.settingsNtfy(),
     queryFn: async () => {
       const res = await fetch("/api/settings/ntfy");
       if (!res.ok) throw new Error("Failed");
@@ -70,7 +71,7 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["settings", "ntfy"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settingsNtfy() });
       setSaveMsg(t("settings.saved"));
       setSaveMsgType("success");
       setAuthToken("");

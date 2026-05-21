@@ -100,6 +100,74 @@ describe("queryKeys factory", () => {
       "dashboard-medication-compliance",
     );
   });
+
+  // v1.4.42 W3-QUERYKEY-LONGTAIL — pin the shapes of the new factory
+  // entries so a future rename can't drift the cache layout silently.
+  it("exposes the per-medication sub-keys under the medications prefix", () => {
+    expect(queryKeys.medicationCompliance("med1")).toEqual([
+      "medications",
+      "med1",
+      "compliance",
+    ]);
+    expect(queryKeys.medicationTitration("med1")).toEqual([
+      "medications",
+      "med1",
+      "titration",
+    ]);
+    expect(queryKeys.medicationCadence("med1")).toEqual([
+      "medications",
+      "med1",
+      "cadence",
+    ]);
+    expect(queryKeys.medicationGlp1Details("med1")).toEqual([
+      "medications",
+      "med1",
+      "glp1-details",
+    ]);
+    expect(queryKeys.medicationIntakeDrugLevelChart("med1")).toEqual([
+      "medications",
+      "med1",
+      "intake",
+      "drug-level-chart",
+    ]);
+    const listKey = queryKeys.medicationIntakeList("med1", {
+      sortBy: "takenAt",
+      sortDir: "desc",
+      limit: 25,
+      offset: 0,
+      status: "completed",
+    });
+    expect(listKey[0]).toBe("medications");
+    expect(listKey[1]).toBe("med1");
+    expect(listKey[2]).toBe("intake");
+    expect(listKey[3]).toBe("list");
+  });
+
+  it("exposes withingsStatus under the withings prefix", () => {
+    expect(queryKeys.withingsStatus()).toEqual(["withings", "status"]);
+  });
+
+  it("packs adminAuditLogFiltered params into a stable filtered shape", () => {
+    const key = queryKeys.adminAuditLogFiltered({
+      filter: "all",
+      page: 1,
+      perPage: 50,
+      actor: "",
+      actionFilter: "",
+      target: "",
+      range: "7d",
+    });
+    expect(key[0]).toBe("admin");
+    expect(key[1]).toBe("audit-log");
+    expect(key[2]).toBe("filtered");
+    expect(key.length).toBe(10);
+  });
+
+  it("packs workoutsRecentList opts under the workouts-recent prefix", () => {
+    const key = queryKeys.workoutsRecentList({ limit: 3 });
+    expect(key[0]).toBe("workouts");
+    expect(key[1]).toBe("recent");
+  });
 });
 
 describe("dependent-key bundles", () => {
@@ -195,11 +263,19 @@ describe("queryKey factory enforcement", () => {
     join(repoRoot, "src", "app", "page.tsx"),
     join(repoRoot, "src", "hooks", "use-auth.ts"),
     // v1.4.41 W-FRONTEND-FACTORY — auth, notifications, and the
-    // about-section migrated to the factory. Future waves extend
-    // this list as they migrate their own surface.
+    // about-section migrated to the factory.
     join(repoRoot, "src", "app", "auth"),
     join(repoRoot, "src", "app", "notifications"),
     join(repoRoot, "src", "components", "settings", "about-section.tsx"),
+    // v1.4.42 W3-QUERYKEY-LONGTAIL — settings / medications /
+    // admin / hooks now route every read through the factory.
+    join(repoRoot, "src", "components", "settings"),
+    join(repoRoot, "src", "components", "medications"),
+    join(repoRoot, "src", "components", "admin"),
+    join(repoRoot, "src", "hooks"),
+    join(repoRoot, "src", "app", "medications", "page.tsx"),
+    join(repoRoot, "src", "app", "medications", "[id]", "history", "page.tsx"),
+    join(repoRoot, "src", "app", "targets", "page.tsx"),
   ];
 
   function collect(): string[] {

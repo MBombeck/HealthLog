@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import { MoodReminderCard } from "@/components/settings/mood-reminder-card";
 import { NotificationStatusCard } from "@/components/settings/notification-status-card";
 import { NtfyCard } from "@/components/settings/ntfy-card";
@@ -25,7 +26,7 @@ export function NotificationsSection() {
   const { isAuthenticated } = useAuth();
 
   const { data: globalServices } = useQuery({
-    queryKey: ["settings", "global-services"],
+    queryKey: queryKeys.settingsGlobalServices(),
     queryFn: async () => {
       const res = await fetch("/api/settings/global-services");
       if (!res.ok) throw new Error("Failed");

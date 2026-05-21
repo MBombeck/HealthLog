@@ -13,6 +13,7 @@ import { IntakeHistoryListV2 } from "@/components/medications/intake-history-lis
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 
 export default function IntakeHistoryPage({
   params,
@@ -31,7 +32,7 @@ export default function IntakeHistoryPage({
   }, [authLoading, isAuthenticated, router]);
 
   const { data: medication, isLoading: medLoading } = useQuery({
-    queryKey: ["medications", id],
+    queryKey: queryKeys.medicationDetail(id),
     queryFn: async () => {
       const res = await fetch(`/api/medications/${id}`);
       if (!res.ok) throw new Error("Failed to fetch");

@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/dialog";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import type { WideEvent, LogLevel } from "@/lib/logging/types";
 
 type RangePreset = "15m" | "1h" | "6h" | "all";
@@ -100,7 +101,7 @@ export function AppLogPreviewSection() {
   }, [traceId, actionFilter, level, range]);
 
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["admin", "app-logs", traceId, actionFilter, level, range],
+    queryKey: queryKeys.adminAppLogs(traceId, actionFilter, level, range),
     queryFn: async () => {
       const res = await fetch(`/api/admin/app-logs?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to load app logs");

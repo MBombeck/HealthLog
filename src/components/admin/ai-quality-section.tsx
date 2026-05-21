@@ -22,6 +22,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Sparkles, Loader2 } from "lucide-react";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 
 interface FeedbackBucket {
   severity: string;
@@ -63,7 +64,7 @@ export function AiQualitySection() {
   const fmt = useFormatters();
 
   const query = useQuery({
-    queryKey: ["admin", "ai-quality"],
+    queryKey: queryKeys.adminAiQuality(),
     queryFn: async () => {
       const res = await fetch("/api/admin/ai-quality");
       const json = (await res.json()) as AiQualityResponse;

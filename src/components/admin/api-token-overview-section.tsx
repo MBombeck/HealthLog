@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/tooltip";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import { type ApiTokenInfo } from "./_shared";
 
 /**
@@ -147,7 +148,7 @@ export function ApiTokenOverviewSection() {
   // one card the toggle hides the entire surface. the maintainer reported it
   // as "sinnlos" — gone.
   const { data: tokens, isLoading } = useQuery({
-    queryKey: ["admin", "tokens"],
+    queryKey: queryKeys.adminTokens(),
     queryFn: async () => {
       const res = await fetch("/api/admin/tokens");
       if (!res.ok) throw new Error("Failed");

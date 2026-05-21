@@ -37,6 +37,7 @@ import {
 } from "recharts";
 import { useMemo } from "react";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 
 interface HostMetricsApiSample {
   capturedAt: string;
@@ -130,7 +131,7 @@ export function HostMetricsChart() {
   const fmt = useFormatters();
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["admin", "host-metrics", "2h"],
+    queryKey: queryKeys.adminHostMetrics("2h"),
     queryFn: async () => {
       const res = await fetch("/api/admin/host-metrics?since=2h");
       if (!res.ok) throw new Error("Failed to load host metrics");

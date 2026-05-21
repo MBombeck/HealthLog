@@ -23,6 +23,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { formatDate } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import { type AdminUser, PasswordInput } from "./_shared";
 
 /**
@@ -49,7 +50,7 @@ export function UserManagementSection() {
   const [logoutTarget, setLogoutTarget] = useState<AdminUser | null>(null);
 
   const { data: users } = useQuery({
-    queryKey: ["admin", "users"],
+    queryKey: queryKeys.adminUsers(),
     queryFn: async () => {
       const res = await fetch("/api/admin/users");
       if (!res.ok) throw new Error("Failed");
@@ -81,7 +82,7 @@ export function UserManagementSection() {
       if (!res.ok) throw new Error(json.error || t("common.error"));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers() });
       setEditingUser(null);
       toast.success(t("common.saved"));
     },

@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 
 interface ApiTokenInfo {
   id: string;
@@ -166,7 +167,7 @@ function ApiTokensCard() {
   const [showRevokedTokens, setShowRevokedTokens] = useState(false);
 
   const { data: tokens } = useQuery({
-    queryKey: ["tokens"],
+    queryKey: queryKeys.tokens(),
     queryFn: async () => {
       const res = await fetch("/api/tokens");
       if (!res.ok) throw new Error("Failed");
@@ -191,7 +192,7 @@ function ApiTokensCard() {
       if (res.ok) {
         setNewToken(json.data.token);
         setNewName("");
-        queryClient.invalidateQueries({ queryKey: ["tokens"] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.tokens() });
       } else {
         setTokenMsg(json.error || t("common.error"));
       }
@@ -205,7 +206,7 @@ function ApiTokensCard() {
   async function handleRevoke(tokenId: string) {
     const res = await fetch(`/api/tokens/${tokenId}`, { method: "DELETE" });
     if (res.ok) {
-      queryClient.invalidateQueries({ queryKey: ["tokens"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tokens() });
     }
   }
 

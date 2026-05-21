@@ -92,10 +92,12 @@ export function useWorkouts(opts: UseWorkoutsOptions = {}): UseWorkoutsResult {
   const { isAuthenticated } = useAuth();
 
   const query = useQuery({
-    queryKey: [
-      ...queryKeys.workoutsRecent(),
-      { limit: opts.limit, offset: opts.offset, since: opts.since, sportType: opts.sportType },
-    ] as const,
+    queryKey: queryKeys.workoutsRecentList({
+      limit: opts.limit,
+      offset: opts.offset,
+      since: opts.since,
+      sportType: opts.sportType,
+    }),
     queryFn: () => fetchWorkouts(opts),
     enabled: isAuthenticated,
     staleTime: 60 * 1000,

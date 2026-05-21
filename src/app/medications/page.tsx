@@ -4,7 +4,11 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
-import { invalidateKeys, medicationDependentKeys } from "@/lib/query-keys";
+import {
+  invalidateKeys,
+  medicationDependentKeys,
+  queryKeys,
+} from "@/lib/query-keys";
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import { MedicationForm } from "@/components/medications/medication-form";
 import { MedicationCard } from "@/components/medications/medication-card";
@@ -90,7 +94,7 @@ export default function MedicationsPage() {
     isError,
     refetch: refetchMedications,
   } = useQuery({
-    queryKey: ["medications"],
+    queryKey: queryKeys.medications(),
     queryFn: async () => {
       const res = await fetch("/api/medications");
       if (!res.ok) throw new Error("Failed to fetch");

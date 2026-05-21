@@ -3,6 +3,8 @@
 import { useContext } from "react";
 import { QueryClientContext, useQuery } from "@tanstack/react-query";
 
+import { queryKeys } from "@/lib/query-keys";
+
 /**
  * v1.4.31 — Client-side accessor for the operator's assistant
  * feature-flag matrix. Mirrors `GET /api/feature-flags`'s response
@@ -86,7 +88,7 @@ export function useFeatureFlags(): AssistantFlagSet {
 
 function useFeatureFlagsQuery(): AssistantFlagSet {
   const query = useQuery({
-    queryKey: ["feature-flags"],
+    queryKey: queryKeys.featureFlags(),
     queryFn: fetchFeatureFlags,
     staleTime: 60_000,
     gcTime: 300_000,

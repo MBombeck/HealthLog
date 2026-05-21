@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 
 type ChannelType = "TELEGRAM" | "NTFY" | "WEB_PUSH";
 
@@ -69,7 +70,7 @@ export function NotificationStatusCard() {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["notifications", "status"],
+    queryKey: queryKeys.notificationsStatus(),
     queryFn: async () => {
       const res = await fetch("/api/notifications/status");
       if (!res.ok) throw new Error("Failed");
@@ -90,7 +91,7 @@ export function NotificationStatusCard() {
       if (!res.ok) throw new Error("Failed");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications", "status"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notificationsStatus() });
     },
   });
 
@@ -103,7 +104,7 @@ export function NotificationStatusCard() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications", "status"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notificationsStatus() });
     },
   });
 

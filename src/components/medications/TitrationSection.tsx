@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2, ExternalLink } from "lucide-react";
 
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
 
 /**
@@ -62,7 +63,7 @@ export function TitrationSection({ medicationId }: TitrationSectionProps) {
   const { t } = useTranslations();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["medications", medicationId, "titration"],
+    queryKey: queryKeys.medicationTitration(medicationId),
     queryFn: async (): Promise<TitrationResponse> => {
       const res = await fetch(`/api/medications/${medicationId}/titration`);
       if (!res.ok) {

@@ -45,6 +45,7 @@ import { AlertTriangle, BookOpenCheck, Loader2 } from "lucide-react";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 
 export interface ResearchModeAcknowledgmentDialogProps {
   open: boolean;
@@ -94,7 +95,7 @@ export function ResearchModeAcknowledgmentDialog({
     onSuccess: () => {
       setErrorMessage(null);
       toast.success(t("medications.researchMode.dialog.successToast"));
-      queryClient.invalidateQueries({ queryKey: ["research-mode"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.researchMode() });
       onAcknowledged?.();
       onOpenChange(false);
     },

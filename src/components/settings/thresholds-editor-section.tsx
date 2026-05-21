@@ -62,7 +62,7 @@ export function ThresholdsEditorSection({ id }: { id: string }) {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["user", "thresholds"],
+    queryKey: queryKeys.userThresholds(),
     queryFn: async () => {
       const res = await fetch("/api/user/thresholds");
       if (!res.ok) throw new Error("failed");
@@ -86,10 +86,10 @@ export function ThresholdsEditorSection({ id }: { id: string }) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user", "thresholds"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.userThresholds() });
       // Every chart/band depends on these thresholds — invalidate everything.
       queryClient.invalidateQueries({ queryKey: queryKeys.analytics() });
-      queryClient.invalidateQueries({ queryKey: ["insights"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.insightsRoot() });
       toast.success(t("thresholds.saveSuccess"));
     },
     onError: (err) =>
@@ -107,9 +107,9 @@ export function ThresholdsEditorSection({ id }: { id: string }) {
       if (!res.ok) throw new Error("reset failed");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user", "thresholds"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.userThresholds() });
       queryClient.invalidateQueries({ queryKey: queryKeys.analytics() });
-      queryClient.invalidateQueries({ queryKey: ["insights"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.insightsRoot() });
       toast.success(t("thresholds.resetSuccess"));
     },
     onError: () => toast.error(t("thresholds.saveError")),

@@ -5,6 +5,7 @@ import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import { SettingsToggle, getApiErrorMessage } from "./_shared";
 
 /**
@@ -45,7 +46,7 @@ interface AssistantFlagsResponse {
 
 function useAssistantFlags() {
   return useQuery({
-    queryKey: ["admin", "settings", "assistant-flags"],
+    queryKey: queryKeys.adminAssistantFlags(),
     queryFn: async () => {
       const res = await fetch("/api/admin/settings/assistant-flags");
       if (!res.ok) throw new Error("Failed");
@@ -73,12 +74,12 @@ function useUpdateAssistantFlags() {
     },
     onSuccess: (data) => {
       client.setQueryData(
-        ["admin", "settings", "assistant-flags"],
+        queryKeys.adminAssistantFlags(),
         data,
       );
       // Bust the runtime `/api/feature-flags` cache so the operator
       // sees the toggled surface react within the same session.
-      client.invalidateQueries({ queryKey: ["feature-flags"] });
+      client.invalidateQueries({ queryKey: queryKeys.featureFlags() });
       toast.success(t("common.saved"));
     },
     onError: (err) => {
@@ -88,7 +89,7 @@ function useUpdateAssistantFlags() {
           : t("admin.settingsSaveError"),
       );
       client.invalidateQueries({
-        queryKey: ["admin", "settings", "assistant-flags"],
+        queryKey: queryKeys.adminAssistantFlags(),
       });
     },
   });

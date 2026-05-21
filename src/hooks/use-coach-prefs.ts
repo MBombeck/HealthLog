@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
+import { queryKeys } from "@/lib/query-keys";
 import {
   DEFAULT_COACH_PREFS,
   type CoachPrefs,
@@ -24,7 +25,7 @@ import {
  */
 export function useCoachPrefs(opts?: { enabled?: boolean }) {
   return useQuery<CoachPrefs>({
-    queryKey: ["coach-prefs"],
+    queryKey: queryKeys.coachPrefs(),
     queryFn: async () => {
       const res = await fetch("/api/auth/me/coach-prefs");
       if (!res.ok) return DEFAULT_COACH_PREFS;
