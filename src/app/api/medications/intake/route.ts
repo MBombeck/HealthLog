@@ -156,6 +156,34 @@ export const GET = apiHandler(async (request: NextRequest) => {
         // structural backstop, this is the defense-in-depth.
         skipDuplicates: true,
       });
+
+      // v1.4.40 — close the compliance-rollup hook gap from v1.4.39.4.
+      // The bulk projection mints fresh `(medicationId, scheduledFor)`
+      // rows in PENDING state; without this hook the rollup for the
+      // affected `(user, medication, day)` tuples stays at its previous
+      // (pre-projection) `scheduled` count, which inflates the apparent
+      // compliance % until the user actually logs against the new
+      // row. Coalesce by `(medicationId, dayKey)` so we fire one
+      // recompute per distinct day-tuple instead of one per row.
+      // Best-effort: errors stay caught inside the helper so a
+      // populator hiccup doesn't surface as a 5xx on the intake
+      // request. Mirror call site in `dashboard/summary/route.ts`.
+      const seenDayKeys = new Set<string>();
+      const recomputeJobs: Array<Promise<void>> = [];
+      for (const m of missing) {
+        const key = `${m.medicationId}|${m.scheduledFor.toISOString().slice(0, 10)}`;
+        if (seenDayKeys.has(key)) continue;
+        seenDayKeys.add(key);
+        recomputeJobs.push(
+          recomputeMedicationComplianceForEvent({
+            userId: user.id,
+            medicationId: m.medicationId,
+            scheduledFor: m.scheduledFor,
+            tz: userTz,
+          }),
+        );
+      }
+      await Promise.all(recomputeJobs);
     }
 
     const events = await prisma.medicationIntakeEvent.findMany({
