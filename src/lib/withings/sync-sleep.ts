@@ -39,7 +39,7 @@ import { getUnitForType } from "@/lib/validations/measurement";
 import {
   collapseToTypeDayKeys,
   recomputeBucketsForMeasurement,
-} from "@/lib/measurements/rollups";
+} from "@/lib/rollups/measurement-rollups";
 
 import { hasActivityScope } from "./client";
 import {

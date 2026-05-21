@@ -31,10 +31,10 @@ vi.mock("@/lib/logging/context", () => ({
 // assert that the import path now folds the persistent rollup tier
 // for each touched (type, day). Mood rollup mock stays no-op because
 // the existing v1.4.39 W-MOOD hook already covers the moodlog branch.
-vi.mock("@/lib/measurements/rollups", async () => {
+vi.mock("@/lib/rollups/measurement-rollups", async () => {
   const actual = await vi.importActual<
-    typeof import("@/lib/measurements/rollups")
-  >("@/lib/measurements/rollups");
+    typeof import("@/lib/rollups/measurement-rollups")
+  >("@/lib/rollups/measurement-rollups");
   return {
     ...actual,
     recomputeBucketsForMeasurement: vi.fn().mockResolvedValue(undefined),
@@ -49,7 +49,7 @@ import { NextRequest } from "next/server";
 import { POST } from "../route";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
-import { recomputeBucketsForMeasurement } from "@/lib/measurements/rollups";
+import { recomputeBucketsForMeasurement } from "@/lib/rollups/measurement-rollups";
 
 beforeEach(() => {
   vi.resetAllMocks();

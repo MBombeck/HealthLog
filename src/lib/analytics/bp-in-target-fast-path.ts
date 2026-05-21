@@ -52,7 +52,7 @@
  */
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
-import { readRollupBuckets } from "@/lib/measurements/rollups";
+import { readRollupBuckets } from "@/lib/rollups/measurement-rollups";
 import {
   probeRollupCoverage,
   type RollupCoverageMap,

@@ -21,7 +21,7 @@ import {
 import {
   collapseToTypeDayKeys,
   recomputeBucketsForMeasurement,
-} from "@/lib/measurements/rollups";
+} from "@/lib/rollups/measurement-rollups";
 
 /**
  * Build the callback URL handed to Withings at `Notify.subscribe` time.

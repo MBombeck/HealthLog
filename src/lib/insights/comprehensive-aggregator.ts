@@ -100,7 +100,7 @@
 import { prisma } from "@/lib/db";
 import type { DataSummary } from "@/lib/analytics/trends";
 import { annotate } from "@/lib/logging/context";
-import { ensureUserRollupsFresh } from "@/lib/measurements/rollups";
+import { ensureUserRollupsFresh } from "@/lib/rollups/measurement-rollups";
 import { aggregateBuckets } from "@/lib/measurements/rollup-read";
 import {
   isFullyCovered,

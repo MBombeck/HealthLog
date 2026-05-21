@@ -15,7 +15,7 @@ import {
   type CorrelationResult,
 } from "@/lib/analytics/correlations";
 import { getMedicationCategories } from "@/lib/medication-category";
-import { readRollupBuckets } from "@/lib/measurements/rollups";
+import { readRollupBuckets } from "@/lib/rollups/measurement-rollups";
 import {
   ensureUserMoodRollupsFresh,
   readMoodDayRollups,

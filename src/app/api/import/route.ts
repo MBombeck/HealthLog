@@ -21,7 +21,7 @@ import { recomputeUserMoodRollups } from "@/lib/mood/rollups";
 import {
   collapseToTypeDayKeys,
   recomputeBucketsForMeasurement,
-} from "@/lib/measurements/rollups";
+} from "@/lib/rollups/measurement-rollups";
 import type { MeasurementType } from "@/generated/prisma/client";
 
 // Derived from canonical enum so round-trip export → import covers every

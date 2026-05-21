@@ -10,7 +10,7 @@ import {
 } from "@/lib/api-response";
 import { updateMeasurementSchema } from "@/lib/validations/measurement";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
-import { recomputeBucketsForMeasurement } from "@/lib/measurements/rollups";
+import { recomputeBucketsForMeasurement } from "@/lib/rollups/measurement-rollups";
 import { Prisma } from "@/generated/prisma/client";
 import { NextRequest } from "next/server";
 

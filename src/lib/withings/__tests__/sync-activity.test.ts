@@ -49,10 +49,10 @@ vi.mock("@/lib/logging/context", () => ({
 // measurement rollup writer so the dashboard chart's `source=rollup`
 // fast-path sees the new buckets. The mock collects the call args so
 // the regression test below can assert the hook fired.
-vi.mock("@/lib/measurements/rollups", async () => {
+vi.mock("@/lib/rollups/measurement-rollups", async () => {
   const actual = await vi.importActual<
-    typeof import("@/lib/measurements/rollups")
-  >("@/lib/measurements/rollups");
+    typeof import("@/lib/rollups/measurement-rollups")
+  >("@/lib/rollups/measurement-rollups");
   return {
     ...actual,
     recomputeBucketsForMeasurement: vi.fn().mockResolvedValue(undefined),
@@ -65,7 +65,7 @@ import {
   recordSyncFailure,
   recordSyncSuccess,
 } from "@/lib/integrations/status";
-import { recomputeBucketsForMeasurement } from "@/lib/measurements/rollups";
+import { recomputeBucketsForMeasurement } from "@/lib/rollups/measurement-rollups";
 
 import { fetchWithingsActivity, syncUserActivity } from "../sync-activity";
 

@@ -48,10 +48,10 @@ vi.mock("@/lib/logging/context", () => ({
 // rollup tier for each touched SLEEP_DURATION day so the dashboard
 // chart's `source=rollup` fast-path sees the new segments. The mock
 // surfaces the call args for the regression test below.
-vi.mock("@/lib/measurements/rollups", async () => {
+vi.mock("@/lib/rollups/measurement-rollups", async () => {
   const actual = await vi.importActual<
-    typeof import("@/lib/measurements/rollups")
-  >("@/lib/measurements/rollups");
+    typeof import("@/lib/rollups/measurement-rollups")
+  >("@/lib/rollups/measurement-rollups");
   return {
     ...actual,
     recomputeBucketsForMeasurement: vi.fn().mockResolvedValue(undefined),
@@ -64,7 +64,7 @@ import {
   recordSyncFailure,
   recordSyncSuccess,
 } from "@/lib/integrations/status";
-import { recomputeBucketsForMeasurement } from "@/lib/measurements/rollups";
+import { recomputeBucketsForMeasurement } from "@/lib/rollups/measurement-rollups";
 
 import {
   fetchWithingsSleep,

@@ -30,7 +30,7 @@ import {
   recomputeBucketsForMeasurement,
   collapseToTypeDayKeys,
   recomputeUserRollups,
-} from "@/lib/measurements/rollups";
+} from "@/lib/rollups/measurement-rollups";
 import { NextRequest } from "next/server";
 import type {
   MeasurementType,

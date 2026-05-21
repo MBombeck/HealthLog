@@ -38,7 +38,7 @@ import { annotate } from "@/lib/logging/context";
 import {
   enqueueBootTimeRollupBackfill,
   recomputeUserRollups,
-} from "@/lib/measurements/rollups";
+} from "@/lib/rollups/measurement-rollups";
 
 interface RecomputeBody {
   userId?: string;

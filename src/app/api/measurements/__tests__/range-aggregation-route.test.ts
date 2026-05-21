@@ -30,10 +30,10 @@ vi.mock("@/lib/db", () => ({
 // v1.4.39.2 — the rollup branch's coverage-mismatch fallback may call
 // `recomputeUserRollups` inline. Mock it so tests can assert whether
 // the inline fold fired without exercising the real populator.
-vi.mock("@/lib/measurements/rollups", async () => {
+vi.mock("@/lib/rollups/measurement-rollups", async () => {
   const actual = await vi.importActual<
-    typeof import("@/lib/measurements/rollups")
-  >("@/lib/measurements/rollups");
+    typeof import("@/lib/rollups/measurement-rollups")
+  >("@/lib/rollups/measurement-rollups");
   return {
     ...actual,
     recomputeBucketsForMeasurement: vi.fn().mockResolvedValue(undefined),
@@ -61,7 +61,7 @@ vi.mock("next/headers", () => ({
 import { GET } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
-import { recomputeUserRollups } from "@/lib/measurements/rollups";
+import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },

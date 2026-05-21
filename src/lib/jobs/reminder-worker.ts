@@ -66,7 +66,7 @@ import {
   recomputeUserRollups,
   type RollupFullBackfillPayload,
   type RollupRecomputePayload,
-} from "@/lib/measurements/rollups";
+} from "@/lib/rollups/measurement-rollups";
 import {
   MOOD_ROLLUP_FULL_BACKFILL_QUEUE,
   MOOD_ROLLUP_FULL_BACKFILL_CONCURRENCY,

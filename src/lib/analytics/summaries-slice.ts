@@ -59,7 +59,7 @@ import { prisma } from "@/lib/db";
 import type { DataSummary } from "@/lib/analytics/trends";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { annotate } from "@/lib/logging/context";
-import { ensureUserRollupsFresh } from "@/lib/measurements/rollups";
+import { ensureUserRollupsFresh } from "@/lib/rollups/measurement-rollups";
 import {
   isFullyCovered,
   probeRollupCoverage,

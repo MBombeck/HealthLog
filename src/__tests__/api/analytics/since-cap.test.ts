@@ -76,7 +76,7 @@ vi.mock("@/lib/logging/context", async () => {
 // The three fast-paths and the rollup helpers are exercised by their
 // own tests; here we stub them so the route's per-type read is the
 // only Prisma traffic the test observes.
-vi.mock("@/lib/measurements/rollups", () => ({
+vi.mock("@/lib/rollups/measurement-rollups", () => ({
   ensureUserRollupsFresh: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -150,7 +150,7 @@ beforeEach(async () => {
   // module scope only sets the initial implementation, and the slim
   // slice test must observe a resolved value not `undefined`.
   const { ensureUserRollupsFresh } = await import(
-    "@/lib/measurements/rollups"
+    "@/lib/rollups/measurement-rollups"
   );
   const { probeRollupCoverage } = await import(
     "@/lib/measurements/rollup-coverage"

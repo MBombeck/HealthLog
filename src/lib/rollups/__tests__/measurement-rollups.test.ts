@@ -89,7 +89,7 @@ import {
   enqueueRollupRecompute,
   ensureUserRollupsFresh,
   recomputeBucketsForMeasurement,
-} from "../rollups";
+} from "../measurement-rollups";
 
 beforeEach(() => {
   queryRaw.mockReset();

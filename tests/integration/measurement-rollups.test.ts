@@ -32,7 +32,7 @@ import {
   recomputeBucketsForMeasurement,
   recomputeUserRollups,
   ALL_GRANULARITIES,
-} from "@/lib/measurements/rollups";
+} from "@/lib/rollups/measurement-rollups";
 import { aggregateBuckets } from "@/lib/measurements/rollup-read";
 import { buildComprehensiveAggregate } from "@/lib/insights/comprehensive-aggregator";
 

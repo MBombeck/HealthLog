@@ -48,7 +48,7 @@ import {
   recomputeUserMedicationCompliance,
   MEDICATION_COMPLIANCE_BACKFILL_DAYS,
 } from "@/lib/medications/compliance-rollups";
-import { recomputeUserRollups } from "@/lib/measurements/rollups";
+import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
 
 export const dynamic = "force-dynamic";
 

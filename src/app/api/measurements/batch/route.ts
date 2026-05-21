@@ -41,7 +41,7 @@ import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import {
   recomputeBucketsForMeasurement,
   collapseToTypeDayKeys,
-} from "@/lib/measurements/rollups";
+} from "@/lib/rollups/measurement-rollups";
 import { Prisma, type MeasurementType } from "@/generated/prisma/client";
 
 // v1.4.25 W16c — historical-backfill threshold for PR push

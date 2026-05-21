@@ -36,7 +36,7 @@ import {
   type ImportJobProgress,
   type ImportJobResult,
 } from "@/lib/measurements/import-apple-health-export";
-import { recomputeUserRollups } from "@/lib/measurements/rollups";
+import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
 
 /** Queue name for the Apple Health export ingest. */
 export const APPLE_HEALTH_IMPORT_QUEUE = "apple-health-import";

@@ -35,7 +35,7 @@ import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import {
   recomputeBucketsForMeasurement,
   collapseToTypeDayKeys,
-} from "@/lib/measurements/rollups";
+} from "@/lib/rollups/measurement-rollups";
 
 const MAX_BATCH_ENTRIES = 500;
 

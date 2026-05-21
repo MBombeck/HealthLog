@@ -21,7 +21,7 @@
  * the v1.4.34.1 / 4.5 aggregator survives.
  */
 import type { MeasurementType } from "@/generated/prisma/client";
-import { readRollupBuckets } from "./rollups";
+import { readRollupBuckets } from "@/lib/rollups/measurement-rollups";
 
 export interface DailyMeanRow {
   day: Date;

@@ -19,7 +19,7 @@ import { prisma } from "@/lib/db";
 import {
   ALL_GRANULARITIES,
   recomputeUserRollups,
-} from "@/lib/measurements/rollups";
+} from "@/lib/rollups/measurement-rollups";
 
 interface CliOptions {
   userId: string | null;
