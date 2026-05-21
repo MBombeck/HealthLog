@@ -2,11 +2,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   MEASURE_TYPE_MAP,
   WITHINGS_OAUTH_SCOPE,
+  exchangeCode,
   fetchMeasurements,
   hasActivityScope,
   parseWithingsScope,
+  refreshAccessToken,
   subscribeWebhook,
 } from "../client";
+import { WithingsApiError } from "../response-classifier";
 import { WITHINGS_NOTIFY_APPLIS } from "../sync";
 
 /**
@@ -374,5 +377,144 @@ describe("fetchMeasurements — pulse-wave velocity + vascular age", () => {
     const out = await fetchMeasurements("token");
     expect(out).toHaveLength(1);
     expect(out[0]).toMatchObject({ type: "VASCULAR_AGE", value: 42 });
+  });
+});
+
+// ── v1.4.42 W6 — off-response classifier wire-through ──
+//
+// Each client entrypoint must throw `WithingsApiError` carrying the
+// classification verdict, NOT a plain `new Error("Withings ... error:
+// <status>")`. Downstream catch-blocks read `err.classification`; the
+// regex-fallback in `classifyError` covers serialised retries but the
+// typed-throw is the contract.
+
+describe("client off-response handling — refreshAccessToken", () => {
+  const creds = { clientId: "id", clientSecret: "secret" };
+
+  it("throws WithingsApiError(classification: 'reauth_required') on Withings 101", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        status: 200,
+        json: async () => ({ status: 101, error: "Invalid token" }),
+      })),
+    );
+
+    await expect(refreshAccessToken("rt", creds)).rejects.toMatchObject({
+      name: "WithingsApiError",
+      classification: "reauth_required",
+      withingsStatus: 101,
+    });
+  });
+
+  it("throws WithingsApiError(classification: 'transient') on HTTP 503", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        status: 503,
+        json: async () => ({ status: 0 }),
+      })),
+    );
+
+    const err = await refreshAccessToken("rt", creds).catch((e) => e);
+    expect(err).toBeInstanceOf(WithingsApiError);
+    expect((err as WithingsApiError).classification).toBe("transient");
+    expect((err as WithingsApiError).reason).toBe("http_503");
+  });
+});
+
+describe("client off-response handling — exchangeCode", () => {
+  const creds = { clientId: "id", clientSecret: "secret" };
+
+  it("classifies Withings 100 (Authentication failed) as reauth_required", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        status: 200,
+        json: async () => ({ status: 100, error: "Authentication failed" }),
+      })),
+    );
+    const err = await exchangeCode("auth-code", creds).catch((e) => e);
+    expect(err).toBeInstanceOf(WithingsApiError);
+    expect((err as WithingsApiError).classification).toBe("reauth_required");
+  });
+});
+
+describe("client off-response handling — fetchMeasurements", () => {
+  it("throws WithingsApiError(classification: 'transient') on Withings 601 (rate-limit)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        status: 200,
+        json: async () => ({ status: 601 }),
+      })),
+    );
+    const err = await fetchMeasurements("token").catch((e) => e);
+    expect(err).toBeInstanceOf(WithingsApiError);
+    expect((err as WithingsApiError).classification).toBe("transient");
+    expect((err as WithingsApiError).withingsStatus).toBe(601);
+  });
+
+  it("throws WithingsApiError(classification: 'persistent') on Withings 293 (invalid params)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        status: 200,
+        json: async () => ({ status: 293 }),
+      })),
+    );
+    const err = await fetchMeasurements("token").catch((e) => e);
+    expect(err).toBeInstanceOf(WithingsApiError);
+    expect((err as WithingsApiError).classification).toBe("persistent");
+  });
+
+  it("returns the empty list on a healthy but empty body (status 0, no measuregrps)", async () => {
+    // Off-response edge case: a healthy connection that has no data
+    // in the requested window is NOT a failure — it's success with
+    // zero rows.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        status: 200,
+        json: async () => ({ status: 0, body: { measuregrps: [] } }),
+      })),
+    );
+    const out = await fetchMeasurements("token");
+    expect(out).toEqual([]);
+  });
+});
+
+describe("client off-response handling — subscribeWebhook 294 idempotency", () => {
+  it("does NOT throw when Withings replies status 294 (already-subscribed)", async () => {
+    // 294 at the subscribe call-site is documented idempotent success;
+    // every other endpoint sees it as `persistent`, but here we
+    // downgrade to success so reconnect flows don't fail.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        status: 200,
+        json: async () => ({ status: 294 }),
+      })),
+    );
+    await expect(
+      subscribeWebhook("token", "https://example.com/webhook", 1),
+    ).resolves.toBeUndefined();
+  });
+
+  it("throws WithingsApiError(classification: 'transient') when Withings replies status 2554 (notify-subscribe busy)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        status: 200,
+        json: async () => ({ status: 2554 }),
+      })),
+    );
+    const err = await subscribeWebhook(
+      "token",
+      "https://example.com/webhook",
+      1,
+    ).catch((e) => e);
+    expect(err).toBeInstanceOf(WithingsApiError);
+    expect((err as WithingsApiError).classification).toBe("transient");
   });
 });

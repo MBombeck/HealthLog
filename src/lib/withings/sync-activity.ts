@@ -45,6 +45,10 @@ import {
 
 import { hasActivityScope } from "./client";
 import {
+  WithingsApiError,
+  classifyWithingsResponse,
+} from "./response-classifier";
+import {
   extractWithingsStatus,
   isWithingsRefreshReauthFailure,
 } from "./sync";
@@ -157,15 +161,22 @@ export async function fetchWithingsActivity(
       body: params.toString(),
     });
     const json = await res.json();
+    const verdict = classifyWithingsResponse(res.status, json);
     getEvent()?.addExternalCall({
       service: "withings",
       method: `fetchWithingsActivity(page=${pageCount})`,
       duration_ms: Math.round(performance.now() - pageStart),
       status: res.status,
-      error: json.status !== 0 ? `status=${json.status}` : undefined,
+      error: verdict.classification === "success" ? undefined : verdict.reason,
     });
-    if (json.status !== 0) {
-      throw new Error(`Withings activity error: ${json.status}`);
+    if (verdict.classification !== "success") {
+      throw new WithingsApiError({
+        verb: "activity",
+        classification: verdict.classification,
+        withingsStatus: verdict.withingsStatus,
+        reason: verdict.reason,
+        upstreamError: typeof json?.error === "string" ? json.error : undefined,
+      });
     }
 
     const body = json.body ?? {};

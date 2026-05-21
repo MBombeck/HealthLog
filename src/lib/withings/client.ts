@@ -3,6 +3,10 @@
  * Docs: https://developer.withings.com/api-reference
  */
 import { getEvent } from "@/lib/logging/context";
+import {
+  WithingsApiError,
+  classifyWithingsResponse,
+} from "./response-classifier";
 
 const WITHINGS_OAUTH_URL =
   "https://account.withings.com/oauth2_user/authorize2";
@@ -112,15 +116,22 @@ export async function exchangeCode(
   });
 
   const json = await res.json();
+  const verdict = classifyWithingsResponse(res.status, json);
   getEvent()?.addExternalCall({
     service: "withings",
     method: "exchangeCode",
     duration_ms: Math.round(performance.now() - start),
     status: res.status,
-    error: json.status !== 0 ? `status=${json.status}` : undefined,
+    error: verdict.classification === "success" ? undefined : verdict.reason,
   });
-  if (json.status !== 0) {
-    throw new Error(`Withings token error: ${json.status} - ${json.error}`);
+  if (verdict.classification !== "success") {
+    throw new WithingsApiError({
+      verb: "token",
+      classification: verdict.classification,
+      withingsStatus: verdict.withingsStatus,
+      reason: verdict.reason,
+      upstreamError: typeof json?.error === "string" ? json.error : undefined,
+    });
   }
   return json.body as WithingsTokenResponse;
 }
@@ -148,15 +159,22 @@ export async function refreshAccessToken(
   });
 
   const json = await res.json();
+  const verdict = classifyWithingsResponse(res.status, json);
   getEvent()?.addExternalCall({
     service: "withings",
     method: "refreshAccessToken",
     duration_ms: Math.round(performance.now() - start),
     status: res.status,
-    error: json.status !== 0 ? `status=${json.status}` : undefined,
+    error: verdict.classification === "success" ? undefined : verdict.reason,
   });
-  if (json.status !== 0) {
-    throw new Error(`Withings refresh error: ${json.status} - ${json.error}`);
+  if (verdict.classification !== "success") {
+    throw new WithingsApiError({
+      verb: "refresh",
+      classification: verdict.classification,
+      withingsStatus: verdict.withingsStatus,
+      reason: verdict.reason,
+      upstreamError: typeof json?.error === "string" ? json.error : undefined,
+    });
   }
   return json.body as WithingsTokenResponse;
 }
@@ -261,15 +279,22 @@ export async function fetchMeasurements(
     });
 
     const json = await res.json();
+    const verdict = classifyWithingsResponse(res.status, json);
     getEvent()?.addExternalCall({
       service: "withings",
       method: `fetchMeasurements(page=${pageCount})`,
       duration_ms: Math.round(performance.now() - pageStart),
       status: res.status,
-      error: json.status !== 0 ? `status=${json.status}` : undefined,
+      error: verdict.classification === "success" ? undefined : verdict.reason,
     });
-    if (json.status !== 0) {
-      throw new Error(`Withings measure error: ${json.status}`);
+    if (verdict.classification !== "success") {
+      throw new WithingsApiError({
+        verb: "measure",
+        classification: verdict.classification,
+        withingsStatus: verdict.withingsStatus,
+        reason: verdict.reason,
+        upstreamError: typeof json?.error === "string" ? json.error : undefined,
+      });
     }
 
     const body = json.body ?? {};
@@ -331,19 +356,29 @@ export async function subscribeWebhook(
   });
 
   const json = await res.json();
+  const verdict = classifyWithingsResponse(res.status, json);
+  // 294 = already-subscribed is idempotent success at the subscribe
+  // call-site (Withings preserves the existing subscription). The
+  // classifier surfaces it as `persistent` because any OTHER endpoint
+  // receiving 294 is a contract bug; here we explicitly downgrade it.
+  const isAlreadySubscribed = json?.status === 294;
+  const treatAsSuccess =
+    verdict.classification === "success" || isAlreadySubscribed;
   getEvent()?.addExternalCall({
     service: "withings",
     method: "subscribeWebhook",
     duration_ms: Math.round(performance.now() - start),
     status: res.status,
-    error:
-      json.status !== 0 && json.status !== 294
-        ? `status=${json.status}`
-        : undefined,
+    error: treatAsSuccess ? undefined : verdict.reason,
   });
-  // Status 0 = success, 294 = already subscribed (both OK)
-  if (json.status !== 0 && json.status !== 294) {
-    throw new Error(`Withings subscribe error: ${json.status}`);
+  if (!treatAsSuccess) {
+    throw new WithingsApiError({
+      verb: "subscribe",
+      classification: verdict.classification,
+      withingsStatus: verdict.withingsStatus,
+      reason: verdict.reason,
+      upstreamError: typeof json?.error === "string" ? json.error : undefined,
+    });
   }
 }
 
@@ -372,14 +407,21 @@ export async function unsubscribeWebhook(
   });
 
   const json = await res.json();
+  const verdict = classifyWithingsResponse(res.status, json);
   getEvent()?.addExternalCall({
     service: "withings",
     method: "unsubscribeWebhook",
     duration_ms: Math.round(performance.now() - start),
     status: res.status,
-    error: json.status !== 0 ? `status=${json.status}` : undefined,
+    error: verdict.classification === "success" ? undefined : verdict.reason,
   });
-  if (json.status !== 0) {
-    getEvent()?.addWarning(`Withings unsubscribe warning: ${json.status}`);
+  // Unsubscribe is best-effort — a stale subscription will eventually
+  // be garbage-collected by Withings, so we never throw here. We do
+  // bubble the verdict into a warning so the audit-log path still
+  // sees the off-response.
+  if (verdict.classification !== "success") {
+    getEvent()?.addWarning(
+      `Withings unsubscribe warning: ${verdict.reason}`,
+    );
   }
 }

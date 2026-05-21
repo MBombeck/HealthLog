@@ -269,6 +269,68 @@ describe("recordSyncFailure — reauth_required", () => {
   });
 });
 
+describe("recordSyncFailure — persistent (v1.4.42 W6)", () => {
+  it("marks state=error_transient (next sync still runs) and audits with kind=persistent", async () => {
+    // Contract-mismatch failures (Withings 293 invalid params) MUST
+    // surface in the audit log with kind=persistent so operations can
+    // grep for upstream contract bugs, but they MUST NOT park the
+    // integration — the next sync should still run because the
+    // mismatch can be one-sided (e.g. Withings introducing a new
+    // required field that the client release fixes).
+    vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
+      consecutiveFailures: 1,
+    } as never);
+    await recordSyncFailure({
+      userId: "u1",
+      integration: "withings",
+      kind: "persistent",
+      message: "Withings measure error: 293 - invalid params",
+      errorCode: "293",
+    });
+    const upsertArgs = vi.mocked(prisma.integrationStatus.upsert).mock
+      .calls[0][0];
+    expect(upsertArgs.update).toMatchObject({ state: "error_transient" });
+    expect(auditLog).toHaveBeenCalledWith(
+      "integrations.sync.failed",
+      expect.objectContaining({
+        details: expect.objectContaining({
+          kind: "persistent",
+          errorCode: "293",
+        }),
+      }),
+    );
+  });
+
+  it("at threshold, the admin alert message includes the 'persistent error' label", async () => {
+    vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
+      consecutiveFailures: 3,
+      alertedAt: null,
+    } as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+      email: "user@example.com",
+    } as never);
+    vi.mocked(prisma.user.findMany).mockResolvedValueOnce([
+      { id: "admin-1" },
+    ] as never);
+    vi.mocked(prisma.integrationStatus.update).mockResolvedValueOnce(
+      {} as never,
+    );
+
+    await recordSyncFailure({
+      userId: "u1",
+      integration: "withings",
+      kind: "persistent",
+      message: "Withings activity error: 293",
+      errorCode: "293",
+    });
+
+    expect(dispatchNotification).toHaveBeenCalledOnce();
+    const payload = vi.mocked(dispatchNotification).mock.calls[0][0];
+    expect(payload.message).toContain("persistent error");
+    expect(payload.message).toContain("Action: investigate the upstream contract");
+  });
+});
+
 describe("recordSyncFailure — admin Telegram skipped silently when no admins", () => {
   it("logs a wide-event warning but does NOT throw when no admin users exist", async () => {
     vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({

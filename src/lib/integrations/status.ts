@@ -162,7 +162,26 @@ export async function recordSyncSuccess(
   });
 }
 
-export type FailureKind = "transient" | "reauth_required";
+/**
+ * Failure kinds carried into `recordSyncFailure`.
+ *
+ *   - `transient`        : retry on the next sync; user not blocked.
+ *   - `reauth_required`  : permanent revoke / invalid_grant; park at
+ *                          `error_reauth` until the user reconnects.
+ *   - `persistent`       : contract mismatch (invalid params, missing
+ *                          field, unknown action). Surfaces in the
+ *                          integration-status card AND audit log so an
+ *                          operator can investigate, but does NOT skip
+ *                          future sync attempts — those may succeed once
+ *                          the upstream side resolves.
+ *
+ * v1.4.42 W6 extended this union from `transient | reauth_required` to
+ * the three-state taxonomy above; the state-mapping function turns
+ * `persistent` into `error_transient` for now (a Withings 293 still
+ * lets the next sync run), but the audit detail carries the explicit
+ * kind so operations can filter.
+ */
+export type FailureKind = "transient" | "reauth_required" | "persistent";
 
 export interface RecordSyncFailureInput {
   userId: string;
@@ -193,6 +212,12 @@ export async function recordSyncFailure(
 ): Promise<void> {
   const { userId, integration, kind, message, errorCode } = input;
   const now = new Date();
+  // State mapping:
+  //   reauth_required → error_reauth (sync entry-point short-circuits)
+  //   transient       → error_transient (next sync still runs)
+  //   persistent      → error_transient (next sync still runs, but the
+  //                     audit detail carries `kind: "persistent"` so
+  //                     operations can grep for contract-bug bursts)
   const newState: IntegrationState =
     kind === "reauth_required" ? "error_reauth" : "error_transient";
 
@@ -486,7 +511,11 @@ export function formatAdminAlertPayload(input: AlertInput): {
     input.integration === "withings" ? "Withings" : "moodLog";
   const subjectLabel = input.subjectLabel ?? input.userId;
   const reasonLabel =
-    input.kind === "reauth_required" ? "re-auth required" : "transient error";
+    input.kind === "reauth_required"
+      ? "re-auth required"
+      : input.kind === "persistent"
+        ? "persistent error"
+        : "transient error";
   const codeLabel = input.errorCode ? ` (${input.errorCode})` : "";
   const trimmed =
     input.message.length > 280
@@ -497,7 +526,13 @@ export function formatAdminAlertPayload(input: AlertInput): {
   const message =
     `${integrationLabel} sync has failed ${input.consecutiveFailures} times in a row for ${subjectLabel}.\n` +
     `Last error: ${reasonLabel}${codeLabel} — ${trimmed}\n` +
-    `Action: ${input.kind === "reauth_required" ? "ask the user to reconnect the integration." : "investigate the upstream service."}`;
+    `Action: ${
+      input.kind === "reauth_required"
+        ? "ask the user to reconnect the integration."
+        : input.kind === "persistent"
+          ? "investigate the upstream contract — params/scope/action likely mismatched."
+          : "investigate the upstream service."
+    }`;
 
   return {
     title,
