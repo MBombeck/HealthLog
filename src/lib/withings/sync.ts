@@ -115,23 +115,7 @@ export async function getValidToken(userId: string): Promise<{
       };
     } catch (err) {
       getEvent()?.addWarning(`Token refresh failed for user ${userId}: ${err}`);
-      // v1.4.42 W6 — the typed `WithingsApiError` carries the
-      // classification verdict directly; the regex fallback in
-      // `classifyError` handles plain `Error` instances (e.g. a
-      // pg-boss job retry that lost the prototype during JSON
-      // round-trip).
-      const message = err instanceof Error ? err.message : String(err);
-      const classification = classifyError(err);
-      await recordSyncFailure({
-        userId,
-        integration: "withings",
-        kind: classificationToFailureKind(classification),
-        message,
-        errorCode:
-          err instanceof WithingsApiError
-            ? err.withingsStatus?.toString()
-            : extractWithingsStatus(message),
-      });
+      await recordWithingsSyncFailure(userId, err);
       return null;
     }
   }
@@ -193,18 +177,7 @@ export async function syncUserMeasurements(
   try {
     measures = await fetchMeasurements(tokenInfo.accessToken, startDate);
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    const classification = classifyError(err);
-    await recordSyncFailure({
-      userId,
-      integration: "withings",
-      kind: classificationToFailureKind(classification),
-      message,
-      errorCode:
-        err instanceof WithingsApiError
-          ? err.withingsStatus?.toString()
-          : extractWithingsStatus(message),
-    });
+    await recordWithingsSyncFailure(userId, err);
     throw err;
   }
 
@@ -307,6 +280,30 @@ export async function syncUserMeasurements(
  *   `reauth_required` → `reauth_required` (park at `error_reauth`)
  *   `persistent`      → `persistent` (audited; next sync still runs)
  */
+/**
+ * v1.4.42 — shared failure-recording shape for the two Withings sync
+ * catch-blocks. The typed `WithingsApiError` carries the classification
+ * verdict directly; `classifyError`'s regex fallback handles plain
+ * `Error` instances (e.g. a pg-boss job retry that lost the prototype
+ * during the JSON round-trip).
+ */
+async function recordWithingsSyncFailure(
+  userId: string,
+  err: unknown,
+): Promise<void> {
+  const message = err instanceof Error ? err.message : String(err);
+  await recordSyncFailure({
+    userId,
+    integration: "withings",
+    kind: classificationToFailureKind(classifyError(err)),
+    message,
+    errorCode:
+      err instanceof WithingsApiError
+        ? err.withingsStatus?.toString()
+        : extractWithingsStatus(message),
+  });
+}
+
 export function classificationToFailureKind(
   classification: WithingsClassification,
 ): FailureKind {
