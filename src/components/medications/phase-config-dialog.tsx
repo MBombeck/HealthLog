@@ -234,13 +234,13 @@ export function PhaseConfigDialog({
                     onChange={(e) =>
                       updateValue(key, parseInt(e.target.value, 10) || 0)
                     }
-                    className="h-8 w-20 text-sm"
+                    className="h-11 w-20 sm:h-9"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-8 w-12 px-0 text-xs"
+                    className="h-11 w-12 px-0 text-xs sm:h-9"
                     onClick={() => toggleMode(key)}
                   >
                     {mode === "MINUTES"
