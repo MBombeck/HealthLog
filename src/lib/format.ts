@@ -13,10 +13,22 @@
  * no hydration-mismatch path today. If you add a new caller that renders
  * pre-fetch data (e.g. a static prop), migrate it to `useFormatters()` to
  * stay consistent with the server-rendered locale.
+ *
+ * v1.4.43 QoL (M8) — `activeLocale()` now reads the full `Locale` union
+ * (`de | en | fr | es | it | pl`). Pre-fix, a sub-locale user (fr / es /
+ * it / pl) saw French strings but the legacy SSR formatters silently
+ * fell back to `en`, producing "12/24/2025, 2:30 PM" in a French shell.
+ * `Intl.DateTimeFormat` already handles every supported locale via the
+ * `INTL_LOCALE_MAP`, so the only change is to widen the cookie /
+ * localStorage decoder.
  */
 
 import { makeFormatters } from "./format-locale";
-import type { Locale } from "./i18n/config";
+import { locales, type Locale } from "./i18n/config";
+
+function isLocale(value: string | null | undefined): value is Locale {
+  return !!value && (locales as readonly string[]).includes(value);
+}
 
 function activeLocale(): Locale {
   if (typeof document === "undefined") return "en";
@@ -26,9 +38,10 @@ function activeLocale(): Locale {
     /(?:^|;\s*)healthlog-locale=([^;]+)/,
   );
   const fromCookie = cookieMatch?.[1];
-  if (fromCookie === "de" || fromCookie === "en") return fromCookie;
+  if (isLocale(fromCookie)) return fromCookie;
   const fromStorage = window.localStorage?.getItem("healthlog-locale");
-  return fromStorage === "de" ? "de" : "en";
+  if (isLocale(fromStorage)) return fromStorage;
+  return "en";
 }
 
 function formatters() {
