@@ -1910,7 +1910,7 @@
       "justNow": "gerade eben",
       "minutesAgo": "vor {count} min",
       "hoursAgo": "vor {count} Std.",
-      "daysAgo": "vor {count} T.",
+      "daysAgo": "vor {count} d",
       "ariaLabel": "Integrationsstatus",
       "resumeCta": "Wieder verbinden",
       "resumeSuccess": "Integration wieder aktiv",
