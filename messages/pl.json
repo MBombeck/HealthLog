@@ -145,7 +145,8 @@
       "moodSensitive": "Wrażliwe — domyślnie wyłączone.",
       "compliance": "Przestrzeganie leków",
       "sleep": "Czas snu",
-      "empty": "Brak danych dla wybranego okresu. Raport zachowa stronę tytułową."
+      "empty": "Brak danych dla wybranego okresu. Raport zachowa stronę tytułową.",
+      "unavailableHint": "Brak danych w tym okresie"
     }
   },
   "errorBoundary": {

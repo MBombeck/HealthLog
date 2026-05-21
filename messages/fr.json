@@ -145,7 +145,8 @@
       "moodSensitive": "Sensible — désactivé par défaut.",
       "compliance": "Observance des médicaments",
       "sleep": "Durée du sommeil",
-      "empty": "Pas de données sur la période sélectionnée. Le rapport conservera la page de garde."
+      "empty": "Pas de données sur la période sélectionnée. Le rapport conservera la page de garde.",
+      "unavailableHint": "Pas de données sur cette période"
     }
   },
   "errorBoundary": {

@@ -145,7 +145,8 @@
       "moodSensitive": "Sensible — desactivado por defecto.",
       "compliance": "Cumplimiento de medicación",
       "sleep": "Duración del sueño",
-      "empty": "No hay datos para el periodo seleccionado. El informe se generará con la portada."
+      "empty": "No hay datos para el periodo seleccionado. El informe se generará con la portada.",
+      "unavailableHint": "Sin datos en este periodo"
     }
   },
   "errorBoundary": {

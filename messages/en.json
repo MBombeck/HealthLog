@@ -145,7 +145,8 @@
       "moodSensitive": "Sensitive — off by default.",
       "compliance": "Medication compliance",
       "sleep": "Sleep duration",
-      "empty": "No data was recorded in this date range yet. The report will still include the cover page."
+      "empty": "No data was recorded in this date range yet. The report will still include the cover page.",
+      "unavailableHint": "No data in this period"
     }
   },
   "errorBoundary": {

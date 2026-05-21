@@ -145,7 +145,8 @@
       "moodSensitive": "Sensibile — disattivato per default.",
       "compliance": "Aderenza ai farmaci",
       "sleep": "Durata del sonno",
-      "empty": "Nessun dato per il periodo selezionato. Il referto manterrà comunque la copertina."
+      "empty": "Nessun dato per il periodo selezionato. Il referto manterrà comunque la copertina.",
+      "unavailableHint": "Nessun dato in questo periodo"
     }
   },
   "errorBoundary": {

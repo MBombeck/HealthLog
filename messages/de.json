@@ -145,7 +145,8 @@
       "moodSensitive": "Sensibel — standardmäßig aus.",
       "compliance": "Medikamenten-Compliance",
       "sleep": "Schlafdauer",
-      "empty": "Für den gewählten Zeitraum liegen noch keine Daten vor. Der Bericht enthält dennoch das Deckblatt."
+      "empty": "Für den gewählten Zeitraum liegen noch keine Daten vor. Der Bericht enthält dennoch das Deckblatt.",
+      "unavailableHint": "Keine Daten in diesem Zeitraum"
     }
   },
   "errorBoundary": {

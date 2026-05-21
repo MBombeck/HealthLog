@@ -297,14 +297,12 @@ export function DoctorReportDialog({
     setError(null);
   }
 
-  // Sections that have data in the current range. Drives both the
-  // rendered checkbox list AND the canonical payload — toggles for
-  // empty sections are stripped before submission so the server doesn't
-  // see a "yes, render this empty thing" instruction.
-  const activeSections = useMemo<Array<keyof DoctorReportPrefs>>(() => {
-    if (!availability) return [];
-    return SECTION_ORDER.filter((key) => availability[key]);
-  }, [availability]);
+  // v1.4.43 QoL (M4) — pre-fix this memo built the on-screen toggle
+  // list, so sections without data in the current range vanished
+  // entirely. The dialog now renders the full `SECTION_ORDER` with
+  // strike-through disabled rows for the empties, and the submission
+  // payload still force-clears any unavailable toggle so the server
+  // never renders an empty section.
 
   function toggleSection(key: keyof DoctorReportPrefs, value: boolean) {
     setPrefs((current) => ({ ...current, [key]: value }));
@@ -454,8 +452,19 @@ export function DoctorReportDialog({
           </div>
 
           {/* ── Section toggles ──────────────────────────────────────── */}
+          {/*
+            v1.4.43 QoL (M4) — pass the full `SECTION_ORDER` (not the
+            availability-filtered `activeSections`) so the user sees a
+            row for every section that *could* be in the report. Rows
+            without data in the current range render disabled with a
+            strike-through label + tooltip, so the user understands
+            which section is empty and why their PDF has fewer
+            sections than expected. The submission payload still
+            force-clears any unavailable toggle, so the server never
+            renders an empty section.
+          */}
           <SectionToggles
-            activeSections={activeSections}
+            allSections={SECTION_ORDER}
             availability={availability}
             availabilityLoading={availabilityLoading}
             prefs={prefs}
@@ -496,8 +505,28 @@ export function DoctorReportDialog({
 
 // ────────────────────────────── Subviews ──────────────────────────────
 
+/**
+ * Exported alongside `SectionToggles` for the SSR component test. The
+ * order array is the canonical render order both inside the live
+ * dialog and inside the test.
+ */
+export const __test_SECTION_ORDER = [
+  "bp",
+  "weight",
+  "pulse",
+  "bmi",
+  "compliance",
+  "sleep",
+  "mood",
+] as const satisfies ReadonlyArray<keyof DoctorReportPrefs>;
+
 interface SectionTogglesProps {
-  activeSections: Array<keyof DoctorReportPrefs>;
+  /**
+   * Sections in render order — always the full `SECTION_ORDER` so the
+   * dialog shows the user every section that *could* be available, with
+   * disabled rows for ones that have no data in the current range.
+   */
+  allSections: ReadonlyArray<keyof DoctorReportPrefs>;
   availability: SectionAvailability | null;
   availabilityLoading: boolean;
   prefs: DoctorReportPrefs;
@@ -514,8 +543,14 @@ const SECTION_LABEL_KEYS: Record<keyof DoctorReportPrefs, string> = {
   sleep: "doctorReport.sections.sleep",
 };
 
-function SectionToggles({
-  activeSections,
+/**
+ * Exported only so the SSR component test in
+ * `__tests__/doctor-report-section-toggles.test.tsx` can render the
+ * toggle list outside the Radix `Dialog` portal. Treat as internal:
+ * the public surface is `<DoctorReportDialog>`.
+ */
+export function SectionToggles({
+  allSections,
   availability,
   availabilityLoading,
   prefs,
@@ -543,10 +578,15 @@ function SectionToggles({
     );
   }
 
-  // No data in the selected range — render an empty-state hint so the
-  // user understands why the toggle list is missing. The PDF still
-  // generates (cover + period + an empty body) so they get something.
-  if (availability && activeSections.length === 0) {
+  // v1.4.43 QoL (M4) — `availableCount` drives the empty-state hint.
+  // Pre-fix, an empty range filtered the list down to zero rows; now
+  // we always render every row with the empties disabled, so the
+  // empty-state guard kicks in only when *no* section has data.
+  const availableCount = availability
+    ? allSections.filter((key) => availability[key]).length
+    : 0;
+
+  if (availability && availableCount === 0) {
     return (
       <div
         className="border-border bg-muted/30 rounded-lg border p-3"
@@ -576,19 +616,40 @@ function SectionToggles({
         )}
       </div>
       <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
-        {activeSections.map((key) => {
+        {allSections.map((key) => {
           const id = `dr-section-${key}`;
+          // v1.4.43 QoL (M4) — sections without data in the current
+          // range render disabled with a strike-through label and an
+          // explanatory tooltip; the user immediately understands
+          // why their PDF carries fewer sections than expected.
+          const isAvailable = availability?.[key] ?? false;
+          const unavailableHint = t("doctorReport.sections.unavailableHint");
           return (
             <li key={key} className="min-h-11">
               <label
                 htmlFor={id}
-                className="hover:bg-muted/50 -mx-2 flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1.5 transition-colors"
+                title={!isAvailable ? unavailableHint : undefined}
+                className={`-mx-2 flex items-center justify-between gap-3 rounded-md px-2 py-1.5 transition-colors ${
+                  isAvailable
+                    ? "hover:bg-muted/50 cursor-pointer"
+                    : "cursor-not-allowed opacity-60"
+                }`}
+                data-unavailable={!isAvailable ? "true" : undefined}
               >
                 <span className="flex flex-col">
-                  <span className="text-sm leading-tight font-medium">
+                  <span
+                    className={`text-sm leading-tight font-medium ${
+                      isAvailable ? "" : "line-through"
+                    }`}
+                  >
                     {t(SECTION_LABEL_KEYS[key])}
                   </span>
-                  {key === "mood" && (
+                  {!isAvailable && (
+                    <span className="text-muted-foreground text-[11px] leading-tight italic">
+                      {unavailableHint}
+                    </span>
+                  )}
+                  {key === "mood" && isAvailable && (
                     <span className="text-muted-foreground text-[11px] leading-tight">
                       {t("doctorReport.sections.moodSensitive")}
                     </span>
@@ -598,7 +659,8 @@ function SectionToggles({
                   id={id}
                   data-testid={`doctor-report-section-${key}`}
                   size="sm"
-                  checked={prefs[key]}
+                  disabled={!isAvailable}
+                  checked={isAvailable && prefs[key]}
                   onCheckedChange={(checked) => onToggle(key, checked)}
                 />
               </label>
