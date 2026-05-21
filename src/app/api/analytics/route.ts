@@ -509,6 +509,7 @@ async function buildAnalyticsResponse(user: AuthedUser) {
       userId: user.id,
       type: "BLOOD_GLUCOSE",
       measuredAt: { gte: glucoseSince },
+      deletedAt: null,
     },
     orderBy: { measuredAt: "asc" },
     select: { value: true, measuredAt: true, glucoseContext: true },
@@ -618,6 +619,7 @@ async function computeSleepStageBreakdown(
       type: "SLEEP_DURATION",
       sleepStage: { not: null },
       measuredAt: { gte: since },
+      deletedAt: null,
     },
     select: { value: true, measuredAt: true, sleepStage: true },
   });
@@ -727,6 +729,7 @@ async function fetchMeasurementSeriesChunked(
         userId,
         type,
         ...(options.since ? { measuredAt: { gte: options.since } } : {}),
+        deletedAt: null,
       },
       orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
       select: {
