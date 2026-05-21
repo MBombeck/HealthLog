@@ -536,6 +536,10 @@ async function buildAchievementsResult(user: AuthedUser) {
         type: {
           in: ["WEIGHT", "BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA", "PULSE"],
         },
+        // v1.4.41 W-DELETED-2 — soft-deleted measurements are excluded
+        // from achievement progress so deleting a row immediately rolls
+        // back any streak / count badge it earned.
+        deletedAt: null,
       },
       select: {
         type: true,
