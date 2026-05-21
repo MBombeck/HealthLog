@@ -8,33 +8,6 @@ export interface DataPoint {
   value: number;
 }
 
-// ── Moving Average ───────────────────────────────────────
-
-export function movingAverage(
-  data: DataPoint[],
-  windowDays: number,
-): DataPoint[] {
-  if (data.length === 0) return [];
-
-  const sorted = [...data].sort((a, b) => a.date.getTime() - b.date.getTime());
-  const result: DataPoint[] = [];
-  const windowMs = windowDays * 24 * 60 * 60 * 1000;
-
-  for (const point of sorted) {
-    const windowStart = point.date.getTime() - windowMs;
-    const windowPoints = sorted.filter(
-      (p) =>
-        p.date.getTime() > windowStart &&
-        p.date.getTime() <= point.date.getTime(),
-    );
-    const avg =
-      windowPoints.reduce((sum, p) => sum + p.value, 0) / windowPoints.length;
-    result.push({ date: point.date, value: Math.round(avg * 100) / 100 });
-  }
-
-  return result;
-}
-
 // ── Trend Slope ──────────────────────────────────────────
 
 export interface TrendSlope {

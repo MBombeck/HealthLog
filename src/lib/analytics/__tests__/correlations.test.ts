@@ -1,10 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { DataPoint } from "../trends";
-import {
-  pairByTimestamp,
-  pearsonCorrelation,
-  weeklyAverages,
-} from "../correlations";
+import { pairByTimestamp, pearsonCorrelation } from "../correlations";
 
 function makePoints(values: number[], startDaysAgo = 30): DataPoint[] {
   const now = Date.now();
@@ -107,57 +103,3 @@ describe("pearsonCorrelation", () => {
   });
 });
 
-describe("weeklyAverages", () => {
-  it("returns empty for empty input", () => {
-    expect(weeklyAverages([])).toEqual([]);
-  });
-
-  it("groups data points by ISO week", () => {
-    const data = makePoints(
-      [70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83],
-      14,
-    );
-    const result = weeklyAverages(data);
-    // 14 days = 2-3 weeks
-    expect(result.length).toBeGreaterThanOrEqual(2);
-    expect(result.length).toBeLessThanOrEqual(3);
-  });
-
-  it("averages values within same week", () => {
-    const now = new Date();
-    // Find the Monday of current week
-    const day = now.getDay();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - day + (day === 0 ? -6 : 1));
-    monday.setHours(12, 0, 0, 0);
-
-    const tuesday = new Date(monday);
-    tuesday.setDate(monday.getDate() + 1);
-
-    const data: DataPoint[] = [
-      { date: monday, value: 70 },
-      { date: tuesday, value: 80 },
-    ];
-    const result = weeklyAverages(data);
-    expect(result).toHaveLength(1);
-    expect(result[0].value).toBe(75);
-  });
-
-  // v3 audit caught a TZ bug: a Sunday-evening Berlin reading (e.g. 22:00
-  // local = 21:00 UTC in summer / 21:00 UTC in winter via DST) bucketed
-  // into next week on UTC servers because `Date.getDay()` was system-local.
-  // The Berlin-TZ-aware implementation puts the same point into THIS week.
-  it("buckets Sunday-evening Berlin into the same ISO week as the preceding Monday", () => {
-    // 2024-08-04 is a Sunday; 22:00 Berlin = 20:00 UTC (CEST). The Monday
-    // of the same Berlin week is 2024-07-29.
-    const sundayEveningBerlin = new Date("2024-08-04T20:00:00.000Z");
-    const mondayMidday = new Date("2024-07-29T11:00:00.000Z");
-    const result = weeklyAverages([
-      { date: mondayMidday, value: 70 },
-      { date: sundayEveningBerlin, value: 90 },
-    ]);
-    expect(result).toHaveLength(1);
-    expect(result[0].value).toBe(80); // (70 + 90) / 2
-    expect(result[0].date.toISOString()).toBe("2024-07-29T00:00:00.000Z");
-  });
-});

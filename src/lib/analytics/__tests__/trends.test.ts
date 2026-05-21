@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import {
-  movingAverage,
   trendSlope,
   detectAnomalies,
   summarize,
@@ -14,27 +13,6 @@ function makePoints(values: number[], startDaysAgo = 30): DataPoint[] {
     value,
   }));
 }
-
-describe("movingAverage", () => {
-  it("returns empty for empty input", () => {
-    expect(movingAverage([], 7)).toEqual([]);
-  });
-
-  it("calculates moving average over window", () => {
-    const data = makePoints([70, 71, 72, 73, 74, 75, 76], 7);
-    const result = movingAverage(data, 3);
-    expect(result).toHaveLength(7);
-    // Last point should be avg of last 3 days
-    expect(result[result.length - 1].value).toBeCloseTo(75, 0);
-  });
-
-  it("handles single data point", () => {
-    const data = makePoints([100], 1);
-    const result = movingAverage(data, 7);
-    expect(result).toHaveLength(1);
-    expect(result[0].value).toBe(100);
-  });
-});
 
 describe("trendSlope", () => {
   it("returns null for insufficient data", () => {
