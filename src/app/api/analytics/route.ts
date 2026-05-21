@@ -1,3 +1,4 @@
+import pLimit from "p-limit";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
@@ -26,6 +27,32 @@ import {
 } from "@/lib/measurements/cumulative-day-sum";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * v1.4.40 W-POOL — bound the per-type analytics fan-out below to ≤ 4
+ * concurrent Prisma round-trips.
+ *
+ * The v1.4.39 empirical cold-mount trace
+ * (`.planning/round-v1439-empirical-trace.md` § B1) recorded thick
+ * `/api/analytics` running 15× `fetchMeasurementSeriesChunked` in
+ * parallel via a bare `Promise.all` (this file's `route.ts:261-269`
+ * pre-fix), each pulling chunked findMany pages of 5 000 rows. The
+ * combined fan-out held ≥ 8 of the default-10 `pg.Pool` slots for
+ * 6.5 s on Marc's 347k-row tenant, starving every other Wave-B / C
+ * dashboard query.
+ *
+ * Capping the concurrency to 4 keeps the same total work but holds
+ * at most 4 pool slots for the analytics branch at any moment. With
+ * the W-POOL ceiling raised to 20 (`src/lib/db.ts:getPoolMax`),
+ * every other dashboard query has ≥ 16 free slots regardless of how
+ * many types analytics is mid-walk over. The thick endpoint pays a
+ * small (~10–15 %) absolute wall-clock cost on a single cold mount —
+ * 15 chunks across 4 lanes = 4 batches instead of 1 — but is already
+ * wrapped in the 60s `caches.analytics` LRU so the user-visible
+ * impact is only the very first mount, in exchange for the chart-tile
+ * burst paying ~5 s less of pool wait time on every mount thereafter.
+ */
+export const ANALYTICS_TYPE_FETCH_CONCURRENCY = 4;
 
 /**
  * v1.4.33 C1 — pull `?slice=…` from either a NextRequest (the
@@ -258,8 +285,15 @@ async function buildAnalyticsResponse(user: AuthedUser) {
   const lastSeenByType: Record<string, { lastSeenAt: string } | null> = {};
 
   let totalRowsReadForAggregate = 0;
+  // v1.4.40 W-POOL — bounded-concurrency wrapper for the 15-way
+  // per-type fan-out below. See `ANALYTICS_TYPE_FETCH_CONCURRENCY`
+  // above + `.planning/round-v1439-empirical-trace.md` § B1 for the
+  // pool-saturation root cause. Same total work, ≤ 4 pool slots held
+  // by this branch at any moment.
+  const typeFetchLimit = pLimit(ANALYTICS_TYPE_FETCH_CONCURRENCY);
   const measurementsByType = await Promise.all(
     types.map((type) =>
+      typeFetchLimit(() =>
       fetchMeasurementSeriesChunked(user.id, type, {
         includeSleepStage: true,
         // v1.4.39 W-SINCE — trailing 425-day floor for the live read.
@@ -348,6 +382,7 @@ async function buildAnalyticsResponse(user: AuthedUser) {
           summary: summarize(datapoints),
         };
       }),
+      ),
     ),
   );
 
