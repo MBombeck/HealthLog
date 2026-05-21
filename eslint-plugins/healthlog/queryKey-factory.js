@@ -48,12 +48,19 @@ const FACTORY_HOME_FILES = [
 const GUARDED_DIRECTORIES = [
   "src/components/charts",
   "src/components/comparison",
+  // v1.4.41 W-FRONTEND-FACTORY — auth + notifications migrated to the
+  // factory. Mirror the test-guard's guardedRoots so IDE/lint CI fail
+  // at the same boundary the unit-test walker does.
+  "src/app/auth",
+  "src/app/notifications",
 ];
 
 // Individual guarded files outside the directories above.
 const GUARDED_FILES = [
   "src/app/page.tsx",
   "src/hooks/use-auth.ts",
+  // v1.4.41 W-FRONTEND-FACTORY — about-section migrated.
+  "src/components/settings/about-section.tsx",
 ];
 
 function isGuarded(filename) {
