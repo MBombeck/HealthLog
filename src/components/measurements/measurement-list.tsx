@@ -56,7 +56,7 @@ import {
 } from "lucide-react";
 import { Fragment, useId, useState } from "react";
 import { createPortal } from "react-dom";
-import { formatDateTime } from "@/lib/format";
+import { formatDateOrRelative, formatDateTime } from "@/lib/format";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { CUMULATIVE_DAY_SUM_TYPES } from "@/lib/measurements/cumulative-day-sum";
 import { invalidateKeys, measurementDependentKeys } from "@/lib/query-keys";
@@ -568,8 +568,16 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                               </span>
                             )}
                           </TableCell>
+                          {/*
+                            v1.4.43 QoL (L8) — `formatDateOrRelative`
+                            renders timestamps inside the last 24 h
+                            as "vor 3 min" so a fresh entry visible
+                            on the dashboard briefing and on the
+                            list view never disagrees about how to
+                            phrase "when".
+                          */}
                           <TableCell className="text-muted-foreground text-sm">
-                            {formatDateTime(m.measuredAt)}
+                            {formatDateOrRelative(m.measuredAt, t)}
                           </TableCell>
                           <TableCell className="text-sm">
                             {m.notes ? (
@@ -714,7 +722,13 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                             </span>
                           )}
                           <p className="text-muted-foreground truncate text-xs">
-                            <span>{formatDateTime(m.measuredAt)}</span>
+                            {/*
+                              v1.4.43 QoL (L8) — see desktop
+                              counterpart at the same `measuredAt`
+                              site. Relative under 24 h, absolute
+                              older.
+                            */}
+                            <span>{formatDateOrRelative(m.measuredAt, t)}</span>
                             {m.source !== "MANUAL" && (
                               <Badge
                                 variant="outline"
@@ -937,6 +951,18 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                         </DropdownMenuContent>
                       </DropdownMenu>
 
+                      {/*
+                        v1.4.43 QoL (L7) — `[Cancel] [Save]` order is
+                        iOS-first intentional per Apple HIG, which
+                        puts the primary / confirmation action
+                        rightmost. iOS is the load-bearing mobile
+                        target for HealthLog and the web shell renders
+                        desktop + iOS PWA from the same component, so
+                        the current order survives. Do NOT flip to
+                        `[Save] [Cancel]` in a future "Android parity"
+                        refactor — fork a platform-specific shell
+                        instead if Android becomes a real audience.
+                      */}
                       <div className="flex items-center gap-2">
                         <Button
                           type="button"

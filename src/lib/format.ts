@@ -72,3 +72,51 @@ export function formatTime(date: Date | string): string {
   return formatters().time(date);
 }
 
+/**
+ * v1.4.43 QoL (L8) — render a timestamp as a relative phrase when it
+ * happened within the last 24 hours, otherwise fall back to the
+ * absolute locale-aware date+time. Closes the visual inconsistency
+ * the measurement-list surfaced: the same screen could show "vor 3
+ * min" (briefing) alongside "21.05.2026, 14:32" (list rows) for
+ * adjacent events.
+ *
+ * Buckets:
+ *   - < 1 m  → "just now"
+ *   - < 1 h  → "vor N min" / "N min ago"
+ *   - < 24 h → "vor N Std." / "N h ago"
+ *   - ≥ 24 h → absolute `formatDateTime`
+ *
+ * The relative branch reuses the `insights.relative*` i18n keys (same
+ * keys `formatRelativeTime()` reads from `@/lib/i18n/relative-time`).
+ * Caller supplies a `t()` translator so this helper stays usable
+ * server-side; clients should pass `useTranslations().t`. The buckets
+ * mirror the briefing's existing copy so users never see two
+ * different relative phrasings in the same view.
+ */
+export function formatDateOrRelative(
+  iso: Date | string,
+  t: (key: string, params?: Record<string, string | number>) => string,
+  /**
+   * Optional "now" for deterministic tests. Defaults to `Date.now()`.
+   */
+  nowMs: number = Date.now(),
+): string {
+  const target =
+    iso instanceof Date ? iso.getTime() : new Date(iso).getTime();
+  if (Number.isNaN(target)) return "";
+  const diffMs = nowMs - target;
+  // Future timestamps fall back to absolute — relative copy doesn't
+  // model them and "in 3 min" would mislead in a health-log context.
+  if (diffMs < 0) return formatDateTime(iso);
+  if (diffMs < 60_000) return t("insights.relativeJustNow");
+  const minutes = Math.floor(diffMs / 60_000);
+  if (minutes < 60) {
+    return t("insights.relativeMinutesAgo", { count: minutes });
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return t("insights.relativeHoursAgo", { count: hours });
+  }
+  return formatDateTime(iso);
+}
+
