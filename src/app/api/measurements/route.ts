@@ -64,6 +64,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   const where = {
     userId: user.id,
+    // v1.4.40 W-DELETED — soft-deleted readings are invisible to every
+    // list / count / aggregate read. The dedicated `sync/state` route
+    // keeps surfacing them via its own filter so iOS can reconcile
+    // tombstones; every other consumer (list view, analytics fan-out,
+    // dashboard read paths) must never include them.
+    deletedAt: null,
     ...(type && { type: type as MeasurementType }),
     ...(from || to
       ? {
@@ -99,6 +105,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
         userId: user.id,
         type: type as MeasurementType,
         measuredAt: { gte: dayStart, lt: dayEnd },
+        deletedAt: null,
       },
       orderBy: { measuredAt: sortDir },
       // v1.4.38 — the 1000-row cap now lives on the validator (refine
@@ -347,6 +354,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
           AND m."type"        = ${type}::measurement_type
           AND m."measured_at" >= ${from}
           AND m."measured_at" <= ${to}
+          AND m."deleted_at"  IS NULL
       `;
       const liveDays = Number(liveDayCountRows[0]?.days ?? BigInt(0));
       if (liveDays > rollupRows.length) {
@@ -484,6 +492,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       WHERE m."user_id" = ${user.id}
         AND m."measured_at" >= ${from}
         AND m."measured_at" <= ${to}
+        AND m."deleted_at" IS NULL
         ${type ? Prisma.sql`AND m."type" = ${type}::measurement_type` : Prisma.empty}
       GROUP BY m."type", bucket_start
       ORDER BY bucket_start ASC

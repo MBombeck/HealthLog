@@ -84,6 +84,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
           userId: user.id,
           type: "BLOOD_PRESSURE_SYS",
           measuredAt: { gte: since },
+          deletedAt: null,
         },
         orderBy: { measuredAt: "asc" },
         select: { id: true, value: true, measuredAt: true },
@@ -93,6 +94,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
           userId: user.id,
           type: "BLOOD_PRESSURE_DIA",
           measuredAt: { gte: since },
+          deletedAt: null,
         },
         orderBy: { measuredAt: "asc" },
         select: { id: true, value: true, measuredAt: true },
@@ -120,7 +122,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
   } else {
     const type = KIND_TO_TYPE[kind];
     const rows = await prisma.measurement.findMany({
-      where: { userId: user.id, type, measuredAt: { gte: since } },
+      where: {
+        userId: user.id,
+        type,
+        measuredAt: { gte: since },
+        deletedAt: null,
+      },
       orderBy: { measuredAt: "asc" },
       select: { id: true, value: true, measuredAt: true },
     });
