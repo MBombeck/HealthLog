@@ -22,6 +22,7 @@ import {
   safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { shouldEmitAuditRow } from "@/lib/audit-dedup";
 import { annotate } from "@/lib/logging/context";
 import { prisma, toJson } from "@/lib/db";
 import {
@@ -57,23 +58,30 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     // v1.4.43 W6 — sibling of `/api/dashboard/widgets`; the per-chart
     // overlay popover hits this on every toggle so the multi-issue
     // envelope matches widgets exactly. Audit breadcrumb keyed
-    // `dashboard.chart-overlay.validation-failed`.
+    // `dashboard.chart-overlay.validation-failed`, deduped via the
+    // shared `shouldEmitAuditRow` 60 s `(userId, action)` window so a
+    // misbehaving iOS client looping the popover cannot flood the
+    // audit ledger.
     const issues = sanitiseZodIssues(parsed.error.issues);
     annotate({
       action: { name: "dashboard.chart-overlay.validation-failed" },
       meta: { issue_count: issues.length },
     });
-    prisma.auditLog
-      .create({
-        data: {
-          userId: user.id,
-          action: "dashboard.chart-overlay.validation-failed",
-          details: JSON.stringify({ issues }),
-        },
-      })
-      .catch(() => {
-        /* swallow — 422 response is the contract */
-      });
+    if (
+      shouldEmitAuditRow(user.id, "dashboard.chart-overlay.validation-failed")
+    ) {
+      prisma.auditLog
+        .create({
+          data: {
+            userId: user.id,
+            action: "dashboard.chart-overlay.validation-failed",
+            details: JSON.stringify({ issues }),
+          },
+        })
+        .catch(() => {
+          /* swallow — 422 response is the contract */
+        });
+    }
     return returnAllZodIssues(parsed.error, 422);
   }
 

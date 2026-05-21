@@ -51,10 +51,13 @@ function putReq(body: unknown): NextRequest {
   });
 }
 
+import { __resetAuditDedupMemoForTests } from "@/lib/audit-dedup";
+
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
+  __resetAuditDedupMemoForTests();
 });
 
 describe("PUT /api/dashboard/chart-overlay-prefs — 422 multi-issue (v1.4.43 W6)", () => {

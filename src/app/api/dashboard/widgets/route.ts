@@ -42,39 +42,11 @@ import type { NextRequest } from "next/server";
 // the enum from `DASHBOARD_WIDGET_IDS` so the two lists cannot drift.
 const widgetIdEnum = z.enum(DASHBOARD_WIDGET_IDS);
 
-// v1.4.43 B2 — in-process dedup memo for the validation-failed audit row.
-// A misbehaving iOS client looping on a 422 can otherwise write thousands
-// of identical audit rows per minute. We dedup on `(userId, action)` with
-// a 60 s window: only the first 422 inside the window writes; subsequent
-// 422s still return the full multi-issue envelope but skip the breadcrumb.
-// In-memory only — a process restart resets the map, which is the safe
-// failure mode (worst case: one extra audit row per restart). Cluster
-// deployments still get one row per process per minute, which is fine for
-// the operator-grep use case the audit row exists for.
-const AUDIT_DEDUP_WINDOW_MS = 60_000;
-const auditDedupMemo = new Map<string, number>();
-
-function shouldEmitAuditRow(userId: string, action: string, now: number): boolean {
-  const key = `${userId}:${action}`;
-  const last = auditDedupMemo.get(key);
-  if (last !== undefined && now - last < AUDIT_DEDUP_WINDOW_MS) {
-    return false;
-  }
-  auditDedupMemo.set(key, now);
-  // Opportunistic GC — drop entries older than the window on every miss so
-  // the map cannot grow unbounded across a long-running process.
-  if (auditDedupMemo.size > 512) {
-    for (const [k, t] of auditDedupMemo) {
-      if (now - t >= AUDIT_DEDUP_WINDOW_MS) auditDedupMemo.delete(k);
-    }
-  }
-  return true;
-}
-
-/** @internal — exported for the dedup unit test only. */
-export function __resetAuditDedupMemoForTests(): void {
-  auditDedupMemo.clear();
-}
+// v1.4.43 B2 — dedup helper extracted to `src/lib/audit-dedup.ts` so both
+// `/api/dashboard/widgets` and `/api/dashboard/chart-overlay-prefs` share
+// the same 60 s `(userId, action)` window.
+export { __resetAuditDedupMemoForTests } from "@/lib/audit-dedup";
+import { shouldEmitAuditRow } from "@/lib/audit-dedup";
 
 const layoutSchema = z.object({
   version: z.literal(1),
