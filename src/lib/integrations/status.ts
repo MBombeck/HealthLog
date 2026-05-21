@@ -825,6 +825,27 @@ const FAILURE_KIND_COPY: Record<
   },
 };
 
+/**
+ * SECURITY INVARIANT (v1.4.43 W13 M-2 — MUST NOT be relaxed):
+ *
+ * The body produced here is dispatched to Telegram via
+ * `dispatchNotification`. `input.message` is upstream-influenced — the
+ * Withings classifier (`src/lib/withings/client.ts`) builds it as
+ * `Withings <verb> error: <status> - <json.error>` where `json.error`
+ * is whatever the upstream API put in the response body. Today that
+ * lands in Telegram on plain text (no `parseMode`), so the upstream
+ * string is rendered literally and a malicious / buggy response body
+ * is inert.
+ *
+ * Do NOT flip the Telegram callers downstream to `parseMode: "HTML"`
+ * or `"MarkdownV2"`. The medication-reminder paths use HTML mode
+ * because their bodies are server-built from sanitised data only; the
+ * admin-alert body is NOT sanitised. If HTML / Markdown parsing is
+ * ever enabled for this payload, escape every interpolated field
+ * (`input.message`, `subjectLabel`, `errorCode`) at the same time —
+ * otherwise an upstream-controlled string becomes an HTML / Markdown
+ * injection vector reaching every admin chat.
+ */
 export function formatAdminAlertPayload(input: AlertInput): {
   title: string;
   message: string;
