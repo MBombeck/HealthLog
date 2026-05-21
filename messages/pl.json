@@ -862,6 +862,8 @@
     "emptyStateDescription": "Zarejestruj co najmniej 3 wpisy, aby odblokować linię trendu.",
     "needMoreDistinctDaysTitle": "Potrzeba więcej różnych dni",
     "needMoreDistinctDaysDescription": "Rejestruj w więcej dni, aby odblokować linię trendu.",
+    "noDataInRangeTitle": "Brak danych w tym zakresie",
+    "noDataInRangeDescription": "Żadne pomiary nie mieszczą się w wybranym zakresie. Zmień zakres lub dodaj nowy pomiar.",
     "personalBaseline": "Twoja średnia",
     "deltaVsBaseline": "{delta} vs. twoja średnia",
     "deltaUnchanged": "odpowiada twojej średniej",

@@ -862,6 +862,8 @@
     "emptyStateDescription": "Saisis au moins 3 entrées pour débloquer la courbe de tendance.",
     "needMoreDistinctDaysTitle": "Plus de jours distincts requis",
     "needMoreDistinctDaysDescription": "Saisis sur plusieurs jours pour débloquer la courbe de tendance.",
+    "noDataInRangeTitle": "Aucune donnée sur cette période",
+    "noDataInRangeDescription": "Aucune mesure ne tombe dans la plage sélectionnée. Change de plage ou saisis une nouvelle mesure.",
     "personalBaseline": "Ta moyenne",
     "deltaVsBaseline": "{delta} vs. ta moyenne",
     "deltaUnchanged": "correspond à ta moyenne",

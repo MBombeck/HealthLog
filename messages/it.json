@@ -862,6 +862,8 @@
     "emptyStateDescription": "Registra almeno 3 voci per sbloccare la linea di tendenza.",
     "needMoreDistinctDaysTitle": "Servono più giorni distinti",
     "needMoreDistinctDaysDescription": "Registra in più giorni per sbloccare la linea di tendenza.",
+    "noDataInRangeTitle": "Nessun dato in questo intervallo",
+    "noDataInRangeDescription": "Nessuna misurazione rientra nell'intervallo selezionato. Cambia intervallo o registra una nuova misurazione.",
     "personalBaseline": "La tua media",
     "deltaVsBaseline": "{delta} vs. la tua media",
     "deltaUnchanged": "corrisponde alla tua media",

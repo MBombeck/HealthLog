@@ -862,6 +862,8 @@
     "emptyStateDescription": "Erfasse mindestens 3 Einträge, um die Trendlinie freizuschalten.",
     "needMoreDistinctDaysTitle": "Mehr Messtage erforderlich",
     "needMoreDistinctDaysDescription": "Erfasse an mehreren Tagen, um eine Trendlinie freizuschalten.",
+    "noDataInRangeTitle": "Keine Daten in diesem Zeitraum",
+    "noDataInRangeDescription": "Für den gewählten Bereich liegen keine Messungen vor. Wechsle den Zeitraum oder erfasse einen neuen Wert.",
     "personalBaseline": "Dein Mittel",
     "deltaVsBaseline": "{delta} vs. dein Mittel",
     "deltaUnchanged": "entspricht deinem Mittel",

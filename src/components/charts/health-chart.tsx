@@ -1132,7 +1132,14 @@ export function HealthChart({
     return map;
   }, [chartData, types]);
 
-  if (!isLoading && !data?.length) return null;
+  // v1.4.43 W11-M6 — keep the card shell mounted even when the loaded
+  // payload is empty. Pre-fix the early `return null` here erased the
+  // whole widget (header + range tabs + chart) and the user saw an
+  // unexplained gap on the dashboard. The in-card render branch below
+  // now paints a "no data in this range" empty state so the user
+  // understands the chart loaded but the selected window holds no
+  // measurements — distinct copy from the < 3-points "more days
+  // needed" hint so the two situations don't blur.
 
   const maxPointIndex = Math.max(0, (chartData?.length ?? 1) - 1);
 
@@ -1288,7 +1295,29 @@ export function HealthChart({
         <div className="flex h-48 items-center justify-center">
           <Loader2 className="text-primary h-6 w-6 animate-spin motion-reduce:animate-none" />
         </div>
-      ) : !chartData?.length ? null : (chartData?.length ?? 0) < 3 ? (
+      ) : !chartData?.length ? (
+        // v1.4.43 W11-M6 — empty-window state.
+        //
+        // Pre-fix the chart silently `return null`ed when `chartData`
+        // resolved empty (after-load, no points in the selected
+        // range). Paired with the < 3-points hint, the user's
+        // five visible chart states were:
+        //
+        //   - skeleton (loading)
+        //   - 1-2 daily points / many raw → "Mehr Messtage erforderlich"
+        //   - 1-2 daily points / < 3 raw  → "Erfasse mindestens 3 Einträge"
+        //   - ≥ 3 daily points            → line chart
+        //   - 0 daily points              → NOTHING
+        //
+        // The "nothing" branch read as a broken widget on the
+        // dashboard. Paint a distinct empty state explaining the
+        // selected range is empty so the user reaches for the range
+        // tabs or the quick-add instead of suspecting a bug.
+        <ChartEmptyState
+          title={t("charts.noDataInRangeTitle")}
+          description={t("charts.noDataInRangeDescription")}
+        />
+      ) : (chartData?.length ?? 0) < 3 ? (
         // v1.4.16 B1a — sparse-data placeholder. <3 daily points is too
         // few to render a meaningful trend; paint a friendly hint
         // instead so the dashboard doesn't look broken.
