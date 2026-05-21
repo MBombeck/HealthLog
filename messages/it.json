@@ -1897,14 +1897,19 @@
       }
     },
     "integrationPill": {
-      "connected": "Connected",
-      "errorReconnect": "Error — reconnect",
-      "notConnected": "Not connected",
+      "connected": "Connesso",
+      "errorReconnect": "Errore — riconnetti",
+      "warningServerError": "Connesso, errore del server",
+      "parkedReconnect": "In pausa — riconnettere manualmente",
+      "notConnected": "Non connesso",
       "justNow": "just now",
       "minutesAgo": "{count} min ago",
       "hoursAgo": "{count} h ago",
       "daysAgo": "{count} d ago",
-      "ariaLabel": "Integration status"
+      "ariaLabel": "Integration status",
+      "resumeCta": "Riconnetti",
+      "resumeSuccess": "Integrazione ripresa",
+      "resumeError": "Riconnessione fallita"
     },
     "apiTokens": "API Tokens",
     "apiTokensDescription": "Create API tokens for external medication intake (e.g., Shortcuts, automations).",

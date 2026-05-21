@@ -1899,12 +1899,17 @@
     "integrationPill": {
       "connected": "Verbunden",
       "errorReconnect": "Fehler — neu verbinden",
+      "warningServerError": "Verbunden, aber Serverfehler",
+      "parkedReconnect": "Pausiert — manuell wieder verbinden",
       "notConnected": "Nicht verbunden",
       "justNow": "gerade eben",
       "minutesAgo": "vor {count} min",
       "hoursAgo": "vor {count} Std.",
       "daysAgo": "vor {count} d",
-      "ariaLabel": "Integrationsstatus"
+      "ariaLabel": "Integrationsstatus",
+      "resumeCta": "Wieder verbinden",
+      "resumeSuccess": "Integration wieder aktiv",
+      "resumeError": "Wieder verbinden fehlgeschlagen"
     },
     "apiTokens": "API-Tokens",
     "apiTokensDescription": "Erstelle API-Tokens für die externe Medikamenten-Einnahme (z.B. Shortcuts, Automationen).",
