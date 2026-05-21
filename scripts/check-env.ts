@@ -67,6 +67,14 @@ interface CheckResult {
   present: boolean;
   required: boolean;
   note?: string;
+  /**
+   * For `anyOf` rows: the alternative that actually satisfied the row.
+   * Set only when the matched name differs from the primary `variable`
+   * — e.g. APNS_KEY satisfied by APNS_KEY_FILE. Lets the renderer print
+   * `[OK] APNS_KEY (satisfied by APNS_KEY_FILE)` instead of misleading
+   * the operator into greping for the primary name.
+   */
+  satisfiedBy?: string;
 }
 
 /**
@@ -129,7 +137,8 @@ export function checkEnv(
 
     for (const v of group.variables) {
       const names = v.anyOf ?? [v.name];
-      const present = names.some((n) => isPresent(env[n]));
+      const matched = names.find((n) => isPresent(env[n]));
+      const present = matched !== undefined;
       const note = v.anyOf
         ? `Satisfied by any of: ${v.anyOf.join(", ")}`
         : undefined;
@@ -139,6 +148,8 @@ export function checkEnv(
         present,
         required: group.required,
         note,
+        satisfiedBy:
+          present && matched && matched !== v.name ? matched : undefined,
       });
       if (present) presentInGroup++;
       else absentInGroup++;
@@ -188,7 +199,10 @@ function renderResults(results: CheckResult[]): {
       currentGroup = r.group;
     }
     if (r.present) {
-      console.log(`  [OK] ${r.variable}`);
+      console.log(
+        `  [OK] ${r.variable}` +
+          (r.satisfiedBy ? ` (satisfied by ${r.satisfiedBy})` : ""),
+      );
     } else if (r.required) {
       console.log(
         `  [MISSING-REQUIRED] ${r.variable}` +

@@ -66,6 +66,7 @@ const SAMPLE_MANIFEST = {
       name: "APNs",
       description: "iOS push",
       required: false,
+      allOrNone: true,
       variables: [
         { name: "APNS_KEY_ID", purpose: "key id" },
         { name: "APNS_TEAM_ID", purpose: "team id" },
@@ -134,6 +135,34 @@ describe("checkEnv — anyOf alternatives", () => {
     expect(apnsKey.present).toBe(true);
   });
 
+  it("records satisfiedBy when an anyOf alternative satisfies the row", () => {
+    // The label `[OK] APNS_KEY` was misleading pre-v1.4.42 — an operator
+    // who saw it would grep for `APNS_KEY` in the env block and find
+    // nothing, file a ghost issue. `satisfiedBy` lets the renderer
+    // surface the alternative that actually matched.
+    const out = checkEnv(SAMPLE_MANIFEST, {
+      DATABASE_URL: "x",
+      ENCRYPTION_KEY: "y",
+      APNS_KEY_ID: "abc",
+      APNS_TEAM_ID: "def",
+      APNS_KEY_FILE: "/secrets/apns.p8",
+    });
+    const apnsKey = out.find((r) => r.variable === "APNS_KEY")!;
+    expect(apnsKey.satisfiedBy).toBe("APNS_KEY_FILE");
+  });
+
+  it("leaves satisfiedBy undefined when the primary name is the one set", () => {
+    const out = checkEnv(SAMPLE_MANIFEST, {
+      DATABASE_URL: "x",
+      ENCRYPTION_KEY: "y",
+      APNS_KEY_ID: "abc",
+      APNS_TEAM_ID: "def",
+      APNS_KEY: "-----BEGIN PRIVATE KEY-----...",
+    });
+    const apnsKey = out.find((r) => r.variable === "APNS_KEY")!;
+    expect(apnsKey.satisfiedBy).toBeUndefined();
+  });
+
   it("treats APNS_KEY as satisfied when APNS_KEY is set (the 12-factor variant)", () => {
     const out = checkEnv(SAMPLE_MANIFEST, {
       DATABASE_URL: "x",
@@ -190,6 +219,25 @@ describe("checkEnv — all-or-none groups", () => {
       ENCRYPTION_KEY: "y",
     });
     expect(out.find((r) => r.variable === "<all-or-none>")).toBeUndefined();
+  });
+
+  it("catches the v1.4.40 AP-2 scenario — 3 of 4 APNS_* set, key missing", () => {
+    // Direct regression pin for the gap the env-check wave was conceived
+    // to close. Pre-v1.4.42 the APNs group lacked `allOrNone: true` so
+    // this exact env-block shape exited 0 and silently disabled APNs.
+    const out = checkEnv(SAMPLE_MANIFEST, {
+      DATABASE_URL: "x",
+      ENCRYPTION_KEY: "y",
+      APNS_KEY_ID: "abc",
+      APNS_TEAM_ID: "def",
+      // APNS_KEY / APNS_KEY_FILE deliberately absent
+    });
+    const synth = out.find(
+      (r) => r.group === "APNs" && r.variable === "<all-or-none>",
+    )!;
+    expect(synth).toBeDefined();
+    expect(synth.required).toBe(true);
+    expect(synth.note).toContain("2/3");
   });
 });
 
