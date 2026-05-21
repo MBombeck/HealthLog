@@ -66,6 +66,7 @@ import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
 import type { DataSummary } from "@/lib/analytics/trends";
+import { mergeSlimAndThickAnalytics } from "@/lib/analytics/merge-slim-thick";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import {
   buildTrafficLightBands,
@@ -245,28 +246,30 @@ export default function DashboardPage() {
   const analyticsSlimQuery = useAnalyticsQuery({ slice: "summaries" });
   const analyticsThickQuery = useAnalyticsQuery();
   const data = useMemo<AnalyticsData | undefined>(() => {
-    const slim = analyticsSlimQuery.data;
-    const thick = analyticsThickQuery.data;
-    if (!slim && !thick) return undefined;
-    // Slim wins on overlapping fields when both have resolved — slim
-    // and thick compute `summaries` / `lastSeenByType` from the same
-    // SQL helpers so the values agree, and reading from whichever
-    // resolves first keeps the tile strip painting as soon as either
-    // query lands.
-    const summaries =
-      slim?.summaries ?? thick?.summaries ?? ({} as Record<string, DataSummary>);
-    const lastSeenByType =
-      slim?.lastSeenByType ?? thick?.lastSeenByType;
+    // v1.4.39.3 — the merge moved to `mergeSlimAndThickAnalytics` so
+    // the empty-slim-vs-populated-thick edge has direct unit
+    // coverage. Pre-fix the inline `slim?.summaries ?? thick?.summaries`
+    // short-circuited on a truthy-but-empty `{}` from the slim slice
+    // and blanked the tile strip even when thick carried the full
+    // payload — the regression Marc's v1.4.39.3 e2e CI flagged across
+    // eight dashboard / chart specs. The helper falls back to thick
+    // when slim resolves with no content and otherwise keeps the
+    // v1.4.39.2 slim-wins-first progressive-paint contract.
+    const merged = mergeSlimAndThickAnalytics(
+      analyticsSlimQuery.data,
+      analyticsThickQuery.data,
+    );
+    if (!merged) return undefined;
     return {
-      summaries,
-      lastSeenByType,
-      bpInTargetPct: (thick?.bpInTargetPct ?? null) as number | null,
-      bpInTargetPct7d: thick?.bpInTargetPct7d ?? null,
-      bpInTargetPct30d: thick?.bpInTargetPct30d ?? null,
-      bpInTargetPctAllTime: thick?.bpInTargetPctAllTime ?? null,
-      bpInTargetPctPriorMonth: thick?.bpInTargetPctPriorMonth ?? null,
-      bpInTargetPctPriorYear: thick?.bpInTargetPctPriorYear ?? null,
-      glucoseByContext: thick?.glucoseByContext as
+      summaries: merged.summaries,
+      lastSeenByType: merged.lastSeenByType,
+      bpInTargetPct: merged.bpInTargetPct,
+      bpInTargetPct7d: merged.bpInTargetPct7d,
+      bpInTargetPct30d: merged.bpInTargetPct30d,
+      bpInTargetPctAllTime: merged.bpInTargetPctAllTime,
+      bpInTargetPctPriorMonth: merged.bpInTargetPctPriorMonth,
+      bpInTargetPctPriorYear: merged.bpInTargetPctPriorYear,
+      glucoseByContext: merged.glucoseByContext as
         | Record<string, DataSummaryType>
         | undefined,
     };
