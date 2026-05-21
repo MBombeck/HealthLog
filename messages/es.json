@@ -152,6 +152,13 @@
     "title": "Algo ha salido mal",
     "description": "Se ha producido un error inesperado. Puedes reintentar, copiar los detalles técnicos o abrir un reporte de bug."
   },
+  "errors": {
+    "notFound": {
+      "title": "Página no encontrada",
+      "body": "La página que buscas no existe o se ha movido. Vuelve al panel para continuar donde lo dejaste.",
+      "backToDashboard": "Volver al panel"
+    }
+  },
   "nav": {
     "dashboard": "Panel",
     "measurements": "Mediciones",

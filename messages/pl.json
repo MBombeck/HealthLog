@@ -152,6 +152,13 @@
     "title": "Coś poszło nie tak",
     "description": "Wystąpił nieoczekiwany błąd. Możesz spróbować ponownie, skopiować szczegóły techniczne lub otworzyć zgłoszenie błędu."
   },
+  "errors": {
+    "notFound": {
+      "title": "Nie znaleziono strony",
+      "body": "Strona, której szukasz, nie istnieje lub została przeniesiona. Wróć do panelu, aby kontynuować od miejsca, w którym przerwałeś.",
+      "backToDashboard": "Powrót do panelu"
+    }
+  },
   "nav": {
     "dashboard": "Panel",
     "measurements": "Pomiary",

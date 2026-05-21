@@ -152,6 +152,13 @@
     "title": "Something went wrong",
     "description": "An unexpected error occurred. You can retry, copy the technical details, or open a bug report."
   },
+  "errors": {
+    "notFound": {
+      "title": "Page not found",
+      "body": "The page you were looking for doesn't exist or has been moved. Head back to the dashboard to pick up where you left off.",
+      "backToDashboard": "Back to dashboard"
+    }
+  },
   "nav": {
     "dashboard": "Dashboard",
     "measurements": "Measurements",

@@ -152,6 +152,13 @@
     "title": "Da ist etwas schiefgelaufen",
     "description": "Ein unerwarteter Fehler ist aufgetreten. Du kannst es erneut versuchen, die technischen Details kopieren oder einen Bug-Report öffnen."
   },
+  "errors": {
+    "notFound": {
+      "title": "Seite nicht gefunden",
+      "body": "Die gesuchte Seite existiert nicht oder wurde verschoben. Kehr zum Dashboard zurück, um dort weiterzumachen, wo du aufgehört hast.",
+      "backToDashboard": "Zurück zum Dashboard"
+    }
+  },
   "nav": {
     "dashboard": "Dashboard",
     "measurements": "Messungen",

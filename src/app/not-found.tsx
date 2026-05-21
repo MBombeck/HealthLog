@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { Logo } from "@/components/ui/logo";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
 
 /**
  * v1.4.27 MB6 — branded 404 page. Next.js mounts this file for any
@@ -11,12 +13,19 @@ import { Logo } from "@/components/ui/logo";
  * application error and doesn't need the bug-report path. Just a
  * branded splash with one link home.
  *
+ * v1.4.43 H4 — the copy is locale-resolved server-side from the same
+ * cookie / Accept-Language path the rest of the app uses, so a German
+ * visitor no longer hits an English-only splash on a typo URL.
+ *
  * Mobile-first: `min-h-dvh` follows the dynamic viewport so the
  * panel anchors centred under iOS Safari's animated URL bar;
  * `safe-area-inset-top` keeps the headline clear of the notch or
  * Dynamic Island.
  */
-export default function NotFound() {
+export default async function NotFound() {
+  const locale = await resolveServerLocale();
+  const { t } = getServerTranslator(locale);
+
   return (
     <main
       id="main-content"
@@ -30,18 +39,17 @@ export default function NotFound() {
           404
         </p>
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-          Page not found
+          {t("errors.notFound.title")}
         </h1>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          The page you were looking for doesn&apos;t exist or has been moved.
-          Head back to the dashboard to pick up where you left off.
+          {t("errors.notFound.body")}
         </p>
       </div>
       <Link
         href="/"
         className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex min-h-11 items-center justify-center rounded-md px-5 text-sm font-medium transition-colors"
       >
-        Back to dashboard
+        {t("errors.notFound.backToDashboard")}
       </Link>
     </main>
   );

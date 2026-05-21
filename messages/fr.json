@@ -152,6 +152,13 @@
     "title": "Une erreur est survenue",
     "description": "Une erreur inattendue est survenue. Tu peux réessayer, copier les détails techniques ou ouvrir un rapport de bug."
   },
+  "errors": {
+    "notFound": {
+      "title": "Page introuvable",
+      "body": "La page que tu cherches n’existe pas ou a été déplacée. Reviens au tableau de bord pour reprendre où tu en étais.",
+      "backToDashboard": "Retour au tableau de bord"
+    }
+  },
   "nav": {
     "dashboard": "Tableau de bord",
     "measurements": "Mesures",

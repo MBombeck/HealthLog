@@ -152,6 +152,13 @@
     "title": "Qualcosa è andato storto",
     "description": "Si è verificato un errore inatteso. Puoi riprovare, copiare i dettagli tecnici o aprire una segnalazione di bug."
   },
+  "errors": {
+    "notFound": {
+      "title": "Pagina non trovata",
+      "body": "La pagina che cercavi non esiste o è stata spostata. Torna alla dashboard per riprendere da dove eri rimasto.",
+      "backToDashboard": "Torna alla dashboard"
+    }
+  },
   "nav": {
     "dashboard": "Dashboard",
     "measurements": "Misurazioni",
