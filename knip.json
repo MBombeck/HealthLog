@@ -69,5 +69,9 @@
     "docker-compose",
     "pg_isready",
     "tsx"
-  ]
+  ],
+  "ignoreExportsUsedInFile": true,
+  "ignoreIssues": {
+    "src/components/ui/**": ["exports", "types"]
+  }
 }

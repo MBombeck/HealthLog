@@ -185,13 +185,3 @@ export async function destroyAllSessions(userId: string): Promise<void> {
   ]);
 }
 
-/**
- * Require an authenticated admin user.
- * Returns user if admin, null otherwise.
- */
-export async function requireAdmin(): Promise<User | null> {
-  const sessionData = await getSession();
-  if (!sessionData) return null;
-  if (sessionData.user.role !== "ADMIN") return null;
-  return sessionData.user;
-}

@@ -2,10 +2,9 @@
  * v1.5.0 — read-side helpers that aggregate the persistent rollup
  * table into the same `DataSummary` shape the live aggregator
  * returns. The reader-side surfaces (`summaries-slice`,
- * `comprehensive-aggregator`, the analytics route) call
- * `readDataSummariesFromRollups` before falling through to live SQL;
- * on rollup miss / stale they call `recomputeUserRollups` once to
- * persist the buckets, then re-read.
+ * `comprehensive-aggregator`, the analytics route) re-aggregate the
+ * trailing DAY buckets directly via `readRollupBuckets` and feed the
+ * resulting rows into `aggregateBuckets` below.
  *
  * The 90-day window is reconstructed from DAY buckets by:
  *   - sum(count_i)              → window count
@@ -20,8 +19,6 @@
  * rollup-read path delegates to live SQL so the byte-shape parity with
  * the v1.4.34.1 / 4.5 aggregator survives.
  */
-import type { MeasurementType } from "@/generated/prisma/client";
-import { readRollupBuckets } from "@/lib/rollups/measurement-rollups";
 
 export interface DailyMeanRow {
   day: Date;
@@ -29,26 +26,6 @@ export interface DailyMeanRow {
   mean: number;
   minValue: number;
   maxValue: number;
-}
-
-/**
- * Read the trailing DAY buckets for `(userId, type)` over `[from, to)`
- * and return them as a normalised list.
- */
-export async function readDailyMeans(
-  userId: string,
-  type: MeasurementType,
-  from: Date,
-  to: Date,
-): Promise<DailyMeanRow[]> {
-  const rows = await readRollupBuckets(userId, type, "DAY", from, to);
-  return rows.map((r) => ({
-    day: r.bucketStart,
-    count: r.count,
-    mean: r.mean,
-    minValue: r.minValue,
-    maxValue: r.maxValue,
-  }));
 }
 
 /**
