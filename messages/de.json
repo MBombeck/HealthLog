@@ -1511,7 +1511,7 @@
       "profileDescription": "Größe, Geburtsdatum und Geschlecht schalten personalisierte Zielwerte frei.",
       "profileCta": "Profil öffnen",
       "measurementTitle": "Erste Messung anlegen",
-      "measurementDescription": "Eine Messung reicht, um deine erste Trend-Kachel zu zeichnen.",
+      "measurementDescription": "Ein Messpunkt reicht, um die Kachel zu aktivieren — der Trend zeichnet sich ab dem 5. Eintrag.",
       "measurementCta": "Messung hinzufügen",
       "medicationTitle": "Medikament hinzufügen",
       "medicationDescription": "Verfolge Compliance und erhalte Erinnerungen genau dann, wenn du sie brauchst.",
