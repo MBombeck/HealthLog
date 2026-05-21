@@ -58,7 +58,7 @@ import {
  *      shaped the same as `MoodForm`).
  *
  * On success: invalidate `medicationDependentKeys` (medications +
- * analytics + insights + intake-summary + achievements) PLUS the
+ * analytics + insights + achievements) PLUS the
  * inline per-medication compliance chart key so the detail page tile
  * refreshes if it happens to be mounted elsewhere in the app.
  *

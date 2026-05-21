@@ -87,7 +87,6 @@ export const queryKeys = {
     ["dashboard-medication-compliance", days] as const,
   medicationPhaseConfig: (medicationId: string) =>
     ["phase-config", medicationId] as const,
-  medicationIntakeSummary: () => ["medications", "intake-summary"] as const,
 
   gamificationAchievements: () => ["gamification", "achievements"] as const,
 
@@ -217,7 +216,6 @@ export const medicationDependentKeys = [
   queryKeys.analytics(),
   queryKeys.insightsRoot(),
   queryKeys.insightsTargets(),
-  queryKeys.medicationIntakeSummary(),
   queryKeys.gamificationAchievements(),
   ["dashboard-medication-compliance"] as const,
 ];
