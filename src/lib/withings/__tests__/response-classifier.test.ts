@@ -174,6 +174,23 @@ describe("WithingsApiError", () => {
     });
     expect(err.message).toBe("Withings subscribe error: 293");
   });
+
+  // v1.4.43 W3-SECURITY (H-2, v1.4.42 L-1 carry-over) — the constructor
+  // caps the message at 1024 chars so a misbehaving upstream cannot
+  // bloat an `AuditLog.details` row through any downstream wrapper.
+  it("caps the message at 1024 chars when upstreamError is unbounded", () => {
+    const huge = "x".repeat(4000);
+    const err = new WithingsApiError({
+      verb: "measure",
+      classification: "transient",
+      withingsStatus: 503,
+      reason: "withings_503",
+      upstreamError: huge,
+    });
+    expect(err.message.length).toBe(1024);
+    // Prefix preserved so the legacy regex parser still matches.
+    expect(err.message.startsWith("Withings measure error: 503 - ")).toBe(true);
+  });
 });
 
 describe("classifyError", () => {
