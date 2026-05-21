@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -222,14 +222,55 @@ export default function DashboardPage() {
     refetchOnWindowFocus: false,
   } as const;
 
-  // v1.4.33 IW2 — the dashboard tile-strip reads `bpInTargetPct*` +
-  // `glucoseByContext` (thick-only fields) so it stays on the default
-  // thick slice. The shared hook still centralises the cache settings
-  // (60s staleTime, no refetch on mount / window focus) so the
-  // tile-strip dedups with the Insights mother page on the same
-  // queryKey + slice combination.
-  const analyticsQuery = useAnalyticsQuery();
-  const data = analyticsQuery.data as AnalyticsData | undefined;
+  // v1.4.39.2 — split the dashboard's analytics consumption so the
+  // tile-strip paints from the slim slice and the BD-Zielbereich +
+  // glucose tiles stream in from the thick slice afterwards.
+  //
+  // Pre-fix: a single `useAnalyticsQuery()` against `/api/analytics`
+  // (thick slice) blocked every per-type tile until the heavy fan-out
+  // resolved. Mood and medication tiles paint from their own dedicated
+  // endpoints and arrived first; the per-type measurement tiles then
+  // arrived as one burst once the full slice landed — Marc reported
+  // this "blocked-then-burst" pattern as "etwas nervig".
+  //
+  // Post-fix: two parallel queries. The slim slice (`?slice=summaries`)
+  // resolves the per-type DataSummary headlines + `lastSeenByType` and
+  // typically returns in well under a second once the rollup tier is
+  // warm; that paints every per-type tile in the strip. The thick
+  // slice resolves `bpInTargetPct*` + `glucoseByContext` for the
+  // BD-Zielbereich and glucose tiles, which stream in independently.
+  // Both queries share `caches.analytics` server-side so warm hits
+  // stay free, and TanStack's parallel-mounting keeps the network fan-
+  // out flat.
+  const analyticsSlimQuery = useAnalyticsQuery({ slice: "summaries" });
+  const analyticsThickQuery = useAnalyticsQuery();
+  const data = useMemo<AnalyticsData | undefined>(() => {
+    const slim = analyticsSlimQuery.data;
+    const thick = analyticsThickQuery.data;
+    if (!slim && !thick) return undefined;
+    // Slim wins on overlapping fields when both have resolved — slim
+    // and thick compute `summaries` / `lastSeenByType` from the same
+    // SQL helpers so the values agree, and reading from whichever
+    // resolves first keeps the tile strip painting as soon as either
+    // query lands.
+    const summaries =
+      slim?.summaries ?? thick?.summaries ?? ({} as Record<string, DataSummary>);
+    const lastSeenByType =
+      slim?.lastSeenByType ?? thick?.lastSeenByType;
+    return {
+      summaries,
+      lastSeenByType,
+      bpInTargetPct: (thick?.bpInTargetPct ?? null) as number | null,
+      bpInTargetPct7d: thick?.bpInTargetPct7d ?? null,
+      bpInTargetPct30d: thick?.bpInTargetPct30d ?? null,
+      bpInTargetPctAllTime: thick?.bpInTargetPctAllTime ?? null,
+      bpInTargetPctPriorMonth: thick?.bpInTargetPctPriorMonth ?? null,
+      bpInTargetPctPriorYear: thick?.bpInTargetPctPriorYear ?? null,
+      glucoseByContext: thick?.glucoseByContext as
+        | Record<string, DataSummaryType>
+        | undefined,
+    };
+  }, [analyticsSlimQuery.data, analyticsThickQuery.data]);
 
   const { data: layoutData } = useQuery({
     queryKey: queryKeys.dashboardWidgets(),
