@@ -502,6 +502,30 @@ export interface AlertInput {
  * 4096 characters but our envelope (title + summary + action line)
  * eats ~150 chars so we keep a comfortable margin.
  */
+/**
+ * Reason + action copy keyed off `FailureKind`. Adding a new failure
+ * kind is a one-row table edit instead of two more arms in two
+ * different ternary stacks (the style-guide forbids nested ternaries).
+ */
+const FAILURE_KIND_COPY: Record<
+  FailureKind,
+  { reason: string; action: string }
+> = {
+  reauth_required: {
+    reason: "re-auth required",
+    action: "ask the user to reconnect the integration.",
+  },
+  persistent: {
+    reason: "persistent error",
+    action:
+      "investigate the upstream contract — params/scope/action likely mismatched.",
+  },
+  transient: {
+    reason: "transient error",
+    action: "investigate the upstream service.",
+  },
+};
+
 export function formatAdminAlertPayload(input: AlertInput): {
   title: string;
   message: string;
@@ -510,12 +534,8 @@ export function formatAdminAlertPayload(input: AlertInput): {
   const integrationLabel =
     input.integration === "withings" ? "Withings" : "moodLog";
   const subjectLabel = input.subjectLabel ?? input.userId;
-  const reasonLabel =
-    input.kind === "reauth_required"
-      ? "re-auth required"
-      : input.kind === "persistent"
-        ? "persistent error"
-        : "transient error";
+  const { reason: reasonLabel, action: actionLabel } =
+    FAILURE_KIND_COPY[input.kind];
   const codeLabel = input.errorCode ? ` (${input.errorCode})` : "";
   const trimmed =
     input.message.length > 280
@@ -526,13 +546,7 @@ export function formatAdminAlertPayload(input: AlertInput): {
   const message =
     `${integrationLabel} sync has failed ${input.consecutiveFailures} times in a row for ${subjectLabel}.\n` +
     `Last error: ${reasonLabel}${codeLabel} — ${trimmed}\n` +
-    `Action: ${
-      input.kind === "reauth_required"
-        ? "ask the user to reconnect the integration."
-        : input.kind === "persistent"
-          ? "investigate the upstream contract — params/scope/action likely mismatched."
-          : "investigate the upstream service."
-    }`;
+    `Action: ${actionLabel}`;
 
   return {
     title,
