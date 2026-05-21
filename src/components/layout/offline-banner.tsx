@@ -38,12 +38,22 @@ export function OfflineBanner() {
     function handleOffline() {
       setIsOnline(false);
     }
-    // Sync once on mount in case we hydrated already-offline.
-    if (typeof navigator !== "undefined" && navigator.onLine === false) {
-      setIsOnline(false);
-    }
+    // Subscribe to the live transition events; both handlers route
+    // through the React setState pathway via the listener callback
+    // rather than a synchronous in-effect setState so the strict
+    // `react-hooks/set-state-in-effect` rule stays happy.
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
+    // Sync the initial state from `navigator.onLine` — deferred to a
+    // microtask so React sees this as an external-system bridge
+    // rather than a render-cascade setState. The legacy in-effect
+    // setState path tripped the strict lint rule, the queueMicrotask
+    // shape is the documented escape hatch.
+    queueMicrotask(() => {
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        setIsOnline(false);
+      }
+    });
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);

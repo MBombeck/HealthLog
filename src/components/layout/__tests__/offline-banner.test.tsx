@@ -8,11 +8,23 @@
  * future refactor that paints during SSR (and creates a hydration
  * mismatch) gets caught.
  */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { OfflineBanner } from "../offline-banner";
+
+const ROOT = join(__dirname, "../../../..");
+const SHELL_PATH = join(ROOT, "src/components/layout/auth-shell.tsx");
+const BANNER_PATH = join(ROOT, "src/components/layout/offline-banner.tsx");
+
+function loadMessages(locale: string): { offlineBanner: { message: string } } {
+  const path = join(ROOT, "messages", `${locale}.json`);
+  return JSON.parse(readFileSync(path, "utf8"));
+}
 
 function render(node: React.ReactNode, locale: "en" | "de" = "en") {
   return renderToStaticMarkup(
@@ -30,22 +42,14 @@ describe("<OfflineBanner>", () => {
   });
 
   it("ships the EN copy for `offlineBanner.message`", () => {
-    // The copy itself is module-private (only painted client-side),
-    // so we verify the message exists in the i18n bundle.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const en = require("../../../../messages/en.json") as {
-      offlineBanner: { message: string };
-    };
+    const en = loadMessages("en");
     expect(en.offlineBanner.message).toBe(
       "No connection — your changes will save once you're back online.",
     );
   });
 
   it("ships the DE copy for `offlineBanner.message`", () => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const de = require("../../../../messages/de.json") as {
-      offlineBanner: { message: string };
-    };
+    const de = loadMessages("de");
     expect(de.offlineBanner.message).toBe(
       "Keine Verbindung — Änderungen werden gespeichert, sobald du wieder online bist.",
     );
@@ -53,26 +57,13 @@ describe("<OfflineBanner>", () => {
 
   it("ships the message key in every supported locale", () => {
     for (const locale of ["en", "de", "fr", "es", "it", "pl"] as const) {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const m = require(`../../../../messages/${locale}.json`) as {
-        offlineBanner?: { message?: string };
-      };
-      expect(m.offlineBanner?.message?.length, locale).toBeGreaterThan(0);
+      const m = loadMessages(locale);
+      expect(m.offlineBanner.message.length, locale).toBeGreaterThan(0);
     }
   });
 
   it("mounts in auth-shell.tsx above the maintainership banner", () => {
-    // Pin the wiring at the file level so a future refactor that
-    // removes the import / mount accidentally is caught.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const fs = require("node:fs") as typeof import("node:fs");
-    const path = require("node:path") as typeof import("node:path");
-    const shellPath = path.join(
-      __dirname,
-      "..",
-      "auth-shell.tsx",
-    );
-    const source = fs.readFileSync(shellPath, "utf8");
+    const source = readFileSync(SHELL_PATH, "utf8");
     expect(source).toContain('from "./offline-banner"');
     expect(source).toContain("<OfflineBanner />");
   });
@@ -82,17 +73,10 @@ describe("<OfflineBanner>", () => {
 // `isOnline === false` the banner paints with the i18n message,
 // the WifiOff icon, and the `role="status"` aria-live region. We
 // can't easily fire window events from a node-environment vitest
-// suite, but we can compile the component source and assert the
+// suite, but we can read the component source and assert the
 // branch carries the expected affordances.
 describe("<OfflineBanner> rendered branch (source-level)", () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const fs = require("node:fs") as typeof import("node:fs");
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const path = require("node:path") as typeof import("node:path");
-  const source = fs.readFileSync(
-    path.join(__dirname, "..", "offline-banner.tsx"),
-    "utf8",
-  );
+  const source = readFileSync(BANNER_PATH, "utf8");
 
   it("hosts an aria-live polite status region (assistive-tech friendly)", () => {
     expect(source).toContain('role="status"');
