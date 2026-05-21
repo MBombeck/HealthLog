@@ -1,8 +1,10 @@
 # Changelog
 
-## [1.4.43] — 2026-05-21 — Analytics 9 s perf fix, audit-driven polish, Zod multi-issue rollout, Withings parked-state automation
+## [1.4.45] — 2026-05-21 — Analytics 9 s perf fix, audit-driven polish, Zod multi-issue rollout, Withings parked-state automation
 
-v1.4.42 closed the iOS-readiness story. v1.4.43 is the post-deploy discovery + closure release: a four-axis audit round (analytics perf / mobile-UI / QoL / security) surfaced one Critical `/api/analytics` 9 s regression that had been latent since v1.4.40, five High mobile-UI WCAG paper-cuts, two PII / log-growth gaps on the security surface, six High QoL copy + i18n gaps, and the chart empty-state false-positive raised after deploy. Eleven implementation waves landed: nine close every audit Critical + High plus the recurring polish items (chart-gate raw-count, QoL copy + plural forms, Withings classifier wiring across both sync paths, ops hardening including the BuildKit version-pin lesson from v1.4.42), one rolls out the v1.4.42 W2-ZOD `returnAllZodIssues` helper to the 41 sibling routes that still dropped every issue past the first, and one closes the v1.4.42 W2-WITHINGS deferred B4 (park after 24 h persistent-failure streak) + B7 (per-kind failure counters). Three companion waves close the audit Mediums + Lows for mobile-UI, QoL, and security.
+> Version note — v1.4.43 was skipped: v1.4.44 shipped as a same-day REG-11 iOS hotfix on `main` while this marathon was running (REG-11 = Home dashboard tile renders neither chart nor latest value when the most recent reading is older than 7 days; root cause was in `/api/dashboard/summary` SQL gates). The REG-11 fix is included in this release alongside the marathon work. v1.4.45 keeps the version monotone above the hotfix tag.
+
+v1.4.42 closed the iOS-readiness story. v1.4.45 is the post-deploy discovery + closure release: a four-axis audit round (analytics perf / mobile-UI / QoL / security) surfaced one Critical `/api/analytics` 9 s regression that had been latent since v1.4.40, five High mobile-UI WCAG paper-cuts, two PII / log-growth gaps on the security surface, six High QoL copy + i18n gaps, and the chart empty-state false-positive raised after deploy. Eleven implementation waves landed: nine close every audit Critical + High plus the recurring polish items (chart-gate raw-count, QoL copy + plural forms, Withings classifier wiring across both sync paths, ops hardening including the BuildKit version-pin lesson from v1.4.42), one rolls out the v1.4.42 W2-ZOD `returnAllZodIssues` helper to the 41 sibling routes that still dropped every issue past the first, and one closes the v1.4.42 W2-WITHINGS deferred B4 (park after 24 h persistent-failure streak) + B7 (per-kind failure counters). Three companion waves close the audit Mediums + Lows for mobile-UI, QoL, and security.
 
 Fourteen touch-disjoint waves landed on `develop` before this release commit. The wave reports under `.planning/phase-W*-v1443-report.md` document the per-wave decisions, file inventories, and test deltas; the multi-axis QA round under `.planning/round-v1443-QA-*-findings.md` covers the cross-cutting verdict that gated this tag; the audit reports under `.planning/round-v1443-AUDIT-*-findings.md` document the discovery phase that fed the marathon.
 
@@ -78,6 +80,29 @@ Anchored on the v1.4.43 W1-ANALYTICS-PERF audit (`.planning/round-v1443-AUDIT-an
 - **Withings persistent-failure park** flips `IntegrationStatus.state` to `"parked"` after > 24 h of consecutive `persistent` failures (Withings `601` / `293` / `294`). A parked integration's next scheduled sync is short-circuited until the user clicks "Wieder verbinden" (rate-limited 5/min/user). Operator can also call the resume endpoint manually for stuck accounts.
 - **Build pipeline**: `docker-publish.yml` now bakes `NEXT_PUBLIC_APP_VERSION` at build time so `/api/version` can never serve a stale version after a Coolify cache re-use. Verify `/api/version` post-deploy as usual.
 - `pnpm test --run` green at 5076 passing / 1 skipped (5077 total), up from 4815. `pnpm typecheck`, `pnpm lint`, `pnpm knip` (enforcing) all green. Two pre-existing integration-tier failures in `tests/integration/workout-batch-{create,race}.test.ts` reproduce on `origin/main` unchanged and are NOT caused by this release; flagged for v1.4.44 investigation.
+
+## [1.4.44] — 2026-05-21 — REG-11 dashboard summary hotfix (iOS Home tile sparkline + value)
+
+iOS-operator-blocking hotfix for REG-11: the Home dashboard tile rendered neither chart nor latest value for BP / Puls / Körperfett when the most recent reading was older than 7 days. Root cause was in `/api/dashboard/summary` SQL gates — both `latestIn7d` and `sparkBuckets` required `measured_at >= sevenDaysAgo`, which returned empty for sparse accounts. The iOS tile rendered from `latestValue: null` + `sparkline: []`. Five iOS-side attempts had been wrong because the bug was server-side. v1.4.44 was a same-day same-author hotfix on `main` while the v1.4.45 audit-marathon was running; the marathon work is preserved in v1.4.45.
+
+### Fixed
+
+- **`/api/dashboard/summary` `latestIn7d` → `latestEver`**: drops the 7-day filter; `DISTINCT ON (type)` returns the latest reading EVER per type, bounded at N-metrics rows. Sparse accounts (one BP reading 60 days ago, nothing since) now get the tile back.
+- **`sparkBuckets` rewritten via `ROW_NUMBER() OVER (PARTITION BY type ORDER BY bucket_start DESC)`**: trailing N daily buckets per type render regardless of calendar age, bounded at SPARK_DAYS × N-metrics.
+- **BP + Pulse `metrics.push` gated on `latest || allTimeCount > 0`** like BodyFat already was — accounts with zero readings ever no longer get empty placeholder tiles.
+
+### Tests
+
+Four new cases in `src/app/api/dashboard/summary/__tests__/route.test.ts` pin REG-11:
+- BP with a 60-day-old reading → tile emits with historical `latestValue` + `sparkline`
+- BP with null readings ever → tile NOT emitted
+- Weight within 7 days → behaviour unchanged (regression guard)
+- Sparkline window picks up 7 daily buckets even if all older than 7 calendar days
+
+### Operator notes
+
+- No migration. No env-var change. No API contract break for iOS v0.5.4.
+- v1.4.43 was skipped; v1.4.45 carries the audit-marathon closure.
 
 ## [1.4.42] — 2026-05-21 — Knip enforcing, queryKey factory closed, iOS Workouts dedup, Withings off-response classification
 
