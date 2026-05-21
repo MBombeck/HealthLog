@@ -419,6 +419,7 @@ async function buildDashboardSummary(
         FROM measurements m
         WHERE m."user_id" = ${userId}
           AND m."measured_at" >= ${sevenDaysAgo}
+          AND m."deleted_at" IS NULL
         ORDER BY m."type", m."measured_at" DESC
       `,
     ),
@@ -440,7 +441,7 @@ async function buildDashboardSummary(
     time("allTime", () =>
       prisma.measurement.groupBy({
         by: ["type"],
-        where: { userId, type: { in: measurementTypes } },
+        where: { userId, type: { in: measurementTypes }, deletedAt: null },
         _count: { _all: true },
         _max: { measuredAt: true },
       }),
@@ -485,6 +486,7 @@ async function buildDashboardSummary(
         FROM measurements m
         WHERE m."user_id" = ${userId}
           AND m."measured_at" >= ${streakWindowStart}
+          AND m."deleted_at" IS NULL
       `,
     ),
   ]);
