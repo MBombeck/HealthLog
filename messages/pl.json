@@ -346,6 +346,7 @@
     "notesPlaceholder": "np. po jedzeniu",
     "formReset": "Resetuj formularz",
     "saveError": "Błąd zapisu",
+    "loadError": "Nie udało się wczytać pomiarów",
     "duplicateTimestamp": "Pomiar tego typu już istnieje dla wybranej daty.",
     "deleteError": "Błąd usuwania",
     "invalidValue": "Wprowadź poprawną wartość.",

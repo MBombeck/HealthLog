@@ -346,6 +346,7 @@
     "notesPlaceholder": "p. ej. después de comer",
     "formReset": "Restablecer formulario",
     "saveError": "Error al guardar",
+    "loadError": "No se han podido cargar las mediciones",
     "duplicateTimestamp": "Ya existe una medición de este tipo en la marca de tiempo seleccionada.",
     "deleteError": "Error al eliminar",
     "invalidValue": "Introduce un valor válido.",

@@ -346,6 +346,7 @@
     "notesPlaceholder": "es. dopo il pasto",
     "formReset": "Reimposta modulo",
     "saveError": "Errore durante il salvataggio",
+    "loadError": "Impossibile caricare le misurazioni",
     "duplicateTimestamp": "Esiste già una misurazione di questo tipo a questa marca temporale.",
     "deleteError": "Errore durante l’eliminazione",
     "invalidValue": "Inserisci un valore valido.",

@@ -1055,7 +1055,7 @@ function DayDrillDown({
   if (error) {
     return (
       <div className="text-destructive py-2 text-xs">
-        {t("measurements.saveError")}
+        {t("measurements.loadError")}
       </div>
     );
   }

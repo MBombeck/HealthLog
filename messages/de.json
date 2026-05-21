@@ -346,6 +346,7 @@
     "notesPlaceholder": "z.B. nach dem Essen",
     "formReset": "Formular zurücksetzen",
     "saveError": "Fehler beim Speichern",
+    "loadError": "Fehler beim Laden",
     "duplicateTimestamp": "Zum gewählten Zeitpunkt existiert bereits ein Messwert dieses Typs.",
     "deleteError": "Fehler beim Löschen",
     "invalidValue": "Bitte einen gültigen Wert eingeben.",

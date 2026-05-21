@@ -346,6 +346,7 @@
     "notesPlaceholder": "p. ex. après le repas",
     "formReset": "Réinitialiser le formulaire",
     "saveError": "Erreur lors de l’enregistrement",
+    "loadError": "Impossible de charger les mesures",
     "duplicateTimestamp": "Une mesure de ce type existe déjà à cet horodatage.",
     "deleteError": "Erreur lors de la suppression",
     "invalidValue": "Saisis une valeur valide.",
