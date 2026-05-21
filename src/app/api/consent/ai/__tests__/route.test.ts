@@ -167,4 +167,44 @@ describe("POST /api/consent/ai", () => {
       },
     });
   });
+
+  describe("v1.4.43 W6 — multi-issue 400 envelope (consent uses 400)", () => {
+    it("surfaces TWO simultaneous validation errors", async () => {
+      vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+      // Bad kind enum + empty artefact.
+      const res = await POST(
+        req({
+          kind: "junk",
+          artefact: "",
+          signedAt: "2026-05-18T10:00:00.000Z",
+        }),
+      );
+      expect(res.status).toBe(400);
+      const body = (await res.json()) as {
+        data: null;
+        error: string;
+        details: {
+          issues: Array<{ path: string; code: string; message: string }>;
+        };
+      };
+      expect(body.data).toBeNull();
+      expect(body.error).toBe("Validation failed");
+      expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
+      for (const issue of body.details.issues) {
+        expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+      }
+    });
+
+    it("surfaces THREE simultaneous validation errors", async () => {
+      vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+      const res = await POST(
+        req({ kind: "junk", artefact: "", signedAt: "not-iso" }),
+      );
+      expect(res.status).toBe(400);
+      const body = (await res.json()) as {
+        details: { issues: Array<unknown> };
+      };
+      expect(body.details.issues.length).toBeGreaterThanOrEqual(3);
+    });
+  });
 });

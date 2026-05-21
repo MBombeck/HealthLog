@@ -154,4 +154,47 @@ describe("PUT /api/admin/settings/assistant-flags", () => {
     const res = await PUT(putReq({ assistantPotatoEnabled: false }));
     expect(res.status).toBe(422);
   });
+
+  describe("v1.4.43 W6 — multi-issue 422 envelope", () => {
+    it("surfaces TWO simultaneous validation errors", async () => {
+      vi.mocked(getSession).mockResolvedValue(ADMIN_OK as never);
+      // Two bad-typed flags.
+      const res = await PUT(
+        putReq({
+          assistantEnabled: "string",
+          assistantCoachEnabled: 999,
+        }),
+      );
+      expect(res.status).toBe(422);
+      const body = (await res.json()) as {
+        data: null;
+        error: string;
+        details: {
+          issues: Array<{ path: string; code: string; message: string }>;
+        };
+      };
+      expect(body.data).toBeNull();
+      expect(body.error).toBe("Validation failed");
+      expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
+      for (const issue of body.details.issues) {
+        expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+      }
+    });
+
+    it("surfaces THREE simultaneous validation errors", async () => {
+      vi.mocked(getSession).mockResolvedValue(ADMIN_OK as never);
+      const res = await PUT(
+        putReq({
+          assistantEnabled: "string",
+          assistantCoachEnabled: 999,
+          assistantBriefingEnabled: "string",
+        }),
+      );
+      expect(res.status).toBe(422);
+      const body = (await res.json()) as {
+        details: { issues: Array<unknown> };
+      };
+      expect(body.details.issues.length).toBeGreaterThanOrEqual(3);
+    });
+  });
 });

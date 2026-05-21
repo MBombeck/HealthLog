@@ -32,6 +32,7 @@ import {
   apiSuccess,
   apiError,
   getClientIp,
+  returnAllZodIssues,
   safeJson,
 } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
@@ -124,7 +125,8 @@ export const PUT = apiHandler(async (request: NextRequest) => {
 
   const parsed = assistantFlagsSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 422);
+    // v1.4.43 W6 — multi-issue 422.
+    return returnAllZodIssues(parsed.error, 422);
   }
 
   const updates: Partial<AssistantFlagsRow> = {};

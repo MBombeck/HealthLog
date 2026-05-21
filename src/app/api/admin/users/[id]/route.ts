@@ -5,6 +5,7 @@ import {
   apiSuccess,
   apiError,
   getClientIp,
+  returnAllZodIssues,
   safeJson,
 } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
@@ -38,7 +39,8 @@ export const PUT = apiHandler(
     if (jsonError) return jsonError;
     const parsed = updateUserSchema.safeParse(body);
     if (!parsed.success) {
-      return apiError(parsed.error.issues[0].message, 422);
+      // v1.4.43 W6 — multi-issue 422.
+      return returnAllZodIssues(parsed.error, 422);
     }
 
     const target = await prisma.user.findUnique({ where: { id } });

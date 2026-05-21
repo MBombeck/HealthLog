@@ -27,6 +27,8 @@ vi.mock("@/lib/db", () => ({
     measurementRollup: {
       findMany: vi.fn(),
     },
+    // v1.4.43 W6 — validation-failed paths write an audit breadcrumb.
+    auditLog: { create: vi.fn().mockResolvedValue({}) },
     $queryRaw: vi.fn(),
   },
 }));
@@ -69,6 +71,10 @@ function getRequest(query: string): NextRequest {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+  // v1.4.43 W6 — validation-failed paths fire a best-effort audit-row
+  // write; the route swallows rejections so the test only needs a
+  // resolved mock to keep the catch-block silent.
+  vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
 });
 
 describe("GET /api/measurements — groupBy=day (W7c collapsed list)", () => {

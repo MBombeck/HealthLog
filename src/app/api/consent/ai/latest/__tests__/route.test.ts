@@ -390,4 +390,48 @@ describe("append-only invariant", () => {
     };
     expect(body.data.receipt?.id).toBe("rcpt-2");
   });
+
+  describe("v1.4.43 W6 — multi-issue 400 envelope (consent uses 400)", () => {
+    it("GET surfaces multi-issue validation errors (≥ 1)", async () => {
+      vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+      const res = await GET(
+        new NextRequest(
+          "http://localhost/api/consent/ai/latest?kind=junk",
+        ),
+      );
+      expect(res.status).toBe(400);
+      const body = (await res.json()) as {
+        data: null;
+        error: string;
+        details: {
+          issues: Array<{ path: string; code: string; message: string }>;
+        };
+      };
+      expect(body.data).toBeNull();
+      expect(body.error).toBe("Validation failed");
+      // The latest query only has a single `kind` knob, so the strict
+      // 2-issue case can't be reached. The shared helper itself is
+      // covered exhaustively by api-response-zod.test.ts; this case
+      // pins the route's new envelope on ≥ 1 issue.
+      expect(body.details.issues.length).toBeGreaterThanOrEqual(1);
+      for (const issue of body.details.issues) {
+        expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+      }
+    });
+
+    it("DELETE surfaces multi-issue validation errors (≥ 1)", async () => {
+      vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+      const res = await DELETE(
+        new NextRequest(
+          "http://localhost/api/consent/ai/latest?kind=junk",
+          { method: "DELETE" },
+        ),
+      );
+      expect(res.status).toBe(400);
+      const body = (await res.json()) as {
+        details: { issues: Array<unknown> };
+      };
+      expect(body.details.issues.length).toBeGreaterThanOrEqual(1);
+    });
+  });
 });

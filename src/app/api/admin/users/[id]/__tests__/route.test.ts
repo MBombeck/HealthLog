@@ -205,4 +205,40 @@ describe("PUT /api/admin/users/[id]", () => {
     const res = await PUT(r, params("u1"));
     expect(res.status).toBe(415);
   });
+
+  describe("v1.4.43 W6 — multi-issue 422 envelope", () => {
+    it("surfaces TWO simultaneous validation errors", async () => {
+      // Bad username (too short) + bad role enum.
+      const res = await PUT(
+        jsonReq({ username: "x", role: "GOD" }),
+        params("u1"),
+      );
+      expect(res.status).toBe(422);
+      const body = (await res.json()) as {
+        data: null;
+        error: string;
+        details: {
+          issues: Array<{ path: string; code: string; message: string }>;
+        };
+      };
+      expect(body.data).toBeNull();
+      expect(body.error).toBe("Validation failed");
+      expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
+      for (const issue of body.details.issues) {
+        expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+      }
+    });
+
+    it("surfaces THREE simultaneous validation errors", async () => {
+      const res = await PUT(
+        jsonReq({ username: "x", email: "not-an-email", role: "GOD" }),
+        params("u1"),
+      );
+      expect(res.status).toBe(422);
+      const body = (await res.json()) as {
+        details: { issues: Array<unknown> };
+      };
+      expect(body.details.issues.length).toBeGreaterThanOrEqual(3);
+    });
+  });
 });

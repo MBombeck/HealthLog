@@ -16,7 +16,10 @@
  */
 import { NextRequest } from "next/server";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiError, apiSuccess } from "@/lib/api-response";
+import {
+  apiSuccess,
+  returnAllZodIssues,
+} from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import {
@@ -38,7 +41,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
     Object.fromEntries(request.nextUrl.searchParams),
   );
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 400);
+    // v1.4.43 W6 — multi-issue 400 (consent routes use 400 not 422).
+    return returnAllZodIssues(parsed.error, 400);
   }
 
   const { kind } = parsed.data;
@@ -86,7 +90,8 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
     Object.fromEntries(request.nextUrl.searchParams),
   );
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 400);
+    // v1.4.43 W6 — multi-issue 400 (consent routes use 400 not 422).
+    return returnAllZodIssues(parsed.error, 400);
   }
 
   const { kind } = parsed.data;

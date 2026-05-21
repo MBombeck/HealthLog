@@ -505,4 +505,46 @@ describe("PUT /api/admin/settings", () => {
     expect(res.status).toBe(422);
     expect(prisma.appSettings.upsert).not.toHaveBeenCalled();
   });
+
+  describe("v1.4.43 W6 — multi-issue 422 envelope", () => {
+    it("surfaces TWO simultaneous validation errors", async () => {
+      // Bad `registrationEnabled` (string not boolean) + bad
+      // `reminderLateMinutes` (string not int).
+      const res = await PUT(
+        jsonReq({
+          registrationEnabled: "string",
+          reminderLateMinutes: "string",
+        }),
+      );
+      expect(res.status).toBe(422);
+      const body = (await res.json()) as {
+        data: null;
+        error: string;
+        details: {
+          issues: Array<{ path: string; code: string; message: string }>;
+        };
+      };
+      expect(body.data).toBeNull();
+      expect(body.error).toBe("Validation failed");
+      expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
+      for (const issue of body.details.issues) {
+        expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+      }
+    });
+
+    it("surfaces THREE simultaneous validation errors", async () => {
+      const res = await PUT(
+        jsonReq({
+          registrationEnabled: "string",
+          reminderLateMinutes: "string",
+          reminderMissedMinutes: "string",
+        }),
+      );
+      expect(res.status).toBe(422);
+      const body = (await res.json()) as {
+        details: { issues: Array<unknown> };
+      };
+      expect(body.details.issues.length).toBeGreaterThanOrEqual(3);
+    });
+  });
 });

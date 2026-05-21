@@ -9,6 +9,7 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
+  returnAllZodIssues,
   safeJson,
   getClientIp,
 } from "@/lib/api-response";
@@ -45,7 +46,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const parsed = createFeedbackSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, 422);
+    // v1.4.43 W6 — multi-issue 422.
+    return returnAllZodIssues(parsed.error, 422);
   }
 
   const feedback = await prisma.feedback.create({

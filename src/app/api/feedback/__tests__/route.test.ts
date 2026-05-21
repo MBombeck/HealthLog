@@ -103,3 +103,53 @@ describe("POST /api/feedback bug-report toggle gate", () => {
     expect(prisma.feedback.create).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("POST /api/feedback — 422 multi-issue (v1.4.43 W6)", () => {
+  it("surfaces TWO simultaneous validation errors", async () => {
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
+      bugReportEnabled: true,
+    } as never);
+    // subject too short + description too short.
+    const res = await POST(
+      jsonRequest({
+        category: "BUG",
+        subject: "x",
+        description: "short",
+      }) as never,
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      data: null;
+      error: string;
+      details: {
+        issues: Array<{ path: string; code: string; message: string }>;
+      };
+    };
+    expect(body.data).toBeNull();
+    expect(body.error).toBe("Validation failed");
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
+    for (const issue of body.details.issues) {
+      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+    }
+  });
+
+  it("surfaces THREE simultaneous validation errors", async () => {
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
+      bugReportEnabled: true,
+    } as never);
+    // bad subject + bad description + bad screenshot.
+    const res = await POST(
+      jsonRequest({
+        category: "BUG",
+        subject: "x",
+        description: "short",
+        screenshot: "not-a-data-url",
+      }) as never,
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      details: { issues: Array<unknown> };
+    };
+    expect(body.details.issues.length).toBeGreaterThanOrEqual(3);
+  });
+});
