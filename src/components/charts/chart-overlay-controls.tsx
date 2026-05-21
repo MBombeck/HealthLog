@@ -248,7 +248,7 @@ export function ChartOverlayControlsBody({
                   prefs.comparisonBaseline === value ? "default" : "outline"
                 }
                 size="sm"
-                className={`h-9 px-1 text-[11px] ${isGreyed ? "opacity-50" : ""}`.trim()}
+                className={`min-h-11 sm:min-h-9 px-2 text-[11px] ${isGreyed ? "opacity-50" : ""}`.trim()}
                 onClick={() => setComparisonBaseline(value)}
                 aria-pressed={prefs.comparisonBaseline === value}
                 aria-disabled={isGreyed || undefined}
