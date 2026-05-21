@@ -852,6 +852,8 @@
     "legendMissed": "Mancata",
     "emptyStateTitle": "Registra altre misurazioni per vedere i trend",
     "emptyStateDescription": "Registra almeno 3 voci per sbloccare la linea di tendenza.",
+    "needMoreDistinctDaysTitle": "Servono più giorni distinti",
+    "needMoreDistinctDaysDescription": "Registra in più giorni per sbloccare la linea di tendenza.",
     "personalBaseline": "La tua media",
     "deltaVsBaseline": "{delta} vs. la tua media",
     "deltaUnchanged": "corrisponde alla tua media",

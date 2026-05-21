@@ -852,6 +852,8 @@
     "legendMissed": "Omitida",
     "emptyStateTitle": "Registra más mediciones para ver tendencias",
     "emptyStateDescription": "Registra al menos 3 entradas para desbloquear la línea de tendencia.",
+    "needMoreDistinctDaysTitle": "Se necesitan más días distintos",
+    "needMoreDistinctDaysDescription": "Registra en más días para desbloquear la línea de tendencia.",
     "personalBaseline": "Tu media",
     "deltaVsBaseline": "{delta} vs. tu media",
     "deltaUnchanged": "coincide con tu media",

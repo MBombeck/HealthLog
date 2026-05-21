@@ -852,6 +852,8 @@
     "legendMissed": "Verpasst",
     "emptyStateTitle": "Erfasse mehr Messungen, um Trends zu sehen",
     "emptyStateDescription": "Erfasse mindestens 3 Einträge, um die Trendlinie freizuschalten.",
+    "needMoreDistinctDaysTitle": "Mehr Messtage erforderlich",
+    "needMoreDistinctDaysDescription": "Erfasse an mehreren Tagen, um eine Trendlinie freizuschalten.",
     "personalBaseline": "Dein Mittel",
     "deltaVsBaseline": "{delta} vs. dein Mittel",
     "deltaUnchanged": "entspricht deinem Mittel",

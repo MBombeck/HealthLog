@@ -852,6 +852,8 @@
     "legendMissed": "Manquée",
     "emptyStateTitle": "Saisis plus de mesures pour voir les tendances",
     "emptyStateDescription": "Saisis au moins 3 entrées pour débloquer la courbe de tendance.",
+    "needMoreDistinctDaysTitle": "Plus de jours distincts requis",
+    "needMoreDistinctDaysDescription": "Saisis sur plusieurs jours pour débloquer la courbe de tendance.",
     "personalBaseline": "Ta moyenne",
     "deltaVsBaseline": "{delta} vs. ta moyenne",
     "deltaUnchanged": "correspond à ta moyenne",
