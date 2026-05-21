@@ -73,7 +73,7 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
-import { GET } from "../route";
+import { ANALYTICS_TYPE_FETCH_CONCURRENCY, GET } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
@@ -375,5 +375,72 @@ describe("GET /api/analytics", () => {
     expect(body.data.lastSeenByType.WEIGHT?.daysAgo).toBeGreaterThanOrEqual(4);
     expect(body.data.lastSeenByType.WEIGHT?.daysAgo).toBeLessThanOrEqual(6);
     expect(body.data.lastSeenByType.PULSE).toBeNull();
+  });
+
+  // v1.4.40 W-POOL — pin the bounded-concurrency cap on the per-type
+  // fan-out inside `buildAnalyticsResponse`. The v1.4.39 empirical
+  // trace (`.planning/round-v1439-empirical-trace.md` §B1) showed the
+  // raw `Promise.all` over `fetchMeasurementSeriesChunked` holding
+  // ≥8 of the default-10 pg.Pool slots for 6.5 s on a power-user cold
+  // mount. The p-limit(4) wrapper keeps the same total work but caps
+  // inflight Prisma round-trips for this branch at 4.
+  //
+  // The assertion instruments the `prisma.measurement.findMany` mock
+  // to track peak inflight count + total batches. With N≥15 types and
+  // a 20 ms per-call delay, an unbounded `Promise.all` would peak at
+  // ~15 and finish in ~20 ms; the bounded version peaks at exactly 4
+  // and finishes in ~80 ms (4 batches × 20 ms ceiling).
+  it("caps per-type Prisma fan-out at ANALYTICS_TYPE_FETCH_CONCURRENCY", async () => {
+    // Default-slice path requires no coverage so the route falls into
+    // the live per-type loop where the fan-out lives.
+    vi.mocked(prisma.measurementRollup.findMany).mockResolvedValue([] as never);
+
+    let inflight = 0;
+    let peak = 0;
+    let calls = 0;
+
+    vi.mocked(prisma.measurement.findMany).mockImplementation(
+      (async () => {
+        // Only count the per-type chunked fan-out calls (not the
+        // narrower glucose / sleep-stage `findMany` reads inside the
+        // same route; those run sequentially AFTER the fan-out
+        // completes so they never overlap with peak inflight).
+        calls += 1;
+        inflight += 1;
+        peak = Math.max(peak, inflight);
+        // 20 ms is large enough to make the bounded vs unbounded
+        // distinction observable but small enough to keep the suite
+        // under a second.
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        inflight -= 1;
+        // Return an empty page so the chunked reader exits after one
+        // round-trip per type.
+        return [] as never;
+      }) as never,
+    );
+
+    const t0 = Date.now();
+    const res = await (
+      GET as unknown as (...args: never[]) => Promise<Response>
+    )();
+    const elapsed = Date.now() - t0;
+    expect(res.status).toBe(200);
+
+    // The cap itself — peak inflight Prisma reads against
+    // `measurements` never crosses the configured ceiling.
+    expect(ANALYTICS_TYPE_FETCH_CONCURRENCY).toBe(4);
+    expect(peak).toBeLessThanOrEqual(ANALYTICS_TYPE_FETCH_CONCURRENCY);
+
+    // Sanity: more than one type was actually walked, otherwise the
+    // bound is unfalsifiable.
+    expect(calls).toBeGreaterThanOrEqual(8);
+
+    // Wall-clock proves the lanes are saturated rather than serialised
+    // by accident. 4 lanes × 20 ms × ⌈calls/4⌉ ≈ 60-100 ms; an
+    // unbounded fan-out would finish in ~25-40 ms; a fully serial
+    // walk would take calls × 20 ms ≈ 300+ ms. The window catches
+    // both regressions.
+    expect(elapsed).toBeGreaterThanOrEqual(40);
+    expect(elapsed).toBeLessThan(calls * 20);
   });
 });
