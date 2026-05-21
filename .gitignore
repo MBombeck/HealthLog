@@ -11,6 +11,9 @@
 # testing
 /coverage
 
+# HAR captures from production debugging (may contain auth headers/cookies)
+*.har
+
 # playwright e2e
 /test-results
 /playwright-report
