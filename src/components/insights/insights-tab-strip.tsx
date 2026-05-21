@@ -377,7 +377,7 @@ function InsightsTabStripImpl({
                             data-slot="insights-tab-strip-group-item"
                             data-active={isChildActive ? "true" : undefined}
                             className={cn(
-                              "flex min-h-10 items-center rounded-md px-2 py-1.5 text-sm transition-colors",
+                              "flex min-h-11 items-center rounded-md px-2 py-1.5 text-sm transition-colors",
                               "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
                               isChildActive
                                 ? "bg-primary/10 text-primary"
