@@ -13,7 +13,22 @@
 // polls `/api/version`, compares against `NEXT_PUBLIC_APP_VERSION`,
 // and triggers an SW-unregister + cache-wipe + hard reload when the
 // server moves ahead of the running shell.
-const CACHE_VERSION = "v1.4.38.4";
+//
+// v1.4.43 QoL (L3) — read the active version from `self.__APP_VERSION__`,
+// which the build step writes to `/public/sw-version.js` (loaded
+// synchronously below via `importScripts`). Pre-fix the literal was
+// hand-bumped per release and quietly drifted four releases stale, so
+// every deploy between v1.4.38.4 → v1.4.42 served the previous shell's
+// cache instead of evicting it on activate. The fallback literal stays
+// in case the import is missing (legacy SW versions, dev mode without
+// the build step), but the source of truth is now the generated file.
+try {
+  importScripts("/sw-version.js");
+} catch {
+  // Fall through to the literal fallback below.
+}
+const CACHE_VERSION =
+  (typeof self !== "undefined" && self.__APP_VERSION__) || "v1.4.43";
 const STATIC_CACHE = `healthlog-static-${CACHE_VERSION}`;
 const PAGE_CACHE = `healthlog-pages-${CACHE_VERSION}`;
 const MAX_STATIC_ENTRIES = 150;

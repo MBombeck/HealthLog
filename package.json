@@ -25,6 +25,7 @@
   "packageManager": "pnpm@10.31.0",
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/generate-sw-version.mjs",
     "build": "next build",
     "analyze": "ANALYZE=1 next build",
     "bundle-report": "node scripts/print-bundle-report.mjs",

@@ -49,6 +49,11 @@ next-env.d.ts
 # prisma generated
 /src/generated/prisma
 
+# v1.4.43 QoL (L3) — generated at build time by
+# scripts/generate-sw-version.mjs; loaded by public/sw.js to key
+# the cache-version baseline.
+/public/sw-version.js
+
 # v1.4.27 B3 — MaxMind GeoLite2 databases are fetched at build time
 # via `scripts/fetch-geolite2.sh`. Too large for git; license key
 # required. The folder + a `.gitkeep` are tracked so the Dockerfile
