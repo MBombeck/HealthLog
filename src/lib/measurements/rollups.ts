@@ -319,7 +319,7 @@ export async function isRollupFresh(
   newestComputedAt: Date | null,
 ): Promise<boolean> {
   const newest = await prisma.measurement.findFirst({
-    where: { userId, type },
+    where: { userId, type, deletedAt: null },
     orderBy: { measuredAt: "desc" },
     select: { measuredAt: true, updatedAt: true },
   });
@@ -403,6 +403,7 @@ async function runRollupAggregate(input: {
         AND m."type" IN (${typeList})
         AND m."measured_at" >= $2
         AND m."measured_at" <  $3
+        AND m."deleted_at" IS NULL
       GROUP BY m."type", ${dateTrunc}
     `;
     return prisma.$queryRawUnsafe<RollupRow[]>(
@@ -435,6 +436,7 @@ async function runRollupAggregate(input: {
     WHERE m."user_id" = $1
       AND m."measured_at" >= $2
       AND m."measured_at" <  $3
+      AND m."deleted_at" IS NULL
     GROUP BY m."type", ${dateTrunc}
   `;
   return prisma.$queryRawUnsafe<RollupRow[]>(
@@ -656,7 +658,7 @@ async function ensureUserRollupsFreshImpl(
         select: { computedAt: true },
       }),
       prisma.measurement.findFirst({
-        where: { userId },
+        where: { userId, deletedAt: null },
         orderBy: { updatedAt: "desc" },
         select: { updatedAt: true, measuredAt: true },
       }),
@@ -775,6 +777,7 @@ export async function enqueueBootTimeRollupBackfill(): Promise<{
             m."type",
             date_trunc('day', m."measured_at") AS bucket_start
           FROM measurements m
+          WHERE m."deleted_at" IS NULL
         ) mt
         LEFT JOIN measurement_rollups r
           ON  r."user_id"     = mt."user_id"
