@@ -24,6 +24,16 @@ vi.mock("@/lib/db-compat", () => ({
 
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue({
+    allowed: true,
+    limit: 30,
+    remaining: 29,
+    resetAt: Date.now() + 15 * 60 * 1000,
+  }),
+  rateLimitHeaders: vi.fn(() => ({})),
+}));
+
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: () => null })),
   cookies: vi.fn(async () => ({
@@ -35,6 +45,7 @@ vi.mock("next/headers", () => ({
 
 import { POST } from "@/app/api/auth/check-user/route";
 import { prisma } from "@/lib/db";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 interface CheckUserBody {
   data: {
@@ -54,6 +65,12 @@ function makeRequest(body: unknown) {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(checkRateLimit).mockResolvedValue({
+    allowed: true,
+    limit: 30,
+    remaining: 29,
+    resetAt: Date.now() + 15 * 60 * 1000,
+  });
 });
 
 afterEach(() => {
@@ -113,5 +130,35 @@ describe("POST /api/auth/check-user", () => {
   it("422s when identifier is missing or blank", async () => {
     const res = await POST(makeRequest({}));
     expect(res.status).toBe(422);
+  });
+
+  it("queries the identifier exactly as iOS sends it (no case-fold)", async () => {
+    // Register stores email + username verbatim (no `.toLowerCase()`
+    // transform in `registerSchema`); folding here would route a
+    // mixed-case existing account to the sign-up branch.
+    vi.mocked(prisma.user.findFirst).mockResolvedValue(null);
+    await POST(makeRequest({ identifier: "MixedCase@Example.com" }));
+    expect(prisma.user.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          OR: [
+            { username: "MixedCase@Example.com" },
+            { email: "MixedCase@Example.com" },
+          ],
+        },
+      }),
+    );
+  });
+
+  it("returns 429 when the per-IP rate-limit is exhausted", async () => {
+    vi.mocked(checkRateLimit).mockResolvedValueOnce({
+      allowed: false,
+      limit: 30,
+      remaining: 0,
+      resetAt: Date.now() + 15 * 60 * 1000,
+    });
+    const res = await POST(makeRequest({ identifier: "anyone@example.com" }));
+    expect(res.status).toBe(429);
+    expect(prisma.user.findFirst).not.toHaveBeenCalled();
   });
 });

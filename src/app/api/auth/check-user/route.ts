@@ -25,17 +25,23 @@
  *     whether the identifier matched (callers learn account-existence
  *     either way — that is the explicit contract iOS needs). The
  *     handler does NOT echo the identifier back.
- *   - No rate-limit middleware added here; the higher-level edge limit
- *     on `/api/auth/*` covers brute-force enumeration concerns, and the
- *     route is functionally equivalent in information leak to the
- *     existing `/api/auth/passkey/login-options` request that already
- *     accepts an identifier.
+ *   - Per-IP rate-limited (30 requests / 15 min) so the by-design
+ *     enumeration contract cannot be brute-forced. Mirrors the
+ *     `/api/auth/passkey/login-options` throttle shape.
+ *   - The identifier is queried EXACTLY as iOS sends it (no
+ *     `.toLowerCase()` normalisation). Email + username columns are
+ *     stored verbatim by `/api/auth/register`, so case-folding here
+ *     would route legitimate existing users to the sign-up branch.
+ *     A future server-side normalisation pass on register write is
+ *     the long-term fix.
  */
 import { z } from "zod/v4";
 import { prisma } from "@/lib/db";
-import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
+import { apiSuccess, apiError, safeJson, getClientIp } from "@/lib/api-response";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
+import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +57,19 @@ export type CheckUserBranch =
   | "exists";
 
 export const POST = apiHandler(async (request: NextRequest) => {
+  const ip = getClientIp(request) ?? "unknown";
+  const rl = await checkRateLimit(
+    `auth:check-user:${ip}`,
+    30,
+    15 * 60 * 1000,
+  );
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { data: null, error: "Too many requests. Please try again later." },
+      { status: 429, headers: rateLimitHeaders(rl) },
+    );
+  }
+
   const { data: body, error: jsonError } = await safeJson(request);
   if (jsonError) return jsonError;
 
@@ -59,7 +78,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("identifier required", 422);
   }
 
-  const identifier = parsed.data.identifier.toLowerCase();
+  const identifier = parsed.data.identifier;
 
   // Match on either username or email — both are unique in the schema.
   const user = await prisma.user.findFirst({
