@@ -544,7 +544,20 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                             </Badge>
                           </TableCell>
                           <TableCell className="font-semibold tabular-nums">
-                            {fmt.integer(m.value)} {m.unit}
+                            {/* v1.4.39.3 — non-grouped rows render the
+                                stored value with its native precision
+                                (`fmt.number` honours up to 3 fraction
+                                digits by default, drops trailing zeros)
+                                so a 78.4 kg weight reading stops
+                                truncating to "78". Grouped rows are
+                                cumulative-type day aggregates (steps,
+                                distance, etc.) and stay on `fmt.integer`
+                                because the underlying readings are
+                                integer-only by definition. */}
+                            {isGrouped
+                              ? fmt.integer(m.value)
+                              : fmt.number(m.value)}{" "}
+                            {m.unit}
                             {isGrouped && (
                               <span className="text-muted-foreground ml-2 text-xs font-normal">
                                 {t("measurements.dailyTotalCaption", {
@@ -683,7 +696,15 @@ export function MeasurementList({ onEdit, onAddFirst }: MeasurementListProps) {
                             </Badge>
                           )}
                           <span className="font-semibold tabular-nums">
-                            {fmt.integer(m.value)} {m.unit}
+                            {/* v1.4.39.3 — mirror the desktop table:
+                                grouped daily aggregates stay integer,
+                                non-grouped single readings render with
+                                their native decimal precision so
+                                "78.4 kg" no longer truncates to "78". */}
+                            {isGrouped
+                              ? fmt.integer(m.value)
+                              : fmt.number(m.value)}{" "}
+                            {m.unit}
                           </span>
                           {isGrouped && (
                             <span className="text-muted-foreground ml-1.5 text-[11px]">
