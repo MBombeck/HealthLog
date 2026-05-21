@@ -33,11 +33,6 @@
     "showPassword": "Afficher le mot de passe",
     "hidePassword": "Masquer le mot de passe"
   },
-  "format": {
-    "dateShort": "{day}/{month}/{year}",
-    "timeShort": "{hour}:{minute}",
-    "dateTime": "{day}/{month}/{year} {hour}:{minute}"
-  },
   "doctorReport": {
     "title": "Rapport de santé",
     "subtitle": "HealthLog — Rapport personnel de santé",
