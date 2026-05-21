@@ -573,9 +573,10 @@ export default function DashboardPage() {
   // changes when the user's timezone changes; recomputing it every
   // render churned the parts-array and walked the format ICU twice per
   // render across a 1 400-line component body.
+  const userTimezone = user?.timezone;
   const hour = useMemo(
-    () => (user?.timezone ? getHourForTimeZone(user.timezone) : null),
-    [user?.timezone],
+    () => (userTimezone ? getHourForTimeZone(userTimezone) : null),
+    [userTimezone],
   );
   const timeGreeting =
     hour == null
