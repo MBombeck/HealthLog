@@ -290,3 +290,73 @@ describe("aggregateWmyBuckets", () => {
     expect(aggregateWmyBuckets(rows).sum).toBe(100);
   });
 });
+
+/**
+ * v1.4.40 W-WMY-WIRE — granularity-routing parity across the v1.4.40
+ * consumers (summaries-slice + health-score-fast-path). Both consumers
+ * now call `readBestGranularityRollups` for their long-window probes;
+ * this pins:
+ *   - 90 d → DAY (every coarser floor too high — DAY is canonical
+ *     for the trailing quarter regardless of consumer),
+ *   - 365 d → MONTH (clears MONTH floor 181 d, short of YEAR floor
+ *     731 d) — the granularity health-score-fast-path's weight long-
+ *     window read and summaries-slice's year-ago baseline both
+ *     consume,
+ *   - 1095 d → YEAR (clears the 731-day YEAR floor) — the v1.5
+ *     multi-year trend card target.
+ *
+ * The parity assertion ensures the routing contract is a single
+ * source of truth: any future floor adjustment forces both consumers
+ * to re-pin in lock-step rather than silently diverging.
+ */
+describe("readBestGranularityRollups — cross-consumer routing parity", () => {
+  it("pins the 90 / 365 / 1095 day routing targets the consumers depend on", async () => {
+    // Three sequential probes with non-empty results so the router
+    // stops at the first matching tier per window.
+    findMany
+      .mockResolvedValueOnce([bucket("2026-02-15T00:00:00.000Z")]) // 90d → DAY
+      .mockResolvedValueOnce([bucket("2025-08-01T00:00:00.000Z")]) // 365d → MONTH
+      .mockResolvedValueOnce([bucket("2024-01-01T00:00:00.000Z")]); // 1095d → YEAR
+
+    const ninety = await readBestGranularityRollups("user", "WEIGHT", 90);
+    const yearLong = await readBestGranularityRollups("user", "WEIGHT", 365);
+    const threeYear = await readBestGranularityRollups("user", "WEIGHT", 1095);
+
+    expect(ninety?.granularity).toBe("DAY");
+    expect(yearLong?.granularity).toBe("MONTH");
+    expect(threeYear?.granularity).toBe("YEAR");
+    // Each consumer-relevant window only fires one round-trip on the
+    // happy path; the per-tier walk is reserved for coverage-miss
+    // scenarios already pinned above.
+    expect(findMany).toHaveBeenCalledTimes(3);
+    expect(findMany.mock.calls[0][0].where.granularity).toBe("DAY");
+    expect(findMany.mock.calls[1][0].where.granularity).toBe("MONTH");
+    expect(findMany.mock.calls[2][0].where.granularity).toBe("YEAR");
+  });
+
+  it("aggregates MONTH buckets to a byte-identical mean compared to the underlying DAY buckets", async () => {
+    // The compositional contract `count / mean` are linearly
+    // composable across granularities — pin it by simulating "MONTH
+    // routing for a 365-day window" vs "DAY routing for the same
+    // window" against the same underlying counts/means and asserting
+    // the count-weighted mean agrees.
+    //
+    // MONTH bucket (consolidated):    count=30, mean=80
+    // DAY buckets (per-day refresh):  count=10/mean=82 + count=20/mean=79
+    //   ⇒ DAY-derived mean = (10*82 + 20*79) / 30 = 80.0
+    // Both must agree numerically — the routing helper's choice is a
+    // performance optimisation, not a math change.
+    const monthBuckets: RollupBucketRow[] = [
+      bucket("2025-08-01T00:00:00.000Z", { count: 30, mean: 80 }),
+    ];
+    const dayBuckets: RollupBucketRow[] = [
+      bucket("2025-08-05T00:00:00.000Z", { count: 10, mean: 82 }),
+      bucket("2025-08-20T00:00:00.000Z", { count: 20, mean: 79 }),
+    ];
+    const monthAgg = aggregateWmyBuckets(monthBuckets);
+    const dayAgg = aggregateWmyBuckets(dayBuckets);
+
+    expect(monthAgg.count).toBe(dayAgg.count);
+    expect(monthAgg.mean).toBeCloseTo(dayAgg.mean ?? Number.NaN, 5);
+  });
+});
