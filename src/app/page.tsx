@@ -1413,7 +1413,7 @@ export default function DashboardPage() {
                       fallback={
                         <div
                           aria-hidden="true"
-                          className="bg-card border-border h-full w-full rounded-xl border p-4 md:p-6"
+                          className="bg-card border-border flex h-full min-h-[6rem] w-full min-w-0 flex-col rounded-xl border p-4 md:p-6"
                         />
                       }
                     >
