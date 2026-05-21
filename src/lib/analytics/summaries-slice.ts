@@ -301,6 +301,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
         )::double precision                                           AS r2_90
       FROM measurements m
       WHERE m."user_id" = ${userId}
+        AND m."deleted_at" IS NULL
       GROUP BY m."type"
     `,
     prisma.$queryRaw<LatestRow[]>`
@@ -310,6 +311,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
         m."measured_at" AS measured_at
       FROM measurements m
       WHERE m."user_id" = ${userId}
+        AND m."deleted_at" IS NULL
       ORDER BY m."type", m."measured_at" DESC
     `,
     // v1.4.37.2 hotfix — the v1.4.35 implementation read EVERY DAY
@@ -487,6 +489,7 @@ async function computeFromLiveAggregate(
         )::double precision                                           AS r2_90
       FROM measurements m
       WHERE m."user_id" = ${userId}
+        AND m."deleted_at" IS NULL
       GROUP BY m."type"
     `,
     prisma.$queryRaw<LatestRow[]>`
@@ -496,6 +499,7 @@ async function computeFromLiveAggregate(
         m."measured_at" AS measured_at
       FROM measurements m
       WHERE m."user_id" = ${userId}
+        AND m."deleted_at" IS NULL
       ORDER BY m."type", m."measured_at" DESC
     `,
   ]);
