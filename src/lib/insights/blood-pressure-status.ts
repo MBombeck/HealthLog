@@ -28,6 +28,7 @@ import {
   withTimeout,
   STATUS_PROVIDER_TIMEOUT_MS,
 } from "@/lib/insights/with-timeout";
+import { persistTimeoutStubAndReturn } from "@/lib/insights/persist-timeout-stub";
 import { annotate } from "@/lib/logging/context";
 
 const BERLIN_DAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
@@ -542,12 +543,18 @@ export async function generateBloodPressureStatusForUser(
   );
 
   if (raced.timedOut || raced.value === null) {
-    return {
-      hasProvider: true,
-      text: getNoKeyBloodPressureStatusText(locale),
-      cached: true,
-      updatedAt: null,
-    };
+    // v1.4.37 — persist a sentinel row keyed to today so the next
+    // mount short-circuits at the cache lookup above instead of
+    // re-racing the same 20 s provider call on every cold visit.
+    // See `persistTimeoutStubAndReturn` for the full rationale.
+    return persistTimeoutStubAndReturn({
+      userId,
+      cacheAction,
+      todayKey,
+      locale,
+      providerType: provider.type,
+      stubText: getNoKeyBloodPressureStatusText(locale),
+    });
   }
 
   const result = raced.value;

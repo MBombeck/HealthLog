@@ -82,6 +82,53 @@ describe("generatePulseStatusForUser — v1.4.6 bucketed payload", () => {
   });
 });
 
+describe("generatePulseStatusForUser — v1.4.41 timeout-stub short-circuit", () => {
+  // The persist-on-timeout path is covered by
+  // `pulse-status-timeout.test.ts`. This block pins the second-mount
+  // behaviour: when a sentinel row already exists for today the cache
+  // lookup short-circuits and the provider is never invoked.
+  it("subsequent mounts short-circuit at the cache lookup and skip the race", async () => {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Europe/Berlin",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date());
+    const y = parts.find((p) => p.type === "year")!.value;
+    const m = parts.find((p) => p.type === "month")!.value;
+    const d = parts.find((p) => p.type === "day")!.value;
+    const todayKey = `${y}-${m}-${d}`;
+    const stubRow = {
+      createdAt: new Date(),
+      details: JSON.stringify({
+        dateKey: todayKey,
+        locale: "en",
+        text: "Pulse fallback text…",
+        timeout: true,
+      }),
+    };
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      dateOfBirth: null,
+      gender: null,
+    } as never);
+    vi.mocked(prisma.auditLog.findFirst).mockResolvedValue(stubRow as never);
+    const providerCall = vi.fn();
+    vi.mocked(resolveProvider).mockResolvedValue({
+      type: "anthropic",
+      generateCompletion: providerCall,
+    } as never);
+
+    const result = await generatePulseStatusForUser("user-1", { locale: "en" });
+
+    expect(providerCall).not.toHaveBeenCalled();
+    expect(result.text).toBe("Pulse fallback text…");
+    expect(result.cached).toBe(true);
+    expect(result.updatedAt).toBe(stubRow.createdAt.toISOString());
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
+  });
+});
+
 describe("generatePulseStatusForUser — token-leak hardening (v1.4.27 F16)", () => {
   it("strips metric: tokens out of the cached text before persisting", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({

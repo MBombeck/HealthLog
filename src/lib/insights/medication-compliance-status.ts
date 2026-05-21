@@ -18,6 +18,7 @@ import {
   withTimeout,
   STATUS_PROVIDER_TIMEOUT_MS,
 } from "@/lib/insights/with-timeout";
+import { persistTimeoutStubAndReturn } from "@/lib/insights/persist-timeout-stub";
 import { annotate } from "@/lib/logging/context";
 
 // 360 daily days + 24 monthly windows ≈ 1080 days of intake history.
@@ -104,6 +105,8 @@ export async function generateMedicationComplianceStatusForUser(
       const parsed = JSON.parse(latestCache.details) as {
         dateKey?: string;
         summary?: string;
+        text?: string;
+        timeout?: boolean;
         medications?: MedicationSummaryItem[];
       };
 
@@ -122,6 +125,25 @@ export async function generateMedicationComplianceStatusForUser(
               typeof entry?.text === "string" &&
               entry.text.trim().length > 0,
           ),
+          cached: true,
+          updatedAt: latestCache.createdAt.toISOString(),
+        };
+      }
+
+      // v1.4.41 — timeout-stub rows persist `text` + `timeout: true`
+      // instead of the standard `summary` + `medications` envelope.
+      // Recognise the stub so the second mount short-circuits at the
+      // cache lookup instead of re-racing the provider call.
+      if (
+        parsed.dateKey === todayKey &&
+        parsed.timeout === true &&
+        typeof parsed.text === "string" &&
+        parsed.text.trim().length > 0
+      ) {
+        return {
+          hasProvider: true,
+          summary: parsed.text,
+          medications: [],
           cached: true,
           updatedAt: latestCache.createdAt.toISOString(),
         };
@@ -332,12 +354,28 @@ export async function generateMedicationComplianceStatusForUser(
   );
 
   if (raced.timedOut || raced.value === null) {
+    // v1.4.37 — persist a sentinel row keyed to today so the next
+    // mount short-circuits at the cache lookup above instead of
+    // re-racing the same 20 s provider call on every cold visit.
+    // See `persistTimeoutStubAndReturn` for the full rationale.
+    // This route returns a richer shape (`summary`, `medications`)
+    // than the standard `text` envelope, so the helper is called
+    // for its persist side-effect and the route maps `summary` ←
+    // `text` on the way out.
+    const stubReturn = await persistTimeoutStubAndReturn({
+      userId,
+      cacheAction,
+      todayKey,
+      locale,
+      providerType: provider.type,
+      stubText: getNoKeyMedicationComplianceStatusText(locale),
+    });
     return {
       hasProvider: true,
-      summary: getNoKeyMedicationComplianceStatusText(locale),
+      summary: stubReturn.text,
       medications: [],
       cached: true,
-      updatedAt: null,
+      updatedAt: stubReturn.updatedAt,
     };
   }
 

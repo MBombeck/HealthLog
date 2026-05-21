@@ -19,6 +19,7 @@ import {
   withTimeout,
   STATUS_PROVIDER_TIMEOUT_MS,
 } from "@/lib/insights/with-timeout";
+import { persistTimeoutStubAndReturn } from "@/lib/insights/persist-timeout-stub";
 import { annotate } from "@/lib/logging/context";
 
 const BERLIN_DAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
@@ -315,8 +316,10 @@ export async function generatePulseStatusForUser(
   // (or upstream failure) return the no-key fallback text in a
   // cached-style envelope so the status card renders deterministically
   // instead of spinning behind React-Query's default retry ladder.
-  // The fallback is NOT persisted to the audit cache — a transient
-  // upstream stall would otherwise poison tomorrow's hit.
+  // v1.4.41 — the timeout branch now persists a sentinel keyed to
+  // today (see `persistTimeoutStubAndReturn`) so subsequent mounts
+  // short-circuit at the cache lookup instead of re-racing the
+  // upstream call. The daily pre-warm job overwrites the stub.
   const raced = await withTimeout(
     () =>
       provider.generateCompletion({
@@ -335,12 +338,18 @@ export async function generatePulseStatusForUser(
   );
 
   if (raced.timedOut || raced.value === null) {
-    return {
-      hasProvider: true,
-      text: getNoKeyPulseStatusText(locale),
-      cached: true,
-      updatedAt: null,
-    };
+    // v1.4.37 — persist a sentinel row keyed to today so the next
+    // mount short-circuits at the cache lookup above instead of
+    // re-racing the same 20 s provider call on every cold visit.
+    // See `persistTimeoutStubAndReturn` for the full rationale.
+    return persistTimeoutStubAndReturn({
+      userId,
+      cacheAction,
+      todayKey,
+      locale,
+      providerType: provider.type,
+      stubText: getNoKeyPulseStatusText(locale),
+    });
   }
 
   const result = raced.value;

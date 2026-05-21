@@ -108,6 +108,114 @@ describe("generateMedicationComplianceStatusForUser — v1.4.6 bucketed payload"
   });
 });
 
+describe("generateMedicationComplianceStatusForUser — v1.4.41 timeout-stub persistence", () => {
+  it("persists a sentinel row keyed to today when the provider times out", async () => {
+    const now = new Date();
+    const medication = {
+      id: "med-1",
+      name: "Ramipril",
+      dose: "5mg",
+      active: true,
+      createdAt: new Date(now.getTime() - 60 * dayMs),
+      schedules: [{ id: "s1", time: "08:00" }],
+    };
+
+    vi.mocked(prisma.auditLog.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.medication.findMany).mockResolvedValue([
+      medication,
+    ] as never);
+    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
+      [] as never,
+    );
+    vi.mocked(prisma.auditLog.create).mockResolvedValue({
+      createdAt: new Date(),
+    } as never);
+
+    vi.mocked(resolveProvider).mockResolvedValue({
+      type: "anthropic",
+      generateCompletion: vi.fn(
+        () =>
+          new Promise(() => {
+            /* never resolves */
+          }),
+      ),
+    } as never);
+
+    vi.useFakeTimers();
+    const promise = generateMedicationComplianceStatusForUser("user-1", {
+      locale: "en",
+    });
+    await vi.advanceTimersByTimeAsync(25_000);
+    const result = await promise;
+    vi.useRealTimers();
+
+    // Route returns the richer `{summary, medications}` shape — the
+    // helper writes the persist row and the route maps `summary` ←
+    // `text` on the way out.
+    expect(result.summary).toBeTruthy();
+    expect(result.medications).toEqual([]);
+    expect(result.cached).toBe(true);
+    expect(result.updatedAt).toBeTruthy();
+
+    const createCalls = vi.mocked(prisma.auditLog.create).mock.calls;
+    expect(createCalls.length).toBe(1);
+    const details = (createCalls[0][0] as { data: { details: string } }).data
+      .details;
+    const parsed = JSON.parse(details) as {
+      dateKey?: string;
+      text?: string;
+      timeout?: boolean;
+      model?: string;
+    };
+    expect(parsed.text).toBeTruthy();
+    expect(parsed.timeout).toBe(true);
+    expect(parsed.model).toBe("timeout-stub");
+    expect(parsed.dateKey).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+describe("generateMedicationComplianceStatusForUser — v1.4.41 timeout-stub short-circuit", () => {
+  it("subsequent mounts short-circuit when a stub row with text+timeout:true exists", async () => {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Europe/Berlin",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date());
+    const y = parts.find((p) => p.type === "year")!.value;
+    const m = parts.find((p) => p.type === "month")!.value;
+    const d = parts.find((p) => p.type === "day")!.value;
+    const todayKey = `${y}-${m}-${d}`;
+    const stubRow = {
+      createdAt: new Date(),
+      details: JSON.stringify({
+        dateKey: todayKey,
+        locale: "en",
+        text: "Medication compliance fallback…",
+        timeout: true,
+      }),
+    };
+
+    vi.mocked(prisma.auditLog.findFirst).mockResolvedValue(stubRow as never);
+    const providerCall = vi.fn();
+    vi.mocked(resolveProvider).mockResolvedValue({
+      type: "anthropic",
+      generateCompletion: providerCall,
+    } as never);
+
+    const result = await generateMedicationComplianceStatusForUser("user-1", {
+      locale: "en",
+    });
+
+    expect(providerCall).not.toHaveBeenCalled();
+    expect(result.summary).toBe("Medication compliance fallback…");
+    expect(result.medications).toEqual([]);
+    expect(result.cached).toBe(true);
+    expect(result.updatedAt).toBe(stubRow.createdAt.toISOString());
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
+  });
+});
+
 describe("generateMedicationComplianceStatusForUser — token-leak hardening (v1.4.27 F16)", () => {
   it("strips metric: tokens out of the cached summary + per-medication text", async () => {
     const now = new Date();
