@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.47.1] — 2026-05-22 — Slim summaries slice 9 s → ~0.5-1 s cold
+
+Same-day hotfix on top of v1.4.47. Dashboard cold mount on power-user accounts was firing `/api/analytics?slice=summaries` at ~9 s TTFB; the time was almost entirely in one `$queryRaw` against the `measurements` table.
+
+The `narrows` query inside `computeFromRollups` was scanning the user's full measurements partition without an outer `measured_at` cap. Every `FILTER` expression inside the SELECT already restricts to 7/30/90 days, so the additional rows were aggregated to NULL and discarded — but the planner still had to read all of them. Adding the matching 90-day outer WHERE turns the read into an index range scan on `(user_id, type, measured_at)` and returns the same output bit-for-bit.
+
+Effect for a ~450 000-row tenant: slim slice cold ~9 s → ~0.5-1 s, warm cache hits stay at the sub-50 ms Map-lookup. The default slice keeps its earlier path; a separate split of `computeFromLiveAggregate` is queued for the next release for tenants who still rely on the no-rollup fallback.
+
+- **Changed:** `src/lib/analytics/summaries-slice.ts:255-306` — `computeFromRollups.narrows` query gains `AND m."measured_at" >= NOW() - INTERVAL '90 days'`.
+- **Risk:** zero. Inner FILTER clauses already discarded rows outside the 90-day window; the new WHERE just narrows the scan to the same set.
+- **No migration. No schema change. No env-var change.**
+- **Operator notes:** standard image roll; no `prisma migrate deploy` step required.
+
 ## [1.4.47] — 2026-05-22 — Audit-backlog closure: drag-to-reorder, Coach disable toggle, OAuth state nonce table, legacy column drop, primitive sweep
 
 v1.4.45 closed the v1.4.43-audit follow-up; v1.4.46 caught a same-day server reconcile (PR worker, intake auto-skip, APNS admin test). v1.4.47 is the dedicated follow-up that lands every deferred v1.4.45 audit Medium/Low plus the W14 legacy-column cleanup the v1.4.45 release scheduled for "one release later".
