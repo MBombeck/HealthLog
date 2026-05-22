@@ -6,7 +6,7 @@
  * Decides *when* to start the spotlight tour. Mounted on the
  * dashboard; opens the tour exactly once for new users and never
  * again unless they explicitly request a replay from
- * Settings → Account.
+ * Settings → Account or Settings → About.
  *
  * Gating rules:
  *
@@ -28,13 +28,23 @@
  *      races with an in-flight `/api/auth/me` refetch, the cached
  *      response could re-open the tour. The localStorage guard
  *      blocks that for the rest of the session.
+ *   5. v1.4.47 W5 — make the tour "the second-visit thing". The
+ *      welcome carousel runs immediately after the wizard; piling
+ *      the tour on top of that consumes ~90 s of forced onboarding
+ *      before the user gets to touch the dashboard. The tour now
+ *      auto-launches only after the wizard has been finished at
+ *      least 24 h ago. Brand-new users (`onboardingCompletedAt ==
+ *      null`) never see the auto-launch — they can still trigger
+ *      the tour manually from Settings → About or Settings →
+ *      Account.
  *
- * Replay flow: the Settings → Account "Restart" button posts
- * `{ completed: false }` to /api/onboarding/tour, then dispatches a
+ * Replay flow: the Settings → Account "Restart" button (and the
+ * Settings → About "Replay" button added in v1.4.47 W5) POST
+ * `{ completed: false }` to /api/onboarding/tour, then dispatch a
  * `healthlog:tour-restart` window event. This launcher listens for
- * that event and force-opens the tour without reading the flag —
- * convenient because invalidating the auth cache + waiting for the
- * round-trip would feel laggy.
+ * that event and force-opens the tour ignoring the auto-launch gate
+ * (24 h delay, session-dismissed flag, post-wizard grace) so the
+ * manual replay always works.
  */
 
 import { useEffect, useState } from "react";
@@ -44,6 +54,51 @@ import { useAuth } from "@/hooks/use-auth";
 import { OnboardingTour } from "./tour";
 
 const POST_WIZARD_GRACE_MS = 1500;
+
+/**
+ * v1.4.47 W5 — auto-launch only kicks in 24 h after the wizard
+ * finished. The first visit is owned by the WelcomeCarousel; the
+ * tour becomes "the second-visit thing".
+ */
+export const TOUR_AUTOLAUNCH_DELAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Pure decision helper exported for unit tests. Given the auth-shape
+ * timing inputs the launcher cares about, return whether the tour
+ * should auto-launch right now.
+ *
+ * Inputs:
+ *   - `onboardingTourCompleted` — server flag; true means the user
+ *     already finished or dismissed the tour. Hard veto.
+ *   - `onboardingCompletedAt` — ISO timestamp of wizard completion
+ *     (or `null` for users who never finished the wizard). The
+ *     24 h gate counts from here.
+ *   - `nowMs` — caller-supplied "current time" so tests can pin a
+ *     synthetic clock without monkey-patching `Date.now()`.
+ *
+ * Returns:
+ *   - `false` when any veto applies (tour already done; no wizard
+ *     completion yet; wizard finished <24 h ago).
+ *   - `true` when the user is eligible and the 24 h delay has passed.
+ *
+ * The function does NOT consult sessionStorage — that's a separate
+ * concern (per-tab dismiss + post-wizard grace) handled by the
+ * launcher around it. Pure for testing.
+ */
+export function shouldAutoLaunchTour(args: {
+  onboardingTourCompleted: boolean;
+  onboardingCompletedAt: string | null;
+  nowMs: number;
+}): boolean {
+  if (args.onboardingTourCompleted) return false;
+  if (args.onboardingCompletedAt == null) return false;
+  const completedMs = Date.parse(args.onboardingCompletedAt);
+  // Date.parse returns NaN for unparseable inputs. Treat the
+  // unparseable case as "no completion yet" so a malformed payload
+  // never auto-launches the tour into an unsuspecting brand-new user.
+  if (Number.isNaN(completedMs)) return false;
+  return args.nowMs - completedMs >= TOUR_AUTOLAUNCH_DELAY_MS;
+}
 
 // v1.4.15 H4 — sessionStorage keys are now scoped by user id so an
 // admin impersonating a second user does not inherit the first user's
@@ -62,6 +117,48 @@ export function tourSessionDismissedKey(userId: string): string {
 
 export function tourReferrerKey(userId: string): string {
   return `healthlog-tour-referrer:${userId}`;
+}
+
+/**
+ * v1.4.47 W5 — sessionStorage key used by the Settings → About
+ * "Replay the tour" + Settings → Account "Restart onboarding tour"
+ * buttons to bypass the 24 h auto-launch gate on the next dashboard
+ * mount. Without this, a first-day user who manually clicks the
+ * replay button would still hit the 24 h block after navigating to
+ * the dashboard (because the launcher mounts fresh and re-evaluates
+ * the auto-launch gate). Exported for the unit-test suite + so the
+ * key construction stays pinned across refactors.
+ */
+export function tourForceLaunchKey(userId: string): string {
+  return `healthlog-tour-force-launch:${userId}`;
+}
+
+/**
+ * Write the force-launch marker. Called by both Settings → Account
+ * and Settings → About when the user explicitly requests the tour.
+ * Exported so the Settings buttons can call it without re-implementing
+ * the sessionStorage dance (and so the test suite can stub it).
+ */
+export function setTourForceLaunch(userId: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(tourForceLaunchKey(userId), "1");
+  } catch {
+    /* ignore — sandboxed iframes etc. */
+  }
+}
+
+function readAndClearForceLaunch(userId: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const key = tourForceLaunchKey(userId);
+    const value = window.sessionStorage.getItem(key);
+    if (value !== "1") return false;
+    window.sessionStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -151,6 +248,18 @@ export function TourLauncher({ ready }: TourLauncherProps) {
     userId: string;
     flag: boolean;
   } | null>(null);
+  // v1.4.47 W5 — clock reading for the 24 h auto-launch gate. The
+  // useState lazy-initialiser runs once at mount; subsequent re-renders
+  // reuse the same value. This keeps the render path pure (React's
+  // purity linter rejects a bare `Date.now()` reference in render) and
+  // matches the established pattern in `personal-record-badge.tsx`:
+  // capture the clock at a stable boundary, then derive freshness from
+  // it. The launcher only consults this value once per (user, flag)
+  // tuple via the `decidedFor` guard, so a mount that takes ten
+  // minutes to reach the decision still uses a representative timestamp
+  // (and a user who crosses the 24 h boundary mid-session will see the
+  // tour on their next page-load — acceptable for a one-shot welcome).
+  const [mountedAtMs] = useState(() => Date.now());
 
   const inputsReady = !isLoading && isAuthenticated && !!user && ready;
   // The set-state-in-render pattern (mirrors `account-section.tsx`'s
@@ -169,7 +278,28 @@ export function TourLauncher({ ready }: TourLauncherProps) {
     // sessionStorage reads happen via per-user keyed helpers, so a
     // browser shared by two HealthLog users (admin impersonation,
     // family laptop, etc.) keeps each user's tour state independent.
-    if (user.onboardingTourCompleted) {
+    //
+    // v1.4.47 W5 — the 24 h auto-launch gate. The mount-time clock is
+    // captured into `mountedAtMs` via a useState lazy initialiser so
+    // the render-phase decision stays pure (no Date.now() in the
+    // render body). The `decidedFor` tuple above further guarantees
+    // this branch runs at most once per (user, flag) transition.
+    //
+    // Force-launch bypass: when the user explicitly requests the tour
+    // from Settings → About / Settings → Account, those buttons set a
+    // per-user sessionStorage marker via `setTourForceLaunch()`. The
+    // launcher reads-and-clears the marker here so the tour launches
+    // on the very next dashboard mount — independent of the 24 h gate,
+    // the session-dismissed flag, and the post-wizard grace. The
+    // marker survives navigation but not a page reload, which matches
+    // user expectation ("I clicked replay, now show me the tour").
+    if (readAndClearForceLaunch(user.id)) {
+      setShowTour(true);
+    } else if (!shouldAutoLaunchTour({
+      onboardingTourCompleted: user.onboardingTourCompleted,
+      onboardingCompletedAt: user.onboardingCompletedAt,
+      nowMs: mountedAtMs,
+    })) {
       setShowTour(false);
     } else if (readSessionDismissed(user.id)) {
       setShowTour(false);

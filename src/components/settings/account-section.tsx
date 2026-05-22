@@ -39,6 +39,7 @@ import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { PasswordInput } from "@/components/ui/password-input";
+import { setTourForceLaunch } from "@/components/onboarding/tour-launcher";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDate } from "@/lib/format";
 import { locales, localeLabels, type Locale } from "@/lib/i18n/config";
@@ -292,6 +293,12 @@ export function AccountSection() {
         setTourMsgType("error");
         return;
       }
+      // v1.4.47 W5 — drop a per-user force-launch marker in
+      // sessionStorage so the next dashboard mount launches the tour
+      // even when the new 24 h auto-launch gate would otherwise
+      // suppress it (e.g. user just finished the wizard 5 min ago).
+      // The launcher reads-and-clears the marker on mount.
+      if (user?.id) setTourForceLaunch(user.id);
       // Refetch the auth payload so `<TourLauncher>` re-evaluates
       // with the new flag, AND fire a window event so a launcher
       // already mounted on the dashboard reopens immediately

@@ -146,6 +146,29 @@ describe("settings sections — SSR smoke", () => {
     expect(html).not.toContain("settings.about.");
   });
 
+  it("<AboutSection> exposes a Replay-tour button for the W5 chain gate", () => {
+    const html = render(<AboutSection />);
+    // v1.4.47 W5 — the spotlight tour now auto-launches only ≥ 24 h
+    // after the wizard finishes (see `shouldAutoLaunchTour` in
+    // `components/onboarding/tour-launcher.tsx`). A first-day user who
+    // *does* want the tour needs a discoverable manual trigger, and
+    // Settings → About is the surface every user can find. Pin both
+    // the data-testid and the visible copy so a future refactor can't
+    // silently drop the button.
+    expect(html).toContain('data-testid="about-replay-tour"');
+    expect(html).toContain("Replay the tour");
+    // No raw i18n key leaks past the i18n layer.
+    expect(html).not.toContain("settings.about.tourReplay");
+  });
+
+  it("<AboutSection> renders the German Replay-tour label end-to-end", () => {
+    // Marc-voice + i18n parity: the W5 spec explicitly names this
+    // surface "Tour ansehen" in German. Lock the resolved copy so a
+    // future locale-bundle drift doesn't silently fall back to English.
+    const html = render(<AboutSection />, "de");
+    expect(html).toContain("Tour ansehen");
+  });
+
   it("<AiSection> renders the Insights card", () => {
     const html = render(<AiSection />);
     // v1.4.33 IW7 — section renamed from "AI Insights" to "Insights"

@@ -1996,7 +1996,9 @@
       "changelog": "Changelog",
       "docs": "Dokumentation",
       "linksHeading": "Quellen & Dokumentation",
-      "newerAvailable": "Neue Version: {tag}"
+      "newerAvailable": "Neue Version: {tag}",
+      "tourReplay": "Tour ansehen",
+      "tourReplayHint": "Zeige die Dashboard-Tour — praktisch, falls du sie beim ersten Besuch übersprungen hast."
     },
     "testConnection": {
       "test": "Verbindung testen",

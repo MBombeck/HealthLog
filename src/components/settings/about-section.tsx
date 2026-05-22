@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowUpCircle,
   BookOpen,
+  Compass,
   ExternalLink,
   GitBranch,
   Info,
@@ -13,6 +14,8 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { setTourForceLaunch } from "@/components/onboarding/tour-launcher";
+import { useAuth } from "@/hooks/use-auth";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -116,6 +119,11 @@ export function UpdateBadge({
 export function AboutSection() {
   const { t } = useTranslations();
   const fmt = useFormatters();
+  // Pull the auth user — only needed so the "Replay the tour" button
+  // can stamp a per-user force-launch marker into sessionStorage. The
+  // hook is cheap (a cached `/api/auth/me` read) and every settings
+  // page already lives behind the same auth boundary.
+  const { user } = useAuth();
 
   const { data: version, isLoading } = useQuery({
     queryKey: queryKeys.apiVersion(),
@@ -128,6 +136,66 @@ export function AboutSection() {
     // The endpoint is `force-static` — version doesn't change at runtime.
     staleTime: Infinity,
   });
+
+  // v1.4.47 W5 — onboarding chain-gate: the spotlight tour now auto-
+  // launches only ≥ 24 h after the wizard finishes (see
+  // `shouldAutoLaunchTour` in `components/onboarding/tour-launcher.tsx`).
+  // The carousel + tour no longer stack into ~90 s of forced onboarding
+  // on first visit. The tradeoff: a first-day user who *does* want the
+  // tour needs a discoverable manual trigger. Settings → About is the
+  // surface every user can find (every locale puts "About" right on the
+  // settings shell), so it carries the replay button next to the
+  // sources/docs links. Settings → Account still has its own
+  // "Restart onboarding tour" — both buttons share the same flow.
+  const [replayingTour, setReplayingTour] = useState(false);
+  const [tourMessage, setTourMessage] = useState<string | null>(null);
+  const [tourMessageType, setTourMessageType] = useState<
+    "success" | "error" | null
+  >(null);
+
+  async function handleReplayTour() {
+    setReplayingTour(true);
+    setTourMessage(null);
+    setTourMessageType(null);
+    try {
+      const res = await fetch("/api/onboarding/tour", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: false }),
+      });
+      if (!res.ok) {
+        setTourMessage(t("settings.savingError"));
+        setTourMessageType("error");
+        return;
+      }
+      // v1.4.47 W5 — drop a per-user force-launch marker into
+      // sessionStorage so the next dashboard mount opens the tour
+      // even when the 24 h auto-launch gate would otherwise suppress
+      // it (e.g. a first-day user who clicked "Replay the tour"
+      // from About 30 min after finishing the wizard). The marker is
+      // session-scoped — a page reload clears it — and consumed
+      // exactly once by the launcher on its next mount.
+      if (user?.id) setTourForceLaunch(user.id);
+      // Fire the same window event Settings → Account uses; a
+      // dashboard already mounted in another tab / background reopens
+      // the spotlight immediately. When the user lands on the
+      // dashboard next, the launcher reads the freshly-flipped
+      // `onboardingTourCompleted = false` from `/api/auth/me` and the
+      // force-launch marker set above; either path lands on the tour.
+      try {
+        window.dispatchEvent(new CustomEvent("healthlog:tour-restart"));
+      } catch {
+        /* ignore — only matters if a dashboard is already mounted */
+      }
+      setTourMessage(t("onboarding.tour.restartConfirmation"));
+      setTourMessageType("success");
+    } catch {
+      setTourMessage(t("common.networkError"));
+      setTourMessageType("error");
+    } finally {
+      setReplayingTour(false);
+    }
+  }
 
   // v1.4.36 W4f — the explicit "Check for updates" button is gone;
   // only the 24 h auto-check stays. When the auto-check reports
@@ -316,6 +384,58 @@ export function AboutSection() {
           </div>
         </div>
       )}
+
+      {/* v1.4.47 W5 — Replay tour card. The dashboard spotlight
+          tour now auto-launches only ≥ 24 h after the wizard finishes,
+          so a first-day user who wants to see it still needs a
+          discoverable manual trigger. About is the surface every user
+          can find (it's the standard "where am I?" stop in the
+          settings shell), so the button lives here next to version +
+          links. Mirrors the stack-on-mobile / right-align-on-desktop
+          contract used by the Account section's "Restart onboarding
+          tour" card so the two surfaces feel consistent. */}
+      <div className="bg-card border-border rounded-xl border p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Compass className="text-primary h-5 w-5" />
+              <h2 className="text-lg font-semibold">
+                {t("settings.about.tourReplay")}
+              </h2>
+            </div>
+            <p className="text-muted-foreground text-xs">
+              {t("settings.about.tourReplayHint")}
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleReplayTour}
+            disabled={replayingTour}
+            data-testid="about-replay-tour"
+            className="w-full shrink-0 sm:w-auto"
+          >
+            {replayingTour ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
+            ) : (
+              <Compass className="mr-2 h-4 w-4" />
+            )}
+            {t("settings.about.tourReplay")}
+          </Button>
+        </div>
+        {tourMessage && (
+          <p
+            role="alert"
+            className={`mt-2 text-xs ${
+              tourMessageType === "success"
+                ? "text-dracula-green"
+                : "text-destructive"
+            }`}
+          >
+            {tourMessage}
+          </p>
+        )}
+      </div>
 
       {/* v1.4.36 W4f — the dedicated "Updates" card with the
           manual "Check for updates" button is gone. The 24 h auto-
