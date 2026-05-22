@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
 import { useFeatureFlags } from "@/hooks/use-feature-flags";
+import { useDisableCoach } from "@/hooks/use-disable-coach";
 
 import { useChartTooltipActive } from "./use-chart-tooltip-active";
 
@@ -37,11 +38,18 @@ export function LayoutCoachFab() {
   const { t } = useTranslations();
   const launch = useCoachLaunch();
   const flags = useFeatureFlags();
+  const disableCoach = useDisableCoach();
   const tooltipActive = useChartTooltipActive();
   if (!launch) return null;
   // v1.4.31 — operator can hide the Coach surface app-wide. The
   // FAB returns null when the master OR the coach sub-flag is off.
   if (!flags.coach) return null;
+  // v1.4.47 W3 — per-user opt-out beats the operator's "on" default.
+  // A privacy-leaning user who toggles "Hide Coach" in Settings → AI
+  // gets the FAB short-circuited here, identical to the global-off
+  // branch above. The hook defaults to `false` in the absence of a
+  // QueryClient (legacy SSR-only snapshot tests).
+  if (disableCoach) return null;
 
   const accessibleLabel = t("insights.heroActionAskCoach");
 

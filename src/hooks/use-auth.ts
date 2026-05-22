@@ -23,13 +23,35 @@ export interface AuthUser {
   onboardingTourCompleted: boolean;
   gravatarUrl: string | null;
   glucoseUnit: string | null;
+  /**
+   * v1.4.47 W3 — per-user Coach opt-out. When `true`, every Coach
+   * mount point (`<LayoutCoachFab>`, `<LayoutCoachMount>`, the
+   * inline `<CoachLaunchButton>` pill, the `/targets` page CTA)
+   * renders nothing. The gate sits BELOW the operator-level
+   * `flags.coach` short-circuit — both must agree to render the
+   * affordance. Defaults to `false` when the field is absent (e.g.
+   * stale /me payload from a partial-deploy rollback).
+   */
+  disableCoach: boolean;
 }
 
 async function fetchMe(): Promise<AuthUser> {
   const res = await fetch("/api/auth/me");
   if (!res.ok) throw new Error("Not authenticated");
   const json = await res.json();
-  return json.data;
+  // v1.4.47 W3 — coerce `disableCoach` against `undefined` so a stale
+  // /me payload from a partial-deploy rollback (older server image
+  // without the field) keeps the Coach surface visible by default.
+  const data = json.data as Partial<AuthUser> & {
+    id: string;
+    username: string;
+    role: string;
+    timezone: string;
+  };
+  return {
+    ...(data as AuthUser),
+    disableCoach: data.disableCoach ?? false,
+  };
 }
 
 export function useAuth() {

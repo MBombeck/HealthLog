@@ -163,6 +163,128 @@ export function AiSection() {
       </header>
 
       <AiInsightsCard isAuthenticated={isAuthenticated} />
+
+      {/* v1.4.47 W3 — per-user Coach opt-out. Lives below the provider
+          card so users who want the surface gone never have to scroll
+          through provider configuration before finding the toggle. */}
+      <DisableCoachCard isAuthenticated={isAuthenticated} />
+    </section>
+  );
+}
+
+/**
+ * v1.4.47 W3 — "Hide Coach" toggle card.
+ *
+ * Persists via `PATCH /api/auth/me/disable-coach`; the response
+ * invalidates `queryKeys.authMe()` so every Coach mount point on the
+ * client (`<LayoutCoachFab>`, `<LayoutCoachMount>`, the inline
+ * `<CoachLaunchButton>` pill, the `/targets` page CTAs) re-renders
+ * with the new `user.disableCoach` value on the next React Query
+ * refetch tick — no full reload required.
+ *
+ * The optimistic-update pattern mirrors `<MoodReminderCard>`: the
+ * Switch flips immediately, the mutation rolls back on error.
+ */
+function DisableCoachCard({ isAuthenticated }: { isAuthenticated: boolean }) {
+  const { t } = useTranslations();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  // Optimistic-update flag — null means "no in-flight change",
+  // otherwise it overrides the wire value until the mutation
+  // settles. Mirrors the `<MoodReminderCard>` pattern so the Switch
+  // reacts instantly to the user's tap.
+  const [optimistic, setOptimistic] = useState<boolean | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
+
+  const checked = optimistic ?? user?.disableCoach ?? false;
+
+  const mutation = useMutation({
+    mutationFn: async (next: boolean) => {
+      const res = await fetch("/api/auth/me/disable-coach", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ disableCoach: next }),
+      });
+      if (!res.ok) {
+        const json = (await res.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        throw new Error(json.error ?? `HTTP ${res.status}`);
+      }
+      return next;
+    },
+    onSuccess: (next) => {
+      setMsg(
+        next
+          ? t("settings.ai.disableCoach.savedHidden")
+          : t("settings.ai.disableCoach.savedShown"),
+      );
+      setMsgType("success");
+      // Surface the new value to every Coach gate via the shared
+      // `useAuth()` query — the gates re-render once React Query
+      // re-fetches /api/auth/me with the updated `disableCoach` field.
+      queryClient.invalidateQueries({ queryKey: queryKeys.authMe() });
+      setOptimistic(null);
+    },
+    onError: (err) => {
+      setOptimistic(null);
+      setMsg(
+        err instanceof Error
+          ? err.message
+          : t("settings.ai.disableCoach.saveError"),
+      );
+      setMsgType("error");
+    },
+  });
+
+  function handleToggle(next: boolean) {
+    setOptimistic(next);
+    setMsg(null);
+    setMsgType(null);
+    mutation.mutate(next);
+  }
+
+  return (
+    <section
+      aria-labelledby="settings-ai-disable-coach-title"
+      data-testid="settings-disable-coach-card"
+      className="bg-card border-border space-y-3 rounded-xl border p-6"
+    >
+      <div className="flex items-center justify-between gap-4">
+        <div className="pr-2">
+          <h2
+            id="settings-ai-disable-coach-title"
+            className="text-base font-semibold"
+          >
+            {t("settings.ai.disableCoach.title")}
+          </h2>
+          <p className="text-muted-foreground text-xs">
+            {t("settings.ai.disableCoach.description")}
+          </p>
+        </div>
+        <Switch
+          data-testid="settings-disable-coach-switch"
+          checked={checked}
+          onCheckedChange={handleToggle}
+          disabled={!isAuthenticated || mutation.isPending}
+          aria-label={t("settings.ai.disableCoach.toggleAria")}
+        />
+      </div>
+      {msg && (
+        <p
+          role="status"
+          aria-live="polite"
+          className={
+            msgType === "error"
+              ? "text-destructive text-xs"
+              : "text-muted-foreground text-xs"
+          }
+        >
+          {msg}
+        </p>
+      )}
     </section>
   );
 }

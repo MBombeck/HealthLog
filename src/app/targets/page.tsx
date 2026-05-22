@@ -129,7 +129,7 @@ function getTargetSourceLink(target: TargetData): string | null {
 
 export default function TargetsPage() {
   const { t } = useTranslations();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.insightsTargets(),
@@ -162,7 +162,10 @@ export default function TargetsPage() {
   // below. The flag default is all-on for fresh installs and on any
   // fetch error, so the path stays open by default.
   const flags = useFeatureFlags();
-  const coachEnabled = flags.coach;
+  // v1.4.47 W3 — per-user "Hide Coach" toggle is a peer gate to the
+  // operator's master flag. When either is off, the per-card CTAs +
+  // the page-level <CoachDrawer> mount below both go dark.
+  const coachEnabled = flags.coach && !user?.disableCoach;
   const aiEnabled = coachEnabled && chainStatus?.activeProvider != null;
 
   // v1.4.25 W3e — Coach drawer state owned by the page. The per-card

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
 import { useFeatureFlags } from "@/hooks/use-feature-flags";
+import { useDisableCoach } from "@/hooks/use-disable-coach";
 
 /**
  * Inline desktop Coach launch button.
@@ -42,6 +43,7 @@ export function CoachLaunchButton({
   const { t } = useTranslations();
   const launch = useCoachLaunch();
   const flags = useFeatureFlags();
+  const disableCoach = useDisableCoach();
 
   if (!launch) {
     // The button only makes sense beneath the provider. Render nothing
@@ -50,6 +52,10 @@ export function CoachLaunchButton({
   }
   // v1.4.31 — operator can hide the Coach surface app-wide.
   if (!flags.coach) return null;
+  // v1.4.47 W3 — per-user opt-out is a peer gate to the operator's
+  // flag; either being off hides the pill entirely. See
+  // `<LayoutCoachFab>` for the matching FAB gate.
+  if (disableCoach) return null;
 
   const accessibleLabel = label ?? t("insights.heroActionAskCoach");
 
@@ -64,10 +70,7 @@ export function CoachLaunchButton({
       size="sm"
       data-slot="coach-launch-inline"
       onClick={() => launch.askCoach(prefill ?? null)}
-      className={cn(
-        "hidden h-10 gap-2 self-end lg:inline-flex",
-        className,
-      )}
+      className={cn("hidden h-10 gap-2 self-end lg:inline-flex", className)}
     >
       <Sparkles className="size-4" aria-hidden="true" />
       <span>{accessibleLabel}</span>

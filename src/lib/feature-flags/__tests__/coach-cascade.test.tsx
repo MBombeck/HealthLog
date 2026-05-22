@@ -314,6 +314,14 @@ describe("Coach disable cascade invariant", () => {
           // Skip every `__tests__/` subtree — the discovery target is
           // the production gate, not the assertions about it.
           if (entry === "__tests__") continue;
+          // v1.4.47 W3 — skip the Prisma client output. The generator
+          // embeds the entire `prisma/schema.prisma` source into
+          // `internal/class.ts` as a JSON-escaped `inlineSchema`
+          // string, so any literal `flags.coach` mention in a schema
+          // doc-comment leaks through here and trips the orphan check.
+          // Generated derivatives are never the gate site we want to
+          // pin; the production component file is.
+          if (entry === "generated") continue;
           walk(full);
           continue;
         }

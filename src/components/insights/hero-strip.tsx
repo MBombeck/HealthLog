@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
 import { formatRelativeTime } from "@/lib/i18n/relative-time";
 import { useFeatureFlags } from "@/hooks/use-feature-flags";
+import { useDisableCoach } from "@/hooks/use-disable-coach";
 import { cn } from "@/lib/utils";
 import { SuggestedPrompts } from "./suggested-prompts";
 import {
@@ -126,7 +127,14 @@ export function HeroStrip({
   // open the Coach drawer, so leaving them visible while the drawer
   // mount is suppressed would surface dead controls.
   const flags = useFeatureFlags();
-  const coachEnabled = flags.coach;
+  // v1.4.47 W3 — per-user "Hide Coach" toggle joins the operator's
+  // master flag. Either-off resolves to `coachEnabled === false` so
+  // the hero action button + suggested-prompts strip + the
+  // `<HealthScoreCard onAskCoach />` prop all vanish together. The
+  // hook is SSR-safe — returns `false` when the legacy snapshot
+  // tests render the strip without a QueryClient.
+  const disableCoach = useDisableCoach();
+  const coachEnabled = flags.coach && !disableCoach;
   const greetingKey = resolveGreetingKey(now ?? new Date());
   const greetingBase = t(greetingKey);
   const greeting = userName ? `${greetingBase}, ${userName}` : greetingBase;

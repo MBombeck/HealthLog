@@ -3,6 +3,7 @@
 import { Quote } from "lucide-react";
 import { useTranslations } from "@/lib/i18n/context";
 import { useFeatureFlags } from "@/hooks/use-feature-flags";
+import { useDisableCoach } from "@/hooks/use-disable-coach";
 import { cn } from "@/lib/utils";
 
 /**
@@ -56,7 +57,12 @@ export function SuggestedPrompts({
   // defence-in-depth so a future caller that mounts <SuggestedPrompts>
   // outside the hero band can never leak a Coach surface.
   const flags = useFeatureFlags();
+  const disableCoach = useDisableCoach();
   if (!flags.coach) return null;
+  // v1.4.47 W3 — per-user opt-out hides every Coach affordance,
+  // including the suggested-prompts chip strip. Same posture as the
+  // FAB / drawer / inline pill gate above.
+  if (disableCoach) return null;
   const items =
     prompts ??
     DEFAULT_PROMPT_KEYS.map((key) => t(`insights.suggestedPrompts.${key}`));

@@ -223,6 +223,23 @@ model User {
   // payload when the toggle is off so the data never leaves the DB row.
   doctorReportPrefsJson Json? @map("doctor_report_prefs_json")
 
+  // v1.4.47 W3 — per-user Coach opt-out (privacy-leaning users).
+  //
+  // When `true`, every Coach mount point on the web client renders
+  // nothing — `<LayoutCoachFab>`, `<LayoutCoachMount>`, the inline
+  // `<CoachLaunchButton>` pill, the `/targets` page CTA, etc. The
+  // gate sits BELOW the operator-level `flags.coach` check: both
+  // must agree to render the affordance. Default `false` so the
+  // upgrade from v1.4.46 is invisible to anyone who hasn't toggled
+  // the new switch.
+  //
+  // Persistence point is the Settings → Insights `<Switch>` labelled
+  // "Hide Coach" / "Coach ausblenden"; the toggle writes through
+  // `PATCH /api/auth/me/disable-coach` and the next /api/auth/me
+  // round-trip surfaces the new value to every Coach gate via the
+  // `useAuth()` hook.
+  disableCoach Boolean @default(false) @map("disable_coach")
+
   // Relations
   passkeys               Passkey[]
   sessions               Session[]
@@ -258,25 +275,25 @@ model User {
   // session can build against a stable DTO. Routes hang off Workout
   // (1:1), not User — the User → WorkoutRoute path is two hops by
   // design.
-  workouts               Workout[]
+  workouts                    Workout[]
   // v1.4.25 W8d — personal records (schema only; detection worker
   // lands in a later release). The GET /api/personal-records route
   // ships with v1.4.25 so the iOS app can build its query path
   // against a stable contract.
-  personalRecords        PersonalRecord[]
+  personalRecords             PersonalRecord[]
   // v1.4.25 W19b — per-pen / per-vial inventory entities, the
   // companion to the running-sum MedicationInventoryEvent ledger.
   // Carries the EMA §6.3 30-day in-use clock per opened pen.
-  inventoryItems         MedicationInventoryItem[]
+  inventoryItems              MedicationInventoryItem[]
   // v1.4.25 W19d — GLP-1 side-effect logbook. 21-entry × 5-category
   // EMA EPAR §4.8-derived taxonomy with 1-5 Likert severity. Daily
   // capture (not per-shot) so delayed-onset symptoms map to their
   // actual occurrence time.
-  medicationSideEffects  MedicationSideEffect[]
+  medicationSideEffects       MedicationSideEffect[]
   // v1.4.34 — Apple Health `export.zip` import jobs. Mirrors the
   // pg-boss job state so the polling endpoint can read live per-
   // phase progress without round-tripping through pg-boss internals.
-  importJobs             ImportJob[]
+  importJobs                  ImportJob[]
   // v1.5.0 — persistent measurement rollup table. Carries the
   // count/min/max/mean/sd/slope/r2 stats per (type, granularity,
   // bucketStart) so the analytics + comprehensive read paths bypass
@@ -284,19 +301,19 @@ model User {
   // multi-instance fan-out. Populated synchronously on the DAY
   // granularity from the measurement write hooks; WEEK/MONTH/YEAR
   // are enqueued through pg-boss for the worker to fold.
-  measurementRollups     MeasurementRollup[]
+  measurementRollups          MeasurementRollup[]
   // v0.5.4 ios-coord — per-day dedup ledger for MOOD_REMINDER pushes.
   // One row per (user, local date) the worker has nudged. Prevents
   // a second push when the cron rechecks the same hour later in the
   // 22:00 window (the cron fires every 15 min — without the ledger
   // a user could see three pushes back-to-back).
-  moodReminderDispatches MoodReminderDispatch[]
+  moodReminderDispatches      MoodReminderDispatch[]
   // v1.4.39 W-MOOD — per-(user, granularity, bucket) mood rollup. New
   // tier behind the mood-analytics read path; per-write hooks fold
   // MoodEntry mutations into the DAY granularity inline so the next
   // read serves from this table instead of the unbounded
   // MoodEntry.findMany walk.
-  moodEntryRollups       MoodEntryRollup[]
+  moodEntryRollups            MoodEntryRollup[]
   // v1.4.39 W-MED — per-(user, medication, day) compliance rollup.
   // Per-write hook on MedicationIntakeEvent mutations + the scheduler
   // keep the row in sync so `/api/medications/intake?scope=compliance`
@@ -308,7 +325,7 @@ model User {
   // be verifiable") plus the operator's GDPR Art. 7 documentation
   // burden. Append-only — a user revoking + re-granting consent mints
   // a fresh row so the timeline reads chronologically.
-  consentReceipts        ConsentReceipt[]
+  consentReceipts             ConsentReceipt[]
 
   @@map("users")
 }
@@ -739,22 +756,22 @@ model Medication {
   createdAt            DateTime           @default(now()) @map("created_at")
   updatedAt            DateTime           @updatedAt @map("updated_at")
 
-  schedules        MedicationSchedule[]
-  intakeEvents     MedicationIntakeEvent[]
-  phaseConfig      ReminderPhaseConfig?
-  telegramMessages TelegramReminderMessage[]
-  doseChanges      MedicationDoseChange[]
-  inventoryEvents  MedicationInventoryEvent[]
+  schedules         MedicationSchedule[]
+  intakeEvents      MedicationIntakeEvent[]
+  phaseConfig       ReminderPhaseConfig?
+  telegramMessages  TelegramReminderMessage[]
+  doseChanges       MedicationDoseChange[]
+  inventoryEvents   MedicationInventoryEvent[]
   /// v1.4.25 W19b — per-pen / per-vial entities (state machine +
   /// 30-day in-use clock). Complements the running-sum
   /// MedicationInventoryEvent ledger.
-  inventoryItems   MedicationInventoryItem[]
+  inventoryItems    MedicationInventoryItem[]
   /// v1.4.25 W19d — structured GLP-1 side-effect logs. Surfaced on
   /// the medication detail page for GLP-1 treatmentClass only; the
   /// taxonomy follows EMA EPAR §4.8 with HealthLog's 5-category
   /// roll-up (GI / METABOLIC / INJECTION_SITE / COGNITIVE /
   /// GLP1_SPECIFIC) and 1-5 Likert severity per entry.
-  sideEffects      MedicationSideEffect[]
+  sideEffects       MedicationSideEffect[]
   /// v1.4.39 W-MED — per-(medication, day) compliance rollup. Mutations
   /// on the linked MedicationIntakeEvent rows refresh the row inline;
   /// the read paths consume this instead of the per-event findMany.
@@ -1986,20 +2003,20 @@ model CoachUsage {
 // distinguish "ai_full" / "ai_insights_only" / future scopes without
 // requiring a schema migration per new tier.
 model ConsentReceipt {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
-  kind        String
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  kind      String
   /// Raw consent artefact — either a base64-encoded PDF or a signed
   /// JWT. The server does not parse this payload; the audit trail is
   /// the storage itself plus the `signedAt` timestamp.
-  artefact    String   @db.Text
+  artefact  String    @db.Text
   /// Wall-clock the client recorded the user's tap. UTC ISO-8601.
-  signedAt    DateTime @map("signed_at")
+  signedAt  DateTime  @map("signed_at")
   /// Optional revocation marker — set when a follow-up "revoke" row
   /// is minted so the latest-per-user lookup can shortcut to "no
   /// active consent" without diffing the kind discriminator.
-  revokedAt   DateTime? @map("revoked_at")
-  createdAt   DateTime @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

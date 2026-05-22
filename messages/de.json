@@ -1869,7 +1869,15 @@
       },
       "testProvider": "Aktiven Provider testen",
       "testSuccess": "OK — {provider} ({model})",
-      "testFailedShort": "Test fehlgeschlagen: {message}"
+      "testFailedShort": "Test fehlgeschlagen: {message}",
+      "disableCoach": {
+        "title": "Coach ausblenden",
+        "description": "Versteckt den Coach-Button und das Coach-Panel auf allen Seiten.",
+        "toggleAria": "Coach-Button und Coach-Panel ausblenden",
+        "savedHidden": "Coach ist ausgeblendet.",
+        "savedShown": "Coach ist sichtbar.",
+        "saveError": "Speichern fehlgeschlagen. Bitte erneut versuchen."
+      }
     },
     "withings": "Withings",
     "withingsDescription": "Verbinde deine Withings-Waage und Blutdruckmessgeräte.",

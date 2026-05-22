@@ -32,5 +32,11 @@ export const GET = apiHandler(async () => {
     gravatarUrl: user.email ? getGravatarUrl(user.email) : null,
     glucoseUnit: user.glucoseUnit ?? null,
     lastReportPracticeName: user.lastReportPracticeName ?? null,
+    // v1.4.47 W3 — per-user Coach opt-out. Default `false` if the
+    // column is absent (partial-deploy rollback safety, see migration
+    // 0076 commentary). Every Coach mount point on the client checks
+    // `user.disableCoach` BELOW the operator-level `flags.coach`
+    // short-circuit; both gates must agree to paint the affordance.
+    disableCoach: user.disableCoach ?? false,
   });
 });

@@ -195,4 +195,28 @@ describe("<AiSection> — dropdown-driven UX (B2)", () => {
     expect(html).toContain("Aktiver Provider");
     expect(html).toContain("Primärer Provider");
   });
+
+  // v1.4.47 W3 — per-user "Hide Coach" toggle. The card lives at the
+  // bottom of the AI section so privacy-leaning users never scroll
+  // past the provider configuration to find it.
+  it("mounts the Hide-Coach toggle card", () => {
+    activeProviderQuery = "codex";
+    const html = render();
+    expect(html).toContain('data-testid="settings-disable-coach-card"');
+    expect(html).toContain('data-testid="settings-disable-coach-switch"');
+    // The localised label + helper line are both surfaced — proves
+    // the i18n keys resolve and the description string ships with the
+    // bilingual copy required by the QoL audit (M2).
+    expect(html).toContain("Hide Coach");
+    expect(html).toContain("Hides the Coach button and drawer everywhere.");
+  });
+
+  it("renders the German Hide-Coach copy", () => {
+    activeProviderQuery = "codex";
+    const html = render("de");
+    expect(html).toContain("Coach ausblenden");
+    expect(html).toContain(
+      "Versteckt den Coach-Button und das Coach-Panel auf allen Seiten.",
+    );
+  });
 });

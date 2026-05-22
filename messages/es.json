@@ -1869,7 +1869,15 @@
       },
       "testProvider": "Test active provider",
       "testSuccess": "OK — {provider} ({model})",
-      "testFailedShort": "Test failed: {message}"
+      "testFailedShort": "Test failed: {message}",
+      "disableCoach": {
+        "title": "Ocultar el Coach",
+        "description": "Oculta el botón del Coach y el panel en todas las páginas.",
+        "toggleAria": "Ocultar el botón del Coach y el panel",
+        "savedHidden": "Coach oculto.",
+        "savedShown": "Coach visible.",
+        "saveError": "No se pudo guardar el cambio. Inténtalo de nuevo."
+      }
     },
     "withings": "Withings",
     "withingsDescription": "Connect your Withings scale and blood pressure monitors.",
