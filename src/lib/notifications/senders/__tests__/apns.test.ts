@@ -74,11 +74,26 @@ import {
 } from "@/lib/notifications/senders/apns";
 import { prisma } from "@/lib/db";
 
+// v1.4.47.2 — real EC P-256 .p8 (test-only, generated for this suite).
+// loadApnsConfig now verifies the key parses as an ES256-compatible
+// asymmetric key via `crypto.createPrivateKey`, so the fixture cannot
+// be a mock string — node-apn would later fail JWT signing on a non-EC
+// payload with the same error this hotfix exists to prevent.
+const TEST_EC_PEM_LINES = [
+  "-----BEGIN PRIVATE KEY-----",
+  "MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgLOXP3Exjr5L5tamN",
+  "pTxck85Iaum80PdRlWDpc/ezviOgCgYIKoZIzj0DAQehRANCAAT1x8nKRb8KshQU",
+  "1aPieSCqOY6ilgC959umaFSlhfav8eZ91UHP/xond9aMoZcuQ7lJG/Rsj70SWMvZ",
+  "bw81BG89",
+  "-----END PRIVATE KEY-----",
+];
 const VALID_ENV = {
   APNS_KEY_ID: "ABCDE12345",
   APNS_TEAM_ID: "TEAM123456",
   APNS_BUNDLE_ID: "test.healthlog.ios",
-  APNS_KEY: "-----BEGIN PRIVATE KEY-----\\nMOCKKEY\\n-----END PRIVATE KEY-----",
+  // Mimic the 12-factor `\n`-escaped single-line form a typical
+  // Coolify / docker-compose `env_file` round-trip produces.
+  APNS_KEY: TEST_EC_PEM_LINES.join("\\n"),
 };
 
 function setEnv(over: Record<string, string | undefined> = {}): void {
@@ -159,6 +174,40 @@ describe("loadApnsConfig — all-or-none env-var guard", () => {
     const a = loadApnsConfig();
     const b = loadApnsConfig();
     expect(a).toBe(b);
+  });
+
+  it("normalises a single-line PEM that lost its newlines", () => {
+    // Reproduce the v1.4.47.2 failure mode: the .env round-trip
+    // stripped the `\n` escapes, arriving as a single line
+    // `-----BEGIN PRIVATE KEY-----<base64-body>-----END PRIVATE KEY-----`.
+    // jsonwebtoken@9 rejects this as "not an asymmetric key"; the
+    // normaliser re-wraps the body so node-apn's JWT signer accepts it.
+    const collapsed = TEST_EC_PEM_LINES.join("");
+    setEnv({ ...VALID_ENV, APNS_KEY: collapsed });
+    const config = loadApnsConfig();
+    expect(config).toBeTruthy();
+    expect(config?.signingKey.startsWith("-----BEGIN PRIVATE KEY-----\n")).toBe(true);
+    expect(config?.signingKey.endsWith("\n-----END PRIVATE KEY-----")).toBe(true);
+  });
+
+  it("accepts a bare base64 body without BEGIN/END markers", () => {
+    // Some operator workflows paste just the base64 payload between
+    // the markers (Apple's portal does this for some clipboard paths).
+    // Wrap and re-emit a canonical PEM.
+    const bareBase64 = TEST_EC_PEM_LINES.slice(1, -1).join("");
+    setEnv({ ...VALID_ENV, APNS_KEY: bareBase64 });
+    const config = loadApnsConfig();
+    expect(config).toBeTruthy();
+    expect(config?.signingKey.startsWith("-----BEGIN PRIVATE KEY-----\n")).toBe(true);
+  });
+
+  it("returns null + warns when APNS_KEY does not parse as an asymmetric key", () => {
+    setEnv({
+      ...VALID_ENV,
+      APNS_KEY: "-----BEGIN PRIVATE KEY-----\\nNOTAREALKEY\\n-----END PRIVATE KEY-----",
+    });
+    const config = loadApnsConfig();
+    expect(config).toBeNull();
   });
 
   it("APNS_PRODUCTION=true sets forceProduction", () => {
