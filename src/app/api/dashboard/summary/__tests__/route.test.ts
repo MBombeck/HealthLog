@@ -604,6 +604,13 @@ describe("GET /api/dashboard/summary", () => {
     // slot (e.g. the intake route or the reminder worker minted it
     // first), the dashboard route's backfill `createMany` must not
     // fire — the route simply re-reads + returns.
+    //
+    // v1.4.47 — pin the wall-clock so the projected scheduledFor and
+    // the mocked existence row land on the same day regardless of
+    // when the suite runs (previously hard-coded 2026-05-21 — broke
+    // on 2026-05-22).
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-21T08:00:00.000Z"));
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     const scheduledFor = new Date("2026-05-21T05:00:00.000Z");
     vi.mocked(prisma.medication.findMany).mockResolvedValue([
@@ -646,6 +653,7 @@ describe("GET /api/dashboard/summary", () => {
       data: { compliance: { scheduledToday: number; takenToday: number } };
     };
     expect(body.data.compliance.scheduledToday).toBe(1);
+    vi.useRealTimers();
   });
 
   it("computes intake compliance for today", async () => {

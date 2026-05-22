@@ -218,6 +218,12 @@ describe("GET /api/medications/intake", () => {
   });
 
   it("does not double-mint when today's rows already exist", async () => {
+    // v1.4.47 — pin the wall-clock so the projected scheduledFor and
+    // the mocked existence row land on the same day regardless of
+    // when the suite runs (previously hard-coded 2026-05-21 — broke
+    // on 2026-05-22).
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-21T08:00:00.000Z"));
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     const scheduledFor = new Date("2026-05-21T05:00:00.000Z");
     vi.mocked(prisma.medication.findMany).mockResolvedValue([
@@ -256,6 +262,7 @@ describe("GET /api/medications/intake", () => {
     );
     expect(res.status).toBe(200);
     expect(prisma.medicationIntakeEvent.createMany).not.toHaveBeenCalled();
+    vi.useRealTimers();
   });
 
   it("returns compliance buckets for the last N days", async () => {
