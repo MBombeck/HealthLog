@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.4.47.3] — 2026-05-22 — APNs PEM diagnostic dump on parse failure
+
+v1.4.47.2 added defensive PEM normalisation but the production env-var was still rejected at `crypto.createPrivateKey` with `error:1E08010C:DECODER routines::unsupported`. The base64 body itself appears to be corrupted somewhere along the Coolify → docker-compose → `process.env` path; normalising the wrapping cannot recover it.
+
+This release adds a one-line diagnostic dump on parse failure so the operator can compare the in-container shape against the source `.p8`:
+
+```
+APNs key did not parse as PEM: <err> [diag raw_len=… norm_len=…
+  escaped_newlines=… real_newlines=… begin_markers=… end_markers=…
+  base64_chars=… other_chars=… sha256_prefix=…]
+```
+
+No secret bytes leave the warning — only character-class counts, structural marker counts, and a 16-char SHA-256 prefix that the operator can compare against `shasum -a 256 AuthKey_*.p8` locally.
+
+### Changed
+
+- `src/lib/notifications/senders/apns.ts:loadApnsConfig` — on the existing `crypto.createPrivateKey` failure branch, emit a structured diagnostic warning. Channel disable behaviour unchanged.
+
+### Risk
+
+Zero. Behaviour-preserving — only the warning message gets richer when the parse already fails.
+
 ## [1.4.47.2] — 2026-05-22 — APNs JWT signing repair (defensive PEM normalisation)
 
 Same-day follow-up to v1.4.47.1. Coolify runtime logs surfaced

@@ -1,6 +1,6 @@
 {
   "name": "healthlog",
-  "version": "1.4.47.2",
+  "version": "1.4.47.3",
   "description": "Self-hosted personal-health-tracking PWA with Withings integration, AI insights, and doctor-report PDF export.",
   "license": "AGPL-3.0-only",
   "homepage": "https://healthlog.dev",

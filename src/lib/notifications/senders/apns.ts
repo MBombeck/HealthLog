@@ -21,7 +21,7 @@
  * separately — that's what the library is for, and pinning a single
  * token to the process lifetime would expire ~50 minutes after boot.
  */
-import { createPrivateKey } from "node:crypto";
+import { createHash, createPrivateKey } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import apn from "@parse/node-apn";
@@ -219,7 +219,29 @@ export function loadApnsConfig(): ApnsConfig | null {
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "parse_failed";
-      getEvent()?.addWarning(`APNs key did not parse as PEM: ${message}`);
+      // v1.4.47.3 — diagnostic dump on parse failure so operators can
+      // tell whether the env-var arrived in the expected shape.
+      // Logs nothing sensitive: only lengths, character-class counts,
+      // and a SHA-256 prefix of the normalised body. Never the key bytes.
+      const sha256 = createHash("sha256").update(signingKey).digest("hex");
+      const escapedNewlineCount = (inlineKey.match(/\\n/g) || []).length;
+      const realNewlineCount = (signingKey.match(/\n/g) || []).length;
+      const beginCount = (signingKey.match(/-----BEGIN/g) || []).length;
+      const endCount = (signingKey.match(/-----END/g) || []).length;
+      const base64Chars = (signingKey.match(/[A-Za-z0-9+/=]/g) || []).length;
+      const otherChars =
+        signingKey.length -
+        base64Chars -
+        realNewlineCount -
+        (signingKey.match(/[-\s]/g) || []).length;
+      getEvent()?.addWarning(
+        `APNs key did not parse as PEM: ${message} ` +
+          `[diag raw_len=${inlineKey.length} norm_len=${signingKey.length} ` +
+          `escaped_newlines=${escapedNewlineCount} real_newlines=${realNewlineCount} ` +
+          `begin_markers=${beginCount} end_markers=${endCount} ` +
+          `base64_chars=${base64Chars} other_chars=${otherChars} ` +
+          `sha256_prefix=${sha256.slice(0, 16)}]`,
+      );
       cachedConfig = null;
       return null;
     }
