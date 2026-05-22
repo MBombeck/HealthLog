@@ -2,9 +2,9 @@
 
 ## [1.4.47] — 2026-05-22 — Audit-backlog closure: drag-to-reorder, Coach disable toggle, OAuth state nonce table, legacy column drop, primitive sweep
 
-v1.4.45 closed the audit marathon; v1.4.46 caught a same-day server reconcile (PR worker, intake auto-skip, APNS admin test). v1.4.47 is the dedicated follow-up that lands every deferred v1.4.45 audit Medium/Low plus the W14 legacy-column cleanup the v1.4.45 release scheduled for "one release later".
+v1.4.45 closed the v1.4.43-audit follow-up; v1.4.46 caught a same-day server reconcile (PR worker, intake auto-skip, APNS admin test). v1.4.47 is the dedicated follow-up that lands every deferred v1.4.45 audit Medium/Low plus the W14 legacy-column cleanup the v1.4.45 release scheduled for "one release later".
 
-Eight touch-disjoint waves landed on `develop` before this release commit:
+Eight changes landed on `develop` before this release commit:
 
 - **W0** wall-clock pin on the two idempotency tests (`/api/dashboard/summary` + `/api/medications/intake`) that hard-coded `2026-05-21` and broke on the 22nd
 - **W1** drop the legacy `consecutive_failures` column on `integration_statuses` — the v1.4.45 W14 per-kind bucket migration carried the legacy integer for one release as a fallback; now removed, alert ladder reads `Math.max(...buckets)`
@@ -30,8 +30,8 @@ Eight touch-disjoint waves landed on `develop` before this release commit:
 - **`/api/auth/me` payload** extended with `disableCoach: boolean` (defaulted to `false` for partial-deploy rollback). `useAuth` types extended; the fetcher coerces `undefined → false` at the wire boundary.
 - **`IntegrationStatus.consecutiveFailures` column dropped** — the v1.4.45 W14 migration introduced per-kind buckets but kept the legacy integer one release as a fallback. v1.4.47 drops the column. Alert ladder + audit `attemptNumber` now read `Math.max(...Object.values(consecutiveFailuresByKind))`. Migration `0077_v1447_drop_legacy_consecutive_failures` is reversible via a `GREATEST(transient, reauth_required, persistent)` recipe documented inline.
 - **`<TourLauncher>` auto-launch gate** extended from "tour not completed" to "tour not completed AND `onboardingCompletedAt + 24 h < now()`". The mount-time clock is captured via `useState(() => Date.now())` so render stays pure. Brand-new users (`onboardingCompletedAt == null`) and same-day re-visits never see the auto-launch; the manual "Replay the tour" button still works.
-- **`messages/de.json`** + 5 sibling locales — added `dashboard.dragHandle` + `dashboard.dragHandleHint`, `settings.ai.disableCoach.{title,description,toggleAria,savedHidden,savedShown,saveError}`, `settings.about.tourReplay` + `settings.about.tourReplayHint`. Marc-voice strings throughout.
-- **Withings `state` cookie** still named `withings_state` (in-flight handshake at deploy time stays alive — only the cookie shape changed, not the name). The cookie + URL now carry just the nonce; user identity resolves via the ledger row.
+- **`messages/de.json`** + 5 sibling locales — added `dashboard.dragHandle` + `dashboard.dragHandleHint`, `settings.ai.disableCoach.{title,description,toggleAria,savedHidden,savedShown,saveError}`, `settings.about.tourReplay` + `settings.about.tourReplayHint`. Copy is tight + professional in every locale; English-fallback on `tourReplay` for es/fr/it/pl per the partial-translation status the rest of the About section already carries.
+- **Withings `state` cookie name preserved** as `withings_state`; the value shape changed from `${userId}:${nonce}` to a bare 22-char base64url nonce. A handshake mid-deploy will fail the CSRF check on the callback side (the cookie carries the old shape, the ledger has no row) and bounce the user to the connect-error page; a retry succeeds. No data loss; users in flight retry once.
 
 ### Fixed
 
@@ -41,7 +41,7 @@ Eight touch-disjoint waves landed on `develop` before this release commit:
 
 ### Operator notes
 
-- **Migration**: three migrations to apply via `prisma migrate deploy`: `0076_v1447_withings_oauth_state`, `0077_v1447_drop_legacy_consecutive_failures`, `0078_v1447_user_disable_coach`. All idempotent (`IF NOT EXISTS` / `IF EXISTS`) + reversible.
+- **Migration MUST run before the app image rolls**: three migrations apply via `prisma migrate deploy` in numeric order: `0076_v1447_withings_oauth_state`, `0077_v1447_drop_legacy_consecutive_failures`, `0078_v1447_user_disable_coach`. All idempotent (`IF NOT EXISTS` / `IF EXISTS`) + reversible. Running the v1.4.47 image without migration 0078 would 500 every `/api/auth/me` call because the Prisma client SELECTs `disable_coach`; run `prisma migrate deploy` first.
 - **New cron**: `withings-oauth-state-cleanup` runs daily at 03:20 Europe/Berlin via pg-boss. Wired into `reminder-worker.ts`; no extra ops setup required beyond a worker container running.
 - **No env-var change.** `pnpm check-env` still passes; the v1.4.42 env-check CI gate enforces manifest ↔ `.env.production.example` lockstep.
 - **No API contract break for iOS v0.5.4.** `disableCoach` is additively extended in `/api/auth/me` (older iOS reads coerce `undefined → false`). Withings OAuth state cookie name preserved; in-flight handshakes survive a deploy. The Coach disable toggle is opt-in; default behaviour unchanged.

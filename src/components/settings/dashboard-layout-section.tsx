@@ -547,7 +547,12 @@ function SortableWidgetRow({
         title={labels.dragHandle}
         disabled={disabled}
         data-slot="widget-drag-handle"
-        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring focus-visible:ring-offset-background -m-1 inline-flex h-7 w-7 cursor-grab touch-none items-center justify-center rounded transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-50"
+        // v1.4.47 W10 design-H1 — extend the WCAG 2.5.5 hit target to
+        // 44 × 44 px via a `::before` pseudo-element while keeping the
+        // visible GripVertical at 28 px (matches the Switch primitive
+        // pattern from v1.4.43 W5-H1). v1.4.47 W10 design-M1 — drop
+        // dnd-kit's CSS transition under prefers-reduced-motion.
+        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring focus-visible:ring-offset-background -m-1 relative inline-flex h-7 w-7 cursor-grab touch-none items-center justify-center rounded transition-colors before:absolute before:inset-[-8px] before:content-[''] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
       >
         <GripVertical className="h-4 w-4" />
       </button>
