@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.4.47.5] — 2026-05-22 — APNs gateway auto-detect on `BadEnvironmentKeyInToken`
+
+v1.4.47.4 + the Coolify `APNS_PRODUCTION` env-var deletion got JWT signing past Apple's gate, but the next push still failed with `BadEnvironmentKeyInToken` — the server's per-device gateway routing didn't match the actual token environment. The iOS client picks the gateway env when it registers, but in practice the client's reported env can mismatch the token's true environment (e.g. a DEBUG build that registered itself as "production" by accident, or a TestFlight-then-Debug installation chain).
+
+This release adds gateway auto-detect: on `BadEnvironmentKeyInToken`, retry exactly once with the opposite gateway. If the retry succeeds, persist the correction to `Device.apnsEnvironment` so subsequent sends go straight to the right gateway.
+
+### Changed
+
+- `src/lib/notifications/senders/apns.ts:sendViaApns` — per-device send-loop now walks an env-sequence (`[initial, opposite]`). Breaks on success OR on any non-`BadEnvironmentKeyInToken` failure. On retry-success, updates `Device.apnsEnvironment` in DB and emits a wide-event warning so the operator sees the correction.
+
+### Effect
+
+- Future pushes hit the right gateway for each device, even if the iOS app misreported the env at registration time.
+- The first delivery after deploy may take 2 RTT-to-Apple round-trips for any device that needs correction; subsequent ones go through directly.
+
+### Risk
+
+Low. The retry only fires on the specific `BadEnvironmentKeyInToken` reason. Other failures (`BadDeviceToken`, `Unregistered`, network) take the existing single-attempt path. Two new unit tests cover the retry-and-correct path + the no-retry-on-BadDeviceToken path.
+
 ## [1.4.47.4] — 2026-05-22 — APNs key escape-free env var (APNS_KEY_B64)
 
 The v1.4.47.2 / .3 chain established that the production `APNS_KEY` env-var is mangled along the `docker-compose env_file` → `process.env` pipeline. Defensive normalisation cannot recover it because the base64 body itself is corrupted on arrival.

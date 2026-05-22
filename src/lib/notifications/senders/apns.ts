@@ -562,8 +562,21 @@ export async function sendViaApns(
 
   for (const device of devices) {
     if (!device.apnsToken) continue;
-    const env =
+    const initialEnv: "production" | "sandbox" =
       device.apnsEnvironment === "production" ? "production" : "sandbox";
+
+    // v1.4.47.5 — gateway auto-detect on BadEnvironmentKeyInToken.
+    // The iOS client picks the gateway env when it registers, but in
+    // practice the client's reported env can mismatch the token's
+    // actual environment (e.g. DEBUG build that registered itself as
+    // "production" by accident). Apple returns `BadEnvironmentKeyInToken`
+    // when the provider gateway env doesn't match the token env. Try
+    // the opposite gateway exactly once; if it succeeds, persist the
+    // correction so subsequent sends go straight to the right env.
+    const envSequence: ReadonlyArray<"production" | "sandbox"> =
+      initialEnv === "production"
+        ? (["production", "sandbox"] as const)
+        : (["sandbox", "production"] as const);
 
     // SB-5 v1.4.40 — only MEDICATION_REMINDER opts in to Focus-bypass.
     // The user explicitly asked the server to nudge them about a dose;
@@ -573,9 +586,12 @@ export async function sendViaApns(
     // Focus modes — including Sleep — silence them as the user expects.
     const isTimeSensitive = payload.eventType === "MEDICATION_REMINDER";
 
-    const result = await sendApnsPush({
+    let result: Awaited<ReturnType<typeof sendApnsPush>> | null = null;
+    let workingEnv: "production" | "sandbox" | null = null;
+    for (const attemptEnv of envSequence) {
+      result = await sendApnsPush({
       deviceToken: device.apnsToken,
-      environment: env,
+      environment: attemptEnv,
       payload: {
         alert: { title: payload.title, body: stripHtml(payload.message) },
         data: {
@@ -602,18 +618,46 @@ export async function sendViaApns(
           : {}),
       },
       collapseId: payload.eventType,
-    });
+      });
 
-    if (result.ok) {
+      if (result.ok) {
+        workingEnv = attemptEnv;
+        break;
+      }
+      // Only retry the OTHER gateway on the specific environment-mismatch
+      // reason. Other failure reasons (BadDeviceToken, expired, network
+      // blips) wouldn't be solved by switching gateways.
+      if (result.reason !== "BadEnvironmentKeyInToken") {
+        break;
+      }
+    }
+
+    if (result?.ok) {
       anySuccess = true;
+      if (workingEnv && workingEnv !== initialEnv) {
+        // Persist the correction so subsequent sends go straight to the
+        // right gateway. Log a wide-event warning so the operator sees
+        // the iOS client's reported env was wrong.
+        await prisma.device
+          .update({
+            where: { id: device.id },
+            data: { apnsEnvironment: workingEnv },
+          })
+          .catch(() => {
+            /* persist is best-effort; the send already succeeded */
+          });
+        getEvent()?.addWarning(
+          `APNs device.apnsEnvironment corrected ${initialEnv} → ${workingEnv} after BadEnvironmentKeyInToken`,
+        );
+      }
       continue;
     }
 
-    if (result.shouldDisable) {
+    if (result?.shouldDisable) {
       deadDeviceIds.push(device.id);
     }
-    lastFailureReason = result.reason;
-    lastFailureStatus = result.status;
+    lastFailureReason = result?.reason;
+    lastFailureStatus = result?.status;
   }
 
   if (deadDeviceIds.length > 0) {
