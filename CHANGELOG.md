@@ -1,5 +1,43 @@
 # Changelog
 
+## [1.4.47.2] — 2026-05-22 — APNs JWT signing repair (defensive PEM normalisation)
+
+Same-day follow-up to v1.4.47.1. Coolify runtime logs surfaced
+
+```
+Notification sender threw for APNS:
+  Failed to generate token: secretOrPrivateKey must be an asymmetric
+  key when using ES256
+```
+
+on every push attempt. The channel had auto-paused after 3 consecutive failures (admin UI showed `sender_threw · Versand pausiert · Nächster Versuch 11:10`).
+
+Root cause: the .p8 PEM stored in the Coolify env-var arrived at `process.env.APNS_KEY` without parseable newlines around the BEGIN / END markers — likely a `docker-compose env_file` round-trip artefact. `openssl pkey` could still parse it, but `jsonwebtoken@9` (used by `@parse/node-apn`) is strict and refused to sign.
+
+### Changed
+
+- `src/lib/notifications/senders/apns.ts:loadApnsConfig` — after the `.replace(/\\n/g, "\n")` 12-factor unescape, normalise the PEM body: strip whitespace between markers, force a 64-char line wrap of the base64 payload, and rebuild a canonical PEM. Idempotent on already-correct PEMs; recovers bare-base64 inputs without markers too. Then verify the result parses as an asymmetric EC key via `crypto.createPrivateKey` before handing to node-apn. On verification failure, return `null` with a one-time warning — beats `sender_threw` on every push.
+
+### Effect
+
+- APNs channel returns to active on the next push attempt (the channel-state machine clears the cooldown on the first success).
+- No env-var change required; the existing `APNS_KEY` value is normalised in-process.
+- Operators with already-correct multi-line PEMs see no behavioural difference.
+
+### Test plan
+
+- [x] 3 new unit tests cover the v1.4.47.2 normalisation paths: collapsed single-line PEM, bare base64 body without markers, unparseable garbage returns null + warning.
+- [x] Updated `VALID_ENV.APNS_KEY` fixture to a real EC P-256 key so the existing tests exercise the verification path end-to-end.
+- [x] `pnpm typecheck` clean, `pnpm lint` clean, full suite green.
+
+### Risk
+
+Low. Adds defensive normalisation + a parse check. Bad PEMs that previously caused `sender_threw` on every push now cleanly disable the APNs channel with a single warning at load time. Good PEMs are passed through unchanged after the canonical re-wrap (which produces an identical PEM for already-correct inputs).
+
+### Operator notes
+
+Standard image roll. No `prisma migrate deploy` step required.
+
 ## [1.4.47.1] — 2026-05-22 — Slim summaries slice 9 s → ~0.5-1 s cold
 
 Same-day hotfix on top of v1.4.47. Dashboard cold mount on power-user accounts was firing `/api/analytics?slice=summaries` at ~9 s TTFB; the time was almost entirely in one `$queryRaw` against the `measurements` table.

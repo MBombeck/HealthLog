@@ -21,6 +21,7 @@
  * separately — that's what the library is for, and pinning a single
  * token to the process lifetime would expire ~50 minutes after boot.
  */
+import { createPrivateKey } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import apn from "@parse/node-apn";
@@ -188,6 +189,40 @@ export function loadApnsConfig(): ApnsConfig | null {
     // when the env block is a single line. Convert them back here so
     // node-apn sees a real PEM. No-op for already-multiline values.
     signingKey = inlineKey.replace(/\\n/g, "\n");
+
+    // v1.4.47.2 — defensive PEM normalisation.
+    //
+    // jsonwebtoken@9 (used by @parse/node-apn) throws
+    // `secretOrPrivateKey must be an asymmetric key when using ES256`
+    // when the PEM body has no newlines between BEGIN/END markers and
+    // the base64 payload — even though openssl can still parse it.
+    // Coolify + docker-compose `env_file` round-trips have at least
+    // three known failure modes that drop newlines: the env value
+    // arriving without `\n` escapes, an editor stripping the trailing
+    // newline at the marker boundary, or a copy-paste from the Apple
+    // Developer portal that lost line breaks. Force-rewrap the
+    // base64 body at 64-char lines if we cannot parse the key as-is.
+    signingKey = normaliseApnsPem(signingKey);
+
+    // Belt-and-suspenders: verify the key actually parses as an
+    // asymmetric EC key before we hand it to node-apn. A single
+    // warning per process beats hundreds of `sender_threw` retries
+    // every time the worker tries to dispatch a push.
+    try {
+      const keyObject = createPrivateKey({ key: signingKey, format: "pem" });
+      if (keyObject.asymmetricKeyType !== "ec") {
+        getEvent()?.addWarning(
+          `APNs key parsed as ${keyObject.asymmetricKeyType ?? "unknown"}; expected "ec" for ES256`,
+        );
+        cachedConfig = null;
+        return null;
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "parse_failed";
+      getEvent()?.addWarning(`APNs key did not parse as PEM: ${message}`);
+      cachedConfig = null;
+      return null;
+    }
   } else {
     try {
       signingKey = readFileSync(/* turbopackIgnore: true */ keyFile, "utf8");
@@ -201,6 +236,39 @@ export function loadApnsConfig(): ApnsConfig | null {
 
   cachedConfig = { keyId, teamId, bundleId, signingKey, forceProduction };
   return cachedConfig;
+}
+
+/**
+ * v1.4.47.2 — repair PEM strings that lost newlines along the
+ * env-var → docker-compose → process.env pipeline.
+ *
+ * If the input already has real newlines around the BEGIN/END markers
+ * AND the body wraps at <=64 chars per line (Apple's .p8 default),
+ * it is returned unchanged. Otherwise we strip everything outside
+ * the BEGIN/END markers, rewrap the base64 body at 64-char lines,
+ * and rebuild a canonical PEM. Idempotent on already-correct PEMs.
+ */
+function normaliseApnsPem(raw: string): string {
+  const beginMarker = "-----BEGIN PRIVATE KEY-----";
+  const endMarker = "-----END PRIVATE KEY-----";
+  const beginIdx = raw.indexOf(beginMarker);
+  const endIdx = raw.indexOf(endMarker);
+  if (beginIdx < 0 || endIdx <= beginIdx) {
+    // Bare base64 body without markers — wrap it.
+    const body = raw.replace(/\s+/g, "");
+    if (!/^[A-Za-z0-9+/=]+$/.test(body)) {
+      // Not recognisable; return as-is and let downstream complain.
+      return raw;
+    }
+    const wrapped = body.replace(/(.{64})/g, "$1\n").replace(/\n$/, "");
+    return `${beginMarker}\n${wrapped}\n${endMarker}`;
+  }
+  const body = raw
+    .slice(beginIdx + beginMarker.length, endIdx)
+    .replace(/\s+/g, "");
+  if (!body) return raw;
+  const wrapped = body.replace(/(.{64})/g, "$1\n").replace(/\n$/, "");
+  return `${beginMarker}\n${wrapped}\n${endMarker}`;
 }
 
 /**
