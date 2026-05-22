@@ -218,7 +218,12 @@ describe("parkIntegrationAtReauth — silent scope-skip park (v1.4.27 F20)", () 
       lastError: "enc(Withings connection is missing the user.activity scope.)",
     });
     // The whole point of the helper: counter is not in the update set.
+    // v1.4.47 W1 — the legacy `consecutiveFailures` column was dropped
+    // (migration 0076); the per-kind bucket is the live counter now.
+    // Neither field appears in the update payload — the existing
+    // bucket values are preserved exactly.
     expect(upsertArgs.update).not.toHaveProperty("consecutiveFailures");
+    expect(upsertArgs.update).not.toHaveProperty("consecutiveFailuresByKind");
 
     // No admin alert fired.
     expect(dispatchNotification).not.toHaveBeenCalled();
@@ -272,6 +277,9 @@ describe("parkIntegrationAtReauth — silent scope-skip park (v1.4.27 F20)", () 
     // First-ever sync attempt on a legacy connection: no row in the
     // table. Helper must create the row at counter=0 so a later
     // genuine transient burst still has the full 3-strike runway.
+    // v1.4.47 W1 — counter is now the per-kind bucket payload (the
+    // legacy `consecutiveFailures` column was dropped in migration
+    // 0076); a zero envelope is the equivalent seed.
     vi.mocked(prisma.integrationStatus.findUnique).mockResolvedValueOnce(null);
     vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce(
       {} as never,
@@ -290,7 +298,11 @@ describe("parkIntegrationAtReauth — silent scope-skip park (v1.4.27 F20)", () 
       userId: "u-new",
       integration: "withings",
       state: "error_reauth",
-      consecutiveFailures: 0,
+      consecutiveFailuresByKind: {
+        transient: 0,
+        reauth_required: 0,
+        persistent: 0,
+      },
     });
     expect(dispatchNotification).not.toHaveBeenCalled();
   });

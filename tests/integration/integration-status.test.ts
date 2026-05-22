@@ -84,7 +84,13 @@ describe("IntegrationStatus end-to-end", () => {
     });
     expect(status).not.toBeNull();
     expect(status!.state).toBe("error_transient");
-    expect(status!.consecutiveFailures).toBe(1);
+    // v1.4.47 W1 — legacy `consecutiveFailures` column dropped; the
+    // per-kind bucket is now the sole counter.
+    expect(status!.consecutiveFailuresByKind).toMatchObject({
+      transient: 1,
+      reauth_required: 0,
+      persistent: 0,
+    });
     expect(status!.lastAttemptAt).toBeInstanceOf(Date);
     expect(status!.lastError).toBeTruthy();
     // Encrypted at rest — must NOT be the plaintext message.
@@ -116,7 +122,13 @@ describe("IntegrationStatus end-to-end", () => {
     const snapshot = await getIntegrationStatus(TEST_USER_ID, "moodlog");
     expect(snapshot.state).toBe("error_transient");
     expect(snapshot.lastError).toBe("moodLog sync HTTP 502");
-    expect(snapshot.consecutiveFailures).toBe(1);
+    // v1.4.47 W1 — snapshot drops the legacy `consecutiveFailures`
+    // scalar; the per-kind bucket carries the count.
+    expect(snapshot.consecutiveFailuresByKind).toMatchObject({
+      transient: 1,
+      reauth_required: 0,
+      persistent: 0,
+    });
   });
 
   it("recordSyncSuccess clears the streak, resets state, and (importantly) does NOT write an audit row", async () => {
@@ -134,7 +146,11 @@ describe("IntegrationStatus end-to-end", () => {
       },
     });
     expect(status!.state).toBe("connected");
-    expect(status!.consecutiveFailures).toBe(0);
+    expect(status!.consecutiveFailuresByKind).toMatchObject({
+      transient: 0,
+      reauth_required: 0,
+      persistent: 0,
+    });
     expect(status!.lastError).toBeNull();
     expect(status!.lastSuccessAt).toBeInstanceOf(Date);
 
@@ -242,7 +258,11 @@ describe("IntegrationStatus end-to-end", () => {
     });
     expect(row!.state).toBe("disconnected");
     expect(row!.lastError).toBeNull();
-    expect(row!.consecutiveFailures).toBe(0);
+    expect(row!.consecutiveFailuresByKind).toMatchObject({
+      transient: 0,
+      reauth_required: 0,
+      persistent: 0,
+    });
   });
 
   // v1.4.43 W14 — end-to-end resume flow against real Postgres.
@@ -259,7 +279,6 @@ describe("IntegrationStatus end-to-end", () => {
         userId: TEST_USER_ID,
         integration: "withings",
         state: "parked",
-        consecutiveFailures: 30,
         consecutiveFailuresByKind: {
           transient: 2,
           reauth_required: 0,
@@ -286,7 +305,6 @@ describe("IntegrationStatus end-to-end", () => {
     });
     expect(row).not.toBeNull();
     expect(row!.state).toBe("connected");
-    expect(row!.consecutiveFailures).toBe(0);
     expect(row!.consecutiveFailuresByKind).toEqual({
       transient: 0,
       reauth_required: 0,

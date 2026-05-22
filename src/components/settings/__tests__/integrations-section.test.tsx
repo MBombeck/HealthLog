@@ -139,7 +139,6 @@ describe("IntegrationsSection — single-status-display contract (A5)", () => {
           lastSuccessAt: "2026-05-09T18:00:00.000Z",
           lastAttemptAt: "2026-05-09T18:00:00.000Z",
           lastError: null,
-          consecutiveFailures: 0,
         },
         {
           integration: "moodlog",
@@ -147,7 +146,6 @@ describe("IntegrationsSection — single-status-display contract (A5)", () => {
           lastSuccessAt: "2026-05-09T17:00:00.000Z",
           lastAttemptAt: "2026-05-09T17:00:00.000Z",
           lastError: null,
-          consecutiveFailures: 0,
         },
       ],
     });
@@ -187,7 +185,6 @@ describe("IntegrationsSection — single-status-display contract (A5)", () => {
           lastSuccessAt: "2026-05-09T08:00:00.000Z",
           lastAttemptAt: "2026-05-09T18:00:00.000Z",
           lastError: "Withings refresh error: 503 - upstream",
-          consecutiveFailures: 2,
         },
         {
           integration: "moodlog",
@@ -195,7 +192,6 @@ describe("IntegrationsSection — single-status-display contract (A5)", () => {
           lastSuccessAt: null,
           lastAttemptAt: null,
           lastError: null,
-          consecutiveFailures: 0,
         },
       ],
     });
@@ -229,7 +225,6 @@ describe("IntegrationsSection — single-status-display contract (A5)", () => {
           lastSuccessAt: "2026-05-08T12:00:00.000Z",
           lastAttemptAt: "2026-05-09T18:00:00.000Z",
           lastError: "Withings refresh error: 100 - invalid_grant",
-          consecutiveFailures: 1,
         },
         {
           integration: "moodlog",
@@ -237,7 +232,6 @@ describe("IntegrationsSection — single-status-display contract (A5)", () => {
           lastSuccessAt: null,
           lastAttemptAt: null,
           lastError: null,
-          consecutiveFailures: 0,
         },
       ],
     });
@@ -265,7 +259,6 @@ describe("IntegrationsSection — single-status-display contract (A5)", () => {
           lastSuccessAt: null,
           lastAttemptAt: null,
           lastError: null,
-          consecutiveFailures: 0,
         },
         {
           integration: "moodlog",
@@ -273,7 +266,6 @@ describe("IntegrationsSection — single-status-display contract (A5)", () => {
           lastSuccessAt: "2026-05-08T10:00:00.000Z",
           lastAttemptAt: "2026-05-08T10:00:00.000Z",
           lastError: null,
-          consecutiveFailures: 0,
         },
       ],
     });
@@ -300,7 +292,6 @@ describe("IntegrationsSection — single-status-display contract (A5)", () => {
           lastSuccessAt: "2026-05-08T12:00:00.000Z",
           lastAttemptAt: "2026-05-09T18:00:00.000Z",
           lastError: "Withings activity error: 293",
-          consecutiveFailures: 30,
         },
         {
           integration: "moodlog",
@@ -308,7 +299,6 @@ describe("IntegrationsSection — single-status-display contract (A5)", () => {
           lastSuccessAt: null,
           lastAttemptAt: null,
           lastError: null,
-          consecutiveFailures: 0,
         },
       ],
     });
@@ -339,7 +329,6 @@ describe("IntegrationsSection — single-status-display contract (A5)", () => {
           lastSuccessAt: "2026-05-09T18:00:00.000Z",
           lastAttemptAt: "2026-05-09T18:00:00.000Z",
           lastError: null,
-          consecutiveFailures: 0,
         },
         {
           integration: "moodlog",
@@ -347,7 +336,6 @@ describe("IntegrationsSection — single-status-display contract (A5)", () => {
           lastSuccessAt: "2026-05-09T17:00:00.000Z",
           lastAttemptAt: "2026-05-09T17:00:00.000Z",
           lastError: null,
-          consecutiveFailures: 0,
         },
       ],
     });

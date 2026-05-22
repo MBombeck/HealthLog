@@ -95,9 +95,11 @@ describe("recordSyncSuccess", () => {
       lastSuccessAt: expect.any(Date),
       lastAttemptAt: expect.any(Date),
       lastError: null,
-      consecutiveFailures: 0,
-      // v1.4.43 W14 — success clears every per-kind bucket too so
-      // the next failure starts from zero in its own bucket.
+      // v1.4.43 W14 — success clears every per-kind bucket so the
+      // next failure starts from zero in its own bucket.
+      // v1.4.47 W1 — the legacy `consecutiveFailures` column was
+      // dropped (migration 0076); the bucket reset is the only
+      // counter write now.
       consecutiveFailuresByKind: {
         transient: 0,
         reauth_required: 0,
@@ -111,9 +113,9 @@ describe("recordSyncSuccess", () => {
 
 describe("recordSyncFailure — under threshold", () => {
   it("increments the counter and does NOT dispatch an admin alert", async () => {
-    vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
-      consecutiveFailures: 1,
-    } as never);
+    vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce(
+      {} as never,
+    );
 
     await recordSyncFailure({
       userId: "u1",
@@ -140,8 +142,19 @@ describe("recordSyncFailure — under threshold", () => {
 
 describe("recordSyncFailure — at threshold", () => {
   it("dispatches an admin Telegram alert when failure count reaches default threshold (3)", async () => {
+    // v1.4.47 W1 — the alert ladder reads Math.max(...buckets) so the
+    // existing row must seed the bucket at N-1 before the in-memory
+    // increment produces alertSignal = N.
+    vi.mocked(prisma.integrationStatus.findUnique).mockResolvedValueOnce({
+      consecutiveFailuresByKind: {
+        transient: 2,
+        reauth_required: 0,
+        persistent: 0,
+      },
+      persistentFailureStartedAt: null,
+      alertedAt: null,
+    } as never);
     vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
-      consecutiveFailures: 3,
       alertedAt: null,
     } as never);
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
@@ -192,9 +205,18 @@ describe("recordSyncFailure — at threshold", () => {
 
   it("uses the custom threshold from INTEGRATION_FAILURE_ALERT_THRESHOLD", async () => {
     process.env.INTEGRATION_FAILURE_ALERT_THRESHOLD = "5";
-    // 4 < 5 → should not page yet
+    // 4 < 5 → should not page yet. Seed the existing bucket at 3 so
+    // the in-memory increment lands at 4.
+    vi.mocked(prisma.integrationStatus.findUnique).mockResolvedValueOnce({
+      consecutiveFailuresByKind: {
+        transient: 3,
+        reauth_required: 0,
+        persistent: 0,
+      },
+      persistentFailureStartedAt: null,
+      alertedAt: null,
+    } as never);
     vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
-      consecutiveFailures: 4,
       alertedAt: null,
     } as never);
     await recordSyncFailure({
@@ -210,9 +232,20 @@ describe("recordSyncFailure — at threshold", () => {
 describe("recordSyncFailure — alert window", () => {
   it("does NOT dispatch a second alert within 24h on the same streak", async () => {
     const now = Date.now();
-    vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
-      consecutiveFailures: 4,
+    // Existing bucket at 3 → in-memory increment lands at 4, above
+    // the default 3-strike threshold. The 24h alertedAt guard must
+    // suppress the duplicate page.
+    vi.mocked(prisma.integrationStatus.findUnique).mockResolvedValueOnce({
+      consecutiveFailuresByKind: {
+        transient: 3,
+        reauth_required: 0,
+        persistent: 0,
+      },
+      persistentFailureStartedAt: null,
       alertedAt: new Date(now - 60 * 60 * 1000), // 1h ago
+    } as never);
+    vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
+      alertedAt: new Date(now - 60 * 60 * 1000),
     } as never);
 
     await recordSyncFailure({
@@ -226,9 +259,18 @@ describe("recordSyncFailure — alert window", () => {
   });
 
   it("DOES dispatch a fresh alert after 24h have elapsed", async () => {
-    vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
-      consecutiveFailures: 6,
+    // Existing bucket at 5 → in-memory increment lands at 6.
+    vi.mocked(prisma.integrationStatus.findUnique).mockResolvedValueOnce({
+      consecutiveFailuresByKind: {
+        transient: 5,
+        reauth_required: 0,
+        persistent: 0,
+      },
+      persistentFailureStartedAt: null,
       alertedAt: new Date(Date.now() - 25 * 60 * 60 * 1000), // 25h ago
+    } as never);
+    vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
+      alertedAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
     } as never);
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
       email: "u@example.com",
@@ -253,9 +295,9 @@ describe("recordSyncFailure — alert window", () => {
 
 describe("recordSyncFailure — reauth_required", () => {
   it("marks state=error_reauth and audits with kind=reauth_required", async () => {
-    vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
-      consecutiveFailures: 1,
-    } as never);
+    vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce(
+      {} as never,
+    );
     await recordSyncFailure({
       userId: "u1",
       integration: "withings",
@@ -286,9 +328,9 @@ describe("recordSyncFailure — persistent (v1.4.42 W6)", () => {
     // integration — the next sync should still run because the
     // mismatch can be one-sided (e.g. Withings introducing a new
     // required field that the client release fixes).
-    vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
-      consecutiveFailures: 1,
-    } as never);
+    vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce(
+      {} as never,
+    );
     await recordSyncFailure({
       userId: "u1",
       integration: "withings",
@@ -311,8 +353,18 @@ describe("recordSyncFailure — persistent (v1.4.42 W6)", () => {
   });
 
   it("at threshold, the admin alert message includes the 'persistent error' label", async () => {
+    // Seed persistent bucket at 2 → in-memory increment lands at 3,
+    // hitting the default threshold.
+    vi.mocked(prisma.integrationStatus.findUnique).mockResolvedValueOnce({
+      consecutiveFailuresByKind: {
+        transient: 0,
+        reauth_required: 0,
+        persistent: 2,
+      },
+      persistentFailureStartedAt: new Date(Date.now() - 60 * 60 * 1000),
+      alertedAt: null,
+    } as never);
     vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
-      consecutiveFailures: 3,
       alertedAt: null,
     } as never);
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
@@ -342,8 +394,18 @@ describe("recordSyncFailure — persistent (v1.4.42 W6)", () => {
 
 describe("recordSyncFailure — admin Telegram skipped silently when no admins", () => {
   it("logs a wide-event warning but does NOT throw when no admin users exist", async () => {
+    // Seed bucket at 2 so the in-memory increment hits the threshold
+    // and the no-admins branch is the one being exercised.
+    vi.mocked(prisma.integrationStatus.findUnique).mockResolvedValueOnce({
+      consecutiveFailuresByKind: {
+        transient: 2,
+        reauth_required: 0,
+        persistent: 0,
+      },
+      persistentFailureStartedAt: null,
+      alertedAt: null,
+    } as never);
     vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
-      consecutiveFailures: 3,
       alertedAt: null,
     } as never);
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
@@ -418,8 +480,9 @@ describe("markReauthRequired / markDisconnected / markReconnected", () => {
     expect(args.update).toEqual({
       state: "disconnected",
       lastError: null,
-      consecutiveFailures: 0,
       // v1.4.43 W14 — disconnect must clear the per-kind buckets too.
+      // v1.4.47 W1 — legacy `consecutiveFailures` column dropped
+      // (migration 0076); the bucket reset is the only counter write.
       consecutiveFailuresByKind: {
         transient: 0,
         reauth_required: 0,
@@ -439,9 +502,10 @@ describe("markReauthRequired / markDisconnected / markReconnected", () => {
     expect(args.update).toEqual({
       state: "connected",
       lastError: null,
-      consecutiveFailures: 0,
       // v1.4.43 W14 — reconnect clears the per-kind buckets so the
       // next sync starts on a clean slate.
+      // v1.4.47 W1 — legacy `consecutiveFailures` column dropped
+      // (migration 0076); the bucket reset is the only counter write.
       consecutiveFailuresByKind: {
         transient: 0,
         reauth_required: 0,
@@ -475,7 +539,6 @@ describe("recordSyncFailure — v1.4.43 W14 per-kind buckets", () => {
   it("increments ONLY the matching bucket on each failure", async () => {
     // Existing row: transient bucket already at 2 from earlier hiccups.
     vi.mocked(prisma.integrationStatus.findUnique).mockResolvedValueOnce({
-      consecutiveFailures: 2,
       consecutiveFailuresByKind: {
         transient: 2,
         reauth_required: 0,
@@ -485,7 +548,6 @@ describe("recordSyncFailure — v1.4.43 W14 per-kind buckets", () => {
       alertedAt: null,
     } as never);
     vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
-      consecutiveFailures: 3,
       alertedAt: null,
     } as never);
 
@@ -513,7 +575,6 @@ describe("recordSyncFailure — v1.4.43 W14 per-kind buckets", () => {
   it("preserves persistentFailureStartedAt across multiple persistent failures", async () => {
     const streakStart = new Date(Date.now() - 60 * 60 * 1000); // 1h ago
     vi.mocked(prisma.integrationStatus.findUnique).mockResolvedValueOnce({
-      consecutiveFailures: 5,
       consecutiveFailuresByKind: {
         transient: 0,
         reauth_required: 0,
@@ -523,7 +584,6 @@ describe("recordSyncFailure — v1.4.43 W14 per-kind buckets", () => {
       alertedAt: new Date(Date.now() - 30 * 60 * 1000), // already alerted
     } as never);
     vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
-      consecutiveFailures: 6,
       alertedAt: new Date(Date.now() - 30 * 60 * 1000),
     } as never);
 
@@ -552,7 +612,6 @@ describe("recordSyncFailure — v1.4.43 W14 per-kind buckets", () => {
   it("a transient failure does NOT reset the persistent bucket nor the streak anchor", async () => {
     const streakStart = new Date(Date.now() - 6 * 60 * 60 * 1000); // 6h ago
     vi.mocked(prisma.integrationStatus.findUnique).mockResolvedValueOnce({
-      consecutiveFailures: 4,
       consecutiveFailuresByKind: {
         transient: 0,
         reauth_required: 0,
@@ -562,7 +621,6 @@ describe("recordSyncFailure — v1.4.43 W14 per-kind buckets", () => {
       alertedAt: null,
     } as never);
     vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
-      consecutiveFailures: 5,
       alertedAt: null,
     } as never);
 
@@ -591,7 +649,6 @@ describe("recordSyncFailure — v1.4.43 W14 per-kind buckets", () => {
   it("flips state to `parked` and writes an audit row once persistent streak > 24h", async () => {
     const streakStart = new Date(Date.now() - 25 * 60 * 60 * 1000); // 25h ago
     vi.mocked(prisma.integrationStatus.findUnique).mockResolvedValueOnce({
-      consecutiveFailures: 30,
       consecutiveFailuresByKind: {
         transient: 0,
         reauth_required: 0,
@@ -601,7 +658,6 @@ describe("recordSyncFailure — v1.4.43 W14 per-kind buckets", () => {
       alertedAt: new Date(Date.now() - 23 * 60 * 60 * 1000),
     } as never);
     vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
-      consecutiveFailures: 31,
       alertedAt: new Date(Date.now() - 23 * 60 * 60 * 1000),
     } as never);
 
@@ -629,18 +685,20 @@ describe("recordSyncFailure — v1.4.43 W14 per-kind buckets", () => {
     );
   });
 
-  it("back-fills the bucket from the legacy single counter on a pre-migration row", async () => {
-    // Legacy row: counter is 3, no bucket JSON yet (predates 0075).
+  it("seeds a fresh zero envelope when the row has no bucket payload yet", async () => {
+    // v1.4.47 W1 — the legacy `consecutiveFailures` column was dropped
+    // (migration 0076). A row that has never written a bucket payload
+    // (`consecutiveFailuresByKind: null`) starts from a zero envelope
+    // on the next failure; the matching bucket ticks to 1 in a single
+    // write.
     vi.mocked(prisma.integrationStatus.findUnique).mockResolvedValueOnce({
-      consecutiveFailures: 3,
       consecutiveFailuresByKind: null,
       persistentFailureStartedAt: null,
       alertedAt: null,
     } as never);
-    vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
-      consecutiveFailures: 4,
-      alertedAt: null,
-    } as never);
+    vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce(
+      {} as never,
+    );
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
       email: "u@example.com",
     } as never);
@@ -659,18 +717,86 @@ describe("recordSyncFailure — v1.4.43 W14 per-kind buckets", () => {
 
     const upsertArgs = vi.mocked(prisma.integrationStatus.upsert).mock
       .calls[0][0];
-    // The 3 legacy failures get bucketed into the CURRENT failure's
-    // kind (reauth_required) — that's the kind the row was last
-    // tagged with, and back-filling into a different kind would
-    // under-count the existing streak. v1.4.43 W10 senior-dev M-1 —
-    // the back-fill branch additionally increments the bucket so the
-    // post-write bucket count matches the legacy column's post-write
-    // value (legacy: 3 → 4, bucket: 0 → 3 → 4).
     expect(upsertArgs.update.consecutiveFailuresByKind).toEqual({
       transient: 0,
-      reauth_required: 4,
+      reauth_required: 1,
       persistent: 0,
     });
+  });
+});
+
+// ── v1.4.47 W1 — migration 0076 down-script reversibility ──────────────
+//
+// Migration 0076 drops `consecutive_failures` and documents a down-script
+// that restores the legacy column via
+//
+//   SET "consecutive_failures" = COALESCE(
+//       GREATEST(
+//           ("consecutive_failures_by_kind"->>'transient')::int,
+//           ("consecutive_failures_by_kind"->>'reauth_required')::int,
+//           ("consecutive_failures_by_kind"->>'persistent')::int
+//       ),
+//       0
+//   )
+//
+// The recipe maps a bucket payload to a single integer using the SAME
+// `Math.max(...)` reducer the live alert ladder uses, so a rollback
+// lands every row at the post-v1.4.43 counter value (= the running
+// alert signal). This test locks in that contract at the JS level so
+// any future tweak to the SQL recipe has to match the in-memory
+// behaviour the writer and the alert ladder share.
+
+describe("v1.4.47 W1 — down-script restores legacy consecutiveFailures via Math.max", () => {
+  /**
+   * In-memory mirror of the migration's down-script projection. Returns
+   * the integer the legacy `consecutive_failures` column would land at
+   * for a given bucket payload. Kept inline so the test file is the
+   * single source of truth for the recipe.
+   */
+  function projectLegacyCounter(
+    buckets: { transient: number; reauth_required: number; persistent: number } | null,
+  ): number {
+    if (!buckets) return 0;
+    return Math.max(
+      buckets.transient,
+      buckets.reauth_required,
+      buckets.persistent,
+    );
+  }
+
+  it("zero buckets map to 0 (post-success or fresh row)", () => {
+    expect(
+      projectLegacyCounter({ transient: 0, reauth_required: 0, persistent: 0 }),
+    ).toBe(0);
+  });
+
+  it("a NULL bucket payload coerces to 0 (rollback against a never-written row)", () => {
+    expect(projectLegacyCounter(null)).toBe(0);
+  });
+
+  it("picks the max across kinds — a 28-deep persistent streak rolls back to 28", () => {
+    // The v1.4.43 W14 production scenario: persistent burst at 28, a
+    // single transient hiccup mid-streak at 2, no reauth. The legacy
+    // column tracked the running streak total and would have been at
+    // 28 (no live transient-driven increment after the persistent
+    // streak anchored). The down-script restores the same 28.
+    expect(
+      projectLegacyCounter({
+        transient: 2,
+        reauth_required: 0,
+        persistent: 28,
+      }),
+    ).toBe(28);
+  });
+
+  it("matches the live alert ladder's reducer (Math.max over Object.values)", () => {
+    // The whole point of the recipe: a rollback restores the exact
+    // integer the live alert ladder reads. If `recordSyncFailure`
+    // pages on alertSignal = 7 today, the rolled-back column lands
+    // at 7 too.
+    const buckets = { transient: 1, reauth_required: 7, persistent: 3 };
+    const liveSignal = Math.max(...Object.values(buckets));
+    expect(projectLegacyCounter(buckets)).toBe(liveSignal);
   });
 });
 
@@ -691,7 +817,8 @@ describe("resumeIntegrationFromPark", () => {
     expect(upsertArgs.update).toEqual({
       state: "connected",
       lastError: null,
-      consecutiveFailures: 0,
+      // v1.4.47 W1 — legacy `consecutiveFailures` column dropped
+      // (migration 0076); the bucket reset is the only counter write.
       consecutiveFailuresByKind: {
         transient: 0,
         reauth_required: 0,
