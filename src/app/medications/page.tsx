@@ -37,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   MoreHorizontal,
   Loader2,
@@ -279,48 +280,48 @@ export default function MedicationsPage() {
         className="sm:max-w-lg"
         footer={<div ref={setFooterEl} className="flex w-full" />}
       >
-          <MedicationForm
-            footerSlot={footerEl}
-            initial={
-              editingMed
-                ? {
-                    id: editingMed.id,
-                    name: editingMed.name,
-                    dose: editingMed.dose,
-                    category: editingMed.category,
-                    // v1.4.25 W4d — pass through the Prisma treatment-class
-                    // discriminator and the optional dosesPerUnit so the
-                    // form preselects the GLP-1 surfaces correctly when
-                    // editing an existing GLP-1 row.
-                    treatmentClass: editingMed.treatmentClass,
-                    dosesPerUnit: editingMed.dosesPerUnit ?? null,
-                    active: editingMed.active,
-                    notificationsEnabled: editingMed.notificationsEnabled,
-                    schedules: editingMed.schedules.map((s) => ({
-                      windowStart: s.windowStart,
-                      windowEnd: s.windowEnd,
-                      label: s.label ?? "",
-                      dose: s.dose ?? "",
-                      ...parseScheduleRecurrence(s.daysOfWeek),
-                    })),
-                  }
-                : undefined
-            }
-            editActions={
-              editingMed
-                ? {
-                    onImportIntakes: () => setImportMedId(editingMed.id),
-                    onApiAccess: () =>
-                      setApiMed({
-                        id: editingMed.id,
-                        name: editingMed.name,
-                      }),
-                  }
-                : undefined
-            }
-            onSuccess={closeDialog}
-            onCancel={closeDialog}
-          />
+        <MedicationForm
+          footerSlot={footerEl}
+          initial={
+            editingMed
+              ? {
+                  id: editingMed.id,
+                  name: editingMed.name,
+                  dose: editingMed.dose,
+                  category: editingMed.category,
+                  // v1.4.25 W4d — pass through the Prisma treatment-class
+                  // discriminator and the optional dosesPerUnit so the
+                  // form preselects the GLP-1 surfaces correctly when
+                  // editing an existing GLP-1 row.
+                  treatmentClass: editingMed.treatmentClass,
+                  dosesPerUnit: editingMed.dosesPerUnit ?? null,
+                  active: editingMed.active,
+                  notificationsEnabled: editingMed.notificationsEnabled,
+                  schedules: editingMed.schedules.map((s) => ({
+                    windowStart: s.windowStart,
+                    windowEnd: s.windowEnd,
+                    label: s.label ?? "",
+                    dose: s.dose ?? "",
+                    ...parseScheduleRecurrence(s.daysOfWeek),
+                  })),
+                }
+              : undefined
+          }
+          editActions={
+            editingMed
+              ? {
+                  onImportIntakes: () => setImportMedId(editingMed.id),
+                  onApiAccess: () =>
+                    setApiMed({
+                      id: editingMed.id,
+                      name: editingMed.name,
+                    }),
+                }
+              : undefined
+          }
+          onSuccess={closeDialog}
+          onCancel={closeDialog}
+        />
       </ResponsiveSheet>
     </div>
   );
@@ -465,14 +466,16 @@ function IntakeImportDialog({
   {"datum": "2026-02-14", "uhrzeit": "23:33:42", "zaehler": 524}
 ]`}
           </pre>
-          <textarea
+          <Textarea
             value={jsonText}
             onChange={(e) => setJsonText(e.target.value)}
             placeholder={t("medications.importPaste")}
             rows={8}
-            // text-base on mobile so iOS Safari doesn't zoom on
-            // focus; text-sm on sm+ for the compact import textarea.
-            className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring w-full rounded-md border px-3 py-2 font-mono text-base focus-visible:ring-2 focus-visible:outline-none sm:text-sm"
+            // JSON paste — disable sentence-case and spell-check so the
+            // primitive defaults don't munge structured input.
+            autoCapitalize="none"
+            spellCheck={false}
+            className="font-mono"
           />
           {result && (
             <p

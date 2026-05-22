@@ -28,6 +28,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -86,7 +87,7 @@ export function FeedbackInboxSection() {
             instead of squashing the badge text below the legibility
             floor. Hide the scrollbar visually but keep the gesture
             working (matches the Insights tab-strip pattern). */}
-        <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="-mx-1 [scrollbar-width:none] overflow-x-auto px-1 [&::-webkit-scrollbar]:hidden">
           <TabsList>
             {FEEDBACK_STATUS_TABS.map((s) => (
               <TabsTrigger key={s} value={s}>
@@ -428,100 +429,96 @@ function FeedbackDetailDialog({
         </div>
       }
     >
-        <div className="space-y-4 text-sm">
-          <div className="bg-muted/40 rounded-md p-3 whitespace-pre-wrap">
-            {item.description}
-          </div>
-
-          {(url || locale || userAgent || appVersion) && (
-            <div>
-              {/* v1.4.33 IW9 — h4 -> h3 so the sheet outline stays
-                  sequential beneath the ResponsiveSheet's h2 title. */}
-              <h3 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                {t("admin.feedback.metadataHeading")}
-              </h3>
-              <dl className="mt-2 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-xs">
-                {url && (
-                  <>
-                    <dt className="text-muted-foreground">
-                      {t("admin.feedback.metaUrl")}
-                    </dt>
-                    <dd className="font-mono break-all">{url}</dd>
-                  </>
-                )}
-                {locale && (
-                  <>
-                    <dt className="text-muted-foreground">
-                      {t("admin.feedback.metaLocale")}
-                    </dt>
-                    <dd className="font-mono">{locale}</dd>
-                  </>
-                )}
-                {appVersion && (
-                  <>
-                    <dt className="text-muted-foreground">
-                      {t("admin.feedback.metaAppVersion")}
-                    </dt>
-                    <dd className="font-mono">{appVersion}</dd>
-                  </>
-                )}
-                {userAgent && (
-                  <>
-                    <dt className="text-muted-foreground">
-                      {t("admin.feedback.metaUserAgent")}
-                    </dt>
-                    <dd className="font-mono break-all">{userAgent}</dd>
-                  </>
-                )}
-              </dl>
-            </div>
-          )}
-
-          {item.screenshotBase64 && (
-            <div>
-              <h3 className="text-muted-foreground mb-2 text-xs font-semibold tracking-wider uppercase">
-                {t("admin.feedback.screenshotHeading")}
-              </h3>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={item.screenshotBase64}
-                alt="Screenshot"
-                className="border-border max-h-72 rounded-md border"
-              />
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <Label htmlFor="admin-feedback-note" className="text-xs">
-              {t("admin.feedback.adminNote")}
-            </Label>
-            <textarea
-              id="admin-feedback-note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={3}
-              maxLength={5000}
-              placeholder={t("admin.feedback.adminNotePlaceholder")}
-              // text-base on mobile so iOS Safari doesn't zoom on
-              // focus; text-sm on sm+ keeps the compact admin look.
-              className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring w-full rounded-md border px-3 py-2 text-base focus-visible:ring-2 focus-visible:outline-none sm:text-sm"
-            />
-            <div className="flex justify-end">
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={update.isPending || note === (item.adminNote ?? "")}
-                onClick={() => update.mutate({ adminNote: note || null })}
-              >
-                {update.isPending && (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-                )}
-                {t("admin.feedback.saveNote")}
-              </Button>
-            </div>
-          </div>
-
+      <div className="space-y-4 text-sm">
+        <div className="bg-muted/40 rounded-md p-3 whitespace-pre-wrap">
+          {item.description}
         </div>
+
+        {(url || locale || userAgent || appVersion) && (
+          <div>
+            {/* v1.4.33 IW9 — h4 -> h3 so the sheet outline stays
+                  sequential beneath the ResponsiveSheet's h2 title. */}
+            <h3 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+              {t("admin.feedback.metadataHeading")}
+            </h3>
+            <dl className="mt-2 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-xs">
+              {url && (
+                <>
+                  <dt className="text-muted-foreground">
+                    {t("admin.feedback.metaUrl")}
+                  </dt>
+                  <dd className="font-mono break-all">{url}</dd>
+                </>
+              )}
+              {locale && (
+                <>
+                  <dt className="text-muted-foreground">
+                    {t("admin.feedback.metaLocale")}
+                  </dt>
+                  <dd className="font-mono">{locale}</dd>
+                </>
+              )}
+              {appVersion && (
+                <>
+                  <dt className="text-muted-foreground">
+                    {t("admin.feedback.metaAppVersion")}
+                  </dt>
+                  <dd className="font-mono">{appVersion}</dd>
+                </>
+              )}
+              {userAgent && (
+                <>
+                  <dt className="text-muted-foreground">
+                    {t("admin.feedback.metaUserAgent")}
+                  </dt>
+                  <dd className="font-mono break-all">{userAgent}</dd>
+                </>
+              )}
+            </dl>
+          </div>
+        )}
+
+        {item.screenshotBase64 && (
+          <div>
+            <h3 className="text-muted-foreground mb-2 text-xs font-semibold tracking-wider uppercase">
+              {t("admin.feedback.screenshotHeading")}
+            </h3>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={item.screenshotBase64}
+              alt="Screenshot"
+              className="border-border max-h-72 rounded-md border"
+            />
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          <Label htmlFor="admin-feedback-note" className="text-xs">
+            {t("admin.feedback.adminNote")}
+          </Label>
+          <Textarea
+            id="admin-feedback-note"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={3}
+            maxLength={5000}
+            placeholder={t("admin.feedback.adminNotePlaceholder")}
+          />
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={update.isPending || note === (item.adminNote ?? "")}
+              onClick={() => update.mutate({ adminNote: note || null })}
+            >
+              {update.isPending && (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+              )}
+              {t("admin.feedback.saveNote")}
+            </Button>
+          </div>
+        </div>
+      </div>
     </ResponsiveSheet>
   );
 }

@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -199,7 +200,7 @@ export default function BugReportPage() {
 
           <div className="space-y-2">
             <Label htmlFor="bug-desc">{t("bugreport.description")}</Label>
-            <textarea
+            <Textarea
               id="bug-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -207,9 +208,6 @@ export default function BugReportPage() {
               minLength={10}
               maxLength={5000}
               rows={8}
-              // text-base on mobile so iOS Safari doesn't zoom on
-              // focus; text-sm on sm+ keeps the compact desktop look.
-              className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring w-full rounded-md border px-3 py-2 text-base focus-visible:ring-2 focus-visible:outline-none sm:text-sm"
             />
           </div>
 
@@ -229,7 +227,11 @@ export default function BugReportPage() {
           )}
 
           <div className="flex items-center justify-end pt-2">
-            <Button type="submit" disabled={loading} aria-busy={loading || undefined}>
+            <Button
+              type="submit"
+              disabled={loading}
+              aria-busy={loading || undefined}
+            >
               {/*
                 v1.4.33 IW9 — swap the icon on loading (Loader2 takes
                 the same 16x16 slot as the Bug icon) so the button

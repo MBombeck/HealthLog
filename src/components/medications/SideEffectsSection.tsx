@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type {
   MedicationSideEffectCategory,
@@ -144,14 +145,11 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
       // from the wire payload. The server derives it from the entry
       // via `categoryForEntry`. Backwards-compatible with older
       // clients during the cut window (route accepts both shapes).
-      const res = await fetch(
-        `/api/medications/${medicationId}/side-effects`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        },
-      );
+      const res = await fetch(`/api/medications/${medicationId}/side-effects`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as {
           error?: string;
@@ -255,7 +253,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
       bodyPaddingY="py-2.5"
     >
       {isLoading && (
-        <div className="flex items-center gap-2 text-muted-foreground">
+        <div className="text-muted-foreground flex items-center gap-2">
           <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
           <span>{t("medications.sideEffects.loading")}</span>
         </div>
@@ -269,7 +267,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
 
       {!isLoading && items.length > 0 && (
         <div className="space-y-2">
-          <p className="text-muted-foreground text-xs uppercase tracking-wide">
+          <p className="text-muted-foreground text-xs tracking-wide uppercase">
             {t("medications.sideEffects.recentTitle")}
           </p>
           <ul className="space-y-1.5">
@@ -333,9 +331,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
                   onClick={() => {
                     if (
                       typeof window === "undefined" ||
-                      window.confirm(
-                        t("medications.sideEffects.deleteConfirm"),
-                      )
+                      window.confirm(t("medications.sideEffects.deleteConfirm"))
                     ) {
                       deleteMutation.mutate(row.id);
                     }
@@ -356,165 +352,161 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
         title={t("medications.sideEffects.sheetTitle")}
         footer={<div ref={setFooterEl} className="flex w-full" />}
       >
-          <form
-            id={formId}
-            onSubmit={handleSubmit}
-            className="space-y-4"
-            aria-label={t("medications.sideEffects.sheetTitle")}
-          >
-            <div className="space-y-1.5">
-              <Label htmlFor="side-effect-category">
-                {t("medications.sideEffects.categoryLabel")}
-              </Label>
-              <Select
-                value={category}
-                onValueChange={(next) => {
-                  setCategory(next as MedicationSideEffectCategory);
-                  // Reset entry — the previously-selected entry probably
-                  // doesn't belong to the new category.
-                  setEntry(null);
-                }}
+        <form
+          id={formId}
+          onSubmit={handleSubmit}
+          className="space-y-4"
+          aria-label={t("medications.sideEffects.sheetTitle")}
+        >
+          <div className="space-y-1.5">
+            <Label htmlFor="side-effect-category">
+              {t("medications.sideEffects.categoryLabel")}
+            </Label>
+            <Select
+              value={category}
+              onValueChange={(next) => {
+                setCategory(next as MedicationSideEffectCategory);
+                // Reset entry — the previously-selected entry probably
+                // doesn't belong to the new category.
+                setEntry(null);
+              }}
+            >
+              <SelectTrigger
+                id="side-effect-category"
+                className="w-full"
+                data-slot="side-effect-category-trigger"
               >
-                <SelectTrigger
-                  id="side-effect-category"
-                  className="w-full"
-                  data-slot="side-effect-category-trigger"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SIDE_EFFECT_CATEGORY_ORDER.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {t(
-                        `medications.sideEffects.categories.${categoryI18nKey(c)}`,
-                      )}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>{t("medications.sideEffects.entryLabel")}</Label>
-              <div
-                className="flex flex-wrap gap-1.5"
-                role="radiogroup"
-                aria-label={t("medications.sideEffects.entryLabel")}
-              >
-                {filteredEntries.map((candidate) => {
-                  const selected = candidate === entry;
-                  return (
-                    <button
-                      type="button"
-                      key={candidate}
-                      role="radio"
-                      aria-checked={selected}
-                      onClick={() => setEntry(candidate)}
-                      className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
-                        selected
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-background text-foreground hover:bg-muted"
-                      }`}
-                    >
-                      {t(
-                        `medications.sideEffects.entries.${entryI18nKey(candidate)}`,
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>{t("medications.sideEffects.severityLabel")}</Label>
-              <div
-                className="flex flex-wrap gap-1.5"
-                role="radiogroup"
-                aria-label={t("medications.sideEffects.severityLabel")}
-              >
-                {SIDE_EFFECT_SEVERITY_LADDER.map((label, idx) => {
-                  const value = (idx + 1) as 1 | 2 | 3 | 4 | 5;
-                  const selected = severity === value;
-                  return (
-                    <button
-                      type="button"
-                      key={label}
-                      role="radio"
-                      aria-checked={selected}
-                      onClick={() => setSeverity(value)}
-                      className={`min-w-[2.5rem] rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                        selected
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-background text-foreground hover:bg-muted"
-                      }`}
-                    >
-                      <span aria-hidden className="block text-sm">
-                        {value}
-                      </span>
-                      <span className="block text-[10px] opacity-80">
-                        {t(`medications.sideEffects.severity.${label}`)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="side-effect-notes">
-                {t("medications.sideEffects.notesLabel")}
-              </Label>
-              <textarea
-                id="side-effect-notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value.slice(0, NOTES_MAX))}
-                placeholder={t("medications.sideEffects.notesPlaceholder")}
-                rows={3}
-                maxLength={NOTES_MAX}
-                enterKeyHint="done"
-                autoCapitalize="sentences"
-                autoComplete="off"
-                // text-base on mobile so iOS Safari doesn't
-                // zoom-on-focus; text-sm on sm+ keeps the compact
-                // notes-row visual.
-                className="border-input bg-background text-foreground w-full rounded-md border px-2 py-1.5 text-base sm:text-sm"
-              />
-              <p className="text-muted-foreground text-right text-[10px]">
-                {notes.length} / {NOTES_MAX}
-              </p>
-            </div>
-
-            {formError && (
-              <p className="text-destructive text-sm" role="alert">
-                {formError}
-              </p>
-            )}
-
-          </form>
-          {footerEl
-            ? createPortal(
-                <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setOpen(false)}
-                  >
-                    {t("medications.sideEffects.cancelCta")}
-                  </Button>
-                  <Button
-                    type="submit"
-                    form={formId}
-                    disabled={createMutation.isPending}
-                  >
-                    {createMutation.isPending && (
-                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SIDE_EFFECT_CATEGORY_ORDER.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {t(
+                      `medications.sideEffects.categories.${categoryI18nKey(c)}`,
                     )}
-                    {t("medications.sideEffects.submitCta")}
-                  </Button>
-                </div>,
-                footerEl,
-              )
-            : null}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{t("medications.sideEffects.entryLabel")}</Label>
+            <div
+              className="flex flex-wrap gap-1.5"
+              role="radiogroup"
+              aria-label={t("medications.sideEffects.entryLabel")}
+            >
+              {filteredEntries.map((candidate) => {
+                const selected = candidate === entry;
+                return (
+                  <button
+                    type="button"
+                    key={candidate}
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => setEntry(candidate)}
+                    className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                      selected
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {t(
+                      `medications.sideEffects.entries.${entryI18nKey(candidate)}`,
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{t("medications.sideEffects.severityLabel")}</Label>
+            <div
+              className="flex flex-wrap gap-1.5"
+              role="radiogroup"
+              aria-label={t("medications.sideEffects.severityLabel")}
+            >
+              {SIDE_EFFECT_SEVERITY_LADDER.map((label, idx) => {
+                const value = (idx + 1) as 1 | 2 | 3 | 4 | 5;
+                const selected = severity === value;
+                return (
+                  <button
+                    type="button"
+                    key={label}
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => setSeverity(value)}
+                    className={`min-w-[2.5rem] rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                      selected
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <span aria-hidden className="block text-sm">
+                      {value}
+                    </span>
+                    <span className="block text-[10px] opacity-80">
+                      {t(`medications.sideEffects.severity.${label}`)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="side-effect-notes">
+              {t("medications.sideEffects.notesLabel")}
+            </Label>
+            <Textarea
+              id="side-effect-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value.slice(0, NOTES_MAX))}
+              placeholder={t("medications.sideEffects.notesPlaceholder")}
+              rows={3}
+              maxLength={NOTES_MAX}
+              enterKeyHint="done"
+              // Compact notes-row padding override; primitive's
+              // px-3 py-2 is too tall inside the side-effect modal.
+              className="px-2 py-1.5"
+            />
+            <p className="text-muted-foreground text-right text-[10px]">
+              {notes.length} / {NOTES_MAX}
+            </p>
+          </div>
+
+          {formError && (
+            <p className="text-destructive text-sm" role="alert">
+              {formError}
+            </p>
+          )}
+        </form>
+        {footerEl
+          ? createPortal(
+              <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setOpen(false)}
+                >
+                  {t("medications.sideEffects.cancelCta")}
+                </Button>
+                <Button
+                  type="submit"
+                  form={formId}
+                  disabled={createMutation.isPending}
+                >
+                  {createMutation.isPending && (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+                  )}
+                  {t("medications.sideEffects.submitCta")}
+                </Button>
+              </div>,
+              footerEl,
+            )
+          : null}
       </ResponsiveSheet>
     </MedicationDetailSection>
   );
