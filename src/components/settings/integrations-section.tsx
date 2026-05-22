@@ -73,7 +73,6 @@ interface IntegrationStatusViewModel {
   lastSuccessAt: string | null;
   lastAttemptAt: string | null;
   lastError: string | null;
-  consecutiveFailures: number;
   consecutiveFailuresByKind?: {
     transient: number;
     reauth_required: number;

@@ -3,7 +3,7 @@
  *
  * Returns a snapshot per integration containing:
  *   - the IntegrationStatus row (state, last-success, last-attempt,
- *     decrypted last-error, consecutive failures, threshold)
+ *     decrypted last-error, per-kind failure buckets, threshold)
  *   - integration-specific extras the UI already shows (Withings:
  *     credentials configured, token expiry, OAuth-connected; moodLog:
  *     credentials configured, enabled flag)
@@ -92,7 +92,6 @@ interface IntegrationViewModel {
   lastSuccessAt: string | null;
   lastAttemptAt: string | null;
   lastError: string | null;
-  consecutiveFailures: number;
 }
 
 interface WithingsExtras {

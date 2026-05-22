@@ -108,8 +108,8 @@ export function getPersistentFailureThreshold(): number {
 /**
  * Re-alert window: once we've paged on a streak we hold the alert for
  * 24h before paging again on the same streak (idempotency). The streak
- * is implicitly "reset" by a single success, which clears
- * consecutiveFailures and alertedAt — so a flapping integration that
+ * is implicitly "reset" by a single success, which clears every
+ * per-kind bucket and `alertedAt` — so a flapping integration that
  * succeeds once an hour will not page repeatedly.
  */
 const ALERT_REPEAT_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -130,9 +130,10 @@ export interface IntegrationStatusSnapshot {
   lastSuccessAt: string | null;
   lastAttemptAt: string | null;
   lastError: string | null;
-  consecutiveFailures: number;
   /** v1.4.43 W14 — per-kind bucketed counters; `null` for rows
-   *  that predate the migration (back-filled on next write). */
+   *  that have never recorded a write yet. v1.4.47 W1 — sole source
+   *  of truth now that the legacy `consecutiveFailures` column is
+   *  gone. */
   consecutiveFailuresByKind: ConsecutiveFailuresByKind | null;
 }
 
@@ -147,7 +148,7 @@ export type ConsecutiveFailuresByKind = Record<FailureKind, number>;
  * Type guard for the JSON payload Prisma returns for the
  * `consecutiveFailuresByKind` column. Anything that's not a plain
  * object with three numeric keys is treated as "no value yet" so the
- * back-fill path runs on the next write.
+ * writer starts from a zero envelope.
  */
 function isFailureBucketObject(
   value: unknown,
@@ -165,9 +166,8 @@ function isFailureBucketObject(
 
 /**
  * Read the JSON `consecutiveFailuresByKind` column off the Prisma row
- * with a typed view. Returns `null` when the row predates the
- * migration so callers can back-fill from the legacy
- * `consecutiveFailures` integer.
+ * with a typed view. Returns `null` for rows that have never written a
+ * bucket payload — callers seed a fresh zero envelope.
  */
 function readBucketColumn(value: unknown): ConsecutiveFailuresByKind | null {
   return isFailureBucketObject(value) ? value : null;
@@ -179,24 +179,6 @@ function readBucketColumn(value: unknown): ConsecutiveFailuresByKind | null {
  */
 function zeroBuckets(): ConsecutiveFailuresByKind {
   return { transient: 0, reauth_required: 0, persistent: 0 };
-}
-
-/**
- * Back-fill the per-kind buckets for a legacy row that predates the
- * v1.4.43 W14 migration. We bucket the existing
- * `consecutiveFailures` count into the kind matching the CURRENT
- * failure (so a row sitting at `error_reauth` with 4 failures
- * back-fills into `reauth_required: 4`). Subsequent failures of a
- * different kind then increment their own bucket without losing the
- * legacy count.
- */
-function backfillBuckets(
-  legacyCount: number,
-  currentKind: FailureKind,
-): ConsecutiveFailuresByKind {
-  const buckets = zeroBuckets();
-  buckets[currentKind] = Math.max(0, legacyCount);
-  return buckets;
 }
 
 /**
@@ -218,7 +200,6 @@ export async function getIntegrationStatus(
       lastSuccessAt: null,
       lastAttemptAt: null,
       lastError: null,
-      consecutiveFailures: 0,
       consecutiveFailuresByKind: null,
     };
   }
@@ -228,7 +209,6 @@ export async function getIntegrationStatus(
     lastSuccessAt: row.lastSuccessAt?.toISOString() ?? null,
     lastAttemptAt: row.lastAttemptAt?.toISOString() ?? null,
     lastError: row.lastError ? safeDecryptError(row.lastError) : null,
-    consecutiveFailures: row.consecutiveFailures,
     consecutiveFailuresByKind: readBucketColumn(row.consecutiveFailuresByKind),
   };
 }
@@ -268,9 +248,9 @@ export async function recordSyncSuccess(
 ): Promise<void> {
   const now = new Date();
   // v1.4.43 W14 — a success resets ALL per-kind buckets back to zero
-  // and clears the persistent-streak start timestamp. The legacy
-  // single-column `consecutiveFailures` zero stays for backward
-  // compatibility with v1.4.43 readers that haven't migrated yet.
+  // and clears the persistent-streak start timestamp.
+  // v1.4.47 W1 — the legacy `consecutiveFailures` column was dropped
+  // (migration 0076), so the bucket reset is the only counter write.
   await prisma.integrationStatus.upsert({
     where: { userId_integration: { userId, integration } },
     create: {
@@ -279,7 +259,6 @@ export async function recordSyncSuccess(
       state: "connected",
       lastSuccessAt: now,
       lastAttemptAt: now,
-      consecutiveFailures: 0,
       consecutiveFailuresByKind: zeroBuckets(),
     },
     update: {
@@ -287,7 +266,6 @@ export async function recordSyncSuccess(
       lastSuccessAt: now,
       lastAttemptAt: now,
       lastError: null,
-      consecutiveFailures: 0,
       consecutiveFailuresByKind: zeroBuckets(),
       persistentFailureStartedAt: null,
       alertedAt: null,
@@ -307,8 +285,6 @@ export interface RecordSyncFailureInput {
 /**
  * Record a sync failure. Always:
  *   - increments the per-kind bucket in `consecutiveFailuresByKind`
- *     (and the legacy `consecutive_failures` integer for one release
- *     as a fallback for un-migrated readers)
  *   - persists the encrypted error message
  *   - writes one `AuditLog` row with `integrations.sync.failed`
  *
@@ -326,10 +302,10 @@ export interface RecordSyncFailureInput {
  *
  * v1.4.43 W14 — per-kind counter migration. Each failure increments
  * ONLY its own bucket; a transient hiccup followed by a persistent
- * failure no longer masks the persistent streak's true age. The
- * legacy single-column `consecutiveFailures` integer continues to be
- * incremented so the v1.4.43 alert ladder + UI consumers keep working
- * unchanged; v1.4.44 will drop it once every reader migrates.
+ * failure no longer masks the persistent streak's true age.
+ * v1.4.47 W1 — the legacy single-column `consecutiveFailures` integer
+ * was dropped (migration 0076); the bucket is now the sole counter
+ * and the back-fill branch is gone.
  */
 export async function recordSyncFailure(
   input: RecordSyncFailureInput,
@@ -342,12 +318,9 @@ export async function recordSyncFailure(
   //   (a) compute the new per-kind bucket value
   //   (b) decide whether the persistent streak has exceeded the
   //       park threshold
-  //   (c) back-fill `consecutiveFailuresByKind` for rows that
-  //       predate the v1.4.43 W14 migration.
   const existing = await prisma.integrationStatus.findUnique({
     where: { userId_integration: { userId, integration } },
     select: {
-      consecutiveFailures: true,
       consecutiveFailuresByKind: true,
       persistentFailureStartedAt: true,
       alertedAt: true,
@@ -355,11 +328,9 @@ export async function recordSyncFailure(
   });
 
   // Resolve the starting bucket envelope:
-  //   - existing JSON value if present (post-migration row)
-  //   - back-fill from the legacy integer if the row predates the
-  //     migration (counts go into the CURRENT failure's bucket so the
-  //     persistent streak is dated from this write, not from zero)
-  //   - zero envelope for the first-ever write
+  //   - existing JSON value if present
+  //   - zero envelope for a row that has never written a bucket payload
+  //     or for the first-ever write of this (user, integration) pair
   const startingBuckets = readBucketColumn(existing?.consecutiveFailuresByKind);
 
   // Snapshot the persistent-bucket count BEFORE we increment so the
@@ -374,31 +345,12 @@ export async function recordSyncFailure(
   // to the audit-log read path below).
   const buckets: ConsecutiveFailuresByKind = startingBuckets
     ? { ...startingBuckets }
-    : existing
-      ? backfillBuckets(existing.consecutiveFailures, kind)
-      : zeroBuckets();
+    : zeroBuckets();
 
   // Increment only the bucket matching this failure's kind.
   // The other two buckets stay at their current value so a persistent
   // streak isn't reset by an intervening transient hiccup.
-  //
-  // v1.4.43 W10 senior-dev M-1 — back-fill branch also increments. The
-  // legacy column writes `{ increment: 1 }` to advance from N → N+1; the
-  // back-fill seed sets `buckets[kind] = legacyCount` (= N), so without
-  // the +1 here the bucket would land at N while the legacy column reads
-  // N+1. When v1.4.44 drops the legacy column, every back-filled row
-  // would page exactly one failure too late.
-  if (startingBuckets) {
-    // Post-migration row — increment the actual bucket.
-    buckets[kind] = (buckets[kind] ?? 0) + 1;
-  } else if (!existing) {
-    // First-ever write — bucket starts at zero, this failure makes 1.
-    buckets[kind] = 1;
-  } else {
-    // Back-fill path — seeded with the legacy count; this failure is
-    // the +1 that brings both the legacy column AND the bucket to N+1.
-    buckets[kind] = (buckets[kind] ?? 0) + 1;
-  }
+  buckets[kind] = (buckets[kind] ?? 0) + 1;
 
   // Track the persistent-streak start so the >24h park check has a
   // wall-clock anchor. Only stamped on the FIRST persistent failure of
@@ -446,7 +398,6 @@ export async function recordSyncFailure(
       state: newState,
       lastAttemptAt: now,
       lastError: encryptedError,
-      consecutiveFailures: 1,
       consecutiveFailuresByKind: buckets,
       persistentFailureStartedAt: isPersistent ? now : null,
     },
@@ -454,7 +405,6 @@ export async function recordSyncFailure(
       state: newState,
       lastAttemptAt: now,
       lastError: encryptedError,
-      consecutiveFailures: { increment: 1 },
       consecutiveFailuresByKind: buckets,
       persistentFailureStartedAt,
     },
@@ -464,6 +414,15 @@ export async function recordSyncFailure(
   // it. The auth/audit helper is its own DB write so it's safe to call
   // serially without bloating latency in the success path (which never
   // calls this).
+  //
+  // v1.4.47 W1 — `attemptNumber` is now sourced from the bucket sum
+  // (the legacy `consecutiveFailures` column was dropped). The sum
+  // matches the legacy column's value for any row written after
+  // v1.4.43: a transient burst followed by a single persistent failure
+  // shows `attemptNumber = transient + persistent`, which is the same
+  // running total the legacy integer carried.
+  const bucketTotal =
+    buckets.transient + buckets.reauth_required + buckets.persistent;
   await auditLog("integrations.sync.failed", {
     userId,
     details: {
@@ -471,7 +430,7 @@ export async function recordSyncFailure(
       kind,
       errorCode: errorCode ?? null,
       message,
-      attemptNumber: row.consecutiveFailures,
+      attemptNumber: bucketTotal,
       bucketCount: buckets[kind],
       state: newState,
     },
@@ -487,15 +446,11 @@ export async function recordSyncFailure(
   //
   // v1.4.43 W14 — the threshold check reads `Math.max(...buckets)` so
   // a row with a 3-deep persistent streak still pages even when the
-  // transient bucket sat at 0 (the legacy integer was the running
-  // total and would have paged at the same moment).
+  // transient bucket sat at 0.
+  // v1.4.47 W1 — the legacy `consecutiveFailures` column was dropped
+  // (migration 0076); the bucket max is now the sole alert signal.
   const threshold = getPersistentFailureThreshold();
-  const alertSignal = Math.max(
-    row.consecutiveFailures,
-    buckets.transient,
-    buckets.reauth_required,
-    buckets.persistent,
-  );
+  const alertSignal = Math.max(...Object.values(buckets));
   if (alertSignal >= threshold) {
     const previouslyAlerted =
       row.alertedAt &&
@@ -577,7 +532,6 @@ export async function resumeIntegrationFromPark(
     update: {
       state: "connected",
       lastError: null,
-      consecutiveFailures: 0,
       consecutiveFailuresByKind: zeroBuckets(),
       persistentFailureStartedAt: null,
       alertedAt: null,
@@ -598,7 +552,7 @@ export async function resumeIntegrationFromPark(
  * Park a connection at `error_reauth` from a deliberate scope-skip
  * short-circuit. Unlike `recordSyncFailure`, this helper:
  *
- *   1. does NOT increment `consecutiveFailures`.
+ *   1. does NOT increment the per-kind failure buckets.
  *   2. does NOT write an `integrations.sync.failed` audit row through
  *      `recordSyncFailure`. A standalone `integrations.reauth_required`
  *      row is written instead so the operations trail still shows the
@@ -607,8 +561,8 @@ export async function resumeIntegrationFromPark(
  *      page fires.
  *
  * Idempotent: a second call for the same scope-skip leaves the row at
- * `error_reauth` with the same encrypted message and the same counter
- * value (no increment). Use it from sync routines that have detected a
+ * `error_reauth` with the same encrypted message and the same bucket
+ * values (no increment). Use it from sync routines that have detected a
  * deliberate, structural scope gap (e.g. legacy Withings connection
  * missing `user.activity`). The defence-in-depth catch-block path
  * stays on `recordSyncFailure` because a 403 reaching the catch is
@@ -646,17 +600,18 @@ export async function parkIntegrationAtReauth(opts: {
       state: "error_reauth",
       lastError: encryptedError,
       lastAttemptAt: now,
-      // First-ever row for this (user, integration) — counter stays at
-      // 0 so a later genuine transient burst still has the full
+      // First-ever row for this (user, integration) — buckets stay at
+      // zero so a later genuine transient burst still has the full
       // 3-strike runway before paging.
-      consecutiveFailures: 0,
+      consecutiveFailuresByKind: zeroBuckets(),
     },
     update: {
       state: "error_reauth",
       lastError: encryptedError,
       lastAttemptAt: now,
-      // Deliberately omit `consecutiveFailures` — the existing value
-      // is preserved exactly. This is the whole point of the helper.
+      // Deliberately omit `consecutiveFailuresByKind` — the existing
+      // bucket values are preserved exactly. This is the whole point
+      // of the helper.
     },
   });
 
@@ -679,6 +634,11 @@ export async function markReauthRequired(
   integration: IntegrationKey,
   message: string,
 ): Promise<void> {
+  // v1.4.47 W1 — the legacy `consecutiveFailures` column was dropped
+  // (migration 0076). Out-of-band reauth detection (proactive token
+  // refresh) seeds the `reauth_required` bucket at 1 on a first-ever
+  // row so subsequent reauth detections accumulate against the same
+  // bucket the alert ladder reads.
   await prisma.integrationStatus.upsert({
     where: { userId_integration: { userId, integration } },
     create: {
@@ -686,7 +646,11 @@ export async function markReauthRequired(
       integration,
       state: "error_reauth",
       lastError: safeEncryptError(message),
-      consecutiveFailures: 1,
+      consecutiveFailuresByKind: {
+        transient: 0,
+        reauth_required: 1,
+        persistent: 0,
+      },
       lastAttemptAt: new Date(),
     },
     update: {
@@ -721,7 +685,6 @@ export async function markDisconnected(
     update: {
       state: "disconnected",
       lastError: null,
-      consecutiveFailures: 0,
       consecutiveFailuresByKind: zeroBuckets(),
       persistentFailureStartedAt: null,
       alertedAt: null,
@@ -749,7 +712,6 @@ export async function markReconnected(
     update: {
       state: "connected",
       lastError: null,
-      consecutiveFailures: 0,
       consecutiveFailuresByKind: zeroBuckets(),
       persistentFailureStartedAt: null,
       alertedAt: null,
