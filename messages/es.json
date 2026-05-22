@@ -275,6 +275,8 @@
     "moveDown": "Bajar",
     "layoutTileColumn": "Tarjeta",
     "layoutChartColumn": "Gráfico",
+    "dragHandle": "Arrastra para reordenar",
+    "dragHandleHint": "Arrastra el manejador para reordenar este widget. También puedes usar los botones de flecha Arriba y Abajo, o enfocar el manejador y pulsar Espacio más las flechas.",
     "emptyTitle": "Tu panel está vacío",
     "emptyDescription": "Registra tu primera medición o estado de ánimo. Las tarjetas y gráficas aparecerán automáticamente en cuanto haya datos.",
     "emptyAddMeasurement": "Registrar la primera medición",

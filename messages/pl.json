@@ -275,6 +275,8 @@
     "moveDown": "W dół",
     "layoutTileColumn": "Kafelek",
     "layoutChartColumn": "Wykres",
+    "dragHandle": "Przeciągnij, aby zmienić kolejność",
+    "dragHandleHint": "Przeciągnij uchwyt, aby zmienić kolejność tego widżetu. Możesz też użyć przycisków strzałek W górę i W dół albo skupić uchwyt i wcisnąć Spację oraz strzałki.",
     "emptyTitle": "Twój panel jest pusty",
     "emptyDescription": "Zarejestruj pierwszy pomiar lub nastrój. Kafelki i wykresy pojawią się automatycznie, gdy będą dane.",
     "emptyAddMeasurement": "Zarejestruj pierwszy pomiar",

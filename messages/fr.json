@@ -275,6 +275,8 @@
     "moveDown": "Descendre",
     "layoutTileColumn": "Tuile",
     "layoutChartColumn": "Graphique",
+    "dragHandle": "Glisser pour réordonner",
+    "dragHandleHint": "Glisse la poignée pour réordonner ce widget. Tu peux aussi utiliser les flèches Haut et Bas, ou cibler la poignée puis appuyer sur Espace plus les flèches.",
     "emptyTitle": "Ton tableau de bord est vide",
     "emptyDescription": "Saisis ta première mesure ou humeur. Les tuiles et graphiques apparaissent automatiquement dès qu’il y a des données.",
     "emptyAddMeasurement": "Saisir la première mesure",

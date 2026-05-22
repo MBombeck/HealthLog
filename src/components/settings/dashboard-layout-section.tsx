@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { toast } from "sonner";
 import {
   LayoutDashboard,
@@ -9,7 +9,24 @@ import {
   Loader2,
   ArrowUp,
   ArrowDown,
+  GripVertical,
 } from "lucide-react";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useTranslations } from "@/lib/i18n/context";
@@ -28,6 +45,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+/**
+ * v1.4.47 W4 — pure reorder helper shared by the arrow buttons and the
+ * @dnd-kit drag-end handler. Both surfaces produce the same `widgets[]`
+ * shape (`order: 0..n-1`) so the existing PUT contract stays untouched
+ * and either input mode flushes via the same Save mutation. Exported so
+ * the unit test can pin the contract without spinning up a DndContext.
+ */
+export function reorderWidgets(
+  widgets: readonly { id: string; order: number }[],
+  fromId: string,
+  toId: string,
+): { id: string; order: number }[] {
+  const sorted = [...widgets].sort((a, b) => a.order - b.order);
+  const fromIdx = sorted.findIndex((w) => w.id === fromId);
+  const toIdx = sorted.findIndex((w) => w.id === toId);
+  if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) {
+    return sorted.map((w, i) => ({ ...w, order: i }));
+  }
+  const next = [...sorted];
+  const [removed] = next.splice(fromIdx, 1);
+  next.splice(toIdx, 0, removed);
+  return next.map((w, i) => ({ ...w, order: i }));
+}
 
 const WIDGET_LABEL_KEYS: Record<DashboardWidgetId, string> = {
   weight: "dashboard.weight",
@@ -53,6 +94,25 @@ const WIDGET_LABEL_KEYS: Record<DashboardWidgetId, string> = {
 export function DashboardLayoutSection({ id }: { id: string }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
+  // v1.4.47 W4 — stable id namespace for the drag-handle `aria-describedby`
+  // tooltip. One hint paragraph is rendered once at the bottom of the list
+  // and referenced by every drag handle in this section.
+  const dragHintId = useId();
+
+  // v1.4.47 W4 — sensors: pointer for mouse/touch, keyboard for Tab + Space
+  // + arrow-key reordering. The KeyboardSensor still works for users who
+  // tab to the GripVertical handle; the legacy ArrowUp / ArrowDown buttons
+  // below remain the primary keyboard surface for accessibility.
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      // Activation distance avoids the drag stealing every click on the row
+      // switches — only a 6 px pointer-down → move counts as drag intent.
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   const { data: remote, isLoading } = useQuery({
     queryKey: queryKeys.dashboardWidgets(),
@@ -149,6 +209,37 @@ export function DashboardLayoutSection({ id }: { id: string }) {
     setDraft({
       ...layout,
       widgets: sorted.map((w, i) => ({ ...w, order: i })),
+    });
+  }
+
+  /**
+   * v1.4.47 W4 — drag-and-drop reorder via @dnd-kit. Persists the same
+   * `order` rewrite shape the arrow buttons already use, so save / cancel
+   * / reset and the existing draft state machine work unchanged. The
+   * pointer + keyboard sensors are wired in the same `useSensors` call;
+   * keyboard a11y still also works through the legacy arrow buttons that
+   * remain on every row.
+   */
+  function handleDragEnd(event: DragEndEvent) {
+    if (!layout) return;
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const reordered = reorderWidgets(
+      layout.widgets,
+      String(active.id),
+      String(over.id),
+    );
+    // `reorderWidgets` operates on the pure { id, order } shape; map back
+    // to the full DashboardWidgetConfig so `visible` / `tileVisible` are
+    // preserved on every row.
+    const byId = new Map(layout.widgets.map((w) => [w.id, w]));
+    setDraft({
+      ...layout,
+      widgets: reordered.map((r, i) => {
+        const original = byId.get(r.id as DashboardWidgetId);
+        if (!original) return { ...r, order: i } as never;
+        return { ...original, order: i };
+      }),
     });
   }
 
@@ -259,7 +350,11 @@ export function DashboardLayoutSection({ id }: { id: string }) {
               right-hand spacer reserves the width of two
               size-11/sm:size-9 buttons so the Tile / Chart column
               headers continue to line up with the switches below. */}
+          {/* v1.4.47 W4 — column header spacer additionally reserves the
+              width of the new drag-handle icon (w-7) so Tile / Chart
+              alignment with the row switches below stays pixel-perfect. */}
           <div className="text-muted-foreground flex items-center gap-2 px-3 pb-1 text-[10px] font-medium tracking-wide uppercase">
+            <span className="w-7" aria-hidden="true" />
             <span className="flex-1" aria-hidden="true" />
             <span className="w-12 text-center">
               {t("dashboard.layoutTileColumn")}
@@ -267,83 +362,58 @@ export function DashboardLayoutSection({ id }: { id: string }) {
             <span className="w-12 text-center">
               {t("dashboard.layoutChartColumn")}
             </span>
-            <span
-              className="w-22 sm:w-18"
-              aria-hidden="true"
-            />
+            <span className="w-22 sm:w-18" aria-hidden="true" />
           </div>
-          {[...layout.widgets]
-            .sort((a, b) => a.order - b.order)
-            .map((widget, index, arr) => {
-              const labelKey = WIDGET_LABEL_KEYS[widget.id] ?? widget.id;
-              const tileChecked =
-                typeof widget.tileVisible === "boolean"
-                  ? widget.tileVisible
-                  : widget.visible;
-              return (
-                // v1.4.29 — drag-list row compactness. The legacy
-                // vertical 44+44-px arrow stack inflated each row
-                // to ~116 px; the horizontal arrow pair on the
-                // trailing edge drops the row to 48 px (`min-h-12`)
-                // while preserving the 44-px mobile tap target
-                // (`size-11`). `sm:size-9` shrinks the buttons
-                // visually on desktop where pointer accuracy is
-                // higher.
-                <div
-                  key={widget.id}
-                  className="border-border bg-background/30 flex min-h-12 items-center gap-2 rounded-md border px-3 py-2"
+          {(() => {
+            const sortedWidgets = [...layout.widgets].sort(
+              (a, b) => a.order - b.order,
+            );
+            const sortedIds = sortedWidgets.map((w) => w.id);
+            return (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={sortedIds}
+                  strategy={verticalListSortingStrategy}
                 >
-                  <span
-                    className="flex-1 truncate text-sm"
-                    title={t(labelKey)}
-                  >
-                    {t(labelKey)}
-                  </span>
-                  <div className="flex w-12 justify-center">
-                    <Switch
-                      checked={tileChecked}
-                      onCheckedChange={(v) => toggleTile(widget.id, v)}
-                      aria-label={`${t(labelKey)} — ${t("dashboard.layoutTileColumn")}`}
+                  {sortedWidgets.map((widget, index, arr) => (
+                    <SortableWidgetRow
+                      key={widget.id}
+                      widget={widget}
+                      labelKey={WIDGET_LABEL_KEYS[widget.id] ?? widget.id}
+                      index={index}
+                      total={arr.length}
+                      dragHintId={dragHintId}
                       disabled={saveMutation.isPending}
-                      data-slot="widget-tile-switch"
+                      labels={{
+                        tileColumn: t("dashboard.layoutTileColumn"),
+                        chartColumn: t("dashboard.layoutChartColumn"),
+                        moveUp: t("dashboard.moveUp"),
+                        moveDown: t("dashboard.moveDown"),
+                        dragHandle: t("dashboard.dragHandle"),
+                        widgetLabel: t(
+                          WIDGET_LABEL_KEYS[widget.id] ?? widget.id,
+                        ),
+                      }}
+                      onToggleTile={toggleTile}
+                      onToggleChart={toggle}
+                      onMove={move}
                     />
-                  </div>
-                  <div className="flex w-12 justify-center">
-                    <Switch
-                      checked={widget.visible}
-                      onCheckedChange={(v) => toggle(widget.id, v)}
-                      aria-label={`${t(labelKey)} — ${t("dashboard.layoutChartColumn")}`}
-                      disabled={saveMutation.isPending}
-                      data-slot="widget-chart-switch"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-11 sm:size-9"
-                    onClick={() => move(widget.id, -1)}
-                    disabled={index === 0 || saveMutation.isPending}
-                    aria-label={t("dashboard.moveUp")}
-                  >
-                    <ArrowUp className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-11 sm:size-9"
-                    onClick={() => move(widget.id, 1)}
-                    disabled={
-                      index === arr.length - 1 || saveMutation.isPending
-                    }
-                    aria-label={t("dashboard.moveDown")}
-                  >
-                    <ArrowDown className="h-4 w-4" />
-                  </Button>
-                </div>
-              );
-            })}
+                  ))}
+                </SortableContext>
+              </DndContext>
+            );
+          })()}
+          {/* v1.4.47 W4 — single shared aria-describedby target for all
+              drag handles. Screen readers read this once per focused
+              handle; sighted users see it in the native browser tooltip
+              via the matching `title` attribute on each handle. */}
+          <p id={dragHintId} className="text-muted-foreground sr-only">
+            {t("dashboard.dragHandleHint")}
+          </p>
         </div>
       )}
 
@@ -379,6 +449,151 @@ export function DashboardLayoutSection({ id }: { id: string }) {
             : t("dashboard.layoutCustomized")}
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * v1.4.47 W4 — sortable row primitive extracted from the section render
+ * so the @dnd-kit `useSortable` hook stays scoped to one row. Translation
+ * strings are passed in pre-resolved (rather than calling `useTranslations`
+ * inside) so this component stays cheap to re-render for the 13+ rows.
+ *
+ * The drag handle is the only listener-bearing surface — the row body
+ * stays click-through so the switches and arrow buttons keep working.
+ * Pointer activation has a 6 px distance constraint (configured on the
+ * parent sensor) so a tap on the handle never accidentally drags.
+ */
+interface SortableWidgetRowProps {
+  widget: {
+    id: DashboardWidgetId;
+    visible: boolean;
+    tileVisible?: boolean;
+    order: number;
+  };
+  labelKey: string;
+  index: number;
+  total: number;
+  dragHintId: string;
+  disabled: boolean;
+  labels: {
+    tileColumn: string;
+    chartColumn: string;
+    moveUp: string;
+    moveDown: string;
+    dragHandle: string;
+    widgetLabel: string;
+  };
+  onToggleTile: (id: DashboardWidgetId, value: boolean) => void;
+  onToggleChart: (id: DashboardWidgetId, value: boolean) => void;
+  onMove: (id: DashboardWidgetId, delta: -1 | 1) => void;
+}
+
+function SortableWidgetRow({
+  widget,
+  index,
+  total,
+  dragHintId,
+  disabled,
+  labels,
+  onToggleTile,
+  onToggleChart,
+  onMove,
+}: SortableWidgetRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: widget.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const tileChecked =
+    typeof widget.tileVisible === "boolean"
+      ? widget.tileVisible
+      : widget.visible;
+
+  return (
+    // v1.4.29 — row sized at 48 px (`min-h-12`) with 44-px mobile tap
+    // targets preserved on the trailing arrow buttons (`size-11`),
+    // shrunk to `sm:size-9` on desktop. v1.4.47 W4 — `isDragging`
+    // raises the row visually (elevation + accent ring) so the ghost
+    // overlay is unambiguous during a drag.
+    <div
+      ref={setNodeRef}
+      style={style}
+      data-slot="widget-row"
+      data-dragging={isDragging ? "true" : undefined}
+      className={`border-border bg-background/30 flex min-h-12 items-center gap-2 rounded-md border px-3 py-2 ${
+        isDragging ? "ring-primary z-10 opacity-90 shadow-lg ring-2" : ""
+      }`}
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        aria-label={`${labels.dragHandle} — ${labels.widgetLabel}`}
+        // v1.4.47 W4 — `aria-describedby` is set after `{...attributes}`
+        // so our shared hint paragraph wins over dnd-kit's own announcer
+        // hookup. The announcer still fires on drag-start / drag-over /
+        // drag-end via the screenReaderInstructions slot below.
+        aria-describedby={dragHintId}
+        title={labels.dragHandle}
+        disabled={disabled}
+        data-slot="widget-drag-handle"
+        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring focus-visible:ring-offset-background -m-1 inline-flex h-7 w-7 cursor-grab touch-none items-center justify-center rounded transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <span className="flex-1 truncate text-sm" title={labels.widgetLabel}>
+        {labels.widgetLabel}
+      </span>
+      <div className="flex w-12 justify-center">
+        <Switch
+          checked={tileChecked}
+          onCheckedChange={(v) => onToggleTile(widget.id, v)}
+          aria-label={`${labels.widgetLabel} — ${labels.tileColumn}`}
+          disabled={disabled}
+          data-slot="widget-tile-switch"
+        />
+      </div>
+      <div className="flex w-12 justify-center">
+        <Switch
+          checked={widget.visible}
+          onCheckedChange={(v) => onToggleChart(widget.id, v)}
+          aria-label={`${labels.widgetLabel} — ${labels.chartColumn}`}
+          disabled={disabled}
+          data-slot="widget-chart-switch"
+        />
+      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="size-11 sm:size-9"
+        onClick={() => onMove(widget.id, -1)}
+        disabled={index === 0 || disabled}
+        aria-label={labels.moveUp}
+      >
+        <ArrowUp className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="size-11 sm:size-9"
+        onClick={() => onMove(widget.id, 1)}
+        disabled={index === total - 1 || disabled}
+        aria-label={labels.moveDown}
+      >
+        <ArrowDown className="h-4 w-4" />
+      </Button>
     </div>
   );
 }

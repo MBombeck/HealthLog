@@ -275,6 +275,8 @@
     "moveDown": "Move down",
     "layoutTileColumn": "Tile",
     "layoutChartColumn": "Chart",
+    "dragHandle": "Drag to reorder",
+    "dragHandleHint": "Drag the handle to reorder this widget. You can also use the Up and Down arrow buttons, or focus the handle and press Space and the arrow keys.",
     "emptyTitle": "Your dashboard is empty",
     "emptyDescription": "Log your first measurement or mood entry. Tiles and charts appear automatically as data lands.",
     "emptyAddMeasurement": "Add your first measurement",

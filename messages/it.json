@@ -275,6 +275,8 @@
     "moveDown": "Sposta giù",
     "layoutTileColumn": "Tile",
     "layoutChartColumn": "Grafico",
+    "dragHandle": "Trascina per riordinare",
+    "dragHandleHint": "Trascina la maniglia per riordinare questo widget. Puoi anche usare i pulsanti freccia Su e Giù, oppure mettere a fuoco la maniglia e premere Spazio e i tasti freccia.",
     "emptyTitle": "La tua dashboard è vuota",
     "emptyDescription": "Registra la prima misurazione o un umore. Tile e grafici appaiono automaticamente non appena ci sono dati.",
     "emptyAddMeasurement": "Registra la prima misurazione",
