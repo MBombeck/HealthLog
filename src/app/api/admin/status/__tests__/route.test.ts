@@ -45,16 +45,9 @@ vi.mock("@/lib/jobs/worker-status", () => ({
 }));
 
 // v1.4.25 W21 Fix-K — `/api/admin/status` now reads the legacy-form
-// counter from the Withings webhook module. Mock it at module boundary
-// so the test fixture stays deterministic.
-vi.mock("@/app/api/withings/webhook/route", () => ({
-  getLegacyFormTotal: vi.fn(() => 0),
-}));
-
 import { GET } from "../route";
 import { prisma } from "@/lib/db";
 import { requireAdmin, HttpError } from "@/lib/api-handler";
-import { getLegacyFormTotal } from "@/app/api/withings/webhook/route";
 
 const ADMIN_CTX = {
   session: { id: "s1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -178,12 +171,4 @@ describe("GET /api/admin/status (integration health summary)", () => {
     expect(tokenCallArgs).toEqual({ where: { revoked: false } });
   });
 
-  it("surfaces the legacy Withings webhook counter on the counters block (Fix-K sec-M2)", async () => {
-    vi.mocked(getLegacyFormTotal).mockReturnValue(7);
-    const res = await GET();
-    const body = (await res.json()) as {
-      data: { counters: { withingsWebhookLegacyFormTotal: number } };
-    };
-    expect(body.data.counters.withingsWebhookLegacyFormTotal).toBe(7);
-  });
 });

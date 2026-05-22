@@ -327,6 +327,20 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
         errorCode: null,
       });
 
+      // v1.4.47 W8 — pre-check navigator.onLine so an airplane-mode
+      // user gets the offline-specific copy immediately rather than
+      // waiting for the fetch to fail with a generic network error.
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        setStreaming({
+          content: "",
+          metricSource: null,
+          inProgress: false,
+          messageId: null,
+          errorCode: "coach.network",
+        });
+        return;
+      }
+
       let response: Response;
       try {
         response = await fetch("/api/insights/chat", {

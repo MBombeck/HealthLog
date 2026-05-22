@@ -28,40 +28,16 @@ import {
  * while users re-subscribe (which also happens organically when they
  * reconnect for the new `user.activity` OAuth scope shipped in W5d).
  *
- * Removal target: v1.4.27 (after all live subscriptions have rotated).
+ * Removal target: a future release once all live subscriptions have
+ * rotated to the path-segment form. The warning is still emitted on the
+ * legacy path so an operator watching the access log knows what to
+ * migrate to.
  *
- * v1.4.25 W21 Fix-K — added an in-memory `withings.webhook.legacy_form_total`
- * counter the `/api/admin/status` endpoint surfaces so the release-gate
- * can read "legacy form usage trending toward zero" before the v1.4.27
- * cut. The warning text now includes the re-subscription URL so anyone
- * watching the access log knows what to migrate to.
+ * v1.4.47 — dropped the in-memory `legacy_form_total` counter (was per-
+ * process, useless on a multi-container deploy; the access-log warning
+ * already covers the signal it provided).
  */
 const MIGRATION_URL = "/api/withings/webhook/[token]" as const;
-
-// In-memory counter — resets on every deploy / cold-start. That is the
-// intended granularity: we want to know "how many legacy-form requests
-// did this process serve since it came up", not a forever-running
-// cumulative metric (which would belong in Prisma).
-const counters = {
-  legacy_form_total: 0,
-};
-
-/**
- * Read the legacy-form counter. Exported so `/api/admin/status` can
- * surface it without a backchannel.
- */
-export function getLegacyFormTotal(): number {
-  return counters.legacy_form_total;
-}
-
-/**
- * Reset the legacy-form counter. Test-only utility; production code
- * does not call this. Documented so a future smoke test can wire up
- * a deterministic "counter was 0 before the call" assertion.
- */
-export function __resetLegacyFormTotalForTests(): void {
-  counters.legacy_form_total = 0;
-}
 
 function hasValidWebhookSecret(
   request: NextRequest,
@@ -89,7 +65,6 @@ async function checkAndWarn(
     return NextResponse.json({ status: "unauthorized" }, { status: 401 });
   }
   if (auth.via === "query") {
-    counters.legacy_form_total += 1;
     getEvent()?.addWarning(
       `withings webhook secret received via legacy URL query — migrate to ${MIGRATION_URL} (re-subscribe with the path-segment token form)`,
     );
