@@ -102,6 +102,7 @@ function setEnv(over: Record<string, string | undefined> = {}): void {
     "APNS_TEAM_ID",
     "APNS_BUNDLE_ID",
     "APNS_KEY",
+    "APNS_KEY_B64",
     "APNS_KEY_FILE",
     "APNS_PRODUCTION",
   ]) {
@@ -205,6 +206,35 @@ describe("loadApnsConfig — all-or-none env-var guard", () => {
     setEnv({
       ...VALID_ENV,
       APNS_KEY: "-----BEGIN PRIVATE KEY-----\\nNOTAREALKEY\\n-----END PRIVATE KEY-----",
+    });
+    const config = loadApnsConfig();
+    expect(config).toBeNull();
+  });
+
+  it("APNS_KEY_B64 base64-decodes to a valid PEM and is preferred over APNS_KEY", () => {
+    // v1.4.47.4 — APNS_KEY_B64 sidesteps the `\n`-escape mangling that
+    // some docker-compose env_file round-trips do to inline PEMs.
+    const canonicalPem = TEST_EC_PEM_LINES.join("\n");
+    const b64 = Buffer.from(canonicalPem, "utf-8").toString("base64");
+    setEnv({
+      APNS_KEY_ID: VALID_ENV.APNS_KEY_ID,
+      APNS_TEAM_ID: VALID_ENV.APNS_TEAM_ID,
+      APNS_BUNDLE_ID: VALID_ENV.APNS_BUNDLE_ID,
+      // Both set on purpose — B64 takes precedence.
+      APNS_KEY: "-----BEGIN PRIVATE KEY-----\\nBROKEN\\n-----END PRIVATE KEY-----",
+      APNS_KEY_B64: b64,
+    });
+    const config = loadApnsConfig();
+    expect(config).toBeTruthy();
+    expect(config?.signingKey).toBe(canonicalPem);
+  });
+
+  it("returns null + warns when APNS_KEY_B64 is not valid base64-encoded PEM", () => {
+    setEnv({
+      APNS_KEY_ID: VALID_ENV.APNS_KEY_ID,
+      APNS_TEAM_ID: VALID_ENV.APNS_TEAM_ID,
+      APNS_BUNDLE_ID: VALID_ENV.APNS_BUNDLE_ID,
+      APNS_KEY_B64: Buffer.from("not a pem at all").toString("base64"),
     });
     const config = loadApnsConfig();
     expect(config).toBeNull();

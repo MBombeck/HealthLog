@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.4.47.4] — 2026-05-22 — APNs key escape-free env var (APNS_KEY_B64)
+
+The v1.4.47.2 / .3 chain established that the production `APNS_KEY` env-var is mangled along the `docker-compose env_file` → `process.env` pipeline. Defensive normalisation cannot recover it because the base64 body itself is corrupted on arrival.
+
+This release adds an escape-free alternative: `APNS_KEY_B64`. The operator base64-encodes the raw `.p8` file (real newlines intact) and stores that single ASCII-safe blob; the app decodes it back to a PEM string. No `\n` escape gymnastics, no character class transformations along the way — base64 chars survive every env-var pipeline.
+
+### Changed
+
+- `src/lib/notifications/senders/apns.ts:loadApnsConfig` — read `APNS_KEY_B64` first; if present, decode via `Buffer.from(value, "base64").toString("utf-8")` and pass directly to `crypto.createPrivateKey` for verification. Existing `APNS_KEY` and `APNS_KEY_FILE` paths kept as fallbacks. Precedence: `APNS_KEY_B64 > APNS_KEY > APNS_KEY_FILE`.
+
+### Operator action
+
+To enable on Coolify (or any other env-var-block):
+
+```bash
+base64 -i AuthKey_<KEY_ID>.p8 | tr -d '\n'
+```
+
+Paste the output as `APNS_KEY_B64`. The legacy `APNS_KEY` can stay set or be removed; the B64 variant overrides it when present.
+
+### Risk
+
+Zero. Additive — the new env-var has its own try/catch + parse-verification with one-warning-per-process disable semantics. Existing operators keep their setup unchanged.
+
 ## [1.4.47.3] — 2026-05-22 — APNs PEM diagnostic dump on parse failure
 
 v1.4.47.2 added defensive PEM normalisation but the production env-var was still rejected at `crypto.createPrivateKey` with `error:1E08010C:DECODER routines::unsupported`. The base64 body itself appears to be corrupted somewhere along the Coolify → docker-compose → `process.env` path; normalising the wrapping cannot recover it.
