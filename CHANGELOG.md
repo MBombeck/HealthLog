@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.4.47.6] — 2026-05-22 — APNs per-channel test endpoint wired
+
+The Settings notification-status card's "Test senden" button was unwired for the APNS channel — the `TEST_ENDPOINTS` map at `notification-status-card.tsx:60-64` had TELEGRAM / NTFY / WEB_PUSH but not APNS. Clicking the button on an APNS row resolved to `undefined` and the fetch fired against an empty URL, silently failing. The operator had no first-class way to verify the v1.4.47.5 auto-detect path; only the natural channel-state-machine cron retry could exercise it.
+
+This release adds the missing endpoint + map entry.
+
+### Added
+
+- `src/app/api/notifications/apns/test/route.ts` (new) — per-channel APNS self-test endpoint. Mirrors the web-push test shape: `requireAuth` + 5/min rate-limit + calls `sendViaApns(user.id, …)` with a localised "test notification" body. Returns `{ ok, reason }` so the UI can surface the actual APNs reason on failure.
+
+### Changed
+
+- `src/components/settings/notification-status-card.tsx:60-65` — added the `APNS` row to `TEST_ENDPOINTS`. The button now actually fires.
+
+### Effect
+
+- Operator can verify APNs delivery without waiting for the channel-state-machine's exponential-backoff cron retry. The v1.4.47.5 auto-detect path runs inside `sendViaApns`, so clicking "Test senden" on the APNS row will exercise it directly.
+
+### Risk
+
+Zero. Additive endpoint + one new map key. Existing channels keep working.
+
 ## [1.4.47.5] — 2026-05-22 — APNs gateway auto-detect on `BadEnvironmentKeyInToken`
 
 v1.4.47.4 + the Coolify `APNS_PRODUCTION` env-var deletion got JWT signing past Apple's gate, but the next push still failed with `BadEnvironmentKeyInToken` — the server's per-device gateway routing didn't match the actual token environment. The iOS client picks the gateway env when it registers, but in practice the client's reported env can mismatch the token's true environment (e.g. a DEBUG build that registered itself as "production" by accident, or a TestFlight-then-Debug installation chain).

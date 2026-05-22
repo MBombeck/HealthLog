@@ -35,7 +35,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
-type ChannelType = "TELEGRAM" | "NTFY" | "WEB_PUSH";
+type ChannelType = "TELEGRAM" | "NTFY" | "WEB_PUSH" | "APNS";
 
 type ChannelState =
   | "active"
@@ -61,6 +61,7 @@ const TEST_ENDPOINTS: Record<ChannelType, string> = {
   TELEGRAM: "/api/settings/telegram/test",
   NTFY: "/api/settings/ntfy/test",
   WEB_PUSH: "/api/notifications/web-push/test",
+  APNS: "/api/notifications/apns/test",
 };
 
 export function NotificationStatusCard() {
