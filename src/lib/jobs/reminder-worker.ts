@@ -31,6 +31,7 @@ import {
 import { setGlobalBoss } from "@/lib/jobs/boss-instance";
 import { cleanupExpiredIdempotencyKeys } from "@/lib/jobs/idempotency-cleanup";
 import { cleanupOldAuditLogs } from "@/lib/jobs/audit-log-cleanup";
+import { cleanupExpiredWithingsOAuthStates } from "@/lib/jobs/withings-oauth-state-cleanup";
 import { runHostMetricTick } from "@/lib/jobs/host-metric-sampler";
 import { aggregateRecommendationFeedback } from "@/lib/jobs/feedback-aggregator";
 import {
@@ -177,6 +178,14 @@ const IDEMPOTENCY_CLEANUP_QUEUE = "idempotency-cleanup";
 const IDEMPOTENCY_CLEANUP_CRON = "0 3 * * *"; // daily at 03:00 (Europe/Berlin)
 const AUDIT_LOG_CLEANUP_QUEUE = "audit-log-cleanup";
 const AUDIT_LOG_CLEANUP_CRON = "15 3 * * *"; // daily at 03:15 (Europe/Berlin)
+// v1.4.47 W6 — daily sweep for the Withings OAuth state ledger. Slots
+// at :20 between the audit-log cleanup (:15) and the mood-reminder
+// cleanup (:25), inside the existing 02:xx-03:xx maintenance window.
+// Rows are normally consumed by the callback handler in single-use
+// fashion; this sweep picks up the long tail where a user closed the
+// Withings approval tab without bouncing back to the callback URL.
+const WITHINGS_OAUTH_STATE_CLEANUP_QUEUE = "withings-oauth-state-cleanup";
+const WITHINGS_OAUTH_STATE_CLEANUP_CRON = "20 3 * * *";
 const OFFHOST_BACKUP_QUEUE = "data-backup-offhost";
 // 02:30 Europe/Berlin — runs after audit-log/idempotency cleanups so old
 // rows are gone before they're snapshotted, but before the existing
@@ -300,6 +309,10 @@ interface IdempotencyCleanupPayload {
 }
 
 interface AuditLogCleanupPayload {
+  triggeredAt: string;
+}
+
+interface WithingsOAuthStateCleanupPayload {
   triggeredAt: string;
 }
 
@@ -1245,6 +1258,23 @@ async function handleAuditLogCleanup(jobs: Job<AuditLogCleanupPayload>[]) {
   });
 }
 
+async function handleWithingsOAuthStateCleanup(
+  jobs: Job<WithingsOAuthStateCleanupPayload>[],
+) {
+  void jobs;
+  await withBackgroundEvent("job.withings_oauth_state_cleanup", async (evt) => {
+    const p = getWorkerPrisma();
+    try {
+      const deleted = await cleanupExpiredWithingsOAuthStates(p);
+      evt.addMeta("withings_oauth_state_cleanup_deleted", deleted);
+    } catch (err) {
+      // The OAuth flow tolerates a stale row sticking around for an
+      // extra day — log + carry on so the boss queue doesn't retry-loop.
+      evt.addWarning(`withings-oauth-state-cleanup failed: ${err}`);
+    }
+  });
+}
+
 async function handleHostMetricSample(jobs: Job<HostMetricSamplePayload>[]) {
   void jobs;
   await withBackgroundEvent("job.host_metric_sample", async (evt) => {
@@ -1671,6 +1701,11 @@ export async function startReminderWorker() {
     RATE_LIMIT_CLEANUP_QUEUE,
     IDEMPOTENCY_CLEANUP_QUEUE,
     AUDIT_LOG_CLEANUP_QUEUE,
+    // v1.4.47 W6 — daily sweep for the Withings OAuth state ledger.
+    // Same pg-boss v12 createQueue contract as the other cleanup
+    // crons; without this entry the schedule below silently no-ops
+    // and abandoned rows pile up.
+    WITHINGS_OAUTH_STATE_CLEANUP_QUEUE,
     OFFHOST_BACKUP_QUEUE,
     HOST_METRIC_QUEUE,
     FEEDBACK_AGGREGATOR_QUEUE,
@@ -1744,6 +1779,7 @@ export async function startReminderWorker() {
     [RATE_LIMIT_CLEANUP_QUEUE, RATE_LIMIT_CLEANUP_CRON],
     [IDEMPOTENCY_CLEANUP_QUEUE, IDEMPOTENCY_CLEANUP_CRON],
     [AUDIT_LOG_CLEANUP_QUEUE, AUDIT_LOG_CLEANUP_CRON],
+    [WITHINGS_OAUTH_STATE_CLEANUP_QUEUE, WITHINGS_OAUTH_STATE_CLEANUP_CRON],
     [OFFHOST_BACKUP_QUEUE, OFFHOST_BACKUP_CRON],
     [HOST_METRIC_QUEUE, HOST_METRIC_CRON],
     [FEEDBACK_AGGREGATOR_QUEUE, FEEDBACK_AGGREGATOR_CRON],
@@ -1859,6 +1895,11 @@ export async function startReminderWorker() {
     AUDIT_LOG_CLEANUP_QUEUE,
     { localConcurrency: 1 },
     handleAuditLogCleanup,
+  );
+  await boss.work<WithingsOAuthStateCleanupPayload>(
+    WITHINGS_OAUTH_STATE_CLEANUP_QUEUE,
+    { localConcurrency: 1 },
+    handleWithingsOAuthStateCleanup,
   );
   await boss.work<OffhostBackupPayload>(
     OFFHOST_BACKUP_QUEUE,

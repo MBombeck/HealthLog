@@ -118,15 +118,29 @@ describe("Withings OAuth handshake (real Postgres)", () => {
     );
     expect(target.searchParams.get("scope")).toBe("user.metrics,user.activity");
     const state = target.searchParams.get("state");
-    expect(state).toMatch(/^user-withings-oauth:[a-f0-9]{32}$/);
+    // v1.4.47 W6 — state is a fully-random 22-char base64url nonce.
+    // The legacy `${user.id}:${random16}` shape leaked the user id to
+    // request logs / network captures (audit L-1); the new shape is
+    // opaque and resolves the user via the `WithingsOAuthState` row.
+    expect(state).toMatch(/^[A-Za-z0-9_-]{22}$/);
 
-    // The Set-Cookie header carries the same state nonce — that cookie
-    // is what `callback/route.ts` compares against on the second leg.
-    // Cookie value is URL-encoded for the `:` separator; compare on the
-    // encoded form so the assertion is byte-stable.
+    // The Set-Cookie header carries the same opaque nonce — that
+    // cookie is what `callback/route.ts` compares against on the
+    // second leg before resolving the user via the ledger row.
     const setCookie = res.headers.get("set-cookie");
     expect(setCookie).toContain("withings_state=");
-    expect(setCookie).toContain(encodeURIComponent(state!));
+    expect(setCookie).toContain(state!);
+
+    // v1.4.47 W6 — the connect handler also persists a ledger row.
+    // Asserting on it here closes the contract loop: the row is what
+    // the callback handler will look up.
+    const prisma = getPrismaClient();
+    const row = await prisma.withingsOAuthState.findUnique({
+      where: { nonce: state! },
+    });
+    expect(row).not.toBeNull();
+    expect(row?.userId).toBe(TEST_USER_ID);
+    expect(row!.expiresAt.getTime()).toBeGreaterThan(Date.now());
   });
 
   it("callback exchanges code → encrypted tokens on the WithingsConnection row", async () => {
@@ -156,7 +170,19 @@ describe("Withings OAuth handshake (real Postgres)", () => {
         throw new Error(`Unexpected fetch in withings-oauth test: ${url}`);
       });
 
-    const state = `${TEST_USER_ID}:${"a".repeat(32)}`;
+    // v1.4.47 W6 — seed a live ledger row so the callback can resolve
+    // the user via the row's `userId`. The state on the URL + cookie
+    // must equal the row's `nonce`.
+    const state = "abcdefghijklmnopqrstuv";
+    const prisma = getPrismaClient();
+    await prisma.withingsOAuthState.create({
+      data: {
+        nonce: state,
+        userId: TEST_USER_ID,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      },
+    });
+
     const req = new NextRequest(
       `http://localhost/api/withings/callback?code=auth-code-123&state=${encodeURIComponent(state)}`,
       {
@@ -175,7 +201,14 @@ describe("Withings OAuth handshake (real Postgres)", () => {
       "/settings/integrations?withings=connected",
     );
 
-    const prisma = getPrismaClient();
+    // v1.4.47 W6 — the ledger row is consumed on the happy path
+    // (single-use semantics). A replay of the same nonce would fail
+    // the state-not-found branch and bounce to the error page.
+    const consumed = await prisma.withingsOAuthState.findUnique({
+      where: { nonce: state },
+    });
+    expect(consumed).toBeNull();
+
     const conn = await prisma.withingsConnection.findUnique({
       where: { userId: TEST_USER_ID },
     });
@@ -210,8 +243,12 @@ describe("Withings OAuth handshake (real Postgres)", () => {
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(new Response("must not be called", { status: 500 }));
 
-    const validState = `${TEST_USER_ID}:${"a".repeat(32)}`;
-    const replayedState = `${TEST_USER_ID}:${"b".repeat(32)}`;
+    // v1.4.47 W6 — 22-char base64url nonces; the cookie value and the
+    // URL state diverge so the constant-time check short-circuits on
+    // the first byte mismatch. No ledger row needs to exist because
+    // the request never reaches the row lookup.
+    const validState = "aaaaaaaaaaaaaaaaaaaaaa";
+    const replayedState = "bbbbbbbbbbbbbbbbbbbbbb";
     const req = new NextRequest(
       `http://localhost/api/withings/callback?code=auth-code-123&state=${encodeURIComponent(replayedState)}`,
       {

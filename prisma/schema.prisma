@@ -234,6 +234,13 @@ model User {
   refreshTokens          RefreshToken[]
   auditLogs              AuditLog[]
   withingsConnection     WithingsConnection?
+  // v1.4.47 W6 — short-lived `(nonce → userId)` ledger backing the
+  // Withings OAuth state check. The connect route mints a row with a
+  // 10-minute TTL; the callback resolves the user via this relation
+  // instead of parsing the cookie value, closing the L-1 audit gap
+  // where the legacy `${user.id}:${nonce}` shape leaked the user id
+  // into request logs / network captures.
+  withingsOAuthStates    WithingsOAuthState[]
   moodEntries            MoodEntry[]
   notificationChannels   NotificationChannel[]
   pushSubscriptions      PushSubscription[]
@@ -1190,6 +1197,40 @@ model WithingsConnection {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("withings_connections")
+}
+
+/// v1.4.47 W6 — short-lived ledger of in-flight OAuth state nonces.
+///
+/// The legacy state shape `${user.id}:${random16}` (v1.4.42-) persisted
+/// the user id in plaintext on both the URL state param and the
+/// `withings_state` cookie. The cookie is httpOnly + Secure +
+/// sameSite:lax today so XSS exfiltration is closed, but the user id
+/// is still recoverable from any request-log entry where the cookie
+/// isn't redacted and from a network-traffic capture of the redirect.
+/// The v1.4.43 security audit (L-1) recommended decoupling the two by
+/// switching the state to a fully-random 16-byte nonce backed by this
+/// short-lived row — the callback resolves the user via the row's
+/// `userId` instead of the cookie value.
+///
+/// Lifecycle:
+///   * `connect` mints a row with `expiresAt = now() + 10 min` and
+///     sets the cookie to JUST the nonce (no user id).
+///   * `callback` looks up the row, asserts `expiresAt > now()`, then
+///     DELETEs it in the same transaction — replay of the same nonce
+///     fails the second time because the row is gone.
+///   * A daily cleanup cron sweeps any abandoned rows whose
+///     `expiresAt` has passed (user closed the Withings tab without
+///     completing the handshake).
+model WithingsOAuthState {
+  nonce     String   @id
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("withings_oauth_states")
 }
 
 // ─── Mood Entries (moodLog) ───────────────────────────────────

@@ -69,6 +69,7 @@ export async function truncateAllTables(client: PrismaClient): Promise<void> {
     "user_achievements",
     "users",
     "withings_connections",
+    "withings_oauth_states",
     "workout_routes",
     "workouts",
   ];
