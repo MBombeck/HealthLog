@@ -1,5 +1,52 @@
 # Changelog
 
+## [1.4.47] — 2026-05-22 — Audit-backlog closure: drag-to-reorder, Coach disable toggle, OAuth state nonce table, legacy column drop, primitive sweep
+
+v1.4.45 closed the audit marathon; v1.4.46 caught a same-day server reconcile (PR worker, intake auto-skip, APNS admin test). v1.4.47 is the dedicated follow-up that lands every deferred v1.4.45 audit Medium/Low plus the W14 legacy-column cleanup the v1.4.45 release scheduled for "one release later".
+
+Eight touch-disjoint waves landed on `develop` before this release commit:
+
+- **W0** wall-clock pin on the two idempotency tests (`/api/dashboard/summary` + `/api/medications/intake`) that hard-coded `2026-05-21` and broke on the 22nd
+- **W1** drop the legacy `consecutive_failures` column on `integration_statuses` — the v1.4.45 W14 per-kind bucket migration carried the legacy integer for one release as a fallback; now removed, alert ladder reads `Math.max(...buckets)`
+- **W2** extract `<Textarea>` primitive with iOS-zoom defence + WCAG tap-target floor; sweep 4 inline call-sites (bugreport, medication JSON paste, side-effects notes, admin feedback)
+- **W3** per-user Coach disable toggle in Settings → Insights; survives `flags.coach` (admin) gate at all five mount points; new `disableCoach` column + audit-logged PATCH endpoint
+- **W4** dashboard widget drag-to-reorder via `@dnd-kit/sortable` (a11y arrow-button fallback preserved); 6 new locale strings; new `reorderWidgets` pure helper
+- **W5** dashboard tour auto-launch gated on `onboardingCompletedAt + 24 h` so the carousel and tour no longer chain immediately; "Replay the tour" CTA added to Settings → About
+- **W6** Withings OAuth `state` cookie no longer encodes `${userId}:${nonce}` — switched to a 16-byte random nonce + short-lived `WithingsOAuthState` ledger row + 03:20 cleanup cron, closing v1.4.43 audit security L-1
+- **W7** drop the in-memory `legacy_form_total` counter (per-process + useless on multi-container deploys; access-log warning still emits)
+- **W8** Coach client pre-checks `navigator.onLine` before fetching `/api/insights/chat` so an airplane-mode user gets the offline-specific `coach.network` copy immediately
+
+### Added
+
+- **`<Textarea>` primitive** (`src/components/ui/textarea.tsx`) — mirrors `<Input>`'s shape with `forwardRef` + `data-slot="textarea"`. Bakes in `text-base sm:text-sm` iOS-zoom defence, `min-h-11 sm:min-h-9` tap target floor, `autoCapitalize="sentences"`, `spellCheck={true}`, `autoComplete="off"` + password-manager-ignore data-attributes. 11 unit tests pin the contract.
+- **Per-user Coach disable toggle** — Settings → Insights "Coach ausblenden" / "Hide Coach" Switch (W3). `disableCoach` Boolean column on `User` (migration `0078_v1447_user_disable_coach`). `GET /api/auth/me/disable-coach` + `PATCH /api/auth/me/disable-coach` (60/min/user rate-limit + audit row on every state-changing call). Mount gates on `<CoachFab>`, `<CoachMount>`, `<CoachLaunchButton>`, `<SuggestedPrompts>`, hero-strip `<HealthScoreCard onAskCoach>`, `/targets` per-card CTAs. `useDisableCoach()` SSR-safe hook mirrors `useFeatureFlags()`'s defensive pattern.
+- **Dashboard drag-to-reorder** — `@dnd-kit/core` + `@dnd-kit/sortable` + `@dnd-kit/utilities` runtime deps (~29 KB gzipped). `<SortableWidgetRow>` wrapper, `closestCenter` collision, vertical-list strategy, `KeyboardSensor` + `sortableKeyboardCoordinates` for full keyboard accessibility. Drag handle is a `<GripVertical>` icon button on every row's leading edge with `cursor-grab` + `touch-none` + 6 px activation distance. Existing arrow buttons survive as the a11y fallback. `reorderWidgets()` pure helper exported for unit-testing the contract without a DOM. 6 locale strings (`dashboard.dragHandle` + `dashboard.dragHandleHint`).
+- **`<OfflineBanner>`'s sibling** — Coach send-message path now pre-checks `navigator.onLine` and short-circuits to the `coach.network` error code before the fetch attempt, so the user sees the offline-specific banner copy immediately instead of waiting on a generic network failure (W8).
+- **Withings OAuth state ledger** — new `WithingsOAuthState` model + `withings_oauth_states` table with `nonce` PK, `userId` FK (`ON DELETE CASCADE`), `expiresAt` index. Connect mints a row with `randomBytes(16).toString("base64url")` + 10 min TTL; callback verifies + DELETEs on every exit branch (single-use). Cleanup cron `withings-oauth-state-cleanup` runs daily at 03:20 Europe/Berlin via `reminder-worker.ts`. New `src/lib/withings/oauth-state.ts` module exports the shared constants + minter.
+- **"Replay the tour" CTA** in Settings → About (`<AboutSection>`). Clicking re-arms a force-launch sessionStorage marker the `<TourLauncher>` consumes on its next mount, bypassing the new 24 h auto-launch gate. Also wired into the existing "Restart onboarding tour" button in `<AccountSection>` so a same-day click after navigation still lands on the tour.
+
+### Changed
+
+- **`/api/auth/me` payload** extended with `disableCoach: boolean` (defaulted to `false` for partial-deploy rollback). `useAuth` types extended; the fetcher coerces `undefined → false` at the wire boundary.
+- **`IntegrationStatus.consecutiveFailures` column dropped** — the v1.4.45 W14 migration introduced per-kind buckets but kept the legacy integer one release as a fallback. v1.4.47 drops the column. Alert ladder + audit `attemptNumber` now read `Math.max(...Object.values(consecutiveFailuresByKind))`. Migration `0077_v1447_drop_legacy_consecutive_failures` is reversible via a `GREATEST(transient, reauth_required, persistent)` recipe documented inline.
+- **`<TourLauncher>` auto-launch gate** extended from "tour not completed" to "tour not completed AND `onboardingCompletedAt + 24 h < now()`". The mount-time clock is captured via `useState(() => Date.now())` so render stays pure. Brand-new users (`onboardingCompletedAt == null`) and same-day re-visits never see the auto-launch; the manual "Replay the tour" button still works.
+- **`messages/de.json`** + 5 sibling locales — added `dashboard.dragHandle` + `dashboard.dragHandleHint`, `settings.ai.disableCoach.{title,description,toggleAria,savedHidden,savedShown,saveError}`, `settings.about.tourReplay` + `settings.about.tourReplayHint`. Marc-voice strings throughout.
+- **Withings `state` cookie** still named `withings_state` (in-flight handshake at deploy time stays alive — only the cookie shape changed, not the name). The cookie + URL now carry just the nonce; user identity resolves via the ledger row.
+
+### Fixed
+
+- **Dashboard summary + medications/intake idempotency tests** broke on 2026-05-22 because they hard-coded `2026-05-21` while the route's projection used `new Date()`. `vi.setSystemTime` pins both ends to the same calendar day so the regression guard stays stable on every future test run (W0).
+- **Coach send-while-offline UX** — airplane-mode user no longer sees a delayed generic network error; the `<MessageThread>` now surfaces the `coach.network` copy immediately (W8). Surfaces the v1.4.45 W12 M6 errorNetwork key properly on the client side.
+- **`legacy_form_total` counter removed** — `withingsWebhookLegacyFormTotal` no longer exposed on `/api/admin/status`. Per-process in-memory counters were never accurate across the multi-container deploy; the access-log warning remains the operator signal (W7).
+
+### Operator notes
+
+- **Migration**: three migrations to apply via `prisma migrate deploy`: `0076_v1447_withings_oauth_state`, `0077_v1447_drop_legacy_consecutive_failures`, `0078_v1447_user_disable_coach`. All idempotent (`IF NOT EXISTS` / `IF EXISTS`) + reversible.
+- **New cron**: `withings-oauth-state-cleanup` runs daily at 03:20 Europe/Berlin via pg-boss. Wired into `reminder-worker.ts`; no extra ops setup required beyond a worker container running.
+- **No env-var change.** `pnpm check-env` still passes; the v1.4.42 env-check CI gate enforces manifest ↔ `.env.production.example` lockstep.
+- **No API contract break for iOS v0.5.4.** `disableCoach` is additively extended in `/api/auth/me` (older iOS reads coerce `undefined → false`). Withings OAuth state cookie name preserved; in-flight handshakes survive a deploy. The Coach disable toggle is opt-in; default behaviour unchanged.
+- **`pnpm test --run` green at ~5100+ passing**, `pnpm typecheck` + `pnpm lint` clean.
+
 ## [1.4.46] — 2026-05-22 — Server reconcile (PR worker cumulative-bucketing + intake auto-skip + APNS admin test)
 
 Discovery follow-up from the v1.4.45 marathon-close review surfaced three server gaps that the audit waves hadn't covered. v1.4.46 lands all three as touch-disjoint fixes.
