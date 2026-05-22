@@ -1374,11 +1374,12 @@ model MedicationComplianceRollup {
 //   - consecutive failure counter (resets on success)
 //
 // `recordSyncSuccess` / `recordSyncFailure` helpers in
-// `src/lib/integrations/status.ts` are the only writers. The
-// `consecutiveFailures` counter feeds the admin-Telegram alerting
-// threshold (default 3). State `error_reauth` parks scheduled syncs
-// until the user reconnects (the sync entry-points consult this row
-// before doing any external work).
+// `src/lib/integrations/status.ts` are the only writers. The per-kind
+// `consecutiveFailuresByKind` JSON bucket feeds the admin-Telegram
+// alerting threshold (default 3) via `Math.max(...Object.values(...))`.
+// State `error_reauth` parks scheduled syncs until the user reconnects
+// (the sync entry-points consult this row before doing any external
+// work).
 //
 // `integration` values are bare strings ("withings", "moodlog") rather
 // than an enum so future integrations don't require a migration.
@@ -1390,7 +1391,9 @@ model IntegrationStatus {
   lastSuccessAt              DateTime? @map("last_success_at")
   lastAttemptAt              DateTime? @map("last_attempt_at")
   lastError                  String?   @map("last_error") // AES-256-GCM encrypted (may contain token-fragment metadata)
-  consecutiveFailures        Int       @default(0) @map("consecutive_failures") // v1.4.44 will drop; per-kind counter below is the source of truth
+  // v1.4.47 W1 — legacy single-column `consecutiveFailures` integer was
+  // dropped (migration 0076). The per-kind bucket below is now the
+  // sole source of truth for the alert ladder.
   consecutiveFailuresByKind  Json?     @map("consecutive_failures_by_kind") // v1.4.43 W14 — { transient, reauth_required, persistent }
   persistentFailureStartedAt DateTime? @map("persistent_failure_started_at") // v1.4.43 W14 — start of the current persistent streak (drives >24h park)
   alertedAt                  DateTime? @map("alerted_at") // last time admin Telegram alert fired (idempotency guard)

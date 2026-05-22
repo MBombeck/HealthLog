@@ -1,0 +1,49 @@
+-- v1.4.47 W1 — drop the legacy `consecutive_failures` column on
+-- `integration_statuses`.
+--
+-- v1.4.43 W14 introduced `consecutive_failures_by_kind` (JSONB) as
+-- the bucketed per-FailureKind counter and kept the single-column
+-- `consecutive_failures` integer for one release as a fallback so
+-- v1.4.43 readers wouldn't break mid-deploy. v1.4.45 W10 closed the
+-- write-time gap (back-fill increment posts the bucket and the legacy
+-- column at the same N+1 value). v1.4.47 W1 drops the legacy column
+-- now that every active integration in production has written at
+-- least one new failure or success since v1.4.43 shipped (>24h ago),
+-- so every row's `consecutive_failures_by_kind` is populated and the
+-- legacy integer is redundant.
+--
+-- After this migration the alert-ladder reader uses
+-- `Math.max(...Object.values(buckets))` exclusively — the legacy
+-- column is no longer consulted. `recordSyncFailure` and friends
+-- stop writing to `consecutive_failures` entirely (the corresponding
+-- application-level cleanup in `src/lib/integrations/status.ts`
+-- lands in the same release).
+--
+-- Idempotent guard (`IF EXISTS`) matches the 0075 pattern so reruns
+-- against an environment that has already dropped the column are
+-- safe.
+--
+-- Reversibility (down-migration):
+--
+--   ALTER TABLE "integration_statuses"
+--       ADD COLUMN IF NOT EXISTS "consecutive_failures" INTEGER
+--       NOT NULL DEFAULT 0;
+--
+--   UPDATE "integration_statuses"
+--      SET "consecutive_failures" = COALESCE(
+--          GREATEST(
+--              ("consecutive_failures_by_kind"->>'transient')::int,
+--              ("consecutive_failures_by_kind"->>'reauth_required')::int,
+--              ("consecutive_failures_by_kind"->>'persistent')::int
+--          ),
+--          0
+--      )
+--      WHERE "consecutive_failures_by_kind" IS NOT NULL;
+--
+-- The down-script restores the legacy counter to `Math.max(...buckets)`
+-- — the same value the alert ladder reads from the buckets — so a
+-- rollback lands every row at the post-v1.4.43 counter value without
+-- losing the streak's true age.
+
+ALTER TABLE "integration_statuses"
+    DROP COLUMN IF EXISTS "consecutive_failures";
