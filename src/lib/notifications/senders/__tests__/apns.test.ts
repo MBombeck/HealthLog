@@ -55,6 +55,7 @@ vi.mock("@/lib/db", () => ({
     device: {
       findMany: vi.fn(),
       deleteMany: vi.fn(),
+      update: vi.fn().mockResolvedValue({}),
     },
   },
 }));
@@ -487,6 +488,61 @@ describe("sendViaApns — dispatcher fan-out", () => {
     expect(r.reason).toBe("InternalServerError");
     // No device row deleted on transient failure.
     expect(prisma.device.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("retries the opposite gateway on BadEnvironmentKeyInToken and corrects Device.apnsEnvironment", async () => {
+    // v1.4.47.5 — when Apple returns BadEnvironmentKeyInToken, the
+    // server's gateway choice (driven by Device.apnsEnvironment)
+    // doesn't match the token's actual environment. Try the other
+    // gateway exactly once; if it succeeds, persist the correction.
+    vi.mocked(prisma.device.findMany).mockResolvedValueOnce([
+      { id: "d1", apnsToken: "tok-a", apnsEnvironment: "production" },
+    ] as never);
+    // First send (production gateway): rejected.
+    sendMock.mockResolvedValueOnce({
+      sent: [],
+      failed: [{ device: "tok-a", status: 403, response: { reason: "BadEnvironmentKeyInToken" } }],
+    });
+    // Second send (sandbox gateway): success.
+    sendMock.mockResolvedValueOnce({
+      sent: [{ device: "tok-a" }],
+      failed: [],
+    });
+
+    const r = await sendViaApns("u-1", {
+      title: "t",
+      message: "m",
+      eventType: "MEDICATION_REMINDER",
+    });
+
+    expect(r.ok).toBe(true);
+    expect(sendMock).toHaveBeenCalledTimes(2);
+    expect(prisma.device.update).toHaveBeenCalledWith({
+      where: { id: "d1" },
+      data: { apnsEnvironment: "sandbox" },
+    });
+  });
+
+  it("does NOT retry the opposite gateway when reason is BadDeviceToken", async () => {
+    vi.mocked(prisma.device.findMany).mockResolvedValueOnce([
+      { id: "d1", apnsToken: "tok-a", apnsEnvironment: "production" },
+    ] as never);
+    sendMock.mockResolvedValueOnce({
+      sent: [],
+      failed: [{ device: "tok-a", status: 410, response: { reason: "BadDeviceToken" } }],
+    });
+
+    const r = await sendViaApns("u-1", {
+      title: "t",
+      message: "m",
+      eventType: "MEDICATION_REMINDER",
+    });
+
+    expect(r.ok).toBe(false);
+    expect(r.hardReject).toBe(true);
+    // Only one send attempt — no retry on BadDeviceToken.
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    expect(prisma.device.update).not.toHaveBeenCalled();
   });
 
   it("strips HTML from the alert body before handing to APNs", async () => {
