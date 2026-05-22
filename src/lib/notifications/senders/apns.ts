@@ -146,10 +146,14 @@ const providers = new Map<"sandbox" | "production", apn.Provider>();
  * rather than throwing on every dispatch.
  *
  * Validation rule: APNS_KEY_ID, APNS_TEAM_ID, APNS_BUNDLE_ID, and ONE OF
- * (APNS_KEY | APNS_KEY_FILE) must all be set together. Setting some but
- * not others is treated as "intentionally disabled" and emits a warning
- * the first time a send is attempted, so a half-finished Coolify env
- * surfaces in the logs the moment it matters.
+ * (APNS_KEY_B64 | APNS_KEY | APNS_KEY_FILE) must all be set together.
+ * Setting some but not others is treated as "intentionally disabled" and
+ * emits a warning the first time a send is attempted, so a half-finished
+ * Coolify env surfaces in the logs the moment it matters.
+ *
+ * Key-source precedence: APNS_KEY_B64 > APNS_KEY > APNS_KEY_FILE. The B64
+ * variant lets operators sidestep `\n`-escape gymnastics that some
+ * docker-compose `env_file` round-trips mangle (v1.4.47.4).
  */
 export function loadApnsConfig(): ApnsConfig | null {
   if (cachedConfig !== undefined) return cachedConfig;
@@ -158,6 +162,12 @@ export function loadApnsConfig(): ApnsConfig | null {
   const teamId = process.env.APNS_TEAM_ID?.trim() || "";
   const bundleId = process.env.APNS_BUNDLE_ID?.trim() || "";
   const inlineKey = process.env.APNS_KEY?.trim() || "";
+  // v1.4.47.4 — `APNS_KEY_B64` is an escape-free alternative when the
+  // `\n`-escaped inline form is mangled by a `docker-compose env_file`
+  // round-trip. Operator base64-encodes the .p8 PEM file as-is and
+  // stores the result; we decode it back to a real PEM string here.
+  // Takes precedence over `APNS_KEY` and `APNS_KEY_FILE` when set.
+  const inlineKeyB64 = process.env.APNS_KEY_B64?.trim() || "";
   const keyFile = process.env.APNS_KEY_FILE?.trim() || "";
   const forceProduction = process.env.APNS_PRODUCTION === "true";
 
@@ -165,8 +175,12 @@ export function loadApnsConfig(): ApnsConfig | null {
   // simply disabled — no warning. If some are set, the operator started
   // configuring and stopped — surface that as a warning so the
   // half-finished state is visible in logs.
-  const anySet = Boolean(keyId || teamId || bundleId || inlineKey || keyFile);
-  const allSet = Boolean(keyId && teamId && bundleId && (inlineKey || keyFile));
+  const anySet = Boolean(
+    keyId || teamId || bundleId || inlineKey || inlineKeyB64 || keyFile,
+  );
+  const allSet = Boolean(
+    keyId && teamId && bundleId && (inlineKey || inlineKeyB64 || keyFile),
+  );
 
   if (!anySet) {
     cachedConfig = null;
@@ -176,15 +190,46 @@ export function loadApnsConfig(): ApnsConfig | null {
   if (!allSet) {
     getEvent()?.addWarning(
       "APNs config incomplete — set APNS_KEY_ID, APNS_TEAM_ID, " +
-        "APNS_BUNDLE_ID, and one of APNS_KEY / APNS_KEY_FILE together. " +
-        "APNs sender is disabled until all four are present.",
+        "APNS_BUNDLE_ID, and one of APNS_KEY / APNS_KEY_B64 / APNS_KEY_FILE " +
+        "together. APNs sender is disabled until all four are present.",
     );
     cachedConfig = null;
     return null;
   }
 
   let signingKey: string;
-  if (inlineKey) {
+  if (inlineKeyB64) {
+    // v1.4.47.4 — base64-encoded PEM. The operator base64s the raw .p8
+    // file contents (with real newlines intact) and stores that result
+    // in `APNS_KEY_B64`. We decode back to UTF-8 PEM string here. This
+    // sidesteps every `\n`-escape gymnastics needed for the legacy
+    // `APNS_KEY` inline path — base64 chars are env-var-pipeline safe.
+    try {
+      signingKey = Buffer.from(inlineKeyB64, "base64").toString("utf-8");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "decode_failed";
+      getEvent()?.addWarning(`APNS_KEY_B64 did not decode: ${message}`);
+      cachedConfig = null;
+      return null;
+    }
+    try {
+      const keyObject = createPrivateKey({ key: signingKey, format: "pem" });
+      if (keyObject.asymmetricKeyType !== "ec") {
+        getEvent()?.addWarning(
+          `APNS_KEY_B64 parsed as ${keyObject.asymmetricKeyType ?? "unknown"}; expected "ec" for ES256`,
+        );
+        cachedConfig = null;
+        return null;
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "parse_failed";
+      getEvent()?.addWarning(
+        `APNS_KEY_B64 did not parse as PEM after base64 decode: ${message}`,
+      );
+      cachedConfig = null;
+      return null;
+    }
+  } else if (inlineKey) {
     // Multi-line PEM with literal `\n` escapes is the 12-factor norm
     // when the env block is a single line. Convert them back here so
     // node-apn sees a real PEM. No-op for already-multiline values.
