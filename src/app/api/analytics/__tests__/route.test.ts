@@ -305,10 +305,12 @@ describe("GET /api/analytics", () => {
   // contract the dashboard tile strip reads.
   it("returns the slim summaries slice when ?slice=summaries is set", async () => {
     const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
-    // v1.4.36 — slim slice now opens with a cheap `SELECT COUNT(*) FROM
-    // measurement_rollups` probe. Force `n: 0` so the route takes the
-    // legacy heavy-aggregate fallback path that this test's fixtures
-    // expect (aggregate + latest, two `$queryRaw` passes).
+    // v1.4.36 — slim slice opens with a cheap `SELECT COUNT(*) FROM
+    // measurement_rollups` probe; `n: 0` forces the cold-fallback
+    // path. v1.4.48 M0 split that path's single aggregate query into
+    // two parallel ones (all-time + windowed), so the cold fixture
+    // now mocks 4 `$queryRaw` calls: coverage + allTime + windowed +
+    // latest.
     vi.mocked(prisma.$queryRaw)
       .mockResolvedValueOnce([{ n: BigInt(0) }] as never)
       .mockResolvedValueOnce([
@@ -318,6 +320,11 @@ describe("GET /api/analytics", () => {
           min_value: 80.0,
           max_value: 84.5,
           mean_value: 82.1,
+        },
+      ] as never)
+      .mockResolvedValueOnce([
+        {
+          type: "WEIGHT",
           avg7: 82.0,
           avg30: 82.2,
           slope7: -0.05,

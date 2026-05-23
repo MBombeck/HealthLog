@@ -130,8 +130,10 @@ describe("<DashboardLayoutSection> — drag-and-drop reorder", () => {
 
   it("hint string localises to German", () => {
     const html = render(<DashboardLayoutSection id="dashboard-layout" />, "de");
-    // Anchor on a stable German fragment from the hint copy.
-    expect(html).toContain("Ziehe den Griff");
+    // v1.4.48 L9 — copy trimmed to ~12 words so screen readers do
+    // not spend ~6 s reading the hint on focus. Anchor on the
+    // shortened phrase.
+    expect(html).toContain("Pfeiltasten Hoch/Runter");
   });
 });
 
