@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -198,6 +198,34 @@ function DisableCoachCard({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [msg, setMsg] = useState<string | null>(null);
   const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
 
+  // v1.4.48 M2 — auto-clear the inline `<p role="status">` line 3 s
+  // after the mutation settles so a Settings card the user scrolled
+  // past minutes earlier doesn't keep echoing a stale "Coach hidden"
+  // banner. The ref tracks the in-flight timer so we can clear it on
+  // unmount + on a follow-up toggle (otherwise a rapid double-tap
+  // could leave a stray timer pointing at a stale message).
+  const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (clearTimerRef.current !== null) {
+        clearTimeout(clearTimerRef.current);
+        clearTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  function scheduleClear() {
+    if (clearTimerRef.current !== null) {
+      clearTimeout(clearTimerRef.current);
+    }
+    clearTimerRef.current = setTimeout(() => {
+      clearTimerRef.current = null;
+      setMsg(null);
+      setMsgType(null);
+    }, 3000);
+  }
+
   const checked = optimistic ?? user?.disableCoach ?? false;
 
   const mutation = useMutation({
@@ -227,6 +255,7 @@ function DisableCoachCard({ isAuthenticated }: { isAuthenticated: boolean }) {
       // re-fetches /api/auth/me with the updated `disableCoach` field.
       queryClient.invalidateQueries({ queryKey: queryKeys.authMe() });
       setOptimistic(null);
+      scheduleClear();
     },
     onError: (err) => {
       setOptimistic(null);
@@ -236,6 +265,7 @@ function DisableCoachCard({ isAuthenticated }: { isAuthenticated: boolean }) {
           : t("settings.ai.disableCoach.saveError"),
       );
       setMsgType("error");
+      scheduleClear();
     },
   });
 
@@ -243,6 +273,10 @@ function DisableCoachCard({ isAuthenticated }: { isAuthenticated: boolean }) {
     setOptimistic(next);
     setMsg(null);
     setMsgType(null);
+    if (clearTimerRef.current !== null) {
+      clearTimeout(clearTimerRef.current);
+      clearTimerRef.current = null;
+    }
     mutation.mutate(next);
   }
 

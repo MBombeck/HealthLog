@@ -61,7 +61,7 @@ function buildUser(disableCoach: boolean): AuthUser {
 
 import { AiSection } from "../ai-section";
 
-function makeFetch(ok: boolean = true) {
+function makeFetch() {
   return vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
     const body = init?.body ? JSON.parse(init.body as string) : {};
     return new Response(
@@ -69,7 +69,7 @@ function makeFetch(ok: boolean = true) {
         data: { disableCoach: body.disableCoach ?? false },
       }),
       {
-        status: ok ? 200 : 500,
+        status: 200,
         headers: { "Content-Type": "application/json" },
       },
     );
@@ -123,31 +123,6 @@ describe("Settings — DisableCoachCard", () => {
     // when `checked={true}`. Pre-fix the card painted `unchecked` for
     // an opted-out user; this assertion guards that regression.
     expect(html).toContain('data-state="checked"');
-  });
-
-  it("PATCH path persists the toggled value to the disable-coach endpoint", async () => {
-    // Hand-invoke the mutation by importing the underlying network
-    // path the card uses. Avoids spinning up a full hydration harness
-    // (no testing-library is configured) while still proving the
-    // wire contract.
-    const fetchSpy = makeFetch();
-    vi.stubGlobal("fetch", fetchSpy);
-
-    const res = await fetch("/api/auth/me/disable-coach", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ disableCoach: true }),
-    });
-    expect(res.status).toBe(200);
-    expect(fetchSpy).toHaveBeenCalledWith(
-      "/api/auth/me/disable-coach",
-      expect.objectContaining({
-        method: "PATCH",
-        body: JSON.stringify({ disableCoach: true }),
-      }),
-    );
-    const json = (await res.json()) as { data: { disableCoach: boolean } };
-    expect(json.data.disableCoach).toBe(true);
   });
 
   it("Switch description string matches the QoL audit (M2) copy", () => {

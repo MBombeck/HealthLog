@@ -1,9 +1,7 @@
 "use client";
 
-import { useContext } from "react";
-import { QueryClientContext } from "@tanstack/react-query";
-
 import { useAuth } from "@/hooks/use-auth";
+import { useQueryClientMounted } from "@/hooks/_internal/use-query-client-safe";
 
 /**
  * v1.4.47 W3 — SSR-safe accessor for the per-user "Hide Coach" toggle.
@@ -15,16 +13,16 @@ import { useAuth } from "@/hooks/use-auth";
  * long-tail SSR snapshot tests (`<SuggestedPrompts>`, `<LayoutCoachFab>`,
  * `<HeroStrip>` …) render the component in isolation and don't.
  *
- * Mirrors the defensive pattern in `useFeatureFlags()`: when no
- * `QueryClientContext` is mounted we short-circuit to the "no opt-out"
- * default so the legacy tests keep rendering the surface, and the gate
- * stays correct for the production app where the provider is always
- * mounted.
+ * v1.4.48 M4 — share the `<QueryClientProvider>`-mount detection with
+ * `useFeatureFlags()` via the `_internal/use-query-client-safe`
+ * helper. When no client is mounted we short-circuit to the "no
+ * opt-out" default; the inner hook is only invoked once the provider
+ * is known to be in the tree, so the conditional call is safe per the
+ * Rules of Hooks (the branch is stable across the component's
+ * lifetime).
  */
 export function useDisableCoach(): boolean {
-  const hasClient = useContext(
-    QueryClientContext as unknown as React.Context<unknown>,
-  );
+  const hasClient = useQueryClientMounted();
   if (!hasClient) return false;
   // eslint-disable-next-line react-hooks/rules-of-hooks
   return useDisableCoachInner();

@@ -1,9 +1,9 @@
 "use client";
 
-import { useContext } from "react";
-import { QueryClientContext, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 import { queryKeys } from "@/lib/query-keys";
+import { useQueryClientMounted } from "@/hooks/_internal/use-query-client-safe";
 
 /**
  * v1.4.31 — Client-side accessor for the operator's assistant
@@ -77,10 +77,13 @@ async function fetchFeatureFlags(): Promise<FeatureFlagsPayload> {
  * renders — so the conditional hook call is safe per the Rules of
  * Hooks (same posture the React docs document for "different
  * environments where the same component renders").
+ *
+ * v1.4.48 M4 — the SSR-mount probe is shared with `useDisableCoach`
+ * via `_internal/use-query-client-safe` so the eslint-disable line
+ * stays in exactly one place per consumer.
  */
 export function useFeatureFlags(): AssistantFlagSet {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const hasClient = useContext(QueryClientContext as unknown as React.Context<any>);
+  const hasClient = useQueryClientMounted();
   if (!hasClient) return DEFAULT_ASSISTANT_FLAGS;
   // eslint-disable-next-line react-hooks/rules-of-hooks
   return useFeatureFlagsQuery();
