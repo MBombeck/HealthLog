@@ -131,6 +131,28 @@ operator attention:
    `DEPLOY_WEBHOOK_SECRET`. The app gates the endpoint with a
    timing-safe compare against that env var.
 
+### DO NOT set as runtime env vars
+
+The following variables are **build-time only** — they are injected
+via `--build-arg` by the `docker-publish` workflow and baked into the
+shipped image. Setting them under Coolify's *Environment Variables*
+panel has zero effect on the running container, and the stale value
+becomes a misleading artefact next time someone audits the deploy
+config:
+
+- `NEXT_PUBLIC_APP_VERSION` — sourced from the GHCR tag at build
+  time. Next.js inlines the value into both the client bundle (so
+  the `<VersionPoller>` self-healing reload compares against the
+  shipped shell) and the `/api/version` server route (so the public
+  endpoint returns the same string). The `env: {…}` block in
+  `next.config.ts` short-circuits the runtime `process.env` read.
+- `NEXT_PUBLIC_APP_BUILD_SHA`, `NEXT_PUBLIC_APP_BUILT_AT` — same
+  pattern. The CI workflow stamps the short SHA and build timestamp
+  into the image during `pnpm build`.
+
+If you spot any of these in the Coolify panel, delete the entry. The
+image already carries the correct value.
+
 Coolify-Tunnel adds one hop to the chain; pair with
 `TRUST_PROXY_HOPS=2`. If you front Coolify itself with Cloudflare,
 bump to `3`.
