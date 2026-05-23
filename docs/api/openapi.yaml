@@ -788,7 +788,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/DisableCoachRequest"
+              $ref: "#/components/schemas/DisableCoachFlag"
       responses:
         "200":
           description: Resolved next-state echoed back for optimistic-update consumers.
@@ -1412,7 +1412,7 @@ components:
         - bundleId
       description: Native device registration. Re-registering an APNs token belonging to another user returns 409
         (cross-user-hijack guard).
-    DisableCoachRequest:
+    DisableCoachFlag:
       type: object
       properties:
         disableCoach:
@@ -2229,13 +2229,7 @@ components:
       type: object
       properties:
         data:
-          type: object
-          properties:
-            disableCoach:
-              type: boolean
-          required:
-            - disableCoach
-          additionalProperties: false
+          $ref: "#/components/schemas/DisableCoachFlagOutput"
         error:
           type: "null"
         meta:
@@ -2252,13 +2246,7 @@ components:
       type: object
       properties:
         data:
-          type: object
-          properties:
-            disableCoach:
-              type: boolean
-          required:
-            - disableCoach
-          additionalProperties: false
+          $ref: "#/components/schemas/DisableCoachFlagOutput"
         error:
           type: "null"
         meta:
@@ -3159,6 +3147,15 @@ components:
       additionalProperties: false
       description: AI-generated insights bundle. Strict-schema validated server-side; Coach-routed when the insight surface
         needs day-level grounding.
+    DisableCoachFlagOutput:
+      type: object
+      properties:
+        disableCoach:
+          type: boolean
+      required:
+        - disableCoach
+      additionalProperties: false
+      description: Per-account Coach opt-out toggle (v1.4.47 W3). `true` hides the Coach FAB and short-circuits its API gates.
   securitySchemes:
     bearerAuth:
       type: http

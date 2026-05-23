@@ -82,7 +82,6 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // the Zod rejection. Top-level keys + a hard 256-char JSON excerpt
     // only; never the full payload, so token-shaped query params (we
     // do not currently accept any but the truncation keeps that
-<<<<<<< HEAD
     // invariant cheap) cannot leak. Shared helper via v1.4.49 so the
     // widget + series routes can't drift on the diagnostic shape; the
     // query map is routed through `redactSensitiveFields` first so any

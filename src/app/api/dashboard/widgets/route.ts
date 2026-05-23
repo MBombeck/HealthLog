@@ -151,7 +151,6 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     // the Zod rejection so a single wide-event line carries enough
     // detail to diagnose serialiser drift in `HealthLog-iOS`. We log
     // ONLY the top-level keys plus a hard 256-char JSON excerpt — never
-<<<<<<< HEAD
     // the full body — so PII / token-like fields cannot leak. The
     // diagnostic shape is built by the shared `buildPayloadDiagnostic`
     // helper (v1.4.49) so the widget + series routes can't drift; the
