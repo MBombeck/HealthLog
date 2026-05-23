@@ -98,6 +98,7 @@ import {
 } from "@/lib/measurements/drain-per-sample-cumulative";
 import { expireStaleInUseItems } from "@/lib/medications/inventory/service";
 import { rotateLegacyMoodLogSecrets } from "@/lib/moodlog-secret";
+import { probeIntegrationStatusNullBuckets } from "@/lib/jobs/integration-status-null-probe";
 import { deleteMessage } from "@/lib/telegram";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { syncMoodLogEntries } from "@/lib/moodlog/sync";
@@ -1760,6 +1761,20 @@ export async function startReminderWorker() {
     await reconcileOrphanImportJobs();
   } catch (err) {
     workerLog("error", "Failed to reconcile orphan ImportJob rows", err);
+  }
+
+  // v1.4.48 M1 — boot probe for legacy `integration_statuses` rows
+  // that still carry `consecutive_failures_by_kind = NULL`. After
+  // v1.4.47 dropped the single-column fallback, such rows alert two
+  // strikes later than they did pre-upgrade. The probe is a single
+  // count query + Wide-Event warning if any survive; fire-and-forget
+  // so a probe failure never blocks worker boot.
+  try {
+    await withBackgroundEvent("worker.boot.integration_status_null_probe", async () => {
+      await probeIntegrationStatusNullBuckets(getWorkerPrisma());
+    });
+  } catch (err) {
+    workerLog("error", "integration-status-null-probe failed", err);
   }
 
   // Schedule recurring cron jobs
