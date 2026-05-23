@@ -422,6 +422,68 @@ const measurementResource = z
     description: "Server-shaped measurement row returned by GET endpoints.",
   });
 
+// v1.4.48 H-APNs-1 — admin diagnostic endpoint for the notification
+// subsystem. Mirrors the runtime types in
+// `src/app/api/admin/notifications/diagnostic/route.ts`: APNs tokens
+// are surfaced only as 8-char hex prefix + suffix (never the full
+// token), per-channel `enabled` + `configPresent` booleans, and a
+// `recentPushAttempts` array reserved for the v1.4.48+ follow-up that
+// adds the dedicated PushAttempt table (currently always `[]` so the
+// shape stays stable for iOS consumers).
+const adminDiagnosticDevice = z
+  .object({
+    id: z.string(),
+    platform: z.string(),
+    hasApnsToken: z.boolean(),
+    apnsTokenPrefix: z.string().nullable(),
+    apnsTokenSuffix: z.string().nullable(),
+    apnsEnvironment: z.string().nullable(),
+    lastSeenAt: z.iso.datetime({ offset: true }),
+  })
+  .meta({
+    id: "AdminDiagnosticDevice",
+    description:
+      "Per-device APNs registration snapshot. The APNs token is masked to its 8-char hex prefix + 8-char suffix so an operator can correlate with iOS-side logs without disclosing the delivery target.",
+  });
+
+const adminDiagnosticChannel = z
+  .object({
+    type: z.string(),
+    enabled: z.boolean(),
+    configPresent: z.boolean(),
+  })
+  .meta({
+    id: "AdminDiagnosticChannel",
+    description:
+      "Per-channel state. `configPresent` is true when the channel's encrypted-JSON config blob carries the field the corresponding sender will read (chatId+botToken for TELEGRAM, topic for NTFY); WEB_PUSH/APNS rely on sibling tables so the row's existence is the signal.",
+  });
+
+const adminDiagnosticPushAttempt = z
+  .object({
+    eventType: z.string(),
+    channel: z.string(),
+    result: z.string(),
+    reason: z.string().nullable(),
+    at: z.iso.datetime({ offset: true }),
+  })
+  .meta({
+    id: "AdminDiagnosticPushAttempt",
+    description:
+      "Single push delivery attempt. Reserved for the v1.4.48+ follow-up that adds the dedicated PushAttempt table — currently always returned as an empty array so the response shape stays stable for iOS consumers.",
+  });
+
+const adminDiagnosticData = z
+  .object({
+    devices: z.array(adminDiagnosticDevice),
+    notificationChannels: z.array(adminDiagnosticChannel),
+    recentPushAttempts: z.array(adminDiagnosticPushAttempt),
+  })
+  .meta({
+    id: "AdminDiagnosticData",
+    description:
+      "Admin notification diagnostic snapshot for the calling user — what the dispatcher would see when targeting this account. Surfaces device tokens (masked), channel state, and recent push attempts so an operator can debug an iOS / Web Push / Telegram / ntfy issue without DB shell access.",
+  });
+
 const insightsComprehensiveResponse = z
   .object({
     summary: z.string(),
@@ -917,6 +979,32 @@ export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "409": {
           description: "Caller has already rated this message text.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/admin/notifications/diagnostic": {
+    get: {
+      tags: ["Admin"],
+      summary: "Admin notification diagnostic snapshot",
+      description:
+        "Admin-only. Returns what the dispatcher would see when targeting the calling admin's account: registered devices (APNs tokens masked to prefix + suffix), per-channel enabled + configPresent flags, and recent push attempts (currently always `[]` pending the v1.4.48+ PushAttempt table). Cookie auth only — never Bearer.",
+      responses: {
+        "200": {
+          description: "Diagnostic snapshot.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                adminDiagnosticData,
+                "AdminDiagnosticResponse",
+              ),
+            },
+          },
+        },
+        "403": {
+          description: "Caller is not an admin.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,

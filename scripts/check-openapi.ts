@@ -16,8 +16,11 @@ const SPEC_PATH = resolve(__dirname, "..", "docs", "api", "openapi.yaml");
 
 function main(): void {
   const document = buildOpenApiDocument();
+  // Must match the options used by `scripts/generate-openapi.ts`.
+  // `sortMapEntries` stays off — see that file's header comment for the
+  // yaml@2 alias-ordering pitfall under sorted output.
   const generated = stringify(document, {
-    sortMapEntries: true,
+    sortMapEntries: false,
     lineWidth: 120,
   });
   const committed = readFileSync(SPEC_PATH, "utf8");

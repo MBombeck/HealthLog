@@ -1,1830 +1,7 @@
-components:
-  schemas:
-    AccessRefreshBundle:
-      additionalProperties: false
-      description: Native-client token bundle returned by login + refresh. Web cookie-only callers see only `user`.
-      properties:
-        refreshToken:
-          description: Refresh token (`hlr_<64hex>`); only present for native-policy callers.
-          type: string
-        refreshTokenExpiresAt:
-          format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-          type: string
-        token:
-          description: Access token (`hlk_<64hex>`).
-          type: string
-        tokenExpiresAt:
-          format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-          type: string
-        user:
-          additionalProperties: false
-          properties:
-            id:
-              type: string
-            username:
-              type: string
-          required:
-            - id
-            - username
-          type: object
-      required:
-        - token
-        - tokenExpiresAt
-      type: object
-    AppleHealthBatchEntry:
-      properties:
-        deviceType:
-          anyOf:
-            - enum:
-                - watch
-                - band
-                - ring
-                - phone
-                - scale
-                - other
-                - unknown
-              type: string
-            - type: "null"
-          description: Device class mapped from `HKDevice.model`. Used by the analytics aggregator to break ties when the same
-            source contributed multiple devices for the same day. Omit (or send null) on legacy clients — the server
-            treats it as `unknown` and the picker falls through.
-        endDate:
-          format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-          type: string
-        externalId:
-          description: HKSample.uuid string — the dedup key.
-          maxLength: 120
-          minLength: 1
-          type: string
-        externalSourceVersion:
-          maxLength: 120
-          minLength: 1
-          type: string
-        hkIdentifier:
-          description: HealthKit identifier (e.g. `HKQuantityTypeIdentifierBodyMass`).
-          maxLength: 120
-          minLength: 1
-          type: string
-        sleepStage:
-          description: HKCategoryValueSleepAnalysis codepoint; only for sleep samples.
-          maximum: 20
-          minimum: 0
-          type: integer
-        startDate:
-          format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-          type: string
-        unit:
-          maxLength: 60
-          minLength: 1
-          type: string
-        value:
-          type: number
-      required:
-        - hkIdentifier
-        - value
-        - unit
-        - startDate
-        - endDate
-        - externalId
-      type: object
-    AppleHealthBatchEntryResult:
-      additionalProperties: false
-      properties:
-        index:
-          maximum: 9007199254740991
-          minimum: 0
-          type: integer
-        reason:
-          type: string
-        status:
-          enum:
-            - inserted
-            - duplicate
-            - skipped
-          type: string
-      required:
-        - index
-        - status
-      type: object
-    AppleHealthBatchRequest:
-      description: Apple Health batch ingest. ≤500 entries per call; idempotent via `Idempotency-Key`.
-      properties:
-        entries:
-          items:
-            $ref: "#/components/schemas/AppleHealthBatchEntry"
-          maxItems: 500
-          minItems: 1
-          type: array
-      required:
-        - entries
-      type: object
-    AppleHealthBatchResponse:
-      additionalProperties: false
-      properties:
-        duplicate:
-          maximum: 9007199254740991
-          minimum: 0
-          type: integer
-        entries:
-          items:
-            $ref: "#/components/schemas/AppleHealthBatchEntryResult"
-          type: array
-        inserted:
-          maximum: 9007199254740991
-          minimum: 0
-          type: integer
-        skipped:
-          maximum: 9007199254740991
-          minimum: 0
-          type: integer
-      required:
-        - inserted
-        - duplicate
-        - skipped
-        - entries
-      type: object
-    BatchMeasurementsResponse:
-      additionalProperties: false
-      properties:
-        data:
-          $ref: "#/components/schemas/AppleHealthBatchResponse"
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    BatchWorkoutsResponse:
-      additionalProperties: false
-      properties:
-        data:
-          $ref: "#/components/schemas/WorkoutBatchResponse"
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    CoachMessageFeedbackRequest:
-      description: Per-message helpful/unhelpful feedback (v1.4.23 H7). Optional `reason` is free-form prose, capped at 200 chars.
-      properties:
-        rating:
-          enum:
-            - helpful
-            - unhelpful
-          type: string
-        reason:
-          maxLength: 200
-          minLength: 1
-          type: string
-      required:
-        - rating
-      type: object
-    CoachMessageFeedbackResponse:
-      additionalProperties: false
-      properties:
-        data:
-          additionalProperties: false
-          properties:
-            createdAt:
-              format: date-time
-              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-              type: string
-            id:
-              type: string
-          required:
-            - id
-            - createdAt
-          type: object
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    CreateMeasurementResponse:
-      additionalProperties: false
-      properties:
-        data:
-          $ref: "#/components/schemas/MeasurementResource"
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    DeviceRegisterRequest:
-      description: Native device registration. Re-registering an APNs token belonging to another user returns 409
-        (cross-user-hijack guard).
-      properties:
-        apnsEnvironment:
-          description: Gateway the iOS client received `apnsToken` from. Server never auto-detects.
-          enum:
-            - sandbox
-            - production
-          type: string
-        apnsToken:
-          description: Hex-encoded APNs device token. Must be paired with `apnsEnvironment`.
-          maxLength: 256
-          minLength: 8
-          pattern: ^[A-Fa-f0-9]+$
-          type: string
-        appVersion:
-          maxLength: 32
-          minLength: 1
-          type: string
-        bundleId:
-          maxLength: 128
-          minLength: 1
-          type: string
-        locale:
-          maxLength: 16
-          minLength: 2
-          type: string
-        model:
-          maxLength: 64
-          minLength: 1
-          type: string
-        token:
-          description: Generic device identifier (legacy; APNs token below).
-          maxLength: 512
-          minLength: 8
-          pattern: ^[A-Za-z0-9+/=._:-]+$
-          type: string
-      required:
-        - token
-        - bundleId
-      type: object
-    DeviceRegisterResponse:
-      additionalProperties: false
-      properties:
-        data:
-          additionalProperties: false
-          properties:
-            id:
-              type: string
-          required:
-            - id
-          type: object
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    DisableCoachRequest:
-      description: Per-account Coach opt-out toggle (v1.4.47 W3). `true` hides the Coach FAB and short-circuits its API gates.
-      properties:
-        disableCoach:
-          type: boolean
-      required:
-        - disableCoach
-      type: object
-    ErrorEnvelope:
-      additionalProperties: false
-      description: "Standard error response: data is null, error is human prose."
-      properties:
-        data:
-          type: "null"
-        error:
-          type: string
-        meta:
-          additionalProperties: false
-          properties:
-            errorCode:
-              type: string
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    GetCoachPrefsResponse:
-      additionalProperties: false
-      properties:
-        data:
-          additionalProperties: false
-          properties:
-            defaultWindow:
-              default: allTime
-              enum:
-                - last7days
-                - last30days
-                - last90days
-                - allTime
-              type: string
-            excludeMetrics:
-              default: []
-              items:
-                enum:
-                  - bp
-                  - weight
-                  - pulse
-                  - mood
-                  - compliance
-                  - hrv
-                  - sleep
-                  - resting_hr
-                  - steps
-                  - medications
-                  - anthropometrics
-                type: string
-              maxItems: 11
-              type: array
-            showEvidenceByDefault:
-              default: false
-              type: boolean
-            tone:
-              default: warm
-              enum:
-                - warm
-                - neutral
-                - concise
-              type: string
-            verbosity:
-              default: default
-              enum:
-                - brief
-                - default
-                - detailed
-              type: string
-          required:
-            - tone
-            - verbosity
-            - excludeMetrics
-            - showEvidenceByDefault
-            - defaultWindow
-          type: object
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    GetDisableCoachResponse:
-      additionalProperties: false
-      properties:
-        data:
-          additionalProperties: false
-          properties:
-            disableCoach:
-              type: boolean
-          required:
-            - disableCoach
-          type: object
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    GetSourcePriorityResponse:
-      additionalProperties: false
-      properties:
-        data:
-          additionalProperties: false
-          properties:
-            activeEnergy:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            bloodPressure:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            bodyFat:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            bodyTemperature:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            deviceTypePriority:
-              additionalProperties:
-                items:
-                  enum:
-                    - watch
-                    - band
-                    - ring
-                    - phone
-                    - scale
-                    - other
-                    - unknown
-                  type: string
-                maxItems: 8
-                type: array
-              properties:
-                default:
-                  items:
-                    enum:
-                      - watch
-                      - band
-                      - ring
-                      - phone
-                      - scale
-                      - other
-                      - unknown
-                    type: string
-                  maxItems: 8
-                  type: array
-              type: object
-            flightsClimbed:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            hrv:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            metricPriority:
-              additionalProperties: false
-              properties:
-                activeEnergy:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                bloodPressure:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                bodyFat:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                bodyTemperature:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                flightsClimbed:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                hrv:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                pulse:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                restingHeartRate:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                sleep:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                spo2:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                steps:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                vo2Max:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                walkingRunningDistance:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                weight:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-              type: object
-            pulse:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            restingHeartRate:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            sleep:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            spo2:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            steps:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            vo2Max:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            walkingRunningDistance:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            weight:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-          type: object
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    GetWorkoutResponse:
-      additionalProperties: false
-      properties:
-        data:
-          $ref: "#/components/schemas/WorkoutDetailResponse"
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    InsightsComprehensiveResponse:
-      additionalProperties: false
-      description: AI-generated insights bundle. Strict-schema validated server-side; Coach-routed when the insight surface
-        needs day-level grounding.
-      properties:
-        citations:
-          items:
-            additionalProperties: {}
-            propertyNames:
-              type: string
-            type: object
-          type: array
-        dailyBriefing:
-          anyOf:
-            - additionalProperties: {}
-              propertyNames:
-                type: string
-              type: object
-            - type: "null"
-        metricSource:
-          additionalProperties: {}
-          propertyNames:
-            type: string
-          type: object
-        recommendations:
-          items:
-            additionalProperties: {}
-            propertyNames:
-              type: string
-            type: object
-          type: array
-        storyboardAnnotations:
-          items:
-            additionalProperties: {}
-            propertyNames:
-              type: string
-            type: object
-          type: array
-        summary:
-          type: string
-        trendAnnotations:
-          anyOf:
-            - additionalProperties: {}
-              propertyNames:
-                type: string
-              type: object
-            - type: "null"
-        warnings:
-          items:
-            additionalProperties: {}
-            propertyNames:
-              type: string
-            type: object
-          type: array
-      required:
-        - summary
-        - recommendations
-        - citations
-        - warnings
-      type: object
-    InsightsComprehensiveResponseEnvelope:
-      additionalProperties: false
-      properties:
-        data:
-          $ref: "#/components/schemas/InsightsComprehensiveResponse"
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    ListMeasurementsResponse:
-      additionalProperties: false
-      properties:
-        data:
-          additionalProperties: false
-          properties:
-            measurements:
-              items:
-                $ref: "#/components/schemas/MeasurementResource"
-              type: array
-            total:
-              maximum: 9007199254740991
-              minimum: 0
-              type: integer
-          required:
-            - measurements
-            - total
-          type: object
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    ListWorkoutsResponse:
-      additionalProperties: false
-      properties:
-        data:
-          $ref: "#/components/schemas/WorkoutListResponse"
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    LoginResponse:
-      additionalProperties: false
-      properties:
-        data:
-          $ref: "#/components/schemas/AccessRefreshBundle"
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    MeasurementResource:
-      additionalProperties: false
-      description: Server-shaped measurement row returned by GET endpoints.
-      properties:
-        id:
-          type: string
-        measuredAt:
-          format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-          type: string
-        notes:
-          anyOf:
-            - type: string
-            - type: "null"
-        source:
-          enum:
-            - MANUAL
-            - WITHINGS
-            - IMPORT
-            - APPLE_HEALTH
-          type: string
-        type:
-          enum:
-            - WEIGHT
-            - BLOOD_PRESSURE_SYS
-            - BLOOD_PRESSURE_DIA
-            - PULSE
-            - BODY_FAT
-            - SLEEP_DURATION
-            - ACTIVITY_STEPS
-            - BLOOD_GLUCOSE
-            - TOTAL_BODY_WATER
-            - BONE_MASS
-            - OXYGEN_SATURATION
-            - HEART_RATE_VARIABILITY
-            - RESTING_HEART_RATE
-            - ACTIVE_ENERGY_BURNED
-            - FLIGHTS_CLIMBED
-            - WALKING_RUNNING_DISTANCE
-            - VO2_MAX
-            - BODY_TEMPERATURE
-            - FAT_FREE_MASS
-            - FAT_MASS
-            - MUSCLE_MASS
-            - SKIN_TEMPERATURE
-            - PULSE_WAVE_VELOCITY
-            - VASCULAR_AGE
-            - VISCERAL_FAT
-            - AUDIO_EXPOSURE_ENV
-            - AUDIO_EXPOSURE_HEADPHONE
-            - TIME_IN_DAYLIGHT
-            - WALKING_STEADINESS
-            - AUDIO_EXPOSURE_EVENT
-          type: string
-        unit:
-          type: string
-        value:
-          type: number
-      required:
-        - id
-        - type
-        - value
-        - unit
-        - measuredAt
-        - source
-      type: object
-    MeasurementsDeleteByExternalIdsRequest:
-      description: iOS deletion-sync. Up to 500 externalIds per call; matching rows owned by other users are silently skipped
-        (cross-user 404 guard).
-      properties:
-        externalIds:
-          items:
-            maxLength: 120
-            minLength: 1
-            type: string
-          maxItems: 500
-          minItems: 0
-          type: array
-      required:
-        - externalIds
-      type: object
-    MeasurementsDeleteByExternalIdsResponse:
-      additionalProperties: false
-      properties:
-        data:
-          $ref: "#/components/schemas/MeasurementsDeleteByExternalIdsResult"
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    MeasurementsDeleteByExternalIdsResult:
-      additionalProperties: false
-      properties:
-        deletedCount:
-          maximum: 9007199254740991
-          minimum: 0
-          type: integer
-      required:
-        - deletedCount
-      type: object
-    PasskeyLoginVerifyRequest:
-      description: Passkey assertion verification. Same native-client token issuance as the password path.
-      properties:
-        challengeId:
-          description: Server-issued WebAuthn challenge id.
-          minLength: 1
-          type: string
-        credential:
-          description: SimpleWebAuthn-style assertion response payload.
-          properties:
-            authenticatorAttachment:
-              enum:
-                - platform
-                - cross-platform
-              type: string
-            clientExtensionResults:
-              additionalProperties: {}
-              propertyNames:
-                type: string
-              type: object
-            id:
-              type: string
-            rawId:
-              type: string
-            response:
-              additionalProperties: {}
-              propertyNames:
-                type: string
-              type: object
-            type:
-              const: public-key
-              type: string
-          required:
-            - id
-            - rawId
-            - type
-            - response
-          type: object
-      required:
-        - challengeId
-        - credential
-      type: object
-    PasskeyLoginVerifyResponse:
-      additionalProperties: false
-      properties:
-        data:
-          $ref: "#/components/schemas/AccessRefreshBundle"
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    PatchDisableCoachResponse:
-      additionalProperties: false
-      properties:
-        data:
-          additionalProperties: false
-          properties:
-            disableCoach:
-              type: boolean
-          required:
-            - disableCoach
-          type: object
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    PutCoachPrefsResponse:
-      additionalProperties: false
-      properties:
-        data:
-          additionalProperties: false
-          properties:
-            defaultWindow:
-              default: allTime
-              enum:
-                - last7days
-                - last30days
-                - last90days
-                - allTime
-              type: string
-            excludeMetrics:
-              default: []
-              items:
-                enum:
-                  - bp
-                  - weight
-                  - pulse
-                  - mood
-                  - compliance
-                  - hrv
-                  - sleep
-                  - resting_hr
-                  - steps
-                  - medications
-                  - anthropometrics
-                type: string
-              maxItems: 11
-              type: array
-            showEvidenceByDefault:
-              default: false
-              type: boolean
-            tone:
-              default: warm
-              enum:
-                - warm
-                - neutral
-                - concise
-              type: string
-            verbosity:
-              default: default
-              enum:
-                - brief
-                - default
-                - detailed
-              type: string
-          required:
-            - tone
-            - verbosity
-            - excludeMetrics
-            - showEvidenceByDefault
-            - defaultWindow
-          type: object
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    PutSourcePriorityResponse:
-      additionalProperties: false
-      properties:
-        data:
-          additionalProperties: false
-          properties:
-            activeEnergy:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            bloodPressure:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            bodyFat:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            bodyTemperature:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            deviceTypePriority:
-              additionalProperties:
-                items:
-                  enum:
-                    - watch
-                    - band
-                    - ring
-                    - phone
-                    - scale
-                    - other
-                    - unknown
-                  type: string
-                maxItems: 8
-                type: array
-              properties:
-                default:
-                  items:
-                    enum:
-                      - watch
-                      - band
-                      - ring
-                      - phone
-                      - scale
-                      - other
-                      - unknown
-                    type: string
-                  maxItems: 8
-                  type: array
-              type: object
-            flightsClimbed:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            hrv:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            metricPriority:
-              additionalProperties: false
-              properties:
-                activeEnergy:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                bloodPressure:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                bodyFat:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                bodyTemperature:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                flightsClimbed:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                hrv:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                pulse:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                restingHeartRate:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                sleep:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                spo2:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                steps:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                vo2Max:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                walkingRunningDistance:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                weight:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-              type: object
-            pulse:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            restingHeartRate:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            sleep:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            spo2:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            steps:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            vo2Max:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            walkingRunningDistance:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-            weight:
-              items:
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                type: string
-              maxItems: 8
-              type: array
-          type: object
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    RefreshResponse:
-      additionalProperties: false
-      properties:
-        data:
-          $ref: "#/components/schemas/AccessRefreshBundle"
-        error:
-          type: "null"
-        meta:
-          additionalProperties: false
-          properties:
-            requestId:
-              type: string
-          type: object
-      required:
-        - data
-        - error
-      type: object
-    RefreshTokenRequest:
-      description: Exchange a one-time-use refresh token for a fresh access + refresh pair.
-      properties:
-        refreshToken:
-          description: Caller-presented refresh token (`hlr_<64hex>`).
-          minLength: 1
-          type: string
-        revoke:
-          description: When true, revoke the supplied token instead of rotating.
-          type: boolean
-      required:
-        - refreshToken
-      type: object
-    WorkoutBatchEntryResult:
-      additionalProperties: false
-      properties:
-        index:
-          maximum: 9007199254740991
-          minimum: 0
-          type: integer
-        reason:
-          type: string
-        status:
-          enum:
-            - inserted
-            - duplicate
-            - skipped
-          type: string
-      required:
-        - index
-        - status
-      type: object
-    WorkoutBatchResponse:
-      additionalProperties: false
-      properties:
-        duplicates:
-          maximum: 9007199254740991
-          minimum: 0
-          type: integer
-        entries:
-          items:
-            $ref: "#/components/schemas/WorkoutBatchEntryResult"
-          type: array
-        inserted:
-          maximum: 9007199254740991
-          minimum: 0
-          type: integer
-        processed:
-          maximum: 9007199254740991
-          minimum: 0
-          type: integer
-        skipped:
-          items:
-            additionalProperties: false
-            properties:
-              index:
-                maximum: 9007199254740991
-                minimum: 0
-                type: integer
-              reason:
-                type: string
-            required:
-              - index
-              - reason
-            type: object
-          type: array
-      required:
-        - processed
-        - inserted
-        - duplicates
-        - skipped
-        - entries
-      type: object
-    WorkoutDetailResponse:
-      additionalProperties: false
-      properties:
-        activeEnergyKcal:
-          anyOf:
-            - type: number
-            - type: "null"
-        avgHr:
-          anyOf:
-            - maximum: 9007199254740991
-              minimum: -9007199254740991
-              type: integer
-            - type: "null"
-        canonicalId:
-          type: string
-        distanceM:
-          anyOf:
-            - type: number
-            - type: "null"
-        durationSec:
-          maximum: 9007199254740991
-          minimum: 0
-          type: integer
-        elevationM:
-          anyOf:
-            - type: number
-            - type: "null"
-        endedAt:
-          format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-          type: string
-        externalId:
-          anyOf:
-            - type: string
-            - type: "null"
-        id:
-          type: string
-        maxHr:
-          anyOf:
-            - maximum: 9007199254740991
-              minimum: -9007199254740991
-              type: integer
-            - type: "null"
-        metadata:
-          anyOf:
-            - {}
-            - type: "null"
-        minHr:
-          anyOf:
-            - maximum: 9007199254740991
-              minimum: -9007199254740991
-              type: integer
-            - type: "null"
-        pauseDurationSec:
-          anyOf:
-            - maximum: 9007199254740991
-              minimum: -9007199254740991
-              type: integer
-            - type: "null"
-        route:
-          anyOf:
-            - $ref: "#/components/schemas/WorkoutRouteGeometry"
-            - type: "null"
-        source:
-          enum:
-            - MANUAL
-            - WITHINGS
-            - IMPORT
-            - APPLE_HEALTH
-          type: string
-        sportType:
-          type: string
-        startedAt:
-          format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-          type: string
-        stepCount:
-          anyOf:
-            - maximum: 9007199254740991
-              minimum: -9007199254740991
-              type: integer
-            - type: "null"
-      required:
-        - id
-        - sportType
-        - startedAt
-        - endedAt
-        - durationSec
-        - distanceM
-        - activeEnergyKcal
-        - avgHr
-        - maxHr
-        - minHr
-        - stepCount
-        - elevationM
-        - pauseDurationSec
-        - source
-        - externalId
-        - metadata
-        - route
-        - canonicalId
-      type: object
-    WorkoutListEntry:
-      additionalProperties: false
-      properties:
-        activeEnergyKcal:
-          anyOf:
-            - type: number
-            - type: "null"
-        avgHr:
-          anyOf:
-            - maximum: 9007199254740991
-              minimum: -9007199254740991
-              type: integer
-            - type: "null"
-        distanceM:
-          anyOf:
-            - type: number
-            - type: "null"
-        durationSec:
-          maximum: 9007199254740991
-          minimum: 0
-          type: integer
-        endedAt:
-          format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-          type: string
-        externalId:
-          anyOf:
-            - type: string
-            - type: "null"
-        id:
-          type: string
-        maxHr:
-          anyOf:
-            - maximum: 9007199254740991
-              minimum: -9007199254740991
-              type: integer
-            - type: "null"
-        source:
-          enum:
-            - MANUAL
-            - WITHINGS
-            - IMPORT
-            - APPLE_HEALTH
-          type: string
-        sportType:
-          type: string
-        startedAt:
-          format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-          type: string
-      required:
-        - id
-        - sportType
-        - startedAt
-        - endedAt
-        - durationSec
-        - distanceM
-        - activeEnergyKcal
-        - avgHr
-        - maxHr
-        - source
-        - externalId
-      type: object
-    WorkoutListResponse:
-      additionalProperties: false
-      properties:
-        meta:
-          additionalProperties: false
-          properties:
-            droppedDuplicates:
-              maximum: 9007199254740991
-              minimum: 0
-              type: integer
-            limit:
-              exclusiveMinimum: 0
-              maximum: 9007199254740991
-              type: integer
-            offset:
-              maximum: 9007199254740991
-              minimum: 0
-              type: integer
-            total:
-              maximum: 9007199254740991
-              minimum: 0
-              type: integer
-          required:
-            - total
-            - limit
-            - offset
-            - droppedDuplicates
-          type: object
-        workouts:
-          items:
-            $ref: "#/components/schemas/WorkoutListEntry"
-          type: array
-      required:
-        - workouts
-        - meta
-      type: object
-    WorkoutRouteGeometry:
-      additionalProperties: false
-      properties:
-        geometry: {}
-        sampleTimestamps:
-          anyOf:
-            - items:
-                type: string
-              type: array
-            - type: "null"
-      required:
-        - geometry
-        - sampleTimestamps
-      type: object
-  securitySchemes:
-    bearerAuth:
-      bearerFormat: hlk_<64hex>
-      description: Native-client API token. Use the `token` field returned by /api/auth/login on a native client.
-      scheme: bearer
-      type: http
-    cookieAuth:
-      description: Browser session cookie — set by /api/auth/login.
-      in: cookie
-      name: healthlog_session
-      type: apiKey
+openapi: 3.1.0
 info:
-  contact:
-    name: HealthLog
-    url: https://healthlog.dev
+  title: HealthLog API
+  version: 1.4.23
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -1840,666 +17,128 @@ info:
   license:
     name: AGPL-3.0
     url: https://github.com/MBombeck/HealthLog/blob/main/LICENSE
-  title: HealthLog API
-  version: 1.4.23
-openapi: 3.1.0
+  contact:
+    name: HealthLog
+    url: https://healthlog.dev
+servers:
+  - url: https://healthlog.bombeck.io
+    description: Production
+  - url: http://localhost:3000
+    description: Local dev
+tags:
+  - name: Auth
+  - name: Measurements
+  - name: Medications
+  - name: Mood
+  - name: Insights
+  - name: Notifications
+  - name: Devices
+  - name: Admin
 paths:
   /api/auth/login:
     post:
+      tags:
+        - Auth
+      summary: Email-or-username login (password)
       description: "Browser callers receive a session cookie. Native callers (X-Client-Type: native or HealthLog-iOS UA
         prefix) additionally receive a paired access + refresh token."
       requestBody:
+        required: true
         content:
           application/json:
             schema:
+              type: object
               properties:
                 email:
-                  minLength: 1
                   type: string
+                  minLength: 1
                 password:
-                  minLength: 1
                   type: string
+                  minLength: 1
               required:
                 - email
                 - password
-              type: object
-        required: true
       responses:
         "200":
+          description: Login succeeded.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/LoginResponse"
-          description: Login succeeded.
         "401": &a1
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
           description: Authentication required or invalid credentials.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422": &a2
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
           description: Request validation failed.
-        "429": &a3
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+        "429": &a3
           description: Rate limit exceeded.
-      summary: Email-or-username login (password)
-      tags:
-        - Auth
-  /api/auth/me/coach-prefs:
-    get:
-      description: Returns the persisted preferences with defaults filled in. Null persisted state resolves to the legacy
-        v1.4.22 defaults.
-      responses:
-        "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetCoachPrefsResponse"
-          description: Resolved preferences.
-        "401": *a1
-        "422": *a2
-        "429": *a3
-      summary: Read per-user Coach prompt-tuning preferences
-      tags:
-        - Auth
-    put:
-      description: Persists the supplied prefs. Body is validated against `CoachPrefs`; missing keys fall back to the
-        documented defaults.
-      requestBody:
-        content:
-          application/json:
-            schema:
-              properties:
-                defaultWindow:
-                  default: allTime
-                  enum:
-                    - last7days
-                    - last30days
-                    - last90days
-                    - allTime
-                  type: string
-                excludeMetrics:
-                  default: []
-                  items:
-                    enum:
-                      - bp
-                      - weight
-                      - pulse
-                      - mood
-                      - compliance
-                      - hrv
-                      - sleep
-                      - resting_hr
-                      - steps
-                      - medications
-                      - anthropometrics
-                    type: string
-                  maxItems: 11
-                  type: array
-                showEvidenceByDefault:
-                  default: false
-                  type: boolean
-                tone:
-                  default: warm
-                  enum:
-                    - warm
-                    - neutral
-                    - concise
-                  type: string
-                verbosity:
-                  default: default
-                  enum:
-                    - brief
-                    - default
-                    - detailed
-                  type: string
-              type: object
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PutCoachPrefsResponse"
-          description: Saved preferences echoed back.
-        "401": *a1
-        "422": *a2
-        "429": *a3
-      summary: Replace per-user Coach prompt-tuning preferences
-      tags:
-        - Auth
-  /api/auth/me/disable-coach:
-    get:
-      description: Returns the user's per-account Coach opt-out flag. Default `false` (Coach visible). Powers the Settings →
-        Insights "Hide Coach" Switch and the layout FAB short-circuit.
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GetDisableCoachResponse"
-          description: Resolved flag.
-        "401": *a1
-        "422": *a2
-        "429": *a3
-      summary: Read per-user Coach opt-out flag
-      tags:
-        - Auth
-    patch:
-      description: Flips the per-account Coach opt-out flag. Idempotent — the DB write fires even when the value matches so
-        the audit-log row mirrors the API call. Rate-limit 60/min per user.
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/DisableCoachRequest"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PatchDisableCoachResponse"
-          description: Resolved next-state echoed back for optimistic-update consumers.
-        "401": *a1
-        "422": *a2
-        "429": *a3
-      summary: Toggle per-user Coach opt-out flag
-      tags:
-        - Auth
-  /api/auth/me/source-priority:
-    get:
-      description: Returns the per-metric-class source priority used by the analytics aggregator. Missing keys fall back to
-        `DEFAULT_SOURCE_PRIORITY`. Null persisted state resolves to the documented defaults.
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GetSourcePriorityResponse"
-          description: Resolved priority.
-        "401": *a1
-        "422": *a2
-        "429": *a3
-      summary: Read per-user source priority
-      tags:
-        - Auth
-    put:
-      description: Persists the supplied priority. Body is validated against `SourcePriority`; missing keys read as
-        `DEFAULT_SOURCE_PRIORITY` at the call site.
-      requestBody:
-        content:
-          application/json:
-            schema:
-              properties:
-                activeEnergy:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                bloodPressure:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                bodyFat:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                bodyTemperature:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                deviceTypePriority:
-                  additionalProperties:
-                    items:
-                      enum:
-                        - watch
-                        - band
-                        - ring
-                        - phone
-                        - scale
-                        - other
-                        - unknown
-                      type: string
-                    maxItems: 8
-                    type: array
-                  properties:
-                    default:
-                      items:
-                        enum:
-                          - watch
-                          - band
-                          - ring
-                          - phone
-                          - scale
-                          - other
-                          - unknown
-                        type: string
-                      maxItems: 8
-                      type: array
-                  type: object
-                flightsClimbed:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                hrv:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                metricPriority:
-                  properties:
-                    activeEnergy:
-                      items:
-                        enum:
-                          - MANUAL
-                          - WITHINGS
-                          - IMPORT
-                          - APPLE_HEALTH
-                        type: string
-                      maxItems: 8
-                      type: array
-                    bloodPressure:
-                      items:
-                        enum:
-                          - MANUAL
-                          - WITHINGS
-                          - IMPORT
-                          - APPLE_HEALTH
-                        type: string
-                      maxItems: 8
-                      type: array
-                    bodyFat:
-                      items:
-                        enum:
-                          - MANUAL
-                          - WITHINGS
-                          - IMPORT
-                          - APPLE_HEALTH
-                        type: string
-                      maxItems: 8
-                      type: array
-                    bodyTemperature:
-                      items:
-                        enum:
-                          - MANUAL
-                          - WITHINGS
-                          - IMPORT
-                          - APPLE_HEALTH
-                        type: string
-                      maxItems: 8
-                      type: array
-                    flightsClimbed:
-                      items:
-                        enum:
-                          - MANUAL
-                          - WITHINGS
-                          - IMPORT
-                          - APPLE_HEALTH
-                        type: string
-                      maxItems: 8
-                      type: array
-                    hrv:
-                      items:
-                        enum:
-                          - MANUAL
-                          - WITHINGS
-                          - IMPORT
-                          - APPLE_HEALTH
-                        type: string
-                      maxItems: 8
-                      type: array
-                    pulse:
-                      items:
-                        enum:
-                          - MANUAL
-                          - WITHINGS
-                          - IMPORT
-                          - APPLE_HEALTH
-                        type: string
-                      maxItems: 8
-                      type: array
-                    restingHeartRate:
-                      items:
-                        enum:
-                          - MANUAL
-                          - WITHINGS
-                          - IMPORT
-                          - APPLE_HEALTH
-                        type: string
-                      maxItems: 8
-                      type: array
-                    sleep:
-                      items:
-                        enum:
-                          - MANUAL
-                          - WITHINGS
-                          - IMPORT
-                          - APPLE_HEALTH
-                        type: string
-                      maxItems: 8
-                      type: array
-                    spo2:
-                      items:
-                        enum:
-                          - MANUAL
-                          - WITHINGS
-                          - IMPORT
-                          - APPLE_HEALTH
-                        type: string
-                      maxItems: 8
-                      type: array
-                    steps:
-                      items:
-                        enum:
-                          - MANUAL
-                          - WITHINGS
-                          - IMPORT
-                          - APPLE_HEALTH
-                        type: string
-                      maxItems: 8
-                      type: array
-                    vo2Max:
-                      items:
-                        enum:
-                          - MANUAL
-                          - WITHINGS
-                          - IMPORT
-                          - APPLE_HEALTH
-                        type: string
-                      maxItems: 8
-                      type: array
-                    walkingRunningDistance:
-                      items:
-                        enum:
-                          - MANUAL
-                          - WITHINGS
-                          - IMPORT
-                          - APPLE_HEALTH
-                        type: string
-                      maxItems: 8
-                      type: array
-                    weight:
-                      items:
-                        enum:
-                          - MANUAL
-                          - WITHINGS
-                          - IMPORT
-                          - APPLE_HEALTH
-                        type: string
-                      maxItems: 8
-                      type: array
-                  type: object
-                pulse:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                restingHeartRate:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                sleep:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                spo2:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                steps:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                vo2Max:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                walkingRunningDistance:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-                weight:
-                  items:
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                    type: string
-                  maxItems: 8
-                  type: array
-              type: object
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PutSourcePriorityResponse"
-          description: Saved priority (defaulted) echoed back.
-        "401": *a1
-        "422": *a2
-        "429": *a3
-      summary: Replace per-user source priority
-      tags:
-        - Auth
+                $ref: "#/components/schemas/ErrorEnvelope"
   /api/auth/passkey/login-verify:
     post:
+      tags:
+        - Auth
+      summary: Passkey assertion verification
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/PasskeyLoginVerifyRequest"
-        required: true
       responses:
         "200":
+          description: Assertion verified — session + optional bearer issued.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/PasskeyLoginVerifyResponse"
-          description: Assertion verified — session + optional bearer issued.
         "401": *a1
         "422": *a2
         "429": *a3
-      summary: Passkey assertion verification
-      tags:
-        - Auth
   /api/auth/refresh:
     post:
+      tags:
+        - Auth
+      summary: Rotate refresh token (one-time use)
       description: Reuse of a consumed refresh token revokes every refresh token still active for the originating device
         (per-device blast radius from v1.4.23). Legacy tokens issued before v1.4.23 with a null deviceId fall back to
         revoke-all-for-user.
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/RefreshTokenRequest"
-        required: true
       responses:
         "200":
+          description: Rotation succeeded — new pair issued.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/RefreshResponse"
-          description: Rotation succeeded — new pair issued.
         "401": *a1
         "422": *a2
         "429": *a3
-      summary: Rotate refresh token (one-time use)
-      tags:
-        - Auth
-  /api/devices:
-    post:
-      description: Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other returns
-        422. Cross-user re-registration of either identifier returns 409.
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/DeviceRegisterRequest"
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/DeviceRegisterResponse"
-          description: Device registered or refreshed.
-        "401": *a1
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: Device or APNs token already registered to another user.
-        "422": *a2
-        "429": *a3
-      summary: Register native device + APNs token
-      tags:
-        - Devices
-  /api/insights/chat/messages/{id}/feedback:
-    post:
-      description: Persists a helpful/unhelpful rating for a single Coach reply. Reuses the v1.4.16 RecommendationFeedback
-        table via the polymorphic `targetType` column. The aggregator buckets ratings by (promptVersion, tone,
-        verbosity).
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CoachMessageFeedbackRequest"
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CoachMessageFeedbackResponse"
-          description: Feedback saved.
-        "401": *a1
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: Message not found or not owned by the caller.
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: Caller has already rated this message text.
-        "422": *a2
-        "429": *a3
-      summary: Rate a Coach assistant message
-      tags:
-        - Insights
-  /api/insights/comprehensive:
-    get:
-      description: Full Insights surface — daily briefing, recommendations with rationale, optional weekly report + storyboard
-        annotations. Strict-schema validated server-side.
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/InsightsComprehensiveResponseEnvelope"
-          description: Insights bundle.
-        "401": *a1
-        "422": *a2
-        "429": *a3
-      summary: Comprehensive AI insights bundle
-      tags:
-        - Insights
   /api/measurements:
     get:
+      tags:
+        - Measurements
+      summary: List measurements
       description: Filter by type + date range. Response is paged via offset/limit; default limit 100, hard cap 500.
       parameters:
         - in: query
           name: type
           schema:
+            type: string
             enum:
               - WEIGHT
               - BLOOD_PRESSURE_SYS
@@ -2531,126 +170,100 @@ paths:
               - TIME_IN_DAYLIGHT
               - WALKING_STEADINESS
               - AUDIO_EXPOSURE_EVENT
-            type: string
         - in: query
           name: from
           schema:
+            type: string
             format: date-time
             pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-            type: string
         - in: query
           name: to
           schema:
+            type: string
             format: date-time
             pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-            type: string
         - in: query
           name: limit
           schema:
             default: 100
-            maximum: 5000
-            minimum: 1
             type: integer
+            minimum: 1
+            maximum: 5000
         - in: query
           name: offset
           schema:
             default: 0
-            maximum: 9007199254740991
-            minimum: 0
             type: integer
+            minimum: 0
+            maximum: 9007199254740991
         - in: query
           name: sortBy
           schema:
             default: measuredAt
+            type: string
             enum:
               - type
               - value
               - measuredAt
               - source
-            type: string
         - in: query
           name: sortDir
           schema:
             default: desc
+            type: string
             enum:
               - asc
               - desc
-            type: string
         - in: query
           name: aggregate
           schema:
+            type: string
             enum:
               - raw
               - daily
               - weekly
               - monthly
-            type: string
         - in: query
           name: source
           schema:
+            type: string
             enum:
               - rollup
-            type: string
         - in: query
           name: groupBy
           schema:
+            type: string
             enum:
               - day
-            type: string
         - in: query
           name: dayKey
           schema:
-            pattern: ^\d{4}-\d{2}-\d{2}$
             type: string
+            pattern: ^\d{4}-\d{2}-\d{2}$
       responses:
         "200":
+          description: Measurement page.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ListMeasurementsResponse"
-          description: Measurement page.
         "401": *a1
         "422": *a2
         "429": *a3
-      summary: List measurements
+    post:
       tags:
         - Measurements
-    post:
+      summary: Create one measurement
       description: Single ingest. Use `/api/measurements/batch` for Apple Health upload streams.
       requestBody:
+        required: true
         content:
           application/json:
             schema:
+              type: object
               properties:
-                deviceType:
-                  anyOf:
-                    - maxLength: 32
-                      minLength: 1
-                      type: string
-                    - type: "null"
-                glucoseContext:
-                  enum:
-                    - FASTING
-                    - POSTPRANDIAL
-                    - RANDOM
-                    - BEDTIME
-                  type: string
-                measuredAt:
-                  format: date-time
-                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-                  type: string
-                notes:
-                  maxLength: 25
-                  type: string
-                source:
-                  default: MANUAL
-                  enum:
-                    - MANUAL
-                    - WITHINGS
-                    - IMPORT
-                    - APPLE_HEALTH
-                  type: string
                 type:
+                  type: string
                   enum:
                     - WEIGHT
                     - BLOOD_PRESSURE_SYS
@@ -2682,78 +295,103 @@ paths:
                     - TIME_IN_DAYLIGHT
                     - WALKING_STEADINESS
                     - AUDIO_EXPOSURE_EVENT
-                  type: string
                 value:
                   type: number
+                measuredAt:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                notes:
+                  type: string
+                  maxLength: 25
+                source:
+                  default: MANUAL
+                  type: string
+                  enum:
+                    - MANUAL
+                    - WITHINGS
+                    - IMPORT
+                    - APPLE_HEALTH
+                glucoseContext:
+                  type: string
+                  enum:
+                    - FASTING
+                    - POSTPRANDIAL
+                    - RANDOM
+                    - BEDTIME
+                deviceType:
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                      maxLength: 32
+                    - type: "null"
               required:
                 - type
                 - value
                 - measuredAt
-              type: object
-        required: true
       responses:
         "201":
+          description: Created.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CreateMeasurementResponse"
-          description: Created.
         "401": *a1
         "422": *a2
         "429": *a3
-      summary: Create one measurement
-      tags:
-        - Measurements
   /api/measurements/batch:
     post:
+      tags:
+        - Measurements
+      summary: Apple Health batch ingest
       description: Up to 500 HealthKit entries per call. Idempotent via the `Idempotency-Key` header (replay window 24h).
         Per-entry status lets the iOS client advance its sync cursor accurately. v1.4.25 W8c adds an optional
         `deviceType` per entry — feed it from `HKDevice.model` so the cross-source canonical picker can break
         Apple-Watch-vs-iPhone ties; null/absent stays backward-compatible with v1.4.23 clients.
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/AppleHealthBatchRequest"
-        required: true
       responses:
         "200":
+          description: Batch processed.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/BatchMeasurementsResponse"
-          description: Batch processed.
         "401": *a1
         "422": *a2
         "429": *a3
-      summary: Apple Health batch ingest
-      tags:
-        - Measurements
   /api/measurements/by-external-ids:
     delete:
+      tags:
+        - Measurements
+      summary: Delete measurements by external ID (iOS deletion-sync)
       description: Removes the user's measurement rows whose externalId is in the request list. Rows owned by another user are
         silently skipped (cross-user 404 guard). Up to 500 externalIds per call.
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/MeasurementsDeleteByExternalIdsRequest"
-        required: true
       responses:
         "200":
+          description: Delete batch processed.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/MeasurementsDeleteByExternalIdsResponse"
-          description: Delete batch processed.
         "401": *a1
         "422": *a2
         "429": *a3
-      summary: Delete measurements by external ID (iOS deletion-sync)
-      tags:
-        - Measurements
   /api/workouts:
     get:
+      tags:
+        - Measurements
+      summary: List workouts (v1.4.32)
       description: "Paginated workout list with cross-source canonical-row dedup. The picker reads the per-user
         source-priority ladder and buckets by `(startedAt 5 min slot, sportType)` — twin workouts (Apple Watch +
         Withings ScanWatch) collapse to a single canonical row per cluster. Field names mirror the iOS handoff contract:
@@ -2762,46 +400,76 @@ paths:
         - in: query
           name: limit
           schema:
-            maximum: 200
-            minimum: 1
             type: integer
+            minimum: 1
+            maximum: 200
         - in: query
           name: offset
           schema:
-            maximum: 9007199254740991
-            minimum: 0
             type: integer
+            minimum: 0
+            maximum: 9007199254740991
         - in: query
           name: since
           schema:
+            type: string
             format: date-time
             pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-            type: string
         - in: query
           name: until
           schema:
+            type: string
             format: date-time
             pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-            type: string
         - in: query
           name: sportType
           schema:
             type: string
       responses:
         "200":
+          description: Canonical workout page.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ListWorkoutsResponse"
-          description: Canonical workout page.
         "401": *a1
         "422": *a2
         "429": *a3
-      summary: List workouts (v1.4.32)
+  /api/workouts/{id}:
+    get:
       tags:
         - Measurements
+      summary: Workout detail (v1.4.32)
+      description: Single-workout envelope. Owns the optional `WorkoutRoute` GeoJSON geometry + `canonicalId` pointer that
+        resolves to the cluster winner so deep-links into non-canonical twin rows can redirect cleanly. Cross-user rows
+        surface as 404 (existence channel sealed).
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: Workout detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetWorkoutResponse"
+        "401": *a1
+        "404":
+          description: Workout not found (or owned by another user).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a2
+        "429": *a3
   /api/workouts/batch:
     post:
+      tags:
+        - Measurements
+      summary: Typed workout batch ingest (v1.4.25 W16b)
       description: Server-side ingest endpoint for HKWorkout records (iOS) and Withings activity rows (server-to-server). Up
         to 100 workouts per call; nested route geometry (GeoJSON LineString) is capped at 20 000 points and stored in a
         1:1 `WorkoutRoute` row keyed by `workoutId`. Idempotent via the `Idempotency-Key` header (replay window 24h).
@@ -2809,105 +477,21 @@ paths:
         body ceiling is 5 MB enforced at the HTTP layer — clients above the ceiling receive a 413 with
         `workout.batch.payload_too_large`.
       requestBody:
+        required: true
         content:
           application/json:
             schema:
+              type: object
               properties:
                 workouts:
+                  minItems: 1
+                  maxItems: 100
+                  type: array
                   items:
+                    type: object
                     properties:
-                      avgHeartRate:
-                        maximum: 300
-                        minimum: 20
-                        type: integer
-                      elevationM:
-                        maximum: 10000
-                        minimum: -500
-                        type: number
-                      endedAt:
-                        format: date-time
-                        pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-                        type: string
-                      externalId:
-                        maxLength: 128
-                        type: string
-                      externalSourceVersion:
-                        maxLength: 64
-                        type: string
-                      maxHeartRate:
-                        maximum: 300
-                        minimum: 20
-                        type: integer
-                      metadata:
-                        additionalProperties: {}
-                        propertyNames:
-                          type: string
-                        type: object
-                      minHeartRate:
-                        maximum: 300
-                        minimum: 20
-                        type: integer
-                      pauseDurationSec:
-                        maximum: 86400
-                        minimum: 0
-                        type: integer
-                      route:
-                        properties:
-                          geometry:
-                            properties:
-                              coordinates:
-                                items:
-                                  items:
-                                    type: number
-                                  prefixItems:
-                                    - maximum: 180
-                                      minimum: -180
-                                      type: number
-                                    - maximum: 90
-                                      minimum: -90
-                                      type: number
-                                  type: array
-                                maxItems: 20000
-                                minItems: 2
-                                type: array
-                              type:
-                                const: LineString
-                                type: string
-                            required:
-                              - type
-                              - coordinates
-                            type: object
-                          sampleTimestamps:
-                            items:
-                              properties:
-                                hr:
-                                  maximum: 300
-                                  minimum: 20
-                                  type: integer
-                                speedMs:
-                                  maximum: 50
-                                  minimum: 0
-                                  type: number
-                                t:
-                                  format: date-time
-                                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-                                  type: string
-                              required:
-                                - t
-                              type: object
-                            type: array
-                        required:
-                          - geometry
-                        type: object
-                      source:
-                        default: MANUAL
-                        enum:
-                          - MANUAL
-                          - WITHINGS
-                          - IMPORT
-                          - APPLE_HEALTH
-                        type: string
                       sportType:
+                        type: string
                         enum:
                           - walking
                           - running
@@ -2929,101 +513,2660 @@ paths:
                           - crossTraining
                           - mixedCardio
                           - other
-                        type: string
                       startedAt:
+                        type: string
                         format: date-time
                         pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                      endedAt:
                         type: string
-                      stepCount:
-                        maximum: 200000
-                        minimum: 0
-                        type: integer
-                      totalDistanceM:
-                        maximum: 1000000
-                        minimum: 0
-                        type: number
+                        format: date-time
+                        pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
                       totalEnergyKcal:
-                        maximum: 50000
-                        minimum: 0
                         type: number
+                        minimum: 0
+                        maximum: 50000
+                      totalDistanceM:
+                        type: number
+                        minimum: 0
+                        maximum: 1000000
+                      avgHeartRate:
+                        type: integer
+                        minimum: 20
+                        maximum: 300
+                      maxHeartRate:
+                        type: integer
+                        minimum: 20
+                        maximum: 300
+                      minHeartRate:
+                        type: integer
+                        minimum: 20
+                        maximum: 300
+                      stepCount:
+                        type: integer
+                        minimum: 0
+                        maximum: 200000
+                      elevationM:
+                        type: number
+                        minimum: -500
+                        maximum: 10000
+                      pauseDurationSec:
+                        type: integer
+                        minimum: 0
+                        maximum: 86400
+                      source:
+                        default: MANUAL
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                      externalId:
+                        type: string
+                        maxLength: 128
+                      externalSourceVersion:
+                        type: string
+                        maxLength: 64
+                      metadata:
+                        type: object
+                        propertyNames:
+                          type: string
+                        additionalProperties: {}
+                      route:
+                        type: object
+                        properties:
+                          geometry:
+                            type: object
+                            properties:
+                              type:
+                                type: string
+                                const: LineString
+                              coordinates:
+                                minItems: 2
+                                maxItems: 20000
+                                type: array
+                                items:
+                                  type: array
+                                  prefixItems:
+                                    - type: number
+                                      minimum: -180
+                                      maximum: 180
+                                    - type: number
+                                      minimum: -90
+                                      maximum: 90
+                                  items:
+                                    type: number
+                            required:
+                              - type
+                              - coordinates
+                          sampleTimestamps:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                t:
+                                  type: string
+                                  format: date-time
+                                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                                speedMs:
+                                  type: number
+                                  minimum: 0
+                                  maximum: 50
+                                hr:
+                                  type: integer
+                                  minimum: 20
+                                  maximum: 300
+                              required:
+                                - t
+                        required:
+                          - geometry
                     required:
                       - sportType
                       - startedAt
                       - endedAt
-                    type: object
-                  maxItems: 100
-                  minItems: 1
-                  type: array
               required:
                 - workouts
-              type: object
-        required: true
       responses:
         "200":
+          description: Batch processed.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/BatchWorkoutsResponse"
-          description: Batch processed.
         "400":
+          description: Batch validation failed (over-cap, schema reject, or oversized route).
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-          description: Batch validation failed (over-cap, schema reject, or oversized route).
         "401": *a1
         "413":
+          description: Request body exceeds the 5 MB ceiling.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-          description: Request body exceeds the 5 MB ceiling.
         "422": *a2
         "429": *a3
-      summary: Typed workout batch ingest (v1.4.25 W16b)
+  /api/devices:
+    post:
       tags:
-        - Measurements
-  /api/workouts/{id}:
+        - Devices
+      summary: Register native device + APNs token
+      description: Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other returns
+        422. Cross-user re-registration of either identifier returns 409.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceRegisterRequest"
+      responses:
+        "201":
+          description: Device registered or refreshed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceRegisterResponse"
+        "401": *a1
+        "409":
+          description: Device or APNs token already registered to another user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a2
+        "429": *a3
+  /api/auth/me/coach-prefs:
     get:
-      description: Single-workout envelope. Owns the optional `WorkoutRoute` GeoJSON geometry + `canonicalId` pointer that
-        resolves to the cluster winner so deep-links into non-canonical twin rows can redirect cleanly. Cross-user rows
-        surface as 404 (existence channel sealed).
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
+      tags:
+        - Auth
+      summary: Read per-user Coach prompt-tuning preferences
+      description: Returns the persisted preferences with defaults filled in. Null persisted state resolves to the legacy
+        v1.4.22 defaults.
       responses:
         "200":
+          description: Resolved preferences.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetWorkoutResponse"
-          description: Workout detail.
+                $ref: "#/components/schemas/GetCoachPrefsResponse"
+        "401": *a1
+        "422": *a2
+        "429": *a3
+    put:
+      tags:
+        - Auth
+      summary: Replace per-user Coach prompt-tuning preferences
+      description: Persists the supplied prefs. Body is validated against `CoachPrefs`; missing keys fall back to the
+        documented defaults.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tone:
+                  default: warm
+                  type: string
+                  enum:
+                    - warm
+                    - neutral
+                    - concise
+                verbosity:
+                  default: default
+                  type: string
+                  enum:
+                    - brief
+                    - default
+                    - detailed
+                excludeMetrics:
+                  default: []
+                  maxItems: 11
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - bp
+                      - weight
+                      - pulse
+                      - mood
+                      - compliance
+                      - hrv
+                      - sleep
+                      - resting_hr
+                      - steps
+                      - medications
+                      - anthropometrics
+                showEvidenceByDefault:
+                  default: false
+                  type: boolean
+                defaultWindow:
+                  default: allTime
+                  type: string
+                  enum:
+                    - last7days
+                    - last30days
+                    - last90days
+                    - allTime
+      responses:
+        "200":
+          description: Saved preferences echoed back.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PutCoachPrefsResponse"
+        "401": *a1
+        "422": *a2
+        "429": *a3
+  /api/auth/me/disable-coach:
+    get:
+      tags:
+        - Auth
+      summary: Read per-user Coach opt-out flag
+      description: Returns the user's per-account Coach opt-out flag. Default `false` (Coach visible). Powers the Settings →
+        Insights "Hide Coach" Switch and the layout FAB short-circuit.
+      responses:
+        "200":
+          description: Resolved flag.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetDisableCoachResponse"
+        "401": *a1
+        "422": *a2
+        "429": *a3
+    patch:
+      tags:
+        - Auth
+      summary: Toggle per-user Coach opt-out flag
+      description: Flips the per-account Coach opt-out flag. Idempotent — the DB write fires even when the value matches so
+        the audit-log row mirrors the API call. Rate-limit 60/min per user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisableCoachRequest"
+      responses:
+        "200":
+          description: Resolved next-state echoed back for optimistic-update consumers.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatchDisableCoachResponse"
+        "401": *a1
+        "422": *a2
+        "429": *a3
+  /api/auth/me/source-priority:
+    get:
+      tags:
+        - Auth
+      summary: Read per-user source priority
+      description: Returns the per-metric-class source priority used by the analytics aggregator. Missing keys fall back to
+        `DEFAULT_SOURCE_PRIORITY`. Null persisted state resolves to the documented defaults.
+      responses:
+        "200":
+          description: Resolved priority.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetSourcePriorityResponse"
+        "401": *a1
+        "422": *a2
+        "429": *a3
+    put:
+      tags:
+        - Auth
+      summary: Replace per-user source priority
+      description: Persists the supplied priority. Body is validated against `SourcePriority`; missing keys read as
+        `DEFAULT_SOURCE_PRIORITY` at the call site.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                steps:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                activeEnergy:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                walkingRunningDistance:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                flightsClimbed:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                sleep:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                weight:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                bloodPressure:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                pulse:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                bodyFat:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                bodyTemperature:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                spo2:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                hrv:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                restingHeartRate:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                vo2Max:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                metricPriority:
+                  type: object
+                  properties:
+                    steps:
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                    activeEnergy:
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                    walkingRunningDistance:
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                    flightsClimbed:
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                    sleep:
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                    weight:
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                    bloodPressure:
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                    pulse:
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                    bodyFat:
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                    bodyTemperature:
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                    spo2:
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                    hrv:
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                    restingHeartRate:
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                    vo2Max:
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                deviceTypePriority:
+                  type: object
+                  properties:
+                    default:
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - watch
+                          - band
+                          - ring
+                          - phone
+                          - scale
+                          - other
+                          - unknown
+                  additionalProperties:
+                    maxItems: 8
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - watch
+                        - band
+                        - ring
+                        - phone
+                        - scale
+                        - other
+                        - unknown
+      responses:
+        "200":
+          description: Saved priority (defaulted) echoed back.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PutSourcePriorityResponse"
+        "401": *a1
+        "422": *a2
+        "429": *a3
+  /api/insights/chat/messages/{id}/feedback:
+    post:
+      tags:
+        - Insights
+      summary: Rate a Coach assistant message
+      description: Persists a helpful/unhelpful rating for a single Coach reply. Reuses the v1.4.16 RecommendationFeedback
+        table via the polymorphic `targetType` column. The aggregator buckets ratings by (promptVersion, tone,
+        verbosity).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CoachMessageFeedbackRequest"
+      responses:
+        "201":
+          description: Feedback saved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachMessageFeedbackResponse"
         "401": *a1
         "404":
+          description: Message not found or not owned by the caller.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-          description: Workout not found (or owned by another user).
+        "409":
+          description: Caller has already rated this message text.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a2
         "429": *a3
-      summary: Workout detail (v1.4.32)
+  /api/admin/notifications/diagnostic:
+    get:
       tags:
-        - Measurements
-servers:
-  - description: Production
-    url: https://healthlog.bombeck.io
-  - description: Local dev
-    url: http://localhost:3000
-tags:
-  - name: Auth
-  - name: Measurements
-  - name: Medications
-  - name: Mood
-  - name: Insights
-  - name: Notifications
-  - name: Devices
-  - name: Admin
+        - Admin
+      summary: Admin notification diagnostic snapshot
+      description: "Admin-only. Returns what the dispatcher would see when targeting the calling admin's account: registered
+        devices (APNs tokens masked to prefix + suffix), per-channel enabled + configPresent flags, and recent push
+        attempts (currently always `[]` pending the v1.4.48+ PushAttempt table). Cookie auth only — never Bearer."
+      responses:
+        "200":
+          description: Diagnostic snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDiagnosticResponse"
+        "401": *a1
+        "403":
+          description: Caller is not an admin.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a2
+        "429": *a3
+  /api/insights/comprehensive:
+    get:
+      tags:
+        - Insights
+      summary: Comprehensive AI insights bundle
+      description: Full Insights surface — daily briefing, recommendations with rationale, optional weekly report + storyboard
+        annotations. Strict-schema validated server-side.
+      responses:
+        "200":
+          description: Insights bundle.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InsightsComprehensiveResponseEnvelope"
+        "401": *a1
+        "422": *a2
+        "429": *a3
+components:
+  schemas:
+    PasskeyLoginVerifyRequest:
+      type: object
+      properties:
+        challengeId:
+          type: string
+          minLength: 1
+          description: Server-issued WebAuthn challenge id.
+        credential:
+          type: object
+          properties:
+            id:
+              type: string
+            rawId:
+              type: string
+            type:
+              type: string
+              const: public-key
+            response:
+              type: object
+              propertyNames:
+                type: string
+              additionalProperties: {}
+            authenticatorAttachment:
+              type: string
+              enum:
+                - platform
+                - cross-platform
+            clientExtensionResults:
+              type: object
+              propertyNames:
+                type: string
+              additionalProperties: {}
+          required:
+            - id
+            - rawId
+            - type
+            - response
+          description: SimpleWebAuthn-style assertion response payload.
+      required:
+        - challengeId
+        - credential
+      description: Passkey assertion verification. Same native-client token issuance as the password path.
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          minLength: 1
+          description: Caller-presented refresh token (`hlr_<64hex>`).
+        revoke:
+          description: When true, revoke the supplied token instead of rotating.
+          type: boolean
+      required:
+        - refreshToken
+      description: Exchange a one-time-use refresh token for a fresh access + refresh pair.
+    AppleHealthBatchRequest:
+      type: object
+      properties:
+        entries:
+          minItems: 1
+          maxItems: 500
+          type: array
+          items:
+            $ref: "#/components/schemas/AppleHealthBatchEntry"
+      required:
+        - entries
+      description: Apple Health batch ingest. ≤500 entries per call; idempotent via `Idempotency-Key`.
+    AppleHealthBatchEntry:
+      type: object
+      properties:
+        hkIdentifier:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: HealthKit identifier (e.g. `HKQuantityTypeIdentifierBodyMass`).
+        value:
+          type: number
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 60
+        startDate:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        endDate:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        sleepStage:
+          description: HKCategoryValueSleepAnalysis codepoint; only for sleep samples.
+          type: integer
+          minimum: 0
+          maximum: 20
+        externalId:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: HKSample.uuid string — the dedup key.
+        externalSourceVersion:
+          type: string
+          minLength: 1
+          maxLength: 120
+        deviceType:
+          description: Device class mapped from `HKDevice.model`. Used by the analytics aggregator to break ties when the same
+            source contributed multiple devices for the same day. Omit (or send null) on legacy clients — the server
+            treats it as `unknown` and the picker falls through.
+          anyOf:
+            - type: string
+              enum:
+                - watch
+                - band
+                - ring
+                - phone
+                - scale
+                - other
+                - unknown
+            - type: "null"
+      required:
+        - hkIdentifier
+        - value
+        - unit
+        - startDate
+        - endDate
+        - externalId
+    MeasurementsDeleteByExternalIdsRequest:
+      type: object
+      properties:
+        externalIds:
+          minItems: 0
+          maxItems: 500
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 120
+      required:
+        - externalIds
+      description: iOS deletion-sync. Up to 500 externalIds per call; matching rows owned by other users are silently skipped
+        (cross-user 404 guard).
+    DeviceRegisterRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 8
+          maxLength: 512
+          pattern: ^[A-Za-z0-9+/=._:-]+$
+          description: Generic device identifier (legacy; APNs token below).
+        bundleId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        locale:
+          type: string
+          minLength: 2
+          maxLength: 16
+        appVersion:
+          type: string
+          minLength: 1
+          maxLength: 32
+        model:
+          type: string
+          minLength: 1
+          maxLength: 64
+        apnsToken:
+          description: Hex-encoded APNs device token. Must be paired with `apnsEnvironment`.
+          type: string
+          minLength: 8
+          maxLength: 256
+          pattern: ^[A-Fa-f0-9]+$
+        apnsEnvironment:
+          description: Gateway the iOS client received `apnsToken` from. Server never auto-detects.
+          type: string
+          enum:
+            - sandbox
+            - production
+      required:
+        - token
+        - bundleId
+      description: Native device registration. Re-registering an APNs token belonging to another user returns 409
+        (cross-user-hijack guard).
+    DisableCoachRequest:
+      type: object
+      properties:
+        disableCoach:
+          type: boolean
+      required:
+        - disableCoach
+      description: Per-account Coach opt-out toggle (v1.4.47 W3). `true` hides the Coach FAB and short-circuits its API gates.
+    CoachMessageFeedbackRequest:
+      type: object
+      properties:
+        rating:
+          type: string
+          enum:
+            - helpful
+            - unhelpful
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+        - rating
+      description: Per-message helpful/unhelpful feedback (v1.4.23 H7). Optional `reason` is free-form prose, capped at 200 chars.
+    LoginResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AccessRefreshBundle"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AccessRefreshBundle:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+            username:
+              type: string
+          required:
+            - id
+            - username
+          additionalProperties: false
+        token:
+          type: string
+          description: Access token (`hlk_<64hex>`).
+        tokenExpiresAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        refreshToken:
+          description: Refresh token (`hlr_<64hex>`); only present for native-policy callers.
+          type: string
+        refreshTokenExpiresAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - token
+        - tokenExpiresAt
+      additionalProperties: false
+      description: Native-client token bundle returned by login + refresh. Web cookie-only callers see only `user`.
+    ErrorEnvelope:
+      type: object
+      properties:
+        data:
+          type: "null"
+        error:
+          type: string
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+            errorCode:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+      description: "Standard error response: data is null, error is human prose."
+    PasskeyLoginVerifyResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AccessRefreshBundle"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    RefreshResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AccessRefreshBundle"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ListMeasurementsResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            measurements:
+              type: array
+              items:
+                $ref: "#/components/schemas/MeasurementResource"
+            total:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+          required:
+            - measurements
+            - total
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    MeasurementResource:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+            - WEIGHT
+            - BLOOD_PRESSURE_SYS
+            - BLOOD_PRESSURE_DIA
+            - PULSE
+            - BODY_FAT
+            - SLEEP_DURATION
+            - ACTIVITY_STEPS
+            - BLOOD_GLUCOSE
+            - TOTAL_BODY_WATER
+            - BONE_MASS
+            - OXYGEN_SATURATION
+            - HEART_RATE_VARIABILITY
+            - RESTING_HEART_RATE
+            - ACTIVE_ENERGY_BURNED
+            - FLIGHTS_CLIMBED
+            - WALKING_RUNNING_DISTANCE
+            - VO2_MAX
+            - BODY_TEMPERATURE
+            - FAT_FREE_MASS
+            - FAT_MASS
+            - MUSCLE_MASS
+            - SKIN_TEMPERATURE
+            - PULSE_WAVE_VELOCITY
+            - VASCULAR_AGE
+            - VISCERAL_FAT
+            - AUDIO_EXPOSURE_ENV
+            - AUDIO_EXPOSURE_HEADPHONE
+            - TIME_IN_DAYLIGHT
+            - WALKING_STEADINESS
+            - AUDIO_EXPOSURE_EVENT
+        value:
+          type: number
+        unit:
+          type: string
+        measuredAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        source:
+          type: string
+          enum:
+            - MANUAL
+            - WITHINGS
+            - IMPORT
+            - APPLE_HEALTH
+        notes:
+          anyOf:
+            - type: string
+            - type: "null"
+      required:
+        - id
+        - type
+        - value
+        - unit
+        - measuredAt
+        - source
+      additionalProperties: false
+      description: Server-shaped measurement row returned by GET endpoints.
+    CreateMeasurementResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/MeasurementResource"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    BatchMeasurementsResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AppleHealthBatchResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AppleHealthBatchResponse:
+      type: object
+      properties:
+        inserted:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        duplicate:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        skipped:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppleHealthBatchEntryResult"
+      required:
+        - inserted
+        - duplicate
+        - skipped
+        - entries
+      additionalProperties: false
+    AppleHealthBatchEntryResult:
+      type: object
+      properties:
+        index:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        status:
+          type: string
+          enum:
+            - inserted
+            - duplicate
+            - skipped
+        reason:
+          type: string
+      required:
+        - index
+        - status
+      additionalProperties: false
+    MeasurementsDeleteByExternalIdsResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/MeasurementsDeleteByExternalIdsResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    MeasurementsDeleteByExternalIdsResult:
+      type: object
+      properties:
+        deletedCount:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+      required:
+        - deletedCount
+      additionalProperties: false
+    ListWorkoutsResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/WorkoutListResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    WorkoutListResponse:
+      type: object
+      properties:
+        workouts:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkoutListEntry"
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            limit:
+              type: integer
+              exclusiveMinimum: 0
+              maximum: 9007199254740991
+            offset:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            droppedDuplicates:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+          required:
+            - total
+            - limit
+            - offset
+            - droppedDuplicates
+          additionalProperties: false
+      required:
+        - workouts
+        - meta
+      additionalProperties: false
+    WorkoutListEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        sportType:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        endedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        durationSec:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        distanceM:
+          anyOf:
+            - type: number
+            - type: "null"
+        activeEnergyKcal:
+          anyOf:
+            - type: number
+            - type: "null"
+        avgHr:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        maxHr:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        source:
+          type: string
+          enum:
+            - MANUAL
+            - WITHINGS
+            - IMPORT
+            - APPLE_HEALTH
+        externalId:
+          anyOf:
+            - type: string
+            - type: "null"
+      required:
+        - id
+        - sportType
+        - startedAt
+        - endedAt
+        - durationSec
+        - distanceM
+        - activeEnergyKcal
+        - avgHr
+        - maxHr
+        - source
+        - externalId
+      additionalProperties: false
+    GetWorkoutResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/WorkoutDetailResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    WorkoutDetailResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        sportType:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        endedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        durationSec:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        distanceM:
+          anyOf:
+            - type: number
+            - type: "null"
+        activeEnergyKcal:
+          anyOf:
+            - type: number
+            - type: "null"
+        avgHr:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        maxHr:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        minHr:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        stepCount:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        elevationM:
+          anyOf:
+            - type: number
+            - type: "null"
+        pauseDurationSec:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        source:
+          type: string
+          enum:
+            - MANUAL
+            - WITHINGS
+            - IMPORT
+            - APPLE_HEALTH
+        externalId:
+          anyOf:
+            - type: string
+            - type: "null"
+        metadata:
+          anyOf:
+            - {}
+            - type: "null"
+        route:
+          anyOf:
+            - $ref: "#/components/schemas/WorkoutRouteGeometry"
+            - type: "null"
+        canonicalId:
+          type: string
+      required:
+        - id
+        - sportType
+        - startedAt
+        - endedAt
+        - durationSec
+        - distanceM
+        - activeEnergyKcal
+        - avgHr
+        - maxHr
+        - minHr
+        - stepCount
+        - elevationM
+        - pauseDurationSec
+        - source
+        - externalId
+        - metadata
+        - route
+        - canonicalId
+      additionalProperties: false
+    WorkoutRouteGeometry:
+      type: object
+      properties:
+        geometry: {}
+        sampleTimestamps:
+          anyOf:
+            - type: array
+              items:
+                type: string
+            - type: "null"
+      required:
+        - geometry
+        - sampleTimestamps
+      additionalProperties: false
+    BatchWorkoutsResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/WorkoutBatchResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    WorkoutBatchResponse:
+      type: object
+      properties:
+        processed:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        inserted:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        duplicates:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        skipped:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+                minimum: 0
+                maximum: 9007199254740991
+              reason:
+                type: string
+            required:
+              - index
+              - reason
+            additionalProperties: false
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkoutBatchEntryResult"
+      required:
+        - processed
+        - inserted
+        - duplicates
+        - skipped
+        - entries
+      additionalProperties: false
+    WorkoutBatchEntryResult:
+      type: object
+      properties:
+        index:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        status:
+          type: string
+          enum:
+            - inserted
+            - duplicate
+            - skipped
+        reason:
+          type: string
+      required:
+        - index
+        - status
+      additionalProperties: false
+    DeviceRegisterResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+          required:
+            - id
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    GetCoachPrefsResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            tone:
+              default: warm
+              type: string
+              enum:
+                - warm
+                - neutral
+                - concise
+            verbosity:
+              default: default
+              type: string
+              enum:
+                - brief
+                - default
+                - detailed
+            excludeMetrics:
+              default: []
+              maxItems: 11
+              type: array
+              items:
+                type: string
+                enum:
+                  - bp
+                  - weight
+                  - pulse
+                  - mood
+                  - compliance
+                  - hrv
+                  - sleep
+                  - resting_hr
+                  - steps
+                  - medications
+                  - anthropometrics
+            showEvidenceByDefault:
+              default: false
+              type: boolean
+            defaultWindow:
+              default: allTime
+              type: string
+              enum:
+                - last7days
+                - last30days
+                - last90days
+                - allTime
+          required:
+            - tone
+            - verbosity
+            - excludeMetrics
+            - showEvidenceByDefault
+            - defaultWindow
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    PutCoachPrefsResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            tone:
+              default: warm
+              type: string
+              enum:
+                - warm
+                - neutral
+                - concise
+            verbosity:
+              default: default
+              type: string
+              enum:
+                - brief
+                - default
+                - detailed
+            excludeMetrics:
+              default: []
+              maxItems: 11
+              type: array
+              items:
+                type: string
+                enum:
+                  - bp
+                  - weight
+                  - pulse
+                  - mood
+                  - compliance
+                  - hrv
+                  - sleep
+                  - resting_hr
+                  - steps
+                  - medications
+                  - anthropometrics
+            showEvidenceByDefault:
+              default: false
+              type: boolean
+            defaultWindow:
+              default: allTime
+              type: string
+              enum:
+                - last7days
+                - last30days
+                - last90days
+                - allTime
+          required:
+            - tone
+            - verbosity
+            - excludeMetrics
+            - showEvidenceByDefault
+            - defaultWindow
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    GetDisableCoachResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            disableCoach:
+              type: boolean
+          required:
+            - disableCoach
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    PatchDisableCoachResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            disableCoach:
+              type: boolean
+          required:
+            - disableCoach
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    GetSourcePriorityResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            steps:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            activeEnergy:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            walkingRunningDistance:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            flightsClimbed:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            sleep:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            weight:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            bloodPressure:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            pulse:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            bodyFat:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            bodyTemperature:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            spo2:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            hrv:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            restingHeartRate:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            vo2Max:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            metricPriority:
+              type: object
+              properties:
+                steps:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                activeEnergy:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                walkingRunningDistance:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                flightsClimbed:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                sleep:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                weight:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                bloodPressure:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                pulse:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                bodyFat:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                bodyTemperature:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                spo2:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                hrv:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                restingHeartRate:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                vo2Max:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+              additionalProperties: false
+            deviceTypePriority:
+              type: object
+              properties:
+                default:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - watch
+                      - band
+                      - ring
+                      - phone
+                      - scale
+                      - other
+                      - unknown
+              additionalProperties:
+                maxItems: 8
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - watch
+                    - band
+                    - ring
+                    - phone
+                    - scale
+                    - other
+                    - unknown
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    PutSourcePriorityResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            steps:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            activeEnergy:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            walkingRunningDistance:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            flightsClimbed:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            sleep:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            weight:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            bloodPressure:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            pulse:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            bodyFat:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            bodyTemperature:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            spo2:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            hrv:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            restingHeartRate:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            vo2Max:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+            metricPriority:
+              type: object
+              properties:
+                steps:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                activeEnergy:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                walkingRunningDistance:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                flightsClimbed:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                sleep:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                weight:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                bloodPressure:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                pulse:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                bodyFat:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                bodyTemperature:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                spo2:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                hrv:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                restingHeartRate:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                vo2Max:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+              additionalProperties: false
+            deviceTypePriority:
+              type: object
+              properties:
+                default:
+                  maxItems: 8
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - watch
+                      - band
+                      - ring
+                      - phone
+                      - scale
+                      - other
+                      - unknown
+              additionalProperties:
+                maxItems: 8
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - watch
+                    - band
+                    - ring
+                    - phone
+                    - scale
+                    - other
+                    - unknown
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    CoachMessageFeedbackResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            createdAt:
+              type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          required:
+            - id
+            - createdAt
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AdminDiagnosticResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AdminDiagnosticData"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AdminDiagnosticData:
+      type: object
+      properties:
+        devices:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminDiagnosticDevice"
+        notificationChannels:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminDiagnosticChannel"
+        recentPushAttempts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminDiagnosticPushAttempt"
+      required:
+        - devices
+        - notificationChannels
+        - recentPushAttempts
+      additionalProperties: false
+      description: Admin notification diagnostic snapshot for the calling user — what the dispatcher would see when targeting
+        this account. Surfaces device tokens (masked), channel state, and recent push attempts so an operator can debug
+        an iOS / Web Push / Telegram / ntfy issue without DB shell access.
+    AdminDiagnosticDevice:
+      type: object
+      properties:
+        id:
+          type: string
+        platform:
+          type: string
+        hasApnsToken:
+          type: boolean
+        apnsTokenPrefix:
+          anyOf:
+            - type: string
+            - type: "null"
+        apnsTokenSuffix:
+          anyOf:
+            - type: string
+            - type: "null"
+        apnsEnvironment:
+          anyOf:
+            - type: string
+            - type: "null"
+        lastSeenAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - id
+        - platform
+        - hasApnsToken
+        - apnsTokenPrefix
+        - apnsTokenSuffix
+        - apnsEnvironment
+        - lastSeenAt
+      additionalProperties: false
+      description: Per-device APNs registration snapshot. The APNs token is masked to its 8-char hex prefix + 8-char suffix so
+        an operator can correlate with iOS-side logs without disclosing the delivery target.
+    AdminDiagnosticChannel:
+      type: object
+      properties:
+        type:
+          type: string
+        enabled:
+          type: boolean
+        configPresent:
+          type: boolean
+      required:
+        - type
+        - enabled
+        - configPresent
+      additionalProperties: false
+      description: Per-channel state. `configPresent` is true when the channel's encrypted-JSON config blob carries the field
+        the corresponding sender will read (chatId+botToken for TELEGRAM, topic for NTFY); WEB_PUSH/APNS rely on sibling
+        tables so the row's existence is the signal.
+    AdminDiagnosticPushAttempt:
+      type: object
+      properties:
+        eventType:
+          type: string
+        channel:
+          type: string
+        result:
+          type: string
+        reason:
+          anyOf:
+            - type: string
+            - type: "null"
+        at:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - eventType
+        - channel
+        - result
+        - reason
+        - at
+      additionalProperties: false
+      description: Single push delivery attempt. Reserved for the v1.4.48+ follow-up that adds the dedicated PushAttempt table
+        — currently always returned as an empty array so the response shape stays stable for iOS consumers.
+    InsightsComprehensiveResponseEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/InsightsComprehensiveResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    InsightsComprehensiveResponse:
+      type: object
+      properties:
+        summary:
+          type: string
+        recommendations:
+          type: array
+          items:
+            type: object
+            propertyNames:
+              type: string
+            additionalProperties: {}
+        citations:
+          type: array
+          items:
+            type: object
+            propertyNames:
+              type: string
+            additionalProperties: {}
+        warnings:
+          type: array
+          items:
+            type: object
+            propertyNames:
+              type: string
+            additionalProperties: {}
+        dailyBriefing:
+          anyOf:
+            - type: object
+              propertyNames:
+                type: string
+              additionalProperties: {}
+            - type: "null"
+        trendAnnotations:
+          anyOf:
+            - type: object
+              propertyNames:
+                type: string
+              additionalProperties: {}
+            - type: "null"
+        storyboardAnnotations:
+          type: array
+          items:
+            type: object
+            propertyNames:
+              type: string
+            additionalProperties: {}
+        metricSource:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+      required:
+        - summary
+        - recommendations
+        - citations
+        - warnings
+      additionalProperties: false
+      description: AI-generated insights bundle. Strict-schema validated server-side; Coach-routed when the insight surface
+        needs day-level grounding.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: hlk_<64hex>
+      description: Native-client API token. Use the `token` field returned by /api/auth/login on a native client.
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: healthlog_session
+      description: Browser session cookie — set by /api/auth/login.
