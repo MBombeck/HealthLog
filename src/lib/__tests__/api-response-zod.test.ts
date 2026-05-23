@@ -123,4 +123,45 @@ describe("returnAllZodIssues", () => {
     // from the JSON envelope, matching apiError's contract.
     expect(body.meta?.headers).toBeUndefined();
   });
+
+  // v1.4.49 — opt-in `stripValuesFromMessage` mode for audit-ledger
+  // writes. The default Zod message for `invalid_enum_value` and a
+  // handful of other codes embeds the offending value verbatim; an
+  // audit-row write on a free-text route would persist user content.
+  // The opt-in keeps the additive multi-issue envelope shape but
+  // drops `message` entirely so only `path` + `code` survive.
+  describe("sanitiseZodIssues with stripValuesFromMessage", () => {
+    it("returns { path, code } only when the option is set", () => {
+      const enumSchema = z.object({
+        kind: z.enum(["weight", "pulse"]),
+      });
+      const parsed = enumSchema.safeParse({ kind: "garbage-value-xxx" });
+      if (parsed.success) throw new Error("expected failure");
+
+      const stripped = sanitiseZodIssues(parsed.error.issues, {
+        stripValuesFromMessage: true,
+      });
+      expect(stripped.length).toBe(1);
+      for (const issue of stripped) {
+        expect(Object.keys(issue).sort()).toEqual(["code", "path"]);
+        // The offending value must not survive on any returned key.
+        expect(JSON.stringify(issue)).not.toContain("garbage-value-xxx");
+      }
+    });
+
+    it("default behaviour (no option) keeps message intact", () => {
+      const enumSchema = z.object({
+        kind: z.enum(["weight", "pulse"]),
+      });
+      const parsed = enumSchema.safeParse({ kind: "garbage" });
+      if (parsed.success) throw new Error("expected failure");
+
+      const kept = sanitiseZodIssues(parsed.error.issues);
+      expect(kept[0]).toMatchObject({
+        path: "kind",
+        code: expect.any(String),
+        message: expect.any(String),
+      });
+    });
+  });
 });

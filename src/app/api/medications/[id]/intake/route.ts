@@ -49,12 +49,20 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
       action: { name: "medications.intake.create.validation-failed" },
       meta: { issue_count: issues.length, medication_id: id },
     });
+    // v1.4.49 — strip `message` from the audit-ledger row; the
+    // intake payload carries `idempotencyKey` (opaque caller string).
+    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
+      stripValuesFromMessage: true,
+    });
     prisma.auditLog
       .create({
         data: {
           userId: user.id,
           action: "medications.intake.create.validation-failed",
-          details: JSON.stringify({ issues, medicationId: id }),
+          details: JSON.stringify({
+            issues: auditIssues,
+            medicationId: id,
+          }),
         },
       })
       .catch(() => {
@@ -211,12 +219,19 @@ export const GET = apiHandler(
         action: { name: "medications.intake.list.validation-failed" },
         meta: { issue_count: issues.length, medication_id: id },
       });
+      // v1.4.49 — strip `message` from the audit-ledger row.
+      const auditIssues = sanitiseZodIssues(parsed.error.issues, {
+        stripValuesFromMessage: true,
+      });
       prisma.auditLog
         .create({
           data: {
             userId: user.id,
             action: "medications.intake.list.validation-failed",
-            details: JSON.stringify({ issues, medicationId: id }),
+            details: JSON.stringify({
+              issues: auditIssues,
+              medicationId: id,
+            }),
           },
         })
         .catch(() => {

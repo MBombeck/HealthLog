@@ -152,12 +152,18 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
       action: { name: "integrations.healthkit.validation-failed" },
       meta: { issue_count: issues.length },
     });
+    // v1.4.49 — strip `message` from the audit-ledger row; the
+    // HealthKit patch payload carries caller-provided `id` + `kind`
+    // strings that Zod can echo.
+    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
+      stripValuesFromMessage: true,
+    });
     prisma.auditLog
       .create({
         data: {
           userId: user.id,
           action: "integrations.healthkit.validation-failed",
-          details: JSON.stringify({ issues }),
+          details: JSON.stringify({ issues: auditIssues }),
         },
       })
       .catch(() => {

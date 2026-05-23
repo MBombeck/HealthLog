@@ -65,12 +65,17 @@ export const POST = apiHandler(async (request: NextRequest) => {
       action: { name: "tokens.create.validation-failed" },
       meta: { issue_count: issues.length },
     });
+    // v1.4.49 — strip `message` from the audit-ledger row; the
+    // mint payload carries a free-text `name`.
+    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
+      stripValuesFromMessage: true,
+    });
     prisma.auditLog
       .create({
         data: {
           userId: user.id,
           action: "tokens.create.validation-failed",
-          details: JSON.stringify({ issues }),
+          details: JSON.stringify({ issues: auditIssues }),
         },
       })
       .catch(() => {

@@ -75,12 +75,17 @@ export const PUT = apiHandler(
         action: { name: "mood-entries.update.validation-failed" },
         meta: { issue_count: issues.length, moodEntryId: id },
       });
+      // v1.4.49 — strip `message` from the audit-ledger row; mood
+      // update carries free-text `note` + `tags`.
+      const auditIssues = sanitiseZodIssues(parsed.error.issues, {
+        stripValuesFromMessage: true,
+      });
       prisma.auditLog
         .create({
           data: {
             userId: user.id,
             action: "mood-entries.update.validation-failed",
-            details: JSON.stringify({ issues, moodEntryId: id }),
+            details: JSON.stringify({ issues: auditIssues, moodEntryId: id }),
           },
         })
         .catch(() => {

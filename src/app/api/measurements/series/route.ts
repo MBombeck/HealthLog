@@ -20,6 +20,7 @@ import {
 } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
+import { redactSensitiveFields } from "@/lib/observability/redact-payload";
 import type { MeasurementType } from "@/generated/prisma/client";
 
 const kindEnum = z.enum([
@@ -81,9 +82,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // the Zod rejection. Top-level keys + a hard 256-char JSON excerpt
     // only; never the full payload, so token-shaped query params (we
     // do not currently accept any but the truncation keeps that
+<<<<<<< HEAD
     // invariant cheap) cannot leak. Shared helper via v1.4.49 so the
-    // widget + series routes can't drift on the diagnostic shape.
-    const payloadDiagnostic = buildPayloadDiagnostic(rawQuery);
+    // widget + series routes can't drift on the diagnostic shape; the
+    // query map is routed through `redactSensitiveFields` first so any
+    // future credential-shaped query string (`token`, `apiKey`,
+    // `csrfState`) redacts to `"[redacted]"` before the truncate.
+    const payloadDiagnostic = buildPayloadDiagnostic(redactSensitiveFields(rawQuery));
     annotate({
       action: { name: "measurements.series.validation-failed" },
       meta: {
@@ -92,12 +97,18 @@ export const GET = apiHandler(async (request: NextRequest) => {
         zod_issues: issues,
       },
     });
+    // v1.4.49 — strip `message` from the audit-ledger row so Zod
+    // codes that embed the offending value (`invalid_enum_value` etc.)
+    // cannot leak user content through the audit surface.
+    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
+      stripValuesFromMessage: true,
+    });
     prisma.auditLog
       .create({
         data: {
           userId: user.id,
           action: "measurements.series.validation-failed",
-          details: JSON.stringify({ issues }),
+          details: JSON.stringify({ issues: auditIssues }),
         },
       })
       .catch(() => {

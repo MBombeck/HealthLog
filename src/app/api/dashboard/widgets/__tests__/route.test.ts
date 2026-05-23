@@ -145,13 +145,14 @@ describe("PUT /api/dashboard/widgets — 422 multi-issue envelope (v1.4.42 W2)",
     expect(call.data.userId).toBe("user-1");
     expect(call.data.action).toBe("dashboard.widgets.validation-failed");
     const details = JSON.parse(call.data.details) as {
-      issues: Array<{ path: string; code: string; message: string }>;
+      issues: Array<{ path: string; code: string }>;
     };
     expect(details.issues.length).toBe(2);
     for (const issue of details.issues) {
-      // Audit row carries the same sanitised shape — issue.params never
-      // hits the ledger either.
-      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+      // v1.4.49 — audit row is the persisted surface. `message`
+      // strips here so a future Zod code that embeds the offending
+      // value cannot leak into the ledger.
+      expect(Object.keys(issue).sort()).toEqual(["code", "path"]);
     }
   });
 
@@ -239,5 +240,66 @@ describe("PUT /api/dashboard/widgets — 422 multi-issue envelope (v1.4.42 W2)",
       details: { issues: Array<unknown> };
     };
     expect(body.details.issues.length).toBe(2);
+  });
+
+  it("redacts sensitive keys before writing the wide-event received_shape_excerpt (v1.4.49)", async () => {
+    // Caller adds a credential-shaped field — must not land in the
+    // wide-event excerpt verbatim. The denylist also covers nested
+    // members so `payload.apiKey` is redacted, while `version` /
+    // `widgets` stay readable for operator debug.
+    const payload = {
+      version: 2,
+      widgets: [],
+      apnsToken: "ff".repeat(32),
+      authorization: "Bearer leaked",
+      payload: { apiKey: "sk_live_xxx" },
+    };
+    const res = await callPut(makeReq(payload));
+    expect(res.status).toBe(422);
+
+    const annotated = vi.mocked(annotate).mock.calls.find(
+      (call) =>
+        (call[0] as { action?: { name?: string } })?.action?.name ===
+        "dashboard.widgets.validation-failed",
+    );
+    const meta = (annotated![0] as { meta?: Record<string, unknown> }).meta!;
+    const excerpt = meta.received_shape_excerpt as string;
+
+    // Sensitive values are never written into the excerpt.
+    expect(excerpt).not.toContain("ff".repeat(32));
+    expect(excerpt).not.toContain("Bearer leaked");
+    expect(excerpt).not.toContain("sk_live_xxx");
+    // The redactor leaves the literal sentinel behind so an operator
+    // can still see the shape of the rejected payload.
+    expect(excerpt).toContain("[redacted]");
+    // Non-sensitive keys still surface for debugging.
+    expect(meta.received_keys).toEqual(
+      expect.arrayContaining([
+        "version",
+        "widgets",
+        "apnsToken",
+        "authorization",
+        "payload",
+      ]),
+    );
+  });
+
+  it("strips `message` from the audit-ledger issues row (v1.4.49)", async () => {
+    // The wide-event meta keeps full message for operator debugging,
+    // but the persisted auditLog row must only carry `path` + `code`
+    // so a future Zod code that embeds the offending value cannot
+    // leak into the ledger.
+    await callPut(makeReq({ version: 2, widgets: [] }));
+
+    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
+    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
+      data: { details: string };
+    };
+    const parsed = JSON.parse(call.data.details) as {
+      issues: Array<Record<string, unknown>>;
+    };
+    for (const issue of parsed.issues) {
+      expect(Object.keys(issue).sort()).toEqual(["code", "path"]);
+    }
   });
 });

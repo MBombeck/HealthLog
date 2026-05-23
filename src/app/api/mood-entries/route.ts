@@ -44,12 +44,20 @@ export const GET = apiHandler(async (request: NextRequest) => {
       action: { name: "mood-entries.list.validation-failed" },
       meta: { issue_count: issues.length },
     });
+    // v1.4.49 — strip `message` from the audit-ledger row so Zod
+    // codes that embed the offending value (`invalid_enum_value` etc.)
+    // cannot leak user-typed content. Mood-entries carry free-text
+    // `note` + `tags`; defensive strip everywhere mood content can
+    // reach a Zod issue.
+    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
+      stripValuesFromMessage: true,
+    });
     prisma.auditLog
       .create({
         data: {
           userId: user.id,
           action: "mood-entries.list.validation-failed",
-          details: JSON.stringify({ issues }),
+          details: JSON.stringify({ issues: auditIssues }),
         },
       })
       .catch(() => {
@@ -116,12 +124,18 @@ async function postMoodEntry(request: NextRequest) {
       action: { name: "mood-entries.create.validation-failed" },
       meta: { issue_count: issues.length },
     });
+    // v1.4.49 — strip `message` from the audit-ledger row; the
+    // mood-create schema's free-text `note` + `tags` could land in a
+    // Zod issue message verbatim.
+    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
+      stripValuesFromMessage: true,
+    });
     prisma.auditLog
       .create({
         data: {
           userId: user.id,
           action: "mood-entries.create.validation-failed",
-          details: JSON.stringify({ issues }),
+          details: JSON.stringify({ issues: auditIssues }),
         },
       })
       .catch(() => {

@@ -85,12 +85,20 @@ export const POST = apiHandler(async (request: NextRequest) => {
       action: { name: "devices.register.validation-failed" },
       meta: { issue_count: issues.length },
     });
+    // v1.4.49 — strip `message` from the audit-ledger row. Device
+    // registration carries `token` + `apnsToken`; the default Zod
+    // message for `invalid_format` echoes the offending value, which
+    // would persist an APNs token (or a forged near-miss) into the
+    // audit ledger.
+    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
+      stripValuesFromMessage: true,
+    });
     prisma.auditLog
       .create({
         data: {
           userId: user.id,
           action: "devices.register.validation-failed",
-          details: JSON.stringify({ issues }),
+          details: JSON.stringify({ issues: auditIssues }),
         },
       })
       .catch(() => {

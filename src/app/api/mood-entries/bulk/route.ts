@@ -122,12 +122,17 @@ async function postBulk(request: NextRequest): Promise<Response> {
       action: { name: "mood.bulk.validation-failed" },
       meta: { issue_count: issues.length },
     });
+    // v1.4.49 — strip `message` from the audit-ledger row; bulk mood
+    // entries carry free-text `note` + `tags` per row.
+    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
+      stripValuesFromMessage: true,
+    });
     prisma.auditLog
       .create({
         data: {
           userId: user.id,
           action: "mood.bulk.validation-failed",
-          details: JSON.stringify({ issues }),
+          details: JSON.stringify({ issues: auditIssues }),
         },
       })
       .catch(() => {

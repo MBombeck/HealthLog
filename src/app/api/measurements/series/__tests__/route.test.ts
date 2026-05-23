@@ -219,4 +219,47 @@ describe("GET /api/measurements/series — 422 multi-issue (v1.4.43 W6)", () => 
     const res = await GET(req("kind=garbage&days=0"));
     expect(res.status).toBe(422);
   });
+
+  it("redacts sensitive query keys before writing the wide-event received_shape_excerpt (v1.4.49)", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    // An attacker-shaped query that mixes a valid `kind` with a
+    // credential-shaped `token` param. The excerpt must keep `kind`
+    // readable for operator debug but redact the token verbatim.
+    const res = await GET(
+      req("kind=garbage&days=0&token=hlk_secret_value&apiKey=sk_live_xxx"),
+    );
+    expect(res.status).toBe(422);
+
+    const annotated = vi.mocked(annotate).mock.calls.find(
+      (call) =>
+        (call[0] as { action?: { name?: string } })?.action?.name ===
+        "measurements.series.validation-failed",
+    );
+    const meta = (annotated![0] as { meta?: Record<string, unknown> }).meta!;
+    const excerpt = meta.received_shape_excerpt as string;
+
+    expect(excerpt).not.toContain("hlk_secret_value");
+    expect(excerpt).not.toContain("sk_live_xxx");
+    expect(excerpt).toContain("[redacted]");
+    // The key inventory still surfaces so operators see the shape.
+    expect(meta.received_keys).toEqual(
+      expect.arrayContaining(["kind", "days", "token", "apiKey"]),
+    );
+  });
+
+  it("strips `message` from the audit-ledger issues row (v1.4.49)", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    await GET(req("kind=garbage&days=0"));
+
+    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
+    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
+      data: { details: string };
+    };
+    const parsed = JSON.parse(call.data.details) as {
+      issues: Array<Record<string, unknown>>;
+    };
+    for (const issue of parsed.issues) {
+      expect(Object.keys(issue).sort()).toEqual(["code", "path"]);
+    }
+  });
 });

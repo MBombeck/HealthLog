@@ -62,12 +62,20 @@ export const POST = apiHandler(
         action: { name: "medications.intake.import.validation-failed" },
         meta: { issue_count: issues.length, medication_id: id },
       });
+      // v1.4.49 — strip `message` from the audit-ledger row; CSV
+      // imports carry caller-provided strings that Zod may echo.
+      const auditIssues = sanitiseZodIssues(parsed.error.issues, {
+        stripValuesFromMessage: true,
+      });
       prisma.auditLog
         .create({
           data: {
             userId: user.id,
             action: "medications.intake.import.validation-failed",
-            details: JSON.stringify({ issues, medicationId: id }),
+            details: JSON.stringify({
+              issues: auditIssues,
+              medicationId: id,
+            }),
           },
         })
         .catch(() => {

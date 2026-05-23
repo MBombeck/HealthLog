@@ -103,12 +103,18 @@ export const POST = apiHandler(async (request: NextRequest) => {
       action: { name: "ingest.medication.validation-failed" },
       meta: { issue_count: issues.length },
     });
+    // v1.4.49 — strip `message` from the audit-ledger row; external
+    // ingest carries free-text `medicationName` + opaque
+    // `idempotencyKey`.
+    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
+      stripValuesFromMessage: true,
+    });
     prisma.auditLog
       .create({
         data: {
           userId: apiToken.userId,
           action: "ingest.medication.validation-failed",
-          details: JSON.stringify({ issues }),
+          details: JSON.stringify({ issues: auditIssues }),
         },
       })
       .catch(() => {

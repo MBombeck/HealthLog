@@ -19,6 +19,25 @@ export interface SanitisedZodIssue {
 }
 
 /**
+ * Variant used when the issues land in an audit-ledger row whose
+ * source field is free-text. `invalid_enum_value` and a handful of
+ * other Zod codes embed the offending value verbatim in
+ * `issue.message`, so a route that JSON-stringifies the sanitised
+ * array into `details` can leak user content. Callers opt in via
+ * `sanitiseZodIssues(error.issues, { stripValuesFromMessage: true })`.
+ */
+export interface SanitiseZodIssueOptions {
+  /**
+   * When true, drop `issue.message` from the returned shape entirely.
+   * Only `path` + `code` survive — enough for an operator to triage
+   * the rejection without persisting user-typed content. Default is
+   * `false` so the additive multi-issue envelope keeps its existing
+   * client contract.
+   */
+  stripValuesFromMessage?: boolean;
+}
+
+/**
  * v1.4.42 W2 — multi-issue Zod error envelope.
  *
  * Historic pattern was `apiError(parsed.error.issues[0].message, 422)`
@@ -33,10 +52,32 @@ export interface SanitisedZodIssue {
  * Privacy: only `path`, `code` and `message` are echoed. `issue.params`
  * (which can carry the raw rejected value for some Zod issue codes)
  * stays server-side.
+ *
+ * v1.4.49 — `stripValuesFromMessage` removes `message` for the
+ * auditLog-emission sites whose input fields are free-text. Some Zod
+ * codes (e.g. `invalid_enum_value`) embed the offending value in the
+ * default message string; a free-text route writing the message into
+ * the audit ledger would leak user content. The opt-in is additive —
+ * the default behaviour is unchanged so existing clients reading
+ * `details.issues[*].message` over the wire keep working.
  */
 export function sanitiseZodIssues(
   issues: readonly ZodIssue[],
-): SanitisedZodIssue[] {
+): SanitisedZodIssue[];
+export function sanitiseZodIssues(
+  issues: readonly ZodIssue[],
+  options: { stripValuesFromMessage: true },
+): Array<Omit<SanitisedZodIssue, "message">>;
+export function sanitiseZodIssues(
+  issues: readonly ZodIssue[],
+  options?: SanitiseZodIssueOptions,
+): SanitisedZodIssue[] | Array<Omit<SanitisedZodIssue, "message">> {
+  if (options?.stripValuesFromMessage) {
+    return issues.map((issue) => ({
+      path: issue.path.join("."),
+      code: issue.code,
+    }));
+  }
   return issues.map((issue) => ({
     path: issue.path.join("."),
     code: issue.code,

@@ -29,6 +29,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { z } from "zod/v4";
 import { invalidateUserDashboardWidgets } from "@/lib/cache/invalidate";
 import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
+import { redactSensitiveFields } from "@/lib/observability/redact-payload";
 import type { NextRequest } from "next/server";
 
 // Single source of truth — every widget id rendered by the Settings →
@@ -150,10 +151,15 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     // the Zod rejection so a single wide-event line carries enough
     // detail to diagnose serialiser drift in `HealthLog-iOS`. We log
     // ONLY the top-level keys plus a hard 256-char JSON excerpt — never
+<<<<<<< HEAD
     // the full body — so PII / token-like fields cannot leak. The
     // diagnostic shape is built by the shared `buildPayloadDiagnostic`
-    // helper (v1.4.49) so the widget + series routes can't drift.
-    const payloadDiagnostic = buildPayloadDiagnostic(body);
+    // helper (v1.4.49) so the widget + series routes can't drift; the
+    // body is routed through `redactSensitiveFields` first so any
+    // future field matching the denylist (password / token / secret /
+    // apiKey / authorization / csrfState / nonce) lands as the literal
+    // `"[redacted]"` instead of its raw value.
+    const payloadDiagnostic = buildPayloadDiagnostic(redactSensitiveFields(body));
     annotate({
       action: { name: "dashboard.widgets.validation-failed" },
       meta: {
@@ -173,12 +179,20 @@ export const PUT = apiHandler(async (request: NextRequest) => {
       )
     ) {
       // Best-effort breadcrumb — never block the 422 on a write miss.
+      // v1.4.49 — strip `message` from the audit-ledger row so Zod
+      // codes that embed the offending value in their default message
+      // (`invalid_enum_value` and similar) cannot leak user content
+      // through the audit surface. The wide-event excerpt above
+      // already carries the shape signal for operator debugging.
+      const auditIssues = sanitiseZodIssues(parsed.error.issues, {
+        stripValuesFromMessage: true,
+      });
       prisma.auditLog
         .create({
           data: {
             userId: user.id,
             action: "dashboard.widgets.validation-failed",
-            details: JSON.stringify({ issues }),
+            details: JSON.stringify({ issues: auditIssues }),
           },
         })
         .catch(() => {

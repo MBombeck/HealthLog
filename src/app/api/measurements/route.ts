@@ -56,12 +56,18 @@ export const GET = apiHandler(async (request: NextRequest) => {
       action: { name: "measurements.list.validation-failed" },
       meta: { issue_count: issues.length },
     });
+    // v1.4.49 — strip `message` from the audit-ledger row to keep
+    // any free-text query slice (custom `dayKey`, attacker-shaped
+    // `type=`) out of the persisted breadcrumb.
+    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
+      stripValuesFromMessage: true,
+    });
     prisma.auditLog
       .create({
         data: {
           userId: user.id,
           action: "measurements.list.validation-failed",
-          details: JSON.stringify({ issues }),
+          details: JSON.stringify({ issues: auditIssues }),
         },
       })
       .catch(() => {
@@ -583,12 +589,17 @@ async function postMeasurement(request: NextRequest) {
         action: { name: "measurements.create.batch.validation-failed" },
         meta: { issue_count: issues.length },
       });
+      // v1.4.49 — strip `message` from the audit-ledger row; batch
+      // rows carry free-text `notes` per measurement.
+      const auditIssues = sanitiseZodIssues(parsed.error.issues, {
+        stripValuesFromMessage: true,
+      });
       prisma.auditLog
         .create({
           data: {
             userId: user.id,
             action: "measurements.create.batch.validation-failed",
-            details: JSON.stringify({ issues }),
+            details: JSON.stringify({ issues: auditIssues }),
           },
         })
         .catch(() => {
@@ -671,12 +682,17 @@ async function postMeasurement(request: NextRequest) {
       action: { name: "measurements.create.validation-failed" },
       meta: { issue_count: issues.length },
     });
+    // v1.4.49 — strip `message` from the audit-ledger row; single
+    // measurement carries free-text `notes`.
+    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
+      stripValuesFromMessage: true,
+    });
     prisma.auditLog
       .create({
         data: {
           userId: user.id,
           action: "measurements.create.validation-failed",
-          details: JSON.stringify({ issues }),
+          details: JSON.stringify({ issues: auditIssues }),
         },
       })
       .catch(() => {
