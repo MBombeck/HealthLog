@@ -57,10 +57,18 @@ export const POST = apiHandler(async (request: NextRequest) => {
     : defaultLocale;
   const t = getServerTranslator(locale).t;
 
+  // Send as MEDICATION_REMINDER so the dispatcher's time-sensitive /
+  // priority-10 branch fires. Otherwise the test runs at the default
+  // `active` interruption-level and iOS may summarise it into the
+  // Notification Center rather than presenting a lock-screen banner —
+  // leaving the user with no signal whether real medication reminders
+  // (which DO use time-sensitive) will surface on the lock screen.
+  // The title/body strings still read "Test notification" so the user
+  // doesn't mistake this for an actual scheduled dose.
   const result = await sendViaApns(user.id, {
     title: t("notifications.admin.testNotificationTitle"),
     message: t("notifications.admin.testNotificationBody"),
-    eventType: "SYSTEM_ALERT",
+    eventType: "MEDICATION_REMINDER",
   });
 
   annotate({

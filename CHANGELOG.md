@@ -35,6 +35,7 @@ v1.4.47 closed the H1 + Mediums punch list. v1.4.49 bundles the deferred v1.4.47
 - Workout-batch integration tests (`workout-batch-create`, `workout-batch-race`) updated to match the v1.4.42 cross-source dedup semantics. The integration suite had been red on `main` since v1.4.45 (three release commits shipped through it). Suite is green again.
 - Twelve stale "migration 0076" references in code comments corrected. `consecutiveFailures` sites read 0077; `disable-coach` sites read 0078. Comment-only sweep, no behavioural change.
 - `docs/ops/attempt-number-semantics.md` referenced migration 0076 for the dropped `consecutiveFailures` column; the actual migration is 0077.
+- Per-channel APNs "Send test" button (Settings → notification channels) now fires with `eventType: "MEDICATION_REMINDER"` so the dispatcher's `time-sensitive` interruption-level + `apns-priority: 10` branch runs. The previous `SYSTEM_ALERT` event-type used the dispatcher's default `active` level, which iOS may summarise into the Notification Center rather than presenting a lock-screen banner — leaving the user with no signal whether a real dose reminder will surface visibly. A successful test now exercises the exact path production reminders take. Title and body strings still read "Test notification" so the push cannot be mistaken for an actual scheduled dose.
 
 ### Performance
 
