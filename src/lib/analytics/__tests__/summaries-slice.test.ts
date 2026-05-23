@@ -54,10 +54,15 @@ afterEach(() => {
 describe("computeSummariesSlice", () => {
   describe("cold fallback — empty rollup table", () => {
     it("returns the empty-summary skeleton when the user has no rows", async () => {
+      // v1.4.48 M0 — cold path now issues two aggregate queries
+      // (`allTime` + `windowed`) instead of one fat aggregate, so the
+      // $queryRaw call count is 4 instead of 3:
       // 1. per-type coverage probe — empty ⇒ cold path.
-      // 2. heavy aggregate ($queryRaw) — empty.
-      // 3. latests ($queryRaw) — empty.
+      // 2. all-time aggregate ($queryRaw) — empty.
+      // 3. windowed aggregate ($queryRaw, 90-day cap) — empty.
+      // 4. latests ($queryRaw) — empty.
       RAW.mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
 
@@ -79,11 +84,16 @@ describe("computeSummariesSlice", () => {
         avg30LastYear: null,
       });
       expect(result.bmi).toBeNull();
-      expect(RAW).toHaveBeenCalledTimes(3);
+      expect(RAW).toHaveBeenCalledTimes(4);
     });
 
     it("maps a populated heavy aggregate row into the DataSummary shape on cold path", async () => {
-      // Coverage probe returns WEIGHT with no buckets → cold path.
+      // v1.4.48 M0 — cold path now splits the heavy aggregate into
+      // all-time + 90-day-capped windowed queries. Mock order:
+      // 1. coverage probe (WEIGHT uncovered → cold path)
+      // 2. all-time aggregate (count / min / max / mean)
+      // 3. windowed aggregate (avg7/30 + slope/r²)
+      // 4. latests
       RAW.mockResolvedValueOnce([{ type: "WEIGHT", has_buckets: false }])
         .mockResolvedValueOnce([
           {
@@ -92,6 +102,11 @@ describe("computeSummariesSlice", () => {
             min_value: 79.2,
             max_value: 84.1,
             mean_value: 82.05,
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            type: "WEIGHT",
             avg7: 81.9,
             avg30: 82.1,
             slope7: -0.014,
@@ -145,6 +160,11 @@ describe("computeSummariesSlice", () => {
             min_value: 72,
             max_value: 72,
             mean_value: 72,
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            type: "PULSE",
             avg7: 72,
             avg30: 72,
             slope7: null,
@@ -175,6 +195,11 @@ describe("computeSummariesSlice", () => {
             min_value: 80,
             max_value: 84,
             mean_value: 82,
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            type: "WEIGHT",
             avg7: null,
             avg30: 82,
             slope7: null,
@@ -207,6 +232,11 @@ describe("computeSummariesSlice", () => {
             min_value: 60,
             max_value: 95,
             mean_value: 77,
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            type: "PULSE",
             avg7: 77,
             avg30: 77,
             slope7: 0,
@@ -436,8 +466,11 @@ describe("computeSummariesSlice", () => {
     });
 
     it("only probes types that actually have data in the current window", async () => {
-      // Coverage probe + rollup GROUP BY both report zero rows → no
-      // types-with-data, so the year-ago probe must NOT fan out.
+      // v1.4.48 M0 — empty coverage map ⇒ `isFullyCovered` returns
+      // false ⇒ cold-fallback path. Cold path now issues 4 raw
+      // queries (coverage probe + all-time + windowed + latests),
+      // all returning empty arrays here ⇒ no types-with-data ⇒ the
+      // year-ago probe must NOT fan out.
       RAW.mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
@@ -446,6 +479,49 @@ describe("computeSummariesSlice", () => {
       await computeSummariesSlice("user-no-data");
 
       expect(ROLLUP_FIND_MANY).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * v1.4.48 M0 — pins the 90-day outer `measured_at` cap on the two
+   * windowed measurements scans: the `narrows` query inside the
+   * rollup-fresh happy path and the `windowed` query inside the
+   * cold-fallback path. Both must constrain the outer WHERE to the
+   * 90-day suffix so the planner does an index range scan on
+   * `(user_id, type, measured_at)` instead of a full-partition scan.
+   * If a future refactor drops the cap, this assertion fails before
+   * the perf regression reaches main.
+   */
+  describe("90-day outer measured_at cap (v1.4.48 M0)", () => {
+    it("applies the 90-day cap to narrows (rollup-fresh path) and windowed (cold-fallback path)", async () => {
+      const queries: string[] = [];
+      RAW.mockImplementation((strings: TemplateStringsArray) => {
+        queries.push(strings.join("?"));
+        return Promise.resolve([]);
+      });
+
+      // Trigger the rollup-fresh path so we capture the `narrows` SQL.
+      // Coverage probe returns one covered type ⇒ `isFullyCovered`
+      // is true ⇒ `computeFromRollups` runs.
+      RAW.mockImplementationOnce((strings: TemplateStringsArray) => {
+        queries.push(strings.join("?"));
+        return Promise.resolve([{ type: "WEIGHT", has_buckets: true }]);
+      });
+      await computeSummariesSlice("user-rollup-pin");
+
+      // Trigger the cold-fallback path so we capture the `windowed`
+      // SQL. Empty coverage map ⇒ `isFullyCovered` is false ⇒
+      // `computeFromLiveAggregate` runs.
+      await computeSummariesSlice("user-cold-pin");
+
+      const joined = queries.join("\n---\n");
+      // Both windowed scans must carry the outer 90-day cap.
+      const capMatches = joined.match(
+        /AND m\."measured_at" >= NOW\(\) - INTERVAL '90 days'/g,
+      );
+      expect(capMatches).not.toBeNull();
+      // narrows (rollup-fresh) + windowed (cold-fallback) = 2 caps.
+      expect(capMatches?.length).toBeGreaterThanOrEqual(2);
     });
   });
 });

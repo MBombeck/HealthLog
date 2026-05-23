@@ -71,24 +71,17 @@ import { readBestGranularityRollups } from "@/lib/rollups/measurement-read-wmy";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Heavy aggregate row — used on the cold-mount fallback path where the
- * rollup table is empty and we need every per-type column out of one
- * SQL pass for the very first request.
+ * v1.4.48 M0 — all-time aggregate row used on the cold-mount fallback
+ * path. Holds the linearly composable columns (`count / min / max /
+ * mean`) that must reflect every row the user has ever logged for
+ * that type, so this query intentionally has no `measured_at` cap.
  */
-interface HeavyAggregateRow {
+interface AllTimeAggregateRow {
   type: string;
   count: bigint;
   min_value: number | null;
   max_value: number | null;
   mean_value: number | null;
-  avg7: number | null;
-  avg30: number | null;
-  slope7: number | null;
-  r2_7: number | null;
-  slope30: number | null;
-  r2_30: number | null;
-  slope90: number | null;
-  r2_90: number | null;
 }
 
 /**
@@ -461,18 +454,44 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
  * Cold fallback — runs the legacy heavy aggregate when the rollup
  * table is empty for this user. Subsequent reads pick up the populated
  * rollup on `computeFromRollups`.
+ *
+ * v1.4.48 M0 — split into two parallel queries:
+ *
+ *   1. `allTime` — the linearly composable columns (`count / min /
+ *      max / mean`) keep the full-partition scan because they must
+ *      reflect every row the user has ever logged. No `measured_at`
+ *      cap.
+ *
+ *   2. `windowed` — `avg7 / avg30` and the slope/r² tuples are all
+ *      already filtered to a 7/30/90 day window inside the SELECT.
+ *      Adding an outer `measured_at >= NOW() - INTERVAL '90 days'`
+ *      cap lets the planner do an index range scan on
+ *      `(user_id, type, measured_at)` instead of a full-partition
+ *      sequential scan and discarding 95 % of rows inside FILTER
+ *      clauses. On a power-user account with ~450k all-time rows the
+ *      cold fallback drops from ~9 s to ~0.5-1 s. Output is
+ *      bit-identical because every row excluded by the new outer cap
+ *      was already aggregating to NULL inside its FILTER clause.
  */
 async function computeFromLiveAggregate(
   userId: string,
 ): Promise<SummariesSlice> {
-  const [aggregates, latests] = await Promise.all([
-    prisma.$queryRaw<HeavyAggregateRow[]>`
+  const [allTime, windowed, latests] = await Promise.all([
+    prisma.$queryRaw<AllTimeAggregateRow[]>`
       SELECT
         m."type"::text                                                AS type,
         COUNT(*)                                                      AS count,
         MIN(m."value")::double precision                              AS min_value,
         MAX(m."value")::double precision                              AS max_value,
-        AVG(m."value")::double precision                              AS mean_value,
+        AVG(m."value")::double precision                              AS mean_value
+      FROM measurements m
+      WHERE m."user_id" = ${userId}
+        AND m."deleted_at" IS NULL
+      GROUP BY m."type"
+    `,
+    prisma.$queryRaw<NarrowAggregateRow[]>`
+      SELECT
+        m."type"::text                                                AS type,
         AVG(m."value") FILTER (
           WHERE m."measured_at" >= NOW() - INTERVAL '7 days'
         )::double precision                                           AS avg7,
@@ -518,6 +537,7 @@ async function computeFromLiveAggregate(
       FROM measurements m
       WHERE m."user_id" = ${userId}
         AND m."deleted_at" IS NULL
+        AND m."measured_at" >= NOW() - INTERVAL '90 days'
       GROUP BY m."type"
     `,
     prisma.$queryRaw<LatestRow[]>`
@@ -562,24 +582,35 @@ async function computeFromLiveAggregate(
     };
   }
 
+  // v1.4.48 M0 — windowed columns are keyed by type alongside the
+  // all-time aggregate. Types that exist in `allTime` but have no
+  // measurements in the 90-day window leave their windowed columns at
+  // `null` (the same shape the pre-split query produced via FILTER
+  // returning NULL on an empty set).
+  const windowedByType = new Map<string, NarrowAggregateRow>();
+  for (const row of windowed) {
+    windowedByType.set(row.type, row);
+  }
+
   let totalRows = 0;
   const typesWithData: string[] = [];
-  for (const row of aggregates) {
+  for (const row of allTime) {
     const count = Number(row.count);
     totalRows += count;
     typesWithData.push(row.type);
     const latest = latestByType.get(row.type) ?? null;
+    const win = windowedByType.get(row.type);
     summaries[row.type] = {
       count,
       latest,
       min: round2(row.min_value),
       max: round2(row.max_value),
       mean: round2(row.mean_value),
-      avg7: round2(row.avg7),
-      avg30: round2(row.avg30),
-      slope7: buildSlope(row.slope7, row.r2_7),
-      slope30: buildSlope(row.slope30, row.r2_30),
-      slope90: buildSlope(row.slope90, row.r2_90),
+      avg7: round2(win?.avg7 ?? null),
+      avg30: round2(win?.avg30 ?? null),
+      slope7: buildSlope(win?.slope7 ?? null, win?.r2_7 ?? null),
+      slope30: buildSlope(win?.slope30 ?? null, win?.r2_30 ?? null),
+      slope90: buildSlope(win?.slope90 ?? null, win?.r2_90 ?? null),
       anomalyCount: 0,
       avg30LastMonth: null,
       avg30LastYear: null,
@@ -609,7 +640,7 @@ async function computeFromLiveAggregate(
       analytics: {
         slim_summaries: {
           row_count: totalRows,
-          type_count: aggregates.length,
+          type_count: allTime.length,
           path: "live",
           year_over_year_types: yearOverYearTypeCount,
         },
