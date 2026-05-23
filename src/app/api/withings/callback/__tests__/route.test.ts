@@ -12,6 +12,10 @@
  * Co-tests M7 — non-P2025 delete failures (DB-connection drop /
  * integrity violation) surface via Wide-Event `addWarning` instead
  * of being silently swallowed.
+ *
+ * v1.4.49 — assertions updated for the four-way reason-tag split
+ * (`csrf1`, `replay`, `expired`, `cross_user`) and the QA-2
+ * err.name-only warning template.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
@@ -67,8 +71,9 @@ vi.mock("@/lib/integrations/status", () => ({
 }));
 
 const addWarning = vi.fn();
+const annotateMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/logging/context", () => ({
-  annotate: vi.fn(),
+  annotate: annotateMock,
   getEvent: vi.fn(() => ({ addWarning, setError: vi.fn() })),
 }));
 
@@ -149,7 +154,7 @@ describe("withings/callback atomic nonce consumption (M3)", () => {
     expect(deleteMock).toHaveBeenCalledTimes(2);
 
     // Exactly one leg landed on `withings=connected`, exactly one
-    // landed on the replay branch (`withings=error&reason=state`).
+    // landed on the replay branch (`withings=error&reason=replay`).
     const locations = [resA, resB]
       .map((r) => r.headers.get("location"))
       .sort();
@@ -158,20 +163,34 @@ describe("withings/callback atomic nonce consumption (M3)", () => {
       locations.some((l) => l?.includes("withings=connected")),
     ).toBe(true);
     expect(
-      locations.some((l) => l?.includes("withings=error&reason=state")),
+      locations.some((l) => l?.includes("withings=error&reason=replay")),
     ).toBe(true);
 
     // P2025 must NOT surface as a warning — it's the expected
     // replay-branch signal, not a real infra problem.
     expect(addWarning).not.toHaveBeenCalled();
+
+    // Wide-Event annotation carries the same reason so operators can
+    // grep without DB-shell.
+    expect(annotateMock).toHaveBeenCalledWith({ meta: { reason: "replay" } });
   });
 
-  it("non-P2025 delete failure (e.g. connection drop) surfaces a Wide-Event warning and bounces to the error page", async () => {
+  it("non-P2025 delete failure (e.g. connection drop) surfaces a Wide-Event warning carrying err.name only, and bounces to the error page", async () => {
     // M7 — a real infra failure on the consume-delete must not be
     // silently swallowed.
-    const infraError = new Error("connection terminated unexpectedly");
+    //
+    // v1.4.49 QA-2 — the warning template now interpolates `err.name`
+    // rather than `${err}`. A Prisma error whose `message` echoes the
+    // offending value (e.g. the raw nonce) into the wide-event log
+    // would otherwise leak it.
+    class TimeoutError extends Error {
+      constructor() {
+        super("connection terminated unexpectedly nonce=abc123");
+        this.name = "TimeoutError";
+      }
+    }
     vi.mocked(prisma.withingsOAuthState.delete).mockRejectedValueOnce(
-      infraError,
+      new TimeoutError(),
     );
 
     const req = callbackRequest(NONCE, NONCE);
@@ -182,19 +201,25 @@ describe("withings/callback atomic nonce consumption (M3)", () => {
       "withings=error&reason=state",
     );
 
-    // The warning carries the error string so the audit trail can
+    // The warning carries the error NAME so the audit trail can
     // distinguish "row was gone" (P2025, no warning) from "DB unhappy"
-    // (warning, infra signal).
+    // (warning, infra signal) without ever interpolating the message
+    // body.
     expect(addWarning).toHaveBeenCalledTimes(1);
     expect(addWarning).toHaveBeenCalledWith(
-      expect.stringContaining("oauth-state-delete failed"),
+      "oauth-state-delete failed: TimeoutError",
     );
-    expect(addWarning).toHaveBeenCalledWith(
-      expect.stringContaining("connection terminated unexpectedly"),
+    // Defensive: the message body (which Prisma may use to echo the
+    // offending value) must not appear in the warning.
+    expect(addWarning).not.toHaveBeenCalledWith(
+      expect.stringContaining("nonce=abc123"),
+    );
+    expect(addWarning).not.toHaveBeenCalledWith(
+      expect.stringContaining("connection terminated"),
     );
   });
 
-  it("delete succeeds but row has expired — validity check trips, no token exchange", async () => {
+  it("delete succeeds but row has expired — validity check trips with reason=expired, no token exchange", async () => {
     const expiredRow = {
       nonce: NONCE,
       userId: "user-1",
@@ -212,13 +237,14 @@ describe("withings/callback atomic nonce consumption (M3)", () => {
 
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toContain(
-      "withings=error&reason=state",
+      "withings=error&reason=expired",
     );
     // Single atomic round-trip consumed the row; no token exchange.
     expect(exchangeCode).not.toHaveBeenCalled();
+    expect(annotateMock).toHaveBeenCalledWith({ meta: { reason: "expired" } });
   });
 
-  it("delete succeeds but row's userId mismatches session — validity check trips, no token exchange", async () => {
+  it("delete succeeds but row's userId mismatches session — validity check trips with reason=cross_user, no token exchange", async () => {
     const crossUserRow = {
       nonce: NONCE,
       userId: "user-OTHER",
@@ -236,12 +262,36 @@ describe("withings/callback atomic nonce consumption (M3)", () => {
 
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toContain(
-      "withings=error&reason=state",
+      "withings=error&reason=cross_user",
     );
     expect(exchangeCode).not.toHaveBeenCalled();
+    expect(annotateMock).toHaveBeenCalledWith({ meta: { reason: "cross_user" } });
   });
 
-  it("URL state vs cookie state mismatch short-circuits BEFORE the atomic delete fires", async () => {
+  it("non-P2025 infra error branch annotates reason=state on the Wide Event (legacy fallback for unclassified DB failures)", async () => {
+    // v1.4.49 — the four named reasons (csrf1, replay, expired,
+    // cross_user) cover every "we know what went wrong" branch. A
+    // raw infra failure is intentionally still tagged `state` —
+    // operators reading the wide event will see the err.name in the
+    // warning and the `reason=state` annotation, which is enough to
+    // distinguish it from the four classified branches.
+    class TimeoutError extends Error {
+      constructor() {
+        super("connection terminated");
+        this.name = "TimeoutError";
+      }
+    }
+    vi.mocked(prisma.withingsOAuthState.delete).mockRejectedValueOnce(
+      new TimeoutError(),
+    );
+
+    const req = callbackRequest(NONCE, NONCE);
+    await GET(req);
+
+    expect(annotateMock).toHaveBeenCalledWith({ meta: { reason: "state" } });
+  });
+
+  it("URL state vs cookie state mismatch short-circuits with reason=csrf1 BEFORE the atomic delete fires", async () => {
     // CSRF leg 1 — must reject without touching the ledger so a
     // probe can't grief legitimate rows by issuing deletes for
     // nonces it doesn't legitimately hold the cookie for.
@@ -250,8 +300,9 @@ describe("withings/callback atomic nonce consumption (M3)", () => {
 
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toContain(
-      "withings=error&reason=state",
+      "withings=error&reason=csrf1",
     );
     expect(prisma.withingsOAuthState.delete).not.toHaveBeenCalled();
+    expect(annotateMock).toHaveBeenCalledWith({ meta: { reason: "csrf1" } });
   });
 });

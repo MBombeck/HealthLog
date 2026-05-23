@@ -55,15 +55,24 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // probe with arbitrary state values can't grief legitimate ledger
   // rows by triggering deletes for nonces it doesn't legitimately
   // hold the cookie for.
+  //
+  // v1.4.49 — reason tags now distinguish the four post-delete branches
+  // so operators reading the audit trail can tell `csrf1` (URL/cookie
+  // mismatch, short-circuit before delete), `replay` (P2025 — nonce
+  // already consumed), `expired` (valid row but TTL elapsed), and
+  // `cross_user` (valid row but session userId mismatch) apart. A
+  // matching `meta.reason` Wide-Event annotation carries the same so
+  // operators can grep without DB-shell.
   if (
     !state ||
     !storedState ||
     state.length !== storedState.length ||
     !timingSafeEqual(Buffer.from(state), Buffer.from(storedState))
   ) {
+    annotate({ meta: { reason: "csrf1" } });
     return NextResponse.redirect(
       new URL(
-        "/settings/integrations?withings=error&reason=state",
+        "/settings/integrations?withings=error&reason=csrf1",
         process.env.NEXT_PUBLIC_APP_URL!,
       ),
     );
@@ -88,9 +97,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
       err.code === "P2025"
     ) {
       // Row already consumed (replay) or never existed.
+      annotate({ meta: { reason: "replay" } });
       return NextResponse.redirect(
         new URL(
-          "/settings/integrations?withings=error&reason=state",
+          "/settings/integrations?withings=error&reason=replay",
           process.env.NEXT_PUBLIC_APP_URL!,
         ),
       );
@@ -100,7 +110,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // so the audit trail captures it, then bounce to the error
     // page. Re-throwing would land on the apiHandler's 500 path and
     // strand the user without a clean redirect.
-    getEvent()?.addWarning(`oauth-state-delete failed: ${err}`);
+    //
+    // v1.4.49 QA-2 — the warning interpolates `err.name` rather than
+    // `${err}` so a Prisma error message echoing the offending value
+    // (e.g. the raw nonce) into the wide-event log cannot leak it.
+    const errName = err instanceof Error ? err.name : "unknown";
+    getEvent()?.addWarning(`oauth-state-delete failed: ${errName}`);
+    annotate({ meta: { reason: "state" } });
     return NextResponse.redirect(
       new URL(
         "/settings/integrations?withings=error&reason=state",
@@ -113,10 +129,20 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // gone from the ledger by this point — single-use semantics —
   // whether the expiry tripped, the userId mismatched, or
   // everything looked good.
-  if (stateRow.expiresAt <= new Date() || stateRow.userId !== user.id) {
+  if (stateRow.expiresAt <= new Date()) {
+    annotate({ meta: { reason: "expired" } });
     return NextResponse.redirect(
       new URL(
-        "/settings/integrations?withings=error&reason=state",
+        "/settings/integrations?withings=error&reason=expired",
+        process.env.NEXT_PUBLIC_APP_URL!,
+      ),
+    );
+  }
+  if (stateRow.userId !== user.id) {
+    annotate({ meta: { reason: "cross_user" } });
+    return NextResponse.redirect(
+      new URL(
+        "/settings/integrations?withings=error&reason=cross_user",
         process.env.NEXT_PUBLIC_APP_URL!,
       ),
     );
