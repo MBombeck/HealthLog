@@ -306,6 +306,14 @@ components:
         - data
         - error
       type: object
+    DisableCoachRequest:
+      description: Per-account Coach opt-out toggle (v1.4.47 W3). `true` hides the Coach FAB and short-circuits its API gates.
+      properties:
+        disableCoach:
+          type: boolean
+      required:
+        - disableCoach
+      type: object
     ErrorEnvelope:
       additionalProperties: false
       description: "Standard error response: data is null, error is human prose."
@@ -381,6 +389,29 @@ components:
             - excludeMetrics
             - showEvidenceByDefault
             - defaultWindow
+          type: object
+        error:
+          type: "null"
+        meta:
+          additionalProperties: false
+          properties:
+            requestId:
+              type: string
+          type: object
+      required:
+        - data
+        - error
+      type: object
+    GetDisableCoachResponse:
+      additionalProperties: false
+      properties:
+        data:
+          additionalProperties: false
+          properties:
+            disableCoach:
+              type: boolean
+          required:
+            - disableCoach
           type: object
         error:
           type: "null"
@@ -1039,6 +1070,29 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/AccessRefreshBundle"
+        error:
+          type: "null"
+        meta:
+          additionalProperties: false
+          properties:
+            requestId:
+              type: string
+          type: object
+      required:
+        - data
+        - error
+      type: object
+    PatchDisableCoachResponse:
+      additionalProperties: false
+      properties:
+        data:
+          additionalProperties: false
+          properties:
+            disableCoach:
+              type: boolean
+          required:
+            - disableCoach
+          type: object
         error:
           type: "null"
         meta:
@@ -1919,6 +1973,45 @@ paths:
         "422": *a2
         "429": *a3
       summary: Replace per-user Coach prompt-tuning preferences
+      tags:
+        - Auth
+  /api/auth/me/disable-coach:
+    get:
+      description: Returns the user's per-account Coach opt-out flag. Default `false` (Coach visible). Powers the Settings →
+        Insights "Hide Coach" Switch and the layout FAB short-circuit.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetDisableCoachResponse"
+          description: Resolved flag.
+        "401": *a1
+        "422": *a2
+        "429": *a3
+      summary: Read per-user Coach opt-out flag
+      tags:
+        - Auth
+    patch:
+      description: Flips the per-account Coach opt-out flag. Idempotent — the DB write fires even when the value matches so
+        the audit-log row mirrors the API call. Rate-limit 60/min per user.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisableCoachRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatchDisableCoachResponse"
+          description: Resolved next-state echoed back for optimistic-update consumers.
+        "401": *a1
+        "422": *a2
+        "429": *a3
+      summary: Toggle per-user Coach opt-out flag
       tags:
         - Auth
   /api/auth/me/source-priority:

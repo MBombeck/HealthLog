@@ -276,7 +276,7 @@
     "layoutTileColumn": "Kachel",
     "layoutChartColumn": "Chart",
     "dragHandle": "Zum Verschieben ziehen",
-    "dragHandleHint": "Ziehe den Griff, um dieses Widget neu zu sortieren. Du kannst auch die Pfeiltasten Nach oben und Nach unten verwenden, oder den Griff fokussieren und Leertaste plus Pfeiltasten drücken.",
+    "dragHandleHint": "Pfeiltasten Hoch/Runter, oder Leertaste plus Pfeiltasten am fokussierten Griff.",
     "emptyTitle": "Dein Dashboard ist leer",
     "emptyDescription": "Erfasse den ersten Messwert oder Stimmungseintrag. Kacheln und Charts erscheinen automatisch, sobald Daten vorhanden sind.",
     "emptyAddMeasurement": "Ersten Messwert erfassen",

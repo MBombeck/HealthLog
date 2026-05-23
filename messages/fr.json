@@ -2005,8 +2005,8 @@
       "docs": "Documentation",
       "linksHeading": "Sources & docs",
       "newerAvailable": "Newer version: {tag}",
-      "tourReplay": "Replay the tour",
-      "tourReplayHint": "Watch the dashboard walkthrough — handy if you skipped it on first visit."
+      "tourReplay": "Revoir la visite",
+      "tourReplayHint": "Voir la visite guidée du tableau de bord — pratique si tu l'as sautée à la première visite."
     },
     "testConnection": {
       "test": "Test connection",

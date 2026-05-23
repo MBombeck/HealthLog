@@ -45,7 +45,7 @@ export function LayoutCoachFab() {
   // FAB returns null when the master OR the coach sub-flag is off.
   if (!flags.coach) return null;
   // v1.4.47 W3 — per-user opt-out beats the operator's "on" default.
-  // A privacy-leaning user who toggles "Hide Coach" in Settings → AI
+  // A privacy-leaning user who toggles "Hide Coach" in Settings → Insights
   // gets the FAB short-circuited here, identical to the global-off
   // branch above. The hook defaults to `false` in the absence of a
   // QueryClient (legacy SSR-only snapshot tests).

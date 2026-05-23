@@ -123,6 +123,20 @@ const coachMessageFeedbackBody = z
       "Per-message helpful/unhelpful feedback (v1.4.23 H7). Optional `reason` is free-form prose, capped at 200 chars.",
   });
 
+const disableCoachBody = z
+  .object({
+    disableCoach: z.boolean(),
+  })
+  .meta({
+    id: "DisableCoachRequest",
+    description:
+      "Per-account Coach opt-out toggle (v1.4.47 W3). `true` hides the Coach FAB and short-circuits its API gates.",
+  });
+
+const disableCoachData = z.object({
+  disableCoach: z.boolean(),
+});
+
 // ── Sub-schemas owned here (route-specific shapes) ───────────────────
 
 const passkeyLoginVerifyRequest = z
@@ -773,6 +787,50 @@ export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(coachPrefsSchema, "PutCoachPrefsResponse"),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/auth/me/disable-coach": {
+    get: {
+      tags: ["Auth"],
+      summary: "Read per-user Coach opt-out flag",
+      description:
+        "Returns the user's per-account Coach opt-out flag. Default `false` (Coach visible). Powers the Settings → Insights \"Hide Coach\" Switch and the layout FAB short-circuit.",
+      responses: {
+        "200": {
+          description: "Resolved flag.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(disableCoachData, "GetDisableCoachResponse"),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+    patch: {
+      tags: ["Auth"],
+      summary: "Toggle per-user Coach opt-out flag",
+      description:
+        "Flips the per-account Coach opt-out flag. Idempotent — the DB write fires even when the value matches so the audit-log row mirrors the API call. Rate-limit 60/min per user.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: disableCoachBody } },
+      },
+      responses: {
+        "200": {
+          description:
+            "Resolved next-state echoed back for optimistic-update consumers.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                disableCoachData,
+                "PatchDisableCoachResponse",
+              ),
             },
           },
         },
