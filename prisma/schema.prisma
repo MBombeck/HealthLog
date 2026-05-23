@@ -1409,7 +1409,7 @@ model IntegrationStatus {
   lastAttemptAt              DateTime? @map("last_attempt_at")
   lastError                  String?   @map("last_error") // AES-256-GCM encrypted (may contain token-fragment metadata)
   // v1.4.47 W1 — legacy single-column `consecutiveFailures` integer was
-  // dropped (migration 0076). The per-kind bucket below is now the
+  // dropped (migration 0077). The per-kind bucket below is now the
   // sole source of truth for the alert ladder.
   consecutiveFailuresByKind  Json?     @map("consecutive_failures_by_kind") // v1.4.43 W14 — { transient, reauth_required, persistent }
   persistentFailureStartedAt DateTime? @map("persistent_failure_started_at") // v1.4.43 W14 — start of the current persistent streak (drives >24h park)

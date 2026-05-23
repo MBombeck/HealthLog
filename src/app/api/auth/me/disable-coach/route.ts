@@ -9,7 +9,7 @@
  *
  * The toggle is reachable from Settings → Insights as a `<Switch>`
  * labelled "Hide Coach" / "Coach ausblenden". Default `false` (Coach
- * visible) — see migration `0076_v1447_user_disable_coach` for the
+ * visible) — see migration `0078_v1447_user_disable_coach` for the
  * column-level documentation.
  *
  * Idempotent. The endpoint always returns the resolved next-state

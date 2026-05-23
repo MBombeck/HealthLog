@@ -250,7 +250,7 @@ export async function recordSyncSuccess(
   // v1.4.43 W14 — a success resets ALL per-kind buckets back to zero
   // and clears the persistent-streak start timestamp.
   // v1.4.47 W1 — the legacy `consecutiveFailures` column was dropped
-  // (migration 0076), so the bucket reset is the only counter write.
+  // (migration 0077), so the bucket reset is the only counter write.
   await prisma.integrationStatus.upsert({
     where: { userId_integration: { userId, integration } },
     create: {
@@ -304,7 +304,7 @@ export interface RecordSyncFailureInput {
  * ONLY its own bucket; a transient hiccup followed by a persistent
  * failure no longer masks the persistent streak's true age.
  * v1.4.47 W1 — the legacy single-column `consecutiveFailures` integer
- * was dropped (migration 0076); the bucket is now the sole counter
+ * was dropped (migration 0077); the bucket is now the sole counter
  * and the back-fill branch is gone.
  */
 export async function recordSyncFailure(
@@ -448,7 +448,7 @@ export async function recordSyncFailure(
   // a row with a 3-deep persistent streak still pages even when the
   // transient bucket sat at 0.
   // v1.4.47 W1 — the legacy `consecutiveFailures` column was dropped
-  // (migration 0076); the bucket max is now the sole alert signal.
+  // (migration 0077); the bucket max is now the sole alert signal.
   const threshold = getPersistentFailureThreshold();
   const alertSignal = Math.max(...Object.values(buckets));
   if (alertSignal >= threshold) {
@@ -635,7 +635,7 @@ export async function markReauthRequired(
   message: string,
 ): Promise<void> {
   // v1.4.47 W1 — the legacy `consecutiveFailures` column was dropped
-  // (migration 0076). Out-of-band reauth detection (proactive token
+  // (migration 0077). Out-of-band reauth detection (proactive token
   // refresh) seeds the `reauth_required` bucket at 1 on a first-ever
   // row so subsequent reauth detections accumulate against the same
   // bucket the alert ladder reads.

@@ -98,7 +98,7 @@ describe("recordSyncSuccess", () => {
       // v1.4.43 W14 — success clears every per-kind bucket so the
       // next failure starts from zero in its own bucket.
       // v1.4.47 W1 — the legacy `consecutiveFailures` column was
-      // dropped (migration 0076); the bucket reset is the only
+      // dropped (migration 0077); the bucket reset is the only
       // counter write now.
       consecutiveFailuresByKind: {
         transient: 0,
@@ -482,7 +482,7 @@ describe("markReauthRequired / markDisconnected / markReconnected", () => {
       lastError: null,
       // v1.4.43 W14 — disconnect must clear the per-kind buckets too.
       // v1.4.47 W1 — legacy `consecutiveFailures` column dropped
-      // (migration 0076); the bucket reset is the only counter write.
+      // (migration 0077); the bucket reset is the only counter write.
       consecutiveFailuresByKind: {
         transient: 0,
         reauth_required: 0,
@@ -505,7 +505,7 @@ describe("markReauthRequired / markDisconnected / markReconnected", () => {
       // v1.4.43 W14 — reconnect clears the per-kind buckets so the
       // next sync starts on a clean slate.
       // v1.4.47 W1 — legacy `consecutiveFailures` column dropped
-      // (migration 0076); the bucket reset is the only counter write.
+      // (migration 0077); the bucket reset is the only counter write.
       consecutiveFailuresByKind: {
         transient: 0,
         reauth_required: 0,
@@ -687,7 +687,7 @@ describe("recordSyncFailure — v1.4.43 W14 per-kind buckets", () => {
 
   it("seeds a fresh zero envelope when the row has no bucket payload yet", async () => {
     // v1.4.47 W1 — the legacy `consecutiveFailures` column was dropped
-    // (migration 0076). A row that has never written a bucket payload
+    // (migration 0077). A row that has never written a bucket payload
     // (`consecutiveFailuresByKind: null`) starts from a zero envelope
     // on the next failure; the matching bucket ticks to 1 in a single
     // write.
@@ -725,9 +725,9 @@ describe("recordSyncFailure — v1.4.43 W14 per-kind buckets", () => {
   });
 });
 
-// ── v1.4.47 W1 — migration 0076 down-script reversibility ──────────────
+// ── v1.4.47 W1 — migration 0077 down-script reversibility ──────────────
 //
-// Migration 0076 drops `consecutive_failures` and documents a down-script
+// Migration 0077 drops `consecutive_failures` and documents a down-script
 // that restores the legacy column via
 //
 //   SET "consecutive_failures" = COALESCE(
@@ -818,7 +818,7 @@ describe("resumeIntegrationFromPark", () => {
       state: "connected",
       lastError: null,
       // v1.4.47 W1 — legacy `consecutiveFailures` column dropped
-      // (migration 0076); the bucket reset is the only counter write.
+      // (migration 0077); the bucket reset is the only counter write.
       consecutiveFailuresByKind: {
         transient: 0,
         reauth_required: 0,
