@@ -14,9 +14,9 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { setTourForceLaunch } from "@/components/onboarding/tour-launcher";
 import { useAuth } from "@/hooks/use-auth";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { restartOnboardingTour } from "@/lib/onboarding/tour-restart";
 import { queryKeys } from "@/lib/query-keys";
 
 interface VersionPayload {
@@ -148,53 +148,32 @@ export function AboutSection() {
   // sources/docs links. Settings → Account still has its own
   // "Restart onboarding tour" — both buttons share the same flow.
   const [replayingTour, setReplayingTour] = useState(false);
-  const [tourMessage, setTourMessage] = useState<string | null>(null);
-  const [tourMessageType, setTourMessageType] = useState<
-    "success" | "error" | null
-  >(null);
+  // v1.4.48 M6c — text + type collapsed into one discriminated state so
+  // the two values can never drift (a "success" message rendered in the
+  // destructive colour was the latent bug class).
+  const [tourFeedback, setTourFeedback] = useState<{
+    text: string;
+    type: "success" | "error";
+  } | null>(null);
 
   async function handleReplayTour() {
     setReplayingTour(true);
-    setTourMessage(null);
-    setTourMessageType(null);
-    try {
-      const res = await fetch("/api/onboarding/tour", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ completed: false }),
+    setTourFeedback(null);
+    // v1.4.48 M6b — both Settings → Account and Settings → About now
+    // delegate to the shared `restartOnboardingTour()` worker so the
+    // server flip + force-launch marker + window event live in one
+    // place. The helper returns a discriminated result; this surface
+    // only owns the translation + feedback rendering.
+    const result = await restartOnboardingTour(user?.id);
+    if (result.ok) {
+      setTourFeedback({
+        text: t("onboarding.tour.restartConfirmation"),
+        type: "success",
       });
-      if (!res.ok) {
-        setTourMessage(t("settings.savingError"));
-        setTourMessageType("error");
-        return;
-      }
-      // v1.4.47 W5 — drop a per-user force-launch marker into
-      // sessionStorage so the next dashboard mount opens the tour
-      // even when the 24 h auto-launch gate would otherwise suppress
-      // it (e.g. a first-day user who clicked "Replay the tour"
-      // from About 30 min after finishing the wizard). The marker is
-      // session-scoped — a page reload clears it — and consumed
-      // exactly once by the launcher on its next mount.
-      if (user?.id) setTourForceLaunch(user.id);
-      // Fire the same window event Settings → Account uses; a
-      // dashboard already mounted in another tab / background reopens
-      // the spotlight immediately. When the user lands on the
-      // dashboard next, the launcher reads the freshly-flipped
-      // `onboardingTourCompleted = false` from `/api/auth/me` and the
-      // force-launch marker set above; either path lands on the tour.
-      try {
-        window.dispatchEvent(new CustomEvent("healthlog:tour-restart"));
-      } catch {
-        /* ignore — only matters if a dashboard is already mounted */
-      }
-      setTourMessage(t("onboarding.tour.restartConfirmation"));
-      setTourMessageType("success");
-    } catch {
-      setTourMessage(t("common.networkError"));
-      setTourMessageType("error");
-    } finally {
-      setReplayingTour(false);
+    } else {
+      setTourFeedback({ text: t(result.messageKey), type: "error" });
     }
+    setReplayingTour(false);
   }
 
   // v1.4.36 W4f — the explicit "Check for updates" button is gone;
@@ -423,16 +402,16 @@ export function AboutSection() {
             {t("settings.about.tourReplay")}
           </Button>
         </div>
-        {tourMessage && (
+        {tourFeedback && (
           <p
             role="alert"
             className={`mt-2 text-xs ${
-              tourMessageType === "success"
+              tourFeedback.type === "success"
                 ? "text-dracula-green"
                 : "text-destructive"
             }`}
           >
-            {tourMessage}
+            {tourFeedback.text}
           </p>
         )}
       </div>

@@ -29,6 +29,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import {
@@ -52,6 +53,10 @@ import {
  * shape (`order: 0..n-1`) so the existing PUT contract stays untouched
  * and either input mode flushes via the same Save mutation. Exported so
  * the unit test can pin the contract without spinning up a DndContext.
+ *
+ * v1.4.48 M6a — also drives the arrow-button `move()` handler below;
+ * the previous in-file swap-and-renumber implementation was a second
+ * copy of the same logic.
  */
 export function reorderWidgets(
   widgets: readonly { id: string; order: number }[],
@@ -68,6 +73,26 @@ export function reorderWidgets(
   const [removed] = next.splice(fromIdx, 1);
   next.splice(toIdx, 0, removed);
   return next.map((w, i) => ({ ...w, order: i }));
+}
+
+/**
+ * v1.4.48 M6a — merge the `{ id, order }` shape returned by
+ * `reorderWidgets()` back into the full `DashboardWidgetConfig[]` so
+ * the section's draft state keeps every per-row flag (`visible`,
+ * `tileVisible`) while the order is rewritten. The arrow buttons and
+ * the @dnd-kit drag-end handler both flow through this helper so
+ * neither surface can silently drop a flag.
+ */
+function mergeReorderIntoLayout(
+  widgets: DashboardLayout["widgets"],
+  reordered: readonly { id: string; order: number }[],
+): DashboardLayout["widgets"] {
+  const byId = new Map(widgets.map((w) => [w.id, w]));
+  return reordered.map((r, i) => {
+    const original = byId.get(r.id as DashboardWidgetId);
+    if (!original) return { ...r, order: i } as never;
+    return { ...original, order: i };
+  });
 }
 
 const WIDGET_LABEL_KEYS: Record<DashboardWidgetId, string> = {
@@ -199,16 +224,25 @@ export function DashboardLayoutSection({ id }: { id: string }) {
     setDraft({ ...layout, comparisonBaseline: value });
   }
 
+  /**
+   * v1.4.48 M6a — the arrow buttons now delegate to `reorderWidgets()`
+   * so the swap-and-renumber logic lives in exactly one place. The
+   * neighbour id is derived from the sorted layout index + delta;
+   * out-of-bounds clicks (top row + ArrowUp, bottom row + ArrowDown)
+   * short-circuit before the helper sees them so the button disabled
+   * state stays the single source of truth for the boundary.
+   */
   function move(widgetId: DashboardWidgetId, delta: -1 | 1) {
     if (!layout) return;
     const sorted = [...layout.widgets].sort((a, b) => a.order - b.order);
     const idx = sorted.findIndex((w) => w.id === widgetId);
     const targetIdx = idx + delta;
     if (idx < 0 || targetIdx < 0 || targetIdx >= sorted.length) return;
-    [sorted[idx], sorted[targetIdx]] = [sorted[targetIdx], sorted[idx]];
+    const neighbourId = sorted[targetIdx].id;
+    const reordered = reorderWidgets(layout.widgets, widgetId, neighbourId);
     setDraft({
       ...layout,
-      widgets: sorted.map((w, i) => ({ ...w, order: i })),
+      widgets: mergeReorderIntoLayout(layout.widgets, reordered),
     });
   }
 
@@ -229,17 +263,9 @@ export function DashboardLayoutSection({ id }: { id: string }) {
       String(active.id),
       String(over.id),
     );
-    // `reorderWidgets` operates on the pure { id, order } shape; map back
-    // to the full DashboardWidgetConfig so `visible` / `tileVisible` are
-    // preserved on every row.
-    const byId = new Map(layout.widgets.map((w) => [w.id, w]));
     setDraft({
       ...layout,
-      widgets: reordered.map((r, i) => {
-        const original = byId.get(r.id as DashboardWidgetId);
-        if (!original) return { ...r, order: i } as never;
-        return { ...original, order: i };
-      }),
+      widgets: mergeReorderIntoLayout(layout.widgets, reordered),
     });
   }
 
@@ -410,10 +436,14 @@ export function DashboardLayoutSection({ id }: { id: string }) {
           {/* v1.4.47 W4 — single shared aria-describedby target for all
               drag handles. Screen readers read this once per focused
               handle; sighted users see it in the native browser tooltip
-              via the matching `title` attribute on each handle. */}
-          <p id={dragHintId} className="text-muted-foreground sr-only">
-            {t("dashboard.dragHandleHint")}
-          </p>
+              via the matching `title` attribute on each handle.
+              v1.4.48 L8 — gate on widget count so an empty layout never
+              orphans the paragraph (no handles to describe). */}
+          {layout.widgets.length > 0 && (
+            <p id={dragHintId} className="text-muted-foreground sr-only">
+              {t("dashboard.dragHandleHint")}
+            </p>
+          )}
         </div>
       )}
 
@@ -509,9 +539,15 @@ function SortableWidgetRow({
     isDragging,
   } = useSortable({ id: widget.id });
 
+  // v1.4.48 L7 — honour the OS `prefers-reduced-motion` preference. The
+  // rest of HealthLog pairs every transition with a `motion-reduce`
+  // companion; dnd-kit's default `transform 250ms ease` was the lone
+  // surface that ignored it. Short-circuit to `none` when reduced
+  // motion is requested so dragged rows snap to place instead of
+  // sliding through the list.
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: prefersReducedMotion() ? "none" : transition,
   };
 
   const tileChecked =

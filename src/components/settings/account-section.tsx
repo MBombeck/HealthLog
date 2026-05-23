@@ -39,11 +39,11 @@ import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { PasswordInput } from "@/components/ui/password-input";
-import { setTourForceLaunch } from "@/components/onboarding/tour-launcher";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDate } from "@/lib/format";
 import { locales, localeLabels, type Locale } from "@/lib/i18n/config";
 import { useTranslations } from "@/lib/i18n/context";
+import { restartOnboardingTour } from "@/lib/onboarding/tour-restart";
 import { describePasskeyError } from "@/lib/passkey-errors";
 import { queryKeys } from "@/lib/query-keys";
 import { TimezonePicker } from "@/components/settings/timezone-picker";
@@ -135,12 +135,15 @@ export function AccountSection() {
   // dispatches a `healthlog:tour-restart` window event so the dashboard's
   // <TourLauncher> picks it up immediately on the user's next nav. The
   // confirmation message goes through the same announce channel as
-  // every other settings save (status: "success" | "error" | null).
+  // every other settings save.
+  // v1.4.48 M6c — text + type collapsed into one discriminated state so
+  // the two values can never drift (same shape as `<AboutSection>`'s
+  // replay button so the surface stays mirrored).
   const [tourRestarting, setTourRestarting] = useState(false);
-  const [tourMsg, setTourMsg] = useState<string | null>(null);
-  const [tourMsgType, setTourMsgType] = useState<"success" | "error" | null>(
-    null,
-  );
+  const [tourFeedback, setTourFeedback] = useState<{
+    text: string;
+    type: "success" | "error";
+  } | null>(null);
 
   // Passkey registration state.
   const [passkeyLoading, setPasskeyLoading] = useState(false);
@@ -280,43 +283,25 @@ export function AccountSection() {
 
   async function handleRestartTour() {
     setTourRestarting(true);
-    setTourMsg(null);
-    setTourMsgType(null);
-    try {
-      const res = await fetch("/api/onboarding/tour", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ completed: false }),
-      });
-      if (!res.ok) {
-        setTourMsg(t("settings.savingError"));
-        setTourMsgType("error");
-        return;
-      }
-      // v1.4.47 W5 — drop a per-user force-launch marker in
-      // sessionStorage so the next dashboard mount launches the tour
-      // even when the new 24 h auto-launch gate would otherwise
-      // suppress it (e.g. user just finished the wizard 5 min ago).
-      // The launcher reads-and-clears the marker on mount.
-      if (user?.id) setTourForceLaunch(user.id);
-      // Refetch the auth payload so `<TourLauncher>` re-evaluates
-      // with the new flag, AND fire a window event so a launcher
-      // already mounted on the dashboard reopens immediately
-      // without waiting for a navigation.
+    setTourFeedback(null);
+    // v1.4.48 M6b — both Settings → Account and Settings → About now
+    // delegate to the shared `restartOnboardingTour()` worker so the
+    // server flip + force-launch marker + window event live in one
+    // place. Account additionally refetches the auth payload so the
+    // `onboardingTourCompleted` flag the launcher reads matches the
+    // server flip immediately — About has no auth handle to refetch
+    // and relies on the next navigation re-running `/api/auth/me`.
+    const result = await restartOnboardingTour(user?.id);
+    if (result.ok) {
       await refetch();
-      try {
-        window.dispatchEvent(new CustomEvent("healthlog:tour-restart"));
-      } catch {
-        /* ignore — only matters if the dashboard is already mounted */
-      }
-      setTourMsg(t("onboarding.tour.restartConfirmation"));
-      setTourMsgType("success");
-    } catch {
-      setTourMsg(t("common.networkError"));
-      setTourMsgType("error");
-    } finally {
-      setTourRestarting(false);
+      setTourFeedback({
+        text: t("onboarding.tour.restartConfirmation"),
+        type: "success",
+      });
+    } else {
+      setTourFeedback({ text: t(result.messageKey), type: "error" });
     }
+    setTourRestarting(false);
   }
 
   async function handleChangePassword(e: React.FormEvent) {
@@ -631,16 +616,16 @@ export function AccountSection() {
             {t("onboarding.tour.restart")}
           </Button>
         </div>
-        {tourMsg && (
+        {tourFeedback && (
           <p
             role="alert"
             className={`mt-2 text-xs ${
-              tourMsgType === "success"
+              tourFeedback.type === "success"
                 ? "text-dracula-green"
                 : "text-destructive"
             }`}
           >
-            {tourMsg}
+            {tourFeedback.text}
           </p>
         )}
       </div>
