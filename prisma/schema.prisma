@@ -223,6 +223,30 @@ model User {
   // payload when the toggle is off so the data never leaves the DB row.
   doctorReportPrefsJson Json? @map("doctor_report_prefs_json")
 
+  // v1.4.49 M-DOUBLE-REMINDER — per-user notification preferences blob.
+  //
+  // Opt-in suppression for redundant server-side pushes. Shape:
+  //   { "medication": { "clientManaged": boolean } }
+  //
+  // When `medication.clientManaged === true`, the reminder cron skips
+  // the APNs `MEDICATION_REMINDER` for this user — iOS v0.6.0.7+
+  // schedules local SpeziScheduler banners that cover the same dose.
+  // The iOS app flips the flag to true on first launch after it has
+  // confirmed (a) APNs permission = `.authorized`, (b) local Spezi
+  // reminders are actively scheduled, and (c) the binary is
+  // >= v0.6.0.7. Default `null` (resolved as `clientManaged: false`)
+  // so existing installs see zero regression — server reminders flow
+  // unchanged until the iOS client explicitly opts the user in.
+  //
+  // Only `MEDICATION_REMINDER` is gated by this flag; MOOD_REMINDER,
+  // PERSONAL_RECORD, SYSTEM_ALERT, and anomaly pushes flow unchanged.
+  //
+  // Persisted via `PATCH /api/auth/me/notification-prefs` with
+  // deep-merge semantics so future categories (e.g. mood,
+  // personal_records) slot in next to `medication` without
+  // overwriting siblings.
+  notificationPrefs Json? @map("notification_prefs")
+
   // v1.4.47 W3 — per-user Coach opt-out (privacy-leaning users).
   //
   // When `true`, every Coach mount point on the web client renders

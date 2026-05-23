@@ -1,0 +1,41 @@
+-- v1.4.49 M-DOUBLE-REMINDER — per-user notification preferences blob.
+--
+-- iOS v0.6.0.7 wires local SpeziScheduler banners for medication doses.
+-- Once the client has confirmed (a) APNs permission = `.authorized`,
+-- (b) Spezi reminders are actively scheduled, and (c) the binary is
+-- >= v0.6.0.7, it flips `notification_prefs.medication.clientManaged`
+-- to true via `PATCH /api/auth/me/notification-prefs`. The server-side
+-- MEDICATION_REMINDER cron then suppresses the redundant APNs push for
+-- that user so the dose only buzzes once.
+--
+-- Shape (additive — future categories slot in next to `medication`):
+--   {
+--     "medication": { "clientManaged": boolean }
+--   }
+--
+-- Default `NULL` (the column itself), which the application layer
+-- resolves to `{ medication: { clientManaged: false } }` so every
+-- existing user keeps the legacy server-side push until the iOS app
+-- explicitly opts them in. This preserves UX for clients that don't
+-- have working local reminders yet (e.g. the
+-- `healthlog-iOS#10` notification-permission-stuck-`notDetermined`
+-- scenario).
+--
+-- Idempotent guard (`IF NOT EXISTS`) matches the 0067 / 0070 / 0071 /
+-- 0075 / 0078 pattern so reruns are safe on prod where the migration
+-- has already been applied.
+--
+-- Reversibility: down migration is
+--   ALTER TABLE "users" DROP COLUMN IF EXISTS "notification_prefs";
+-- A roll-back loses opt-in state for every user that had flipped
+-- `clientManaged` (they fall back to server-side reminders) but the
+-- application reads tolerate a missing column / null row and default
+-- to `clientManaged: false`, so a partial deploy where the schema is
+-- rolled back ahead of the app code keeps working.
+
+-- No additional index — reads at cron time are per-user
+-- (`WHERE id = $1`), matching the convention set by
+-- `source_priority_json` and `doctor_report_prefs_json` on the same
+-- table (no GIN index on either).
+ALTER TABLE "users"
+    ADD COLUMN IF NOT EXISTS "notification_prefs" JSONB;

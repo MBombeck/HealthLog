@@ -110,6 +110,7 @@ import {
   getPhaseKeyboard,
 } from "@/lib/jobs/reminder-phases";
 import { runMoodReminderTick } from "@/lib/jobs/mood-reminder";
+import { isMedicationReminderClientManaged } from "@/lib/validations/notification-prefs";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { assertSubsystemEnabled } from "@/lib/process-type";
 import { runOffhostBackup } from "@/lib/jobs/offhost-backup";
@@ -459,6 +460,12 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
               // Used to localise the reminder title / message / keyboard
               // labels per user. Null falls back to the app default.
               locale: true,
+              // v1.4.49 M-DOUBLE-REMINDER — read the per-user prefs
+              // blob so the dispatch step can skip APNs sends for users
+              // whose iOS client has opted in to local SpeziScheduler
+              // reminders. Null = legacy default (clientManaged: false),
+              // i.e. the server reminder fires as before.
+              notificationPrefs: true,
             },
           },
         },
@@ -623,6 +630,42 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
 
           // Send notification if enabled
           if (med.notificationsEnabled) {
+            // v1.4.49 M-DOUBLE-REMINDER — opt-in client-managed
+            // suppression. When the iOS app has confirmed local
+            // SpeziScheduler banners cover the dose, the server-side
+            // APNs push is redundant. Skip the dispatch and emit a
+            // wide-event annotation so the operator can audit the
+            // skip path. ONLY suppresses MEDICATION_REMINDER — other
+            // notification kinds (MOOD_REMINDER, PERSONAL_RECORD,
+            // SYSTEM_ALERT, anomaly alerts) flow unchanged.
+            if (
+              isMedicationReminderClientManaged(med.user.notificationPrefs)
+            ) {
+              const [winH, winM] = schedule.windowStart.split(":").map(Number);
+              const doseAtIso = localHmAsUtc(
+                now,
+                med.user.timezone,
+                winH,
+                winM,
+              ).toISOString();
+              evt.addMeta(
+                "medication_reminder_suppressed_client_managed",
+                `${med.name}:${schedule.windowStart}-${schedule.windowEnd}`,
+              );
+              evt.addMeta(
+                "medication_reminder_suppressed_meta",
+                {
+                  user_id: med.user.id,
+                  medication_id: med.id,
+                  schedule_id: schedule.id,
+                  phase: currentPhase,
+                  dose_at: doseAtIso,
+                },
+              );
+              schedulesProcessed++;
+              continue;
+            }
+
             const { title, message } = getPhaseMessage(
               currentPhase,
               med.name,
