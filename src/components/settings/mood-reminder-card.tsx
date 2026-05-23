@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SmilePlus } from "lucide-react";
 
@@ -25,6 +25,37 @@ export function MoodReminderCard({
   const [msg, setMsg] = useState<string | null>(null);
   const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
 
+  // v1.4.49 — auto-clear the inline `<p role="status">` line 3 s after
+  // the mutation settles so a Settings card the user scrolled past
+  // minutes earlier doesn't keep echoing a stale "reminder enabled"
+  // banner. Mirrors the `<DisableCoachCard>` pattern landed in v1.4.48
+  // M2; the v1.4.48 docstring claimed this card already auto-cleared,
+  // this commit backfills the actual behaviour. The ref tracks the
+  // in-flight timer so we can clear it on unmount + on a follow-up
+  // toggle (otherwise a rapid double-tap could leave a stray timer
+  // pointing at a stale message).
+  const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (clearTimerRef.current !== null) {
+        clearTimeout(clearTimerRef.current);
+        clearTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  function scheduleClear() {
+    if (clearTimerRef.current !== null) {
+      clearTimeout(clearTimerRef.current);
+    }
+    clearTimerRef.current = setTimeout(() => {
+      clearTimerRef.current = null;
+      setMsg(null);
+      setMsgType(null);
+    }, 3000);
+  }
+
   const { data: profile } = useQuery({
     queryKey: queryKeys.userProfile(),
     queryFn: async () => {
@@ -42,6 +73,10 @@ export function MoodReminderCard({
     setSaving(true);
     setMsg(null);
     setMsgType(null);
+    if (clearTimerRef.current !== null) {
+      clearTimeout(clearTimerRef.current);
+      clearTimerRef.current = null;
+    }
 
     const res = await fetch("/api/user/profile", {
       method: "PATCH",
@@ -58,10 +93,12 @@ export function MoodReminderCard({
       setMsgType("success");
       await queryClient.invalidateQueries({ queryKey: queryKeys.userProfile() });
       setOptimistic(null);
+      scheduleClear();
     } else {
       setOptimistic(null);
       setMsg(t("notifications.moodReminder.saveError"));
       setMsgType("error");
+      scheduleClear();
     }
     setSaving(false);
   }

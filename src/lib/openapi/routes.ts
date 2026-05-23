@@ -123,19 +123,23 @@ const coachMessageFeedbackBody = z
       "Per-message helpful/unhelpful feedback (v1.4.23 H7). Optional `reason` is free-form prose, capped at 200 chars.",
   });
 
-const disableCoachBody = z
+// v1.4.49 — single schema for the per-user Coach opt-out flag. Previously
+// split into `disableCoachBody` (PATCH request) and `disableCoachData`
+// (response payload), both `z.object({ disableCoach: z.boolean() })`. The
+// payload was passed through `dataEnvelope(..., "GetDisableCoachResponse")`
+// / `dataEnvelope(..., "PatchDisableCoachResponse")` which IDs the
+// envelope wrapper — the inner flag carries its own `.meta()` and now
+// renders as a single `$ref: "#/components/schemas/DisableCoachFlag"` in
+// both the request body and both response envelopes.
+const disableCoachFlag = z
   .object({
     disableCoach: z.boolean(),
   })
   .meta({
-    id: "DisableCoachRequest",
+    id: "DisableCoachFlag",
     description:
       "Per-account Coach opt-out toggle (v1.4.47 W3). `true` hides the Coach FAB and short-circuits its API gates.",
   });
-
-const disableCoachData = z.object({
-  disableCoach: z.boolean(),
-});
 
 // ── Sub-schemas owned here (route-specific shapes) ───────────────────
 
@@ -867,7 +871,7 @@ export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "Resolved flag.",
           content: {
             "application/json": {
-              schema: dataEnvelope(disableCoachData, "GetDisableCoachResponse"),
+              schema: dataEnvelope(disableCoachFlag, "GetDisableCoachResponse"),
             },
           },
         },
@@ -881,7 +885,7 @@ export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "Flips the per-account Coach opt-out flag. Idempotent — the DB write fires even when the value matches so the audit-log row mirrors the API call. Rate-limit 60/min per user.",
       requestBody: {
         required: true,
-        content: { "application/json": { schema: disableCoachBody } },
+        content: { "application/json": { schema: disableCoachFlag } },
       },
       responses: {
         "200": {
@@ -890,7 +894,7 @@ export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(
-                disableCoachData,
+                disableCoachFlag,
                 "PatchDisableCoachResponse",
               ),
             },

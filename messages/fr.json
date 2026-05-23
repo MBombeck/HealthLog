@@ -2003,8 +2003,8 @@
       "repository": "Source code",
       "changelog": "Changelog",
       "docs": "Documentation",
-      "linksHeading": "Sources & docs",
-      "newerAvailable": "Newer version: {tag}",
+      "linksHeading": "Sources et documentation",
+      "newerAvailable": "Nouvelle version : {tag}",
       "tourReplay": "Revoir la visite",
       "tourReplayHint": "Voir la visite guidée du tableau de bord — pratique si tu l'as sautée à la première visite."
     },

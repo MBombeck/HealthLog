@@ -8,6 +8,7 @@
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
   apiSuccess,
+  buildPayloadDiagnostic,
   safeJson,
   returnAllZodIssues,
   sanitiseZodIssues,
@@ -149,24 +150,15 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     // the Zod rejection so a single wide-event line carries enough
     // detail to diagnose serialiser drift in `HealthLog-iOS`. We log
     // ONLY the top-level keys plus a hard 256-char JSON excerpt — never
-    // the full body — so PII / token-like fields cannot leak.
-    const receivedKeys =
-      body && typeof body === "object" && !Array.isArray(body)
-        ? Object.keys(body as Record<string, unknown>)
-        : [];
-    let excerpt: string;
-    try {
-      excerpt = JSON.stringify(body) ?? "";
-    } catch {
-      excerpt = "";
-    }
-    const receivedShapeExcerpt = excerpt.slice(0, 256);
+    // the full body — so PII / token-like fields cannot leak. The
+    // diagnostic shape is built by the shared `buildPayloadDiagnostic`
+    // helper (v1.4.49) so the widget + series routes can't drift.
+    const payloadDiagnostic = buildPayloadDiagnostic(body);
     annotate({
       action: { name: "dashboard.widgets.validation-failed" },
       meta: {
         issue_count: issues.length,
-        received_keys: receivedKeys,
-        received_shape_excerpt: receivedShapeExcerpt,
+        ...payloadDiagnostic,
         zod_issues: issues,
       },
     });

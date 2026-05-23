@@ -44,6 +44,48 @@ export function sanitiseZodIssues(
   }));
 }
 
+/**
+ * v1.4.49 — diagnostic shape echoed into a wide-event meta when an iOS
+ * (or any other) caller fails Zod validation on a JSON payload. Pairs
+ * with the per-route `annotate({ action, meta: { ...payloadDiagnostic,
+ * zod_issues, issue_count } })` call. Each field is bounded:
+ *
+ *   - `received_keys`: top-level keys only; never values
+ *   - `received_shape_excerpt`: hard 256-char `JSON.stringify` slice
+ *
+ * Defensive shape: caller passes the raw parsed body (object | array |
+ * primitive | undefined). Non-object input collapses to an empty key
+ * list and an empty excerpt — the helper never throws.
+ *
+ * A redaction layer (PII / token-shape removal) is expected to be
+ * applied as a follow-up composable step by a parallel
+ * `W-OBSERV-PII-V1449` audit; this helper builds the unredacted shape
+ * so the redactor can post-process via a second helper call. Keeping
+ * the two concerns separate lets the unit test for this helper stay
+ * stable while the redaction policy evolves.
+ */
+export interface PayloadDiagnostic {
+  received_keys: string[];
+  received_shape_excerpt: string;
+}
+
+export function buildPayloadDiagnostic(body: unknown): PayloadDiagnostic {
+  const received_keys =
+    body && typeof body === "object" && !Array.isArray(body)
+      ? Object.keys(body as Record<string, unknown>)
+      : [];
+  let excerpt: string;
+  try {
+    excerpt = JSON.stringify(body) ?? "";
+  } catch {
+    excerpt = "";
+  }
+  return {
+    received_keys,
+    received_shape_excerpt: excerpt.slice(0, 256),
+  };
+}
+
 type ErrorMeta = {
   errorCode?: string;
   headers?: Record<string, string>;

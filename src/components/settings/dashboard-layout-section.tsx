@@ -90,7 +90,24 @@ function mergeReorderIntoLayout(
   const byId = new Map(widgets.map((w) => [w.id, w]));
   return reordered.map((r, i) => {
     const original = byId.get(r.id as DashboardWidgetId);
-    if (!original) return { ...r, order: i } as never;
+    if (!original) {
+      // v1.4.49 — defence-in-depth dev warning for the orphan branch.
+      // Today this branch is statically unreachable: every id in
+      // `reordered` is sourced from `layout.widgets`, so `byId.get`
+      // always hits. The upcoming per-tile Suspense refactor will
+      // introduce dynamic widgets where this invariant could break;
+      // the warning fires in dev only so a regression surfaces in the
+      // console instead of silently dropping the row via the cast.
+      if (
+        typeof window !== "undefined" &&
+        process.env.NODE_ENV === "development"
+      ) {
+        console.warn(
+          `mergeReorderIntoLayout: orphan widget id "${r.id}" dropped`,
+        );
+      }
+      return { ...r, order: i } as never;
+    }
     return { ...original, order: i };
   });
 }

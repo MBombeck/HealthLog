@@ -2003,8 +2003,8 @@
       "repository": "Source code",
       "changelog": "Changelog",
       "docs": "Documentation",
-      "linksHeading": "Sources & docs",
-      "newerAvailable": "Newer version: {tag}",
+      "linksHeading": "Fuentes y documentación",
+      "newerAvailable": "Nueva versión: {tag}",
       "tourReplay": "Volver a ver el recorrido",
       "tourReplayHint": "Mira el recorrido del panel — útil si lo saltaste en la primera visita."
     },

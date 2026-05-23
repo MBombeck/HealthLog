@@ -14,6 +14,7 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
   apiSuccess,
+  buildPayloadDiagnostic,
   returnAllZodIssues,
   sanitiseZodIssues,
 } from "@/lib/api-response";
@@ -80,21 +81,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // the Zod rejection. Top-level keys + a hard 256-char JSON excerpt
     // only; never the full payload, so token-shaped query params (we
     // do not currently accept any but the truncation keeps that
-    // invariant cheap) cannot leak.
-    const receivedKeys = Object.keys(rawQuery);
-    let excerpt: string;
-    try {
-      excerpt = JSON.stringify(rawQuery) ?? "";
-    } catch {
-      excerpt = "";
-    }
-    const receivedShapeExcerpt = excerpt.slice(0, 256);
+    // invariant cheap) cannot leak. Shared helper via v1.4.49 so the
+    // widget + series routes can't drift on the diagnostic shape.
+    const payloadDiagnostic = buildPayloadDiagnostic(rawQuery);
     annotate({
       action: { name: "measurements.series.validation-failed" },
       meta: {
         issue_count: issues.length,
-        received_keys: receivedKeys,
-        received_shape_excerpt: receivedShapeExcerpt,
+        ...payloadDiagnostic,
         zod_issues: issues,
       },
     });

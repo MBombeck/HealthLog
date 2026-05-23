@@ -21,7 +21,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { annotate, getEvent } from "@/lib/logging/context";
 
-export interface IntegrationStatusNullProbeResult {
+interface IntegrationStatusNullProbeResult {
   count: number;
 }
 
