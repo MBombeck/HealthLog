@@ -16,6 +16,15 @@ vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@/lib/logging/context", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/logging/context")>();
+  return {
+    ...actual,
+    annotate: vi.fn(),
+  };
+});
+
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: () => null })),
   cookies: vi.fn(async () => ({
@@ -28,6 +37,7 @@ vi.mock("next/headers", () => ({
 import { GET } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+import { annotate } from "@/lib/logging/context";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -155,6 +165,50 @@ describe("GET /api/measurements/series — 422 multi-issue (v1.4.43 W6)", () => 
     };
     expect(call.data.userId).toBe("user-1");
     expect(call.data.action).toBe("measurements.series.validation-failed");
+  });
+
+  it("surfaces received_keys + received_shape_excerpt + zod_issues in the wide-event meta (v1.4.48 H-iOS-2)", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const res = await GET(req("kind=garbage&days=0&extraGarbage=fromIos"));
+    expect(res.status).toBe(422);
+
+    const annotated = vi.mocked(annotate).mock.calls.find(
+      (call) =>
+        (call[0] as { action?: { name?: string } })?.action?.name ===
+        "measurements.series.validation-failed",
+    );
+    expect(annotated, "validation-failed annotate call").toBeTruthy();
+    const meta = (annotated![0] as { meta?: Record<string, unknown> }).meta!;
+
+    expect(meta.received_keys).toEqual(
+      expect.arrayContaining(["kind", "days", "extraGarbage"]),
+    );
+    expect(typeof meta.received_shape_excerpt).toBe("string");
+    expect((meta.received_shape_excerpt as string).length).toBeLessThanOrEqual(
+      256,
+    );
+    expect(meta.received_shape_excerpt as string).toContain("\"kind\":\"garbage\"");
+
+    const issues = meta.zod_issues as Array<{ path: string; code: string }>;
+    expect(Array.isArray(issues)).toBe(true);
+    expect(issues.length).toBeGreaterThanOrEqual(2);
+    for (const issue of issues) {
+      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+    }
+  });
+
+  it("caps received_shape_excerpt at 256 chars even for a long iOS query", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const long = "x".repeat(500);
+    const res = await GET(req(`kind=garbage&days=0&junk=${long}`));
+    expect(res.status).toBe(422);
+    const annotated = vi.mocked(annotate).mock.calls.find(
+      (call) =>
+        (call[0] as { action?: { name?: string } })?.action?.name ===
+        "measurements.series.validation-failed",
+    );
+    const meta = (annotated![0] as { meta?: Record<string, unknown> }).meta!;
+    expect((meta.received_shape_excerpt as string).length).toBe(256);
   });
 
   it("does not block the 422 when the audit-row write rejects", async () => {

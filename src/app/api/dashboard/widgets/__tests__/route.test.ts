@@ -36,6 +36,15 @@ vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@/lib/logging/context", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/logging/context")>();
+  return {
+    ...actual,
+    annotate: vi.fn(),
+  };
+});
+
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: () => null })),
   cookies: vi.fn(async () => ({
@@ -48,6 +57,7 @@ vi.mock("next/headers", () => ({
 import { PUT, __resetAuditDedupMemoForTests } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+import { annotate } from "@/lib/logging/context";
 import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
 
 const SESSION_OK = {
@@ -163,6 +173,58 @@ describe("PUT /api/dashboard/widgets — 422 multi-issue envelope (v1.4.42 W2)",
       details: { issues: Array<unknown> };
     };
     expect(body2.details.issues.length).toBe(2);
+  });
+
+  it("surfaces received_keys + received_shape_excerpt + zod_issues in the wide-event meta (v1.4.48 H-iOS-1)", async () => {
+    const payload = { version: 2, widgets: [], extraGarbage: "from-ios" };
+    const res = await callPut(makeReq(payload));
+    expect(res.status).toBe(422);
+
+    const annotated = vi.mocked(annotate).mock.calls.find(
+      (call) =>
+        (call[0] as { action?: { name?: string } })?.action?.name ===
+        "dashboard.widgets.validation-failed",
+    );
+    expect(annotated, "validation-failed annotate call").toBeTruthy();
+    const meta = (annotated![0] as { meta?: Record<string, unknown> }).meta!;
+
+    // Top-level keys mirror the iOS-sent payload (NOT the schema keys).
+    expect(meta.received_keys).toEqual(
+      expect.arrayContaining(["version", "widgets", "extraGarbage"]),
+    );
+
+    // Excerpt is a JSON-stringified prefix, hard-capped at 256 chars.
+    expect(typeof meta.received_shape_excerpt).toBe("string");
+    expect((meta.received_shape_excerpt as string).length).toBeLessThanOrEqual(
+      256,
+    );
+    expect(meta.received_shape_excerpt as string).toContain("\"version\":2");
+
+    // zod_issues is the same sanitised array surfaced under details.issues.
+    const issues = meta.zod_issues as Array<{ path: string; code: string }>;
+    expect(Array.isArray(issues)).toBe(true);
+    expect(issues.length).toBeGreaterThanOrEqual(2);
+    for (const issue of issues) {
+      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+    }
+  });
+
+  it("caps received_shape_excerpt at 256 chars even for a large iOS payload", async () => {
+    const widgets = Array.from({ length: 30 }, (_, i) => ({
+      id: `widget-${i}-${"x".repeat(20)}`,
+      visible: true,
+      order: i,
+    }));
+    const res = await callPut(makeReq({ version: 99, widgets }));
+    expect(res.status).toBe(422);
+
+    const annotated = vi.mocked(annotate).mock.calls.find(
+      (call) =>
+        (call[0] as { action?: { name?: string } })?.action?.name ===
+        "dashboard.widgets.validation-failed",
+    );
+    const meta = (annotated![0] as { meta?: Record<string, unknown> }).meta!;
+    expect((meta.received_shape_excerpt as string).length).toBe(256);
   });
 
   it("does not block the 422 response when the audit-row write rejects", async () => {

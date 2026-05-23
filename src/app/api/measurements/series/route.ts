@@ -70,16 +70,33 @@ function stdDev(values: number[]): number {
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
 
-  const parsed = querySchema.safeParse(
-    Object.fromEntries(request.nextUrl.searchParams),
-  );
+  const rawQuery = Object.fromEntries(request.nextUrl.searchParams);
+  const parsed = querySchema.safeParse(rawQuery);
   if (!parsed.success) {
     // v1.4.43 W6 — iOS chart loader hot path; multi-issue 422 +
     // audit breadcrumb keyed `measurements.series.validation-failed`.
     const issues = sanitiseZodIssues(parsed.error.issues);
+    // v1.4.48 H-iOS-2 — surface the iOS-sent query shape alongside
+    // the Zod rejection. Top-level keys + a hard 256-char JSON excerpt
+    // only; never the full payload, so token-shaped query params (we
+    // do not currently accept any but the truncation keeps that
+    // invariant cheap) cannot leak.
+    const receivedKeys = Object.keys(rawQuery);
+    let excerpt: string;
+    try {
+      excerpt = JSON.stringify(rawQuery) ?? "";
+    } catch {
+      excerpt = "";
+    }
+    const receivedShapeExcerpt = excerpt.slice(0, 256);
     annotate({
       action: { name: "measurements.series.validation-failed" },
-      meta: { issue_count: issues.length },
+      meta: {
+        issue_count: issues.length,
+        received_keys: receivedKeys,
+        received_shape_excerpt: receivedShapeExcerpt,
+        zod_issues: issues,
+      },
     });
     prisma.auditLog
       .create({
