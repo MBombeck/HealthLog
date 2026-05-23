@@ -8,6 +8,7 @@ import { classifyTelegramError } from "@/lib/notifications/retry-policy";
 import { prisma } from "@/lib/db";
 import type { ReminderPhase } from "@/generated/prisma/client";
 import { getEvent } from "@/lib/logging/context";
+import { recordPushAttempt } from "@/lib/notifications/senders/push-attempt-record";
 
 /**
  * Telegram sender result. Inherits from `SendOutcome` so the dispatcher
@@ -154,9 +155,22 @@ export async function sendViaTelegram(
   }
 
   if (result.ok) {
+    recordPushAttempt({
+      userId: payload.userId,
+      channel: "TELEGRAM",
+      eventType: payload.eventType,
+      result: "ok",
+    });
     return { ok: true, messageId: result.messageId };
   }
   const classified = classifyTelegramError(result.errorDescription);
+  recordPushAttempt({
+    userId: payload.userId,
+    channel: "TELEGRAM",
+    eventType: payload.eventType,
+    result: "error",
+    reason: classified.reason,
+  });
   return {
     ok: false,
     hardReject: classified.hardReject,

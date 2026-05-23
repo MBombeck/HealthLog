@@ -25,12 +25,15 @@ export const dynamic = "force-dynamic";
  *                                       the channel-specific config
  *                                       blob is present.
  *     recentPushAttempts: PushAttempt[] — last 20 push deliveries for
- *                                         the calling user. See
- *                                         comment below — HealthLog
- *                                         does not currently persist
- *                                         per-attempt push history, so
- *                                         this is `[]` until a
- *                                         dedicated table is added.
+ *                                         the calling user, ordered by
+ *                                         recency. Backed by the
+ *                                         `push_attempts` table — every
+ *                                         sender (APNS, WEB_PUSH,
+ *                                         TELEGRAM, NTFY) writes one
+ *                                         fire-and-forget row per
+ *                                         dispatch. v1.4.49 closed the
+ *                                         empty-array stub by adding
+ *                                         the table + the write path.
  *   }
  *
  * Security: admin-only (cookie auth, never Bearer). The route never
@@ -141,7 +144,7 @@ export const GET = apiHandler(async () => {
   const { user } = await requireAdmin();
   annotate({ action: { name: "admin.notifications.diagnostic" } });
 
-  const [devices, channels] = await Promise.all([
+  const [devices, channels, pushAttempts] = await Promise.all([
     prisma.device.findMany({
       where: { userId: user.id },
       select: {
@@ -156,6 +159,22 @@ export const GET = apiHandler(async () => {
     prisma.notificationChannel.findMany({
       where: { userId: user.id },
       select: { type: true, enabled: true, config: true },
+    }),
+    // v1.4.49 — trailing 20 push attempts for the calling admin's own
+    // account. The `(user_id, created_at DESC)` index on `push_attempts`
+    // turns the orderBy + take into a single index scan, so the cost is
+    // bounded regardless of the user's lifetime push volume.
+    prisma.pushAttempt.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: {
+        eventType: true,
+        channel: true,
+        result: true,
+        reason: true,
+        createdAt: true,
+      },
     }),
   ]);
 
@@ -178,14 +197,17 @@ export const GET = apiHandler(async () => {
     configPresent: isChannelConfigPresent(c.type, c.config),
   }));
 
-  // HealthLog does not currently persist per-attempt push delivery
-  // history (no `PushAttempt` / equivalent table — Wide Events emit to
-  // stdout via `emitIfSampled` and audit-log captures only
-  // channel-state transitions, not individual sends). Surfacing the
-  // last 20 attempts is a known v1.4.48+ follow-up; until then this
-  // field is intentionally an empty array so the response shape stays
-  // stable for iOS-side consumers.
-  const recentPushAttempts: DiagnosticPushAttempt[] = [];
+  // v1.4.49 — backed by the `push_attempts` table. Map `createdAt`
+  // → `at` ISO string so the response shape matches the
+  // `DiagnosticPushAttempt` interface above (the existing consumer
+  // contract uses `at`, not `createdAt`).
+  const recentPushAttempts: DiagnosticPushAttempt[] = pushAttempts.map((a) => ({
+    eventType: a.eventType,
+    channel: a.channel,
+    result: a.result,
+    reason: a.reason,
+    at: a.createdAt.toISOString(),
+  }));
 
   const payload: DiagnosticPayload = {
     devices: diagnosticDevices,

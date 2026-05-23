@@ -29,6 +29,7 @@ import apn from "@parse/node-apn";
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
 import type { SendOutcome } from "@/lib/notifications/retry-policy";
+import { recordPushAttempt } from "@/lib/notifications/senders/push-attempt-record";
 
 export interface ApnsPayload {
   /** APNs `aps.alert.title` + `aps.alert.body`. */
@@ -526,6 +527,13 @@ export async function sendViaApns(
 ): Promise<SendOutcome> {
   const config = loadApnsConfig();
   if (!config) {
+    recordPushAttempt({
+      userId,
+      channel: "APNS",
+      eventType: payload.eventType,
+      result: "skipped",
+      reason: "apns_not_configured",
+    });
     return {
       ok: false,
       hardReject: false,
@@ -548,6 +556,13 @@ export async function sendViaApns(
   if (devices.length === 0) {
     // Same rationale as web-push: a user who hasn't paired an iPhone yet
     // shouldn't see the channel auto-disabled. Treat as soft "no recipient".
+    recordPushAttempt({
+      userId,
+      channel: "APNS",
+      eventType: payload.eventType,
+      result: "skipped",
+      reason: "apns_no_devices",
+    });
     return {
       ok: false,
       hardReject: false,
@@ -667,25 +682,47 @@ export async function sendViaApns(
   }
 
   if (anySuccess) {
+    recordPushAttempt({
+      userId,
+      channel: "APNS",
+      eventType: payload.eventType,
+      result: "ok",
+    });
     return { ok: true };
   }
 
   // Every surviving device returned a permanent reason → channel is dead
   // until the user re-registers from a fresh iOS install.
   if (deadDeviceIds.length === devices.length) {
+    const reason = lastFailureReason ?? "apns_all_devices_unregistered";
+    recordPushAttempt({
+      userId,
+      channel: "APNS",
+      eventType: payload.eventType,
+      result: "error",
+      reason,
+    });
     return {
       ok: false,
       hardReject: true,
       statusCode: lastFailureStatus,
-      reason: lastFailureReason ?? "apns_all_devices_unregistered",
+      reason,
     };
   }
 
+  const reason = lastFailureReason ?? "apns_send_failed";
+  recordPushAttempt({
+    userId,
+    channel: "APNS",
+    eventType: payload.eventType,
+    result: "error",
+    reason,
+  });
   return {
     ok: false,
     hardReject: false,
     statusCode: lastFailureStatus,
-    reason: lastFailureReason ?? "apns_send_failed",
+    reason,
   };
 }
 

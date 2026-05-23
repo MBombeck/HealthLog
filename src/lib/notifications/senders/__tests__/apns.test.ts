@@ -57,6 +57,13 @@ vi.mock("@/lib/db", () => ({
       deleteMany: vi.fn(),
       update: vi.fn().mockResolvedValue({}),
     },
+    // v1.4.49 — sendViaApns now writes a fire-and-forget row to
+    // push_attempts on every exit path. The mock returns a resolved
+    // promise so the swallowed-error helper has nothing to swallow,
+    // keeping these legacy tests focused on the dispatcher contract.
+    pushAttempt: {
+      create: vi.fn().mockResolvedValue({}),
+    },
   },
 }));
 

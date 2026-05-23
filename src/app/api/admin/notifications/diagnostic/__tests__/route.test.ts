@@ -25,6 +25,12 @@ vi.mock("@/lib/db", () => ({
     notificationChannel: {
       findMany: vi.fn(),
     },
+    // v1.4.49 — backing query for `recentPushAttempts`. The route
+    // pulls the trailing 20 rows ordered by `createdAt` DESC and maps
+    // the `createdAt` Date to an `at` ISO string for the response.
+    pushAttempt: {
+      findMany: vi.fn(),
+    },
   },
 }));
 
@@ -106,6 +112,7 @@ beforeEach(() => {
   vi.mocked(prisma.notificationChannel.findMany).mockResolvedValue(
     [] as never,
   );
+  vi.mocked(prisma.pushAttempt.findMany).mockResolvedValue([] as never);
 });
 
 describe("GET /api/admin/notifications/diagnostic — auth gates", () => {
@@ -319,13 +326,73 @@ describe("GET /api/admin/notifications/diagnostic — channel configPresent", ()
   });
 });
 
-describe("GET /api/admin/notifications/diagnostic — recentPushAttempts placeholder", () => {
-  it("returns recentPushAttempts as an empty array (no per-attempt push history table yet)", async () => {
+describe("GET /api/admin/notifications/diagnostic — recentPushAttempts", () => {
+  it("returns recentPushAttempts as an empty array when the user has no rows", async () => {
     vi.mocked(requireAdmin).mockResolvedValue(ADMIN_CTX);
 
     const res = await GET();
     const body = (await res.json()) as DiagnosticEnvelope;
 
     expect(body.data.recentPushAttempts).toEqual([]);
+  });
+
+  it("maps push_attempts rows to the documented response shape (createdAt → at ISO string)", async () => {
+    vi.mocked(requireAdmin).mockResolvedValue(ADMIN_CTX);
+    // The route's findMany select returns `createdAt` as a Date; the
+    // mapping step normalises to an ISO string under `at`.
+    vi.mocked(prisma.pushAttempt.findMany).mockResolvedValue([
+      {
+        eventType: "MEDICATION_REMINDER",
+        channel: "APNS",
+        result: "ok",
+        reason: null,
+        createdAt: new Date("2026-05-22T09:00:00.000Z"),
+      },
+      {
+        eventType: "MOOD_REMINDER",
+        channel: "TELEGRAM",
+        result: "error",
+        reason: "telegram_blocked_by_user",
+        createdAt: new Date("2026-05-22T08:30:00.000Z"),
+      },
+    ] as never);
+
+    const res = await GET();
+    const body = (await res.json()) as DiagnosticEnvelope;
+
+    expect(res.status).toBe(200);
+    expect(body.data.recentPushAttempts).toEqual([
+      {
+        eventType: "MEDICATION_REMINDER",
+        channel: "APNS",
+        result: "ok",
+        reason: null,
+        at: "2026-05-22T09:00:00.000Z",
+      },
+      {
+        eventType: "MOOD_REMINDER",
+        channel: "TELEGRAM",
+        result: "error",
+        reason: "telegram_blocked_by_user",
+        at: "2026-05-22T08:30:00.000Z",
+      },
+    ]);
+  });
+
+  it("scopes the push-attempt query to the calling admin's userId, ordered desc by recency, capped at 20", async () => {
+    vi.mocked(requireAdmin).mockResolvedValue(ADMIN_CTX);
+    vi.mocked(prisma.pushAttempt.findMany).mockResolvedValue([] as never);
+
+    await GET();
+
+    expect(vi.mocked(prisma.pushAttempt.findMany)).toHaveBeenCalledTimes(1);
+    const args = vi.mocked(prisma.pushAttempt.findMany).mock.calls[0]?.[0] as {
+      where: { userId: string };
+      orderBy: { createdAt: "desc" };
+      take: number;
+    };
+    expect(args.where.userId).toBe(ADMIN_USER_ID);
+    expect(args.orderBy).toEqual({ createdAt: "desc" });
+    expect(args.take).toBe(20);
   });
 });

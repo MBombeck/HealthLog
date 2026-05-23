@@ -233,6 +233,15 @@ const MOOD_REMINDER_CRON = "*/15 * * * *";
 const MOOD_REMINDER_CLEANUP_QUEUE = "mood-reminder-cleanup";
 const MOOD_REMINDER_CLEANUP_CRON = "25 3 * * *";
 const MOOD_REMINDER_RETENTION_DAYS = 90;
+// v1.4.49 — daily prune for the push-attempt ledger. Same 90-day
+// retention as the mood-reminder dispatch ledger; both surfaces are
+// behavioural footprints we keep long enough to debug a duplicate-push
+// report (~one billing cycle) but no longer. Slots at 03:35 between
+// mood-reminder cleanup (03:25) and drain-cumulative (03:45) so the
+// 03:xx maintenance window stays ordered.
+const PUSH_ATTEMPT_CLEANUP_QUEUE = "push-attempt-cleanup";
+const PUSH_ATTEMPT_CLEANUP_CRON = "35 3 * * *";
+const PUSH_ATTEMPT_RETENTION_DAYS = 90;
 // v1.4.38 — the per-sample cutoff hours constant now lives on the
 // helper module so the worker, the admin route, and the CLI all read
 // the same source of truth. Re-export pulled in alongside
@@ -1191,6 +1200,45 @@ async function handleMoodReminderCleanup(
   });
 }
 
+/**
+ * v1.4.49 — daily prune for the per-attempt push-delivery ledger.
+ *
+ * Every sender (APNS, WEB_PUSH, TELEGRAM, NTFY) writes one
+ * fire-and-forget row to `push_attempts` per dispatch. The admin
+ * diagnostic endpoint only ever reads the trailing 20 rows per user,
+ * so anything older than the 90-day retention window is dead weight
+ * inflating the table and the `(user_id, created_at DESC)` index.
+ *
+ * The DELETE is unbounded by user — the index covers `created_at`
+ * directly, so a `WHERE created_at < cutoff` scan is bounded by the
+ * size of the trailing-edge of the table rather than the live working
+ * set. On a one-million-row table with the documented retention
+ * window, the daily prune touches ~11k rows (1M / 90d × 1d) and
+ * completes in milliseconds.
+ */
+interface PushAttemptCleanupPayload {
+  triggeredAt: string;
+}
+
+async function handlePushAttemptCleanup(
+  jobs: Job<PushAttemptCleanupPayload>[],
+) {
+  void jobs;
+  await withBackgroundEvent("job.push_attempt_cleanup", async (evt) => {
+    const p = getWorkerPrisma();
+    try {
+      const cutoff = new Date();
+      cutoff.setUTCDate(cutoff.getUTCDate() - PUSH_ATTEMPT_RETENTION_DAYS);
+      const deleted = await p.pushAttempt.deleteMany({
+        where: { createdAt: { lt: cutoff } },
+      });
+      evt.addMeta("push_attempt_cleanup_deleted", deleted.count);
+    } catch (err) {
+      evt.addWarning(`push-attempt-cleanup failed: ${err}`);
+    }
+  });
+}
+
 async function handleMoodReminderCheck(jobs: Job<MoodReminderPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.mood_reminder", async (evt) => {
@@ -1747,6 +1795,10 @@ export async function startReminderWorker() {
     // dispatcher never fires.
     MOOD_REMINDER_QUEUE,
     MOOD_REMINDER_CLEANUP_QUEUE,
+    // v1.4.49 — push-attempt ledger cleanup. Same createQueue contract
+    // as the other cleanup jobs; the daily schedule below would
+    // silently no-op without this entry.
+    PUSH_ATTEMPT_CLEANUP_QUEUE,
   ];
 
   for (const q of allQueues) {
@@ -1829,6 +1881,8 @@ export async function startReminderWorker() {
     // per tick for the entire opted-in cohort.
     [MOOD_REMINDER_QUEUE, MOOD_REMINDER_CRON],
     [MOOD_REMINDER_CLEANUP_QUEUE, MOOD_REMINDER_CLEANUP_CRON],
+    // v1.4.49 — daily 03:35 Europe/Berlin prune for push_attempts.
+    [PUSH_ATTEMPT_CLEANUP_QUEUE, PUSH_ATTEMPT_CLEANUP_CRON],
   ];
 
   for (const [name, cron] of schedules) {
@@ -1949,6 +2003,15 @@ export async function startReminderWorker() {
     MOOD_REMINDER_CLEANUP_QUEUE,
     { localConcurrency: 1 },
     handleMoodReminderCleanup,
+  );
+  // v1.4.49 — daily prune of the push-attempt ledger. Single-flight
+  // matches every other cleanup queue; two ticks racing on the same
+  // DELETE statement is wasted work and the second tick's payload
+  // would be a no-op anyway.
+  await boss.work<PushAttemptCleanupPayload>(
+    PUSH_ATTEMPT_CLEANUP_QUEUE,
+    { localConcurrency: 1 },
+    handlePushAttemptCleanup,
   );
   await boss.work<PrDetectionPayload>(
     PR_DETECTION_QUEUE,

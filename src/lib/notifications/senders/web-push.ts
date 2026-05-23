@@ -5,6 +5,7 @@ import type { SendOutcome } from "@/lib/notifications/retry-policy";
 import { classifyHttpStatus } from "@/lib/notifications/retry-policy";
 import { getVapidConfig } from "@/lib/notifications/vapid-config";
 import { getEvent } from "@/lib/logging/context";
+import { recordPushAttempt } from "@/lib/notifications/senders/push-attempt-record";
 
 /**
  * Send Web Push notification to all subscribed devices of a user.
@@ -32,6 +33,13 @@ export async function sendViaWebPush(
     const config = await getVapidConfig();
     if (!config) {
       getEvent()?.addWarning("Web Push: VAPID keys not configured");
+      recordPushAttempt({
+        userId,
+        channel: "WEB_PUSH",
+        eventType: payload.eventType,
+        result: "skipped",
+        reason: "web_push_vapid_not_configured",
+      });
       return {
         ok: false,
         hardReject: false,
@@ -54,6 +62,13 @@ export async function sendViaWebPush(
       // may simply not have hit "Subscribe" on this browser. Counting
       // this as a give-up signal would lock the user out of the channel
       // they just configured. Treat it as a soft "no recipient" instead.
+      recordPushAttempt({
+        userId,
+        channel: "WEB_PUSH",
+        eventType: payload.eventType,
+        result: "skipped",
+        reason: "web_push_no_subscriptions",
+      });
       return {
         ok: false,
         hardReject: false,
@@ -119,12 +134,25 @@ export async function sendViaWebPush(
     }
 
     if (anySuccess) {
+      recordPushAttempt({
+        userId,
+        channel: "WEB_PUSH",
+        eventType: payload.eventType,
+        result: "ok",
+      });
       return { ok: true };
     }
 
     // Every sub returned a permanent 410/404 → channel is dead until
     // the user re-pairs a device. This is a hard reject.
     if (allPermanentReject && expiredIds.length === subscriptions.length) {
+      recordPushAttempt({
+        userId,
+        channel: "WEB_PUSH",
+        eventType: payload.eventType,
+        result: "error",
+        reason: "web_push_410_gone",
+      });
       return {
         ok: false,
         hardReject: true,
@@ -135,6 +163,13 @@ export async function sendViaWebPush(
 
     // Soft failure (5xx / 429 / fetch error) on at least one sub.
     const classified = classifyHttpStatus(lastTransientStatus, "web-push");
+    recordPushAttempt({
+      userId,
+      channel: "WEB_PUSH",
+      eventType: payload.eventType,
+      result: "error",
+      reason: classified.reason,
+    });
     return {
       ok: false,
       hardReject: false,
@@ -147,6 +182,13 @@ export async function sendViaWebPush(
         ? err
         : new Error("[web-push] sendViaWebPush failed"),
     );
+    recordPushAttempt({
+      userId,
+      channel: "WEB_PUSH",
+      eventType: payload.eventType,
+      result: "error",
+      reason: "web_push_unexpected_error",
+    });
     return {
       ok: false,
       hardReject: false,

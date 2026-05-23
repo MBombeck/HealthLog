@@ -326,6 +326,13 @@ model User {
   // burden. Append-only — a user revoking + re-granting consent mints
   // a fresh row so the timeline reads chronologically.
   consentReceipts             ConsentReceipt[]
+  // v1.4.49 — per-attempt push-delivery ledger. Every sender (APNS,
+  // WEB_PUSH, TELEGRAM, NTFY) writes one fire-and-forget row per
+  // dispatch so the admin diagnostic endpoint can return the trailing
+  // 20 attempts ordered by recency. Daily prune at 03:35 Europe/Berlin
+  // retires rows older than 90 days (see `handlePushAttemptCleanup` in
+  // `reminder-worker.ts`).
+  pushAttempts                PushAttempt[]
 
   @@map("users")
 }
@@ -2022,4 +2029,52 @@ model ConsentReceipt {
 
   @@index([userId, createdAt(sort: Desc)])
   @@map("consent_receipts")
+}
+
+// ─── Push attempt ledger (v1.4.49) ───────────────────────────
+//
+// Per-attempt push-delivery history. Every sender on the dispatcher
+// cascade (APNS, WEB_PUSH, TELEGRAM, NTFY) writes one fire-and-forget
+// row per dispatch so the admin diagnostic endpoint can surface the
+// trailing 20 attempts per user without needing DB shell access.
+//
+// The write is best-effort: a DB hiccup on the insert must not break
+// the actual push delivery, so every sender wraps the `create()` in a
+// `void … .catch(() => {})` block. There is no retry — a single
+// missing row is acceptable.
+//
+// Retention: a daily cron at 03:35 Europe/Berlin (between the
+// audit-log cleanup at 03:15 and the mood-reminder cleanup at 03:25)
+// deletes rows older than 90 days. See `handlePushAttemptCleanup` in
+// `src/lib/jobs/reminder-worker.ts`.
+//
+// `eventType` mirrors the dispatcher's `NotificationPayload.eventType`
+// string (`MEDICATION_REMINDER`, `MOOD_REMINDER`, `PERSONAL_RECORD`,
+// `MEASUREMENT_ANOMALY`, `SYSTEM_ALERT`, …); stored as plain text so
+// future event-type additions never require a schema migration.
+//
+// `channel` is the dispatcher `ChannelType` string (`APNS`,
+// `WEB_PUSH`, `TELEGRAM`, `NTFY`).
+//
+// `result` is one of `"ok"` | `"error"` | `"skipped"` — `skipped`
+// covers the "no recipient" / "config missing" soft cases.
+//
+// `reason` is the failure reason on `error` or `skipped` results, and
+// null on `ok`. For APNS this is Apple's reason code
+// (`BadDeviceToken`, `Unregistered`, …); for Web Push it carries the
+// classified `web_push_*` reason; Telegram / NTFY likewise mirror
+// their sender-side `SendOutcome.reason`.
+model PushAttempt {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  channel   String // "APNS" | "WEB_PUSH" | "TELEGRAM" | "NTFY"
+  eventType String   @map("event_type") // dispatcher event-type string
+  result    String // "ok" | "error" | "skipped"
+  reason    String? // sender-side reason on error/skip; null on ok
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("push_attempts")
 }

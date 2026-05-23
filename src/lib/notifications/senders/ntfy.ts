@@ -5,6 +5,7 @@ import type {
 import type { SendOutcome } from "@/lib/notifications/retry-policy";
 import { classifyHttpStatus } from "@/lib/notifications/retry-policy";
 import { getEvent } from "@/lib/logging/context";
+import { recordPushAttempt } from "@/lib/notifications/senders/push-attempt-record";
 
 /**
  * Send notification via ntfy (simple HTTP POST).
@@ -52,9 +53,22 @@ export async function sendViaNtfy(
     });
 
     if (res.ok) {
+      recordPushAttempt({
+        userId: payload.userId,
+        channel: "NTFY",
+        eventType: payload.eventType,
+        result: "ok",
+      });
       return { ok: true, statusCode: res.status };
     }
     const classified = classifyHttpStatus(res.status, "ntfy");
+    recordPushAttempt({
+      userId: payload.userId,
+      channel: "NTFY",
+      eventType: payload.eventType,
+      result: "error",
+      reason: classified.reason,
+    });
     return {
       ok: false,
       statusCode: res.status,
@@ -68,6 +82,13 @@ export async function sendViaNtfy(
       method: "sendNotification",
       duration_ms: Math.round(performance.now() - start),
       error: message,
+    });
+    recordPushAttempt({
+      userId: payload.userId,
+      channel: "NTFY",
+      eventType: payload.eventType,
+      result: "error",
+      reason: "ntfy_network_error",
     });
     return {
       ok: false,
