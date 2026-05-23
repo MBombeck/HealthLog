@@ -71,7 +71,7 @@ import { readBestGranularityRollups } from "@/lib/rollups/measurement-read-wmy";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * v1.4.48 M0 — all-time aggregate row used on the cold-mount fallback
+ * v1.4.48 — all-time aggregate row used on the cold-mount fallback
  * path. Holds the linearly composable columns (`count / min / max /
  * mean`) that must reflect every row the user has ever logged for
  * that type, so this query intentionally has no `measured_at` cap.
@@ -93,8 +93,9 @@ interface AllTimeAggregateRow {
 /**
  * v1.4.37.2 — shape returned by the per-type GROUP BY over
  * `measurement_rollups`. Replaces the v1.4.35 row-per-bucket transfer
- * that materialised ~306k rows on a power-user account; the SQL now
- * does the aggregation server-side and hands back one row per type.
+ * that materialised a six-figure row count on tenants with large
+ * measurement partitions; the SQL now does the aggregation
+ * server-side and hands back one row per type.
  */
 interface RollupAggregateRow {
   type: string;
@@ -194,8 +195,8 @@ export async function computeSummariesSlice(
 ): Promise<SummariesSlice> {
   // v1.4.37.1 hotfix — fire-and-forget. See `src/app/api/analytics/route.ts`
   // for the full rationale: awaiting this on the read path can stall
-  // the event loop for 30–60 s on power-user accounts whose iOS step
-  // samples keep the 90-day window slightly stale. The downstream
+  // the event loop for tens of seconds on tenants with large iOS step
+  // sample sets that keep the 90-day window slightly stale. The downstream
   // coverage probe falls back to live SQL for uncovered types, so
   // correctness is preserved; the read just doesn't block waiting
   // for the background refresh.
@@ -250,9 +251,9 @@ export async function computeSummariesSlice(
  * `(user_id, type, measured_at)` instead of reading every row in the
  * user's measurements partition. Every FILTER expression inside the
  * SELECT already restricts to 7/30/90 days, so the cap excludes only
- * rows that were already being aggregated to NULL. On a power-user
- * account with ~450k all-time rows this lifts the slim slice from
- * ~9 s cold to ~0.5-1 s; output is bit-identical.
+ * rows that were already being aggregated to NULL. On tenants with
+ * large measurement partitions this lifts the slim slice from
+ * multi-second cold to sub-second; output is bit-identical.
  */
 async function computeFromRollups(userId: string): Promise<SummariesSlice> {
   const [narrows, latests, dayBuckets] = await Promise.all([
@@ -320,11 +321,12 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
     // v1.4.37.2 hotfix — the v1.4.35 implementation read EVERY DAY
     // rollup bucket for the user (`findMany` without a `bucketStart`
     // window) and then composed `count / min / max / mean` in JS.
-    // On a power-user account that materialised as a 306k-row
-    // transfer + a JS loop = ~3.85 s per cache miss, even with the
-    // rollup table hot. The slim slice's contract is the all-time
-    // count / min / max / mean per type — exactly what a SQL
-    // `GROUP BY type` returns in a single round-trip. Returns 8 rows
+    // On tenants with large measurement partitions that materialised
+    // as a six-figure row transfer + a JS loop = multi-second per
+    // cache miss, even with the rollup table hot. The slim slice's
+    // contract is the all-time count / min / max / mean per type —
+    // exactly what a SQL `GROUP BY type` returns in a single
+    // round-trip. Returns 8 rows
     // instead of 306k, brings the cache-miss cost into the < 100 ms
     // budget. The downstream `aggregateBuckets` call is bypassed
     // because the per-type aggregate is already shaped server-side.
@@ -455,7 +457,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
  * table is empty for this user. Subsequent reads pick up the populated
  * rollup on `computeFromRollups`.
  *
- * v1.4.48 M0 — split into two parallel queries:
+ * v1.4.48 — split into two parallel queries:
  *
  *   1. `allTime` — the linearly composable columns (`count / min /
  *      max / mean`) keep the full-partition scan because they must
@@ -468,8 +470,8 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
  *      cap lets the planner do an index range scan on
  *      `(user_id, type, measured_at)` instead of a full-partition
  *      sequential scan and discarding 95 % of rows inside FILTER
- *      clauses. On a power-user account with ~450k all-time rows the
- *      cold fallback drops from ~9 s to ~0.5-1 s. Output is
+ *      clauses. On tenants with large measurement partitions the
+ *      cold fallback drops from multi-second to sub-second. Output is
  *      bit-identical because every row excluded by the new outer cap
  *      was already aggregating to NULL inside its FILTER clause.
  */
@@ -582,7 +584,7 @@ async function computeFromLiveAggregate(
     };
   }
 
-  // v1.4.48 M0 — windowed columns are keyed by type alongside the
+  // v1.4.48 — windowed columns are keyed by type alongside the
   // all-time aggregate. Types that exist in `allTime` but have no
   // measurements in the 90-day window leave their windowed columns at
   // `null` (the same shape the pre-split query produced via FILTER

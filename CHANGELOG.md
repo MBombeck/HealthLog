@@ -1,5 +1,60 @@
 # Changelog
 
+## [1.4.48] — 2026-05-23 — Audit-backlog closure: integration suite green, perf cap on cold-fallback path, Withings + Coach + onboarding polish
+
+v1.4.47 closed the H1 + Mediums punch list. v1.4.48 is the dedicated low-priority sweep: the Mediums and Lows deferred from the v1.4.47 audit round land together, the workout-batch integration suite that had been red on `main` for three releases turns green, the cold-mount analytics fallback path picks up the same 90-day outer cap that v1.4.47.1 shipped for the rollup-fresh path, and the iOS validation-failure audit rows now carry the rejected payload shape so the iOS team can chase serialiser drift from a single log line.
+
+### Added
+
+- `/api/admin/notifications/diagnostic` — admin-only endpoint that surfaces device APNs token presence (masked to an 8-char prefix + 8-char suffix), notification channel config presence, and recent push attempts for the calling account. Closes the DB-shell bottleneck that slowed the v1.4.47 APNs investigation.
+- Native sub-locale translations for `settings.about.tourReplay` and `tourReplayHint` (es / fr / it / pl). Tightened `dashboard.dragHandleHint` copy in de + pl (was ~30 words on a `sr-only` paragraph; screen readers spent ~6 s reading it on focus).
+- OpenAPI documentation for `GET` + `PATCH /api/auth/me/disable-coach`.
+- Operations runbook notes: `attemptNumber` audit-row vs alert-signal semantics at `docs/ops/attempt-number-semantics.md`, and explicit migration-before-container ordering at `docs/ops/deploy.md` for manual / partial-deploy scenarios.
+
+### Changed
+
+- `/api/analytics` cold-fallback path splits the heavy single-statement aggregate into two parallel queries. The linearly composable columns (`count` / `min` / `max` / `mean`) keep the full-partition scan; the windowed 7 / 30 / 90-day `avg` / `slope` / `r²` columns take a 90-day outer cap so the planner does an index range scan on `(user_id, type, measured_at)` instead of a full-partition sequential scan. Output is bit-identical; cold slim slice drops from multi-second to sub-second on tenants with large measurement partitions.
+- Dashboard reorder + onboarding tour helpers consolidated. Arrow-button reorder delegates to the same swap path as drag-and-drop. `restartOnboardingTour` extracted so About + Account sections share the surface. `useSortable` honours `prefers-reduced-motion`. Drag-handle `aria-describedby` hint gates on visible widget count so the empty-state cannot orphan the hint paragraph.
+- Coach disable surface tightened. The status banner auto-clears after 3 s. `PATCH /api/auth/me/disable-coach` body migrated to Zod + `returnAllZodIssues` for the uniform 422 envelope. The `eslint-disable react-hooks/rules-of-hooks` line in `useDisableCoach` is replaced with a shared `useQueryClientMounted` helper that both `useFeatureFlags` and `useDisableCoach` consume.
+- Withings OAuth callback consumes the nonce atomically. `delete` is issued first; the `P2025` catch handles the replay branch. The previous read-then-delete pattern allowed a theoretical race between two concurrent callbacks with the same nonce. Silent `.catch(() => {})` on delete failures now surface via a Wide-Event warning so a real infra failure reaches the audit trail.
+- Withings `connect` endpoint rate-limited to 10 calls per 60 s per user (mirroring the disable-coach pattern); row-create failures redirect to the consistent error surface (`/settings/integrations?withings=error&reason=connect`) instead of bubbling a 500.
+- Worker boot emits a Wide-Event warning if any `integration_statuses` row still has a NULL per-kind counter after the v1.4.47 legacy-column drop. Closes the silent alert-ladder gap where such rows would alert two strikes later than they should.
+
+### Fixed
+
+- Workout-batch integration tests (`workout-batch-create`, `workout-batch-race`) updated to match the v1.4.42 cross-source dedup semantics. The integration suite had been red on `main` since v1.4.45 (three release commits shipped through it). Suite is green again.
+- Twelve stale "migration 0076" references in code comments corrected. `consecutiveFailures` sites read 0077; `disable-coach` sites read 0078. Comment-only sweep, no behavioural change.
+- `docs/ops/attempt-number-semantics.md` referenced migration 0076 for the dropped `consecutiveFailures` column; the actual migration is 0077.
+
+### Performance
+
+- Cold-fallback `/api/analytics` slim slice — `aggregates` query split so the windowed columns get a 90-day outer `WHERE` cap, matching the inner `FILTER` windows. Multi-second TTFB on cold mounts drops to sub-second on tenants with large measurement partitions. The `narrows` query received the same cap in v1.4.47.1.
+
+### Security
+
+- Withings `connect` rate-limited (per-user 10 / 60 s) to bound ledger-row growth from a misbehaving client.
+- Coach `disable-coach` validation envelope unified through `returnAllZodIssues` for a uniform 422 shape.
+
+### Observability
+
+- `dashboard.widgets.validation-failed` and `measurements.series.validation-failed` audit rows now carry `received_keys`, a truncated `received_shape_excerpt` (256-char hard cap), and the sanitised Zod issues. One log line per validation failure carries both the iOS-sent shape and the server's rejection reason, so iOS serialiser drift can be chased without DB-shell access.
+
+### Documentation
+
+- `NEXT_PUBLIC_APP_VERSION`, `NEXT_PUBLIC_APP_BUILD_SHA`, `NEXT_PUBLIC_APP_BUILT_AT` documented as build-time-only env-vars in `docs/self-hosting/reverse-proxy.md`. The Coolify runtime entry was misleading; Next.js bakes the values into the bundle at build time via the `next.config.ts` `env:` block.
+
+### Test hygiene
+
+- New grep-discovery test mirrors the `flags.coach` discovery test for `user.disableCoach` / `useDisableCoach`. New sites must be added to the allowlist explicitly so CI fails on an unreviewed addition.
+- `target-card.tsx` per-card "Ask the coach" CTA pinned in the user-disable fixture (the cascade fixture already covered the page-level gate).
+- `textarea` `forwardRef` `Symbol.for("react.forward_ref")` sentinel assertion deleted (React-internal API). Ref forwarding is covered indirectly by the call sites that pass `ref` to `<Textarea>`.
+- `vi.useRealTimers()` moved into the suite-level `afterEach` in the medications-intake and dashboard-summary route tests. A failed assertion no longer leaks fake timers across suites.
+
+### Deferred
+
+- Server-side suppression of `MEDICATION_REMINDER` APNs for iOS v0.6.0.7+ clients (GitHub issue #206) — waits for iOS v0.6.0.8 to ship the notification-permission re-trigger fix (`healthlog-iOS#10`). Without that iOS fix, the server cannot reliably distinguish a v0.6.0.7+ client that manages reminders locally from one whose permission never reached `authorized`. The server-side suppression flag plumbing lands in v1.4.49 once iOS v0.6.0.8 is verified.
+- `/api/admin/notifications/diagnostic` not yet in `docs/api/openapi.yaml`. Admin-only, internal consumer today; deferred to v1.4.49 alongside the iOS-side companion diagnostic surface.
+
 ## [1.4.47.6] — 2026-05-22 — APNs per-channel test endpoint wired
 
 The Settings notification-status card's "Test senden" button was unwired for the APNS channel — the `TEST_ENDPOINTS` map at `notification-status-card.tsx:60-64` had TELEGRAM / NTFY / WEB_PUSH but not APNS. Clicking the button on an APNS row resolved to `undefined` and the fetch fired against an empty URL, silently failing. The operator had no first-class way to verify the v1.4.47.5 auto-detect path; only the natural channel-state-machine cron retry could exercise it.
@@ -185,9 +240,9 @@ Eight changes landed on `develop` before this release commit:
 - **No API contract break for iOS v0.5.4.** `disableCoach` is additively extended in `/api/auth/me` (older iOS reads coerce `undefined → false`). Withings OAuth state cookie name preserved; in-flight handshakes survive a deploy. The Coach disable toggle is opt-in; default behaviour unchanged.
 - **`pnpm test --run` green at ~5100+ passing**, `pnpm typecheck` + `pnpm lint` clean.
 
-## [1.4.46] — 2026-05-22 — Server reconcile (PR worker cumulative-bucketing + intake auto-skip + APNS admin test)
+## [1.4.46] — 2026-05-22 — Server follow-up (PR worker cumulative-bucketing + intake auto-skip + APNS admin test)
 
-Discovery follow-up from the v1.4.45 marathon-close review surfaced three server gaps that the audit waves hadn't covered. v1.4.46 lands all three as touch-disjoint fixes.
+Discovery follow-up from the v1.4.45 post-deploy review surfaced three server gaps that the audit hadn't covered. v1.4.46 lands all three as independent fixes.
 
 ### Fixed
 
@@ -201,73 +256,71 @@ Discovery follow-up from the v1.4.45 marathon-close review surfaced three server
 
 ## [1.4.45] — 2026-05-21 — Analytics 9 s perf fix, audit-driven polish, Zod multi-issue rollout, Withings parked-state automation
 
-> Version note — v1.4.43 was skipped: v1.4.44 shipped as a same-day REG-11 iOS hotfix on `main` while this marathon was running (REG-11 = Home dashboard tile renders neither chart nor latest value when the most recent reading is older than 7 days; root cause was in `/api/dashboard/summary` SQL gates). The REG-11 fix is included in this release alongside the marathon work. v1.4.45 keeps the version monotone above the hotfix tag.
+> Version note — v1.4.43 was skipped: v1.4.44 shipped as a same-day REG-11 iOS hotfix on `main` while this release work was running (REG-11 = Home dashboard tile renders neither chart nor latest value when the most recent reading is older than 7 days; root cause was in `/api/dashboard/summary` SQL gates). The REG-11 fix is included in this release alongside the rest of the closure work. v1.4.45 keeps the version monotone above the hotfix tag.
 
-v1.4.42 closed the iOS-readiness story. v1.4.45 is the post-deploy discovery + closure release: a four-axis audit round (analytics perf / mobile-UI / QoL / security) surfaced one Critical `/api/analytics` 9 s regression that had been latent since v1.4.40, five High mobile-UI WCAG paper-cuts, two PII / log-growth gaps on the security surface, six High QoL copy + i18n gaps, and the chart empty-state false-positive raised after deploy. Eleven implementation waves landed: nine close every audit Critical + High plus the recurring polish items (chart-gate raw-count, QoL copy + plural forms, Withings classifier wiring across both sync paths, ops hardening including the BuildKit version-pin lesson from v1.4.42), one rolls out the v1.4.42 W2-ZOD `returnAllZodIssues` helper to the 41 sibling routes that still dropped every issue past the first, and one closes the v1.4.42 W2-WITHINGS deferred B4 (park after 24 h persistent-failure streak) + B7 (per-kind failure counters). Three companion waves close the audit Mediums + Lows for mobile-UI, QoL, and security.
+v1.4.42 closed the iOS-readiness story. v1.4.45 is the post-deploy discovery + closure release: a four-axis audit round (analytics perf / mobile-UI / QoL / security) surfaced one Critical `/api/analytics` 9 s regression that had been latent since v1.4.40, five High mobile-UI WCAG paper-cuts, two PII / log-growth gaps on the security surface, six High QoL copy + i18n gaps, and the chart empty-state false-positive raised after deploy. Eleven separate fixes landed: nine close every audit Critical + High plus the recurring polish items (chart-gate raw-count, QoL copy + plural forms, Withings classifier wiring across both sync paths, ops hardening including the BuildKit version-pin lesson from v1.4.42), one rolls out the v1.4.42 `returnAllZodIssues` helper to the 41 sibling routes that still dropped every issue past the first, and one closes the v1.4.42 Withings classifier deferred items B4 (park after 24 h persistent-failure streak) + B7 (per-kind failure counters). Three companion sub-tasks close the audit Mediums + Lows for mobile-UI, QoL, and security.
 
-Fourteen touch-disjoint waves landed on `develop` before this release commit. The wave reports under `.planning/phase-W*-v1443-report.md` document the per-wave decisions, file inventories, and test deltas; the multi-axis QA round under `.planning/round-v1443-QA-*-findings.md` covers the cross-cutting verdict that gated this tag; the audit reports under `.planning/round-v1443-AUDIT-*-findings.md` document the discovery phase that fed the marathon.
+Fourteen independent sub-tasks landed on `develop` before this release commit.
 
 ### Added
 
-- **`returnAllZodIssues` rolled out across 41 API routes** (W6) — every measurements / medications / mood / auth / settings / admin / consent / bugreport / feedback / device / token / ingest route now returns every Zod issue under `details.issues` plus a sanitised `{ path, code, message }` projection. iOS-contract hot paths additionally write a `<route>.validation-failed` audit-ledger breadcrumb (fire-and-forget). The CSV-import outlier (`/api/medications/[id]/intake/import`) preserves its `Invalid format:` prefix via `meta.errorCode = "medication.intake.import.invalid_format"`. 220 new unit cases pin 2-issue / 3-issue scenarios per touched route.
-- **Withings persistent-failure park automation** (W14) — a `persistent` failure streak running > 24 h flips `IntegrationStatus.state` to a new `parked` sentinel. Settings card renders a pill `data-state="parked"` with copy "Pausiert — manuell wieder verbinden" (DE) / "Paused — reconnect manually" (EN) plus a "Wieder verbinden" / "Reconnect" CTA. New endpoint `POST /api/integrations/withings/resume` (rate-limited 5/min/user, idempotent) clears the park via `resumeIntegrationFromPark` and the per-card status query invalidates so the pill flips back without a refresh. Schema migration `0075_v1443_integration_park` adds the `consecutive_failures_by_kind` JSONB column + `persistent_failure_started_at` timestamp; backfill on next write bucketises the legacy single-counter into the current `FailureKind`.
-- **`POST /api/auth/check-user` audit-ledger breadcrumb** (W13 M-1) — every branch (`found` / `not_found` / `passkey_only` / `email_fallback`) now writes `auditLog("auth.check-user", { ipAddress, details: { branch, identifier_hash } })` with the identifier hashed via `hashToken`. The route's per-IP throttle (30/15 min) stays; the audit row closes the operator-grep gap for enumeration-attempt investigations.
-- **`/api/settings/account` DELETE cascade** (W12 M3) — split the danger-zone "Konto vollständig löschen" from the existing "Alle Gesundheitsdaten löschen" so a user reading "Gefahrenzone" reaches the right destructive action. New endpoint cascades User + sessions + passkeys + audit log under a Prisma tx; concurrent active sessions are invalidated synchronously. Six new integration tests pin the happy path + sibling-session invalidation + 401 / 422 / last-admin guard.
-- **`<OfflineBanner>` mounted in `<AuthShell>`** (W12 M5) — listens for `online` / `offline` window events and renders "Keine Verbindung — Änderungen werden gespeichert, sobald du wieder online bist". Bilingual via i18n. Closes the PWA "blank tile + no explanation when airplane-mode toggles mid-form-fill" paper-cut.
-- **`<ChartSkeleton>` 3 s "still computing" caption** (W12 L4) — after 3 s of skeleton paint a small caption renders to set user expectation when `/api/analytics` is on the slow path. Bilingual.
-- **`<AccountDeleteCard>` + neutral danger-zone visuals** (W12 M3 + L5) — `AlertTriangle` icon dropped, title in neutral grey, button stays red. Same protective gate, less visual hostility.
-- **`formatDateOrRelative(iso)` helper** (W12 L8) — within 24 h renders relative ("vor 12 min"), older renders absolute. Wired into `measurement-list.tsx:572,717` so adjacent timestamps no longer mix formats.
-- **`scrollBehaviorForUser()` helper in `src/lib/motion.ts`** (W5 H5) — reads `prefers-reduced-motion: reduce` and returns `"auto"` or `"smooth"`. Wired into the four JS-driven smooth-scroll sites (`settings-shell`, `admin-shell`, `coach-panel/message-thread` × 2).
-- **`charts.noDataInRangeTitle` + `charts.noDataInRangeDescription`** copy across all six locales (W11 M6). Replaces the silent `return null` branch in `<HealthChart>` with a proper `<ChartEmptyState>` so the dashboard layout doesn't reflow when a chart enters its empty branch.
-- **`charts.needMoreDistinctDaysTitle` + `charts.needMoreDistinctDaysDescription`** copy across all six locales (W2 C1). Distinguishes the "few raw measurements" branch from the "lots of data, only on 1-2 days" branch on the chart's empty state.
-- **`<DailyBriefing>` / `<CorrelationRow>` / `<TrendsRow>` skeleton heights reserved** to match loaded content (W11 M3) — `h-[24rem]` for DailyBriefing, `h-[20rem]` for the others. Closes the CLS hot-spot on cold mounts.
-- **`<DashboardTileStripSkeleton>`** painted when `trendCards.length === 0 && analyticsSlimQuery.isLoading && layout.widgets.some(w => w.tileVisible)` (W11 M5). User sees the strip silhouette during the slow window instead of header + empty page + 9 s jump.
+- **`returnAllZodIssues` rolled out across 41 API routes** — every measurements / medications / mood / auth / settings / admin / consent / bugreport / feedback / device / token / ingest route now returns every Zod issue under `details.issues` plus a sanitised `{ path, code, message }` projection. iOS-contract hot paths additionally write a `<route>.validation-failed` audit-ledger breadcrumb (fire-and-forget). The CSV-import outlier (`/api/medications/[id]/intake/import`) preserves its `Invalid format:` prefix via `meta.errorCode = "medication.intake.import.invalid_format"`. 220 new unit cases pin 2-issue / 3-issue scenarios per touched route.
+- **Withings persistent-failure park automation** — a `persistent` failure streak running > 24 h flips `IntegrationStatus.state` to a new `parked` sentinel. Settings card renders a pill `data-state="parked"` with copy "Pausiert — manuell wieder verbinden" (DE) / "Paused — reconnect manually" (EN) plus a "Wieder verbinden" / "Reconnect" CTA. New endpoint `POST /api/integrations/withings/resume` (rate-limited 5/min/user, idempotent) clears the park via `resumeIntegrationFromPark` and the per-card status query invalidates so the pill flips back without a refresh. Schema migration `0075_v1443_integration_park` adds the `consecutive_failures_by_kind` JSONB column + `persistent_failure_started_at` timestamp; backfill on next write bucketises the legacy single-counter into the current `FailureKind`.
+- **`POST /api/auth/check-user` audit-ledger breadcrumb** — every branch (`found` / `not_found` / `passkey_only` / `email_fallback`) now writes `auditLog("auth.check-user", { ipAddress, details: { branch, identifier_hash } })` with the identifier hashed via `hashToken`. The route's per-IP throttle (30/15 min) stays; the audit row closes the operator-grep gap for enumeration-attempt investigations.
+- **`/api/settings/account` DELETE cascade** — split the danger-zone "Konto vollständig löschen" from the existing "Alle Gesundheitsdaten löschen" so a user reading "Gefahrenzone" reaches the right destructive action. New endpoint cascades User + sessions + passkeys + audit log under a Prisma tx; concurrent active sessions are invalidated synchronously. Six new integration tests pin the happy path + sibling-session invalidation + 401 / 422 / last-admin guard.
+- **`<OfflineBanner>` mounted in `<AuthShell>`** — listens for `online` / `offline` window events and renders "Keine Verbindung — Änderungen werden gespeichert, sobald du wieder online bist". Bilingual via i18n. Closes the PWA "blank tile + no explanation when airplane-mode toggles mid-form-fill" paper-cut.
+- **`<ChartSkeleton>` 3 s "still computing" caption** — after 3 s of skeleton paint a small caption renders to set user expectation when `/api/analytics` is on the slow path. Bilingual.
+- **`<AccountDeleteCard>` + neutral danger-zone visuals** — `AlertTriangle` icon dropped, title in neutral grey, button stays red. Same protective gate, less visual hostility.
+- **`formatDateOrRelative(iso)` helper** — within 24 h renders relative ("vor 12 min"), older renders absolute. Wired into `measurement-list.tsx:572,717` so adjacent timestamps no longer mix formats.
+- **`scrollBehaviorForUser()` helper in `src/lib/motion.ts`** — reads `prefers-reduced-motion: reduce` and returns `"auto"` or `"smooth"`. Wired into the four JS-driven smooth-scroll sites (`settings-shell`, `admin-shell`, `coach-panel/message-thread` × 2).
+- **`charts.noDataInRangeTitle` + `charts.noDataInRangeDescription`** copy across all six locales. Replaces the silent `return null` branch in `<HealthChart>` with a proper `<ChartEmptyState>` so the dashboard layout doesn't reflow when a chart enters its empty branch.
+- **`charts.needMoreDistinctDaysTitle` + `charts.needMoreDistinctDaysDescription`** copy across all six locales. Distinguishes the "few raw measurements" branch from the "lots of data, only on 1-2 days" branch on the chart's empty state.
+- **`<DailyBriefing>` / `<CorrelationRow>` / `<TrendsRow>` skeleton heights reserved** to match loaded content — `h-[24rem]` for DailyBriefing, `h-[20rem]` for the others. Closes the CLS hot-spot on cold mounts.
+- **`<DashboardTileStripSkeleton>`** painted when `trendCards.length === 0 && analyticsSlimQuery.isLoading && layout.widgets.some(w => w.tileVisible)`. User sees the strip silhouette during the slow window instead of header + empty page + 9 s jump.
 
 ### Changed
 
-- **`/api/analytics` slim slice `computeAvg30LastYearMap` capped at `p-limit(4)`** (W1) — closes the 9 s regression introduced in v1.4.40 W-WMY-WIRE. The unbounded `Promise.all` over 15 measurement types drowned the `pg.Pool` max=20 even after v1.4.40's W-POOL raise; capping at 4 collapses the burst to match the thick route's existing `ANALYTICS_TYPE_FETCH_CONCURRENCY=4`. Expected dashboard cold-mount: 9.0 s → 2-3 s (concurrent slim + thick both cold) / ~50 ms (warm cache); WMY-converged tenants ≤ 500 ms cold. The slim slice's per-(userId, date) cache key is unchanged; concurrent dashboards still single-flight per slice.
-- **Withings activity + sleep sync catch-blocks routed through `WithingsApiError` typed classifier** (W7) — both `sync-activity.ts:174` and `sync-sleep.ts:155` previously caught raw thrown values + branched on `Error.message` string-matching. Now they typed-cast through `WithingsApiError` so a non-Error rejection lands in the `unknown` branch instead of silently sliding into `error_transient`. A typed-classification regression suite (`src/lib/withings/__tests__/sync-typed-classification.test.ts`) pins both paths.
-- **`IntegrationStatusPill` warning state for `persistent` failures** (W4 H3) — v1.4.42's classifier introduced the fourth FailureKind but mapped it to `error_transient` so the pill read "Fehler — neu verbinden" identically to a transient failure. New "warning" pill state with copy "Verbunden, aber Serverfehler" gives the operator + user the signal that the access token still works but the upstream is responding with `601` / `293` / `294`.
-- **`auth.check-user` rate-limit wrapper + 6 auth routes converted** (W13 M-4) — `checkAuthSurfaceRateLimit` wraps `checkRateLimit` and routes anonymous-bucket trust-violations to a tight 100/15-min global bucket instead of every misconfigured anonymous request collapsing into one shared `unknown` bucket. Applied to `/api/auth/login`, `/api/auth/register`, `/api/auth/passkey/login-options`, `/api/auth/passkey/login-verify`, `/api/auth/refresh`, `/api/auth/check-user`, `/api/auth/password`.
-- **Coach SSE re-detects refusal on replayed turns** (W13 M-3) — every prior turn loaded from `coach_messages.encryptedContent` now runs through `detectRefusal` before re-entering the prompt. A positive hit short-circuits the SSE with a refusal response + emits an `audit.coach.replay-injection` audit row. Closes the "false-negative amplification" path where a regex-bank miss on turn N kept re-entering on every subsequent turn.
-- **`/api/auth/passkey/login-verify` body now Zod-narrowed** (W13 L-3) — replaces the raw `as AuthenticationResponseJSON` cast with an explicit Zod parse upstream of `verifyAuthentication`. Closes the type-narrowing gap a future refactor could trip on; the verifier remains the runtime owner.
-- **`activeLocale()` reads the full `Locale` union** (W12 M8) — sub-locale users (fr / es / it / pl) now get their native number + date formats from `Intl.DateTimeFormat` instead of the `en` fallback. The legacy `format.ts` helper backed ~25 SSR + audit-log call sites; the new branch falls back to `en` only when the cookie is unrecognised.
-- **404 + global-error copy tightened across all locales** (W12 L1) — "Page not found / The page you were looking for doesn't exist or has been moved." → "Diese Seite existiert nicht." / "This page doesn't exist." period. Bilingual lockup retained on `global-error.tsx` (root layout has failed by the time this paints — no i18n provider).
-- **`relativeMinutesAgo` / `relativeHoursAgo` / `relativeDaysAgo` keys split into `…One` / `…Other`** (W4 H6) — `count === 1` now renders the singular form across all six locales. The integration pill abbreviated forms (`vor 1 min` / `vor 1 d`) remain.
-- **`coach.network` mapped to its own `errorNetwork` i18n key** (W12 M6) — distinct copy from the provider-error bucket so a user sees "Keine Internetverbindung" when their network is dead vs the original generic provider-unreachable copy when the provider itself is down.
-- **`DayDrillDown` error renders `measurements.loadError` instead of `measurements.saveError`** (W4 H1) — closes the "Save error" misattribution on GET-only failures.
-- **Switch tap target extends to 44 × 44 via `::before` pseudo-element** (W5 H1) — every Settings / sources / dashboard-layout / coach-settings / notification toggle now meets WCAG 2.5.5 without changing the visual.
-- **Comparison-baseline buttons in chart overlay popover bump to 44 px on mobile** (W5 H2) — `min-h-11 sm:min-h-9` so phones get the safer target without densifying desktop.
-- **Mood-form kebab + edit-mode footer kebab bump to 44 × 44** (W5 H3) — `h-11 w-11` to match the medication-form pattern.
-- **Bottom-sheet close-X reaches 44 px on phones, keeps 36 px on desktop** (W5 H4) — `min-h-9 sm:min-h-11` gated on breakpoint.
-- **`Loader2 animate-spin` paired with `motion-reduce:animate-none` across 21 sites** (W11 M1) — closes the motion-sensitivity gap on chart loading + settings spinners + admin backup runners + drug-level + doctor-report dialogs.
-- **`phase-config-dialog.tsx` Input + Button bump to 44 px on mobile** (W11 M2) — drops `text-sm` from the Input so the iOS-zoom-on-focus is closed.
-- **`correlation-card.tsx` skeleton mirrors the loaded scatter chart's aspect ratio** (W11 M4) — `aspect-square sm:aspect-[3/2] min-h-[180px] sm:h-auto`. Closes the ~60 px CLS on the insights cold mount.
-- **`insights-tab-strip.tsx` group-popover items bumped to 44 px** (W11 L1) — outer tab pills already met the floor; inner popover items lagged.
-- **`chart-overlay-controls.tsx` trigger adopts the responsive `min-h-11 sm:min-h-9` pattern** (W11 L2) — consistent with the v1.4.33 maintainer-item-7 settlement.
-- **`RecentWorkoutsTile` + `DrugLevelChart` reserve loaded-card height during loading** (W11 L6) — no card-pop on first paint.
-- **`dedupeWorkoutBatch` honours `User.sourcePriorityJson`** (W9) — write-time picker threads the same priority ladder the read-time picker uses. The v1.4.42 wave's docstring warning ("does NOT consult sourcePriorityJson") is now obsolete; the batch route does a single `prisma.user.findUnique` lookup before the dedup pass.
-- **`/api/dashboard/widgets` 422 audit-ledger row dedupes per `(userId, action)` over 60 s** (W8 B2) — a misconfigured iOS client retrying every 100 ms no longer writes 10 audit rows per second. The 422 response is still per-call; only the audit-ledger row dedupes.
+- **`/api/analytics` slim slice `computeAvg30LastYearMap` capped at `p-limit(4)`** — closes the 9 s regression introduced in v1.4.40. The unbounded `Promise.all` over 15 measurement types drowned the `pg.Pool` max=20 even after v1.4.40's pool raise; capping at 4 collapses the burst to match the thick route's existing `ANALYTICS_TYPE_FETCH_CONCURRENCY=4`. Expected dashboard cold-mount: 9.0 s → 2-3 s (concurrent slim + thick both cold) / ~50 ms (warm cache); WMY-converged tenants ≤ 500 ms cold. The slim slice's per-(userId, date) cache key is unchanged; concurrent dashboards still single-flight per slice.
+- **Withings activity + sleep sync catch-blocks routed through `WithingsApiError` typed classifier** — both `sync-activity.ts:174` and `sync-sleep.ts:155` previously caught raw thrown values + branched on `Error.message` string-matching. Now they typed-cast through `WithingsApiError` so a non-Error rejection lands in the `unknown` branch instead of silently sliding into `error_transient`. A typed-classification regression suite (`src/lib/withings/__tests__/sync-typed-classification.test.ts`) pins both paths.
+- **`IntegrationStatusPill` warning state for `persistent` failures** — v1.4.42's classifier introduced the fourth FailureKind but mapped it to `error_transient` so the pill read "Fehler — neu verbinden" identically to a transient failure. New "warning" pill state with copy "Verbunden, aber Serverfehler" gives the operator + user the signal that the access token still works but the upstream is responding with `601` / `293` / `294`.
+- **`auth.check-user` rate-limit wrapper + 6 auth routes converted** — `checkAuthSurfaceRateLimit` wraps `checkRateLimit` and routes anonymous-bucket trust-violations to a tight 100/15-min global bucket instead of every misconfigured anonymous request collapsing into one shared `unknown` bucket. Applied to `/api/auth/login`, `/api/auth/register`, `/api/auth/passkey/login-options`, `/api/auth/passkey/login-verify`, `/api/auth/refresh`, `/api/auth/check-user`, `/api/auth/password`.
+- **Coach SSE re-detects refusal on replayed turns** — every prior turn loaded from `coach_messages.encryptedContent` now runs through `detectRefusal` before re-entering the prompt. A positive hit short-circuits the SSE with a refusal response + emits an `audit.coach.replay-injection` audit row. Closes the "false-negative amplification" path where a regex-bank miss on turn N kept re-entering on every subsequent turn.
+- **`/api/auth/passkey/login-verify` body now Zod-narrowed** — replaces the raw `as AuthenticationResponseJSON` cast with an explicit Zod parse upstream of `verifyAuthentication`. Closes the type-narrowing gap a future refactor could trip on; the verifier remains the runtime owner.
+- **`activeLocale()` reads the full `Locale` union** — sub-locale users (fr / es / it / pl) now get their native number + date formats from `Intl.DateTimeFormat` instead of the `en` fallback. The legacy `format.ts` helper backed ~25 SSR + audit-log call sites; the new branch falls back to `en` only when the cookie is unrecognised.
+- **404 + global-error copy tightened across all locales** — "Page not found / The page you were looking for doesn't exist or has been moved." → "Diese Seite existiert nicht." / "This page doesn't exist." period. Bilingual lockup retained on `global-error.tsx` (root layout has failed by the time this paints — no i18n provider).
+- **`relativeMinutesAgo` / `relativeHoursAgo` / `relativeDaysAgo` keys split into `…One` / `…Other`** — `count === 1` now renders the singular form across all six locales. The integration pill abbreviated forms (`vor 1 min` / `vor 1 d`) remain.
+- **`coach.network` mapped to its own `errorNetwork` i18n key** — distinct copy from the provider-error bucket so a user sees "Keine Internetverbindung" when their network is dead vs the original generic provider-unreachable copy when the provider itself is down.
+- **`DayDrillDown` error renders `measurements.loadError` instead of `measurements.saveError`** — closes the "Save error" misattribution on GET-only failures.
+- **Switch tap target extends to 44 × 44 via `::before` pseudo-element** — every Settings / sources / dashboard-layout / coach-settings / notification toggle now meets WCAG 2.5.5 without changing the visual.
+- **Comparison-baseline buttons in chart overlay popover bump to 44 px on mobile** — `min-h-11 sm:min-h-9` so phones get the safer target without densifying desktop.
+- **Mood-form kebab + edit-mode footer kebab bump to 44 × 44** — `h-11 w-11` to match the medication-form pattern.
+- **Bottom-sheet close-X reaches 44 px on phones, keeps 36 px on desktop** — `min-h-9 sm:min-h-11` gated on breakpoint.
+- **`Loader2 animate-spin` paired with `motion-reduce:animate-none` across 21 sites** — closes the motion-sensitivity gap on chart loading + settings spinners + admin backup runners + drug-level + doctor-report dialogs.
+- **`phase-config-dialog.tsx` Input + Button bump to 44 px on mobile** — drops `text-sm` from the Input so the iOS-zoom-on-focus is closed.
+- **`correlation-card.tsx` skeleton mirrors the loaded scatter chart's aspect ratio** — `aspect-square sm:aspect-[3/2] min-h-[180px] sm:h-auto`. Closes the ~60 px CLS on the insights cold mount.
+- **`insights-tab-strip.tsx` group-popover items bumped to 44 px** — outer tab pills already met the floor; inner popover items lagged.
+- **`chart-overlay-controls.tsx` trigger adopts the responsive `min-h-11 sm:min-h-9` pattern** — consistent with the v1.4.33 maintainer-item-7 settlement.
+- **`RecentWorkoutsTile` + `DrugLevelChart` reserve loaded-card height during loading** — no card-pop on first paint.
+- **`dedupeWorkoutBatch` honours `User.sourcePriorityJson`** — write-time picker threads the same priority ladder the read-time picker uses. The v1.4.42 docstring warning ("does NOT consult sourcePriorityJson") is now obsolete; the batch route does a single `prisma.user.findUnique` lookup before the dedup pass.
+- **`/api/dashboard/widgets` 422 audit-ledger row dedupes per `(userId, action)` over 60 s** — a misconfigured iOS client retrying every 100 ms no longer writes 10 audit rows per second. The 422 response is still per-call; only the audit-ledger row dedupes.
 
 ### Fixed
 
-- **`auth.login.failed` audit row no longer persists the raw typed identifier** (W3 H-1) — replaced with `identifier_hash: hashToken(identifier)`. Closes the PII gap surfaced by the v1.4.20 retroactive directive: an admin scrolling `/api/admin/audit-log` no longer sees every wrong-email a user typo'd at the login screen, and a future audit-table compromise no longer hands an attacker a list of probed identifiers.
-- **`WithingsApiError.message` capped at 1024 chars in the constructor** (W3 H-2) — the v1.4.42 classifier persisted the upstream `json.error` string verbatim into `AuditLog.details`. Withings is the trusted upstream but the operator-readable audit row should match the encrypted-error column's 1024-char cap.
-- **Chart empty-state copy split on raw measurement count** (W2 C1) — `<HealthChart>`, `<MoodChart>`, `<MedicationComplianceChart>` now distinguish "fewer than 3 entries" (empty-state title) from "many entries but only on 1-2 distinct days" (new `needMoreDistinctDays` title). The user-reported "Erfasse 3 Einträge" on a populated account is closed.
-- **Chart `aria-busy` empty branch no longer silently returns null** (W11 M6) — replaced with a `<ChartEmptyState>` rendering the `noDataInRange` copy.
-- **`docker-publish.yml` bakes the build-tag into the image at build time** (W8 B11) — closes the BuildKit cache version-stale paper-cut from v1.4.42.
-- **`pnpm check-env` enforces manifest ↔ `.env.production.example` lockstep on CI** (W8 B5).
-- **`global-error.tsx` bilingual lockup** (W4 H5 + W12 L1 follow-up).
-- **`not-found.tsx` localised via `getServerTranslations`** (W4 H4).
-- **German `daysAgo` integration-pill abbreviation** (W12 M7) — "vor {count} T." → "vor {count} d" matches the rest of the app's stale-hint pattern.
-- **SW `CACHE_VERSION` re-anchors per build** (W12 L3) — `public/sw.js`'s literal `"v1.4.38.4"` had drifted four releases stale; the activate-step's old-cache eviction had been a no-op. A new `prebuild` script writes `public/sw-version.js` from `package.json`'s version + `importScripts('/sw-version.js')` re-anchors `CACHE_VERSION` per deploy.
-- **Onboarding checklist measurement-completion copy** (W12 L2).
-- **Doctor-report unavailable sections render disabled instead of vanishing** (W12 M4).
-- **`auth/login + auth/register` test mocks updated for `checkAuthSurfaceRateLimit`** (post-cherry-pick reconcile) — W6's new test files pinned the old `checkRateLimit` signature; W13's M-4 wrapper rename collided at runtime causing 500 instead of 401 / 422. Both factories + `beforeEach` arming updated.
+- **`auth.login.failed` audit row no longer persists the raw typed identifier** — replaced with `identifier_hash: hashToken(identifier)`. Closes the PII gap surfaced by the v1.4.20 retroactive directive: an admin scrolling `/api/admin/audit-log` no longer sees every wrong-email a user typo'd at the login screen, and a future audit-table compromise no longer hands an attacker a list of probed identifiers.
+- **`WithingsApiError.message` capped at 1024 chars in the constructor** — the v1.4.42 classifier persisted the upstream `json.error` string verbatim into `AuditLog.details`. Withings is the trusted upstream but the operator-readable audit row should match the encrypted-error column's 1024-char cap.
+- **Chart empty-state copy split on raw measurement count** — `<HealthChart>`, `<MoodChart>`, `<MedicationComplianceChart>` now distinguish "fewer than 3 entries" (empty-state title) from "many entries but only on 1-2 distinct days" (new `needMoreDistinctDays` title). The user-reported "Erfasse 3 Einträge" on a populated account is closed.
+- **Chart `aria-busy` empty branch no longer silently returns null** — replaced with a `<ChartEmptyState>` rendering the `noDataInRange` copy.
+- **`docker-publish.yml` bakes the build-tag into the image at build time** — closes the BuildKit cache version-stale paper-cut from v1.4.42.
+- **`pnpm check-env` enforces manifest ↔ `.env.production.example` lockstep on CI**.
+- **`global-error.tsx` bilingual lockup**.
+- **`not-found.tsx` localised via `getServerTranslations`**.
+- **German `daysAgo` integration-pill abbreviation** — "vor {count} T." → "vor {count} d" matches the rest of the app's stale-hint pattern.
+- **SW `CACHE_VERSION` re-anchors per build** — `public/sw.js`'s literal `"v1.4.38.4"` had drifted four releases stale; the activate-step's old-cache eviction had been a no-op. A new `prebuild` script writes `public/sw-version.js` from `package.json`'s version + `importScripts('/sw-version.js')` re-anchors `CACHE_VERSION` per deploy.
+- **Onboarding checklist measurement-completion copy**.
+- **Doctor-report unavailable sections render disabled instead of vanishing**.
+- **`auth/login + auth/register` test mocks updated for `checkAuthSurfaceRateLimit`** — the earlier new test files pinned the old `checkRateLimit` signature; the `checkAuthSurfaceRateLimit` wrapper rename collided at runtime causing 500 instead of 401 / 422. Both factories + `beforeEach` arming updated.
 
 ### Performance
-
-Anchored on the v1.4.43 W1-ANALYTICS-PERF audit (`.planning/round-v1443-AUDIT-analytics-9s-findings.md`).
 
 - **Dashboard cold-mount `/api/analytics` (concurrent slim + thick):** 9.0 s + 9.0 s in parallel → est. 2-3 s + 2-3 s in parallel (slim slice fan-out capped at `p-limit(4)`). Warm cache (60 s TTL hit) unchanged at ~50 ms. WMY-converged tenants ≤ 500 ms cold.
 

@@ -12,7 +12,7 @@ audit number, never the other way around.
 of all three failure buckets. This is the historical "consecutive
 failures" running total carried by the legacy
 `IntegrationStatus.consecutiveFailures` column (dropped in migration
-`0076`, v1.4.47 W1). Auditors looking at a single row see one integer
+`0077`, v1.4.47). Auditors looking at a single row see one integer
 that captures how many failures the bucket ledger has accumulated since
 the last success.
 
