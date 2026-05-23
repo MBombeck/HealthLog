@@ -1,8 +1,8 @@
 # Changelog
 
-## [1.4.48] — 2026-05-23 — Audit-backlog closure: integration suite green, perf cap on cold-fallback path, Withings + Coach + onboarding polish
+## [1.4.49] — 2026-05-23 — Audit-backlog closure + server-side reminder suppression + diagnostic endpoint backed
 
-v1.4.47 closed the H1 + Mediums punch list. v1.4.48 is the dedicated low-priority sweep: the Mediums and Lows deferred from the v1.4.47 audit round land together, the workout-batch integration suite that had been red on `main` for three releases turns green, the cold-mount analytics fallback path picks up the same 90-day outer cap that v1.4.47.1 shipped for the rollup-fresh path, and the iOS validation-failure audit rows now carry the rejected payload shape so the iOS team can chase serialiser drift from a single log line.
+v1.4.47 closed the H1 + Mediums punch list. v1.4.49 bundles the deferred v1.4.47 Mediums and Lows together with the v1.4.48-deferred items: server-side suppression of `MEDICATION_REMINDER` APNs for iOS clients that manage their own local reminders, a `push_attempts` table backing the diagnostic endpoint, the `/api/admin/notifications/diagnostic` OpenAPI entry, and a sweep of v1.4.48 QA forward-findings (Withings reason-tagging, observability PII hardening, MoodReminderCard auto-clear parity, simplifier dead-code, sub-locale copy gaps). The workout-batch integration suite that had been red on `main` for three releases turns green; the cold-mount analytics fallback path picks up the same 90-day outer cap that v1.4.47.1 shipped for the rollup-fresh path; iOS validation-failure audit rows carry the rejected payload shape so iOS serialiser drift can be chased from a single log line.
 
 ### Added
 
@@ -52,8 +52,8 @@ v1.4.47 closed the H1 + Mediums punch list. v1.4.48 is the dedicated low-priorit
 
 ### Deferred
 
-- Server-side suppression of `MEDICATION_REMINDER` APNs for iOS v0.6.0.7+ clients (GitHub issue #206) — waits for iOS v0.6.0.8 to ship the notification-permission re-trigger fix (`healthlog-iOS#10`). Without that iOS fix, the server cannot reliably distinguish a v0.6.0.7+ client that manages reminders locally from one whose permission never reached `authorized`. The server-side suppression flag plumbing lands in v1.4.49 once iOS v0.6.0.8 is verified.
-- `/api/admin/notifications/diagnostic` not yet in `docs/api/openapi.yaml`. Admin-only, internal consumer today; deferred to v1.4.49 alongside the iOS-side companion diagnostic surface.
+- iOS v0.6.0.8 ships the Settings-side notification-permission re-trigger (`healthlog-iOS#10`), the in-app APNs diagnostic surface, and the `CFBundleShortVersionString` + UA build-number fixes — these depend on Marc's Xcode build cycle, not the server. The server-side suppression flag added in this release is opt-in (`clientManaged: false` by default) so existing users on the still-buggy v0.6.0.7 client see no behaviour change until they upgrade to v0.6.0.8 and the iOS client explicitly opts in via `PATCH /api/auth/me/notification-prefs`.
+- Reactive `prefersReducedMotion()` hook — current helper at `src/lib/charts/reduced-motion.ts` is read-once at render; doesn't react to mid-session OS toggle. Twenty-one call sites would benefit from a `useSyncExternalStore`-backed hook. Scoped as a v1.4.50 single-purpose refactor.
 
 ## [1.4.47.6] — 2026-05-22 — APNs per-channel test endpoint wired
 
