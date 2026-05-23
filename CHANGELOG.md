@@ -6,8 +6,11 @@ v1.4.47 closed the H1 + Mediums punch list. v1.4.49 bundles the deferred v1.4.47
 
 ### Added
 
-- `/api/admin/notifications/diagnostic` — admin-only endpoint that surfaces device APNs token presence (masked to an 8-char prefix + 8-char suffix), notification channel config presence, and recent push attempts for the calling account. Closes the DB-shell bottleneck that slowed the v1.4.47 APNs investigation.
-- Native sub-locale translations for `settings.about.tourReplay` and `tourReplayHint` (es / fr / it / pl). Tightened `dashboard.dragHandleHint` copy in de + pl (was ~30 words on a `sr-only` paragraph; screen readers spent ~6 s reading it on focus).
+- `/api/admin/notifications/diagnostic` — admin-only endpoint that surfaces device APNs token presence (masked to an 8-char prefix + 8-char suffix), notification channel config presence, and recent push attempts for the calling account. Closes the DB-shell bottleneck that slowed the v1.4.47 APNs investigation. The endpoint is registered in `docs/api/openapi.yaml` so future iOS clients can codegen against it.
+- `push_attempts` table backs the diagnostic endpoint's `recentPushAttempts` field. Every APNS / Web-Push / Telegram / NTFY sender writes a fire-and-forget row per attempt (channel + eventType + result + reason + createdAt). The diagnostic endpoint now returns the last 20 attempts ordered by recency. Daily cleanup cron at 03:35 Europe/Berlin prunes rows older than 90 days.
+- `GET` + `PATCH /api/auth/me/notification-prefs` — per-user notification preferences with deep-merge semantics. Initial category `medication.clientManaged: boolean` (default `false`); future categories slot in without overwriting siblings. The cron `medicationReminderJob` skips dose-due APNs when the flag is `true`, emitting a `medication_reminder.suppressed_client_managed` wide-event annotation per skip. Other notification kinds (mood reminder, personal record, system alert) are unaffected. Closes the server side of GitHub issue #206.
+- `redactSensitiveFields(body)` helper at `src/lib/observability/redact-payload.ts` with a denylist (`password` / `token` / `secret` / `apiKey` / `authorization` / `csrfState` / `nonce`, case-insensitive, recursive). Used by the wide-event `received_shape_excerpt` surface so future free-text routes adopting the pattern cannot leak credentials.
+- Native sub-locale translations for `settings.about.tourReplay` and `tourReplayHint` (es / fr / it / pl), and for `settings.about.linksHeading` + `newerAvailable` across the same four sub-locales. Tightened `dashboard.dragHandleHint` copy in de + pl (was ~30 words on a `sr-only` paragraph; screen readers spent ~6 s reading it on focus).
 - OpenAPI documentation for `GET` + `PATCH /api/auth/me/disable-coach`.
 - Operations runbook notes: `attemptNumber` audit-row vs alert-signal semantics at `docs/ops/attempt-number-semantics.md`, and explicit migration-before-container ordering at `docs/ops/deploy.md` for manual / partial-deploy scenarios.
 
@@ -17,8 +20,15 @@ v1.4.47 closed the H1 + Mediums punch list. v1.4.49 bundles the deferred v1.4.47
 - Dashboard reorder + onboarding tour helpers consolidated. Arrow-button reorder delegates to the same swap path as drag-and-drop. `restartOnboardingTour` extracted so About + Account sections share the surface. `useSortable` honours `prefers-reduced-motion`. Drag-handle `aria-describedby` hint gates on visible widget count so the empty-state cannot orphan the hint paragraph.
 - Coach disable surface tightened. The status banner auto-clears after 3 s. `PATCH /api/auth/me/disable-coach` body migrated to Zod + `returnAllZodIssues` for the uniform 422 envelope. The `eslint-disable react-hooks/rules-of-hooks` line in `useDisableCoach` is replaced with a shared `useQueryClientMounted` helper that both `useFeatureFlags` and `useDisableCoach` consume.
 - Withings OAuth callback consumes the nonce atomically. `delete` is issued first; the `P2025` catch handles the replay branch. The previous read-then-delete pattern allowed a theoretical race between two concurrent callbacks with the same nonce. Silent `.catch(() => {})` on delete failures now surface via a Wide-Event warning so a real infra failure reaches the audit trail.
+- Withings callback `?reason=state` redirect is now differentiated into four distinct reason tags so operators can tell `csrf1` (URL/cookie mismatch), `replay` (nonce already consumed), `expired` (TTL elapsed), and `cross_user` (session/row userId mismatch) apart without DB-shell access. The delete-failure warning template interpolates `err.name` rather than `${err}` so Prisma error messages cannot echo offending values into the audit log.
 - Withings `connect` endpoint rate-limited to 10 calls per 60 s per user (mirroring the disable-coach pattern); row-create failures redirect to the consistent error surface (`/settings/integrations?withings=error&reason=connect`) instead of bubbling a 500.
+- `buildPayloadDiagnostic(body)` helper extracted to `src/lib/api-response.ts`. The dashboard widgets PUT route and the measurements series GET route now route their bodies through `redactSensitiveFields` first then call the shared helper — single source of truth for the iOS payload-diff wide-event shape, redaction layered in front composably.
+- `sanitiseZodIssues(issues, { stripValuesFromMessage: true })` overload added; 14 audit-log sites that wrote `JSON.stringify({ issues })` to `details` now strip the `message` string to a `{ path, code }` pair. Most impactful catch: the `/api/devices` route's `invalid_format` issues were echoing `apnsToken` values verbatim into the audit log.
+- `disableCoachBody` + `disableCoachData` Zod schemas collapsed into a single `disableCoachFlag` schema in the OpenAPI route table; `zod-openapi` emits the request + response pair from the one source.
+- `yaml@2` emitter no longer sorts map entries during `pnpm openapi:generate`. Alphabetical sort had placed alias references before their anchors when `.meta()`-tagged sub-schemas appeared inside `z.array(...)`. Output stability is preserved by Zod's declaration-order guarantee.
 - Worker boot emits a Wide-Event warning if any `integration_statuses` row still has a NULL per-kind counter after the v1.4.47 legacy-column drop. Closes the silent alert-ladder gap where such rows would alert two strikes later than they should.
+- `MoodReminderCard` status banner auto-clears after 3 s — parity with `DisableCoachCard` (the existing docstring claimed parity that the implementation lacked).
+- `mergeReorderIntoLayout` emits a dev-only `console.warn` when a reorder id has no matching widget in the layout. Statically unreachable today; defence-in-depth for the upcoming per-tile Suspense refactor that introduces dynamic widgets.
 
 ### Fixed
 
@@ -37,7 +47,9 @@ v1.4.47 closed the H1 + Mediums punch list. v1.4.49 bundles the deferred v1.4.47
 
 ### Observability
 
-- `dashboard.widgets.validation-failed` and `measurements.series.validation-failed` audit rows now carry `received_keys`, a truncated `received_shape_excerpt` (256-char hard cap), and the sanitised Zod issues. One log line per validation failure carries both the iOS-sent shape and the server's rejection reason, so iOS serialiser drift can be chased without DB-shell access.
+- `dashboard.widgets.validation-failed` and `measurements.series.validation-failed` audit rows now carry `received_keys`, a truncated `received_shape_excerpt` (256-char hard cap), and the sanitised Zod issues. The excerpt is generated through `redactSensitiveFields` so credential-shaped keys (password / token / secret / apiKey / authorization / csrfState / nonce) land as the literal `"[redacted]"` instead of their raw values. One log line per validation failure carries both the iOS-sent shape and the server's rejection reason, so iOS serialiser drift can be chased without DB-shell access.
+- Push attempts persisted in `push_attempts` for every channel (APNS / Web-Push / Telegram / NTFY). The diagnostic endpoint reads the last 20 per user; the daily cron at 03:35 Europe/Berlin prunes attempts older than 90 days. Operators can now grep the wide-event `notifications.send` annotation OR query the table directly for an APNs incident triage.
+- Withings callback redirect reasons emit matching `meta.reason` annotations (`csrf1` / `replay` / `expired` / `cross_user`) so the wide-event stream carries the same differentiation the URL query param does.
 
 ### Documentation
 
@@ -49,11 +61,19 @@ v1.4.47 closed the H1 + Mediums punch list. v1.4.49 bundles the deferred v1.4.47
 - `target-card.tsx` per-card "Ask the coach" CTA pinned in the user-disable fixture (the cascade fixture already covered the page-level gate).
 - `textarea` `forwardRef` `Symbol.for("react.forward_ref")` sentinel assertion deleted (React-internal API). Ref forwarding is covered indirectly by the call sites that pass `ref` to `<Textarea>`.
 - `vi.useRealTimers()` moved into the suite-level `afterEach` in the medications-intake and dashboard-summary route tests. A failed assertion no longer leaks fake timers across suites.
+- New test files pin the v1.4.49 surfaces: `redact-payload.test.ts` (9 cases — passthrough / per-key redact / Authorization case-insensitive / nested recursion / array recursion / multi-pattern / scalar passthrough / Date preservation / pattern-set pin), `push-attempt-record.test.ts` (13 cases across the four senders × ok / error / skipped + DB-error-swallowed), `notification-prefs/route.test.ts` (11 cases), `notification-prefs.test.ts` validations (18 cases), `mood-reminder-card.test.tsx` (2 auto-clear cases).
+- Full unit-test gate after v1.4.49 reconcile: 510 files / 5272 passed / 0 failed / 1 skipped.
+
+### Migrations
+
+- `0079_v1449_user_notification_prefs` — adds `users.notification_prefs` (jsonb, nullable). Shape: `{ medication: { clientManaged: boolean } }`; future categories slot in next to `medication`.
+- `0080_v1449_push_attempts` — new `push_attempts` table with `(user_id, created_at DESC)` index. Cascade-delete on user removal. Retention via the daily cleanup cron.
 
 ### Deferred
 
 - iOS v0.6.0.8 ships the Settings-side notification-permission re-trigger (`healthlog-iOS#10`), the in-app APNs diagnostic surface, and the `CFBundleShortVersionString` + UA build-number fixes — these depend on Marc's Xcode build cycle, not the server. The server-side suppression flag added in this release is opt-in (`clientManaged: false` by default) so existing users on the still-buggy v0.6.0.7 client see no behaviour change until they upgrade to v0.6.0.8 and the iOS client explicitly opts in via `PATCH /api/auth/me/notification-prefs`.
 - Reactive `prefersReducedMotion()` hook — current helper at `src/lib/charts/reduced-motion.ts` is read-once at render; doesn't react to mid-session OS toggle. Twenty-one call sites would benefit from a `useSyncExternalStore`-backed hook. Scoped as a v1.4.50 single-purpose refactor.
+- `handleReminderCheck` extraction — the cron handler in `src/lib/jobs/reminder-worker.ts` is a 260-line non-exported blob. The v1.4.49 suppression skip-path is pinned via the helper `isMedicationReminderClientManaged` rather than a direct integration test of the handler. Scoped as v1.4.50 hygiene.
 
 ## [1.4.47.6] — 2026-05-22 — APNs per-channel test endpoint wired
 
