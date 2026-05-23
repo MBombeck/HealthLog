@@ -177,13 +177,17 @@ describe("POST /api/workouts/batch — concurrent-write race", () => {
   it("two batches with one overlapping externalId resolve to a single DB row each", async () => {
     const { POST } = await import("@/app/api/workouts/batch/route");
 
-    // Batch A — entries 0..3 unique-to-A plus one shared key.
+    // Batch A — two entries one minute apart plus one shared key. The
+    // v1.4.42 `dedupeWorkoutBatch` picker collapses the minute-1 +
+    // minute-2 pair (same activity, within the 90 s window) to one
+    // surviving row, leaving 2 effective rows per batch.
     const batchA: WorkoutFixture[] = [
       workout("hk-uuid-only-a-0", 1),
       workout("hk-uuid-only-a-1", 2),
       workout("hk-uuid-shared", 10),
     ];
-    // Batch B — entries 0..3 unique-to-B plus the SAME shared key.
+    // Batch B — same shape, different externalIds for the unique pair
+    // but the SAME shared key.
     const batchB: WorkoutFixture[] = [
       workout("hk-uuid-only-b-0", 21),
       workout("hk-uuid-only-b-1", 22),
@@ -202,16 +206,17 @@ describe("POST /api/workouts/batch — concurrent-write race", () => {
     };
     const bJson = (await resB.json()) as typeof aJson;
 
-    // Five unique tuples total across both batches; one shared. The
-    // composite unique index means the shared key lands exactly once,
-    // either as A's "inserted" or B's "inserted" — never both. The
-    // sum of the two batches' inserted counts is exactly 5.
-    expect(aJson.data.inserted + bJson.data.inserted).toBe(5);
+    // Three unique tuples land in the DB after write-time dedup + the
+    // composite unique index: one survivor from A's minute-1/2 pair,
+    // one survivor from B's minute-21/22 pair, and one shared-key row
+    // (either as A's "inserted" or B's "inserted" — never both). The
+    // sum of the two batches' inserted counts equals the row count.
+    expect(aJson.data.inserted + bJson.data.inserted).toBe(3);
 
     const stored = await getPrismaClient().workout.findMany({
       where: { userId: TEST_USER_ID },
     });
-    expect(stored).toHaveLength(5);
+    expect(stored).toHaveLength(3);
     const sharedRows = stored.filter(
       (r) => r.externalId === "hk-uuid-shared",
     );
