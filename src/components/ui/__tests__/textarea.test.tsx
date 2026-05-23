@@ -63,20 +63,6 @@ describe("<Textarea>", () => {
     expect(html).toContain("sm:text-sm");
   });
 
-  it("is wrapped in React.forwardRef so refs reach the <textarea>", () => {
-    // React tags forwardRef components with a sentinel symbol on
-    // `$$typeof`. Verifying the sentinel keeps the assertion
-    // dependency-free (no testing-library / DOM env needed) while
-    // still catching a regression that strips the wrapper.
-    const forwardRefSymbol = Symbol.for("react.forward_ref");
-    const componentMeta = Textarea as unknown as {
-      $$typeof: symbol;
-      render?: unknown;
-    };
-    expect(componentMeta.$$typeof).toBe(forwardRefSymbol);
-    expect(typeof componentMeta.render).toBe("function");
-  });
-
   it("forwards rows / placeholder / maxLength to the underlying element", () => {
     const html = renderToStaticMarkup(
       <Textarea

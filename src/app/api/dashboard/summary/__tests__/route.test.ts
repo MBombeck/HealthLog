@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db", () => ({
@@ -92,6 +92,14 @@ beforeEach(() => {
   vi.mocked(prisma.medicationIntakeEvent.createMany).mockResolvedValue({
     count: 0,
   } as never);
+});
+
+// v1.4.48 L13 — restore real timers no matter how a test exits. A failed
+// assertion inside an `it` that opted into fake timers would otherwise
+// leak the fake clock into the next test in the file (or, worse, the
+// next file in the same vitest worker).
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("GET /api/dashboard/summary", () => {
@@ -653,7 +661,7 @@ describe("GET /api/dashboard/summary", () => {
       data: { compliance: { scheduledToday: number; takenToday: number } };
     };
     expect(body.data.compliance.scheduledToday).toBe(1);
-    vi.useRealTimers();
+    // v1.4.48 L13 — suite-level `afterEach` restores real timers.
   });
 
   it("computes intake compliance for today", async () => {
