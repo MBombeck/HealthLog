@@ -60,9 +60,21 @@ describe("calculateCompliance — cadence-aware adapter", () => {
     const schedules: ComplianceSchedule[] = [
       { windowStart: "08:00", windowEnd: "09:00", daysOfWeek: null },
     ];
-    const events = Array.from({ length: 7 }, (_, i) =>
-      eventAt(new Date(NOW.getTime() - (i + 1) * DAY_MS + 8 * 3600_000), true),
-    );
+    // Anchor events to 08:30 UTC on today (NOW = 12:00 UTC, so the
+    // morning slot is already past) and the six prior days. Going one
+    // day further back would land the event before the rolling-window
+    // start (NOW − 7 d = 2025-01-08T12:00Z, but the would-be event sits
+    // at 2025-01-08T08:30Z — below the window start), which the slot
+    // grid intentionally excludes. The original `NOW − N×DAY + 8h`
+    // shape also landed events at 20:00 UTC on the prior day, twelve
+    // hours away from the 08:00 slot — at the edge of the pairing
+    // radius, which matched in Europe/Berlin and missed in UTC.
+    const events = Array.from({ length: 7 }, (_, i) => {
+      const at = new Date(NOW);
+      at.setUTCDate(at.getUTCDate() - i);
+      at.setUTCHours(8, 30, 0, 0);
+      return eventAt(at, true);
+    });
     const result = calculateCompliance(events, schedules, 7);
     expect(result.rate).toBe(100);
     expect(result.taken).toBe(7);
@@ -227,13 +239,18 @@ describe("calculateCompliance — cadence-aware adapter", () => {
       { windowStart: "08:00", windowEnd: "09:00", daysOfWeek: null },
     ];
     // Medication created 3 days ago — the prior 4 days of the 7-day
-    // window must not count as missed.
+    // window must not count as missed. Anchor each event at 08:30 UTC
+    // on today + the two prior days (NOW = 12:00 UTC so today's morning
+    // slot is already past). Going to "3 days ago" would land the event
+    // at the createdAt instant itself (08:30 < 12:00 on the cutoff day)
+    // which slips just below the slot grid's emit-cutoff.
     const createdAt = new Date(NOW.getTime() - 3 * DAY_MS);
-    const events = [
-      eventAt(new Date(NOW.getTime() - 1 * DAY_MS + 8 * 3600_000), true),
-      eventAt(new Date(NOW.getTime() - 2 * DAY_MS + 8 * 3600_000), true),
-      eventAt(new Date(NOW.getTime() - 3 * DAY_MS + 8 * 3600_000), true),
-    ];
+    const events = [0, 1, 2].map((daysAgo) => {
+      const at = new Date(NOW);
+      at.setUTCDate(at.getUTCDate() - daysAgo);
+      at.setUTCHours(8, 30, 0, 0);
+      return eventAt(at, true);
+    });
     const result = calculateCompliance(events, schedules, 7, createdAt);
     expect(result.rate).toBe(100);
     expect(result.taken).toBe(3);
