@@ -163,9 +163,12 @@ describe("GET /api/analytics — chunked per-type reads (Sr-H1)", () => {
     const httpEvent = buffered.find((e) => e.http?.path === "/api/analytics");
     expect(httpEvent).toBeDefined();
     expect(httpEvent!.meta).toBeDefined();
+    // v1.4.49.1 — analytics route delegates to `computeSummariesSlice`,
+    // which writes the row-count slot under `slim_summaries` rather than
+    // the old `bp_aggregate.row_count`.
     const analytics = httpEvent!.meta!.analytics as
-      | { bp_aggregate?: { row_count?: number } }
+      | { slim_summaries?: { row_count?: number } }
       | undefined;
-    expect(analytics?.bp_aggregate?.row_count).toBe(ROW_COUNT);
+    expect(analytics?.slim_summaries?.row_count).toBe(ROW_COUNT);
   });
 });

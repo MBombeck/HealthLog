@@ -227,7 +227,7 @@ describe("Withings OAuth nonce ledger (real Postgres)", () => {
     const replayRes = await callback(replayReq);
     expect(replayRes.status).toBe(307);
     expect(replayRes.headers.get("location")).toContain(
-      "withings=error&reason=state",
+      "withings=error&reason=replay",
     );
     // No token-endpoint call on the replay leg.
     const replayTokenCalls = fetchSpy.mock.calls.filter(
@@ -267,7 +267,7 @@ describe("Withings OAuth nonce ledger (real Postgres)", () => {
 
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toContain(
-      "withings=error&reason=state",
+      "withings=error&reason=expired",
     );
 
     // Token endpoint never hit.
@@ -321,9 +321,19 @@ describe("Withings OAuth nonce ledger (real Postgres)", () => {
 
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toContain(
-      "withings=error&reason=state",
+      "withings=error&reason=cross_user",
     );
-    expect(fetchSpy).not.toHaveBeenCalled();
+    // No token-endpoint call — short-circuited before exchangeCode fires.
+    // (Unrelated transports may still hit `fetch` for wide-event shipping;
+    // we narrow to the Withings token URL the same way the replay leg
+    // above does so the assertion stays meaningful without coupling to
+    // logging-transport details.)
+    const crossUserTokenCalls = fetchSpy.mock.calls.filter(
+      ([input]) =>
+        (typeof input === "string" ? input : (input as Request).url) ===
+        WITHINGS_TOKEN_URL,
+    );
+    expect(crossUserTokenCalls).toHaveLength(0);
 
     // The row is stamped out — single-use + cross-user mismatch is a
     // CSRF signal, not a recoverable state, so we don't leave the
