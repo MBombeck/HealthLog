@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.5.0] — 2026-05-24 — Native iOS client public-beta via TestFlight
+
+The minor-version cut that marks the native iOS client publicly available. The SwiftUI iOS app (separate repository) is now joinable via TestFlight: https://testflight.apple.com/join/bucuTBpa. This release contains no runtime server changes on top of v1.4.50 — the backend contract the iOS app speaks against has been live since v1.4.23 and has been continuously validated across every v1.4.2x–v1.4.50 release. This is the milestone that promotes the v1.5 line from "in active development" to "current".
+
+### Changed
+
+- README rewrite for the v1.5 cut: TestFlight badge added to the badge row plus an iOS TestFlight link in the Website / Demo / Docs row and the footer. Buy Me A Coffee badge added. Status block updated to reflect that v1.5 is now the current line, with a new "Heavily developed" advisory directly below it that tells self-hosters to pin a tag, take a backup before every upgrade, and read the CHANGELOG before pulling `latest`. Tech-Stack table flags the iOS app as TestFlight-available. Roadmap table promotes v1.5 from "in active development" to "current".
+- README simplification: the `How it works` diagram cluster (four SVGs covering data flow, Coach pipeline, source priority, and security model) is no longer inlined in the README. The diagrams continue to live in [`docs/diagrams/`](docs/diagrams/) and are surfaced through [docs.healthlog.dev](https://docs.healthlog.dev) where they render reliably across themes and viewport widths. The `03-self-hosting-topology.svg` stays inline under Deployment because it carries deployment-time information a self-hoster wants on the first scroll.
+
+### Notes
+
+- iOS coordination items closed alongside this cut: the v1.4.49 server-side `clientManaged` MEDICATION_REMINDER suppression rule is now active for iOS v0.6.0.8+ clients that opt in via `PATCH /api/auth/me/notification-prefs`; tracked in healthlog-iOS#9. Issue [#206](https://github.com/MBombeck/HealthLog/issues/206) is closed.
+- HealthLog suite carries forward from v1.4.50: 5279 unit + integration pass, lint clean, typecheck clean. No new tests since 1.5.0 is documentation-only on top of 1.4.50.
+
 ## [1.4.50] — 2026-05-24 — MoodLog reverse-sync (HealthLog → MoodLog push)
 
 Marc reported that mood entries logged inside HealthLog — specifically via the iOS app — never reached MoodLog. The historic integration ran one-way: `syncMoodLogEntries` polled MoodLog every 15 minutes and pulled new rows, but nothing flowed the other direction. A user tracking mood in HealthLog ended up with one log per app and no overlap.

@@ -11,10 +11,12 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License: AGPL-3.0" /></a>
   <a href="https://github.com/MBombeck/HealthLog/releases"><img src="https://img.shields.io/github/v/release/MBombeck/HealthLog?sort=semver&color=success" alt="Latest release" /></a>
+  <a href="https://testflight.apple.com/join/bucuTBpa"><img src="https://img.shields.io/badge/iOS-TestFlight-007AFF?logo=apple&logoColor=white" alt="iOS app on TestFlight" /></a>
   <img src="https://img.shields.io/badge/Self--Hosted-yes-success" alt="Self-Hosted" />
   <img src="https://img.shields.io/badge/Next.js-16-black?logo=next.js" alt="Next.js 16" />
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
   <a href="https://github.com/MBombeck/HealthLog/pkgs/container/healthlog"><img src="https://img.shields.io/badge/GHCR-multi--arch-2496ED?logo=docker&logoColor=white" alt="GHCR multi-arch image" /></a>
+  <a href="https://buymeacoffee.com/mbombeck"><img src="https://img.shields.io/badge/Buy_me_a_coffee-FFDD00?logo=buy-me-a-coffee&logoColor=black" alt="Buy Me A Coffee" /></a>
 </p>
 
 <p align="center">
@@ -25,7 +27,8 @@
 <p align="center">
   <a href="https://healthlog.dev">Website</a> &middot;
   <a href="https://demo.healthlog.dev">Live Demo</a> &middot;
-  <a href="https://docs.healthlog.dev">Documentation</a>
+  <a href="https://docs.healthlog.dev">Documentation</a> &middot;
+  <a href="https://testflight.apple.com/join/bucuTBpa">iOS TestFlight</a>
 </p>
 
 ---
@@ -34,7 +37,9 @@
 
 HealthLog is a self-hosted personal health tracker that runs from a single `docker compose up`. It covers the metrics most people actually log -- weight, blood pressure, pulse, body composition, blood glucose, sleep, mood, and medication compliance -- and brings them together in one dashboard with reference ranges from ESC/ESH 2018, ADA 2024, and NICE NG115. Withings devices sync automatically; an `export.zip` import folds your full Apple Health history into the same timeline; multi-provider AI Insights (BYOK or local) explain what the numbers mean; a doctor-report PDF generates client-side. EN/DE end-to-end. AGPL-3.0.
 
-> **Status**: active. New releases roughly weekly -- see [CHANGELOG](CHANGELOG.md). Current focus: native iOS client (v1.5).
+> **Status**: active. New releases roughly weekly -- see [CHANGELOG](CHANGELOG.md). Current line: v1.5 — native iOS client now public-beta via [TestFlight](https://testflight.apple.com/join/bucuTBpa).
+
+> **Heavily developed.** HealthLog ships multiple releases per week. Behaviour, API shapes, and database schema can change between minor versions; migrations are forward-only and not all are rehearsed against every legacy fixture. If you self-host, pin a tag, take a backup before every upgrade, and read the [CHANGELOG](CHANGELOG.md) before pulling `latest`. Issue reports and PRs welcome — this is the rough edge where the project gets sharper.
 
 Built for people who want their health data on their own server -- whether that's a NAS, a homelab, or a small VPS -- and who don't want to hand it to a US cloud to read a 7-day weight trend. **Try the [live demo](https://demo.healthlog.dev)** to see what a working install looks like, or skip to [Quick Start](#quick-start) below.
 
@@ -59,24 +64,6 @@ Most health apps lock your data behind proprietary clouds, push subscriptions, a
 | AI Insights              | Multi-provider BYOK  | No              | Limited       | Subscription| n/a         |
 | Subscription required    | No                   | For some metrics| No            | Yes         | No          |
 | Your data leaves device  | Never                | Withings cloud  | Apple cloud   | Oura cloud  | Depends     |
-
----
-
-## How it works
-
-<p align="center">
-  <img src="docs/diagrams/01-data-flow.svg" alt="Five-stage data pipeline: sources to ingest to Postgres + rollups to reads to surfaces" width="900" />
-</p>
-
-Every reading walks the same five-stage pipeline. **Sources** (Withings webhook, an Apple Health `export.zip`, the iPhone HealthKit batch from the v1.5 native client, manual entry, the moodLog.app webhook) reach a small set of **ingest** endpoints, which dedup against the source-priority resolver before persisting into Postgres. **Storage** keeps two shapes — a `Measurement` row per sample plus pre-aggregated DAY / WEEK / MONTH `MeasurementRollup` buckets. **Reads** probe the rollups first and fall back to live SQL when the ask is too slope-heavy or the bucket is cold. **Surfaces** — dashboard tiles, Insights cards, the AI Coach, the doctor-report PDF — all consume the same read path, so a number on a tile is always the same number the Coach cites.
-
-Three more diagrams cover the pieces that matter most when you're evaluating the project:
-
-- [`02-coach-pipeline.svg`](docs/diagrams/02-coach-pipeline.svg) — how the AI Coach grounds every reply in your own data via the snapshot builder + provider chain + Zod-validated parser.
-- [`04-source-priority.svg`](docs/diagrams/04-source-priority.svg) — why steps logged simultaneously by Apple Watch, a Withings ScanWatch and the iPhone don't triple-count.
-- [`05-security-model.svg`](docs/diagrams/05-security-model.svg) — the three concentric perimeters (auth, session, encrypted core) plus rate-limiter, audit-log and SSRF rails.
-
-The deployment topology lives further down under [Deployment](#deployment).
 
 ---
 
@@ -163,7 +150,7 @@ Open **http://localhost:3000**. The first registered user becomes admin.
 | PDF           | jsPDF (client-side generation)                    |
 | Testing       | Vitest 4                                          |
 | Deployment    | Docker (multi-stage Alpine)                       |
-| Native client | SwiftUI iOS app (separate repo, active for v1.5)  |
+| Native client | SwiftUI iOS app — v1.5, public beta via [TestFlight](https://testflight.apple.com/join/bucuTBpa) |
 
 ---
 
@@ -488,8 +475,8 @@ For a single-process default the same container hosts both the web and worker (`
 
 | Release line | Focus |
 | ------------ | ----- |
-| **v1.4.x** (current) | Web maturity — Apple Health import, AI Coach, persistent rollup tier, multi-provider AI, doctor PDF, encryption-key rotation, Coolify autodeploy. Roughly weekly cadence. |
-| **v1.5** (in active development) | Native iOS client (SwiftUI). The backend contract is already locked in [`docs/api/openapi.yaml`](docs/api/openapi.yaml); the iOS app lives in a separate repository and ingests via the same `/api/measurements/batch` and `/api/auth/refresh` surfaces the web uses. |
+| **v1.4.x** | Web maturity — Apple Health import, AI Coach, persistent rollup tier, multi-provider AI, doctor PDF, encryption-key rotation, Coolify autodeploy. Roughly weekly cadence. |
+| **v1.5** (current) | Native iOS client (SwiftUI) in public beta via [TestFlight](https://testflight.apple.com/join/bucuTBpa). Backend contract locked in [`docs/api/openapi.yaml`](docs/api/openapi.yaml); the iOS app lives in a separate repository and ingests via the same `/api/measurements/batch` and `/api/auth/refresh` surfaces the web uses. |
 | **v2.x** (planned) | Multi-tenant hardening, expanded device passthrough (Garmin / Polar), opt-in cross-user aggregate research mode (off by default; never enabled without explicit consent). |
 
 The detailed changelog lives in [`CHANGELOG.md`](CHANGELOG.md); per-release audit summaries live under [`docs/audit/`](docs/audit/).
@@ -516,5 +503,7 @@ HealthLog is licensed under the [GNU Affero General Public License v3.0](LICENSE
 <p align="center">
   <a href="https://healthlog.dev">healthlog.dev</a> &middot;
   <a href="https://demo.healthlog.dev">Live Demo</a> &middot;
-  <a href="https://docs.healthlog.dev">Docs</a>
+  <a href="https://docs.healthlog.dev">Docs</a> &middot;
+  <a href="https://testflight.apple.com/join/bucuTBpa">iOS TestFlight</a> &middot;
+  <a href="https://buymeacoffee.com/mbombeck">Buy Me A Coffee</a>
 </p>
