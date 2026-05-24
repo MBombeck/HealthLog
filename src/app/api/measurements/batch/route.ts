@@ -17,6 +17,14 @@
  *     a partial-success retry, or two devices uploading the same
  *     HealthKit sample, surface as `duplicate` per entry instead of
  *     hard-failing the batch.
+ *   - v1.5.0 issue #213 — entries whose `externalId` starts with
+ *     `stats:` are per-day cumulative totals (Steps, Active Energy,
+ *     Sleep Duration, Walking/Running Distance, Flights Climbed). The
+ *     iOS HealthKit observer re-posts those throughout the day as the
+ *     running total changes. They surface as `updated` (the row's
+ *     value is overwritten) rather than `duplicate` (the new value
+ *     dropped). Sample-class externalIds keep the strict immutable
+ *     `duplicate` contract.
  */
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
@@ -91,12 +99,28 @@ type BatchEntry = z.infer<typeof batchEntrySchema>;
 /**
  * Per-entry outcome the iOS client uses to advance its sync cursor.
  * `inserted` and `duplicate` both indicate the row landed (or was
- * already present), so the client can checkpoint past them.
- * `skipped` is the only case where the client may want to surface a
- * diagnostic — typically because Apple introduced a new identifier the
- * server doesn't know about yet.
+ * already present), so the client can checkpoint past them. `updated`
+ * is the per-day-aggregate overwrite path: when the iOS client re-posts
+ * a `stats:*` cumulative row (Steps, Active Energy, Sleep Duration,
+ * Walking/Running Distance, Flights Climbed — see issue #213) for a day
+ * we already have, the server overwrites the row's `value` rather than
+ * dropping the new payload as a duplicate. Sample-class rows (every
+ * other HK metric) keep the strict `duplicate` semantics because each
+ * sample is a canonical, immutable reading. `skipped` is the only case
+ * where the client may want to surface a diagnostic — typically because
+ * Apple introduced a new identifier the server doesn't know about yet.
  */
-type EntryStatus = "inserted" | "duplicate" | "skipped";
+type EntryStatus = "inserted" | "updated" | "duplicate" | "skipped";
+
+// v1.5.0 issue #213 — `stats:*` externalIds carry per-day cumulative
+// totals that the iOS HealthKit observer re-posts as the day progresses.
+// Treating those as immutable duplicates freezes the day's tile at the
+// first-sync value. Sample-class externalIds (every other prefix) keep
+// the strict insert-only contract.
+const STATS_EXTERNAL_ID_PREFIX = "stats:";
+function isStatsExternalId(externalId: string | null | undefined): boolean {
+  return typeof externalId === "string" && externalId.startsWith(STATS_EXTERNAL_ID_PREFIX);
+}
 interface EntryResult {
   index: number;
   status: EntryStatus;
@@ -218,6 +242,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
   }
 
   let insertedCount = 0;
+  let updatedCount = 0;
   let duplicateCount = 0;
 
   if (prepared.length > 0) {
@@ -247,15 +272,52 @@ async function postBatch(request: NextRequest): Promise<Response> {
     );
 
     const toInsert: Prisma.MeasurementCreateManyInput[] = [];
+    const toOverwrite: Prepared[] = [];
     for (const p of prepared) {
       const key = `${p.row.type}::${p.row.externalId}`;
       if (existingSet.has(key)) {
-        results[p.index] = { index: p.index, status: "duplicate" };
-        duplicateCount += 1;
+        // v1.5.0 issue #213 — per-day cumulative `stats:*` rows are
+        // intentionally overwritten on a re-post so today's tile reflects
+        // the latest HealthKit total instead of freezing at the
+        // first-sync value. Sample-class rows keep the immutable
+        // duplicate contract.
+        if (isStatsExternalId(p.row.externalId as string)) {
+          toOverwrite.push(p);
+        } else {
+          results[p.index] = { index: p.index, status: "duplicate" };
+          duplicateCount += 1;
+        }
       } else {
         results[p.index] = { index: p.index, status: "inserted" };
         toInsert.push(p.row);
       }
+    }
+
+    if (toOverwrite.length > 0) {
+      await prisma.$transaction(async (tx) => {
+        for (const p of toOverwrite) {
+          await tx.measurement.updateMany({
+            where: {
+              userId: user.id,
+              source: "APPLE_HEALTH",
+              type: p.row.type as MeasurementType,
+              externalId: p.row.externalId as string,
+            },
+            data: {
+              value: p.row.value as number,
+              unit: p.row.unit as string,
+              measuredAt: p.row.measuredAt as Date,
+              externalSourceVersion: p.row.externalSourceVersion as
+                | string
+                | null,
+              deviceType: p.row.deviceType as Prepared["row"]["deviceType"],
+              sleepStage: p.row.sleepStage as Prepared["row"]["sleepStage"],
+            },
+          });
+          results[p.index] = { index: p.index, status: "updated" };
+          updatedCount += 1;
+        }
+      });
     }
 
     if (toInsert.length > 0) {
@@ -327,18 +389,37 @@ async function postBatch(request: NextRequest): Promise<Response> {
     details: {
       processed: entries.length,
       inserted: insertedCount,
+      updated: updatedCount,
       duplicates: duplicateCount,
       skipped: skipped.length,
     },
   });
+
+  // v1.5.0 issue #213 — dedicated wide-event annotation so an operator
+  // can grep `measurement.batch.stats-overwrite` to see how often
+  // per-day cumulative rows are getting re-posted (a healthy ingest
+  // flow). Only fires when at least one row was overwritten so the
+  // baseline ingest trace is unchanged for batches with no `stats:*`
+  // duplicates.
+  if (updatedCount > 0) {
+    annotate({
+      action: { name: "measurement.batch.stats-overwrite" },
+      meta: {
+        updated: updatedCount,
+        processed: entries.length,
+      },
+    });
+  }
 
   // v1.4.25 W16c — kick off PR detection for this user. We always
   // enqueue when at least one row was written (or the batch had any
   // measurements to consider) so a single off-day reading still gets
   // evaluated; the warm-up gate inside the detector decides whether
   // it's a record. Suppress push notifications for historical
-  // backfills above the silent threshold.
-  if (insertedCount > 0 || duplicateCount > 0) {
+  // backfills above the silent threshold. Updated `stats:*` rows also
+  // count — a per-day-total overwrite can flip the day's value past a
+  // personal record.
+  if (insertedCount > 0 || updatedCount > 0 || duplicateCount > 0) {
     const silent = entries.length > PR_DETECTION_SILENT_THRESHOLD;
     try {
       await enqueuePrDetection(user.id, { silent });
@@ -366,6 +447,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
     meta: {
       processed: entries.length,
       inserted: insertedCount,
+      updated: updatedCount,
       duplicates: duplicateCount,
       skipped: skipped.length,
     },
@@ -374,8 +456,11 @@ async function postBatch(request: NextRequest): Promise<Response> {
   // v1.4.34 IW-G — bust per-user analytics + achievements + workouts
   // caches when at least one row landed so the next read picks up the
   // ingested batch. Skipped-only ingests don't change state, so we
-  // gate the invalidation on `insertedCount > 0`.
-  if (insertedCount > 0) {
+  // gate the invalidation on `insertedCount > 0 || updatedCount > 0`
+  // — overwriting a per-day `stats:*` row changes the day's reading
+  // and must invalidate every consumer that reads through this user's
+  // measurements.
+  if (insertedCount > 0 || updatedCount > 0) {
     invalidateUserMeasurements(user.id);
 
     // v1.5.0 — refresh the persistent rollup table for every distinct
@@ -407,6 +492,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
   return apiSuccess({
     processed: entries.length,
     inserted: insertedCount,
+    updated: updatedCount,
     duplicates: duplicateCount,
     skipped,
     entries: results,

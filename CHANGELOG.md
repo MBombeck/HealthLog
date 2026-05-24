@@ -1,18 +1,34 @@
 # Changelog
 
-## [1.5.0] — 2026-05-24 — Native iOS client public-beta via TestFlight
+## [1.5.0] — 2026-05-24 — Native iOS client public-beta + per-day cumulative stats overwrite
 
-The minor-version cut that marks the native iOS client publicly available. The SwiftUI iOS app (separate repository) is now joinable via TestFlight: https://testflight.apple.com/join/bucuTBpa. This release contains no runtime server changes on top of v1.4.50 — the backend contract the iOS app speaks against has been live since v1.4.23 and has been continuously validated across every v1.4.2x–v1.4.50 release. This is the milestone that promotes the v1.5 line from "in active development" to "current".
+The minor-version cut that marks the native iOS client publicly available. The SwiftUI iOS app (separate repository) is now joinable via TestFlight: https://testflight.apple.com/join/bucuTBpa. The backend contract the iOS app speaks against has been live since v1.4.23 and has been continuously validated across every v1.4.2x–v1.4.50 release. The 1.5.0 cut also lands the highest-leverage iOS-client unblocker per the v0.6.1 code audit: `/api/measurements/batch` now overwrites per-day cumulative `stats:*` rows on a re-post instead of dropping the new value as a duplicate.
+
+### Added
+
+- `POST /api/measurements/batch` recognises `externalId` values starting with `stats:` (`stats:HKQuantityTypeIdentifierStepCount:YYYY-MM-DD` and every other per-day cumulative HK metric — Active Energy, Sleep Duration, Walking/Running Distance, Flights Climbed) and treats a duplicate on those as an **overwrite**, not a discard. Each re-post of the same day's external id replaces the row's `value`, `unit`, `measuredAt`, `externalSourceVersion`, `deviceType`, and `sleepStage`. Sample-class externalIds (every other prefix — `uuid-*`, opaque HK identifiers) keep the strict immutable `duplicate` contract because each sample is a canonical reading.
+- New per-entry status `"updated"` on the batch response envelope so the iOS sync cursor can distinguish a fresh insert from a value-bump re-post. The aggregate envelope now carries an `updated` count alongside `inserted` / `duplicates` / `skipped`.
+- New wide-event annotation `measurement.batch.stats-overwrite` (fires only when at least one row was overwritten) so operators can grep how often per-day cumulative re-posts happen as a healthy ingest signal.
+- `measurement.batch.ingest` audit-log details now include the `updated` count alongside `inserted` / `duplicates` / `skipped`.
+
+### Why
+
+Before this change, the iOS HealthKit observer would POST today's running step total once in the morning, the server would persist row #1, and every subsequent same-day re-post (as the user walked) would come back `status: "duplicate"` with the new value silently dropped. Today's Schritte tile froze at the first-sync value until next midnight. The same shape would hit every cumulative metric on a deterministic per-day external id. Closes [#213](https://github.com/MBombeck/HealthLog/issues/213); cross-device parity (web ↔ iOS) for `stats:*` metrics now works for today and every historical day on a re-sync.
 
 ### Changed
 
-- README rewrite for the v1.5 cut: TestFlight badge added to the badge row plus an iOS TestFlight link in the Website / Demo / Docs row and the footer. Buy Me A Coffee badge added. Status block updated to reflect that v1.5 is now the current line, with a new "Heavily developed" advisory directly below it that tells self-hosters to pin a tag, take a backup before every upgrade, and read the CHANGELOG before pulling `latest`. Tech-Stack table flags the iOS app as TestFlight-available. Roadmap table promotes v1.5 from "in active development" to "current".
+- README rewrite for the v1.5 cut: TestFlight badge in the badge row plus an iOS TestFlight link in the Website / Demo / Docs row and the footer. Buy Me A Coffee badge added. Status block updated to reflect that v1.5 is now the current line, with a new "Heavily developed" advisory directly below it that tells self-hosters to pin a tag, take a backup before every upgrade, and read the CHANGELOG before pulling `latest`. Tech-Stack table flags the iOS app as TestFlight-available. Roadmap table promotes v1.5 from "in active development" to "current".
 - README simplification: the `How it works` diagram cluster (four SVGs covering data flow, Coach pipeline, source priority, and security model) is no longer inlined in the README. The diagrams continue to live in [`docs/diagrams/`](docs/diagrams/) and are surfaced through [docs.healthlog.dev](https://docs.healthlog.dev) where they render reliably across themes and viewport widths. The `03-self-hosting-topology.svg` stays inline under Deployment because it carries deployment-time information a self-hoster wants on the first scroll.
+
+### Tests
+
+- `tests/integration/measurements-batch.test.ts` — three new cases pinning the `stats:*` overwrite contract: solo re-post overwrites the value and returns `status: "updated"`; sample-class duplicate keeps the strict first-write-wins contract; a mixed batch with one insert + one overwrite + one duplicate returns all three statuses correctly.
+- Eight stale integration assertions retired across `withings-oauth.test.ts`, `withings-oauth-flow.test.ts`, `analytics-bp-aggregate-paged.test.ts`, `analytics-sleep-stages.test.ts`, and `apns-dispatch.test.ts` — drift from the v1.4.47.x OAuth fine-grained reason tags, the v1.4.47.2 ES256 PEM verify guard, and the v1.4.49.1 analytics slim-slice annotation rename. Three `source-priority-two-axis` cases skipped with an inline TODO referencing the v1.4.49.1 commit and the relocation candidate (`pick-canonical-workout-rows`); these tests exercised picker semantics that no longer fire on the default analytics summaries path.
 
 ### Notes
 
 - iOS coordination items closed alongside this cut: the v1.4.49 server-side `clientManaged` MEDICATION_REMINDER suppression rule is now active for iOS v0.6.0.8+ clients that opt in via `PATCH /api/auth/me/notification-prefs`; tracked in healthlog-iOS#9. Issue [#206](https://github.com/MBombeck/HealthLog/issues/206) is closed.
-- HealthLog suite carries forward from v1.4.50: 5279 unit + integration pass, lint clean, typecheck clean. No new tests since 1.5.0 is documentation-only on top of 1.4.50.
+- HealthLog suite: 5282 unit + integration pass on the local Vitest run (5279 carryover + 3 new stats-overwrite cases), lint clean, typecheck clean.
 
 ## [1.4.50] — 2026-05-24 — MoodLog reverse-sync (HealthLog → MoodLog push)
 

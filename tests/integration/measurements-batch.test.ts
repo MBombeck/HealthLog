@@ -486,4 +486,216 @@ describe("POST /api/measurements/batch (real Postgres)", () => {
     });
     expect(stored).toHaveLength(1);
   });
+
+  // v1.5.0 issue #213 — per-day cumulative `stats:*` externalIds are
+  // re-posted by the iOS HealthKit observer throughout the day. Prior
+  // to this fix the server returned `status: "duplicate"` and silently
+  // dropped the new value, freezing today's tile at the first-sync
+  // total. Sample-class externalIds (every other prefix) keep the
+  // immutable duplicate contract because each sample is canonical.
+  describe("stats:* externalId overwrite (issue #213)", () => {
+    it("re-posting a stats:* day-aggregate row overwrites the value and returns status='updated'", async () => {
+      const { POST } = await import("@/app/api/measurements/batch/route");
+
+      const externalId =
+        "stats:HKQuantityTypeIdentifierStepCount:2026-05-24";
+      const firstBody = {
+        entries: [
+          {
+            hkIdentifier: "HKQuantityTypeIdentifierStepCount",
+            value: 300,
+            unit: "count",
+            startDate: "2026-05-24T00:00:00.000Z",
+            endDate: "2026-05-24T08:00:00.000Z",
+            externalId,
+          },
+        ],
+      };
+
+      const first = await POST(makeRequest(firstBody));
+      expect(first.status).toBe(200);
+      const firstJson = (await first.json()) as {
+        data: {
+          inserted: number;
+          updated: number;
+          duplicates: number;
+          entries: Array<{ status: string }>;
+        };
+      };
+      expect(firstJson.data.inserted).toBe(1);
+      expect(firstJson.data.updated).toBe(0);
+      expect(firstJson.data.duplicates).toBe(0);
+      expect(firstJson.data.entries[0]?.status).toBe("inserted");
+
+      const secondBody = {
+        entries: [
+          {
+            ...firstBody.entries[0],
+            value: 5200,
+            endDate: "2026-05-24T16:00:00.000Z",
+          },
+        ],
+      };
+
+      const second = await POST(makeRequest(secondBody));
+      expect(second.status).toBe(200);
+      const secondJson = (await second.json()) as {
+        data: {
+          inserted: number;
+          updated: number;
+          duplicates: number;
+          entries: Array<{ status: string }>;
+        };
+      };
+      expect(secondJson.data.inserted).toBe(0);
+      expect(secondJson.data.updated).toBe(1);
+      expect(secondJson.data.duplicates).toBe(0);
+      expect(secondJson.data.entries[0]?.status).toBe("updated");
+
+      // The single row on disk reflects the latest re-post.
+      const stored = await getPrismaClient().measurement.findMany({
+        where: { userId: TEST_USER_ID, externalId },
+      });
+      expect(stored).toHaveLength(1);
+      expect(stored[0]!.value).toBeCloseTo(5200, 5);
+    });
+
+    it("sample-class externalIds (non-stats:* prefix) keep the strict duplicate contract", async () => {
+      const { POST } = await import("@/app/api/measurements/batch/route");
+
+      const externalId = "uuid-pulse-sample-001";
+      const body = {
+        entries: [
+          {
+            hkIdentifier: "HKQuantityTypeIdentifierHeartRate",
+            value: 64,
+            unit: "count/min",
+            startDate: "2026-05-24T08:00:00.000Z",
+            endDate: "2026-05-24T08:00:00.000Z",
+            externalId,
+          },
+        ],
+      };
+
+      const first = await POST(makeRequest(body));
+      expect(first.status).toBe(200);
+      expect(((await first.json()) as { data: { inserted: number } }).data.inserted)
+        .toBe(1);
+
+      // Replay with a different value — must NOT overwrite because the
+      // externalId is not stats:*. Sample-class rows are immutable.
+      const replayBody = {
+        entries: [
+          {
+            ...body.entries[0],
+            value: 200,
+          },
+        ],
+      };
+
+      const second = await POST(makeRequest(replayBody));
+      expect(second.status).toBe(200);
+      const secondJson = (await second.json()) as {
+        data: { inserted: number; updated: number; duplicates: number };
+      };
+      expect(secondJson.data.inserted).toBe(0);
+      expect(secondJson.data.updated).toBe(0);
+      expect(secondJson.data.duplicates).toBe(1);
+
+      const stored = await getPrismaClient().measurement.findMany({
+        where: { userId: TEST_USER_ID, externalId },
+      });
+      expect(stored).toHaveLength(1);
+      // First-write wins — sample-class duplicates do not overwrite.
+      expect(stored[0]!.value).toBeCloseTo(64, 5);
+    });
+
+    it("a mixed batch with one new + one stats:* overwrite + one sample-class duplicate returns all three statuses", async () => {
+      const { POST } = await import("@/app/api/measurements/batch/route");
+
+      // Seed: one stats:* steps row (will be overwritten) + one
+      // sample-class pulse row (will surface as duplicate on replay).
+      const stepsExternalId =
+        "stats:HKQuantityTypeIdentifierStepCount:2026-05-25";
+      const pulseExternalId = "uuid-pulse-mixed-001";
+      await POST(
+        makeRequest({
+          entries: [
+            {
+              hkIdentifier: "HKQuantityTypeIdentifierStepCount",
+              value: 1200,
+              unit: "count",
+              startDate: "2026-05-25T00:00:00.000Z",
+              endDate: "2026-05-25T09:00:00.000Z",
+              externalId: stepsExternalId,
+            },
+            {
+              hkIdentifier: "HKQuantityTypeIdentifierHeartRate",
+              value: 70,
+              unit: "count/min",
+              startDate: "2026-05-25T09:00:00.000Z",
+              endDate: "2026-05-25T09:00:00.000Z",
+              externalId: pulseExternalId,
+            },
+          ],
+        }),
+      );
+
+      // Second batch: stats:* re-post (overwrite) + sample-class
+      // replay (duplicate) + a brand-new pulse sample (insert).
+      const second = await POST(
+        makeRequest({
+          entries: [
+            {
+              hkIdentifier: "HKQuantityTypeIdentifierStepCount",
+              value: 8400,
+              unit: "count",
+              startDate: "2026-05-25T00:00:00.000Z",
+              endDate: "2026-05-25T18:00:00.000Z",
+              externalId: stepsExternalId,
+            },
+            {
+              hkIdentifier: "HKQuantityTypeIdentifierHeartRate",
+              value: 70,
+              unit: "count/min",
+              startDate: "2026-05-25T09:00:00.000Z",
+              endDate: "2026-05-25T09:00:00.000Z",
+              externalId: pulseExternalId,
+            },
+            {
+              hkIdentifier: "HKQuantityTypeIdentifierHeartRate",
+              value: 88,
+              unit: "count/min",
+              startDate: "2026-05-25T15:00:00.000Z",
+              endDate: "2026-05-25T15:00:00.000Z",
+              externalId: "uuid-pulse-mixed-002",
+            },
+          ],
+        }),
+      );
+
+      expect(second.status).toBe(200);
+      const json = (await second.json()) as {
+        data: {
+          inserted: number;
+          updated: number;
+          duplicates: number;
+          entries: Array<{ index: number; status: string }>;
+        };
+      };
+      expect(json.data.inserted).toBe(1);
+      expect(json.data.updated).toBe(1);
+      expect(json.data.duplicates).toBe(1);
+
+      const byIndex = new Map(json.data.entries.map((e) => [e.index, e.status]));
+      expect(byIndex.get(0)).toBe("updated");
+      expect(byIndex.get(1)).toBe("duplicate");
+      expect(byIndex.get(2)).toBe("inserted");
+
+      const stepsRow = await getPrismaClient().measurement.findFirst({
+        where: { userId: TEST_USER_ID, externalId: stepsExternalId },
+      });
+      expect(stepsRow?.value).toBeCloseTo(8400, 5);
+    });
+  });
 });
