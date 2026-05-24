@@ -42,7 +42,7 @@ describe("generateMedicationComplianceStatusForUser — v1.4.6 bucketed payload"
       dose: "5mg",
       active: true,
       createdAt: new Date(now.getTime() - 1100 * dayMs),
-      schedules: [{ id: "s1", time: "08:00" }],
+      schedules: [{ id: "s1", windowStart: "08:00", windowEnd: "09:00", daysOfWeek: null }],
     };
 
     const events: Array<{
@@ -117,7 +117,7 @@ describe("generateMedicationComplianceStatusForUser — v1.4.41 timeout-stub per
       dose: "5mg",
       active: true,
       createdAt: new Date(now.getTime() - 60 * dayMs),
-      schedules: [{ id: "s1", time: "08:00" }],
+      schedules: [{ id: "s1", windowStart: "08:00", windowEnd: "09:00", daysOfWeek: null }],
     };
 
     vi.mocked(prisma.auditLog.findFirst).mockResolvedValue(null);
@@ -225,7 +225,7 @@ describe("generateMedicationComplianceStatusForUser — token-leak hardening (v1
       dose: "5mg",
       active: true,
       createdAt: new Date(now.getTime() - 60 * dayMs),
-      schedules: [{ id: "s1", time: "08:00" }],
+      schedules: [{ id: "s1", windowStart: "08:00", windowEnd: "09:00", daysOfWeek: null }],
     };
 
     vi.mocked(prisma.auditLog.findFirst).mockResolvedValue(null);

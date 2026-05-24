@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.5.0] — 2026-05-24 — Native iOS client public-beta + per-day cumulative stats overwrite
+## [1.5.0] — 2026-05-24 — Native iOS client public-beta + per-day cumulative stats overwrite + cadence-aware medication compliance
 
 The minor-version cut that marks the native iOS client publicly available. The SwiftUI iOS app (separate repository) is now joinable via TestFlight: https://testflight.apple.com/join/bucuTBpa. The backend contract the iOS app speaks against has been live since v1.4.23 and has been continuously validated across every v1.4.2x–v1.4.50 release. The 1.5.0 cut also lands the highest-leverage iOS-client unblocker per the v0.6.1 code audit: `/api/measurements/batch` now overwrites per-day cumulative `stats:*` rows on a re-post instead of dropping the new value as a duplicate.
 
@@ -15,6 +15,10 @@ The minor-version cut that marks the native iOS client publicly available. The S
 
 Before this change, the iOS HealthKit observer would POST today's running step total once in the morning, the server would persist row #1, and every subsequent same-day re-post (as the user walked) would come back `status: "duplicate"` with the new value silently dropped. Today's Schritte tile froze at the first-sync value until next midnight. The same shape would hit every cumulative metric on a deterministic per-day external id. Closes [#213](https://github.com/MBombeck/HealthLog/issues/213); cross-device parity (web ↔ iOS) for `stats:*` metrics now works for today and every historical day on a re-sync.
 
+### Fixed
+
+- Medication compliance now honours `daysOfWeek` and `intervalWeeks` across every call site that surfaces a rate. The legacy aggregator computed `totalExpected = schedules.length * days`, which silently ignored cadence. A weekly Ozempic schedule with all four Mondays taken in the last 30 days reported ~13% adherence (4 / 30) instead of 100%; a weekday-only 3×/day metformin schedule with every weekday dose taken reported ~73% (66 / 90) instead of 100%. `calculateCompliance` is now a cadence-aware adapter on top of `buildCadenceTimeline` — the same pair-matching pipeline that drives the per-medication cadence chart — so the rate on the medication card, the AI Coach prompt context (7d/30d/90d windows in `src/lib/insights/features.ts`), the BP-status compliance gate, the medication-compliance status insight, `/api/insights/targets`, `/api/insights/comprehensive`, and the medication-compliance pillar of the dashboard Health Score all agree on a single, cadence-correct denominator. The wire shape (`{ totalExpected, taken, skipped, missed, rate, streak }`) is unchanged so every UI tile and persisted-insight consumer keeps reading the same fields. Closes [#214](https://github.com/MBombeck/HealthLog/issues/214). Expected user-visible shift: users on weekly meds (GLP-1 agonists, biologics) will see their Health Score rise as the medication pillar moves from ~13 to ~100; users on weekday-only multi-dose schedules will see their score rise as the pillar moves from ~73 to ~100; users on daily-only schedules see no change because the legacy denominator was already correct for that path. Migrations across the eight production call sites are mechanical — the function signature is unchanged.
+
 ### Changed
 
 - README rewrite for the v1.5 cut: TestFlight badge in the badge row plus an iOS TestFlight link in the Website / Demo / Docs row and the footer. Buy Me A Coffee badge added. Status block updated to reflect that v1.5 is now the current line, with a new "Heavily developed" advisory directly below it that tells self-hosters to pin a tag, take a backup before every upgrade, and read the CHANGELOG before pulling `latest`. Tech-Stack table flags the iOS app as TestFlight-available. Roadmap table promotes v1.5 from "in active development" to "current".
@@ -23,12 +27,14 @@ Before this change, the iOS HealthKit observer would POST today's running step t
 ### Tests
 
 - `tests/integration/measurements-batch.test.ts` — three new cases pinning the `stats:*` overwrite contract: solo re-post overwrites the value and returns `status: "updated"`; sample-class duplicate keeps the strict first-write-wins contract; a mixed batch with one insert + one overwrite + one duplicate returns all three statuses correctly.
+- `src/lib/analytics/__tests__/compliance.test.ts` — parameterised cadence matrix: 1×/day daily (7 / 0 / 18 of 21), weekly Mondays-only (all taken / one missed), bi-weekly (`intervalWeeks=2`), weekday-only 3×/day metformin, skipped-dose denominator exclusion, `medicationCreatedAt` truncation, DST spring-forward boundary in Europe/Berlin, and over-logged-day rate cap. The matrix pins the contract for every cadence the production app exercises so future schedule-shape work can't silently regress.
+- `src/lib/analytics/__tests__/health-score-fast-path.test.ts` — two cadence-aware regression cases: a weekly Mondays-only med with every Monday taken now lifts the medication-compliance pillar to ≥ 50 (previously ~13 under the bug); a daily-only med with every dose taken stays ≥ 90 (no regression on the path that worked).
 - Eight stale integration assertions retired across `withings-oauth.test.ts`, `withings-oauth-flow.test.ts`, `analytics-bp-aggregate-paged.test.ts`, `analytics-sleep-stages.test.ts`, and `apns-dispatch.test.ts` — drift from the v1.4.47.x OAuth fine-grained reason tags, the v1.4.47.2 ES256 PEM verify guard, and the v1.4.49.1 analytics slim-slice annotation rename. Three `source-priority-two-axis` cases skipped with an inline TODO referencing the v1.4.49.1 commit and the relocation candidate (`pick-canonical-workout-rows`); these tests exercised picker semantics that no longer fire on the default analytics summaries path.
 
 ### Notes
 
 - iOS coordination items closed alongside this cut: the v1.4.49 server-side `clientManaged` MEDICATION_REMINDER suppression rule is now active for iOS v0.6.0.8+ clients that opt in via `PATCH /api/auth/me/notification-prefs`; tracked in healthlog-iOS#9. Issue [#206](https://github.com/MBombeck/HealthLog/issues/206) is closed.
-- HealthLog suite: 5282 unit + integration pass on the local Vitest run (5279 carryover + 3 new stats-overwrite cases), lint clean, typecheck clean.
+- HealthLog suite: 5285 unit (5279 carryover + 3 new stats-overwrite cases + new compliance matrix and Health-Score regression cases that net out the legacy assertions retired during the cadence-aware migration) + 253 integration tests pass on the local Vitest run, lint clean, typecheck clean.
 
 ## [1.4.50] — 2026-05-24 — MoodLog reverse-sync (HealthLog → MoodLog push)
 

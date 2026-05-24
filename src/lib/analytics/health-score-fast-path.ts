@@ -292,6 +292,10 @@ export async function computeUserHealthScoreFastPath(
           select: {
             windowStart: true,
             windowEnd: true,
+            // v1.5.0 — cadence-aware compliance reads daysOfWeek so a
+            // weekly med (Mondays only) doesn't get a 30-day denominator
+            // that depresses the score by ~85 percentage points. Closes #214.
+            daysOfWeek: true,
           },
         },
       },
@@ -323,7 +327,12 @@ export async function computeUserHealthScoreFastPath(
     }
     medicationCompliance30 = medications.map((med) => {
       const events = eventsByMed.get(med.id) ?? [];
-      return calculateCompliance(events, med.schedules, 30, med.createdAt).rate;
+      // v1.5.0 — pass the helper's pinned `now` so the cadence-aware
+      // window math agrees with the score's other pillars (which also
+      // anchor to the same `now`). Closes #214.
+      return calculateCompliance(events, med.schedules, 30, med.createdAt, {
+        now,
+      }).rate;
     });
     medicationCompliance30Previous = medications.map((med) => {
       const events = (eventsByMed.get(med.id) ?? []).filter(
@@ -336,8 +345,9 @@ export async function computeUserHealthScoreFastPath(
         takenAt: e.takenAt ? new Date(e.takenAt.getTime() + 7 * DAY_MS) : null,
         skipped: e.skipped,
       }));
-      return calculateCompliance(shifted, med.schedules, 30, med.createdAt)
-        .rate;
+      return calculateCompliance(shifted, med.schedules, 30, med.createdAt, {
+        now,
+      }).rate;
     });
   }
 

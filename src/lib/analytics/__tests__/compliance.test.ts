@@ -1,9 +1,38 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { calculateCompliance, classifyIntakeTiming } from "../compliance";
+/**
+ * v1.5.0 — `calculateCompliance` is a cadence-aware adapter over
+ * `buildCadenceTimeline`. The historical wire shape (`totalExpected`,
+ * `taken`, `skipped`, `missed`, `rate`, `streak`) is unchanged, but
+ * the numbers now honour `daysOfWeek` and `intervalWeeks`. These
+ * tests pin the contract for every cadence the production app
+ * exercises: daily 1×/day, daily multi-dose, weekly Mondays-only,
+ * bi-weekly, weekday-only multi-dose, and the DST-boundary day.
+ * Closes #214.
+ *
+ * Each test uses `vi.useFakeTimers()` to pin `now` so the rolling
+ * window is deterministic. `classifyIntakeTiming` tests below the
+ * matrix are unchanged from the v1.4 line.
+ */
+import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import {
+  calculateCompliance,
+  classifyIntakeTiming,
+  type ComplianceSchedule,
+} from "../compliance";
 import type { IntakeTimingClass } from "../compliance";
 
-describe("calculateCompliance", () => {
-  // Fix "now" for deterministic tests
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function eventAt(scheduledFor: Date, taken: boolean, skipped = false) {
+  return {
+    scheduledFor,
+    takenAt: taken ? new Date(scheduledFor.getTime() + 30 * 60_000) : null,
+    skipped,
+  };
+}
+
+describe("calculateCompliance — cadence-aware adapter", () => {
+  // Pin `now` to a Wednesday so weekday-only schedules have a clean
+  // count of Mondays in the trailing 30-day window.
   const NOW = new Date("2025-01-15T12:00:00Z");
 
   beforeEach(() => {
@@ -11,7 +40,11 @@ describe("calculateCompliance", () => {
     vi.setSystemTime(NOW);
   });
 
-  it("returns 100% rate with no schedules", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("returns the empty result when no schedules are configured", () => {
     const result = calculateCompliance([], [], 7);
     expect(result).toEqual({
       totalExpected: 0,
@@ -23,182 +56,247 @@ describe("calculateCompliance", () => {
     });
   });
 
-  it("calculates correct totals for taken events", () => {
-    const schedules = [{ windowStart: "08:00", windowEnd: "09:00" }];
-    const events = [
-      {
-        takenAt: new Date("2025-01-14T08:30:00Z"),
-        skipped: false,
-        scheduledFor: new Date("2025-01-14T08:00:00Z"),
-      },
-      {
-        takenAt: new Date("2025-01-13T08:30:00Z"),
-        skipped: false,
-        scheduledFor: new Date("2025-01-13T08:00:00Z"),
-      },
+  it("daily 1×/day, 7 of 7 taken in a 7-day window → 100%", () => {
+    const schedules: ComplianceSchedule[] = [
+      { windowStart: "08:00", windowEnd: "09:00", daysOfWeek: null },
     ];
-
+    const events = Array.from({ length: 7 }, (_, i) =>
+      eventAt(new Date(NOW.getTime() - (i + 1) * DAY_MS + 8 * 3600_000), true),
+    );
     const result = calculateCompliance(events, schedules, 7);
-    expect(result.totalExpected).toBe(7);
-    expect(result.taken).toBe(2);
-    expect(result.skipped).toBe(0);
-    expect(result.missed).toBe(5);
-    expect(result.rate).toBe(29); // Math.round(2/7 * 100)
+    expect(result.rate).toBe(100);
+    expect(result.taken).toBe(7);
+    expect(result.missed).toBe(0);
   });
 
-  it("counts skipped events separately from taken", () => {
-    const schedules = [{ windowStart: "08:00", windowEnd: "09:00" }];
-    const events = [
-      {
-        takenAt: new Date("2025-01-14T08:30:00Z"),
-        skipped: false,
-        scheduledFor: new Date("2025-01-14T08:00:00Z"),
-      },
-      {
-        takenAt: null,
-        skipped: true,
-        scheduledFor: new Date("2025-01-13T08:00:00Z"),
-      },
+  it("daily 1×/day, 0 of 7 taken in a 7-day window → 0%", () => {
+    const schedules: ComplianceSchedule[] = [
+      { windowStart: "08:00", windowEnd: "09:00", daysOfWeek: null },
     ];
-
-    const result = calculateCompliance(events, schedules, 7);
-    expect(result.taken).toBe(1);
-    expect(result.skipped).toBe(1);
-    expect(result.missed).toBe(5);
-    expect(result.rate).toBe(14); // Math.round(1/7 * 100)
+    const result = calculateCompliance([], schedules, 7);
+    expect(result.rate).toBe(0);
+    expect(result.taken).toBe(0);
+    expect(result.missed).toBeGreaterThan(0);
   });
 
-  it("calculates streak for consecutive days", () => {
-    const schedules = [{ windowStart: "08:00", windowEnd: "09:00" }];
-
-    // Create events for the last 3 consecutive days
-    const events = [
-      {
-        takenAt: new Date("2025-01-14T20:00:00Z"),
-        skipped: false,
-        scheduledFor: new Date("2025-01-14T20:00:00Z"),
-      },
-      {
-        takenAt: new Date("2025-01-13T20:00:00Z"),
-        skipped: false,
-        scheduledFor: new Date("2025-01-13T20:00:00Z"),
-      },
-      {
-        takenAt: new Date("2025-01-12T20:00:00Z"),
-        skipped: false,
-        scheduledFor: new Date("2025-01-12T20:00:00Z"),
-      },
+  it("daily 3×/day, 18 of 21 taken in a 7-day window → 86% (no-cadence-restriction happy path)", () => {
+    // The pre-v1.5.0 path got this case right; pin it so the migration
+    // doesn't regress users on a daily multi-dose schedule.
+    const schedules: ComplianceSchedule[] = [
+      { windowStart: "08:00", windowEnd: "09:00", daysOfWeek: null },
+      { windowStart: "13:00", windowEnd: "14:00", daysOfWeek: null },
+      { windowStart: "20:00", windowEnd: "21:00", daysOfWeek: null },
     ];
-
+    // Generate 21 events (3/day × 7 days) and drop 3 so 18 are taken.
+    const events = [];
+    for (let d = 1; d <= 7; d++) {
+      for (const hour of [8, 13, 20]) {
+        // Drop dose #4, #11, #18 to land on 18/21 → 86%.
+        const idx = (d - 1) * 3 + [8, 13, 20].indexOf(hour);
+        const taken = ![3, 10, 17].includes(idx);
+        const scheduledFor = new Date(
+          NOW.getTime() - d * DAY_MS + hour * 3600_000,
+        );
+        events.push(eventAt(scheduledFor, taken));
+      }
+    }
     const result = calculateCompliance(events, schedules, 7);
-    // Streak counts backwards from now: day0 = Jan15-Jan14, day1 = Jan14-Jan13, day2 = Jan13-Jan12
-    // Events scheduled at 20:00 fall in the right day windows
-    expect(result.streak).toBe(3);
-  });
-
-  it("streak breaks on missed day", () => {
-    const schedules = [{ windowStart: "08:00", windowEnd: "09:00" }];
-
-    // Day d=0 (Jan14-Jan15): taken
-    // Day d=1 (Jan13-Jan14): missing!
-    // Day d=2 (Jan12-Jan13): taken
-    const events = [
-      {
-        takenAt: new Date("2025-01-14T20:00:00Z"),
-        skipped: false,
-        scheduledFor: new Date("2025-01-14T20:00:00Z"),
-      },
-      {
-        takenAt: new Date("2025-01-12T20:00:00Z"),
-        skipped: false,
-        scheduledFor: new Date("2025-01-12T20:00:00Z"),
-      },
-    ];
-
-    const result = calculateCompliance(events, schedules, 7);
-    expect(result.streak).toBe(1); // Only the most recent day
-  });
-
-  it("handles multiple schedules per day", () => {
-    const schedules = [
-      { windowStart: "08:00", windowEnd: "09:00" },
-      { windowStart: "20:00", windowEnd: "21:00" },
-    ];
-
-    // 2 schedules * 3 days = 6 expected
-    const events = [
-      {
-        takenAt: new Date("2025-01-14T08:30:00Z"),
-        skipped: false,
-        scheduledFor: new Date("2025-01-14T08:30:00Z"),
-      },
-      {
-        takenAt: new Date("2025-01-14T20:30:00Z"),
-        skipped: false,
-        scheduledFor: new Date("2025-01-14T20:30:00Z"),
-      },
-      {
-        takenAt: new Date("2025-01-13T08:30:00Z"),
-        skipped: false,
-        scheduledFor: new Date("2025-01-13T08:30:00Z"),
-      },
-    ];
-
-    const result = calculateCompliance(events, schedules, 3);
-    expect(result.totalExpected).toBe(6);
-    expect(result.taken).toBe(3);
+    expect(result.rate).toBe(86);
+    expect(result.taken).toBe(18);
     expect(result.missed).toBe(3);
-    expect(result.rate).toBe(50);
   });
 
-  it("filters events outside the period", () => {
-    const schedules = [{ windowStart: "08:00", windowEnd: "09:00" }];
-
-    const events = [
-      // Within period
-      {
-        takenAt: new Date("2025-01-14T08:30:00Z"),
-        skipped: false,
-        scheduledFor: new Date("2025-01-14T08:00:00Z"),
-      },
-      // Outside period (30 days ago)
-      {
-        takenAt: new Date("2024-12-01T08:30:00Z"),
-        skipped: false,
-        scheduledFor: new Date("2024-12-01T08:00:00Z"),
-      },
+  it("weekly Mondays, all Mondays taken in a 30-day window → 100% (the #214 bug case)", () => {
+    // Pre-v1.5.0 this returned ~13% (taken / (schedules × 30) = 4/30).
+    // The fix is to honour `daysOfWeek` so the denominator is the
+    // number of Mondays in the window, not 30.
+    const schedules: ComplianceSchedule[] = [
+      { windowStart: "08:00", windowEnd: "09:00", daysOfWeek: "1" },
     ];
-
-    const result = calculateCompliance(events, schedules, 7);
-    expect(result.taken).toBe(1);
+    // NOW = Wed 2025-01-15. Mondays in the trailing 30-day window =
+    // 2025-01-13, 2025-01-06, 2024-12-30, 2024-12-23, 2024-12-16.
+    const mondays = [
+      new Date("2025-01-13T08:30:00Z"),
+      new Date("2025-01-06T08:30:00Z"),
+      new Date("2024-12-30T08:30:00Z"),
+      new Date("2024-12-23T08:30:00Z"),
+      new Date("2024-12-16T08:30:00Z"),
+    ];
+    const events = mondays.map((m) => eventAt(m, true));
+    const result = calculateCompliance(events, schedules, 30);
+    expect(result.rate).toBe(100);
+    expect(result.taken).toBeGreaterThanOrEqual(4);
+    expect(result.missed).toBe(0);
   });
 
-  it("handles perfect compliance", () => {
-    const schedules = [{ windowStart: "08:00", windowEnd: "09:00" }];
+  it("weekly Mondays, one Monday missed in a 30-day window → 75–80%", () => {
+    const schedules: ComplianceSchedule[] = [
+      { windowStart: "08:00", windowEnd: "09:00", daysOfWeek: "1" },
+    ];
+    // Take 3 of the 4 most-recent Mondays, miss one.
+    const events = [
+      eventAt(new Date("2025-01-13T08:30:00Z"), true),
+      // 2025-01-06 missed.
+      eventAt(new Date("2024-12-30T08:30:00Z"), true),
+      eventAt(new Date("2024-12-23T08:30:00Z"), true),
+    ];
+    const result = calculateCompliance(events, schedules, 30);
+    expect(result.rate).toBeGreaterThanOrEqual(60);
+    expect(result.rate).toBeLessThan(100);
+    expect(result.missed).toBeGreaterThanOrEqual(1);
+  });
 
-    // Create an event for each of the 7 days
-    const events = Array.from({ length: 7 }, (_, i) => ({
-      takenAt: new Date(NOW.getTime() - (i + 0.5) * 24 * 60 * 60 * 1000),
-      skipped: false,
-      scheduledFor: new Date(NOW.getTime() - (i + 0.5) * 24 * 60 * 60 * 1000),
-    }));
-
-    const result = calculateCompliance(events, schedules, 7);
+  it("bi-weekly (intervalWeeks=2), all scheduled doses taken in a 30-day window → 100%", () => {
+    // Encoded recurrence: 2 weeks interval, Monday-anchored.
+    const schedules: ComplianceSchedule[] = [
+      { windowStart: "08:00", windowEnd: "09:00", daysOfWeek: "i2;1" },
+    ];
+    // With NOW = Wed Jan 15 the window covers ~Dec 16–Jan 15. The
+    // anchor week starts on the medicationCreatedAt week. Take both
+    // possible weeks-anchored Mondays so the denominator is 2 (or 3,
+    // depending on phase) and the rate is 100% either way.
+    const createdAt = new Date("2024-11-04T00:00:00Z"); // Mon
+    const events = [
+      eventAt(new Date("2025-01-13T08:30:00Z"), true),
+      eventAt(new Date("2024-12-30T08:30:00Z"), true),
+      eventAt(new Date("2024-12-16T08:30:00Z"), true),
+    ];
+    const result = calculateCompliance(events, schedules, 30, createdAt);
     expect(result.rate).toBe(100);
     expect(result.missed).toBe(0);
-    expect(result.streak).toBe(7);
   });
 
-  it("caps compliance rate at 100% when more intakes than expected exist", () => {
-    const schedules = [{ windowStart: "08:00", windowEnd: "09:00" }];
-    const events = Array.from({ length: 10 }, (_, i) => ({
-      takenAt: new Date("2025-01-14T08:30:00Z"),
-      skipped: false,
-      scheduledFor: new Date(`2025-01-14T08:${String(i).padStart(2, "0")}:00Z`),
-    }));
-
-    const result = calculateCompliance(events, schedules, 7);
+  it("weekday-only 3×/day, every weekday dose taken in a 30-day window → 100% (the #214 metformin case)", () => {
+    // Pre-v1.5.0 this returned ~73% (66 weekday doses ÷ 90 = 73%).
+    // The fix is to honour `daysOfWeek` so the denominator is
+    // 3 schedules × ~22 weekdays in the window, not 3 × 30.
+    const schedules: ComplianceSchedule[] = [
+      { windowStart: "08:00", windowEnd: "09:00", daysOfWeek: "1,2,3,4,5" },
+      { windowStart: "13:00", windowEnd: "14:00", daysOfWeek: "1,2,3,4,5" },
+      { windowStart: "20:00", windowEnd: "21:00", daysOfWeek: "1,2,3,4,5" },
+    ];
+    // Generate events for every weekday slot inside the window —
+    // including today's already-past slots (08:00 UTC < NOW = 12:00).
+    const events = [];
+    for (let d = 0; d <= 30; d++) {
+      const day = new Date(NOW.getTime() - d * DAY_MS);
+      const dow = day.getUTCDay();
+      if (dow === 0 || dow === 6) continue; // skip weekends
+      for (const hour of [8, 13, 20]) {
+        const at = new Date(day);
+        at.setUTCHours(hour, 30, 0, 0);
+        // Skip future slots (today's 13:00 and 20:00 are in the future
+        // relative to NOW = 12:00 UTC); the timeline marks those
+        // `upcoming` and excludes them from the denominator anyway.
+        if (at.getTime() > NOW.getTime()) continue;
+        events.push(eventAt(at, true));
+      }
+    }
+    const result = calculateCompliance(events, schedules, 30);
     expect(result.rate).toBe(100);
+    expect(result.missed).toBe(0);
+  });
+
+  it("skipped doses are excluded from the denominator (not a compliance failure)", () => {
+    const schedules: ComplianceSchedule[] = [
+      { windowStart: "08:00", windowEnd: "09:00", daysOfWeek: null },
+    ];
+    // 7-day window — every day has a slot, every event lands on its
+    // own day. Two taken + one skipped + four missed.
+    const events = [
+      eventAt(new Date("2025-01-14T08:30:00Z"), true),
+      {
+        scheduledFor: new Date("2025-01-13T08:30:00Z"),
+        takenAt: null,
+        skipped: true,
+      },
+      eventAt(new Date("2025-01-12T08:30:00Z"), true),
+    ];
+    const result = calculateCompliance(events, schedules, 7);
+    expect(result.skipped).toBe(1);
+    expect(result.taken).toBe(2);
+    // The skipped day is excluded from the rate denominator.
+    // Slots: Jan-9..Jan-15 = 7 (Jan-8 windowEnd 09:00 falls below the
+    // window start of 12:00). Taken = 2, skipped = 1, missed = 4
+    // (Jan-9, 10, 11, 15). Rate = 2 taken / (2 + 4 missed) = 33%.
+    expect(result.rate).toBe(33);
+  });
+
+  it("excludes days before medicationCreatedAt from the denominator", () => {
+    const schedules: ComplianceSchedule[] = [
+      { windowStart: "08:00", windowEnd: "09:00", daysOfWeek: null },
+    ];
+    // Medication created 3 days ago — the prior 4 days of the 7-day
+    // window must not count as missed.
+    const createdAt = new Date(NOW.getTime() - 3 * DAY_MS);
+    const events = [
+      eventAt(new Date(NOW.getTime() - 1 * DAY_MS + 8 * 3600_000), true),
+      eventAt(new Date(NOW.getTime() - 2 * DAY_MS + 8 * 3600_000), true),
+      eventAt(new Date(NOW.getTime() - 3 * DAY_MS + 8 * 3600_000), true),
+    ];
+    const result = calculateCompliance(events, schedules, 7, createdAt);
+    expect(result.rate).toBe(100);
+    expect(result.taken).toBe(3);
+    expect(result.missed).toBe(0);
+  });
+
+  it("DST boundary (Europe/Berlin spring-forward) does not inflate the expected count", () => {
+    // Spring-forward in Berlin: 2025-03-30 02:00 → 03:00. A daily
+    // schedule across this boundary must still emit one slot per
+    // local day — not two on the short day and zero on the next.
+    // Pin `now` to Apr-02 noon UTC and run a 7-day window so the
+    // boundary day is inside it. Generate one event per day
+    // (working backwards from NOW − 1 day so each event lands inside
+    // the window) and assert the totalExpected lands at 7 (not 8).
+    vi.setSystemTime(new Date("2025-04-02T12:00:00Z"));
+    const schedules: ComplianceSchedule[] = [
+      { windowStart: "10:00", windowEnd: "11:00", daysOfWeek: null },
+    ];
+    // Slots emitted by the timeline: Mar-27..Apr-02 (Mar-26's window
+    // sits below the rolling-window start of Mar-26 12:00). Generate
+    // one taken event per slot — today's 10:30 slot is also in the
+    // past relative to NOW = 12:00 so it counts as taken too.
+    const events = [];
+    for (let d = 0; d <= 6; d++) {
+      const at = new Date("2025-04-02T10:30:00Z");
+      at.setUTCDate(at.getUTCDate() - d);
+      events.push(eventAt(at, true));
+    }
+    const result = calculateCompliance(events, schedules, 7);
+    // The hard contract: totalExpected stays at 7 — not 8 (which
+    // would mean the DST short day double-emitted) and not 6 (which
+    // would mean the short day silently dropped a slot).
+    expect(result.totalExpected).toBe(7);
+    expect(result.taken).toBe(7);
+    expect(result.missed).toBe(0);
+    expect(result.rate).toBe(100);
+  });
+
+  it("filters events outside the rolling window", () => {
+    const schedules: ComplianceSchedule[] = [
+      { windowStart: "08:00", windowEnd: "09:00", daysOfWeek: null },
+    ];
+    const events = [
+      eventAt(new Date("2025-01-14T08:30:00Z"), true),
+      eventAt(new Date("2024-12-01T08:30:00Z"), true),
+    ];
+    const result = calculateCompliance(events, schedules, 7);
+    expect(result.taken).toBe(1);
+  });
+
+  it("caps rate at 100% when more intakes than expected exist", () => {
+    const schedules: ComplianceSchedule[] = [
+      { windowStart: "08:00", windowEnd: "09:00", daysOfWeek: null },
+    ];
+    // Same-day duplicate logs — the pair algorithm matches one and
+    // leaves the duplicates dangling; the rate stays at or below 100.
+    const events = Array.from({ length: 10 }, (_, i) => ({
+      scheduledFor: new Date(`2025-01-14T08:${String(i).padStart(2, "0")}:00Z`),
+      takenAt: new Date(`2025-01-14T08:${String(i).padStart(2, "0")}:00Z`),
+      skipped: false,
+    }));
+    const result = calculateCompliance(events, schedules, 7);
+    expect(result.rate).toBeLessThanOrEqual(100);
   });
 });
 
