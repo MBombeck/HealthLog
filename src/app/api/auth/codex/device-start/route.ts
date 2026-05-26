@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { annotate } from "@/lib/logging/context";
 import { encrypt } from "@/lib/crypto";
 import { apiSuccess } from "@/lib/api-response";
+import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 
 /**
  * v1.4.7.1: Device-code flow for ChatGPT-OAuth.
@@ -42,7 +43,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     ),
     {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: shouldEmitSecureCookie(),
       sameSite: "lax",
       path: "/",
       maxAge: 15 * 60,

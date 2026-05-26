@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.5.1] — 2026-05-26 — Self-hosting opt-out for the session-cookie `Secure` flag
+
+A self-hoster running HealthLog on a LAN address (`http://10.x.x.x:3000`) over plain HTTP reported a silent login failure: the `/api/auth/login` POST returned 200 with a `Set-Cookie` header on the response, but the very next `/api/auth/me` request came back 401 and the page reloaded to the login screen. Root cause is the modern browser behaviour around `Secure`-flagged cookies — every cookie the app issues in `NODE_ENV=production` carries `Secure`, and on a plain-HTTP origin that is not `localhost` / `127.0.0.1` / `::1`, the browser silently drops the cookie before sending the next request. The default-Docker image runs `NODE_ENV=production`, so any operator browsing from a different host than the one running `docker compose up` (NAS / homelab / VPS / Tailscale + Magic-DNS) used to hit the dead-end.
+
+### Added
+
+- `SESSION_COOKIE_SECURE` environment variable. Controls the `Secure` flag on the session cookie, the onboarding-hint cookie, the Withings OAuth state cookie, and the Codex device-OAuth state cookie. Three values:
+  - **unset** (default) — flag is set when `NODE_ENV === "production"`, the long-standing behaviour.
+  - **`false`** — flag is never set. Use this for LAN / VPN / Tailscale-only deployments where the operator deliberately serves plain HTTP and accepts the trade-off (the session cookie crosses the wire unencrypted; do NOT use on an open-internet HTTP origin).
+  - **`true`** — flag is always set, useful when a developer fronts a `pnpm dev` server with HTTPS to test the production cookie path.
+- New shared helper `src/lib/auth/secure-cookie.ts` (`shouldEmitSecureCookie()`) that every `Secure`-bearing cookie call now reads. Replaces four scattered `secure: process.env.NODE_ENV === "production"` literals in `src/lib/auth/session.ts`, `src/app/api/auth/codex/device-start/route.ts`, and `src/app/api/withings/connect/route.ts`.
+- `.env.example` block documenting the new variable with a clear warning about the open-internet-HTTP case.
+
+### Tests
+
+- `src/lib/auth/__tests__/secure-cookie.test.ts` — six cases covering the default path, both explicit overrides, whitespace / case-insensitive parsing, and the fall-through for unrecognised values.
+
+### Notes
+
+- The default behaviour is unchanged for every deployment that runs behind an HTTPS-terminating reverse proxy (the documented self-hosting path) — those continue to set `Secure` exactly as before. The opt-out is intentional and explicit.
+- Operators currently working around the issue with `NODE_ENV=development` can move back to `NODE_ENV=production` plus `SESSION_COOKIE_SECURE=false` on this release; that keeps build optimisation + production error masking on while letting the cookie reach the browser over HTTP.
+
 ## [1.5.0] — 2026-05-24 — Native iOS client public-beta + per-day cumulative stats overwrite + cadence-aware medication compliance
 
 The minor-version cut that marks the native iOS client publicly available. The SwiftUI iOS app (separate repository) is now joinable via TestFlight: https://testflight.apple.com/join/bucuTBpa. The backend contract the iOS app speaks against has been live since v1.4.23 and has been continuously validated across every v1.4.2x–v1.4.50 release. The 1.5.0 cut also lands the highest-leverage iOS-client unblocker per the v0.6.1 code audit: `/api/measurements/batch` now overwrites per-day cumulative `stats:*` rows on a re-post instead of dropping the new value as a duplicate.

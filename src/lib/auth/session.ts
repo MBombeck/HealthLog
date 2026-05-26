@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import type { User } from "@/generated/prisma/client";
 import { ensureDbCompatibility } from "@/lib/db-compat";
 import { getEvent } from "@/lib/logging/context";
+import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 
 const SESSION_COOKIE = "healthlog_session";
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -28,7 +29,7 @@ export async function setOnboardingPendingCookie(
   if (pending) {
     cookieStore.set(ONBOARDING_COOKIE, "pending", {
       httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
+      secure: shouldEmitSecureCookie(),
       // v1.4.22 W5 reconcile (Sec-MED-1) — Strict (not Lax) because
       // no cross-site redirect flow ever depends on this cookie. The
       // sibling `healthlog_session` cookie stays Lax because the
@@ -70,7 +71,7 @@ export async function createSession(
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, session.id, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldEmitSecureCookie(),
     // OAuth callbacks (e.g. Withings) arrive via top-level cross-site redirect.
     // Lax keeps CSRF protection for unsafe methods while allowing this flow.
     sameSite: "lax",
@@ -133,7 +134,7 @@ export async function getSession(): Promise<{
     });
     cookieStore.set(SESSION_COOKIE, session.id, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: shouldEmitSecureCookie(),
       sameSite: "lax",
       maxAge: SESSION_MAX_AGE_MS / 1000,
       path: "/",

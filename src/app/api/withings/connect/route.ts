@@ -11,6 +11,7 @@ import {
   mintWithingsOAuthStateNonce,
 } from "@/lib/withings/oauth-state";
 import { NextRequest, NextResponse } from "next/server";
+import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 
 /**
  * Redirects the user to Withings OAuth authorization page.
@@ -88,7 +89,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
   const response = NextResponse.redirect(url);
   response.cookies.set(WITHINGS_OAUTH_STATE_COOKIE, nonce, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldEmitSecureCookie(),
     sameSite: "lax",
     maxAge: Math.floor(WITHINGS_OAUTH_STATE_TTL_MS / 1000),
     path: "/",

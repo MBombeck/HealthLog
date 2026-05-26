@@ -218,3 +218,37 @@ than the actual proxy hop count, or the proxy is dropping the
 The one-shot stderr warning `[getClientIp] TRUST_PROXY_HOPS=N but
 X-Forwarded-For carried M entries` confirms a mismatch. Adjust the
 env var down to the actual chain length and restart.
+
+## Running over plain HTTP on a LAN (no reverse proxy)
+
+The session cookie carries the `Secure` flag by default under
+`NODE_ENV=production`, which is what the bundled Docker image runs.
+On a plain-HTTP origin that is not `localhost` / `127.0.0.1` / `::1`,
+modern browsers silently drop a `Secure` cookie before sending the
+next request — the login round-trip looks like it succeeds (the
+server returns 200 + `Set-Cookie`) but the very next page load
+401s and bounces back to `/auth/login`.
+
+If you genuinely want to serve HealthLog on `http://10.0.0.42:3000`
+or `http://healthlog.lan:3000` (NAS, homelab, Tailscale-only
+surface) and trust the network the traffic crosses, set:
+
+```
+SESSION_COOKIE_SECURE=false
+```
+
+in your `.env`. The session, onboarding-hint, Withings OAuth state,
+and Codex device-OAuth state cookies all stop emitting `Secure` and
+login works over HTTP. The trade-off is explicit: the session
+cookie crosses the wire unencrypted, so the network it traverses
+needs to be one you control.
+
+**Do not set this on a deployment that ever serves plain HTTP to the
+open internet.** Anyone with passive network access can capture the
+session cookie and impersonate the user. The right answer for any
+public-facing host is the reverse proxy + Let's Encrypt path
+documented above.
+
+The default behaviour is unchanged when this variable is unset —
+deployments behind an HTTPS-terminating proxy keep setting `Secure`
+exactly as before.
