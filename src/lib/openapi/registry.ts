@@ -25,6 +25,7 @@
 import { createDocument, type ZodOpenApiObject } from "zod-openapi";
 
 import { openApiPaths, openApiComponents } from "./routes";
+import { version as packageVersion } from "../../../package.json";
 
 const openApiBase: Pick<
   ZodOpenApiObject,
@@ -33,7 +34,11 @@ const openApiBase: Pick<
   openapi: "3.1.0",
   info: {
     title: "HealthLog API",
-    version: "1.4.23",
+    // v1.5.1 — pulled from package.json so the spec's info.version
+    // tracks the release line automatically. The CI drift gate
+    // (`pnpm openapi:check`) catches the case where the registry
+    // and the committed spec disagree.
+    version: packageVersion,
     description:
       "Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.\n\n" +
       "## Date-time contract\n\n" +
