@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.5.2] — 2026-05-26 — Plumb SESSION_COOKIE_SECURE through docker-compose
+
+v1.5.1 added a `SESSION_COOKIE_SECURE` env var so plain-HTTP self-hosts can drop the cookie's `Secure` flag. The Node helper read it correctly and the unit tests passed, but a self-hoster following the documented `.env` workaround reported that `docker compose exec app env | grep SESSION_COOKIE` came back empty — the value was set in `.env`, set in the helper, but never reached the running container.
+
+Root cause is the way the bundled `docker-compose.yml` passes env vars to the `app` service: it lists each one explicitly under `environment:` rather than mounting the `.env` file wholesale. Variables not on that whitelist are read by `docker compose` for `${VAR}` substitution but never propagated to the container's process env. `SESSION_COOKIE_SECURE` wasn't on the list, so setting it in `.env` was a silent no-op.
+
+### Fixed
+
+- `docker-compose.yml` now lists `SESSION_COOKIE_SECURE: "${SESSION_COOKIE_SECURE:-}"` under the `app` service's `environment:` block. Defaults to empty (so the helper falls back to `NODE_ENV === "production"`, the pre-v1.5.1 behaviour); setting it to `false` in `.env` now actually reaches the Node process.
+
+### Self-hoster recipe (full, now end-to-end working)
+
+```bash
+git pull                         # picks up the new compose file
+docker compose pull              # picks up the new image (no-op if already on :latest)
+echo 'SESSION_COOKIE_SECURE=false' >> .env
+docker compose up -d --force-recreate
+```
+
+Verify with:
+
+```bash
+docker compose exec app env | grep SESSION_COOKIE
+# SESSION_COOKIE_SECURE=false
+
+curl http://10.x.x.x:3000/api/version
+# {"data":{"version":"1.5.2",...}}
+```
+
+Then log in over plain HTTP from a non-localhost browser — the session cookie no longer carries `Secure`, the browser keeps it, and the round-trip completes.
+
 ## [1.5.1] — 2026-05-26 — Self-hosting opt-out for the session-cookie `Secure` flag
 
 A self-hoster running HealthLog on a LAN address (`http://10.x.x.x:3000`) over plain HTTP reported a silent login failure: the `/api/auth/login` POST returned 200 with a `Set-Cookie` header on the response, but the very next `/api/auth/me` request came back 401 and the page reloaded to the login screen. Root cause is the modern browser behaviour around `Secure`-flagged cookies — every cookie the app issues in `NODE_ENV=production` carries `Secure`, and on a plain-HTTP origin that is not `localhost` / `127.0.0.1` / `::1`, the browser silently drops the cookie before sending the next request. The default-Docker image runs `NODE_ENV=production`, so any operator browsing from a different host than the one running `docker compose up` (NAS / homelab / VPS / Tailscale + Magic-DNS) used to hit the dead-end.

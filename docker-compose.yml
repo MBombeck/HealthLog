@@ -26,6 +26,13 @@ services:
       API_TOKEN_HMAC_KEY: "${API_TOKEN_HMAC_KEY}"
       NEXT_PUBLIC_APP_URL: "${NEXT_PUBLIC_APP_URL:-http://localhost:3000}"
       APP_URL: "${APP_URL:-http://localhost:3000}"
+      # v1.5.1 session-cookie Secure-flag opt-out. Forwarded explicitly so
+      # an operator setting SESSION_COOKIE_SECURE=false in .env actually
+      # reaches the Node process (the compose `environment:` block is a
+      # whitelist — vars not listed here don't propagate from .env into
+      # the container, even though docker-compose reads .env for
+      # `${VAR}` substitution at compose-up time).
+      SESSION_COOKIE_SECURE: "${SESSION_COOKIE_SECURE:-}"
       # all = bundle web + worker in this container (default, single-host)
       # web = serve HTTP only; pair with a separate app-worker service
       HEALTHLOG_PROCESS_TYPE: "${HEALTHLOG_PROCESS_TYPE:-all}"
