@@ -300,13 +300,13 @@ paths:
         - in: query
           name: cursor
           schema:
-            description: Opaque keyset cursor from the previous page. Treat as fully opaque — echo, never parse. Omit for the
-              initial sync.
+            description: Opaque multi-domain keyset cursor from the previous page. Treat as fully opaque — echo, never parse. Omit
+              for the initial sync.
             type: string
             minLength: 1
-            maxLength: 512
-          description: Opaque keyset cursor from the previous page. Treat as fully opaque — echo, never parse. Omit for the
-            initial sync.
+            maxLength: 2048
+          description: Opaque multi-domain keyset cursor from the previous page. Treat as fully opaque — echo, never parse. Omit
+            for the initial sync.
         - in: query
           name: limit
           schema:
@@ -2751,6 +2751,50 @@ components:
             - liveCount
             - tombstonedCount
           additionalProperties: false
+        mood:
+          type: object
+          properties:
+            lastUpdatedAt:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
+            liveCount:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            tombstonedCount:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+          required:
+            - lastUpdatedAt
+            - liveCount
+            - tombstonedCount
+          additionalProperties: false
+        intakes:
+          type: object
+          properties:
+            lastUpdatedAt:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
+            liveCount:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            tombstonedCount:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+          required:
+            - lastUpdatedAt
+            - liveCount
+            - tombstonedCount
+          additionalProperties: false
         sync:
           type: object
           properties:
@@ -2777,6 +2821,8 @@ components:
         - lastSyncedAt
         - serverNow
         - measurements
+        - mood
+        - intakes
         - sync
       additionalProperties: false
       description: iOS SyncMode handshake. Each GET also advances the server-side `lastSyncedAt` checkpoint and returns the
@@ -2834,8 +2880,40 @@ components:
                 - upserts
                 - tombstones
               additionalProperties: false
+            mood:
+              type: object
+              properties:
+                upserts:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/SyncMoodUpsert"
+                tombstones:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/SyncMoodTombstone"
+              required:
+                - upserts
+                - tombstones
+              additionalProperties: false
+            intakes:
+              type: object
+              properties:
+                upserts:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/SyncIntakeUpsert"
+                tombstones:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/SyncIntakeTombstone"
+              required:
+                - upserts
+                - tombstones
+              additionalProperties: false
           required:
             - measurements
+            - mood
+            - intakes
           additionalProperties: false
       required:
         - serverNow
@@ -2844,8 +2922,9 @@ components:
         - cursorExpired
         - changes
       additionalProperties: false
-      description: Measurements-only delta page (v1.7.0). Single combined opaque cursor; tombstones apply before upserts
-        within a page.
+      description: "Multi-domain delta page (v1.7.0): measurements + mood + intakes. One opaque multi-domain keyset cursor;
+        tombstones apply before upserts within each domain. Tombstone identity: measurements key on externalId, mood +
+        intakes on server id. The iOS consumer is measurements-only this cycle; mood + intakes are forward-prep."
     SyncMeasurementUpsert:
       type: object
       properties:
@@ -2966,6 +3045,146 @@ components:
         - updatedAt
       additionalProperties: false
       description: A soft-deleted measurement. Apply tombstones BEFORE upserts within a page to avoid resurrecting a row.
+    SyncMoodUpsert:
+      type: object
+      properties:
+        id:
+          type: string
+        date:
+          type: string
+          description: YYYY-MM-DD anchored to the row's `tz`.
+        mood:
+          type: string
+        score:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        tags:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: JSON array of tag keys, or null.
+        note:
+          anyOf:
+            - type: string
+            - type: "null"
+        moodLoggedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        source:
+          type: string
+        syncVersion:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          description: LWW reconciliation counter; mood is last-writer-wins by it.
+        updatedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - id
+        - date
+        - mood
+        - score
+        - tags
+        - note
+        - moodLoggedAt
+        - source
+        - syncVersion
+        - updatedAt
+      additionalProperties: false
+    SyncMoodTombstone:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Server id — the identity key the client dedups on for mood.
+        syncVersion:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        deletedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        updatedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - id
+        - syncVersion
+        - deletedAt
+        - updatedAt
+      additionalProperties: false
+      description: A soft-deleted mood entry, keyed on server `id`. Apply before upserts within the domain page.
+    SyncIntakeUpsert:
+      type: object
+      properties:
+        id:
+          type: string
+        medicationId:
+          type: string
+        scheduledFor:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        takenAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+        skipped:
+          type: boolean
+        source:
+          type: string
+        syncVersion:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          description: Reconciliation counter. An intake is immutable; a correction is a tombstone + re-insert.
+        updatedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - id
+        - medicationId
+        - scheduledFor
+        - takenAt
+        - skipped
+        - source
+        - syncVersion
+        - updatedAt
+      additionalProperties: false
+    SyncIntakeTombstone:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Server id — the identity key the client dedups on for intakes.
+        syncVersion:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        deletedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        updatedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - id
+        - syncVersion
+        - deletedAt
+        - updatedAt
+      additionalProperties: false
+      description: A soft-deleted medication intake, keyed on server `id`. Apply before upserts within the domain page.
     ListMeasurementsResponse:
       type: object
       properties:
@@ -5336,6 +5555,50 @@ components:
           propertyNames:
             type: string
           additionalProperties: {}
+        layoutCatalogue:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              visible:
+                type: boolean
+              order:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+            required:
+              - id
+              - visible
+              - order
+            additionalProperties: false
+          description: Full 27-id widget catalogue (server-known + iOS-only) with per-widget visibility + order. iOS-only ids are
+            appended default-invisible. The web dashboard reads `layout`; this block is the cold-launch seed for the
+            native client.
+        metricStates:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            type: object
+            properties:
+              value:
+                type: number
+              measuredAt:
+                type: string
+              unit:
+                type: string
+            required:
+              - value
+              - measuredAt
+              - unit
+            additionalProperties: false
+          description: "Latest reading per chartable metric, keyed by the iOS `MetricKind` raw value (the non-obvious raws:
+            `oxygenSaturation`, `totalBodyWater`, `heartRateVariability`, `bodyMassIndex`, `walkingAsymmetryPercentage`,
+            `walkingDoubleSupportPercentage`, `environmentalAudioExposure`, `headphoneAudioExposure`,
+            `activeEnergyBurned`). Each entry carries `value`, `measuredAt` (ISO8601), and the canonical `unit`. Types
+            the user has never logged are omitted."
         tiles:
           type: object
           properties:
@@ -5451,6 +5714,8 @@ components:
       required:
         - user
         - layout
+        - layoutCatalogue
+        - metricStates
         - tiles
         - extras
         - briefing
@@ -5461,7 +5726,10 @@ components:
       description: Unified above-the-fold dashboard payload. `tiles` always arrives (slim summaries + mood + resolved widget
         layout); `extras` (BD-in-target + per-context glucose) is null on a rollup-coverage miss so the strip never
         waits on the slowest read. `briefing` is lifted read-only from the pre-generated insight cache — never generated
-        synchronously — and reports `ready` / `preparing` / `disabled` via `briefingState`.
+        synchronously — and reports `ready` / `preparing` / `disabled` via `briefingState`. `layoutCatalogue` (full
+        27-id widget catalogue) and `metricStates` (latest reading per metric, keyed by iOS `MetricKind` raw value) are
+        additive cold-launch seeds for the native client; both derive in-process from data already fetched, adding no DB
+        round-trip.
     InsightsComprehensiveResponseEnvelope:
       type: object
       properties:
