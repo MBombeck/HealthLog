@@ -68,6 +68,9 @@ export async function sendViaTelegram(
   const scheduleId = payload.metadata?.scheduleId as string | undefined;
   const phase = payload.metadata?.phase as string | undefined;
   const date = payload.metadata?.date as string | undefined;
+  // v1.7.0 SB-SCHED-4 — per-slot dedup. Empty string for a legacy
+  // single-window schedule (byte-stable against pre-v1.7 rows).
+  const timeOfDay = (payload.metadata?.timeOfDay as string | undefined) ?? "";
   const replyMarkup = payload.metadata?.replyMarkup as
     | { inline_keyboard: { text: string; callback_data: string }[][] }
     | undefined;
@@ -129,11 +132,12 @@ export async function sendViaTelegram(
     try {
       await prisma.telegramReminderMessage.upsert({
         where: {
-          medicationId_scheduleId_date_phase: {
+          medicationId_scheduleId_date_phase_timeOfDay: {
             medicationId,
             scheduleId,
             date,
             phase: phase as ReminderPhase,
+            timeOfDay,
           },
         },
         create: {
@@ -143,6 +147,7 @@ export async function sendViaTelegram(
           messageId: result.messageId,
           phase: phase as ReminderPhase,
           date,
+          timeOfDay,
         },
         update: {
           chatId: config.chatId,

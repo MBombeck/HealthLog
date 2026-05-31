@@ -573,210 +573,211 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
             continue;
           }
 
-          const startMins = parseTimeToMinutes(schedule.windowStart);
-          const endMins = parseTimeToMinutes(schedule.windowEnd);
+          // v1.7.0 SB-SCHED-4 — multi-time-of-day dispatch. A schedule
+          // with `timesOfDay = ["08:00","20:00"]` is two distinct dose
+          // slots per day; the pre-v1.7 worker keyed phase + dedup on the
+          // single `windowStart`, so the evening dose never reminded.
+          // Iterate every first-class time-of-day, each with its own
+          // window (anchored at the time, spanning the legacy
+          // `windowEnd - windowStart` duration), phase, dedup key
+          // (now including the time-of-day), and RED-mint instant.
+          //
+          // The legacy single-window contract is preserved: a schedule
+          // with no first-class `timesOfDay` emits exactly one slot at
+          // `windowStart` with `timeOfDay = ""`, which dedupes against
+          // pre-v1.7 rows (backfilled to "") byte-for-byte.
+          const baseStartMins = parseTimeToMinutes(schedule.windowStart);
+          const baseEndMins = parseTimeToMinutes(schedule.windowEnd);
+          const windowDuration = baseEndMins - baseStartMins;
           const currentMins = parseTimeToMinutes(currentTime);
-          const windowDuration = endMins - startMins;
-          const minutesToEnd = endMins - currentMins;
-          const minutesFromStart = currentMins - startMins;
 
-          // Skip if enough intake events exist
-          if (eventCount > schedulesProcessed) {
-            schedulesProcessed++;
-            continue;
-          }
+          const hasFirstClassTimes =
+            schedule.timesOfDay && schedule.timesOfDay.length > 0;
+          const slotTimes = hasFirstClassTimes
+            ? schedule.timesOfDay
+            : [schedule.windowStart];
 
-          // Skip if medication is snoozed
-          if (med.snoozedUntil && now < med.snoozedUntil) {
-            schedulesProcessed++;
-            continue;
-          }
+          for (const slotTime of slotTimes) {
+            // Dedup key time-of-day: "" for a legacy single-window
+            // schedule (byte-stable against pre-v1.7 rows), else the
+            // explicit HH:mm.
+            const dedupTimeOfDay = hasFirstClassTimes ? slotTime : "";
+            const slotStartMins = parseTimeToMinutes(slotTime);
+            const slotEndMins = slotStartMins + windowDuration;
+            const minutesToEnd = slotEndMins - currentMins;
+            const minutesFromStart = currentMins - slotStartMins;
 
-          // Resolve phase thresholds
-          const thresholds = resolvePhaseThresholds(
-            phaseConfig,
-            windowDuration,
-          );
+            // Skip if enough intake events exist for slots processed so far.
+            if (eventCount > schedulesProcessed) {
+              schedulesProcessed++;
+              continue;
+            }
 
-          // Determine current phase
-          const currentPhase = determinePhase(
-            minutesToEnd,
-            minutesFromStart,
-            thresholds,
-          );
+            // Skip if medication is snoozed
+            if (med.snoozedUntil && now < med.snoozedUntil) {
+              schedulesProcessed++;
+              continue;
+            }
 
-          if (!currentPhase) {
-            schedulesProcessed++;
-            continue;
-          }
+            // Resolve phase thresholds
+            const thresholds = resolvePhaseThresholds(
+              phaseConfig,
+              windowDuration,
+            );
 
-          // Check if this phase was already notified today
-          const existingMessage =
-            await prisma.telegramReminderMessage.findUnique({
-              where: {
-                medicationId_scheduleId_date_phase: {
-                  medicationId: med.id,
-                  scheduleId: schedule.id,
-                  date: localDateStr,
-                  phase: currentPhase,
+            // Determine current phase for this slot's window.
+            const currentPhase = determinePhase(
+              minutesToEnd,
+              minutesFromStart,
+              thresholds,
+            );
+
+            if (!currentPhase) {
+              schedulesProcessed++;
+              continue;
+            }
+
+            // Check if this phase was already notified today for this
+            // time-of-day.
+            const existingMessage =
+              await prisma.telegramReminderMessage.findUnique({
+                where: {
+                  medicationId_scheduleId_date_phase_timeOfDay: {
+                    medicationId: med.id,
+                    scheduleId: schedule.id,
+                    date: localDateStr,
+                    phase: currentPhase,
+                    timeOfDay: dedupTimeOfDay,
+                  },
                 },
-              },
-            });
+              });
 
-          if (existingMessage) {
-            // Already sent for this phase — skip
-            schedulesProcessed++;
-            continue;
-          }
+            if (existingMessage) {
+              // Already sent for this phase + time-of-day — skip
+              schedulesProcessed++;
+              continue;
+            }
 
-          const doseInfo = schedule.dose ?? med.dose;
-          const timeWindow = `${schedule.windowStart}–${schedule.windowEnd}`;
+            const doseInfo = schedule.dose ?? med.dose;
+            const timeWindow = `${slotTime}`;
 
-          // RED phase: create missed intake event
-          if (currentPhase === "RED") {
-            const [h, m] = schedule.windowStart.split(":").map(Number);
+            const [h, m] = slotTime.split(":").map(Number);
             // DST-safe: re-derive the offset at the target local time so
             // the UTC instant is correct on spring-forward / fall-back
-            // days. `todayStart + h * 3.6e6` drifts by an hour twice a
-            // year — the iOS snooze action would otherwise pin against
-            // the wrong baseline.
-            const scheduledFor = localHmAsUtc(now, med.user.timezone, h, m);
+            // days.
+            const slotScheduledFor = localHmAsUtc(now, med.user.timezone, h, m);
 
-            const existingMissed = await prisma.medicationIntakeEvent.count({
-              where: {
-                medicationId: med.id,
-                userId: med.user.id,
-                scheduledFor,
-                takenAt: null,
-                source: "REMINDER",
-              },
-            });
-
-            if (existingMissed === 0) {
-              await prisma.medicationIntakeEvent.create({
-                data: {
-                  userId: med.user.id,
+            // RED phase: create missed intake event for this slot.
+            if (currentPhase === "RED") {
+              const existingMissed = await prisma.medicationIntakeEvent.count({
+                where: {
                   medicationId: med.id,
-                  scheduledFor,
+                  userId: med.user.id,
+                  scheduledFor: slotScheduledFor,
                   takenAt: null,
-                  skipped: false,
                   source: "REMINDER",
                 },
               });
 
-              evt.addMeta(
-                "missed_dose",
-                `${med.name}:${schedule.windowStart}-${schedule.windowEnd}`,
-              );
+              if (existingMissed === 0) {
+                await prisma.medicationIntakeEvent.create({
+                  data: {
+                    userId: med.user.id,
+                    medicationId: med.id,
+                    scheduledFor: slotScheduledFor,
+                    takenAt: null,
+                    skipped: false,
+                    source: "REMINDER",
+                  },
+                });
 
-              // v1.4.39 W-MED — the worker just minted a fresh
-              // `scheduledFor` row with `takenAt: null`; refresh the
-              // compliance rollup so the per-day `scheduled` count
-              // increments before any read sees the user's tile.
-              await recomputeMedicationComplianceForEvent({
-                userId: med.user.id,
-                medicationId: med.id,
-                scheduledFor,
-                tz: med.user.timezone,
-              });
+                evt.addMeta("missed_dose", `${med.name}:${slotTime}`);
+
+                // v1.4.39 W-MED — refresh the compliance rollup so the
+                // per-day `scheduled` count increments before any read.
+                await recomputeMedicationComplianceForEvent({
+                  userId: med.user.id,
+                  medicationId: med.id,
+                  scheduledFor: slotScheduledFor,
+                  tz: med.user.timezone,
+                });
+              }
             }
-          }
 
-          // Send notification if enabled
-          if (med.notificationsEnabled) {
-            // v1.4.49 M-DOUBLE-REMINDER — opt-in client-managed
-            // suppression. When the iOS app has confirmed local
-            // SpeziScheduler banners cover the dose, the server-side
-            // APNs push is redundant. Skip the dispatch and emit a
-            // wide-event annotation so the operator can audit the
-            // skip path. ONLY suppresses MEDICATION_REMINDER — other
-            // notification kinds (MOOD_REMINDER, PERSONAL_RECORD,
-            // SYSTEM_ALERT, anomaly alerts) flow unchanged.
-            if (
-              isMedicationReminderClientManaged(med.user.notificationPrefs)
-            ) {
-              const [winH, winM] = schedule.windowStart.split(":").map(Number);
-              const doseAtIso = localHmAsUtc(
-                now,
-                med.user.timezone,
-                winH,
-                winM,
-              ).toISOString();
-              evt.addMeta(
-                "medication_reminder_suppressed_client_managed",
-                `${med.name}:${schedule.windowStart}-${schedule.windowEnd}`,
-              );
-              evt.addMeta(
-                "medication_reminder_suppressed_meta",
-                {
+            // Send notification if enabled
+            if (med.notificationsEnabled) {
+              // v1.4.49 M-DOUBLE-REMINDER — opt-in client-managed
+              // suppression. ONLY suppresses MEDICATION_REMINDER.
+              if (
+                isMedicationReminderClientManaged(med.user.notificationPrefs)
+              ) {
+                const doseAtIso = slotScheduledFor.toISOString();
+                evt.addMeta(
+                  "medication_reminder_suppressed_client_managed",
+                  `${med.name}:${slotTime}`,
+                );
+                evt.addMeta("medication_reminder_suppressed_meta", {
                   user_id: med.user.id,
                   medication_id: med.id,
                   schedule_id: schedule.id,
                   phase: currentPhase,
                   dose_at: doseAtIso,
-                },
+                });
+                schedulesProcessed++;
+                continue;
+              }
+
+              const { title, message } = getPhaseMessage(
+                currentPhase,
+                med.name,
+                doseInfo,
+                timeWindow,
+                minutesToEnd,
+                med.user.locale,
               );
-              schedulesProcessed++;
-              continue;
+
+              const keyboard = getPhaseKeyboard(
+                currentPhase,
+                med.id,
+                med.user.locale,
+              );
+
+              // v0.5.4 — surface the slot time as an ISO 8601 string so
+              // the iOS snooze action pins against the actual slot.
+              const scheduledAtIso = slotScheduledFor.toISOString();
+
+              evt.addMeta(
+                "notification_phase",
+                `${currentPhase}:${med.name}:${slotTime}`,
+              );
+
+              try {
+                await dispatchNotification({
+                  eventType: "MEDICATION_REMINDER",
+                  userId: med.user.id,
+                  title,
+                  message,
+                  metadata: {
+                    medicationId: med.id,
+                    scheduleId: schedule.id,
+                    phase: currentPhase,
+                    date: localDateStr,
+                    // v1.7.0 SB-SCHED-4 — carry the dedup time-of-day so
+                    // the Telegram-message ledger keys per slot.
+                    timeOfDay: dedupTimeOfDay,
+                    scheduledAt: scheduledAtIso,
+                    replyMarkup: keyboard,
+                  },
+                });
+              } catch (notifErr) {
+                evt.addWarning(
+                  `Notification dispatch failed for ${currentPhase} phase ${med.name}: ${notifErr}`,
+                );
+              }
             }
 
-            const { title, message } = getPhaseMessage(
-              currentPhase,
-              med.name,
-              doseInfo,
-              timeWindow,
-              minutesToEnd,
-              med.user.locale,
-            );
-
-            const keyboard = getPhaseKeyboard(
-              currentPhase,
-              med.id,
-              med.user.locale,
-            );
-
-            // v0.5.4 — surface the window-start as an ISO 8601 string so
-            // the iOS notification handler can pin a "snooze 15 min"
-            // action against the actual schedule slot rather than the
-            // wall-clock moment APNs delivered. DST-safe via
-            // `localHmAsUtc` so spring-forward / fall-back days don't
-            // drift the baseline by an hour.
-            const [winH, winM] = schedule.windowStart.split(":").map(Number);
-            const scheduledAtIso = localHmAsUtc(
-              now,
-              med.user.timezone,
-              winH,
-              winM,
-            ).toISOString();
-
-            evt.addMeta(
-              "notification_phase",
-              `${currentPhase}:${med.name}:${schedule.windowStart}-${schedule.windowEnd}`,
-            );
-
-            try {
-              await dispatchNotification({
-                eventType: "MEDICATION_REMINDER",
-                userId: med.user.id,
-                title,
-                message,
-                metadata: {
-                  medicationId: med.id,
-                  scheduleId: schedule.id,
-                  phase: currentPhase,
-                  date: localDateStr,
-                  scheduledAt: scheduledAtIso,
-                  replyMarkup: keyboard,
-                },
-              });
-            } catch (notifErr) {
-              evt.addWarning(
-                `Notification dispatch failed for ${currentPhase} phase ${med.name}: ${notifErr}`,
-              );
-            }
+            schedulesProcessed++;
           }
-
-          schedulesProcessed++;
         }
       }
     } catch (err) {
