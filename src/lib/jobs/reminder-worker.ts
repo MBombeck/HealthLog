@@ -36,7 +36,11 @@ import { setGlobalBoss } from "@/lib/jobs/boss-instance";
 import { cleanupExpiredIdempotencyKeys } from "@/lib/jobs/idempotency-cleanup";
 import { cleanupOldAuditLogs } from "@/lib/jobs/audit-log-cleanup";
 import { cleanupExpiredWithingsOAuthStates } from "@/lib/jobs/withings-oauth-state-cleanup";
-import { cleanupExpiredMeasurementTombstones } from "@/lib/jobs/measurement-tombstone-cleanup";
+import {
+  cleanupExpiredMeasurementTombstones,
+  cleanupExpiredMoodTombstones,
+  cleanupExpiredIntakeTombstones,
+} from "@/lib/jobs/measurement-tombstone-cleanup";
 import { runHostMetricTick } from "@/lib/jobs/host-metric-sampler";
 import { aggregateRecommendationFeedback } from "@/lib/jobs/feedback-aggregator";
 import {
@@ -1412,10 +1416,18 @@ async function handleMeasurementTombstoneCleanup(
   await withBackgroundEvent("job.measurement_tombstone_cleanup", async (evt) => {
     const p = getWorkerPrisma();
     try {
-      const pruned = await cleanupExpiredMeasurementTombstones(p);
-      evt.addMeta("measurement_tombstone_cleanup_pruned", pruned);
+      // v1.7.0 sync — prune tombstones across all three sync domains on
+      // the same retention horizon.
+      const [measurements, mood, intakes] = await Promise.all([
+        cleanupExpiredMeasurementTombstones(p),
+        cleanupExpiredMoodTombstones(p),
+        cleanupExpiredIntakeTombstones(p),
+      ]);
+      evt.addMeta("measurement_tombstone_cleanup_pruned", measurements);
+      evt.addMeta("mood_tombstone_cleanup_pruned", mood);
+      evt.addMeta("intake_tombstone_cleanup_pruned", intakes);
     } catch (err) {
-      evt.addWarning(`measurement-tombstone-cleanup failed: ${err}`);
+      evt.addWarning(`tombstone-cleanup failed: ${err}`);
     }
   });
 }

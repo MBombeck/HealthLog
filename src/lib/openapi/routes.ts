@@ -456,6 +456,16 @@ const syncStateResponse = z
       liveCount: z.number().int().nonnegative(),
       tombstonedCount: z.number().int().nonnegative(),
     }),
+    mood: z.object({
+      lastUpdatedAt: z.iso.datetime({ offset: true }).nullable(),
+      liveCount: z.number().int().nonnegative(),
+      tombstonedCount: z.number().int().nonnegative(),
+    }),
+    intakes: z.object({
+      lastUpdatedAt: z.iso.datetime({ offset: true }).nullable(),
+      liveCount: z.number().int().nonnegative(),
+      tombstonedCount: z.number().int().nonnegative(),
+    }),
     sync: z
       .object({
         incrementalWindowDays: z
@@ -513,15 +523,79 @@ const syncMeasurementTombstone = z
       "A soft-deleted measurement. Apply tombstones BEFORE upserts within a page to avoid resurrecting a row.",
   });
 
+const syncMoodUpsert = z
+  .object({
+    id: z.string(),
+    date: z.string().describe("YYYY-MM-DD anchored to the row's `tz`."),
+    mood: z.string(),
+    score: z.number().int(),
+    tags: z.string().nullable().describe("JSON array of tag keys, or null."),
+    note: z.string().nullable(),
+    moodLoggedAt: z.iso.datetime({ offset: true }),
+    source: z.string(),
+    syncVersion: z
+      .number()
+      .int()
+      .nonnegative()
+      .describe("LWW reconciliation counter; mood is last-writer-wins by it."),
+    updatedAt: z.iso.datetime({ offset: true }),
+  })
+  .meta({ id: "SyncMoodUpsert" });
+
+const syncMoodTombstone = z
+  .object({
+    id: z.string().describe("Server id — the identity key the client dedups on for mood."),
+    syncVersion: z.number().int().nonnegative(),
+    deletedAt: z.iso.datetime({ offset: true }),
+    updatedAt: z.iso.datetime({ offset: true }),
+  })
+  .meta({
+    id: "SyncMoodTombstone",
+    description:
+      "A soft-deleted mood entry, keyed on server `id`. Apply before upserts within the domain page.",
+  });
+
+const syncIntakeUpsert = z
+  .object({
+    id: z.string(),
+    medicationId: z.string(),
+    scheduledFor: z.iso.datetime({ offset: true }),
+    takenAt: z.iso.datetime({ offset: true }).nullable(),
+    skipped: z.boolean(),
+    source: z.string(),
+    syncVersion: z
+      .number()
+      .int()
+      .nonnegative()
+      .describe(
+        "Reconciliation counter. An intake is immutable; a correction is a tombstone + re-insert.",
+      ),
+    updatedAt: z.iso.datetime({ offset: true }),
+  })
+  .meta({ id: "SyncIntakeUpsert" });
+
+const syncIntakeTombstone = z
+  .object({
+    id: z.string().describe("Server id — the identity key the client dedups on for intakes."),
+    syncVersion: z.number().int().nonnegative(),
+    deletedAt: z.iso.datetime({ offset: true }),
+    updatedAt: z.iso.datetime({ offset: true }),
+  })
+  .meta({
+    id: "SyncIntakeTombstone",
+    description:
+      "A soft-deleted medication intake, keyed on server `id`. Apply before upserts within the domain page.",
+  });
+
 const syncChangesQuery = z
   .object({
     cursor: z
       .string()
       .min(1)
-      .max(512)
+      .max(2048)
       .optional()
       .describe(
-        "Opaque keyset cursor from the previous page. Treat as fully opaque — echo, never parse. Omit for the initial sync.",
+        "Opaque multi-domain keyset cursor from the previous page. Treat as fully opaque — echo, never parse. Omit for the initial sync.",
       ),
     limit: z.coerce
       .number()
@@ -553,12 +627,20 @@ const syncChangesResponse = z
         upserts: z.array(syncMeasurementUpsert),
         tombstones: z.array(syncMeasurementTombstone),
       }),
+      mood: z.object({
+        upserts: z.array(syncMoodUpsert),
+        tombstones: z.array(syncMoodTombstone),
+      }),
+      intakes: z.object({
+        upserts: z.array(syncIntakeUpsert),
+        tombstones: z.array(syncIntakeTombstone),
+      }),
     }),
   })
   .meta({
     id: "SyncChangesResponse",
     description:
-      "Measurements-only delta page (v1.7.0). Single combined opaque cursor; tombstones apply before upserts within a page.",
+      "Multi-domain delta page (v1.7.0): measurements + mood + intakes. One opaque multi-domain keyset cursor; tombstones apply before upserts within each domain. Tombstone identity: measurements key on externalId, mood + intakes on server id. The iOS consumer is measurements-only this cycle; mood + intakes are forward-prep.",
   });
 
 // v1.4.48 H-APNs-1 — admin diagnostic endpoint for the notification

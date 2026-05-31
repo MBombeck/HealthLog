@@ -91,6 +91,27 @@ interface ChangesData {
         deletedAt: string;
       }>;
     };
+    mood: {
+      upserts: Array<{ id: string; score: number; syncVersion: number }>;
+      tombstones: Array<{
+        id: string;
+        syncVersion: number;
+        deletedAt: string;
+      }>;
+    };
+    intakes: {
+      upserts: Array<{
+        id: string;
+        medicationId: string;
+        skipped: boolean;
+        syncVersion: number;
+      }>;
+      tombstones: Array<{
+        id: string;
+        syncVersion: number;
+        deletedAt: string;
+      }>;
+    };
   };
 }
 
@@ -112,6 +133,59 @@ async function seedLive(n: number): Promise<void> {
       },
     });
   }
+}
+
+/** Seed n live mood entries with strictly increasing updatedAt. */
+async function seedMood(n: number): Promise<string[]> {
+  const prisma = getPrismaClient();
+  const base = new Date("2026-05-20T00:00:00.000Z").getTime();
+  const ids: string[] = [];
+  for (let i = 0; i < n; i++) {
+    const row = await prisma.moodEntry.create({
+      data: {
+        userId: TEST_USER_ID,
+        date: `2026-05-${20 + i}`,
+        mood: "GUT",
+        score: 4,
+        moodLoggedAt: new Date(base + i * 60_000),
+        updatedAt: new Date(base + i * 1000),
+      },
+    });
+    ids.push(row.id);
+  }
+  return ids;
+}
+
+/** Seed one medication + n live intake events with increasing updatedAt. */
+async function seedIntakes(n: number): Promise<{ medId: string; ids: string[] }> {
+  const prisma = getPrismaClient();
+  const base = new Date("2026-05-20T00:00:00.000Z").getTime();
+  const med = await prisma.medication.create({
+    data: {
+      userId: TEST_USER_ID,
+      name: "Ramipril",
+      dose: "5mg",
+      active: true,
+      schedules: { create: [{ windowStart: "08:00", windowEnd: "10:00" }] },
+    },
+  });
+  const ids: string[] = [];
+  for (let i = 0; i < n; i++) {
+    const scheduledFor = new Date(base + i * 86_400_000);
+    const row = await prisma.medicationIntakeEvent.create({
+      data: {
+        userId: TEST_USER_ID,
+        medicationId: med.id,
+        scheduledFor,
+        takenAt: scheduledFor,
+        skipped: false,
+        source: "WEB",
+        updatedAt: new Date(base + i * 1000),
+      },
+    });
+    ids.push(row.id);
+  }
+  return { medId: med.id, ids };
 }
 
 describe("GET /api/sync/changes (real Postgres)", () => {
@@ -230,11 +304,13 @@ describe("GET /api/sync/changes (real Postgres)", () => {
     await seedLive(2);
     const { GET } = await import("@/app/api/sync/changes/route");
 
-    // A cursor whose updatedAt is older than the retention horizon.
+    // A cursor whose measurements watermark is older than the retention
+    // horizon (any domain past the window expires the whole cursor).
     const ancient = encodeCursor({
-      updatedAtMs:
-        Date.now() - (TOMBSTONE_RETENTION_DAYS + 5) * 86_400_000,
-      id: "clxancient",
+      measurements: {
+        updatedAtMs: Date.now() - (TOMBSTONE_RETENTION_DAYS + 5) * 86_400_000,
+        id: "clxancient",
+      },
     });
     const res = await GET(
       makeRequest(`?cursor=${encodeURIComponent(ancient)}`),
@@ -321,5 +397,179 @@ describe("GET /api/sync/changes (real Postgres)", () => {
       (t) => t.externalId,
     );
     expect(tombIds).toContain("uuid-recent-tomb");
+  });
+});
+
+describe("GET /api/sync/changes — mood domain (real Postgres)", () => {
+  it("pages mood entries with a per-domain cursor round-trip", async () => {
+    await seedMood(5);
+    const { GET } = await import("@/app/api/sync/changes/route");
+
+    const page1 = await GET(makeRequest("?limit=2"));
+    const j1 = (await page1.json()) as { data: ChangesData };
+    expect(j1.data.changes.mood.upserts).toHaveLength(2);
+    expect(j1.data.hasMore).toBe(true);
+    // syncVersion defaults to 0 for legacy/seeded mood rows.
+    expect(j1.data.changes.mood.upserts[0].syncVersion).toBe(0);
+
+    const page2 = await GET(
+      makeRequest(`?limit=2&cursor=${encodeURIComponent(j1.data.cursor!)}`),
+    );
+    const j2 = (await page2.json()) as { data: ChangesData };
+    expect(j2.data.changes.mood.upserts).toHaveLength(2);
+
+    const page3 = await GET(
+      makeRequest(`?limit=2&cursor=${encodeURIComponent(j2.data.cursor!)}`),
+    );
+    const j3 = (await page3.json()) as { data: ChangesData };
+    expect(j3.data.changes.mood.upserts).toHaveLength(1);
+    expect(j3.data.hasMore).toBe(false);
+
+    const all = [
+      ...j1.data.changes.mood.upserts,
+      ...j2.data.changes.mood.upserts,
+      ...j3.data.changes.mood.upserts,
+    ].map((r) => r.id);
+    expect(new Set(all).size).toBe(5);
+  });
+
+  it("surfaces a soft-deleted mood entry as a tombstone keyed on id, never an upsert, and hides it from the list read", async () => {
+    const [delId, keepId] = await seedMood(2);
+    const { DELETE } = await import("@/app/api/mood-entries/[id]/route");
+    await DELETE(
+      new NextRequest(`http://localhost/api/mood-entries/${delId}`, {
+        method: "DELETE",
+      }),
+      { params: Promise.resolve({ id: delId }) },
+    );
+
+    const { GET } = await import("@/app/api/sync/changes/route");
+    const res = await GET(makeRequest());
+    const j = (await res.json()) as { data: ChangesData };
+
+    expect(j.data.changes.mood.tombstones).toHaveLength(1);
+    expect(j.data.changes.mood.tombstones[0].id).toBe(delId);
+    expect(j.data.changes.mood.tombstones[0].syncVersion).toBe(1);
+    expect(j.data.changes.mood.upserts.map((u) => u.id)).toEqual([keepId]);
+
+    // Not in the normal list read.
+    const { GET: LIST } = await import("@/app/api/mood-entries/route");
+    const listRes = await LIST(
+      new NextRequest("http://localhost/api/mood-entries", { method: "GET" }),
+    );
+    const listJson = (await listRes.json()) as {
+      data: { entries: Array<{ id: string }> };
+    };
+    const listed = listJson.data.entries.map((m) => m.id);
+    expect(listed).not.toContain(delId);
+    expect(listed).toContain(keepId);
+  });
+});
+
+describe("GET /api/sync/changes — intake domain (real Postgres)", () => {
+  it("pages intake events with a per-domain cursor round-trip", async () => {
+    await seedIntakes(5);
+    const { GET } = await import("@/app/api/sync/changes/route");
+
+    const page1 = await GET(makeRequest("?limit=2"));
+    const j1 = (await page1.json()) as { data: ChangesData };
+    expect(j1.data.changes.intakes.upserts).toHaveLength(2);
+    expect(j1.data.hasMore).toBe(true);
+    expect(j1.data.changes.intakes.upserts[0].syncVersion).toBe(0);
+
+    const page2 = await GET(
+      makeRequest(`?limit=2&cursor=${encodeURIComponent(j1.data.cursor!)}`),
+    );
+    const j2 = (await page2.json()) as { data: ChangesData };
+    const page3 = await GET(
+      makeRequest(`?limit=2&cursor=${encodeURIComponent(j2.data.cursor!)}`),
+    );
+    const j3 = (await page3.json()) as { data: ChangesData };
+    expect(j3.data.changes.intakes.upserts).toHaveLength(1);
+    expect(j3.data.hasMore).toBe(false);
+
+    const all = [
+      ...j1.data.changes.intakes.upserts,
+      ...j2.data.changes.intakes.upserts,
+      ...j3.data.changes.intakes.upserts,
+    ].map((r) => r.id);
+    expect(new Set(all).size).toBe(5);
+  });
+
+  it("surfaces a soft-deleted intake as a tombstone keyed on id, never an upsert", async () => {
+    const { medId, ids } = await seedIntakes(2);
+    const [delId, keepId] = ids;
+    const { DELETE } = await import(
+      "@/app/api/medications/[id]/intake/[eventId]/route"
+    );
+    await DELETE(
+      new NextRequest(
+        `http://localhost/api/medications/${medId}/intake/${delId}`,
+        { method: "DELETE" },
+      ),
+      { params: Promise.resolve({ id: medId, eventId: delId }) },
+    );
+
+    const { GET } = await import("@/app/api/sync/changes/route");
+    const res = await GET(makeRequest());
+    const j = (await res.json()) as { data: ChangesData };
+
+    expect(j.data.changes.intakes.tombstones).toHaveLength(1);
+    expect(j.data.changes.intakes.tombstones[0].id).toBe(delId);
+    expect(j.data.changes.intakes.tombstones[0].syncVersion).toBe(1);
+    expect(j.data.changes.intakes.upserts.map((u) => u.id)).toEqual([keepId]);
+  });
+});
+
+describe("GET /api/sync/changes — multi-domain (real Postgres)", () => {
+  it("serves all three domains in one page and advances each domain's watermark independently", async () => {
+    await seedLive(2);
+    await seedMood(2);
+    await seedIntakes(2);
+    const { GET } = await import("@/app/api/sync/changes/route");
+
+    const res = await GET(makeRequest());
+    const j = (await res.json()) as { data: ChangesData };
+    expect(j.data.changes.measurements.upserts).toHaveLength(2);
+    expect(j.data.changes.mood.upserts).toHaveLength(2);
+    expect(j.data.changes.intakes.upserts).toHaveLength(2);
+    expect(j.data.hasMore).toBe(false);
+
+    // Echoing the cursor back yields an empty caught-up page across all
+    // three domains — the per-domain watermarks all advanced.
+    const res2 = await GET(
+      makeRequest(`?cursor=${encodeURIComponent(j.data.cursor!)}`),
+    );
+    const j2 = (await res2.json()) as { data: ChangesData };
+    expect(j2.data.changes.measurements.upserts).toHaveLength(0);
+    expect(j2.data.changes.mood.upserts).toHaveLength(0);
+    expect(j2.data.changes.intakes.upserts).toHaveLength(0);
+    expect(j2.data.hasMore).toBe(false);
+  });
+
+  it("hasMore reflects ANY domain still having rows past its page", async () => {
+    // measurements has 3 rows, mood + intakes have 1 each; with limit=2 the
+    // measurements domain still has more → hasMore must be true.
+    await seedLive(3);
+    await seedMood(1);
+    await seedIntakes(1);
+    const { GET } = await import("@/app/api/sync/changes/route");
+
+    const res = await GET(makeRequest("?limit=2"));
+    const j = (await res.json()) as { data: ChangesData };
+    expect(j.data.changes.measurements.upserts).toHaveLength(2);
+    expect(j.data.changes.mood.upserts).toHaveLength(1);
+    expect(j.data.changes.intakes.upserts).toHaveLength(1);
+    expect(j.data.hasMore).toBe(true);
+  });
+
+  it("treats a garbage cursor as a clean initial sync", async () => {
+    await seedMood(1);
+    const { GET } = await import("@/app/api/sync/changes/route");
+    const res = await GET(makeRequest("?cursor=not-a-valid-cursor"));
+    const j = (await res.json()) as { data: ChangesData };
+    expect(res.status).toBe(200);
+    expect(j.data.cursorExpired).toBe(false);
+    expect(j.data.changes.mood.upserts).toHaveLength(1);
   });
 });
