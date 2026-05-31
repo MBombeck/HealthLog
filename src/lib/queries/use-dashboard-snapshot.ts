@@ -30,6 +30,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
+import { DASHBOARD_REFETCH_INTERVAL_MS } from "@/lib/queries/refetch-interval";
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
 
 async function fetchDashboardSnapshot(): Promise<DashboardSnapshot> {
@@ -47,7 +48,7 @@ export function useDashboardSnapshot(enabled = true) {
     staleTime: 60_000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
-    refetchInterval: 120_000,
+    refetchInterval: DASHBOARD_REFETCH_INTERVAL_MS,
     refetchIntervalInBackground: false,
     retry: false,
   });

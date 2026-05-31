@@ -4,6 +4,7 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
+import { DASHBOARD_REFETCH_INTERVAL_MS } from "@/lib/queries/refetch-interval";
 import type { DataSummary } from "@/lib/analytics/trends";
 
 /**
@@ -138,7 +139,7 @@ export function useAnalyticsQuery(
     staleTime: 60_000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
-    refetchInterval: 120_000,
+    refetchInterval: DASHBOARD_REFETCH_INTERVAL_MS,
     refetchIntervalInBackground: false,
   });
 }
