@@ -166,9 +166,17 @@ export const PUT = apiHandler(async (request: NextRequest) => {
       widgetsBody.widgets = widgetsBody.widgets.filter(
         (w) => !(typeof w?.id === "string" && !knownWidgetIds.has(w.id)),
       );
+      // v1.7.0 — the unknown-id filter runs over the FULL incoming
+      // `widgets` array BEFORE Zod's `.max(20)` applies, so `droppedIds`
+      // is bounded only by the request body limit. Cap the logged array
+      // (keep the full `dropped_count`) so a single large request can't
+      // push thousands of strings into one wide-event line.
       annotate({
         action: { name: "dashboard.widgets.unknown-id-dropped" },
-        meta: { dropped_ids: droppedIds, dropped_count: droppedIds.length },
+        meta: {
+          dropped_ids: droppedIds.slice(0, 20),
+          dropped_count: droppedIds.length,
+        },
       });
     }
   }

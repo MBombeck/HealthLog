@@ -352,6 +352,31 @@ describe("PUT /api/dashboard/widgets — accept-and-ignore unknown ids (v1.7.0 #
     );
   });
 
+  it("caps the logged dropped_ids array at 20 while keeping the full dropped_count (v1.7.0)", async () => {
+    // A large all-unknown payload — the unknown-id filter runs before
+    // Zod's `.max(20)`, so the wide-event line must not carry every id.
+    const widgets = Array.from({ length: 200 }, (_, i) => ({
+      id: `ios-unknown-${i}`,
+      visible: true,
+      order: i,
+    }));
+
+    const res = await callPut(makeReq({ version: 1, widgets }));
+    // All widgets unknown → surviving array is empty → 422 (min 1). The
+    // annotation fires regardless, before the Zod parse.
+    expect(res.status).toBe(422);
+
+    const dropAnnotate = vi.mocked(annotate).mock.calls.find(
+      (c) =>
+        (c[0] as { action?: { name?: string } }).action?.name ===
+        "dashboard.widgets.unknown-id-dropped",
+    );
+    expect(dropAnnotate, "unknown-id-dropped annotate call").toBeTruthy();
+    const meta = (dropAnnotate![0] as { meta?: Record<string, unknown> }).meta!;
+    expect(meta.dropped_count).toBe(200);
+    expect((meta.dropped_ids as string[]).length).toBe(20);
+  });
+
   it("still 422s when a surviving entry is malformed (missing order)", async () => {
     const res = await callPut(
       makeReq({
