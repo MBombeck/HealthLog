@@ -75,6 +75,8 @@ const MedicationComplianceChart = dynamic(
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
+import { useDashboardSnapshot } from "@/lib/queries/use-dashboard-snapshot";
+import { isDashboardSnapshotEnabled } from "@/lib/dashboard/snapshot-flag";
 import type { DataSummary } from "@/lib/analytics/trends";
 import { mergeSlimAndThickAnalytics } from "@/lib/analytics/merge-slim-thick";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
@@ -214,9 +216,46 @@ export default function DashboardPage() {
   // Both queries share `caches.analytics` server-side so warm hits
   // stay free, and TanStack's parallel-mounting keeps the network fan-
   // out flat.
-  const analyticsSlimQuery = useAnalyticsQuery({ slice: "summaries" });
-  const analyticsThickQuery = useAnalyticsQuery();
+  // v1.7.0 W6 — unified first-paint snapshot (reversible rollout flag).
+  // When `NEXT_PUBLIC_DASHBOARD_SNAPSHOT=true`, every tile hydrates from
+  // ONE un-gated `/api/dashboard/snapshot` cell so the whole strip
+  // shares one completion moment and the `/api/auth/me` round-trip
+  // leaves the cold critical path. Flag OFF keeps the legacy four
+  // independent cells (today's behaviour, byte-identical).
+  const snapshotEnabled = isDashboardSnapshotEnabled();
+  const snapshotQuery = useDashboardSnapshot(snapshotEnabled);
+
+  const analyticsSlimQuery = useAnalyticsQuery({
+    slice: "summaries",
+    enabled: !snapshotEnabled && isAuthenticated,
+  });
+  const analyticsThickQuery = useAnalyticsQuery({
+    enabled: !snapshotEnabled && isAuthenticated,
+  });
   const data = useMemo<AnalyticsData | undefined>(() => {
+    // v1.7.0 W6 — snapshot path: assemble the same `AnalyticsData`
+    // shape from the single snapshot cell so every downstream tile
+    // reads unchanged. `extras` is null on a rollup-coverage miss
+    // (two-phase contract) → the BD-Zielbereich + glucose fields stay
+    // undefined and those tiles render their per-tile shimmer while the
+    // rest of the strip paints.
+    if (snapshotEnabled) {
+      const snap = snapshotQuery.data;
+      if (!snap) return undefined;
+      return {
+        summaries: snap.tiles.summaries,
+        lastSeenByType: snap.tiles.lastSeenByType,
+        bpInTargetPct: snap.extras?.bpInTargetPct ?? null,
+        bpInTargetPct7d: snap.extras?.bpInTargetPct7d ?? null,
+        bpInTargetPct30d: snap.extras?.bpInTargetPct30d ?? null,
+        bpInTargetPctAllTime: snap.extras?.bpInTargetPctAllTime ?? null,
+        bpInTargetPctPriorMonth: snap.extras?.bpInTargetPctPriorMonth ?? null,
+        bpInTargetPctPriorYear: snap.extras?.bpInTargetPctPriorYear ?? null,
+        glucoseByContext: snap.extras?.glucoseByContext as
+          | Record<string, DataSummary>
+          | undefined,
+      };
+    }
     // v1.4.39.3 — the merge moved to `mergeSlimAndThickAnalytics` so
     // the empty-slim-vs-populated-thick edge has direct unit
     // coverage. Pre-fix the inline `slim?.summaries ?? thick?.summaries`
@@ -244,9 +283,14 @@ export default function DashboardPage() {
         | Record<string, DataSummary>
         | undefined,
     };
-  }, [analyticsSlimQuery.data, analyticsThickQuery.data]);
+  }, [
+    snapshotEnabled,
+    snapshotQuery.data,
+    analyticsSlimQuery.data,
+    analyticsThickQuery.data,
+  ]);
 
-  const { data: layoutData } = useQuery({
+  const { data: layoutDataLegacy } = useQuery({
     queryKey: queryKeys.dashboardWidgets(),
     queryFn: async () => {
       const res = await fetch("/api/dashboard/widgets");
@@ -254,11 +298,14 @@ export default function DashboardPage() {
       const json = await res.json();
       return json.data as DashboardLayout;
     },
-    enabled: isAuthenticated,
+    enabled: !snapshotEnabled && isAuthenticated,
     ...DASHBOARD_QUERY_OPTS,
   });
+  const layoutData = snapshotEnabled
+    ? snapshotQuery.data?.layout
+    : layoutDataLegacy;
 
-  const { data: moodData } = useQuery({
+  const { data: moodDataLegacy } = useQuery({
     queryKey: queryKeys.moodAnalytics(),
     queryFn: async () => {
       const res = await fetch("/api/mood/analytics");
@@ -269,9 +316,18 @@ export default function DashboardPage() {
         summary: DataSummary;
       };
     },
-    enabled: isAuthenticated,
+    enabled: !snapshotEnabled && isAuthenticated,
     ...DASHBOARD_QUERY_OPTS,
   });
+  const moodData = snapshotEnabled
+    ? snapshotQuery.data
+      ? {
+          entries: snapshotQuery.data.tiles.mood.entries,
+          summary: (snapshotQuery.data.tiles.mood.summary ??
+            undefined) as DataSummary,
+        }
+      : undefined
+    : moodDataLegacy;
 
   // v1.4.27 B1 — the dashboard's `<InsightsCardPreview>` retired (it
   // duplicated the much-richer `/insights` advisor surface). The advisor
