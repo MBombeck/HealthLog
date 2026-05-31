@@ -12,7 +12,10 @@ import {
 import { auditLog } from "@/lib/auth/audit";
 import { annotate } from "@/lib/logging/context";
 import { checkAuthSurfaceRateLimit } from "@/lib/rate-limit";
-import { resolveTokenPolicy } from "@/lib/auth/native-client";
+import {
+  resolveTokenPolicy,
+  NATIVE_REFRESH_TOKEN_DAYS,
+} from "@/lib/auth/native-client";
 import {
   rotateRefreshToken,
   revokeRefreshToken,
@@ -58,7 +61,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // Refresh always uses the native policy: a refresh token only exists for
   // native callers, and we never want to upgrade it back to a 90d token.
   if (policy.refreshTokenDays === null) {
-    policy.refreshTokenDays = 60;
+    policy.refreshTokenDays = NATIVE_REFRESH_TOKEN_DAYS;
     policy.accessTokenDays = 1;
   }
 

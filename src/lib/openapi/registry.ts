@@ -65,6 +65,7 @@ const openApiBase: Pick<
     { name: "Notifications" },
     { name: "Devices" },
     { name: "Export" },
+    { name: "Sync" },
     { name: "Admin" },
   ],
 };

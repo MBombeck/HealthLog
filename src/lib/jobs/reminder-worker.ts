@@ -36,6 +36,7 @@ import { setGlobalBoss } from "@/lib/jobs/boss-instance";
 import { cleanupExpiredIdempotencyKeys } from "@/lib/jobs/idempotency-cleanup";
 import { cleanupOldAuditLogs } from "@/lib/jobs/audit-log-cleanup";
 import { cleanupExpiredWithingsOAuthStates } from "@/lib/jobs/withings-oauth-state-cleanup";
+import { cleanupExpiredMeasurementTombstones } from "@/lib/jobs/measurement-tombstone-cleanup";
 import { runHostMetricTick } from "@/lib/jobs/host-metric-sampler";
 import { aggregateRecommendationFeedback } from "@/lib/jobs/feedback-aggregator";
 import {
@@ -266,6 +267,15 @@ const MOOD_REMINDER_RETENTION_DAYS = 90;
 const PUSH_ATTEMPT_CLEANUP_QUEUE = "push-attempt-cleanup";
 const PUSH_ATTEMPT_CLEANUP_CRON = "35 3 * * *";
 const PUSH_ATTEMPT_RETENTION_DAYS = 90;
+// v1.7.0 — daily prune for soft-deleted measurement tombstones. Rows
+// whose `deletedAt` predates the refresh-token lifetime + margin are
+// hard-deleted (a device offline that long re-pairs with a full backfill,
+// not an incremental delta, so it never relies on the tombstone).
+// Retention lives on the helper module keyed to the refresh lifetime so
+// the two never drift. Slots at 03:40 between push-attempt cleanup (03:35)
+// and the drain (03:45) inside the existing 03:xx maintenance window.
+const MEASUREMENT_TOMBSTONE_CLEANUP_QUEUE = "measurement-tombstone-cleanup";
+const MEASUREMENT_TOMBSTONE_CLEANUP_CRON = "40 3 * * *";
 // v1.4.38 — the per-sample cutoff hours constant now lives on the
 // helper module so the worker, the admin route, and the CLI all read
 // the same source of truth. Re-export pulled in alongside
@@ -1344,6 +1354,25 @@ async function handlePushAttemptCleanup(
   });
 }
 
+interface MeasurementTombstoneCleanupPayload {
+  triggeredAt: string;
+}
+
+async function handleMeasurementTombstoneCleanup(
+  jobs: Job<MeasurementTombstoneCleanupPayload>[],
+) {
+  void jobs;
+  await withBackgroundEvent("job.measurement_tombstone_cleanup", async (evt) => {
+    const p = getWorkerPrisma();
+    try {
+      const pruned = await cleanupExpiredMeasurementTombstones(p);
+      evt.addMeta("measurement_tombstone_cleanup_pruned", pruned);
+    } catch (err) {
+      evt.addWarning(`measurement-tombstone-cleanup failed: ${err}`);
+    }
+  });
+}
+
 async function handleMoodReminderCheck(jobs: Job<MoodReminderPayload>[]) {
   void jobs;
   await withBackgroundEvent("job.mood_reminder", async (evt) => {
@@ -1947,6 +1976,11 @@ export async function startReminderWorker() {
     // this entry the 04:30 schedule silently no-ops and every briefing
     // falls back to the lazy on-demand generation it was meant to retire.
     INSIGHT_PREGENERATE_QUEUE,
+    // v1.7.0 — soft-deleted measurement tombstone prune. Same createQueue
+    // contract as the other cleanup jobs; without this entry the daily
+    // schedule silently no-ops and pruned-past-retention tombstones pile
+    // up forever.
+    MEASUREMENT_TOMBSTONE_CLEANUP_QUEUE,
   ];
 
   for (const q of allQueues) {
@@ -2034,6 +2068,9 @@ export async function startReminderWorker() {
     // v1.7.0 — nightly 04:30 Europe/Berlin comprehensive-insight
     // pre-generation. Budget-gated per user inside the handler.
     [INSIGHT_PREGENERATE_QUEUE, INSIGHT_PREGENERATE_CRON],
+    // v1.7.0 — daily 03:40 Europe/Berlin prune for expired measurement
+    // tombstones.
+    [MEASUREMENT_TOMBSTONE_CLEANUP_QUEUE, MEASUREMENT_TOMBSTONE_CLEANUP_CRON],
   ];
 
   for (const [name, cron] of schedules) {
@@ -2163,6 +2200,13 @@ export async function startReminderWorker() {
     PUSH_ATTEMPT_CLEANUP_QUEUE,
     { localConcurrency: 1 },
     handlePushAttemptCleanup,
+  );
+  // v1.7.0 — daily prune of expired measurement tombstones. Single-flight
+  // like every other cleanup queue.
+  await boss.work<MeasurementTombstoneCleanupPayload>(
+    MEASUREMENT_TOMBSTONE_CLEANUP_QUEUE,
+    { localConcurrency: 1 },
+    handleMeasurementTombstoneCleanup,
   );
   await boss.work<PrDetectionPayload>(
     PR_DETECTION_QUEUE,

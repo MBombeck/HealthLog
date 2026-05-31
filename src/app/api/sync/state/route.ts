@@ -33,6 +33,10 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
+import {
+  NATIVE_REFRESH_TOKEN_DAYS,
+  TOMBSTONE_RETENTION_DAYS,
+} from "@/lib/auth/native-client";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const GET = apiHandler(async (_request: NextRequest) => {
@@ -88,6 +92,15 @@ export const GET = apiHandler(async (_request: NextRequest) => {
       lastUpdatedAt: latest?.updatedAt?.toISOString() ?? null,
       liveCount,
       tombstonedCount,
+    },
+    // v1.7.0 — the sync window iOS should derive its incremental-delta
+    // horizon from, rather than hardcoding a constant. `incrementalWindowDays`
+    // tracks the native refresh-token lifetime (a device offline longer
+    // re-pairs with a full backfill); `tombstoneRetentionDays` is the
+    // horizon past which `/api/sync/changes` returns `cursorExpired`.
+    sync: {
+      incrementalWindowDays: NATIVE_REFRESH_TOKEN_DAYS,
+      tombstoneRetentionDays: TOMBSTONE_RETENTION_DAYS,
     },
   });
 });
