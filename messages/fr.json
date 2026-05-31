@@ -1150,7 +1150,6 @@
       "intake": {
         "title": "Intake history",
         "importButton": "Import",
-        "viewAllLink": "View full history →",
         "rowActions": {
           "openMenu": "Open row actions",
           "edit": "Edit",
@@ -1199,10 +1198,6 @@
       },
       "settings": {
         "title": "Settings",
-        "csvImport": {
-          "title": "CSV import",
-          "stub": "Import intakes directly from the history above."
-        },
         "phases": {
           "openButton": "Configure phases",
           "requiresCourseWindow": "Phases are available once a course window is set."
@@ -1273,7 +1268,28 @@
         "advancedOption": "Paramètres avancés"
       },
       "advanced": {
-        "title": "Paramètres avancés"
+        "title": "Paramètres avancés",
+        "group": {
+          "data": "Données",
+          "reminders": "Rappels",
+          "lifecycle": "Cycle de vie",
+          "danger": "Zone de danger"
+        },
+        "csvImport": {
+          "title": "Import CSV/JSON",
+          "helper": "Importez les prises passées depuis un fichier ou du JSON collé.",
+          "button": "Importer CSV/JSON"
+        }
+      },
+      "header": {
+        "historyLabel": "Voir l'historique des prises",
+        "advancedLabel": "Paramètres avancés"
+      },
+      "history": {
+        "back": "Retour au médicament",
+        "subtitle": "Historique complet des prises",
+        "plannedSuffix": "prévu",
+        "drugLevelDisclosure": "Afficher la courbe estimée du principe actif"
       }
     }
   },

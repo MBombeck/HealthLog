@@ -1150,7 +1150,6 @@
       "intake": {
         "title": "Einnahmeverlauf",
         "importButton": "Importieren",
-        "viewAllLink": "Vollständigen Verlauf öffnen →",
         "rowActions": {
           "openMenu": "Zeilen-Aktionen öffnen",
           "edit": "Bearbeiten",
@@ -1199,10 +1198,6 @@
       },
       "settings": {
         "title": "Einstellungen",
-        "csvImport": {
-          "title": "CSV-Import",
-          "stub": "Importiere Einnahmen direkt aus dem Verlauf oben."
-        },
         "phases": {
           "openButton": "Phasen konfigurieren",
           "requiresCourseWindow": "Phasen sind nur mit Kurs-Fenster verfügbar."
@@ -1273,7 +1268,28 @@
         "advancedOption": "Erweiterte Einstellungen"
       },
       "advanced": {
-        "title": "Erweiterte Einstellungen"
+        "title": "Erweiterte Einstellungen",
+        "group": {
+          "data": "Daten",
+          "reminders": "Erinnerungen",
+          "lifecycle": "Lebenszyklus",
+          "danger": "Gefahrenzone"
+        },
+        "csvImport": {
+          "title": "CSV-/JSON-Import",
+          "helper": "Vergangene Einnahmen aus einer Datei oder eingefügtem JSON importieren.",
+          "button": "CSV/JSON importieren"
+        }
+      },
+      "header": {
+        "historyLabel": "Einnahmeverlauf ansehen",
+        "advancedLabel": "Erweiterte Einstellungen"
+      },
+      "history": {
+        "back": "Zurück zum Medikament",
+        "subtitle": "Vollständiger Einnahmeverlauf",
+        "plannedSuffix": "geplant",
+        "drugLevelDisclosure": "Geschätzte Wirkstoffkurve anzeigen"
       }
     }
   },
