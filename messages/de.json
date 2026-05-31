@@ -1636,7 +1636,7 @@
         "glucose": "Glukose",
         "walking_steadiness": "Gehstabilität",
         "walking_asymmetry": "Gangasymmetrie",
-        "walking_double_support": "Doppelstützzeit",
+        "walking_double_support": "Doppelstandphase",
         "walking_step_length": "Schrittlänge",
         "walking_speed": "Gehgeschwindigkeit",
         "audio_env": "Umgebungslautstärke",
