@@ -3,6 +3,9 @@ import {
   DEFAULT_DASHBOARD_LAYOUT,
   resolveDashboardLayout,
   serializeDashboardLayout,
+  DASHBOARD_WIDGET_IDS,
+  DASHBOARD_IOS_ONLY_WIDGET_IDS,
+  DASHBOARD_WIDGET_CATALOGUE_IDS,
   type DashboardLayout,
 } from "@/lib/dashboard-layout";
 
@@ -370,5 +373,48 @@ describe("resolveDashboardLayout() — chartOverlayPrefs (v1.4.18)", () => {
     };
     const resolved = resolveDashboardLayout(saved);
     expect(Object.keys(resolved.chartOverlayPrefs ?? {})).toEqual(["bp"]);
+  });
+});
+
+/**
+ * v1.7.0 — full 27-id widget catalogue for the iOS cold-launch seed.
+ * The catalogue is a pure superset of the server-known ids; the
+ * iOS-only ids extend it without touching the writable PUT enum.
+ */
+describe("DASHBOARD_WIDGET_CATALOGUE_IDS — 27-id catalogue", () => {
+  it("carries exactly 27 distinct ids (16 server-known + 11 iOS-only)", () => {
+    expect(DASHBOARD_WIDGET_IDS).toHaveLength(16);
+    expect(DASHBOARD_IOS_ONLY_WIDGET_IDS).toHaveLength(11);
+    expect(DASHBOARD_WIDGET_CATALOGUE_IDS).toHaveLength(27);
+    expect(new Set(DASHBOARD_WIDGET_CATALOGUE_IDS).size).toBe(27);
+  });
+
+  it("is a superset of the server-known ids in declaration order", () => {
+    expect(
+      DASHBOARD_WIDGET_CATALOGUE_IDS.slice(0, DASHBOARD_WIDGET_IDS.length),
+    ).toEqual([...DASHBOARD_WIDGET_IDS]);
+  });
+
+  it("does not double-book a server-known id as iOS-only", () => {
+    const known = new Set<string>(DASHBOARD_WIDGET_IDS);
+    for (const id of DASHBOARD_IOS_ONLY_WIDGET_IDS) {
+      expect(known.has(id)).toBe(false);
+    }
+  });
+
+  it("carries the locked iOS-only ids verbatim", () => {
+    expect([...DASHBOARD_IOS_ONLY_WIDGET_IDS]).toEqual([
+      "restingHeartRate",
+      "hrv",
+      "walkingSpeed",
+      "walkingAsymmetry",
+      "walkingStepLength",
+      "bmi",
+      "bodyTemperature",
+      "walkingDoubleSupport",
+      "respiratoryRate",
+      "audioExposureEnvironment",
+      "audioExposureHeadphone",
+    ]);
   });
 });

@@ -31,8 +31,12 @@
  * yields `briefingState: "preparing"` and the `insight-pregenerate`
  * cron refills it. The builder NEVER POSTs `/api/insights/generate`.
  */
-import type { PrismaClient } from "@/generated/prisma/client";
+import type {
+  PrismaClient,
+  MeasurementType,
+} from "@/generated/prisma/client";
 import { computeSummariesSlice } from "@/lib/analytics/summaries-slice";
+import { getUnitForType } from "@/lib/validations/measurement";
 import {
   summarize,
   type DataPoint,
@@ -51,7 +55,9 @@ import {
 } from "@/lib/rollups/mood-rollups";
 import {
   resolveDashboardLayout,
+  DASHBOARD_WIDGET_CATALOGUE_IDS,
   type DashboardLayout,
+  type DashboardWidgetCatalogueId,
 } from "@/lib/dashboard-layout";
 import { dailyBriefingSchema, type DailyBriefing } from "@/lib/ai/schema";
 import { getAssistantFlags } from "@/lib/feature-flags";
@@ -69,6 +75,67 @@ const GLUCOSE_CONTEXTS = [
   "RANDOM",
   "BEDTIME",
 ] as const;
+
+/**
+ * v1.7.0 — HealthLog `MeasurementType` → iOS `MetricKind` raw value.
+ *
+ * The iOS client decodes `MetricKind` from these exact raw strings
+ * (`MetricKind.swift:30-122`); the snapshot's `metricStates` block is
+ * keyed by them so a cold-launch first-paint seeds every tile without
+ * a per-metric round-trip. Most map to the lowercase / camel form of
+ * the enum, but a handful are non-obvious and locked verbatim in
+ * `.planning/ios-coord/v1.7.0-ios-convergence-locks.md` §4b:
+ *
+ *   - SpO₂ → `oxygenSaturation`
+ *   - body water → `totalBodyWater`
+ *   - HRV → `heartRateVariability`
+ *   - BMI → `bodyMassIndex`
+ *   - walking asymmetry → `walkingAsymmetryPercentage`
+ *   - walking double support → `walkingDoubleSupportPercentage`
+ *   - environmental audio → `environmentalAudioExposure`
+ *   - headphone audio → `headphoneAudioExposure`
+ *   - active energy → `activeEnergyBurned`
+ *
+ * Types without an iOS `MetricKind` counterpart are intentionally
+ * absent (no key emitted) rather than mapped to a guessed raw. The
+ * audio-exposure EVENT flag, walking steadiness, and the Withings-only
+ * body-composition metrics (fat-free / muscle mass, PWV, vascular age,
+ * visceral fat, skin temperature) have no iOS tile and are omitted.
+ */
+const METRIC_KIND_RAW_BY_TYPE: Partial<Record<MeasurementType, string>> = {
+  WEIGHT: "weight",
+  BLOOD_PRESSURE_SYS: "bloodPressureSystolic",
+  BLOOD_PRESSURE_DIA: "bloodPressureDiastolic",
+  PULSE: "pulse",
+  BODY_FAT: "bodyFat",
+  SLEEP_DURATION: "sleep",
+  ACTIVITY_STEPS: "steps",
+  BLOOD_GLUCOSE: "bloodGlucose",
+  TOTAL_BODY_WATER: "totalBodyWater",
+  BONE_MASS: "boneMass",
+  OXYGEN_SATURATION: "oxygenSaturation",
+  HEART_RATE_VARIABILITY: "heartRateVariability",
+  RESTING_HEART_RATE: "restingHeartRate",
+  ACTIVE_ENERGY_BURNED: "activeEnergyBurned",
+  FLIGHTS_CLIMBED: "flightsClimbed",
+  WALKING_RUNNING_DISTANCE: "walkingRunningDistance",
+  VO2_MAX: "vo2Max",
+  BODY_TEMPERATURE: "bodyTemperature",
+  FAT_FREE_MASS: "fatFreeMass",
+  FAT_MASS: "fatMass",
+  MUSCLE_MASS: "muscleMass",
+  RESPIRATORY_RATE: "respiratoryRate",
+  BODY_MASS_INDEX: "bodyMassIndex",
+  LEAN_BODY_MASS: "leanBodyMass",
+  WALKING_HEART_RATE_AVERAGE: "walkingHeartRateAverage",
+  WALKING_ASYMMETRY: "walkingAsymmetryPercentage",
+  WALKING_DOUBLE_SUPPORT: "walkingDoubleSupportPercentage",
+  WALKING_STEP_LENGTH: "walkingStepLength",
+  WALKING_SPEED: "walkingSpeed",
+  AUDIO_EXPOSURE_ENV: "environmentalAudioExposure",
+  AUDIO_EXPOSURE_HEADPHONE: "headphoneAudioExposure",
+  TIME_IN_DAYLIGHT: "timeInDaylight",
+};
 
 export type BriefingState = "ready" | "preparing" | "disabled";
 
@@ -110,9 +177,45 @@ export interface DashboardSnapshotExtras {
   glucoseByContext: Record<string, DataSummary>;
 }
 
+/**
+ * v1.7.0 — latest reading per chartable metric, keyed by the iOS
+ * `MetricKind` raw value. Additive cold-launch seed: the iOS client
+ * paints every tile from this block on first launch without a
+ * per-metric round-trip. Derived in-process from the slim summaries
+ * slice already fetched for `tiles.summaries` — NO extra DB query.
+ */
+export interface DashboardMetricState {
+  value: number;
+  measuredAt: string;
+  unit: string;
+}
+
+/**
+ * v1.7.0 — one widget row in the full catalogue. Mirrors the
+ * web-layout `DashboardWidgetConfig` shape (`visible` + `order`) but
+ * over the full 27-id catalogue (server-known + iOS-only), so the
+ * iOS layout round-trips in one key.
+ */
+export interface DashboardLayoutCatalogueEntry {
+  id: DashboardWidgetCatalogueId;
+  visible: boolean;
+  order: number;
+}
+
 export interface DashboardSnapshot {
   user: DashboardSnapshotUser;
   layout: DashboardLayout;
+  /**
+   * v1.7.0 — full 27-id widget catalogue (visibility + order) for the
+   * iOS cold-launch seed. Additive alongside the web `layout`; the web
+   * page keeps reading `layout` byte-identically.
+   */
+  layoutCatalogue: DashboardLayoutCatalogueEntry[];
+  /**
+   * v1.7.0 — per-chartable-metric latest reading, keyed by iOS
+   * `MetricKind` raw value. Additive; the web page does not read it.
+   */
+  metricStates: Record<string, DashboardMetricState>;
   /** Fast phase — always present. */
   tiles: {
     summaries: Record<string, DataSummary>;
@@ -395,6 +498,75 @@ function liftBriefing(
 }
 
 /**
+ * v1.7.0 — derive the per-metric latest-reading block from the slim
+ * summaries slice already fetched for `tiles.summaries`. ZERO extra DB
+ * round-trips: the slim slice's `DISTINCT ON (type)` read already
+ * carries the latest `value` (`summaries[type].latest`) and the
+ * matching timestamp (`lastSeenByType[type].lastSeenAt`); the unit is
+ * the static canonical-unit lookup. This keeps the snapshot pool-safe
+ * — no new query is issued against the shared Prisma pool.
+ *
+ * Keyed by the iOS `MetricKind` raw value so the iOS cold-launch seed
+ * can decode each entry directly. Types with no iOS counterpart, no
+ * latest value, or no timestamp are omitted (no key emitted).
+ */
+function buildMetricStates(
+  summaries: Record<string, DataSummary>,
+  lastSeenByType: Record<string, { lastSeenAt: string } | null>,
+): Record<string, DashboardMetricState> {
+  const out: Record<string, DashboardMetricState> = {};
+  for (const [type, metricKindRaw] of Object.entries(
+    METRIC_KIND_RAW_BY_TYPE,
+  )) {
+    if (!metricKindRaw) continue;
+    const summary = summaries[type];
+    const lastSeen = lastSeenByType[type];
+    if (!summary || summary.latest === null || !lastSeen) continue;
+    out[metricKindRaw] = {
+      value: summary.latest,
+      measuredAt: lastSeen.lastSeenAt,
+      unit: getUnitForType(type),
+    };
+  }
+  return out;
+}
+
+/**
+ * v1.7.0 — full 27-id widget catalogue (visibility + order). The
+ * server-known ids inherit the user's resolved layout (the same
+ * `visible` / `order` the web `layout` block carries); the 11 iOS-only
+ * ids are appended default-invisible after the highest known order so
+ * the catalogue round-trips in one key. Pure projection over the
+ * already-resolved layout — no DB read.
+ */
+function buildLayoutCatalogue(
+  layout: DashboardLayout,
+): DashboardLayoutCatalogueEntry[] {
+  const knownById = new Map<string, { visible: boolean; order: number }>();
+  for (const w of layout.widgets) {
+    knownById.set(w.id, { visible: w.visible, order: w.order });
+  }
+  let nextOrder =
+    layout.widgets.length > 0
+      ? Math.max(...layout.widgets.map((w) => w.order)) + 1
+      : 0;
+  const out: DashboardLayoutCatalogueEntry[] = [];
+  for (const id of DASHBOARD_WIDGET_CATALOGUE_IDS) {
+    const known = knownById.get(id);
+    if (known) {
+      out.push({ id, visible: known.visible, order: known.order });
+    } else {
+      // iOS-only id — not in the user's saved layout. Append
+      // default-invisible after the known ids, mirroring the on-read
+      // auto-upgrade convention for newly-introduced widgets.
+      out.push({ id, visible: false, order: nextOrder });
+      nextOrder += 1;
+    }
+  }
+  return out.sort((a, b) => a.order - b.order);
+}
+
+/**
  * Assemble the full snapshot in ONE `Promise.all`. Every sub-read is
  * timed via the optional `time` wrapper so a regression is attributable
  * through `meta.snapshot.sub_*_ms` without re-instrumenting the route.
@@ -448,6 +620,8 @@ export async function buildDashboardSnapshot(
       greetingHour: hourInTimezone(now, userTz),
     },
     layout,
+    layoutCatalogue: buildLayoutCatalogue(layout),
+    metricStates: buildMetricStates(slim.summaries, slim.lastSeenByType),
     tiles: {
       summaries: slim.summaries,
       lastSeenByType: enrichLastSeen(slim.lastSeenByType, nowMs),

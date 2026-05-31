@@ -931,6 +931,37 @@ const dashboardSnapshotResponse = z
       greetingHour: z.number().int(),
     }),
     layout: z.record(z.string(), z.unknown()),
+    // v1.7.0 — full 27-id widget catalogue (16 server-known + 11
+    // iOS-only) so a cold-launch first-paint seeds every tile and the
+    // layout round-trips in one key. Additive alongside the web
+    // `layout` block, which stays byte-identical.
+    layoutCatalogue: z
+      .array(
+        z.object({
+          id: z.string(),
+          visible: z.boolean(),
+          order: z.number().int(),
+        }),
+      )
+      .describe(
+        "Full 27-id widget catalogue (server-known + iOS-only) with per-widget visibility + order. iOS-only ids are appended default-invisible. The web dashboard reads `layout`; this block is the cold-launch seed for the native client.",
+      ),
+    // v1.7.0 — per-chartable-metric latest reading keyed by iOS
+    // `MetricKind` raw value (e.g. `oxygenSaturation`,
+    // `heartRateVariability`, `bodyMassIndex`). Derived in-process from
+    // the slim summaries slice — no extra DB read.
+    metricStates: z
+      .record(
+        z.string(),
+        z.object({
+          value: z.number(),
+          measuredAt: z.string(),
+          unit: z.string(),
+        }),
+      )
+      .describe(
+        "Latest reading per chartable metric, keyed by the iOS `MetricKind` raw value (the non-obvious raws: `oxygenSaturation`, `totalBodyWater`, `heartRateVariability`, `bodyMassIndex`, `walkingAsymmetryPercentage`, `walkingDoubleSupportPercentage`, `environmentalAudioExposure`, `headphoneAudioExposure`, `activeEnergyBurned`). Each entry carries `value`, `measuredAt` (ISO8601), and the canonical `unit`. Types the user has never logged are omitted.",
+      ),
     tiles: z.object({
       summaries: dataSummaryRecord,
       lastSeenByType: z.record(z.string(), z.unknown()),
@@ -964,7 +995,7 @@ const dashboardSnapshotResponse = z
   .meta({
     id: "DashboardSnapshotResponse",
     description:
-      "Unified above-the-fold dashboard payload. `tiles` always arrives (slim summaries + mood + resolved widget layout); `extras` (BD-in-target + per-context glucose) is null on a rollup-coverage miss so the strip never waits on the slowest read. `briefing` is lifted read-only from the pre-generated insight cache — never generated synchronously — and reports `ready` / `preparing` / `disabled` via `briefingState`.",
+      "Unified above-the-fold dashboard payload. `tiles` always arrives (slim summaries + mood + resolved widget layout); `extras` (BD-in-target + per-context glucose) is null on a rollup-coverage miss so the strip never waits on the slowest read. `briefing` is lifted read-only from the pre-generated insight cache — never generated synchronously — and reports `ready` / `preparing` / `disabled` via `briefingState`. `layoutCatalogue` (full 27-id widget catalogue) and `metricStates` (latest reading per metric, keyed by iOS `MetricKind` raw value) are additive cold-launch seeds for the native client; both derive in-process from data already fetched, adding no DB round-trip.",
   });
 
 // v1.5.0 — natural-language medication extraction route. The wizard's

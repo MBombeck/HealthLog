@@ -46,6 +46,55 @@ export const DASHBOARD_WIDGET_IDS = [
 
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number];
 
+/**
+ * v1.7.0 — iOS-only widget ids the native client materialises in its
+ * own default layout but the server PUT enum does NOT yet accept. These
+ * are the HK-completeness tiles the iOS app added in its v0.5.2 / v0.7.0
+ * sweeps (`DashboardWidgetLayout.swift`); each maps 1:1 to a HealthLog
+ * `MeasurementType` the server already stores.
+ *
+ * They are deliberately kept OUT of `DASHBOARD_WIDGET_IDS` so the
+ * widgets PUT route's Zod enum + the on-read resolver are unchanged —
+ * widening the writable enum is a separate decision. This constant
+ * exists only so the dashboard snapshot can publish the full 27-id
+ * catalogue (`DASHBOARD_WIDGET_CATALOGUE_IDS`) the iOS cold-launch seed
+ * needs, letting the layout round-trip in one key without a second
+ * round-trip. See `.planning/ios-coord/v1.7.0-ios-convergence-locks.md`
+ * §2b.
+ */
+export const DASHBOARD_IOS_ONLY_WIDGET_IDS = [
+  "restingHeartRate",
+  "hrv",
+  "walkingSpeed",
+  "walkingAsymmetry",
+  "walkingStepLength",
+  "bmi",
+  "bodyTemperature",
+  "walkingDoubleSupport",
+  "respiratoryRate",
+  "audioExposureEnvironment",
+  "audioExposureHeadphone",
+] as const;
+
+export type DashboardIosOnlyWidgetId =
+  (typeof DASHBOARD_IOS_ONLY_WIDGET_IDS)[number];
+
+/**
+ * v1.7.0 — full widget-id catalogue: the 16 server-known ids plus the
+ * 11 iOS-only ids = 27 distinct ids. This is the authoritative set the
+ * iOS client expects in the snapshot's catalogue block so a cold-launch
+ * first-paint can seed every tile without a second round-trip. Pure
+ * superset of `DASHBOARD_WIDGET_IDS`; never used to gate the writable
+ * PUT enum.
+ */
+export const DASHBOARD_WIDGET_CATALOGUE_IDS = [
+  ...DASHBOARD_WIDGET_IDS,
+  ...DASHBOARD_IOS_ONLY_WIDGET_IDS,
+] as const;
+
+export type DashboardWidgetCatalogueId =
+  (typeof DASHBOARD_WIDGET_CATALOGUE_IDS)[number];
+
 export interface DashboardWidgetConfig {
   id: DashboardWidgetId;
   /**
