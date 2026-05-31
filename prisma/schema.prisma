@@ -850,6 +850,19 @@ enum MedicationDeliveryForm {
   @@map("medication_delivery_form")
 }
 
+/// v1.7.0 — schedule-type discriminator. SCHEDULED is the default (rrule
+/// / rolling / legacy cadence as today). PRN = as-needed: never
+/// projected, never reminded, excluded from compliance expected-count,
+/// still loggable. CYCLIC = N weeks on / M weeks off from the anchor;
+/// within an on-week the rrule / legacy cadence applies as usual.
+enum MedicationScheduleType {
+  SCHEDULED
+  PRN
+  CYCLIC
+
+  @@map("medication_schedule_type")
+}
+
 model Medication {
   id                   String             @id @default(cuid())
   userId               String             @map("user_id")
@@ -894,6 +907,16 @@ model Medication {
   /// A one-time injection is `oneShot = true` + `deliveryForm =
   /// INJECTION`. The migration backfills ORAL for every existing row.
   deliveryForm         MedicationDeliveryForm @default(ORAL) @map("delivery_form")
+  /// v1.7.0 — iOS Live Activity opt-in for this medication's reminders.
+  /// Default false; existing rows backfill false. The server stores +
+  /// echoes the flag; the iOS client owns the ActivityKit lifecycle. No
+  /// server-side behaviour hangs off it.
+  liveActivityEnabled  Boolean            @default(false) @map("live_activity_enabled")
+  /// v1.7.0 — iOS 26 AlarmKit critical-reminder opt-in. Critical alarms
+  /// bypass the device mute switch / Focus. Default false; the server
+  /// stores the preference only — it does not itself authorise anything
+  /// server-side.
+  criticalAlarmEnabled Boolean            @default(false) @map("critical_alarm_enabled")
   createdAt            DateTime           @default(now()) @map("created_at")
   updatedAt            DateTime           @updatedAt @map("updated_at")
 
@@ -975,6 +998,19 @@ model MedicationSchedule {
   /// Zod layer; the column itself is unconstrained at the DB so
   /// future extensions don't need a new migration.
   rollingIntervalDays Int? @map("rolling_interval_days")
+  /// v1.7.0 — schedule-type discriminator. SCHEDULED = the existing rrule
+  /// / rolling / legacy cadence. PRN = as-needed (never projected,
+  /// reminded, or counted in compliance expected; still loggable).
+  /// CYCLIC = N weeks on / M weeks off, gating whichever inner cadence
+  /// the rrule / legacy fields describe. Backfills SCHEDULED.
+  scheduleType MedicationScheduleType @default(SCHEDULED) @map("schedule_type")
+  /// v1.7.0 — cyclic "on" weeks. Only meaningful when
+  /// `scheduleType = CYCLIC`. The phase repeats (cyclicOnWeeks on, then
+  /// cyclicOffWeeks off) from the medication's `startsOn ?? createdAt`.
+  cyclicOnWeeks  Int? @map("cyclic_on_weeks")
+  /// v1.7.0 — cyclic "off" weeks. Only meaningful when
+  /// `scheduleType = CYCLIC`.
+  cyclicOffWeeks Int? @map("cyclic_off_weeks")
 
   medication       Medication                @relation(fields: [medicationId], references: [id], onDelete: Cascade)
   telegramMessages TelegramReminderMessage[]
@@ -1951,6 +1987,13 @@ model Device {
   model           String?
   apnsToken       String?  @map("apns_token")
   apnsEnvironment String?  @map("apns_environment") // "sandbox" | "production"
+  /// v1.7.0 — per-device medication-delivery override. NULL = inherit the
+  /// user-level roaming default
+  /// (`User.notificationPrefs.medication.deliveryDefault`). "server"
+  /// forces server APNs for this device; "client" forces local. Stored +
+  /// echoed in v1.7.0; cron suppression stays user-level (APNs fans out to
+  /// all the user's devices and iOS dedupes locally).
+  medicationDelivery String? @map("medication_delivery")
   lastSeen        DateTime @default(now()) @map("last_seen")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
