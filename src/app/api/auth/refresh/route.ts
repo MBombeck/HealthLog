@@ -79,13 +79,34 @@ export const POST = apiHandler(async (request: NextRequest) => {
       action: { name: "auth.token.refresh.failed" },
       meta: { refresh_failure: result.reason },
     });
+    // v1.7.0 — stable machine `errorCode` so native clients can branch
+    // re-auth-required from a transient blip without string-matching the
+    // human-prose `error`:
+    //   - `auth.refresh.reuse`   — a consumed token was presented again;
+    //     the device's refresh family is now revoked (stolen-token
+    //     signal). The client must re-pair, not retry.
+    //   - `auth.refresh.revoked` — the family was revoked out-of-band
+    //     (explicit logout, or reuse detected on another device). Also
+    //     terminal: re-auth required.
+    //   - `auth.refresh.invalid` — not found / expired. The client drops
+    //     the token and re-authenticates.
     if (result.reason === "already_used") {
       return apiError(
         "Refresh token reuse detected — please log in again.",
         401,
+        { errorCode: "auth.refresh.reuse" },
       );
     }
-    return apiError("Invalid refresh token", 401);
+    if (result.reason === "revoked") {
+      return apiError(
+        "Refresh token has been revoked — please log in again.",
+        401,
+        { errorCode: "auth.refresh.revoked" },
+      );
+    }
+    return apiError("Invalid refresh token", 401, {
+      errorCode: "auth.refresh.invalid",
+    });
   }
 
   await auditLog("auth.token.refresh", {
