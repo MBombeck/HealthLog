@@ -31,10 +31,160 @@ tags:
   - name: Medications
   - name: Mood
   - name: Insights
+  - name: Dashboard
   - name: Notifications
   - name: Devices
+  - name: Export
+  - name: Sync
   - name: Admin
 paths:
+  /api/export/health-record:
+    post:
+      tags:
+        - Export
+      summary: Generate a health-record export (PDF / FHIR / package)
+      description: "v1.7.0 flagship export. Returns the doctor-handover artefact in the requested `format`: `pdf` →
+        application/pdf, `fhir` → application/fhir+json (HL7 FHIR R4 document Bundle), `package` → application/zip (PDF
+        + FHIR + README). Auth via cookie or Bearer; shared `export:<userId>` rate bucket (10/h). Strict validation:
+        unknown keys 422."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                format:
+                  type: string
+                  enum:
+                    - pdf
+                    - fhir
+                    - package
+                range:
+                  type: object
+                  properties:
+                    startDate:
+                      type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                    endDate:
+                      type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                    days:
+                      type: integer
+                      minimum: 1
+                      maximum: 365
+                  additionalProperties: false
+                sections:
+                  type: object
+                  properties:
+                    vitals:
+                      type: object
+                      properties:
+                        weight:
+                          type: boolean
+                        bp:
+                          type: boolean
+                        pulse:
+                          type: boolean
+                        oxygenSaturation:
+                          type: boolean
+                        bodyFat:
+                          type: boolean
+                        bodyComposition:
+                          type: boolean
+                    cardioFitness:
+                      type: object
+                      properties:
+                        restingHeartRate:
+                          type: boolean
+                        hrv:
+                          type: boolean
+                        vo2max:
+                          type: boolean
+                    activity:
+                      type: object
+                      properties:
+                        steps:
+                          type: boolean
+                        distance:
+                          type: boolean
+                        energy:
+                          type: boolean
+                        sleep:
+                          type: boolean
+                    glucose:
+                      type: boolean
+                    medications:
+                      type: object
+                      properties:
+                        list:
+                          type: boolean
+                        compliance:
+                          type: boolean
+                        glp1:
+                          type: boolean
+                        sideEffects:
+                          type: boolean
+                    mood:
+                      type: boolean
+                    bmi:
+                      type: boolean
+                locale:
+                  type: string
+                  enum:
+                    - de
+                    - en
+                    - fr
+                    - es
+                    - it
+                    - pl
+                practiceName:
+                  type: string
+                  maxLength: 120
+                includeCharts:
+                  type: boolean
+                includeAiSummary:
+                  type: boolean
+              required:
+                - format
+              additionalProperties: false
+      responses:
+        "200":
+          description: "Export generated. Content-Type varies by `format`: application/pdf, application/fhir+json, or
+            application/zip."
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/fhir+json:
+              schema:
+                type: string
+                format: binary
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "401": &a1
+          description: Authentication required or invalid credentials.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": &a2
+          description: Request validation failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429": &a3
+          description: Rate limit exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /api/auth/login:
     post:
       tags:
@@ -65,24 +215,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/LoginResponse"
-        "401": &a1
-          description: Authentication required or invalid credentials.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-        "422": &a2
-          description: Request validation failed.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-        "429": &a3
-          description: Rate limit exceeded.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
+        "401": *a1
+        "422": *a2
+        "429": *a3
   /api/auth/passkey/login-verify:
     post:
       tags:
@@ -109,9 +244,16 @@ paths:
       tags:
         - Auth
       summary: Rotate refresh token (one-time use)
-      description: Reuse of a consumed refresh token revokes every refresh token still active for the originating device
+      description: >-
+        Reuse of a consumed refresh token revokes every refresh token still active for the originating device
         (per-device blast radius from v1.4.23). Legacy tokens issued before v1.4.23 with a null deviceId fall back to
         revoke-all-for-user.
+
+
+        On a 401, `meta.errorCode` is a stable machine code so the client can branch terminal re-auth from a transient
+        blip without parsing the prose `error`: `auth.refresh.reuse` (a consumed token was replayed — device family
+        revoked, re-pair required), `auth.refresh.revoked` (family revoked out-of-band — re-pair required),
+        `auth.refresh.invalid` (not found / expired — drop the token and re-authenticate).
       requestBody:
         required: true
         content:
@@ -125,6 +267,61 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RefreshResponse"
+        "401": *a1
+        "422": *a2
+        "429": *a3
+  /api/sync/state:
+    get:
+      tags:
+        - Sync
+      summary: Sync handshake + window metadata
+      description: Cheap 'should I sync?' summary. Returns the previous `lastSyncedAt` checkpoint and advances it server-side
+        on each call. The `sync` block carries the incremental-delta window + tombstone retention so the client reads
+        them rather than hardcoding.
+      responses:
+        "200":
+          description: Sync state summary.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncStateEnvelope"
+        "401": *a1
+        "422": *a2
+        "429": *a3
+  /api/sync/changes:
+    get:
+      tags:
+        - Sync
+      summary: Measurements delta feed
+      description: "Incremental catch-up after the first-pair backfill (never a replacement for it). Pages over an opaque
+        keyset cursor; each page carries `tombstones` (soft-deleted rows, keyed on `externalId`) and `upserts` (live
+        rows). Apply tombstones before upserts within a page. `cursorExpired: true` forces a clean re-init."
+      parameters:
+        - in: query
+          name: cursor
+          schema:
+            description: Opaque keyset cursor from the previous page. Treat as fully opaque — echo, never parse. Omit for the
+              initial sync.
+            type: string
+            minLength: 1
+            maxLength: 512
+          description: Opaque keyset cursor from the previous page. Treat as fully opaque — echo, never parse. Omit for the
+            initial sync.
+        - in: query
+          name: limit
+          schema:
+            description: Page size, default 200, hard cap 500.
+            type: integer
+            minimum: 1
+            maximum: 500
+          description: Page size, default 200, hard cap 500.
+      responses:
+        "200":
+          description: Delta page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncChangesEnvelope"
         "401": *a1
         "422": *a2
         "429": *a3
@@ -1655,6 +1852,24 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a2
         "429": *a3
+  /api/dashboard/snapshot:
+    get:
+      tags:
+        - Dashboard
+      summary: Unified dashboard first-paint snapshot
+      description: "Assembles every above-the-fold tile field in one round-trip from the rollup / mood / widget helpers plus a
+        read-only lift of the pre-generated daily briefing. Two-phase: `tiles` always present, `extras` nullable on a
+        rollup-coverage miss. No LLM is reachable from this path. Cookie or Bearer auth."
+      responses:
+        "200":
+          description: Dashboard snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSnapshotResponseEnvelope"
+        "401": *a1
+        "422": *a2
+        "429": *a3
   /api/insights/comprehensive:
     get:
       tags:
@@ -1851,6 +2066,16 @@ components:
           enum:
             - sandbox
             - production
+        medicationDelivery:
+          description: v1.7.0 per-device medication-delivery override. NULL / omitted = inherit the user-level roaming default.
+            "server" forces server APNs for this device; "client" forces local. Stored + echoed; cron suppression stays
+            user-level.
+          anyOf:
+            - type: string
+              enum:
+                - server
+                - client
+            - type: "null"
       required:
         - token
         - bundleId
@@ -1899,6 +2124,14 @@ components:
             - INJECTION
             - OTHER
         notificationsEnabled:
+          type: boolean
+        liveActivityEnabled:
+          description: iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client owns the
+            ActivityKit lifecycle; the server only stores + echoes the flag.
+          type: boolean
+        criticalAlarmEnabled:
+          description: iOS 26 AlarmKit critical-reminder opt-in. Default false. Critical alarms bypass the device mute switch /
+            Focus; the server stores the preference only and hangs no server-side behaviour off it.
           type: boolean
         startsOn:
           description: Date the medication course begins (ISO `YYYY-MM-DD`). Anchors RRULE BYDAY / BYMONTHDAY patterns and the
@@ -1999,6 +2232,25 @@ components:
           type: integer
           minimum: 1
           maximum: 365
+        scheduleType:
+          description: Schedule type. SCHEDULED (default) = rrule / rolling / legacy cadence. PRN = as-needed (never projected,
+            reminded, or counted in compliance expected; still loggable via the intake route). CYCLIC = N weeks on / M
+            weeks off, gating whichever inner cadence the rrule / legacy fields describe.
+          type: string
+          enum:
+            - SCHEDULED
+            - PRN
+            - CYCLIC
+        cyclicOnWeeks:
+          description: Cyclic "on" weeks (1..52). Required when `scheduleType` is CYCLIC; ignored otherwise.
+          type: integer
+          minimum: 1
+          maximum: 52
+        cyclicOffWeeks:
+          description: Cyclic "off" weeks (0..52). Required when `scheduleType` is CYCLIC; ignored otherwise.
+          type: integer
+          minimum: 0
+          maximum: 52
       required:
         - windowStart
         - windowEnd
@@ -2054,6 +2306,14 @@ components:
         active:
           type: boolean
         notificationsEnabled:
+          type: boolean
+        liveActivityEnabled:
+          description: iOS Live Activity opt-in for this medication's reminders. The iOS client owns the ActivityKit lifecycle;
+            the server only stores + echoes the flag.
+          type: boolean
+        criticalAlarmEnabled:
+          description: iOS 26 AlarmKit critical-reminder opt-in. Critical alarms bypass the device mute switch / Focus; the server
+            stores the preference only.
           type: boolean
         startsOn:
           description: Date the medication course begins (ISO `YYYY-MM-DD`). Anchors RRULE BYDAY / BYMONTHDAY patterns and the
@@ -2288,6 +2548,29 @@ components:
             - type: "null"
           description: Flexible-rolling interval in days, counted forward from the latest `MedicationIntakeEvent.takenAt`.
             **Mutually exclusive with `rrule`.**
+        scheduleType:
+          type: string
+          enum:
+            - SCHEDULED
+            - PRN
+            - CYCLIC
+          description: v1.7.0 schedule-type discriminator. SCHEDULED = rrule / rolling / legacy cadence. PRN = as-needed (never
+            projected, reminded, or counted in compliance expected; still loggable via the intake route). CYCLIC = N
+            weeks on / M weeks off, gating whichever inner cadence the rrule / legacy fields describe.
+        cyclicOnWeeks:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+          description: v1.7.0 cyclic "on" weeks. Only meaningful when `scheduleType` is CYCLIC; null otherwise.
+        cyclicOffWeeks:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+          description: v1.7.0 cyclic "off" weeks. Only meaningful when `scheduleType` is CYCLIC; null otherwise.
       required:
         - id
         - medicationId
@@ -2300,10 +2583,34 @@ components:
         - reminderGraceMinutes
         - rrule
         - rollingIntervalDays
+        - scheduleType
+        - cyclicOnWeeks
+        - cyclicOffWeeks
       description: Schedule entry attached to a medication. v1.5 promotes `timesOfDay` to first-class and introduces `rrule`
         (calendar-anchored cadences) and `rollingIntervalDays` (flexible-rolling cadences). The two recurrence
         primitives are mutually exclusive — enforced by the Zod refine on writes, the route layer, and a DB CHECK
-        constraint (`medication_schedules_rrule_xor_rolling`).
+        constraint (`medication_schedules_rrule_xor_rolling`). v1.7.0 adds `scheduleType` (SCHEDULED / PRN / CYCLIC) and
+        the cyclic on/off-week fields.
+    ErrorEnvelope:
+      type: object
+      properties:
+        data:
+          type: "null"
+        error:
+          type: string
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+            errorCode:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+      description: "Standard error response: data is null, error is human prose."
     LoginResponse:
       type: object
       properties:
@@ -2354,26 +2661,6 @@ components:
         - tokenExpiresAt
       additionalProperties: false
       description: Native-client token bundle returned by login + refresh. Web cookie-only callers see only `user`.
-    ErrorEnvelope:
-      type: object
-      properties:
-        data:
-          type: "null"
-        error:
-          type: string
-        meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-            errorCode:
-              type: string
-          additionalProperties: false
-      required:
-        - data
-        - error
-      additionalProperties: false
-      description: "Standard error response: data is null, error is human prose."
     PasskeyLoginVerifyResponse:
       type: object
       properties:
@@ -2408,6 +2695,277 @@ components:
         - data
         - error
       additionalProperties: false
+    SyncStateEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SyncStateResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    SyncStateResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+        timezone:
+          type: string
+        lastSyncedAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+        serverNow:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        measurements:
+          type: object
+          properties:
+            lastUpdatedAt:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
+            liveCount:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            tombstonedCount:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+          required:
+            - lastUpdatedAt
+            - liveCount
+            - tombstonedCount
+          additionalProperties: false
+        sync:
+          type: object
+          properties:
+            incrementalWindowDays:
+              type: integer
+              exclusiveMinimum: 0
+              maximum: 9007199254740991
+              description: Days an incremental delta stays valid; tracks the native refresh-token lifetime. Beyond it a device
+                re-pairs with a full backfill. iOS derives its window from this rather than hardcoding 60.
+            tombstoneRetentionDays:
+              type: integer
+              exclusiveMinimum: 0
+              maximum: 9007199254740991
+              description: Horizon past which tombstones may be pruned. A cursor older than this gets `cursorExpired` on
+                `/api/sync/changes`.
+          required:
+            - incrementalWindowDays
+            - tombstoneRetentionDays
+          additionalProperties: false
+          description: Sync-window metadata the client reads instead of hardcoding.
+      required:
+        - userId
+        - timezone
+        - lastSyncedAt
+        - serverNow
+        - measurements
+        - sync
+      additionalProperties: false
+      description: iOS SyncMode handshake. Each GET also advances the server-side `lastSyncedAt` checkpoint and returns the
+        previous value. The cheap 'should I sync?' summary; the durable delta cursor lives on `/api/sync/changes`.
+    SyncChangesEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SyncChangesResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    SyncChangesResponse:
+      type: object
+      properties:
+        serverNow:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        cursor:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Opaque cursor to echo into the next request.
+        hasMore:
+          type: boolean
+          description: False once the client is caught up as of `serverNow`.
+        cursorExpired:
+          type: boolean
+          description: True when the supplied cursor predates tombstone retention — drop the cursor and do a clean initial sync.
+        changes:
+          type: object
+          properties:
+            measurements:
+              type: object
+              properties:
+                upserts:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/SyncMeasurementUpsert"
+                tombstones:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/SyncMeasurementTombstone"
+              required:
+                - upserts
+                - tombstones
+              additionalProperties: false
+          required:
+            - measurements
+          additionalProperties: false
+      required:
+        - serverNow
+        - cursor
+        - hasMore
+        - cursorExpired
+        - changes
+      additionalProperties: false
+      description: Measurements-only delta page (v1.7.0). Single combined opaque cursor; tombstones apply before upserts
+        within a page.
+    SyncMeasurementUpsert:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+            - WEIGHT
+            - BLOOD_PRESSURE_SYS
+            - BLOOD_PRESSURE_DIA
+            - PULSE
+            - BODY_FAT
+            - SLEEP_DURATION
+            - ACTIVITY_STEPS
+            - BLOOD_GLUCOSE
+            - TOTAL_BODY_WATER
+            - BONE_MASS
+            - OXYGEN_SATURATION
+            - HEART_RATE_VARIABILITY
+            - RESTING_HEART_RATE
+            - ACTIVE_ENERGY_BURNED
+            - FLIGHTS_CLIMBED
+            - WALKING_RUNNING_DISTANCE
+            - VO2_MAX
+            - BODY_TEMPERATURE
+            - FAT_FREE_MASS
+            - FAT_MASS
+            - MUSCLE_MASS
+            - SKIN_TEMPERATURE
+            - PULSE_WAVE_VELOCITY
+            - VASCULAR_AGE
+            - VISCERAL_FAT
+            - AUDIO_EXPOSURE_ENV
+            - AUDIO_EXPOSURE_HEADPHONE
+            - TIME_IN_DAYLIGHT
+            - WALKING_STEADINESS
+            - AUDIO_EXPOSURE_EVENT
+            - RESPIRATORY_RATE
+            - BODY_MASS_INDEX
+            - LEAN_BODY_MASS
+            - WALKING_HEART_RATE_AVERAGE
+            - WALKING_ASYMMETRY
+            - WALKING_DOUBLE_SUPPORT
+            - WALKING_STEP_LENGTH
+            - WALKING_SPEED
+        value:
+          type: number
+        unit:
+          type: string
+        measuredAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        source:
+          type: string
+          enum:
+            - MANUAL
+            - WITHINGS
+            - IMPORT
+            - APPLE_HEALTH
+        notes:
+          anyOf:
+            - type: string
+            - type: "null"
+        externalId:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Cross-device dedup key (UUID string or `stats:<id>:<date>`).
+        syncVersion:
+          type: integer
+          exclusiveMinimum: 0
+          maximum: 9007199254740991
+          description: LWW reconciliation counter; echo to keep the mirror monotonic.
+        updatedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - id
+        - type
+        - value
+        - unit
+        - measuredAt
+        - source
+        - externalId
+        - syncVersion
+        - updatedAt
+      additionalProperties: false
+    SyncMeasurementTombstone:
+      type: object
+      properties:
+        id:
+          type: string
+        externalId:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: The identity key the client dedups on for measurements.
+        syncVersion:
+          type: integer
+          exclusiveMinimum: 0
+          maximum: 9007199254740991
+        deletedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        updatedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - id
+        - externalId
+        - syncVersion
+        - deletedAt
+        - updatedAt
+      additionalProperties: false
+      description: A soft-deleted measurement. Apply tombstones BEFORE upserts within a page to avoid resurrecting a row.
     ListMeasurementsResponse:
       type: object
       properties:
@@ -3007,6 +3565,14 @@ components:
           type: boolean
         notificationsEnabled:
           type: boolean
+        liveActivityEnabled:
+          type: boolean
+          description: v1.7.0 iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client owns the
+            ActivityKit lifecycle; the server only stores + echoes the flag.
+        criticalAlarmEnabled:
+          type: boolean
+          description: v1.7.0 iOS 26 AlarmKit critical-reminder opt-in. Default false. Critical alarms bypass the device mute
+            switch / Focus; the server stores the preference only.
         pausedAt:
           anyOf:
             - type: string
@@ -3019,6 +3585,16 @@ components:
               format: date-time
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
+        nextDueAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: v1.7.0 server-computed next due instant across all the medication's schedules (earliest
+            `nextOccurrenceAfter`). Read-only — computed, not stored. NULL when no schedule has an upcoming slot
+            (paused, one-shot in the past, `endsOn` crossed, every schedule PRN). The list GET is cached 60 s, so a 60 s
+            staleness is accepted.
         startsOn:
           anyOf:
             - type: string
@@ -3073,8 +3649,11 @@ components:
         - dosesPerUnit
         - active
         - notificationsEnabled
+        - liveActivityEnabled
+        - criticalAlarmEnabled
         - pausedAt
         - snoozedUntil
+        - nextDueAt
         - startsOn
         - endsOn
         - oneShot
@@ -3146,6 +3725,14 @@ components:
           type: boolean
         notificationsEnabled:
           type: boolean
+        liveActivityEnabled:
+          type: boolean
+          description: v1.7.0 iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client owns the
+            ActivityKit lifecycle; the server only stores + echoes the flag.
+        criticalAlarmEnabled:
+          type: boolean
+          description: v1.7.0 iOS 26 AlarmKit critical-reminder opt-in. Default false. Critical alarms bypass the device mute
+            switch / Focus; the server stores the preference only.
         pausedAt:
           anyOf:
             - type: string
@@ -3158,6 +3745,16 @@ components:
               format: date-time
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
+        nextDueAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: v1.7.0 server-computed next due instant across all the medication's schedules (earliest
+            `nextOccurrenceAfter`). Read-only — computed, not stored. NULL when no schedule has an upcoming slot
+            (paused, one-shot in the past, `endsOn` crossed, every schedule PRN). The list GET is cached 60 s, so a 60 s
+            staleness is accepted.
         startsOn:
           anyOf:
             - type: string
@@ -3199,8 +3796,11 @@ components:
         - dosesPerUnit
         - active
         - notificationsEnabled
+        - liveActivityEnabled
+        - criticalAlarmEnabled
         - pausedAt
         - snoozedUntil
+        - nextDueAt
         - startsOn
         - endsOn
         - oneShot
@@ -4669,6 +5269,199 @@ components:
       additionalProperties: false
       description: Single push delivery attempt. Reserved for the v1.4.48+ follow-up that adds the dedicated PushAttempt table
         — currently always returned as an empty array so the response shape stays stable for iOS consumers.
+    DashboardSnapshotResponseEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DashboardSnapshotResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DashboardSnapshotResponse:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            username:
+              type: string
+            timezone:
+              type: string
+            heightCm:
+              anyOf:
+                - type: number
+                - type: "null"
+            dateOfBirth:
+              anyOf:
+                - type: string
+                - type: "null"
+            gender:
+              anyOf:
+                - type: string
+                  enum:
+                    - MALE
+                    - FEMALE
+                - type: "null"
+            glucoseUnit:
+              anyOf:
+                - type: string
+                - type: "null"
+            onboardingTourCompleted:
+              type: boolean
+            greetingHour:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - username
+            - timezone
+            - heightCm
+            - dateOfBirth
+            - gender
+            - glucoseUnit
+            - onboardingTourCompleted
+            - greetingHour
+          additionalProperties: false
+        layout:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+        tiles:
+          type: object
+          properties:
+            summaries:
+              type: object
+              propertyNames:
+                type: string
+              additionalProperties: {}
+            lastSeenByType:
+              type: object
+              propertyNames:
+                type: string
+              additionalProperties: {}
+            mood:
+              type: object
+              properties:
+                summary:
+                  anyOf:
+                    - type: object
+                      propertyNames:
+                        type: string
+                      additionalProperties: {}
+                    - type: "null"
+                entries:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      date:
+                        type: string
+                      score:
+                        type: number
+                      samples:
+                        type: integer
+                        minimum: -9007199254740991
+                        maximum: 9007199254740991
+                    required:
+                      - date
+                      - score
+                      - samples
+                    additionalProperties: false
+              required:
+                - summary
+                - entries
+              additionalProperties: false
+          required:
+            - summaries
+            - lastSeenByType
+            - mood
+          additionalProperties: false
+        extras:
+          anyOf:
+            - type: object
+              properties:
+                bpInTargetPct:
+                  anyOf:
+                    - type: number
+                    - type: "null"
+                bpInTargetPct7d:
+                  anyOf:
+                    - type: number
+                    - type: "null"
+                bpInTargetPct30d:
+                  anyOf:
+                    - type: number
+                    - type: "null"
+                bpInTargetPctAllTime:
+                  anyOf:
+                    - type: number
+                    - type: "null"
+                bpInTargetPctPriorMonth:
+                  anyOf:
+                    - type: number
+                    - type: "null"
+                bpInTargetPctPriorYear:
+                  anyOf:
+                    - type: number
+                    - type: "null"
+                glucoseByContext:
+                  type: object
+                  propertyNames:
+                    type: string
+                  additionalProperties: {}
+              required:
+                - bpInTargetPct
+                - bpInTargetPct7d
+                - bpInTargetPct30d
+                - bpInTargetPctAllTime
+                - bpInTargetPctPriorMonth
+                - bpInTargetPctPriorYear
+                - glucoseByContext
+              additionalProperties: false
+            - type: "null"
+        briefing:
+          anyOf:
+            - type: object
+              propertyNames:
+                type: string
+              additionalProperties: {}
+            - type: "null"
+        briefingState:
+          type: string
+          enum:
+            - ready
+            - preparing
+            - disabled
+        briefingUpdatedAt:
+          anyOf:
+            - type: string
+            - type: "null"
+        generatedAt:
+          type: string
+      required:
+        - user
+        - layout
+        - tiles
+        - extras
+        - briefing
+        - briefingState
+        - briefingUpdatedAt
+        - generatedAt
+      additionalProperties: false
+      description: Unified above-the-fold dashboard payload. `tiles` always arrives (slim summaries + mood + resolved widget
+        layout); `extras` (BD-in-target + per-context glucose) is null on a rollup-coverage miss so the strip never
+        waits on the slowest read. `briefing` is lifted read-only from the pre-generated insight cache — never generated
+        synchronously — and reports `ready` / `preparing` / `disabled` via `briefingState`.
     InsightsComprehensiveResponseEnvelope:
       type: object
       properties:
@@ -4804,6 +5597,29 @@ components:
             - type: "null"
           description: Flexible-rolling interval in days, counted forward from the latest `MedicationIntakeEvent.takenAt`.
             **Mutually exclusive with `rrule`.**
+        scheduleType:
+          type: string
+          enum:
+            - SCHEDULED
+            - PRN
+            - CYCLIC
+          description: v1.7.0 schedule-type discriminator. SCHEDULED = rrule / rolling / legacy cadence. PRN = as-needed (never
+            projected, reminded, or counted in compliance expected; still loggable via the intake route). CYCLIC = N
+            weeks on / M weeks off, gating whichever inner cadence the rrule / legacy fields describe.
+        cyclicOnWeeks:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+          description: v1.7.0 cyclic "on" weeks. Only meaningful when `scheduleType` is CYCLIC; null otherwise.
+        cyclicOffWeeks:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+          description: v1.7.0 cyclic "off" weeks. Only meaningful when `scheduleType` is CYCLIC; null otherwise.
       required:
         - id
         - medicationId
@@ -4816,11 +5632,15 @@ components:
         - reminderGraceMinutes
         - rrule
         - rollingIntervalDays
+        - scheduleType
+        - cyclicOnWeeks
+        - cyclicOffWeeks
       additionalProperties: false
       description: Schedule entry attached to a medication. v1.5 promotes `timesOfDay` to first-class and introduces `rrule`
         (calendar-anchored cadences) and `rollingIntervalDays` (flexible-rolling cadences). The two recurrence
         primitives are mutually exclusive — enforced by the Zod refine on writes, the route layer, and a DB CHECK
-        constraint (`medication_schedules_rrule_xor_rolling`).
+        constraint (`medication_schedules_rrule_xor_rolling`). v1.7.0 adds `scheduleType` (SCHEDULED / PRN / CYCLIC) and
+        the cyclic on/off-week fields.
     DisableCoachFlagOutput:
       type: object
       properties:
@@ -4899,6 +5719,14 @@ components:
           type: boolean
         notificationsEnabled:
           type: boolean
+        liveActivityEnabled:
+          type: boolean
+          description: v1.7.0 iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client owns the
+            ActivityKit lifecycle; the server only stores + echoes the flag.
+        criticalAlarmEnabled:
+          type: boolean
+          description: v1.7.0 iOS 26 AlarmKit critical-reminder opt-in. Default false. Critical alarms bypass the device mute
+            switch / Focus; the server stores the preference only.
         pausedAt:
           anyOf:
             - type: string
@@ -4911,6 +5739,16 @@ components:
               format: date-time
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
+        nextDueAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: v1.7.0 server-computed next due instant across all the medication's schedules (earliest
+            `nextOccurrenceAfter`). Read-only — computed, not stored. NULL when no schedule has an upcoming slot
+            (paused, one-shot in the past, `endsOn` crossed, every schedule PRN). The list GET is cached 60 s, so a 60 s
+            staleness is accepted.
         startsOn:
           anyOf:
             - type: string
@@ -4950,8 +5788,11 @@ components:
         - dosesPerUnit
         - active
         - notificationsEnabled
+        - liveActivityEnabled
+        - criticalAlarmEnabled
         - pausedAt
         - snoozedUntil
+        - nextDueAt
         - startsOn
         - endsOn
         - oneShot
