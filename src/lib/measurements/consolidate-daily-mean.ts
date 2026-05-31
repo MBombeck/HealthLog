@@ -52,17 +52,20 @@ import {
   HIGH_FREQUENCY_MEAN_TYPES,
 } from "./apple-health-mapping";
 import {
-  canonicalDailyTimestamp,
-  dayKeyForUserTz,
-  type PerSampleRow,
-} from "./drain-per-sample-cumulative";
+  CONSOLIDATION_GRACE_CUTOFF_HOURS,
+  bucketRowsByDay,
+  runConsolidation,
+  type DayWriteOutcome,
+} from "./consolidation-base";
+import { type PerSampleRow } from "./drain-per-sample-cumulative";
 
 /**
  * Grace window — rows newer than `now() - cutoffHours` stay raw so
  * today's still-in-flight watch syncs surface in the live "today" view.
- * Matches the cumulative drain's `DRAIN_CUMULATIVE_CUTOFF_HOURS`.
+ * Sourced from the shared `CONSOLIDATION_GRACE_CUTOFF_HOURS` so it tracks
+ * the cumulative drain's `DRAIN_CUMULATIVE_CUTOFF_HOURS` in lockstep.
  */
-export const MEAN_CONSOLIDATION_CUTOFF_HOURS = 36;
+export const MEAN_CONSOLIDATION_CUTOFF_HOURS = CONSOLIDATION_GRACE_CUTOFF_HOURS;
 
 /** The daily-stats externalId prefix marks an already-collapsed row. */
 const DAILY_STATS_PREFIX = "stats:";
@@ -127,17 +130,7 @@ export function bucketMeanRows(
   rows: readonly PerSampleRow[],
   tz: string,
 ): Map<string, PerSampleRow[]> {
-  const byDay = new Map<string, PerSampleRow[]>();
-  for (const row of rows) {
-    if (row.externalId !== null && row.externalId.startsWith(DAILY_STATS_PREFIX)) {
-      continue;
-    }
-    const key = dayKeyForUserTz(row.measuredAt, tz);
-    const slot = byDay.get(key) ?? [];
-    slot.push(row);
-    byDay.set(key, slot);
-  }
-  return byDay;
+  return bucketRowsByDay(rows, tz, DAILY_STATS_PREFIX);
 }
 
 /**
@@ -151,150 +144,140 @@ export async function consolidateDailyMean(
   prismaClient: PrismaClient,
   options: MeanConsolidationOptions = {},
 ): Promise<MeanConsolidationSummary> {
-  const dryRun = options.dryRun ?? false;
   const log = options.log ?? ((line) => console.log(line));
-  const cutoffAt =
-    typeof options.cutoffHours === "number" && options.cutoffHours > 0
-      ? new Date(Date.now() - options.cutoffHours * 60 * 60 * 1000)
-      : null;
-
-  const users = options.userId
-    ? await prismaClient.user.findMany({
-        where: { id: options.userId },
-        select: { id: true, timezone: true },
-      })
-    : await prismaClient.user.findMany({
-        select: { id: true, timezone: true },
-      });
 
   const summary: MeanConsolidationSummary = {
-    dryRun,
+    dryRun: options.dryRun ?? false,
     buckets: [],
     totals: {
-      usersScanned: users.length,
+      usersScanned: 0,
       daysConsolidated: 0,
       perSampleRowsSoftDeleted: 0,
       dailyRowsUpserted: 0,
     },
   };
 
-  for (const user of users) {
-    const tz =
-      user.timezone && user.timezone.length > 0 ? user.timezone : "Europe/Berlin";
+  const { usersScanned } = await runConsolidation<MeasurementType>({
+    prismaClient,
+    options,
+    types: HIGH_FREQUENCY_MEAN_TYPES,
+    hkIdentifierForType,
+    dailyStatsExternalId,
+    statsPrefix: DAILY_STATS_PREFIX,
+    reduce: meanBucketValue,
+    // Live per-sample rows for the type, source-scoped to APPLE_HEALTH so
+    // manual + Withings spot rows survive. The single minted stats row is
+    // excluded by the NOT-startsWith predicate so it is never re-folded;
+    // soft-deleted rows are excluded so a re-run converges.
+    buildScanWhere: ({ userId, type, cutoffAt, statsPrefix }) => ({
+      userId,
+      source: "APPLE_HEALTH",
+      type,
+      deletedAt: null,
+      NOT: { externalId: { startsWith: statsPrefix } },
+      ...(cutoffAt ? { measuredAt: { lt: cutoffAt } } : {}),
+    }),
+    // Mean needs the row unit to carry it onto the canonical daily row.
+    scanSelect: {
+      id: true,
+      type: true,
+      value: true,
+      measuredAt: true,
+      externalId: true,
+      unit: true,
+    },
+    writeDay: async ({
+      prismaClient: pc,
+      userId,
+      type,
+      externalId,
+      canonicalTimestamp,
+      reducedValue,
+      dayRows,
+      sourceRowIds,
+    }): Promise<DayWriteOutcome> => {
+      // Carry the canonical unit straight off the in-hand live day rows
+      // (units are homogeneous per type). Avoids an extra per-day query
+      // and never reads a soft-deleted row's unit — the scan already
+      // filters `deletedAt: null`.
+      const unit = dayRows[0]?.unit ?? "unknown";
+      let removed = 0;
+      await pc.$transaction(async (tx) => {
+        // Mint / refresh the canonical daily-mean row first. The unique
+        // index (userId, type, source, externalId) makes the upsert
+        // idempotent across re-runs. Built field-by-field (no spread)
+        // per the no-mass-assignment convention.
+        await tx.measurement.upsert({
+          where: {
+            userId_type_source_externalId: {
+              userId,
+              type,
+              source: "APPLE_HEALTH",
+              externalId,
+            },
+          },
+          create: {
+            userId,
+            type,
+            value: reducedValue,
+            unit,
+            source: "APPLE_HEALTH",
+            measuredAt: canonicalTimestamp,
+            externalId,
+          },
+          update: {
+            value: reducedValue,
+            measuredAt: canonicalTimestamp,
+            deletedAt: null,
+          },
+        });
 
-    for (const type of HIGH_FREQUENCY_MEAN_TYPES) {
-      const hkIdentifier = hkIdentifierForType(type);
-      if (!hkIdentifier) continue;
+        // Soft-delete the per-sample rows in the same transaction —
+        // tombstone, never hard-delete; they remain as an audit trail and
+        // drop off the live read + this pass's re-run discovery.
+        const del = await tx.measurement.updateMany({
+          where: { id: { in: sourceRowIds }, deletedAt: null },
+          data: { deletedAt: new Date() },
+        });
+        removed = del.count;
+      });
+      return { kind: "written", sourceRowsRemoved: removed };
+    },
+    recordBucket: ({
+      userId,
+      type,
+      dateKey,
+      dayRows,
+      reducedValue,
+      canonicalTimestamp,
+      externalId,
+      outcome,
+    }) => {
+      summary.buckets.push({
+        userId,
+        type,
+        dateKey,
+        perSampleCount: dayRows.length,
+        meanValue: reducedValue,
+        canonicalTimestamp: canonicalTimestamp.toISOString(),
+        externalId,
+      });
+      summary.totals.daysConsolidated += 1;
+      summary.totals.dailyRowsUpserted += 1;
+      summary.totals.perSampleRowsSoftDeleted +=
+        outcome?.kind === "written" ? outcome.sourceRowsRemoved : dayRows.length;
+    },
+    onUserComplete: ({ userId, tz, dryRun }) => {
+      log(
+        `[mean-consolidation] user=${userId} tz=${tz}${dryRun ? " (dry-run)" : ""}`,
+      );
+    },
+  });
 
-      // Live per-sample rows for the type, source-scoped to APPLE_HEALTH
-      // so manual + Withings spot rows survive. The single minted stats
-      // row is excluded by the NOT-startsWith predicate so it is never
-      // re-folded; soft-deleted rows are excluded so a re-run converges.
-      const perSampleRows = (await prismaClient.measurement.findMany({
-        where: {
-          userId: user.id,
-          source: "APPLE_HEALTH",
-          type,
-          deletedAt: null,
-          NOT: { externalId: { startsWith: DAILY_STATS_PREFIX } },
-          ...(cutoffAt ? { measuredAt: { lt: cutoffAt } } : {}),
-        },
-        select: {
-          id: true,
-          type: true,
-          value: true,
-          measuredAt: true,
-          externalId: true,
-          unit: true,
-        },
-        orderBy: { measuredAt: "asc" },
-      })) as PerSampleRow[];
-
-      if (perSampleRows.length === 0) continue;
-
-      const byDay = bucketMeanRows(perSampleRows, tz);
-
-      for (const [dateKey, dayRows] of byDay) {
-        if (dayRows.length === 0) continue;
-
-        const meanValue = meanBucketValue(dayRows);
-        const canonicalTs = canonicalDailyTimestamp(dateKey, tz);
-        const externalId = dailyStatsExternalId(hkIdentifier, dateKey);
-        // Carry the canonical unit straight off the in-hand live day rows
-        // (units are homogeneous per type). Avoids an extra per-day query
-        // and never reads a soft-deleted row's unit — the scan already
-        // filters `deletedAt: null`.
-        const unit = dayRows[0]?.unit ?? "unknown";
-
-        const bucket: MeanConsolidationBucket = {
-          userId: user.id,
-          type,
-          dateKey,
-          perSampleCount: dayRows.length,
-          meanValue,
-          canonicalTimestamp: canonicalTs.toISOString(),
-          externalId,
-        };
-        summary.buckets.push(bucket);
-        summary.totals.daysConsolidated += 1;
-
-        if (!dryRun) {
-          const ids = dayRows.map((r) => r.id);
-          await prismaClient.$transaction(async (tx) => {
-            // Mint / refresh the canonical daily-mean row first. The
-            // unique index (userId, type, source, externalId) makes the
-            // upsert idempotent across re-runs. Built field-by-field
-            // (no spread) per the no-mass-assignment convention.
-            await tx.measurement.upsert({
-              where: {
-                userId_type_source_externalId: {
-                  userId: user.id,
-                  type,
-                  source: "APPLE_HEALTH",
-                  externalId,
-                },
-              },
-              create: {
-                userId: user.id,
-                type,
-                value: meanValue,
-                unit,
-                source: "APPLE_HEALTH",
-                measuredAt: canonicalTs,
-                externalId,
-              },
-              update: {
-                value: meanValue,
-                measuredAt: canonicalTs,
-                deletedAt: null,
-              },
-            });
-            summary.totals.dailyRowsUpserted += 1;
-
-            // Soft-delete the per-sample rows in the same transaction —
-            // tombstone, never hard-delete; they remain as an audit
-            // trail and drop off the live read + this pass's re-run
-            // discovery.
-            const del = await tx.measurement.updateMany({
-              where: { id: { in: ids }, deletedAt: null },
-              data: { deletedAt: new Date() },
-            });
-            summary.totals.perSampleRowsSoftDeleted += del.count;
-          });
-        } else {
-          summary.totals.dailyRowsUpserted += 1;
-          summary.totals.perSampleRowsSoftDeleted += dayRows.length;
-        }
-      }
-    }
-
-    log(
-      `[mean-consolidation] user=${user.id} tz=${tz}${dryRun ? " (dry-run)" : ""}`,
-    );
-  }
+  summary.totals.usersScanned = usersScanned;
 
   log(
-    `[mean-consolidation] done — usersScanned=${summary.totals.usersScanned} daysConsolidated=${summary.totals.daysConsolidated} perSampleRowsSoftDeleted=${summary.totals.perSampleRowsSoftDeleted} dailyRowsUpserted=${summary.totals.dailyRowsUpserted}${dryRun ? " (dry-run)" : ""}`,
+    `[mean-consolidation] done — usersScanned=${summary.totals.usersScanned} daysConsolidated=${summary.totals.daysConsolidated} perSampleRowsSoftDeleted=${summary.totals.perSampleRowsSoftDeleted} dailyRowsUpserted=${summary.totals.dailyRowsUpserted}${options.dryRun ? " (dry-run)" : ""}`,
   );
 
   return summary;

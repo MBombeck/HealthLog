@@ -41,10 +41,11 @@ import type { PrismaClient } from "@/generated/prisma/client";
 
 import { dailyStatsExternalId } from "./apple-health-mapping";
 import {
-  canonicalDailyTimestamp,
-  dayKeyForUserTz,
-  type PerSampleRow,
-} from "./drain-per-sample-cumulative";
+  bucketRowsByDay,
+  runConsolidation,
+  type DayWriteOutcome,
+} from "./consolidation-base";
+import { type PerSampleRow } from "./drain-per-sample-cumulative";
 
 /** HealthLog measurement type that carries step counts. */
 const STEP_TYPE = "ACTIVITY_STEPS" as const;
@@ -128,20 +129,7 @@ export function bucketLegacyStepRows(
   rows: readonly PerSampleRow[],
   tz: string,
 ): Map<string, PerSampleRow[]> {
-  const byDay = new Map<string, PerSampleRow[]>();
-  for (const row of rows) {
-    if (
-      row.externalId !== null &&
-      row.externalId.startsWith(STEP_DAILY_STATS_PREFIX)
-    ) {
-      continue;
-    }
-    const key = dayKeyForUserTz(row.measuredAt, tz);
-    const slot = byDay.get(key) ?? [];
-    slot.push(row);
-    byDay.set(key, slot);
-  }
-  return byDay;
+  return bucketRowsByDay(rows, tz, STEP_DAILY_STATS_PREFIX);
 }
 
 /** SUM the values in a per-day legacy bucket. */
@@ -162,23 +150,13 @@ export async function consolidateLegacySteps(
   prismaClient: PrismaClient,
   options: StepConsolidationOptions = {},
 ): Promise<StepConsolidationSummary> {
-  const dryRun = options.dryRun ?? false;
   const log = options.log ?? ((line) => console.log(line));
 
-  const users = options.userId
-    ? await prismaClient.user.findMany({
-        where: { id: options.userId },
-        select: { id: true, timezone: true },
-      })
-    : await prismaClient.user.findMany({
-        select: { id: true, timezone: true },
-      });
-
   const summary: StepConsolidationSummary = {
-    dryRun,
+    dryRun: options.dryRun ?? false,
     buckets: [],
     totals: {
-      usersScanned: users.length,
+      usersScanned: 0,
       daysConsolidated: 0,
       legacyRowsSoftDeleted: 0,
       dailyRowsUpserted: 0,
@@ -187,163 +165,190 @@ export async function consolidateLegacySteps(
     },
   };
 
-  for (const user of users) {
-    const tz =
-      user.timezone && user.timezone.length > 0
-        ? user.timezone
-        : "Europe/Berlin";
+  // Per-user day count for the COMPLETE log line (mirrors `byDay.size`).
+  // Single type, so the per-(user, type) scan is the per-user scan.
+  // `perUserScanned` gates the START + COMPLETE log pair so a user with
+  // zero live legacy rows logs nothing, exactly as the prior loop's
+  // `if (legacyRows.length === 0) continue` did.
+  let perUserDayCount = 0;
+  let perUserScanned = false;
 
+  const { usersScanned } = await runConsolidation<typeof STEP_TYPE>({
+    prismaClient,
+    options,
+    types: [STEP_TYPE],
+    // Single type — the HK identifier is fixed.
+    hkIdentifierForType: () => STEP_HK_IDENTIFIER,
+    dailyStatsExternalId,
+    statsPrefix: STEP_DAILY_STATS_PREFIX,
+    reduce: sumLegacyStepValues,
     // Live legacy step rows whose externalId is NOT the daily-stats
-    // shape. The `stats:` daily-total row (if present) is read
-    // separately below per day; we exclude it here so it is never
-    // soft-deleted. Soft-deleted rows (`deletedAt IS NOT NULL`) are
-    // excluded so a re-run after a partial pass never re-aggregates.
-    const legacyRows = (await prismaClient.measurement.findMany({
-      where: {
-        userId: user.id,
-        type: STEP_TYPE,
-        deletedAt: null,
-        NOT: { externalId: { startsWith: STEP_DAILY_STATS_PREFIX } },
-      },
-      select: {
-        id: true,
-        type: true,
-        value: true,
-        measuredAt: true,
-        externalId: true,
-      },
-      orderBy: { measuredAt: "asc" },
-    })) as PerSampleRow[];
-
-    if (legacyRows.length === 0) continue;
-
-    log(`[step-consolidation] user=${user.id} tz=${tz} legacyRows=${legacyRows.length}${dryRun ? " (dry-run)" : ""}`);
-
-    const byDay = bucketLegacyStepRows(legacyRows, tz);
-
-    for (const [dateKey, dayRows] of byDay) {
-      if (dayRows.length === 0) continue;
-
-      const legacySum = sumLegacyStepValues(dayRows);
-      const canonicalTs = canonicalDailyTimestamp(dateKey, tz);
-      const externalId = dailyStatsExternalId(STEP_HK_IDENTIFIER, dateKey);
-
-      // Does a post-v1.5.0 daily total already exist for this day? If so
-      // it is the source of truth (HealthKit's own daily aggregate) —
-      // we do NOT overwrite it and do NOT add the legacy sum on top
-      // (that would double-count). We still soft-delete the legacy rows.
-      // `source` is deliberately omitted from this probe (the upsert below
-      // pins `source: "MANUAL"`): a daily total written by iOS lands as
-      // `APPLE_HEALTH`, and matching it here is what prevents minting a
-      // second MANUAL total on top of it. The asymmetry with the upsert
-      // `where` is intentional, not a bug.
-      const existingTotal = await prismaClient.measurement.findFirst({
-        where: {
-          userId: user.id,
-          type: STEP_TYPE,
-          externalId,
-          deletedAt: null,
-        },
+    // shape. The `stats:` daily-total row (if present) is read separately
+    // per day; we exclude it here so it is never soft-deleted. No
+    // source-scope — legacy granular rows predate the source split, so
+    // every source is in scope. Soft-deleted rows are excluded so a
+    // re-run after a partial pass never re-aggregates.
+    buildScanWhere: ({ userId, type, statsPrefix }) => ({
+      userId,
+      type,
+      deletedAt: null,
+      NOT: { externalId: { startsWith: statsPrefix } },
+    }),
+    // Does a post-v1.5.0 daily total already exist for this day? If so it
+    // is the source of truth (HealthKit's own daily aggregate) — we do
+    // NOT overwrite it and do NOT add the legacy sum on top (that would
+    // double-count). We still soft-delete the legacy rows. `source` is
+    // deliberately omitted from this probe (the write below pins
+    // `source: "MANUAL"`): a daily total written by iOS lands as
+    // `APPLE_HEALTH`, and matching it here is what prevents minting a
+    // second MANUAL total on top of it. The asymmetry with the upsert
+    // `where` is intentional, not a bug. Returning `false` records the
+    // bucket but skips the mint.
+    onBucket: async ({ prismaClient: pc, userId, type, externalId }) => {
+      const existingTotal = await pc.measurement.findFirst({
+        where: { userId, type, externalId, deletedAt: null },
         select: { id: true },
       });
-      const hadExistingTotal = existingTotal !== null;
-
-      const bucket: StepConsolidationBucket = {
-        userId: user.id,
-        dateKey,
-        legacyRowCount: dayRows.length,
-        legacySum,
-        hadExistingTotal,
-        canonicalTimestamp: canonicalTs.toISOString(),
-        externalId,
-      };
-      summary.buckets.push(bucket);
-      summary.totals.daysConsolidated += 1;
-      if (hadExistingTotal) summary.totals.daysFoldedIntoExisting += 1;
-
-      const ids = dayRows.map((r) => r.id);
-
-      if (!dryRun) {
-        try {
-          await prismaClient.$transaction(async (tx) => {
-            if (!hadExistingTotal) {
-              // Mint the canonical daily-total row. The unique index
-              // (userId, type, source, externalId) makes the upsert
-              // idempotent across re-runs. Source is MANUAL — these are
-              // historical rows whose original sampling source is no
-              // longer meaningful once collapsed; the externalId carries
-              // the canonical daily-stats shape. Built field-by-field
-              // (no spread) per the no-mass-assignment convention.
-              await tx.measurement.upsert({
-                where: {
-                  userId_type_source_externalId: {
-                    userId: user.id,
-                    type: STEP_TYPE,
-                    source: "MANUAL",
-                    externalId,
-                  },
-                },
-                create: {
-                  userId: user.id,
-                  type: STEP_TYPE,
-                  value: legacySum,
-                  unit: "steps",
+      return existingTotal === null; // shouldMint
+    },
+    writeDay: async ({
+      prismaClient: pc,
+      userId,
+      type,
+      externalId,
+      canonicalTimestamp,
+      reducedValue,
+      sourceRowIds,
+      shouldMint,
+    }): Promise<DayWriteOutcome> => {
+      try {
+        let removed = 0;
+        await pc.$transaction(async (tx) => {
+          if (shouldMint) {
+            // Mint the canonical daily-total row. The unique index
+            // (userId, type, source, externalId) makes the upsert
+            // idempotent across re-runs. Source is MANUAL — these are
+            // historical rows whose original sampling source is no longer
+            // meaningful once collapsed; the externalId carries the
+            // canonical daily-stats shape. Built field-by-field (no
+            // spread) per the no-mass-assignment convention.
+            await tx.measurement.upsert({
+              where: {
+                userId_type_source_externalId: {
+                  userId,
+                  type,
                   source: "MANUAL",
-                  measuredAt: canonicalTs,
                   externalId,
                 },
-                update: {
-                  value: legacySum,
-                  measuredAt: canonicalTs,
-                  deletedAt: null,
-                },
-              });
-              summary.totals.dailyRowsUpserted += 1;
-            }
-
-            // Soft-delete the legacy granular rows in the same
-            // transaction. Tombstone, never hard-delete — they remain as
-            // an audit/backup trail. `deletedAt` excludes them from every
-            // live read and from this pass's own re-run discovery.
-            const del = await tx.measurement.updateMany({
-              where: { id: { in: ids }, deletedAt: null },
-              data: { deletedAt: new Date() },
+              },
+              create: {
+                userId,
+                type,
+                value: reducedValue,
+                unit: "steps",
+                source: "MANUAL",
+                measuredAt: canonicalTimestamp,
+                externalId,
+              },
+              update: {
+                value: reducedValue,
+                measuredAt: canonicalTimestamp,
+                deletedAt: null,
+              },
             });
-            summary.totals.legacyRowsSoftDeleted += del.count;
-          });
-        } catch (err) {
-          // A pre-existing row can collide on the second unique index
-          // (userId, type, measuredAt, source, sleepStage) when a MANUAL
-          // step row already sits at this day's canonical-noon instant
-          // with a null externalId — the mint's `create` branch fires
-          // (the upsert keys on externalId, which differs) and trips that
-          // index, rolling back the soft-delete too. Skipping the day
-          // (rather than aborting the whole user) keeps the pass
-          // converging: the legacy rows stay live but every other day
-          // still consolidates, and the run does not re-throw on every
-          // boot. Non-P2002 errors are genuine failures — rethrow so
-          // pg-boss retries.
-          if (!isUniqueConstraintViolation(err)) throw err;
-          summary.totals.daysConsolidated -= 1;
-          summary.totals.daysSkippedOnConflict += 1;
-          summary.buckets.pop();
-          log(
-            `[step-consolidation] user=${user.id} day=${dateKey} skipped — unique-constraint conflict on mint`,
-          );
-        }
-      } else {
-        if (!hadExistingTotal) summary.totals.dailyRowsUpserted += 1;
-        summary.totals.legacyRowsSoftDeleted += ids.length;
-      }
-    }
+          }
 
-    log(
-      `[step-consolidation] user=${user.id} complete days=${byDay.size}${dryRun ? " (dry-run)" : ""}`,
-    );
-  }
+          // Soft-delete the legacy granular rows in the same transaction.
+          // Tombstone, never hard-delete — they remain as an audit/backup
+          // trail. `deletedAt` excludes them from every live read and from
+          // this pass's own re-run discovery.
+          const del = await tx.measurement.updateMany({
+            where: { id: { in: sourceRowIds }, deletedAt: null },
+            data: { deletedAt: new Date() },
+          });
+          removed = del.count;
+        });
+        return { kind: "written", sourceRowsRemoved: removed };
+      } catch (err) {
+        // A pre-existing row can collide on the second unique index
+        // (userId, type, measuredAt, source, sleepStage) when a MANUAL
+        // step row already sits at this day's canonical-noon instant with
+        // a null externalId — the mint's `create` branch fires (the
+        // upsert keys on externalId, which differs) and trips that index,
+        // rolling back the soft-delete too. Skipping the day (rather than
+        // aborting the whole user) keeps the pass converging: the legacy
+        // rows stay live but every other day still consolidates, and the
+        // run does not re-throw on every boot. Non-P2002 errors are
+        // genuine failures — rethrow so pg-boss retries.
+        if (!isUniqueConstraintViolation(err)) throw err;
+        return { kind: "skipped-conflict" };
+      }
+    },
+    recordBucket: ({
+      userId,
+      dateKey,
+      dayRows,
+      reducedValue,
+      canonicalTimestamp,
+      externalId,
+      shouldMint,
+      outcome,
+    }) => {
+      const dryRun = outcome === null;
+      if (outcome?.kind === "skipped-conflict") {
+        // Mint hit a unique-constraint collision; the transaction rolled
+        // back. Step over the day — record only the skip counter.
+        summary.totals.daysSkippedOnConflict += 1;
+        log(
+          `[step-consolidation] user=${userId} day=${dateKey} skipped — unique-constraint conflict on mint`,
+        );
+        return;
+      }
+
+      const hadExistingTotal = !shouldMint;
+      summary.buckets.push({
+        userId,
+        dateKey,
+        legacyRowCount: dayRows.length,
+        legacySum: reducedValue,
+        hadExistingTotal,
+        canonicalTimestamp: canonicalTimestamp.toISOString(),
+        externalId,
+      });
+      summary.totals.daysConsolidated += 1;
+      if (hadExistingTotal) summary.totals.daysFoldedIntoExisting += 1;
+      if (shouldMint) summary.totals.dailyRowsUpserted += 1;
+      // Real run: count what the transaction soft-deleted. Dry-run: count
+      // the rows that would have been soft-deleted.
+      summary.totals.legacyRowsSoftDeleted +=
+        outcome?.kind === "written" && !dryRun
+          ? outcome.sourceRowsRemoved
+          : dayRows.length;
+    },
+    onScan: ({ userId, tz, rowCount, dayCount, dryRun }) => {
+      perUserDayCount = dayCount;
+      perUserScanned = true;
+      log(
+        `[step-consolidation] user=${userId} tz=${tz} legacyRows=${rowCount}${dryRun ? " (dry-run)" : ""}`,
+      );
+    },
+    onUserComplete: ({ userId, dryRun }) => {
+      // Skip the COMPLETE line for users with no live legacy rows — the
+      // scan never fired, matching the prior zero-row `continue`.
+      if (perUserScanned) {
+        log(
+          `[step-consolidation] user=${userId} complete days=${perUserDayCount}${dryRun ? " (dry-run)" : ""}`,
+        );
+      }
+      perUserDayCount = 0;
+      perUserScanned = false;
+    },
+  });
+
+  summary.totals.usersScanned = usersScanned;
 
   log(
-    `[step-consolidation] done — usersScanned=${summary.totals.usersScanned} daysConsolidated=${summary.totals.daysConsolidated} legacyRowsSoftDeleted=${summary.totals.legacyRowsSoftDeleted} dailyRowsUpserted=${summary.totals.dailyRowsUpserted} daysFoldedIntoExisting=${summary.totals.daysFoldedIntoExisting} daysSkippedOnConflict=${summary.totals.daysSkippedOnConflict}${dryRun ? " (dry-run)" : ""}`,
+    `[step-consolidation] done — usersScanned=${summary.totals.usersScanned} daysConsolidated=${summary.totals.daysConsolidated} legacyRowsSoftDeleted=${summary.totals.legacyRowsSoftDeleted} dailyRowsUpserted=${summary.totals.dailyRowsUpserted} daysFoldedIntoExisting=${summary.totals.daysFoldedIntoExisting} daysSkippedOnConflict=${summary.totals.daysSkippedOnConflict}${options.dryRun ? " (dry-run)" : ""}`,
   );
 
   return summary;
