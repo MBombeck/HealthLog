@@ -148,7 +148,7 @@ export function UnitPreferenceCard({
                   disabled={!isAuthenticated || mutation.isPending}
                   onClick={() => handleSelect(opt.key)}
                   className={cn(
-                    "min-h-9 rounded-md px-4 text-sm font-medium transition-colors disabled:opacity-50",
+                    "min-h-11 rounded-md px-4 text-sm font-medium transition-colors focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 sm:min-h-9",
                     selected
                       ? "bg-background text-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground",
