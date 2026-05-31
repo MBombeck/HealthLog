@@ -76,9 +76,6 @@ export const DASHBOARD_IOS_ONLY_WIDGET_IDS = [
   "audioExposureHeadphone",
 ] as const;
 
-export type DashboardIosOnlyWidgetId =
-  (typeof DASHBOARD_IOS_ONLY_WIDGET_IDS)[number];
-
 /**
  * v1.7.0 — full widget-id catalogue: the 16 server-known ids plus the
  * 11 iOS-only ids = 27 distinct ids. This is the authoritative set the
