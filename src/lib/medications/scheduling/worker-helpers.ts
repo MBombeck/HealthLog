@@ -19,6 +19,7 @@
 import {
   type CanonicalSchedule,
   type RecurrenceContext,
+  type ScheduleType,
   occurrencesBetween,
 } from "@/lib/medications/scheduling/recurrence";
 
@@ -37,6 +38,16 @@ export interface WorkerScheduleRow {
   reminderGraceMinutes: number | null;
   rrule: string | null;
   rollingIntervalDays: number | null;
+  /**
+   * v1.7.0 — schedule-type + cyclic phase. The Prisma column is the
+   * `MedicationScheduleType` enum (string-valued at runtime), so a plain
+   * string assignment matches `ScheduleType`. Rows selected before the
+   * v1.7.0 read-flip that omit these fields default to SCHEDULED via the
+   * adapter below.
+   */
+  scheduleType?: ScheduleType | null;
+  cyclicOnWeeks?: number | null;
+  cyclicOffWeeks?: number | null;
 }
 
 /** Minimal `Medication` projection used by the worker. */
@@ -64,6 +75,9 @@ export function buildCanonicalSchedule(
     windowStart: schedule.windowStart,
     windowEnd: schedule.windowEnd,
     reminderGraceMinutes: schedule.reminderGraceMinutes,
+    scheduleType: schedule.scheduleType ?? "SCHEDULED",
+    cyclicOnWeeks: schedule.cyclicOnWeeks ?? null,
+    cyclicOffWeeks: schedule.cyclicOffWeeks ?? null,
   };
 }
 

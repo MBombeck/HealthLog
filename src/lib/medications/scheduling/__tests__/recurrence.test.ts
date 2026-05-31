@@ -45,6 +45,9 @@ function makeSchedule(
     windowStart: "08:00",
     windowEnd: "09:00",
     reminderGraceMinutes: null,
+    scheduleType: "SCHEDULED",
+    cyclicOnWeeks: null,
+    cyclicOffWeeks: null,
     ...overrides,
   };
 }
@@ -911,5 +914,136 @@ describe("nextOccurrenceAfter + matchesInstant", () => {
     );
     const offByTenMin = new Date(slots[0].at.getTime() + 10 * 60_000);
     expect(matchesInstant(schedule, offByTenMin, ctx)).toBe(false);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────
+// v1.7.0 — PRN (as-needed)
+// ────────────────────────────────────────────────────────────────────
+
+describe("occurrencesBetween — PRN", () => {
+  it("emits zero occurrences even with a daily rrule present", () => {
+    const schedule = makeSchedule({
+      scheduleType: "PRN",
+      rrule: "FREQ=DAILY",
+      timesOfDay: ["08:00"],
+    });
+    const ctx = makeCtx({
+      medication: { startsOn: d("2026-06-01T00:00:00Z") },
+    });
+    const slots = occurrencesBetween(
+      schedule,
+      d("2026-06-01T00:00:00Z"),
+      d("2026-06-30T23:59:59Z"),
+      ctx,
+    );
+    expect(slots).toHaveLength(0);
+  });
+
+  it("nextOccurrenceAfter returns null for PRN", () => {
+    const schedule = makeSchedule({
+      scheduleType: "PRN",
+      rrule: "FREQ=DAILY",
+      timesOfDay: ["08:00"],
+    });
+    const ctx = makeCtx();
+    expect(nextOccurrenceAfter(schedule, d("2026-06-01T00:00:00Z"), ctx)).toBe(
+      null,
+    );
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────
+// v1.7.0 — CYCLIC (on/off weeks)
+// ────────────────────────────────────────────────────────────────────
+
+describe("occurrencesBetween — CYCLIC", () => {
+  // 2-on / 1-off daily schedule anchored to Sun 2026-06-07 (a week
+  // start). Weeks: 0,1 on; 2 off; 3 on; 4 on; 5 off; …
+  function cyclicDaily(): CanonicalSchedule {
+    return makeSchedule({
+      scheduleType: "CYCLIC",
+      cyclicOnWeeks: 2,
+      cyclicOffWeeks: 1,
+      rrule: "FREQ=DAILY",
+      timesOfDay: ["08:00"],
+    });
+  }
+
+  it("emits in on-weeks (0,1) and skips the off-week (2), resumes week 3", () => {
+    const schedule = cyclicDaily();
+    const ctx = makeCtx({
+      medication: { startsOn: d("2026-06-07T00:00:00Z") }, // Sunday
+    });
+
+    // Week 0 (Jun 7–13) — on.
+    const week0 = occurrencesBetween(
+      schedule,
+      d("2026-06-07T00:00:00Z"),
+      d("2026-06-13T23:59:59Z"),
+      ctx,
+    );
+    expect(week0.length).toBeGreaterThan(0);
+
+    // Week 2 (Jun 21–27) — off.
+    const week2 = occurrencesBetween(
+      schedule,
+      d("2026-06-21T00:00:00Z"),
+      d("2026-06-27T23:59:59Z"),
+      ctx,
+    );
+    expect(week2).toHaveLength(0);
+
+    // Week 3 (Jun 28–Jul 4) — on again.
+    const week3 = occurrencesBetween(
+      schedule,
+      d("2026-06-28T00:00:00Z"),
+      d("2026-07-04T23:59:59Z"),
+      ctx,
+    );
+    expect(week3.length).toBeGreaterThan(0);
+  });
+
+  it("composes with BYDAY — only the matching weekday inside on-weeks", () => {
+    const schedule = makeSchedule({
+      scheduleType: "CYCLIC",
+      cyclicOnWeeks: 1,
+      cyclicOffWeeks: 1,
+      rrule: "FREQ=WEEKLY;BYDAY=WE",
+      timesOfDay: ["08:00"],
+    });
+    const ctx = makeCtx({
+      medication: { startsOn: d("2026-06-07T00:00:00Z") }, // Sunday wk-start
+    });
+    // Week 0 (on) Wednesday is Jun 10.
+    const onWeek = occurrencesBetween(
+      schedule,
+      d("2026-06-07T00:00:00Z"),
+      d("2026-06-13T23:59:59Z"),
+      ctx,
+    );
+    expect(onWeek).toHaveLength(1);
+    // Week 1 (off) Wednesday is Jun 17 — suppressed.
+    const offWeek = occurrencesBetween(
+      schedule,
+      d("2026-06-14T00:00:00Z"),
+      d("2026-06-20T23:59:59Z"),
+      ctx,
+    );
+    expect(offWeek).toHaveLength(0);
+  });
+
+  it("nextOccurrenceAfter lands in the next on-week, skipping the off-week", () => {
+    const schedule = cyclicDaily();
+    const ctx = makeCtx({
+      medication: { startsOn: d("2026-06-07T00:00:00Z") },
+    });
+    // From the start of the off-week (Jun 21), the next due slot must be
+    // in week 3 (Jun 28+), not inside the off week.
+    const next = nextOccurrenceAfter(schedule, d("2026-06-21T00:00:00Z"), ctx);
+    expect(next).not.toBe(null);
+    expect(next!.at.getTime()).toBeGreaterThanOrEqual(
+      d("2026-06-28T00:00:00Z").getTime(),
+    );
   });
 });

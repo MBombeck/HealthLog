@@ -44,6 +44,16 @@ import { annotate } from "@/lib/logging/context";
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 
+/**
+ * v1.7.0 — schedule-type discriminator on the canonical schedule.
+ * SCHEDULED keeps the rrule / rolling / legacy dispatch unchanged. PRN
+ * emits no slots (it is as-needed — never projected, reminded, or
+ * counted in compliance-expected, but still loggable). CYCLIC gates
+ * whichever inner cadence (rrule / legacy) the schedule describes by an
+ * N-weeks-on / M-weeks-off phase anchored to `startsOn ?? createdAt`.
+ */
+export type ScheduleType = "SCHEDULED" | "PRN" | "CYCLIC";
+
 export interface CanonicalSchedule {
   id: string;
   rrule: string | null;
@@ -58,6 +68,16 @@ export interface CanonicalSchedule {
   windowStart: string;
   windowEnd: string;
   reminderGraceMinutes: number | null;
+  /**
+   * v1.7.0 — schedule type. Defaults to SCHEDULED for every pre-v1.7
+   * row. PRN short-circuits the engine to zero slots; CYCLIC wraps the
+   * inner cadence with an on/off-week phase gate.
+   */
+  scheduleType: ScheduleType;
+  /** v1.7.0 — cyclic "on" weeks. Only read when `scheduleType === "CYCLIC"`. */
+  cyclicOnWeeks: number | null;
+  /** v1.7.0 — cyclic "off" weeks. Only read when `scheduleType === "CYCLIC"`. */
+  cyclicOffWeeks: number | null;
 }
 
 export interface RecurrenceContext {
@@ -121,16 +141,64 @@ export function occurrencesBetween(
 ): Occurrence[] {
   if (to.getTime() < from.getTime()) return [];
 
+  // v1.7.0 — PRN (as-needed) emits no scheduled slots. It is loggable
+  // through the intake route but never projected, reminded, or counted
+  // in compliance-expected. The early return keeps every downstream
+  // surface (projector, worker, compliance) PRN-aware in one place.
+  if (schedule.scheduleType === "PRN") return [];
+
+  let slots: Occurrence[];
   if (ctx.medication.oneShot) {
-    return expandOneShot(schedule, ctx, from, to);
+    slots = expandOneShot(schedule, ctx, from, to);
+  } else if (schedule.rollingIntervalDays !== null) {
+    slots = expandRolling(schedule, ctx, from, to);
+  } else if (schedule.rrule !== null) {
+    slots = expandRrule(schedule, ctx, from, to);
+  } else {
+    slots = expandLegacy(schedule, ctx, from, to);
   }
-  if (schedule.rollingIntervalDays !== null) {
-    return expandRolling(schedule, ctx, from, to);
+
+  // v1.7.0 — CYCLIC gate. Drop any slot that lands in an "off" week of
+  // the N-on / M-off cycle. The inner cadence (rrule / legacy / rolling
+  // / one-shot) still decides which days emit within an "on" week; this
+  // only suppresses the off-week slots. Composes with `intervalWeeks`
+  // (the inner legacy stride) because the two phase computations are
+  // independent: the legacy stride filters weeks first, the cyclic gate
+  // filters the surviving slots second.
+  if (schedule.scheduleType === "CYCLIC") {
+    return slots.filter((s) => isInCyclicOnWeek(s.at, schedule, ctx));
   }
-  if (schedule.rrule !== null) {
-    return expandRrule(schedule, ctx, from, to);
-  }
-  return expandLegacy(schedule, ctx, from, to);
+  return slots;
+}
+
+/**
+ * v1.7.0 — true when `instant` falls in an "on" week of the cyclic
+ * on/off phase. The anchor is the medication's `startsOn ?? createdAt`,
+ * snapped to its UTC week start. `phase = weeksFromAnchor mod
+ * (on + off)`; the slot survives iff `phase < on`. A non-positive or
+ * missing `cyclicOnWeeks` keeps every slot (defensive — the route + Zod
+ * require a positive value for CYCLIC, but the engine never throws on a
+ * malformed row).
+ */
+function isInCyclicOnWeek(
+  instant: Date,
+  schedule: CanonicalSchedule,
+  ctx: RecurrenceContext,
+): boolean {
+  const onWeeks = schedule.cyclicOnWeeks;
+  const offWeeks = schedule.cyclicOffWeeks ?? 0;
+  if (onWeeks === null || onWeeks <= 0) return true;
+  const cycleLen = onWeeks + offWeeks;
+  if (cycleLen <= 0) return true;
+
+  const anchor = ctx.medication.startsOn ?? ctx.medication.createdAt;
+  const anchorWeekStart = startOfUtcWeek(anchor).getTime();
+  const instantWeekStart = startOfUtcWeek(instant).getTime();
+  const weeksFromAnchor = Math.round(
+    (instantWeekStart - anchorWeekStart) / WEEK_MS,
+  );
+  const phase = ((weeksFromAnchor % cycleLen) + cycleLen) % cycleLen;
+  return phase < onWeeks;
 }
 
 /**
@@ -149,13 +217,19 @@ export function nextOccurrenceAfter(
   after: Date,
   ctx: RecurrenceContext,
 ): Occurrence | null {
+  // v1.7.0 — PRN never has a next due instant.
+  if (schedule.scheduleType === "PRN") return null;
+
   const endsOn = ctx.medication.endsOn;
   const hardCap = new Date(after.getTime() + 365 * 10 * DAY_MS);
   const limit = endsOn
     ? new Date(Math.min(endOfUtcDay(endsOn).getTime(), hardCap.getTime()))
     : hardCap;
 
-  // One-shot is single-slot — fast path.
+  const cyclic = schedule.scheduleType === "CYCLIC";
+
+  // One-shot is single-slot — fast path. (One-shot is never cyclic, but
+  // gate defensively so a malformed row can't surface an off-week slot.)
   if (ctx.medication.oneShot) {
     const slots = expandOneShot(
       schedule,
@@ -164,7 +238,9 @@ export function nextOccurrenceAfter(
       limit,
     );
     for (const s of slots) {
-      if (s.at.getTime() > after.getTime()) return s;
+      if (s.at.getTime() <= after.getTime()) continue;
+      if (cyclic && !isInCyclicOnWeek(s.at, schedule, ctx)) continue;
+      return s;
     }
     return null;
   }
@@ -178,7 +254,9 @@ export function nextOccurrenceAfter(
       limit,
     );
     for (const s of slots) {
-      if (s.at.getTime() > after.getTime()) return s;
+      if (s.at.getTime() <= after.getTime()) continue;
+      if (cyclic && !isInCyclicOnWeek(s.at, schedule, ctx)) continue;
+      return s;
     }
     return null;
   }

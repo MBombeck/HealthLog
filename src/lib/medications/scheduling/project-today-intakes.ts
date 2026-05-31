@@ -69,6 +69,14 @@ export async function projectTodayIntakesAndRecompute(input: {
           reminderGraceMinutes: true,
           rrule: true,
           rollingIntervalDays: true,
+          // v1.7.0 — PRN short-circuits to zero slots and CYCLIC gates the
+          // inner cadence by an on/off-week phase; both decisions live in
+          // the canonical engine, so the projector must select the new
+          // columns or every PRN / CYCLIC schedule would project as a
+          // plain SCHEDULED row.
+          scheduleType: true,
+          cyclicOnWeeks: true,
+          cyclicOffWeeks: true,
         },
       },
     },
