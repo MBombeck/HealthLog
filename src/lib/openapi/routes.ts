@@ -45,6 +45,7 @@ import {
 } from "@/lib/validations/medication";
 import { medicationExtractionSchema } from "@/lib/ai/coach/medication-extract-prompt";
 import { INSIGHTS_TILE_IDS } from "@/lib/insights-layout";
+import { exportSelectionSchema } from "@/lib/validations/health-record-export";
 
 /**
  * Common envelopes — every HealthLog API response wraps payload in
@@ -810,6 +811,14 @@ const insightsLayoutSchema = z
       "Per-user Insights tile layout: an ordered list of tiles with a visibility flag. `version` is the layout schema version; tile ids are a closed enum derived from the server's tile registry.",
   });
 
+// v1.7.0 — health-record export selection. Strict shape: unknown keys
+// (including any attempt to smuggle a userId) 422 via returnAllZodIssues.
+exportSelectionSchema.meta({
+  id: "HealthRecordExportRequest",
+  description:
+    "v1.7.0 — health-record / doctor-handover export selection. `format` picks PDF, FHIR R4 document Bundle, or a combined zip package. Grouped `sections` toggles drive which domains are read (mood is opt-in, off by default). No `userId` field — the user is always narrowed from the session/Bearer. The route is strict: unknown keys 422.",
+});
+
 // ── Standard 401 / 422 / 429 responses ───────────────────────────────
 
 const stdResponses = {
@@ -830,6 +839,38 @@ const stdResponses = {
 // ── Path table ───────────────────────────────────────────────────────
 
 export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/export/health-record": {
+    post: {
+      tags: ["Export"],
+      summary: "Generate a health-record export (PDF / FHIR / package)",
+      description:
+        "v1.7.0 flagship export. Returns the doctor-handover artefact in the requested `format`: `pdf` → application/pdf, `fhir` → application/fhir+json (HL7 FHIR R4 document Bundle), `package` → application/zip (PDF + FHIR + README). Auth via cookie or Bearer; shared `export:<userId>` rate bucket (10/h). Strict validation: unknown keys 422.",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: exportSelectionSchema },
+        },
+      },
+      responses: {
+        "200": {
+          description:
+            "Export generated. Content-Type varies by `format`: application/pdf, application/fhir+json, or application/zip.",
+          content: {
+            "application/pdf": {
+              schema: z.string().meta({ format: "binary" }),
+            },
+            "application/fhir+json": {
+              schema: z.string().meta({ format: "binary" }),
+            },
+            "application/zip": {
+              schema: z.string().meta({ format: "binary" }),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
   "/api/auth/login": {
     post: {
       tags: ["Auth"],

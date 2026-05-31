@@ -63,6 +63,7 @@ const openApiBase: Pick<
     { name: "Insights" },
     { name: "Notifications" },
     { name: "Devices" },
+    { name: "Export" },
     { name: "Admin" },
   ],
 };
