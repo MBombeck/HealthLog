@@ -138,6 +138,27 @@ describe("Settings — UnitPreferenceCard", () => {
     expect(html).toContain("Imperial");
   });
 
+  it("applies a roving tabindex — selected segment is the tab stop", () => {
+    // Roving tabindex: the radiogroup is a single tab stop. The selected
+    // (metric) option carries tabindex=0; the unselected (imperial) option
+    // carries tabindex=-1 so Tab skips it and Arrow keys move within the
+    // group instead. Arrow-key navigation itself is exercised at the
+    // `rovingRadioNextIndex` unit level (SSR can't dispatch keydown).
+    const html = render();
+    expect(segmentMarkup(html, "metric")).toContain('tabindex="0"');
+    expect(segmentMarkup(html, "imperial")).toContain('tabindex="-1"');
+  });
+
+  it("moves the tab stop to the imperial segment when it is selected", () => {
+    authSpy.mockImplementation(() => ({
+      user: buildUser("imperial"),
+      isAuthenticated: true,
+    }));
+    const html = render();
+    expect(segmentMarkup(html, "imperial")).toContain('tabindex="0"');
+    expect(segmentMarkup(html, "metric")).toContain('tabindex="-1"');
+  });
+
   it("disables both segments when unauthenticated", () => {
     authSpy.mockImplementation(() => ({ user: null, isAuthenticated: false }));
     const html = renderToStaticMarkup(

@@ -22,9 +22,12 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
+import { useRovingRadioGroup } from "@/hooks/use-roving-radio-group";
 import { useTranslations } from "@/lib/i18n/context";
 
 type ExportFormat = "pdf" | "fhir" | "package";
+
+const EXPORT_FORMATS: readonly ExportFormat[] = ["pdf", "fhir", "package"];
 
 interface SectionState {
   weight: boolean;
@@ -107,6 +110,12 @@ export function HealthRecordExportPanel() {
   const isPdfLike = format === "pdf" || format === "package";
   const isFhirLike = format === "fhir" || format === "package";
 
+  const { getRadioProps: getFormatRadioProps } = useRovingRadioGroup({
+    count: EXPORT_FORMATS.length,
+    selectedIndex: EXPORT_FORMATS.indexOf(format),
+    onSelect: (index) => setFormat(EXPORT_FORMATS[index]!),
+  });
+
   function toggle(key: keyof SectionState) {
     setSections((prev) => ({ ...prev, [key]: !prev[key] }));
   }
@@ -185,7 +194,7 @@ export function HealthRecordExportPanel() {
             {t("settings.healthRecord.format")}
           </legend>
           <div className="flex flex-wrap gap-2" role="radiogroup">
-            {(["pdf", "fhir", "package"] as const).map((f) => (
+            {EXPORT_FORMATS.map((f, index) => (
               <Button
                 key={f}
                 type="button"
@@ -194,6 +203,7 @@ export function HealthRecordExportPanel() {
                 variant={format === f ? "default" : "outline"}
                 className="min-h-11 sm:min-h-9"
                 onClick={() => setFormat(f)}
+                {...getFormatRadioProps(index)}
               >
                 {t(`settings.healthRecord.format_${f}`)}
               </Button>

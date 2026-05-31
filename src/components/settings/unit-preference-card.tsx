@@ -7,6 +7,7 @@ import { Ruler } from "lucide-react";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { useRovingRadioGroup } from "@/hooks/use-roving-radio-group";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -118,6 +119,14 @@ export function UnitPreferenceCard({
     { key: "imperial", label: t("settings.dashboard.units.imperial") },
   ];
 
+  const optionsDisabled = !isAuthenticated || mutation.isPending;
+  const { getRadioProps } = useRovingRadioGroup({
+    count: options.length,
+    selectedIndex: options.findIndex((o) => o.key === value),
+    onSelect: (index) => handleSelect(options[index]!.key),
+    isDisabled: () => optionsDisabled,
+  });
+
   return (
     <section
       aria-labelledby="settings-units-title"
@@ -136,7 +145,7 @@ export function UnitPreferenceCard({
             data-testid="settings-unit-preference-control"
             className="bg-muted inline-flex rounded-lg p-1"
           >
-            {options.map((opt) => {
+            {options.map((opt, index) => {
               const selected = value === opt.key;
               return (
                 <button
@@ -145,8 +154,9 @@ export function UnitPreferenceCard({
                   role="radio"
                   aria-checked={selected}
                   data-testid={`settings-unit-preference-${opt.key}`}
-                  disabled={!isAuthenticated || mutation.isPending}
+                  disabled={optionsDisabled}
                   onClick={() => handleSelect(opt.key)}
+                  {...getRadioProps(index)}
                   className={cn(
                     "min-h-11 rounded-md px-4 text-sm font-medium transition-colors focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 sm:min-h-9",
                     selected

@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, MoreHorizontal, Plus, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "@/lib/i18n/context";
+import { useRovingRadioGroup } from "@/hooks/use-roving-radio-group";
 import { invalidateKeys, moodDependentKeys } from "@/lib/query-keys";
 
 const MOOD_LEVELS = [
@@ -70,6 +71,11 @@ export function MoodForm({ onSuccess, onCancel, footerSlot }: MoodFormProps) {
   const queryClient = useQueryClient();
 
   const [mood, setMood] = useState("");
+  const { getRadioProps: getMoodRadioProps } = useRovingRadioGroup({
+    count: MOOD_LEVELS.length,
+    selectedIndex: MOOD_LEVELS.findIndex((l) => l.value === mood),
+    onSelect: (index) => setMood(MOOD_LEVELS[index]!.value),
+  });
   const [tagsInput, setTagsInput] = useState("");
   const [moodLoggedAt, setMoodLoggedAt] = useState(getDefaultMoodLoggedAtValue);
   const [loading, setLoading] = useState(false);
@@ -191,7 +197,7 @@ export function MoodForm({ onSuccess, onCancel, footerSlot }: MoodFormProps) {
           aria-labelledby="mood-level-label"
           className="grid grid-cols-5 gap-2"
         >
-          {MOOD_LEVELS.map((level) => {
+          {MOOD_LEVELS.map((level, index) => {
             const isSelected = mood === level.value;
             return (
               <button
@@ -200,6 +206,7 @@ export function MoodForm({ onSuccess, onCancel, footerSlot }: MoodFormProps) {
                 role="radio"
                 aria-checked={isSelected}
                 onClick={() => setMood(level.value)}
+                {...getMoodRadioProps(index)}
                 className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-center transition-colors ${
                   isSelected
                     ? "border-primary bg-primary/10 text-primary border-2"
