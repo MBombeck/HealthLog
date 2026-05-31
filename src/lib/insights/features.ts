@@ -6,7 +6,12 @@
 import { prisma } from "@/lib/db";
 import { summarize } from "@/lib/analytics/trends";
 import type { DataPoint } from "@/lib/analytics/trends";
-import { calculateCompliance } from "@/lib/analytics/compliance";
+import {
+  buildComplianceMedicationContext,
+  calculateCompliance,
+  lastNonSkippedTakenAt,
+} from "@/lib/analytics/compliance";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
 import {
@@ -920,11 +925,27 @@ export async function extractFeatures(
       eventsByMed.set(e.medicationId, list);
     }
 
+    // v1.7.0 SB-SCHED-2 — resolve the user timezone once so every
+    // per-med compliance call can route its denominator through the
+    // canonical engine (RRULE / rolling / one-shot / PRN / cyclic).
+    const userTz = await resolveUserTimezone(userId);
+
     features.medications = medications.map((med) => {
       const mapped = eventsByMed.get(med.id) ?? [];
-      const c7 = calculateCompliance(mapped, med.schedules, 7, med.createdAt);
-      const c30 = calculateCompliance(mapped, med.schedules, 30, med.createdAt);
-      const c90 = calculateCompliance(mapped, med.schedules, 90, med.createdAt);
+      const medicationContext = buildComplianceMedicationContext(
+        med,
+        lastNonSkippedTakenAt(mapped),
+        userTz,
+      );
+      const c7 = calculateCompliance(mapped, med.schedules, 7, med.createdAt, {
+        medicationContext,
+      });
+      const c30 = calculateCompliance(mapped, med.schedules, 30, med.createdAt, {
+        medicationContext,
+      });
+      const c90 = calculateCompliance(mapped, med.schedules, 90, med.createdAt, {
+        medicationContext,
+      });
 
       return {
         name: med.name,

@@ -3,8 +3,11 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import {
+  buildComplianceMedicationContext,
   calculateCompliance,
   classifyIntakeTiming,
+  expectedSlotCountForDay,
+  lastNonSkippedTakenAt,
 } from "@/lib/analytics/compliance";
 import type { DailyComplianceEntry } from "@/lib/analytics/compliance";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
@@ -41,22 +44,34 @@ export const GET = apiHandler(
     }));
 
     const createdAt = medication.createdAt;
-    const compliance7 = calculateCompliance(
-      mapped,
-      medication.schedules,
-      7,
-      createdAt,
+
+    // v1.7.0 SB-SCHED-2 — thread the medication context so the
+    // denominator routes through the canonical engine (RRULE / rolling /
+    // one-shot / PRN / cyclic) instead of the legacy daysOfWeek walker.
+    // `lastIntakeAt` is the latest non-skipped takenAt (rolling cadences
+    // re-anchor on it); the events list is already ordered scheduledFor
+    // desc, so scan for the max takenAt.
+    const lastIntakeAt = lastNonSkippedTakenAt(mapped);
+    const userTz = user.timezone || "Europe/Berlin";
+    const medicationContext = buildComplianceMedicationContext(
+      medication,
+      lastIntakeAt,
+      userTz,
     );
+
+    const compliance7 = calculateCompliance(mapped, medication.schedules, 7, createdAt, {
+      medicationContext,
+    });
     const compliance30 = calculateCompliance(
       mapped,
       medication.schedules,
       30,
       createdAt,
+      { medicationContext },
     );
 
     // Build daily compliance map for heatmap/line chart (90 days)
     const now = new Date();
-    const schedulesPerDay = medication.schedules.length;
     const dailyCompliance: Record<string, DailyComplianceEntry> = {};
 
     for (let d = 0; d < 90; d++) {
@@ -123,8 +138,24 @@ export const GET = apiHandler(
         else veryLate++;
       }
 
+      // v1.7.0 item 5 — the per-day expected count is the engine's actual
+      // due-slot count for THIS day, not the static schedule count. iOS
+      // history paints a "missed" mark only when `due === true`, so
+      // off-weeks / non-matching weekdays / PRN days no longer show a
+      // false miss. `expected` is kept populated (= expectedCount) for
+      // existing web consumers that read it; `due` + `expectedCount` are
+      // the explicit additive fields iOS keys off.
+      const expectedCount = expectedSlotCountForDay(
+        medication.schedules,
+        dayStart,
+        dayEnd,
+        medicationContext,
+      );
+
       dailyCompliance[dateKey] = {
-        expected: schedulesPerDay,
+        expected: expectedCount,
+        expectedCount,
+        due: expectedCount > 0,
         taken: takenEvents.length,
         skipped: dayEvents.filter((e) => e.skipped).length,
         onTime: onTime + early,

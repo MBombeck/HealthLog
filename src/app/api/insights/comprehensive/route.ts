@@ -15,7 +15,11 @@ import {
   pearsonCorrelation,
   type PairedPoint,
 } from "@/lib/analytics/correlations";
-import { calculateCompliance } from "@/lib/analytics/compliance";
+import {
+  buildComplianceMedicationContext,
+  calculateCompliance,
+  lastNonSkippedTakenAt,
+} from "@/lib/analytics/compliance";
 import { getMedicationCategories } from "@/lib/medication-category";
 import { apiHandler, requireAuth, type AuthContext } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
@@ -293,8 +297,18 @@ export async function buildComprehensiveResponse(user: AuthedUser) {
       skipped: e.skipped,
       scheduledFor: e.scheduledFor,
     }));
-    const c7 = calculateCompliance(mapped, med.schedules, 7, med.createdAt);
-    const c30 = calculateCompliance(mapped, med.schedules, 30, med.createdAt);
+    // v1.7.0 SB-SCHED-2 — engine-routed denominator.
+    const medicationContext = buildComplianceMedicationContext(
+      med,
+      lastNonSkippedTakenAt(mapped),
+      user.timezone || "Europe/Berlin",
+    );
+    const c7 = calculateCompliance(mapped, med.schedules, 7, med.createdAt, {
+      medicationContext,
+    });
+    const c30 = calculateCompliance(mapped, med.schedules, 30, med.createdAt, {
+      medicationContext,
+    });
 
     medCompliance.push({
       id: med.id,

@@ -25,7 +25,10 @@ import {
   type IntakeEventLike,
   type ScheduleLike,
 } from "@/lib/medications/scheduling/cadence";
-import type { ScheduleType } from "@/lib/medications/scheduling/recurrence";
+import {
+  occurrencesBetween,
+  type ScheduleType,
+} from "@/lib/medications/scheduling/recurrence";
 
 interface IntakeEvent {
   takenAt: Date | null;
@@ -58,6 +61,18 @@ export interface ComplianceResult {
  */
 export interface DailyComplianceEntry {
   expected: number;
+  /**
+   * v1.7.0 item 5 — the true engine-computed due-slot count for the day.
+   * Equals `expected`; carried as an explicit additive field iOS keys
+   * off so it doesn't have to infer "due-ness" from `expected`.
+   */
+  expectedCount: number;
+  /**
+   * v1.7.0 item 5 — `expectedCount > 0`. iOS renders a "missed" mark
+   * only when `due === true`, so off-weeks / non-matching weekdays / PRN
+   * days no longer paint a false miss.
+   */
+  due: boolean;
   taken: number;
   skipped: number;
   onTime: number;
@@ -188,6 +203,103 @@ export interface ComplianceMedicationContext {
   createdAt: Date;
   lastIntakeAt: Date | null;
   timeZone: string;
+}
+
+/**
+ * v1.7.0 SB-SCHED-2 — convenience builder so the eight compliance call
+ * sites don't each re-spell the context shape. Pass the medication row
+ * (any object carrying the course-window fields), the latest non-skipped
+ * intake instant, and the user's timezone.
+ */
+export function buildComplianceMedicationContext(
+  med: {
+    startsOn: Date | null;
+    endsOn: Date | null;
+    oneShot: boolean;
+    createdAt: Date;
+  },
+  lastIntakeAt: Date | null,
+  timeZone: string,
+): ComplianceMedicationContext {
+  return {
+    startsOn: med.startsOn,
+    endsOn: med.endsOn,
+    oneShot: med.oneShot,
+    createdAt: med.createdAt,
+    lastIntakeAt,
+    timeZone,
+  };
+}
+
+/**
+ * v1.7.0 SB-SCHED-2 — the latest non-skipped `takenAt` across an event
+ * list (rolling cadences re-anchor on it). Returns null when the user
+ * has never logged a non-skipped intake. Order-independent, so the
+ * caller can pass an events array in any sort order.
+ */
+export function lastNonSkippedTakenAt(
+  events: { takenAt: Date | null; skipped: boolean }[],
+): Date | null {
+  return events.reduce<Date | null>((latest, e) => {
+    if (e.skipped || e.takenAt === null) return latest;
+    if (latest === null || e.takenAt.getTime() > latest.getTime()) {
+      return e.takenAt;
+    }
+    return latest;
+  }, null);
+}
+
+/**
+ * v1.7.0 item 5 — count the expected dose slots a medication's schedules
+ * emit inside `[dayStart, dayEnd)`, routed through the canonical engine.
+ * Powers the per-day `due` / `expectedCount` fields on the per-med
+ * compliance payload so iOS history renders a "missed" mark only on days
+ * the schedule actually expected a dose (not off-weeks / non-matching
+ * weekdays / PRN days).
+ */
+export function expectedSlotCountForDay(
+  schedules: ComplianceSchedule[],
+  dayStart: Date,
+  dayEnd: Date,
+  ctx: ComplianceMedicationContext,
+): number {
+  let count = 0;
+  const recurrenceCtx = {
+    medication: {
+      id: "compliance-daily",
+      startsOn: ctx.startsOn,
+      endsOn: ctx.endsOn,
+      oneShot: ctx.oneShot,
+      createdAt: ctx.createdAt,
+    },
+    timeZone: ctx.timeZone,
+    lastIntakeAt: ctx.lastIntakeAt,
+  };
+  for (let i = 0; i < schedules.length; i++) {
+    const s = schedules[i];
+    const canonical = {
+      id: `compliance-daily-${i}`,
+      rrule: s.rrule ?? null,
+      rollingIntervalDays: s.rollingIntervalDays ?? null,
+      timesOfDay: s.timesOfDay ?? [],
+      daysOfWeek: s.daysOfWeek ?? null,
+      windowStart: s.windowStart,
+      windowEnd: s.windowEnd,
+      reminderGraceMinutes: s.reminderGraceMinutes ?? null,
+      scheduleType: s.scheduleType ?? ("SCHEDULED" as const),
+      cyclicOnWeeks: s.cyclicOnWeeks ?? null,
+      cyclicOffWeeks: s.cyclicOffWeeks ?? null,
+    };
+    count += occurrencesBetween(
+      canonical,
+      dayStart,
+      // occurrencesBetween is inclusive of both ends; subtract 1 ms so a
+      // slot exactly at the next day's midnight doesn't double-count.
+      new Date(dayEnd.getTime() - 1),
+      recurrenceCtx,
+    ).length;
+  }
+  return count;
 }
 
 /**

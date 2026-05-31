@@ -14,7 +14,12 @@ import {
   pearsonCorrelation,
   type PairedPoint,
 } from "@/lib/analytics/correlations";
-import { calculateCompliance } from "@/lib/analytics/compliance";
+import {
+  buildComplianceMedicationContext,
+  calculateCompliance,
+  lastNonSkippedTakenAt,
+} from "@/lib/analytics/compliance";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { getMedicationCategories } from "@/lib/medication-category";
 import { sanitizeForPrompt } from "@/lib/insights/sanitize";
 import { getNoKeyBloodPressureStatusText } from "@/lib/insights/no-key-fallbacks";
@@ -297,6 +302,10 @@ export async function generateBloodPressureStatusForUser(
           },
         });
 
+  // v1.7.0 SB-SCHED-2 — resolve the user timezone once so the BP-status
+  // compliance gate routes its denominator through the canonical engine.
+  const userTz = await resolveUserTimezone(userId);
+
   const medicationCompliance = bpMedications.map((medication) => {
     const eventsForMedication = bpMedicationEvents
       .filter((event) => event.medicationId === medication.id)
@@ -306,17 +315,24 @@ export async function generateBloodPressureStatusForUser(
         skipped: event.skipped,
       }));
 
+    const medicationContext = buildComplianceMedicationContext(
+      medication,
+      lastNonSkippedTakenAt(eventsForMedication),
+      userTz,
+    );
     const compliance7 = calculateCompliance(
       eventsForMedication,
       medication.schedules,
       7,
       medication.createdAt,
+      { medicationContext },
     );
     const compliance30 = calculateCompliance(
       eventsForMedication,
       medication.schedules,
       30,
       medication.createdAt,
+      { medicationContext },
     );
 
     return {

@@ -11,7 +11,11 @@ import {
   getStepsRange,
   getBpTargetsByAge,
 } from "@/lib/analytics/classifications";
-import { calculateCompliance } from "@/lib/analytics/compliance";
+import {
+  buildComplianceMedicationContext,
+  calculateCompliance,
+  lastNonSkippedTakenAt,
+} from "@/lib/analytics/compliance";
 import { pairByTimestamp } from "@/lib/analytics/correlations";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
 import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
@@ -890,17 +894,26 @@ async function buildTargetsResponse(user: AuthedUser) {
       const medicationEvents = intakeEvents.filter(
         (event) => event.medicationId === medication.id,
       );
+      // v1.7.0 SB-SCHED-2 — engine-routed denominator (userTz resolved
+      // above at the route entry).
+      const medicationContext = buildComplianceMedicationContext(
+        medication,
+        lastNonSkippedTakenAt(medicationEvents),
+        userTz,
+      );
       const compliance7 = calculateCompliance(
         medicationEvents,
         medication.schedules,
         7,
         medication.createdAt,
+        { medicationContext },
       );
       const compliance30 = calculateCompliance(
         medicationEvents,
         medication.schedules,
         30,
         medication.createdAt,
+        { medicationContext },
       );
 
       return {

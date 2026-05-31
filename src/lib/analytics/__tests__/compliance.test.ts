@@ -14,8 +14,12 @@
  */
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import {
+  buildComplianceMedicationContext,
   calculateCompliance,
   classifyIntakeTiming,
+  expectedSlotCountForDay,
+  lastNonSkippedTakenAt,
+  type ComplianceMedicationContext,
   type ComplianceSchedule,
 } from "../compliance";
 import type { IntakeTimingClass } from "../compliance";
@@ -550,6 +554,106 @@ describe("calculateCompliance — engine-routed (medicationContext)", () => {
     // expected slot is left unpaired.
     expect(result.rate).toBe(100);
     expect(result.missed).toBe(0);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────
+// v1.7.0 item 5 — per-day due / expectedCount helpers
+// ────────────────────────────────────────────────────────────────────
+
+describe("expectedSlotCountForDay + lastNonSkippedTakenAt", () => {
+  function ctx(
+    overrides: Partial<ComplianceMedicationContext> = {},
+  ): ComplianceMedicationContext {
+    return buildComplianceMedicationContext(
+      {
+        startsOn: overrides.startsOn ?? null,
+        endsOn: overrides.endsOn ?? null,
+        oneShot: overrides.oneShot ?? false,
+        createdAt: overrides.createdAt ?? new Date("2024-12-01T00:00:00Z"),
+      },
+      overrides.lastIntakeAt ?? null,
+      overrides.timeZone ?? "UTC",
+    );
+  }
+
+  it("weekly BYDAY — due on the matching weekday, not due otherwise", () => {
+    const schedules: ComplianceSchedule[] = [
+      {
+        windowStart: "08:00",
+        windowEnd: "09:00",
+        daysOfWeek: null,
+        rrule: "FREQ=WEEKLY;BYDAY=MO",
+        timesOfDay: ["08:00"],
+      },
+    ];
+    // 2025-01-13 is a Monday; 2025-01-14 a Tuesday.
+    const monday = expectedSlotCountForDay(
+      schedules,
+      new Date("2025-01-13T00:00:00Z"),
+      new Date("2025-01-14T00:00:00Z"),
+      ctx(),
+    );
+    const tuesday = expectedSlotCountForDay(
+      schedules,
+      new Date("2025-01-14T00:00:00Z"),
+      new Date("2025-01-15T00:00:00Z"),
+      ctx(),
+    );
+    expect(monday).toBe(1);
+    expect(tuesday).toBe(0);
+  });
+
+  it("PRN — never due", () => {
+    const schedules: ComplianceSchedule[] = [
+      {
+        windowStart: "08:00",
+        windowEnd: "09:00",
+        daysOfWeek: null,
+        scheduleType: "PRN",
+        rrule: "FREQ=DAILY",
+        timesOfDay: ["08:00"],
+      },
+    ];
+    const count = expectedSlotCountForDay(
+      schedules,
+      new Date("2025-01-13T00:00:00Z"),
+      new Date("2025-01-14T00:00:00Z"),
+      ctx(),
+    );
+    expect(count).toBe(0);
+  });
+
+  it("multi time-of-day daily — expectedCount reflects each dose", () => {
+    const schedules: ComplianceSchedule[] = [
+      {
+        windowStart: "08:00",
+        windowEnd: "09:00",
+        daysOfWeek: null,
+        rrule: "FREQ=DAILY",
+        timesOfDay: ["08:00", "20:00"],
+      },
+    ];
+    const count = expectedSlotCountForDay(
+      schedules,
+      new Date("2025-01-13T00:00:00Z"),
+      new Date("2025-01-14T00:00:00Z"),
+      ctx(),
+    );
+    expect(count).toBe(2);
+  });
+
+  it("lastNonSkippedTakenAt picks the newest non-skipped takenAt", () => {
+    const events = [
+      { takenAt: new Date("2025-01-10T08:00:00Z"), skipped: false },
+      { takenAt: new Date("2025-01-12T08:00:00Z"), skipped: false },
+      { takenAt: new Date("2025-01-13T08:00:00Z"), skipped: true },
+      { takenAt: null, skipped: false },
+    ];
+    expect(lastNonSkippedTakenAt(events)?.toISOString()).toBe(
+      "2025-01-12T08:00:00.000Z",
+    );
+    expect(lastNonSkippedTakenAt([])).toBe(null);
   });
 });
 
