@@ -24,8 +24,12 @@ export const GET = apiHandler(
 
     const { id } = await params;
 
-    const measurement = await prisma.measurement.findUnique({
-      where: { id },
+    // v1.7.0 — filter `deletedAt: null` so a soft-deleted (tombstoned)
+    // row 404s on a direct GET, matching the list / analytics / rollup
+    // read invariant. `findFirst` (not `findUnique`) because `deletedAt`
+    // is not part of a unique index.
+    const measurement = await prisma.measurement.findFirst({
+      where: { id, deletedAt: null },
     });
 
     if (!measurement || measurement.userId !== user.id) {
@@ -50,8 +54,11 @@ export const PUT = apiHandler(
 
     const { id } = await params;
 
-    const existing = await prisma.measurement.findUnique({
-      where: { id },
+    // v1.7.0 — refuse to resurrect-edit a tombstoned row. The
+    // `deletedAt: null` filter makes a soft-deleted measurement 404 on
+    // PUT rather than letting an `update` re-write a still-tombstoned row.
+    const existing = await prisma.measurement.findFirst({
+      where: { id, deletedAt: null },
     });
 
     if (!existing || existing.userId !== user.id) {
