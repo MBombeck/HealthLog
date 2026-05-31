@@ -74,6 +74,12 @@ export interface HealthKitMetricPageProps {
    * default.
    */
   coachPrefill?: string;
+  /**
+   * v1.7.0 — display-time value scale for the chart (e.g. WALKING_SPEED
+   * stores m/s but renders km/h via `valueScale={3.6}`). Defaults to 1
+   * (identity) so every existing page renders unchanged.
+   */
+  valueScale?: number;
 }
 
 export function HealthKitMetricPage({
@@ -88,6 +94,7 @@ export function HealthKitMetricPage({
   emptyStateCtaType,
   emptyStateIcon,
   coachPrefill,
+  valueScale,
 }: HealthKitMetricPageProps) {
   const { user, isAuthenticated } = useAuth();
   const { t } = useTranslations();
@@ -132,6 +139,7 @@ export function HealthKitMetricPage({
         valueBands={valueBands}
         compareBaseline={compareBaseline}
         userTimezone={user?.timezone}
+        valueScale={valueScale}
       />
       <CoachLaunchButton />
     </SubPageShell>

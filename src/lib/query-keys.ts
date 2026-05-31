@@ -323,6 +323,12 @@ export const queryKeys = {
     timezone: string,
     fromIso: string,
     toIso: string,
+    // v1.7.0 — display-time value scale (e.g. m/s → km/h via 3.6).
+    // Defaults to 1 so every pre-v1.7.0 caller packs a byte-identical
+    // tuple; a non-default scale re-keys the cache so the processed
+    // (scaled) series doesn't bleed across charts that share the
+    // underlying raw window.
+    valueScale: number = 1,
   ) =>
     [
       "chart-data",
@@ -332,6 +338,7 @@ export const queryKeys = {
       timezone,
       fromIso,
       toIso,
+      valueScale,
     ] as const,
 };
 

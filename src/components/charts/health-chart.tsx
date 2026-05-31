@@ -173,6 +173,20 @@ interface HealthChartProps {
    * behaviour bit-for-bit.
    */
   userTimezone?: string;
+  /**
+   * v1.7.0 — display-time scalar applied to every raw value before it
+   * enters the chart pipeline (bucketing, y-domain, personal baseline,
+   * trend, tooltip). Used by the unit-fix mounts to render a metric in
+   * a derived display unit (e.g. WALKING_SPEED m/s → km/h via
+   * `valueScale={3.6}`) while raw storage stays canonical SI.
+   *
+   * Defaults to `1` — the identity scale — so every existing chart
+   * renders byte-identical to the pre-v1.7.0 behaviour. Recharts is
+   * untouched; the scale is folded into the value at the single read
+   * boundary so all downstream math operates on the scaled series
+   * uniformly.
+   */
+  valueScale?: number;
 }
 
 interface ChartDataPoint {
@@ -465,6 +479,7 @@ export function HealthChart({
   annotations,
   verticalMarkers,
   userTimezone = "Europe/Berlin",
+  valueScale = 1,
 }: HealthChartProps) {
   const { isAuthenticated, user } = useAuth();
   const { t, locale } = useTranslations();
@@ -567,6 +582,9 @@ export function HealthChart({
       // re-running the unbounded walk.
       fetchWindow.from,
       fetchWindow.to,
+      // v1.7.0 — re-key when the display scale changes so a km/h chart
+      // never reads a m/s-scaled sibling out of the cache.
+      valueScale,
     ),
     // v1.4.28 FB-D2 — cache the bounded window for a minute so tab
     // navigation between insights sub-pages does not re-fire every
@@ -628,7 +646,12 @@ export function HealthChart({
         const page = (json.data?.measurements ?? []) as MeasurementApiRow[];
 
         for (const measurement of page) {
-          const rawValue = measurement.value;
+          // v1.7.0 — fold the display-time scale into the raw value at
+          // the single read boundary so bucketing, the y-domain, the
+          // personal baseline, the trend, and the tooltip all operate
+          // on the scaled series uniformly. `valueScale` defaults to 1
+          // (identity), so non-unit-fixed charts read byte-identical.
+          const rawValue = measurement.value * valueScale;
           const value =
             valueMode === "bmi"
               ? bmiDivisor

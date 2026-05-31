@@ -129,9 +129,12 @@ describe("<HealthChart> — bounded range fetch", () => {
     const key = (globalThis as unknown as { __lastQueryKey?: unknown[] })
       .__lastQueryKey;
     expect(key).toBeDefined();
-    // Last two slots are `from` / `to`. Both must be ISO date strings.
+    // v1.7.0 — the key now trails with the display `valueScale` (default
+    // 1), so `from` / `to` sit at length-3 / length-2 and the scale at
+    // length-1. The window slots must still be ISO date strings.
     const isoRe = /\d{4}-\d{2}-\d{2}T/;
+    expect(String(key![key!.length - 3])).toMatch(isoRe);
     expect(String(key![key!.length - 2])).toMatch(isoRe);
-    expect(String(key![key!.length - 1])).toMatch(isoRe);
+    expect(key![key!.length - 1]).toBe(1);
   });
 });

@@ -82,7 +82,20 @@ describe("queryKeys factory", () => {
       "2026-05-01T00:00:00.000Z",
     );
     expect(key[0]).toBe("chart-data");
-    expect(key.length).toBe(7);
+    // v1.7.0 — the tuple trails with the display `valueScale` (default 1).
+    expect(key.length).toBe(8);
+    expect(key[7]).toBe(1);
+    expect(
+      queryKeys.chartData(
+        "WALKING_SPEED",
+        "raw",
+        "no-bmi",
+        "Europe/Berlin",
+        "2026-04-01T00:00:00.000Z",
+        "2026-05-01T00:00:00.000Z",
+        3.6,
+      )[7],
+    ).toBe(3.6);
     // Numeric bmiDivisor is allowed (BMI charts pass `heightCm * heightCm`).
     const bmiKey = queryKeys.chartData(
       "WEIGHT",
