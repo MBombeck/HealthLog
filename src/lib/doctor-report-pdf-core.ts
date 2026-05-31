@@ -34,6 +34,25 @@ export interface DoctorReportRenderOptions {
    * Eastern-time rows even when generated in the browser.
    */
   userTz?: string;
+  /**
+   * v1.7.0 — decrypted KVNR (German insurance number). Printed on the
+   * cover when present; the column is encrypted at rest, so the route
+   * decrypts it and hands the plaintext in here. Null/undefined omits
+   * the cover line exactly like an unset practice name.
+   */
+  insuranceNumber?: string | null;
+  /**
+   * v1.7.0 — embed jsPDF-native trend sparklines per primary vital.
+   * Defaults to `true`. Off produces a compact text-only report.
+   */
+  includeCharts?: boolean;
+  /**
+   * v1.7.0 — optional AI summary text. OUT of the clinical PDF by
+   * default; rendered ONLY when the user explicitly opts in, under a
+   * clearly-labelled "AI summary — not clinically validated" heading.
+   * Null/undefined/empty omits the section entirely.
+   */
+  aiSummary?: string | null;
 }
 
 /**
@@ -134,6 +153,155 @@ function getBpClassificationKey(sys: number, dia: number): string {
   return "doctorReport.bpHypertensionGrade3";
 }
 
+/** Primary vitals that get a trend sparkline + a summary trend arrow. */
+const SPARKLINE_TYPES = [
+  "WEIGHT",
+  "BLOOD_PRESSURE_SYS",
+  "PULSE",
+] as const;
+
+type FormatNum = (value: number, decimals?: number) => string;
+
+/** First-half vs second-half mean → "↑" / "↓" / "→". */
+function trendArrow(values: number[]): "↑" | "↓" | "→" {
+  if (values.length < 2) return "→";
+  const mid = Math.floor(values.length / 2);
+  const firstHalf = values.slice(0, mid);
+  const secondHalf = values.slice(mid);
+  const mean = (arr: number[]) =>
+    arr.reduce((a, b) => a + b, 0) / arr.length;
+  const delta = mean(secondHalf) - mean(firstHalf);
+  // Threshold at ~1% of the first-half mean so flat series read "→".
+  const threshold = Math.abs(mean(firstHalf)) * 0.01;
+  if (delta > threshold) return "↑";
+  if (delta < -threshold) return "↓";
+  return "→";
+}
+
+/**
+ * Deterministic clinical-summary lines. Pure data — no AI. Mirrors the
+ * existing BP/BMI classification approach: factual, reproducible.
+ */
+function buildClinicalSummaryLines(
+  data: DoctorReportData,
+  t: T,
+  num: FormatNum,
+): string[] {
+  const lines: string[] = [];
+
+  const totalReadings = Object.values(data.measurements).reduce(
+    (sum, arr) => sum + arr.length,
+    0,
+  );
+  const paramCount = Object.keys(data.stats).length;
+  if (totalReadings > 0) {
+    lines.push(
+      t("doctorReport.summaryReadings", {
+        days: data.period.days,
+        count: totalReadings,
+        params: paramCount,
+      }),
+    );
+  }
+
+  // Per-primary-vital latest + trend arrow.
+  for (const type of SPARKLINE_TYPES) {
+    const series = data.measurements[type];
+    const stat = data.stats[type];
+    if (!series || series.length === 0 || !stat) continue;
+    const arrow = trendArrow(series.map((p) => p.value));
+    lines.push(
+      t("doctorReport.summaryTrend", {
+        label: t(DOCTOR_REPORT_TYPE_LABEL_KEYS[type] ?? ""),
+        latest: num(stat.latest, 1),
+        arrow,
+      }),
+    );
+  }
+
+  // Medication-adherence headline (weighted mean across meds).
+  const compEntries = Object.values(data.compliance);
+  const totalDoses = compEntries.reduce((s, c) => s + c.total, 0);
+  const totalTaken = compEntries.reduce((s, c) => s + c.taken, 0);
+  if (totalDoses > 0) {
+    lines.push(
+      t("doctorReport.summaryAdherence", {
+        rate: num((totalTaken / totalDoses) * 100, 1),
+      }),
+    );
+  }
+
+  return lines;
+}
+
+/**
+ * Draw a jsPDF-native trend sparkline (label + min/max ticks + polyline).
+ * Returns the new `y` cursor below the drawn chart. Vector-only — uses
+ * `doc.lines()`, no raster image, no native canvas module.
+ */
+function drawSparkline(
+  doc: jsPDF,
+  opts: {
+    x: number;
+    y: number;
+    width: number;
+    label: string;
+    values: number[];
+    num: FormatNum;
+    unit: string;
+  },
+): number {
+  const { x, y, width, label, values, num, unit } = opts;
+  const chartHeight = 16;
+  const labelHeight = 5;
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(30, 30, 30);
+  doc.text(label, x, y + labelHeight - 1.5);
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+
+  const chartTop = y + labelHeight;
+  const chartBottom = chartTop + chartHeight;
+  // Reserve a right gutter for the min/max value labels.
+  const gutter = 22;
+  const chartWidth = width - gutter;
+
+  // Baseline box.
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.2);
+  doc.line(x, chartBottom, x + chartWidth, chartBottom);
+
+  // Polyline points → jsPDF relative `lines()` deltas.
+  const stepX = values.length > 1 ? chartWidth / (values.length - 1) : 0;
+  const points = values.map((v, i) => ({
+    px: x + i * stepX,
+    py: chartBottom - ((v - min) / range) * chartHeight,
+  }));
+  doc.setDrawColor(80, 110, 200);
+  doc.setLineWidth(0.4);
+  const deltas: [number, number][] = [];
+  for (let i = 1; i < points.length; i++) {
+    deltas.push([points[i].px - points[i - 1].px, points[i].py - points[i - 1].py]);
+  }
+  if (deltas.length > 0) {
+    doc.lines(deltas, points[0].px, points[0].py);
+  }
+
+  // Min/max labels in the right gutter.
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(120, 120, 120);
+  const unitSuffix = unit ? ` ${unit}` : "";
+  doc.text(`${num(max, 1)}${unitSuffix}`, x + chartWidth + 2, chartTop + 2);
+  doc.text(`${num(min, 1)}${unitSuffix}`, x + chartWidth + 2, chartBottom);
+
+  return chartBottom + 2;
+}
+
 /**
  * Render the doctor report into a `jsPDF` instance.
  *
@@ -145,7 +313,15 @@ export function buildDoctorReportPdfDocument(
   data: DoctorReportData,
   options: DoctorReportRenderOptions,
 ): jsPDF {
-  const { t, locale, now = new Date(), userTz } = options;
+  const {
+    t,
+    locale,
+    now = new Date(),
+    userTz,
+    insuranceNumber = null,
+    includeCharts = true,
+    aiSummary = null,
+  } = options;
   const formatters = makeFormatters(locale, userTz);
   const num = (value: number, decimals = 1) =>
     formatters.number(value, decimals);
@@ -160,6 +336,17 @@ export function buildDoctorReportPdfDocument(
   };
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  // v1.7.0 — document metadata (PDF/A-leaning). jsPDF embeds the standard
+  // Helvetica fonts and pulls no external resources; setting the document
+  // properties + a deterministic creation date gives most practice systems
+  // an acceptable file without the full PDF/A-1b XMP/OutputIntent work
+  // (documented as a follow-up, not a release blocker).
+  doc.setProperties({
+    title: t("doctorReport.title"),
+    subject: t("doctorReport.subtitle"),
+    creator: "HealthLog",
+    author: data.patient.fullName ?? data.patient.username ?? "HealthLog",
+  });
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
   let y = margin;
@@ -201,8 +388,12 @@ export function buildDoctorReportPdfDocument(
   doc.setFontSize(9);
   doc.setTextColor(80, 80, 80);
   const patientInfo: string[] = [];
-  if (data.patient.username) {
-    patientInfo.push(`${t("doctorReport.patient")}: ${data.patient.username}`);
+  // v1.7.0 — prefer the legal full name on the cover; fall back to the
+  // username when no full name is set (collapses exactly like the
+  // practice name when neither is present).
+  const patientName = data.patient.fullName ?? data.patient.username ?? null;
+  if (patientName) {
+    patientInfo.push(`${t("doctorReport.patient")}: ${patientName}`);
   }
   if (data.patient.dateOfBirth) {
     patientInfo.push(
@@ -223,6 +414,18 @@ export function buildDoctorReportPdfDocument(
       `${t("doctorReport.height")}: ${data.patient.heightCm} cm`,
     );
   }
+  // v1.7.0 — optional insurer + KVNR. Each line collapses when its field
+  // is unset, mirroring the existing practice-name behaviour.
+  if (data.patient.insurerName) {
+    patientInfo.push(
+      `${t("doctorReport.insurer")}: ${data.patient.insurerName}`,
+    );
+  }
+  if (insuranceNumber) {
+    patientInfo.push(
+      `${t("doctorReport.insuranceNumber")}: ${insuranceNumber}`,
+    );
+  }
   // Reporting period uses the explicit `start`/`end` from the data payload
   // (set by `normaliseDateRange()`). For older payloads that only carried
   // `since`, fall back to (since, now()) to preserve previous behaviour.
@@ -240,6 +443,29 @@ export function buildDoctorReportPdfDocument(
     y += 4.5;
   }
   y += 4;
+
+  // v1.7.0 — deterministic clinical-summary block. Pure data (NOT AI),
+  // built from the same aggregated stats the tables print. Gives a
+  // physician a one-paragraph orientation before the detail tables.
+  const summaryLines = buildClinicalSummaryLines(data, t, num);
+  if (summaryLines.length > 0) {
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 30, 30);
+    doc.text(t("doctorReport.summaryTitle"), margin, y);
+    y += 5;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(60, 60, 60);
+    for (const line of summaryLines) {
+      const wrapped = doc.splitTextToSize(line, pageWidth - 2 * margin);
+      for (const w of wrapped) {
+        doc.text(w, margin, y);
+        y += 4.5;
+      }
+    }
+    y += 4;
+  }
 
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
@@ -314,6 +540,45 @@ export function buildDoctorReportPdfDocument(
     y =
       (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
         .finalY + 8;
+  }
+
+  // v1.7.0 — jsPDF-native trend sparklines per primary vital. Vector
+  // polylines drawn with `doc.lines()` — zero new dependency, no native
+  // canvas module, isomorphic. Selection-gated via `includeCharts`.
+  if (includeCharts) {
+    const chartTypes = SPARKLINE_TYPES.filter(
+      (type) => (data.measurements[type]?.length ?? 0) >= 2,
+    );
+    if (chartTypes.length > 0) {
+      if (y > 235) {
+        doc.addPage();
+        y = margin;
+      }
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(30, 30, 30);
+      doc.text(t("doctorReport.chartsTitle"), margin, y);
+      y += 6;
+      for (const type of chartTypes) {
+        const series = data.measurements[type] ?? [];
+        if (y > 250) {
+          doc.addPage();
+          y = margin;
+        }
+        const label = t(DOCTOR_REPORT_TYPE_LABEL_KEYS[type] ?? "");
+        y = drawSparkline(doc, {
+          x: margin,
+          y,
+          width: pageWidth - 2 * margin,
+          label,
+          values: series.map((p) => p.value),
+          num,
+          unit: unitFor(type),
+        });
+        y += 4;
+      }
+      y += 2;
+    }
   }
 
   const sysStat = data.stats.BLOOD_PRESSURE_SYS;
@@ -665,6 +930,48 @@ export function buildDoctorReportPdfDocument(
     y =
       (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
         .finalY + 8;
+  }
+
+  // v1.7.0 — optional AI summary. OUT of the clinical PDF by default;
+  // rendered ONLY when the user explicitly opted in. Clearly labelled and
+  // flagged as not clinically validated so a physician never mistakes it
+  // for a machine-generated diagnosis.
+  const aiText = typeof aiSummary === "string" ? aiSummary.trim() : "";
+  if (aiText.length > 0) {
+    if (y > 220) {
+      doc.addPage();
+      y = margin;
+    }
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(120, 80, 0);
+    doc.text(t("doctorReport.aiSummaryTitle"), margin, y);
+    y += 5;
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(150, 110, 40);
+    const disclaimer = doc.splitTextToSize(
+      t("doctorReport.aiSummaryDisclaimer"),
+      pageWidth - 2 * margin,
+    );
+    for (const line of disclaimer) {
+      doc.text(line, margin, y);
+      y += 4;
+    }
+    y += 2;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(60, 60, 60);
+    const wrapped = doc.splitTextToSize(aiText, pageWidth - 2 * margin);
+    for (const line of wrapped) {
+      if (y > 270) {
+        doc.addPage();
+        y = margin;
+      }
+      doc.text(line, margin, y);
+      y += 4.5;
+    }
+    y += 4;
   }
 
   const addFooter = (pageDoc: jsPDF) => {
