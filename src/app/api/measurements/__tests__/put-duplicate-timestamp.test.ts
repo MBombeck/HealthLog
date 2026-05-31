@@ -4,7 +4,7 @@ import { NextRequest } from "next/server";
 vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: {
-      findUnique: vi.fn(),
+      findFirst: vi.fn(),
       update: vi.fn(),
     },
   },
@@ -54,7 +54,7 @@ beforeEach(() => {
 describe("PUT /api/measurements/[id] — duplicate-timestamp handling", () => {
   it("returns 409 when re-pointing measuredAt onto an existing tuple", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(prisma.measurement.findUnique).mockResolvedValue({
+    vi.mocked(prisma.measurement.findFirst).mockResolvedValue({
       id: "m-2",
       userId: "user-1",
       type: "ACTIVITY_STEPS",
@@ -90,7 +90,7 @@ describe("PUT /api/measurements/[id] — duplicate-timestamp handling", () => {
 
   it("re-throws any non-P2002 Prisma error", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(prisma.measurement.findUnique).mockResolvedValue({
+    vi.mocked(prisma.measurement.findFirst).mockResolvedValue({
       id: "m-3",
       userId: "user-1",
       type: "WEIGHT",
@@ -126,7 +126,7 @@ describe("PUT /api/measurements/[id] — duplicate-timestamp handling", () => {
     // PUT exists — workouts are ingested via POST /api/workouts/batch
     // only. The 409 handler must therefore fire for sport-typed rows.
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(prisma.measurement.findUnique).mockResolvedValue({
+    vi.mocked(prisma.measurement.findFirst).mockResolvedValue({
       id: "m-sport",
       userId: "user-1",
       type: "ACTIVE_ENERGY_BURNED",
@@ -163,7 +163,7 @@ describe("PUT /api/measurements/[id] — duplicate-timestamp handling", () => {
 
   it("returns the updated measurement on the 200 happy path", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(prisma.measurement.findUnique).mockResolvedValue({
+    vi.mocked(prisma.measurement.findFirst).mockResolvedValue({
       id: "m-4",
       userId: "user-1",
       type: "WEIGHT",
