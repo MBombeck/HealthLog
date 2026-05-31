@@ -1754,6 +1754,30 @@
       "vitalsParent": {
         "label": "Constantes",
         "header": "Constantes vitales"
+      },
+      "bodyParent": {
+        "label": "Corps",
+        "header": "Composition corporelle"
+      },
+      "activityParent": {
+        "label": "Activité",
+        "header": "Activité et mobilité"
+      },
+      "cardiovascularParent": {
+        "label": "Cardiovasculaire",
+        "header": "Marqueurs cardiovasculaires"
+      },
+      "hearingParent": {
+        "label": "Audition",
+        "header": "Audition et exposition sonore"
+      },
+      "environmentParent": {
+        "label": "Environnement",
+        "header": "Environnement"
+      },
+      "metabolicParent": {
+        "label": "Métabolique",
+        "header": "Métabolique"
       }
     },
     "hrv": {
@@ -1956,7 +1980,247 @@
         "mixedCardio": "Cardio mixte",
         "other": "Autre"
       }
-    }
+    },
+    "bloodGlucose": {
+      "title": "Glycémie",
+      "description": "Vos relevés de glycémie au fil du temps, en mg/dL.",
+      "chartTitle": "Glycémie",
+      "emptyState": {
+        "title": "Aucune donnée de glycémie",
+        "description": "Les relevés de glycémie apparaissent ici dès que vous en saisissez un ou qu’un appareil se synchronise."
+      }
+    },
+    "navBloodGlucose": "Glucose",
+    "totalBodyWater": {
+      "title": "Eau corporelle totale",
+      "description": "Votre eau corporelle totale au fil du temps, en kilogrammes.",
+      "chartTitle": "Eau corporelle totale",
+      "emptyState": {
+        "title": "Aucune donnée d’eau corporelle",
+        "description": "Les relevés d’eau corporelle apparaissent ici dès qu’une balance à impédance se synchronise."
+      }
+    },
+    "navTotalBodyWater": "Eau corporelle",
+    "boneMass": {
+      "title": "Masse osseuse",
+      "description": "Votre masse osseuse au fil du temps, en kilogrammes.",
+      "chartTitle": "Masse osseuse",
+      "emptyState": {
+        "title": "Aucune donnée de masse osseuse",
+        "description": "Les relevés de masse osseuse apparaissent ici dès qu’une balance à impédance se synchronise."
+      }
+    },
+    "navBoneMass": "Masse osseuse",
+    "flightsClimbed": {
+      "title": "Étages gravis",
+      "description": "Volées d’escaliers gravies chaque jour.",
+      "chartTitle": "Étages gravis par jour",
+      "emptyState": {
+        "title": "Aucune donnée d’étages",
+        "description": "Les totaux d’étages apparaissent ici dès qu’Apple Health synchronise une journée."
+      }
+    },
+    "navFlightsClimbed": "Étages",
+    "walkingRunningDistance": {
+      "title": "Distance marche + course",
+      "description": "Distance de marche et de course parcourue chaque jour, en kilomètres.",
+      "chartTitle": "Distance par jour",
+      "emptyState": {
+        "title": "Aucune donnée de distance",
+        "description": "La distance quotidienne apparaît ici dès qu’Apple Health synchronise une journée."
+      }
+    },
+    "navWalkingRunningDistance": "Distance",
+    "fatFreeMass": {
+      "title": "Masse sans graisse",
+      "description": "Votre masse sans graisse au fil du temps, en kilogrammes.",
+      "chartTitle": "Masse sans graisse",
+      "emptyState": {
+        "title": "Aucune donnée",
+        "description": "Les relevés apparaissent ici dès qu’une balance à impédance se synchronise."
+      }
+    },
+    "navFatFreeMass": "Masse maigre",
+    "fatMass": {
+      "title": "Masse grasse",
+      "description": "Votre masse grasse au fil du temps, en kilogrammes.",
+      "chartTitle": "Masse grasse",
+      "emptyState": {
+        "title": "Aucune donnée de masse grasse",
+        "description": "Les relevés apparaissent ici dès qu’une balance à impédance se synchronise."
+      }
+    },
+    "navFatMass": "Masse grasse",
+    "muscleMass": {
+      "title": "Masse musculaire",
+      "description": "Votre masse musculaire au fil du temps, en kilogrammes.",
+      "chartTitle": "Masse musculaire",
+      "emptyState": {
+        "title": "Aucune donnée musculaire",
+        "description": "Les relevés apparaissent ici dès qu’une balance à impédance se synchronise."
+      }
+    },
+    "navMuscleMass": "Masse musculaire",
+    "skinTemperature": {
+      "title": "Température cutanée",
+      "description": "La température cutanée de votre poignet au fil du temps, en degrés Celsius.",
+      "chartTitle": "Température cutanée",
+      "emptyState": {
+        "title": "Aucune donnée",
+        "description": "Les relevés apparaissent ici dès qu’un appareil synchronise la température nocturne."
+      }
+    },
+    "navSkinTemperature": "Temp. peau",
+    "pulseWaveVelocity": {
+      "title": "Vitesse de l’onde de pouls",
+      "description": "Votre vitesse d’onde de pouls artérielle au fil du temps, en m/s — des valeurs plus élevées suggèrent des artères plus rigides.",
+      "chartTitle": "Vitesse de l’onde de pouls",
+      "emptyState": {
+        "title": "Aucune donnée",
+        "description": "Les relevés apparaissent ici dès qu’un appareil Withings compatible se synchronise."
+      }
+    },
+    "navPulseWaveVelocity": "Vitesse onde de pouls",
+    "vascularAge": {
+      "title": "Âge vasculaire",
+      "description": "Votre âge vasculaire estimé au fil du temps, en années.",
+      "chartTitle": "Âge vasculaire",
+      "emptyState": {
+        "title": "Aucune donnée",
+        "description": "Les estimations apparaissent ici dès qu’un appareil Withings compatible se synchronise."
+      }
+    },
+    "navVascularAge": "Âge vasculaire",
+    "visceralFat": {
+      "title": "Graisse viscérale",
+      "description": "Votre indice de graisse viscérale au fil du temps.",
+      "chartTitle": "Graisse viscérale",
+      "emptyState": {
+        "title": "Aucune donnée",
+        "description": "Les indices apparaissent ici dès qu’une balance à impédance compatible se synchronise."
+      }
+    },
+    "navVisceralFat": "Graisse viscérale",
+    "audioExposureEnv": {
+      "title": "Audio ambiant",
+      "description": "Votre exposition quotidienne moyenne au son ambiant, en dBA.",
+      "chartTitle": "Exposition au son ambiant",
+      "emptyState": {
+        "title": "Aucune donnée",
+        "description": "Les niveaux sonores apparaissent ici dès qu’Apple Health se synchronise."
+      }
+    },
+    "navAudioExposureEnv": "Audio ambiant",
+    "audioExposureHeadphone": {
+      "title": "Audio du casque",
+      "description": "Votre exposition quotidienne moyenne au casque, en dBA.",
+      "chartTitle": "Exposition au casque",
+      "emptyState": {
+        "title": "Aucune donnée",
+        "description": "Les niveaux apparaissent ici dès qu’Apple Health se synchronise."
+      }
+    },
+    "navAudioExposureHeadphone": "Audio casque",
+    "timeInDaylight": {
+      "title": "Temps à la lumière du jour",
+      "description": "Minutes passées à la lumière du jour chaque jour.",
+      "chartTitle": "Lumière du jour par jour",
+      "emptyState": {
+        "title": "Aucune donnée",
+        "description": "Les totaux apparaissent ici dès qu’Apple Health synchronise une journée."
+      }
+    },
+    "navTimeInDaylight": "Lumière du jour",
+    "walkingSteadiness": {
+      "title": "Stabilité de la marche",
+      "description": "Votre stabilité de marche au fil du temps, en pourcentage.",
+      "chartTitle": "Stabilité de la marche",
+      "emptyState": {
+        "title": "Aucune donnée",
+        "description": "Les relevés apparaissent ici dès qu’Apple Health se synchronise."
+      }
+    },
+    "navWalkingSteadiness": "Stabilité de marche",
+    "audioExposureEvent": {
+      "title": "Événements sonores forts",
+      "description": "Jours avec un événement d’exposition sonore forte.",
+      "chartTitle": "Événements sonores par jour",
+      "emptyState": {
+        "title": "Aucune donnée",
+        "description": "Les événements apparaissent ici dès qu’Apple Health se synchronise."
+      }
+    },
+    "navAudioExposureEvent": "Événements sonores",
+    "respiratoryRate": {
+      "title": "Fréquence respiratoire",
+      "description": "Votre fréquence respiratoire au fil du temps, en respirations par minute.",
+      "chartTitle": "Fréquence respiratoire",
+      "emptyState": {
+        "title": "Aucune donnée",
+        "description": "Les relevés apparaissent ici dès qu’Apple Health synchronise la respiration du sommeil ou de l’entraînement."
+      }
+    },
+    "navRespiratoryRate": "Fréquence respiratoire",
+    "leanBodyMass": {
+      "title": "Masse maigre corporelle",
+      "description": "Votre masse maigre corporelle au fil du temps, en kilogrammes.",
+      "chartTitle": "Masse maigre corporelle",
+      "emptyState": {
+        "title": "Aucune donnée",
+        "description": "Les relevés apparaissent ici dès qu’une balance à impédance se synchronise."
+      }
+    },
+    "navLeanBodyMass": "Masse maigre corporelle",
+    "walkingHeartRateAverage": {
+      "title": "Pouls en marchant",
+      "description": "Votre fréquence cardiaque moyenne en marchant, en bpm.",
+      "chartTitle": "Pouls moyen en marchant",
+      "emptyState": {
+        "title": "Aucune donnée",
+        "description": "Les relevés apparaissent ici dès qu’Apple Health se synchronise."
+      }
+    },
+    "navWalkingHeartRateAverage": "Pouls en marchant",
+    "walkingAsymmetry": {
+      "title": "Asymétrie de la marche",
+      "description": "Votre asymétrie de marche au fil du temps, en pourcentage.",
+      "chartTitle": "Asymétrie de la marche",
+      "emptyState": {
+        "title": "Aucune donnée",
+        "description": "Les relevés apparaissent ici dès qu’Apple Health se synchronise."
+      }
+    },
+    "navWalkingAsymmetry": "Asymétrie de marche",
+    "walkingDoubleSupport": {
+      "title": "Temps de double appui",
+      "description": "Le pourcentage de chaque foulée avec les deux pieds au sol.",
+      "chartTitle": "Temps de double appui",
+      "emptyState": {
+        "title": "Aucune donnée",
+        "description": "Les relevés apparaissent ici dès qu’Apple Health se synchronise."
+      }
+    },
+    "navWalkingDoubleSupport": "Double appui",
+    "walkingStepLength": {
+      "title": "Longueur de pas",
+      "description": "Votre longueur de pas moyenne au fil du temps, en mètres.",
+      "chartTitle": "Longueur de pas",
+      "emptyState": {
+        "title": "Aucune donnée",
+        "description": "Les relevés apparaissent ici dès qu’Apple Health se synchronise."
+      }
+    },
+    "navWalkingStepLength": "Longueur de pas",
+    "walkingSpeed": {
+      "title": "Vitesse de marche",
+      "description": "Votre vitesse de marche moyenne au fil du temps, en km/h.",
+      "chartTitle": "Vitesse de marche (km/h)",
+      "emptyState": {
+        "title": "Aucune donnée",
+        "description": "Les relevés apparaissent ici dès qu’Apple Health se synchronise."
+      }
+    },
+    "navWalkingSpeed": "Vitesse de marche"
   },
   "thresholds": {
     "defaultLabel": "Par défaut",

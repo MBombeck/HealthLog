@@ -1754,6 +1754,30 @@
       "vitalsParent": {
         "label": "Vitalwerte",
         "header": "Vital-Werte"
+      },
+      "bodyParent": {
+        "label": "Körper",
+        "header": "Körperzusammensetzung"
+      },
+      "activityParent": {
+        "label": "Aktivität",
+        "header": "Aktivität & Mobilität"
+      },
+      "cardiovascularParent": {
+        "label": "Herz-Kreislauf",
+        "header": "Herz-Kreislauf-Marker"
+      },
+      "hearingParent": {
+        "label": "Gehör",
+        "header": "Gehör & Lärmbelastung"
+      },
+      "environmentParent": {
+        "label": "Umwelt",
+        "header": "Umwelt"
+      },
+      "metabolicParent": {
+        "label": "Stoffwechsel",
+        "header": "Stoffwechsel"
       }
     },
     "hrv": {
@@ -1956,7 +1980,247 @@
         "mixedCardio": "Mixed Cardio",
         "other": "Sonstiges"
       }
-    }
+    },
+    "bloodGlucose": {
+      "title": "Blutzucker",
+      "description": "Deine Blutzuckerwerte im Zeitverlauf, in mg/dL.",
+      "chartTitle": "Blutzucker",
+      "emptyState": {
+        "title": "Noch keine Glukosedaten",
+        "description": "Blutzuckerwerte erscheinen hier, sobald du einen erfasst oder ein Gerät synchronisiert."
+      }
+    },
+    "navBloodGlucose": "Glukose",
+    "totalBodyWater": {
+      "title": "Gesamtkörperwasser",
+      "description": "Dein Gesamtkörperwasser im Zeitverlauf, in Kilogramm.",
+      "chartTitle": "Gesamtkörperwasser",
+      "emptyState": {
+        "title": "Noch keine Körperwasserdaten",
+        "description": "Körperwasserwerte erscheinen hier, sobald eine Körperanalysewaage synchronisiert."
+      }
+    },
+    "navTotalBodyWater": "Körperwasser",
+    "boneMass": {
+      "title": "Knochenmasse",
+      "description": "Deine Knochenmasse im Zeitverlauf, in Kilogramm.",
+      "chartTitle": "Knochenmasse",
+      "emptyState": {
+        "title": "Noch keine Knochenmassedaten",
+        "description": "Knochenmassewerte erscheinen hier, sobald eine Körperanalysewaage synchronisiert."
+      }
+    },
+    "navBoneMass": "Knochenmasse",
+    "flightsClimbed": {
+      "title": "Treppen",
+      "description": "Stockwerke, die du jeden Tag erklommen hast.",
+      "chartTitle": "Treppen pro Tag",
+      "emptyState": {
+        "title": "Noch keine Treppendaten",
+        "description": "Treppenwerte erscheinen hier, sobald Apple Health einen Tag synchronisiert."
+      }
+    },
+    "navFlightsClimbed": "Treppen",
+    "walkingRunningDistance": {
+      "title": "Geh- + Laufstrecke",
+      "description": "Geh- und Laufstrecke pro Tag, in Kilometern.",
+      "chartTitle": "Strecke pro Tag",
+      "emptyState": {
+        "title": "Noch keine Streckendaten",
+        "description": "Tagesstrecke erscheint hier, sobald Apple Health einen Tag synchronisiert."
+      }
+    },
+    "navWalkingRunningDistance": "Strecke",
+    "fatFreeMass": {
+      "title": "Fettfreie Masse",
+      "description": "Deine fettfreie Masse im Zeitverlauf, in Kilogramm.",
+      "chartTitle": "Fettfreie Masse",
+      "emptyState": {
+        "title": "Noch keine Daten zur fettfreien Masse",
+        "description": "Werte erscheinen hier, sobald eine Körperanalysewaage synchronisiert."
+      }
+    },
+    "navFatFreeMass": "Fettfreie Masse",
+    "fatMass": {
+      "title": "Fettmasse",
+      "description": "Deine Fettmasse im Zeitverlauf, in Kilogramm.",
+      "chartTitle": "Fettmasse",
+      "emptyState": {
+        "title": "Noch keine Fettmassedaten",
+        "description": "Fettmassewerte erscheinen hier, sobald eine Körperanalysewaage synchronisiert."
+      }
+    },
+    "navFatMass": "Fettmasse",
+    "muscleMass": {
+      "title": "Muskelmasse",
+      "description": "Deine Muskelmasse im Zeitverlauf, in Kilogramm.",
+      "chartTitle": "Muskelmasse",
+      "emptyState": {
+        "title": "Noch keine Muskelmassedaten",
+        "description": "Muskelmassewerte erscheinen hier, sobald eine Körperanalysewaage synchronisiert."
+      }
+    },
+    "navMuscleMass": "Muskelmasse",
+    "skinTemperature": {
+      "title": "Hauttemperatur",
+      "description": "Deine Handgelenk-Hauttemperatur im Zeitverlauf, in Grad Celsius.",
+      "chartTitle": "Hauttemperatur",
+      "emptyState": {
+        "title": "Noch keine Hauttemperaturdaten",
+        "description": "Werte erscheinen hier, sobald ein Wearable die nächtliche Temperatur synchronisiert."
+      }
+    },
+    "navSkinTemperature": "Hauttemperatur",
+    "pulseWaveVelocity": {
+      "title": "Pulswellengeschwindigkeit",
+      "description": "Deine arterielle Pulswellengeschwindigkeit im Zeitverlauf, in m/s — höhere Werte deuten auf steifere Arterien hin.",
+      "chartTitle": "Pulswellengeschwindigkeit",
+      "emptyState": {
+        "title": "Noch keine Daten",
+        "description": "Werte erscheinen hier, sobald ein kompatibles Withings-Gerät synchronisiert."
+      }
+    },
+    "navPulseWaveVelocity": "Pulswellengeschwindigkeit",
+    "vascularAge": {
+      "title": "Gefäßalter",
+      "description": "Dein geschätztes Gefäßalter im Zeitverlauf, in Jahren.",
+      "chartTitle": "Gefäßalter",
+      "emptyState": {
+        "title": "Noch keine Gefäßalterdaten",
+        "description": "Schätzungen erscheinen hier, sobald ein kompatibles Withings-Gerät synchronisiert."
+      }
+    },
+    "navVascularAge": "Gefäßalter",
+    "visceralFat": {
+      "title": "Viszeralfett",
+      "description": "Dein Viszeralfett-Index im Zeitverlauf.",
+      "chartTitle": "Viszeralfett",
+      "emptyState": {
+        "title": "Noch keine Viszeralfettdaten",
+        "description": "Werte erscheinen hier, sobald eine kompatible Körperanalysewaage synchronisiert."
+      }
+    },
+    "navVisceralFat": "Viszeralfett",
+    "audioExposureEnv": {
+      "title": "Umgebungslärm",
+      "description": "Dein täglicher mittlerer Umgebungs-Geräuschpegel, in dBA.",
+      "chartTitle": "Umgebungs-Geräuschpegel",
+      "emptyState": {
+        "title": "Noch keine Umgebungslärmdaten",
+        "description": "Pegelwerte erscheinen hier, sobald Apple Health synchronisiert."
+      }
+    },
+    "navAudioExposureEnv": "Umgebungslärm",
+    "audioExposureHeadphone": {
+      "title": "Kopfhörerpegel",
+      "description": "Dein täglicher mittlerer Kopfhörerpegel, in dBA.",
+      "chartTitle": "Kopfhörer-Lautstärke",
+      "emptyState": {
+        "title": "Noch keine Kopfhörerdaten",
+        "description": "Pegelwerte erscheinen hier, sobald Apple Health synchronisiert."
+      }
+    },
+    "navAudioExposureHeadphone": "Kopfhörerpegel",
+    "timeInDaylight": {
+      "title": "Zeit im Tageslicht",
+      "description": "Minuten im Tageslicht pro Tag.",
+      "chartTitle": "Tageslicht pro Tag",
+      "emptyState": {
+        "title": "Noch keine Tageslichtdaten",
+        "description": "Tageslichtwerte erscheinen hier, sobald Apple Health einen Tag synchronisiert."
+      }
+    },
+    "navTimeInDaylight": "Tageslicht",
+    "walkingSteadiness": {
+      "title": "Gangstabilität",
+      "description": "Deine Gangstabilität im Zeitverlauf, in Prozent.",
+      "chartTitle": "Gangstabilität",
+      "emptyState": {
+        "title": "Noch keine Gangstabilitätsdaten",
+        "description": "Werte erscheinen hier, sobald Apple Health synchronisiert."
+      }
+    },
+    "navWalkingSteadiness": "Gangstabilität",
+    "audioExposureEvent": {
+      "title": "Laute Lärmereignisse",
+      "description": "Tage mit einem lauten Umgebungsereignis.",
+      "chartTitle": "Lärmereignisse pro Tag",
+      "emptyState": {
+        "title": "Noch keine Lärmereignisdaten",
+        "description": "Lärmereignisse erscheinen hier, sobald Apple Health synchronisiert."
+      }
+    },
+    "navAudioExposureEvent": "Lärmereignisse",
+    "respiratoryRate": {
+      "title": "Atemfrequenz",
+      "description": "Deine Atemfrequenz im Zeitverlauf, in Atemzügen pro Minute.",
+      "chartTitle": "Atemfrequenz",
+      "emptyState": {
+        "title": "Noch keine Atemfrequenzdaten",
+        "description": "Werte erscheinen hier, sobald Apple Health Schlaf- oder Trainingsatmung synchronisiert."
+      }
+    },
+    "navRespiratoryRate": "Atemfrequenz",
+    "leanBodyMass": {
+      "title": "Magermasse",
+      "description": "Deine Magermasse im Zeitverlauf, in Kilogramm.",
+      "chartTitle": "Magermasse",
+      "emptyState": {
+        "title": "Noch keine Magermassedaten",
+        "description": "Werte erscheinen hier, sobald eine Körperanalysewaage synchronisiert."
+      }
+    },
+    "navLeanBodyMass": "Magermasse",
+    "walkingHeartRateAverage": {
+      "title": "Geh-Puls",
+      "description": "Dein durchschnittlicher Puls beim Gehen, in bpm.",
+      "chartTitle": "Durchschnittlicher Geh-Puls",
+      "emptyState": {
+        "title": "Noch keine Geh-Puls-Daten",
+        "description": "Werte erscheinen hier, sobald Apple Health synchronisiert."
+      }
+    },
+    "navWalkingHeartRateAverage": "Geh-Puls",
+    "walkingAsymmetry": {
+      "title": "Gangasymmetrie",
+      "description": "Deine Gangasymmetrie im Zeitverlauf, in Prozent.",
+      "chartTitle": "Gangasymmetrie",
+      "emptyState": {
+        "title": "Noch keine Gangasymmetriedaten",
+        "description": "Werte erscheinen hier, sobald Apple Health synchronisiert."
+      }
+    },
+    "navWalkingAsymmetry": "Gangasymmetrie",
+    "walkingDoubleSupport": {
+      "title": "Doppelstandphase",
+      "description": "Der Anteil jedes Schritts mit beiden Füßen am Boden, in Prozent.",
+      "chartTitle": "Doppelstandphase",
+      "emptyState": {
+        "title": "Noch keine Doppelstanddaten",
+        "description": "Werte erscheinen hier, sobald Apple Health synchronisiert."
+      }
+    },
+    "navWalkingDoubleSupport": "Doppelstandphase",
+    "walkingStepLength": {
+      "title": "Schrittlänge",
+      "description": "Deine durchschnittliche Schrittlänge im Zeitverlauf, in Metern.",
+      "chartTitle": "Schrittlänge",
+      "emptyState": {
+        "title": "Noch keine Schrittlängendaten",
+        "description": "Werte erscheinen hier, sobald Apple Health synchronisiert."
+      }
+    },
+    "navWalkingStepLength": "Schrittlänge",
+    "walkingSpeed": {
+      "title": "Gehgeschwindigkeit",
+      "description": "Deine durchschnittliche Gehgeschwindigkeit im Zeitverlauf, in km/h.",
+      "chartTitle": "Gehgeschwindigkeit (km/h)",
+      "emptyState": {
+        "title": "Noch keine Gehgeschwindigkeitsdaten",
+        "description": "Werte erscheinen hier, sobald Apple Health synchronisiert."
+      }
+    },
+    "navWalkingSpeed": "Gehgeschwindigkeit"
   },
   "thresholds": {
     "defaultLabel": "Default",

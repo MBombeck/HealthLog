@@ -129,9 +129,32 @@ const SUB_PAGE_TABS: Record<
     labelKey: "insights.navBodyTemperature",
     metric: "BODY_TEMPERATURE",
   },
+  atemfrequenz: {
+    labelKey: "insights.navRespiratoryRate",
+    metric: "RESPIRATORY_RATE",
+  },
   // ── body composition ──
   gewicht: { labelKey: "insights.navWeight", metric: "WEIGHT" },
   bmi: { labelKey: "insights.navBmi", metric: "BMI" },
+  koerperwasser: {
+    labelKey: "insights.navTotalBodyWater",
+    metric: "TOTAL_BODY_WATER",
+  },
+  knochenmasse: { labelKey: "insights.navBoneMass", metric: "BONE_MASS" },
+  "fettfreie-masse": {
+    labelKey: "insights.navFatFreeMass",
+    metric: "FAT_FREE_MASS",
+  },
+  fettmasse: { labelKey: "insights.navFatMass", metric: "FAT_MASS" },
+  muskelmasse: { labelKey: "insights.navMuscleMass", metric: "MUSCLE_MASS" },
+  viszeralfett: {
+    labelKey: "insights.navVisceralFat",
+    metric: "VISCERAL_FAT",
+  },
+  magermasse: {
+    labelKey: "insights.navLeanBodyMass",
+    metric: "LEAN_BODY_MASS",
+  },
   // ── activity ──
   "aktive-energie": {
     labelKey: "insights.navActiveEnergy",
@@ -141,6 +164,38 @@ const SUB_PAGE_TABS: Record<
   // availability helper reads `inputs.hasWorkouts` rather than a
   // `summaries[…].count`.
   workouts: { labelKey: "insights.navWorkouts", metric: "WORKOUTS" },
+  stockwerke: {
+    labelKey: "insights.navFlightsClimbed",
+    metric: "FLIGHTS_CLIMBED",
+  },
+  gehstrecke: {
+    labelKey: "insights.navWalkingRunningDistance",
+    metric: "WALKING_RUNNING_DISTANCE",
+  },
+  gangstabilitaet: {
+    labelKey: "insights.navWalkingSteadiness",
+    metric: "WALKING_STEADINESS",
+  },
+  gehpuls: {
+    labelKey: "insights.navWalkingHeartRateAverage",
+    metric: "WALKING_HEART_RATE_AVERAGE",
+  },
+  gangasymmetrie: {
+    labelKey: "insights.navWalkingAsymmetry",
+    metric: "WALKING_ASYMMETRY",
+  },
+  doppelstandphase: {
+    labelKey: "insights.navWalkingDoubleSupport",
+    metric: "WALKING_DOUBLE_SUPPORT",
+  },
+  schrittlaenge: {
+    labelKey: "insights.navWalkingStepLength",
+    metric: "WALKING_STEP_LENGTH",
+  },
+  gehgeschwindigkeit: {
+    labelKey: "insights.navWalkingSpeed",
+    metric: "WALKING_SPEED",
+  },
   // ── sleep ──
   schlaf: { labelKey: "insights.navSleep", metric: "SLEEP_DURATION" },
   // ── cardiovascular ──
@@ -149,6 +204,41 @@ const SUB_PAGE_TABS: Record<
     metric: "RESTING_HEART_RATE",
   },
   hrv: { labelKey: "insights.navHrv", metric: "HEART_RATE_VARIABILITY" },
+  pulswellengeschwindigkeit: {
+    labelKey: "insights.navPulseWaveVelocity",
+    metric: "PULSE_WAVE_VELOCITY",
+  },
+  gefaessalter: {
+    labelKey: "insights.navVascularAge",
+    metric: "VASCULAR_AGE",
+  },
+  // ── hearing ──
+  laermbelastung: {
+    labelKey: "insights.navAudioExposureEnv",
+    metric: "AUDIO_EXPOSURE_ENV",
+  },
+  kopfhoererpegel: {
+    labelKey: "insights.navAudioExposureHeadphone",
+    metric: "AUDIO_EXPOSURE_HEADPHONE",
+  },
+  laermereignisse: {
+    labelKey: "insights.navAudioExposureEvent",
+    metric: "AUDIO_EXPOSURE_EVENT",
+  },
+  // ── environment ──
+  tageslicht: {
+    labelKey: "insights.navTimeInDaylight",
+    metric: "TIME_IN_DAYLIGHT",
+  },
+  // ── metabolic ──
+  blutzucker: {
+    labelKey: "insights.navBloodGlucose",
+    metric: "BLOOD_GLUCOSE",
+  },
+  hauttemperatur: {
+    labelKey: "insights.navSkinTemperature",
+    metric: "SKIN_TEMPERATURE",
+  },
   // ── mood ──
   stimmung: { labelKey: "insights.navMood", metric: "MOOD" },
   // ── events ──
@@ -157,8 +247,11 @@ const SUB_PAGE_TABS: Record<
 
 /**
  * v1.4.34 IW-D — group metadata (label + popover header) keyed by
- * `SubPageGroup`. The strip renders one parent pill per group; the
- * five wave-A HealthKit pills are the only group today.
+ * `SubPageGroup`. The strip renders one parent pill per group. v1.7.0
+ * adds the body / activity / cardiovascular / hearing / environment /
+ * metabolic clusters as the previously-orphan metrics each get a
+ * sub-page; collapsing them behind a parent pill keeps the strip
+ * scannable.
  */
 const SUB_PAGE_GROUP_META: Record<
   SubPageGroup,
@@ -167,6 +260,30 @@ const SUB_PAGE_GROUP_META: Record<
   vitals: {
     labelKey: "insights.tabStrip.vitalsParent.label",
     headerKey: "insights.tabStrip.vitalsParent.header",
+  },
+  body: {
+    labelKey: "insights.tabStrip.bodyParent.label",
+    headerKey: "insights.tabStrip.bodyParent.header",
+  },
+  activity: {
+    labelKey: "insights.tabStrip.activityParent.label",
+    headerKey: "insights.tabStrip.activityParent.header",
+  },
+  cardiovascular: {
+    labelKey: "insights.tabStrip.cardiovascularParent.label",
+    headerKey: "insights.tabStrip.cardiovascularParent.header",
+  },
+  hearing: {
+    labelKey: "insights.tabStrip.hearingParent.label",
+    headerKey: "insights.tabStrip.hearingParent.header",
+  },
+  environment: {
+    labelKey: "insights.tabStrip.environmentParent.label",
+    headerKey: "insights.tabStrip.environmentParent.header",
+  },
+  metabolic: {
+    labelKey: "insights.tabStrip.metabolicParent.label",
+    headerKey: "insights.tabStrip.metabolicParent.header",
   },
 };
 

@@ -46,21 +46,52 @@ const SUB_PAGE_METRIC = {
   puls: ["PULSE"],
   sauerstoff: ["OXYGEN_SATURATION"],
   koerpertemperatur: ["BODY_TEMPERATURE"],
+  // v1.7.0 — respiratory rate joins the vitals cluster.
+  atemfrequenz: ["RESPIRATORY_RATE"],
   // ── body composition ──
   gewicht: ["WEIGHT"],
   // BMI is derived from WEIGHT + profile height (no separate series).
   bmi: ["WEIGHT"],
+  // v1.7.0 — Withings / Apple body-composition tail.
+  koerperwasser: ["TOTAL_BODY_WATER"],
+  knochenmasse: ["BONE_MASS"],
+  "fettfreie-masse": ["FAT_FREE_MASS"],
+  fettmasse: ["FAT_MASS"],
+  muskelmasse: ["MUSCLE_MASS"],
+  viszeralfett: ["VISCERAL_FAT"],
+  magermasse: ["LEAN_BODY_MASS"],
   // ── activity ──
   "aktive-energie": ["ACTIVE_ENERGY_BURNED"],
   // v1.4.32 — workouts surface; the page reads `Workout` rows directly
   // through `useWorkouts()` rather than the `summaries` map, so the
   // metric list stays empty.
   workouts: [],
+  // v1.7.0 — activity + Apple-Health Mobility cluster.
+  stockwerke: ["FLIGHTS_CLIMBED"],
+  gehstrecke: ["WALKING_RUNNING_DISTANCE"],
+  gangstabilitaet: ["WALKING_STEADINESS"],
+  gehpuls: ["WALKING_HEART_RATE_AVERAGE"],
+  gangasymmetrie: ["WALKING_ASYMMETRY"],
+  doppelstandphase: ["WALKING_DOUBLE_SUPPORT"],
+  schrittlaenge: ["WALKING_STEP_LENGTH"],
+  gehgeschwindigkeit: ["WALKING_SPEED"],
   // ── sleep ──
   schlaf: ["SLEEP_DURATION"],
   // ── cardiovascular ──
   ruhepuls: ["RESTING_HEART_RATE"],
   hrv: ["HEART_RATE_VARIABILITY"],
+  // v1.7.0 — Withings cardiovascular risk markers.
+  pulswellengeschwindigkeit: ["PULSE_WAVE_VELOCITY"],
+  gefaessalter: ["VASCULAR_AGE"],
+  // ── hearing (v1.7.0) — audio-exposure cluster ──
+  laermbelastung: ["AUDIO_EXPOSURE_ENV"],
+  kopfhoererpegel: ["AUDIO_EXPOSURE_HEADPHONE"],
+  laermereignisse: ["AUDIO_EXPOSURE_EVENT"],
+  // ── environment (v1.7.0) ──
+  tageslicht: ["TIME_IN_DAYLIGHT"],
+  // ── metabolic (v1.7.0) ──
+  blutzucker: ["BLOOD_GLUCOSE"],
+  hauttemperatur: ["SKIN_TEMPERATURE"],
   // ── mood ──
   stimmung: ["MOOD"],
   // ── events (medication adherence is event-driven; no measurement series) ──
@@ -79,24 +110,80 @@ export const SUB_PAGE_SLUGS = Object.keys(SUB_PAGE_METRIC) as SubPageSlug[];
  * change here plus a matching label key under
  * `insights.tabStrip.<group>Parent.*` in every locale.
  */
-export type SubPageGroup = "vitals";
+// v1.7.0 — the new metric clusters each collapse behind a parent pill
+// so the strip stays scannable as the sub-page count grows. The flat
+// pills (puls, blutdruck, gewicht, bmi, schlaf, stimmung, medikamente,
+// workouts) stay direct entries as before.
+export type SubPageGroup =
+  | "vitals"
+  | "body"
+  | "activity"
+  | "cardiovascular"
+  | "hearing"
+  | "environment"
+  | "metabolic";
 
 export const SUB_PAGE_GROUP: Partial<Record<SubPageSlug, SubPageGroup>> = {
+  // vitals
   hrv: "vitals",
   ruhepuls: "vitals",
   sauerstoff: "vitals",
   koerpertemperatur: "vitals",
   "aktive-energie": "vitals",
+  atemfrequenz: "vitals",
+  // body composition (v1.7.0)
+  koerperwasser: "body",
+  knochenmasse: "body",
+  "fettfreie-masse": "body",
+  fettmasse: "body",
+  muskelmasse: "body",
+  viszeralfett: "body",
+  magermasse: "body",
+  // activity / mobility (v1.7.0)
+  stockwerke: "activity",
+  gehstrecke: "activity",
+  gangstabilitaet: "activity",
+  gehpuls: "activity",
+  gangasymmetrie: "activity",
+  doppelstandphase: "activity",
+  schrittlaenge: "activity",
+  gehgeschwindigkeit: "activity",
+  // cardiovascular (v1.7.0)
+  pulswellengeschwindigkeit: "cardiovascular",
+  gefaessalter: "cardiovascular",
+  // hearing (v1.7.0)
+  laermbelastung: "hearing",
+  kopfhoererpegel: "hearing",
+  laermereignisse: "hearing",
+  // environment (v1.7.0)
+  tageslicht: "environment",
+  // metabolic (v1.7.0)
+  blutzucker: "metabolic",
+  hauttemperatur: "metabolic",
 };
 
 /**
  * v1.4.34 IW-D — canonical order of the sub-pages inside each parent
- * popover. The strip iterates `SUB_PAGE_SLUGS`, so a vitals member's
- * position in the popover follows its position in that array.
+ * popover. The strip iterates `SUB_PAGE_SLUGS`, so a member's position
+ * in the popover follows its position in that array.
  */
 export const SUB_PAGE_GROUP_ORDER: Record<SubPageGroup, readonly SubPageSlug[]> =
   {
     vitals: SUB_PAGE_SLUGS.filter((slug) => SUB_PAGE_GROUP[slug] === "vitals"),
+    body: SUB_PAGE_SLUGS.filter((slug) => SUB_PAGE_GROUP[slug] === "body"),
+    activity: SUB_PAGE_SLUGS.filter(
+      (slug) => SUB_PAGE_GROUP[slug] === "activity",
+    ),
+    cardiovascular: SUB_PAGE_SLUGS.filter(
+      (slug) => SUB_PAGE_GROUP[slug] === "cardiovascular",
+    ),
+    hearing: SUB_PAGE_SLUGS.filter((slug) => SUB_PAGE_GROUP[slug] === "hearing"),
+    environment: SUB_PAGE_SLUGS.filter(
+      (slug) => SUB_PAGE_GROUP[slug] === "environment",
+    ),
+    metabolic: SUB_PAGE_SLUGS.filter(
+      (slug) => SUB_PAGE_GROUP[slug] === "metabolic",
+    ),
   };
 
 /**

@@ -139,6 +139,34 @@ export const CHART_OVERLAY_KEYS = [
   "oxygenSaturation",
   "bodyTemperature",
   "activeEnergy",
+  // v1.7.0 — chart-overlay slots for the previously-orphan metric
+  // sub-pages. Each card owns its own slot so the chart-cog popover
+  // persists per metric. Camel-case keys mirror the existing
+  // convention; one per new chart surface.
+  "bloodGlucose",
+  "totalBodyWater",
+  "boneMass",
+  "flightsClimbed",
+  "walkingRunningDistance",
+  "fatFreeMass",
+  "fatMass",
+  "muscleMass",
+  "skinTemperature",
+  "pulseWaveVelocity",
+  "vascularAge",
+  "visceralFat",
+  "audioExposureEnv",
+  "audioExposureHeadphone",
+  "timeInDaylight",
+  "walkingSteadiness",
+  "audioExposureEvent",
+  "respiratoryRate",
+  "leanBodyMass",
+  "walkingHeartRateAverage",
+  "walkingAsymmetry",
+  "walkingDoubleSupport",
+  "walkingStepLength",
+  "walkingSpeed",
 ] as const;
 export type ChartOverlayKey = (typeof CHART_OVERLAY_KEYS)[number];
 

@@ -1754,6 +1754,30 @@
       "vitalsParent": {
         "label": "Witalne",
         "header": "Parametry witalne"
+      },
+      "bodyParent": {
+        "label": "Ciało",
+        "header": "Skład ciała"
+      },
+      "activityParent": {
+        "label": "Aktywność",
+        "header": "Aktywność i mobilność"
+      },
+      "cardiovascularParent": {
+        "label": "Sercowo-naczyniowe",
+        "header": "Markery sercowo-naczyniowe"
+      },
+      "hearingParent": {
+        "label": "Słuch",
+        "header": "Słuch i ekspozycja na dźwięk"
+      },
+      "environmentParent": {
+        "label": "Środowisko",
+        "header": "Środowisko"
+      },
+      "metabolicParent": {
+        "label": "Metaboliczne",
+        "header": "Metaboliczne"
       }
     },
     "hrv": {
@@ -1956,7 +1980,247 @@
         "mixedCardio": "Cardio mieszane",
         "other": "Inne"
       }
-    }
+    },
+    "bloodGlucose": {
+      "title": "Poziom glukozy",
+      "description": "Twoje odczyty glukozy w czasie, w mg/dL.",
+      "chartTitle": "Poziom glukozy",
+      "emptyState": {
+        "title": "Brak danych o glukozie",
+        "description": "Odczyty glukozy pojawią się tutaj po zapisaniu jednego lub synchronizacji urządzenia."
+      }
+    },
+    "navBloodGlucose": "Glukoza",
+    "totalBodyWater": {
+      "title": "Całkowita woda w organizmie",
+      "description": "Twoja całkowita woda w organizmie w czasie, w kilogramach.",
+      "chartTitle": "Całkowita woda w organizmie",
+      "emptyState": {
+        "title": "Brak danych o wodzie",
+        "description": "Odczyty wody pojawią się tutaj po synchronizacji wagi analitycznej."
+      }
+    },
+    "navTotalBodyWater": "Woda w organizmie",
+    "boneMass": {
+      "title": "Masa kostna",
+      "description": "Twoja masa kostna w czasie, w kilogramach.",
+      "chartTitle": "Masa kostna",
+      "emptyState": {
+        "title": "Brak danych o masie kostnej",
+        "description": "Odczyty masy kostnej pojawią się tutaj po synchronizacji wagi analitycznej."
+      }
+    },
+    "navBoneMass": "Masa kostna",
+    "flightsClimbed": {
+      "title": "Pokonane piętra",
+      "description": "Kondygnacje schodów pokonane każdego dnia.",
+      "chartTitle": "Pokonane piętra dziennie",
+      "emptyState": {
+        "title": "Brak danych o piętrach",
+        "description": "Sumy pięter pojawią się tutaj po synchronizacji dnia przez Apple Health."
+      }
+    },
+    "navFlightsClimbed": "Piętra",
+    "walkingRunningDistance": {
+      "title": "Dystans marsz + bieg",
+      "description": "Dystans marszu i biegu pokonany każdego dnia, w kilometrach.",
+      "chartTitle": "Dystans dziennie",
+      "emptyState": {
+        "title": "Brak danych o dystansie",
+        "description": "Dzienny dystans pojawi się tutaj po synchronizacji dnia przez Apple Health."
+      }
+    },
+    "navWalkingRunningDistance": "Dystans",
+    "fatFreeMass": {
+      "title": "Masa beztłuszczowa",
+      "description": "Twoja masa beztłuszczowa w czasie, w kilogramach.",
+      "chartTitle": "Masa beztłuszczowa",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji wagi analitycznej."
+      }
+    },
+    "navFatFreeMass": "Masa beztłuszczowa",
+    "fatMass": {
+      "title": "Masa tłuszczowa",
+      "description": "Twoja masa tłuszczowa w czasie, w kilogramach.",
+      "chartTitle": "Masa tłuszczowa",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji wagi analitycznej."
+      }
+    },
+    "navFatMass": "Masa tłuszczowa",
+    "muscleMass": {
+      "title": "Masa mięśniowa",
+      "description": "Twoja masa mięśniowa w czasie, w kilogramach.",
+      "chartTitle": "Masa mięśniowa",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji wagi analitycznej."
+      }
+    },
+    "navMuscleMass": "Masa mięśniowa",
+    "skinTemperature": {
+      "title": "Temperatura skóry",
+      "description": "Temperatura skóry nadgarstka w czasie, w stopniach Celsjusza.",
+      "chartTitle": "Temperatura skóry",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji nocnej temperatury przez urządzenie."
+      }
+    },
+    "navSkinTemperature": "Temp. skóry",
+    "pulseWaveVelocity": {
+      "title": "Prędkość fali tętna",
+      "description": "Prędkość fali tętna tętniczego w czasie, w m/s — wyższe wartości sugerują sztywniejsze tętnice.",
+      "chartTitle": "Prędkość fali tętna",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji zgodnego urządzenia Withings."
+      }
+    },
+    "navPulseWaveVelocity": "Prędkość fali tętna",
+    "vascularAge": {
+      "title": "Wiek naczyniowy",
+      "description": "Twój szacowany wiek naczyniowy w czasie, w latach.",
+      "chartTitle": "Wiek naczyniowy",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Szacunki pojawią się tutaj po synchronizacji zgodnego urządzenia Withings."
+      }
+    },
+    "navVascularAge": "Wiek naczyniowy",
+    "visceralFat": {
+      "title": "Tłuszcz trzewny",
+      "description": "Twój wskaźnik tłuszczu trzewnego w czasie.",
+      "chartTitle": "Tłuszcz trzewny",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Wskaźniki pojawią się tutaj po synchronizacji zgodnej wagi analitycznej."
+      }
+    },
+    "navVisceralFat": "Tłuszcz trzewny",
+    "audioExposureEnv": {
+      "title": "Hałas otoczenia",
+      "description": "Twoja średnia dzienna ekspozycja na dźwięk otoczenia, w dBA.",
+      "chartTitle": "Ekspozycja na dźwięk otoczenia",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Poziomy dźwięku pojawią się tutaj po synchronizacji Apple Health."
+      }
+    },
+    "navAudioExposureEnv": "Hałas otoczenia",
+    "audioExposureHeadphone": {
+      "title": "Dźwięk słuchawek",
+      "description": "Twoja średnia dzienna ekspozycja na dźwięk słuchawek, w dBA.",
+      "chartTitle": "Ekspozycja słuchawek",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Poziomy pojawią się tutaj po synchronizacji Apple Health."
+      }
+    },
+    "navAudioExposureHeadphone": "Dźwięk słuchawek",
+    "timeInDaylight": {
+      "title": "Czas w świetle dziennym",
+      "description": "Minuty spędzone w świetle dziennym każdego dnia.",
+      "chartTitle": "Światło dzienne dziennie",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Sumy pojawią się tutaj po synchronizacji dnia przez Apple Health."
+      }
+    },
+    "navTimeInDaylight": "Światło dzienne",
+    "walkingSteadiness": {
+      "title": "Stabilność chodu",
+      "description": "Twoja stabilność chodu w czasie, w procentach.",
+      "chartTitle": "Stabilność chodu",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji Apple Health."
+      }
+    },
+    "navWalkingSteadiness": "Stabilność chodu",
+    "audioExposureEvent": {
+      "title": "Głośne zdarzenia dźwiękowe",
+      "description": "Dni ze zdarzeniem ekspozycji na głośny hałas.",
+      "chartTitle": "Zdarzenia hałasu dziennie",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Zdarzenia pojawią się tutaj po synchronizacji Apple Health."
+      }
+    },
+    "navAudioExposureEvent": "Zdarzenia hałasu",
+    "respiratoryRate": {
+      "title": "Częstość oddechów",
+      "description": "Twoja częstość oddechów w czasie, w oddechach na minutę.",
+      "chartTitle": "Częstość oddechów",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji oddechu snu lub treningu przez Apple Health."
+      }
+    },
+    "navRespiratoryRate": "Częstość oddechów",
+    "leanBodyMass": {
+      "title": "Beztłuszczowa masa ciała",
+      "description": "Twoja beztłuszczowa masa ciała w czasie, w kilogramach.",
+      "chartTitle": "Beztłuszczowa masa ciała",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji wagi analitycznej."
+      }
+    },
+    "navLeanBodyMass": "Beztłuszczowa masa ciała",
+    "walkingHeartRateAverage": {
+      "title": "Tętno podczas chodu",
+      "description": "Twoje średnie tętno podczas chodzenia, w ud./min.",
+      "chartTitle": "Średnie tętno podczas chodu",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji Apple Health."
+      }
+    },
+    "navWalkingHeartRateAverage": "Tętno podczas chodu",
+    "walkingAsymmetry": {
+      "title": "Asymetria chodu",
+      "description": "Twoja asymetria chodu w czasie, w procentach.",
+      "chartTitle": "Asymetria chodu",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji Apple Health."
+      }
+    },
+    "navWalkingAsymmetry": "Asymetria chodu",
+    "walkingDoubleSupport": {
+      "title": "Czas podwójnego podparcia",
+      "description": "Odsetek każdego kroku z obiema stopami na ziemi.",
+      "chartTitle": "Czas podwójnego podparcia",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji Apple Health."
+      }
+    },
+    "navWalkingDoubleSupport": "Podwójne podparcie",
+    "walkingStepLength": {
+      "title": "Długość kroku",
+      "description": "Twoja średnia długość kroku w czasie, w metrach.",
+      "chartTitle": "Długość kroku",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji Apple Health."
+      }
+    },
+    "navWalkingStepLength": "Długość kroku",
+    "walkingSpeed": {
+      "title": "Prędkość chodu",
+      "description": "Twoja średnia prędkość chodu w czasie, w km/h.",
+      "chartTitle": "Prędkość chodu (km/h)",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji Apple Health."
+      }
+    },
+    "navWalkingSpeed": "Prędkość chodu"
   },
   "thresholds": {
     "defaultLabel": "Domyślne",
