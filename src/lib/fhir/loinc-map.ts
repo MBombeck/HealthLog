@@ -42,7 +42,7 @@ export const MEASUREMENT_LOINC: Record<string, LoincMapping> = {
   },
   BODY_MASS_INDEX: {
     loinc: "39156-5",
-    display: "Body mass index (BMI)",
+    display: "Body mass index (BMI) [Ratio]",
     unit: "kg/m2",
     category: "vital-signs",
   },
@@ -54,7 +54,7 @@ export const MEASUREMENT_LOINC: Record<string, LoincMapping> = {
   },
   RESTING_HEART_RATE: {
     loinc: "40443-4",
-    display: "Resting heart rate",
+    display: "Heart rate --resting",
     unit: "/min",
     category: "vital-signs",
   },
@@ -71,8 +71,8 @@ export const MEASUREMENT_LOINC: Record<string, LoincMapping> = {
     category: "vital-signs",
   },
   OXYGEN_SATURATION: {
-    loinc: "2708-6",
-    display: "Oxygen saturation in Arterial blood",
+    loinc: "59408-5",
+    display: "Oxygen saturation in Arterial blood by Pulse oximetry",
     unit: "%",
     category: "vital-signs",
   },
@@ -83,8 +83,8 @@ export const MEASUREMENT_LOINC: Record<string, LoincMapping> = {
     category: "vital-signs",
   },
   VO2_MAX: {
-    loinc: "84478-5",
-    display: "Maximal oxygen uptake",
+    loinc: "96402-2",
+    display: "Oxygen consumption maximum during exercise",
     unit: "mL/min/kg",
     category: "vital-signs",
   },
@@ -97,27 +97,93 @@ export const MEASUREMENT_LOINC: Record<string, LoincMapping> = {
   ACTIVITY_STEPS: {
     loinc: "41950-7",
     display: "Number of steps in 24 hour Measured",
-    unit: "/d",
+    unit: "{steps}",
     category: "activity",
   },
+  // Stored canonically in MINUTES; the builder converts the emitted value to
+  // hours so it matches the UCUM `h` unit (and the iOS table). PDF unaffected.
   SLEEP_DURATION: {
     loinc: "93832-4",
     display: "Sleep duration",
-    unit: "min",
+    unit: "h",
     category: "activity",
   },
-  // Body-composition family without a stable LOINC — local text + UCUM.
+  ACTIVE_ENERGY_BURNED: {
+    loinc: "41981-2",
+    display: "Calories burned",
+    unit: "kcal",
+    category: "activity",
+  },
+  WALKING_SPEED: {
+    loinc: "41957-2",
+    display: "Gait speed [Velocity] Measured",
+    unit: "m/s",
+    category: "vital-signs",
+  },
+  WALKING_ASYMMETRY: {
+    loinc: "91557-1",
+    display: "Walking asymmetry percentage",
+    unit: "%",
+    category: "vital-signs",
+  },
+  WALKING_STEP_LENGTH: {
+    loinc: "41955-6",
+    display: "Step length Measured",
+    unit: "m",
+    category: "vital-signs",
+  },
+  // Body-composition family with iOS-locked LOINC codes.
   TOTAL_BODY_WATER: {
-    loinc: null,
-    display: "Total body water",
+    loinc: "73704-9",
+    display: "Body water by Bioelectrical impedance analysis",
     unit: "kg",
     category: "vital-signs",
   },
   BONE_MASS: {
-    loinc: null,
-    display: "Bone mass",
+    loinc: "73708-0",
+    display: "Bone mineral content by DXA",
     unit: "kg",
     category: "vital-signs",
+  },
+  // HK-placeholder codes — no published LOINC term. iOS emits the HealthKit
+  // identifier STRING as the `code` (in the LOINC system slot); the server
+  // must emit the identical placeholder, not invent a LOINC. The `loinc`
+  // field below carries that placeholder string verbatim.
+  WALKING_DOUBLE_SUPPORT: {
+    loinc: "HKQuantityTypeIdentifierWalkingDoubleSupportPercentage",
+    display: "Walking double support percentage",
+    unit: "%",
+    category: "vital-signs",
+  },
+  AUDIO_EXPOSURE_ENV: {
+    loinc: "HKQuantityTypeIdentifierEnvironmentalAudioExposure",
+    display: "Environmental audio exposure",
+    unit: "dB[A]",
+    category: "vital-signs",
+  },
+  AUDIO_EXPOSURE_HEADPHONE: {
+    loinc: "HKQuantityTypeIdentifierHeadphoneAudioExposure",
+    display: "Headphone audio exposure",
+    unit: "dB[A]",
+    category: "vital-signs",
+  },
+  FLIGHTS_CLIMBED: {
+    loinc: "HKQuantityTypeIdentifierFlightsClimbed",
+    display: "Flights climbed",
+    unit: "{flights}",
+    category: "activity",
+  },
+  WALKING_RUNNING_DISTANCE: {
+    loinc: "HKQuantityTypeIdentifierDistanceWalkingRunning",
+    display: "Distance walking/running",
+    unit: "m",
+    category: "activity",
+  },
+  TIME_IN_DAYLIGHT: {
+    loinc: "HKQuantityTypeIdentifierTimeInDaylight",
+    display: "Time in daylight",
+    unit: "min",
+    category: "activity",
   },
   MUSCLE_MASS: {
     loinc: null,
@@ -157,11 +223,25 @@ export const BP_SYS_LOINC = "8480-6";
 export const BP_DIA_LOINC = "8462-4";
 export const BP_UNIT = "mm[Hg]";
 
-/** Per-context glucose LOINC. Generic glucose 2339-0; fasting 1558-6. */
+/**
+ * Per-context glucose LOINC, byte-aligned to the iOS table:
+ * - random / unspecified / bedtime → 2339-0 (Glucose in Blood)
+ * - fasting / beforeMeal           → 1558-6 (Fasting glucose in Serum/Plasma)
+ * - afterMeal (POSTPRANDIAL)        → 1521-4 (Glucose in Serum/Plasma 2h post meal)
+ *
+ * The server's `GlucoseContext` enum has no separate beforeMeal/afterMeal; its
+ * POSTPRANDIAL value is the afterMeal case and maps to 1521-4.
+ */
 export const GLUCOSE_LOINC: Record<string, { loinc: string; display: string }> =
   {
-    FASTING: { loinc: "1558-6", display: "Fasting glucose [Mass/volume]" },
-    POSTPRANDIAL: { loinc: "2339-0", display: "Glucose [Mass/volume] in Blood" },
+    FASTING: {
+      loinc: "1558-6",
+      display: "Fasting glucose [Mass/volume] in Serum or Plasma",
+    },
+    POSTPRANDIAL: {
+      loinc: "1521-4",
+      display: "Glucose [Mass/volume] in Serum or Plasma --2 hours post meal",
+    },
     RANDOM: { loinc: "2339-0", display: "Glucose [Mass/volume] in Blood" },
     BEDTIME: { loinc: "2339-0", display: "Glucose [Mass/volume] in Blood" },
   };

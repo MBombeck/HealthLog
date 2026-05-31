@@ -96,6 +96,16 @@ export interface FhirMedicationStatement {
   dosage?: FhirDosage[];
 }
 
+export interface FhirDiagnosticReport {
+  resourceType: "DiagnosticReport";
+  id: string;
+  status: "final";
+  code: FhirCodeableConcept;
+  subject: FhirReference;
+  effectivePeriod?: FhirPeriod;
+  result?: FhirReference[];
+}
+
 export interface FhirCompositionSection {
   title: string;
   code?: FhirCodeableConcept;
@@ -119,7 +129,8 @@ export type FhirResource =
   | FhirComposition
   | FhirPatient
   | FhirObservation
-  | FhirMedicationStatement;
+  | FhirMedicationStatement
+  | FhirDiagnosticReport;
 
 export interface FhirBundleEntry {
   fullUrl?: string;

@@ -40,6 +40,7 @@ import type {
   FhirMedicationStatement,
   FhirPatient,
   FhirComposition,
+  FhirDiagnosticReport,
   FhirReference,
   FhirResource,
 } from "@/lib/fhir/types";
@@ -141,9 +142,19 @@ export function buildFhirDocumentBundle(
   const glucoseUnit = resolveGlucoseUnit(data.glucoseUnit ?? null);
 
   for (const [type, mapping] of Object.entries(MEASUREMENT_LOINC)) {
-    // BP is emitted as a panel below; skip the single-value path.
+    // BMI is emitted once by the computed-BMI block below (matching the PDF's
+    // BMI line); skip the stored BODY_MASS_INDEX series here to avoid a
+    // duplicate Observation.
+    if (type === "BODY_MASS_INDEX") continue;
     const reading = latestReading(data, type);
     if (!reading) continue;
+    // SLEEP_DURATION is stored in MINUTES; the iOS-locked UCUM unit is `h`, so
+    // emit the value in hours to keep value and unit consistent. The PDF reads
+    // the raw series independently and is unaffected.
+    const value =
+      type === "SLEEP_DURATION"
+        ? Math.round((reading.value / 60) * 100) / 100
+        : reading.value;
     obsSeq += 1;
     pushObservation({
       resourceType: "Observation",
@@ -154,7 +165,7 @@ export function buildFhirDocumentBundle(
       subject: patientRef,
       effectiveDateTime: reading.measuredAt,
       valueQuantity: {
-        value: reading.value,
+        value,
         unit: mapping.unit,
         system: UCUM_SYSTEM,
         code: mapping.unit,
@@ -226,9 +237,13 @@ export function buildFhirDocumentBundle(
       category: [categoryConcept("vital-signs")],
       code: {
         coding: [
-          { system: LOINC_SYSTEM, code: "39156-5", display: "Body mass index" },
+          {
+            system: LOINC_SYSTEM,
+            code: "39156-5",
+            display: "Body mass index (BMI) [Ratio]",
+          },
         ],
-        text: "Body mass index (BMI)",
+        text: "Body mass index (BMI) [Ratio]",
       },
       subject: patientRef,
       effectiveDateTime: data.period.end,
@@ -359,26 +374,53 @@ export function buildFhirDocumentBundle(
     title: "Health Record",
     section: [
       {
-        title: "Patient",
+        // Vital-signs section carries the narrative + every Observation ref,
+        // matching the iOS Bundle graph ("Vital signs" + "Medications").
+        title: "Vital signs",
         text: { status: "generated", div: `<div xmlns="http://www.w3.org/1999/xhtml">${escapeXml(narrativeText)}</div>` },
-        entry: [patientRef],
+        entry: [patientRef, ...observationRefs],
       },
-      ...(observationRefs.length > 0
-        ? [{ title: "Observations", entry: observationRefs }]
-        : []),
       ...(medicationRefs.length > 0
         ? [{ title: "Medications", entry: medicationRefs }]
         : []),
     ],
   };
 
-  // The Composition must be the FIRST entry in a document Bundle.
+  // --- DiagnosticReport (vital-signs panel; routes all Observations) -----
+  // Last entry in the Bundle, matching the iOS Bundle graph. `result[]`
+  // references every emitted Observation.
+  const diagnosticReport: FhirDiagnosticReport = {
+    resourceType: "DiagnosticReport",
+    id: "diagnostic-report-1",
+    status: "final",
+    code: {
+      coding: [
+        {
+          system: LOINC_SYSTEM,
+          code: "85353-1",
+          display:
+            "Vital signs, weight, height, head circumference, oxygen saturation and BMI panel",
+        },
+      ],
+      text: "Vital signs panel",
+    },
+    subject: patientRef,
+    effectivePeriod: { start: data.period.start, end: data.period.end },
+    result: observationRefs,
+  };
+
+  // The Composition must be the FIRST entry in a document Bundle; the
+  // DiagnosticReport is the LAST.
   const orderedEntries: FhirBundleEntry[] = [
     {
       fullUrl: `urn:uuid:${composition.id}`,
       resource: composition as FhirResource,
     },
     ...entries,
+    {
+      fullUrl: `urn:uuid:${diagnosticReport.id}`,
+      resource: diagnosticReport as FhirResource,
+    },
   ];
 
   return {

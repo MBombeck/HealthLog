@@ -5,7 +5,14 @@ import type {
   FhirObservation,
   FhirMedicationStatement,
   FhirPatient,
+  FhirDiagnosticReport,
 } from "../types";
+
+function observationsOf(bundle: ReturnType<typeof buildFhirDocumentBundle>) {
+  return bundle.entry
+    .map((e) => e.resource)
+    .filter((r): r is FhirObservation => r.resourceType === "Observation");
+}
 
 const FIXED_NOW = new Date("2026-05-03T12:00:00.000Z");
 
@@ -232,5 +239,241 @@ describe("buildFhirDocumentBundle", () => {
       .map((e) => e.resource)
       .filter((r) => r.resourceType === "Observation");
     expect(observations).toHaveLength(0);
+  });
+
+  it("maps SpO2 to the iOS-locked LOINC 59408-5 with display + UCUM %", () => {
+    const bundle = buildFhirDocumentBundle(
+      makeData({
+        measurements: {
+          OXYGEN_SATURATION: [
+            { value: 98, measuredAt: "2026-04-30T08:00:00.000Z" },
+          ],
+        },
+      }),
+      { insuranceNumber: null },
+      FIXED_NOW,
+    );
+    const spo2 = observationsOf(bundle).find((o) =>
+      o.code.coding?.some((c) => c.code === "59408-5"),
+    );
+    expect(spo2).toBeDefined();
+    const coding = spo2?.code.coding?.find((c) => c.code === "59408-5");
+    expect(coding?.display).toBe(
+      "Oxygen saturation in Arterial blood by Pulse oximetry",
+    );
+    expect(spo2?.valueQuantity?.code).toBe("%");
+  });
+
+  it("maps VO2max to 96402-2 with the iOS display", () => {
+    const bundle = buildFhirDocumentBundle(
+      makeData({
+        measurements: {
+          VO2_MAX: [{ value: 42, measuredAt: "2026-04-30T08:00:00.000Z" }],
+        },
+      }),
+      { insuranceNumber: null },
+      FIXED_NOW,
+    );
+    const coding = observationsOf(bundle)
+      .flatMap((o) => o.code.coding ?? [])
+      .find((c) => c.code === "96402-2");
+    expect(coding?.display).toBe("Oxygen consumption maximum during exercise");
+  });
+
+  it("emits steps with UCUM {steps}", () => {
+    const bundle = buildFhirDocumentBundle(
+      makeData({
+        measurements: {
+          ACTIVITY_STEPS: [
+            { value: 8200, measuredAt: "2026-04-30T08:00:00.000Z" },
+          ],
+        },
+      }),
+      { insuranceNumber: null },
+      FIXED_NOW,
+    );
+    const steps = observationsOf(bundle).find((o) =>
+      o.code.coding?.some((c) => c.code === "41950-7"),
+    );
+    expect(steps?.valueQuantity?.code).toBe("{steps}");
+    expect(steps?.valueQuantity?.unit).toBe("{steps}");
+  });
+
+  it("emits sleep in HOURS with UCUM h (stored minutes converted)", () => {
+    const bundle = buildFhirDocumentBundle(
+      makeData({
+        measurements: {
+          // 450 minutes = 7.5 h
+          SLEEP_DURATION: [
+            { value: 450, measuredAt: "2026-04-30T08:00:00.000Z" },
+          ],
+        },
+      }),
+      { insuranceNumber: null },
+      FIXED_NOW,
+    );
+    const sleep = observationsOf(bundle).find((o) =>
+      o.code.coding?.some((c) => c.code === "93832-4"),
+    );
+    expect(sleep?.valueQuantity?.code).toBe("h");
+    expect(sleep?.valueQuantity?.value).toBe(7.5);
+  });
+
+  it("maps body water + bone mass to the iOS-locked LOINC codes", () => {
+    const bundle = buildFhirDocumentBundle(
+      makeData({
+        measurements: {
+          TOTAL_BODY_WATER: [
+            { value: 42.3, measuredAt: "2026-04-30T08:00:00.000Z" },
+          ],
+          BONE_MASS: [{ value: 3.1, measuredAt: "2026-04-30T08:00:00.000Z" }],
+        },
+      }),
+      { insuranceNumber: null },
+      FIXED_NOW,
+    );
+    const water = observationsOf(bundle).find((o) =>
+      o.code.coding?.some((c) => c.code === "73704-9"),
+    );
+    const bone = observationsOf(bundle).find((o) =>
+      o.code.coding?.some((c) => c.code === "73708-0"),
+    );
+    expect(water?.valueQuantity?.code).toBe("kg");
+    expect(bone?.valueQuantity?.code).toBe("kg");
+  });
+
+  it("maps the new standard activity/gait metrics", () => {
+    const bundle = buildFhirDocumentBundle(
+      makeData({
+        measurements: {
+          ACTIVE_ENERGY_BURNED: [
+            { value: 540, measuredAt: "2026-04-30T08:00:00.000Z" },
+          ],
+          WALKING_SPEED: [
+            { value: 1.3, measuredAt: "2026-04-30T08:00:00.000Z" },
+          ],
+        },
+      }),
+      { insuranceNumber: null },
+      FIXED_NOW,
+    );
+    const energy = observationsOf(bundle).find((o) =>
+      o.code.coding?.some((c) => c.code === "41981-2"),
+    );
+    const speed = observationsOf(bundle).find((o) =>
+      o.code.coding?.some((c) => c.code === "41957-2"),
+    );
+    expect(energy?.valueQuantity?.code).toBe("kcal");
+    // Walking speed FHIR value stays m/s (no km/h conversion).
+    expect(speed?.valueQuantity?.code).toBe("m/s");
+    expect(speed?.valueQuantity?.value).toBe(1.3);
+  });
+
+  it("emits HK-placeholder codes as the HealthKit identifier string", () => {
+    const bundle = buildFhirDocumentBundle(
+      makeData({
+        measurements: {
+          AUDIO_EXPOSURE_ENV: [
+            { value: 72, measuredAt: "2026-04-30T08:00:00.000Z" },
+          ],
+          FLIGHTS_CLIMBED: [
+            { value: 12, measuredAt: "2026-04-30T08:00:00.000Z" },
+          ],
+        },
+      }),
+      { insuranceNumber: null },
+      FIXED_NOW,
+    );
+    const audio = observationsOf(bundle).find((o) =>
+      o.code.coding?.some(
+        (c) => c.code === "HKQuantityTypeIdentifierEnvironmentalAudioExposure",
+      ),
+    );
+    const flights = observationsOf(bundle).find((o) =>
+      o.code.coding?.some(
+        (c) => c.code === "HKQuantityTypeIdentifierFlightsClimbed",
+      ),
+    );
+    expect(audio?.valueQuantity?.code).toBe("dB[A]");
+    expect(flights?.valueQuantity?.code).toBe("{flights}");
+  });
+
+  it("discriminates glucose LOINC by context (random/fasting/afterMeal)", () => {
+    const bundle = buildFhirDocumentBundle(
+      makeData({
+        glucoseStats: {
+          RANDOM: { avg: 110, min: 90, max: 140, count: 3, latest: 110 },
+          FASTING: { avg: 92, min: 85, max: 100, count: 4, latest: 90 },
+          POSTPRANDIAL: { avg: 130, min: 120, max: 160, count: 2, latest: 132 },
+        },
+      }),
+      { insuranceNumber: null },
+      FIXED_NOW,
+    );
+    const codes = observationsOf(bundle)
+      .flatMap((o) => o.code.coding ?? [])
+      .map((c) => c.code);
+    expect(codes).toContain("2339-0"); // random
+    expect(codes).toContain("1558-6"); // fasting
+    expect(codes).toContain("1521-4"); // afterMeal / postprandial
+  });
+
+  it("emits BMI exactly once (computed block, no stored-series duplicate)", () => {
+    const bundle = buildFhirDocumentBundle(
+      makeData({
+        bmi: 24.1,
+        measurements: {
+          BODY_MASS_INDEX: [
+            { value: 23.9, measuredAt: "2026-04-30T08:00:00.000Z" },
+          ],
+        },
+      }),
+      { insuranceNumber: null },
+      FIXED_NOW,
+    );
+    const bmiObs = observationsOf(bundle).filter((o) =>
+      o.code.coding?.some((c) => c.code === "39156-5"),
+    );
+    expect(bmiObs).toHaveLength(1);
+    // The computed BMI (24.1) wins, not the stored series (23.9).
+    expect(bmiObs[0].valueQuantity?.value).toBe(24.1);
+    expect(bmiObs[0].code.coding?.[0].display).toBe(
+      "Body mass index (BMI) [Ratio]",
+    );
+  });
+
+  it("appends a DiagnosticReport as the LAST entry routing all Observation refs", () => {
+    const bundle = buildFhirDocumentBundle(
+      makeData(),
+      { insuranceNumber: null },
+      FIXED_NOW,
+    );
+    const last = bundle.entry[bundle.entry.length - 1].resource;
+    expect(last.resourceType).toBe("DiagnosticReport");
+    const report = last as FhirDiagnosticReport;
+    expect(report.code.coding?.[0].code).toBe("85353-1");
+    expect(report.effectivePeriod?.start).toBe("2026-02-02T00:00:00.000Z");
+    expect(report.effectivePeriod?.end).toBe("2026-05-03T12:00:00.000Z");
+    const obsCount = observationsOf(bundle).length;
+    expect(report.result).toHaveLength(obsCount);
+    expect(obsCount).toBeGreaterThan(0);
+  });
+
+  it("uses 'Vital signs' + 'Medications' Composition sections", () => {
+    const bundle = buildFhirDocumentBundle(
+      makeData(),
+      { insuranceNumber: null },
+      FIXED_NOW,
+    );
+    const composition = bundle.entry[0].resource;
+    expect(composition.resourceType).toBe("Composition");
+    const titles =
+      composition.resourceType === "Composition"
+        ? (composition.section ?? []).map((s) => s.title)
+        : [];
+    expect(titles).toContain("Vital signs");
+    expect(titles).toContain("Medications");
+    expect(titles).not.toContain("Patient");
+    expect(titles).not.toContain("Observations");
   });
 });
