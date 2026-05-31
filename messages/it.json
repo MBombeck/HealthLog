@@ -2754,6 +2754,16 @@
         "saveError": "Impossibile salvare la modifica. Riprova."
       }
     },
+    "dashboard": {
+      "units": {
+        "title": "Unità",
+        "description": "Scegli come vengono mostrate distanze e velocità nei grafici e nei riquadri.",
+        "metric": "Metrico",
+        "imperial": "Imperiale",
+        "saved": "Preferenza unità salvata.",
+        "saveError": "Impossibile salvare la preferenza delle unità."
+      }
+    },
     "withings": "Withings",
     "withingsDescription": "Connect your Withings scale and blood pressure monitors.",
     "withingsCredentials": "API Credentials",

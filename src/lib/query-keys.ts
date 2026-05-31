@@ -29,6 +29,14 @@ export const queryKeys = {
    * settings/ai-section, targets/target-edit-sheet).
    */
   userThresholds: () => ["user", "thresholds"] as const,
+  /**
+   * v1.7.0 — Settings → Display metric/imperial control reads its
+   * current value from `GET /api/auth/me/unit-preference`. The PATCH
+   * mutation also invalidates `authMe()` so `useAuth().unitPreference`
+   * (and every chart display transform that keys off it) re-renders
+   * without a manual reload.
+   */
+  userUnitPreference: () => ["user", "unit-preference"] as const,
 
   measurements: () => ["measurements"] as const,
   moodEntries: () => ["mood-entries"] as const,

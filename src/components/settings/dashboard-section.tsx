@@ -1,10 +1,13 @@
 "use client";
 
 import { DashboardLayoutSection } from "@/components/settings/dashboard-layout-section";
+import { UnitPreferenceCard } from "@/components/settings/unit-preference-card";
+import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 
 export function DashboardSection() {
   const { t } = useTranslations();
+  const { isAuthenticated } = useAuth();
 
   return (
     <section
@@ -22,6 +25,8 @@ export function DashboardSection() {
           {t("settings.sections.dashboard.description")}
         </p>
       </header>
+
+      <UnitPreferenceCard isAuthenticated={isAuthenticated} />
 
       <DashboardLayoutSection id="dashboard-layout" />
     </section>

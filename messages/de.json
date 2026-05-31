@@ -2754,6 +2754,16 @@
         "saveError": "Speichern fehlgeschlagen. Bitte erneut versuchen."
       }
     },
+    "dashboard": {
+      "units": {
+        "title": "Einheiten",
+        "description": "Lege fest, wie Distanzen und Geschwindigkeiten in Diagrammen und Kacheln angezeigt werden.",
+        "metric": "Metrisch",
+        "imperial": "Imperial",
+        "saved": "Einheiten-Einstellung gespeichert.",
+        "saveError": "Einheiten-Einstellung konnte nicht gespeichert werden."
+      }
+    },
     "withings": "Withings",
     "withingsDescription": "Verbinde deine Withings-Waage und Blutdruckmessgeräte.",
     "withingsCredentials": "API-Zugangsdaten",
