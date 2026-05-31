@@ -17,6 +17,7 @@ import {
   setMedicationCategory,
 } from "@/lib/medication-category";
 import { serializeScheduleRecurrence } from "@/lib/medication-schedule";
+import { computeNextDueAt } from "@/lib/medications/scheduling/next-due";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { NextRequest } from "next/server";
 
@@ -44,6 +45,32 @@ export const GET = apiHandler(
       // Category enrichment is optional
     }
 
+    // v1.7.0 SB-SCHED-3 — server-computed next due instant. Rolling
+    // cadences re-anchor on the latest non-skipped intake, so fetch it
+    // once (no-op for calendar cadences but cheap + keeps the value
+    // correct for rolling injections).
+    const lastIntake =
+      medication.schedules.some((s) => s.rollingIntervalDays !== null)
+        ? await prisma.medicationIntakeEvent.findFirst({
+            where: { userId: user.id, medicationId: id, takenAt: { not: null } },
+            orderBy: { takenAt: "desc" },
+            select: { takenAt: true },
+          })
+        : null;
+    const nextDue = computeNextDueAt({
+      medication: {
+        id: medication.id,
+        startsOn: medication.startsOn,
+        endsOn: medication.endsOn,
+        oneShot: medication.oneShot,
+        createdAt: medication.createdAt,
+      },
+      schedules: medication.schedules,
+      now: new Date(),
+      userTz: user.timezone || "Europe/Berlin",
+      lastIntakeAt: lastIntake?.takenAt ?? null,
+    });
+
     annotate({
       action: {
         name: "medication.get",
@@ -52,7 +79,11 @@ export const GET = apiHandler(
       },
     });
 
-    return apiSuccess({ ...medication, category });
+    return apiSuccess({
+      ...medication,
+      category,
+      nextDueAt: nextDue ? nextDue.toISOString() : null,
+    });
   },
 );
 
@@ -94,6 +125,8 @@ export const PUT = apiHandler(
       deliveryForm,
       active,
       notificationsEnabled,
+      liveActivityEnabled,
+      criticalAlarmEnabled,
       schedules,
       startsOn,
       endsOn,
@@ -184,6 +217,9 @@ export const PUT = apiHandler(
       ...(deliveryForm !== undefined && { deliveryForm }),
       ...(active !== undefined && { active }),
       ...(notificationsEnabled !== undefined && { notificationsEnabled }),
+      // v1.7.0 — iOS reminder flags, field-by-field.
+      ...(liveActivityEnabled !== undefined && { liveActivityEnabled }),
+      ...(criticalAlarmEnabled !== undefined && { criticalAlarmEnabled }),
       // v1.5 scheduling primitives — pass-through when supplied.
       // `startsOn` / `endsOn` are `Date | null | undefined` (the
       // schema lets the user clear them explicitly with null).
@@ -194,9 +230,12 @@ export const PUT = apiHandler(
         schedules: {
           create: schedules.map((s) => {
             // Invariant 2 — default to FREQ=DAILY when nothing else is set.
+            // v1.7.0 — PRN carries no cadence, so never default it.
             const hasLegacyDays = (s.daysOfWeek?.length ?? 0) > 0;
+            const isPrn = s.scheduleType === "PRN";
             const defaultedRrule =
               oneShot !== true &&
+              !isPrn &&
               s.rrule === undefined &&
               s.rollingIntervalDays === undefined &&
               !hasLegacyDays
@@ -226,6 +265,16 @@ export const PUT = apiHandler(
               ...(defaultedRrule !== undefined && { rrule: defaultedRrule }),
               ...(s.rollingIntervalDays !== undefined && {
                 rollingIntervalDays: s.rollingIntervalDays,
+              }),
+              // v1.7.0 — schedule type + cyclic weeks, field-by-field.
+              ...(s.scheduleType !== undefined && {
+                scheduleType: s.scheduleType,
+              }),
+              ...(s.cyclicOnWeeks !== undefined && {
+                cyclicOnWeeks: s.cyclicOnWeeks,
+              }),
+              ...(s.cyclicOffWeeks !== undefined && {
+                cyclicOffWeeks: s.cyclicOffWeeks,
               }),
             };
           }),

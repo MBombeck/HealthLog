@@ -579,11 +579,30 @@ const medicationScheduleResource = z
       .describe(
         "Flexible-rolling interval in days, counted forward from the latest `MedicationIntakeEvent.takenAt`. **Mutually exclusive with `rrule`.**",
       ),
+    scheduleType: z
+      .enum(["SCHEDULED", "PRN", "CYCLIC"])
+      .describe(
+        "v1.7.0 schedule-type discriminator. SCHEDULED = rrule / rolling / legacy cadence. PRN = as-needed (never projected, reminded, or counted in compliance expected; still loggable via the intake route). CYCLIC = N weeks on / M weeks off, gating whichever inner cadence the rrule / legacy fields describe.",
+      ),
+    cyclicOnWeeks: z
+      .number()
+      .int()
+      .nullable()
+      .describe(
+        "v1.7.0 cyclic \"on\" weeks. Only meaningful when `scheduleType` is CYCLIC; null otherwise.",
+      ),
+    cyclicOffWeeks: z
+      .number()
+      .int()
+      .nullable()
+      .describe(
+        "v1.7.0 cyclic \"off\" weeks. Only meaningful when `scheduleType` is CYCLIC; null otherwise.",
+      ),
   })
   .meta({
     id: "MedicationSchedule",
     description:
-      "Schedule entry attached to a medication. v1.5 promotes `timesOfDay` to first-class and introduces `rrule` (calendar-anchored cadences) and `rollingIntervalDays` (flexible-rolling cadences). The two recurrence primitives are mutually exclusive — enforced by the Zod refine on writes, the route layer, and a DB CHECK constraint (`medication_schedules_rrule_xor_rolling`).",
+      "Schedule entry attached to a medication. v1.5 promotes `timesOfDay` to first-class and introduces `rrule` (calendar-anchored cadences) and `rollingIntervalDays` (flexible-rolling cadences). The two recurrence primitives are mutually exclusive — enforced by the Zod refine on writes, the route layer, and a DB CHECK constraint (`medication_schedules_rrule_xor_rolling`). v1.7.0 adds `scheduleType` (SCHEDULED / PRN / CYCLIC) and the cyclic on/off-week fields.",
   });
 
 const medicationResource = z
@@ -601,8 +620,24 @@ const medicationResource = z
       ),
     active: z.boolean(),
     notificationsEnabled: z.boolean(),
+    liveActivityEnabled: z
+      .boolean()
+      .describe(
+        "v1.7.0 iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client owns the ActivityKit lifecycle; the server only stores + echoes the flag.",
+      ),
+    criticalAlarmEnabled: z
+      .boolean()
+      .describe(
+        "v1.7.0 iOS 26 AlarmKit critical-reminder opt-in. Default false. Critical alarms bypass the device mute switch / Focus; the server stores the preference only.",
+      ),
     pausedAt: z.iso.datetime({ offset: true }).nullable(),
     snoozedUntil: z.iso.datetime({ offset: true }).nullable(),
+    nextDueAt: z.iso
+      .datetime({ offset: true })
+      .nullable()
+      .describe(
+        "v1.7.0 server-computed next due instant across all the medication's schedules (earliest `nextOccurrenceAfter`). Read-only — computed, not stored. NULL when no schedule has an upcoming slot (paused, one-shot in the past, `endsOn` crossed, every schedule PRN). The list GET is cached 60 s, so a 60 s staleness is accepted.",
+      ),
     startsOn: z
       .iso
       .datetime({ offset: true })

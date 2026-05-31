@@ -159,6 +159,38 @@ export const scheduleSchema = z
       .describe(
         "Flexible-rolling interval in days, counted forward from the latest `MedicationIntakeEvent.takenAt` (the dose re-anchors when logged). Mutually exclusive with `rrule`. Range 1..365.",
       ),
+    /**
+     * v1.7.0 — schedule-type discriminator. SCHEDULED (default) keeps the
+     * rrule / rolling / legacy cadence. PRN is as-needed (never projected,
+     * reminded, or counted in compliance expected; still loggable).
+     * CYCLIC wraps the inner cadence with an N-on / M-off week phase.
+     */
+    scheduleType: z
+      .enum(["SCHEDULED", "PRN", "CYCLIC"])
+      .optional()
+      .describe(
+        "Schedule type. SCHEDULED (default) = rrule / rolling / legacy cadence. PRN = as-needed (never projected, reminded, or counted in compliance expected; still loggable via the intake route). CYCLIC = N weeks on / M weeks off, gating whichever inner cadence the rrule / legacy fields describe.",
+      ),
+    /** v1.7.0 — cyclic "on" weeks. Required when `scheduleType === "CYCLIC"`. */
+    cyclicOnWeeks: z
+      .number()
+      .int()
+      .min(1)
+      .max(52)
+      .optional()
+      .describe(
+        "Cyclic \"on\" weeks (1..52). Required when `scheduleType` is CYCLIC; ignored otherwise.",
+      ),
+    /** v1.7.0 — cyclic "off" weeks. Required when `scheduleType === "CYCLIC"`. */
+    cyclicOffWeeks: z
+      .number()
+      .int()
+      .min(0)
+      .max(52)
+      .optional()
+      .describe(
+        "Cyclic \"off\" weeks (0..52). Required when `scheduleType` is CYCLIC; ignored otherwise.",
+      ),
   })
   .refine(
     (s) => !(s.rrule && s.rollingIntervalDays),
@@ -166,6 +198,25 @@ export const scheduleSchema = z
       message:
         "A schedule can be calendar-anchored (rrule) or rolling, not both",
       path: ["rrule"],
+    },
+  )
+  .refine(
+    (s) =>
+      s.scheduleType !== "CYCLIC" ||
+      (s.cyclicOnWeeks !== undefined && s.cyclicOffWeeks !== undefined),
+    {
+      message: "cyclic schedules require both cyclicOnWeeks and cyclicOffWeeks",
+      path: ["cyclicOnWeeks"],
+    },
+  )
+  .refine(
+    (s) =>
+      s.scheduleType !== "PRN" ||
+      (s.rrule === undefined && s.rollingIntervalDays === undefined),
+    {
+      message:
+        "PRN schedules cannot carry a cadence (rrule or rollingIntervalDays)",
+      path: ["scheduleType"],
     },
   )
   .refine(
@@ -242,6 +293,20 @@ export const createMedicationSchema = z
     /** v1.6.0 — route of administration (ORAL | INJECTION | OTHER). */
     deliveryForm: z.enum(MEDICATION_DELIVERY_FORM_VALUES).optional(),
     notificationsEnabled: z.boolean().optional(),
+    /** v1.7.0 — iOS Live Activity opt-in for this medication's reminders. */
+    liveActivityEnabled: z
+      .boolean()
+      .optional()
+      .describe(
+        "iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client owns the ActivityKit lifecycle; the server only stores + echoes the flag.",
+      ),
+    /** v1.7.0 — iOS 26 AlarmKit critical-reminder opt-in. */
+    criticalAlarmEnabled: z
+      .boolean()
+      .optional()
+      .describe(
+        "iOS 26 AlarmKit critical-reminder opt-in. Default false. Critical alarms bypass the device mute switch / Focus; the server stores the preference only and hangs no server-side behaviour off it.",
+      ),
     ...courseWindowFields,
     schedules: z.array(scheduleSchema).min(1, "Mindestens ein Zeitfenster"),
   })
@@ -274,6 +339,20 @@ export const updateMedicationSchema = z
     deliveryForm: z.enum(MEDICATION_DELIVERY_FORM_VALUES).optional(),
     active: z.boolean().optional(),
     notificationsEnabled: z.boolean().optional(),
+    /** v1.7.0 — iOS Live Activity opt-in for this medication's reminders. */
+    liveActivityEnabled: z
+      .boolean()
+      .optional()
+      .describe(
+        "iOS Live Activity opt-in for this medication's reminders. The iOS client owns the ActivityKit lifecycle; the server only stores + echoes the flag.",
+      ),
+    /** v1.7.0 — iOS 26 AlarmKit critical-reminder opt-in. */
+    criticalAlarmEnabled: z
+      .boolean()
+      .optional()
+      .describe(
+        "iOS 26 AlarmKit critical-reminder opt-in. Critical alarms bypass the device mute switch / Focus; the server stores the preference only.",
+      ),
     ...courseWindowFields,
     schedules: z.array(scheduleSchema).optional(),
     /**

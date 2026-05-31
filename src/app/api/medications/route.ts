@@ -15,6 +15,7 @@ import {
   setMedicationCategory,
 } from "@/lib/medication-category";
 import { serializeScheduleRecurrence } from "@/lib/medication-schedule";
+import { computeNextDueAt } from "@/lib/medications/scheduling/next-due";
 import { getUserTodayBounds } from "@/lib/timezone";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
@@ -55,6 +56,11 @@ async function buildMedicationsList(
       entry._max.takenAt ? entry._max.takenAt.toISOString() : null,
     ]),
   );
+  // v1.7.0 SB-SCHED-3 — Date-typed last-intake map for the engine
+  // (rolling cadences re-anchor on it). Same groupBy as the ISO map.
+  const lastTakenAtDateByMedicationId = Object.fromEntries(
+    latestIntakes.map((entry) => [entry.medicationId, entry._max.takenAt]),
+  );
   const todayEventCountByMedId = Object.fromEntries(
     todayEvents.map(
       (entry: { medicationId: string; _count: { id: number } }) => [
@@ -71,12 +77,33 @@ async function buildMedicationsList(
     getEvent()?.addWarning("Medication categories could not be loaded");
   }
 
-  return medications.map((m) => ({
-    ...m,
-    category: categoryMap[m.id] ?? "OTHER",
-    lastTakenAt: lastTakenAtByMedicationId[m.id] ?? null,
-    todayEventCount: todayEventCountByMedId[m.id] ?? 0,
-  }));
+  // v1.7.0 SB-SCHED-3 — server-computed next due instant. Time-derived;
+  // the list GET is cached 60 s on userId, so a 60 s staleness window is
+  // accepted here as it already is for `todayEventCount`.
+  const now = new Date();
+
+  return medications.map((m) => {
+    const nextDue = computeNextDueAt({
+      medication: {
+        id: m.id,
+        startsOn: m.startsOn,
+        endsOn: m.endsOn,
+        oneShot: m.oneShot,
+        createdAt: m.createdAt,
+      },
+      schedules: m.schedules,
+      now,
+      userTz,
+      lastIntakeAt: lastTakenAtDateByMedicationId[m.id] ?? null,
+    });
+    return {
+      ...m,
+      category: categoryMap[m.id] ?? "OTHER",
+      lastTakenAt: lastTakenAtByMedicationId[m.id] ?? null,
+      todayEventCount: todayEventCountByMedId[m.id] ?? 0,
+      nextDueAt: nextDue ? nextDue.toISOString() : null,
+    };
+  });
 }
 
 export const GET = apiHandler(async () => {
@@ -123,6 +150,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
     dosesPerUnit,
     deliveryForm,
     notificationsEnabled,
+    liveActivityEnabled,
+    criticalAlarmEnabled,
     schedules,
     startsOn,
     endsOn,
@@ -184,6 +213,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
       ...(dosesPerUnit !== undefined && { dosesPerUnit }),
       // v1.6.0 — route of administration; Prisma defaults to ORAL when omitted.
       ...(deliveryForm !== undefined && { deliveryForm }),
+      // v1.7.0 — iOS reminder flags; Prisma defaults both to false.
+      ...(liveActivityEnabled !== undefined && { liveActivityEnabled }),
+      ...(criticalAlarmEnabled !== undefined && { criticalAlarmEnabled }),
       // v1.5 — wizard's reminders toggle now ships through the create
       // payload (was orphaned in the initial diff). Prisma defaults to
       // true when omitted, matching the legacy form's behaviour.
@@ -195,9 +227,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
       schedules: {
         create: schedules.map((s) => {
           // Invariant 2 — default to FREQ=DAILY when nothing else is set.
+          // v1.7.0 — PRN schedules carry no cadence, so never default
+          // them to FREQ=DAILY (they would otherwise project + remind).
           const hasLegacyDays = (s.daysOfWeek?.length ?? 0) > 0;
+          const isPrn = s.scheduleType === "PRN";
           const defaultedRrule =
             !oneShot &&
+            !isPrn &&
             s.rrule === undefined &&
             s.rollingIntervalDays === undefined &&
             !hasLegacyDays
@@ -228,6 +264,14 @@ export const POST = apiHandler(async (request: NextRequest) => {
             ...(defaultedRrule !== undefined && { rrule: defaultedRrule }),
             ...(s.rollingIntervalDays !== undefined && {
               rollingIntervalDays: s.rollingIntervalDays,
+            }),
+            // v1.7.0 — schedule type + cyclic weeks, field-by-field.
+            ...(s.scheduleType !== undefined && { scheduleType: s.scheduleType }),
+            ...(s.cyclicOnWeeks !== undefined && {
+              cyclicOnWeeks: s.cyclicOnWeeks,
+            }),
+            ...(s.cyclicOffWeeks !== undefined && {
+              cyclicOffWeeks: s.cyclicOffWeeks,
             }),
           };
         }),
