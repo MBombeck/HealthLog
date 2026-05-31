@@ -522,19 +522,35 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
           timeZone: userTz,
         }); // YYYY-MM-DD format
 
-        // Count existing intake events for this medication today
-        const eventCount = await prisma.medicationIntakeEvent.count({
+        // v1.7.0 code-correctness M4 — fetch today's intake events so a
+        // logged dose suppresses the reminder for the SLOT it belongs to,
+        // not a positional running counter. The pre-v1.7 code suppressed
+        // by `eventCount > schedulesProcessed`, which attributed a logged
+        // morning dose to whichever slot iterated first; with an unsorted
+        // `timesOfDay = ["20:00","08:00"]` that suppressed the evening
+        // reminder while the morning still fired. We match by time-of-day
+        // proximity instead. Worker-minted RED placeholders (takenAt null,
+        // not skipped, source REMINDER) are NOT a user action, so they are
+        // excluded from the suppression set.
+        const todayEvents = await prisma.medicationIntakeEvent.findMany({
           where: {
             medicationId: med.id,
             userId: med.user.id,
             scheduledFor: { gte: todayStart, lte: todayEnd },
           },
+          select: { scheduledFor: true, takenAt: true, skipped: true },
         });
+        const loggedDoseInstants = todayEvents
+          .filter((e) => e.takenAt !== null || e.skipped)
+          .map((e) => (e.takenAt ?? e.scheduledFor).getTime());
 
         // Resolve phase configuration
         const phaseConfig = med.phaseConfig ?? DEFAULT_PHASE_CONFIG;
 
-        let schedulesProcessed = 0;
+        // Slots a logged dose has already claimed (by index into the
+        // chronologically-sorted slotTimes) so one dose can't suppress two.
+        const claimedSlotInstants = new Set<number>();
+
         const sortedSchedules = [...med.schedules].sort((a, b) =>
           a.windowStart.localeCompare(b.windowStart),
         );
@@ -610,9 +626,13 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
 
           const hasFirstClassTimes =
             schedule.timesOfDay && schedule.timesOfDay.length > 0;
-          const slotTimes = hasFirstClassTimes
-            ? schedule.timesOfDay
-            : [schedule.windowStart];
+          // v1.7.0 code-correctness M4 — iterate slots in chronological
+          // order so phase/dedup/suppression decisions are deterministic
+          // and a logged dose maps to the nearest slot, not whichever the
+          // stored array order happened to surface first.
+          const slotTimes = (
+            hasFirstClassTimes ? [...schedule.timesOfDay] : [schedule.windowStart]
+          ).sort((a, b) => parseTimeToMinutes(a) - parseTimeToMinutes(b));
 
           for (const slotTime of slotTimes) {
             // Dedup key time-of-day: "" for a legacy single-window
@@ -624,15 +644,40 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
             const minutesToEnd = slotEndMins - currentMins;
             const minutesFromStart = currentMins - slotStartMins;
 
-            // Skip if enough intake events exist for slots processed so far.
-            if (eventCount > schedulesProcessed) {
-              schedulesProcessed++;
+            // The UTC instant this slot is due (DST-safe).
+            const [slotH, slotM] = slotTime.split(":").map(Number);
+            const slotInstant = localHmAsUtc(
+              now,
+              med.user.timezone,
+              slotH,
+              slotM,
+            ).getTime();
+
+            // Suppress this slot's reminder if a user-logged dose (taken
+            // or skipped) sits within half the window duration of the
+            // slot's due time. Matching by proximity — not a positional
+            // counter — means a partially-dosed day still reminds for the
+            // correct missing slot. Each logged dose claims at most one
+            // slot so two slots can't both be suppressed by one dose.
+            const matchRadiusMs =
+              Math.max(windowDuration, 60) * 60_000 * 0.5;
+            let matchedIdx = -1;
+            let matchedDist = Infinity;
+            for (let li = 0; li < loggedDoseInstants.length; li++) {
+              if (claimedSlotInstants.has(li)) continue;
+              const dist = Math.abs(loggedDoseInstants[li] - slotInstant);
+              if (dist <= matchRadiusMs && dist < matchedDist) {
+                matchedDist = dist;
+                matchedIdx = li;
+              }
+            }
+            if (matchedIdx >= 0) {
+              claimedSlotInstants.add(matchedIdx);
               continue;
             }
 
             // Skip if medication is snoozed
             if (med.snoozedUntil && now < med.snoozedUntil) {
-              schedulesProcessed++;
               continue;
             }
 
@@ -650,7 +695,6 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
             );
 
             if (!currentPhase) {
-              schedulesProcessed++;
               continue;
             }
 
@@ -671,18 +715,14 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
 
             if (existingMessage) {
               // Already sent for this phase + time-of-day — skip
-              schedulesProcessed++;
               continue;
             }
 
             const doseInfo = schedule.dose ?? med.dose;
             const timeWindow = `${slotTime}`;
 
-            const [h, m] = slotTime.split(":").map(Number);
-            // DST-safe: re-derive the offset at the target local time so
-            // the UTC instant is correct on spring-forward / fall-back
-            // days.
-            const slotScheduledFor = localHmAsUtc(now, med.user.timezone, h, m);
+            // DST-safe slot instant, computed once above.
+            const slotScheduledFor = new Date(slotInstant);
 
             // RED phase: create missed intake event for this slot.
             if (currentPhase === "RED") {
@@ -740,7 +780,6 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
                   phase: currentPhase,
                   dose_at: doseAtIso,
                 });
-                schedulesProcessed++;
                 continue;
               }
 
@@ -792,8 +831,6 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
                 );
               }
             }
-
-            schedulesProcessed++;
           }
         }
       }
