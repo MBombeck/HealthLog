@@ -91,8 +91,17 @@ export class ServerCache<T> {
     return entry.value;
   }
 
-  /** Insert or overwrite. Evicts the oldest entry if the cap is hit. */
-  set(key: string, value: T): void {
+  /**
+   * Insert or overwrite. Evicts the oldest entry if the cap is hit.
+   *
+   * `ttlMsOverride` lets a single key carry a longer (or shorter) TTL
+   * than the bucket default without splitting it into a separate cache
+   * instance — used by the dashboard-snapshot key, which must outlive
+   * the 60 s analytics default so the client's 120 s refetch interval
+   * lands on a warm entry, while still sharing the bucket's `${userId}|`
+   * prefix-sweep invalidation.
+   */
+  set(key: string, value: T, ttlMsOverride?: number): void {
     // The key might already exist (eviction-by-set is a write through
     // the same slot — no cap eviction needed). Delete-then-set to keep
     // the LRU ordering predictable.
@@ -106,7 +115,7 @@ export class ServerCache<T> {
       }
     }
     this.map.set(key, {
-      expiresAt: Date.now() + this.opts.ttlMs,
+      expiresAt: Date.now() + (ttlMsOverride ?? this.opts.ttlMs),
       value,
     });
   }
@@ -143,7 +152,11 @@ export class ServerCache<T> {
    * Builder rejections do NOT poison the cache — the `pending` entry
    * is removed on reject so the next caller retries.
    */
-  async wrap(key: string, builder: () => Promise<T>): Promise<{
+  async wrap(
+    key: string,
+    builder: () => Promise<T>,
+    ttlMsOverride?: number,
+  ): Promise<{
     value: T;
     outcome: "hit" | "miss" | "stampede";
   }> {
@@ -163,7 +176,7 @@ export class ServerCache<T> {
     this.misses += 1;
     const promise = builder()
       .then((value) => {
-        this.set(key, value);
+        this.set(key, value, ttlMsOverride);
         return value;
       })
       .finally(() => {
@@ -302,8 +315,9 @@ export async function cached<T>(
   key: string,
   builder: () => Promise<T>,
   annotateFn?: (fields: { meta: Record<string, unknown> }) => void,
+  ttlMsOverride?: number,
 ): Promise<T> {
-  const { value, outcome } = await cache.wrap(key, builder);
+  const { value, outcome } = await cache.wrap(key, builder, ttlMsOverride);
   if (annotateFn) {
     const name = cache.stats().name;
     annotateFn({

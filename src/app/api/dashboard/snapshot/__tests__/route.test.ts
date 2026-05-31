@@ -4,7 +4,11 @@
  *   - 401 envelope when unauthenticated;
  *   - 200 `{ data, error }` envelope with the snapshot body when
  *     authenticated;
- *   - second call within the 60 s TTL hits the cache (builder runs once).
+ *   - a repeat call hits the cache (builder runs once);
+ *   - the snapshot key carries a per-key TTL longer than the 120 s
+ *     client refetch interval so a scheduled poll stays a cache hit
+ *     (the entry outlives the analytics bucket's 60 s default), while a
+ *     measurement-write invalidation still evicts it.
  *
  * The builder is mocked — its own assembly contract is covered by
  * `src/lib/dashboard/__tests__/snapshot.test.ts`.
@@ -40,7 +44,8 @@ vi.mock("@/lib/dashboard/snapshot", () => ({
 
 import { GET } from "../route";
 import { getSession } from "@/lib/auth/session";
-import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
+import { __resetAllCachesForTests, caches } from "@/lib/cache/server-cache";
+import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -126,5 +131,29 @@ describe("GET /api/dashboard/snapshot", () => {
     await callGet(makeReq());
     await callGet(makeReq());
     expect(buildDashboardSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays cached past the 120 s client refetch interval (per-key TTL)", async () => {
+    vi.useFakeTimers();
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    await callGet(makeReq());
+    // The analytics bucket default is 60 s; the snapshot key carries a
+    // longer per-key TTL so the 120 s scheduled refetch is a hit.
+    vi.advanceTimersByTime(120_000);
+    await callGet(makeReq());
+    expect(buildDashboardSnapshot).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it("evicts the snapshot on a measurement-write invalidation", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    await callGet(makeReq());
+    expect(buildDashboardSnapshot).toHaveBeenCalledTimes(1);
+    // A measurement write sweeps the `${userId}|` prefix, which covers
+    // the longer-TTL snapshot key.
+    invalidateUserMeasurements("user-1");
+    expect(caches.analytics.get("user-1|dashboard-snapshot")).toBeNull();
+    await callGet(makeReq());
+    expect(buildDashboardSnapshot).toHaveBeenCalledTimes(2);
   });
 });

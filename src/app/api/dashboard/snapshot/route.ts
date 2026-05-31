@@ -13,11 +13,15 @@
  * is narrowed from the resolved session — never a body field.
  *
  * The body is read-through `caches.analytics` keyed
- * `${userId}|dashboard-snapshot` (60 s TTL — same bucket family the
- * slim/thick analytics + mood reads use, so a single eviction sweep
- * covers it; see `src/lib/cache/invalidate.ts`). Per-sub-query timings
- * surface under `meta.snapshot.sub_*_ms` on the cache-miss path so a
- * regression is attributable without re-instrumenting.
+ * `${userId}|dashboard-snapshot`, but with a per-key TTL of
+ * `SNAPSHOT_CACHE_TTL_MS` (>= the client's 120 s refetch interval) so a
+ * scheduled refetch lands on a warm entry instead of re-running the
+ * full builder on every tick. It still rides the analytics bucket so
+ * the `${userId}|` eviction sweep on a measurement / mood / medication
+ * write covers it (see `src/lib/cache/invalidate.ts`) — correctness on
+ * writes is unchanged; only the idle-poll TTL is longer. Per-sub-query
+ * timings surface under `meta.snapshot.sub_*_ms` on the cache-miss path
+ * so a regression is attributable without re-instrumenting.
  *
  * No LLM is reachable from the builder — the daily briefing is lifted
  * read-only from `User.insightsCachedText`. The nightly
@@ -29,6 +33,7 @@ import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
 import { NO_STORE_BUT_BFCACHE } from "@/lib/http/cache-headers";
 import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
+import { DASHBOARD_REFETCH_INTERVAL_MS } from "@/lib/queries/refetch-interval";
 import {
   buildDashboardSnapshot,
   type DashboardSnapshot,
@@ -36,6 +41,18 @@ import {
 } from "@/lib/dashboard/snapshot";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Per-key TTL for the snapshot cache entry. Strictly greater than the
+ * client's 120 s refetch interval so a scheduled poll lands on a warm
+ * entry instead of a guaranteed miss that re-runs the full builder. The
+ * 60 s headroom absorbs interval jitter / a poll firing a touch late.
+ * The analytics bucket's 60 s default still governs the slim / thick /
+ * mood cells; only this key is lengthened. Eviction on writes is
+ * unchanged (the `${userId}|` prefix sweep / point-delete both ignore
+ * the TTL).
+ */
+const SNAPSHOT_CACHE_TTL_MS = DASHBOARD_REFETCH_INTERVAL_MS + 60_000;
 
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
@@ -75,6 +92,7 @@ export const GET = apiHandler(async () => {
     `${user.id}|dashboard-snapshot`,
     () => buildDashboardSnapshot(prisma, snapshotUser, { time }),
     annotate,
+    SNAPSHOT_CACHE_TTL_MS,
   );
 
   // Only surface timings on the cache-miss path (the hit path skips the
