@@ -96,7 +96,10 @@ export type DashboardWidgetCatalogueId =
   (typeof DASHBOARD_WIDGET_CATALOGUE_IDS)[number];
 
 export interface DashboardWidgetConfig {
-  id: DashboardWidgetId;
+  // v1.7.0 — widened to the full 27-id catalogue so iOS-only ids
+  // round-trip through the stored layout. The web render path only
+  // looks up its own 16 ids; the other 11 ride along untouched.
+  id: DashboardWidgetCatalogueId;
   /**
    * Whether the widget shows up in the *charts* row (the lower section
    * of the dashboard with the line graphs). The legacy single-toggle
@@ -327,17 +330,27 @@ export function resolveDashboardLayout(raw: unknown): DashboardLayout {
     return DEFAULT_DASHBOARD_LAYOUT;
   }
 
-  // Drop widget ids the current build does not know about. v1.4.28
-  // retired the `glp1` tile; any user who saved a layout before then
-  // still has the orphan id in `dashboardWidgetsJson`, and the PUT
-  // route's Zod enum rejects the entire blob on the next save round-
-  // trip. Filtering on read keeps the GET shape current-build-safe
-  // and lets the Settings UI re-PUT a clean array.
-  const knownIds = new Set<string>(DASHBOARD_WIDGET_IDS);
+  // Drop widget ids outside the full 27-id catalogue. v1.4.28 retired
+  // the `glp1` tile; any user who saved a layout before then still has
+  // the orphan id in `dashboardWidgetsJson`, and a stale-enum PUT would
+  // reject the entire blob on the next save round-trip. Filtering on
+  // read keeps the GET shape current-build-safe and lets the Settings
+  // UI re-PUT a clean array.
+  //
+  // v1.7.0 — the catalogue is the 27-id superset (16 web-known + 11
+  // iOS-only). The 11 iOS-only ids are RETAINED here so a layout the
+  // native client persisted round-trips intact on GET; the web render
+  // path looks up only its own 16 ids and silently ignores the rest
+  // (it never iterates id→component generically). A genuinely-unknown
+  // id (typo / retired tile) outside the 27 still drops.
+  const knownIds = new Set<string>(DASHBOARD_WIDGET_CATALOGUE_IDS);
   const filtered = candidate.widgets.filter((w) => knownIds.has(w.id));
 
-  // Merge with defaults so new widgets introduced in later versions show up
-  // automatically (invisible by default, users opt-in).
+  // Merge with defaults so new WEB widgets introduced in later versions
+  // show up automatically (invisible by default, users opt-in). Only the
+  // 16 web defaults are auto-appended — iOS-only ids only ever appear in
+  // a layout once a native client has explicitly sent them, so they are
+  // never seeded for a web-only account.
   const savedIds = new Set(filtered.map((w) => w.id));
   const missing = DEFAULT_DASHBOARD_LAYOUT.widgets.filter(
     (w) => !savedIds.has(w.id),

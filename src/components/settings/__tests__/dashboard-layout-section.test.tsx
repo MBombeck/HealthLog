@@ -1,7 +1,18 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { DEFAULT_DASHBOARD_LAYOUT } from "@/lib/dashboard-layout";
+import {
+  DEFAULT_DASHBOARD_LAYOUT,
+  DASHBOARD_IOS_ONLY_WIDGET_IDS,
+  type DashboardLayout,
+} from "@/lib/dashboard-layout";
+
+// Mutable holder so individual tests can inject a layout (e.g. one that
+// carries iOS-only ids) into the mocked `useQuery` without re-mocking
+// the module. Defaults to the 16-tile web default layout.
+const queryState: { layout: DashboardLayout } = {
+  layout: DEFAULT_DASHBOARD_LAYOUT,
+};
 
 /**
  * v1.4.15 Fix 5 — independent strip-tile + chart toggles.
@@ -19,7 +30,7 @@ import { DEFAULT_DASHBOARD_LAYOUT } from "@/lib/dashboard-layout";
  */
 
 vi.mock("@tanstack/react-query", () => ({
-  useQuery: () => ({ data: DEFAULT_DASHBOARD_LAYOUT, isLoading: false }),
+  useQuery: () => ({ data: queryState.layout, isLoading: false }),
   useQueryClient: () => ({ setQueryData: vi.fn() }),
   useMutation: () => ({
     mutate: vi.fn(),
@@ -46,6 +57,10 @@ function render(node: React.ReactElement, locale: "en" | "de" = "en") {
     <I18nProvider initialLocale={locale}>{node}</I18nProvider>,
   );
 }
+
+beforeEach(() => {
+  queryState.layout = DEFAULT_DASHBOARD_LAYOUT;
+});
 
 describe("<DashboardLayoutSection> — tile + chart split", () => {
   it("renders both Tile and Chart column headers in English", () => {
@@ -187,5 +202,59 @@ describe("reorderWidgets — pure mutation contract", () => {
     const snapshot = JSON.parse(JSON.stringify(initial));
     reorderWidgets(initial, "a", "c");
     expect(initial).toEqual(snapshot);
+  });
+});
+
+/**
+ * v1.7.0 W1 — the stored layout now round-trips the 11 iOS-only widget
+ * ids. The web Settings list has no tile/chart surface for them, so the
+ * render must SKIP an id with no web component rather than paint an
+ * unlabelled row with dead toggles.
+ */
+describe("<DashboardLayoutSection> — iOS-only id skip (v1.7.0)", () => {
+  it("renders only web-known rows when the layout carries iOS-only ids", () => {
+    // Inject a layout = the 16 web defaults + the 11 iOS-only ids.
+    queryState.layout = {
+      ...DEFAULT_DASHBOARD_LAYOUT,
+      widgets: [
+        ...DEFAULT_DASHBOARD_LAYOUT.widgets,
+        ...DASHBOARD_IOS_ONLY_WIDGET_IDS.map((id, i) => ({
+          id,
+          visible: true,
+          tileVisible: true,
+          order: DEFAULT_DASHBOARD_LAYOUT.widgets.length + i,
+        })),
+      ],
+    };
+
+    const html = render(<DashboardLayoutSection id="dashboard-layout" />);
+
+    // One row (= one tile switch) per WEB-known widget — the iOS-only
+    // ids are skipped, not rendered as raw-id rows.
+    const tileSwitches = html.match(/data-slot="widget-tile-switch"/g) ?? [];
+    expect(tileSwitches).toHaveLength(DEFAULT_DASHBOARD_LAYOUT.widgets.length);
+
+    // No iOS-only raw id leaks into the markup as a row label.
+    for (const iosId of DASHBOARD_IOS_ONLY_WIDGET_IDS) {
+      expect(html).not.toContain(`>${iosId}<`);
+    }
+  });
+
+  it("does not crash when the layout is ENTIRELY iOS-only ids", () => {
+    queryState.layout = {
+      ...DEFAULT_DASHBOARD_LAYOUT,
+      widgets: DASHBOARD_IOS_ONLY_WIDGET_IDS.map((id, i) => ({
+        id,
+        visible: true,
+        tileVisible: true,
+        order: i,
+      })),
+    };
+
+    const html = render(<DashboardLayoutSection id="dashboard-layout" />);
+    // No web-known rows → zero switches, but the section still renders.
+    const tileSwitches = html.match(/data-slot="widget-tile-switch"/g) ?? [];
+    expect(tileSwitches).toHaveLength(0);
+    expect(html).toContain("dashboard-layout");
   });
 });

@@ -38,6 +38,7 @@ import {
   type ComparisonBaseline,
   COMPARISON_BASELINES,
   DEFAULT_DASHBOARD_LAYOUT,
+  DASHBOARD_WIDGET_IDS,
 } from "@/lib/dashboard-layout";
 import {
   Select,
@@ -408,9 +409,20 @@ export function DashboardLayoutSection({ id }: { id: string }) {
             <span className="w-22 sm:w-18" aria-hidden="true" />
           </div>
           {(() => {
-            const sortedWidgets = [...layout.widgets].sort(
-              (a, b) => a.order - b.order,
-            );
+            // v1.7.0 — the stored layout now round-trips the 11 iOS-only
+            // widget ids so the native client can drop its local merge
+            // workarounds. The web Settings list has no tile/chart
+            // surface for them, so skip any id outside the 16 web-known
+            // ids rather than render an unlabelled row with dead toggles.
+            // The skipped ids stay untouched in the persisted layout
+            // because the Save mutation PUTs `layout.widgets` whole and
+            // the server retains every catalogue id.
+            const webWidgetIds = new Set<string>(DASHBOARD_WIDGET_IDS);
+            const sortedWidgets = [...layout.widgets]
+              .filter((w): w is typeof w & { id: DashboardWidgetId } =>
+                webWidgetIds.has(w.id),
+              )
+              .sort((a, b) => a.order - b.order);
             const sortedIds = sortedWidgets.map((w) => w.id);
             return (
               <DndContext

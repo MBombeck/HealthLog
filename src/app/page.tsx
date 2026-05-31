@@ -22,6 +22,7 @@ import { convertGlucose, resolveGlucoseUnit } from "@/lib/glucose";
 import { cn } from "@/lib/utils";
 import {
   resolveDashboardLayout,
+  DASHBOARD_WIDGET_IDS,
   type DashboardLayout,
 } from "@/lib/dashboard-layout";
 import type { DashboardAnalyticsData as AnalyticsData } from "@/types/analytics";
@@ -1402,8 +1403,14 @@ export default function DashboardPage() {
         // configured tile count so the strip's footprint is reserved
         // during the slow window. The skeleton swaps in for the real
         // strip the moment `analyticsSlimQuery.isLoading` flips false.
+        // v1.7.0 — count only WEB-known tiles. The stored layout now
+        // round-trips the 11 iOS-only ids (so the native client can drop
+        // its merge workarounds), but the web dashboard has no tile
+        // component for them; including them here would over-reserve the
+        // skeleton silhouette by rows that never paint.
+        const webWidgetIds = new Set<string>(DASHBOARD_WIDGET_IDS);
         const configuredTileCount = layout.widgets.filter(
-          (w) => w.tileVisible ?? w.visible,
+          (w) => webWidgetIds.has(w.id) && (w.tileVisible ?? w.visible),
         ).length;
         // v1.7.0 — the primary data source differs by flag. In snapshot
         // mode `analyticsSlimQuery` is `enabled: false`, and a disabled
