@@ -23,6 +23,8 @@ import {
   type ComplianceSchedule,
 } from "../compliance";
 import type { IntakeTimingClass } from "../compliance";
+import { getUserTodayBounds } from "@/lib/timezone";
+import { userDayKey } from "@/lib/tz/format";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -654,6 +656,74 @@ describe("expectedSlotCountForDay + lastNonSkippedTakenAt", () => {
       "2025-01-12T08:00:00.000Z",
     );
     expect(lastNonSkippedTakenAt([])).toBe(null);
+  });
+
+  // v1.7.0 code-correctness M1 — the per-med compliance route must
+  // anchor each daily cell on the user-tz local-day boundary so the
+  // `due` / `expectedCount` flag attaches to the calendar cell the user
+  // actually sees. A UTC-midnight slice would shove a tz-distant user's
+  // dose into the adjacent day. These tests model the route's day
+  // computation (getUserTodayBounds + userDayKey) and assert the engine
+  // counts the dose in the cell its dateKey labels.
+  it("anchors the due slot on the user-tz local day for a UTC+13 user", () => {
+    const tz = "Pacific/Auckland"; // UTC+12, +13 in DST (January = NZDT +13)
+    const schedules: ComplianceSchedule[] = [
+      {
+        windowStart: "08:00",
+        windowEnd: "09:00",
+        daysOfWeek: null,
+        rrule: "FREQ=DAILY",
+        timesOfDay: ["08:00"],
+      },
+    ];
+
+    // A representative instant inside 2025-01-14 local (noon NZ).
+    const representative = new Date("2025-01-14T12:00:00+13:00");
+    const { start, end } = getUserTodayBounds(representative, tz);
+    const dayEnd = new Date(end.getTime() + 1); // half-open [start, dayEnd)
+
+    // The cell key is the user-tz day, not the UTC slice. 08:00 NZ on
+    // the 14th is 19:00 UTC on the 13th — a UTC slice would mislabel it.
+    expect(userDayKey(start, tz)).toBe("2025-01-14");
+
+    const count = expectedSlotCountForDay(schedules, start, dayEnd, ctx({ timeZone: tz }));
+    expect(count).toBe(1);
+  });
+
+  it("does not double-count or drop a dose at the user-tz day boundary", () => {
+    const tz = "Pacific/Auckland";
+    const schedules: ComplianceSchedule[] = [
+      {
+        windowStart: "08:00",
+        windowEnd: "09:00",
+        daysOfWeek: null,
+        rrule: "FREQ=DAILY",
+        timesOfDay: ["08:00"],
+      },
+    ];
+
+    // Two adjacent local days: the 14th must hold exactly one dose, the
+    // 13th exactly one — neither steals the other's slot.
+    const day14 = getUserTodayBounds(new Date("2025-01-14T12:00:00+13:00"), tz);
+    const day13 = getUserTodayBounds(new Date("2025-01-13T12:00:00+13:00"), tz);
+
+    const count14 = expectedSlotCountForDay(
+      schedules,
+      day14.start,
+      new Date(day14.end.getTime() + 1),
+      ctx({ timeZone: tz }),
+    );
+    const count13 = expectedSlotCountForDay(
+      schedules,
+      day13.start,
+      new Date(day13.end.getTime() + 1),
+      ctx({ timeZone: tz }),
+    );
+
+    expect(count14).toBe(1);
+    expect(count13).toBe(1);
+    expect(userDayKey(day14.start, tz)).toBe("2025-01-14");
+    expect(userDayKey(day13.start, tz)).toBe("2025-01-13");
   });
 });
 

@@ -11,6 +11,8 @@ import {
 } from "@/lib/analytics/compliance";
 import type { DailyComplianceEntry } from "@/lib/analytics/compliance";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
+import { getUserTodayBounds } from "@/lib/timezone";
+import { userDayKey } from "@/lib/tz/format";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -75,13 +77,28 @@ export const GET = apiHandler(
     const dailyCompliance: Record<string, DailyComplianceEntry> = {};
 
     for (let d = 0; d < 90; d++) {
-      const dayStart = new Date(now.getTime() - (d + 1) * 24 * 60 * 60 * 1000);
-      const dayEnd = new Date(now.getTime() - d * 24 * 60 * 60 * 1000);
+      // v1.7.0 code-correctness M1 — anchor each day's [start,end) on the
+      // user-tz local-day boundary, not a UTC-midnight slice. The engine
+      // applies `timesOfDay` in the user timezone, so for tz-distant users
+      // a UTC slice could attach `due` / `expectedCount` to the adjacent
+      // calendar cell. Anchor on a noon-local representative instant
+      // (dodges the DST midnight-ambiguity edge) and key off the user-tz
+      // day so the heatmap cell, the engine frame, and `dateKey` agree.
+      const representative = new Date(
+        now.getTime() - d * 24 * 60 * 60 * 1000 - 12 * 60 * 60 * 1000,
+      );
+      const { start: dayStart, end: dayEndInclusive } = getUserTodayBounds(
+        representative,
+        userTz,
+      );
+      // `getUserTodayBounds` returns an inclusive end (local 23:59:59.999);
+      // the slicing loops below use a half-open `[dayStart, dayEnd)`.
+      const dayEnd = new Date(dayEndInclusive.getTime() + 1);
 
       // Skip days before medication was created
       if (dayEnd <= createdAt) continue;
 
-      const dateKey = dayStart.toISOString().slice(0, 10);
+      const dateKey = userDayKey(dayStart, userTz);
 
       const dayEvents = mapped.filter(
         (e) => e.scheduledFor >= dayStart && e.scheduledFor < dayEnd,
