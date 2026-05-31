@@ -24,28 +24,15 @@ export interface SourceChipsProps {
   className?: string;
 }
 
-const METRIC_KEYS: Record<CoachProvenance["metrics"][number], string> = {
-  bp: "insights.coach.metric.bp",
-  weight: "insights.coach.metric.weight",
-  pulse: "insights.coach.metric.pulse",
-  mood: "insights.coach.metric.mood",
-  compliance: "insights.coach.metric.compliance",
-  general: "insights.coach.metric.general",
-  // ── v1.4.23 Apple Health additive ──
-  // Optional metric tags surfaced when the iOS app's HealthKit snapshot
-  // contains the matching block. The translation keys follow the same
-  // `insights.coach.metric.<token>` namespace and fall back to the raw
-  // token when a new metric ships before the locale files catch up.
-  hrv: "insights.coach.metric.hrv",
-  sleep: "insights.coach.metric.sleep",
-  resting_hr: "insights.coach.metric.resting_hr",
-  steps: "insights.coach.metric.steps",
-  active_energy: "insights.coach.metric.active_energy",
-  flights: "insights.coach.metric.flights",
-  distance: "insights.coach.metric.distance",
-  vo2_max: "insights.coach.metric.vo2_max",
-  body_temp: "insights.coach.metric.body_temp",
-};
+// v1.7.0 — every provenance metric token resolves to
+// `insights.coach.metric.<token>`. The clustered taxonomy added ~26
+// new tokens; the key is derived from the token rather than maintained
+// in a hand-listed map. The resolver falls back to the raw token when
+// a locale file lags, and `messages/en.json` carries one leaf per
+// token (propagated to all locales by the locale-integrity guard).
+function metricI18nKey(metric: CoachProvenance["metrics"][number]): string {
+  return `insights.coach.metric.${metric}`;
+}
 
 const WINDOW_KEYS: Record<CoachProvenance["windows"][number], string> = {
   last7days: "insights.coach.window.last7days",
@@ -71,7 +58,7 @@ export function SourceChips({ provenance, className }: SourceChipsProps) {
   // "general" tag visibly.
   const primaryWindowKey = windows[0] ?? null;
   const chips = metrics.map((metric) => {
-    const metricLabel = t(METRIC_KEYS[metric]);
+    const metricLabel = t(metricI18nKey(metric));
     const windowLabel = primaryWindowKey
       ? t(WINDOW_KEYS[primaryWindowKey])
       : null;

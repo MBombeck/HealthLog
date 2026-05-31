@@ -443,6 +443,10 @@ Reply now as the assistant, in ${locale === "de" ? "German" : "English"}.`;
       promptVersion: PROMPT_VERSION,
       conversationId: workingConversationId,
       historyTurns: window.length,
+      // v1.7.0 — count of provenance metrics the snapshot surfaced
+      // this turn (a proxy for cluster breadth) so the dashboards can
+      // correlate reply shape with cluster activation.
+      clusterCount: snapshot.provenance.metrics.length,
     },
   });
 

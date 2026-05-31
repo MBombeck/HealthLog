@@ -1021,6 +1021,22 @@ paths:
                     - last30days
                     - last90days
                     - allTime
+                dataClusters:
+                  maxItems: 10
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - cardio
+                      - body
+                      - activity
+                      - workouts
+                      - sleep
+                      - mood
+                      - glucose
+                      - medication
+                      - mobility
+                      - environment
       responses:
         "200":
           description: Saved preferences echoed back.
@@ -3603,6 +3619,22 @@ components:
                 - last30days
                 - last90days
                 - allTime
+            dataClusters:
+              maxItems: 10
+              type: array
+              items:
+                type: string
+                enum:
+                  - cardio
+                  - body
+                  - activity
+                  - workouts
+                  - sleep
+                  - mood
+                  - glucose
+                  - medication
+                  - mobility
+                  - environment
           required:
             - tone
             - verbosity
@@ -3671,6 +3703,22 @@ components:
                 - last30days
                 - last90days
                 - allTime
+            dataClusters:
+              maxItems: 10
+              type: array
+              items:
+                type: string
+                enum:
+                  - cardio
+                  - body
+                  - activity
+                  - workouts
+                  - sleep
+                  - mood
+                  - glucose
+                  - medication
+                  - mobility
+                  - environment
           required:
             - tone
             - verbosity

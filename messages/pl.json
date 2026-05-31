@@ -1618,7 +1618,33 @@
         "vo2_max": "VO₂ max",
         "body_temp": "Temperatura ciała",
         "medications": "Leki",
-        "anthropometrics": "Profil (wzrost, wiek, płeć)"
+        "anthropometrics": "Profil (wzrost, wiek, płeć)",
+        "walking_hr": "Tętno podczas chodzenia",
+        "respiratory_rate": "Częstość oddechów",
+        "spo2": "Saturacja krwi",
+        "pulse_wave_velocity": "Prędkość fali tętna",
+        "vascular_age": "Wiek naczyniowy",
+        "body_fat": "Tkanka tłuszczowa",
+        "fat_mass": "Masa tłuszczowa",
+        "fat_free_mass": "Masa beztłuszczowa",
+        "muscle_mass": "Masa mięśniowa",
+        "lean_body_mass": "Beztłuszczowa masa ciała",
+        "bone_mass": "Masa kostna",
+        "total_body_water": "Woda w organizmie",
+        "bmi": "BMI",
+        "visceral_fat": "Tłuszcz trzewny",
+        "glucose": "Glukoza",
+        "walking_steadiness": "Stabilność chodu",
+        "walking_asymmetry": "Asymetria chodu",
+        "walking_double_support": "Czas podwójnego podparcia",
+        "walking_step_length": "Długość kroku",
+        "walking_speed": "Prędkość chodu",
+        "audio_env": "Dźwięk otoczenia",
+        "audio_headphone": "Dźwięk słuchawek",
+        "audio_event": "Zdarzenia głośnego dźwięku",
+        "daylight": "Czas w świetle dziennym",
+        "skin_temp": "Temperatura skóry",
+        "workouts": "Treningi"
       },
       "window": {
         "last7days": "Ostatnie 7 dni",
@@ -1656,7 +1682,52 @@
       "providerRateLimitTitle": "Dostawca z ograniczeniem",
       "providerRateLimitBody": "Dostawca jest tymczasowo przeciążony; reset za ~5 min.",
       "settingsContextLabel": "Wysyłaj kontekst",
-      "settingsContextHint": "Opcjonalne bloki, na których coach może się opierać. Wyłączenie pominie blok w każdej odpowiedzi."
+      "settingsContextHint": "Opcjonalne bloki, na których coach może się opierać. Wyłączenie pominie blok w każdej odpowiedzi.",
+      "cluster": {
+        "cardio": {
+          "label": "Sercowo-naczyniowe",
+          "hint": "Ciśnienie · tętno · HRV · tętno spoczynkowe i marszowe"
+        },
+        "body": {
+          "label": "Skład ciała",
+          "hint": "Waga · tłuszcz · mięśnie · BMI"
+        },
+        "activity": {
+          "label": "Aktywność",
+          "hint": "Kroki · energia · dystans · VO₂ max"
+        },
+        "workouts": {
+          "label": "Treningi",
+          "hint": "Biegi · przejażdżki · sesje"
+        },
+        "sleep": {
+          "label": "Sen",
+          "hint": "Czas trwania · fazy"
+        },
+        "mood": {
+          "label": "Nastrój",
+          "hint": "Codzienne wpisy nastroju"
+        },
+        "glucose": {
+          "label": "Glukoza",
+          "hint": "Pomiary na czczo i poposiłkowe"
+        },
+        "medication": {
+          "label": "Leki",
+          "hint": "Przestrzeganie · kontekst GLP-1"
+        },
+        "mobility": {
+          "label": "Mobilność i chód",
+          "hint": "Stabilność · asymetria · chód"
+        },
+        "environment": {
+          "label": "Środowisko",
+          "hint": "Hałas · światło · temp. skóry"
+        }
+      },
+      "settingsClustersLabel": "Dane widziane przez Coacha",
+      "settingsClustersHint": "Wybierz, które grupy danych Coach może czytać. Więcej danych to bogatsze odpowiedzi i większy prompt.",
+      "settingsClusterNoData": "Brak danych"
     },
     "relativeJustNow": "przed chwilą",
     "relativeMinutesAgoOne": "{count} minutę temu",

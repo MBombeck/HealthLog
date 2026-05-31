@@ -1618,7 +1618,33 @@
         "vo2_max": "VO₂ max",
         "body_temp": "Body temperature",
         "medications": "Medications",
-        "anthropometrics": "Profile (height, age, gender)"
+        "anthropometrics": "Profile (height, age, gender)",
+        "walking_hr": "Walking heart rate",
+        "respiratory_rate": "Respiratory rate",
+        "spo2": "Blood oxygen",
+        "pulse_wave_velocity": "Pulse-wave velocity",
+        "vascular_age": "Vascular age",
+        "body_fat": "Body fat",
+        "fat_mass": "Fat mass",
+        "fat_free_mass": "Fat-free mass",
+        "muscle_mass": "Muscle mass",
+        "lean_body_mass": "Lean body mass",
+        "bone_mass": "Bone mass",
+        "total_body_water": "Body water",
+        "bmi": "BMI",
+        "visceral_fat": "Visceral fat",
+        "glucose": "Glucose",
+        "walking_steadiness": "Walking steadiness",
+        "walking_asymmetry": "Walking asymmetry",
+        "walking_double_support": "Double support time",
+        "walking_step_length": "Step length",
+        "walking_speed": "Walking speed",
+        "audio_env": "Environmental sound",
+        "audio_headphone": "Headphone audio",
+        "audio_event": "Loud-sound events",
+        "daylight": "Time in daylight",
+        "skin_temp": "Skin temperature",
+        "workouts": "Workouts"
       },
       "window": {
         "last7days": "last 7 days",
@@ -1656,7 +1682,52 @@
       "dailyLimitTitle": "Daily limit reached",
       "dailyLimitBody": "Daily limit reached; resets at 00:00 UTC.",
       "providerRateLimitTitle": "Provider rate-limited",
-      "providerRateLimitBody": "Provider temporarily rate-limited; retry in ~5 min."
+      "providerRateLimitBody": "Provider temporarily rate-limited; retry in ~5 min.",
+      "cluster": {
+        "cardio": {
+          "label": "Cardiovascular",
+          "hint": "BP · pulse · HRV · resting & walking HR"
+        },
+        "body": {
+          "label": "Body composition",
+          "hint": "Weight · body fat · muscle · BMI"
+        },
+        "activity": {
+          "label": "Activity",
+          "hint": "Steps · energy · distance · VO₂ max"
+        },
+        "workouts": {
+          "label": "Workouts",
+          "hint": "Runs · rides · sessions"
+        },
+        "sleep": {
+          "label": "Sleep",
+          "hint": "Duration · stages"
+        },
+        "mood": {
+          "label": "Mood",
+          "hint": "Daily mood entries"
+        },
+        "glucose": {
+          "label": "Glucose",
+          "hint": "Fasting · postprandial readings"
+        },
+        "medication": {
+          "label": "Medication",
+          "hint": "Adherence · GLP-1 context"
+        },
+        "mobility": {
+          "label": "Mobility & gait",
+          "hint": "Steadiness · asymmetry · gait"
+        },
+        "environment": {
+          "label": "Environment",
+          "hint": "Noise · daylight · skin temp"
+        }
+      },
+      "settingsClustersLabel": "Data the Coach sees",
+      "settingsClustersHint": "Pick which clusters of your data the Coach can read. More data means richer answers and a larger prompt.",
+      "settingsClusterNoData": "No data yet"
     },
     "relativeJustNow": "just now",
     "relativeMinutesAgoOne": "{count} minute ago",
