@@ -115,6 +115,34 @@ function getHourForTimeZone(timeZone?: string): number {
   }
 }
 
+/**
+ * v1.7.0 — first-paint gate for the dashboard tile strip.
+ *
+ * `primaryLoading` must come from whichever query actually drives the
+ * tiles: the snapshot cell under `NEXT_PUBLIC_DASHBOARD_SNAPSHOT=true`,
+ * the slim analytics cell otherwise. A disabled TanStack query reports
+ * `isLoading: false` (idle fetch status), so keying off the wrong
+ * source flashes the empty state for the whole fetch. Pure + exported
+ * so the gate has direct unit coverage without mounting the page.
+ */
+export function resolveDashboardFirstPaintGate(input: {
+  trendCardCount: number;
+  chartCount: number;
+  configuredTileCount: number;
+  primaryLoading: boolean;
+}): { showTileStripSkeleton: boolean; showEmptyState: boolean } {
+  const showTileStripSkeleton =
+    input.trendCardCount === 0 &&
+    input.primaryLoading &&
+    input.configuredTileCount > 0;
+  const showEmptyState =
+    input.trendCardCount === 0 &&
+    input.chartCount === 0 &&
+    !showTileStripSkeleton &&
+    !input.primaryLoading;
+  return { showTileStripSkeleton, showEmptyState };
+}
+
 function getRangeColorClass(
   value: number | null | undefined,
   config: RangeDisplayConfig,
@@ -1377,10 +1405,23 @@ export default function DashboardPage() {
         const configuredTileCount = layout.widgets.filter(
           (w) => w.tileVisible ?? w.visible,
         ).length;
-        const showTileStripSkeleton =
-          trendCards.length === 0 &&
-          analyticsSlimQuery.isLoading &&
-          configuredTileCount > 0;
+        // v1.7.0 — the primary data source differs by flag. In snapshot
+        // mode `analyticsSlimQuery` is `enabled: false`, and a disabled
+        // TanStack query reports `fetchStatus: "idle"` → `isLoading` is
+        // always `false`. Gating the skeleton on the slim query then
+        // never fires under snapshot mode, so the empty-state branch
+        // below flashes for the whole snapshot fetch. Key the loading
+        // flag off whichever query is actually driving the tiles.
+        const primaryLoading = snapshotEnabled
+          ? snapshotQuery.isLoading
+          : analyticsSlimQuery.isLoading;
+        const { showTileStripSkeleton, showEmptyState } =
+          resolveDashboardFirstPaintGate({
+            trendCardCount: trendCards.length,
+            chartCount: charts.length,
+            configuredTileCount,
+            primaryLoading,
+          });
 
         // v1.4.15 phase-C5: dashboard fully-empty state. When no tile
         // and no chart has data the dashboard would otherwise paint a
@@ -1396,11 +1437,7 @@ export default function DashboardPage() {
         // v1.4.43 W11 — the empty-state only fires once the slim slice
         // resolves with no tiles to show. While slim is in flight the
         // skeleton strip below carries the layout footprint.
-        if (
-          trendCards.length === 0 &&
-          charts.length === 0 &&
-          !showTileStripSkeleton
-        ) {
+        if (showEmptyState) {
           return (
             <EmptyState
               icon={<Activity className="size-6" />}
