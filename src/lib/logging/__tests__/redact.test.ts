@@ -27,6 +27,13 @@ describe("redactSecrets", () => {
       "OAuth ?code=[REDACTED]&state=abc",
     );
     expect(redactSecrets("api?api_key=secret")).toBe("api?api_key=[REDACTED]");
+    // v1.7.0 — health-insurance identity in a stray query string.
+    expect(redactSecrets("profile ?kvnr=A123456780 saved")).toBe(
+      "profile ?kvnr=[REDACTED] saved",
+    );
+    expect(redactSecrets("export ?insuranceNumber=A123456780&days=30")).toBe(
+      "export ?insuranceNumber=[REDACTED]&days=30",
+    );
   });
 
   it("redacts OpenAI and Anthropic API keys", () => {

@@ -148,4 +148,19 @@ describe("redactSensitiveFields", () => {
       benignField: "kept",
     });
   });
+
+  it("redacts the health-insurance identity additions (insuranceNumber / kvnr / insurerName)", () => {
+    const body = {
+      insuranceNumber: "A123456780",
+      kvnr: "A123456780",
+      insurerName: "Example Krankenkasse",
+      benignField: "kept",
+    };
+    expect(redactSensitiveFields(body)).toEqual({
+      insuranceNumber: "[redacted]",
+      kvnr: "[redacted]",
+      insurerName: "[redacted]",
+      benignField: "kept",
+    });
+  });
 });

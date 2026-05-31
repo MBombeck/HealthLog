@@ -43,6 +43,16 @@ export const SENSITIVE_KEY_PATTERNS: readonly RegExp[] = [
   /otp/i,
   /recovery/i,
   /dsn/i,
+  // v1.7.0 — health-insurance identity. `insuranceNumber` / `kvnr`
+  // (the German statutory-insurance number) is encrypted at rest and is
+  // absent from every current wide-event excerpt, but the field name
+  // belongs on the denylist as defence-in-depth: if a future change
+  // routes a profile body through `buildPayloadDiagnostic` /
+  // `redactSensitiveFields`, the value redacts instead of landing
+  // verbatim. Also covers `insurerName`.
+  /insurance/i,
+  /insurer/i,
+  /kvnr/i,
 ];
 
 const REDACTED = "[redacted]";
