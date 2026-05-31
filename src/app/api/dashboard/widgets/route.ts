@@ -137,6 +137,42 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   const { data: body, error: jsonError } = await safeJson(request);
   if (jsonError) return jsonError;
 
+  // v1.7.0 #9 — accept-and-ignore unknown widget ids on write. iOS ships
+  // its own widget tiles ahead of a server release; the strict enum used
+  // to reject the ENTIRE blob if any id was unknown, surfacing the
+  // "Layout konnte nicht gespeichert werden" toast on every save. Mirror
+  // the read-side tolerance (`dashboard-layout.ts` drops unknown ids on
+  // GET): filter unknown ids out before Zod so the server persists only
+  // ids it knows; iOS keeps its own local layout for the rest. The enum
+  // still validates the SURVIVING ids, so a genuinely malformed entry
+  // (non-string id, missing `order`) still 422s. A typo in a KNOWN id
+  // silently vanishes — acceptable, and greppable via the annotation.
+  const knownWidgetIds = new Set<string>(DASHBOARD_WIDGET_IDS);
+  if (
+    body &&
+    typeof body === "object" &&
+    Array.isArray((body as { widgets?: unknown }).widgets)
+  ) {
+    const widgetsBody = body as {
+      widgets: Array<{ id?: unknown }>;
+    };
+    const droppedIds = widgetsBody.widgets
+      .map((w) => w?.id)
+      .filter(
+        (id): id is string =>
+          typeof id === "string" && !knownWidgetIds.has(id),
+      );
+    if (droppedIds.length > 0) {
+      widgetsBody.widgets = widgetsBody.widgets.filter(
+        (w) => !(typeof w?.id === "string" && !knownWidgetIds.has(w.id)),
+      );
+      annotate({
+        action: { name: "dashboard.widgets.unknown-id-dropped" },
+        meta: { dropped_ids: droppedIds, dropped_count: droppedIds.length },
+      });
+    }
+  }
+
   const parsed = layoutSchema.safeParse(body);
   if (!parsed.success) {
     // v1.4.42 W2 — the legacy `issues[0].message` envelope dropped

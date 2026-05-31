@@ -59,6 +59,7 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { annotate } from "@/lib/logging/context";
 import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
+import { DASHBOARD_WIDGET_IDS } from "@/lib/dashboard-layout";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -211,10 +212,14 @@ describe("PUT /api/dashboard/widgets — 422 multi-issue envelope (v1.4.42 W2)",
   });
 
   it("caps received_shape_excerpt at 256 chars even for a large iOS payload", async () => {
+    // v1.7.0 #9 — unknown ids are now filtered out before Zod, so use a
+    // KNOWN id (survives the filter) with an out-of-range `order` (>99)
+    // and a long label to keep the payload large AND failing validation.
     const widgets = Array.from({ length: 30 }, (_, i) => ({
-      id: `widget-${i}-${"x".repeat(20)}`,
+      id: DASHBOARD_WIDGET_IDS[0],
       visible: true,
-      order: i,
+      order: 999 + i,
+      label: `${"x".repeat(20)}-${i}`,
     }));
     const res = await callPut(makeReq({ version: 99, widgets }));
     expect(res.status).toBe(422);
@@ -301,5 +306,62 @@ describe("PUT /api/dashboard/widgets — 422 multi-issue envelope (v1.4.42 W2)",
     for (const issue of parsed.issues) {
       expect(Object.keys(issue).sort()).toEqual(["code", "path"]);
     }
+  });
+});
+
+describe("PUT /api/dashboard/widgets — accept-and-ignore unknown ids (v1.7.0 #9)", () => {
+  const knownId = DASHBOARD_WIDGET_IDS[0];
+
+  it("persists known ids, drops unknown ids, returns 200, and annotates", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      dashboardWidgetsJson: null,
+    } as never);
+    vi.mocked(prisma.user.update).mockResolvedValue({} as never);
+
+    const res = await callPut(
+      makeReq({
+        version: 1,
+        widgets: [
+          { id: knownId, visible: true, order: 0 },
+          { id: "ios-only-future-tile", visible: true, order: 1 },
+        ],
+      }),
+    );
+    expect(res.status).toBe(200);
+
+    // The persisted blob never carries the unknown id.
+    expect(prisma.user.update).toHaveBeenCalledTimes(1);
+    const updateArg = vi.mocked(prisma.user.update).mock.calls[0]?.[0] as unknown as {
+      data: { dashboardWidgetsJson: { widgets: Array<{ id: string }> } };
+    };
+    const persistedIds = updateArg.data.dashboardWidgetsJson.widgets.map(
+      (w) => w.id,
+    );
+    expect(persistedIds).toContain(knownId);
+    expect(persistedIds).not.toContain("ios-only-future-tile");
+
+    // The drop is greppable via the annotation.
+    expect(annotate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: { name: "dashboard.widgets.unknown-id-dropped" },
+        meta: expect.objectContaining({
+          dropped_ids: ["ios-only-future-tile"],
+          dropped_count: 1,
+        }),
+      }),
+    );
+  });
+
+  it("still 422s when a surviving entry is malformed (missing order)", async () => {
+    const res = await callPut(
+      makeReq({
+        version: 1,
+        widgets: [
+          { id: knownId, visible: true }, // no `order`
+          { id: "ios-only-future-tile", visible: true, order: 1 },
+        ],
+      }),
+    );
+    expect(res.status).toBe(422);
   });
 });
