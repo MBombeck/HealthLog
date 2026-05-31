@@ -749,6 +749,64 @@ const insightsComprehensiveResponse = z
       "AI-generated insights bundle. Strict-schema validated server-side; Coach-routed when the insight surface needs day-level grounding.",
   });
 
+// v1.7.0 — unified dashboard first-paint snapshot. One GET that
+// assembles every above-the-fold tile field in a single round-trip.
+// Two-phase shape: `tiles` (fast, always present) + `extras` (thick,
+// nullable on a rollup-coverage miss). The nested AI / DataSummary
+// blocks are typed loosely (`z.record`) to match the comprehensive
+// response style above — the strict shapes live in their own Zod
+// modules and the iOS client does not consume this web-only route.
+const dataSummaryRecord = z.record(z.string(), z.unknown());
+
+const dashboardSnapshotResponse = z
+  .object({
+    user: z.object({
+      username: z.string(),
+      timezone: z.string(),
+      heightCm: z.number().nullable(),
+      dateOfBirth: z.string().nullable(),
+      gender: z.enum(["MALE", "FEMALE"]).nullable(),
+      glucoseUnit: z.string().nullable(),
+      onboardingTourCompleted: z.boolean(),
+      greetingHour: z.number().int(),
+    }),
+    layout: z.record(z.string(), z.unknown()),
+    tiles: z.object({
+      summaries: dataSummaryRecord,
+      lastSeenByType: z.record(z.string(), z.unknown()),
+      mood: z.object({
+        summary: dataSummaryRecord.nullable(),
+        entries: z.array(
+          z.object({
+            date: z.string(),
+            score: z.number(),
+            samples: z.number().int(),
+          }),
+        ),
+      }),
+    }),
+    extras: z
+      .object({
+        bpInTargetPct: z.number().nullable(),
+        bpInTargetPct7d: z.number().nullable(),
+        bpInTargetPct30d: z.number().nullable(),
+        bpInTargetPctAllTime: z.number().nullable(),
+        bpInTargetPctPriorMonth: z.number().nullable(),
+        bpInTargetPctPriorYear: z.number().nullable(),
+        glucoseByContext: dataSummaryRecord,
+      })
+      .nullable(),
+    briefing: z.record(z.string(), z.unknown()).nullable(),
+    briefingState: z.enum(["ready", "preparing", "disabled"]),
+    briefingUpdatedAt: z.string().nullable(),
+    generatedAt: z.string(),
+  })
+  .meta({
+    id: "DashboardSnapshotResponse",
+    description:
+      "Unified above-the-fold dashboard payload. `tiles` always arrives (slim summaries + mood + resolved widget layout); `extras` (BD-in-target + per-context glucose) is null on a rollup-coverage miss so the strip never waits on the slowest read. `briefing` is lifted read-only from the pre-generated insight cache — never generated synchronously — and reports `ready` / `preparing` / `disabled` via `briefingState`.",
+  });
+
 // v1.5.0 — natural-language medication extraction route. The wizard's
 // optional "Beschreiben" overlay POSTs a free-text description and
 // receives a partial structured payload the form merges onto whatever
@@ -1767,6 +1825,28 @@ export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "403": {
           description: "Caller is not an admin.",
           content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/dashboard/snapshot": {
+    get: {
+      tags: ["Dashboard"],
+      summary: "Unified dashboard first-paint snapshot",
+      description:
+        "Assembles every above-the-fold tile field in one round-trip from the rollup / mood / widget helpers plus a read-only lift of the pre-generated daily briefing. Two-phase: `tiles` always present, `extras` nullable on a rollup-coverage miss. No LLM is reachable from this path. Cookie or Bearer auth.",
+      responses: {
+        "200": {
+          description: "Dashboard snapshot.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                dashboardSnapshotResponse,
+                "DashboardSnapshotResponseEnvelope",
+              ),
+            },
+          },
         },
         ...stdResponses,
       },
