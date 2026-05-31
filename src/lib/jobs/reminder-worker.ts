@@ -56,6 +56,12 @@ import {
   type MedicationInventoryExpirePayload,
 } from "@/lib/jobs/medication-inventory-expire";
 import {
+  INSIGHT_PREGENERATE_QUEUE,
+  INSIGHT_PREGENERATE_CRON,
+  runInsightPregenerate,
+  type InsightPregeneratePayload,
+} from "@/lib/jobs/insight-pregenerate";
+import {
   INTAKE_AUTO_SKIP_QUEUE,
   INTAKE_AUTO_SKIP_CRON,
   runIntakeAutoSkipPass,
@@ -1567,6 +1573,27 @@ async function handleMedicationInventoryExpire(
   });
 }
 
+async function handleInsightPregenerateJob(
+  jobs: Job<InsightPregeneratePayload>[],
+) {
+  void jobs;
+  await withBackgroundEvent("job.insight_pregenerate", async (evt) => {
+    try {
+      const summary = await runInsightPregenerate(getWorkerPrisma());
+      evt.setBackground({
+        task_name: "job.insight_pregenerate",
+        result: { ...summary },
+      });
+    } catch (err) {
+      evt.addWarning(
+        `insight-pregenerate failed: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  });
+}
+
 /**
  * v1.4.46 — hourly auto-skip for stale unmarked medication intakes.
  *
@@ -1898,6 +1925,12 @@ export async function startReminderWorker() {
     // as the other cleanup jobs; the daily schedule below would
     // silently no-op without this entry.
     PUSH_ATTEMPT_CLEANUP_QUEUE,
+    // v1.7.0 — nightly comprehensive-insight pre-generation so the
+    // daily briefing is warm before the user opens /insights or the
+    // dashboard snapshot. Same pg-boss v12 createQueue contract; without
+    // this entry the 04:30 schedule silently no-ops and every briefing
+    // falls back to the lazy on-demand generation it was meant to retire.
+    INSIGHT_PREGENERATE_QUEUE,
   ];
 
   for (const q of allQueues) {
@@ -1982,6 +2015,9 @@ export async function startReminderWorker() {
     [MOOD_REMINDER_CLEANUP_QUEUE, MOOD_REMINDER_CLEANUP_CRON],
     // v1.4.49 — daily 03:35 Europe/Berlin prune for push_attempts.
     [PUSH_ATTEMPT_CLEANUP_QUEUE, PUSH_ATTEMPT_CLEANUP_CRON],
+    // v1.7.0 — nightly 04:30 Europe/Berlin comprehensive-insight
+    // pre-generation. Budget-gated per user inside the handler.
+    [INSIGHT_PREGENERATE_QUEUE, INSIGHT_PREGENERATE_CRON],
   ];
 
   for (const [name, cron] of schedules) {
@@ -2121,6 +2157,15 @@ export async function startReminderWorker() {
     MEDICATION_INVENTORY_EXPIRE_QUEUE,
     { localConcurrency: 1 },
     handleMedicationInventoryExpire,
+  );
+  // v1.7.0 — nightly comprehensive-insight pre-generation. Single-flight
+  // so two ticks can't double-generate the same user; the per-user
+  // budget gate inside the handler also covers the race, but
+  // serialising here avoids wasted chain-resolves.
+  await boss.work<InsightPregeneratePayload>(
+    INSIGHT_PREGENERATE_QUEUE,
+    { localConcurrency: 1 },
+    handleInsightPregenerateJob,
   );
   // v1.4.46 — hourly auto-skip for stale unmarked intakes.
   // Single-flight: two ticks racing against the same row pile is wasted
