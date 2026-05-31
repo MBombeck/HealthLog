@@ -108,7 +108,7 @@
     "eslint-config-next": "16.2.6",
     "knip": "^6.14.2",
     "pdf-parse": "^2.4.5",
-    "pg": "^8.20.0",
+    "pg": "^8.21.0",
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "shadcn": "^4.7.0",
