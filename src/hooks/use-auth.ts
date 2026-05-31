@@ -39,6 +39,14 @@ export interface AuthUser {
    * stale /me payload from a partial-deploy rollback).
    */
   disableCoach: boolean;
+  /**
+   * v1.7.0 — optional patient-identity fields used by the health-record
+   * export (PDF cover + FHIR Patient). All optional; `insuranceNumber`
+   * is the German KVNR, decrypted server-side for the form prefill.
+   */
+  fullName: string | null;
+  insurerName: string | null;
+  insuranceNumber: string | null;
 }
 
 async function fetchMe(): Promise<AuthUser> {

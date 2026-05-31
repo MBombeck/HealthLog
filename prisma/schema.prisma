@@ -394,6 +394,19 @@ model User {
   // `reminder-worker.ts`).
   pushAttempts                PushAttempt[]
 
+  // v1.7.0 profile — optional patient-identity fields surfaced on the
+  // health-record export cover (PDF) and the FHIR `Patient` resource.
+  // `fullName` + `insurerName` are plaintext (consistent with the other
+  // plaintext profile columns: dateOfBirth, gender, heightCm). The German
+  // KVNR (`insuranceNumber`) is a quasi-identifier, so it is stored
+  // AES-256-GCM encrypted under the active key via `src/lib/crypto.ts`
+  // (column suffix `*Encrypted` per the project convention). All three are
+  // optional — an unset field collapses its cover line / FHIR slot exactly
+  // like the existing `practiceName`.
+  fullName                 String? @map("full_name")
+  insurerName              String? @map("insurer_name")
+  insuranceNumberEncrypted String? @map("insurance_number_encrypted")
+
   @@map("users")
 }
 

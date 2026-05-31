@@ -17,6 +17,7 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { applyProfileUpdate } from "@/lib/auth/profile-update";
 import { prisma } from "@/lib/db";
+import { decrypt } from "@/lib/crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -36,8 +37,22 @@ export const GET = apiHandler(async () => {
       locale: true,
       timezone: true,
       moodReminderEnabled: true,
+      fullName: true,
+      insurerName: true,
+      insuranceNumberEncrypted: true,
     },
   });
+
+  // v1.7.0 — decrypt the KVNR fail-soft so a key-rotation gap never 500s
+  // the profile fetch.
+  let insuranceNumber: string | null = null;
+  if (dbUser?.insuranceNumberEncrypted) {
+    try {
+      insuranceNumber = decrypt(dbUser.insuranceNumberEncrypted);
+    } catch {
+      insuranceNumber = null;
+    }
+  }
 
   return apiSuccess({
     username: dbUser?.username ?? user.username,
@@ -49,6 +64,9 @@ export const GET = apiHandler(async () => {
     locale: dbUser?.locale ?? null,
     timezone: dbUser?.timezone ?? "Europe/Berlin",
     moodReminderEnabled: dbUser?.moodReminderEnabled ?? false,
+    fullName: dbUser?.fullName ?? null,
+    insurerName: dbUser?.insurerName ?? null,
+    insuranceNumber,
   });
 });
 
@@ -75,5 +93,8 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     locale: result.user.locale,
     timezone: result.user.timezone,
     moodReminderEnabled: result.user.moodReminderEnabled,
+    fullName: result.user.fullName,
+    insurerName: result.user.insurerName,
+    hasInsuranceNumber: result.user.hasInsuranceNumber,
   });
 });
