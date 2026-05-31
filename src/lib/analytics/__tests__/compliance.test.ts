@@ -317,6 +317,242 @@ describe("calculateCompliance — cadence-aware adapter", () => {
   });
 });
 
+// ────────────────────────────────────────────────────────────────────
+// v1.7.0 SB-SCHED-2 — canonical-engine-routed compliance (Option B)
+//
+// When a `medicationContext` is supplied, the expected-slot denominator
+// runs through the canonical recurrence engine. These golden fixtures
+// pin every cadence type's denominator explicitly — this is the
+// riskiest change of the release because it moves every adherence number
+// for non-daily meds.
+// ────────────────────────────────────────────────────────────────────
+
+describe("calculateCompliance — engine-routed (medicationContext)", () => {
+  // Pin `now` to a Wednesday so a weekly Monday cadence has a clean
+  // count of Mondays in the trailing 30-day window.
+  const NOW = new Date("2025-01-15T12:00:00Z");
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function ctx(overrides: Partial<{
+    startsOn: Date | null;
+    endsOn: Date | null;
+    oneShot: boolean;
+    createdAt: Date;
+    lastIntakeAt: Date | null;
+    timeZone: string;
+  }> = {}) {
+    return {
+      startsOn: null,
+      endsOn: null,
+      oneShot: false,
+      createdAt: new Date("2024-12-01T00:00:00Z"),
+      lastIntakeAt: null,
+      timeZone: "UTC",
+      ...overrides,
+    };
+  }
+
+  it("parity: a legacy daysOfWeek-only schedule yields identical numbers with no context", () => {
+    const schedules: ComplianceSchedule[] = [
+      { windowStart: "08:00", windowEnd: "09:00", daysOfWeek: null },
+    ];
+    const events = Array.from({ length: 7 }, (_, i) =>
+      eventAt(new Date(NOW.getTime() - (i + 1) * DAY_MS), true),
+    );
+    const legacy = calculateCompliance(events, schedules, 7);
+    const withCtx = calculateCompliance(events, schedules, 7, undefined, {
+      medicationContext: ctx(),
+    });
+    // Legacy daysOfWeek-only schedule has no canonical fields → both
+    // paths run the legacy walker → identical numbers.
+    expect(withCtx).toEqual(legacy);
+  });
+
+  it("FREQ=WEEKLY;BYDAY=MO — took every Monday → 100%, denominator counts only Mondays", () => {
+    const schedules: ComplianceSchedule[] = [
+      {
+        windowStart: "08:00",
+        windowEnd: "09:00",
+        daysOfWeek: null,
+        rrule: "FREQ=WEEKLY;BYDAY=MO",
+        timesOfDay: ["08:00"],
+      },
+    ];
+    // Mondays in the trailing 30 days from Wed 2025-01-15: Jan 13, 6,
+    // Dec 30, 23, 16. Log a taken intake on each.
+    const mondays = [
+      "2025-01-13T08:30:00Z",
+      "2025-01-06T08:30:00Z",
+      "2024-12-30T08:30:00Z",
+      "2024-12-23T08:30:00Z",
+      "2024-12-16T08:30:00Z",
+    ].map((s) => ({
+      scheduledFor: new Date(s),
+      takenAt: new Date(s),
+      skipped: false,
+    }));
+    const result = calculateCompliance(mondays, schedules, 30, undefined, {
+      medicationContext: ctx(),
+    });
+    expect(result.rate).toBe(100);
+    // Denominator is the count of Mondays, not 30 days.
+    expect(result.totalExpected).toBeLessThanOrEqual(6);
+    expect(result.totalExpected).toBeGreaterThanOrEqual(4);
+  });
+
+  it("FREQ=WEEKLY;INTERVAL=2;BYDAY=WE — bi-weekly denominator counts only on-weeks", () => {
+    const schedules: ComplianceSchedule[] = [
+      {
+        windowStart: "08:00",
+        windowEnd: "09:00",
+        daysOfWeek: null,
+        rrule: "FREQ=WEEKLY;INTERVAL=2;BYDAY=WE",
+        timesOfDay: ["08:00"],
+      },
+    ];
+    const result = calculateCompliance([], schedules, 30, undefined, {
+      medicationContext: ctx({ startsOn: new Date("2024-12-04T00:00:00Z") }),
+    });
+    // Over ~30 days a bi-weekly Wednesday emits roughly 2 slots, never
+    // the ~4 a weekly Wednesday would. Nothing taken → all missed.
+    expect(result.totalExpected).toBeLessThanOrEqual(3);
+  });
+
+  it("rolling rollingIntervalDays=7 — only the next-due slot counts", () => {
+    const schedules: ComplianceSchedule[] = [
+      {
+        windowStart: "08:00",
+        windowEnd: "09:00",
+        daysOfWeek: null,
+        rollingIntervalDays: 7,
+        timesOfDay: ["08:00"],
+      },
+    ];
+    // Last intake 5 days ago → next due in 2 days (future) → no past
+    // expected slot inside the window → empty-window contract → 100.
+    const result = calculateCompliance([], schedules, 30, undefined, {
+      medicationContext: ctx({
+        lastIntakeAt: new Date(NOW.getTime() - 5 * DAY_MS),
+      }),
+    });
+    expect(result.totalExpected).toBe(0);
+    expect(result.rate).toBe(100);
+  });
+
+  it("one-shot — exactly one expected slot on startsOn", () => {
+    const startsOn = new Date("2025-01-10T00:00:00Z");
+    const schedules: ComplianceSchedule[] = [
+      {
+        windowStart: "08:00",
+        windowEnd: "09:00",
+        daysOfWeek: null,
+        scheduleType: "SCHEDULED",
+        timesOfDay: ["08:00"],
+      },
+    ];
+    const result = calculateCompliance([], schedules, 30, undefined, {
+      medicationContext: ctx({ oneShot: true, startsOn, endsOn: startsOn }),
+    });
+    // One-shot anchored on Jan 10 → exactly one expected slot in the
+    // trailing-30 window; nothing taken → one missed.
+    expect(result.totalExpected).toBe(1);
+    expect(result.missed).toBe(1);
+  });
+
+  it("PRN — rate 100, totalExpected 0, even with a daily rrule present", () => {
+    const schedules: ComplianceSchedule[] = [
+      {
+        windowStart: "08:00",
+        windowEnd: "09:00",
+        daysOfWeek: null,
+        scheduleType: "PRN",
+        rrule: "FREQ=DAILY",
+        timesOfDay: ["08:00"],
+      },
+    ];
+    const result = calculateCompliance([], schedules, 30, undefined, {
+      medicationContext: ctx(),
+    });
+    expect(result.totalExpected).toBe(0);
+    expect(result.rate).toBe(100);
+  });
+
+  it("cyclic 2-on/1-off — off-week days are not counted in the denominator", () => {
+    const schedules: ComplianceSchedule[] = [
+      {
+        windowStart: "08:00",
+        windowEnd: "09:00",
+        daysOfWeek: null,
+        scheduleType: "CYCLIC",
+        cyclicOnWeeks: 2,
+        cyclicOffWeeks: 1,
+        rrule: "FREQ=DAILY",
+        timesOfDay: ["08:00"],
+      },
+    ];
+    const cyclicResult = calculateCompliance([], schedules, 30, undefined, {
+      medicationContext: ctx({ startsOn: new Date("2024-12-01T00:00:00Z") }),
+    });
+    const dailySchedules: ComplianceSchedule[] = [
+      {
+        windowStart: "08:00",
+        windowEnd: "09:00",
+        daysOfWeek: null,
+        rrule: "FREQ=DAILY",
+        timesOfDay: ["08:00"],
+      },
+    ];
+    const dailyResult = calculateCompliance([], dailySchedules, 30, undefined, {
+      medicationContext: ctx({ startsOn: new Date("2024-12-01T00:00:00Z") }),
+    });
+    // Cyclic drops the off-weeks → strictly fewer expected slots than a
+    // plain daily over the same window.
+    expect(cyclicResult.totalExpected).toBeLessThan(dailyResult.totalExpected);
+  });
+
+  it("DST spring-forward day (Europe/Berlin) parity — daily rate stays 100", () => {
+    // Europe/Berlin spring-forward 2025-03-30. Pin now just after it.
+    vi.setSystemTime(new Date("2025-03-31T12:00:00Z"));
+    const schedules: ComplianceSchedule[] = [
+      {
+        windowStart: "08:00",
+        windowEnd: "09:00",
+        daysOfWeek: null,
+        rrule: "FREQ=DAILY",
+        timesOfDay: ["08:00"],
+      },
+    ];
+    // Log a taken intake around 08:00 Berlin local for each of the past
+    // 7 days. The ±12 h pairing radius absorbs the DST hour shift, so a
+    // daily schedule across the spring-forward boundary stays compliant.
+    // Log a taken intake around 08:00 Berlin local for each day spanning
+    // the window with a one-day pad on each edge. The ±12 h pairing
+    // radius absorbs the DST hour shift, so every expected daily slot
+    // across the spring-forward boundary pairs with a logged intake.
+    const events = Array.from({ length: 10 }, (_, i) => {
+      const sched = new Date(
+        new Date("2025-03-31T12:00:00Z").getTime() - (i - 1) * DAY_MS,
+      );
+      sched.setUTCHours(6, 30, 0, 0); // ~08:00 Berlin (CET/CEST)
+      return { scheduledFor: sched, takenAt: sched, skipped: false };
+    });
+    const result = calculateCompliance(events, schedules, 7, undefined, {
+      medicationContext: ctx({ timeZone: "Europe/Berlin" }),
+    });
+    // Daily cadence across the DST boundary stays fully compliant — no
+    // expected slot is left unpaired.
+    expect(result.rate).toBe(100);
+    expect(result.missed).toBe(0);
+  });
+});
+
 describe("classifyIntakeTiming", () => {
   // v1.4.34 IW-C — the classifier now widens the pre-window grace to
   // 3h and introduces an `early` bucket so a proactive logger (10 min

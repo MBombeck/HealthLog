@@ -28,6 +28,12 @@
  */
 
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
+import {
+  type CanonicalSchedule,
+  type RecurrenceContext,
+  type ScheduleType,
+  occurrencesBetween,
+} from "@/lib/medications/scheduling/recurrence";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 
 export interface ScheduleLike {
@@ -37,6 +43,92 @@ export interface ScheduleLike {
   windowEnd: string;
   /** Encoded recurrence string per `serializeScheduleRecurrence`. */
   daysOfWeek: string | null;
+  /**
+   * v1.7.0 SB-SCHED-2 — canonical-engine fields. When any of these is
+   * present AND the caller supplies a `CadenceEngineContext`,
+   * `expandScheduleSlots` delegates the expected-slot grid to the
+   * canonical recurrence engine (`occurrencesBetween`) instead of the
+   * legacy `daysOfWeek` walker. This routes compliance through the same
+   * engine the projector + reminder worker use, fixing the long-standing
+   * bug where an `rrule = "FREQ=WEEKLY;BYDAY=MO"` schedule expanded to
+   * daily-every-day in compliance (because `daysOfWeek = null` reads as
+   * "every day"). Absent fields keep the legacy weekday path so existing
+   * fixtures / pre-v1.7 callers are byte-stable.
+   */
+  rrule?: string | null;
+  rollingIntervalDays?: number | null;
+  timesOfDay?: string[];
+  reminderGraceMinutes?: number | null;
+  scheduleType?: ScheduleType | null;
+  cyclicOnWeeks?: number | null;
+  cyclicOffWeeks?: number | null;
+  /** Stable id for the engine occurrence; defaults to a synthetic value. */
+  id?: string;
+}
+
+/**
+ * v1.7.0 SB-SCHED-2 — medication-level context the canonical engine
+ * needs to expand a schedule's expected slots. Passed once per
+ * medication into the cadence helpers; threaded down to
+ * `expandScheduleSlots`. When omitted, every schedule falls back to the
+ * legacy weekday walker (the byte-stable pre-v1.7 path).
+ */
+export interface CadenceEngineContext {
+  startsOn: Date | null;
+  endsOn: Date | null;
+  oneShot: boolean;
+  createdAt: Date;
+  /** Latest non-skipped intake — only read by rolling cadences. */
+  lastIntakeAt: Date | null;
+  /** User IANA timezone. Required for the engine to apply HH:mm slots. */
+  timeZone: string;
+}
+
+/** A schedule routes through the canonical engine iff it carries a
+ * non-legacy recurrence shape OR a non-SCHEDULED schedule type. */
+function usesCanonicalEngine(schedule: ScheduleLike): boolean {
+  return (
+    (schedule.rrule ?? null) !== null ||
+    (schedule.rollingIntervalDays ?? null) !== null ||
+    (schedule.scheduleType ?? "SCHEDULED") !== "SCHEDULED"
+  );
+}
+
+/** Build a `CanonicalSchedule` from a `ScheduleLike` + its index. */
+function toCanonical(
+  schedule: ScheduleLike,
+  scheduleIndex: number,
+): CanonicalSchedule {
+  return {
+    id: schedule.id ?? `cadence-${scheduleIndex}`,
+    rrule: schedule.rrule ?? null,
+    rollingIntervalDays: schedule.rollingIntervalDays ?? null,
+    timesOfDay: schedule.timesOfDay ?? [],
+    daysOfWeek: schedule.daysOfWeek ?? null,
+    windowStart: schedule.windowStart,
+    windowEnd: schedule.windowEnd,
+    reminderGraceMinutes: schedule.reminderGraceMinutes ?? null,
+    scheduleType: schedule.scheduleType ?? "SCHEDULED",
+    cyclicOnWeeks: schedule.cyclicOnWeeks ?? null,
+    cyclicOffWeeks: schedule.cyclicOffWeeks ?? null,
+  };
+}
+
+/** Build the engine's `RecurrenceContext` from the cadence context. */
+function toRecurrenceContext(
+  engineCtx: CadenceEngineContext,
+): RecurrenceContext {
+  return {
+    medication: {
+      id: "cadence-med",
+      startsOn: engineCtx.startsOn,
+      endsOn: engineCtx.endsOn,
+      oneShot: engineCtx.oneShot,
+      createdAt: engineCtx.createdAt,
+    },
+    timeZone: engineCtx.timeZone,
+    lastIntakeAt: engineCtx.lastIntakeAt,
+  };
 }
 
 export interface IntakeEventLike {
@@ -171,8 +263,28 @@ export function expandScheduleSlots(
   to: Date,
   anchor: Date = from,
   timeZone?: string,
+  engineCtx?: CadenceEngineContext,
 ): ExpectedDose[] {
   if (to <= from) return [];
+
+  // v1.7.0 SB-SCHED-2 — Option B delegation. When the caller supplies a
+  // medication context AND the schedule carries a canonical recurrence
+  // (rrule / rolling) or a non-SCHEDULED type, expand the expected-slot
+  // grid through the canonical engine so compliance, the cadence chart,
+  // and the projector all read the same source of truth. The legacy
+  // weekday walker below stays the path for plain `daysOfWeek` schedules
+  // and for every caller that doesn't thread a context (byte-stable).
+  if (engineCtx && (engineCtx.oneShot || usesCanonicalEngine(schedule))) {
+    const canonical = toCanonical(schedule, scheduleIndex);
+    const recurrenceCtx = toRecurrenceContext(engineCtx);
+    const occurrences = occurrencesBetween(canonical, from, to, recurrenceCtx);
+    return occurrences.map((occ) => ({
+      day: startOfLocalDay(occ.at, timeZone),
+      windowStart: occ.at,
+      windowEnd: occ.graceUntil,
+      scheduleIndex,
+    }));
+  }
 
   const recurrence = parseScheduleRecurrence(schedule.daysOfWeek);
   const slots: ExpectedDose[] = [];
@@ -309,12 +421,21 @@ export function computeNextDose(
   lookaheadDays = 14,
   anchor?: Date,
   timeZone?: string,
+  engineCtx?: CadenceEngineContext,
 ): ExpectedDose | null {
   const to = new Date(asOf.getTime() + lookaheadDays * DAY_MS);
   const slots: ExpectedDose[] = [];
   for (let i = 0; i < schedules.length; i++) {
     slots.push(
-      ...expandScheduleSlots(schedules[i], i, asOf, to, anchor ?? asOf, timeZone),
+      ...expandScheduleSlots(
+        schedules[i],
+        i,
+        asOf,
+        to,
+        anchor ?? asOf,
+        timeZone,
+        engineCtx,
+      ),
     );
   }
   if (slots.length === 0) return null;
@@ -335,6 +456,7 @@ export function buildCadenceTimeline(
   windowDays = 30,
   anchor?: Date,
   timeZone?: string,
+  engineCtx?: CadenceEngineContext,
 ): PairedDose[] {
   const from = new Date(asOf.getTime() - windowDays * DAY_MS);
   const slots: ExpectedDose[] = [];
@@ -347,6 +469,7 @@ export function buildCadenceTimeline(
         asOf,
         anchor ?? from,
         timeZone,
+        engineCtx,
       ),
     );
   }

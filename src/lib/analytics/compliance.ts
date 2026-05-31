@@ -21,9 +21,11 @@
 
 import {
   buildCadenceTimeline,
+  type CadenceEngineContext,
   type IntakeEventLike,
   type ScheduleLike,
 } from "@/lib/medications/scheduling/cadence";
+import type { ScheduleType } from "@/lib/medications/scheduling/recurrence";
 
 interface IntakeEvent {
   takenAt: Date | null;
@@ -154,6 +156,38 @@ export interface ComplianceSchedule {
   windowStart: string; // HH:mm
   windowEnd: string; // HH:mm
   daysOfWeek?: string | null;
+  /**
+   * v1.7.0 SB-SCHED-2 — canonical-engine fields. When present (and a
+   * `medicationContext` is threaded into `calculateCompliance`), the
+   * expected-slot grid is computed through the canonical recurrence
+   * engine, so an `rrule = "FREQ=WEEKLY;BYDAY=MO"` schedule counts only
+   * Mondays in the denominator instead of every day. Absent fields keep
+   * the legacy `daysOfWeek` path — existing fixtures / callers that pass
+   * only `{ windowStart, windowEnd }` behave exactly as before.
+   */
+  rrule?: string | null;
+  rollingIntervalDays?: number | null;
+  timesOfDay?: string[];
+  reminderGraceMinutes?: number | null;
+  scheduleType?: ScheduleType | null;
+  cyclicOnWeeks?: number | null;
+  cyclicOffWeeks?: number | null;
+}
+
+/**
+ * v1.7.0 SB-SCHED-2 — medication-level context the canonical engine
+ * needs to expand expected slots. When supplied, `calculateCompliance`
+ * routes the denominator through the engine; when omitted, every
+ * schedule falls back to the legacy weekday walker (the byte-stable
+ * pre-v1.7 behaviour that the parity fixtures pin).
+ */
+export interface ComplianceMedicationContext {
+  startsOn: Date | null;
+  endsOn: Date | null;
+  oneShot: boolean;
+  createdAt: Date;
+  lastIntakeAt: Date | null;
+  timeZone: string;
 }
 
 /**
@@ -205,7 +239,7 @@ export function calculateCompliance(
   schedules: ComplianceSchedule[],
   days: number,
   medicationCreatedAt?: Date,
-  options?: { now?: Date },
+  options?: { now?: Date; medicationContext?: ComplianceMedicationContext },
 ): ComplianceResult {
   if (schedules.length === 0) {
     return {
@@ -233,11 +267,39 @@ export function calculateCompliance(
   // Normalise the schedule shape so legacy callers that pass only
   // `{ windowStart, windowEnd }` still produce a usable `daysOfWeek`
   // field (treated as daily by the cadence parser).
-  const normalisedSchedules: ScheduleLike[] = schedules.map((s) => ({
+  const normalisedSchedules: ScheduleLike[] = schedules.map((s, i) => ({
+    id: `compliance-${i}`,
     windowStart: s.windowStart,
     windowEnd: s.windowEnd,
     daysOfWeek: s.daysOfWeek ?? null,
+    // v1.7.0 SB-SCHED-2 — thread the canonical-engine fields so the
+    // cadence expander can delegate to `occurrencesBetween` when a
+    // medication context is supplied. Undefined fields collapse to the
+    // legacy weekday path inside `expandScheduleSlots`.
+    rrule: s.rrule ?? null,
+    rollingIntervalDays: s.rollingIntervalDays ?? null,
+    timesOfDay: s.timesOfDay,
+    reminderGraceMinutes: s.reminderGraceMinutes ?? null,
+    scheduleType: s.scheduleType ?? null,
+    cyclicOnWeeks: s.cyclicOnWeeks ?? null,
+    cyclicOffWeeks: s.cyclicOffWeeks ?? null,
   }));
+
+  // v1.7.0 SB-SCHED-2 — build the engine context once per medication.
+  // When the caller supplies it, the timeline routes through the
+  // canonical engine (RRULE / rolling / one-shot / PRN / cyclic);
+  // otherwise the legacy weekday walker stays in force.
+  const ctx = options?.medicationContext;
+  const engineCtx: CadenceEngineContext | undefined = ctx
+    ? {
+        startsOn: ctx.startsOn,
+        endsOn: ctx.endsOn,
+        oneShot: ctx.oneShot,
+        createdAt: ctx.createdAt,
+        lastIntakeAt: ctx.lastIntakeAt,
+        timeZone: ctx.timeZone,
+      }
+    : undefined;
 
   // Match events against the same slot grid the cadence chart uses.
   // The chart's pairing radius is ±12 h so a late-by-six-hours dose
@@ -257,6 +319,8 @@ export function calculateCompliance(
     now,
     effectiveDays,
     medicationCreatedAt ?? effectiveStart,
+    engineCtx?.timeZone,
+    engineCtx,
   );
 
   let taken = 0;
