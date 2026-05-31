@@ -17,6 +17,14 @@
  *   - `staleTime: 60_000` + `refetchOnMount: false` +
  *     `refetchOnWindowFocus: false` mirror `DASHBOARD_QUERY_OPTS` so a
  *     return-to-dashboard within a minute is a free cache hit.
+ *   - `refetchInterval: 120_000` + `refetchIntervalInBackground: false`
+ *     keep an open dashboard live: an idle tab polls the snapshot every
+ *     two minutes so freshly-synced Withings / HealthKit readings appear
+ *     without a manual reload. The poll hits the warm 60 s server cache
+ *     cheaply and only triggers a sub-second rollup rebuild when the
+ *     underlying data actually changed — never the LLM surfaces, which
+ *     stay daily / pre-generated. The interval pauses while the tab is
+ *     backgrounded.
  *   - The queryKey is the centralised factory entry
  *     `queryKeys.dashboardSnapshot()`.
  */
@@ -39,6 +47,8 @@ export function useDashboardSnapshot(enabled = true) {
     staleTime: 60_000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
+    refetchInterval: 120_000,
+    refetchIntervalInBackground: false,
     retry: false,
   });
 }
