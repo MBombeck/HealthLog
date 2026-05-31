@@ -38,7 +38,7 @@
 
 HealthLog is a self-hosted personal health tracker that runs from a single `docker compose up`. It covers the metrics most people actually log -- weight, blood pressure, pulse, body composition, blood glucose, sleep, mood, and medication compliance -- and brings them together in one dashboard with reference ranges from ESH 2023, ADA 2024, and NICE NG115. Withings devices sync automatically; an `export.zip` import folds your full Apple Health history into the same timeline; a native SwiftUI iOS client (public-beta via [TestFlight](https://testflight.apple.com/join/bucuTBpa)) streams HealthKit live; multi-provider AI Insights (BYOK or local) explain what the numbers mean; a doctor-report PDF generates client-side. EN/DE end-to-end. AGPL-3.0.
 
-> **Status**: active. New releases roughly weekly -- see [CHANGELOG](CHANGELOG.md). Current line: v1.5 — native iOS client now public-beta via [TestFlight](https://testflight.apple.com/join/bucuTBpa).
+> **Status**: active. New releases roughly weekly -- see [CHANGELOG](CHANGELOG.md). Current line: v1.7 — health-record export (PDF + FHIR R4), flexible medication schedules, full HealthKit metric coverage, and a first-paint dashboard snapshot. The native iOS client is public-beta via [TestFlight](https://testflight.apple.com/join/bucuTBpa).
 
 > **Heavily developed.** HealthLog ships multiple releases per week. Behaviour, API shapes, and database schema can change between minor versions; migrations are forward-only and not all are rehearsed against every legacy fixture. If you self-host, pin a tag, take a backup before every upgrade, and read the [CHANGELOG](CHANGELOG.md) before pulling `latest`. Issue reports and PRs welcome — this is the rough edge where the project gets sharper.
 
@@ -70,7 +70,7 @@ Most health apps lock your data behind proprietary clouds, push subscriptions, a
 
 ## Key Features
 
-**Health Metrics** -- Track weight, blood pressure, pulse, body fat, sleep, steps, blood glucose (fasting/postprandial/random/bedtime, mg/dL ↔ mmol/L), total body water, bone mass, and pulse oximetry (SpO₂) with interactive trend charts, moving averages, and traffic-light ranges based on ESH 2023, ADA 2024, and consensus pulse-oximeter guidance (NICE NG115). Body-composition + SpO₂ metrics sync automatically from Withings Body+ scales and ScanWatch devices.
+**Health Metrics** -- Track weight, blood pressure, pulse, body fat, sleep, steps, blood glucose (fasting/postprandial/random/bedtime, mg/dL ↔ mmol/L), total body water, bone mass, and pulse oximetry (SpO₂) with interactive trend charts, moving averages, and traffic-light ranges based on ESH 2023, ADA 2024, and consensus pulse-oximeter guidance (NICE NG115). Body-composition + SpO₂ metrics sync automatically from Withings Body+ scales and ScanWatch devices. Every stored HealthKit metric now has a chart surface — flights climbed, audio exposure, walking speed/step-length/asymmetry/double-support, respiratory rate, the body-composition family, mobility, daylight, and more — and a metric/imperial display toggle renders walking speed in km/h while storage and exports stay canonical SI.
 
 **Custom Thresholds** -- Override the computed default ranges per metric with the targets your clinician set. Audit-logged. Doctor Report PDF prints both your target and the standard reference.
 
@@ -78,23 +78,25 @@ Most health apps lock your data behind proprietary clouds, push subscriptions, a
 
 **Mood Logging** -- 5-point scale with tags, notes, and trend analytics. Syncs automatically from moodLog.app via webhook.
 
-**Medication Compliance** -- Flexible scheduling with time windows, day-of-week recurrence, and `intervalWeeks` (so once-weekly GLP-1 injections and weekday-only doses score honestly, not against a daily denominator). Take / skip / snooze logging, compliance heatmaps, GLP-1 pen-inventory + injection-site rotation, structured side-effect tracking. External API for iOS Shortcuts integration.
+**Medication Compliance** -- Flexible scheduling driven by a single recurrence engine: time windows, day-of-week recurrence, `intervalWeeks`, rolling intervals, RFC-5545 RRULE, one-time doses, as-needed (PRN), and cyclic on/off-week plans — so once-weekly GLP-1 injections, weekday-only doses, and non-daily plans score honestly against their real cadence rather than a daily denominator, everywhere from the dashboard tile to the detail page. Route of administration (oral / injection / other) carries the injection-site picker for any injection. Take / skip / snooze logging, compliance heatmaps, GLP-1 pen-inventory + injection-site rotation, structured side-effect tracking. External API for iOS Shortcuts integration.
 
 **Withings Integration** -- OAuth2 device sync for scales, blood pressure monitors, and activity trackers with automatic deduplication.
 
 **Apple Health import** -- Drop your iOS `export.zip` on the import page. A streaming parser handles multi-gigabyte archives (Zip64), folds every `<Record>`, `<Workout>`, `<Correlation>`, and `<ClinicalRecord>` into the same timeline as your other metrics, and stays idempotent on re-upload. Per-type ingestion stats plus a live status endpoint so you can watch the progress on a long historical drain.
 
-**AI Coach + Insights** -- A conversational Coach grounded in your own data, a daily briefing, a weekly report, and a Health Score tile on the dashboard. Pick OpenAI, Anthropic Claude, ChatGPT via Codex device-OAuth (no API key needed), or any OpenAI-compatible local endpoint (Ollama, LM Studio, vLLM). BYOK or admin-shared. Every claim links back to the measurements that produced it. Local endpoints keep all data on your network.
+**AI Coach + Insights** -- A conversational Coach grounded in your own data, a daily briefing, a weekly report, and a Health Score tile on the dashboard. Pick OpenAI, Anthropic Claude, ChatGPT via Codex device-OAuth (no API key needed), or any OpenAI-compatible local endpoint (Ollama, LM Studio, vLLM). BYOK or admin-shared. Feed the Coach a chosen set of data clusters (cardiovascular, body composition, activity, workouts, sleep, mood, glucose, medication, mobility, environment) with a soft budget cap that degrades the lowest-signal clusters first. Every claim links back to the measurements that produced it. Local endpoints keep all data on your network.
 
 **Doctor Report PDF Export** -- Generate professional medical reports client-side. Locale-aware (English/German), with vital sign summaries, BP/BMI/glucose classification, compliance rates, custom-threshold badges, and optional AI analysis.
 
+**Health-record export (PDF + FHIR R4)** -- `POST /api/export/health-record` produces a selectable export: an enriched clinical PDF, a machine-readable HL7 FHIR R4 document bundle (LOINC-coded observations, a BP panel, medication statements, a diagnostic report), or both packaged as one zip. The selection chooses date range and per-domain sections; both formats read the same aggregator so they describe identical numbers, and the optional AI summary is an explicit opt-in section marked as not clinically validated. Optional patient identity (name, insurer, insurance number) on Account feeds the report cover and the FHIR `Patient`.
+
 **Built-in Feedback** -- Send bug reports and feature requests from inside the app. Stored in your HealthLog database — no GitHub config required. Optional GitHub escalation for admins.
 
-**PWA with Offline Support** -- Installable on iOS and Android. Service worker with intelligent caching strategies for reliable offline access.
+**PWA with Offline Support** -- Installable on iOS and Android. Service worker with intelligent caching strategies for reliable offline access. A paginated, opaque-cursor sync delta feed (`GET /api/sync/changes`) with measurement tombstones lets native and offline clients reconcile against the server incrementally.
 
 **Multi-Channel Notifications** -- Telegram (with inline action buttons), ntfy (self-hostable), Web Push (VAPID), and Apple Push (APNs) for the native iOS client. One dispatcher fans medication reminders out to whichever channels the user has enabled, with late/missed escalation.
 
-**Sub-second dashboard** -- A persistent rollup tier pre-aggregates every measurement at DAY / WEEK / MONTH granularity. The dashboard and analytics paths read those buckets first and fall back to live SQL only when a tenant hasn't been backfilled yet, so paint time stays under 500 ms regardless of how many years of history you've imported.
+**Sub-second dashboard** -- A persistent rollup tier pre-aggregates every measurement at DAY / WEEK / MONTH granularity. The dashboard and analytics paths read those buckets first and fall back to live SQL only when a tenant hasn't been backfilled yet, so paint time stays under 500 ms regardless of how many years of history you've imported. The above-the-fold tiles arrive together in a single first-paint snapshot, and a nightly job pre-generates the daily briefing so `/insights` is a cache read rather than a synchronous model call.
 
 **Gamification** -- 59 persistent achievements across intake streaks, compliance milestones, and healthy metric streaks.
 
@@ -153,7 +155,7 @@ Open **http://localhost:3000**. The first registered user becomes admin.
 | PDF           | jsPDF (client-side generation)                    |
 | Testing       | Vitest 4                                          |
 | Deployment    | Docker (multi-stage Alpine)                       |
-| Native client | SwiftUI iOS app — v1.5, public beta via [TestFlight](https://testflight.apple.com/join/bucuTBpa) |
+| Native client | SwiftUI iOS app — public beta via [TestFlight](https://testflight.apple.com/join/bucuTBpa) |
 
 ---
 
@@ -439,7 +441,7 @@ All mutations require authentication via session cookie. External ingest uses Be
 ## Local Development
 
 ```bash
-# Prerequisites: Node.js 20+, pnpm, PostgreSQL
+# Prerequisites: Node.js 22, pnpm, PostgreSQL
 
 cp .env.example .env
 pnpm install
@@ -485,7 +487,8 @@ For a single-process default the same container hosts both the web and worker (`
 | Release line | Focus |
 | ------------ | ----- |
 | **v1.4.x** | Web maturity — Apple Health import, AI Coach, persistent rollup tier, multi-provider AI, doctor PDF, encryption-key rotation, Coolify autodeploy. Roughly weekly cadence. |
-| **v1.5** (current) | Native iOS client (SwiftUI) in public beta via [TestFlight](https://testflight.apple.com/join/bucuTBpa). Backend contract locked in [`docs/api/openapi.yaml`](docs/api/openapi.yaml); the iOS app lives in a separate repository and ingests via the same `/api/measurements/batch` and `/api/auth/refresh` surfaces the web uses. |
+| **v1.5** | Native iOS client (SwiftUI) in public beta via [TestFlight](https://testflight.apple.com/join/bucuTBpa). Backend contract locked in [`docs/api/openapi.yaml`](docs/api/openapi.yaml); the iOS app lives in a separate repository and ingests via the same `/api/measurements/batch` and `/api/auth/refresh` surfaces the web uses. |
+| **v1.6 – v1.7** (current) | Medication editor overhaul + route of administration (v1.6), then health-record export (PDF + HL7 FHIR R4), flexible schedules (RRULE / rolling / interval-weeks / one-time / PRN / cyclic) with cadence-canonical compliance, full HealthKit metric coverage, a metric/imperial display preference, a first-paint dashboard snapshot, and a sync delta feed for offline clients (v1.7). |
 | **v2.x** (planned) | Multi-tenant hardening, expanded device passthrough (Garmin / Polar), opt-in cross-user aggregate research mode (off by default; never enabled without explicit consent). |
 
 The detailed changelog lives in [`CHANGELOG.md`](CHANGELOG.md).
