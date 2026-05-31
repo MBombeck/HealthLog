@@ -96,7 +96,7 @@
     "@next/bundle-analyzer": "^16.2.6",
     "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
-    "@testcontainers/postgresql": "^11.14.0",
+    "@testcontainers/postgresql": "^12.0.1",
     "@types/node": "^25",
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
