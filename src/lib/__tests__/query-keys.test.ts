@@ -28,6 +28,10 @@ describe("queryKeys factory", () => {
   // v1.4.33 IW2 — slice param routes the slim consumer onto its own
   // cache slot but leaves `["analytics"]` (the root) as a prefix so
   // mutation invalidations sweep both shapes.
+  it("exposes the unified dashboard-snapshot key", () => {
+    expect(queryKeys.dashboardSnapshot()).toEqual(["dashboard", "snapshot"]);
+  });
+
   it("threads the slim slice through queryKeys.analytics", () => {
     expect(queryKeys.analytics("summaries")).toEqual(["analytics", "summaries"]);
   });

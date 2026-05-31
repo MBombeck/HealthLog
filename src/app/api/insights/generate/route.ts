@@ -33,6 +33,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { requireAssistantSurface } from "@/lib/feature-flags";
+import { invalidateUserInsights } from "@/lib/cache/invalidate";
 import { annotate } from "@/lib/logging/context";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
 
@@ -540,6 +541,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // newly generated comprehensive while the insights-page status cards
   // still show yesterday's text until midnight Berlin time.
   await evictPerStatusInsightCache(userId);
+
+  // v1.7.0 W6 — the dashboard snapshot embeds the pre-generated daily
+  // briefing read-only; drop it so the next snapshot carries the fresh
+  // briefing instead of the stale one.
+  invalidateUserInsights(userId);
 
   await auditLog("insights.generate", {
     userId,

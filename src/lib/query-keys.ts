@@ -46,6 +46,18 @@ export const queryKeys = {
     (slice ? (["analytics", slice] as const) : (["analytics"] as const)),
   moodAnalytics: () => ["mood-analytics"] as const,
 
+  /**
+   * v1.7.0 W6 — unified dashboard first-paint snapshot. One client cell
+   * hydrates every above-the-fold tile from `GET /api/dashboard/snapshot`,
+   * replacing the four independent analytics-slim / analytics-thick /
+   * mood / widget-layout cells. A measurement / mood / medication /
+   * widget / insight write evicts the matching server cache bucket via
+   * `src/lib/cache/invalidate.ts`; the client read carries the same
+   * 60 s `staleTime` as `DASHBOARD_QUERY_OPTS` so a warm return-to-
+   * dashboard is a free cache hit.
+   */
+  dashboardSnapshot: () => ["dashboard", "snapshot"] as const,
+
   insightsRoot: () => ["insights"] as const,
   insightsComprehensive: () => ["insights", "comprehensive"] as const,
   insightsTargets: () => ["insights", "targets"] as const,
