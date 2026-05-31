@@ -491,6 +491,7 @@ export function missedDoses(
   windowDays = 30,
   anchor?: Date,
   timeZone?: string,
+  engineCtx?: CadenceEngineContext,
 ): number {
   const timeline = buildCadenceTimeline(
     schedules,
@@ -499,6 +500,7 @@ export function missedDoses(
     windowDays,
     anchor,
     timeZone,
+    engineCtx,
   );
   return timeline.filter((d) => d.status === "missed").length;
 }

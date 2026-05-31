@@ -7,7 +7,11 @@
 
 import { describe, expect, it } from "vitest";
 import { complianceChips } from "../compliance";
-import type { IntakeEventLike, ScheduleLike } from "../cadence";
+import type {
+  CadenceEngineContext,
+  IntakeEventLike,
+  ScheduleLike,
+} from "../cadence";
 
 function d(iso: string): Date {
   return new Date(iso);
@@ -203,5 +207,115 @@ describe("complianceChips", () => {
       expect(result.adherenceRate).toBeLessThanOrEqual(100);
       expect(result.windowDays).toBe(7);
     }
+  });
+});
+
+describe("complianceChips — canonical-engine delegation (v1.7.0 SB-SCHED-2)", () => {
+  function engineCtx(over?: Partial<CadenceEngineContext>): CadenceEngineContext {
+    return {
+      startsOn: null,
+      endsOn: null,
+      oneShot: false,
+      createdAt: d("2025-05-01T00:00:00Z"),
+      lastIntakeAt: null,
+      timeZone: "Europe/Berlin",
+      ...over,
+    };
+  }
+
+  it("RRULE weekly Monday: legacy walker counts every day missed, engine counts only Mondays", () => {
+    // `daysOfWeek = null` reads as every-day to the legacy walker, so an
+    // RRULE-weekly schedule over-counts expected doses without the engine.
+    const rruleWeekly: ScheduleLike = {
+      windowStart: "08:00",
+      windowEnd: "09:00",
+      daysOfWeek: null,
+      rrule: "FREQ=WEEKLY;BYDAY=MO",
+      timesOfDay: ["08:00"],
+    };
+    const NOW = d("2025-06-10T12:00:00Z"); // Tuesday
+
+    // Legacy path (no engineCtx) expands daily → many missed days.
+    const legacy = complianceChips([rruleWeekly], [], NOW, 14);
+    // Canonical path (engineCtx) expands only Mondays in the window.
+    const engine = complianceChips(
+      [rruleWeekly],
+      [],
+      NOW,
+      14,
+      undefined,
+      "Europe/Berlin",
+      engineCtx(),
+    );
+
+    // The engine path expects far fewer doses (only the Mondays in a
+    // 14-day window: 2) than the daily legacy expansion (~13).
+    expect(engine.missedLast30).toBeLessThan(legacy.missedLast30);
+    expect(engine.missedLast30).toBeLessThanOrEqual(2);
+  });
+
+  it("PRN: engine short-circuits to zero expected doses (no adherence, no missed)", () => {
+    const prn: ScheduleLike = {
+      windowStart: "08:00",
+      windowEnd: "09:00",
+      daysOfWeek: null,
+      scheduleType: "PRN",
+      timesOfDay: ["08:00"],
+    };
+    const NOW = d("2025-06-10T12:00:00Z");
+
+    const engine = complianceChips(
+      [prn],
+      [],
+      NOW,
+      30,
+      undefined,
+      "Europe/Berlin",
+      engineCtx(),
+    );
+
+    // PRN is as-needed — never projected, reminded, or counted in
+    // compliance-expected. No expected slots → null adherence, zero missed.
+    expect(engine.adherenceRate).toBeNull();
+    expect(engine.missedLast30).toBe(0);
+  });
+
+  it("CYCLIC: off-week days are not counted as missed", () => {
+    // 1 week on / 1 week off, anchored at startsOn. The "off" week should
+    // emit no expected doses, so an empty event stream cannot read as
+    // 100% missed across both weeks.
+    const cyclic: ScheduleLike = {
+      windowStart: "08:00",
+      windowEnd: "09:00",
+      daysOfWeek: null,
+      scheduleType: "CYCLIC",
+      cyclicOnWeeks: 1,
+      cyclicOffWeeks: 1,
+      timesOfDay: ["08:00"],
+    };
+    const NOW = d("2025-06-10T12:00:00Z");
+
+    const engine = complianceChips(
+      [cyclic],
+      [],
+      NOW,
+      14,
+      undefined,
+      "Europe/Berlin",
+      engineCtx({ startsOn: d("2025-05-01T00:00:00Z") }),
+    );
+    const everyDay = complianceChips(
+      [{ ...cyclic, scheduleType: "SCHEDULED" }],
+      [],
+      NOW,
+      14,
+      undefined,
+      "Europe/Berlin",
+      engineCtx({ startsOn: d("2025-05-01T00:00:00Z") }),
+    );
+
+    // The cyclic gate must drop the off-week's doses, so fewer missed
+    // than the equivalent every-day SCHEDULED expansion.
+    expect(engine.missedLast30).toBeLessThan(everyDay.missedLast30);
   });
 });
