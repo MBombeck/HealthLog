@@ -1087,6 +1087,21 @@ model MedicationIntakeEvent {
   /// is the only surface that writes this column). Existing rows stay
   /// NULL forever and the read paths treat NULL as "no site recorded".
   injectionSite  InjectionSite? @map("injection_site")
+  // v1.7.0 sync — server-set mutation timestamp. The model had no
+  // `updatedAt`; the offline-sync keyset feed orders on it, so it is
+  // added here. `@updatedAt` makes Prisma maintain it on every write.
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  // v1.7.0 sync — reconciliation counter. An intake is an immutable
+  // fact, so a "correction" is a tombstone + re-insert rather than an
+  // in-place edit; syncVersion still bumps on the soft-delete write so
+  // the feed echoes a monotonic value. Default 0 for legacy rows.
+  syncVersion    Int            @default(0) @map("sync_version")
+  // v1.7.0 sync — soft-delete tombstone. The user-facing per-event
+  // DELETE route flips this (and bumps syncVersion) rather than removing
+  // the row, so `/api/sync/changes` surfaces the deletion as a tombstone
+  // keyed on the server `id`. NULL = live; non-NULL = tombstoned.
+  // Read paths (today / compliance / lists) filter `deletedAt: null`.
+  deletedAt      DateTime?      @map("deleted_at")
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
@@ -1101,6 +1116,9 @@ model MedicationIntakeEvent {
   /// inserts (WEB / TELEGRAM / IMPORT) on the same slot.
   @@unique([userId, medicationId, scheduledFor, source])
   @@index([userId, medicationId, scheduledFor])
+  // v1.7.0 sync — keyset support for the `/api/sync/changes` intake feed
+  // (`where userId` ordered by `(updatedAt asc, id asc)`).
+  @@index([userId, updatedAt, id])
   @@map("medication_intake_events")
 }
 
@@ -1505,11 +1523,28 @@ model MoodEntry {
   syncedAt     DateTime @default(now()) @map("synced_at")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
+  // v1.7.0 sync — LWW reconciliation counter for the offline-sync feed.
+  // Monotonically bumped on every server-side mutation (update +
+  // soft-delete). Mood is last-writer-wins by syncVersion: the higher
+  // value wins. Default 0 for the additive migration so legacy rows
+  // round-trip unchanged.
+  syncVersion  Int       @default(0) @map("sync_version")
+  // v1.7.0 sync — soft-delete tombstone. The user-facing DELETE route
+  // flips this (and bumps syncVersion) rather than removing the row, so
+  // the `/api/sync/changes` feed surfaces the deletion as a tombstone
+  // keyed on the server `id` to paired clients offline at delete time.
+  // NULL = live row; non-NULL = tombstoned at the recorded instant.
+  // Every list / detail / analytics / rollup read filters
+  // `deletedAt: null` so tombstoned rows never surface in normal reads.
+  deletedAt    DateTime? @map("deleted_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date, moodLoggedAt])
   @@index([userId, date])
+  // v1.7.0 sync — keyset support for the `/api/sync/changes` mood feed
+  // (`where userId` ordered by `(updatedAt asc, id asc)`).
+  @@index([userId, updatedAt, id])
   @@map("mood_entries")
 }
 
