@@ -56,6 +56,9 @@ function buildUser(disableCoach: boolean): AuthUser {
     avatarUrl: null,
     glucoseUnit: null,
     disableCoach,
+    fullName: null,
+    insurerName: null,
+    insuranceNumber: null,
   };
 }
 

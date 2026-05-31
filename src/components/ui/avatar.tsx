@@ -32,7 +32,11 @@ function AvatarImage({
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"
-      className={cn("aspect-square size-full", className)}
+      // `object-cover` preserves the image's intrinsic proportions inside
+      // the square frame (centre-crop) rather than stretching a non-square
+      // upload to fill — the previous `aspect-square size-full` squashed
+      // portrait/landscape photos.
+      className={cn("size-full object-cover object-center", className)}
       {...props}
     />
   );

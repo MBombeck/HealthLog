@@ -118,6 +118,10 @@ export function AccountSection() {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState<string>("");
   const [timezone, setTimezone] = useState<string>("Europe/Berlin");
+  // v1.7.0 — optional patient-identity fields for the health-record export.
+  const [fullName, setFullName] = useState("");
+  const [insurerName, setInsurerName] = useState("");
+  const [insuranceNumber, setInsuranceNumber] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [saveMsgType, setSaveMsgType] = useState<"success" | "error" | null>(
@@ -183,6 +187,9 @@ export function AccountSection() {
     );
     setGender(user.gender ?? "");
     setTimezone(resolveInitialTimezone(user.timezone, detectBrowserTimezone()));
+    setFullName(user.fullName ?? "");
+    setInsurerName(user.insurerName ?? "");
+    setInsuranceNumber(user.insuranceNumber ?? "");
   }
 
   async function handleSaveProfile(e: React.FormEvent) {
@@ -204,6 +211,9 @@ export function AccountSection() {
           heightCm: heightCm ? parseFloat(heightCm) : null,
           dateOfBirth: dateOfBirth || null,
           gender: gender || null,
+          fullName: fullName.trim() || null,
+          insurerName: insurerName.trim() || null,
+          insuranceNumber: insuranceNumber.trim() || null,
         }),
       }),
       user && timezone && timezone !== user.timezone
@@ -495,6 +505,57 @@ export function AccountSection() {
           </div>
 
           <TimezonePicker value={timezone} onChange={setTimezone} />
+
+          {/* v1.7.0 — optional patient-identity fields surfaced on the
+              health-record export cover + FHIR Patient. All optional;
+              the KVNR is validated server-side and stored encrypted. */}
+          <div className="border-border space-y-4 border-t pt-4">
+            <p className="text-muted-foreground text-xs">
+              {t("settings.identity.description")}
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="full-name">{t("settings.identity.fullName")}</Label>
+              <Input
+                id="full-name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder={t("settings.identity.fullNamePlaceholder")}
+                maxLength={120}
+                autoComplete="name"
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="insurer">{t("settings.identity.insurer")}</Label>
+                <Input
+                  id="insurer"
+                  value={insurerName}
+                  onChange={(e) => setInsurerName(e.target.value)}
+                  placeholder={t("settings.identity.insurerPlaceholder")}
+                  maxLength={120}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="insurance-number">
+                  {t("settings.identity.insuranceNumber")}
+                </Label>
+                <Input
+                  id="insurance-number"
+                  value={insuranceNumber}
+                  onChange={(e) =>
+                    setInsuranceNumber(e.target.value.toUpperCase())
+                  }
+                  placeholder="A123456780"
+                  maxLength={10}
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                />
+                <p className="text-muted-foreground text-xs">
+                  {t("settings.identity.insuranceNumberHint")}
+                </p>
+              </div>
+            </div>
+          </div>
 
           {saveMsg && (
             <p
