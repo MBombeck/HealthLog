@@ -118,7 +118,30 @@ describe("runInsightPregenerate — budget gate", () => {
     );
     // Only u2 reached the generator.
     expect(generate).toHaveBeenCalledTimes(1);
-    expect(generate).toHaveBeenCalledWith("u2", { locale: "en" });
+    expect(generate).toHaveBeenCalledWith("u2", {
+      locale: "en",
+      force: true,
+    });
+  });
+});
+
+describe("runInsightPregenerate — force flag", () => {
+  it("forces a fresh generation so the 20-24h cache window is not short-circuited to `cached`", async () => {
+    const { prisma } = makePrisma([{ id: "u1", locale: "de" }]);
+    const generate = vi
+      .fn()
+      .mockResolvedValue({ status: "generated", providerType: "x" });
+
+    await runInsightPregenerate(prisma as never, { generate });
+
+    // The cron's discovery window (20 h) is shorter than the
+    // generator's 24 h TTL; `force: true` bypasses the TTL re-check so
+    // a 20-24h-old cache actually regenerates rather than returning
+    // `cached` and wasting the budget bucket.
+    expect(generate).toHaveBeenCalledWith("u1", {
+      locale: "de",
+      force: true,
+    });
   });
 });
 
@@ -150,7 +173,10 @@ describe("runInsightPregenerate — outcome tally", () => {
       budgetBlocked: 0,
     });
     // Locale defaulting: null → "de".
-    expect(generate).toHaveBeenLastCalledWith("d", { locale: "de" });
+    expect(generate).toHaveBeenLastCalledWith("d", {
+      locale: "de",
+      force: true,
+    });
   });
 });
 

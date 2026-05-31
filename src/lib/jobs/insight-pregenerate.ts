@@ -128,7 +128,7 @@ export async function runInsightPregenerate(
     /** Injected for the test — defaults to the real generator. */
     generate?: (
       userId: string,
-      opts: { locale: "de" | "en" },
+      opts: { locale: "de" | "en"; force?: boolean },
     ) => Promise<GenerateOutcome>;
   } = {},
 ): Promise<PregenerateRunResult> {
@@ -167,8 +167,16 @@ export async function runInsightPregenerate(
       continue;
     }
 
+    // Force a fresh generation: the discovery window (20 h) is shorter
+    // than the generator's 24 h cache TTL, so without `force` a user
+    // whose cache is 20–24 h old would be discovered, consume the
+    // budget bucket, then short-circuit to `cached` with no actual
+    // pre-generation — defeating the "warm the cache before the user's
+    // morning visit" intent for the common case. The per-user budget
+    // bucket (above) is what bounds cost, not the TTL re-check.
     const outcome = await generate(candidate.id, {
       locale: normalizeLocale(candidate.locale),
+      force: true,
     });
     switch (outcome.status) {
       case "generated":
