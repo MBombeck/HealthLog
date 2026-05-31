@@ -627,6 +627,12 @@ model Measurement {
   @@unique([userId, type, source, externalId])
   @@index([userId, type, measuredAt])
   @@index([externalId])
+  // v1.7.0 — supports the `/api/sync/changes` keyset feed, which walks
+  // `where userId` ordered by `(updatedAt asc, id asc)` with `take
+  // limit+1`. Without this index Postgres filters by `userId` then sorts
+  // the user's entire measurement set per page; the delta drain allows
+  // 120 pulls/min/user. See migration 0096.
+  @@index([userId, updatedAt, id])
   // `measurements_legacy_step_consolidation_idx` is a partial index
   // over `type = 'ACTIVITY_STEPS' AND deleted_at IS NULL` — see
   // migration 0087. It accelerates the v1.5.6 legacy step-consolidation
