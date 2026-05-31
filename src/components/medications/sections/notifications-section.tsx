@@ -68,7 +68,25 @@ const SECTION_TITLE_ID = "medication-detail-notifications-heading";
 const ROW_TITLE_ID = "medication-detail-notifications-row-label";
 const HELPER_ID = "medication-detail-notifications-helper";
 
-export function NotificationsSection({
+/**
+ * v1.7.0 — section wrapper. Keeps the `<MedicationDetailSection>`
+ * chrome for any standalone consumer; the advanced-settings sheet
+ * consumes `<NotificationsBody>` directly under its own group header.
+ */
+export function NotificationsSection(props: NotificationsSectionProps) {
+  const { t } = useTranslations();
+  return (
+    <MedicationDetailSection
+      titleId={SECTION_TITLE_ID}
+      title={t("medications.detail.notifications.title")}
+      dataSlot="medication-detail-notifications-section"
+    >
+      <NotificationsBody {...props} />
+    </MedicationDetailSection>
+  );
+}
+
+export function NotificationsBody({
   medicationId,
   notificationsEnabled,
 }: NotificationsSectionProps) {
@@ -138,74 +156,64 @@ export function NotificationsSection({
   }
 
   return (
-    <MedicationDetailSection
-      titleId={SECTION_TITLE_ID}
-      title={t("medications.detail.notifications.title")}
-      dataSlot="medication-detail-notifications-section"
-    >
-      <div className="space-y-3">
-        {clientManaged ? (
-          // v1.5.5 §9.6 — iPhone-managed path. The switch is hidden;
-          // the read-only chip tells the user where the toggle lives.
-          <p
-            className="text-foreground text-sm"
-            data-slot="notifications-client-managed-chip"
-          >
-            <Badge variant="outline" className="font-normal">
-              {t("medications.detail.notifications.clientManagedChip")}
-            </Badge>
-          </p>
-        ) : (
-          <label
-            htmlFor={SWITCH_ID}
-            className="flex items-center justify-between gap-3"
-            data-slot="notifications-switch-row"
-          >
-            <span className="space-y-1">
-              <span
-                id={ROW_TITLE_ID}
-                className="text-foreground block text-sm font-medium"
-              >
-                {t("medications.detail.notifications.switchLabel")}
-              </span>
-              <span
-                id={HELPER_ID}
-                className="text-muted-foreground block text-xs"
-              >
-                {localEnabled
-                  ? t("medications.detail.notifications.helperOn")
-                  : t("medications.detail.notifications.helperOff")}
-              </span>
+    <div className="space-y-3" data-slot="medication-detail-notifications-body">
+      {clientManaged ? (
+        // v1.5.5 §9.6 — iPhone-managed path. The switch is hidden;
+        // the read-only chip tells the user where the toggle lives.
+        <p
+          className="text-foreground text-sm"
+          data-slot="notifications-client-managed-chip"
+        >
+          <Badge variant="outline" className="font-normal">
+            {t("medications.detail.notifications.clientManagedChip")}
+          </Badge>
+        </p>
+      ) : (
+        <label
+          htmlFor={SWITCH_ID}
+          className="flex items-center justify-between gap-3"
+          data-slot="notifications-switch-row"
+        >
+          <span className="space-y-1">
+            <span
+              id={ROW_TITLE_ID}
+              className="text-foreground block text-sm font-medium"
+            >
+              {t("medications.detail.notifications.switchLabel")}
             </span>
-            <Switch
-              id={SWITCH_ID}
-              checked={localEnabled}
-              disabled={submitting}
-              onCheckedChange={(checked) => void flip(checked)}
-              aria-labelledby={ROW_TITLE_ID}
-              aria-describedby={HELPER_ID}
-            />
-          </label>
-        )}
+            <span
+              id={HELPER_ID}
+              className="text-muted-foreground block text-xs"
+            >
+              {localEnabled
+                ? t("medications.detail.notifications.helperOn")
+                : t("medications.detail.notifications.helperOff")}
+            </span>
+          </span>
+          <Switch
+            id={SWITCH_ID}
+            checked={localEnabled}
+            disabled={submitting}
+            onCheckedChange={(checked) => void flip(checked)}
+            aria-labelledby={ROW_TITLE_ID}
+            aria-describedby={HELPER_ID}
+          />
+        </label>
+      )}
 
-        {status && status.channels.length > 0 && (
-          <div
-            className="flex flex-wrap gap-1.5"
-            aria-hidden="true"
-            data-slot="notifications-channels-chips"
-          >
-            {status.channels.map((channel) => (
-              <Badge
-                key={channel.type}
-                variant="outline"
-                className="text-xs"
-              >
-                {channel.type}
-              </Badge>
-            ))}
-          </div>
-        )}
-      </div>
-    </MedicationDetailSection>
+      {status && status.channels.length > 0 && (
+        <div
+          className="flex flex-wrap gap-1.5"
+          aria-hidden="true"
+          data-slot="notifications-channels-chips"
+        >
+          {status.channels.map((channel) => (
+            <Badge key={channel.type} variant="outline" className="text-xs">
+              {channel.type}
+            </Badge>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

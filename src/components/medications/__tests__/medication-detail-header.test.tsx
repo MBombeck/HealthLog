@@ -41,6 +41,7 @@ function render(props: {
       active={props.active ?? true}
       endsOn={props.endsOn}
       onEditPlan={() => {}}
+      onOpenHistory={() => {}}
       onOpenAdvanced={() => {}}
     />,
   );
@@ -73,29 +74,39 @@ describe("MedicationDetailHeader (D-3 §9.1)", () => {
     const html = render({ active: true });
     const headingIndex = html.indexOf("<h1");
     const buttonIndex = html.indexOf(
-      "data-slot=\"medication-detail-edit-button\"",
+      'data-slot="medication-detail-edit-button"',
     );
     expect(headingIndex).toBeGreaterThan(-1);
     expect(buttonIndex).toBeGreaterThan(-1);
     expect(headingIndex).toBeLessThan(buttonIndex);
   });
 
-  it("renders the edit button beside the advanced-settings gear (v1.6.0)", () => {
+  it("renders the edit, history and advanced buttons (v1.7.0)", () => {
     const html = render({ active: true });
     expect(html).toContain("common.edit");
     expect(html).toContain('data-slot="medication-detail-edit-button"');
+    expect(html).toContain('data-slot="medication-detail-history-button"');
     expect(html).toContain('data-slot="medication-detail-advanced-button"');
-    expect(html).toContain('aria-label="medications.detail.edit.advancedOption"');
+    expect(html).toContain(
+      'aria-label="medications.detail.header.historyLabel"',
+    );
+    expect(html).toContain(
+      'aria-label="medications.detail.header.advancedLabel"',
+    );
   });
 
-  it("orders the primary edit button before the advanced gear", () => {
+  it("orders the buttons edit → history → advanced", () => {
     const html = render({ active: true });
     const edit = html.indexOf('data-slot="medication-detail-edit-button"');
+    const history = html.indexOf(
+      'data-slot="medication-detail-history-button"',
+    );
     const advanced = html.indexOf(
       'data-slot="medication-detail-advanced-button"',
     );
     expect(edit).toBeGreaterThan(-1);
-    expect(advanced).toBeGreaterThan(edit);
+    expect(history).toBeGreaterThan(edit);
+    expect(advanced).toBeGreaterThan(history);
   });
 
   it("status pill text always renders (no colour-only state)", () => {

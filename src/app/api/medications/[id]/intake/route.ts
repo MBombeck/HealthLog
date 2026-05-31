@@ -279,10 +279,21 @@ export const GET = apiHandler(
             : {};
     const where = { medicationId: id, userId: user.id, ...statusFilter };
 
+    // v1.7.0 O-1 — pin NULLS LAST on the `takenAt` sort. Skipped rows
+    // carry `takenAt: null`; under a bare `desc` collation Postgres
+    // emits NULLS FIRST, floating skipped/planned rows to the top of
+    // the history view. Pinning them last keeps the descending order
+    // reading today → yesterday → … with real timestamps first. Other
+    // sort columns are non-null so they keep the simple shape.
+    const orderBy =
+      sortBy === "takenAt"
+        ? { takenAt: { sort: sortDir, nulls: "last" as const } }
+        : { [sortBy]: sortDir };
+
     const [events, total] = await Promise.all([
       prisma.medicationIntakeEvent.findMany({
         where,
-        orderBy: { [sortBy]: sortDir },
+        orderBy,
         take: limit,
         skip: offset,
       }),

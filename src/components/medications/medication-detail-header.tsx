@@ -5,10 +5,12 @@
  *
  * Renders the drug name as the H1, dose as a muted sub-line, and a
  * status row carrying a Dracula-token dot + always-visible label
- * (Aktiv / Pausiert / Beendet) and an edit pencil that opens the
- * wizard with the `"name"` intent (Step 1 landing). The DOM order is
- * `name → dose → status → edit` so the screen reader announces the
- * drug first and the affordance last (C-E4-3).
+ * (Aktiv / Pausiert / Beendet) and a three-button action row: Edit
+ * (pencil, opens the wizard at Step 1), History (clock, routes to the
+ * full intake-history view) and Advanced (sliders, opens the advanced
+ * settings sheet). The DOM order is `name → dose → status → edit →
+ * history → advanced` so the screen reader announces the drug first
+ * and the affordances last (C-E4-3).
  *
  * The status pill text is always rendered; the dot carries
  * `aria-hidden="true"` and reads from Dracula tokens via
@@ -18,7 +20,7 @@
  * destructive zone, not on the header (E-2 M-1).
  */
 
-import { Pencil, Settings2 } from "lucide-react";
+import { History, Pencil, SlidersHorizontal } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,9 +38,16 @@ export interface MedicationDetailHeaderProps {
    */
   onEditPlan: () => void;
   /**
-   * v1.6.0 — the gear button opens the `<AdvancedSettingsSheet>`
-   * (notifications / API tokens / Phasen / destructive zone). Kept as
-   * a discreet secondary affordance beside the primary edit button.
+   * v1.7.0 — the History (clock) button routes directly to the full
+   * intake-history view. A `() => void` so the page owns the
+   * `router.push`; an icon-only button (not an anchor) since it carries
+   * an `aria-label`.
+   */
+  onOpenHistory: () => void;
+  /**
+   * v1.7.0 — the sliders button opens the `<AdvancedSettingsSheet>`
+   * (Data / Reminders / Lifecycle / Danger zone). Kept as a discreet
+   * secondary affordance beside the primary edit button.
    */
   onOpenAdvanced: () => void;
 }
@@ -65,6 +74,7 @@ export function MedicationDetailHeader({
   active,
   endsOn,
   onEditPlan,
+  onOpenHistory,
   onOpenAdvanced,
 }: MedicationDetailHeaderProps) {
   const { t } = useTranslations();
@@ -105,7 +115,11 @@ export function MedicationDetailHeader({
           </Badge>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      {/* v1.7.0 — three-button row: Edit (primary, labelled) →
+          History (ghost icon, direct to /history) → Advanced (ghost
+          icon, sliders). DOM order primary → read → config. All carry a
+          44px touch target on mobile. */}
+      <div className="flex items-center gap-1.5">
         <Button
           variant="outline"
           size="sm"
@@ -120,11 +134,21 @@ export function MedicationDetailHeader({
           variant="ghost"
           size="icon"
           className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
+          onClick={onOpenHistory}
+          aria-label={t("medications.detail.header.historyLabel")}
+          data-slot="medication-detail-history-button"
+        >
+          <History aria-hidden="true" className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
           onClick={onOpenAdvanced}
-          aria-label={t("medications.detail.edit.advancedOption")}
+          aria-label={t("medications.detail.header.advancedLabel")}
           data-slot="medication-detail-advanced-button"
         >
-          <Settings2 aria-hidden="true" className="h-4 w-4" />
+          <SlidersHorizontal aria-hidden="true" className="h-4 w-4" />
         </Button>
       </div>
     </div>

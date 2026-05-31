@@ -236,8 +236,7 @@ export default function MedicationDetailPage({
 
   const oneShot = medication.oneShot === true;
   const intakeCount = intakeList?.meta.total ?? 0;
-  const primaryGrace =
-    medication.schedules[0]?.reminderGraceMinutes ?? null;
+  const primaryGrace = medication.schedules[0]?.reminderGraceMinutes ?? null;
   // `wizardPayload` is non-null here — the early returns above bail
   // before this point whenever `medication` is undefined.
   const payload = wizardPayload as MedicationPayload;
@@ -263,15 +262,17 @@ export default function MedicationDetailPage({
         </Link>
       </Button>
 
-      {/* G-1 §3.2 — Header band. The Bearbeiten dropdown owns the
-          wizard ("Plan bearbeiten") + the advanced sheet ("Erweiterte
-          Einstellungen"); the page owns both open-states. */}
+      {/* v1.7.0 — Header band. Three buttons: Edit opens the wizard,
+          History routes directly to the full intake-history view, and
+          Advanced opens the settings sheet. The page owns the wizard +
+          advanced open-states; History is a plain navigation. */}
       <MedicationDetailHeader
         name={medication.name}
         dose={medication.dose}
         active={medication.active}
         endsOn={medication.endsOn}
         onEditPlan={() => setWizardOpen(true)}
+        onOpenHistory={() => router.push(`/medications/${id}/history`)}
         onOpenAdvanced={() => setAdvancedOpen(true)}
       />
 
@@ -344,6 +345,7 @@ export default function MedicationDetailPage({
         reminderGraceMinutes={primaryGrace}
         intakeCount={intakeCount}
         onRequestPhaseSheet={openPhaseSheet}
+        onOpenImport={() => setImportOpen(true)}
       />
 
       {/* G-1 §5 — phase sheet mounted as a sibling of the advanced

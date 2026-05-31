@@ -3,10 +3,13 @@
 /**
  * v1.5.5 D-3 §9.8 — Verwaltung & Gefahrenzone.
  *
- * One heading, two cards under it. Card A (`Verwaltung`) carries the
- * reversible actions (Pausieren + Beenden); Card B (`Gefahrenzone`,
- * `border-destructive/40`) carries the irreversible ones (Verlauf
- * löschen + Medikament löschen).
+ * v1.7.0 — split into two reusable bodies so the redesigned
+ * `<AdvancedSettingsSheet>` can slot them under different groups:
+ * `<LifecycleManageBody>` (Pause + End → Lifecycle group) and
+ * `<DangerZoneBody>` (Purge + Delete → Danger zone group). The
+ * standalone `<DestructiveZoneSection>` wrapper still composes both
+ * under one section heading for any caller that wants the bundled
+ * shape.
  *
  * Mutation contracts per D-3 §3:
  *
@@ -68,28 +71,28 @@ const PAUSE_SWITCH_ID = "medication-detail-pause-switch";
 const PAUSE_TITLE_ID = "medication-detail-pause-title";
 const PAUSE_HELPER_ID = "medication-detail-pause-helper";
 
-export function DestructiveZoneSection({
+/**
+ * v1.7.0 — reversible lifecycle controls: pause/resume + end course.
+ * Bare (no section / card chrome); the caller supplies its own grouping.
+ */
+export function LifecycleManageBody({
   medicationId,
   medicationName,
   active,
-  intakeCount,
   onAfterAction,
-}: DestructiveZoneSectionProps) {
+}: {
+  medicationId: string;
+  medicationName: string;
+  active: boolean;
+  onAfterAction?: () => void;
+}) {
   const { t } = useTranslations();
-  const router = useRouter();
   const queryClient = useQueryClient();
 
   const [paused, setPaused] = useState(!active);
   const [tier1Busy, setTier1Busy] = useState(false);
-
   const [endDialogOpen, setEndDialogOpen] = useState(false);
   const [tier2Busy, setTier2Busy] = useState(false);
-
-  const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
-  const [tier3aBusy, setTier3aBusy] = useState(false);
-
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [tier3bBusy, setTier3bBusy] = useState(false);
 
   async function tier1Toggle(pauseNext: boolean) {
     if (tier1Busy) return;
@@ -149,14 +152,131 @@ export function DestructiveZoneSection({
     }
   }
 
+  return (
+    <div className="space-y-4" data-slot="destructive-zone-card-a">
+      <label
+        htmlFor={PAUSE_SWITCH_ID}
+        className="flex items-center justify-between gap-3"
+      >
+        <span className="space-y-1">
+          <span
+            id={PAUSE_TITLE_ID}
+            className="text-foreground block text-sm font-medium"
+          >
+            {t("medications.detail.zone.pause.title")}
+          </span>
+          <span
+            id={PAUSE_HELPER_ID}
+            className="text-muted-foreground block text-xs"
+          >
+            {t("medications.detail.zone.pause.helper")}
+          </span>
+        </span>
+        <Switch
+          id={PAUSE_SWITCH_ID}
+          checked={paused}
+          disabled={tier1Busy}
+          onCheckedChange={(checked) => void tier1Toggle(checked)}
+          aria-labelledby={PAUSE_TITLE_ID}
+          aria-describedby={PAUSE_HELPER_ID}
+        />
+      </label>
+
+      <Separator />
+
+      <div className="flex items-center justify-between gap-3">
+        <div className="space-y-1">
+          <p className="text-foreground text-sm font-medium">
+            {t("medications.detail.zone.end.title")}
+          </p>
+          <p className="text-muted-foreground text-xs">
+            {t("medications.detail.zone.end.helper")}
+          </p>
+        </div>
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => setEndDialogOpen(true)}
+          className="min-h-11 font-semibold sm:min-h-9"
+          data-slot="destructive-zone-end"
+        >
+          <Archive aria-hidden="true" className="h-4 w-4" />
+          {t("medications.detail.zone.end.button")}
+        </Button>
+      </div>
+
+      {/* Tier 2 — Beenden confirm */}
+      <AlertDialog open={endDialogOpen} onOpenChange={setEndDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("medications.detail.zone.end.dialogTitle", {
+                name: medicationName,
+              })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("medications.detail.zone.end.dialogBody")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={(e) => {
+                e.preventDefault();
+                void tier2End();
+              }}
+              disabled={tier2Busy}
+              aria-busy={tier2Busy || undefined}
+              className="font-semibold"
+            >
+              {tier2Busy && (
+                <Loader2
+                  aria-hidden="true"
+                  className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none"
+                />
+              )}
+              {t("medications.detail.zone.end.button")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+/**
+ * v1.7.0 — irreversible danger zone: purge intake history + delete the
+ * medication. Wrapped in a `border-destructive/40` card to keep the
+ * visual warning convention.
+ */
+export function DangerZoneBody({
+  medicationId,
+  medicationName,
+  intakeCount,
+  onAfterAction,
+}: {
+  medicationId: string;
+  medicationName: string;
+  intakeCount: number;
+  onAfterAction?: () => void;
+}) {
+  const { t } = useTranslations();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
+  const [tier3aBusy, setTier3aBusy] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [tier3bBusy, setTier3bBusy] = useState(false);
+
   async function tier3aPurge() {
     if (tier3aBusy) return;
     setTier3aBusy(true);
     try {
-      const res = await fetch(
-        `/api/medications/${medicationId}/intake/purge`,
-        { method: "DELETE" },
-      );
+      const res = await fetch(`/api/medications/${medicationId}/intake/purge`, {
+        method: "DELETE",
+      });
       if (!res.ok) {
         toast.error(t("medications.detail.zone.purge.failed"));
         return;
@@ -197,154 +317,54 @@ export function DestructiveZoneSection({
   }
 
   return (
-    <MedicationDetailSection
-      titleId="medication-detail-zone-heading"
-      title={t("medications.detail.zone.title")}
-      dataSlot="medication-detail-zone-section"
+    <Card
+      className="border-destructive/40 space-y-4 p-4"
+      data-slot="destructive-zone-card-b"
     >
-      <div className="space-y-4">
-        {/* Card A — Verwaltung (reversible) */}
-        <Card className="p-4 space-y-4" data-slot="destructive-zone-card-a">
-          <label
-            htmlFor={PAUSE_SWITCH_ID}
-            className="flex items-center justify-between gap-3"
-          >
-            <span className="space-y-1">
-              <span
-                id={PAUSE_TITLE_ID}
-                className="text-foreground block text-sm font-medium"
-              >
-                {t("medications.detail.zone.pause.title")}
-              </span>
-              <span
-                id={PAUSE_HELPER_ID}
-                className="text-muted-foreground block text-xs"
-              >
-                {t("medications.detail.zone.pause.helper")}
-              </span>
-            </span>
-            <Switch
-              id={PAUSE_SWITCH_ID}
-              checked={paused}
-              disabled={tier1Busy}
-              onCheckedChange={(checked) => void tier1Toggle(checked)}
-              aria-labelledby={PAUSE_TITLE_ID}
-              aria-describedby={PAUSE_HELPER_ID}
-            />
-          </label>
-
-          <Separator />
-
-          <div className="flex items-center justify-between gap-3">
-            <div className="space-y-1">
-              <p className="text-foreground text-sm font-medium">
-                {t("medications.detail.zone.end.title")}
-              </p>
-              <p className="text-muted-foreground text-xs">
-                {t("medications.detail.zone.end.helper")}
-              </p>
-            </div>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setEndDialogOpen(true)}
-              className="min-h-11 sm:min-h-9 font-semibold"
-              data-slot="destructive-zone-end"
-            >
-              <Archive aria-hidden="true" className="h-4 w-4" />
-              {t("medications.detail.zone.end.button")}
-            </Button>
-          </div>
-        </Card>
-
-        {/* Card B — Gefahrenzone (irreversible) */}
-        <Card
-          className="border-destructive/40 p-4 space-y-4"
-          data-slot="destructive-zone-card-b"
+      <div className="flex items-center justify-between gap-3">
+        <div className="space-y-1">
+          <p className="text-foreground text-sm font-medium">
+            {t("medications.detail.zone.purge.title")}
+          </p>
+          <p className="text-muted-foreground text-xs">
+            {t("medications.detail.zone.purge.helper", { count: intakeCount })}
+          </p>
+        </div>
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => setPurgeDialogOpen(true)}
+          disabled={intakeCount === 0}
+          className="min-h-11 font-semibold sm:min-h-9"
+          data-slot="destructive-zone-purge"
         >
-          <div className="flex items-center justify-between gap-3">
-            <div className="space-y-1">
-              <p className="text-foreground text-sm font-medium">
-                {t("medications.detail.zone.purge.title")}
-              </p>
-              <p className="text-muted-foreground text-xs">
-                {t("medications.detail.zone.purge.helper", { count: intakeCount })}
-              </p>
-            </div>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setPurgeDialogOpen(true)}
-              disabled={intakeCount === 0}
-              className="min-h-11 sm:min-h-9 font-semibold"
-              data-slot="destructive-zone-purge"
-            >
-              <Trash2 aria-hidden="true" className="h-4 w-4" />
-              {t("medications.detail.zone.purge.button")}
-            </Button>
-          </div>
-
-          <Separator />
-
-          <div className="flex items-center justify-between gap-3">
-            <div className="space-y-1">
-              <p className="text-foreground text-sm font-medium">
-                {t("medications.detail.zone.delete.title")}
-              </p>
-              <p className="text-muted-foreground text-xs">
-                {t("medications.detail.zone.delete.helper")}
-              </p>
-            </div>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setDeleteDialogOpen(true)}
-              className="min-h-11 sm:min-h-9 font-semibold"
-              data-slot="destructive-zone-delete"
-            >
-              <Trash2 aria-hidden="true" className="h-4 w-4" />
-              {t("medications.detail.zone.delete.button")}
-            </Button>
-          </div>
-        </Card>
+          <Trash2 aria-hidden="true" className="h-4 w-4" />
+          {t("medications.detail.zone.purge.button")}
+        </Button>
       </div>
 
-      {/* Tier 2 — Beenden confirm */}
-      <AlertDialog open={endDialogOpen} onOpenChange={setEndDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("medications.detail.zone.end.dialogTitle", {
-                name: medicationName,
-              })}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("medications.detail.zone.end.dialogBody")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={(e) => {
-                e.preventDefault();
-                void tier2End();
-              }}
-              disabled={tier2Busy}
-              aria-busy={tier2Busy || undefined}
-              className="font-semibold"
-            >
-              {tier2Busy && (
-                <Loader2
-                  aria-hidden="true"
-                  className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none"
-                />
-              )}
-              {t("medications.detail.zone.end.button")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Separator />
+
+      <div className="flex items-center justify-between gap-3">
+        <div className="space-y-1">
+          <p className="text-foreground text-sm font-medium">
+            {t("medications.detail.zone.delete.title")}
+          </p>
+          <p className="text-muted-foreground text-xs">
+            {t("medications.detail.zone.delete.helper")}
+          </p>
+        </div>
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => setDeleteDialogOpen(true)}
+          className="min-h-11 font-semibold sm:min-h-9"
+          data-slot="destructive-zone-delete"
+        >
+          <Trash2 aria-hidden="true" className="h-4 w-4" />
+          {t("medications.detail.zone.delete.button")}
+        </Button>
+      </div>
 
       {/* Tier 3a — Verlauf purge confirm */}
       <AlertDialog open={purgeDialogOpen} onOpenChange={setPurgeDialogOpen}>
@@ -419,6 +439,46 @@ export function DestructiveZoneSection({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </Card>
+  );
+}
+
+/**
+ * Standalone wrapper — one heading, Card A (reversible) over Card B
+ * (irreversible). Retained for callers / tests that expect the bundled
+ * shape.
+ */
+export function DestructiveZoneSection({
+  medicationId,
+  medicationName,
+  active,
+  intakeCount,
+  onAfterAction,
+}: DestructiveZoneSectionProps) {
+  const { t } = useTranslations();
+
+  return (
+    <MedicationDetailSection
+      titleId="medication-detail-zone-heading"
+      title={t("medications.detail.zone.title")}
+      dataSlot="medication-detail-zone-section"
+    >
+      <div className="space-y-4">
+        <Card className="space-y-4 p-4">
+          <LifecycleManageBody
+            medicationId={medicationId}
+            medicationName={medicationName}
+            active={active}
+            onAfterAction={onAfterAction}
+          />
+        </Card>
+        <DangerZoneBody
+          medicationId={medicationId}
+          medicationName={medicationName}
+          intakeCount={intakeCount}
+          onAfterAction={onAfterAction}
+        />
+      </div>
     </MedicationDetailSection>
   );
 }

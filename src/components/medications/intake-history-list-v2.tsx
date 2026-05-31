@@ -123,9 +123,17 @@ interface IntakeHistoryListV2Props {
    * v1.5.5 F-1 C-2 — selection contract; see `IntakeHistoryListV2Selection`.
    */
   selection?: IntakeHistoryListV2Selection;
+  /**
+   * v1.7.0 — initial sort column. Defaults to `"takenAt"` to preserve
+   * the detail-page preview behaviour; the full-history view passes
+   * `"scheduledFor"` so skipped rows (`takenAt: null`) never float to
+   * the top of the descending order (O-1).
+   */
+  defaultSortBy?: IntakeHistorySortKey;
 }
 
-type SortKey = "takenAt" | "scheduledFor";
+export type IntakeHistorySortKey = "takenAt" | "scheduledFor";
+type SortKey = IntakeHistorySortKey;
 
 const DEFAULT_PAGE_SIZE = 25;
 /**
@@ -142,6 +150,7 @@ export function IntakeHistoryListV2({
   onEditIntake,
   onDeleteIntake,
   selection,
+  defaultSortBy = "takenAt",
 }: IntakeHistoryListV2Props) {
   const { isAuthenticated } = useAuth();
   const { t } = useTranslations();
@@ -153,7 +162,7 @@ export function IntakeHistoryListV2({
   const showRowActions = Boolean(onEditIntake || onDeleteIntake);
   const showSelection = selection?.mode === "multi";
 
-  const [sortBy, setSortBy] = useState<SortKey>("takenAt");
+  const [sortBy, setSortBy] = useState<SortKey>(defaultSortBy);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(0);
 
@@ -326,9 +335,21 @@ export function IntakeHistoryListV2({
                         </TableCell>
                       )}
                       <TableCell className="text-sm">
-                        {event.takenAt
-                          ? formatters.dateTime(event.takenAt)
-                          : "—"}
+                        {/* v1.7.0 — the date column is always populated:
+                            taken rows show `takenAt`, skipped rows fall
+                            back to `scheduledFor` with a muted
+                            "(planned)" suffix so the chronological
+                            order stays clean and no `—` row floats. */}
+                        {event.takenAt ? (
+                          formatters.dateTime(event.takenAt)
+                        ) : (
+                          <>
+                            {formatters.dateTime(event.scheduledFor)}{" "}
+                            <span className="text-muted-foreground text-xs">
+                              ({t("medications.detail.history.plannedSuffix")})
+                            </span>
+                          </>
+                        )}
                       </TableCell>
                       <TableCell className="text-sm">
                         {formatters.dateTime(event.scheduledFor)}
@@ -386,7 +407,9 @@ export function IntakeHistoryListV2({
                                   onSelect={() => onEditIntake(event)}
                                   data-slot="intake-history-row-edit"
                                 >
-                                  {t("medications.detail.intake.rowActions.edit")}
+                                  {t(
+                                    "medications.detail.intake.rowActions.edit",
+                                  )}
                                 </DropdownMenuItem>
                               )}
                               {onDeleteIntake && (
