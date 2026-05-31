@@ -115,12 +115,14 @@ export function invalidateUserDashboardWidgets(userId: string): void {
 }
 
 /**
- * v1.7.0 W6 — invalidate caches a fresh comprehensive-insight write
+ * v1.7.0 — invalidate caches a fresh comprehensive-insight write
  * dirties. The dashboard snapshot embeds the pre-generated daily
  * briefing read-only, so a new generation must evict it; the next
- * snapshot then carries the new briefing. Called from the
- * `/api/insights/generate` POST and the `insight-pregenerate` cron
- * after a successful cache write.
+ * snapshot then carries the new briefing. Called directly from the
+ * `/api/insights/generate` POST after its own cache write, and from
+ * `generateComprehensiveInsight` after its write — so the
+ * `insight-pregenerate` cron evicts through the generator, not by
+ * calling this itself.
  */
 export function invalidateUserInsights(userId: string): void {
   invalidateUserDashboardSnapshot(userId);
