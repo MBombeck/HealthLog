@@ -5,14 +5,17 @@
  * iOS client performs a periodic 30-day window reconciliation: it pulls
  * the current set of HealthKit sample UUIDs in the window and posts the
  * externalIds the server holds that are no longer present. This endpoint
- * accepts that batch-delete list and removes every matching row owned by
- * the calling user.
+ * accepts that batch-delete list and soft-deletes every matching row owned
+ * by the calling user (v1.7.0 — sets `deletedAt` + bumps `syncVersion`
+ * rather than removing the row, so deletions surface as tombstones on the
+ * `/api/sync/changes` delta feed).
  *
  * Idempotency contract:
  *   - Cross-user safety: rows owned by another user are silently skipped
- *     (Prisma's `deleteMany` with `userId` in the where-clause guarantees
+ *     (Prisma's `updateMany` with `userId` in the where-clause guarantees
  *     this), so a duplicate / replayed delete is a no-op rather than a
- *     401.
+ *     401. The `deletedAt: null` guard makes a replay touch zero rows
+ *     and return `deletedCount: 0`.
  *   - Empty arrays return `{ deletedCount: 0 }` with 200 — the iOS
  *     client should not consider that a failure.
  *   - The batch cap mirrors the ingest path (`/api/measurements/batch`)
@@ -85,24 +88,38 @@ async function deleteByExternalIds(request: NextRequest): Promise<Response> {
     return apiSuccess({ deletedCount: 0 });
   }
 
-  // Prisma `deleteMany` with the userId predicate is the cross-user
-  // 404 guard: rows belonging to other users are simply not matched.
-  // We pre-fetch the (type, measuredAt) tuples so the rollup recompute
-  // step below knows which buckets to refresh after the deletion.
-  // The unique index on `(userId, type, source, externalId)` keeps
-  // the matched set small even with overlapping HealthKit history.
+  // v1.7.0 — soft-delete instead of a hard `deleteMany`. Flipping
+  // `deletedAt` (+ bumping `syncVersion`) keeps the row so the
+  // `/api/sync/changes` delta feed surfaces it as a tombstone keyed on
+  // `externalId` for paired clients that were offline at delete time.
+  // Every list / analytics / rollup read already filters
+  // `deletedAt: null`, so a tombstoned row is invisible to normal reads.
+  //
+  // The userId predicate stays the cross-user 404 guard: rows belonging
+  // to other users are simply not matched. The `deletedAt: null` guard
+  // makes a replayed reconciliation idempotent — already-tombstoned rows
+  // are not re-touched and `deletedCount` counts only rows newly
+  // tombstoned by this call. We pre-fetch the (type, measuredAt) tuples
+  // of the live matches so the rollup recompute below knows which
+  // buckets to refresh.
   const affectedRows = await prisma.measurement.findMany({
     where: {
       userId: user.id,
       externalId: { in: externalIds },
+      deletedAt: null,
     },
     select: { type: true, measuredAt: true },
   });
 
-  const result = await prisma.measurement.deleteMany({
+  const result = await prisma.measurement.updateMany({
     where: {
       userId: user.id,
       externalId: { in: externalIds },
+      deletedAt: null,
+    },
+    data: {
+      deletedAt: new Date(),
+      syncVersion: { increment: 1 },
     },
   });
 

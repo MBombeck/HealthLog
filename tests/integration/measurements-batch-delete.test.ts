@@ -2,13 +2,17 @@
  * Integration suite for `DELETE /api/measurements/by-external-ids` —
  * the iOS deletion-sync endpoint. Asserts the contract the iOS client
  * relies on for HealthKit reconciliation:
- *   - Happy path: matching rows are deleted, deletedCount equals the
- *     number actually removed.
+ *   - Happy path: matching rows are SOFT-deleted (v1.7.0 — `deletedAt`
+ *     set + `syncVersion` bumped, row retained), deletedCount equals the
+ *     number freshly tombstoned. Tombstoned rows are invisible to normal
+ *     reads but still present in the table for the tombstone feed.
  *   - Cross-user 404 guard: another user's rows that happen to share an
- *     externalId remain untouched.
+ *     externalId remain untouched (live).
  *   - Empty array: returns 200 with deletedCount = 0 (not a failure).
  *   - Batch size cap: 501 externalIds returns 422 with a documented
  *     errorCode so the client can surface the diagnostic.
+ *   - Replay idempotency: a second delete of the same externalIds is a
+ *     no-op (deletedCount 0) because the rows are already tombstoned.
  */
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -114,7 +118,7 @@ async function seedMeasurement(opts: {
 }
 
 describe("DELETE /api/measurements/by-external-ids (real Postgres)", () => {
-  it("removes matching rows owned by the caller and returns deletedCount", async () => {
+  it("soft-deletes matching rows owned by the caller and returns deletedCount", async () => {
     const { DELETE } =
       await import("@/app/api/measurements/by-external-ids/route");
 
@@ -132,20 +136,36 @@ describe("DELETE /api/measurements/by-external-ids (real Postgres)", () => {
     const json = (await response.json()) as { data: { deletedCount: number } };
     expect(json.data.deletedCount).toBe(2);
 
-    const remaining = await getPrismaClient().measurement.findMany({
+    // v1.7.0 — rows are SOFT-deleted, so all three rows still exist in
+    // the table. The two targeted rows carry a non-null `deletedAt` (and
+    // a bumped `syncVersion`); the untouched row stays live.
+    const all = await getPrismaClient().measurement.findMany({
       where: { userId: TEST_USER_ID },
       orderBy: { externalId: "asc" },
     });
-    expect(remaining).toHaveLength(1);
-    expect(remaining[0]?.externalId).toBe("uuid-keep-3");
+    expect(all).toHaveLength(3);
+
+    const live = all.filter((r) => r.deletedAt === null);
+    expect(live).toHaveLength(1);
+    expect(live[0]?.externalId).toBe("uuid-keep-3");
+
+    const tombstoned = all.filter((r) => r.deletedAt !== null);
+    expect(tombstoned.map((r) => r.externalId).sort()).toEqual([
+      "uuid-del-1",
+      "uuid-del-2",
+    ]);
+    // syncVersion bumped from the default 1 to 2 on tombstone.
+    for (const row of tombstoned) {
+      expect(row.syncVersion).toBe(2);
+    }
   });
 
-  it("never deletes rows owned by another user (cross-user 404 guard)", async () => {
+  it("never tombstones rows owned by another user (cross-user 404 guard)", async () => {
     const { DELETE } =
       await import("@/app/api/measurements/by-external-ids/route");
 
     // Two users own rows with the same externalId; deleting via the
-    // logged-in user must only remove that user's row.
+    // logged-in user must only tombstone that user's row.
     await seedMeasurement({ userId: TEST_USER_ID, externalId: "uuid-shared" });
     await seedMeasurement({
       userId: OTHER_USER_ID,
@@ -163,13 +183,16 @@ describe("DELETE /api/measurements/by-external-ids (real Postgres)", () => {
     const callerRows = await getPrismaClient().measurement.findMany({
       where: { userId: TEST_USER_ID },
     });
-    expect(callerRows).toHaveLength(0);
+    expect(callerRows).toHaveLength(1);
+    expect(callerRows[0]?.deletedAt).not.toBeNull();
 
+    // The other user's row must stay live (deletedAt null) and untouched.
     const otherRows = await getPrismaClient().measurement.findMany({
       where: { userId: OTHER_USER_ID },
     });
     expect(otherRows).toHaveLength(1);
     expect(otherRows[0]?.externalId).toBe("uuid-shared");
+    expect(otherRows[0]?.deletedAt).toBeNull();
   });
 
   it("accepts an empty externalIds array as a no-op", async () => {
@@ -187,6 +210,34 @@ describe("DELETE /api/measurements/by-external-ids (real Postgres)", () => {
       where: { userId: TEST_USER_ID },
     });
     expect(stored).toHaveLength(1);
+    expect(stored[0]?.deletedAt).toBeNull();
+  });
+
+  it("is idempotent on replay — a second delete tombstones zero rows", async () => {
+    const { DELETE } =
+      await import("@/app/api/measurements/by-external-ids/route");
+
+    await seedMeasurement({ userId: TEST_USER_ID, externalId: "uuid-replay" });
+
+    const first = await DELETE(makeRequest({ externalIds: ["uuid-replay"] }));
+    const firstJson = (await first.json()) as {
+      data: { deletedCount: number };
+    };
+    expect(firstJson.data.deletedCount).toBe(1);
+
+    const second = await DELETE(makeRequest({ externalIds: ["uuid-replay"] }));
+    const secondJson = (await second.json()) as {
+      data: { deletedCount: number };
+    };
+    // Already tombstoned — the `deletedAt: null` guard matches nothing,
+    // so the replay is a no-op and syncVersion does not bump again.
+    expect(secondJson.data.deletedCount).toBe(0);
+
+    const row = await getPrismaClient().measurement.findFirst({
+      where: { userId: TEST_USER_ID, externalId: "uuid-replay" },
+    });
+    expect(row?.deletedAt).not.toBeNull();
+    expect(row?.syncVersion).toBe(2);
   });
 
   it("returns 422 with measurement.delete.too_large when batch exceeds the cap", async () => {

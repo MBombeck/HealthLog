@@ -183,7 +183,21 @@ export const DELETE = apiHandler(
       return apiError("Measurement not found", 404);
     }
 
-    await prisma.measurement.delete({ where: { id } });
+    // v1.7.0 — soft-delete instead of a hard `delete`. Setting `deletedAt`
+    // (+ bumping `syncVersion`) leaves the row in place so the
+    // `/api/sync/changes` delta feed can surface it as a tombstone to
+    // paired clients that were offline at delete time. Every list /
+    // analytics / rollup read already filters `deletedAt: null`
+    // (see `measurements/route.ts:100`), so the row is invisible to
+    // normal reads from this point on. A row that is already tombstoned
+    // re-bumps `syncVersion` harmlessly (idempotent re-delete).
+    await prisma.measurement.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        syncVersion: { increment: 1 },
+      },
+    });
 
     await auditLog("measurement.delete", {
       userId: user.id,
