@@ -84,6 +84,49 @@ export const coachDefaultWindowEnum = z.enum([
 export type CoachDefaultWindow = z.infer<typeof coachDefaultWindowEnum>;
 
 /**
+ * v1.7.0 — clustered, opt-in Coach data sources. Each cluster groups a
+ * set of `CoachScopeSource` / `MeasurementType` / model reads behind a
+ * single toggle in the Coach settings sheet. The snapshot builder
+ * expands the enabled clusters into the source set when the request
+ * does not carry an explicit `scope.sources` list, then subtracts
+ * `excludeMetrics` as a post-filter (a cluster can be on while a single
+ * metric inside it is excluded).
+ *
+ * The cluster set is the opt-in source of truth going forward;
+ * `excludeMetrics` stays valid for back-compat and only narrows.
+ */
+export const coachDataClusterEnum = z.enum([
+  "cardio",
+  "body",
+  "activity",
+  "workouts",
+  "sleep",
+  "mood",
+  "glucose",
+  "medication",
+  "mobility",
+  "environment",
+]);
+export type CoachDataCluster = z.infer<typeof coachDataClusterEnum>;
+
+/**
+ * Clusters enabled when the user has never touched the cluster picker
+ * (`dataClusters === undefined`). These four reproduce today's legacy
+ * five domains: cardio carries BP + pulse, body carries weight, mood
+ * and medication map straight through. The additive members riding
+ * inside cardio/body (HRV, resting HR, body-composition) only surface
+ * when the user actually has rows for them — empty blocks are dropped —
+ * so a web-only account stays close to the legacy 5-domain output while
+ * an iOS account quietly gains the extra signals it already stores.
+ */
+export const DEFAULT_COACH_CLUSTERS: ReadonlyArray<CoachDataCluster> = [
+  "cardio",
+  "body",
+  "mood",
+  "medication",
+];
+
+/**
  * Full preferences shape. Defaults are inlined into the schema so a
  * `safeParse({})` call returns the legacy v1.4.22 defaults — saves a
  * sprinkle of `?? defaultX` calls at the call sites.
@@ -94,6 +137,13 @@ export const coachPrefsSchema = z.object({
   excludeMetrics: z.array(coachExcludeMetricEnum).max(11).default([]),
   showEvidenceByDefault: z.boolean().default(false),
   defaultWindow: coachDefaultWindowEnum.default("allTime"),
+  // v1.7.0 — opt-in cluster selection. `undefined` (key absent) is the
+  // back-compat sentinel: the snapshot builder expands
+  // `DEFAULT_COACH_CLUSTERS` so a legacy user who never opened the
+  // picker keeps the legacy domains. We deliberately do NOT `.default([])`
+  // — an empty array means "the user turned everything off", which is a
+  // distinct, valid state from "never picked".
+  dataClusters: z.array(coachDataClusterEnum).max(10).optional(),
 });
 
 export type CoachPrefs = z.infer<typeof coachPrefsSchema>;
