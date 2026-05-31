@@ -496,6 +496,40 @@ export const CUMULATIVE_HK_TYPES: ReadonlySet<MeasurementType> = new Set<Measure
 ]);
 
 /**
+ * v1.7.0 — high-frequency *spot* HealthKit metrics that arrive at
+ * sampling granularity (tens-to-hundreds of rows per day) but whose
+ * correct daily reduction is the MEAN, not the SUM. Summing a day's
+ * walking-speed or respiratory-rate samples is meaningless; the
+ * per-day mean is the right consolidation.
+ *
+ * The nightly daily-mean drain (`drainDailyMean`) walks this set per
+ * user × type × completed day, UPSERTs one `stats:<HK>:<day>` row at
+ * local-noon carrying the day's mean, and SOFT-deletes the per-sample
+ * rows (tombstone, audit-trail preserving — the legacy-step choice).
+ *
+ * Disjoint from `CUMULATIVE_HK_TYPES` by construction — a type in both
+ * would be reduced by SUM and MEAN at once and corrupt the value. The
+ * disjointness is asserted in `apple-health-mapping.test.ts`.
+ *
+ * PULSE is deliberately EXCLUDED even though it is high-frequency:
+ * correlation + scatter analytics read raw PULSE rows, so draining it
+ * to a daily grain would change those inputs. PULSE keeps raw storage;
+ * its DISPLAY stays daily-aggregated via the read-path AVG (PULSE is
+ * not in `CUMULATIVE_HK_TYPES`, so the daily read averages it).
+ *
+ * Like the cumulative drain, the daily-mean drain scopes to
+ * `source = 'APPLE_HEALTH'` only — manual + Withings spot rows for the
+ * same type stay untouched.
+ */
+export const HIGH_FREQUENCY_MEAN_TYPES: ReadonlySet<MeasurementType> = new Set<MeasurementType>([
+  "RESPIRATORY_RATE",
+  "AUDIO_EXPOSURE_ENV",
+  "AUDIO_EXPOSURE_HEADPHONE",
+  "WALKING_SPEED",
+  "WALKING_STEP_LENGTH",
+]);
+
+/**
  * v1.4.30 — externalId shape for daily-aggregated cumulative
  * HealthKit rows. iOS emits one row per day per cumulative type via
  * `HKStatisticsCollectionQuery` per R-A Option A; the externalId

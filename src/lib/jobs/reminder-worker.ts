@@ -113,6 +113,13 @@ import {
   enqueueBootTimeStepConsolidation,
   type StepConsolidationPayload,
 } from "@/lib/jobs/step-consolidation";
+import {
+  MEAN_CONSOLIDATION_QUEUE,
+  MEAN_CONSOLIDATION_CONCURRENCY,
+  runMeanConsolidationForUser,
+  enqueueBootTimeMeanConsolidation,
+  type MeanConsolidationPayload,
+} from "@/lib/jobs/mean-consolidation";
 import { expireStaleInUseItems } from "@/lib/medications/inventory/service";
 import { rotateLegacyMoodLogSecrets } from "@/lib/moodlog-secret";
 import { probeIntegrationStatusNullBuckets } from "@/lib/jobs/integration-status-null-probe";
@@ -1911,6 +1918,14 @@ export async function startReminderWorker() {
     // registered here or pg-boss never provisions it and the boot
     // enqueue silently never drains.
     STEP_CONSOLIDATION_QUEUE,
+    // v1.7.0 — daily-mean consolidation for high-frequency spot
+    // HealthKit metrics (walking speed/step length, respiratory rate,
+    // audio exposure). Boot discovery enqueues one job per user holding
+    // live per-sample mean-type rows; the per-user pass collapses each
+    // day to its mean and soft-deletes the originals. Idempotent across
+    // reboots. The queue MUST be registered here or pg-boss never
+    // provisions it and the boot enqueue silently never drains.
+    MEAN_CONSOLIDATION_QUEUE,
     // v1.4.37 W7c — explicit createQueue is required before the
     // nightly schedule below registers (pg-boss v12 contract). Without
     // this entry the drain schedule silently no-ops and the
@@ -2255,6 +2270,27 @@ export async function startReminderWorker() {
     },
   );
 
+  // v1.7.0 — daily-mean consolidation worker. The boot enqueue helper
+  // below sends one job per user holding live per-sample high-frequency
+  // mean-type rows; this handler collapses each completed day to its
+  // mean and soft-deletes the originals. Serial concurrency so the
+  // populator never crowds the dashboard request pool.
+  await boss.work<MeanConsolidationPayload>(
+    MEAN_CONSOLIDATION_QUEUE,
+    { localConcurrency: MEAN_CONSOLIDATION_CONCURRENCY },
+    async (jobs) => {
+      for (const job of jobs) {
+        const { userId } = job.data;
+        const { daysConsolidated, perSampleRowsSoftDeleted } =
+          await runMeanConsolidationForUser(userId);
+        workerLog(
+          "info",
+          `[mean-consolidation] user=${userId} days=${daysConsolidated} perSampleRowsSoftDeleted=${perSampleRowsSoftDeleted}`,
+        );
+      }
+    },
+  );
+
   // v1.4.39 W-MOOD — mood-rollup per-bucket worker. Folds the
   // WEEK / MONTH / YEAR buckets that the mood-entry write hooks
   // enqueue; the DAY bucket runs synchronously in the hook itself.
@@ -2428,6 +2464,34 @@ export async function startReminderWorker() {
     workerLog(
       "error",
       "[step-consolidation] boot discovery threw an unexpected error",
+      err,
+    );
+  }
+
+  // v1.7.0 — fire-and-forget boot discovery for the daily-mean
+  // consolidation pass. Finds every user holding live per-sample
+  // high-frequency mean-type rows and enqueues one job per account.
+  // Idempotent across reboots: consolidated rows are soft-deleted, so
+  // the discovery predicate drops them. Errors are returned through the
+  // helper's result value — the worker boot never fails on a miss.
+  try {
+    const { enqueued, skipped, error } =
+      await enqueueBootTimeMeanConsolidation();
+    if (error) {
+      workerLog(
+        "error",
+        `[mean-consolidation] boot discovery failed: ${error}`,
+      );
+    } else {
+      workerLog(
+        "info",
+        `[mean-consolidation] boot discovery: enqueued=${enqueued} skipped=${skipped}`,
+      );
+    }
+  } catch (err) {
+    workerLog(
+      "error",
+      "[mean-consolidation] boot discovery threw an unexpected error",
       err,
     );
   }

@@ -3,8 +3,10 @@ import {
   APPLE_HEALTH_SLEEP_STAGE_MAP,
   APPLE_HEALTH_TYPE_MAP,
   CUMULATIVE_HK_TYPES,
+  HIGH_FREQUENCY_MEAN_TYPES,
   HK_QUANTITY_TYPE_DEFERRED,
   dailyStatsExternalId,
+  hkIdentifierForType,
   mapAppleHealthEntry,
 } from "../apple-health-mapping";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
@@ -619,5 +621,40 @@ describe("dailyStatsExternalId (v1.4.30 — R-A Option A handoff lock)", () => {
         "HKQuantityTypeIdentifierTimeInDaylight",
       ].sort(),
     );
+  });
+});
+
+describe("HIGH_FREQUENCY_MEAN_TYPES (v1.7.0)", () => {
+  it("is strictly disjoint from CUMULATIVE_HK_TYPES", () => {
+    for (const type of HIGH_FREQUENCY_MEAN_TYPES) {
+      expect(CUMULATIVE_HK_TYPES.has(type)).toBe(false);
+    }
+    for (const type of CUMULATIVE_HK_TYPES) {
+      expect(HIGH_FREQUENCY_MEAN_TYPES.has(type)).toBe(false);
+    }
+  });
+
+  it("excludes PULSE — correlation/scatter read raw PULSE rows", () => {
+    expect(HIGH_FREQUENCY_MEAN_TYPES.has("PULSE" as MeasurementType)).toBe(
+      false,
+    );
+  });
+
+  it("covers the genuinely-orphan high-frequency spot metrics", () => {
+    expect(Array.from(HIGH_FREQUENCY_MEAN_TYPES).sort()).toEqual(
+      [
+        "RESPIRATORY_RATE",
+        "AUDIO_EXPOSURE_ENV",
+        "AUDIO_EXPOSURE_HEADPHONE",
+        "WALKING_SPEED",
+        "WALKING_STEP_LENGTH",
+      ].sort(),
+    );
+  });
+
+  it("every mean type resolves to a HealthKit identifier", () => {
+    for (const type of HIGH_FREQUENCY_MEAN_TYPES) {
+      expect(hkIdentifierForType(type)).not.toBeNull();
+    }
   });
 });
