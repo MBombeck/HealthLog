@@ -383,6 +383,90 @@ describe("dispatchNotification — per-event default policy (v1.4.25 W16c)", () 
   });
 });
 
+describe("dispatchNotification — MOOD_REMINDER single source of truth (v1.7.0)", () => {
+  it("delivers when the card is on and no per-event preference row exists", async () => {
+    const channel = makeChannel({
+      type: "NTFY",
+      config: JSON.stringify({
+        serverUrl: "https://ntfy.example",
+        topic: "t",
+      }),
+      preferences: [],
+    });
+    vi.mocked(prisma.notificationChannel.findMany).mockResolvedValueOnce([
+      channel,
+    ] as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      moodReminderEnabled: true,
+    } as never);
+    sendViaNtfyMock.mockResolvedValueOnce({ ok: true });
+
+    await dispatchNotification({
+      eventType: "MOOD_REMINDER",
+      userId: "u-1",
+      title: "Mood",
+      message: "How are you feeling?",
+    });
+
+    // Card on + no pref row → delivered (the old double opt-in dropped it).
+    expect(sendViaNtfyMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("suppresses when the user has an explicit per-event opt-out", async () => {
+    const channel = makeChannel({
+      type: "NTFY",
+      config: JSON.stringify({
+        serverUrl: "https://ntfy.example",
+        topic: "t",
+      }),
+      preferences: [{ eventType: "MOOD_REMINDER", enabled: false }],
+    });
+    vi.mocked(prisma.notificationChannel.findMany).mockResolvedValueOnce([
+      channel,
+    ] as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      moodReminderEnabled: true,
+    } as never);
+
+    await dispatchNotification({
+      eventType: "MOOD_REMINDER",
+      userId: "u-1",
+      title: "Mood",
+      message: "How are you feeling?",
+    });
+
+    // Card on but an explicit opt-out row → still suppressed.
+    expect(sendViaNtfyMock).not.toHaveBeenCalled();
+  });
+
+  it("suppresses when the card is off", async () => {
+    const channel = makeChannel({
+      type: "NTFY",
+      config: JSON.stringify({
+        serverUrl: "https://ntfy.example",
+        topic: "t",
+      }),
+      preferences: [],
+    });
+    vi.mocked(prisma.notificationChannel.findMany).mockResolvedValueOnce([
+      channel,
+    ] as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      moodReminderEnabled: false,
+    } as never);
+
+    await dispatchNotification({
+      eventType: "MOOD_REMINDER",
+      userId: "u-1",
+      title: "Mood",
+      message: "How are you feeling?",
+    });
+
+    // Card off → no delivery.
+    expect(sendViaNtfyMock).not.toHaveBeenCalled();
+  });
+});
+
 describe("dispatchNotification — Telegram hard reject", () => {
   it("auto-disables on 'chat not found'", async () => {
     const channel = makeChannel({
