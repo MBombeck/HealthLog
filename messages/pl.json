@@ -3771,7 +3771,10 @@
       "statusOff": "Wyłączone",
       "enabledToast": "Przypomnienie o nastroju włączone.",
       "disabledToast": "Przypomnienie o nastroju wyłączone.",
-      "saveError": "Zapis nieudany. Spróbuj ponownie."
+      "saveError": "Zapis nieudany. Spróbuj ponownie.",
+      "hourLabel": "Godzina przypomnienia",
+      "hourAria": "Godzina przypomnienia o nastroju",
+      "hourSavedToast": "Godzina przypomnienia zaktualizowana."
     },
     "eventMedicationReminder": "Przypomnienie o leku",
     "eventMedicationReminderDesc": "Wysyłane o każdej zaplanowanej godzinie dawki.",

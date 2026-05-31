@@ -9,7 +9,8 @@
  *
  * Shape (additive — future categories slot in next to `medication`):
  *   {
- *     "medication": { "clientManaged": boolean }
+ *     "medication": { "clientManaged": boolean },
+ *     "mood": { "reminderHour": 0..23 }
  *   }
  *
  * The schema is intentionally additive — every new category grows the
@@ -42,6 +43,19 @@ const medicationPrefsSchema = z
   .partial();
 
 /**
+ * v1.7.0 — mood category schema. `reminderHour` is the local-time hour
+ * (0–23) at which the daily mood reminder fires. Sub-object form keeps
+ * the layout open for future mood knobs (quiet days, snooze, …).
+ * Default is 22:00 — see `DEFAULT_NOTIFICATION_PREFS` — so an unset
+ * value is identical to the legacy hardcoded behaviour.
+ */
+const moodPrefsSchema = z
+  .object({
+    reminderHour: z.number().int().min(0).max(23),
+  })
+  .partial();
+
+/**
  * v1.7.0 — per-device delivery override schema for the device PATCH.
  * NULL clears the override (the device inherits the user-level roaming
  * default).
@@ -57,6 +71,7 @@ export const deviceDeliverySchema = z.enum(["server", "client"]).nullable();
 export const notificationPrefsSchema = z
   .object({
     medication: medicationPrefsSchema,
+    mood: moodPrefsSchema,
   })
   .partial();
 
@@ -73,7 +88,17 @@ export interface NotificationPrefs {
     /** v1.7.0 — roaming user-level delivery default. */
     deliveryDefault: "server" | "client";
   };
+  mood: {
+    /** v1.7.0 — local-time hour (0–23) for the daily mood reminder. */
+    reminderHour: number;
+  };
 }
+
+/**
+ * v1.7.0 — default mood-reminder hour. 22:00 reproduces the legacy
+ * hardcoded window, so any user with an unset value sees zero change.
+ */
+export const DEFAULT_MOOD_REMINDER_HOUR = 22;
 
 /**
  * Safe defaults. Every category is off so the server reminders flow
@@ -85,6 +110,9 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   medication: {
     clientManaged: false,
     deliveryDefault: "server",
+  },
+  mood: {
+    reminderHour: DEFAULT_MOOD_REMINDER_HOUR,
   },
 };
 
@@ -118,6 +146,10 @@ export function resolveNotificationPrefs(
       ...base.medication,
       ...(incoming.medication ?? {}),
     },
+    mood: {
+      ...base.mood,
+      ...(incoming.mood ?? {}),
+    },
   });
 }
 
@@ -141,6 +173,7 @@ function applyDeliveryDefaultMapping(prefs: NotificationPrefs): NotificationPref
       ...prefs.medication,
       clientManaged,
     },
+    mood: { ...prefs.mood },
   };
 }
 
@@ -176,9 +209,20 @@ export function resolveDeviceDelivery(
   return parseNotificationPrefs(raw).medication.deliveryDefault;
 }
 
+/**
+ * Cron-side helper. Resolve the user's local-time mood-reminder hour
+ * (0–23) from the persisted prefs blob, falling back to the default
+ * (22:00) for a null / drifted row. Pulled out so the mood-reminder
+ * cron reads one number instead of threading the whole prefs object.
+ */
+export function resolveMoodReminderHour(raw: unknown): number {
+  return parseNotificationPrefs(raw).mood.reminderHour;
+}
+
 function cloneDefaults(): NotificationPrefs {
   return {
     medication: { ...DEFAULT_NOTIFICATION_PREFS.medication },
+    mood: { ...DEFAULT_NOTIFICATION_PREFS.mood },
   };
 }
 
@@ -189,6 +233,10 @@ function mergeOverDefaults(
     medication: {
       ...DEFAULT_NOTIFICATION_PREFS.medication,
       ...(input.medication ?? {}),
+    },
+    mood: {
+      ...DEFAULT_NOTIFICATION_PREFS.mood,
+      ...(input.mood ?? {}),
     },
   });
 }

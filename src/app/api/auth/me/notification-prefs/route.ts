@@ -2,7 +2,8 @@
  * v1.4.49 M-DOUBLE-REMINDER — per-user notification preferences endpoint.
  *
  *  GET    /api/auth/me/notification-prefs  — current resolved prefs.
- *  PATCH  /api/auth/me/notification-prefs  — body `{ medication?: { clientManaged?: boolean } }`.
+ *  PATCH  /api/auth/me/notification-prefs  — body `{ medication?: { clientManaged?: boolean },
+ *                                            mood?: { reminderHour?: 0..23 } }`.
  *                                            Deep-merges the supplied
  *                                            shape over the persisted
  *                                            row so future categories

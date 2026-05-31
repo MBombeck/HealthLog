@@ -3771,7 +3771,10 @@
       "statusOff": "Off",
       "enabledToast": "Mood reminder enabled.",
       "disabledToast": "Mood reminder disabled.",
-      "saveError": "Save failed. Please try again."
+      "saveError": "Save failed. Please try again.",
+      "hourLabel": "Reminder time",
+      "hourAria": "Mood reminder hour",
+      "hourSavedToast": "Reminder time updated."
     },
     "eventMedicationReminder": "Medication reminder",
     "eventMedicationReminderDesc": "Sent at each scheduled dose time.",

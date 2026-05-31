@@ -3771,7 +3771,10 @@
       "statusOff": "Aus",
       "enabledToast": "Stimmungs-Erinnerung aktiviert.",
       "disabledToast": "Stimmungs-Erinnerung deaktiviert.",
-      "saveError": "Speichern fehlgeschlagen. Bitte später erneut versuchen."
+      "saveError": "Speichern fehlgeschlagen. Bitte später erneut versuchen.",
+      "hourLabel": "Erinnerungszeit",
+      "hourAria": "Stunde der Stimmungs-Erinnerung",
+      "hourSavedToast": "Erinnerungszeit aktualisiert."
     },
     "eventMedicationReminder": "Medikamenten-Erinnerung",
     "eventMedicationReminderDesc": "Wird zu jeder geplanten Einnahmezeit gesendet.",

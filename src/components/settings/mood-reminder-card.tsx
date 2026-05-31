@@ -13,6 +13,10 @@ interface ProfileShape {
   moodReminderEnabled: boolean;
 }
 
+interface NotificationPrefsShape {
+  mood: { reminderHour: number };
+}
+
 export function MoodReminderCard({
   isAuthenticated,
 }: {
@@ -21,6 +25,7 @@ export function MoodReminderCard({
   const { t } = useTranslations();
   const queryClient = useQueryClient();
   const [optimistic, setOptimistic] = useState<boolean | null>(null);
+  const [optimisticHour, setOptimisticHour] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
@@ -66,7 +71,20 @@ export function MoodReminderCard({
     enabled: isAuthenticated,
   });
 
+  // v1.7.0 — the per-user reminder hour lives in the roaming
+  // notification-prefs blob so iOS + web share one source of truth.
+  const { data: prefs } = useQuery({
+    queryKey: queryKeys.authNotificationPrefs(),
+    queryFn: async () => {
+      const res = await fetch("/api/auth/me/notification-prefs");
+      if (!res.ok) throw new Error("Failed to load notification prefs");
+      return (await res.json()).data as NotificationPrefsShape;
+    },
+    enabled: isAuthenticated,
+  });
+
   const enabled = optimistic ?? profile?.moodReminderEnabled ?? false;
+  const reminderHour = optimisticHour ?? prefs?.mood.reminderHour ?? 22;
 
   async function handleToggle(next: boolean) {
     setOptimistic(next);
@@ -103,6 +121,39 @@ export function MoodReminderCard({
     setSaving(false);
   }
 
+  async function handleHourChange(next: number) {
+    setOptimisticHour(next);
+    setSaving(true);
+    setMsg(null);
+    setMsgType(null);
+    if (clearTimerRef.current !== null) {
+      clearTimeout(clearTimerRef.current);
+      clearTimerRef.current = null;
+    }
+
+    const res = await fetch("/api/auth/me/notification-prefs", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mood: { reminderHour: next } }),
+    });
+
+    if (res.ok) {
+      setMsg(t("notifications.moodReminder.hourSavedToast"));
+      setMsgType("success");
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.authNotificationPrefs(),
+      });
+      setOptimisticHour(null);
+      scheduleClear();
+    } else {
+      setOptimisticHour(null);
+      setMsg(t("notifications.moodReminder.saveError"));
+      setMsgType("error");
+      scheduleClear();
+    }
+    setSaving(false);
+  }
+
   return (
     <section
       aria-labelledby="settings-mood-reminder-title"
@@ -129,6 +180,30 @@ export function MoodReminderCard({
           </label>
         }
       />
+      {enabled && (
+        <div className="mt-4 flex min-h-11 items-center gap-3">
+          <label
+            htmlFor="mood-reminder-hour"
+            className="text-sm font-medium"
+          >
+            {t("notifications.moodReminder.hourLabel")}
+          </label>
+          <select
+            id="mood-reminder-hour"
+            className="border-input bg-background h-11 rounded-md border px-3 text-sm"
+            value={reminderHour}
+            disabled={!isAuthenticated || saving}
+            onChange={(e) => handleHourChange(Number(e.target.value))}
+            aria-label={t("notifications.moodReminder.hourAria")}
+          >
+            {Array.from({ length: 24 }, (_, h) => (
+              <option key={h} value={h}>
+                {`${h.toString().padStart(2, "0")}:00`}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       {msg && (
         <p
           role="status"

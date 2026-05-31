@@ -3771,7 +3771,10 @@
       "statusOff": "Disattivato",
       "enabledToast": "Promemoria dell’umore attivato.",
       "disabledToast": "Promemoria dell’umore disattivato.",
-      "saveError": "Salvataggio non riuscito. Riprova."
+      "saveError": "Salvataggio non riuscito. Riprova.",
+      "hourLabel": "Ora del promemoria",
+      "hourAria": "Ora del promemoria dell’umore",
+      "hourSavedToast": "Ora del promemoria aggiornata."
     },
     "eventMedicationReminder": "Promemoria farmaco",
     "eventMedicationReminderDesc": "Inviato a ogni orario di dose programmato.",

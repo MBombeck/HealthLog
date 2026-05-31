@@ -3771,7 +3771,10 @@
       "statusOff": "Desactivado",
       "enabledToast": "Recordatorio de ánimo activado.",
       "disabledToast": "Recordatorio de ánimo desactivado.",
-      "saveError": "No se pudo guardar. Inténtalo de nuevo."
+      "saveError": "No se pudo guardar. Inténtalo de nuevo.",
+      "hourLabel": "Hora del recordatorio",
+      "hourAria": "Hora del recordatorio de ánimo",
+      "hourSavedToast": "Hora del recordatorio actualizada."
     },
     "eventMedicationReminder": "Recordatorio de medicación",
     "eventMedicationReminderDesc": "Se envía a cada hora de dosis programada.",

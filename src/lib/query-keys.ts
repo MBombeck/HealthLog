@@ -185,6 +185,14 @@ export const queryKeys = {
     ["insights", "glp1-timeline", limit] as const,
   userAiProvider: () => ["user", "ai-provider"] as const,
   userProfile: () => ["user", "profile"] as const,
+  /**
+   * v1.7.0 — the roaming notification prefs blob behind
+   * `GET/PATCH /api/auth/me/notification-prefs` (medication delivery
+   * default + mood reminder hour). Distinct from
+   * `notificationsPreferences()` (the per-event push toggles on the
+   * `/notifications` page) so the two never collide in the cache.
+   */
+  authNotificationPrefs: () => ["auth", "me", "notification-prefs"] as const,
 
   apiVersion: () => ["api", "version"] as const,
   publicVersion: () => ["public", "version"] as const,

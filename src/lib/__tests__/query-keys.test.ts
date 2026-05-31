@@ -69,6 +69,11 @@ describe("queryKeys factory", () => {
       "notifications",
       "status",
     ]);
+    expect(queryKeys.authNotificationPrefs()).toEqual([
+      "auth",
+      "me",
+      "notification-prefs",
+    ]);
     expect(queryKeys.apiVersion()).toEqual(["api", "version"]);
   });
 

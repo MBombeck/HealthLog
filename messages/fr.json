@@ -3771,7 +3771,10 @@
       "statusOff": "Désactivé",
       "enabledToast": "Rappel d’humeur activé.",
       "disabledToast": "Rappel d’humeur désactivé.",
-      "saveError": "Échec de l’enregistrement. Réessayez."
+      "saveError": "Échec de l’enregistrement. Réessayez.",
+      "hourLabel": "Heure du rappel",
+      "hourAria": "Heure du rappel d’humeur",
+      "hourSavedToast": "Heure du rappel mise à jour."
     },
     "eventMedicationReminder": "Rappel de médicament",
     "eventMedicationReminderDesc": "Envoyé à chaque heure de prise prévue.",
