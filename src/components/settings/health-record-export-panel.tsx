@@ -111,6 +111,16 @@ export function HealthRecordExportPanel() {
     setSections((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
+  // The single "Medikamente" control gates the whole medication block
+  // (list + compliance) so unchecking it actually excludes all medication
+  // data from the export — matching the iOS five-section model.
+  function toggleMedications() {
+    setSections((prev) => {
+      const next = !(prev.medList && prev.compliance);
+      return { ...prev, medList: next, compliance: next };
+    });
+  }
+
   async function handleGenerate() {
     setBusy(true);
     setError(null);
@@ -319,8 +329,8 @@ export function HealthRecordExportPanel() {
             />
             <ToggleRow
               label={t("settings.healthRecord.medications")}
-              checked={sections.compliance}
-              onToggle={() => toggle("compliance")}
+              checked={sections.medList && sections.compliance}
+              onToggle={toggleMedications}
             />
             <ToggleRow
               label={t("settings.healthRecord.bmi")}
