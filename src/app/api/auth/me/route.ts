@@ -52,6 +52,10 @@ export const GET = apiHandler(async () => {
       ? buildAvatarUrl(user.id, user.avatarUpdatedAt)
       : null,
     glucoseUnit: user.glucoseUnit ?? null,
+    // v1.7.0 — global metric/imperial display preference. Canonical
+    // storage stays SI; this only drives the display-time transform
+    // branch. Null defaults to "metric" on the client.
+    unitPreference: user.unitPreference === "imperial" ? "imperial" : "metric",
     lastReportPracticeName: user.lastReportPracticeName ?? null,
     // v1.4.47 W3 — per-user Coach opt-out. Default `false` if the
     // column is absent (partial-deploy rollback safety, see migration

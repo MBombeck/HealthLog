@@ -55,6 +55,7 @@ function buildUser(disableCoach: boolean): AuthUser {
     onboardingTourCompleted: true,
     avatarUrl: null,
     glucoseUnit: null,
+    unitPreference: "metric",
     disableCoach,
     fullName: null,
     insurerName: null,

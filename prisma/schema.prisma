@@ -82,6 +82,10 @@ model User {
   insightsLayoutJson      Json?   @map("insights_layout_json")
   // Blood-glucose display unit preference. Canonical storage is mg/dL.
   glucoseUnit             String? @map("glucose_unit") // "mg/dL" | "mmol/L" | null = default "mg/dL"
+  // v1.7.0 unit pref — global metric/imperial display preference.
+  // Canonical storage stays SI; this only selects the display-time
+  // transform branch (km/h vs mph, km vs mi). Null = default "metric".
+  unitPreference          String? @map("unit_preference") // "metric" | "imperial" | null = default "metric"
   // AI provider selection for insights. Null = OPENAI fallback.
   aiProvider              String? @map("ai_provider") // "OPENAI" | "ANTHROPIC" | "LOCAL" | "CHATGPT_OAUTH"
   aiModel                 String? @map("ai_model")

@@ -30,6 +30,13 @@ export interface AuthUser {
   avatarUrl: string | null;
   glucoseUnit: string | null;
   /**
+   * v1.7.0 — global metric/imperial display preference. Canonical
+   * storage stays SI; this selects the display-time transform branch
+   * (km/h vs mph, km vs mi). Null on a stale /me payload coerces to
+   * "metric" in `fetchMe`.
+   */
+  unitPreference: "metric" | "imperial";
+  /**
    * v1.4.47 W3 — per-user Coach opt-out. When `true`, every Coach
    * mount point (`<LayoutCoachFab>`, `<LayoutCoachMount>`, the
    * inline `<CoachLaunchButton>` pill, the `/targets` page CTA)
@@ -65,6 +72,9 @@ async function fetchMe(): Promise<AuthUser> {
   return {
     ...(data as AuthUser),
     disableCoach: data.disableCoach ?? false,
+    // v1.7.0 — coerce against a stale /me payload (older server image
+    // without the field) so the display defaults to metric.
+    unitPreference: data.unitPreference === "imperial" ? "imperial" : "metric",
   };
 }
 
