@@ -3765,9 +3765,9 @@
     },
     "moodReminder": {
       "title": "Recordatorio diario de ánimo",
-      "description": "Aviso suave a las 22:00 si aún no has registrado el ánimo del día. Se envía solo por canales ya configurados (Telegram, ntfy, Web Push, Apple Push) y permanece en silencio una vez que has registrado el ánimo hoy.",
+      "description": "Aviso suave a la hora que elijas si aún no has registrado el ánimo del día. Se envía solo por canales ya configurados (Telegram, ntfy, Web Push, Apple Push) y permanece en silencio una vez que has registrado el ánimo hoy.",
       "toggleAria": "Alternar recordatorio diario de ánimo",
-      "statusOn": "Activo a las 22:00 hora local",
+      "statusOn": "Activo a la hora que elijas",
       "statusOff": "Desactivado",
       "enabledToast": "Recordatorio de ánimo activado.",
       "disabledToast": "Recordatorio de ánimo desactivado.",

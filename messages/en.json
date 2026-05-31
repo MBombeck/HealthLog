@@ -3765,9 +3765,9 @@
     },
     "moodReminder": {
       "title": "Daily mood reminder",
-      "description": "Gentle 22:00 nudge when you haven't logged a mood for the day. Routes only through channels you've already configured (Telegram, ntfy, Web Push, Apple Push) and stays silent once you've logged today.",
+      "description": "A gentle nudge at your chosen time when you haven't logged a mood for the day. Routes only through channels you've already configured (Telegram, ntfy, Web Push, Apple Push) and stays silent once you've logged today.",
       "toggleAria": "Toggle daily mood reminder",
-      "statusOn": "On at 22:00 your time",
+      "statusOn": "Active at your chosen time",
       "statusOff": "Off",
       "enabledToast": "Mood reminder enabled.",
       "disabledToast": "Mood reminder disabled.",

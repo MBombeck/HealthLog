@@ -3765,9 +3765,9 @@
     },
     "moodReminder": {
       "title": "Codzienne przypomnienie o nastroju",
-      "description": "Delikatne przypomnienie o 22:00, jeśli dziś jeszcze nie zapisano nastroju. Wysyłane tylko skonfigurowanymi już kanałami (Telegram, ntfy, Web Push, Apple Push) i milknie, gdy dziś zapisano nastrój.",
+      "description": "Delikatne przypomnienie o wybranej przez Ciebie godzinie, jeśli dziś jeszcze nie zapisano nastroju. Wysyłane tylko skonfigurowanymi już kanałami (Telegram, ntfy, Web Push, Apple Push) i milknie, gdy dziś zapisano nastrój.",
       "toggleAria": "Włącz lub wyłącz codzienne przypomnienie o nastroju",
-      "statusOn": "Aktywne o 22:00 czasu lokalnego",
+      "statusOn": "Aktywne o wybranej godzinie",
       "statusOff": "Wyłączone",
       "enabledToast": "Przypomnienie o nastroju włączone.",
       "disabledToast": "Przypomnienie o nastroju wyłączone.",

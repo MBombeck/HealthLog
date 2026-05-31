@@ -3765,9 +3765,9 @@
     },
     "moodReminder": {
       "title": "Tägliche Stimmungs-Erinnerung",
-      "description": "Sanfter Anstoß um 22:00 Uhr, falls du heute noch keine Stimmung erfasst hast. Greift nur auf bereits eingerichtete Kanäle (Telegram, ntfy, Web Push, Apple Push) zurück und schweigt, sobald du heute geloggt hast.",
+      "description": "Sanfter Anstoß zur eingestellten Zeit, falls du heute noch keine Stimmung erfasst hast. Greift nur auf bereits eingerichtete Kanäle (Telegram, ntfy, Web Push, Apple Push) zurück und schweigt, sobald du heute geloggt hast.",
       "toggleAria": "Tägliche Stimmungs-Erinnerung umschalten",
-      "statusOn": "Aktiv um 22:00 deiner Zeit",
+      "statusOn": "Aktiv zu deiner eingestellten Zeit",
       "statusOff": "Aus",
       "enabledToast": "Stimmungs-Erinnerung aktiviert.",
       "disabledToast": "Stimmungs-Erinnerung deaktiviert.",

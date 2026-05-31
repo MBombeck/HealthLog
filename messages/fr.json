@@ -3765,9 +3765,9 @@
     },
     "moodReminder": {
       "title": "Rappel quotidien d’humeur",
-      "description": "Petit rappel à 22:00 si tu n’as pas encore noté ton humeur du jour. Utilise uniquement les canaux déjà configurés (Telegram, ntfy, Web Push, Apple Push) et reste silencieux dès que tu as noté ton humeur aujourd’hui.",
+      "description": "Petit rappel à l’heure que tu as choisie si tu n’as pas encore noté ton humeur du jour. Utilise uniquement les canaux déjà configurés (Telegram, ntfy, Web Push, Apple Push) et reste silencieux dès que tu as noté ton humeur aujourd’hui.",
       "toggleAria": "Activer / désactiver le rappel quotidien d’humeur",
-      "statusOn": "Actif à 22:00 heure locale",
+      "statusOn": "Actif à l’heure que tu as choisie",
       "statusOff": "Désactivé",
       "enabledToast": "Rappel d’humeur activé.",
       "disabledToast": "Rappel d’humeur désactivé.",
