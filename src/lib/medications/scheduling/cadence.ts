@@ -277,7 +277,18 @@ export function expandScheduleSlots(
   if (engineCtx && (engineCtx.oneShot || usesCanonicalEngine(schedule))) {
     const canonical = toCanonical(schedule, scheduleIndex);
     const recurrenceCtx = toRecurrenceContext(engineCtx);
-    const occurrences = occurrencesBetween(canonical, from, to, recurrenceCtx);
+    // v1.7.0 code-correctness M5 — `occurrencesBetween` is inclusive of
+    // both ends, but the legacy walker below is half-open `[from, to)`
+    // (`if (wStart >= to) continue`). Subtract 1 ms from `to` so a dose
+    // landing exactly at the window boundary isn't counted by the engine
+    // path but dropped by the legacy path — the two branches stay
+    // denominator-equivalent at the edge.
+    const occurrences = occurrencesBetween(
+      canonical,
+      from,
+      new Date(to.getTime() - 1),
+      recurrenceCtx,
+    );
     return occurrences.map((occ) => ({
       day: startOfLocalDay(occ.at, timeZone),
       windowStart: occ.at,
