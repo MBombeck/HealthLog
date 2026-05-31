@@ -16,6 +16,7 @@ import { cookieJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { encodeCursor } from "@/lib/sync/cursor";
 import { TOMBSTONE_RETENTION_DAYS } from "@/lib/auth/native-client";
+import { cleanupExpiredMeasurementTombstones } from "@/lib/jobs/measurement-tombstone-cleanup";
 
 const TEST_USER_ID = "user-sync-changes";
 
@@ -243,5 +244,82 @@ describe("GET /api/sync/changes (real Postgres)", () => {
     expect(j.data.hasMore).toBe(false);
     expect(j.data.changes.measurements.upserts).toHaveLength(0);
     expect(j.data.changes.measurements.tombstones).toHaveLength(0);
+  });
+
+  it("the tombstone-cleanup prune horizon and the feed cursor horizon share the SAME retention window so a row cannot be pruned inside a reachable cursor window (v1.7.0 L4)", async () => {
+    const prisma = getPrismaClient();
+
+    // Both horizons are derived from `TOMBSTONE_RETENTION_DAYS`: the
+    // cleanup job prunes rows whose `deletedAt` is older than
+    // `now - TOMBSTONE_RETENTION_DAYS`, and the feed flags `cursorExpired`
+    // for a cursor whose `updatedAt` is older than the same window. A
+    // soft-delete sets `deletedAt == updatedAt`, and any later mutation
+    // only moves `updatedAt` forward (never `deletedAt`), so a row the
+    // cleanup is eligible to prune (`deletedAt` past the window) can only
+    // have an `updatedAt` that is also past the window UNLESS it was
+    // re-touched — in which case the row is still present and re-surfaces
+    // as a tombstone on the next delta.
+    const horizonMs = TOMBSTONE_RETENTION_DAYS * 86_400_000;
+
+    // Case 1 — a tombstone freshly inside the window (deletedAt recent) is
+    // NOT pruned, and its cursor is NOT expired: both horizons agree it is
+    // reachable.
+    const recent = new Date(Date.now() - 60_000);
+    await prisma.measurement.create({
+      data: {
+        userId: TEST_USER_ID,
+        type: "WEIGHT",
+        value: 80,
+        unit: "kg",
+        source: "APPLE_HEALTH",
+        measuredAt: recent,
+        externalId: "uuid-recent-tomb",
+        deletedAt: recent,
+        updatedAt: recent,
+      },
+    });
+
+    // Case 2 — a tombstone whose `deletedAt` AND `updatedAt` both predate
+    // the window: pruned by cleanup, and a cursor at that position is
+    // expired by the feed. The shared window means a row is never both
+    // pruned-eligible AND inside a non-expired cursor window.
+    const ancient = new Date(Date.now() - horizonMs - 5 * 86_400_000);
+    await prisma.measurement.create({
+      data: {
+        userId: TEST_USER_ID,
+        type: "WEIGHT",
+        value: 81,
+        unit: "kg",
+        source: "APPLE_HEALTH",
+        measuredAt: ancient,
+        externalId: "uuid-ancient-tomb",
+        deletedAt: ancient,
+        updatedAt: ancient,
+      },
+    });
+
+    const pruned = await cleanupExpiredMeasurementTombstones(prisma);
+    // Only the ancient row (deletedAt past the retention horizon) is
+    // pruned; the recent reachable tombstone survives.
+    expect(pruned).toBe(1);
+    const survivors = await prisma.measurement.findMany({
+      where: { userId: TEST_USER_ID },
+      select: { externalId: true },
+    });
+    const ids = survivors.map((s) => s.externalId);
+    expect(ids).toContain("uuid-recent-tomb");
+    expect(ids).not.toContain("uuid-ancient-tomb");
+
+    // The surviving recent tombstone is still reachable by a fresh cursor
+    // (the feed's reachable window keys on the SAME retention horizon), so
+    // the deletion is not silently dropped.
+    const { GET } = await import("@/app/api/sync/changes/route");
+    const res = await GET(makeRequest());
+    const body = (await res.json()) as { data: ChangesData };
+    expect(body.data.cursorExpired).toBe(false);
+    const tombIds = body.data.changes.measurements.tombstones.map(
+      (t) => t.externalId,
+    );
+    expect(tombIds).toContain("uuid-recent-tomb");
   });
 });
