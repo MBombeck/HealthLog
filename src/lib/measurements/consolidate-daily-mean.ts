@@ -205,6 +205,7 @@ export async function consolidateDailyMean(
           value: true,
           measuredAt: true,
           externalId: true,
+          unit: true,
         },
         orderBy: { measuredAt: "asc" },
       })) as PerSampleRow[];
@@ -219,9 +220,11 @@ export async function consolidateDailyMean(
         const meanValue = meanBucketValue(dayRows);
         const canonicalTs = canonicalDailyTimestamp(dateKey, tz);
         const externalId = dailyStatsExternalId(hkIdentifier, dateKey);
-        const unit = dayRows[0]?.value !== undefined
-          ? await resolveCanonicalUnit(prismaClient, user.id, type)
-          : "unknown";
+        // Carry the canonical unit straight off the in-hand live day rows
+        // (units are homogeneous per type). Avoids an extra per-day query
+        // and never reads a soft-deleted row's unit — the scan already
+        // filters `deletedAt: null`.
+        const unit = dayRows[0]?.unit ?? "unknown";
 
         const bucket: MeanConsolidationBucket = {
           userId: user.id,
@@ -295,20 +298,4 @@ export async function consolidateDailyMean(
   );
 
   return summary;
-}
-
-/**
- * Pull the canonical unit for a `(userId, type)` pair from an existing
- * live per-sample row. Used during the upsert's `create` branch.
- */
-async function resolveCanonicalUnit(
-  prismaClient: PrismaClient,
-  userId: string,
-  type: MeasurementType,
-): Promise<string> {
-  const row = await prismaClient.measurement.findFirst({
-    where: { userId, type, source: "APPLE_HEALTH" },
-    select: { unit: true },
-  });
-  return row?.unit ?? "unknown";
 }

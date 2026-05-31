@@ -228,6 +228,12 @@ export interface PerSampleRow {
   value: number;
   measuredAt: Date;
   externalId: string | null;
+  /**
+   * Optional — only the mean-consolidation pass selects `unit` so it can
+   * read the canonical unit straight off the day's rows rather than
+   * issuing a separate query. The cumulative drain leaves it unselected.
+   */
+  unit?: string;
 }
 
 export interface BucketedRows {

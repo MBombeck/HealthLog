@@ -13,6 +13,7 @@ function row(
   value: number,
   iso: string,
   externalId: string | null = null,
+  unit = "m/s",
 ): PerSampleRow {
   return {
     id,
@@ -20,6 +21,7 @@ function row(
     value,
     measuredAt: new Date(iso),
     externalId,
+    unit,
   };
 }
 
@@ -71,7 +73,6 @@ describe("consolidateDailyMean — drain flow (mocked Prisma)", () => {
   function buildPrismaMock(rowsByType: Record<string, unknown[]>) {
     const upsert = vi.fn().mockResolvedValue({});
     const updateMany = vi.fn().mockResolvedValue({ count: 0 });
-    const findFirst = vi.fn().mockResolvedValue({ unit: "m/s" });
     const findManyMeasurement = vi.fn(
       async (args: { where: { type: string } }) =>
         rowsByType[args.where.type] ?? [],
@@ -86,7 +87,7 @@ describe("consolidateDailyMean — drain flow (mocked Prisma)", () => {
             .fn()
             .mockResolvedValue([{ id: "user-1", timezone: "Europe/Berlin" }]),
         },
-        measurement: { findMany: findManyMeasurement, findFirst },
+        measurement: { findMany: findManyMeasurement },
         $transaction: vi.fn(async (cb: (t: unknown) => Promise<unknown>) =>
           cb(tx),
         ),
@@ -127,10 +128,12 @@ describe("consolidateDailyMean — drain flow (mocked Prisma)", () => {
 
     // value is the MEAN (1.2), not the sum (2.4).
     const upsertArg = upsert.mock.calls[0]?.[0] as {
-      create: { value: number; source: string };
+      create: { value: number; source: string; unit: string };
     };
     expect(upsertArg.create.value).toBeCloseTo(1.2, 6);
     expect(upsertArg.create.source).toBe("APPLE_HEALTH");
+    // Unit is read straight off the day's rows (no separate query).
+    expect(upsertArg.create.unit).toBe("m/s");
 
     // soft-delete: updateMany sets deletedAt, never a hard delete.
     const updArg = updateMany.mock.calls[0]?.[0] as {
