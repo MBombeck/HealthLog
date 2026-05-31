@@ -6,10 +6,7 @@
  * v1.7.0 — split into two reusable bodies so the redesigned
  * `<AdvancedSettingsSheet>` can slot them under different groups:
  * `<LifecycleManageBody>` (Pause + End → Lifecycle group) and
- * `<DangerZoneBody>` (Purge + Delete → Danger zone group). The
- * standalone `<DestructiveZoneSection>` wrapper still composes both
- * under one section heading for any caller that wants the bundled
- * shape.
+ * `<DangerZoneBody>` (Purge + Delete → Danger zone group).
  *
  * Mutation contracts per D-3 §3:
  *
@@ -49,23 +46,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
 import { useTranslations } from "@/lib/i18n/context";
 import { invalidateKeys, medicationDependentKeys } from "@/lib/query-keys";
-
-export interface DestructiveZoneSectionProps {
-  medicationId: string;
-  medicationName: string;
-  active: boolean;
-  intakeCount: number;
-  /**
-   * v1.5.6 G-1 §5 — fires after a non-navigating destructive success
-   * (Tier 1 pause/resume, Tier 2 end, Tier 3a purge) so a hosting
-   * sheet can close itself. Tier 3b delete navigates instead and does
-   * not call this. Absent on the standalone surface.
-   */
-  onAfterAction?: () => void;
-}
 
 const PAUSE_SWITCH_ID = "medication-detail-pause-switch";
 const PAUSE_TITLE_ID = "medication-detail-pause-title";
@@ -443,42 +425,3 @@ export function DangerZoneBody({
   );
 }
 
-/**
- * Standalone wrapper — one heading, Card A (reversible) over Card B
- * (irreversible). Retained for callers / tests that expect the bundled
- * shape.
- */
-export function DestructiveZoneSection({
-  medicationId,
-  medicationName,
-  active,
-  intakeCount,
-  onAfterAction,
-}: DestructiveZoneSectionProps) {
-  const { t } = useTranslations();
-
-  return (
-    <MedicationDetailSection
-      titleId="medication-detail-zone-heading"
-      title={t("medications.detail.zone.title")}
-      dataSlot="medication-detail-zone-section"
-    >
-      <div className="space-y-4">
-        <Card className="space-y-4 p-4">
-          <LifecycleManageBody
-            medicationId={medicationId}
-            medicationName={medicationName}
-            active={active}
-            onAfterAction={onAfterAction}
-          />
-        </Card>
-        <DangerZoneBody
-          medicationId={medicationId}
-          medicationName={medicationName}
-          intakeCount={intakeCount}
-          onAfterAction={onAfterAction}
-        />
-      </div>
-    </MedicationDetailSection>
-  );
-}
