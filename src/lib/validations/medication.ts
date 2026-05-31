@@ -1,5 +1,7 @@
 import { z } from "zod/v4";
 
+import { SCHEDULE_TYPES } from "@/lib/medications/scheduling/recurrence";
+
 const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 /**
  * Clinical-category values stored in the `medication_categories` side-
@@ -166,7 +168,7 @@ export const scheduleSchema = z
      * CYCLIC wraps the inner cadence with an N-on / M-off week phase.
      */
     scheduleType: z
-      .enum(["SCHEDULED", "PRN", "CYCLIC"])
+      .enum(SCHEDULE_TYPES)
       .optional()
       .describe(
         "Schedule type. SCHEDULED (default) = rrule / rolling / legacy cadence. PRN = as-needed (never projected, reminded, or counted in compliance expected; still loggable via the intake route). CYCLIC = N weeks on / M weeks off, gating whichever inner cadence the rrule / legacy fields describe.",

@@ -52,7 +52,8 @@ import { wallClockInTz } from "@/lib/tz/wall-clock";
  * whichever inner cadence (rrule / legacy) the schedule describes by an
  * N-weeks-on / M-weeks-off phase anchored to `startsOn ?? createdAt`.
  */
-export type ScheduleType = "SCHEDULED" | "PRN" | "CYCLIC";
+export const SCHEDULE_TYPES = ["SCHEDULED", "PRN", "CYCLIC"] as const;
+export type ScheduleType = (typeof SCHEDULE_TYPES)[number];
 
 export interface CanonicalSchedule {
   id: string;
