@@ -5,6 +5,7 @@ import {
   isMedicationReminderClientManaged,
   notificationPrefsSchema,
   parseNotificationPrefs,
+  resolveDeviceDelivery,
   resolveNotificationPrefs,
 } from "../notification-prefs";
 
@@ -55,15 +56,23 @@ describe("parseNotificationPrefs", () => {
   });
 
   it("returns the persisted shape when valid", () => {
+    // v1.7.0 — the resolved shape now carries the roaming
+    // `deliveryDefault` (defaulted to "server" when the row omits it).
     expect(
       parseNotificationPrefs({ medication: { clientManaged: true } }),
-    ).toEqual({ medication: { clientManaged: true } });
+    ).toEqual({ medication: { clientManaged: true, deliveryDefault: "server" } });
   });
 
   it("fills missing keys from the defaults", () => {
     expect(parseNotificationPrefs({ medication: {} })).toEqual({
-      medication: { clientManaged: false },
+      medication: { clientManaged: false, deliveryDefault: "server" },
     });
+  });
+
+  it("v1.7.0 — deliveryDefault 'client' maps onto clientManaged true", () => {
+    expect(
+      parseNotificationPrefs({ medication: { deliveryDefault: "client" } }),
+    ).toEqual({ medication: { clientManaged: true, deliveryDefault: "client" } });
   });
 });
 
@@ -73,7 +82,9 @@ describe("resolveNotificationPrefs (deep-merge)", () => {
       { medication: { clientManaged: false } },
       { medication: { clientManaged: true } },
     );
-    expect(out).toEqual({ medication: { clientManaged: true } });
+    expect(out).toEqual({
+      medication: { clientManaged: true, deliveryDefault: "server" },
+    });
   });
 
   it("preserves the persisted medication keys when the input only touches new sub-keys", () => {
@@ -83,14 +94,27 @@ describe("resolveNotificationPrefs (deep-merge)", () => {
       { medication: { clientManaged: true } },
       { medication: {} },
     );
-    expect(out).toEqual({ medication: { clientManaged: true } });
+    expect(out).toEqual({
+      medication: { clientManaged: true, deliveryDefault: "server" },
+    });
   });
 
   it("falls back to defaults when the persisted row is null", () => {
     const out = resolveNotificationPrefs(null, {
       medication: { clientManaged: true },
     });
-    expect(out).toEqual({ medication: { clientManaged: true } });
+    expect(out).toEqual({
+      medication: { clientManaged: true, deliveryDefault: "server" },
+    });
+  });
+
+  it("v1.7.0 — PATCHing deliveryDefault 'client' roams + maps to clientManaged", () => {
+    const out = resolveNotificationPrefs(null, {
+      medication: { deliveryDefault: "client" },
+    });
+    expect(out).toEqual({
+      medication: { clientManaged: true, deliveryDefault: "client" },
+    });
   });
 
   it("returns the defaults when neither side carries a value", () => {
@@ -122,6 +146,42 @@ describe("isMedicationReminderClientManaged — cron-skip gate", () => {
         medication: { clientManaged: true },
       }),
     ).toBe(true);
+  });
+
+  it("v1.7.0 — returns true when deliveryDefault is 'client'", () => {
+    expect(
+      isMedicationReminderClientManaged({
+        medication: { deliveryDefault: "client" },
+      }),
+    ).toBe(true);
+  });
+});
+
+describe("resolveDeviceDelivery — per-device override", () => {
+  it("defaults to server when nothing is set", () => {
+    expect(resolveDeviceDelivery(null, null)).toBe("server");
+    expect(resolveDeviceDelivery(null, undefined)).toBe("server");
+  });
+
+  it("the device override wins over the user-level default", () => {
+    expect(
+      resolveDeviceDelivery(
+        { medication: { deliveryDefault: "server" } },
+        "client",
+      ),
+    ).toBe("client");
+    expect(
+      resolveDeviceDelivery(
+        { medication: { deliveryDefault: "client" } },
+        "server",
+      ),
+    ).toBe("server");
+  });
+
+  it("a null override inherits the user-level roaming default", () => {
+    expect(
+      resolveDeviceDelivery({ medication: { deliveryDefault: "client" } }, null),
+    ).toBe("client");
   });
 
   it("returns false for a drifted persisted shape (forward-compat)", () => {

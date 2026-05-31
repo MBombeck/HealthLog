@@ -241,6 +241,13 @@ const deviceRegisterRequest = z
       .describe(
         "Gateway the iOS client received `apnsToken` from. Server never auto-detects.",
       ),
+    medicationDelivery: z
+      .enum(["server", "client"])
+      .nullable()
+      .optional()
+      .describe(
+        "v1.7.0 per-device medication-delivery override. NULL / omitted = inherit the user-level roaming default. \"server\" forces server APNs for this device; \"client\" forces local. Stored + echoed; cron suppression stays user-level.",
+      ),
   })
   .meta({
     id: "DeviceRegisterRequest",

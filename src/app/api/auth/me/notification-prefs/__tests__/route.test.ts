@@ -87,7 +87,9 @@ describe("GET /api/auth/me/notification-prefs", () => {
     const env = (await res.json()) as {
       data: { medication: { clientManaged: boolean } };
     };
-    expect(env.data).toEqual({ medication: { clientManaged: false } });
+    expect(env.data).toEqual({
+      medication: { clientManaged: false, deliveryDefault: "server" },
+    });
   });
 
   it("returns the resolved prefs when the row holds a value", async () => {
@@ -103,7 +105,9 @@ describe("GET /api/auth/me/notification-prefs", () => {
     const env = (await res.json()) as {
       data: { medication: { clientManaged: boolean } };
     };
-    expect(env.data).toEqual({ medication: { clientManaged: true } });
+    expect(env.data).toEqual({
+      medication: { clientManaged: true, deliveryDefault: "server" },
+    });
   });
 
   it("returns defaults when the persisted shape has drifted", async () => {
@@ -121,7 +125,9 @@ describe("GET /api/auth/me/notification-prefs", () => {
     const env = (await res.json()) as {
       data: { medication: { clientManaged: boolean } };
     };
-    expect(env.data).toEqual({ medication: { clientManaged: false } });
+    expect(env.data).toEqual({
+      medication: { clientManaged: false, deliveryDefault: "server" },
+    });
   });
 });
 
@@ -150,12 +156,16 @@ describe("PATCH /api/auth/me/notification-prefs", () => {
     const env = (await res.json()) as {
       data: { medication: { clientManaged: boolean } };
     };
-    expect(env.data).toEqual({ medication: { clientManaged: true } });
+    expect(env.data).toEqual({
+      medication: { clientManaged: true, deliveryDefault: "server" },
+    });
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "user-1" },
       data: {
-        notificationPrefs: { medication: { clientManaged: true } },
+        notificationPrefs: {
+          medication: { clientManaged: true, deliveryDefault: "server" },
+        },
       },
     });
 
@@ -164,8 +174,12 @@ describe("PATCH /api/auth/me/notification-prefs", () => {
       expect.objectContaining({
         userId: "user-1",
         details: expect.objectContaining({
-          previous: { medication: { clientManaged: false } },
-          next: { medication: { clientManaged: true } },
+          previous: {
+            medication: { clientManaged: false, deliveryDefault: "server" },
+          },
+          next: {
+            medication: { clientManaged: true, deliveryDefault: "server" },
+          },
           changed: ["medication"],
         }),
       }),
@@ -222,7 +236,9 @@ describe("PATCH /api/auth/me/notification-prefs", () => {
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "user-1" },
       data: {
-        notificationPrefs: { medication: { clientManaged: true } },
+        notificationPrefs: {
+          medication: { clientManaged: true, deliveryDefault: "server" },
+        },
       },
     });
   });
@@ -243,12 +259,16 @@ describe("PATCH /api/auth/me/notification-prefs", () => {
     const env = (await res.json()) as {
       data: { medication: { clientManaged: boolean } };
     };
-    expect(env.data).toEqual({ medication: { clientManaged: true } });
+    expect(env.data).toEqual({
+      medication: { clientManaged: true, deliveryDefault: "server" },
+    });
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "user-1" },
       data: {
-        notificationPrefs: { medication: { clientManaged: true } },
+        notificationPrefs: {
+          medication: { clientManaged: true, deliveryDefault: "server" },
+        },
       },
     });
   });

@@ -58,6 +58,11 @@ const deviceSchema = z
       .regex(/^[A-Fa-f0-9]+$/, "apnsToken must be hex")
       .optional(),
     apnsEnvironment: z.enum(["sandbox", "production"]).optional(),
+    // v1.7.0 — per-device medication-delivery override. NULL (or
+    // omitted) inherits the user-level roaming default. "server" forces
+    // server APNs for this device; "client" forces local. Stored +
+    // echoed; cron suppression stays user-level.
+    medicationDelivery: z.enum(["server", "client"]).nullable().optional(),
   })
   .refine(
     (v) =>
@@ -138,6 +143,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     model,
     apnsToken,
     apnsEnvironment,
+    medicationDelivery,
   } = parsed.data;
 
   // APNs-token collision lookup. Two cases:
@@ -201,6 +207,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
         model: model ?? null,
         apnsToken: apnsToken ?? null,
         apnsEnvironment: apnsEnvironment ?? null,
+        // v1.7.0 — only touch the override when the client sends the
+        // field, so a re-register that omits it keeps the prior value.
+        ...(medicationDelivery !== undefined && { medicationDelivery }),
         lastSeen: new Date(),
       },
       select: { id: true },
@@ -218,6 +227,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
         model: model ?? null,
         apnsToken: apnsToken ?? null,
         apnsEnvironment: apnsEnvironment ?? null,
+        // v1.7.0 — per-device delivery override (null = inherit default).
+        ...(medicationDelivery !== undefined && { medicationDelivery }),
       },
       select: { id: true },
     });
