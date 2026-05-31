@@ -79,9 +79,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
   if (includeIntake) {
     const where: {
       userId: string;
+      deletedAt: null;
       scheduledFor?: { gte?: Date; lte?: Date };
     } = {
       userId: user.id,
+      // v1.7.0 sync — exclude tombstoned rows from the export.
+      deletedAt: null,
     };
     if (since || until) {
       where.scheduledFor = {};

@@ -36,7 +36,12 @@ export const GET = apiHandler(
 
     const { id } = await params;
 
-    const entry = await prisma.moodEntry.findUnique({ where: { id } });
+    // v1.7.0 sync — a soft-deleted (tombstoned) row 404s on a direct GET,
+    // matching the list / analytics / rollup read invariant. `findFirst`
+    // (not `findUnique`) because `deletedAt` is not part of a unique index.
+    const entry = await prisma.moodEntry.findFirst({
+      where: { id, deletedAt: null },
+    });
 
     if (!entry || entry.userId !== user.id) {
       return apiError("Mood entry not found", 404);
@@ -57,7 +62,11 @@ export const PUT = apiHandler(
 
     const { id } = await params;
 
-    const existing = await prisma.moodEntry.findUnique({ where: { id } });
+    // v1.7.0 sync — refuse to resurrect-edit a tombstoned row; the
+    // `deletedAt: null` filter makes a soft-deleted entry 404 on PUT.
+    const existing = await prisma.moodEntry.findFirst({
+      where: { id, deletedAt: null },
+    });
 
     if (!existing || existing.userId !== user.id) {
       return apiError("Mood entry not found", 404);
@@ -119,6 +128,11 @@ export const PUT = apiHandler(
       updateData.note = data.note;
     }
 
+    // v1.7.0 sync — mood is last-writer-wins by syncVersion; bump it on
+    // every server-side edit so the `/api/sync/changes` feed echoes a
+    // monotonic value and paired clients reconcile higher-wins.
+    updateData.syncVersion = { increment: 1 };
+
     const entry = await prisma.moodEntry.update({
       where: { id },
       data: updateData,
@@ -179,7 +193,21 @@ export const DELETE = apiHandler(
       return apiError("Mood entry not found", 404);
     }
 
-    await prisma.moodEntry.delete({ where: { id } });
+    // v1.7.0 sync — soft-delete instead of a hard `delete`. Setting
+    // `deletedAt` (+ bumping `syncVersion`) leaves the row in place so the
+    // `/api/sync/changes` feed surfaces it as a tombstone (keyed on the
+    // server `id`) to paired clients that were offline at delete time.
+    // Every list / detail / analytics / rollup read filters
+    // `deletedAt: null`, so the row is invisible to normal reads from
+    // here on. A re-delete of an already-tombstoned row re-bumps
+    // `syncVersion` harmlessly (idempotent).
+    await prisma.moodEntry.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        syncVersion: { increment: 1 },
+      },
+    });
 
     await auditLog("moodEntry.delete", {
       userId: user.id,

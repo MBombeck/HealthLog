@@ -93,7 +93,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const ninetyDaysAgo = new Date();
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
   const moods = await prisma.moodEntry.findMany({
-    where: { userId: user.id, moodLoggedAt: { gte: ninetyDaysAgo } },
+    // v1.7.0 sync — exclude tombstoned rows.
+    where: { userId: user.id, deletedAt: null, moodLoggedAt: { gte: ninetyDaysAgo } },
     select: { moodLoggedAt: true, tags: true },
     orderBy: { moodLoggedAt: "desc" },
   });

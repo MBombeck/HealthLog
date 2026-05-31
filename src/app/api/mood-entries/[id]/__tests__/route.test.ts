@@ -8,6 +8,7 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     moodEntry: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
     },
@@ -61,6 +62,12 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
+  // v1.7.0 sync — PUT now looks the row up via `findFirst` with a
+  // `deletedAt: null` guard (refuses to resurrect-edit a tombstone).
+  vi.mocked(prisma.moodEntry.findFirst).mockResolvedValue({
+    id: "me1",
+    userId: "user-1",
+  } as never);
   vi.mocked(prisma.moodEntry.findUnique).mockResolvedValue({
     id: "me1",
     userId: "user-1",

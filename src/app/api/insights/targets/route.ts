@@ -876,6 +876,8 @@ async function buildTargetsResponse(user: AuthedUser) {
     const intakeEvents = await prisma.medicationIntakeEvent.findMany({
       where: {
         userId,
+        // v1.7.0 sync — exclude tombstoned rows.
+        deletedAt: null,
         medicationId: {
           in: activeMedications.map((medication) => medication.id),
         },
@@ -1051,7 +1053,8 @@ async function buildTargetsResponse(user: AuthedUser) {
   const moodSince = new Date(Date.now() - moodRollupWindowMs);
   const moodRollups = await readMoodDayRollups(userId, moodSince);
   const latestMoodEntry = await prisma.moodEntry.findFirst({
-    where: { userId },
+    // v1.7.0 sync — exclude tombstoned rows.
+    where: { userId, deletedAt: null },
     orderBy: { moodLoggedAt: "desc" },
     select: { score: true, moodLoggedAt: true },
   });
@@ -1077,7 +1080,8 @@ async function buildTargetsResponse(user: AuthedUser) {
     // trailing 30-day window only (instead of every entry ever) \u2014 that's
     // the bound the legacy code was missing.
     const recentRawMood = await prisma.moodEntry.findMany({
-      where: { userId, moodLoggedAt: { gte: thirtyDaysAgoMood } },
+      // v1.7.0 sync — exclude tombstoned rows.
+      where: { userId, deletedAt: null, moodLoggedAt: { gte: thirtyDaysAgoMood } },
       orderBy: { moodLoggedAt: "asc" },
       select: { score: true, moodLoggedAt: true },
     });

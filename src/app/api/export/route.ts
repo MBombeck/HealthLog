@@ -81,7 +81,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   if (type === "intake" || type === "all") {
     const events = await prisma.medicationIntakeEvent.findMany({
-      where: { userId },
+      // v1.7.0 sync — exclude tombstoned rows from the export (mirrors
+      // the measurement export's `deletedAt: null` filter above).
+      where: { userId, deletedAt: null },
       include: { medication: { select: { name: true } } },
       orderBy: { scheduledFor: "desc" },
     });
@@ -93,7 +95,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   if (type === "mood" || type === "all") {
     const moodEntries = await prisma.moodEntry.findMany({
-      where: { userId },
+      // v1.7.0 sync — exclude tombstoned rows from the export.
+      where: { userId, deletedAt: null },
       orderBy: { moodLoggedAt: "desc" },
     });
     data.moodEntries =

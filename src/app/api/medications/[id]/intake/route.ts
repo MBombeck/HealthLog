@@ -277,7 +277,14 @@ export const GET = apiHandler(
                 ],
               }
             : {};
-    const where = { medicationId: id, userId: user.id, ...statusFilter };
+    // v1.7.0 sync — exclude tombstoned rows from the per-medication
+    // intake history list + its count.
+    const where = {
+      medicationId: id,
+      userId: user.id,
+      deletedAt: null,
+      ...statusFilter,
+    };
 
     // v1.7.0 O-1 — pin NULLS LAST on the `takenAt` sort. Skipped rows
     // carry `takenAt: null`; under a bare `desc` collation Postgres

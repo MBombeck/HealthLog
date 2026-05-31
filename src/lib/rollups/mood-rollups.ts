@@ -190,6 +190,7 @@ export async function recomputeMoodBucketsForEntry(
         STDDEV_POP(m."score")::double precision      AS sd
       FROM "mood_entries" m
       WHERE m."user_id"        = ${userId}
+        AND m."deleted_at"     IS NULL
         AND m."mood_logged_at" >= ${dayStart}
         AND m."mood_logged_at" <  ${dayEnd}
     )
@@ -224,6 +225,7 @@ export async function recomputeMoodBucketsForEntry(
         SELECT 1
         FROM "mood_entries" m
         WHERE m."user_id"        = ${userId}
+          AND m."deleted_at"     IS NULL
           AND m."mood_logged_at" >= ${dayStart}
           AND m."mood_logged_at" <  ${dayEnd}
       )
@@ -464,6 +466,7 @@ export async function enqueueBootTimeMoodRollupBackfill(): Promise<{
       FROM (
         SELECT DISTINCT m."user_id"
         FROM mood_entries m
+        WHERE m."deleted_at" IS NULL
       ) mt
       LEFT JOIN mood_entry_rollups r
         ON  r."user_id"     = mt."user_id"
@@ -542,6 +545,7 @@ async function runMoodRollupAggregate(
       STDDEV_POP(m."score")::double precision                   AS sd
     FROM mood_entries m
     WHERE m."user_id"        = $1
+      AND m."deleted_at"     IS NULL
       AND m."mood_logged_at" >= $2
       AND m."mood_logged_at" <  $3
     GROUP BY ${dateTrunc}

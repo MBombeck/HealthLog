@@ -77,6 +77,8 @@ export const GET = apiHandler(
       where: {
         medicationId: id,
         userId: user.id,
+        // v1.7.0 sync — exclude tombstoned rows from the cadence read.
+        deletedAt: null,
         scheduledFor: { gte: from },
       },
       select: { scheduledFor: true, takenAt: true, skipped: true },

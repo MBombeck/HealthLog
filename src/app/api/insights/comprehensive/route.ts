@@ -130,7 +130,8 @@ export async function buildComprehensiveResponse(user: AuthedUser) {
     // rollup coverage yet. Bounded by the 90-day window so the walk is
     // capped even when the rollup miss happens.
     const moodEntries = await prisma.moodEntry.findMany({
-      where: { userId, moodLoggedAt: { gte: ninetyDaysAgo } },
+      // v1.7.0 sync — exclude tombstoned rows.
+      where: { userId, deletedAt: null, moodLoggedAt: { gte: ninetyDaysAgo } },
       orderBy: { moodLoggedAt: "asc" },
       select: { date: true, score: true, moodLoggedAt: true },
     });
@@ -277,6 +278,8 @@ export async function buildComprehensiveResponse(user: AuthedUser) {
         where: {
           medicationId: { in: medications.map((m) => m.id) },
           userId,
+          // v1.7.0 sync — exclude tombstoned rows.
+          deletedAt: null,
           scheduledFor: { gte: ninetyDaysAgo },
         },
         orderBy: { scheduledFor: "desc" },

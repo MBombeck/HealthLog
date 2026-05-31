@@ -181,7 +181,8 @@ export async function generateGeneralStatusForUser(
   );
 
   const intakeEvents = await prisma.medicationIntakeEvent.findMany({
-    where: { userId },
+    // v1.7.0 sync — exclude tombstoned rows.
+    where: { userId, deletedAt: null },
     orderBy: { scheduledFor: "asc" },
     select: {
       scheduledFor: true,

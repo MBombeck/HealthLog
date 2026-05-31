@@ -41,9 +41,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   const where: {
     userId: string;
+    deletedAt: null;
     moodLoggedAt?: { gte?: Date; lte?: Date };
   } = {
     userId: user.id,
+    // v1.7.0 sync — exclude tombstoned rows from the export.
+    deletedAt: null,
   };
   if (since || until) {
     where.moodLoggedAt = {};

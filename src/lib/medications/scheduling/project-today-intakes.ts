@@ -106,7 +106,14 @@ export async function projectTodayIntakesAndRecompute(input: {
     let lastIntakeAt: Date | null = null;
     if (med.schedules.some((s) => s.rollingIntervalDays !== null)) {
       const lastIntake = await prisma.medicationIntakeEvent.findFirst({
-        where: { userId, medicationId: med.id, takenAt: { not: null } },
+        // v1.7.0 sync — a tombstoned intake is no longer a taken dose, so
+        // it must not anchor the rolling-interval next-due computation.
+        where: {
+          userId,
+          medicationId: med.id,
+          deletedAt: null,
+          takenAt: { not: null },
+        },
         orderBy: { takenAt: "desc" },
         select: { takenAt: true },
       });
@@ -138,6 +145,10 @@ export async function projectTodayIntakesAndRecompute(input: {
       userId,
       scheduledFor: { gte: todayStart, lt: todayEnd },
     },
+    // v1.7.0 sync — intentionally NO `deletedAt: null` filter here. A
+    // tombstoned row still occupies its `(userId, medicationId,
+    // scheduledFor, source)` unique slot, so the backfill must treat it
+    // as present to avoid a P2002 collision when minting REMINDER rows.
     select: { medicationId: true, scheduledFor: true },
   });
   const existingKey = new Set(

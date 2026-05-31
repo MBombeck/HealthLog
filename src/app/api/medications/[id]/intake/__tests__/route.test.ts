@@ -122,7 +122,12 @@ describe("GET /api/medications/[id]/intake — status filter", () => {
 
     const where = vi.mocked(prisma.medicationIntakeEvent.findMany).mock
       .calls[0][0]?.where;
-    expect(where).toEqual({ medicationId: "med-1", userId: "user-1" });
+    // v1.7.0 sync — list filters out tombstoned rows.
+    expect(where).toEqual({
+      medicationId: "med-1",
+      userId: "user-1",
+      deletedAt: null,
+    });
   });
 
   it("applies no status filter when explicitly passed `status=all`", async () => {
@@ -134,7 +139,11 @@ describe("GET /api/medications/[id]/intake — status filter", () => {
 
     const where = vi.mocked(prisma.medicationIntakeEvent.findMany).mock
       .calls[0][0]?.where;
-    expect(where).toEqual({ medicationId: "med-1", userId: "user-1" });
+    expect(where).toEqual({
+      medicationId: "med-1",
+      userId: "user-1",
+      deletedAt: null,
+    });
   });
 
   it("filters to confirmed-taken rows for `status=taken`", async () => {
@@ -144,6 +153,7 @@ describe("GET /api/medications/[id]/intake — status filter", () => {
     expect(where).toEqual({
       medicationId: "med-1",
       userId: "user-1",
+      deletedAt: null,
       takenAt: { not: null },
       skipped: false,
     });
@@ -156,6 +166,7 @@ describe("GET /api/medications/[id]/intake — status filter", () => {
     expect(where).toEqual({
       medicationId: "med-1",
       userId: "user-1",
+      deletedAt: null,
       skipped: true,
     });
   });
@@ -167,6 +178,7 @@ describe("GET /api/medications/[id]/intake — status filter", () => {
     expect(where).toEqual({
       medicationId: "med-1",
       userId: "user-1",
+      deletedAt: null,
       OR: [{ takenAt: { not: null }, skipped: false }, { skipped: true }],
     });
   });
@@ -184,6 +196,7 @@ describe("GET /api/medications/[id]/intake — status filter", () => {
     expect(countArgs?.where).toEqual({
       medicationId: "med-1",
       userId: "user-1",
+      deletedAt: null,
       OR: [{ takenAt: { not: null }, skipped: false }, { skipped: true }],
     });
   });

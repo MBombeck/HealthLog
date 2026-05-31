@@ -283,6 +283,8 @@ export async function computeUserHealthScoreFastPath(
     prisma.moodEntry.findMany({
       where: {
         userId,
+        // v1.7.0 sync — exclude tombstoned rows.
+        deletedAt: null,
         moodLoggedAt: { gte: prevSince30d, lte: now },
       },
       select: { score: true, moodLoggedAt: true },
@@ -329,6 +331,8 @@ export async function computeUserHealthScoreFastPath(
     const intakeEvents = await prisma.medicationIntakeEvent.findMany({
       where: {
         userId,
+        // v1.7.0 sync — exclude tombstoned rows.
+        deletedAt: null,
         medicationId: { in: medIds },
         scheduledFor: { gte: prevSince30d, lte: now },
       },

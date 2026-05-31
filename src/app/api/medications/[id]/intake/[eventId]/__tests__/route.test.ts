@@ -85,9 +85,16 @@ beforeEach(() => {
   vi.mocked(prisma.medication.updateMany).mockResolvedValue({
     count: 0,
   } as never);
-  vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValue(
-    null as never,
-  );
+  // v1.7.0 sync — PUT now looks the event up via `findFirst` with a
+  // `deletedAt: null` guard. The default returns the live event so the
+  // PUT lookup succeeds; the lifecycle `liveIntake` probe (also
+  // `findFirst`) is sequenced per-test via `mockResolvedValueOnce`.
+  vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValue({
+    id: "e1",
+    userId: "user-1",
+    medicationId: "m1",
+    scheduledFor: new Date(),
+  } as never);
 });
 
 describe("PUT /api/medications/[id]/intake/[eventId] — 422 multi-issue (v1.4.43 W6)", () => {
@@ -212,9 +219,17 @@ describe("PUT /api/medications/[id]/intake/[eventId] — one-shot reconcile on s
       oneShot: true,
       active: false,
     } as never);
-    vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValueOnce(
-      null as never,
-    );
+    // v1.7.0 sync — first `findFirst` is the PUT event lookup (returns
+    // the live event); the second is the lifecycle `liveIntake` probe
+    // (returns null → the dose is no longer logged → reactivate).
+    vi.mocked(prisma.medicationIntakeEvent.findFirst)
+      .mockResolvedValueOnce({
+        id: "e1",
+        userId: "user-1",
+        medicationId: "m1",
+        scheduledFor: new Date(),
+      } as never)
+      .mockResolvedValueOnce(null as never);
     vi.mocked(prisma.medication.updateMany).mockResolvedValueOnce({
       count: 1,
     } as never);

@@ -172,6 +172,8 @@ export async function generateMedicationComplianceStatusForUser(
   const medicationEvents = await prisma.medicationIntakeEvent.findMany({
     where: {
       userId,
+      // v1.7.0 sync — exclude tombstoned rows from compliance status.
+      deletedAt: null,
       medicationId: { in: medications.map((medication) => medication.id) },
       scheduledFor: { gte: rangeStart },
     },

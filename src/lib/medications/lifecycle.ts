@@ -38,6 +38,7 @@ interface ReconcilePrisma {
       where: {
         userId: string;
         medicationId: string;
+        deletedAt: null;
         skipped: false;
         takenAt: { not: null };
       };
@@ -73,6 +74,9 @@ export async function reconcileOneShotState(
     where: {
       userId,
       medicationId,
+      // v1.7.0 sync — a tombstoned intake no longer counts as the logged
+      // one-shot dose, so soft-deleting it reactivates the medication.
+      deletedAt: null,
       skipped: false,
       takenAt: { not: null },
     },

@@ -327,7 +327,8 @@ async function buildMoodBlock(
 
   // Coverage fallback — mirror the live walk in `/api/mood/analytics`.
   const moodEntries = await prisma.moodEntry.findMany({
-    where: { userId },
+    // v1.7.0 sync — exclude tombstoned rows from the dashboard snapshot.
+    where: { userId, deletedAt: null },
     orderBy: { moodLoggedAt: "asc" },
     select: { date: true, score: true },
   });

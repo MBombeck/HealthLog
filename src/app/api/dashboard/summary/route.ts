@@ -357,6 +357,8 @@ async function projectAndReadTodaysIntakes(
   return prisma.medicationIntakeEvent.findMany({
     where: {
       userId,
+      // v1.7.0 sync — exclude tombstoned rows from the today tile.
+      deletedAt: null,
       scheduledFor: { gte: todayStart, lt: todayEnd },
     },
     select: { id: true, takenAt: true, skipped: true },
@@ -478,6 +480,8 @@ async function buildDashboardSummary(
       prisma.medicationIntakeEvent.findMany({
         where: {
           userId,
+          // v1.7.0 sync — exclude tombstoned rows from streak counting.
+          deletedAt: null,
           scheduledFor: { gte: streakWindowStart },
           OR: [{ takenAt: { not: null } }, { skipped: true }],
         },

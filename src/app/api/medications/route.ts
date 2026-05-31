@@ -40,12 +40,18 @@ async function buildMedicationsList(
     }),
     prisma.medicationIntakeEvent.groupBy({
       by: ["medicationId"],
-      where: { userId, skipped: false, takenAt: { not: null } },
+      // v1.7.0 sync — exclude tombstoned rows from the last-taken map.
+      where: { userId, deletedAt: null, skipped: false, takenAt: { not: null } },
       _max: { takenAt: true },
     }),
     prisma.medicationIntakeEvent.groupBy({
       by: ["medicationId"],
-      where: { userId, scheduledFor: { gte: todayStartUtc, lte: todayEndUtc } },
+      // v1.7.0 sync — exclude tombstoned rows from the today-count map.
+      where: {
+        userId,
+        deletedAt: null,
+        scheduledFor: { gte: todayStartUtc, lte: todayEndUtc },
+      },
       _count: { id: true },
     }),
   ]);

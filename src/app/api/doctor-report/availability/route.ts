@@ -83,10 +83,20 @@ export const POST = apiHandler(async (request: NextRequest) => {
       },
     }),
     prisma.moodEntry.count({
-      where: { userId: user.id, moodLoggedAt: { gte: start, lte: end } },
+      // v1.7.0 sync — exclude tombstoned rows from the availability count.
+      where: {
+        userId: user.id,
+        deletedAt: null,
+        moodLoggedAt: { gte: start, lte: end },
+      },
     }),
     prisma.medicationIntakeEvent.count({
-      where: { userId: user.id, scheduledFor: { gte: start, lte: end } },
+      // v1.7.0 sync — exclude tombstoned rows from the availability count.
+      where: {
+        userId: user.id,
+        deletedAt: null,
+        scheduledFor: { gte: start, lte: end },
+      },
     }),
     prisma.measurement.count({
       where: {

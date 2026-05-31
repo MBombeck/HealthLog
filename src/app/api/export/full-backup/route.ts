@@ -63,12 +63,15 @@ export const GET = apiHandler(async (request: NextRequest) => {
         },
       }),
       prisma.medicationIntakeEvent.findMany({
-        where: { userId: user.id },
+        // v1.7.0 sync — exclude tombstoned rows (mirrors the measurement
+        // `deletedAt: null` filter above on this user-facing export).
+        where: { userId: user.id, deletedAt: null },
         include: { medication: { select: { name: true } } },
         orderBy: { scheduledFor: "desc" },
       }),
       prisma.moodEntry.findMany({
-        where: { userId: user.id },
+        // v1.7.0 sync — exclude tombstoned rows.
+        where: { userId: user.id, deletedAt: null },
         orderBy: { moodLoggedAt: "desc" },
       }),
     ]);

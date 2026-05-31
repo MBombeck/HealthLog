@@ -6,6 +6,7 @@ vi.mock("@/lib/db", () => ({
     medicationIntakeEvent: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       update: vi.fn(),
       // v1.4.39 W-SERVER-FIX — `scope=today` now backfills missing
       // rows for schedules whose window opens today (covers daily
@@ -328,7 +329,9 @@ describe("POST /api/medications/intake", () => {
 
   it("returns 404 when the event isn't owned by the user", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(prisma.medicationIntakeEvent.findUnique).mockResolvedValue({
+    // v1.7.0 sync — the status toggle looks the row up via `findFirst`
+    // with a `deletedAt: null` guard.
+    vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValue({
       id: "e1",
       userId: "someone-else",
       medicationId: "m1",
@@ -345,7 +348,7 @@ describe("POST /api/medications/intake", () => {
 
   it("marks event as skipped", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(prisma.medicationIntakeEvent.findUnique).mockResolvedValue({
+    vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValue({
       id: "e1",
       userId: "user-1",
       medicationId: "m1",
@@ -358,9 +361,10 @@ describe("POST /api/medications/intake", () => {
     } as never);
     const res = await POST(req({ intakeId: "e1", status: "skipped" }));
     expect(res.status).toBe(200);
+    // v1.7.0 sync — the skip toggle bumps syncVersion.
     expect(prisma.medicationIntakeEvent.update).toHaveBeenCalledWith({
       where: { id: "e1" },
-      data: { takenAt: null, skipped: true },
+      data: { takenAt: null, skipped: true, syncVersion: { increment: 1 } },
     });
   });
 });

@@ -35,7 +35,8 @@ export const GET = apiHandler(
     }
 
     const events = await prisma.medicationIntakeEvent.findMany({
-      where: { medicationId: id, userId: user.id },
+      // v1.7.0 sync — exclude tombstoned rows from the compliance read.
+      where: { medicationId: id, userId: user.id, deletedAt: null },
       orderBy: { scheduledFor: "desc" },
     });
 

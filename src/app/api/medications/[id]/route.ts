@@ -52,7 +52,14 @@ export const GET = apiHandler(
     const lastIntake =
       medication.schedules.some((s) => s.rollingIntervalDays !== null)
         ? await prisma.medicationIntakeEvent.findFirst({
-            where: { userId: user.id, medicationId: id, takenAt: { not: null } },
+            // v1.7.0 sync — a tombstoned intake no longer anchors the
+            // rolling-interval next-due computation.
+            where: {
+              userId: user.id,
+              medicationId: id,
+              deletedAt: null,
+              takenAt: { not: null },
+            },
             orderBy: { takenAt: "desc" },
             select: { takenAt: true },
           })

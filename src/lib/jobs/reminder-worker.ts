@@ -536,6 +536,9 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
           where: {
             medicationId: med.id,
             userId: med.user.id,
+            // v1.7.0 sync — a tombstoned dose is no longer a logged
+            // action, so it must not suppress today's reminder.
+            deletedAt: null,
             scheduledFor: { gte: todayStart, lte: todayEnd },
           },
           select: { scheduledFor: true, takenAt: true, skipped: true },
@@ -572,6 +575,9 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
             where: {
               userId: med.user.id,
               medicationId: med.id,
+              // v1.7.0 sync — a tombstoned intake no longer anchors the
+              // rolling-interval next-due computation.
+              deletedAt: null,
               takenAt: { not: null },
             },
             orderBy: { takenAt: "desc" },
@@ -726,6 +732,10 @@ async function handleReminderCheck(jobs: Job<ReminderCheckPayload>[]) {
 
             // RED phase: create missed intake event for this slot.
             if (currentPhase === "RED") {
+              // v1.7.0 sync — intentionally NO `deletedAt: null` filter:
+              // a tombstoned row still occupies the `(userId, medicationId,
+              // scheduledFor, source)` unique slot, so the missed-dose
+              // create must treat it as present to avoid a P2002 collision.
               const existingMissed = await prisma.medicationIntakeEvent.count({
                 where: {
                   medicationId: med.id,

@@ -304,7 +304,8 @@ export async function collectDoctorReportData(
         },
       }),
       prisma.medicationIntakeEvent.findMany({
-        where: { userId, scheduledFor: { gte: start, lte: end } },
+        // v1.7.0 sync — exclude tombstoned rows from the doctor report.
+        where: { userId, deletedAt: null, scheduledFor: { gte: start, lte: end } },
         include: { medication: { select: { name: true } } },
         orderBy: { scheduledFor: "asc" },
       }),
@@ -314,7 +315,8 @@ export async function collectDoctorReportData(
       // and then dropped".
       sections.mood
         ? prisma.moodEntry.findMany({
-            where: { userId, moodLoggedAt: { gte: start, lte: end } },
+            // v1.7.0 sync — exclude tombstoned rows from the doctor report.
+            where: { userId, deletedAt: null, moodLoggedAt: { gte: start, lte: end } },
             orderBy: { moodLoggedAt: "asc" },
           })
         : Promise.resolve([]),

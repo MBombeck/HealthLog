@@ -289,6 +289,8 @@ export async function generateBloodPressureStatusForUser(
       : await prisma.medicationIntakeEvent.findMany({
           where: {
             userId,
+            // v1.7.0 sync — exclude tombstoned rows.
+            deletedAt: null,
             medicationId: {
               in: bpMedications.map((medication) => medication.id),
             },

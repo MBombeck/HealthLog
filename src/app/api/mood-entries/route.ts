@@ -71,6 +71,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   const where = {
     userId: user.id,
+    // v1.7.0 sync — hide soft-deleted (tombstoned) rows from the list.
+    deletedAt: null,
     ...(mood && { mood }),
     ...(from || to
       ? {

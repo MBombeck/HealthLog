@@ -550,6 +550,8 @@ async function buildAchievementsResult(user: AuthedUser) {
     prisma.medicationIntakeEvent.findMany({
       where: {
         userId,
+        // v1.7.0 sync — exclude tombstoned rows from streak counting.
+        deletedAt: null,
         source: { not: "IMPORT" },
         scheduledFor: { gte: startDate, lte: now },
       },
@@ -611,6 +613,8 @@ async function buildAchievementsResult(user: AuthedUser) {
     prisma.moodEntry.findMany({
       where: {
         userId,
+        // v1.7.0 sync — exclude tombstoned rows from streak counting.
+        deletedAt: null,
         moodLoggedAt: { gte: startDate, lte: now },
       },
       select: {

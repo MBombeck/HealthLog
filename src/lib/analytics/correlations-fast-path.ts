@@ -231,11 +231,13 @@ export async function computeCorrelationHypothesesFastPath(
   // narrow projections) and neither has a rollup equivalent today.
   const [moodRows, intakeRows] = await Promise.all([
     prisma.moodEntry.findMany({
-      where: { userId, moodLoggedAt: { gte: since } },
+      // v1.7.0 sync — exclude tombstoned rows.
+      where: { userId, deletedAt: null, moodLoggedAt: { gte: since } },
       select: { score: true, moodLoggedAt: true },
     }) as Promise<MoodRow[]>,
     prisma.medicationIntakeEvent.findMany({
-      where: { userId, scheduledFor: { gte: since } },
+      // v1.7.0 sync — exclude tombstoned rows.
+      where: { userId, deletedAt: null, scheduledFor: { gte: since } },
       select: { scheduledFor: true, takenAt: true, skipped: true },
     }) as Promise<IntakeRow[]>,
   ]);

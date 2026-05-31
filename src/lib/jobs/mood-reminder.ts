@@ -171,7 +171,9 @@ export async function runMoodReminderTick(
       }
 
       const existingMood = await prisma.moodEntry.findFirst({
-        where: { userId: user.id, date: decision.localDate },
+        // v1.7.0 sync — a tombstoned entry no longer counts as "logged
+        // today", so a deleted entry must not suppress the daily nudge.
+        where: { userId: user.id, date: decision.localDate, deletedAt: null },
         select: { id: true },
       });
       if (existingMood) {

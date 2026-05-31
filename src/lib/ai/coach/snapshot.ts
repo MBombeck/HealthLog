@@ -745,7 +745,8 @@ async function buildCoachSnapshotImpl(
     // Mood entries live on a separate model. Pull only the recent
     // window for the day-level rows + bucket the rest.
     const moodRows = await prisma.moodEntry.findMany({
-      where: { userId, moodLoggedAt: { gte: cutoff } },
+      // v1.7.0 sync — exclude tombstoned rows from the Coach snapshot.
+      where: { userId, deletedAt: null, moodLoggedAt: { gte: cutoff } },
       orderBy: { moodLoggedAt: "asc" },
       select: { moodLoggedAt: true, score: true },
     });
