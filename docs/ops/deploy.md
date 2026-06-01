@@ -14,11 +14,11 @@ canonical command sequence on a single-instance host:
 
 ```sh
 # 1. Pull the new image.
-docker pull ghcr.io/marc-bombeck/healthlog:vX.Y.Z
+docker pull ghcr.io/mbombeck/healthlog:vX.Y.Z
 
 # 2. Run migrations against the live DB using the new image.
 docker run --rm --env-file .env.production \
-  ghcr.io/marc-bombeck/healthlog:vX.Y.Z \
+  ghcr.io/mbombeck/healthlog:vX.Y.Z \
   pnpm prisma migrate deploy
 
 # 3. Recreate the app container so it picks up the new image.
@@ -53,8 +53,7 @@ roll back:
 1. Roll back the **app container** to the previous image tag.
 2. Leave the **database schema** at the newer migration. The previous
    app version reads forward-compatible-ish shapes for nearly every
-   release pair we've shipped on the v1.4.x line; tested in the
-   release-marathon QA pass.
+   release pair shipped on the v1.4.x line.
 3. If a column-drop migration ships in the rollback target, hand-roll
    the column back via a fresh forward migration (`pnpm prisma migrate
    dev --create-only --name vX_Y_Z_rollback_<col>`), edit the SQL,

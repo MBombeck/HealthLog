@@ -532,3 +532,32 @@ export function useSystemStatus() {
     },
   });
 }
+
+/** Helpful-rate tint shared by the AI-quality + Coach-feedback tables.
+ * Green ≥80 %, yellow ≥50 %, orange below. */
+export function helpfulRateColour(rate: number): string {
+  if (rate >= 0.8) return "text-dracula-green";
+  if (rate >= 0.5) return "text-dracula-yellow";
+  return "text-dracula-orange";
+}
+
+export interface PublicVersion {
+  version: string;
+  buildSha: string | null;
+  builtAt: string | null;
+  offlineGeoEnabled?: boolean;
+}
+
+/** Shared `/api/version` reader — the system-status section + overview
+ * summary both surface app version / build SHA / offline-geo state. */
+export function usePublicVersion() {
+  return useQuery({
+    queryKey: queryKeys.publicVersion(),
+    queryFn: async () => {
+      const res = await fetch("/api/version");
+      if (!res.ok) throw new Error("Failed to load version");
+      return (await res.json()).data as PublicVersion;
+    },
+    staleTime: 5 * 60_000,
+  });
+}

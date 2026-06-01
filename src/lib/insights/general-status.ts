@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/db";
-import { resolveProvider } from "@/lib/ai/provider";
 import {
   getGeneralStatusSystemPrompt,
   getGeneralStatusUserPrompt,
@@ -13,88 +12,95 @@ import {
   getPreviousInsightContext,
 } from "@/lib/insights/memory";
 import { applyPayloadBudget } from "@/lib/insights/bucket-series";
-import { stripChartTokens } from "@/lib/insights/chart-tokens";
 import {
-  withTimeout,
-  STATUS_PROVIDER_TIMEOUT_MS,
-} from "@/lib/insights/with-timeout";
-import { persistTimeoutStubAndReturn } from "@/lib/insights/persist-timeout-stub";
+  buildGradedSeriesFromPoints,
+  degradeStatusSnapshotToBudget,
+} from "@/lib/insights/graded-series";
+import {
+  normalizeLocale,
+  normalizeSummaryText,
+  parseSummaryFromContent,
+  persistStatusInsight,
+  round,
+  summarizeSeries,
+} from "@/lib/insights/status-shared";
+import { runStatusCompletion } from "@/lib/insights/status-provider";
+import {
+  readFreshStatusText,
+  resolveReadOnlyStatusMiss,
+} from "@/lib/insights/status-cache";
+import { returnTimeoutFallback } from "@/lib/insights/timeout-fallback";
 import { annotate } from "@/lib/logging/context";
 import { toBerlinDayKey } from "@/lib/tz/resolver";
-
-type SupportedLocale = "de" | "en";
 
 // Derived from canonical enum so a new measurement type is auto-included
 // in the AI general-status fetch (V3 audit: enum drift cousins).
 const MEASUREMENT_TYPES = measurementTypeEnum.options;
 
-function round(value: number, digits = 1): number {
-  const factor = 10 ** digits;
-  return Math.round(value * factor) / factor;
-}
-
-function normalizeSummaryText(value: string): string {
-  return stripChartTokens(value).replace(/\s+/g, " ").trim();
-}
-
-function summarizeSeries(series: Array<{ value: number }>) {
-  if (series.length === 0) return null;
-  const first = series[0].value;
-  const last = series[series.length - 1].value;
-  // v1.4.33 — fold sum/min/max into a single walk. The previous
-  // `Math.min(...series.map(...))` / `Math.max(...series.map(...))`
-  // spread tripped V8's ~125 000-arg ceiling on the bound /api/analytics
-  // path; see `.planning/round-v1433-analytics-500-report.md` §"Carry-
-  // over". These helpers are fed bounded windows today so the crash
-  // never reached them, but the spread allocates a transient args array
-  // on every call — the fold is both stack-safe and cheaper.
-  let sum = 0;
-  let minVal = series[0].value;
-  let maxVal = series[0].value;
-  for (const entry of series) {
-    sum += entry.value;
-    if (entry.value < minVal) minVal = entry.value;
-    if (entry.value > maxVal) maxVal = entry.value;
-  }
-  return {
-    points: series.length,
-    start: round(first, 2),
-    end: round(last, 2),
-    delta: round(last - first, 2),
-    mean: round(sum / series.length, 2),
-    min: round(minVal, 2),
-    max: round(maxVal, 2),
-  };
-}
-
-function normalizeLocale(value: string | null | undefined): SupportedLocale {
-  return value === "en" ? "en" : "de";
-}
+// The general overview folds its per-type graded series in memory from a
+// single bounded read (take 5000, desc) rather than per-type rollup-tier
+// reads: a many-metric account would otherwise fan out ~15 metrics × 3
+// rollup round-trips per render. `degradeStatusSnapshotToBudget` already
+// caps the multi-metric snapshot, so the bounded in-memory fold is the
+// deliberate design here; the rollup tier is wired into the focused
+// single-metric cards (weight / pulse / bmi / blood-pressure) instead.
 
 export async function generateGeneralStatusForUser(
   userId: string,
   options?: {
     locale?: string | null;
     force?: boolean;
+    /** v1.8.3 — read-only navigation path; see weight-status for the rationale. */
+    readOnly?: boolean;
   },
 ): Promise<{
   hasProvider: boolean;
   text: string | null;
   cached: boolean;
   updatedAt: string | null;
+  preparing?: boolean;
 }> {
   const locale = normalizeLocale(options?.locale);
   const force = options?.force === true;
+  const readOnly = options?.readOnly === true;
   const cacheAction = `insights.general-status.${locale}`;
   const todayKey = toBerlinDayKey(new Date());
 
-  const provider = await resolveProvider(userId);
-  if (provider.type === "none") {
+  const cached = await readFreshStatusText({
+    userId,
+    cacheAction,
+    todayKey,
+    force,
+  });
+  if (cached) {
     return {
-      hasProvider: false,
-      text: getNoKeyGeneralStatusText(locale),
+      hasProvider: true,
+      text: cached.text,
       cached: true,
+      updatedAt: cached.updatedAt,
+    };
+  }
+
+  if (readOnly) {
+    const outcome = await resolveReadOnlyStatusMiss({
+      userId,
+      metric: "general",
+      locale,
+    });
+    if (outcome === "no-provider") {
+      return {
+        hasProvider: false,
+        text: getNoKeyGeneralStatusText(locale),
+        cached: true,
+        updatedAt: null,
+      };
+    }
+    return {
+      hasProvider: true,
+      text: null,
+      cached: false,
       updatedAt: null,
+      preparing: true,
     };
   }
 
@@ -104,35 +110,6 @@ export async function generateGeneralStatusForUser(
       dateOfBirth: true,
     },
   });
-
-  const latestCache = await prisma.auditLog.findFirst({
-    where: { userId, action: cacheAction },
-    orderBy: { createdAt: "desc" },
-    select: { createdAt: true, details: true },
-  });
-
-  if (!force && latestCache?.details) {
-    try {
-      const parsed = JSON.parse(latestCache.details) as {
-        dateKey?: string;
-        text?: string;
-      };
-      if (
-        parsed.dateKey === todayKey &&
-        typeof parsed.text === "string" &&
-        parsed.text.trim().length > 0
-      ) {
-        return {
-          hasProvider: true,
-          text: parsed.text,
-          cached: true,
-          updatedAt: latestCache.createdAt.toISOString(),
-        };
-      }
-    } catch {
-      // ignore invalid cache payload
-    }
-  }
 
   // v1.4.28 FB-D2 — cap the snapshot input. General-status pulls
   // every supported measurement type; without a cap the read scales
@@ -157,31 +134,46 @@ export async function generateGeneralStatusForUser(
 
   const now = new Date();
 
+  // `dailyByType` keeps the `applyPayloadBudget` daily buckets for the
+  // downstream BP in-target pairing; the prompt embeds the compact
+  // graded series instead of the full daily array. Skip types with no
+  // data so a many-metric account can't balloon the snapshot with empty
+  // series objects.
+  const dailyByType = new Map<
+    (typeof MEASUREMENT_TYPES)[number],
+    ReturnType<typeof applyPayloadBudget>
+  >();
   const measurementSeries = Object.fromEntries(
-    MEASUREMENT_TYPES.map((type) => {
+    MEASUREMENT_TYPES.flatMap((type) => {
       const records = measurements
         .filter((measurement) => measurement.type === type)
         .map((measurement) => ({
           measuredAt: measurement.measuredAt,
           value: measurement.value,
         }));
+      if (records.length === 0) return [];
 
       const series = applyPayloadBudget(records, { now });
+      dailyByType.set(type, series);
+      const graded = buildGradedSeriesFromPoints(records, now);
 
       return [
-        type,
-        {
-          summary: summarizeSeries(
-            series.daily.map((bucket) => ({ value: bucket.value })),
-          ),
-          series,
-        },
+        [
+          type,
+          {
+            summary: summarizeSeries(
+              series.daily.map((bucket) => ({ value: bucket.value })),
+            ),
+            series: graded,
+          },
+        ] as const,
       ];
     }),
   );
 
   const intakeEvents = await prisma.medicationIntakeEvent.findMany({
-    where: { userId },
+    // v1.7.0 sync — exclude tombstoned rows.
+    where: { userId, deletedAt: null },
     orderBy: { scheduledFor: "asc" },
     select: {
       scheduledFor: true,
@@ -221,6 +213,7 @@ export async function generateGeneralStatusForUser(
       value: value.total > 0 ? round((value.taken / value.total) * 100, 1) : 0,
     }));
   const adherenceSeries = applyPayloadBudget(adherenceRecords, { now });
+  const adherenceGraded = buildGradedSeriesFromPoints(adherenceRecords, now);
 
   // Fetch mood context (optional — for enrichment only). v1.4.28
   // FB-D2 — cap at 90 entries.
@@ -238,6 +231,7 @@ export async function generateGeneralStatusForUser(
     value: entry.score,
   }));
   const moodSeries = applyPayloadBudget(moodRecords, { now });
+  const moodGraded = buildGradedSeriesFromPoints(moodRecords, now);
   const moodSummary = summarizeSeries(
     moodSeries.daily.map((bucket) => ({ value: bucket.value })),
   );
@@ -246,9 +240,9 @@ export async function generateGeneralStatusForUser(
   const bpTargets = getBpTargets(user?.dateOfBirth ?? null);
   let bpInTargetLast30Days: number | null = null;
   if (bpTargets) {
-    const sysDaily = measurementSeries.BLOOD_PRESSURE_SYS?.series.daily ?? [];
+    const sysDaily = dailyByType.get("BLOOD_PRESSURE_SYS")?.daily ?? [];
     const diaMap = new Map(
-      (measurementSeries.BLOOD_PRESSURE_DIA?.series.daily ?? []).map(
+      (dailyByType.get("BLOOD_PRESSURE_DIA")?.daily ?? []).map(
         (bucket) => [bucket.dayOffset, bucket.value] as const,
       ),
     );
@@ -311,7 +305,7 @@ export async function generateGeneralStatusForUser(
       summary: summarizeSeries(
         adherenceSeries.daily.map((bucket) => ({ value: bucket.value })),
       ),
-      series: adherenceSeries,
+      series: adherenceGraded,
     },
     bloodPressureTargets: bpTargets
       ? {
@@ -326,16 +320,22 @@ export async function generateGeneralStatusForUser(
             points: moodSeries.daily.length,
             mean: moodMean,
             latest: moodSeries.daily[0]?.value ?? null,
-            series: moodSeries,
+            series: moodGraded,
           }
         : null,
   };
 
+  const shed = degradeStatusSnapshotToBudget(
+    snapshot as unknown as Record<string, unknown>,
+  );
   const snapshotJson = JSON.stringify(snapshot, null, 2);
 
   annotate({
     action: { name: cacheAction },
-    meta: { payload_size_bytes: snapshotJson.length },
+    meta: {
+      payload_size_bytes: snapshotJson.length,
+      ...(shed.length > 0 ? { snapshot_shed: shed } : {}),
+    },
   });
 
   // v1.4: pull the previous cached general-status into the prompt so
@@ -352,84 +352,59 @@ export async function generateGeneralStatusForUser(
     locale,
   );
 
-  // v1.4.28 FB-D2 — 20 s timeout race; fall back to the no-key text
-  // on stall so the InsightStatusCard renders deterministically.
-  const raced = await withTimeout(
-    () =>
-      provider.generateCompletion({
-        systemPrompt: getGeneralStatusSystemPrompt(locale),
-        userPrompt: getGeneralStatusUserPrompt(
-          snapshotJson,
-          todayKey,
-          locale,
-          previousContextBlock,
-        ),
-        temperature: 0.3,
-        maxTokens: 1000,
-      }),
-    STATUS_PROVIDER_TIMEOUT_MS,
-    null,
-  );
-
-  if (raced.timedOut || raced.value === null) {
-    // v1.4.37 — persist a sentinel row keyed to today so the next
-    // mount short-circuits at the cache lookup above instead of
-    // re-racing the same 20 s provider call on every cold visit.
-    // See `persistTimeoutStubAndReturn` for the full rationale.
-    return persistTimeoutStubAndReturn({
-      userId,
-      cacheAction,
+  const outcome = await runStatusCompletion({
+    userId,
+    cacheAction,
+    systemPrompt: getGeneralStatusSystemPrompt(locale),
+    userPrompt: getGeneralStatusUserPrompt(
+      snapshotJson,
       todayKey,
       locale,
-      providerType: provider.type,
+      previousContextBlock,
+    ),
+    temperature: 0.3,
+    maxTokens: 1000,
+  });
+
+  if (outcome.kind === "none") {
+    return {
+      hasProvider: false,
+      text: getNoKeyGeneralStatusText(locale),
+      cached: true,
+      updatedAt: null,
+    };
+  }
+  if (outcome.kind === "timeout" || outcome.kind === "error") {
+    return returnTimeoutFallback({
+      cacheAction,
+      reason: outcome.kind,
+      userId,
+      todayKey,
       stubText: getNoKeyGeneralStatusText(locale),
     });
   }
 
-  const result = raced.value;
-  const content = result.content;
-  if (typeof content !== "string" || content.trim().length === 0) {
-    throw new Error("AI returned empty content for general-status");
-  }
-
-  let summary = "";
-  try {
-    const parsed = JSON.parse(content) as { summary?: string };
-    if (typeof parsed.summary === "string") {
-      summary = parsed.summary;
-    } else {
-      summary = content;
-    }
-  } catch {
-    summary = content;
-  }
-
-  summary = normalizeSummaryText(summary);
+  const summary = normalizeSummaryText(parseSummaryFromContent(outcome.content));
   if (!summary) {
     throw new Error("General-status summary was empty after normalization");
   }
 
-  const created = await prisma.auditLog.create({
-    data: {
-      userId,
-      action: cacheAction,
-      details: JSON.stringify({
-        dateKey: todayKey,
-        locale,
-        text: summary,
-        providerType: provider.type,
-        model: result.model ?? "unknown",
-        tokensUsed: result.tokensUsed ?? null,
-      }),
-    },
-    select: { createdAt: true },
+  const updatedAt = await persistStatusInsight({
+    userId,
+    cacheAction,
+    todayKey,
+    locale,
+    text: summary,
+    providerType: outcome.providerType,
+    model: outcome.model,
+    tokensUsed: outcome.tokensUsed,
   });
 
   return {
     hasProvider: true,
     text: summary,
     cached: false,
-    updatedAt: created.createdAt.toISOString(),
+    updatedAt,
   };
 }
 

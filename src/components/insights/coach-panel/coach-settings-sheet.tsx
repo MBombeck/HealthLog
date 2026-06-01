@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -27,9 +26,12 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslations } from "@/lib/i18n/context";
-import { useCoachPrefs } from "@/hooks/use-coach-prefs";
+import { useCoachPrefs, useSaveCoachPrefs } from "@/hooks/use-coach-prefs";
 import {
+  DEFAULT_COACH_CLUSTERS,
   DEFAULT_COACH_PREFS,
+  coachDataClusterEnum,
+  type CoachDataCluster,
   type CoachDefaultWindow,
   type CoachExcludeMetric,
   type CoachPrefs,
@@ -97,12 +99,18 @@ const DEFAULT_WINDOW_OPTIONS: CoachDefaultWindow[] = [
   "allTime",
 ];
 
+// v1.7.0 — clustered, opt-in data sources. Order matches the design
+// sketch (default-on clinical clusters first). Each row shows the
+// cluster label + a member-preview hint + a toggle. Toggling writes
+// `dataClusters`; the snapshot builder expands the enabled set into the
+// source set, then subtracts the existing `excludeMetrics` post-filter.
+const CLUSTER_OPTIONS: CoachDataCluster[] = coachDataClusterEnum.options;
+
 export function CoachSettingsSheet({
   open,
   onOpenChange,
 }: CoachSettingsSheetProps) {
   const { t } = useTranslations();
-  const queryClient = useQueryClient();
 
   const { data: persisted } = useCoachPrefs({ enabled: open });
 
@@ -120,18 +128,11 @@ export function CoachSettingsSheet({
     setDraft(persisted);
   }
 
-  const save = useMutation({
-    mutationFn: async (next: CoachPrefs) => {
-      const res = await fetch("/api/auth/me/coach-prefs", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(next),
-      });
-      if (!res.ok) throw new Error("coach-prefs.save_failed");
-      return (await res.json()) as { data: CoachPrefs };
-    },
-    onSuccess: (envelope) => {
-      queryClient.setQueryData(["coach-prefs"], envelope.data);
+  // v1.7.2 — write through the shared `useSaveCoachPrefs` mutation so
+  // the cog and the chat-side sources rail persist via one code path
+  // and seed the same `coachPrefs()` cache key on success.
+  const save = useSaveCoachPrefs({
+    onSuccess: () => {
       toast.success(t("insights.coach.settingsSaved"));
       onOpenChange(false);
     },
@@ -145,6 +146,27 @@ export function CoachSettingsSheet({
         : prev.excludeMetrics.filter((m) => m !== metric),
     }));
   }
+
+  // v1.7.0 — the persisted `dataClusters` may be `undefined` (the user
+  // never opened the picker). Materialise the legacy default set the
+  // first time the user toggles a cluster so the on-screen switches
+  // reflect what the snapshot builder actually resolves.
+  function toggleCluster(cluster: CoachDataCluster, next: boolean) {
+    setDraft((prev) => {
+      const current = prev.dataClusters ?? Array.from(DEFAULT_COACH_CLUSTERS);
+      const updated = next
+        ? Array.from(new Set([...current, cluster]))
+        : current.filter((c) => c !== cluster);
+      return { ...prev, dataClusters: updated };
+    });
+  }
+
+  // The switch state mirrors the resolved set: undefined → legacy
+  // defaults, otherwise the explicit array (including the empty
+  // "everything off" state).
+  const enabledClusters = new Set<CoachDataCluster>(
+    draft.dataClusters ?? DEFAULT_COACH_CLUSTERS,
+  );
 
   // Render a skeleton shell while the persisted prefs are loading so
   // we never render the form against `DEFAULT_COACH_PREFS` and snap
@@ -326,7 +348,51 @@ export function CoachSettingsSheet({
               </Select>
             </div>
 
-            {/* Exclude metrics */}
+            {/* v1.7.0 — clustered, opt-in data sources. */}
+            <div className="flex flex-col gap-2">
+              <Label className="text-xs font-medium">
+                {t("insights.coach.settingsClustersLabel")}
+              </Label>
+              <p className="text-muted-foreground text-[11px] leading-relaxed">
+                {t("insights.coach.settingsClustersHint")}
+              </p>
+              <ul
+                data-slot="coach-prefs-cluster-list"
+                className="border-border/60 divide-border/50 mt-1 flex flex-col divide-y rounded-md border"
+              >
+                {CLUSTER_OPTIONS.map((cluster) => {
+                  const id = `coach-prefs-cluster-${cluster}`;
+                  const checked = enabledClusters.has(cluster);
+                  return (
+                    <li
+                      key={cluster}
+                      className="flex items-center justify-between gap-3 px-3 py-2"
+                    >
+                      <div className="flex min-w-0 flex-col">
+                        <Label
+                          htmlFor={id}
+                          className="cursor-pointer text-xs font-medium"
+                        >
+                          {t(`insights.coach.cluster.${cluster}.label`)}
+                        </Label>
+                        <span className="text-muted-foreground text-[11px] leading-snug">
+                          {t(`insights.coach.cluster.${cluster}.hint`)}
+                        </span>
+                      </div>
+                      <Switch
+                        id={id}
+                        data-slot={`coach-prefs-cluster-${cluster}`}
+                        checked={checked}
+                        onCheckedChange={(next) => toggleCluster(cluster, next)}
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            {/* Exclude metrics — advanced fine-tune. Subtracts a single
+                metric inside an otherwise-enabled cluster. */}
             <div className="flex flex-col gap-2">
               <Label className="text-xs font-medium">
                 {t("insights.coach.settingsExcludeLabel")}

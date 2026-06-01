@@ -35,11 +35,13 @@ import type { MeasurementType, SleepStage } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
+import { safeFetch } from "@/lib/safe-fetch";
 import { getUnitForType } from "@/lib/validations/measurement";
 import {
   collapseToTypeDayKeys,
   recomputeBucketsForMeasurement,
 } from "@/lib/rollups/measurement-rollups";
+import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 
 import { hasActivityScope } from "./client";
 import {
@@ -118,7 +120,7 @@ export async function fetchWithingsSleep(
   });
 
   const pageStart = performance.now();
-  const res = await fetch(WITHINGS_SLEEP_URL, {
+  const res = await safeFetch(WITHINGS_SLEEP_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -313,6 +315,18 @@ export async function syncUserSleep(
     for (const k of keys) {
       await recomputeBucketsForMeasurement(userId, k.type, k.measuredAt);
     }
+
+    // v1.8.0 — drop the per-metric assessment caches the synced types
+    // dirty (sleep + resting-HR feed the pulse / general cards).
+    // Fire-and-forget.
+    invalidateStatusInsightsForTypes(
+      userId,
+      keys.map((k) => k.type),
+    ).catch((err) => {
+      getEvent()?.addWarning(
+        `withings sleep: status-insight invalidate failed for ${userId}: ${err}`,
+      );
+    });
   } catch (err) {
     getEvent()?.addWarning(
       `withings sleep: rollup recompute failed for ${userId}: ${err}`,

@@ -21,6 +21,7 @@ import { withIdempotency } from "@/lib/idempotency";
 import { moodDateKey, DEFAULT_TIMEZONE } from "@/lib/mood/date-key";
 import { invalidateUserMood } from "@/lib/cache/invalidate";
 import { recomputeMoodBucketsForEntry } from "@/lib/rollups/mood-rollups";
+import { pushMoodEntriesToMoodLog } from "@/lib/moodlog/push";
 
 function parseTags(tags: string | null): string[] {
   if (!tags) return [];
@@ -70,6 +71,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   const where = {
     userId: user.id,
+    // v1.7.0 sync — hide soft-deleted (tombstoned) rows from the list.
+    deletedAt: null,
     ...(mood && { mood }),
     ...(from || to
       ? {
@@ -197,6 +200,30 @@ async function postMoodEntry(request: NextRequest) {
         },
       });
     }
+
+    // v1.4.50 — reverse-sync push to MoodLog. Fire-and-forget; the
+    // helper itself is best-effort and never throws, so a 502 from
+    // MoodLog or a transient network blip can never bubble back to
+    // the user's create. The pull side (15-min cron) backfills any
+    // entry that fails the push window. Entries with `source ===
+    // "MOODLOG"` skip inside the helper to avoid an echo loop.
+    void pushMoodEntriesToMoodLog(user.id, [
+      {
+        date: entry.date,
+        moodLoggedAt: entry.moodLoggedAt,
+        mood: entry.mood,
+        note: entry.note ?? null,
+        tags: entry.tags,
+        source: entry.source,
+      },
+    ]).catch(() => {
+      // The helper already wraps its own errors in wide-event
+      // warnings. The void + .catch is defence-in-depth so a
+      // synchronous throw inside the helper's promise chain (e.g. a
+      // future refactor that adds an await on a rejected promise
+      // before the first try/catch) can't surface as an unhandled
+      // rejection in the Next.js runtime.
+    });
 
     return apiSuccess({ ...entry, tags: parseTags(entry.tags) }, 201);
   } catch (err) {

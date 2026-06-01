@@ -29,6 +29,14 @@ export const queryKeys = {
    * settings/ai-section, targets/target-edit-sheet).
    */
   userThresholds: () => ["user", "thresholds"] as const,
+  /**
+   * v1.7.0 — Settings → Display metric/imperial control reads its
+   * current value from `GET /api/auth/me/unit-preference`. The PATCH
+   * mutation also invalidates `authMe()` so `useAuth().unitPreference`
+   * (and every chart display transform that keys off it) re-renders
+   * without a manual reload.
+   */
+  userUnitPreference: () => ["user", "unit-preference"] as const,
 
   measurements: () => ["measurements"] as const,
   moodEntries: () => ["mood-entries"] as const,
@@ -45,6 +53,18 @@ export const queryKeys = {
   analytics: (slice?: "summaries") =>
     (slice ? (["analytics", slice] as const) : (["analytics"] as const)),
   moodAnalytics: () => ["mood-analytics"] as const,
+
+  /**
+   * v1.7.0 W6 — unified dashboard first-paint snapshot. One client cell
+   * hydrates every above-the-fold tile from `GET /api/dashboard/snapshot`,
+   * replacing the four independent analytics-slim / analytics-thick /
+   * mood / widget-layout cells. A measurement / mood / medication /
+   * widget / insight write evicts the matching server cache bucket via
+   * `src/lib/cache/invalidate.ts`; the client read carries the same
+   * 60 s `staleTime` as `DASHBOARD_QUERY_OPTS` so a warm return-to-
+   * dashboard is a free cache hit.
+   */
+  dashboardSnapshot: () => ["dashboard", "snapshot"] as const,
 
   insightsRoot: () => ["insights"] as const,
   insightsComprehensive: () => ["insights", "comprehensive"] as const,
@@ -130,6 +150,16 @@ export const queryKeys = {
     ["dashboard-medication-compliance", days] as const,
   medicationPhaseConfig: (medicationId: string) =>
     ["phase-config", medicationId] as const,
+  /**
+   * v1.5.5 F-1 H-2 — per-medication api-endpoint status (enabled +
+   * active-token-count) used by the detail-page Externe Integration
+   * row. The key rides under the `["medications", id, …]` prefix so
+   * `medicationDependentKeys` catches it on token mint / disable.
+   * Centralising the tuple closes the bare-array bypass the
+   * useMemo inside `<ApiTokensRow>` was using.
+   */
+  medicationApiEndpoint: (medicationId: string) =>
+    ["medications", medicationId, "api-endpoint"] as const,
 
   gamificationAchievements: () => ["gamification", "achievements"] as const,
 
@@ -155,6 +185,14 @@ export const queryKeys = {
     ["insights", "glp1-timeline", limit] as const,
   userAiProvider: () => ["user", "ai-provider"] as const,
   userProfile: () => ["user", "profile"] as const,
+  /**
+   * v1.7.0 — the roaming notification prefs blob behind
+   * `GET/PATCH /api/auth/me/notification-prefs` (medication delivery
+   * default + mood reminder hour). Distinct from
+   * `notificationsPreferences()` (the per-event push toggles on the
+   * `/notifications` page) so the two never collide in the cache.
+   */
+  authNotificationPrefs: () => ["auth", "me", "notification-prefs"] as const,
 
   apiVersion: () => ["api", "version"] as const,
   publicVersion: () => ["public", "version"] as const,
@@ -263,6 +301,14 @@ export const queryKeys = {
   dashboardWidgets: () => ["user", "dashboardWidgets"] as const,
 
   /**
+   * v1.5.5 — per-user insights tile layout (mirrors
+   * `dashboardWidgets`). The Settings UI + the iOS client + the
+   * `/insights` shell all read this key; the PUT mutation invalidates
+   * it on save so every consumer paints the new layout in lockstep.
+   */
+  insightsLayout: () => ["user", "insightsLayout"] as const,
+
+  /**
    * v1.4.25 W5e — per-user, per-metric-class source priority. The
    * Settings → Sources surface reads + writes this key; saving
    * invalidates `analytics()` because the cumulative-metric aggregator
@@ -293,6 +339,12 @@ export const queryKeys = {
     timezone: string,
     fromIso: string,
     toIso: string,
+    // v1.7.0 — display-time value scale (e.g. m/s → km/h via 3.6).
+    // Defaults to 1 so every pre-v1.7.0 caller packs a byte-identical
+    // tuple; a non-default scale re-keys the cache so the processed
+    // (scaled) series doesn't bleed across charts that share the
+    // underlying raw window.
+    valueScale: number = 1,
   ) =>
     [
       "chart-data",
@@ -302,6 +354,7 @@ export const queryKeys = {
       timezone,
       fromIso,
       toIso,
+      valueScale,
     ] as const,
 };
 
@@ -345,6 +398,19 @@ export const moodDependentKeys = [
  * `["dashboard-medication-compliance"]` lands in the bundle so an
  * intake POST refreshes the chart immediately rather than waiting for
  * `staleTime` (audit L4).
+ *
+ * v1.5.5 D-3 §10 invariant 20 (was C-E2-1 / H-cluster-G) — the
+ * per-medication inline compliance chart used to mount under
+ * `queryKeys.medicationComplianceChart(medicationId)` which expands to
+ * `["compliance-chart-inline", id]`. The prefix `["compliance-chart-inline"]`
+ * lands in the bundle so every detail-page mutation (today's-dose,
+ * Pausieren, end, purge, edit) evicts the inline compliance tile in
+ * one tick. The TanStack hierarchical-prefix semantics catch every
+ * per-medication slot under that prefix.
+ *
+ * `queryKeys.medicationDetail(id)` rides under the
+ * `["medications"]` prefix already so a single medication invalidation
+ * also evicts its detail-page read.
  */
 export const medicationDependentKeys = [
   queryKeys.medications(),
@@ -353,6 +419,7 @@ export const medicationDependentKeys = [
   queryKeys.insightsTargets(),
   queryKeys.gamificationAchievements(),
   ["dashboard-medication-compliance"] as const,
+  ["compliance-chart-inline"] as const,
 ];
 
 /**

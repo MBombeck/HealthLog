@@ -140,7 +140,13 @@ export async function createRegistrationOptions(
     })),
     authenticatorSelection: {
       residentKey: "preferred",
-      userVerification: "preferred",
+      // `required` (vs `preferred`) instructs the authenticator that
+      // a UV check (biometric / PIN / fingerprint) is mandatory for
+      // every registration ceremony. A `preferred` posture lets a
+      // device that lacks a UV factor silently downgrade — and the
+      // resulting passkey carries the same `userVerified: false` flag
+      // forever, blocking any future AAL3-style assertion against it.
+      userVerification: "required",
     },
   });
 
@@ -216,7 +222,11 @@ export async function createAuthenticationOptions(userId?: string) {
 
   const options = await generateAuthenticationOptions({
     rpID: getRpId(),
-    userVerification: "preferred",
+    // Match the registration posture — see `createRegistrationOptions`
+    // above for the rationale. Refusing to honour a `userVerified:
+    // false` assertion keeps the AAL3 floor that the registration
+    // policy now enforces.
+    userVerification: "required",
     allowCredentials,
   });
 

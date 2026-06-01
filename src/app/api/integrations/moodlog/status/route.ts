@@ -21,7 +21,8 @@ export const GET = apiHandler(async () => {
   });
 
   const entryCount = await prisma.moodEntry.count({
-    where: { userId: user.id },
+    // v1.7.0 sync — exclude tombstoned rows from the entry count.
+    where: { userId: user.id, deletedAt: null },
   });
 
   // V3 audit STILL-V2-C-2: stored secret is now AES-GCM encrypted at rest.

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { useRovingRadioGroup } from "@/hooks/use-roving-radio-group";
 import type {
   MedicationSideEffectCategory,
   MedicationSideEffectEntry,
@@ -183,6 +184,17 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
     () => entriesByCategory(category),
     [category],
   );
+
+  const { getRadioProps: getEntryRadioProps } = useRovingRadioGroup({
+    count: filteredEntries.length,
+    selectedIndex: entry ? filteredEntries.indexOf(entry) : -1,
+    onSelect: (index) => setEntry(filteredEntries[index]!),
+  });
+  const { getRadioProps: getSeverityRadioProps } = useRovingRadioGroup({
+    count: SIDE_EFFECT_SEVERITY_LADDER.length,
+    selectedIndex: severity !== null ? severity - 1 : -1,
+    onSelect: (index) => setSeverity((index + 1) as 1 | 2 | 3 | 4 | 5),
+  });
 
   function resetForm() {
     setCategory("GI");
@@ -397,7 +409,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
               role="radiogroup"
               aria-label={t("medications.sideEffects.entryLabel")}
             >
-              {filteredEntries.map((candidate) => {
+              {filteredEntries.map((candidate, index) => {
                 const selected = candidate === entry;
                 return (
                   <button
@@ -406,6 +418,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
                     role="radio"
                     aria-checked={selected}
                     onClick={() => setEntry(candidate)}
+                    {...getEntryRadioProps(index)}
                     className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
                       selected
                         ? "border-primary bg-primary text-primary-foreground"
@@ -438,6 +451,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
                     role="radio"
                     aria-checked={selected}
                     onClick={() => setSeverity(value)}
+                    {...getSeverityRadioProps(idx)}
                     className={`min-w-[2.5rem] rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
                       selected
                         ? "border-primary bg-primary text-primary-foreground"

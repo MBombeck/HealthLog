@@ -133,8 +133,25 @@ export async function dispatchNotification(
     // lock-screen on first launch. The user enables it explicitly
     // from /settings/notifications once they've seen the badge a few
     // times and decided they want push.
-    const defaultEnabled =
+    let defaultEnabled =
       EVENT_DEFAULT_ENABLED[payload.eventType as EventType] ?? true;
+
+    // v1.7.0 — MOOD_REMINDER single source of truth = the visible card.
+    // The event used to default OFF, layered on top of the per-user
+    // `moodReminderEnabled` flag, so a user who flipped the card still
+    // got nothing (no pref row → `!defaultEnabled` → continue). Collapse
+    // the double opt-in: when the card is on, the event default is on, so
+    // enabling the card alone delivers. A genuine explicit per-event
+    // opt-out (a `NotificationPreference` row with `enabled = false`) is
+    // still honoured below via `pref.enabled` — only the no-row default
+    // is derived from the card.
+    if (payload.eventType === "MOOD_REMINDER") {
+      const user = await prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: { moodReminderEnabled: true },
+      });
+      defaultEnabled = user?.moodReminderEnabled === true;
+    }
     for (const channel of channels) {
       const pref = channel.preferences[0];
       if (pref) {

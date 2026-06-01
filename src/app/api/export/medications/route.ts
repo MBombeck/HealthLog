@@ -6,6 +6,13 @@
  * a `# Intake history` block when `?intake=true` (the default — the
  * UI toggle is checked by default so a stripped-down export is opt-in).
  *
+ * `?medicationId=<id>` scopes the export to a single medication (its row
+ * plus, when intake is on, only that medication's intake log) — the
+ * per-medication advanced sheet uses it so the export mirrors the
+ * per-medication import beside it. Omitted, the export spans every
+ * medication (the `/settings/export` card). The id is always narrowed by
+ * `userId`, so a foreign id resolves to no medication and 404s.
+ *
  * Response is `text/csv` with an attachment filename ending in `.csv`.
  *
  * Auth: cookie session OR Bearer token (`requireAuth`).
@@ -38,6 +45,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   const params = new URL(request.url).searchParams;
   const includeIntake = params.get("intake") !== "false";
+  const medicationId = params.get("medicationId") || undefined;
   const sinceRaw = params.get("since");
   const untilRaw = params.get("until");
   const since = sinceRaw ? safeDate(sinceRaw) : undefined;
@@ -51,7 +59,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // shape doesn't need every future field anyway.
   const [medications, userTz] = await Promise.all([
     prisma.medication.findMany({
-      where: { userId: user.id },
+      where: medicationId
+        ? { userId: user.id, id: medicationId }
+        : { userId: user.id },
       select: {
         name: true,
         dose: true,
@@ -70,6 +80,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
     resolveUserTimezone(user.id),
   ]);
 
+  // A scoped export for an id the caller doesn't own resolves to no row
+  // (the `where` is narrowed by userId) — surface that as 404 rather than
+  // streaming an empty CSV.
+  if (medicationId && medications.length === 0) {
+    return apiError("Medication not found", 404);
+  }
+
   const sections: string[] = [
     "# Medications",
     toCSV(formatMedicationsForExport(medications)),
@@ -79,10 +96,15 @@ export const GET = apiHandler(async (request: NextRequest) => {
   if (includeIntake) {
     const where: {
       userId: string;
+      deletedAt: null;
+      medicationId?: string;
       scheduledFor?: { gte?: Date; lte?: Date };
     } = {
       userId: user.id,
+      // v1.7.0 sync — exclude tombstoned rows from the export.
+      deletedAt: null,
     };
+    if (medicationId) where.medicationId = medicationId;
     if (since || until) {
       where.scheduledFor = {};
       if (since) where.scheduledFor.gte = since;
@@ -107,6 +129,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       medicationCount: medications.length,
       intakeCount,
       includeIntake,
+      medicationId: medicationId ?? null,
       since: since?.toISOString() ?? null,
       until: until?.toISOString() ?? null,
     },
@@ -117,6 +140,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       export_medications_count: medications.length,
       export_intake_count: intakeCount,
       export_include_intake: includeIntake,
+      export_medication_scoped: Boolean(medicationId),
     },
   });
 

@@ -1,45 +1,23 @@
 import type { Locale } from "@/lib/i18n/config";
 import { getBaseSystemPrompt } from "./base-system";
 
-const MEDCO_SECTION_DE = `FACHSPEZIFISCH — MEDIKAMENTEN-ADHÄRENZ:
-- Einnahmetreue-Bewertung:
-  * ≥ 90%: Ausgezeichnete Adhärenz
-  * 80-89%: Gute Adhärenz
-  * 70-79%: Moderate Adhärenz — therapeutische Wirksamkeit möglicherweise eingeschränkt
-  * < 70%: Unzureichende Adhärenz — wahrscheinlich subtherapeutische Wirkung
-- Muster-Analyse: Morgen- vs. Abendeinnahme getrennt bewerten (Abenddosen werden häufiger vergessen).
-- Streak-Tracking: Längste ununterbrochene Einnahmeperiode identifizieren und hervorheben.
-- Wochenend-Effekt: Einnahmetreue an Wochenenden vs. Wochentagen vergleichen.
-- Wirksamkeits-Korrelation: Direkte Verbindung zwischen Einnahmetreue und Vitalwert-Veränderungen herstellen.
-  * Beispiel: "In Wochen mit > 90% Einnahmetreue war der mittlere systolische RR 5 mmHg niedriger."
-- Verpasste Dosen: Konsequenzen differenzieren (Antihypertensiva-Rebound vs. Statine = weniger zeitkritisch).
-- Motivierende Gesprächsführung: Positive Formulierungen bevorzugen, Fortschritte anerkennen.
-- Vergleiche Perioden hoher Adhärenz (>90%) mit den zugehörigen Vitalwerten. Zeige konkret: "In Wochen mit >90% Einnahmetreue war der systolische RR X mmHg niedriger."
-- Korrelationen nur erwähnen wenn der r-Wert im Snapshot vorhanden und |r| > 0.4 ist. Falls das Feld nicht im Snapshot vorhanden ist, keine Korrelation interpretieren oder erfinden.
-- Nutze historicalComparison um den Einfluss der Adhärenz auf Blutdruck und Puls zu quantifizieren, sofern die Daten im Snapshot vorhanden sind.
-- Falls Stimmungsdaten verfügbar und Korrelation |r| > 0.4: Prüfe ob niedrige Adhärenz mit schlechterer Stimmung korreliert.
-- Chronotherapie-Hinweis: Falls ein Blutdruck-Medikament vorhanden ist UND Compliance > 90% ABER BP nicht im Zielbereich: "Einnahme-Zeitpunkt mit dem Arzt besprechen — abendliche Einnahme kann bei einigen Patienten die nächtliche Blutdruckkontrolle verbessern."
-- Mood-Adhärenz-Risiko: Falls moodAdherenceRisk = true: "Deine Stimmung war in den letzten Tagen niedrig. Erfahrungsgemäß kann das die Einnahmetreue in den kommenden Tagen beeinflussen. Tipp: Lege die Medikamente abends schon bereit."`;
+const MEDCO_SECTION_DE = `METRIK — MEDIKAMENTEN-EINNAHMETREUE:
+- Der Snapshot trägt overall (medicationCount, averageCompliance7, averageCompliance30) und medications[] je Medikament mit name, dose, schedulesPerDay, compliance7, compliance30, streak, taken7/skipped7/missed7, dailySeries (graded) und latestDay.
+- Lies die Einnahmetreue als Prozentsatz erfüllter geplanter Dosen über die letzten 7 bzw. 30 Tage. Vergleiche compliance7 mit compliance30, um die jüngste Richtung gegen die eigene Baseline der Person zu sehen.
+- Seltene Kadenz: Bei niedriger schedulesPerDay oder seltener Einnahme (z.B. Wocheninjektion) ist compliance7 rauschanfällig — eine einzige verpasste Dosis verschiebt den Prozentwert stark. Stütze die Einschätzung dann auf compliance30 (den tragenden Wert) und behandle compliance7 nur als groben Hinweis.
+- Einordnung (zur Orientierung, nicht als Urteil): ≥ 90 % sehr verlässlich, 80-89 % gut, 70-79 % lückenhaft, < 70 % deutlich lückenhaft — die therapeutische Wirkung kann dann eingeschränkt sein.
+- Positiv rahmen: streak ist die längste ununterbrochene Serie — bei guter Treue ausdrücklich anerkennen. Bei mehreren Medikamenten das mit der niedrigsten Treue benennen.
+- Zusammenhänge zu Vitalwerten nur erwähnen, wenn ein r-Wert im Snapshot vorhanden und |r| > 0.4 ist — als Zusammenhang, nie als Ursache. Keine Wirkung erfinden, wenn die Daten fehlen.
+- Eine Botschaft: Schließe mit EINEM machbaren Schritt, der zur Lücke passt (z.B. Abenddosen werden häufiger vergessen — eine feste Routine oder ein Reminder zur kritischen Uhrzeit kann helfen). Keine Schuldzuweisung.`;
 
-const MEDCO_SECTION_EN = `DOMAIN — MEDICATION ADHERENCE:
-- Adherence rating:
-  * ≥ 90%: Excellent adherence
-  * 80-89%: Good adherence
-  * 70-79%: Moderate adherence — therapeutic effect possibly reduced
-  * < 70%: Insufficient adherence — likely subtherapeutic effect
-- Pattern analysis: Score morning vs. evening doses separately (evening doses are missed more often).
-- Streak tracking: Identify and highlight the longest uninterrupted intake streak.
-- Weekend effect: Compare weekend vs. weekday adherence.
-- Effectiveness correlation: Draw a direct link between adherence and vital-sign movement.
-  * Example: "In weeks with > 90% adherence the mean systolic BP was 5 mmHg lower."
-- Missed doses: Differentiate consequences (antihypertensive rebound vs. statins = less time-critical).
-- Motivational interviewing: Prefer positive framing, acknowledge progress.
-- Compare periods of high adherence (>90%) with the corresponding vitals. Be concrete: "In weeks with >90% adherence systolic BP was X mmHg lower."
-- Mention correlations only if the r-value is present in the snapshot and |r| > 0.4. If the field is missing, do not interpret or invent a correlation.
-- Use historicalComparison to quantify how adherence affects blood pressure and pulse, where data is available.
-- If mood data is available and the correlation |r| > 0.4: Check whether low adherence aligns with worse mood.
-- Chronotherapy note: If a BP medication exists AND compliance > 90% BUT BP is off target: "Discuss timing with your doctor — for some patients, evening dosing improves nocturnal BP control."
-- Mood-adherence risk: If moodAdherenceRisk = true: "Your mood has been low recently. Experience shows this can affect adherence over the next few days. Tip: prepare your medication the evening before."`;
+const MEDCO_SECTION_EN = `METRIC — MEDICATION ADHERENCE:
+- The snapshot carries overall (medicationCount, averageCompliance7, averageCompliance30) and medications[] per medication with name, dose, schedulesPerDay, compliance7, compliance30, streak, taken7/skipped7/missed7, dailySeries (graded) and latestDay.
+- Read adherence as the percentage of scheduled doses taken over the last 7 and 30 days. Compare compliance7 with compliance30 to see the recent direction against the person's own baseline.
+- Rare cadence: with a low schedulesPerDay or an infrequent schedule (e.g. a weekly injection), compliance7 is noise-prone — a single missed dose swings the percentage sharply. Lean the assessment on compliance30 (the load-bearing value) and treat compliance7 only as a rough pointer.
+- Placement (for orientation, not judgement): ≥ 90% very reliable, 80-89% good, 70-79% patchy, < 70% clearly patchy — therapeutic effect may then be reduced.
+- Frame positively: streak is the longest uninterrupted run — acknowledge a good streak explicitly. With several medications, name the one with the lowest adherence.
+- Mention links to vital signs only when an r-value is present in the snapshot and |r| > 0.4 — as an association, never a cause. Do not invent an effect when the data is absent.
+- One message: close with ONE doable step that fits the gap (e.g. evening doses are missed more often — a fixed routine or a reminder at the critical time can help). No blame.`;
 
 export function getMedicationComplianceSystemPrompt(locale: Locale): string {
   const section = locale === "en" ? MEDCO_SECTION_EN : MEDCO_SECTION_DE;
@@ -60,14 +38,12 @@ export function getMedicationComplianceUserPrompt(
       : "";
   if (locale === "en") {
     return `Date: ${todayKey} (Europe/Berlin)
-Analyse medication adherence with focus on patterns, effectiveness correlation and concrete suggestions for improvement.
-Use the correlation data and historical comparison to back up the link between adherence and vital signs.${ctxBlock}
+Write one short assessment of this person's medication adherence: name the recent rate, place it against their own baseline (compliance7 vs compliance30), and close with one doable, blame-free step. Judge confidence from the event count and recency.${ctxBlock}
 
 ${snapshotJson}`;
   }
   return `Datum: ${todayKey} (Europe/Berlin)
-Analysiere die Medikamenten-Einnahmetreue mit Fokus auf Muster, Wirksamkeitskorrelation und konkrete Verbesserungsvorschläge.
-Nutze die Korrelationsdaten und den historischen Vergleich um den Zusammenhang zwischen Adhärenz und Vitalwerten zu belegen.${ctxBlock}
+Schreibe eine kurze Einschätzung zur Einnahmetreue dieser Person: benenne die jüngste Rate, ordne sie gegen die eigene Baseline ein (compliance7 vs. compliance30) und schließe mit einem machbaren, wertfreien Schritt. Konfidenz aus Ereignisanzahl und Aktualität ableiten.${ctxBlock}
 
 ${snapshotJson}`;
 }

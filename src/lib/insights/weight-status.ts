@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/db";
-import { resolveProvider } from "@/lib/ai/provider";
 import {
   getWeightSystemPrompt,
   getWeightUserPrompt,
@@ -18,59 +17,35 @@ import {
   dayOffsetToBerlinDayKey,
   type DailyBucket,
 } from "@/lib/insights/bucket-series";
-import { stripChartTokens } from "@/lib/insights/chart-tokens";
 import {
-  withTimeout,
-  STATUS_PROVIDER_TIMEOUT_MS,
-} from "@/lib/insights/with-timeout";
-import { persistTimeoutStubAndReturn } from "@/lib/insights/persist-timeout-stub";
+  buildGradedSeriesFromPoints,
+  buildGradedSeriesWithRollups,
+  degradeStatusSnapshotToBudget,
+} from "@/lib/insights/graded-series";
+import {
+  type SupportedLocale,
+  normalizeLocale,
+  normalizeSummaryText,
+  parseSummaryFromContent,
+  persistStatusInsight,
+  round,
+  summarizeSeries,
+} from "@/lib/insights/status-shared";
+import { runStatusCompletion } from "@/lib/insights/status-provider";
+import {
+  readFreshStatusText,
+  resolveReadOnlyStatusMiss,
+} from "@/lib/insights/status-cache";
+import { returnTimeoutFallback } from "@/lib/insights/timeout-fallback";
 import { annotate } from "@/lib/logging/context";
 import { toBerlinDayKey } from "@/lib/tz/resolver";
 
-type SupportedLocale = "de" | "en";
-
-function round(value: number, digits = 1): number {
-  const factor = 10 ** digits;
-  return Math.round(value * factor) / factor;
-}
-
-function normalizeSummaryText(value: string): string {
-  return stripChartTokens(value).replace(/\s+/g, " ").trim();
-}
-
-function normalizeLocale(value: string | null | undefined): SupportedLocale {
-  return value === "en" ? "en" : "de";
-}
-
-function summarizeSeries(series: Array<{ value: number }>) {
-  if (series.length === 0) return null;
-  const first = series[0].value;
-  const last = series[series.length - 1].value;
-  // v1.4.33 — fold sum/min/max into a single walk. The previous
-  // `Math.min(...series.map(...))` / `Math.max(...series.map(...))`
-  // spread tripped V8's ~125 000-arg ceiling on the bound /api/analytics
-  // path; see `.planning/round-v1433-analytics-500-report.md` §"Carry-
-  // over". These helpers are fed bounded windows today so the crash
-  // never reached them, but the spread allocates a transient args array
-  // on every call — the fold is both stack-safe and cheaper.
-  let sum = 0;
-  let minVal = series[0].value;
-  let maxVal = series[0].value;
-  for (const entry of series) {
-    sum += entry.value;
-    if (entry.value < minVal) minVal = entry.value;
-    if (entry.value > maxVal) maxVal = entry.value;
-  }
-  return {
-    points: series.length,
-    start: round(first, 2),
-    end: round(last, 2),
-    delta: round(last - first, 2),
-    mean: round(sum / series.length, 2),
-    min: round(minVal, 2),
-    max: round(maxVal, 2),
-  };
-}
+/**
+ * Cap on the embedded correlation pair arrays. The Pearson coefficient
+ * is still computed over the full overlap; only the row-by-row pair
+ * list the prompt carries is trimmed to its most recent entries.
+ */
+const CORRELATION_PAIR_CAP = 30;
 
 /**
  * Pair two daily-bucket series on `dayOffset`. The synthesised `date`
@@ -109,55 +84,69 @@ export async function generateWeightStatusForUser(
   options?: {
     locale?: string | null;
     force?: boolean;
+    /**
+     * v1.8.3 — read-only mode for the navigation path. On a cache miss the
+     * generator does NOT run the SQL gather + blocking LLM inline; it
+     * enqueues an out-of-band generation and returns a `preparing` shape so
+     * the request never awaits the provider. The worker (and the nightly
+     * pre-generate cron) call with `readOnly: false` to actually generate.
+     */
+    readOnly?: boolean;
   },
 ): Promise<{
   hasProvider: boolean;
   text: string | null;
   cached: boolean;
   updatedAt: string | null;
+  preparing?: boolean;
 }> {
   const locale = normalizeLocale(options?.locale);
   const force = options?.force === true;
+  const readOnly = options?.readOnly === true;
   const cacheAction = `insights.weight-status.${locale}`;
   const todayKey = toBerlinDayKey(new Date());
 
-  const provider = await resolveProvider(userId);
-  if (provider.type === "none") {
+  // Serve today's real assessment when present. The shared reader
+  // rejects timeout stubs, so a single stall no longer pins the
+  // fallback for the day.
+  const cached = await readFreshStatusText({
+    userId,
+    cacheAction,
+    todayKey,
+    force,
+  });
+  if (cached) {
     return {
-      hasProvider: false,
-      text: getNoKeyWeightStatusText(locale),
+      hasProvider: true,
+      text: cached.text,
       cached: true,
-      updatedAt: null,
+      updatedAt: cached.updatedAt,
     };
   }
 
-  const latestCache = await prisma.auditLog.findFirst({
-    where: { userId, action: cacheAction },
-    orderBy: { createdAt: "desc" },
-    select: { createdAt: true, details: true },
-  });
-
-  if (!force && latestCache?.details) {
-    try {
-      const parsed = JSON.parse(latestCache.details) as {
-        dateKey?: string;
-        text?: string;
+  // v1.8.3 — read-only navigation path: never block on the provider.
+  // Enqueue generation out of band and return preparing / no-provider.
+  if (readOnly) {
+    const outcome = await resolveReadOnlyStatusMiss({
+      userId,
+      metric: "weight",
+      locale,
+    });
+    if (outcome === "no-provider") {
+      return {
+        hasProvider: false,
+        text: getNoKeyWeightStatusText(locale),
+        cached: true,
+        updatedAt: null,
       };
-      if (
-        parsed.dateKey === todayKey &&
-        typeof parsed.text === "string" &&
-        parsed.text.trim().length > 0
-      ) {
-        return {
-          hasProvider: true,
-          text: parsed.text,
-          cached: true,
-          updatedAt: latestCache.createdAt.toISOString(),
-        };
-      }
-    } catch {
-      // ignore invalid cache payload
     }
+    return {
+      hasProvider: true,
+      text: null,
+      cached: false,
+      updatedAt: null,
+      preparing: true,
+    };
   }
 
   // v1.4.28 FB-D2 — cap the snapshot input. BP captures three types
@@ -235,6 +224,28 @@ export async function generateWeightStatusForUser(
     moodSeries.daily.map((bucket) => ({ value: bucket.value })),
   );
   const moodMean = moodSummary?.mean ?? null;
+
+  // Compact graded series for the prompt. The `*Series.daily` buckets
+  // above stay for the correlation pairing + latest-day focus; only the
+  // graded shape is embedded so the full daily arrays never ship.
+  //
+  // Weight + the two BP context channels source their recent / weekly
+  // slices from a bounded raw read and their monthly / yearly tail from
+  // the MONTH / YEAR rollup tier (with a full-history in-memory fallback
+  // on a cold-tier coverage miss). Mood has no rollup tier, so it stays
+  // an in-memory fold.
+  const [weightGraded, sysGraded, diaGraded] = await Promise.all([
+    buildGradedSeriesWithRollups(userId, "WEIGHT", now),
+    buildGradedSeriesWithRollups(userId, "BLOOD_PRESSURE_SYS", now),
+    buildGradedSeriesWithRollups(userId, "BLOOD_PRESSURE_DIA", now),
+  ]);
+  const moodGraded = buildGradedSeriesFromPoints(
+    moodSeries.daily.map((b) => ({
+      measuredAt: new Date(dayOffsetToBerlinDayKey(now, b.dayOffset)),
+      value: b.value,
+    })),
+    now,
+  );
 
   const weightVsSystolicPairs = pairDailyBuckets(
     weightSeries.daily,
@@ -320,7 +331,7 @@ export async function generateWeightStatusForUser(
       summary: summarizeSeries(
         weightSeries.daily.map((bucket) => ({ value: bucket.value })),
       ),
-      series: weightSeries,
+      series: weightGraded,
       latestDayFocus: latestWeight
         ? {
             day: latestWeightDay,
@@ -339,19 +350,22 @@ export async function generateWeightStatusForUser(
         summary: summarizeSeries(
           sysSeries.daily.map((bucket) => ({ value: bucket.value })),
         ),
-        series: sysSeries,
+        series: sysGraded,
       },
       diastolic: {
         summary: summarizeSeries(
           diaSeries.daily.map((bucket) => ({ value: bucket.value })),
         ),
-        series: diaSeries,
+        series: diaGraded,
       },
-      pairedDaily: pairedSystolicDiastolic,
+      // Keep the correlation coefficients (computed over the full
+      // overlap) but cap the embedded pair arrays to the most recent
+      // paired days — the raw pair lists were a major payload driver.
+      pairedDaily: pairedSystolicDiastolic.slice(-CORRELATION_PAIR_CAP),
     },
     weightVsSystolic: {
       correlation: weightVsSystolicCorrelation,
-      pairs: weightVsSystolicPairs.map((entry) => ({
+      pairs: weightVsSystolicPairs.slice(-CORRELATION_PAIR_CAP).map((entry) => ({
         day: entry.dayKey,
         weight: round(entry.a, 2),
         systolic: round(entry.b, 2),
@@ -359,7 +373,7 @@ export async function generateWeightStatusForUser(
     },
     weightVsMeanBloodPressure: {
       correlation: weightVsMeanBpCorrelation,
-      pairs: weightVsMeanBpPairs.map((entry) => ({
+      pairs: weightVsMeanBpPairs.slice(-CORRELATION_PAIR_CAP).map((entry) => ({
         day: entry.dayKey,
         weight: round(entry.a, 2),
         meanBloodPressure: round(entry.b, 2),
@@ -371,7 +385,7 @@ export async function generateWeightStatusForUser(
             points: moodSeries.daily.length,
             mean: moodMean,
             latest: moodSeries.daily[0]?.value ?? null,
-            series: moodSeries,
+            series: moodGraded,
             moodVsWeightCorrelation: (() => {
               const moodVsWeightPairs = pairDailyBuckets(
                 moodSeries.daily,
@@ -384,11 +398,17 @@ export async function generateWeightStatusForUser(
         : null,
   };
 
+  const shed = degradeStatusSnapshotToBudget(
+    snapshot as unknown as Record<string, unknown>,
+  );
   const snapshotJson = JSON.stringify(snapshot, null, 2);
 
   annotate({
     action: { name: cacheAction },
-    meta: { payload_size_bytes: snapshotJson.length },
+    meta: {
+      payload_size_bytes: snapshotJson.length,
+      ...(shed.length > 0 ? { snapshot_shed: shed } : {}),
+    },
   });
 
   const previousContext = await getPreviousInsightContext(
@@ -402,84 +422,63 @@ export async function generateWeightStatusForUser(
     locale,
   );
 
-  // v1.4.28 FB-D2 — 20 s timeout race; fall back to the no-key text
-  // on stall so the InsightStatusCard renders deterministically.
-  const raced = await withTimeout(
-    () =>
-      provider.generateCompletion({
-        systemPrompt: getWeightSystemPrompt(locale),
-        userPrompt: getWeightUserPrompt(
-          snapshotJson,
-          todayKey,
-          locale,
-          previousContextBlock,
-        ),
-        temperature: 0.3,
-        maxTokens: 1000,
-      }),
-    STATUS_PROVIDER_TIMEOUT_MS,
-    null,
-  );
-
-  if (raced.timedOut || raced.value === null) {
-    // v1.4.37 — persist a sentinel row keyed to today so the next
-    // mount short-circuits at the cache lookup above instead of
-    // re-racing the same 20 s provider call on every cold visit.
-    // See `persistTimeoutStubAndReturn` for the full rationale.
-    return persistTimeoutStubAndReturn({
-      userId,
-      cacheAction,
+  // Run the provider chain bounded by the aligned 60 s budget. A
+  // timeout / error / empty content is a transient miss — serve the
+  // fallback for this render without persisting it, so the next mount
+  // re-attempts a real generation rather than sticking the fallback.
+  const outcome = await runStatusCompletion({
+    userId,
+    cacheAction,
+    systemPrompt: getWeightSystemPrompt(locale),
+    userPrompt: getWeightUserPrompt(
+      snapshotJson,
       todayKey,
       locale,
-      providerType: provider.type,
+      previousContextBlock,
+    ),
+    temperature: 0.3,
+    maxTokens: 1000,
+  });
+
+  if (outcome.kind === "none") {
+    return {
+      hasProvider: false,
+      text: getNoKeyWeightStatusText(locale),
+      cached: true,
+      updatedAt: null,
+    };
+  }
+  if (outcome.kind === "timeout" || outcome.kind === "error") {
+    return returnTimeoutFallback({
+      cacheAction,
+      reason: outcome.kind,
+      userId,
+      todayKey,
       stubText: getNoKeyWeightStatusText(locale),
     });
   }
 
-  const result = raced.value;
-  const content = result.content;
-  if (typeof content !== "string" || content.trim().length === 0) {
-    throw new Error("AI returned empty content for weight-status");
-  }
-
-  let summary = "";
-  try {
-    const parsed = JSON.parse(content) as { summary?: string };
-    if (typeof parsed.summary === "string") {
-      summary = parsed.summary;
-    } else {
-      summary = content;
-    }
-  } catch {
-    summary = content;
-  }
-
-  summary = normalizeSummaryText(summary);
+  const summary = normalizeSummaryText(parseSummaryFromContent(outcome.content));
   if (!summary) {
     throw new Error("Weight-status summary was empty after normalization");
   }
 
-  const created = await prisma.auditLog.create({
-    data: {
-      userId,
-      action: cacheAction,
-      details: JSON.stringify({
-        dateKey: todayKey,
-        locale,
-        text: summary,
-        providerType: provider.type,
-        model: result.model ?? "unknown",
-        tokensUsed: result.tokensUsed ?? null,
-      }),
-    },
-    select: { createdAt: true },
+  const updatedAt = await persistStatusInsight({
+    userId,
+    cacheAction,
+    todayKey,
+    locale,
+    text: summary,
+    providerType: outcome.providerType,
+    model: outcome.model,
+    tokensUsed: outcome.tokensUsed,
   });
 
   return {
     hasProvider: true,
     text: summary,
     cached: false,
-    updatedAt: created.createdAt.toISOString(),
+    updatedAt,
   };
 }
 

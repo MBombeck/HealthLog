@@ -233,6 +233,16 @@ export function proxy(request: NextRequest) {
     "Permissions-Policy",
     "camera=(), microphone=(), geolocation=()",
   );
+  // COOP isolates this BrowsingContextGroup from cross-origin popups,
+  // closing the Spectre-class side-channel surface a stray
+  // `window.opener` reference would otherwise carry. CORP narrows the
+  // page's resources to same-origin loaders, complementing the
+  // `frame-ancestors 'none'` CSP rule for non-document subresources.
+  // The legacy `X-Permitted-Cross-Domain-Policies` line shuts the
+  // Flash/PDF crossdomain.xml channel that some scanners still flag.
+  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
+  response.headers.set("X-Permitted-Cross-Domain-Policies", "none");
 
   // CSP — permissive in dev, strict in production. Third-party hosts in
   // `connect-src` are gated to the surfaces that actually need them so a
@@ -255,9 +265,15 @@ export function proxy(request: NextRequest) {
   const withingsConnectSrc = isWithingsRoute
     ? " https://wbsapi.withings.net"
     : "";
+  // v1.5.5 — Gravatar host removed from `img-src`. The /me payload
+  // used to return `gravatarUrl: https://www.gravatar.com/avatar/<sha256(email)>`,
+  // which leaked the email digest to Automattic on every authenticated
+  // page-load. Avatars now live on the User row and serve from
+  // same-origin `/api/user/avatar/{id}`, so `img-src 'self'` covers
+  // them.
   const csp = isDev
-    ? `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.gravatar.com; connect-src 'self'; font-src 'self';`
-    : `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.gravatar.com; connect-src 'self'${aiConnectSrc}${withingsConnectSrc}; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self'; report-uri ${cspReportEndpoint}; report-to csp-endpoint;`;
+    ? `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self';`
+    : `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'${aiConnectSrc}${withingsConnectSrc}; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self'; report-uri ${cspReportEndpoint}; report-to csp-endpoint;`;
   response.headers.set("Content-Security-Policy", csp);
 
   // Production-only headers. HSTS carries `preload` so the domain stays

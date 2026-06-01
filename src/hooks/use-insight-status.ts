@@ -23,7 +23,31 @@ export interface InsightStatusData {
   text: string | null;
   cached: boolean;
   updatedAt: string | null;
+  /**
+   * v1.8.3 — the route is read-only: a cache miss enqueues an out-of-band
+   * generation and returns `preparing: true` with `text: null`. The card
+   * shows a preparing state and the hook polls (bounded) until the worker
+   * warms the cache. Absent / false means the payload is terminal.
+   */
+  preparing?: boolean;
 }
+
+/**
+ * v1.8.3 — client-side ceiling on the status GET. The route is now
+ * read-only (sub-second cache read), so a slow response means the network
+ * itself is degraded, not the LLM. Mirror the advisor hook's 8 s
+ * `ADVISOR_TIMEOUT_MS`: abort and surface the empty / preparing state
+ * rather than letting a hung request pin the navigation. No user
+ * navigation may ever await an uncapped round-trip.
+ */
+const STATUS_TIMEOUT_MS = 8_000;
+
+/**
+ * Poll interval while a card is `preparing`. Bounded by `staleTime` so a
+ * settled (terminal) payload never re-fetches on a timer; only the
+ * preparing state keeps polling, and it stops as soon as text lands.
+ */
+const STATUS_POLL_MS = 4_000;
 
 /**
  * Metric slugs the sub-pages render. Each slug is paired with the
@@ -71,17 +95,37 @@ export function useInsightStatus(metric: InsightStatusMetric) {
   return useQuery({
     queryKey: QUERY_KEY_FACTORY[metric](locale),
     queryFn: async (): Promise<InsightStatusData> => {
-      const res = await fetch(`/api/insights/${metric}-status?locale=${locale}`);
-      if (!res.ok) throw new Error("Failed");
-      const json = (await res.json()) as { data: InsightStatusData };
-      return json.data;
+      // v1.8.3 — bound the fetch on the client. AbortController + 8 s
+      // timeout so a degraded network can't pin the navigation thread.
+      // The card surfaces its preparing / empty state on abort exactly as
+      // it does for a `preparing` payload, and the bounded poll retries.
+      const controller = new AbortController();
+      const timeoutHandle = setTimeout(
+        () => controller.abort(),
+        STATUS_TIMEOUT_MS,
+      );
+      try {
+        const res = await fetch(
+          `/api/insights/${metric}-status?locale=${locale}`,
+          { signal: controller.signal },
+        );
+        if (!res.ok) throw new Error("Failed");
+        const json = (await res.json()) as { data: InsightStatusData };
+        return json.data;
+      } finally {
+        clearTimeout(timeoutHandle);
+      }
     },
     enabled: isAuthenticated,
     staleTime: 60 * 1000,
-    // v1.4.28 FB-D2 — the status route now returns a deterministic
-    // cached-style envelope on provider timeout. Retrying that response
-    // re-fires the same expensive upstream call and the user perceives
-    // a longer hang. Drop retries to surface the fallback immediately.
+    // v1.4.28 FB-D2 — the status route returns a deterministic envelope on
+    // a miss/timeout. Retrying inline re-fires work and lengthens the
+    // perceived hang; the bounded `preparing` poll below covers the warm-up.
     retry: 0,
+    // v1.8.3 — poll only while the worker is preparing the assessment.
+    // Returns false (no timer) for any terminal payload so a settled card
+    // never re-fetches on an interval.
+    refetchInterval: (query) =>
+      query.state.data?.preparing ? STATUS_POLL_MS : false,
   });
 }

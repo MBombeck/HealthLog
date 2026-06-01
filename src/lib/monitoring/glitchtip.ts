@@ -1,3 +1,5 @@
+import { safeFetch } from "@/lib/safe-fetch";
+
 interface ParsedGlitchtipDsn {
   dsn: string;
   publicKey: string;
@@ -121,14 +123,20 @@ async function tryEnvelope(
   config: ParsedGlitchtipDsn,
   body: string,
 ): Promise<GlitchtipDeliveryResult> {
-  const response = await fetch(config.envelopeUrl, {
-    method: "POST",
-    headers: {
-      "content-type": "application/x-sentry-envelope",
+  const response = await safeFetch(
+    config.envelopeUrl,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/x-sentry-envelope",
+      },
+      body,
+      cache: "no-store",
     },
-    body,
-    cache: "no-store",
-  });
+    // Operator-configured GlitchTip host carrying the redacted wide-event
+    // payload — pin the connect-time IP against DNS rebinding.
+    { requirePublicHost: true },
+  );
 
   if (response.ok)
     return { ok: true, method: "envelope", status: response.status };
@@ -150,14 +158,19 @@ async function tryStoreQuery(
   target.searchParams.set("sentry_version", "7");
   target.searchParams.set("sentry_client", "healthlog/1.0");
 
-  const response = await fetch(target, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
+  const response = await safeFetch(
+    target,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      cache: "no-store",
     },
-    body: JSON.stringify(payload),
-    cache: "no-store",
-  });
+    // Operator-configured GlitchTip host — pin the connect-time IP.
+    { requirePublicHost: true },
+  );
 
   if (response.ok)
     return { ok: true, method: "store-query", status: response.status };
@@ -175,15 +188,20 @@ async function tryStoreHeader(
   payload: Record<string, unknown>,
 ): Promise<GlitchtipDeliveryResult> {
   const sentryAuth = `Sentry sentry_version=7, sentry_key=${config.publicKey}, sentry_client=healthlog/1.0`;
-  const response = await fetch(config.storeUrl, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-sentry-auth": sentryAuth,
+  const response = await safeFetch(
+    config.storeUrl,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-sentry-auth": sentryAuth,
+      },
+      body: JSON.stringify(payload),
+      cache: "no-store",
     },
-    body: JSON.stringify(payload),
-    cache: "no-store",
-  });
+    // Operator-configured GlitchTip host — pin the connect-time IP.
+    { requirePublicHost: true },
+  );
 
   if (response.ok)
     return { ok: true, method: "store-header", status: response.status };

@@ -9,6 +9,7 @@
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { getEvent } from "@/lib/logging/context";
+import { safeFetch } from "@/lib/safe-fetch";
 
 export interface FeedbackInput {
   category: string;
@@ -135,7 +136,7 @@ export async function publishFeedbackToGithub(
 
   const title = `[${categoryLabel}] ${safeSubject || `Feedback – ${dateStr}`}`;
 
-  const res = await fetch(
+  const res = await safeFetch(
     `https://api.github.com/repos/${config.repo}/issues`,
     {
       method: "POST",

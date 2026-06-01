@@ -39,6 +39,15 @@ import {
   dailyStatsExternalId,
   hkIdentifierForType,
 } from "./apple-health-mapping";
+import {
+  CONSOLIDATION_GRACE_CUTOFF_HOURS,
+  bucketRowsByDay,
+  runConsolidation,
+  type DayWriteOutcome,
+} from "./consolidation-base";
+
+/** Prefix marking an already-collapsed daily-stats row. */
+const DAILY_STATS_PREFIX = "stats:";
 
 /**
  * v1.4.38 — canonical cutoff for the nightly scheduled drain. Rows
@@ -50,9 +59,11 @@ import {
  * import the constant for visibility but deliberately pass `undefined`
  * by default so an explicit one-shot drain collapses every row the
  * operator points it at; pass the constant explicitly when mirroring
- * the nightly behaviour from an interactive shell.
+ * the nightly behaviour from an interactive shell. Sourced from the
+ * shared `CONSOLIDATION_GRACE_CUTOFF_HOURS` so the cumulative + mean
+ * drains track the same grace window.
  */
-export const DRAIN_CUMULATIVE_CUTOFF_HOURS = 36;
+export const DRAIN_CUMULATIVE_CUTOFF_HOURS = CONSOLIDATION_GRACE_CUTOFF_HOURS;
 
 /** Per-(user, type, day) action summary. */
 export interface DrainBucket {
@@ -228,6 +239,12 @@ export interface PerSampleRow {
   value: number;
   measuredAt: Date;
   externalId: string | null;
+  /**
+   * Optional — only the mean-consolidation pass selects `unit` so it can
+   * read the canonical unit straight off the day's rows rather than
+   * issuing a separate query. The cumulative drain leaves it unselected.
+   */
+  unit?: string;
 }
 
 export interface BucketedRows {
@@ -239,19 +256,11 @@ export function bucketRowsByUserDay(
   rows: readonly PerSampleRow[],
   tz: string,
 ): BucketedRows {
-  const byDay = new Map<string, PerSampleRow[]>();
-  for (const row of rows) {
-    // Skip rows already in the daily-stats shape — re-running the
-    // drain on a previously-collapsed bucket is a no-op.
-    if (row.externalId !== null && row.externalId.startsWith("stats:")) {
-      continue;
-    }
-    const key = dayKeyForUserTz(row.measuredAt, tz);
-    const slot = byDay.get(key) ?? [];
-    slot.push(row);
-    byDay.set(key, slot);
-  }
-  return { byDay };
+  // Skip rows already in the daily-stats shape — re-running the drain
+  // on a previously-collapsed bucket is a no-op. Delegates to the shared
+  // bucketing primitive; wrapped in `{ byDay }` for the established
+  // return shape.
+  return { byDay: bucketRowsByDay(rows, tz, DAILY_STATS_PREFIX) };
 }
 
 /**
@@ -275,175 +284,155 @@ export async function drainPerSampleCumulative(
   prismaClient: PrismaClient,
   options: DrainOptions = {},
 ): Promise<DrainSummary> {
-  const dryRun = options.dryRun ?? false;
   const log = options.log ?? ((line) => console.log(line));
-  // v1.4.37 W7c — when the scheduler passes a cutoff window we leave
-  // rows newer than the cutoff alone so the user's "today" view keeps
-  // updating in real time. Cutoff is computed once per invocation so
-  // every per-user-type scan uses the same boundary instant.
-  const cutoffAt =
-    typeof options.cutoffHours === "number" && options.cutoffHours > 0
-      ? new Date(Date.now() - options.cutoffHours * 60 * 60 * 1000)
-      : null;
-
-  const users = options.userId
-    ? await prismaClient.user.findMany({
-        where: { id: options.userId },
-        select: { id: true, timezone: true },
-      })
-    : await prismaClient.user.findMany({
-        select: { id: true, timezone: true },
-      });
 
   const summary: DrainSummary = {
-    dryRun,
+    dryRun: options.dryRun ?? false,
     buckets: [],
     totals: {
-      usersScanned: users.length,
+      usersScanned: 0,
       bucketsCollapsed: 0,
       perSampleRowsDeleted: 0,
       dailyRowsUpserted: 0,
     },
   };
 
-  for (const user of users) {
-    const tz = user.timezone && user.timezone.length > 0 ? user.timezone : "Europe/Berlin";
-    log(`[drain] user=${user.id} tz=${tz}${dryRun ? " (dry-run)" : ""}`);
+  // v1.4.38 — per-user counters that mirror the aggregate totals so the
+  // per-user COMPLETE log line carries useful numbers without re-walking
+  // the summary list. Snapshotted in `onUserStart`, diffed in
+  // `onUserComplete`.
+  let beforeBucketsCollapsed = 0;
+  let beforePerSampleDeleted = 0;
+  let beforeDailyUpserted = 0;
 
-    // v1.4.38 — per-user counters that mirror the existing aggregate
-    // totals. Lets the per-user COMPLETE log line carry useful
-    // numbers without re-walking the summary list later.
-    const beforeBucketsCollapsed = summary.totals.bucketsCollapsed;
-    const beforePerSampleDeleted = summary.totals.perSampleRowsDeleted;
-    const beforeDailyUpserted = summary.totals.dailyRowsUpserted;
+  const { usersScanned } = await runConsolidation<MeasurementType>({
+    prismaClient,
+    options,
+    types: CUMULATIVE_HK_TYPES,
+    hkIdentifierForType,
+    dailyStatsExternalId,
+    statsPrefix: DAILY_STATS_PREFIX,
+    reduce: sumBucketValues,
+    // v1.4.37 W7c — exclude rows inside the grace window so the nightly
+    // scheduled drain never collapses today's still-in-flight watch
+    // syncs. No `deletedAt` filter and no NOT-stats predicate here: the
+    // cumulative drain historically scans every row and relies on the
+    // in-memory bucketer to skip already-collapsed `stats:` rows.
+    buildScanWhere: ({ userId, type, cutoffAt }) => ({
+      userId,
+      source: "APPLE_HEALTH",
+      type,
+      ...(cutoffAt ? { measuredAt: { lt: cutoffAt } } : {}),
+    }),
+    writeDay: async ({
+      prismaClient: pc,
+      userId,
+      type,
+      externalId,
+      canonicalTimestamp,
+      reducedValue,
+      dayRows,
+      sourceRowIds,
+    }): Promise<DayWriteOutcome> => {
+      let removed = 0;
+      await pc.$transaction(async (tx) => {
+        // Upsert the daily-aggregated row first, then drop the
+        // per-sample rows. The unique index
+        // (userId, type, source, externalId) makes the upsert
+        // idempotent across re-runs.
+        await tx.measurement.upsert({
+          where: {
+            userId_type_source_externalId: {
+              userId,
+              type,
+              source: "APPLE_HEALTH",
+              externalId,
+            },
+          },
+          create: {
+            userId,
+            type,
+            value: reducedValue,
+            // pick the canonical unit from an existing row; the
+            // per-sample rows all carry the same unit on a given type.
+            // dayRows always has ≥1 row (empty buckets are skipped).
+            unit:
+              dayRows[0]?.value !== undefined
+                ? await resolveCanonicalUnit(tx, userId, type)
+                : "count",
+            source: "APPLE_HEALTH",
+            measuredAt: canonicalTimestamp,
+            externalId,
+          },
+          update: {
+            value: reducedValue,
+            measuredAt: canonicalTimestamp,
+          },
+        });
 
-    for (const type of CUMULATIVE_HK_TYPES) {
-      const hkIdentifier = hkIdentifierForType(type);
-      if (!hkIdentifier) continue;
+        // Delete the per-sample rows that contributed to the sum.
+        // Using `id IN (...)` is bounded by the per-bucket cap (the
+        // largest cumulative bucket in real data is a ~1 440-row
+        // stepCount day on a phone-only user).
+        const del = await tx.measurement.deleteMany({
+          where: { id: { in: sourceRowIds } },
+        });
+        removed = del.count;
+      });
+      return { kind: "written", sourceRowsRemoved: removed };
+    },
+    recordBucket: ({
+      userId,
+      type,
+      dateKey,
+      dayRows,
+      reducedValue,
+      canonicalTimestamp,
+      externalId,
+      outcome,
+    }) => {
+      summary.buckets.push({
+        userId,
+        type,
+        dateKey,
+        perSampleCount: dayRows.length,
+        sumValue: reducedValue,
+        canonicalTimestamp: canonicalTimestamp.toISOString(),
+        externalId,
+      });
+      summary.totals.bucketsCollapsed += 1;
+      // On a real run, count the rows the transaction actually removed;
+      // on dry-run, count the rows that would have been removed.
+      summary.totals.perSampleRowsDeleted +=
+        outcome?.kind === "written" ? outcome.sourceRowsRemoved : dayRows.length;
+      summary.totals.dailyRowsUpserted += 1;
+    },
+    onUserStart: ({ userId, tz, dryRun }) => {
+      log(`[drain] user=${userId} tz=${tz}${dryRun ? " (dry-run)" : ""}`);
+      beforeBucketsCollapsed = summary.totals.bucketsCollapsed;
+      beforePerSampleDeleted = summary.totals.perSampleRowsDeleted;
+      beforeDailyUpserted = summary.totals.dailyRowsUpserted;
+    },
+    onUserComplete: ({ userId, dryRun }) => {
+      // v1.4.38 — per-user COMPLETE log line, mirrors the START line so
+      // an operator scanning the worker log can pair start/finish for a
+      // user without scrolling every per-type bucket.
+      const userBucketsCollapsed =
+        summary.totals.bucketsCollapsed - beforeBucketsCollapsed;
+      const userPerSampleDeleted =
+        summary.totals.perSampleRowsDeleted - beforePerSampleDeleted;
+      const userDailyUpserted =
+        summary.totals.dailyRowsUpserted - beforeDailyUpserted;
+      log(
+        `[drain] user=${userId} complete bucketsCollapsed=${userBucketsCollapsed} perSampleRowsDeleted=${userPerSampleDeleted} dailyRowsUpserted=${userDailyUpserted}${dryRun ? " (dry-run)" : ""}`,
+      );
+    },
+  });
 
-      const perSampleRows = (await prismaClient.measurement.findMany({
-        where: {
-          userId: user.id,
-          source: "APPLE_HEALTH",
-          type,
-          // v1.4.37 W7c — exclude rows that fall inside the grace
-          // window so the nightly scheduled drain never collapses
-          // today's still-in-flight watch syncs.
-          ...(cutoffAt ? { measuredAt: { lt: cutoffAt } } : {}),
-        },
-        select: {
-          id: true,
-          type: true,
-          value: true,
-          measuredAt: true,
-          externalId: true,
-        },
-        orderBy: { measuredAt: "asc" },
-      })) as PerSampleRow[];
-
-      if (perSampleRows.length === 0) continue;
-
-      const { byDay } = bucketRowsByUserDay(perSampleRows, tz);
-
-      for (const [dateKey, dayRows] of byDay) {
-        if (dayRows.length === 0) continue;
-
-        // Already-collapsed buckets are caught above (rows with
-        // externalId starting "stats:" never enter the bucket map).
-        // A single per-sample row left over is still drained — that
-        // way the externalId converges to the canonical shape even
-        // when iOS happened to emit exactly one sample on a quiet
-        // day.
-
-        const sumValue = sumBucketValues(dayRows);
-        const canonicalTs = canonicalDailyTimestamp(dateKey, tz);
-        const externalId = dailyStatsExternalId(hkIdentifier, dateKey);
-
-        const bucket: DrainBucket = {
-          userId: user.id,
-          type,
-          dateKey,
-          perSampleCount: dayRows.length,
-          sumValue,
-          canonicalTimestamp: canonicalTs.toISOString(),
-          externalId,
-        };
-        summary.buckets.push(bucket);
-        summary.totals.bucketsCollapsed += 1;
-
-        if (!dryRun) {
-          await prismaClient.$transaction(async (tx) => {
-            // Upsert the daily-aggregated row first, then drop the
-            // per-sample rows. The unique index
-            // (userId, type, source, externalId) makes the upsert
-            // idempotent across re-runs.
-            await tx.measurement.upsert({
-              where: {
-                userId_type_source_externalId: {
-                  userId: user.id,
-                  type,
-                  source: "APPLE_HEALTH",
-                  externalId,
-                },
-              },
-              create: {
-                userId: user.id,
-                type,
-                value: sumValue,
-                unit: dayRows[0]?.value !== undefined
-                  ? // pick the canonical unit from the existing row by
-                    // looking it up via the mapping table; the per-sample
-                    // rows all carry the same unit on a given type, so
-                    // any of them would do.
-                    await resolveCanonicalUnit(tx, user.id, type)
-                  : "count",
-                source: "APPLE_HEALTH",
-                measuredAt: canonicalTs,
-                externalId,
-              },
-              update: {
-                value: sumValue,
-                measuredAt: canonicalTs,
-              },
-            });
-
-            // Delete the per-sample rows that contributed to the sum.
-            // Using `id IN (...)` is bounded by the per-bucket cap
-            // (the largest cumulative bucket in real data is a
-            // ~1 440-row stepCount day on a phone-only user).
-            const ids = dayRows.map((r) => r.id);
-            const del = await tx.measurement.deleteMany({
-              where: { id: { in: ids } },
-            });
-            summary.totals.perSampleRowsDeleted += del.count;
-            summary.totals.dailyRowsUpserted += 1;
-          });
-        } else {
-          summary.totals.perSampleRowsDeleted += dayRows.length;
-          summary.totals.dailyRowsUpserted += 1;
-        }
-      }
-    }
-
-    // v1.4.38 — per-user COMPLETE log line. Mirrors the START line on
-    // line 311 so an operator scanning the worker log can pair
-    // "drain started for user X" with "drain finished for user X"
-    // without scrolling through every per-type bucket. Counts are
-    // computed as the delta against the snapshot taken before the
-    // per-type loop started.
-    const userBucketsCollapsed =
-      summary.totals.bucketsCollapsed - beforeBucketsCollapsed;
-    const userPerSampleDeleted =
-      summary.totals.perSampleRowsDeleted - beforePerSampleDeleted;
-    const userDailyUpserted =
-      summary.totals.dailyRowsUpserted - beforeDailyUpserted;
-    log(
-      `[drain] user=${user.id} complete bucketsCollapsed=${userBucketsCollapsed} perSampleRowsDeleted=${userPerSampleDeleted} dailyRowsUpserted=${userDailyUpserted}${dryRun ? " (dry-run)" : ""}`,
-    );
-  }
+  summary.totals.usersScanned = usersScanned;
 
   log(
-    `[drain] done — usersScanned=${summary.totals.usersScanned} bucketsCollapsed=${summary.totals.bucketsCollapsed} perSampleRowsDeleted=${summary.totals.perSampleRowsDeleted} dailyRowsUpserted=${summary.totals.dailyRowsUpserted}${dryRun ? " (dry-run)" : ""}`,
+    `[drain] done — usersScanned=${summary.totals.usersScanned} bucketsCollapsed=${summary.totals.bucketsCollapsed} perSampleRowsDeleted=${summary.totals.perSampleRowsDeleted} dailyRowsUpserted=${summary.totals.dailyRowsUpserted}${options.dryRun ? " (dry-run)" : ""}`,
   );
   return summary;
 }

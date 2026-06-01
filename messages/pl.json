@@ -8,6 +8,7 @@
     "create": "Utwórz",
     "close": "Zamknij",
     "loading": "Ładowanie…...",
+    "loadFailed": "Could not load",
     "error": "Błąd",
     "saved": "Zapisano",
     "no": "Nie",
@@ -147,7 +148,17 @@
       "sleep": "Czas snu",
       "empty": "Brak danych dla wybranego okresu. Raport zachowa stronę tytułową.",
       "unavailableHint": "Brak danych w tym okresie"
-    }
+    },
+    "insurer": "Ubezpieczyciel zdrowotny",
+    "insuranceNumber": "Nr ubezpieczonego",
+    "summaryTitle": "Podsumowanie kliniczne",
+    "summaryReadings": "Zarejestrowano w ciągu {days} dni: {count} pomiarów w {params} parametrach.",
+    "summaryTrend": "{label}: ostatnio {latest} {arrow}",
+    "summaryAdherence": "Przestrzeganie zaleceń lekowych: {rate}% (średnia ważona).",
+    "chartsTitle": "Wykresy trendów",
+    "aiSummaryTitle": "Podsumowanie AI — niezweryfikowane klinicznie",
+    "aiSummaryDisclaimer": "Ta sekcja została wygenerowana automatycznie przez model AI i nie jest zweryfikowana klinicznie. Nie zastępuje oceny lekarskiej.",
+    "packageReadme": "Dokumentacja zdrowotna HealthLog\n\nTen pakiet zawiera:\n- report.pdf: raport zdrowotny dla lekarza.\n- bundle.json: te same dane jako dokument HL7 FHIR R4 (Bundle), zgodny z ePA.\n\nWygenerowano w HealthLog."
   },
   "errorBoundary": {
     "title": "Coś poszło nie tak",
@@ -294,6 +305,32 @@
         "title": "Brak treningów",
         "cta": "Otwórz aplikację Apple Zdrowie na iPhonie, aby zsynchronizować treningi."
       }
+    },
+    "metric": {
+      "title": {
+        "weight": "Waga",
+        "bloodPressure": "Ciśnienie krwi",
+        "pulse": "Tętno",
+        "bodyFat": "Tkanka tłuszczowa",
+        "glucose": "Glikemia",
+        "sleep": "Sen",
+        "steps": "Kroki",
+        "totalBodyWater": "Całkowita woda w organizmie",
+        "boneMass": "Masa kostna",
+        "oxygenSaturation": "Saturacja tlenem"
+      },
+      "unit": {
+        "weight": "kg",
+        "bloodPressure": "mmHg",
+        "pulse": "bpm",
+        "bodyFat": "%",
+        "glucose": "mg/dL",
+        "sleep": "h",
+        "steps": "kroki",
+        "totalBodyWater": "kg",
+        "boneMass": "kg",
+        "oxygenSaturation": "%"
+      }
     }
   },
   "measurements": {
@@ -337,6 +374,14 @@
     "typeTimeInDaylight": "Czas w świetle dziennym",
     "typeWalkingSteadiness": "Stabilność chodu",
     "typeAudioExposureEvent": "Zdarzenie głośnego słuchania",
+    "typeRespiratoryRate": "Częstość oddechów",
+    "typeBodyMassIndex": "Wskaźnik masy ciała",
+    "typeLeanBodyMass": "Masa beztłuszczowa",
+    "typeWalkingHeartRateAverage": "Tętno przy chodzeniu (śr.)",
+    "typeWalkingAsymmetry": "Asymetria chodu",
+    "typeWalkingDoubleSupport": "Podwójna podpora chodu",
+    "typeWalkingStepLength": "Długość kroku",
+    "typeWalkingSpeed": "Prędkość chodu",
     "glucoseContext": "Kontekst",
     "glucoseContextFasting": "Na czczo (≥8 godz. bez jedzenia)",
     "glucoseContextPostprandial": "Po posiłku (2 godz. po jedzeniu)",
@@ -379,7 +424,8 @@
     "nextPage": "Następna strona",
     "dailyTotalCaption": "({count} pomiarów)",
     "expandDay": "Pokaż pomiary z tego dnia",
-    "collapseDay": "Ukryj pomiary z tego dnia"
+    "collapseDay": "Ukryj pomiary z tego dnia",
+    "loadError": "Nie udało się załadować pomiarów."
   },
   "mood": {
     "title": "Nastrój",
@@ -438,6 +484,7 @@
     "scheduleDaily": "Codziennie",
     "inactive": "Wstrzymany",
     "intakeHistory": "Historia przyjęć",
+    "openDetailPage": "Open medication detail page",
     "deleteConfirm": "Usunąć lek?",
     "compliance": "Przestrzeganie zaleceń",
     "importIntakes": "Import intakes",
@@ -476,6 +523,8 @@
     "categoryDigestive": "Trawienne",
     "categorySkin": "Pielęgnacja skóry",
     "categorySleepAid": "Na sen",
+    "categoryDiabetes": "Diabetes",
+    "categoryAntibiotic": "Antibiotic",
     "categoryOther": "Inne",
     "daysSun": "Nd",
     "daysMon": "Pn",
@@ -593,44 +642,285 @@
       }
     },
     "scheduling": {
-      "section": "Harmonogram",
-      "loading": "Wczytywanie danych harmonogramu",
-      "loadFailed": "Nie udało się wczytać danych harmonogramu.",
-      "editCta": "Edytuj",
-      "reminders": {
-        "on": "Przypomnienia włączone",
-        "off": "Przypomnienia wyłączone"
-      },
-      "cadenceViz": {
-        "title": "Ostatnie 30 dni",
-        "ariaTimeline": "Oś czasu dawek z ostatnich 30 dni",
-        "emptyState": "Brak zaplanowanych dawek w tym oknie.",
-        "nextDoseLabel": "Następna dawka:",
-        "noNextDose": "Brak zaplanowanej nadchodzącej dawki.",
-        "status": {
-          "taken": "Przyjęta",
-          "skipped": "Pominięta",
-          "missed": "Niepodjęta",
-          "upcoming": "Nadchodząca"
-        }
-      },
-      "compliance": {
-        "title": "Adherencja",
-        "noData": "Brak danych",
-        "adherenceRate": "Adherencja",
-        "currentStreak": "Bieżąca seria",
-        "longestStreak": "Najdłuższa seria",
-        "missedLast30": "Pominięte (30 d.)",
-        "unit": {
-          "days": "d.",
-          "doses": "dawek"
+      "naturalLanguage": {
+        "title": "Opisz lek",
+        "description": "Opisz lek własnymi słowami, a my wstępnie wypełnimy formularz za Ciebie.",
+        "placeholder": "np. Mounjaro 5 mg co tydzień w środę rano od najbliższego poniedziałku",
+        "submit": "Wyodrębnij",
+        "submitBusy": "Wyodrębnianie…",
+        "cancel": "Anuluj",
+        "examples": {
+          "label": "Wypróbuj jeden z tych przykładów",
+          "weekly": "Mounjaro 5 mg co tydzień w środę rano",
+          "daily": "Ibuprofen 200 mg codziennie, 3 razy dziennie",
+          "rolling": "Metotreksat 7,5 mg co 7 dni od ostatniego wstrzyknięcia"
         },
-        "chips": {
-          "adherenceTooltip": "Udział dawek przyjętych w ostatnich 30 dniach (pominięte dawki są wyłączone z mianownika).",
-          "streakTooltip": "Kolejne dni do dziś, w których każda zaplanowana dawka została przyjęta lub świadomie pominięta.",
-          "longestTooltip": "Najdłuższa nieprzerwana seria w 30-dniowym oknie.",
-          "missedTooltip": "Liczba dawek pominiętych w ostatnich 30 dniach."
+        "error": {
+          "empty": "Najpierw wpisz opis.",
+          "tooLong": "Utrzymuj opis poniżej 2000 znaków.",
+          "rateLimit": "Zbyt wiele żądań — poczekaj chwilę i spróbuj ponownie.",
+          "noProvider": "Brak skonfigurowanego dostawcy AI — skonfiguruj go w Ustawieniach.",
+          "budget": "Osiągnięto dzienny limit AI — spróbuj jutro.",
+          "network": "Nie udało się połączyć z dostawcą AI — spróbuj ponownie."
         }
+      },
+      "cadence": {
+        "section": "Cadence",
+        "label": "How often",
+        "kind": {
+          "daily": "Every day",
+          "weekdays": "Certain days of the week",
+          "everyNWeeks": "Every N weeks on certain days",
+          "monthly": "Monthly on a specific day",
+          "everyNMonths": "Every N months on a specific day",
+          "yearly": "Once a year",
+          "rolling": "Every N days from when I last took it (flexible)",
+          "rollingExplainer": "Counts from your last logged intake — pauses if you skip a dose.",
+          "oneShot": "One-time dose"
+        },
+        "weekdays": {
+          "label": "Days of the week",
+          "short": {
+            "mo": "Mo",
+            "tu": "Tu",
+            "we": "We",
+            "th": "Th",
+            "fr": "Fr",
+            "sa": "Sa",
+            "su": "Su"
+          },
+          "long": {
+            "mo": "Monday",
+            "tu": "Tuesday",
+            "we": "Wednesday",
+            "th": "Thursday",
+            "fr": "Friday",
+            "sa": "Saturday",
+            "su": "Sunday"
+          }
+        },
+        "intervalWeeks": {
+          "suffix": "weeks"
+        },
+        "dayOfMonth": {
+          "label": "Day"
+        },
+        "intervalMonths": {
+          "suffix": "months",
+          "dayOnLabel": "on day"
+        },
+        "yearly": {
+          "date": {
+            "label": "Date"
+          }
+        },
+        "rollingDays": {
+          "suffix": "days"
+        }
+      },
+      "timesOfDay": {
+        "section": "Times of day",
+        "label": "Times of day",
+        "empty": {
+          "cta": "Add the first time."
+        },
+        "add": "Add time",
+        "remove": "Remove",
+        "presets": {
+          "morning": "Morning",
+          "noon": "Noon",
+          "evening": "Evening",
+          "night": "Night"
+        },
+        "max": {
+          "reached": "Maximum reached — remove a time before adding another."
+        }
+      },
+      "courseWindow": {
+        "section": "Course window",
+        "startsOn": {
+          "label": "Starts on"
+        },
+        "endsOn": {
+          "label": "Ends on"
+        },
+        "noEndDate": "No end date",
+        "oneShotCaption": "(one-time dose)",
+        "invalidRange": "End date must be on or after the start date."
+      }
+    },
+    "wizard": {
+      "header": {
+        "stepOf": "Step {current} of {total}",
+        "createTitle": "New medication",
+        "editTitle": "Edit {name}"
+      },
+      "nav": {
+        "back": "Back",
+        "next": "Next",
+        "save": "Save",
+        "saveEdit": "Save changes"
+      },
+      "nl": {
+        "button": "Describe"
+      },
+      "steps": {
+        "step1": {
+          "title": "What's the medication called?",
+          "subline": "Exactly as it appears on the box.",
+          "label": "Name",
+          "placeholder": "e.g. Ramipril"
+        },
+        "step2": {
+          "title": "What kind of medication is it?",
+          "subline": "We use this for the right templates and analytics."
+        },
+        "step3": {
+          "title": "What's the dose?",
+          "subline": "A tablet, a puff, a drop — depending on the form.",
+          "amountLabel": "Amount",
+          "amountPlaceholder": "e.g. 5",
+          "unitLabel": "Unit",
+          "unit": {
+            "mg": "mg",
+            "ml": "ml",
+            "iu": "IU",
+            "mcg": "µg",
+            "g": "g",
+            "tablets": "tablet(s)",
+            "capsules": "capsule(s)",
+            "drops": "drops",
+            "puffs": "puff",
+            "sprays": "spray",
+            "pieces": "pieces",
+            "other": "other"
+          },
+          "deliveryFormLabel": "Droga podania",
+          "deliveryForm": {
+            "ORAL": "Doustnie",
+            "INJECTION": "Iniekcja",
+            "OTHER": "Inna"
+          },
+          "dosesPerUnitLabel": "Dawki na jednostkę",
+          "dosesPerUnitPlaceholder": "np. 4",
+          "dosesPerUnitHint": "Dawki na wstrzykiwacz / fiolkę — zostaw puste, aby nie śledzić zapasów.",
+          "injectionSiteToggle": "Rotacja miejsc wstrzyknięcia",
+          "injectionSiteHint": "Opcjonalny przewodnik rotacji. Miejsce każdej dawki zapisywane jest przy rejestrowaniu przyjęcia."
+        },
+        "step4": {
+          "title": "Over what period are you taking it?",
+          "subline": "A start date is enough for today. You can add an end date later."
+        },
+        "step5": {
+          "title": "How often do you take it?",
+          "subline": "Pick the cadence — the details follow on the next step."
+        },
+        "step6": {
+          "title": "What does that look like in detail?",
+          "subline": "Set weekdays, intervals, or the day of the month.",
+          "intervalWeeks": {
+            "label": "Every",
+            "suffix": "weeks"
+          },
+          "dayOfMonth": {
+            "label": "On",
+            "suffix": "day of the month"
+          },
+          "rollingDays": {
+            "label": "Every",
+            "suffix": "days from the last intake"
+          }
+        },
+        "step7": {
+          "title": "When do you take it?",
+          "subline": "One or more times of day — reminders follow this list.",
+          "presetsLabel": "Time-of-day presets",
+          "presets": {
+            "morning": "Morning",
+            "noon": "Noon",
+            "evening": "Evening",
+            "night": "Night"
+          }
+        },
+        "step8": {
+          "title": "All done — should HealthLog remind you?",
+          "subline": "Review everything below before you save.",
+          "remindersLabel": "Reminders on",
+          "remindersDescription": "Push, Telegram or ntfy — based on your settings.",
+          "multiScheduleNote": "This medication has multiple schedules. The detailed editor returns in a later release."
+        }
+      },
+      "classRow": {
+        "bloodPressure": "Blood pressure",
+        "diabetes": "Diabetes",
+        "hormone": "Hormones",
+        "glp1": "GLP-1 injection",
+        "painRelief": "Pain",
+        "allergy": "Allergy",
+        "vitamin": "Vitamins",
+        "supplement": "Supplement",
+        "antibiotic": "Antibiotic",
+        "other": "Other"
+      },
+      "cadence": {
+        "daily": {
+          "label": "Daily",
+          "description": "Every day at the same time."
+        },
+        "weekdays": {
+          "label": "Specific weekdays",
+          "description": "E.g. Monday, Wednesday, Friday."
+        },
+        "everyNWeeks": {
+          "label": "Every few weeks",
+          "description": "E.g. every 2 weeks on Thursdays (GLP-1, biologics)."
+        },
+        "monthly": {
+          "label": "Monthly",
+          "description": "On a fixed day each month (e.g. always the 1st)."
+        },
+        "rolling": {
+          "label": "Flexible from last dose",
+          "description": "Leave the next dose open. When you tap 'taken', the counter starts again from that moment."
+        },
+        "oneShot": {
+          "label": "Single dose",
+          "description": "One administration, e.g. a vaccine or an antibiotic course."
+        }
+      },
+      "summary": {
+        "title": "Summary",
+        "cadence": {
+          "daily": "Every day",
+          "weekdays": "On selected days of the week",
+          "biweekly": "Every two weeks",
+          "monthly": "Monthly",
+          "quarterly": "Every three months",
+          "yearly": "Once a year",
+          "rolling": "Every {n} days from your last intake",
+          "oneShot": "A single dose",
+          "everyNWeeks": "Every {n} weeks",
+          "everyNMonths": "Every {n} months"
+        },
+        "weekdaysDetail": ", on {days}",
+        "dayOfMonthDetail": ", on day {day}.",
+        "times": "at {times}",
+        "startsOn": "Starts: {date}",
+        "endsOn": "Ends: {date}",
+        "noEndDate": "No end date"
+      },
+      "compose": {
+        "scheduleIndex": "Schedule {n} of {total}",
+        "list": {
+          "add": "Add another schedule",
+          "edit": "Edit",
+          "remove": "Remove",
+          "removeDisabled": "At least one schedule is required.",
+          "empty": "No schedule yet."
+        }
+      },
+      "errors": {
+        "submitFailed": "Could not save the medication — please retry."
       }
     },
     "titration": {
@@ -795,6 +1085,182 @@
         "gatedCta": "Otwórz tryb Badawczy w Ustawieniach",
         "unknownDrug": "{name} nie znajduje się w katalogu GLP-1 zatwierdzonym przez EMA, więc HealthLog nie może wyrysować krzywej farmakokinetyki populacyjnej."
       }
+    },
+    "detail": {
+      "status": {
+        "active": "Active",
+        "paused": "Paused",
+        "ended": "Ended"
+      },
+      "today": {
+        "groupLabel": "Today's dose",
+        "taken": "Taken",
+        "skipped": "Skipped",
+        "toastTaken": "Today's dose logged",
+        "toastSkipped": "Today's dose skipped",
+        "recordedTaken": "Taken today at {time}",
+        "recordedSkipped": "Skipped today at {time}",
+        "recordedOneShot": "One-shot dose taken at {time}",
+        "noneScheduled": "No dose scheduled for today.",
+        "pausedHint": "Paused — no reminder today.",
+        "error": "Could not log the dose."
+      },
+      "cadence": {
+        "oneShotOn": "One-time dose on {date}.",
+        "oneShotPending": "One-time dose pending."
+      },
+      "intake": {
+        "title": "Intake history",
+        "importButton": "Import",
+        "rowActions": {
+          "openMenu": "Open row actions",
+          "edit": "Edit",
+          "delete": "Delete"
+        },
+        "selection": {
+          "rowToggleLabel": "Select row"
+        },
+        "bulkDelete": {
+          "selectionCount": "{count} entries selected",
+          "deleteButton": "Delete selection",
+          "cancelButton": "Cancel",
+          "confirmTitle": "Delete the selected entries?",
+          "confirmBody": "{count} entries will be removed permanently. The medication itself stays.",
+          "confirmAction": "Delete",
+          "toast": "Selection deleted",
+          "failed": "Could not delete the selection."
+        },
+        "edit": {
+          "dialogTitle": "Edit intake",
+          "takenAtLabel": "Taken at",
+          "skippedLabel": "Skipped",
+          "noteLabel": "Note",
+          "save": "Save",
+          "cancel": "Cancel",
+          "savedToast": "Intake updated",
+          "failed": "Could not update the intake."
+        },
+        "deleteRow": {
+          "confirmTitle": "Delete this intake?",
+          "confirmBody": "The entry is removed permanently.",
+          "confirmAction": "Delete",
+          "toast": "Intake deleted",
+          "failed": "Could not delete the intake."
+        }
+      },
+      "notifications": {
+        "title": "Notifications",
+        "switchLabel": "Send a reminder when this dose is due",
+        "helperOn": "Reminders are on.",
+        "helperOff": "Reminders are off.",
+        "enabledToast": "Reminders on",
+        "disabledToast": "Reminders off",
+        "toggleFailed": "Could not change the reminder setting.",
+        "clientManagedChip": "Your iPhone manages reminders for this medication."
+      },
+      "settings": {
+        "title": "Settings",
+        "phases": {
+          "openButton": "Configure phases",
+          "requiresCourseWindow": "Phases are available once a course window is set."
+        },
+        "grace": {
+          "label": "Reminder window — applies to your primary schedule",
+          "primaryScheduleNote": "Multi-schedule medications keep their other schedules' default window.",
+          "unit": "minutes",
+          "saved": "Reminder window saved",
+          "failed": "Could not save the reminder window."
+        }
+      },
+      "zone": {
+        "title": "Manage & danger zone",
+        "pause": {
+          "title": "Pause",
+          "helper": "Pause reminders until you turn them back on. History stays intact.",
+          "pausedToast": "Reminders paused",
+          "resumedToast": "Reminders resumed",
+          "failed": "Could not change the paused state."
+        },
+        "end": {
+          "title": "End medication",
+          "helper": "Stop reminders and mark the medication as ended. History stays visible.",
+          "button": "End",
+          "dialogTitle": "End {name} — stop reminders, history stays visible",
+          "dialogBody": "No more reminders. Old entries remain in the timeline.",
+          "toast": "Medication ended",
+          "failed": "Could not end the medication."
+        },
+        "purge": {
+          "title": "Delete history",
+          "helper": "{count} intake events are stored for this medication.",
+          "button": "Delete history",
+          "dialogTitle": "Really delete the history?",
+          "dialogBody": "The {count} intake events will be removed permanently. The medication itself stays.",
+          "toast": "History deleted",
+          "failed": "Could not delete the history."
+        },
+        "delete": {
+          "title": "Delete medication",
+          "helper": "Removes the medication and every related record.",
+          "button": "Delete",
+          "dialogTitle": "Delete {name}?",
+          "dialogBody": "The medication, its schedules, intake history, API tokens, phase config and reminders will be removed permanently.",
+          "toast": "Medication deleted",
+          "failed": "Could not delete the medication."
+        }
+      },
+      "phases": {
+        "modeLabel": "{phase} mode",
+        "saveFailed": "Could not save the reminder phases."
+      },
+      "api": {
+        "caption": "Endpoint for \"{name}\"",
+        "copyUrl": "Copy URL",
+        "urlCopied": "URL copied",
+        "mintToken": "Mint token",
+        "mintAnotherToken": "Mint another token",
+        "mintFailed": "Could not mint a token.",
+        "copyFailed": "Could not copy.",
+        "tokenCopied": "Token copied",
+        "copyToken": "Copy token",
+        "mintedHint": "Copy this token now — it is shown only once."
+      },
+      "edit": {
+        "planOption": "Edytuj plan",
+        "advancedOption": "Ustawienia zaawansowane"
+      },
+      "advanced": {
+        "title": "Ustawienia zaawansowane",
+        "group": {
+          "data": "Dane",
+          "reminders": "Przypomnienia",
+          "lifecycle": "Cykl życia",
+          "danger": "Strefa zagrożenia"
+        },
+        "dataPortability": {
+          "import": {
+            "title": "Importuj przyjęcia",
+            "helper": "Wczytaj wcześniejsze przyjęcia z pliku JSON lub wklejonego JSON.",
+            "button": "Importuj JSON"
+          },
+          "export": {
+            "title": "Eksportuj lek",
+            "helper": "Pobierz ten lek jako plik CSV.",
+            "includeIntake": "Dołącz historię przyjęć",
+            "button": "Eksportuj CSV"
+          }
+        }
+      },
+      "header": {
+        "historyLabel": "Zobacz historię przyjęć",
+        "advancedLabel": "Ustawienia zaawansowane"
+      },
+      "history": {
+        "back": "Powrót do leku",
+        "subtitle": "Pełna historia przyjęć",
+        "plannedSuffix": "zaplanowane",
+        "drugLevelDisclosure": "Pokaż szacowaną krzywą stężenia leku"
+      }
     }
   },
   "charts": {
@@ -910,6 +1376,7 @@
   },
   "insights": {
     "noAnalysisYet": "Brak analizy.",
+    "assessmentPreparing": "Przygotowywanie oceny…",
     "emptyTitle": "Jeszcze za mało danych",
     "emptyDescription": "Insights pojawią się, gdy zarejestrujesz kilka pomiarów. Zacznij od wagi lub ciśnienia.",
     "emptyAddMeasurement": "Zarejestruj pomiar",
@@ -1112,7 +1579,33 @@
         "vo2_max": "VO₂ max",
         "body_temp": "Temperatura ciała",
         "medications": "Leki",
-        "anthropometrics": "Profil (wzrost, wiek, płeć)"
+        "anthropometrics": "Profil (wzrost, wiek, płeć)",
+        "walking_hr": "Tętno podczas chodzenia",
+        "respiratory_rate": "Częstość oddechów",
+        "spo2": "Saturacja krwi",
+        "pulse_wave_velocity": "Prędkość fali tętna",
+        "vascular_age": "Wiek naczyniowy",
+        "body_fat": "Tkanka tłuszczowa",
+        "fat_mass": "Masa tłuszczowa",
+        "fat_free_mass": "Masa beztłuszczowa",
+        "muscle_mass": "Masa mięśniowa",
+        "lean_body_mass": "Beztłuszczowa masa ciała",
+        "bone_mass": "Masa kostna",
+        "total_body_water": "Woda w organizmie",
+        "bmi": "BMI",
+        "visceral_fat": "Tłuszcz trzewny",
+        "glucose": "Glukoza",
+        "walking_steadiness": "Stabilność chodu",
+        "walking_asymmetry": "Asymetria chodu",
+        "walking_double_support": "Czas podwójnego podparcia",
+        "walking_step_length": "Długość kroku",
+        "walking_speed": "Prędkość chodu",
+        "audio_env": "Dźwięk otoczenia",
+        "audio_headphone": "Dźwięk słuchawek",
+        "audio_event": "Zdarzenia głośnego dźwięku",
+        "daylight": "Czas w świetle dziennym",
+        "skin_temp": "Temperatura skóry",
+        "workouts": "Treningi"
       },
       "window": {
         "last7days": "Ostatnie 7 dni",
@@ -1150,7 +1643,53 @@
       "providerRateLimitTitle": "Dostawca z ograniczeniem",
       "providerRateLimitBody": "Dostawca jest tymczasowo przeciążony; reset za ~5 min.",
       "settingsContextLabel": "Wysyłaj kontekst",
-      "settingsContextHint": "Opcjonalne bloki, na których coach może się opierać. Wyłączenie pominie blok w każdej odpowiedzi."
+      "settingsContextHint": "Opcjonalne bloki, na których coach może się opierać. Wyłączenie pominie blok w każdej odpowiedzi.",
+      "cluster": {
+        "cardio": {
+          "label": "Sercowo-naczyniowe",
+          "hint": "Ciśnienie · tętno · HRV · tętno spoczynkowe i marszowe"
+        },
+        "body": {
+          "label": "Skład ciała",
+          "hint": "Waga · tłuszcz · mięśnie · BMI"
+        },
+        "activity": {
+          "label": "Aktywność",
+          "hint": "Kroki · energia · dystans · VO₂ max"
+        },
+        "workouts": {
+          "label": "Treningi",
+          "hint": "Biegi · przejażdżki · sesje"
+        },
+        "sleep": {
+          "label": "Sen",
+          "hint": "Czas trwania · fazy"
+        },
+        "mood": {
+          "label": "Nastrój",
+          "hint": "Codzienne wpisy nastroju"
+        },
+        "glucose": {
+          "label": "Glukoza",
+          "hint": "Pomiary na czczo i poposiłkowe"
+        },
+        "medication": {
+          "label": "Leki",
+          "hint": "Przestrzeganie · kontekst GLP-1"
+        },
+        "mobility": {
+          "label": "Mobilność i chód",
+          "hint": "Stabilność · asymetria · chód"
+        },
+        "environment": {
+          "label": "Środowisko",
+          "hint": "Hałas · światło · temp. skóry"
+        }
+      },
+      "settingsClustersLabel": "Dane widziane przez Coacha",
+      "settingsClustersHint": "Wybierz, które grupy danych Coach może czytać. Więcej danych to bogatsze odpowiedzi i większy prompt.",
+      "settingsClusterNoData": "Brak danych",
+      "sourcesMemberCount": "{count} wskaźników"
     },
     "relativeJustNow": "przed chwilą",
     "relativeMinutesAgoOne": "{count} minutę temu",
@@ -1177,6 +1716,30 @@
       "vitalsParent": {
         "label": "Witalne",
         "header": "Parametry witalne"
+      },
+      "bodyParent": {
+        "label": "Ciało",
+        "header": "Skład ciała"
+      },
+      "activityParent": {
+        "label": "Aktywność",
+        "header": "Aktywność i mobilność"
+      },
+      "cardiovascularParent": {
+        "label": "Sercowo-naczyniowe",
+        "header": "Markery sercowo-naczyniowe"
+      },
+      "hearingParent": {
+        "label": "Słuch",
+        "header": "Słuch i ekspozycja na dźwięk"
+      },
+      "environmentParent": {
+        "label": "Środowisko",
+        "header": "Środowisko"
+      },
+      "metabolicParent": {
+        "label": "Metaboliczne",
+        "header": "Metaboliczne"
       }
     },
     "hrv": {
@@ -1238,7 +1801,90 @@
       "medikamenteEmptyDescription": "Insights przestrzegania wymagają przynajmniej jednego zarejestrowanego leku.",
       "medikamenteEmptyAction": "Otwórz leki",
       "therapyTimelineDescription": "Chronologiczny protokół terapii GLP-1 — zmiany dawki, iniekcje, stan, działania niepożądane.",
-      "bmiDescription": "BMI obliczone z twojej wagi i wzrostu, z oceną."
+      "bmiDescription": "BMI obliczone z twojej wagi i wzrostu, z oceną.",
+      "target": {
+        "range": "Cel: {min}–{max} {unit}",
+        "bpRange": "Cel: {sysMin}–{sysMax} / {diaMin}–{diaMax} {unit}",
+        "inTargetShare": "{pct}% zarejestrowanych dni w zakresie celu",
+        "adjustLink": "Dostosuj zakres docelowy"
+      },
+      "explainer": {
+        "trigger": "Czym jest {title}?",
+        "bloodPressureTitle": "Ciśnienie krwi",
+        "bloodPressureBody": "Ciśnienie krwi to siła, z jaką krew napiera na ściany tętnic, zapisywana jako skurczowe do rozkurczowego (szczyt podczas uderzenia serca do wartości spoczynkowej między uderzeniami). Stale wysokie wartości z czasem obciążają serce i naczynia.",
+        "pulseTitle": "Tętno",
+        "pulseBody": "Tętno to liczba uderzeń serca na minutę. Pojedynczy pomiar odzwierciedla to, co robiłeś w danej chwili — w spoczynku wynosi zwykle 60–100 uderzeń na minutę i naturalnie rośnie przy ruchu, stresie lub kofeinie.",
+        "weightTitle": "Waga",
+        "weightBody": "Masa ciała to jeden z najprostszych sygnałów długoterminowego bilansu energetycznego i ogólnego zdrowia. Trend na przestrzeni tygodni liczy się znacznie bardziej niż pojedynczy odczyt, który zmienia się wraz z nawodnieniem, jedzeniem i porą dnia.",
+        "bmiTitle": "Wskaźnik masy ciała (BMI)",
+        "bmiBody": "BMI to waga podzielona przez wzrost do kwadratu — jedna liczba przypisująca Cię do szerokiej kategorii wagowej. To badanie przesiewowe dla populacji, a nie diagnoza, i nie odróżnia mięśni od tłuszczu.",
+        "sleepTitle": "Sen",
+        "sleepBody": "Długość snu to czas, który faktycznie przespałeś w nocy, podzielony na fazy lekką, głęboką i REM. Większość dorosłych potrzebuje około siedmiu do dziewięciu godzin; stała ilość i jakość wspierają regenerację, nastrój i metabolizm.",
+        "moodTitle": "Nastrój",
+        "moodBody": "Śledzenie nastroju rejestruje Twoje samopoczucie w czasie na prostej skali. Regularne zapisywanie ujawnia wzorce — jak sen, aktywność czy leki łączą się z samopoczuciem — których pojedynczy dzień nigdy nie pokaże.",
+        "medicationsTitle": "Przestrzeganie zaleceń lekowych",
+        "medicationsBody": "Przestrzeganie zaleceń to rzetelność przyjmowania leków zgodnie z zaleceniami, pokazana tu jako odsetek oczekiwanych dawek, które zarejestrowałeś. Regularne przyjmowanie często decyduje o tym, czy terapia działa zgodnie z zamierzeniem.",
+        "restingHrTitle": "Tętno spoczynkowe",
+        "restingHrBody": "Tętno spoczynkowe to częstość uderzeń serca w pełnym spoczynku, zwykle mierzona w nocy. Niższe tętno zwykle wskazuje na lepszą wydolność krążeniową, a rosnący trend może być wczesnym sygnałem stresu lub choroby.",
+        "hrvTitle": "Zmienność rytmu serca (HRV)",
+        "hrvBody": "HRV to drobna zmienność czasu między kolejnymi uderzeniami serca. Wyższa zmienność zwykle odzwierciedla dobrze zregenerowany, elastyczny układ nerwowy, a utrzymujący się spadek może sygnalizować zmęczenie, stres lub niewystarczającą regenerację.",
+        "oxygenSaturationTitle": "Saturacja tlenem (SpO₂)",
+        "oxygenSaturationBody": "SpO₂ to odsetek czerwonych krwinek przenoszących tlen. Wartości 95–100% są normalne w spoczynku; wartości utrzymujące się poniżej 90% wymagają uwagi, choć krótkie nocne spadki są częste.",
+        "bodyTemperatureTitle": "Temperatura ciała",
+        "bodyTemperatureBody": "Temperatura ciała odzwierciedla stan cieplny rdzenia, zwykle około 37 °C z niewielkimi dobowymi wahaniami. Utrzymujący się wzrost może wskazywać na infekcję, podczas gdy nocne pomiary na nadgarstku śledzą głównie zmiany względne, a nie wartość kliniczną.",
+        "activeEnergyTitle": "Energia aktywna",
+        "activeEnergyBody": "Energia aktywna to kalorie spalane przez ruch, ponad podstawowy wydatek w spoczynku. To bezpośrednia miara tego, jak aktywny fizycznie był Twój dzień.",
+        "workoutsTitle": "Treningi",
+        "workoutsBody": "Treningi to ustrukturyzowane sesje ćwiczeń rejestrowane przez Twoje urządzenia, wraz z typem, czasem trwania i energią. Ich śledzenie pokazuje, jak regularny trening kumuluje się przez tygodnie i jak wiąże się z innymi sygnałami zdrowotnymi.",
+        "respiratoryRateTitle": "Częstość oddechów",
+        "respiratoryRateBody": "Częstość oddechów to liczba wdechów na minutę. W spoczynku większość dorosłych oddycha około dwunastu do dwudziestu razy na minutę; utrzymujący się wzrost może towarzyszyć chorobie, wysiłkowi lub stresowi.",
+        "bodyWaterTitle": "Całkowita woda w organizmie",
+        "bodyWaterBody": "Całkowita woda w organizmie to udział płynów w masie ciała, wewnątrz i wokół komórek. Zmienia się wraz z nawodnieniem, posiłkami i aktywnością, więc trend w ciągu tygodni mówi więcej niż pojedynczy pomiar.",
+        "boneMassTitle": "Masa kostna",
+        "boneMassBody": "Masa kostna to szacowana waga minerałów w szkielecie. Pomiary z wagi są przybliżone, ale stabilny lub rosnący trend sprzyja długotrwałej wytrzymałości kości.",
+        "fatFreeMassTitle": "Masa beztłuszczowa",
+        "fatFreeMassBody": "Masa beztłuszczowa to wszystko w ciele, co nie jest tłuszczem — mięśnie, kości, narządy i woda. Utrzymanie lub jej budowanie przy spadku wagi zwykle wskazuje na zdrowszy skład ciała.",
+        "fatMassTitle": "Masa tłuszczowa",
+        "fatMassBody": "Masa tłuszczowa to łączna waga tłuszczu w ciele. Pewna ilość tłuszczu jest niezbędna dla hormonów i magazynowania energii, ale jego nadmiar — zwłaszcza w okolicy brzucha — zwiększa długoterminowe ryzyko zdrowotne.",
+        "muscleMassTitle": "Masa mięśniowa",
+        "muscleMassBody": "Masa mięśniowa to szacowana waga mięśni w ciele. Więcej mięśni wspiera siłę, metabolizm i sprawność, a ich utrzymanie z wiekiem zwykle wymaga aktywnego wysiłku.",
+        "visceralFatTitle": "Tłuszcz trzewny",
+        "visceralFatBody": "Tłuszcz trzewny to tłuszcz gromadzony głęboko w jamie brzusznej wokół narządów. W odróżnieniu od tłuszczu podskórnego jego wysoki poziom jest ściśle powiązany z chorobami serca i cukrzycą typu 2, więc im niżej, tym lepiej.",
+        "leanBodyMassTitle": "Beztłuszczowa masa ciała",
+        "leanBodyMassBody": "Beztłuszczowa masa ciała to całkowita waga pomniejszona o tłuszcz — mięśnie, kości, narządy i woda razem. Śledzenie jej obok wagi pokazuje, czy zmiany wynikają z mięśni, czy z tłuszczu.",
+        "flightsClimbedTitle": "Pokonane piętra",
+        "flightsClimbedBody": "Pokonane piętra liczą kondygnacje, które pokonujesz w górę każdego dnia, gdzie jedno piętro to około trzech metrów wzniesienia. To prosty wskaźnik codziennej aktywności i wysiłku nóg.",
+        "walkingDistanceTitle": "Dystans marszu i biegu",
+        "walkingDistanceBody": "Dystans marszu i biegu to droga, jaką pokonujesz pieszo każdego dnia. Uzupełnia liczbę kroków, pokazując, jak daleko się poruszałeś, a nie tylko jak często stawiałeś kroki.",
+        "walkingSteadinessTitle": "Stabilność chodu",
+        "walkingSteadinessBody": "Stabilność chodu szacuje, jak stabilny i zrównoważony jest twój sposób chodzenia, w skali od dobrej do niskiej. Niski poziom wskazuje na większe ryzyko upadku i warto omówić go z lekarzem.",
+        "walkingHeartRateTitle": "Tętno podczas chodzenia",
+        "walkingHeartRateBody": "Tętno podczas chodzenia to średni puls w trakcie równego marszu. Niższa wartość w czasie często odzwierciedla poprawę wydolności krążeniowej przy tym samym wysiłku.",
+        "walkingAsymmetryTitle": "Asymetria chodu",
+        "walkingAsymmetryBody": "Asymetria chodu to odsetek czasu, w którym kroki są nierówne między lewą a prawą nogą. Wyższy procent może wskazywać na ból, kontuzję lub problem z chodem wart sprawdzenia.",
+        "doubleSupportTimeTitle": "Czas podwójnego podparcia",
+        "doubleSupportTimeBody": "Czas podwójnego podparcia to udział każdego cyklu chodu, w którym obie stopy dotykają ziemi jednocześnie. Wyższy procent zwykle oznacza ostrożniejszy, mniej stabilny chód.",
+        "stepLengthTitle": "Długość kroku",
+        "stepLengthBody": "Długość kroku to średnia odległość od jednego postawienia stopy do następnego. Krótszy krok w czasie może odzwierciedlać zmęczenie, ostrożność lub zmianę sprawności ruchowej.",
+        "walkingSpeedTitle": "Prędkość chodu",
+        "walkingSpeedBody": "Prędkość chodu to tempo poruszania się po płaskim terenie. To dobrze zbadany wskaźnik ogólnego zdrowia i sprawności, a stałe lub rosnące tempo to dobry znak.",
+        "pulseWaveVelocityTitle": "Prędkość fali tętna",
+        "pulseWaveVelocityBody": "Prędkość fali tętna mierzy, jak szybko fala ciśnienia z każdego uderzenia serca przemieszcza się przez tętnice. Szybsza fala wskazuje na sztywniejsze tętnice, co wiąże się z wyższym ryzykiem sercowo-naczyniowym.",
+        "vascularAgeTitle": "Wiek naczyniowy",
+        "vascularAgeBody": "Wiek naczyniowy szacuje, jak stare zachowują się twoje tętnice w porównaniu z rzeczywistym wiekiem, na podstawie sztywności tętnic. Wiek naczyniowy niższy od rzeczywistego sugeruje zdrowsze naczynia krwionośne.",
+        "environmentalAudioTitle": "Poziom dźwięku otoczenia",
+        "environmentalAudioBody": "Poziom dźwięku otoczenia śledzi głośność otoczenia w decybelach. Długotrwała ekspozycja powyżej około 70 dB może z czasem uszkodzić słuch, więc niższe średnie dzienne są bezpieczniejsze.",
+        "headphoneAudioTitle": "Poziom dźwięku w słuchawkach",
+        "headphoneAudioBody": "Poziom dźwięku w słuchawkach śledzi w decybelach, jak głośno słuchasz przez słuchawki. Ściszanie głośności i robienie przerw chroni słuch w dłuższej perspektywie.",
+        "audioEventsTitle": "Zdarzenia głośnego dźwięku",
+        "audioEventsBody": "Zdarzenia głośnego dźwięku oznaczają momenty, gdy hałas wokół ciebie osiągnął poziom mogący przy wystarczającej ekspozycji uszkodzić słuch. Częste zdarzenia to sygnał, by poszukać cichszego otoczenia lub ochrony słuchu.",
+        "daylightTitle": "Czas w świetle dziennym",
+        "daylightBody": "Czas w świetle dziennym to ilość czasu spędzanego w świetle na zewnątrz każdego dnia. Regularne światło dzienne wspiera zdrowy rytm snu i czuwania oraz nastrój, a czas na świeżym powietrzu wiąże się ze zdrowiem oczu.",
+        "bloodGlucoseTitle": "Poziom glukozy we krwi",
+        "bloodGlucoseBody": "Poziom glukozy we krwi to ilość cukru we krwi, głównego źródła energii organizmu. Rośnie po jedzeniu i ustala się między posiłkami; wartości utrzymujące się wysoko mogą sygnalizować cukrzycę lub stan przedcukrzycowy.",
+        "skinTemperatureTitle": "Temperatura skóry",
+        "skinTemperatureBody": "Temperatura skóry to tutaj niewielka nocna zmiana temperatury nadgarstka względem twojej własnej wartości bazowej, a nie bezwzględny pomiar gorączki. Zmiany mogą odzwierciedlać sen, otoczenie, chorobę lub fazę cyklu menstruacyjnego."
+      }
     },
     "sleep": {
       "title": "Sen",
@@ -1379,7 +2025,247 @@
         "mixedCardio": "Cardio mieszane",
         "other": "Inne"
       }
-    }
+    },
+    "bloodGlucose": {
+      "title": "Poziom glukozy",
+      "description": "Twoje odczyty glukozy w czasie, w mg/dL.",
+      "chartTitle": "Poziom glukozy",
+      "emptyState": {
+        "title": "Brak danych o glukozie",
+        "description": "Odczyty glukozy pojawią się tutaj po zapisaniu jednego lub synchronizacji urządzenia."
+      }
+    },
+    "navBloodGlucose": "Glukoza",
+    "totalBodyWater": {
+      "title": "Całkowita woda w organizmie",
+      "description": "Twoja całkowita woda w organizmie w czasie, w kilogramach.",
+      "chartTitle": "Całkowita woda w organizmie",
+      "emptyState": {
+        "title": "Brak danych o wodzie",
+        "description": "Odczyty wody pojawią się tutaj po synchronizacji wagi analitycznej."
+      }
+    },
+    "navTotalBodyWater": "Woda w organizmie",
+    "boneMass": {
+      "title": "Masa kostna",
+      "description": "Twoja masa kostna w czasie, w kilogramach.",
+      "chartTitle": "Masa kostna",
+      "emptyState": {
+        "title": "Brak danych o masie kostnej",
+        "description": "Odczyty masy kostnej pojawią się tutaj po synchronizacji wagi analitycznej."
+      }
+    },
+    "navBoneMass": "Masa kostna",
+    "flightsClimbed": {
+      "title": "Pokonane piętra",
+      "description": "Kondygnacje schodów pokonane każdego dnia.",
+      "chartTitle": "Pokonane piętra dziennie",
+      "emptyState": {
+        "title": "Brak danych o piętrach",
+        "description": "Sumy pięter pojawią się tutaj po synchronizacji dnia przez Apple Health."
+      }
+    },
+    "navFlightsClimbed": "Piętra",
+    "walkingRunningDistance": {
+      "title": "Dystans marsz + bieg",
+      "description": "Dystans marszu i biegu pokonany każdego dnia, w kilometrach.",
+      "chartTitle": "Dystans dziennie",
+      "emptyState": {
+        "title": "Brak danych o dystansie",
+        "description": "Dzienny dystans pojawi się tutaj po synchronizacji dnia przez Apple Health."
+      }
+    },
+    "navWalkingRunningDistance": "Dystans",
+    "fatFreeMass": {
+      "title": "Masa beztłuszczowa",
+      "description": "Twoja masa beztłuszczowa w czasie, w kilogramach.",
+      "chartTitle": "Masa beztłuszczowa",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji wagi analitycznej."
+      }
+    },
+    "navFatFreeMass": "Masa beztłuszczowa",
+    "fatMass": {
+      "title": "Masa tłuszczowa",
+      "description": "Twoja masa tłuszczowa w czasie, w kilogramach.",
+      "chartTitle": "Masa tłuszczowa",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji wagi analitycznej."
+      }
+    },
+    "navFatMass": "Masa tłuszczowa",
+    "muscleMass": {
+      "title": "Masa mięśniowa",
+      "description": "Twoja masa mięśniowa w czasie, w kilogramach.",
+      "chartTitle": "Masa mięśniowa",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji wagi analitycznej."
+      }
+    },
+    "navMuscleMass": "Masa mięśniowa",
+    "skinTemperature": {
+      "title": "Temperatura skóry",
+      "description": "Temperatura skóry nadgarstka w czasie, w stopniach Celsjusza.",
+      "chartTitle": "Temperatura skóry",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji nocnej temperatury przez urządzenie."
+      }
+    },
+    "navSkinTemperature": "Temp. skóry",
+    "pulseWaveVelocity": {
+      "title": "Prędkość fali tętna",
+      "description": "Prędkość fali tętna tętniczego w czasie, w m/s — wyższe wartości sugerują sztywniejsze tętnice.",
+      "chartTitle": "Prędkość fali tętna",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji zgodnego urządzenia Withings."
+      }
+    },
+    "navPulseWaveVelocity": "Prędkość fali tętna",
+    "vascularAge": {
+      "title": "Wiek naczyniowy",
+      "description": "Twój szacowany wiek naczyniowy w czasie, w latach.",
+      "chartTitle": "Wiek naczyniowy",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Szacunki pojawią się tutaj po synchronizacji zgodnego urządzenia Withings."
+      }
+    },
+    "navVascularAge": "Wiek naczyniowy",
+    "visceralFat": {
+      "title": "Tłuszcz trzewny",
+      "description": "Twój wskaźnik tłuszczu trzewnego w czasie.",
+      "chartTitle": "Tłuszcz trzewny",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Wskaźniki pojawią się tutaj po synchronizacji zgodnej wagi analitycznej."
+      }
+    },
+    "navVisceralFat": "Tłuszcz trzewny",
+    "audioExposureEnv": {
+      "title": "Hałas otoczenia",
+      "description": "Twoja średnia dzienna ekspozycja na dźwięk otoczenia, w dBA.",
+      "chartTitle": "Ekspozycja na dźwięk otoczenia",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Poziomy dźwięku pojawią się tutaj po synchronizacji Apple Health."
+      }
+    },
+    "navAudioExposureEnv": "Hałas otoczenia",
+    "audioExposureHeadphone": {
+      "title": "Dźwięk słuchawek",
+      "description": "Twoja średnia dzienna ekspozycja na dźwięk słuchawek, w dBA.",
+      "chartTitle": "Ekspozycja słuchawek",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Poziomy pojawią się tutaj po synchronizacji Apple Health."
+      }
+    },
+    "navAudioExposureHeadphone": "Dźwięk słuchawek",
+    "timeInDaylight": {
+      "title": "Czas w świetle dziennym",
+      "description": "Minuty spędzone w świetle dziennym każdego dnia.",
+      "chartTitle": "Światło dzienne dziennie",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Sumy pojawią się tutaj po synchronizacji dnia przez Apple Health."
+      }
+    },
+    "navTimeInDaylight": "Światło dzienne",
+    "walkingSteadiness": {
+      "title": "Stabilność chodu",
+      "description": "Twoja stabilność chodu w czasie, w procentach.",
+      "chartTitle": "Stabilność chodu",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji Apple Health."
+      }
+    },
+    "navWalkingSteadiness": "Stabilność chodu",
+    "audioExposureEvent": {
+      "title": "Głośne zdarzenia dźwiękowe",
+      "description": "Dni ze zdarzeniem ekspozycji na głośny hałas.",
+      "chartTitle": "Zdarzenia hałasu dziennie",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Zdarzenia pojawią się tutaj po synchronizacji Apple Health."
+      }
+    },
+    "navAudioExposureEvent": "Zdarzenia hałasu",
+    "respiratoryRate": {
+      "title": "Częstość oddechów",
+      "description": "Twoja częstość oddechów w czasie, w oddechach na minutę.",
+      "chartTitle": "Częstość oddechów",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji oddechu snu lub treningu przez Apple Health."
+      }
+    },
+    "navRespiratoryRate": "Częstość oddechów",
+    "leanBodyMass": {
+      "title": "Beztłuszczowa masa ciała",
+      "description": "Twoja beztłuszczowa masa ciała w czasie, w kilogramach.",
+      "chartTitle": "Beztłuszczowa masa ciała",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji wagi analitycznej."
+      }
+    },
+    "navLeanBodyMass": "Beztłuszczowa masa ciała",
+    "walkingHeartRateAverage": {
+      "title": "Tętno podczas chodu",
+      "description": "Twoje średnie tętno podczas chodzenia, w ud./min.",
+      "chartTitle": "Średnie tętno podczas chodu",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji Apple Health."
+      }
+    },
+    "navWalkingHeartRateAverage": "Tętno podczas chodu",
+    "walkingAsymmetry": {
+      "title": "Asymetria chodu",
+      "description": "Twoja asymetria chodu w czasie, w procentach.",
+      "chartTitle": "Asymetria chodu",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji Apple Health."
+      }
+    },
+    "navWalkingAsymmetry": "Asymetria chodu",
+    "walkingDoubleSupport": {
+      "title": "Czas podwójnego podparcia",
+      "description": "Odsetek każdego kroku z obiema stopami na ziemi.",
+      "chartTitle": "Czas podwójnego podparcia",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji Apple Health."
+      }
+    },
+    "navWalkingDoubleSupport": "Podwójne podparcie",
+    "walkingStepLength": {
+      "title": "Długość kroku",
+      "description": "Twoja średnia długość kroku w czasie, w metrach.",
+      "chartTitle": "Długość kroku",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji Apple Health."
+      }
+    },
+    "navWalkingStepLength": "Długość kroku",
+    "walkingSpeed": {
+      "title": "Prędkość chodu",
+      "description": "Twoja średnia prędkość chodu w czasie, w km/h.",
+      "chartTitle": "Prędkość chodu (km/h)",
+      "emptyState": {
+        "title": "Brak danych",
+        "description": "Odczyty pojawią się tutaj po synchronizacji Apple Health."
+      }
+    },
+    "navWalkingSpeed": "Prędkość chodu"
   },
   "thresholds": {
     "defaultLabel": "Domyślne",
@@ -1513,6 +2399,27 @@
       "title": "Witaj ponownie",
       "body": "Wstępne kroki masz już za sobą. Aby coś zmienić, otwórz ustawienia — wszystko, co skonfigurowałeś, da się tam edytować.",
       "cta": "Otwórz pulpit"
+    },
+    "welcome": {
+      "title": "Witaj w HealthLog",
+      "carouselLabel": "Karuzela powitalna",
+      "slideOf": "Slajd {current} z {total}",
+      "prevSlide": "Poprzedni slajd",
+      "nextSlide": "Następny slajd",
+      "gotoSlide": "Przejdź do slajdu {index}",
+      "cta": "Zaczynamy",
+      "slide1": {
+        "title": "Śledź każdy sygnał",
+        "body": "Waga, ciśnienie, glukoza, sen, nastrój — wszystko w jednym dzienniku, który należy do Ciebie."
+      },
+      "slide2": {
+        "title": "Połącz swoje źródła",
+        "body": "Synchronizuj z Apple Health i Withings lub dodawaj odczyty ręcznie. Twoje dane zostają na Twoim serwerze."
+      },
+      "slide3": {
+        "title": "Zobacz wzorce",
+        "body": "Codzienne podsumowania, wykresy trendów i coach, który wskazuje co się zmieniło — wszystko na Twoim urządzeniu."
+      }
     }
   },
   "gettingStarted": {
@@ -1707,6 +2614,19 @@
     "timezoneHint": "Used for chart axis labels, reminder times, export timestamps, and Coach context. Stored data is unchanged.",
     "timezoneInvalid": "Not a valid IANA timezone.",
     "profileSaved": "Profile saved",
+    "avatar": {
+      "title": "Zdjęcie profilowe",
+      "description": "Prześlij zdjęcie przechowywane na własnym serwerze. Pojawia się w całej aplikacji zamiast zewnętrznej usługi awatarów.",
+      "upload": "Prześlij zdjęcie",
+      "replace": "Zmień zdjęcie",
+      "remove": "Usuń",
+      "hint": "JPEG, PNG lub WebP. Do 2 MB i 2048×2048 pikseli.",
+      "uploaded": "Zaktualizowano zdjęcie profilowe",
+      "removed": "Usunięto zdjęcie profilowe",
+      "invalidType": "Nieobsługiwany typ obrazu. Użyj JPEG, PNG lub WebP.",
+      "tooLarge": "Obraz przekracza limit 2 MB.",
+      "error": "Nie udało się zaktualizować zdjęcia profilowego. Spróbuj ponownie."
+    },
     "changePassword": "Change password",
     "changePasswordDescription": "Replace your current password with a new one.",
     "passwordReset": "Password reset",
@@ -1879,6 +2799,16 @@
         "saveError": "Nie udało się zapisać zmiany. Spróbuj ponownie."
       }
     },
+    "dashboard": {
+      "units": {
+        "title": "Jednostki",
+        "description": "Wybierz sposób wyświetlania odległości i prędkości na wykresach i kafelkach.",
+        "metric": "Metryczne",
+        "imperial": "Imperialne",
+        "saved": "Zapisano preferencję jednostek.",
+        "saveError": "Nie udało się zapisać preferencji jednostek."
+      }
+    },
     "withings": "Withings",
     "withingsDescription": "Connect your Withings scale and blood pressure monitors.",
     "withingsCredentials": "API Credentials",
@@ -2045,6 +2975,54 @@
       "nextRetry": "Next retry",
       "reEnable": "Re-enable",
       "sendTest": "Send test"
+    },
+    "identity": {
+      "description": "Opcjonalne dane do eksportu dokumentacji zdrowotnej (okładka PDF + eksport FHIR). Wszystkie pola są opcjonalne.",
+      "fullName": "Imię i nazwisko",
+      "fullNamePlaceholder": "np. Anna Kowalska",
+      "insurer": "Ubezpieczyciel zdrowotny",
+      "insurerPlaceholder": "np. AOK Bayern",
+      "insuranceNumber": "Numer ubezpieczonego (KVNR)",
+      "insuranceNumberHint": "10 znaków: jedna litera + dziewięć cyfr (np. A123456780)."
+    },
+    "healthRecord": {
+      "title": "Eksportuj dokumentację zdrowotną",
+      "description": "Wygeneruj pełną dokumentację zdrowotną dla lekarza — jako PDF, ustrukturyzowaną (FHIR) lub łączny pakiet.",
+      "format": "Format",
+      "format_pdf": "PDF",
+      "format_fhir": "Ustrukturyzowany (FHIR)",
+      "format_package": "Pakiet: PDF + FHIR",
+      "range": "Okres",
+      "range90": "Ostatnie 90 dni",
+      "range180": "Ostatnie 6 miesięcy",
+      "range365": "Ostatnie 12 miesięcy",
+      "practiceName": "Gabinet (opcjonalnie)",
+      "practiceNamePlaceholder": "np. dr Kowalski",
+      "includedData": "Uwzględnione dane",
+      "groupVitals": "Parametry życiowe",
+      "groupCardio": "Serce i kondycja",
+      "groupActivity": "Aktywność i sen",
+      "weight": "Waga",
+      "bp": "Ciśnienie krwi",
+      "pulse": "Tętno",
+      "oxygenSaturation": "Saturacja tlenem",
+      "bodyFat": "Tkanka tłuszczowa",
+      "bodyComposition": "Skład ciała",
+      "restingHeartRate": "Tętno spoczynkowe",
+      "hrv": "Zmienność rytmu serca",
+      "vo2max": "VO₂max",
+      "steps": "Kroki",
+      "distance": "Dystans",
+      "sleep": "Sen",
+      "glucose": "Glukoza we krwi",
+      "medications": "Leki i przestrzeganie zaleceń",
+      "mood": "Nastrój (domyślnie wyłączony — dane wrażliwe)",
+      "bmi": "BMI",
+      "includeCharts": "Osadź wykresy trendów (tylko PDF)",
+      "includeAiSummary": "Dołącz podsumowanie AI (niezweryfikowane klinicznie)",
+      "fhirNote": "Dane ustrukturyzowane są zgodne ze standardem FHIR R4 (kompatybilne z ePA).",
+      "generate": "Generuj",
+      "error": "Eksport nie powiódł się ({code})."
     }
   },
   "admin": {
@@ -2120,6 +3098,7 @@
     "telegramGlobal": "Allow Telegram notifications.",
     "ntfyGlobal": "Allow ntfy notifications.",
     "webPushGlobal": "Allow browser push notifications.",
+    "moodLogGlobal": "Allow mood-log reminders.",
     "integrationWebPush": "Web Push",
     "integrationBugReport": "Bug Report",
     "offlineGeoLabel": "Dane geograficzne",
@@ -2831,14 +3810,31 @@
     },
     "moodReminder": {
       "title": "Codzienne przypomnienie o nastroju",
-      "description": "Delikatne przypomnienie o 22:00, jeśli dziś jeszcze nie zapisano nastroju. Wysyłane tylko skonfigurowanymi już kanałami (Telegram, ntfy, Web Push, Apple Push) i milknie, gdy dziś zapisano nastrój.",
+      "description": "Delikatne przypomnienie o wybranej przez Ciebie godzinie, jeśli dziś jeszcze nie zapisano nastroju. Wysyłane tylko skonfigurowanymi już kanałami (Telegram, ntfy, Web Push, Apple Push) i milknie, gdy dziś zapisano nastrój.",
       "toggleAria": "Włącz lub wyłącz codzienne przypomnienie o nastroju",
-      "statusOn": "Aktywne o 22:00 czasu lokalnego",
+      "statusOn": "Aktywne o wybranej godzinie",
       "statusOff": "Wyłączone",
       "enabledToast": "Przypomnienie o nastroju włączone.",
       "disabledToast": "Przypomnienie o nastroju wyłączone.",
-      "saveError": "Zapis nieudany. Spróbuj ponownie."
-    }
+      "saveError": "Zapis nieudany. Spróbuj ponownie.",
+      "hourLabel": "Godzina przypomnienia",
+      "hourAria": "Godzina przypomnienia o nastroju",
+      "hourSavedToast": "Godzina przypomnienia zaktualizowana."
+    },
+    "eventMedicationReminder": "Przypomnienie o leku",
+    "eventMedicationReminderDesc": "Wysyłane o każdej zaplanowanej godzinie dawki.",
+    "eventMeasurementAnomaly": "Nietypowy pomiar",
+    "eventMeasurementAnomalyDesc": "Wysyłane, gdy odczyt znacznie odbiega od Twojego zwykłego zakresu.",
+    "eventComplianceLow": "Niska zgodność",
+    "eventComplianceLowDesc": "Wysyłane, gdy odsetek przyjętych dawek z ostatnich dni spadnie poniżej 80 %.",
+    "eventWithingsSyncFailed": "Synchronizacja Withings nie powiodła się",
+    "eventWithingsSyncFailedDesc": "Wysyłane, gdy synchronizacja Withings nie powiedzie się kilka razy z rzędu.",
+    "eventSystemAlert": "Powiadomienie systemowe",
+    "eventSystemAlertDesc": "Ogólne komunikaty z serwera HealthLog, na przykład okna serwisowe lub uwagi do konta.",
+    "eventPersonalRecord": "Rekord osobisty",
+    "eventPersonalRecordDesc": "Wysyłane, gdy odczyt pobije Twój dotychczasowy rekord.",
+    "eventMoodReminder": "Przypomnienie o nastroju",
+    "eventMoodReminderDesc": "Codzienne przypomnienie, aby zapisać swój aktualny nastrój."
   },
   "i18n": {
     "maintainershipBanner": {

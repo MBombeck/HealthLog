@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { isValidKvnr, normaliseKvnr } from "@/lib/validations/kvnr";
 
 /** Minimum password length — must match checkPasswordStrength() in @/lib/auth/password.ts */
 const PASSWORD_MIN_LENGTH = 12;
@@ -38,6 +39,25 @@ export const profileSchema = z.object({
   heightCm: z.number().min(50).max(300).nullable().optional(),
   dateOfBirth: z.string().nullable().optional(), // ISO date string
   gender: z.enum(["MALE", "FEMALE"]).nullable().optional(),
+  // v1.7.0 — optional patient-identity fields for the health-record
+  // export cover + FHIR Patient resource. All optional, never required.
+  fullName: z.string().trim().max(120).nullable().optional(),
+  insurerName: z.string().trim().max(120).nullable().optional(),
+  // German KVNR. Empty string / null clears it; a non-empty value must
+  // pass the mod-10 check-digit validation. Normalised (whitespace
+  // stripped + uppercased) before the refine runs.
+  insuranceNumber: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((v) => {
+      if (v === null || v === undefined) return v;
+      const cleaned = normaliseKvnr(v);
+      return cleaned.length === 0 ? null : cleaned;
+    })
+    .refine((v) => v === null || v === undefined || isValidKvnr(v), {
+      message: "Invalid insurance number (KVNR)",
+    }),
 });
 
 export const changePasswordSchema = z

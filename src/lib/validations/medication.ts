@@ -1,6 +1,16 @@
 import { z } from "zod/v4";
 
+import { SCHEDULE_TYPES } from "@/lib/medications/scheduling/recurrence";
+
 const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+/**
+ * Clinical-category values stored in the `medication_categories` side-
+ * table (TEXT column). v1.5.4 adds `DIABETES` and `ANTIBIOTIC` so the
+ * wizard's Step 2 taxonomy can write a first-class bucket for those
+ * two rows instead of collapsing them into `OTHER`. The column is a
+ * plain TEXT field — no Prisma enum exists to migrate; the Zod values
+ * list is the only enforcement layer.
+ */
 export const MEDICATION_CATEGORY_VALUES = [
   "BLOOD_PRESSURE",
   "VITAMIN",
@@ -12,8 +22,11 @@ export const MEDICATION_CATEGORY_VALUES = [
   "HORMONE",
   "SKIN",
   "SLEEP_AID",
+  "DIABETES",
+  "ANTIBIOTIC",
   "OTHER",
 ] as const;
+export type MedicationCategoryValue = (typeof MEDICATION_CATEGORY_VALUES)[number];
 
 /**
  * v1.4.25 W4d — Prisma-level treatment class. Orthogonal to
@@ -27,50 +40,404 @@ export const MEDICATION_TREATMENT_CLASS_VALUES = ["GENERIC", "GLP1"] as const;
 export type MedicationTreatmentClass =
   (typeof MEDICATION_TREATMENT_CLASS_VALUES)[number];
 
-export const scheduleSchema = z.object({
-  windowStart: z.string().regex(timeRegex, "Format: HH:mm"),
-  windowEnd: z.string().regex(timeRegex, "Format: HH:mm"),
-  label: z.string().max(50).optional(),
-  dose: z.string().max(50).optional(),
-  daysOfWeek: z.array(z.number().int().min(0).max(6)).optional(),
-  intervalWeeks: z.number().int().min(1).max(4).optional(),
-});
+/**
+ * v1.6.0 — route of administration. Decoupled from `treatmentClass`:
+ * the injection-site picker surfaces for any `INJECTION` dose, and a
+ * one-time injection is `oneShot: true` + `deliveryForm: "INJECTION"`.
+ * ORAL is the default the migration backfilled onto every existing row.
+ */
+export const MEDICATION_DELIVERY_FORM_VALUES = [
+  "ORAL",
+  "INJECTION",
+  "OTHER",
+] as const;
+export type MedicationDeliveryForm =
+  (typeof MEDICATION_DELIVERY_FORM_VALUES)[number];
 
-export const createMedicationSchema = z.object({
-  name: z.string().min(1).max(100),
-  dose: z.string().min(1).max(50),
-  category: z.enum(MEDICATION_CATEGORY_VALUES).optional(),
-  /** v1.4.25 W4d — treatment-class discriminator (GENERIC | GLP1). */
-  treatmentClass: z.enum(MEDICATION_TREATMENT_CLASS_VALUES).optional(),
-  /** v1.4.25 W4d — doses per pen/vial for inventory tracking. */
-  dosesPerUnit: z.number().int().min(1).max(100).optional(),
-  schedules: z.array(scheduleSchema).min(1, "Mindestens ein Zeitfenster"),
-});
+/**
+ * v1.5 — RRULE string shape check.
+ *
+ * Not a full RFC 5545 parser (that lives in the `rrule` npm package on
+ * the server side). The regex catches the subset HealthLog mints from
+ * the wizard / form: a `FREQ=` line with optional `INTERVAL=`,
+ * `BYDAY=`, `BYMONTHDAY=`, `BYMONTH=`, `COUNT=`, `UNTIL=` properties
+ * separated by `;`. Any pathological-looking shape (the `FREQ=SECONDLY`
+ * DoS surface, `;COUNT=999999999`) is filtered at the server route
+ * layer with a hard cap on emitted occurrences.
+ */
+const RRULE_PROPS =
+  /^FREQ=(?:DAILY|WEEKLY|MONTHLY|YEARLY)(?:;(?:INTERVAL=\d{1,3}|BYDAY=(?:MO|TU|WE|TH|FR|SA|SU)(?:,(?:MO|TU|WE|TH|FR|SA|SU))*|BYMONTHDAY=-?\d{1,2}(?:,-?\d{1,2})*|BYMONTH=\d{1,2}(?:,\d{1,2})*|COUNT=\d{1,4}|UNTIL=\d{8}T\d{6}Z))*$/;
 
-export const updateMedicationSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
-  dose: z.string().min(1).max(50).optional(),
-  category: z.enum(MEDICATION_CATEGORY_VALUES).optional(),
-  treatmentClass: z.enum(MEDICATION_TREATMENT_CLASS_VALUES).optional(),
-  dosesPerUnit: z.number().int().min(1).max(100).nullable().optional(),
-  active: z.boolean().optional(),
-  notificationsEnabled: z.boolean().optional(),
-  schedules: z.array(scheduleSchema).optional(),
-});
+export const scheduleSchema = z
+  .object({
+    windowStart: z
+      .string()
+      .regex(timeRegex, "Format: HH:mm")
+      .describe(
+        "Legacy single-time-of-intake (HH:mm, user local). v1.5 keeps the field for backwards compatibility with pre-wizard iOS clients; the new `timesOfDay` array supersedes it.",
+      ),
+    windowEnd: z
+      .string()
+      .regex(timeRegex, "Format: HH:mm")
+      .describe(
+        "Legacy reminder-window upper bound (HH:mm). Used to derive the late-classification grace span when `reminderGraceMinutes` is null.",
+      ),
+    label: z
+      .string()
+      .max(50)
+      .optional()
+      .describe("Optional human label (e.g. \"Morning\", \"Evening\")."),
+    dose: z
+      .string()
+      .max(50)
+      .optional()
+      .describe(
+        "Per-schedule dose override. NULL means the schedule inherits `Medication.dose`.",
+      ),
+    daysOfWeek: z
+      .array(z.number().int().min(0).max(6))
+      .optional()
+      .describe(
+        "Legacy day-of-week filter (0=Sunday..6=Saturday). v1.5 reads new writes through `rrule` first; this field is preserved for pre-v1.5 rows and is the input the route serialises into the persisted `days_of_week` string.",
+      ),
+    intervalWeeks: z
+      .number()
+      .int()
+      .min(1)
+      .max(4)
+      .optional()
+      .describe(
+        "Legacy multi-week stride (1..4). Bi-weekly + tri-weekly were broken in the pre-v1.5 reminder worker; new writes encode the same intent via `rrule` (e.g. `FREQ=WEEKLY;INTERVAL=2;BYDAY=WE`).",
+      ),
+    /**
+     * v1.5 — first-class times-of-day. One or more HH:mm entries in
+     * the user's wall-clock; the engine applies them per matched day.
+     * Empty array falls back to `[windowStart]` for backwards-compat.
+     */
+    timesOfDay: z
+      .array(z.string().regex(timeRegex, "Format: HH:mm"))
+      .max(8)
+      .optional()
+      .describe(
+        "v1.5 first-class points-in-time the dose is taken (HH:mm, user local). Up to 8 entries. Absent or empty means the route stamps `[windowStart]` so the new engine always sees a populated array.",
+      ),
+    /**
+     * v1.5 — reminder grace window (minutes). Replaces the implicit
+     * `windowEnd - windowStart` span for late-classification. NULL
+     * falls back to the legacy span. Capped at 24 hours.
+     */
+    reminderGraceMinutes: z
+      .number()
+      .int()
+      .min(1)
+      .max(24 * 60)
+      .optional()
+      .describe(
+        "Reminder grace window in minutes. Caps at 24h. NULL falls back to the legacy `windowEnd - windowStart` span.",
+      ),
+    /**
+     * v1.5 — RFC 5545 RRULE string for calendar-anchored cadences.
+     * Mutually exclusive with `rollingIntervalDays`.
+     */
+    rrule: z
+      .string()
+      .max(200)
+      .regex(RRULE_PROPS, "Invalid RRULE")
+      .optional()
+      .describe(
+        "RFC 5545 RRULE string (subset). Use for daily / weekly-with-BYDAY / multi-week / monthly / yearly cadences. Mutually exclusive with `rollingIntervalDays`. Examples: `FREQ=DAILY`, `FREQ=WEEKLY;BYDAY=MO,WE,FR`, `FREQ=WEEKLY;INTERVAL=2;BYDAY=WE`, `FREQ=MONTHLY;BYMONTHDAY=1`, `FREQ=YEARLY;BYMONTH=1;BYMONTHDAY=1`.",
+      ),
+    /**
+     * v1.5 — flexible-rolling interval in days, counted from the
+     * latest MedicationIntakeEvent.takenAt. Mutually exclusive with
+     * `rrule`. Range 1..365 days.
+     */
+    rollingIntervalDays: z
+      .number()
+      .int()
+      .min(1)
+      .max(365)
+      .optional()
+      .describe(
+        "Flexible-rolling interval in days, counted forward from the latest `MedicationIntakeEvent.takenAt` (the dose re-anchors when logged). Mutually exclusive with `rrule`. Range 1..365.",
+      ),
+    /**
+     * v1.7.0 — schedule-type discriminator. SCHEDULED (default) keeps the
+     * rrule / rolling / legacy cadence. PRN is as-needed (never projected,
+     * reminded, or counted in compliance expected; still loggable).
+     * CYCLIC wraps the inner cadence with an N-on / M-off week phase.
+     */
+    scheduleType: z
+      .enum(SCHEDULE_TYPES)
+      .optional()
+      .describe(
+        "Schedule type. SCHEDULED (default) = rrule / rolling / legacy cadence. PRN = as-needed (never projected, reminded, or counted in compliance expected; still loggable via the intake route). CYCLIC = N weeks on / M weeks off, gating whichever inner cadence the rrule / legacy fields describe.",
+      ),
+    /** v1.7.0 — cyclic "on" weeks. Required when `scheduleType === "CYCLIC"`. */
+    cyclicOnWeeks: z
+      .number()
+      .int()
+      .min(1)
+      .max(52)
+      .optional()
+      .describe(
+        "Cyclic \"on\" weeks (1..52). Required when `scheduleType` is CYCLIC; ignored otherwise.",
+      ),
+    /** v1.7.0 — cyclic "off" weeks. Required when `scheduleType === "CYCLIC"`. */
+    cyclicOffWeeks: z
+      .number()
+      .int()
+      .min(0)
+      .max(52)
+      .optional()
+      .describe(
+        "Cyclic \"off\" weeks (0..52). Required when `scheduleType` is CYCLIC; ignored otherwise.",
+      ),
+  })
+  .refine(
+    (s) => !(s.rrule && s.rollingIntervalDays),
+    {
+      message:
+        "A schedule can be calendar-anchored (rrule) or rolling, not both",
+      path: ["rrule"],
+    },
+  )
+  .refine(
+    (s) =>
+      s.scheduleType !== "CYCLIC" ||
+      (s.cyclicOnWeeks !== undefined && s.cyclicOffWeeks !== undefined),
+    {
+      message: "cyclic schedules require both cyclicOnWeeks and cyclicOffWeeks",
+      path: ["cyclicOnWeeks"],
+    },
+  )
+  .refine(
+    (s) =>
+      s.scheduleType !== "PRN" ||
+      (s.rrule === undefined && s.rollingIntervalDays === undefined),
+    {
+      message:
+        "PRN schedules cannot carry a cadence (rrule or rollingIntervalDays)",
+      path: ["scheduleType"],
+    },
+  )
+  .refine(
+    (s) =>
+      s.rollingIntervalDays === undefined ||
+      s.rollingIntervalDays === null ||
+      !s.timesOfDay ||
+      s.timesOfDay.length <= 1,
+    {
+      message: "rolling-cadence schedules accept at most one time of day",
+      path: ["timesOfDay"],
+    },
+  )
+  .meta({
+    id: "MedicationScheduleInput",
+    description:
+      "Single schedule entry on a medication. v1.5 introduces `timesOfDay`, `rrule`, `rollingIntervalDays`, and `reminderGraceMinutes` as first-class fields; `windowStart`, `windowEnd`, `daysOfWeek`, and `intervalWeeks` are preserved through the v1.5.x line for backwards compatibility. **`rrule` and `rollingIntervalDays` are mutually exclusive** — supplying both fails 422 (`rrule_xor_rolling`). The DB enforces the same invariant via a CHECK constraint.",
+  });
 
-export const intakeSchema = z.object({
-  medicationId: z.string().min(1),
-  scheduledFor: z.iso
-    .datetime({ offset: true })
+/**
+ * v1.5 — medication-level course window + one-shot flag. The fields
+ * are optional on the create path so the existing form (no wizard
+ * yet) keeps working. The route layer enforces the `oneShot` + at-
+ * least-one-schedule invariant for the wizard path.
+ */
+const courseWindowFields = {
+  /**
+   * Date the medication course begins. ISO YYYY-MM-DD. NULL = "from
+   * creation" (the legacy implicit anchor).
+   */
+  startsOn: z.iso
+    .date()
     .transform((s) => new Date(s))
-    .optional(),
-  takenAt: z.iso
-    .datetime({ offset: true })
+    .nullable()
+    .optional()
+    .describe(
+      "Date the medication course begins (ISO `YYYY-MM-DD`). Anchors RRULE BYDAY / BYMONTHDAY patterns and the rolling-interval countdown's first window. NULL = active from creation (the legacy implicit behaviour). Required when `oneShot` is true.",
+    ),
+  /**
+   * Date the medication course ends. ISO YYYY-MM-DD. NULL = chronic.
+   * Required to equal `startsOn` when `oneShot` is true (the route
+   * normalises this; the schema doesn't because they're sister
+   * fields and the cross-field refine is enforced at the route).
+   */
+  endsOn: z.iso
+    .date()
     .transform((s) => new Date(s))
-    .optional(),
-  skipped: z.boolean().optional().default(false),
-  idempotencyKey: z.string().max(128).optional(),
-});
+    .nullable()
+    .optional()
+    .describe(
+      "Date the medication course ends (ISO `YYYY-MM-DD`). NULL = no end date (chronic). When `oneShot` is true the route normalises `endsOn` to equal `startsOn`.",
+    ),
+  /**
+   * Single-administration medication. Auto-deactivates after the
+   * single intake is logged.
+   */
+  oneShot: z
+    .boolean()
+    .optional()
+    .describe(
+      "Single-administration medication (e.g. flu shot, post-op single dose). When true the medication has at most one schedule with no `rrule` / `rollingIntervalDays`, and `active` auto-flips to false once the dose is logged (non-skipped).",
+    ),
+};
+
+export const createMedicationSchema = z
+  .object({
+    name: z.string().min(1).max(100),
+    dose: z.string().min(1).max(50),
+    category: z.enum(MEDICATION_CATEGORY_VALUES).optional(),
+    /** v1.4.25 W4d — treatment-class discriminator (GENERIC | GLP1). */
+    treatmentClass: z.enum(MEDICATION_TREATMENT_CLASS_VALUES).optional(),
+    /** v1.4.25 W4d — doses per pen/vial for inventory tracking. */
+    dosesPerUnit: z.number().int().min(1).max(100).optional(),
+    /** v1.6.0 — route of administration (ORAL | INJECTION | OTHER). */
+    deliveryForm: z.enum(MEDICATION_DELIVERY_FORM_VALUES).optional(),
+    notificationsEnabled: z.boolean().optional(),
+    /** v1.7.0 — iOS Live Activity opt-in for this medication's reminders. */
+    liveActivityEnabled: z
+      .boolean()
+      .optional()
+      .describe(
+        "iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client owns the ActivityKit lifecycle; the server only stores + echoes the flag.",
+      ),
+    /** v1.7.0 — iOS 26 AlarmKit critical-reminder opt-in. */
+    criticalAlarmEnabled: z
+      .boolean()
+      .optional()
+      .describe(
+        "iOS 26 AlarmKit critical-reminder opt-in. Default false. Critical alarms bypass the device mute switch / Focus; the server stores the preference only and hangs no server-side behaviour off it.",
+      ),
+    ...courseWindowFields,
+    schedules: z.array(scheduleSchema).min(1, "Mindestens ein Zeitfenster"),
+  })
+  .refine((b) => b.oneShot !== true || !!b.startsOn, {
+    message: "startsOn is required when oneShot is true",
+    path: ["startsOn"],
+  })
+  .refine(
+    (b) =>
+      !b.startsOn || !b.endsOn || b.endsOn.getTime() >= b.startsOn.getTime(),
+    {
+      message: "endsOn must be on or after startsOn",
+      path: ["endsOn"],
+    },
+  )
+  .meta({
+    id: "CreateMedicationRequest",
+    description:
+      "Create-medication body. The route enforces the v1.5 cross-field invariants on top of the per-schedule `rrule_xor_rolling` Zod refine: a `oneShot:true` medication may carry at most one schedule and that schedule must not declare a recurrence; `endsOn` is normalised to equal `startsOn` for one-shot doses; a recurring schedule with no `rrule`, `rollingIntervalDays`, or legacy `daysOfWeek` defaults to `rrule = \"FREQ=DAILY\"`; and `timesOfDay` is dual-written from `windowStart` when the caller omits it.",
+  });
+
+export const updateMedicationSchema = z
+  .object({
+    name: z.string().min(1).max(100).optional(),
+    dose: z.string().min(1).max(50).optional(),
+    category: z.enum(MEDICATION_CATEGORY_VALUES).optional(),
+    treatmentClass: z.enum(MEDICATION_TREATMENT_CLASS_VALUES).optional(),
+    dosesPerUnit: z.number().int().min(1).max(100).nullable().optional(),
+    /** v1.6.0 — route of administration (ORAL | INJECTION | OTHER). */
+    deliveryForm: z.enum(MEDICATION_DELIVERY_FORM_VALUES).optional(),
+    active: z.boolean().optional(),
+    notificationsEnabled: z.boolean().optional(),
+    /** v1.7.0 — iOS Live Activity opt-in for this medication's reminders. */
+    liveActivityEnabled: z
+      .boolean()
+      .optional()
+      .describe(
+        "iOS Live Activity opt-in for this medication's reminders. The iOS client owns the ActivityKit lifecycle; the server only stores + echoes the flag.",
+      ),
+    /** v1.7.0 — iOS 26 AlarmKit critical-reminder opt-in. */
+    criticalAlarmEnabled: z
+      .boolean()
+      .optional()
+      .describe(
+        "iOS 26 AlarmKit critical-reminder opt-in. Critical alarms bypass the device mute switch / Focus; the server stores the preference only.",
+      ),
+    ...courseWindowFields,
+    schedules: z.array(scheduleSchema).optional(),
+    /**
+     * v1.5.5 — top-level primary-schedule grace bridge. The detail
+     * page settings section saves the reminder-window in minutes for
+     * the medication's primary schedule without re-sending the full
+     * `schedules` array. The route normalises this value onto the
+     * primary schedule's `reminderGraceMinutes` before the Prisma
+     * update so the persisted shape stays per-schedule. NULL clears
+     * the override and falls back to the legacy `windowEnd -
+     * windowStart` span.
+     */
+    reminderGraceMinutes: z
+      .number()
+      .int()
+      .min(0)
+      .max(24 * 60)
+      .nullable()
+      .optional()
+      .describe(
+        "Detail-page bridge: primary-schedule reminder-window in minutes. The route maps the value onto the primary schedule's `reminderGraceMinutes` field; ignored when a full `schedules` array is also supplied.",
+      ),
+  })
+  .refine((b) => b.oneShot !== true || !!b.startsOn, {
+    message: "startsOn is required when oneShot is true",
+    path: ["startsOn"],
+  })
+  .refine(
+    (b) =>
+      !b.startsOn || !b.endsOn || b.endsOn.getTime() >= b.startsOn.getTime(),
+    {
+      message: "endsOn must be on or after startsOn",
+      path: ["endsOn"],
+    },
+  )
+  .meta({
+    id: "UpdateMedicationRequest",
+    description:
+      "Update-medication body. Every field is optional; omitted fields are left untouched. Supplying `schedules` REPLACES the medication's full schedule list (the route deletes existing rows before re-creating). Flipping `active` to false records the current timestamp on `pausedAt`; flipping back to true clears it. v1.5 invariants on the `schedules` array match the create path.",
+  });
+
+export const intakeSchema = z
+  .object({
+    medicationId: z
+      .string()
+      .min(1)
+      .describe(
+        "Server-narrowed from the URL path. The route layer overwrites whatever the body supplies before Zod parsing so a caller cannot log an intake against another medication.",
+      ),
+    scheduledFor: z.iso
+      .datetime({ offset: true })
+      .transform((s) => new Date(s))
+      .optional()
+      .describe(
+        "Slot the dose belongs to. Defaults to `takenAt` (or `now()` when both are absent) so the compliance pairing logic can pin the dose to a schedule slot.",
+      ),
+    takenAt: z.iso
+      .datetime({ offset: true })
+      .transform((s) => new Date(s))
+      .optional()
+      .describe(
+        "When the dose was actually taken. NULL when `skipped` is true; defaults to `now()` for non-skipped intakes.",
+      ),
+    skipped: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe(
+        "True to log a skipped slot (no consumption, no inventory decrement, one-shot medications stay active).",
+      ),
+    idempotencyKey: z
+      .string()
+      .max(128)
+      .optional()
+      .describe(
+        "Caller-issued de-dup key. A second POST with the same key returns the original event without creating a new row.",
+      ),
+  })
+  .meta({
+    id: "MedicationIntakeRequest",
+    description:
+      "Per-medication intake log body. Idempotent via `idempotencyKey`; the server also dedupes by a 60-second sliding window when the key is absent. Non-skipped intakes auto-decrement pen inventory (best-effort), refresh the per-day compliance rollup, and — for one-shot medications — flip `active` to false.",
+  });
 
 export const externalIntakeSchema = z.object({
   medicationName: z.string().min(1).max(200),
@@ -121,6 +488,23 @@ export const updateIntakeEventSchema = z.object({
     .transform((s) => new Date(s))
     .optional(),
 });
+
+/**
+ * v1.5.5 — bulk-delete request body. The detail-page intake-history
+ * preview surfaces a multi-select that posts the resulting eventIds
+ * here. The cap matches `listIntakeEventsSchema.limit` (500) so the
+ * client never selects more rows than the table can return at once.
+ * Server-side guarantees scoped-by-medication ownership via
+ * `assertMedicationOwnership` + a `userId` predicate on the
+ * `deleteMany`.
+ */
+export const bulkDeleteIntakeEventsSchema = z.object({
+  eventIds: z.array(z.string().min(1).max(64)).min(1).max(500),
+});
+
+export type BulkDeleteIntakeEventsInput = z.infer<
+  typeof bulkDeleteIntakeEventsSchema
+>;
 
 /**
  * v1.4.25 W19b — inventory (pen / vial) CRUD validators.

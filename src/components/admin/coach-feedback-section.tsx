@@ -23,6 +23,7 @@ import { Loader2, Sparkles } from "lucide-react";
 
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
+import { helpfulRateColour } from "./_shared";
 
 interface CoachFeedbackBucket {
   promptVersion: string;
@@ -43,12 +44,6 @@ interface FeedbackSummary {
 interface CoachFeedbackResponse {
   data: { summary: FeedbackSummary | null } | null;
   error?: string | null;
-}
-
-function helpfulRateColour(rate: number): string {
-  if (rate >= 0.8) return "text-dracula-green";
-  if (rate >= 0.5) return "text-dracula-yellow";
-  return "text-dracula-orange";
 }
 
 export function CoachFeedbackSection() {

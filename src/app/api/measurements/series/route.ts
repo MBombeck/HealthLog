@@ -34,11 +34,25 @@ const kindEnum = z.enum([
   "totalBodyWater",
   "boneMass",
   "oxygenSaturation",
+  // v1.5.5 — the iOS app surfaces these as series-capable, but
+  // the route used to reject the trend/detail view request with a
+  // 422. The underlying MeasurementType enum already carries each
+  // value; this list extends the camelCase wire shape so the route
+  // matches the data it can serve.
+  "restingHeartRate",
+  "heartRateVariability",
+  "vo2Max",
 ]);
 
 const querySchema = z.object({
   kind: kindEnum,
-  days: z.coerce.number().int().min(1).max(365).optional().default(30),
+  // v1.5.5 — the 365-day cap rejected the iOS app's "Alle"-range
+  // request (days = 3650) with a 422, painting an error banner on
+  // every metric tile. Ten years matches the recurrence engine's
+  // nextOccurrenceAfter hard cap and the medication course-window
+  // upper bound, so the ceiling stays consistent across the surface
+  // area that the user can wire to a "show me everything" intent.
+  days: z.coerce.number().int().min(1).max(3650).optional().default(30),
 });
 
 const KIND_TO_TYPE: Record<z.infer<typeof kindEnum>, MeasurementType> = {
@@ -52,6 +66,9 @@ const KIND_TO_TYPE: Record<z.infer<typeof kindEnum>, MeasurementType> = {
   totalBodyWater: "TOTAL_BODY_WATER",
   boneMass: "BONE_MASS",
   oxygenSaturation: "OXYGEN_SATURATION",
+  restingHeartRate: "RESTING_HEART_RATE",
+  heartRateVariability: "HEART_RATE_VARIABILITY",
+  vo2Max: "VO2_MAX",
 };
 
 interface SeriesPoint {

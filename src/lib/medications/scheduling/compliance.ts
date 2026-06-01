@@ -21,6 +21,7 @@
 
 import {
   buildCadenceTimeline,
+  type CadenceEngineContext,
   type IntakeEventLike,
   type PairedDose,
   type ScheduleLike,
@@ -133,6 +134,7 @@ export function complianceChips(
   windowDays = 30,
   anchor?: Date,
   timeZone?: string,
+  engineCtx?: CadenceEngineContext,
 ): ComplianceChips {
   const timeline = buildCadenceTimeline(
     schedules,
@@ -141,6 +143,7 @@ export function complianceChips(
     windowDays,
     anchor,
     timeZone,
+    engineCtx,
   );
   const taken = timeline.filter((d) => d.status === "taken").length;
   const missed = timeline.filter((d) => d.status === "missed").length;

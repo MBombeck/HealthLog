@@ -87,7 +87,10 @@ describe("GET /api/auth/me/notification-prefs", () => {
     const env = (await res.json()) as {
       data: { medication: { clientManaged: boolean } };
     };
-    expect(env.data).toEqual({ medication: { clientManaged: false } });
+    expect(env.data).toEqual({
+      medication: { clientManaged: false, deliveryDefault: "server" },
+      mood: { reminderHour: 22 },
+    });
   });
 
   it("returns the resolved prefs when the row holds a value", async () => {
@@ -103,7 +106,10 @@ describe("GET /api/auth/me/notification-prefs", () => {
     const env = (await res.json()) as {
       data: { medication: { clientManaged: boolean } };
     };
-    expect(env.data).toEqual({ medication: { clientManaged: true } });
+    expect(env.data).toEqual({
+      medication: { clientManaged: true, deliveryDefault: "server" },
+      mood: { reminderHour: 22 },
+    });
   });
 
   it("returns defaults when the persisted shape has drifted", async () => {
@@ -121,7 +127,10 @@ describe("GET /api/auth/me/notification-prefs", () => {
     const env = (await res.json()) as {
       data: { medication: { clientManaged: boolean } };
     };
-    expect(env.data).toEqual({ medication: { clientManaged: false } });
+    expect(env.data).toEqual({
+      medication: { clientManaged: false, deliveryDefault: "server" },
+      mood: { reminderHour: 22 },
+    });
   });
 });
 
@@ -150,12 +159,18 @@ describe("PATCH /api/auth/me/notification-prefs", () => {
     const env = (await res.json()) as {
       data: { medication: { clientManaged: boolean } };
     };
-    expect(env.data).toEqual({ medication: { clientManaged: true } });
+    expect(env.data).toEqual({
+      medication: { clientManaged: true, deliveryDefault: "server" },
+      mood: { reminderHour: 22 },
+    });
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "user-1" },
       data: {
-        notificationPrefs: { medication: { clientManaged: true } },
+        notificationPrefs: {
+          medication: { clientManaged: true, deliveryDefault: "server" },
+          mood: { reminderHour: 22 },
+        },
       },
     });
 
@@ -164,8 +179,14 @@ describe("PATCH /api/auth/me/notification-prefs", () => {
       expect.objectContaining({
         userId: "user-1",
         details: expect.objectContaining({
-          previous: { medication: { clientManaged: false } },
-          next: { medication: { clientManaged: true } },
+          previous: {
+            medication: { clientManaged: false, deliveryDefault: "server" },
+            mood: { reminderHour: 22 },
+          },
+          next: {
+            medication: { clientManaged: true, deliveryDefault: "server" },
+            mood: { reminderHour: 22 },
+          },
           changed: ["medication"],
         }),
       }),
@@ -222,7 +243,10 @@ describe("PATCH /api/auth/me/notification-prefs", () => {
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "user-1" },
       data: {
-        notificationPrefs: { medication: { clientManaged: true } },
+        notificationPrefs: {
+          medication: { clientManaged: true, deliveryDefault: "server" },
+          mood: { reminderHour: 22 },
+        },
       },
     });
   });
@@ -243,14 +267,57 @@ describe("PATCH /api/auth/me/notification-prefs", () => {
     const env = (await res.json()) as {
       data: { medication: { clientManaged: boolean } };
     };
-    expect(env.data).toEqual({ medication: { clientManaged: true } });
+    expect(env.data).toEqual({
+      medication: { clientManaged: true, deliveryDefault: "server" },
+      mood: { reminderHour: 22 },
+    });
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "user-1" },
       data: {
-        notificationPrefs: { medication: { clientManaged: true } },
+        notificationPrefs: {
+          medication: { clientManaged: true, deliveryDefault: "server" },
+          mood: { reminderHour: 22 },
+        },
       },
     });
+  });
+
+  it("v1.7.0 — persists a custom mood.reminderHour", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      notificationPrefs: null,
+    } as never);
+    vi.mocked(prisma.user.update).mockResolvedValue({} as never);
+
+    const res = await (PATCH as (r: Request) => Promise<Response>)(
+      mkPatch({ mood: { reminderHour: 9 } }),
+    );
+    expect(res.status).toBe(200);
+    const env = (await res.json()) as {
+      data: { mood: { reminderHour: number } };
+    };
+    expect(env.data.mood).toEqual({ reminderHour: 9 });
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "user-1" },
+      data: {
+        notificationPrefs: {
+          medication: { clientManaged: false, deliveryDefault: "server" },
+          mood: { reminderHour: 9 },
+        },
+      },
+    });
+  });
+
+  it("v1.7.0 — rejects a mood.reminderHour outside 0..23 with 422", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+
+    const res = await (PATCH as (r: Request) => Promise<Response>)(
+      mkPatch({ mood: { reminderHour: 24 } }),
+    );
+    expect(res.status).toBe(422);
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
   it("returns 429 when the per-user rate-limit fires", async () => {

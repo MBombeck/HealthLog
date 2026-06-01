@@ -65,6 +65,7 @@ import type {
   CityResponse,
 } from "mmdb-lib/lib/reader/response";
 import { getEvent } from "@/lib/logging/context";
+import { safeFetch } from "@/lib/safe-fetch";
 
 interface IpwhoIsResponse {
   success?: boolean;
@@ -284,20 +285,23 @@ async function readUtf8Json(res: Response): Promise<unknown> {
 async function lookupIpLocationOnline(ip: string): Promise<string | null> {
   if (process.env.IP_GEO_LOOKUP_DISABLED === "1") return null;
   try {
-    const res = await fetch(buildLookupUrl(ip), {
-      signal: AbortSignal.timeout(3000),
-      headers: {
-        // ipwho.is and ip-api both honour Accept-Language for the
-        // city field. Without the hint, ip-api falls back to the
-        // English ASCII fold ("Nuremberg" instead of "Nürnberg").
-        // German first because the user-base is DACH-skewed; English
-        // as a graceful fallback for cities that don't have a German
-        // name. Quality 0.5 on the en fallback keeps providers from
-        // tie-breaking the wrong way.
-        "Accept-Language": "de, en;q=0.5",
-        Accept: "application/json",
+    const res = await safeFetch(
+      buildLookupUrl(ip),
+      {
+        headers: {
+          // ipwho.is and ip-api both honour Accept-Language for the
+          // city field. Without the hint, ip-api falls back to the
+          // English ASCII fold ("Nuremberg" instead of "Nürnberg").
+          // German first because the user-base is DACH-skewed; English
+          // as a graceful fallback for cities that don't have a German
+          // name. Quality 0.5 on the en fallback keeps providers from
+          // tie-breaking the wrong way.
+          "Accept-Language": "de, en;q=0.5",
+          Accept: "application/json",
+        },
       },
-    });
+      { timeoutMs: 3_000 },
+    );
     if (!res.ok) return null;
 
     const data = (await readUtf8Json(res)) as GeoResponse;

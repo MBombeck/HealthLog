@@ -28,6 +28,7 @@
  *      fixture seeds three same-day rows, soft-deletes one, recomputes,
  *      and asserts `count == 2` (not 3) on the resulting bucket.
  */
+import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 process.env.ENCRYPTION_KEY ??=
@@ -306,5 +307,66 @@ describe("Measurement.deletedAt — tombstone invisibility (v1.4.40 W-DELETED)",
     expect(bucket!.mean).toBeCloseTo(80.2, 2);
     expect(bucket!.minValue).toBeCloseTo(80.0, 2);
     expect(bucket!.maxValue).toBeCloseTo(80.4, 2);
+  });
+
+  it("GET /api/measurements/[id] 404s a soft-deleted row, PUT refuses to resurrect it (v1.7.0 M3)", async () => {
+    const prisma = getPrismaClient();
+    const user = await seedSession("soft-delete-single-resource");
+
+    const live = await prisma.measurement.create({
+      data: {
+        userId: user.id,
+        type: "WEIGHT",
+        value: 80.0,
+        unit: "kg",
+        source: "MANUAL",
+        measuredAt: new Date(),
+      },
+    });
+
+    // The single-resource GET resolves the live row.
+    const { GET, PUT } = await import("@/app/api/measurements/[id]/route");
+    const ctx = { params: Promise.resolve({ id: live.id }) };
+
+    const liveGet = await GET(
+      new NextRequest(`http://localhost/api/measurements/${live.id}`, {
+        method: "GET",
+      }),
+      ctx,
+    );
+    expect(liveGet.status).toBe(200);
+
+    // Tombstone the row.
+    await prisma.measurement.update({
+      where: { id: live.id },
+      data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
+    });
+
+    // GET now 404s — the tombstone is invisible to the single-resource read.
+    const tombGet = await GET(
+      new NextRequest(`http://localhost/api/measurements/${live.id}`, {
+        method: "GET",
+      }),
+      ctx,
+    );
+    expect(tombGet.status).toBe(404);
+
+    // PUT refuses to resurrect-edit the tombstoned row.
+    const tombPut = await PUT(
+      new NextRequest(`http://localhost/api/measurements/${live.id}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ value: 81.0 }),
+      }),
+      ctx,
+    );
+    expect(tombPut.status).toBe(404);
+
+    // The row stays tombstoned and unedited.
+    const after = await prisma.measurement.findUnique({
+      where: { id: live.id },
+    });
+    expect(after!.deletedAt).not.toBeNull();
+    expect(after!.value).toBeCloseTo(80.0, 2);
   });
 });

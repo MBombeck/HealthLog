@@ -3,6 +3,7 @@
  * Uses the HTTP API directly — no library needed.
  */
 import { getEvent } from "@/lib/logging/context";
+import { safeFetch } from "@/lib/safe-fetch";
 
 interface TelegramResponse {
   ok: boolean;
@@ -31,14 +32,14 @@ async function telegramApiRequest(
 ): Promise<TelegramResponse> {
   const start = performance.now();
   try {
-    const res = await fetch(
+    const res = await safeFetch(
       `https://api.telegram.org/bot${botToken}/${method}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(10_000),
       },
+      { timeoutMs: 10_000 },
     );
     const data = (await res.json()) as TelegramResponse;
     getEvent()?.addExternalCall({

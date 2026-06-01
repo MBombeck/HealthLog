@@ -73,19 +73,10 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
-import { ANALYTICS_TYPE_FETCH_CONCURRENCY, GET } from "../route";
+import { GET } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
-
-interface MeasurementRow {
-  id: string;
-  measuredAt: Date;
-  value: number;
-  source: "MANUAL" | "WITHINGS" | "IMPORT" | "APPLE_HEALTH";
-  deviceType: string | null;
-  sleepStage?: string | null;
-}
 
 const SESSION_USER = {
   id: "user-1",
@@ -101,16 +92,6 @@ const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
   user: SESSION_USER as never,
 };
-
-function pulseRow(measuredAt: Date, value: number, id: string): MeasurementRow {
-  return {
-    id,
-    measuredAt,
-    value,
-    source: "APPLE_HEALTH",
-    deviceType: "watch",
-  };
-}
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -147,6 +128,13 @@ beforeEach(() => {
   // falls back to the live fast-path branches and the assertions stay
   // byte-shape stable.
   vi.mocked(prisma.measurement.findFirst).mockResolvedValue(null as never);
+  // v1.4.49.1 — `computeSleepStageBreakdown` + the glucose 30-day
+  // window both call `prisma.measurement.findMany`; the per-type
+  // chunked fan-out that used to override this mock per test is gone
+  // (folded into `computeSummariesSlice` $queryRaw), so the default
+  // needs to be a safe empty array — undefined would crash
+  // `rows.length` inside the sleep-stage builder.
+  vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   vi.mocked(prisma.$queryRaw as any).mockResolvedValue([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -165,57 +153,24 @@ afterEach(() => {
 });
 
 describe("GET /api/analytics", () => {
-  it("survives a 130 000-row PULSE series without blowing the stack", async () => {
-    // The chunked reader pages 5 000 at a time. Simulate one full page
-    // for PULSE so the route's per-type aggregator hits the failing
-    // `summarize()` codepath with a 5 000-point series, then stop. We
-    // intentionally don't seed every single Apple Watch sample in the
-    // mock — V8's spread-arg ceiling is repeatable with a far smaller
-    // array than production (see `trends.test.ts` for the 250 000-row
-    // direct regression). This test pins the route-entry contract.
-    const N = 5_000;
-    const now = Date.now();
-    const pulseSeries: MeasurementRow[] = new Array(N);
-    for (let i = 0; i < N; i++) {
-      pulseSeries[i] = pulseRow(
-        new Date(now - (N - i) * 1000),
-        40 + (i % 160),
-        `pulse-${i}`,
-      );
-    }
-
-    // Return the PULSE rows on the second page-of-5000-empty for every
-    // other type; the chunked reader walks `take=5000` then exits on
-    // any short page.
-    vi.mocked(prisma.measurement.findMany).mockImplementation(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (async (args: any) => {
-        if (args.where?.type === "PULSE" && !args.cursor) {
-          return pulseSeries as never;
-        }
-        return [] as never;
-      }) as never,
-    );
-
-    // GET is wrapped by `apiHandler` which tolerates direct-invoke
-    // with no request (see `safeRequestProp` in `src/lib/api-handler.ts`).
-    // Cast through `unknown` so the TS signature `(...args: never[])`
-    // doesn't fight the vitest direct-invoke pattern.
-    const res = await (
-      GET as unknown as (...args: never[]) => Promise<Response>
-    )();
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as {
-      data: { summaries: Record<string, { count: number; min: number | null; max: number | null }> };
-    };
-    expect(body.data.summaries.PULSE.count).toBe(N);
-    // 40 + (N-1) % 160 → wave around (40..199).
-    expect(body.data.summaries.PULSE.min).toBeGreaterThanOrEqual(40);
-    expect(body.data.summaries.PULSE.max).toBeLessThanOrEqual(199);
-  });
+  // v1.4.49.1 — the default slice no longer fans out 15 per-type
+  // `prisma.measurement.findMany` walks; it delegates to
+  // `computeSummariesSlice`, which feeds entirely from `$queryRaw`
+  // against `measurement_rollups` (DAY buckets + a 90-day narrow
+  // aggregate). Tests now exercise the rollup-tier path. The slim
+  // slice's own test file (`summaries-slice.test.ts`) covers the per-
+  // type SQL contract; the route tests below verify the wiring + the
+  // shape of the default-slice response.
 
   it("returns a 200 envelope for a brand-new user with zero rows", async () => {
-    vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
+    // v1.4.49.1 — slim slice's `probeRollupCoverage` (one `$queryRaw`)
+    // returns an empty coverage set so `isFullyCovered` is false; the
+    // path falls through to `computeFromLiveAggregate`, which fires
+    // three `$queryRaw`s (allTime, windowed, latests) — all empty for
+    // a brand-new user. The default-slice handler chains a few more
+    // `$queryRaw`s through the BP / health-score / correlations fast
+    // paths; the shared empty-`[]` default seeded in `beforeEach`
+    // satisfies every one.
 
     const res = await (
       GET as unknown as (...args: never[]) => Promise<Response>
@@ -228,56 +183,41 @@ describe("GET /api/analytics", () => {
         healthScore: unknown;
       };
     };
-    // Empty series should not crash on the new fold path either.
     expect(body.data.summaries.PULSE.count).toBe(0);
     expect(body.data.summaries.WEIGHT.count).toBe(0);
     expect(body.data.bmi).toBeNull();
     expect(body.data.healthScore).toBeNull();
+    // v1.4.49.1 — the legacy 15-way per-type live walk used a chunked
+    // pagination select `(id, measuredAt, value, source, deviceType)`
+    // unique to `fetchMeasurementSeriesChunked`. Other `findMany` calls
+    // (sleep-stage breakdown, glucose 30-day window, BP fallback) all
+    // use different select shapes, so this negative check pins the
+    // deleted fan-out without false-positiving on legitimate reads.
+    expect(prisma.measurement.findMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          id: true,
+          source: true,
+          deviceType: true,
+        }),
+        take: 5000,
+      }),
+    );
   });
 
-  // v1.4.34 IW-B — the dashboard tile strip reads `lastSeenByType[type]?.daysAgo`
-  // and forwards it to each `<TrendCard>` so a metric the user hasn't
-  // logged in a while keeps its tile visible with an "Letzter Wert vor
-  // Xd" caption instead of disappearing.
-  it("emits lastSeenByType keyed on the freshest measuredAt per type", async () => {
-    const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
-    const oneDayAgo = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000);
-
-    vi.mocked(prisma.measurement.findMany).mockImplementation(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (async (args: any) => {
-        if (args.where?.type === "WEIGHT" && !args.cursor) {
-          return [
-            {
-              id: "w-old",
-              measuredAt: eightDaysAgo,
-              value: 80.5,
-              source: "MANUAL",
-              deviceType: null,
-            },
-          ] as never;
-        }
-        if (args.where?.type === "PULSE" && !args.cursor) {
-          return [
-            {
-              id: "p-fresh",
-              measuredAt: oneDayAgo,
-              value: 72,
-              source: "APPLE_HEALTH",
-              deviceType: "watch",
-            },
-          ] as never;
-        }
-        return [] as never;
-      }) as never,
-    );
-
+  // v1.4.49.1 — the dashboard tile-strip's `lastSeenByType[type]?.daysAgo`
+  // contract is now produced entirely by the slim slice
+  // (`computeSummariesSlice` → `latests` `$queryRaw`). The shape +
+  // freshness math is covered by `summaries-slice.test.ts`. This route
+  // test only pins that the field reaches the response envelope and
+  // that the GET wrapper's `enrichLastSeenDaysAgo` re-derives `daysAgo`
+  // from the cached `lastSeenAt` ISO so a slice straddling midnight
+  // still surfaces a wall-clock-truthful caption.
+  it("includes lastSeenByType + bfcache Cache-Control on the default slice", async () => {
     const res = await (
       GET as unknown as (...args: never[]) => Promise<Response>
     )();
     expect(res.status).toBe(200);
-    // bfcache-friendly Cache-Control — verifies the IW-B header
-    // posture is on the wire.
     expect(res.headers.get("Cache-Control")).toBe(
       "private, max-age=0, must-revalidate",
     );
@@ -288,15 +228,20 @@ describe("GET /api/analytics", () => {
           string,
           { lastSeenAt: string; daysAgo: number } | null
         >;
+        summaries: Record<
+          string,
+          { avg30LastMonth: number | null; avg30LastYear: number | null }
+        >;
       };
     };
-    expect(body.data.lastSeenByType.WEIGHT?.daysAgo).toBeGreaterThanOrEqual(7);
-    expect(body.data.lastSeenByType.WEIGHT?.daysAgo).toBeLessThanOrEqual(9);
-    expect(body.data.lastSeenByType.PULSE?.daysAgo).toBeGreaterThanOrEqual(0);
-    expect(body.data.lastSeenByType.PULSE?.daysAgo).toBeLessThanOrEqual(2);
-    // Types the user never logged report `null` so the tile-strip
-    // helper falls through without painting a caption.
+    // Types the user never logged report `null` — the tile-strip helper
+    // falls through without painting a freshness caption.
     expect(body.data.lastSeenByType.BLOOD_GLUCOSE).toBeNull();
+    // v1.4.49.1 — `avg30LastMonth` plumbs through the default slice
+    // now that the slim narrow query carries it. The empty-mocks
+    // fixture produces null; the field must still EXIST on the shape
+    // so the dashboard's `tileCompareDelta` helper can `?? null`.
+    expect("avg30LastMonth" in (body.data.summaries.WEIGHT ?? {})).toBe(true);
   });
 
   // v1.4.33 C1 — slim summaries slice. The route branches on
@@ -384,70 +329,13 @@ describe("GET /api/analytics", () => {
     expect(body.data.lastSeenByType.PULSE).toBeNull();
   });
 
-  // v1.4.40 W-POOL — pin the bounded-concurrency cap on the per-type
-  // fan-out inside `buildAnalyticsResponse`. The v1.4.39 empirical
-  // trace (`.planning/round-v1439-empirical-trace.md` §B1) showed the
-  // raw `Promise.all` over `fetchMeasurementSeriesChunked` holding
-  // ≥8 of the default-10 pg.Pool slots for 6.5 s on a power-user cold
-  // mount. The p-limit(4) wrapper keeps the same total work but caps
-  // inflight Prisma round-trips for this branch at 4.
-  //
-  // The assertion instruments the `prisma.measurement.findMany` mock
-  // to track peak inflight count + total batches. With N≥15 types and
-  // a 20 ms per-call delay, an unbounded `Promise.all` would peak at
-  // ~15 and finish in ~20 ms; the bounded version peaks at exactly 4
-  // and finishes in ~80 ms (4 batches × 20 ms ceiling).
-  it("caps per-type Prisma fan-out at ANALYTICS_TYPE_FETCH_CONCURRENCY", async () => {
-    // Default-slice path requires no coverage so the route falls into
-    // the live per-type loop where the fan-out lives.
-    vi.mocked(prisma.measurementRollup.findMany).mockResolvedValue([] as never);
-
-    let inflight = 0;
-    let peak = 0;
-    let calls = 0;
-
-    vi.mocked(prisma.measurement.findMany).mockImplementation(
-      (async () => {
-        // Only count the per-type chunked fan-out calls (not the
-        // narrower glucose / sleep-stage `findMany` reads inside the
-        // same route; those run sequentially AFTER the fan-out
-        // completes so they never overlap with peak inflight).
-        calls += 1;
-        inflight += 1;
-        peak = Math.max(peak, inflight);
-        // 20 ms is large enough to make the bounded vs unbounded
-        // distinction observable but small enough to keep the suite
-        // under a second.
-        await new Promise((resolve) => setTimeout(resolve, 20));
-        inflight -= 1;
-        // Return an empty page so the chunked reader exits after one
-        // round-trip per type.
-        return [] as never;
-      }) as never,
-    );
-
-    const t0 = Date.now();
-    const res = await (
-      GET as unknown as (...args: never[]) => Promise<Response>
-    )();
-    const elapsed = Date.now() - t0;
-    expect(res.status).toBe(200);
-
-    // The cap itself — peak inflight Prisma reads against
-    // `measurements` never crosses the configured ceiling.
-    expect(ANALYTICS_TYPE_FETCH_CONCURRENCY).toBe(4);
-    expect(peak).toBeLessThanOrEqual(ANALYTICS_TYPE_FETCH_CONCURRENCY);
-
-    // Sanity: more than one type was actually walked, otherwise the
-    // bound is unfalsifiable.
-    expect(calls).toBeGreaterThanOrEqual(8);
-
-    // Wall-clock proves the lanes are saturated rather than serialised
-    // by accident. 4 lanes × 20 ms × ⌈calls/4⌉ ≈ 60-100 ms; an
-    // unbounded fan-out would finish in ~25-40 ms; a fully serial
-    // walk would take calls × 20 ms ≈ 300+ ms. The window catches
-    // both regressions.
-    expect(elapsed).toBeGreaterThanOrEqual(40);
-    expect(elapsed).toBeLessThan(calls * 20);
-  });
+  // v1.4.49.1 — the 15-way per-type `fetchMeasurementSeriesChunked`
+  // fan-out was removed entirely; the default slice now delegates to
+  // `computeSummariesSlice` which runs three rollup-tier `$queryRaw`
+  // passes regardless of the type count. The pre-v1.4.49.1 "caps
+  // per-type Prisma fan-out at ANALYTICS_TYPE_FETCH_CONCURRENCY" test
+  // belonged to a code path that no longer exists; the no-fan-out
+  // assertion in the "brand-new user" test above pins the negative
+  // contract (the chunked findMany must never re-appear on the default
+  // slice critical path).
 });

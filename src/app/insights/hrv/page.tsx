@@ -20,6 +20,7 @@ export default function InsightsHrvPage() {
       insightMetric="HEART_RATE_VARIABILITY"
       chartKey="hrv"
       i18nPrefix="insights.hrv"
+      explainerMetric="hrv"
       color="#bd93f9"
       unit="ms"
       yAxisUnit="ms"

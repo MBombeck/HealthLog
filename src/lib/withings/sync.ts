@@ -28,6 +28,7 @@ import {
   collapseToTypeDayKeys,
   recomputeBucketsForMeasurement,
 } from "@/lib/rollups/measurement-rollups";
+import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 
 /**
  * Build the callback URL handed to Withings at `Notify.subscribe` time.
@@ -250,6 +251,19 @@ export async function syncUserMeasurements(
     for (const k of keys) {
       await recomputeBucketsForMeasurement(userId, k.type, k.measuredAt);
     }
+
+    // v1.8.0 — a Withings sync that lands new weight / BP / pulse /
+    // body-comp rows dirties the matching per-metric assessment caches.
+    // Drop them so the next mount / nightly warm pass regenerates
+    // against the new data. Fire-and-forget: never fails the sync.
+    invalidateStatusInsightsForTypes(
+      userId,
+      keys.map((k) => k.type),
+    ).catch((err) => {
+      getEvent()?.addWarning(
+        `withings: status-insight invalidate failed for ${userId}: ${err}`,
+      );
+    });
   } catch (err) {
     getEvent()?.addWarning(
       `withings: rollup recompute failed for ${userId}: ${err}`,

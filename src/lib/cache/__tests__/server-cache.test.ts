@@ -43,6 +43,35 @@ describe("ServerCache.get / set", () => {
   });
 });
 
+describe("ServerCache per-key TTL override", () => {
+  it("set() honours a longer-than-default TTL for a single key", () => {
+    vi.useFakeTimers();
+    const cache = new ServerCache<string>({ maxEntries: 4, ttlMs: 60_000 });
+    cache.set("default", "v");
+    cache.set("long", "v", 180_000);
+    // Past the bucket default but inside the override.
+    vi.advanceTimersByTime(60_001);
+    expect(cache.get("default")).toBeNull();
+    expect(cache.get("long")).toBe("v");
+    // Past the override too.
+    vi.advanceTimersByTime(120_000);
+    expect(cache.get("long")).toBeNull();
+  });
+
+  it("wrap()/cached() thread the TTL override and stay evictable by prefix", async () => {
+    vi.useFakeTimers();
+    const cache = new ServerCache<string>({ maxEntries: 4, ttlMs: 60_000 });
+    await cached(cache, "u1|dashboard-snapshot", async () => "snap", undefined, 180_000);
+    // Default bucket TTL elapsed; the override keeps the entry warm so
+    // the 120 s client refetch interval lands on a hit, not a miss.
+    vi.advanceTimersByTime(120_000);
+    expect(cache.get("u1|dashboard-snapshot")).toBe("snap");
+    // Invalidation still evicts regardless of the longer TTL.
+    expect(cache.deleteByPrefix("u1|")).toBe(1);
+    expect(cache.get("u1|dashboard-snapshot")).toBeNull();
+  });
+});
+
 describe("ServerCache LRU eviction", () => {
   it("evicts the oldest entry on capacity overflow", () => {
     const cache = new ServerCache<number>({ maxEntries: 3, ttlMs: 60_000 });

@@ -63,11 +63,27 @@ import { getPrismaClient, truncateAllTables } from "./setup";
 
 const TEST_USER_ID = "user-apns-dispatch-test";
 
+// v1.4.47.2 — `loadApnsConfig` verifies the key parses as an ES256-compatible
+// asymmetric key via `crypto.createPrivateKey`, so the fixture must be a real
+// EC P-256 PEM (test-only, generated for this suite). Mirrors the constant
+// used by the unit-level apns.test.ts so both layers exercise the live guard.
+const TEST_EC_PEM_LINES = [
+  "-----BEGIN PRIVATE KEY-----",
+  "MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgLOXP3Exjr5L5tamN",
+  "pTxck85Iaum80PdRlWDpc/ezviOgCgYIKoZIzj0DAQehRANCAAT1x8nKRb8KshQU",
+  "1aPieSCqOY6ilgC959umaFSlhfav8eZ91UHP/xond9aMoZcuQ7lJG/Rsj70SWMvZ",
+  "bw81BG89",
+  "-----END PRIVATE KEY-----",
+];
+
 const APNS_ENV = {
   APNS_KEY_ID: "ABCDE12345",
   APNS_TEAM_ID: "TEAM123456",
   APNS_BUNDLE_ID: "test.healthlog.ios",
-  APNS_KEY: "-----BEGIN PRIVATE KEY-----\\nINTEG\\n-----END PRIVATE KEY-----",
+  // 12-factor `\n`-escaped single-line form a typical Coolify / docker-compose
+  // `env_file` round-trip produces; `normaliseApnsPem` turns it back into the
+  // multi-line PEM the EC parser expects.
+  APNS_KEY: TEST_EC_PEM_LINES.join("\\n"),
 };
 
 beforeEach(async () => {

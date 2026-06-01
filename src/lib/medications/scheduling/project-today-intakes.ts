@@ -13,7 +13,8 @@
  * new schedule cadence, audit metadata) only have to land once.
  *
  * The helper is intentionally side-effect-only:
- *   1. Projects the active schedules through `expandTodayIntakes`.
+ *   1. Projects the active schedules through the canonical recurrence
+ *      engine (`scheduleEmitsInWindow`), minting at `windowStart`.
  *   2. Reads existing rows in the today-window.
  *   3. Inserts the missing rows (`skipDuplicates: true` for the
  *      `(userId, medicationId, scheduledFor, source)` unique index).
@@ -28,7 +29,12 @@
  * Returns the counts so the caller can surface them on `annotate(...)`.
  */
 import { prisma } from "@/lib/db";
-import { expandTodayIntakes } from "@/lib/medication-schedule";
+import {
+  buildCanonicalSchedule,
+  buildRecurrenceContext,
+  scheduleEmitsInWindow,
+} from "@/lib/medications/scheduling/worker-helpers";
+import { localHmAsUtc } from "@/lib/timezone";
 import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
 
 export interface ProjectTodayIntakesResult {
@@ -48,6 +54,10 @@ export async function projectTodayIntakesAndRecompute(input: {
     where: { userId, active: true },
     select: {
       id: true,
+      startsOn: true,
+      endsOn: true,
+      oneShot: true,
+      createdAt: true,
       schedules: {
         select: {
           id: true,
@@ -55,16 +65,93 @@ export async function projectTodayIntakesAndRecompute(input: {
           windowStart: true,
           windowEnd: true,
           daysOfWeek: true,
+          timesOfDay: true,
+          reminderGraceMinutes: true,
+          rrule: true,
+          rollingIntervalDays: true,
+          // v1.7.0 — PRN short-circuits to zero slots and CYCLIC gates the
+          // inner cadence by an on/off-week phase; both decisions live in
+          // the canonical engine, so the projector must select the new
+          // columns or every PRN / CYCLIC schedule would project as a
+          // plain SCHEDULED row.
+          scheduleType: true,
+          cyclicOnWeeks: true,
+          cyclicOffWeeks: true,
         },
       },
     },
   });
 
-  const projected = expandTodayIntakes(
-    activeMedications.flatMap((m) => m.schedules),
-    new Date(),
-    userTz,
-  );
+  // v1.6.0 read-flip — gate every "does this schedule emit today?"
+  // decision through the canonical recurrence engine (the same path the
+  // reminder worker uses). The legacy `expandTodayIntakes` walker read
+  // only `daysOfWeek` + `windowStart` and silently skipped
+  // `intervalWeeks > 1`, rolling, RRULE, and one-shot cadences — so the
+  // dashboard / intake today-tile diverged from what the worker minted
+  // for bi-weekly (GLP-1), rolling, and RRULE-only schedules. The
+  // `scheduledFor` instant stays anchored to `windowStart` so it remains
+  // byte-identical to the worker's RED-phase row and dedupes against the
+  // `@@unique([userId, medicationId, scheduledFor, source])` index.
+  const now = new Date();
+  const projected: Array<{ medicationId: string; scheduledFor: Date }> = [];
+
+  for (const med of activeMedications) {
+    if (med.schedules.length === 0) continue;
+
+    // Rolling cadence anchors off the last logged intake. One findFirst
+    // per medication, scoped to `takenAt IS NOT NULL` — byte-identical to
+    // the reminder worker's baseline (`reminder-worker.ts`), so projector
+    // and worker resolve the same next-due instant and never mint
+    // divergent `(med, scheduledFor)` rows.
+    let lastIntakeAt: Date | null = null;
+    if (med.schedules.some((s) => s.rollingIntervalDays !== null)) {
+      const lastIntake = await prisma.medicationIntakeEvent.findFirst({
+        // v1.7.0 sync — a tombstoned intake is no longer a taken dose, so
+        // it must not anchor the rolling-interval next-due computation.
+        where: {
+          userId,
+          medicationId: med.id,
+          deletedAt: null,
+          takenAt: { not: null },
+        },
+        orderBy: { takenAt: "desc" },
+        select: { takenAt: true },
+      });
+      lastIntakeAt = lastIntake?.takenAt ?? null;
+    }
+
+    const ctx = buildRecurrenceContext({ medication: med, userTz, lastIntakeAt });
+
+    for (const schedule of med.schedules) {
+      const canonical = buildCanonicalSchedule(schedule);
+      if (!scheduleEmitsInWindow(canonical, ctx, todayStart, todayEnd)) {
+        continue;
+      }
+      // Multi-time-of-day fan-out — mirror the reminder worker's
+      // per-slot mint. A schedule with `timesOfDay = ["07:00","19:00"]`
+      // is two distinct dose slots; projecting only `windowStart`
+      // minted a single pending row, so a twice-daily med's second
+      // dose never appeared in the today-tile and the event-count
+      // compliance rollup read half the expected doses (a 2×/day med
+      // showed 50% even when both doses were logged). Absent
+      // first-class `timesOfDay` the projector emits one slot at
+      // `windowStart`, byte-stable against the worker's legacy single-
+      // window row and the `(userId, medicationId, scheduledFor,
+      // source)` unique index.
+      const slotTimes =
+        schedule.timesOfDay && schedule.timesOfDay.length > 0
+          ? schedule.timesOfDay
+          : [schedule.windowStart];
+      for (const slotTime of slotTimes) {
+        const [h, m] = slotTime.split(":").map(Number);
+        if (!Number.isFinite(h) || !Number.isFinite(m)) continue;
+        projected.push({
+          medicationId: schedule.medicationId,
+          scheduledFor: localHmAsUtc(now, userTz, h, m),
+        });
+      }
+    }
+  }
 
   if (projected.length === 0) {
     return { projected: 0, backfilled: 0 };
@@ -75,6 +162,10 @@ export async function projectTodayIntakesAndRecompute(input: {
       userId,
       scheduledFor: { gte: todayStart, lt: todayEnd },
     },
+    // v1.7.0 sync — intentionally NO `deletedAt: null` filter here. A
+    // tombstoned row still occupies its `(userId, medicationId,
+    // scheduledFor, source)` unique slot, so the backfill must treat it
+    // as present to avoid a P2002 collision when minting REMINDER rows.
     select: { medicationId: true, scheduledFor: true },
   });
   const existingKey = new Set(

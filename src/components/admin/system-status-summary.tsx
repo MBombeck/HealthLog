@@ -22,35 +22,14 @@ import {
   Server,
   Tag,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
-import { queryKeys } from "@/lib/query-keys";
-import { StatusItem, useSystemStatus } from "./_shared";
-
-interface VersionResponse {
-  version: string;
-  buildSha: string | null;
-  builtAt: string | null;
-  offlineGeoEnabled?: boolean;
-}
-
-function useVersion() {
-  return useQuery({
-    queryKey: queryKeys.publicVersion(),
-    queryFn: async () => {
-      const res = await fetch("/api/version");
-      if (!res.ok) throw new Error("Failed to load version");
-      return (await res.json()).data as VersionResponse;
-    },
-    staleTime: 5 * 60_000,
-  });
-}
+import { StatusItem, usePublicVersion, useSystemStatus } from "./_shared";
 
 export function SystemStatusSummary() {
   const { t } = useTranslations();
   const { data: status, isError } = useSystemStatus();
-  const { data: version } = useVersion();
+  const { data: version } = usePublicVersion();
 
   return (
     <section

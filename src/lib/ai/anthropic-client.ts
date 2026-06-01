@@ -1,3 +1,4 @@
+import { safeFetch } from "@/lib/safe-fetch";
 import type { AIProvider, CompletionParams, CompletionResult } from "./types";
 
 interface AnthropicClientConfig {
@@ -35,21 +36,26 @@ export class AnthropicClient implements AIProvider {
     );
     const url = `${baseUrl}/messages`;
 
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": this.config.apiKey,
-        "anthropic-version": ANTHROPIC_VERSION,
+    const res = await safeFetch(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": this.config.apiKey,
+          "anthropic-version": ANTHROPIC_VERSION,
+        },
+        body: JSON.stringify({
+          model: this.config.model,
+          max_tokens: params.maxTokens ?? 1000,
+          temperature: params.temperature ?? 0.3,
+          system: params.systemPrompt,
+          messages: [{ role: "user", content: wrapForJson(params.userPrompt) }],
+        }),
       },
-      body: JSON.stringify({
-        model: this.config.model,
-        max_tokens: params.maxTokens ?? 1000,
-        temperature: params.temperature ?? 0.3,
-        system: params.systemPrompt,
-        messages: [{ role: "user", content: wrapForJson(params.userPrompt) }],
-      }),
-    });
+      // 60 s ceiling — see openai-client.ts for the rationale.
+      { timeoutMs: 60_000 },
+    );
 
     if (!res.ok) {
       // Mirror the openai-client body-capture so 4xx/5xx upstream incidents

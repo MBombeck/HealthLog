@@ -28,8 +28,10 @@ import {
 import {
   buildCadenceTimeline,
   computeNextDose,
+  type CadenceEngineContext,
 } from "@/lib/medications/scheduling/cadence";
 import { complianceChips } from "@/lib/medications/scheduling/compliance";
+import { lastNonSkippedTakenAt } from "@/lib/analytics/compliance";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 
@@ -75,6 +77,8 @@ export const GET = apiHandler(
       where: {
         medicationId: id,
         userId: user.id,
+        // v1.7.0 sync — exclude tombstoned rows from the cadence read.
+        deletedAt: null,
         scheduledFor: { gte: from },
       },
       select: { scheduledFor: true, takenAt: true, skipped: true },
@@ -95,6 +99,23 @@ export const GET = apiHandler(
     // was a sneaky bug at the 08:00-Berlin / 16:00-Tokyo intersection.
     const userTz = await resolveUserTimezone(user.id);
 
+    // v1.7.0 SB-SCHED-2 — route the detail-page compliance through the
+    // canonical recurrence engine so RRULE / rolling / cyclic / one-shot /
+    // PRN schedules read the same expected-slot grid the dashboard tile +
+    // intake path use. Without this the detail page falls back to the
+    // legacy weekday walker (e.g. `FREQ=WEEKLY;BYDAY=MO` expands daily,
+    // PRN counts as a real cadence) and disagrees with the dashboard.
+    // Mirrors `analytics/compliance.ts`'s context construction.
+    const lastIntakeAt = lastNonSkippedTakenAt(events);
+    const engineCtx: CadenceEngineContext = {
+      startsOn: med.startsOn,
+      endsOn: med.endsOn,
+      oneShot: med.oneShot,
+      createdAt: med.createdAt,
+      lastIntakeAt,
+      timeZone: userTz,
+    };
+
     const timeline = buildCadenceTimeline(
       med.schedules,
       events,
@@ -102,6 +123,7 @@ export const GET = apiHandler(
       windowDays,
       anchor,
       userTz,
+      engineCtx,
     );
     const chips = complianceChips(
       med.schedules,
@@ -110,8 +132,16 @@ export const GET = apiHandler(
       windowDays,
       anchor,
       userTz,
+      engineCtx,
     );
-    const next = computeNextDose(med.schedules, asOf, 14, anchor, userTz);
+    const next = computeNextDose(
+      med.schedules,
+      asOf,
+      14,
+      anchor,
+      userTz,
+      engineCtx,
+    );
 
     annotate({
       action: {

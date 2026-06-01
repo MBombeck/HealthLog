@@ -16,7 +16,7 @@ import type { CoachScopeSource } from "@/lib/ai/coach/types";
  *
  * Until v1.4.27 the Coach drawer was mounted inline on
  * `/insights/page.tsx` body, which meant navigating to a routed
- * sub-page (`/insights/blutdruck`, etc.) unmounted the drawer and
+ * sub-page (`/insights/blood-pressure`, etc.) unmounted the drawer and
  * removed every entry point to the Coach. The MA3 audit + Decision F
  * promoted the drawer up to `/insights/layout.tsx` so every routed
  * Insights surface can launch it.

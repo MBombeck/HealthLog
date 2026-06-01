@@ -53,6 +53,65 @@ const nextConfig: NextConfig = {
   // from memory instead of paying a full reload. See
   // `src/lib/http/cache-headers.ts` for the typed constant reused by
   // route handlers that opt into the same posture.
+  // v1.8.0 — the routed Insights sub-pages migrated from German to
+  // English slugs (`/insights/blutdruck` → `/insights/blood-pressure`,
+  // …). Every legacy German URL 301-redirects to its English target so
+  // bookmarks, the PWA's cached navigation, and any external link keep
+  // resolving. The redirect set is exhaustive and matches the rename
+  // table in `docs/adr/0001-insights-naming-convention.md`; the slug
+  // registry itself lives in `src/lib/insights/sub-page-metric.ts`.
+  // `bmi`, `hrv`, and `workouts` were already English and need no entry.
+  async redirects() {
+    const insightsSlugRenames: Array<[string, string]> = [
+      ["blutdruck", "blood-pressure"],
+      ["puls", "pulse"],
+      ["sauerstoff", "oxygen"],
+      ["koerpertemperatur", "body-temperature"],
+      ["atemfrequenz", "respiratory-rate"],
+      ["gewicht", "weight"],
+      ["koerperwasser", "body-water"],
+      ["knochenmasse", "bone-mass"],
+      ["fettfreie-masse", "fat-free-mass"],
+      ["fettmasse", "fat-mass"],
+      ["muskelmasse", "muscle-mass"],
+      ["viszeralfett", "visceral-fat"],
+      ["magermasse", "lean-body-mass"],
+      ["aktive-energie", "active-energy"],
+      ["stockwerke", "flights-climbed"],
+      ["gehstrecke", "walking-distance"],
+      ["gangstabilitaet", "walking-steadiness"],
+      ["gehpuls", "walking-heart-rate"],
+      ["gangasymmetrie", "walking-asymmetry"],
+      ["doppelstandphase", "double-support-time"],
+      ["schrittlaenge", "step-length"],
+      ["gehgeschwindigkeit", "walking-speed"],
+      ["schlaf", "sleep"],
+      ["ruhepuls", "resting-pulse"],
+      ["pulswellengeschwindigkeit", "pulse-wave-velocity"],
+      ["gefaessalter", "vascular-age"],
+      ["laermbelastung", "environmental-audio"],
+      ["kopfhoererpegel", "headphone-audio"],
+      ["laermereignisse", "audio-events"],
+      ["tageslicht", "daylight"],
+      ["blutzucker", "blood-glucose"],
+      ["hauttemperatur", "skin-temperature"],
+      ["stimmung", "mood"],
+      ["medikamente", "medications"],
+    ];
+    return insightsSlugRenames.flatMap(([from, to]) => [
+      {
+        source: `/insights/${from}`,
+        destination: `/insights/${to}`,
+        permanent: true,
+      },
+      // Preserve any nested path (e.g. a future `/insights/sleep/2026-05-31`).
+      {
+        source: `/insights/${from}/:path*`,
+        destination: `/insights/${to}/:path*`,
+        permanent: true,
+      },
+    ]);
+  },
   async headers() {
     return [
       {

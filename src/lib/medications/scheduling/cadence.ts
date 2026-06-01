@@ -28,6 +28,12 @@
  */
 
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
+import {
+  type CanonicalSchedule,
+  type RecurrenceContext,
+  type ScheduleType,
+  occurrencesBetween,
+} from "@/lib/medications/scheduling/recurrence";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 
 export interface ScheduleLike {
@@ -37,6 +43,86 @@ export interface ScheduleLike {
   windowEnd: string;
   /** Encoded recurrence string per `serializeScheduleRecurrence`. */
   daysOfWeek: string | null;
+  /**
+   * v1.7.0 SB-SCHED-2 — canonical-engine fields. As of v1.7.3 (B15),
+   * `expandScheduleSlots` delegates the expected-slot grid to the
+   * canonical recurrence engine (`occurrencesBetween`) for EVERY schedule
+   * shape whenever the caller supplies a `CadenceEngineContext` — these
+   * fields carry the recurrence detail the engine reads (rrule / rolling
+   * / cyclic), and a plain legacy `daysOfWeek` row routes through the
+   * engine's `expandLegacy` branch all the same. This keeps compliance on
+   * the same engine the projector + reminder worker use, fixing the bug
+   * where an `rrule = "FREQ=WEEKLY;BYDAY=MO"` schedule expanded to
+   * daily-every-day in compliance (because `daysOfWeek = null` reads as
+   * "every day") AND the B15 bug where a multi-`timesOfDay` legacy row
+   * collapsed to one slot/day in the numerator. Only callers that omit a
+   * context fall to the legacy weekday walker (byte-stable for pure-math
+   * / pre-v1.7 fixtures).
+   */
+  rrule?: string | null;
+  rollingIntervalDays?: number | null;
+  timesOfDay?: string[];
+  reminderGraceMinutes?: number | null;
+  scheduleType?: ScheduleType | null;
+  cyclicOnWeeks?: number | null;
+  cyclicOffWeeks?: number | null;
+  /** Stable id for the engine occurrence; defaults to a synthetic value. */
+  id?: string;
+}
+
+/**
+ * v1.7.0 SB-SCHED-2 — medication-level context the canonical engine
+ * needs to expand a schedule's expected slots. Passed once per
+ * medication into the cadence helpers; threaded down to
+ * `expandScheduleSlots`. When omitted, every schedule falls back to the
+ * legacy weekday walker (the byte-stable pre-v1.7 path).
+ */
+export interface CadenceEngineContext {
+  startsOn: Date | null;
+  endsOn: Date | null;
+  oneShot: boolean;
+  createdAt: Date;
+  /** Latest non-skipped intake — only read by rolling cadences. */
+  lastIntakeAt: Date | null;
+  /** User IANA timezone. Required for the engine to apply HH:mm slots. */
+  timeZone: string;
+}
+
+/** Build a `CanonicalSchedule` from a `ScheduleLike` + its index. */
+function toCanonical(
+  schedule: ScheduleLike,
+  scheduleIndex: number,
+): CanonicalSchedule {
+  return {
+    id: schedule.id ?? `cadence-${scheduleIndex}`,
+    rrule: schedule.rrule ?? null,
+    rollingIntervalDays: schedule.rollingIntervalDays ?? null,
+    timesOfDay: schedule.timesOfDay ?? [],
+    daysOfWeek: schedule.daysOfWeek ?? null,
+    windowStart: schedule.windowStart,
+    windowEnd: schedule.windowEnd,
+    reminderGraceMinutes: schedule.reminderGraceMinutes ?? null,
+    scheduleType: schedule.scheduleType ?? "SCHEDULED",
+    cyclicOnWeeks: schedule.cyclicOnWeeks ?? null,
+    cyclicOffWeeks: schedule.cyclicOffWeeks ?? null,
+  };
+}
+
+/** Build the engine's `RecurrenceContext` from the cadence context. */
+function toRecurrenceContext(
+  engineCtx: CadenceEngineContext,
+): RecurrenceContext {
+  return {
+    medication: {
+      id: "cadence-med",
+      startsOn: engineCtx.startsOn,
+      endsOn: engineCtx.endsOn,
+      oneShot: engineCtx.oneShot,
+      createdAt: engineCtx.createdAt,
+    },
+    timeZone: engineCtx.timeZone,
+    lastIntakeAt: engineCtx.lastIntakeAt,
+  };
 }
 
 export interface IntakeEventLike {
@@ -138,6 +224,15 @@ function applyTime(day: Date, hhmm: string, tz: string | undefined): Date {
   return instantInTz(parts.year, parts.month, parts.day, h, m, tz);
 }
 
+/** Parse "HH:mm" to minutes-since-midnight, or null when malformed. */
+function hhmmToMinutes(hhmm: string): number | null {
+  const [hStr, mStr] = hhmm.split(":");
+  const h = Number(hStr);
+  const m = Number(mStr);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  return h * 60 + m;
+}
+
 /** Snap a Date down to the user-local midnight. */
 function startOfLocalDay(d: Date, tz: string | undefined): Date {
   const parts = wallClockInTz(d, tz);
@@ -171,8 +266,50 @@ export function expandScheduleSlots(
   to: Date,
   anchor: Date = from,
   timeZone?: string,
+  engineCtx?: CadenceEngineContext,
 ): ExpectedDose[] {
   if (to <= from) return [];
+
+  // v1.7.3 B15 — canonical-engine delegation. When the caller supplies a
+  // medication context, expand the expected-slot grid through the
+  // canonical engine for EVERY schedule shape (rrule / rolling / one-shot
+  // / PRN / cyclic AND plain legacy `daysOfWeek`). The engine's
+  // `expandLegacy` branch iterates `effectiveTimesOfDay` correctly, so a
+  // single legacy row carrying multiple `timesOfDay` emits one slot per
+  // time — matching exactly what `expectedSlotCountForDay` already counts.
+  //
+  // The earlier gate (`oneShot || usesCanonicalEngine`) diverged the
+  // compliance numerator from the denominator: a 2×/day legacy schedule
+  // (`daysOfWeek` set, two `timesOfDay`, no rrule) fell through to the
+  // local legacy walker below, which only ever emits ONE slot/day from
+  // `windowStart`, while `expectedSlotCountForDay` always ran the engine
+  // and counted both slots → 1/2 = 50%. Routing both sides through the
+  // single engine converges them for every schedule form.
+  //
+  // The local legacy walker below stays the path only when no context is
+  // threaded (pure-math callers / pre-v1.7 fixtures) — byte-stable.
+  if (engineCtx) {
+    const canonical = toCanonical(schedule, scheduleIndex);
+    const recurrenceCtx = toRecurrenceContext(engineCtx);
+    // v1.7.0 code-correctness M5 — `occurrencesBetween` is inclusive of
+    // both ends, but the legacy walker below is half-open `[from, to)`
+    // (`if (wStart >= to) continue`). Subtract 1 ms from `to` so a dose
+    // landing exactly at the window boundary isn't counted by the engine
+    // path but dropped by the legacy path — the two branches stay
+    // denominator-equivalent at the edge.
+    const occurrences = occurrencesBetween(
+      canonical,
+      from,
+      new Date(to.getTime() - 1),
+      recurrenceCtx,
+    );
+    return occurrences.map((occ) => ({
+      day: startOfLocalDay(occ.at, timeZone),
+      windowStart: occ.at,
+      windowEnd: occ.graceUntil,
+      scheduleIndex,
+    }));
+  }
 
   const recurrence = parseScheduleRecurrence(schedule.daysOfWeek);
   const slots: ExpectedDose[] = [];
@@ -210,22 +347,65 @@ export function expandScheduleSlots(
       }
     }
 
-    const wStart = applyTime(day, schedule.windowStart, timeZone);
-    let wEnd = applyTime(day, schedule.windowEnd, timeZone);
-    // Overnight window: windowEnd <= windowStart means next day.
-    if (wEnd <= wStart) {
-      wEnd = new Date(wEnd.getTime() + DAY_MS);
+    // v1.7.3 B15 — defence-in-depth for the context-less legacy path. A
+    // schedule carrying multiple `timesOfDay` must emit one slot per time
+    // per qualifying day, mirroring the engine's `expandLegacy`. Pre-fix
+    // this walker only ever emitted a single `windowStart..windowEnd`
+    // window, so a 2×/day legacy row read as one slot/day here — the
+    // numerator half of the B15 divergence. When `timesOfDay` is empty we
+    // keep the historical single-window behaviour (byte-stable for every
+    // pre-v1.7 fixture that relies on it).
+    const times =
+      schedule.timesOfDay && schedule.timesOfDay.length > 0
+        ? schedule.timesOfDay
+        : null;
+
+    if (times === null) {
+      const wStart = applyTime(day, schedule.windowStart, timeZone);
+      let wEnd = applyTime(day, schedule.windowEnd, timeZone);
+      // Overnight window: windowEnd <= windowStart means next day.
+      if (wEnd <= wStart) {
+        wEnd = new Date(wEnd.getTime() + DAY_MS);
+      }
+
+      if (wStart >= to) continue;
+      if (wEnd <= from) continue;
+
+      slots.push({
+        day,
+        windowStart: wStart,
+        windowEnd: wEnd,
+        scheduleIndex,
+      });
+      continue;
     }
 
-    if (wStart >= to) continue;
-    if (wEnd <= from) continue;
+    for (const time of times) {
+      const wStart = applyTime(day, time, timeZone);
+      // Each time-of-day slot spans the schedule's window length. Reuse
+      // the windowStart..windowEnd span so the pairing radius and the
+      // chart cell keep their existing shape; an overnight window pushes
+      // the end to the next day.
+      const startMin = hhmmToMinutes(schedule.windowStart);
+      const endMin = hhmmToMinutes(schedule.windowEnd);
+      let spanMs = DAY_MS;
+      if (startMin !== null && endMin !== null) {
+        let span = endMin - startMin;
+        if (span <= 0) span += 24 * 60; // overnight window
+        spanMs = span * 60_000;
+      }
+      const wEnd = new Date(wStart.getTime() + spanMs);
 
-    slots.push({
-      day,
-      windowStart: wStart,
-      windowEnd: wEnd,
-      scheduleIndex,
-    });
+      if (wStart >= to) continue;
+      if (wEnd <= from) continue;
+
+      slots.push({
+        day,
+        windowStart: wStart,
+        windowEnd: wEnd,
+        scheduleIndex,
+      });
+    }
   }
 
   return slots;
@@ -309,12 +489,21 @@ export function computeNextDose(
   lookaheadDays = 14,
   anchor?: Date,
   timeZone?: string,
+  engineCtx?: CadenceEngineContext,
 ): ExpectedDose | null {
   const to = new Date(asOf.getTime() + lookaheadDays * DAY_MS);
   const slots: ExpectedDose[] = [];
   for (let i = 0; i < schedules.length; i++) {
     slots.push(
-      ...expandScheduleSlots(schedules[i], i, asOf, to, anchor ?? asOf, timeZone),
+      ...expandScheduleSlots(
+        schedules[i],
+        i,
+        asOf,
+        to,
+        anchor ?? asOf,
+        timeZone,
+        engineCtx,
+      ),
     );
   }
   if (slots.length === 0) return null;
@@ -335,6 +524,7 @@ export function buildCadenceTimeline(
   windowDays = 30,
   anchor?: Date,
   timeZone?: string,
+  engineCtx?: CadenceEngineContext,
 ): PairedDose[] {
   const from = new Date(asOf.getTime() - windowDays * DAY_MS);
   const slots: ExpectedDose[] = [];
@@ -347,6 +537,7 @@ export function buildCadenceTimeline(
         asOf,
         anchor ?? from,
         timeZone,
+        engineCtx,
       ),
     );
   }
@@ -368,6 +559,7 @@ export function missedDoses(
   windowDays = 30,
   anchor?: Date,
   timeZone?: string,
+  engineCtx?: CadenceEngineContext,
 ): number {
   const timeline = buildCadenceTimeline(
     schedules,
@@ -376,6 +568,7 @@ export function missedDoses(
     windowDays,
     anchor,
     timeZone,
+    engineCtx,
   );
   return timeline.filter((d) => d.status === "missed").length;
 }

@@ -109,6 +109,7 @@ interface NarrowAggregateRow {
   type: string;
   avg7: number | null;
   avg30: number | null;
+  avg30_last_month: number | null;
   slope7: number | null;
   r2_7: number | null;
   slope30: number | null;
@@ -266,6 +267,10 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
         AVG(m."value") FILTER (
           WHERE m."measured_at" >= NOW() - INTERVAL '30 days'
         )::double precision                                           AS avg30,
+        AVG(m."value") FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '60 days'
+            AND m."measured_at" <  NOW() - INTERVAL '30 days'
+        )::double precision                                           AS avg30_last_month,
         REGR_SLOPE(
           m."value",
           EXTRACT(EPOCH FROM m."measured_at") / 86400.0
@@ -415,7 +420,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
       slope30: buildSlope(narrow?.slope30 ?? null, narrow?.r2_30 ?? null),
       slope90: buildSlope(narrow?.slope90 ?? null, narrow?.r2_90 ?? null),
       anomalyCount: 0,
-      avg30LastMonth: null,
+      avg30LastMonth: round2(narrow?.avg30_last_month ?? null),
       avg30LastYear: null,
     };
   }
@@ -500,6 +505,10 @@ async function computeFromLiveAggregate(
         AVG(m."value") FILTER (
           WHERE m."measured_at" >= NOW() - INTERVAL '30 days'
         )::double precision                                           AS avg30,
+        AVG(m."value") FILTER (
+          WHERE m."measured_at" >= NOW() - INTERVAL '60 days'
+            AND m."measured_at" <  NOW() - INTERVAL '30 days'
+        )::double precision                                           AS avg30_last_month,
         REGR_SLOPE(
           m."value",
           EXTRACT(EPOCH FROM m."measured_at") / 86400.0
@@ -614,7 +623,7 @@ async function computeFromLiveAggregate(
       slope30: buildSlope(win?.slope30 ?? null, win?.r2_30 ?? null),
       slope90: buildSlope(win?.slope90 ?? null, win?.r2_90 ?? null),
       anomalyCount: 0,
-      avg30LastMonth: null,
+      avg30LastMonth: round2(win?.avg30_last_month ?? null),
       avg30LastYear: null,
     };
   }

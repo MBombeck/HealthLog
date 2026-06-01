@@ -46,6 +46,23 @@ describe("moodLog secret encrypt-at-rest", () => {
     expect(isLegacyPlaintext(null)).toBe(false);
   });
 
+  it("throws when an envelope-shaped row fails to decrypt (tamper or stale key)", () => {
+    // `<keyId>.<payload>` shape but the keyId is unknown to the live
+    // config — must surface as an error, not silently return the
+    // ciphertext as if it were the plaintext secret.
+    expect(() => readMoodLogSecret("v9.AAAAAAAAAAAAAAAAAAAAAAA=")).toThrow();
+  });
+
+  it("treats envelope-shaped tampered ciphertext as a hard failure", () => {
+    // Round-trip an encrypted value, then flip a byte in the payload.
+    // The shape stays envelope-like, so decrypt must throw (AES-GCM
+    // auth-tag mismatch) instead of falling back to plaintext.
+    const enc = encryptMoodLogSecret("mb_test");
+    const dot = enc.indexOf(".");
+    const tampered = `${enc.slice(0, dot + 1)}AA${enc.slice(dot + 3)}`;
+    expect(() => readMoodLogSecret(tampered)).toThrow();
+  });
+
   it("rotateLegacyMoodLogSecrets encrypts only legacy rows and is idempotent", async () => {
     const enc = encryptMoodLogSecret("mb_alreadyencrypted");
     const rows = [

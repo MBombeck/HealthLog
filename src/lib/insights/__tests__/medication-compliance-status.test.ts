@@ -8,8 +8,8 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-vi.mock("@/lib/ai/provider", () => ({
-  resolveProvider: vi.fn(),
+vi.mock("@/lib/insights/status-provider", () => ({
+  runStatusCompletion: vi.fn(),
 }));
 
 vi.mock("@/lib/insights/memory", () => ({
@@ -22,19 +22,50 @@ vi.mock("@/lib/medication-category", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { resolveProvider } from "@/lib/ai/provider";
+import { runStatusCompletion } from "@/lib/insights/status-provider";
 import { getMedicationCategories } from "@/lib/medication-category";
 import { generateMedicationComplianceStatusForUser } from "../medication-compliance-status";
 
 const dayMs = 24 * 60 * 60 * 1000;
+
+function stubCompletion(
+  content: string,
+  capture?: { userPrompt: string | null },
+) {
+  vi.mocked(runStatusCompletion).mockImplementation(
+    async (args: { userPrompt: string }) => {
+      if (capture) capture.userPrompt = args.userPrompt;
+      return {
+        kind: "ok",
+        content,
+        providerType: "anthropic",
+        model: "x",
+        tokensUsed: 1,
+      } as never;
+    },
+  );
+}
+
+function medFixture(now: Date) {
+  return {
+    id: "med-1",
+    name: "Ramipril",
+    dose: "5mg",
+    active: true,
+    createdAt: new Date(now.getTime() - 60 * dayMs),
+    schedules: [
+      { id: "s1", windowStart: "08:00", windowEnd: "09:00", daysOfWeek: null },
+    ],
+  };
+}
 
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(getMedicationCategories).mockResolvedValue({});
 });
 
-describe("generateMedicationComplianceStatusForUser — v1.4.6 bucketed payload", () => {
-  it("emits {daily, monthly} compliance series per medication spanning 3 years", async () => {
+describe("generateMedicationComplianceStatusForUser — graded payload", () => {
+  it("emits a graded {recent, weekly, monthly} compliance series per medication", async () => {
     const now = new Date();
     const medication = {
       id: "med-1",
@@ -42,7 +73,9 @@ describe("generateMedicationComplianceStatusForUser — v1.4.6 bucketed payload"
       dose: "5mg",
       active: true,
       createdAt: new Date(now.getTime() - 1100 * dayMs),
-      schedules: [{ id: "s1", time: "08:00" }],
+      schedules: [
+        { id: "s1", windowStart: "08:00", windowEnd: "09:00", daysOfWeek: null },
+      ],
     };
 
     const events: Array<{
@@ -73,17 +106,7 @@ describe("generateMedicationComplianceStatusForUser — v1.4.6 bucketed payload"
     } as never);
 
     const captured: { userPrompt: string | null } = { userPrompt: null };
-    vi.mocked(resolveProvider).mockResolvedValue({
-      type: "anthropic",
-      generateCompletion: vi.fn(async (args: { userPrompt: string }) => {
-        captured.userPrompt = args.userPrompt;
-        return {
-          content: '{"summary":"OK","medications":[]}',
-          model: "x",
-          tokensUsed: 1,
-        };
-      }),
-    } as never);
+    stubCompletion('{"summary":"OK","medications":[]}', captured);
 
     await generateMedicationComplianceStatusForUser("user-1", {
       locale: "en",
@@ -95,142 +118,104 @@ describe("generateMedicationComplianceStatusForUser — v1.4.6 bucketed payload"
     expect(snapshot.medications).toBeInstanceOf(Array);
     expect(snapshot.medications.length).toBe(1);
     const dailySeries = snapshot.medications[0].dailySeries;
-    expect(dailySeries).toHaveProperty("daily");
+    expect(dailySeries).toHaveProperty("recent");
+    expect(dailySeries).toHaveProperty("weekly");
     expect(dailySeries).toHaveProperty("monthly");
-    expect(dailySeries.daily.length).toBeGreaterThan(0);
-    expect(dailySeries.monthly.length).toBeGreaterThan(0);
-    expect(dailySeries.daily[0]).toHaveProperty("dayOffset");
-    expect(dailySeries.daily[0]).toHaveProperty("value");
-    expect(dailySeries.daily[0]).toHaveProperty("n");
-    expect(dailySeries.monthly[0]).toHaveProperty("monthOffset");
-    expect(dailySeries.monthly[0]).toHaveProperty("value");
-    expect(dailySeries.monthly[0]).toHaveProperty("n");
+    expect(dailySeries).toHaveProperty("yearly");
+    expect(dailySeries.recent.length).toBeLessThanOrEqual(21);
+    expect(dailySeries.recent[0]).toHaveProperty("date");
+    expect(dailySeries.recent[0]).toHaveProperty("mean");
+    expect(dailySeries.monthly[0]).toHaveProperty("month");
   });
 });
 
-describe("generateMedicationComplianceStatusForUser — v1.4.41 timeout-stub persistence", () => {
-  it("persists a sentinel row keyed to today when the provider times out", async () => {
+describe("generateMedicationComplianceStatusForUser — timeout never persists", () => {
+  it("serves the fallback summary without writing a cache row on timeout", async () => {
     const now = new Date();
-    const medication = {
-      id: "med-1",
-      name: "Ramipril",
-      dose: "5mg",
-      active: true,
-      createdAt: new Date(now.getTime() - 60 * dayMs),
-      schedules: [{ id: "s1", time: "08:00" }],
-    };
-
     vi.mocked(prisma.auditLog.findFirst).mockResolvedValue(null);
     vi.mocked(prisma.medication.findMany).mockResolvedValue([
-      medication,
+      medFixture(now),
     ] as never);
     vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
       [] as never,
     );
     vi.mocked(prisma.auditLog.create).mockResolvedValue({
-      createdAt: new Date(),
+      createdAt: now,
     } as never);
 
-    vi.mocked(resolveProvider).mockResolvedValue({
-      type: "anthropic",
-      generateCompletion: vi.fn(
-        () =>
-          new Promise(() => {
-            /* never resolves */
-          }),
-      ),
-    } as never);
-
-    vi.useFakeTimers();
-    const promise = generateMedicationComplianceStatusForUser("user-1", {
-      locale: "en",
-    });
-    await vi.advanceTimersByTimeAsync(25_000);
-    const result = await promise;
-    vi.useRealTimers();
-
-    // Route returns the richer `{summary, medications}` shape — the
-    // helper writes the persist row and the route maps `summary` ←
-    // `text` on the way out.
-    expect(result.summary).toBeTruthy();
-    expect(result.medications).toEqual([]);
-    expect(result.cached).toBe(true);
-    expect(result.updatedAt).toBeTruthy();
-
-    const createCalls = vi.mocked(prisma.auditLog.create).mock.calls;
-    expect(createCalls.length).toBe(1);
-    const details = (createCalls[0][0] as { data: { details: string } }).data
-      .details;
-    const parsed = JSON.parse(details) as {
-      dateKey?: string;
-      text?: string;
-      timeout?: boolean;
-      model?: string;
-    };
-    expect(parsed.text).toBeTruthy();
-    expect(parsed.timeout).toBe(true);
-    expect(parsed.model).toBe("timeout-stub");
-    expect(parsed.dateKey).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-  });
-});
-
-describe("generateMedicationComplianceStatusForUser — v1.4.41 timeout-stub short-circuit", () => {
-  it("subsequent mounts short-circuit when a stub row with text+timeout:true exists", async () => {
-    const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: "Europe/Berlin",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).formatToParts(new Date());
-    const y = parts.find((p) => p.type === "year")!.value;
-    const m = parts.find((p) => p.type === "month")!.value;
-    const d = parts.find((p) => p.type === "day")!.value;
-    const todayKey = `${y}-${m}-${d}`;
-    const stubRow = {
-      createdAt: new Date(),
-      details: JSON.stringify({
-        dateKey: todayKey,
-        locale: "en",
-        text: "Medication compliance fallback…",
-        timeout: true,
-      }),
-    };
-
-    vi.mocked(prisma.auditLog.findFirst).mockResolvedValue(stubRow as never);
-    const providerCall = vi.fn();
-    vi.mocked(resolveProvider).mockResolvedValue({
-      type: "anthropic",
-      generateCompletion: providerCall,
+    vi.mocked(runStatusCompletion).mockResolvedValue({
+      kind: "timeout",
     } as never);
 
     const result = await generateMedicationComplianceStatusForUser("user-1", {
       locale: "en",
     });
 
-    expect(providerCall).not.toHaveBeenCalled();
-    expect(result.summary).toBe("Medication compliance fallback…");
+    expect(result.summary).toBeTruthy();
     expect(result.medications).toEqual([]);
     expect(result.cached).toBe(true);
-    expect(result.updatedAt).toBe(stubRow.createdAt.toISOString());
-    expect(prisma.auditLog.create).not.toHaveBeenCalled();
+    expect(result.updatedAt).toBeNull();
+    // v1.8.3 — no real assessment persisted (updatedAt stays null above),
+    // but a short-TTL negative stub IS written so the read-only route does
+    // not re-enqueue on every navigation while the provider is degraded.
+    // The stub is a timeout marker that `readFreshStatusText` rejects.
+    await Promise.resolve();
+    for (const call of vi.mocked(prisma.auditLog.create).mock.calls) {
+      const details = JSON.parse(
+        (call[0] as { data: { details: string } }).data.details,
+      );
+      expect(details.timeout === true || details.model === "timeout-stub").toBe(
+        true,
+      );
+    }
+  });
+});
+
+describe("generateMedicationComplianceStatusForUser — cache-read skips a stub", () => {
+  it("regenerates when the only cached row is a timeout stub", async () => {
+    const now = new Date();
+    const todayKey = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Berlin",
+    }).format(now);
+    vi.mocked(prisma.auditLog.findFirst).mockResolvedValue({
+      createdAt: now,
+      details: JSON.stringify({
+        dateKey: todayKey,
+        locale: "en",
+        text: "Medication compliance fallback…",
+        model: "timeout-stub",
+        timeout: true,
+      }),
+    } as never);
+    vi.mocked(prisma.medication.findMany).mockResolvedValue([
+      medFixture(now),
+    ] as never);
+    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
+      [] as never,
+    );
+    vi.mocked(prisma.auditLog.create).mockResolvedValue({
+      createdAt: now,
+    } as never);
+
+    stubCompletion('{"summary":"Fresh compliance assessment.","medications":[]}');
+
+    const result = await generateMedicationComplianceStatusForUser("user-1", {
+      locale: "en",
+    });
+
+    expect(runStatusCompletion).toHaveBeenCalledTimes(1);
+    expect(result.summary).toBe("Fresh compliance assessment.");
+    expect(result.cached).toBe(false);
   });
 });
 
 describe("generateMedicationComplianceStatusForUser — token-leak hardening (v1.4.27 F16)", () => {
-  it("strips metric: tokens out of the cached summary + per-medication text", async () => {
+  it("strips metric: tokens out of the cached summary", async () => {
     const now = new Date();
-    const medication = {
-      id: "med-1",
-      name: "Ramipril",
-      dose: "5mg",
-      active: true,
-      createdAt: new Date(now.getTime() - 60 * dayMs),
-      schedules: [{ id: "s1", time: "08:00" }],
-    };
 
     vi.mocked(prisma.auditLog.findFirst).mockResolvedValue(null);
     vi.mocked(prisma.medication.findMany).mockResolvedValue([
-      medication,
+      medFixture(now),
     ] as never);
     vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
       [] as never,
@@ -239,24 +224,15 @@ describe("generateMedicationComplianceStatusForUser — token-leak hardening (v1
       createdAt: new Date(),
     } as never);
 
-    vi.mocked(resolveProvider).mockResolvedValue({
-      type: "anthropic",
-      generateCompletion: vi.fn(async () => ({
-        content: JSON.stringify({
-          summary:
-            "Compliance held steady at 96%. metric:BLOOD_PRESSURE_SYS over the last 30 days.",
-          medications: [
-            {
-              medicationId: "med-1",
-              summary:
-                "Ramipril taken on schedule. metric:PULSE no missed doses in 30 days.",
-            },
-          ],
-        }),
-        model: "x",
-        tokensUsed: 1,
-      })),
-    } as never);
+    // The compliance prompt returns only a `{ summary }` envelope; the
+    // per-medication cards are placeholder text built server-side, never
+    // model-authored. So token-leak hardening only has to scrub `summary`.
+    stubCompletion(
+      JSON.stringify({
+        summary:
+          "Compliance held steady at 96%. metric:BLOOD_PRESSURE_SYS over the last 30 days.",
+      }),
+    );
 
     const result = await generateMedicationComplianceStatusForUser("user-1", {
       locale: "en",
@@ -264,6 +240,9 @@ describe("generateMedicationComplianceStatusForUser — token-leak hardening (v1
 
     expect(result.summary).toBeTruthy();
     expect(result.summary).not.toContain("metric:");
+    // A per-medication placeholder row is still surfaced for the active med.
+    expect(result.medications).toHaveLength(1);
+    expect(result.medications[0].medicationId).toBe("med-1");
     expect(result.medications[0].text).not.toContain("metric:");
     const createCalls = vi.mocked(prisma.auditLog.create).mock.calls;
     expect(createCalls.length).toBeGreaterThan(0);

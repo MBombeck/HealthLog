@@ -23,6 +23,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Sparkles, Loader2 } from "lucide-react";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
+import { helpfulRateColour } from "./_shared";
 
 interface FeedbackBucket {
   severity: string;
@@ -52,12 +53,6 @@ const SEVERITY_TINT: Record<string, string> = {
   important: "text-dracula-orange",
   urgent: "text-dracula-red",
 };
-
-function helpfulRateColour(rate: number): string {
-  if (rate >= 0.8) return "text-dracula-green";
-  if (rate >= 0.5) return "text-dracula-yellow";
-  return "text-dracula-orange";
-}
 
 export function AiQualitySection() {
   const { t } = useTranslations();

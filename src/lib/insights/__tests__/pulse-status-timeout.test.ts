@@ -1,19 +1,18 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 
 /**
- * v1.4.28 R3a FB-D2 — provider timeout fallback for the pulse-status
- * route. When the upstream `generateCompletion` call does not resolve
- * inside the 20-second budget the route returns a deterministic
- * cached-style envelope so the InsightStatusCard renders the
- * fallback text instead of spinning behind React-Query's default
- * retries.
+ * Provider-timeout fallback for the pulse-status route. When the
+ * provider chain does not resolve inside `STATUS_PROVIDER_TIMEOUT_MS`
+ * the route returns the deterministic no-key fallback so the
+ * InsightStatusCard renders instead of spinning. It must NOT persist the
+ * fallback AS AN ASSESSMENT (the pre-v1.4.28 stick-until-midnight bug);
+ * `updatedAt` stays null and the served text is never a real assessment.
  *
- * v1.4.41 — the timeout branch now persists a sentinel keyed to
- * today (see `persistTimeoutStubAndReturn`) so subsequent mounts
- * short-circuit at the cache lookup. The persisted row carries
- * `timeout: true` + `model: "timeout-stub"` so the daily pre-warm
- * job can recognise and overwrite the stub instead of treating it
- * as a real assessment.
+ * v1.8.3 — the timeout path now writes a *short-TTL negative stub*
+ * (`{ timeout:true, model:"timeout-stub", retryAt }`). It is explicitly
+ * rejected by `readFreshStatusText`, so it can never hide the real
+ * assessment; its sole purpose is to stop the read-only route re-enqueuing
+ * generation on every navigation while a provider is degraded.
  */
 
 vi.mock("@/lib/db", () => ({
@@ -21,12 +20,13 @@ vi.mock("@/lib/db", () => ({
     user: { findUnique: vi.fn() },
     auditLog: { findFirst: vi.fn(), create: vi.fn() },
     measurement: { findMany: vi.fn() },
+    measurementRollup: { findMany: vi.fn() },
     moodEntry: { findMany: vi.fn() },
   },
 }));
 
-vi.mock("@/lib/ai/provider", () => ({
-  resolveProvider: vi.fn(),
+vi.mock("@/lib/insights/status-provider", () => ({
+  runStatusCompletion: vi.fn(),
 }));
 
 vi.mock("@/lib/insights/memory", () => ({
@@ -35,20 +35,16 @@ vi.mock("@/lib/insights/memory", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { resolveProvider } from "@/lib/ai/provider";
+import { runStatusCompletion } from "@/lib/insights/status-provider";
 import { generatePulseStatusForUser } from "../pulse-status";
 
 beforeEach(() => {
   vi.resetAllMocks();
-  vi.useFakeTimers();
-});
-
-afterEach(() => {
-  vi.useRealTimers();
+  vi.mocked(prisma.measurementRollup.findMany).mockResolvedValue([] as never);
 });
 
 describe("generatePulseStatusForUser — provider timeout fallback", () => {
-  it("returns a cached-style envelope when the provider exceeds 20 s", async () => {
+  it("returns the fallback without persisting a cache row on timeout", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       dateOfBirth: null,
       gender: null,
@@ -58,40 +54,36 @@ describe("generatePulseStatusForUser — provider timeout fallback", () => {
       { value: 72, measuredAt: new Date() },
     ] as never);
     vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
-    vi.mocked(prisma.auditLog.create).mockResolvedValue({
-      createdAt: new Date(),
+
+    vi.mocked(runStatusCompletion).mockResolvedValue({
+      kind: "timeout",
     } as never);
 
-    // Provider stalls indefinitely.
-    vi.mocked(resolveProvider).mockResolvedValue({
-      type: "anthropic",
-      generateCompletion: vi.fn(
-        () => new Promise<{ content: string }>(() => {}),
-      ),
-    } as never);
-
-    const promise = generatePulseStatusForUser("user-1", { locale: "en" });
-    // Advance past the 20-second budget so the timeout race wins.
-    await vi.advanceTimersByTimeAsync(21_000);
-    const result = await promise;
+    const result = await generatePulseStatusForUser("user-1", {
+      locale: "en",
+    });
 
     expect(result.hasProvider).toBe(true);
     expect(result.cached).toBe(true);
     expect(typeof result.text).toBe("string");
     expect(result.text?.length ?? 0).toBeGreaterThan(0);
-    // v1.4.41 — the timeout branch now persists a sentinel row so
-    // subsequent mounts short-circuit at the cache lookup. The
-    // daily pre-warm worker overwrites the stub by detecting
-    // `timeout: true` + `model: "timeout-stub"`.
+    // No real assessment persisted — `updatedAt` stays null so the card
+    // never mislabels the fallback as a fresh assessment.
+    expect(result.updatedAt).toBeNull();
+
+    // v1.8.3 — a short-TTL negative stub IS persisted (fire-and-forget) so
+    // the read-only route doesn't re-enqueue on every navigation while the
+    // provider is degraded. It is marked as a timeout stub, which
+    // `readFreshStatusText` rejects, so it never hides the real assessment.
+    // The write is fire-and-forget (`void`), so flush the microtask queue.
+    await Promise.resolve();
     expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
-    const createArg = vi.mocked(prisma.auditLog.create).mock.calls[0][0] as {
+    const persisted = vi.mocked(prisma.auditLog.create).mock.calls[0][0] as {
       data: { details: string };
     };
-    const parsed = JSON.parse(createArg.data.details) as {
-      timeout?: boolean;
-      model?: string;
-    };
-    expect(parsed.timeout).toBe(true);
-    expect(parsed.model).toBe("timeout-stub");
+    const stub = JSON.parse(persisted.data.details);
+    expect(stub.timeout).toBe(true);
+    expect(stub.model).toBe("timeout-stub");
+    expect(typeof stub.retryAt).toBe("string");
   });
 });

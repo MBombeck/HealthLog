@@ -63,6 +63,12 @@ const NOT_COACH_OWNED_ROUTES: ReadonlyArray<string> = [
   // ability to dispose of stale recommendations.
   "src/app/api/insights/feedback/route.ts",
   "src/app/api/insights/glp1-timeline/route.ts",
+  // v1.5.5 — per-user tile layout for the `/insights` surface. The
+  // endpoint persists tile visibility + ordering only; it carries no
+  // assistant prose and is the mirror of `/api/dashboard/widgets`,
+  // which also sits outside the Coach gate. Disabling Coach must not
+  // wedge the user's ability to reorder the insights tile strip.
+  "src/app/api/insights/layout/route.ts",
   "src/app/api/insights/targets/route.ts",
 ];
 

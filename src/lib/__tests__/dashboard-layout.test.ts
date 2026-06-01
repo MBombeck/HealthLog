@@ -3,6 +3,9 @@ import {
   DEFAULT_DASHBOARD_LAYOUT,
   resolveDashboardLayout,
   serializeDashboardLayout,
+  DASHBOARD_WIDGET_IDS,
+  DASHBOARD_IOS_ONLY_WIDGET_IDS,
+  DASHBOARD_WIDGET_CATALOGUE_IDS,
   type DashboardLayout,
 } from "@/lib/dashboard-layout";
 
@@ -370,5 +373,137 @@ describe("resolveDashboardLayout() — chartOverlayPrefs (v1.4.18)", () => {
     };
     const resolved = resolveDashboardLayout(saved);
     expect(Object.keys(resolved.chartOverlayPrefs ?? {})).toEqual(["bp"]);
+  });
+});
+
+/**
+ * v1.7.0 — full 27-id widget catalogue for the iOS cold-launch seed.
+ * The catalogue is a pure superset of the server-known ids; the
+ * iOS-only ids extend it without touching the writable PUT enum.
+ */
+describe("DASHBOARD_WIDGET_CATALOGUE_IDS — 27-id catalogue", () => {
+  it("carries exactly 27 distinct ids (16 server-known + 11 iOS-only)", () => {
+    expect(DASHBOARD_WIDGET_IDS).toHaveLength(16);
+    expect(DASHBOARD_IOS_ONLY_WIDGET_IDS).toHaveLength(11);
+    expect(DASHBOARD_WIDGET_CATALOGUE_IDS).toHaveLength(27);
+    expect(new Set(DASHBOARD_WIDGET_CATALOGUE_IDS).size).toBe(27);
+  });
+
+  it("is a superset of the server-known ids in declaration order", () => {
+    expect(
+      DASHBOARD_WIDGET_CATALOGUE_IDS.slice(0, DASHBOARD_WIDGET_IDS.length),
+    ).toEqual([...DASHBOARD_WIDGET_IDS]);
+  });
+
+  it("does not double-book a server-known id as iOS-only", () => {
+    const known = new Set<string>(DASHBOARD_WIDGET_IDS);
+    for (const id of DASHBOARD_IOS_ONLY_WIDGET_IDS) {
+      expect(known.has(id)).toBe(false);
+    }
+  });
+
+  it("carries the locked iOS-only ids verbatim", () => {
+    expect([...DASHBOARD_IOS_ONLY_WIDGET_IDS]).toEqual([
+      "restingHeartRate",
+      "hrv",
+      "walkingSpeed",
+      "walkingAsymmetry",
+      "walkingStepLength",
+      "bmi",
+      "bodyTemperature",
+      "walkingDoubleSupport",
+      "respiratoryRate",
+      "audioExposureEnvironment",
+      "audioExposureHeadphone",
+    ]);
+  });
+});
+
+/**
+ * v1.7.0 W1 — iOS-only ids round-trip through the stored layout so the
+ * native client can drop its local merge workarounds
+ * (`byMergingIosOnlyDefaults` / `byRestoringIosOnlyWidgets`). The
+ * resolver + serializer must RETAIN every catalogue id (27) while the
+ * default layout stays the 16 web tiles, and a genuinely-unknown id
+ * outside the 27 still drops.
+ */
+describe("resolveDashboardLayout() — iOS-only id retention (v1.7.0)", () => {
+  it("retains all 11 iOS-only ids alongside the web ids on read", () => {
+    const stored = {
+      version: 1,
+      widgets: [
+        { id: "weight", visible: true, tileVisible: true, order: 0 },
+        ...DASHBOARD_IOS_ONLY_WIDGET_IDS.map((id, i) => ({
+          id,
+          visible: true,
+          tileVisible: true,
+          order: 1 + i,
+        })),
+      ],
+    };
+    const resolved = resolveDashboardLayout(stored);
+    const ids = resolved.widgets.map((w) => w.id);
+    for (const iosId of DASHBOARD_IOS_ONLY_WIDGET_IDS) {
+      expect(ids).toContain(iosId);
+    }
+    expect(ids).toContain("weight");
+  });
+
+  it("round-trips the full 27-id catalogue through serialize → resolve", () => {
+    const layout: DashboardLayout = {
+      version: 1,
+      widgets: DASHBOARD_WIDGET_CATALOGUE_IDS.map((id, i) => ({
+        id,
+        visible: true,
+        tileVisible: true,
+        order: i,
+      })),
+    };
+    const serialized = serializeDashboardLayout(layout);
+    const resolved = resolveDashboardLayout(serialized);
+    expect(resolved.widgets.map((w) => w.id).sort()).toEqual(
+      [...DASHBOARD_WIDGET_CATALOGUE_IDS].sort(),
+    );
+  });
+
+  it("still drops an id outside the 27-catalogue while keeping iOS-only ids", () => {
+    const stored = {
+      version: 1,
+      widgets: [
+        { id: "weight", visible: true, tileVisible: true, order: 0 },
+        { id: "hrv", visible: true, tileVisible: true, order: 1 }, // iOS-only
+        { id: "glp1", visible: true, tileVisible: true, order: 2 }, // retired
+        { id: "totally-made-up", visible: true, tileVisible: true, order: 3 },
+      ],
+    };
+    const resolved = resolveDashboardLayout(stored);
+    const ids = resolved.widgets.map((w) => w.id);
+    expect(ids).toContain("hrv");
+    expect(ids).not.toContain("glp1");
+    expect(ids).not.toContain("totally-made-up");
+  });
+
+  it("keeps the default layout at the 16 web tiles (no iOS-only seeded)", () => {
+    const ids = DEFAULT_DASHBOARD_LAYOUT.widgets.map((w) => w.id);
+    expect(ids).toHaveLength(16);
+    for (const iosId of DASHBOARD_IOS_ONLY_WIDGET_IDS) {
+      expect(ids).not.toContain(iosId);
+    }
+  });
+
+  it("does NOT auto-append iOS-only ids when a web-only layout is read", () => {
+    // A web account that saved only `weight` must auto-upgrade to the 16
+    // web defaults — never to the 27 catalogue. iOS-only ids appear only
+    // once a native client has explicitly sent them.
+    const partial = {
+      version: 1,
+      widgets: [{ id: "weight", visible: true, tileVisible: true, order: 0 }],
+    };
+    const resolved = resolveDashboardLayout(partial);
+    const ids = resolved.widgets.map((w) => w.id);
+    expect(ids).toHaveLength(16);
+    for (const iosId of DASHBOARD_IOS_ONLY_WIDGET_IDS) {
+      expect(ids).not.toContain(iosId);
+    }
   });
 });

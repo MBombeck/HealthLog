@@ -58,8 +58,30 @@ export interface ResponsiveSheetProps {
    * consumer renders its own close affordance inside the header.
    */
   showCloseButton?: boolean;
+  /**
+   * Desktop (Dialog branch) content width. The bottom-sheet branch
+   * always spans the viewport, so this prop only affects the `md+`
+   * Dialog. Defaults to `"md"` (448 px) to preserve every existing
+   * consumer; pass `"4xl"` for the wide medication editor's
+   * two-column layout. The class is the only width utility applied —
+   * the prior `cn("sm:max-w-md", className)` ordering let a
+   * consumer-passed width silently collide with the hardcoded
+   * default, so the width now resolves from this single source.
+   */
+  contentWidth?: "md" | "lg" | "2xl" | "3xl" | "4xl";
   children: React.ReactNode;
 }
+
+const CONTENT_WIDTH_CLASS: Record<
+  NonNullable<ResponsiveSheetProps["contentWidth"]>,
+  string
+> = {
+  md: "sm:max-w-md",
+  lg: "sm:max-w-lg",
+  "2xl": "sm:max-w-2xl",
+  "3xl": "sm:max-w-3xl",
+  "4xl": "sm:max-w-4xl",
+};
 
 /**
  * v1.4.27 R3d MB1 — shared mount primitive that flips between a
@@ -89,6 +111,7 @@ export function ResponsiveSheet({
   className,
   bodyClassName,
   showCloseButton = true,
+  contentWidth = "md",
   children,
 }: ResponsiveSheetProps) {
   const isMobile = useIsMobile();
@@ -160,7 +183,7 @@ export function ResponsiveSheet({
         showCloseButton={showCloseButton}
         data-slot="responsive-sheet-content"
         data-variant="dialog"
-        className={cn("sm:max-w-md", className)}
+        className={cn(CONTENT_WIDTH_CLASS[contentWidth], className)}
       >
         {hideHeader ? (
           <DialogHeader className="sr-only">

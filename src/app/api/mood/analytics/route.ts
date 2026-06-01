@@ -124,7 +124,8 @@ async function buildMoodAnalyticsResponse(
   // so the request still gets a correct response — the warm-up
   // fired above will mint the rollups for the next request.
   const moodEntries = await prisma.moodEntry.findMany({
-    where: { userId },
+    // v1.7.0 sync — exclude tombstoned rows from the analytics fallback.
+    where: { userId, deletedAt: null },
     orderBy: { moodLoggedAt: "asc" },
     select: { date: true, score: true, moodLoggedAt: true },
   });

@@ -19,6 +19,30 @@
 
 export type ClientPolicy = "web" | "native";
 
+/**
+ * Native refresh-token lifetime in days. The single source of truth for
+ * the native refresh window — the token policy, the `/api/auth/refresh`
+ * fallback, the sync delta-feed window surfaced in `/api/sync/state`, and
+ * the tombstone-retention cleanup job all read this so the four never
+ * drift. iOS derives its incremental-delta window from the issued
+ * `refreshTokenExpiresAt` rather than hardcoding 60 (v1.7.0 iOS-coord
+ * §7.2); keep this coupled.
+ */
+export const NATIVE_REFRESH_TOKEN_DAYS = 60;
+
+/**
+ * Tombstone retention margin (days) added on top of the refresh-token
+ * lifetime. A device offline longer than the refresh lifetime has lost
+ * its token and re-pairs (backfill, not delta), so tombstones only need
+ * to outlive the refresh window plus slack. Drives the cleanup job and
+ * the `cursorExpired` horizon in `/api/sync/changes`.
+ */
+export const TOMBSTONE_RETENTION_MARGIN_DAYS = 15;
+
+/** Days a soft-delete tombstone is retained before pruning. */
+export const TOMBSTONE_RETENTION_DAYS =
+  NATIVE_REFRESH_TOKEN_DAYS + TOMBSTONE_RETENTION_MARGIN_DAYS;
+
 export interface TokenPolicyDecision {
   policy: ClientPolicy;
   /** Lifetime of the issued ApiToken in days. */
@@ -66,7 +90,7 @@ export function resolveTokenPolicy(headers: Headers): TokenPolicyDecision {
   return {
     policy: "native",
     accessTokenDays: 1,
-    refreshTokenDays: 60,
+    refreshTokenDays: NATIVE_REFRESH_TOKEN_DAYS,
     tokenLabel: "native",
   };
 }

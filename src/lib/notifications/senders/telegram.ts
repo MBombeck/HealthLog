@@ -20,32 +20,56 @@ export interface TelegramSendResult extends SendOutcome {
 }
 
 /**
- * Delete ALL existing Telegram reminder messages for a medication (any date).
- * Ensures max one active message per medication in the chat.
+ * Delete the existing Telegram reminder message for a single dose slot
+ * before re-sending it. v1.7.0 SB-SCHED-4 — scoped to the exact slot
+ * `{ medicationId, scheduleId, date, phase, timeOfDay }` (the same
+ * composite the tracking upsert keys on), NOT the whole medication. A
+ * medication with `timesOfDay = ["08:00","20:00"]` has two distinct
+ * ledger rows per day; the pre-v1.7 whole-medication wipe deleted the
+ * morning row when the evening slot dispatched, so the worker's dedup
+ * check (`findUnique`) found nothing and re-fired the morning reminder.
  * Best-effort: logs errors but never throws.
  */
 async function deleteExistingReminders(
   botToken: string,
   medicationId: string,
+  scheduleId: string,
+  date: string,
+  phase: ReminderPhase,
+  timeOfDay: string,
 ): Promise<void> {
   try {
-    const existing = await prisma.telegramReminderMessage.findMany({
-      where: { medicationId },
+    const existing = await prisma.telegramReminderMessage.findUnique({
+      where: {
+        medicationId_scheduleId_date_phase_timeOfDay: {
+          medicationId,
+          scheduleId,
+          date,
+          phase,
+          timeOfDay,
+        },
+      },
     });
 
-    for (const msg of existing) {
-      try {
-        await deleteMessage(botToken, msg.chatId, msg.messageId);
-      } catch {
-        // Best-effort: message may already be deleted
-      }
+    if (!existing) return;
+
+    try {
+      await deleteMessage(botToken, existing.chatId, existing.messageId);
+    } catch {
+      // Best-effort: message may already be deleted
     }
 
-    if (existing.length > 0) {
-      await prisma.telegramReminderMessage.deleteMany({
-        where: { medicationId },
-      });
-    }
+    await prisma.telegramReminderMessage.delete({
+      where: {
+        medicationId_scheduleId_date_phase_timeOfDay: {
+          medicationId,
+          scheduleId,
+          date,
+          phase,
+          timeOfDay,
+        },
+      },
+    });
   } catch (err) {
     getEvent()?.addWarning(`Failed to delete existing reminders: ${err}`);
   }
@@ -68,13 +92,25 @@ export async function sendViaTelegram(
   const scheduleId = payload.metadata?.scheduleId as string | undefined;
   const phase = payload.metadata?.phase as string | undefined;
   const date = payload.metadata?.date as string | undefined;
+  // v1.7.0 SB-SCHED-4 — per-slot dedup. Empty string for a legacy
+  // single-window schedule (byte-stable against pre-v1.7 rows).
+  const timeOfDay = (payload.metadata?.timeOfDay as string | undefined) ?? "";
   const replyMarkup = payload.metadata?.replyMarkup as
     | { inline_keyboard: { text: string; callback_data: string }[][] }
     | undefined;
 
-  // Phase-aware: delete old messages before sending new one
-  if (medicationId && phase) {
-    await deleteExistingReminders(config.botToken, medicationId);
+  // Phase-aware: delete the prior message for THIS slot before re-sending,
+  // keyed on the same composite the tracking upsert uses so a multi-time-
+  // of-day medication's other slots keep their live ledger rows.
+  if (medicationId && scheduleId && phase && date) {
+    await deleteExistingReminders(
+      config.botToken,
+      medicationId,
+      scheduleId,
+      date,
+      phase as ReminderPhase,
+      timeOfDay,
+    );
   }
 
   // Build reply markup
@@ -129,11 +165,12 @@ export async function sendViaTelegram(
     try {
       await prisma.telegramReminderMessage.upsert({
         where: {
-          medicationId_scheduleId_date_phase: {
+          medicationId_scheduleId_date_phase_timeOfDay: {
             medicationId,
             scheduleId,
             date,
             phase: phase as ReminderPhase,
+            timeOfDay,
           },
         },
         create: {
@@ -143,6 +180,7 @@ export async function sendViaTelegram(
           messageId: result.messageId,
           phase: phase as ReminderPhase,
           date,
+          timeOfDay,
         },
         update: {
           chatId: config.chatId,

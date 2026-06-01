@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { isPublicUrl } from "@/lib/validations/notifications";
 
 /**
  * Schema for admin settings update (PUT /api/admin/settings).
@@ -29,14 +30,16 @@ export const adminSettingsSchema = z
         (v) => {
           const trimmed = v.trim();
           if (!trimmed) return true;
-          try {
-            const parsed = new URL(trimmed);
-            return ["https:", "http:"].includes(parsed.protocol);
-          } catch {
-            return false;
-          }
+          // The Umami script proxy fetches this URL server-side and
+          // re-serves the body from the app origin under a strict CSP
+          // — a private-IP target would be an SSRF channel. Match the
+          // posture every other admin-supplied outbound URL takes.
+          return isPublicUrl(trimmed);
         },
-        { message: "Umami script URL is invalid" },
+        {
+          message:
+            "Umami script URL must be a public HTTP(S) endpoint (no private / loopback / metadata addresses)",
+        },
       )
       .optional(),
     umamiWebsiteId: z.string().optional(),
@@ -47,14 +50,15 @@ export const adminSettingsSchema = z
         (v) => {
           const trimmed = v.trim();
           if (!trimmed) return true;
-          try {
-            const parsed = new URL(trimmed);
-            return ["https:", "http:"].includes(parsed.protocol);
-          } catch {
-            return false;
-          }
+          // Glitchtip DSNs are `https://<key>@host/projectid`. The
+          // userinfo is the auth material; the SSRF surface is the
+          // host — same `isPublicUrl` posture as the Umami URL.
+          return isPublicUrl(trimmed);
         },
-        { message: "Glitchtip DSN is invalid" },
+        {
+          message:
+            "Glitchtip DSN must point to a public HTTP(S) endpoint (no private / loopback / metadata addresses)",
+        },
       )
       .optional(),
     glitchtipEnvironment: z.string().optional(),

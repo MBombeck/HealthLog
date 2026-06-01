@@ -24,8 +24,9 @@ import { Loader2, MoreHorizontal, Plus, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "@/lib/i18n/context";
 import { invalidateKeys, measurementDependentKeys } from "@/lib/query-keys";
+import { MEASUREMENT_NOTES_MAX_LENGTH } from "@/lib/validations/measurement";
 
-const MAX_COMMENT_LENGTH = 25;
+const MAX_COMMENT_LENGTH = MEASUREMENT_NOTES_MAX_LENGTH;
 
 const MEASUREMENT_TYPES = [
   {

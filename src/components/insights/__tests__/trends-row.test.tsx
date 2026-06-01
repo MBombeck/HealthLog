@@ -89,19 +89,25 @@ describe("<TrendsRow>", () => {
     expect(slots.length).toBe(3);
   });
 
-  it("pins every chart slot to h-[140px] so Recharts mounts with a known size (CLS fix)", () => {
+  it("pins every chart slot to h-[180px] so Recharts mounts with a known size (CLS fix)", () => {
     // v1.4.36 W2 — without an explicit height the Recharts
     // ResponsiveContainer mounts with width=-1 height=-1 and emits a
     // console warning per chart. The mood card also drifted taller
-    // than BP / weight on hydration. Pinning the wrapper at 140 px
-    // matches the mini-chart's internal default; the row paints with
-    // zero layout shift.
+    // than BP / weight on hydration.
+    //
+    // v1.5.4.x — wrapper raised from 140 to 180 px. The 140 px slot
+    // matched the chart's internal painting area, but the mini-mode
+    // card shell adds ~34 px of header + padding above it. The
+    // resulting overflow pushed the chart envelope down into the
+    // TrendAnnotation row below — visible as text sitting on top of
+    // the chart. 180 px absorbs the full envelope so the three tiles
+    // share one chart-band baseline without overlap.
     const html = render(<TrendsRow />);
     const slots =
       html.match(/data-slot="trends-row-chart-slot"[^>]*class="[^"]*"/g) ?? [];
     expect(slots.length).toBe(3);
     for (const slot of slots) {
-      expect(slot).toMatch(/h-\[140px\]/);
+      expect(slot).toMatch(/h-\[180px\]/);
     }
   });
 

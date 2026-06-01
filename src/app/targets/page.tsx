@@ -236,9 +236,9 @@ export default function TargetsPage() {
 
       {/* Profile incomplete hint */}
       {profileIncomplete && (
-        <Card className="border-l-4 border-l-orange-500">
+        <Card className="border-warning border-l-4">
           <CardContent className="flex gap-3 py-3">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
+            <AlertCircle className="text-warning mt-0.5 h-4 w-4 shrink-0" />
             <div>
               <p className="text-sm font-medium">
                 {t("targets.profileIncomplete")}

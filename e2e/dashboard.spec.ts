@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { STORAGE_STATE_PATH } from "./setup/global-setup";
+import { mockDashboardSnapshot } from "./utils/mock-dashboard-snapshot";
 
 /**
  * Authenticated dashboard render — proves the seed user can reach the
@@ -20,6 +21,14 @@ test.describe("authenticated dashboard render", () => {
   test.use({ storageState: STORAGE_STATE_PATH });
 
   test.beforeEach(async ({ page }) => {
+    // v1.7.2 — the dashboard snapshot flag is default-ON, so the page
+    // reads every tile from `/api/dashboard/snapshot` and ignores the
+    // legacy cells below. Mock the snapshot with the same populated
+    // four-metric set so the tile strip + charts paint. The legacy
+    // `/api/analytics` + `/api/mood/analytics` mocks stay for the
+    // reversible `NEXT_PUBLIC_DASHBOARD_SNAPSHOT=false` path.
+    await mockDashboardSnapshot(page);
+
     // Mock analytics with a populated weight summary so the weight tile
     // and chart render. `count` must be >0 for the tile to clear the
     // data-floor gate in `src/app/page.tsx`.

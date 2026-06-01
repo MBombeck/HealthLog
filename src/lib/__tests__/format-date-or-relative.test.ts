@@ -42,31 +42,36 @@ describe("formatDateOrRelative", () => {
     );
   });
 
-  it("returns minutesAgo at exactly the 1-minute mark", () => {
+  // v1.4.49.2 — One/Other pluralisation. Pre-fix the helper called
+  // bare `insights.relativeMinutesAgo` / `insights.relativeHoursAgo`
+  // keys; the translation bundle only carries the pluralised `*One` /
+  // `*Other` variants so `t()` echoed the bare key into the UI. These
+  // assertions now pin the correct dispatch.
+  it("returns minutesAgoOne at exactly the 1-minute mark", () => {
     const iso = new Date(NOW - 1 * MINUTE).toISOString();
     expect(formatDateOrRelative(iso, fakeT, NOW)).toBe(
-      "insights.relativeMinutesAgo:count=1",
+      "insights.relativeMinutesAgoOne:count=1",
     );
   });
 
-  it("returns minutesAgo within the [1m, 1h) window", () => {
+  it("returns minutesAgoOther within the [2m, 1h) window", () => {
     const iso = new Date(NOW - 30 * MINUTE).toISOString();
     expect(formatDateOrRelative(iso, fakeT, NOW)).toBe(
-      "insights.relativeMinutesAgo:count=30",
+      "insights.relativeMinutesAgoOther:count=30",
     );
   });
 
-  it("returns hoursAgo at exactly the 1-hour mark", () => {
+  it("returns hoursAgoOne at exactly the 1-hour mark", () => {
     const iso = new Date(NOW - 1 * HOUR).toISOString();
     expect(formatDateOrRelative(iso, fakeT, NOW)).toBe(
-      "insights.relativeHoursAgo:count=1",
+      "insights.relativeHoursAgoOne:count=1",
     );
   });
 
-  it("returns hoursAgo at the 23h59m edge", () => {
+  it("returns hoursAgoOther at the 23h59m edge", () => {
     const iso = new Date(NOW - (23 * HOUR + 59 * MINUTE)).toISOString();
     expect(formatDateOrRelative(iso, fakeT, NOW)).toBe(
-      "insights.relativeHoursAgo:count=23",
+      "insights.relativeHoursAgoOther:count=23",
     );
   });
 
@@ -103,6 +108,44 @@ describe("formatDateOrRelative", () => {
   it("accepts a Date instance as well as ISO string", () => {
     expect(
       formatDateOrRelative(new Date(NOW - 30 * MINUTE), fakeT, NOW),
-    ).toBe("insights.relativeMinutesAgo:count=30");
+    ).toBe("insights.relativeMinutesAgoOther:count=30");
+  });
+
+  // v1.4.49.2 — regression guard. The helper's `t()` calls must dispatch
+  // to keys that actually exist in `messages/en.json`. Pre-fix the bare
+  // `insights.relativeMinutesAgo` and `insights.relativeHoursAgo` keys
+  // passed straight through `t()` to the UI because no translation
+  // matched. Pin the contract here so a future twin-helper-divergence
+  // (same shape, different keys) fails fast instead of leaking raw keys
+  // into production.
+  it("emits only keys that exist in the translation bundle", async () => {
+    const en = await import("../../../messages/en.json");
+    const bundleKeysCalled = new Set<string>();
+    const collectingT = (key: string, params?: Record<string, string | number>) => {
+      bundleKeysCalled.add(key);
+      return params ? `${key}:${JSON.stringify(params)}` : key;
+    };
+    // Drive every relative bucket so we hit `t()` on each branch.
+    formatDateOrRelative(new Date(NOW - 30 * SECOND).toISOString(), collectingT, NOW);
+    formatDateOrRelative(new Date(NOW - 1 * MINUTE).toISOString(), collectingT, NOW);
+    formatDateOrRelative(new Date(NOW - 30 * MINUTE).toISOString(), collectingT, NOW);
+    formatDateOrRelative(new Date(NOW - 1 * HOUR).toISOString(), collectingT, NOW);
+    formatDateOrRelative(new Date(NOW - 12 * HOUR).toISOString(), collectingT, NOW);
+    expect(bundleKeysCalled.size).toBeGreaterThan(0);
+    // `insights.*` carries a mix of string and nested-object children
+    // (e.g. `personalRecord: { badge, tooltip }`), so the bundle type
+    // is `Record<string, unknown>` not `Record<string, string>`. We
+    // only need shallow `key in object` membership here — the value
+    // shape doesn't matter for this regression guard.
+    const root = en as unknown as Record<string, unknown>;
+    const top = (root.default as Record<string, unknown> | undefined) ?? root;
+    const insightsBundle = top.insights as Record<string, unknown> | undefined;
+    expect(insightsBundle).toBeTruthy();
+    for (const fullKey of bundleKeysCalled) {
+      // Each key is "insights.<short>" — assert the short key exists in
+      // the en bundle so future renames or typos surface in CI.
+      const short = fullKey.replace(/^insights\./, "");
+      expect(insightsBundle?.[short]).toBeDefined();
+    }
   });
 });

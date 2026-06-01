@@ -7,7 +7,7 @@ import { NextRequest } from "next/server";
 vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: {
-      findUnique: vi.fn(),
+      findFirst: vi.fn(),
       update: vi.fn(),
     },
     auditLog: { create: vi.fn() },
@@ -60,7 +60,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
-  vi.mocked(prisma.measurement.findUnique).mockResolvedValue({
+  vi.mocked(prisma.measurement.findFirst).mockResolvedValue({
     id: "m1",
     userId: "user-1",
   } as never);
@@ -95,7 +95,7 @@ describe("PUT /api/measurements/[id] — 422 multi-issue (v1.4.43 W6)", () => {
       putReq({
         value: "string",
         measuredAt: "not-iso",
-        notes: "a".repeat(200),
+        notes: "a".repeat(201),
       }),
       ROUTE_CTX,
     );

@@ -3,7 +3,8 @@
  *
  * The reminder cron fires every 15 minutes (same cadence as the
  * medication-reminder loop in `reminder-worker.ts`). When the cron lands
- * inside the 22:00 hour in a user's local timezone, this module:
+ * inside the user's chosen hour (`notificationPrefs.mood.reminderHour`,
+ * default 22:00) in their local timezone, this module:
  *
  *   1. Skips users who haven't opted in (`User.moodReminderEnabled = false`).
  *   2. Skips users who already logged a mood entry for the local date.
@@ -26,17 +27,24 @@ import { defaultLocale, locales } from "@/lib/i18n/config";
 import { getLocalDateParts } from "@/lib/timezone";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { getEvent } from "@/lib/logging/context";
+import {
+  DEFAULT_MOOD_REMINDER_HOUR,
+  resolveMoodReminderHour,
+} from "@/lib/validations/notification-prefs";
 
 /**
- * Hour of day (in the user's local timezone) at which the mood reminder
- * should fire. 22:00 is late enough that a "did you forget to log?" nudge
- * lands in the user's wind-down window without colliding with dinner or
- * the medication-reminder hot path.
+ * Default hour of day (in the user's local timezone) at which the mood
+ * reminder fires when the user has not set a custom hour. 22:00 is late
+ * enough that a "did you forget to log?" nudge lands in the user's
+ * wind-down window without colliding with dinner or the
+ * medication-reminder hot path.
  *
- * Exported so the unit tests can pin the contract without scraping the
- * handler internals.
+ * The hour is now per-user (`notificationPrefs.mood.reminderHour`,
+ * 0–23); this constant is the fallback for an unset value, preserving
+ * the legacy hardcoded behaviour. Exported so the unit tests can pin
+ * the contract without scraping the handler internals.
  */
-export const MOOD_REMINDER_LOCAL_HOUR = 22;
+export const MOOD_REMINDER_LOCAL_HOUR = DEFAULT_MOOD_REMINDER_HOUR;
 
 export interface MoodReminderSummary {
   candidatesScanned: number;
@@ -68,14 +76,24 @@ function resolveLocale(locale: string | null | undefined): Locale {
  * 23:00 → null) without touching the DB.
  */
 export function evaluateMoodReminderWindow(
-  user: { timezone: string; moodReminderEnabled: boolean },
+  user: {
+    timezone: string;
+    moodReminderEnabled: boolean;
+    /**
+     * Per-user local-time hour (0–23). Optional: an omitted value
+     * resolves to the default 22:00 so existing callers keep the
+     * legacy window.
+     */
+    reminderHour?: number;
+  },
   now: Date,
 ): { fire: boolean; localDate: string | null; localHour: number } {
   if (!user.moodReminderEnabled) {
     return { fire: false, localDate: null, localHour: -1 };
   }
+  const targetHour = user.reminderHour ?? MOOD_REMINDER_LOCAL_HOUR;
   const parts = getLocalDateParts(now, user.timezone || "Europe/Berlin");
-  const inWindow = parts.hour === MOOD_REMINDER_LOCAL_HOUR;
+  const inWindow = parts.hour === targetHour;
   const isoDate = `${parts.year.toString().padStart(4, "0")}-${parts.month
     .toString()
     .padStart(2, "0")}-${parts.day.toString().padStart(2, "0")}`;
@@ -141,14 +159,18 @@ export async function runMoodReminderTick(
 
   const candidates = await prisma.user.findMany({
     where: { moodReminderEnabled: true },
-    select: { id: true, timezone: true, locale: true },
+    select: { id: true, timezone: true, locale: true, notificationPrefs: true },
   });
 
   for (const user of candidates) {
     summary.candidatesScanned += 1;
     try {
       const decision = evaluateMoodReminderWindow(
-        { timezone: user.timezone, moodReminderEnabled: true },
+        {
+          timezone: user.timezone,
+          moodReminderEnabled: true,
+          reminderHour: resolveMoodReminderHour(user.notificationPrefs),
+        },
         now,
       );
 
@@ -171,7 +193,9 @@ export async function runMoodReminderTick(
       }
 
       const existingMood = await prisma.moodEntry.findFirst({
-        where: { userId: user.id, date: decision.localDate },
+        // v1.7.0 sync — a tombstoned entry no longer counts as "logged
+        // today", so a deleted entry must not suppress the daily nudge.
+        where: { userId: user.id, date: decision.localDate, deletedAt: null },
         select: { id: true },
       });
       if (existingMood) {

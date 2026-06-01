@@ -46,8 +46,57 @@ export const DASHBOARD_WIDGET_IDS = [
 
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number];
 
+/**
+ * v1.7.0 — iOS-only widget ids the native client materialises in its
+ * own default layout but the server PUT enum does NOT yet accept. These
+ * are the HK-completeness tiles the iOS app added in its v0.5.2 / v0.7.0
+ * sweeps (`DashboardWidgetLayout.swift`); each maps 1:1 to a HealthLog
+ * `MeasurementType` the server already stores.
+ *
+ * They are deliberately kept OUT of `DASHBOARD_WIDGET_IDS` so the
+ * widgets PUT route's Zod enum + the on-read resolver are unchanged —
+ * widening the writable enum is a separate decision. This constant
+ * exists only so the dashboard snapshot can publish the full 27-id
+ * catalogue (`DASHBOARD_WIDGET_CATALOGUE_IDS`) the iOS cold-launch seed
+ * needs, letting the layout round-trip in one key without a second
+ * round-trip. See `.planning/ios-coord/v1.7.0-ios-convergence-locks.md`
+ * §2b.
+ */
+export const DASHBOARD_IOS_ONLY_WIDGET_IDS = [
+  "restingHeartRate",
+  "hrv",
+  "walkingSpeed",
+  "walkingAsymmetry",
+  "walkingStepLength",
+  "bmi",
+  "bodyTemperature",
+  "walkingDoubleSupport",
+  "respiratoryRate",
+  "audioExposureEnvironment",
+  "audioExposureHeadphone",
+] as const;
+
+/**
+ * v1.7.0 — full widget-id catalogue: the 16 server-known ids plus the
+ * 11 iOS-only ids = 27 distinct ids. This is the authoritative set the
+ * iOS client expects in the snapshot's catalogue block so a cold-launch
+ * first-paint can seed every tile without a second round-trip. Pure
+ * superset of `DASHBOARD_WIDGET_IDS`; never used to gate the writable
+ * PUT enum.
+ */
+export const DASHBOARD_WIDGET_CATALOGUE_IDS = [
+  ...DASHBOARD_WIDGET_IDS,
+  ...DASHBOARD_IOS_ONLY_WIDGET_IDS,
+] as const;
+
+export type DashboardWidgetCatalogueId =
+  (typeof DASHBOARD_WIDGET_CATALOGUE_IDS)[number];
+
 export interface DashboardWidgetConfig {
-  id: DashboardWidgetId;
+  // v1.7.0 — widened to the full 27-id catalogue so iOS-only ids
+  // round-trip through the stored layout. The web render path only
+  // looks up its own 16 ids; the other 11 ride along untouched.
+  id: DashboardWidgetCatalogueId;
   /**
    * Whether the widget shows up in the *charts* row (the lower section
    * of the dashboard with the line graphs). The legacy single-toggle
@@ -127,7 +176,7 @@ export const CHART_OVERLAY_KEYS = [
   "medications",
   "sleep",
   "steps",
-  // v1.4.25 W16a — VO2 max chart-row on /insights/puls. Independent
+  // v1.4.25 W16a — VO2 max chart-row on /insights/pulse. Independent
   // overlay-prefs slot so the cardio sub-page's VO2 chart-cog state
   // doesn't bleed into the pulse chart sitting directly above it.
   "vo2Max",
@@ -139,6 +188,34 @@ export const CHART_OVERLAY_KEYS = [
   "oxygenSaturation",
   "bodyTemperature",
   "activeEnergy",
+  // v1.7.0 — chart-overlay slots for the previously-orphan metric
+  // sub-pages. Each card owns its own slot so the chart-cog popover
+  // persists per metric. Camel-case keys mirror the existing
+  // convention; one per new chart surface.
+  "bloodGlucose",
+  "totalBodyWater",
+  "boneMass",
+  "flightsClimbed",
+  "walkingRunningDistance",
+  "fatFreeMass",
+  "fatMass",
+  "muscleMass",
+  "skinTemperature",
+  "pulseWaveVelocity",
+  "vascularAge",
+  "visceralFat",
+  "audioExposureEnv",
+  "audioExposureHeadphone",
+  "timeInDaylight",
+  "walkingSteadiness",
+  "audioExposureEvent",
+  "respiratoryRate",
+  "leanBodyMass",
+  "walkingHeartRateAverage",
+  "walkingAsymmetry",
+  "walkingDoubleSupport",
+  "walkingStepLength",
+  "walkingSpeed",
 ] as const;
 export type ChartOverlayKey = (typeof CHART_OVERLAY_KEYS)[number];
 
@@ -250,17 +327,27 @@ export function resolveDashboardLayout(raw: unknown): DashboardLayout {
     return DEFAULT_DASHBOARD_LAYOUT;
   }
 
-  // Drop widget ids the current build does not know about. v1.4.28
-  // retired the `glp1` tile; any user who saved a layout before then
-  // still has the orphan id in `dashboardWidgetsJson`, and the PUT
-  // route's Zod enum rejects the entire blob on the next save round-
-  // trip. Filtering on read keeps the GET shape current-build-safe
-  // and lets the Settings UI re-PUT a clean array.
-  const knownIds = new Set<string>(DASHBOARD_WIDGET_IDS);
+  // Drop widget ids outside the full 27-id catalogue. v1.4.28 retired
+  // the `glp1` tile; any user who saved a layout before then still has
+  // the orphan id in `dashboardWidgetsJson`, and a stale-enum PUT would
+  // reject the entire blob on the next save round-trip. Filtering on
+  // read keeps the GET shape current-build-safe and lets the Settings
+  // UI re-PUT a clean array.
+  //
+  // v1.7.0 — the catalogue is the 27-id superset (16 web-known + 11
+  // iOS-only). The 11 iOS-only ids are RETAINED here so a layout the
+  // native client persisted round-trips intact on GET; the web render
+  // path looks up only its own 16 ids and silently ignores the rest
+  // (it never iterates id→component generically). A genuinely-unknown
+  // id (typo / retired tile) outside the 27 still drops.
+  const knownIds = new Set<string>(DASHBOARD_WIDGET_CATALOGUE_IDS);
   const filtered = candidate.widgets.filter((w) => knownIds.has(w.id));
 
-  // Merge with defaults so new widgets introduced in later versions show up
-  // automatically (invisible by default, users opt-in).
+  // Merge with defaults so new WEB widgets introduced in later versions
+  // show up automatically (invisible by default, users opt-in). Only the
+  // 16 web defaults are auto-appended — iOS-only ids only ever appear in
+  // a layout once a native client has explicitly sent them, so they are
+  // never seeded for a web-only account.
   const savedIds = new Set(filtered.map((w) => w.id));
   const missing = DEFAULT_DASHBOARD_LAYOUT.widgets.filter(
     (w) => !savedIds.has(w.id),

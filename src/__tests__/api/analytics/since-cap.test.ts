@@ -116,7 +116,11 @@ vi.mock("@/lib/analytics/summaries-slice", () => ({
 import { GET } from "@/app/api/analytics/route";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
-import { annotate } from "@/lib/logging/context";
+// v1.4.49.1 — `annotate` import retired alongside the
+// `bp_aggregate.live_since` annotation assertion (the annotation lived
+// in the now-deleted per-type live walk). The surviving slim-slice
+// invariant doesn't read annotate. Re-add this import if a future
+// regression test needs to verify a wide-event field.
 import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
 
 const callGet = GET as unknown as (req: Request) => Promise<Response>;
@@ -194,79 +198,18 @@ beforeEach(async () => {
   });
 });
 
-describe("GET /api/analytics — live-fallback `since` cap (W-SINCE)", () => {
-  it("passes a trailing-425-day `where.measuredAt.gte` to every per-type findMany", async () => {
-    const before = Date.now();
-    const response = await callGet(
-      new Request("http://localhost/api/analytics"),
-    );
-    expect(response.status).toBe(200);
-    const after = Date.now();
-
-    const findMany = prisma.measurement.findMany as ReturnType<typeof vi.fn>;
-    expect(findMany.mock.calls.length).toBeGreaterThan(0);
-
-    // QA Specialist-H2 (v1.4.39): 425 days = 365 (year-ago window) +
-    // 30 (avg30LastYear bucket span) + 30 (cache-aging buffer).
-    const FOUR_TWENTY_FIVE_DAYS_MS = 425 * 24 * 60 * 60 * 1000;
-    const expectedMinSince = before - FOUR_TWENTY_FIVE_DAYS_MS;
-    const expectedMaxSince = after - FOUR_TWENTY_FIVE_DAYS_MS;
-
-    // The per-type loop (A2) issues chunked reads with an `orderBy`
-    // *array* (`(measuredAt asc, id asc)`); the 30-day glucose and
-    // 30-day sleep-stage reads use either a single-object orderBy or
-    // none at all. Filtering on the array shape isolates the chunked
-    // helper's traffic from the unrelated narrow reads.
-    const perTypeCalls = findMany.mock.calls.filter((call) => {
-      const arg = call[0] as { orderBy?: unknown };
-      return Array.isArray(arg?.orderBy);
-    });
-
-    expect(perTypeCalls.length).toBeGreaterThan(0);
-
-    for (const call of perTypeCalls) {
-      const arg = call[0] as {
-        where?: { measuredAt?: { gte?: Date } };
-      };
-      const gte = arg.where?.measuredAt?.gte;
-      expect(gte).toBeInstanceOf(Date);
-      const gteMs = (gte as Date).getTime();
-      expect(gteMs).toBeGreaterThanOrEqual(expectedMinSince);
-      expect(gteMs).toBeLessThanOrEqual(expectedMaxSince);
-    }
-  });
-
-  it("annotates `meta.analytics.bp_aggregate.live_since` with the 425-day cutoff ISO", async () => {
-    const before = Date.now();
-    await callGet(new Request("http://localhost/api/analytics"));
-    const after = Date.now();
-
-    const annotateFn = annotate as ReturnType<typeof vi.fn>;
-    const bpAggregateCall = annotateFn.mock.calls.find((call) => {
-      const fields = call[0] as
-        | { meta?: { analytics?: { bp_aggregate?: unknown } } }
-        | undefined;
-      return fields?.meta?.analytics?.bp_aggregate !== undefined;
-    });
-    expect(bpAggregateCall).toBeDefined();
-
-    const fields = bpAggregateCall![0] as {
-      meta: {
-        analytics: {
-          bp_aggregate: { row_count: number; live_since: string };
-        };
-      };
-    };
-    const bpAggregate = fields.meta.analytics.bp_aggregate;
-    expect(typeof bpAggregate.live_since).toBe("string");
-
-    const FOUR_TWENTY_FIVE_DAYS_MS = 425 * 24 * 60 * 60 * 1000;
-    const liveSinceMs = new Date(bpAggregate.live_since).getTime();
-    expect(liveSinceMs).toBeGreaterThanOrEqual(
-      before - FOUR_TWENTY_FIVE_DAYS_MS,
-    );
-    expect(liveSinceMs).toBeLessThanOrEqual(after - FOUR_TWENTY_FIVE_DAYS_MS);
-  });
+describe("GET /api/analytics — per-type live walk retired (v1.4.49.1)", () => {
+  // v1.4.49.1 — the W-SINCE 425-day `since` cap was a defense-in-depth
+  // bound on the now-deleted 15-way per-type live walk. The default
+  // slice routes through `computeSummariesSlice` exclusively, which
+  // reads `measurement_rollups` DAY buckets + a 90-day narrow
+  // `$queryRaw` directly — no chunked findMany against `measurements`
+  // at all on the default critical path. The two assertions that pinned
+  // (a) the per-type `where.measuredAt.gte` and (b) the
+  // `meta.analytics.bp_aggregate.live_since` annotate were removed
+  // together because both code paths were deleted; the surviving
+  // `slim ?slice=summaries` invariant below still pins that the slim
+  // branch never reaches a chunked measurements walk.
 
   it("does not invoke the per-type loop on the slim `?slice=summaries` branch", async () => {
     const response = await callGet(

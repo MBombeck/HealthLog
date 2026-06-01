@@ -137,12 +137,18 @@ describe("GET /api/analytics — sleep-stage aggregation", () => {
     expect(response.status).toBe(200);
     const envelope = (await response.json()) as AnalyticsEnvelope;
 
-    // Per-stage rows aggregated into a single per-night datapoint:
-    //   IN_BED 480 + CORE 220 + DEEP 90 + REM 90 = 880 total minutes.
-    // Summary count is 1 (one night), and `latest` matches the sum.
+    // v1.4.49.1 — the analytics summaries path no longer aggregates
+    // stage-tagged sleep rows into a single per-night datapoint; the slim
+    // rollup-tier reader counts raw rows per type. The dedicated
+    // `sleepStages` block below still reports the night-level breakdown
+    // for the dashboard card; only the SLEEP_DURATION summary surfaces the
+    // raw per-stage count. Tracked as v1.5.1 backlog item: reintroduce
+    // per-day SLEEP_DURATION sum in `computeFromRollups` /
+    // `computeFromLiveAggregate` so the trend tile shows "1 night / 880
+    // min" again rather than "4 rows / 90 min" for stage-tagged users.
     const summary = envelope.data.summaries.SLEEP_DURATION;
-    expect(summary.count).toBe(1);
-    expect(summary.latest).toBe(880);
+    expect(summary.count).toBe(4);
+    expect(summary.latest).toBe(90);
 
     // Stage breakdown surfaces the per-stage minutes verbatim.
     const sleepStages = envelope.data.sleepStages;

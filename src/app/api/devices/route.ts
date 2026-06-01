@@ -35,6 +35,7 @@ import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const deviceSchema = z
   .object({
@@ -57,6 +58,11 @@ const deviceSchema = z
       .regex(/^[A-Fa-f0-9]+$/, "apnsToken must be hex")
       .optional(),
     apnsEnvironment: z.enum(["sandbox", "production"]).optional(),
+    // v1.7.0 — per-device medication-delivery override. NULL (or
+    // omitted) inherits the user-level roaming default. "server" forces
+    // server APNs for this device; "client" forces local. Stored +
+    // echoed; cron suppression stays user-level.
+    medicationDelivery: z.enum(["server", "client"]).nullable().optional(),
   })
   .refine(
     (v) =>
@@ -71,6 +77,28 @@ const deviceSchema = z
 
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
+
+  // Per-user rate cap on device registration. The handler returns a
+  // distinct 409 (`apns_token_owned_by_other_user` /
+  // `token_owned_by_other_user`) when an `apnsToken` is already
+  // bound to a different account — useful for the legitimate
+  // cross-user-hijack guard, but it also means an authenticated user
+  // could enumerate token ownership across accounts unboundedly. 20
+  // device-mutations per 15 minutes is well outside any realistic
+  // client behaviour (the iOS app registers once on login + on token
+  // rotation; not 20× / window) while capping enumeration cost.
+  const rl = await checkRateLimit(
+    `devices:register:${user.id}`,
+    20,
+    15 * 60 * 1000,
+  );
+  if (!rl.allowed) {
+    annotate({
+      action: { name: "devices.register.rate-limited" },
+      meta: { userId: user.id, resetAt: rl.resetAt },
+    });
+    return apiError("Too many device registrations, please slow down", 429);
+  }
 
   const { data: body, error } = await safeJson(request);
   if (error) return error;
@@ -115,6 +143,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     model,
     apnsToken,
     apnsEnvironment,
+    medicationDelivery,
   } = parsed.data;
 
   // APNs-token collision lookup. Two cases:
@@ -178,6 +207,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
         model: model ?? null,
         apnsToken: apnsToken ?? null,
         apnsEnvironment: apnsEnvironment ?? null,
+        // v1.7.0 — only touch the override when the client sends the
+        // field, so a re-register that omits it keeps the prior value.
+        ...(medicationDelivery !== undefined && { medicationDelivery }),
         lastSeen: new Date(),
       },
       select: { id: true },
@@ -195,6 +227,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
         model: model ?? null,
         apnsToken: apnsToken ?? null,
         apnsEnvironment: apnsEnvironment ?? null,
+        // v1.7.0 — per-device delivery override (null = inherit default).
+        ...(medicationDelivery !== undefined && { medicationDelivery }),
       },
       select: { id: true },
     });

@@ -65,6 +65,20 @@ export const ALLOWED_CHART_TOKENS = [
   // alongside the iOS-app sync.
   "metric:WALKING_STEADINESS",
   "metric:AUDIO_EXPOSURE_EVENT",
+  // v1.5.5 — iOS-coord additions. Same posture: the LLM can
+  // reference these in prose; the chart components ride the
+  // existing card-shelf renderer.
+  "metric:RESPIRATORY_RATE",
+  "metric:BODY_MASS_INDEX",
+  "metric:LEAN_BODY_MASS",
+  "metric:WALKING_HEART_RATE_AVERAGE",
+  "metric:WALKING_ASYMMETRY",
+  "metric:WALKING_DOUBLE_SUPPORT",
+  // v1.5.5 iOS-coord follow-up — raw-SI gait pair. Same posture:
+  // the LLM can reference these in prose; the chart components
+  // ride the existing card-shelf renderer.
+  "metric:WALKING_STEP_LENGTH",
+  "metric:WALKING_SPEED",
 ] as const;
 
 export type ChartToken = (typeof ALLOWED_CHART_TOKENS)[number];
@@ -142,6 +156,16 @@ const ORPHAN_ENUMS = [
   "AUDIO_EXPOSURE_ENV",
   "AUDIO_EXPOSURE_HEADPHONE",
   "TIME_IN_DAYLIGHT",
+  // v1.5.5 iOS-coord additions — same shape, same posture.
+  "RESPIRATORY_RATE",
+  "BODY_MASS_INDEX",
+  "LEAN_BODY_MASS",
+  "WALKING_HEART_RATE_AVERAGE",
+  "WALKING_ASYMMETRY",
+  "WALKING_DOUBLE_SUPPORT",
+  // v1.5.5 iOS-coord follow-up — raw-SI gait pair, same shape.
+  "WALKING_STEP_LENGTH",
+  "WALKING_SPEED",
 ] as const;
 
 // `\b` boundaries keep ordinary English prose untouched — "weight"

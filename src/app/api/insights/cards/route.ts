@@ -140,6 +140,8 @@ export const GET = apiHandler(async () => {
     const allEvents = await prisma.medicationIntakeEvent.findMany({
       where: {
         userId: user.id,
+        // v1.7.0 sync — exclude tombstoned rows.
+        deletedAt: null,
         medicationId: { in: activeMeds.map((m) => m.id) },
         scheduledFor: { gte: new Date(Date.now() - 30 * 86_400_000) },
       },

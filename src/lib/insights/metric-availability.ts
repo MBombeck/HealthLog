@@ -60,7 +60,36 @@ export type InsightMetric =
   | "ACTIVE_ENERGY_BURNED"
   // v1.4.32 — workouts surface; gate is event-driven (workouts table
   // row count, not a Measurement series) and threaded via `hasWorkouts`.
-  | "WORKOUTS";
+  | "WORKOUTS"
+  // v1.7.0 — every previously-orphan MeasurementType now gets a
+  // first-class sub-page. Each key equals its MeasurementType string so
+  // the generic `hasMetricData` fallback gates it on
+  // `summaries[metric].count > 0` with no new handler branch (the
+  // metric auto-lights-up the moment the first reading lands).
+  | "BLOOD_GLUCOSE"
+  | "TOTAL_BODY_WATER"
+  | "BONE_MASS"
+  | "FLIGHTS_CLIMBED"
+  | "WALKING_RUNNING_DISTANCE"
+  | "FAT_FREE_MASS"
+  | "FAT_MASS"
+  | "MUSCLE_MASS"
+  | "SKIN_TEMPERATURE"
+  | "PULSE_WAVE_VELOCITY"
+  | "VASCULAR_AGE"
+  | "VISCERAL_FAT"
+  | "AUDIO_EXPOSURE_ENV"
+  | "AUDIO_EXPOSURE_HEADPHONE"
+  | "TIME_IN_DAYLIGHT"
+  | "WALKING_STEADINESS"
+  | "AUDIO_EXPOSURE_EVENT"
+  | "RESPIRATORY_RATE"
+  | "LEAN_BODY_MASS"
+  | "WALKING_HEART_RATE_AVERAGE"
+  | "WALKING_ASYMMETRY"
+  | "WALKING_DOUBLE_SUPPORT"
+  | "WALKING_STEP_LENGTH"
+  | "WALKING_SPEED";
 
 /**
  * Inputs the gating helper consumes. The `summaries` shape mirrors

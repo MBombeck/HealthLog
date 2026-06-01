@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { InsightResult } from "@/lib/ai/types";
 import {
@@ -176,12 +177,20 @@ export function useInsightsAdvisorQuery(
     },
   });
 
+  // v1.8.3 — stabilise the `regenerate` callback so the memoised
+  // `<InsightsTabStrip>` (which receives it as `onRegenerate`) is not
+  // re-rendered on every shell render by a fresh arrow reference. A
+  // status-query flip on a sub-page that re-renders the shell would
+  // otherwise re-reconcile the whole strip mid-gesture and eat taps.
+  const { mutate } = mutation;
+  const regenerate = useCallback(() => mutate(), [mutate]);
+
   return {
     payload: query.data ?? null,
     isLoading: query.isLoading,
     isError: query.isError,
     error: (query.error as Error | null) ?? null,
-    regenerate: () => mutation.mutate(),
+    regenerate,
     isRegenerating: mutation.isPending,
     regenerateError: (mutation.error as Error | null) ?? null,
   };

@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 import { STORAGE_STATE_PATH } from "./setup/global-setup";
+import {
+  mockDashboardSnapshot,
+  WEIGHT_ONLY_SUMMARIES,
+} from "./utils/mock-dashboard-snapshot";
 
 /**
  * Mobile-viewport smoke (Pixel 5 profile only). Asserts:
@@ -31,6 +35,11 @@ test.describe("mobile-viewport smoke", () => {
   test("dashboard has no horizontal scroll, bottom-nav respects content, all CTAs ≥ 44 px tall", async ({
     page,
   }) => {
+    // v1.7.2 — snapshot flag default-ON; mock the snapshot cell with a
+    // WEIGHT-only populated summary so the weight tile paints. Legacy
+    // mocks below stay for the reversible `=false` path.
+    await mockDashboardSnapshot(page, { summaries: WEIGHT_ONLY_SUMMARIES });
+
     // v1.4.37 W-CI — match `/api/analytics` AND any sliced variant
     // (`?slice=summaries`). The previous string glob `**/api/analytics`
     // didn't match the query-string form so the IW1 slim-slice fetch

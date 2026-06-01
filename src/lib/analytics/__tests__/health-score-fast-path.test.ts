@@ -462,4 +462,153 @@ describe("computeUserHealthScoreFastPath", () => {
       expect(result).not.toBeNull();
     });
   });
+
+  // v1.5.0 — regression pin for the cadence-aware compliance migration
+  // (closes #214). Before this release the score helper fed every
+  // medication-compliance pillar through `schedules.length * 30` as the
+  // denominator, so a weekly Ozempic schedule with 4 taken Mondays
+  // reported ~13% and dragged the score down ~10–15 points. The
+  // adapter now matches the cadence chart's denominator (Mondays-in-
+  // window) and the weekly med contributes its true 100% rate.
+  describe("cadence-aware medication compliance (closes #214)", () => {
+    function mondaysInWindow(now: Date, days: number): Date[] {
+      const out: Date[] = [];
+      const from = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+      const cursor = new Date(from);
+      while (cursor <= now) {
+        if (cursor.getUTCDay() === 1) {
+          out.push(new Date(cursor));
+        }
+        cursor.setUTCDate(cursor.getUTCDate() + 1);
+      }
+      return out;
+    }
+
+    it("weekly Mondays-only med with all Mondays taken contributes a 100% pillar", async () => {
+      const coverage = new Map<string, boolean>([]);
+      FULLY_COVERED.mockReturnValue(false);
+      PROBE.mockResolvedValue(coverage);
+      // Weight + BP attribution reads return empty so only the
+      // medication compliance pillar is non-null.
+      MEASUREMENT_FIND_MANY.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+      const now = new Date("2026-05-13T12:00:00.000Z"); // Wed
+      MEDICATION_FIND_MANY.mockResolvedValueOnce([
+        {
+          id: "med-weekly",
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          schedules: [
+            { windowStart: "08:00", windowEnd: "09:00", daysOfWeek: "1" },
+          ],
+        },
+      ]);
+      // One intake per Monday inside the trailing 30 days. The
+      // cadence pairing reads `scheduledFor` for both anchor and
+      // event, so the Mondays-only timeline lines up cleanly.
+      const events = mondaysInWindow(now, 30).map((mon) => ({
+        medicationId: "med-weekly",
+        scheduledFor: new Date(
+          Date.UTC(
+            mon.getUTCFullYear(),
+            mon.getUTCMonth(),
+            mon.getUTCDate(),
+            8,
+            30,
+          ),
+        ),
+        takenAt: new Date(
+          Date.UTC(
+            mon.getUTCFullYear(),
+            mon.getUTCMonth(),
+            mon.getUTCDate(),
+            8,
+            35,
+          ),
+        ),
+        skipped: false,
+      }));
+      // The helper reads the 37-day window (prevSince30d → now) so
+      // the prior-week snapshot has data too — return the same set
+      // unfiltered; the helper filters internally.
+      INTAKE_FIND_MANY.mockResolvedValueOnce(events);
+
+      const result = await computeUserHealthScoreFastPath({
+        userId: "user-weekly-med",
+        bpInTargetPct: 80,
+        heightCm: 178,
+        now,
+        coverage,
+      });
+
+      expect(result).not.toBeNull();
+      // The medication pillar must be populated and reflect a 100%
+      // rate (or at least ≥ 50, well above the pre-fix ~13%). The
+      // exact pillar number depends on `computeHealthScore`'s
+      // weighting; we assert the directional contract — the score is
+      // computed AND the compliance branch fired.
+      expect(result?.components.compliance.value).not.toBeNull();
+      const complianceValue = result?.components.compliance.value ?? 0;
+      // Pre-fix this user reported ~13% adherence → ~13 here. The
+      // post-fix path produces ≥ 90 (one Monday per week, all taken
+      // → 100% with the new denominator). 50 is a wide safety margin
+      // that catches the regression with zero flake risk.
+      expect(complianceValue).toBeGreaterThanOrEqual(50);
+    });
+
+    it("daily-only med with all doses taken still reports 100% (no regression on the path that already worked)", async () => {
+      const coverage = new Map<string, boolean>([]);
+      FULLY_COVERED.mockReturnValue(false);
+      PROBE.mockResolvedValue(coverage);
+      MEASUREMENT_FIND_MANY.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+      const now = new Date("2026-05-13T12:00:00.000Z"); // Wed
+      MEDICATION_FIND_MANY.mockResolvedValueOnce([
+        {
+          id: "med-daily",
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          schedules: [
+            { windowStart: "08:00", windowEnd: "09:00", daysOfWeek: null },
+          ],
+        },
+      ]);
+      // One taken event per day over the trailing 30 days — including
+      // today's already-past slot (08:00 UTC < NOW = 12:00).
+      const events = [];
+      for (let d = 0; d < 30; d++) {
+        const day = new Date(now.getTime() - d * 24 * 60 * 60 * 1000);
+        const at = new Date(
+          Date.UTC(
+            day.getUTCFullYear(),
+            day.getUTCMonth(),
+            day.getUTCDate(),
+            8,
+            30,
+          ),
+        );
+        if (at.getTime() > now.getTime()) continue;
+        events.push({
+          medicationId: "med-daily",
+          scheduledFor: at,
+          takenAt: new Date(at.getTime() + 5 * 60_000),
+          skipped: false,
+        });
+      }
+      INTAKE_FIND_MANY.mockResolvedValueOnce(events);
+
+      const result = await computeUserHealthScoreFastPath({
+        userId: "user-daily-med",
+        bpInTargetPct: 80,
+        heightCm: 178,
+        now,
+        coverage,
+      });
+
+      expect(result).not.toBeNull();
+      // Daily-only path was correct under the legacy denominator and
+      // stays correct under the cadence denominator. The contract:
+      // taken=N, missed=0 → rate=100; pillar reads ≥ 90 with whatever
+      // weighting `computeHealthScore` applies.
+      expect(result?.components.compliance.value).toBeGreaterThanOrEqual(90);
+    });
+  });
 });

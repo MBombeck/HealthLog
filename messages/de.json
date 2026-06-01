@@ -8,6 +8,7 @@
     "create": "Erstellen",
     "close": "Schließen",
     "loading": "Laden...",
+    "loadFailed": "Konnte nicht geladen werden",
     "error": "Fehler",
     "saved": "Gespeichert",
     "no": "Nein",
@@ -147,7 +148,17 @@
       "sleep": "Schlafdauer",
       "empty": "Für den gewählten Zeitraum liegen noch keine Daten vor. Der Bericht enthält dennoch das Deckblatt.",
       "unavailableHint": "Keine Daten in diesem Zeitraum"
-    }
+    },
+    "insurer": "Krankenkasse",
+    "insuranceNumber": "Versichertennr.",
+    "summaryTitle": "Klinische Zusammenfassung",
+    "summaryReadings": "Über {days} Tage erfasst: {count} Messwerte über {params} Parameter.",
+    "summaryTrend": "{label}: zuletzt {latest} {arrow}",
+    "summaryAdherence": "Medikamenten-Einnahmetreue: {rate}% (gewichteter Mittelwert).",
+    "chartsTitle": "Trend-Diagramme",
+    "aiSummaryTitle": "KI-Zusammenfassung — nicht klinisch validiert",
+    "aiSummaryDisclaimer": "Dieser Abschnitt wurde automatisch von einem KI-Modell erzeugt und ist nicht klinisch validiert. Er ersetzt keine ärztliche Beurteilung.",
+    "packageReadme": "HealthLog Gesundheitsakte\n\nDieses Paket enthält:\n- report.pdf: den Gesundheitsbericht für die ärztliche Vorlage.\n- bundle.json: dieselben Daten als HL7-FHIR-R4-Dokument (Bundle), ePA-kompatibel.\n\nErstellt mit HealthLog."
   },
   "errorBoundary": {
     "title": "Da ist etwas schiefgelaufen",
@@ -294,6 +305,32 @@
         "title": "Noch keine Workouts",
         "cta": "Öffne die Apple-Health-App auf dem iPhone, damit Workouts hier erscheinen."
       }
+    },
+    "metric": {
+      "title": {
+        "weight": "Gewicht",
+        "bloodPressure": "Blutdruck",
+        "pulse": "Puls",
+        "bodyFat": "Körperfett",
+        "glucose": "Blutzucker",
+        "sleep": "Schlaf",
+        "steps": "Schritte",
+        "totalBodyWater": "Gesamtkörperwasser",
+        "boneMass": "Knochenmasse",
+        "oxygenSaturation": "Sauerstoffsättigung"
+      },
+      "unit": {
+        "weight": "kg",
+        "bloodPressure": "mmHg",
+        "pulse": "bpm",
+        "bodyFat": "%",
+        "glucose": "mg/dL",
+        "sleep": "h",
+        "steps": "Schritte",
+        "totalBodyWater": "kg",
+        "boneMass": "kg",
+        "oxygenSaturation": "%"
+      }
     }
   },
   "measurements": {
@@ -337,6 +374,14 @@
     "typeTimeInDaylight": "Zeit im Tageslicht",
     "typeWalkingSteadiness": "Gehstabilität",
     "typeAudioExposureEvent": "Lautes-Hören-Ereignis",
+    "typeRespiratoryRate": "Atemfrequenz",
+    "typeBodyMassIndex": "Body-Mass-Index",
+    "typeLeanBodyMass": "Magermasse",
+    "typeWalkingHeartRateAverage": "Geh-Puls (Mittelwert)",
+    "typeWalkingAsymmetry": "Gang-Asymmetrie",
+    "typeWalkingDoubleSupport": "Gang-Doppelstand",
+    "typeWalkingStepLength": "Schrittlänge",
+    "typeWalkingSpeed": "Gehgeschwindigkeit",
     "glucoseContext": "Kontext",
     "glucoseContextFasting": "Nüchtern (≥8 h ohne Nahrung)",
     "glucoseContextPostprandial": "Postprandial (2 h nach dem Essen)",
@@ -379,7 +424,8 @@
     "nextPage": "Nächste Seite",
     "dailyTotalCaption": "({count} Einzelwerte)",
     "expandDay": "Einzelwerte dieses Tages anzeigen",
-    "collapseDay": "Einzelwerte dieses Tages ausblenden"
+    "collapseDay": "Einzelwerte dieses Tages ausblenden",
+    "loadError": "Messwerte konnten nicht geladen werden."
   },
   "mood": {
     "title": "Stimmung",
@@ -438,6 +484,7 @@
     "scheduleDaily": "Täglich",
     "inactive": "Pausiert",
     "intakeHistory": "Einnahme-Verlauf",
+    "openDetailPage": "Medikament-Detailseite öffnen",
     "deleteConfirm": "Medikament löschen?",
     "compliance": "Einnahmetreue",
     "importIntakes": "Einnahmen importieren",
@@ -476,6 +523,8 @@
     "categoryDigestive": "Magen/Darm",
     "categorySkin": "Hautpflege",
     "categorySleepAid": "Schlafmittel",
+    "categoryDiabetes": "Diabetes",
+    "categoryAntibiotic": "Antibiotikum",
     "categoryOther": "Sonstiges",
     "daysSun": "So",
     "daysMon": "Mo",
@@ -593,44 +642,285 @@
       }
     },
     "scheduling": {
-      "section": "Zeitplan",
-      "loading": "Lade Zeitplan-Daten",
-      "loadFailed": "Zeitplan-Daten konnten nicht geladen werden.",
-      "editCta": "Bearbeiten",
-      "reminders": {
-        "on": "Erinnerungen an",
-        "off": "Erinnerungen aus"
-      },
-      "cadenceViz": {
-        "title": "Letzte 30 Tage",
-        "ariaTimeline": "Dosis-Zeitstrahl der letzten 30 Tage",
-        "emptyState": "Im Zeitfenster sind keine Dosen geplant.",
-        "nextDoseLabel": "Nächste Dosis:",
-        "noNextDose": "Keine kommende Dosis geplant.",
-        "status": {
-          "taken": "Genommen",
-          "skipped": "Ausgelassen",
-          "missed": "Verpasst",
-          "upcoming": "Geplant"
-        }
-      },
-      "compliance": {
-        "title": "Adhärenz",
-        "noData": "Keine Daten",
-        "adherenceRate": "Adhärenz",
-        "currentStreak": "Aktuelle Serie",
-        "longestStreak": "Längste Serie",
-        "missedLast30": "Verpasst (30 T.)",
-        "unit": {
-          "days": "T.",
-          "doses": "Dosen"
+      "naturalLanguage": {
+        "title": "Medikament beschreiben",
+        "description": "Beschreibe das Medikament in eigenen Worten — das Formular wird automatisch vorausgefüllt.",
+        "placeholder": "z. B. Mounjaro 5 mg wöchentlich am Mittwochmorgen ab nächstem Montag",
+        "submit": "Übernehmen",
+        "submitBusy": "Wird verarbeitet …",
+        "cancel": "Abbrechen",
+        "examples": {
+          "label": "Eines dieser Beispiele übernehmen",
+          "weekly": "Mounjaro 5 mg wöchentlich am Mittwochmorgen",
+          "daily": "Ibuprofen 200 mg täglich, 3-mal am Tag",
+          "rolling": "Methotrexat 7,5 mg alle 7 Tage nach der letzten Spritze"
         },
-        "chips": {
-          "adherenceTooltip": "Anteil genommener Dosen im 30-Tage-Fenster (ausgelassene Dosen werden ausgenommen).",
-          "streakTooltip": "Aufeinanderfolgende Tage bis heute, an denen alle geplanten Dosen genommen oder bewusst ausgelassen wurden.",
-          "longestTooltip": "Längste durchgehende Serie im 30-Tage-Fenster.",
-          "missedTooltip": "Anzahl verpasster Dosen in den letzten 30 Tagen."
+        "error": {
+          "empty": "Bitte zuerst eine Beschreibung eingeben.",
+          "tooLong": "Beschreibung muss unter 2000 Zeichen bleiben.",
+          "rateLimit": "Zu viele Anfragen — bitte kurz warten und erneut versuchen.",
+          "noProvider": "Kein KI-Anbieter konfiguriert — bitte in den Einstellungen einrichten.",
+          "budget": "Tägliches KI-Budget erreicht — bitte morgen erneut versuchen.",
+          "network": "KI-Anbieter nicht erreichbar — bitte erneut versuchen."
         }
+      },
+      "cadence": {
+        "section": "Rhythmus",
+        "label": "Wie oft",
+        "kind": {
+          "daily": "Jeden Tag",
+          "weekdays": "An bestimmten Wochentagen",
+          "everyNWeeks": "Alle N Wochen an bestimmten Tagen",
+          "monthly": "Monatlich an einem bestimmten Tag",
+          "everyNMonths": "Alle N Monate an einem bestimmten Tag",
+          "yearly": "Einmal im Jahr",
+          "rolling": "Alle N Tage seit der letzten Einnahme (flexibel)",
+          "rollingExplainer": "Zählt ab der letzten erfassten Einnahme — pausiert, wenn du eine Dosis auslässt.",
+          "oneShot": "Einmaldosis"
+        },
+        "weekdays": {
+          "label": "Wochentage",
+          "short": {
+            "mo": "Mo",
+            "tu": "Di",
+            "we": "Mi",
+            "th": "Do",
+            "fr": "Fr",
+            "sa": "Sa",
+            "su": "So"
+          },
+          "long": {
+            "mo": "Montag",
+            "tu": "Dienstag",
+            "we": "Mittwoch",
+            "th": "Donnerstag",
+            "fr": "Freitag",
+            "sa": "Samstag",
+            "su": "Sonntag"
+          }
+        },
+        "intervalWeeks": {
+          "suffix": "Wochen"
+        },
+        "dayOfMonth": {
+          "label": "Tag"
+        },
+        "intervalMonths": {
+          "suffix": "Monate",
+          "dayOnLabel": "am Tag"
+        },
+        "yearly": {
+          "date": {
+            "label": "Datum"
+          }
+        },
+        "rollingDays": {
+          "suffix": "Tage"
+        }
+      },
+      "timesOfDay": {
+        "section": "Uhrzeiten",
+        "label": "Uhrzeiten",
+        "empty": {
+          "cta": "Erste Uhrzeit hinzufügen."
+        },
+        "add": "Uhrzeit hinzufügen",
+        "remove": "Entfernen",
+        "presets": {
+          "morning": "Morgens",
+          "noon": "Mittags",
+          "evening": "Abends",
+          "night": "Nachts"
+        },
+        "max": {
+          "reached": "Maximum erreicht — bitte zuerst eine Uhrzeit entfernen."
+        }
+      },
+      "courseWindow": {
+        "section": "Behandlungszeitraum",
+        "startsOn": {
+          "label": "Beginnt am"
+        },
+        "endsOn": {
+          "label": "Endet am"
+        },
+        "noEndDate": "Kein Enddatum",
+        "oneShotCaption": "(einmalige Dosis)",
+        "invalidRange": "Das Enddatum muss am oder nach dem Startdatum liegen."
+      }
+    },
+    "wizard": {
+      "header": {
+        "stepOf": "Schritt {current} von {total}",
+        "createTitle": "Neues Medikament",
+        "editTitle": "{name} bearbeiten"
+      },
+      "nav": {
+        "back": "Zurück",
+        "next": "Weiter",
+        "save": "Speichern",
+        "saveEdit": "Änderungen speichern"
+      },
+      "nl": {
+        "button": "Beschreiben"
+      },
+      "steps": {
+        "step1": {
+          "title": "Wie heißt das Medikament?",
+          "subline": "Genau so wie es auf der Packung steht.",
+          "label": "Name",
+          "placeholder": "z. B. Ramipril"
+        },
+        "step2": {
+          "title": "Was für ein Medikament ist das?",
+          "subline": "Wir nutzen das für passende Vorlagen und Auswertungen."
+        },
+        "step3": {
+          "title": "Wie hoch ist die Dosis?",
+          "subline": "Eine Tablette, ein Hub, ein Tropfen — je nach Form.",
+          "amountLabel": "Menge",
+          "amountPlaceholder": "z. B. 5",
+          "unitLabel": "Einheit",
+          "unit": {
+            "mg": "mg",
+            "ml": "ml",
+            "iu": "I.E.",
+            "mcg": "µg",
+            "g": "g",
+            "tablets": "Tablette(n)",
+            "capsules": "Kapsel(n)",
+            "drops": "Tropfen",
+            "puffs": "Hub",
+            "sprays": "Sprühstoß",
+            "pieces": "Stück",
+            "other": "Sonstige"
+          },
+          "deliveryFormLabel": "Darreichung",
+          "deliveryForm": {
+            "ORAL": "Oral",
+            "INJECTION": "Injektion",
+            "OTHER": "Sonstige"
+          },
+          "dosesPerUnitLabel": "Dosen pro Einheit",
+          "dosesPerUnitPlaceholder": "z. B. 4",
+          "dosesPerUnitHint": "Dosen pro Pen / Ampulle — leer lassen, wenn kein Bestand getrackt wird.",
+          "injectionSiteToggle": "Injektionsstellen-Rotation",
+          "injectionSiteHint": "Optionaler Rotationshelfer. Die Stelle jeder Dosis wird beim Eintragen der Einnahme erfasst."
+        },
+        "step4": {
+          "title": "Über welchen Zeitraum nimmst du es?",
+          "subline": "Heute reicht ein Startdatum. Ein Ende kannst du später setzen."
+        },
+        "step5": {
+          "title": "Wie oft nimmst du es?",
+          "subline": "Wähle die Regelmäßigkeit — die Details kommen im nächsten Schritt."
+        },
+        "step6": {
+          "title": "Wie sieht das im Detail aus?",
+          "subline": "Trage Wochentage, Intervalle oder den Tag im Monat ein.",
+          "intervalWeeks": {
+            "label": "Alle",
+            "suffix": "Wochen"
+          },
+          "dayOfMonth": {
+            "label": "Am",
+            "suffix": "Tag des Monats"
+          },
+          "rollingDays": {
+            "label": "Alle",
+            "suffix": "Tage ab der letzten Einnahme"
+          }
+        },
+        "step7": {
+          "title": "Wann nimmst du es?",
+          "subline": "Eine oder mehrere Uhrzeiten — die Erinnerungen richten sich danach.",
+          "presetsLabel": "Tagespresets",
+          "presets": {
+            "morning": "Morgens",
+            "noon": "Mittags",
+            "evening": "Abends",
+            "night": "Nachts"
+          }
+        },
+        "step8": {
+          "title": "Fertig — soll HealthLog dich erinnern?",
+          "subline": "Du kannst alles unten nochmal prüfen, bevor du speicherst.",
+          "remindersLabel": "Erinnerungen aktiv",
+          "remindersDescription": "Push, Telegram oder ntfy — je nach deinen Einstellungen.",
+          "multiScheduleNote": "Dieses Medikament hat mehrere Zeitpläne. Den Detail-Editor öffnen wir in einer späteren Version."
+        }
+      },
+      "classRow": {
+        "bloodPressure": "Blutdruck",
+        "diabetes": "Diabetes",
+        "hormone": "Hormone",
+        "glp1": "GLP-1-Injektion",
+        "painRelief": "Schmerz",
+        "allergy": "Allergie",
+        "vitamin": "Vitamine",
+        "supplement": "Nahrungsergänzung",
+        "antibiotic": "Antibiotikum",
+        "other": "Sonstiges"
+      },
+      "cadence": {
+        "daily": {
+          "label": "Täglich",
+          "description": "Jeden Tag, immer zur gleichen Uhrzeit."
+        },
+        "weekdays": {
+          "label": "Bestimmte Wochentage",
+          "description": "Z. B. Montag, Mittwoch, Freitag."
+        },
+        "everyNWeeks": {
+          "label": "Alle X Wochen",
+          "description": "Z. B. alle 2 Wochen Donnerstags (GLP-1, Biologika)."
+        },
+        "monthly": {
+          "label": "Monatlich",
+          "description": "An einem festen Tag im Monat (z. B. immer am 1.)."
+        },
+        "rolling": {
+          "label": "Flexibel ab letzter Einnahme",
+          "description": "Du lässt den nächsten Termin offen, drückst 'genommen' wenn du sie genommen hast — ab dem Zeitpunkt zählt der Counter wieder."
+        },
+        "oneShot": {
+          "label": "Einmalig",
+          "description": "Einzelgabe, zum Beispiel eine Impfung oder ein Antibiotikum."
+        }
+      },
+      "summary": {
+        "title": "Übersicht",
+        "cadence": {
+          "daily": "Jeden Tag",
+          "weekdays": "An ausgewählten Wochentagen",
+          "biweekly": "Alle zwei Wochen",
+          "monthly": "Monatlich",
+          "quarterly": "Alle drei Monate",
+          "yearly": "Einmal im Jahr",
+          "rolling": "Alle {n} Tage seit der letzten Einnahme",
+          "oneShot": "Eine Einmaldosis",
+          "everyNWeeks": "Alle {n} Wochen",
+          "everyNMonths": "Alle {n} Monate"
+        },
+        "weekdaysDetail": ", an {days}",
+        "dayOfMonthDetail": ", am {day}.",
+        "times": "um {times}",
+        "startsOn": "Beginn: {date}",
+        "endsOn": "Ende: {date}",
+        "noEndDate": "Kein Enddatum"
+      },
+      "compose": {
+        "scheduleIndex": "Zeitplan {n} von {total}",
+        "list": {
+          "add": "Weiteren Zeitplan hinzufügen",
+          "edit": "Bearbeiten",
+          "remove": "Entfernen",
+          "removeDisabled": "Mindestens ein Zeitplan ist erforderlich.",
+          "empty": "Noch kein Zeitplan."
+        }
+      },
+      "errors": {
+        "submitFailed": "Medikament konnte nicht gespeichert werden — bitte erneut versuchen."
       }
     },
     "titration": {
@@ -795,6 +1085,182 @@
         "gatedCta": "Forschungsmodus in den Einstellungen öffnen",
         "unknownDrug": "{name} ist nicht im EMA-zugelassenen GLP-1-Katalog enthalten. HealthLog kann dafür keine Populations-Pharmakokinetik-Kurve erzeugen."
       }
+    },
+    "detail": {
+      "status": {
+        "active": "Aktiv",
+        "paused": "Pausiert",
+        "ended": "Beendet"
+      },
+      "today": {
+        "groupLabel": "Heutige Dosis",
+        "taken": "Genommen",
+        "skipped": "Übersprungen",
+        "toastTaken": "Heutige Dosis erfasst",
+        "toastSkipped": "Heutige Dosis übersprungen",
+        "recordedTaken": "Heute genommen um {time}",
+        "recordedSkipped": "Heute übersprungen um {time}",
+        "recordedOneShot": "Einmalig genommen um {time}",
+        "noneScheduled": "Heute keine Einnahme geplant.",
+        "pausedHint": "Pausiert — heute keine Erinnerung.",
+        "error": "Dosis konnte nicht erfasst werden."
+      },
+      "cadence": {
+        "oneShotOn": "Einmalige Dosis am {date}.",
+        "oneShotPending": "Einmalige Dosis ausstehend."
+      },
+      "intake": {
+        "title": "Einnahmeverlauf",
+        "importButton": "Importieren",
+        "rowActions": {
+          "openMenu": "Zeilen-Aktionen öffnen",
+          "edit": "Bearbeiten",
+          "delete": "Löschen"
+        },
+        "selection": {
+          "rowToggleLabel": "Zeile auswählen"
+        },
+        "bulkDelete": {
+          "selectionCount": "{count} Einträge ausgewählt",
+          "deleteButton": "Auswahl löschen",
+          "cancelButton": "Abbrechen",
+          "confirmTitle": "Ausgewählte Einträge löschen?",
+          "confirmBody": "{count} Einträge werden dauerhaft entfernt. Das Medikament bleibt.",
+          "confirmAction": "Löschen",
+          "toast": "Auswahl gelöscht",
+          "failed": "Auswahl konnte nicht gelöscht werden."
+        },
+        "edit": {
+          "dialogTitle": "Einnahme bearbeiten",
+          "takenAtLabel": "Eingenommen um",
+          "skippedLabel": "Übersprungen",
+          "noteLabel": "Notiz",
+          "save": "Speichern",
+          "cancel": "Abbrechen",
+          "savedToast": "Einnahme aktualisiert",
+          "failed": "Einnahme konnte nicht aktualisiert werden."
+        },
+        "deleteRow": {
+          "confirmTitle": "Diese Einnahme löschen?",
+          "confirmBody": "Der Eintrag wird dauerhaft entfernt.",
+          "confirmAction": "Löschen",
+          "toast": "Einnahme gelöscht",
+          "failed": "Einnahme konnte nicht gelöscht werden."
+        }
+      },
+      "notifications": {
+        "title": "Erinnerungen",
+        "switchLabel": "Erinnern, wenn die Dosis fällig ist",
+        "helperOn": "Erinnerungen sind aktiv.",
+        "helperOff": "Erinnerungen sind aus.",
+        "enabledToast": "Erinnerungen aktiv",
+        "disabledToast": "Erinnerungen aus",
+        "toggleFailed": "Erinnerungs-Einstellung konnte nicht geändert werden.",
+        "clientManagedChip": "Dein iPhone steuert die Erinnerungen für dieses Medikament."
+      },
+      "settings": {
+        "title": "Einstellungen",
+        "phases": {
+          "openButton": "Phasen konfigurieren",
+          "requiresCourseWindow": "Phasen sind nur mit Kurs-Fenster verfügbar."
+        },
+        "grace": {
+          "label": "Erinnerungsfenster — gilt für deinen Hauptzeitplan",
+          "primaryScheduleNote": "Andere Zeitpläne behalten ihr Standard-Fenster.",
+          "unit": "Minuten",
+          "saved": "Erinnerungsfenster gespeichert",
+          "failed": "Erinnerungsfenster konnte nicht gespeichert werden."
+        }
+      },
+      "zone": {
+        "title": "Verwaltung & Gefahrenzone",
+        "pause": {
+          "title": "Pausieren",
+          "helper": "Erinnerungen anhalten, bis du sie wieder aktivierst. Verlauf bleibt erhalten.",
+          "pausedToast": "Erinnerungen pausiert",
+          "resumedToast": "Erinnerungen reaktiviert",
+          "failed": "Status konnte nicht geändert werden."
+        },
+        "end": {
+          "title": "Medikament beenden",
+          "helper": "Erinnerungen stoppen und das Medikament als beendet markieren. Verlauf bleibt sichtbar.",
+          "button": "Beenden",
+          "dialogTitle": "{name} beenden — Erinnerungen stoppen, Verlauf bleibt sichtbar",
+          "dialogBody": "Keine weiteren Erinnerungen. Alte Einträge bleiben in der Übersicht.",
+          "toast": "Medikament beendet",
+          "failed": "Medikament konnte nicht beendet werden."
+        },
+        "purge": {
+          "title": "Verlauf löschen",
+          "helper": "Es sind {count} Einnahmen für dieses Medikament gespeichert.",
+          "button": "Verlauf löschen",
+          "dialogTitle": "Verlauf wirklich löschen?",
+          "dialogBody": "Die {count} Einnahmen werden unwiderruflich gelöscht. Das Medikament selbst bleibt.",
+          "toast": "Verlauf gelöscht",
+          "failed": "Verlauf konnte nicht gelöscht werden."
+        },
+        "delete": {
+          "title": "Medikament löschen",
+          "helper": "Entfernt das Medikament und alle zugehörigen Daten.",
+          "button": "Löschen",
+          "dialogTitle": "{name} löschen?",
+          "dialogBody": "Medikament, Zeitpläne, Verlauf, API-Tokens, Phasen-Konfiguration und Erinnerungen werden unwiderruflich gelöscht.",
+          "toast": "Medikament gelöscht",
+          "failed": "Medikament konnte nicht gelöscht werden."
+        }
+      },
+      "phases": {
+        "modeLabel": "Modus für {phase}",
+        "saveFailed": "Phasen konnten nicht gespeichert werden."
+      },
+      "api": {
+        "caption": "Endpunkt für „{name}\"",
+        "copyUrl": "URL kopieren",
+        "urlCopied": "URL kopiert",
+        "mintToken": "Token erzeugen",
+        "mintAnotherToken": "Weiteres Token erzeugen",
+        "mintFailed": "Token konnte nicht erzeugt werden.",
+        "copyFailed": "Kopieren fehlgeschlagen.",
+        "tokenCopied": "Token kopiert",
+        "copyToken": "Token kopieren",
+        "mintedHint": "Token jetzt kopieren — es wird nur einmal angezeigt."
+      },
+      "edit": {
+        "planOption": "Plan bearbeiten",
+        "advancedOption": "Erweiterte Einstellungen"
+      },
+      "advanced": {
+        "title": "Erweiterte Einstellungen",
+        "group": {
+          "data": "Daten",
+          "reminders": "Erinnerungen",
+          "lifecycle": "Lebenszyklus",
+          "danger": "Gefahrenzone"
+        },
+        "dataPortability": {
+          "import": {
+            "title": "Einnahmen importieren",
+            "helper": "Vergangene Einnahmen aus einer JSON-Datei oder eingefügtem JSON laden.",
+            "button": "JSON importieren"
+          },
+          "export": {
+            "title": "Medikament exportieren",
+            "helper": "Dieses Medikament als CSV-Datei herunterladen.",
+            "includeIntake": "Einnahmeverlauf einschließen",
+            "button": "CSV exportieren"
+          }
+        }
+      },
+      "header": {
+        "historyLabel": "Einnahmeverlauf ansehen",
+        "advancedLabel": "Erweiterte Einstellungen"
+      },
+      "history": {
+        "back": "Zurück zum Medikament",
+        "subtitle": "Vollständiger Einnahmeverlauf",
+        "plannedSuffix": "geplant",
+        "drugLevelDisclosure": "Geschätzte Wirkstoffkurve anzeigen"
+      }
     }
   },
   "charts": {
@@ -916,6 +1382,7 @@
     "bmiEmptyDescription": "Für den BMI wird deine Körpergröße benötigt. Hinterlege sie unter Einstellungen → Account.",
     "bmiEmptyAction": "Account-Einstellungen öffnen",
     "noAnalysisYet": "Noch keine Analyse vorhanden.",
+    "assessmentPreparing": "Einschätzung wird vorbereitet…",
     "noProviderConfigured": "Auswertung nicht verfügbar.",
     "startAnalysis": "Analyse starten",
     "refreshAnalysis": "Analyse aktualisieren",
@@ -1112,7 +1579,33 @@
         "vo2_max": "VO₂ max",
         "body_temp": "Körpertemperatur",
         "medications": "Medikamente",
-        "anthropometrics": "Profil (Größe, Alter, Geschlecht)"
+        "anthropometrics": "Profil (Größe, Alter, Geschlecht)",
+        "walking_hr": "Geh-Herzfrequenz",
+        "respiratory_rate": "Atemfrequenz",
+        "spo2": "Sauerstoffsättigung",
+        "pulse_wave_velocity": "Pulswellengeschwindigkeit",
+        "vascular_age": "Gefäßalter",
+        "body_fat": "Körperfett",
+        "fat_mass": "Fettmasse",
+        "fat_free_mass": "Fettfreie Masse",
+        "muscle_mass": "Muskelmasse",
+        "lean_body_mass": "Magermasse",
+        "bone_mass": "Knochenmasse",
+        "total_body_water": "Körperwasser",
+        "bmi": "BMI",
+        "visceral_fat": "Viszeralfett",
+        "glucose": "Glukose",
+        "walking_steadiness": "Gehstabilität",
+        "walking_asymmetry": "Gangasymmetrie",
+        "walking_double_support": "Doppelstandphase",
+        "walking_step_length": "Schrittlänge",
+        "walking_speed": "Gehgeschwindigkeit",
+        "audio_env": "Umgebungslautstärke",
+        "audio_headphone": "Kopfhörer-Lautstärke",
+        "audio_event": "Lärm-Ereignisse",
+        "daylight": "Zeit im Tageslicht",
+        "skin_temp": "Hauttemperatur",
+        "workouts": "Workouts"
       },
       "window": {
         "last7days": "letzte 7 Tage",
@@ -1150,7 +1643,53 @@
       "dailyLimitTitle": "Heute-Limit erreicht",
       "dailyLimitBody": "Heute-Limit erreicht; Reset um 00:00 UTC.",
       "providerRateLimitTitle": "Provider rate-limited",
-      "providerRateLimitBody": "Provider ist temporär überlastet; Reset in ~5 min."
+      "providerRateLimitBody": "Provider ist temporär überlastet; Reset in ~5 min.",
+      "cluster": {
+        "cardio": {
+          "label": "Herz-Kreislauf",
+          "hint": "Blutdruck · Puls · HRV · Ruhe- & Geh-Herzfrequenz"
+        },
+        "body": {
+          "label": "Körperzusammensetzung",
+          "hint": "Gewicht · Körperfett · Muskeln · BMI"
+        },
+        "activity": {
+          "label": "Aktivität",
+          "hint": "Schritte · Energie · Distanz · VO₂max"
+        },
+        "workouts": {
+          "label": "Workouts",
+          "hint": "Läufe · Radtouren · Einheiten"
+        },
+        "sleep": {
+          "label": "Schlaf",
+          "hint": "Dauer · Phasen"
+        },
+        "mood": {
+          "label": "Stimmung",
+          "hint": "Tägliche Stimmungseinträge"
+        },
+        "glucose": {
+          "label": "Glukose",
+          "hint": "Nüchtern- & postprandiale Werte"
+        },
+        "medication": {
+          "label": "Medikation",
+          "hint": "Therapietreue · GLP-1-Kontext"
+        },
+        "mobility": {
+          "label": "Mobilität & Gang",
+          "hint": "Stabilität · Asymmetrie · Gangbild"
+        },
+        "environment": {
+          "label": "Umgebung",
+          "hint": "Lärm · Tageslicht · Hauttemperatur"
+        }
+      },
+      "settingsClustersLabel": "Daten, die der Coach sieht",
+      "settingsClustersHint": "Wähle, welche Datencluster der Coach lesen darf. Mehr Daten bedeuten reichhaltigere Antworten und einen größeren Prompt.",
+      "settingsClusterNoData": "Noch keine Daten",
+      "sourcesMemberCount": "{count} Werte"
     },
     "relativeJustNow": "gerade eben",
     "relativeMinutesAgoOne": "vor {count} Minute",
@@ -1177,6 +1716,30 @@
       "vitalsParent": {
         "label": "Vitalwerte",
         "header": "Vital-Werte"
+      },
+      "bodyParent": {
+        "label": "Körper",
+        "header": "Körperzusammensetzung"
+      },
+      "activityParent": {
+        "label": "Aktivität",
+        "header": "Aktivität & Mobilität"
+      },
+      "cardiovascularParent": {
+        "label": "Herz-Kreislauf",
+        "header": "Herz-Kreislauf-Marker"
+      },
+      "hearingParent": {
+        "label": "Gehör",
+        "header": "Gehör & Lärmbelastung"
+      },
+      "environmentParent": {
+        "label": "Umwelt",
+        "header": "Umwelt"
+      },
+      "metabolicParent": {
+        "label": "Stoffwechsel",
+        "header": "Stoffwechsel"
       }
     },
     "hrv": {
@@ -1238,7 +1801,90 @@
       "medikamenteEmptyDescription": "Adhärenz-Insights brauchen mindestens ein erfasstes Medikament.",
       "medikamenteEmptyAction": "Medikamente öffnen",
       "therapyTimelineDescription": "Chronologisches GLP-1-Therapieprotokoll — Dosis-Änderungen, Injektionen, Bestand, Nebenwirkungen.",
-      "bmiDescription": "BMI aus deinem Gewicht und deiner Größe abgeleitet, mit Einschätzung."
+      "bmiDescription": "BMI aus deinem Gewicht und deiner Größe abgeleitet, mit Einschätzung.",
+      "target": {
+        "range": "Ziel: {min}–{max} {unit}",
+        "bpRange": "Ziel: {sysMin}–{sysMax} / {diaMin}–{diaMax} {unit}",
+        "inTargetShare": "{pct}% der erfassten Tage im Zielbereich",
+        "adjustLink": "Zielbereich anpassen"
+      },
+      "explainer": {
+        "trigger": "Was ist {title}?",
+        "bloodPressureTitle": "Blutdruck",
+        "bloodPressureBody": "Der Blutdruck ist die Kraft, die das Blut auf die Gefäßwände ausübt, angegeben als systolisch zu diastolisch (Spitzenwert beim Herzschlag über dem Ruhewert dazwischen). Dauerhaft hohe Werte belasten Herz und Gefäße auf Dauer.",
+        "pulseTitle": "Puls",
+        "pulseBody": "Der Puls gibt an, wie oft das Herz pro Minute schlägt. Eine Einzelmessung spiegelt den Moment wider – in Ruhe liegt er meist bei 60–100 Schlägen pro Minute und steigt natürlicherweise bei Bewegung, Stress oder Koffein.",
+        "weightTitle": "Gewicht",
+        "weightBody": "Das Körpergewicht ist eines der einfachsten Signale für die langfristige Energiebilanz und die allgemeine Gesundheit. Der Trend über Wochen zählt weit mehr als ein einzelner Wert, der mit Flüssigkeit, Ernährung und Tageszeit schwankt.",
+        "bmiTitle": "Body-Mass-Index (BMI)",
+        "bmiBody": "Der BMI ist das Gewicht geteilt durch die Körpergröße zum Quadrat und ordnet Sie einer groben Gewichtskategorie zu. Er ist ein Orientierungswert, keine Diagnose, und unterscheidet nicht zwischen Muskeln und Fett.",
+        "sleepTitle": "Schlaf",
+        "sleepBody": "Die Schlafdauer ist die tatsächlich geschlafene Zeit pro Nacht, aufgeteilt in Leicht-, Tief- und REM-Schlaf. Die meisten Erwachsenen brauchen etwa sieben bis neun Stunden; gleichmäßige Menge und Qualität unterstützen Erholung, Stimmung und Stoffwechsel.",
+        "moodTitle": "Stimmung",
+        "moodBody": "Die Stimmungserfassung hält auf einer einfachen Skala fest, wie Sie sich fühlen. Regelmäßiges Protokollieren zeigt Muster – wie Schlaf, Aktivität oder Medikamente mit dem Befinden zusammenhängen –, die ein einzelner Tag nie offenbart.",
+        "medicationsTitle": "Medikamenten-Therapietreue",
+        "medicationsBody": "Die Therapietreue zeigt, wie zuverlässig Sie Ihre Medikamente wie verordnet einnehmen, hier als Anteil der erwarteten Dosen, die Sie erfasst haben. Eine gleichmäßige Einnahme entscheidet oft darüber, ob eine Therapie wie beabsichtigt wirkt.",
+        "restingHrTitle": "Ruhepuls",
+        "restingHrBody": "Der Ruhepuls ist die Herzfrequenz in völliger Ruhe, meist über Nacht gemessen. Ein niedriger Ruhepuls deutet in der Regel auf eine bessere Herz-Kreislauf-Fitness hin, ein steigender Trend kann ein frühes Zeichen für Stress oder Krankheit sein.",
+        "hrvTitle": "Herzfrequenzvariabilität (HRV)",
+        "hrvBody": "Die HRV ist die kleine Schwankung der Zeit zwischen aufeinanderfolgenden Herzschlägen. Eine höhere Variabilität spiegelt meist ein gut erholtes, anpassungsfähiges Nervensystem wider, ein anhaltender Rückgang kann auf Erschöpfung, Stress oder mangelnde Erholung hinweisen.",
+        "oxygenSaturationTitle": "Sauerstoffsättigung (SpO₂)",
+        "oxygenSaturationBody": "Die SpO₂ ist der Prozentsatz der roten Blutkörperchen, die Sauerstoff transportieren. Werte von 95–100 % sind in Ruhe normal; Werte, die dauerhaft unter 90 % liegen, verdienen Aufmerksamkeit, kurze nächtliche Abfälle sind jedoch häufig.",
+        "bodyTemperatureTitle": "Körpertemperatur",
+        "bodyTemperatureBody": "Die Körpertemperatur spiegelt Ihren Kernwärmezustand wider, normalerweise um 37 °C mit kleinen Tagesschwankungen. Ein anhaltender Anstieg kann auf eine Infektion hindeuten; nächtliche Messungen am Handgelenk erfassen vor allem relative Änderungen, keinen klinischen Wert.",
+        "activeEnergyTitle": "Aktive Energie",
+        "activeEnergyBody": "Die aktive Energie sind die Kalorien, die Sie durch Bewegung verbrennen, zusätzlich zum Grundumsatz in Ruhe. Sie ist ein direktes Maß dafür, wie körperlich aktiv Ihr Tag war.",
+        "workoutsTitle": "Workouts",
+        "workoutsBody": "Workouts sind die strukturierten Trainingseinheiten, die Ihre Geräte mit Art, Dauer und Energie aufzeichnen. Ihre Erfassung zeigt, wie sich regelmäßiges Training über Wochen summiert und wie es mit Ihren anderen Gesundheitssignalen zusammenhängt.",
+        "respiratoryRateTitle": "Atemfrequenz",
+        "respiratoryRateBody": "Die Atemfrequenz ist die Anzahl der Atemzüge pro Minute. In Ruhe atmen die meisten Erwachsenen etwa zwölf- bis zwanzigmal pro Minute; ein anhaltender Anstieg kann mit Krankheit, Anstrengung oder Stress einhergehen.",
+        "bodyWaterTitle": "Gesamtkörperwasser",
+        "bodyWaterBody": "Das Gesamtkörperwasser ist der Anteil deines Körpergewichts, der aus Flüssigkeit in und um die Zellen besteht. Es schwankt mit Flüssigkeitshaushalt, Ernährung und Aktivität, daher sagt der Trend über Wochen mehr aus als ein einzelner Wert.",
+        "boneMassTitle": "Knochenmasse",
+        "boneMassBody": "Die Knochenmasse ist das geschätzte Gewicht der Mineralien in deinem Skelett. Waagengestützte Schätzungen sind ungefähr, doch ein gleichbleibender oder steigender Trend unterstützt die langfristige Knochenstärke.",
+        "fatFreeMassTitle": "Fettfreie Masse",
+        "fatFreeMassBody": "Die fettfreie Masse ist alles in deinem Körper, das kein Fett ist — Muskeln, Knochen, Organe und Wasser. Sie zu halten oder aufzubauen, während das Gewicht sinkt, deutet meist auf eine gesündere Körperzusammensetzung hin.",
+        "fatMassTitle": "Fettmasse",
+        "fatMassBody": "Die Fettmasse ist das Gesamtgewicht des Körperfetts. Etwas Fett ist für Hormone und Energiespeicher unverzichtbar, doch zu viel — besonders am Bauch — erhöht das langfristige Gesundheitsrisiko.",
+        "muscleMassTitle": "Muskelmasse",
+        "muscleMassBody": "Die Muskelmasse ist das geschätzte Gewicht der Muskeln in deinem Körper. Mehr Muskeln unterstützen Kraft, Stoffwechsel und Beweglichkeit und müssen mit zunehmendem Alter aktiv erhalten werden.",
+        "visceralFatTitle": "Viszeralfett",
+        "visceralFatBody": "Viszeralfett ist das Fett, das tief im Bauchraum um die Organe gespeichert wird. Anders als das Unterhautfett ist ein hoher Wert eng mit Herzkrankheiten und Typ-2-Diabetes verbunden, daher ist niedriger meist besser.",
+        "leanBodyMassTitle": "Magermasse",
+        "leanBodyMassBody": "Die Magermasse ist dein Gesamtgewicht abzüglich des Körperfetts — Muskeln, Knochen, Organe und Wasser zusammen. Sie neben dem Gewicht zu verfolgen zeigt, ob Veränderungen aus Muskeln oder aus Fett stammen.",
+        "flightsClimbedTitle": "Etagen gestiegen",
+        "flightsClimbedBody": "Die gestiegenen Etagen zählen die Stockwerke, die du täglich nach oben gehst, wobei eine Etage etwa drei Metern Höhe entspricht. Es ist ein einfacher Marker für Alltagsaktivität und Beinarbeit.",
+        "walkingDistanceTitle": "Geh- + Laufstrecke",
+        "walkingDistanceBody": "Die Geh- und Laufstrecke ist die Strecke, die du täglich zu Fuß zurücklegst. Sie ergänzt die Schrittzahl, indem sie zeigt, wie weit du dich bewegt hast, nicht nur wie oft du getreten bist.",
+        "walkingSteadinessTitle": "Gehstabilität",
+        "walkingSteadinessBody": "Die Gehstabilität schätzt, wie stabil und ausgewogen dein Gangbild ist, eingeteilt von OK bis niedrig. Ein niedriger Wert deutet auf ein höheres Sturzrisiko hin und sollte ärztlich besprochen werden.",
+        "walkingHeartRateTitle": "Herzfrequenz beim Gehen",
+        "walkingHeartRateBody": "Die Herzfrequenz beim Gehen ist dein durchschnittlicher Puls bei einem gleichmäßigen Spaziergang. Ein über die Zeit niedrigerer Wert spiegelt bei gleicher Anstrengung oft eine bessere Herz-Kreislauf-Fitness wider.",
+        "walkingAsymmetryTitle": "Gangasymmetrie",
+        "walkingAsymmetryBody": "Die Gangasymmetrie ist der Anteil der Zeit, in der deine Schritte zwischen linkem und rechtem Bein ungleichmäßig sind. Ein höherer Prozentsatz kann auf Schmerzen, eine Verletzung oder ein Gangproblem hindeuten, das näher betrachtet werden sollte.",
+        "doubleSupportTimeTitle": "Doppelunterstützungszeit",
+        "doubleSupportTimeBody": "Die Doppelunterstützungszeit ist der Anteil jedes Gehzyklus, in dem beide Füße gleichzeitig den Boden berühren. Ein höherer Prozentsatz bedeutet meist ein vorsichtigeres, weniger stabiles Gangbild.",
+        "stepLengthTitle": "Schrittlänge",
+        "stepLengthBody": "Die Schrittlänge ist der durchschnittliche Abstand von einem Fußauftritt zum nächsten. Eine über die Zeit kürzere Schrittlänge kann Müdigkeit, Vorsicht oder eine veränderte Beweglichkeit widerspiegeln.",
+        "walkingSpeedTitle": "Gehgeschwindigkeit",
+        "walkingSpeedBody": "Die Gehgeschwindigkeit ist, wie schnell du dich auf ebenem Untergrund fortbewegst. Sie ist ein gut untersuchter Marker für allgemeine Gesundheit und Beweglichkeit, und ein gleichbleibendes oder steigendes Tempo ist ein gutes Zeichen.",
+        "pulseWaveVelocityTitle": "Pulswellengeschwindigkeit",
+        "pulseWaveVelocityBody": "Die Pulswellengeschwindigkeit misst, wie schnell die Druckwelle jedes Herzschlags durch deine Arterien läuft. Eine schnellere Welle weist auf steifere Arterien hin, was mit einem höheren Herz-Kreislauf-Risiko verbunden ist.",
+        "vascularAgeTitle": "Gefäßalter",
+        "vascularAgeBody": "Das Gefäßalter schätzt anhand der Arteriensteifigkeit, wie alt sich deine Arterien im Vergleich zu deinem tatsächlichen Alter verhalten. Ein Gefäßalter unter dem echten Alter deutet auf gesündere Blutgefäße hin.",
+        "environmentalAudioTitle": "Umgebungslautstärke",
+        "environmentalAudioBody": "Die Umgebungslautstärke erfasst die Lautstärke deiner Umwelt in Dezibel. Anhaltende Belastung über etwa 70 dB kann das Gehör mit der Zeit schädigen, daher sind niedrigere Tagesmittel sicherer.",
+        "headphoneAudioTitle": "Kopfhörerlautstärke",
+        "headphoneAudioBody": "Die Kopfhörerlautstärke erfasst in Dezibel, wie laut du über Ohrhörer oder Kopfhörer hörst. Die Lautstärke niedrig zu halten und Pausen einzulegen schützt dein Gehör langfristig.",
+        "audioEventsTitle": "Laute Geräuschereignisse",
+        "audioEventsBody": "Laute Geräuschereignisse markieren Momente, in denen der Lärm um dich herum ein Niveau erreicht hat, das bei ausreichender Belastung das Gehör schädigen kann. Häufige Ereignisse sind ein Hinweis, eine ruhigere Umgebung oder Gehörschutz zu suchen.",
+        "daylightTitle": "Zeit im Tageslicht",
+        "daylightBody": "Die Zeit im Tageslicht ist, wie lange du dich täglich im Freien im Licht aufhältst. Regelmäßiges Tageslicht unterstützt einen gesunden Schlaf-Wach-Rhythmus und die Stimmung, und Zeit im Freien ist mit der Augengesundheit verbunden.",
+        "bloodGlucoseTitle": "Blutzucker",
+        "bloodGlucoseBody": "Der Blutzucker ist die Zuckermenge in deinem Blut, die wichtigste Energiequelle des Körpers. Er steigt nach dem Essen und pendelt sich zwischen den Mahlzeiten ein; dauerhaft hohe Werte können auf Diabetes oder Prädiabetes hinweisen.",
+        "skinTemperatureTitle": "Hauttemperatur",
+        "skinTemperatureBody": "Die Hauttemperatur ist hier die kleine nächtliche Abweichung deiner Handgelenkstemperatur von deinem eigenen Ausgangswert, keine absolute Fiebermessung. Veränderungen können Schlaf, Umgebung, Krankheit oder Zyklusphase widerspiegeln."
+      }
     },
     "sleep": {
       "title": "Schlaf",
@@ -1379,7 +2025,247 @@
         "mixedCardio": "Mixed Cardio",
         "other": "Sonstiges"
       }
-    }
+    },
+    "bloodGlucose": {
+      "title": "Blutzucker",
+      "description": "Deine Blutzuckerwerte im Zeitverlauf, in mg/dL.",
+      "chartTitle": "Blutzucker",
+      "emptyState": {
+        "title": "Noch keine Glukosedaten",
+        "description": "Blutzuckerwerte erscheinen hier, sobald du einen erfasst oder ein Gerät synchronisiert."
+      }
+    },
+    "navBloodGlucose": "Glukose",
+    "totalBodyWater": {
+      "title": "Gesamtkörperwasser",
+      "description": "Dein Gesamtkörperwasser im Zeitverlauf, in Kilogramm.",
+      "chartTitle": "Gesamtkörperwasser",
+      "emptyState": {
+        "title": "Noch keine Körperwasserdaten",
+        "description": "Körperwasserwerte erscheinen hier, sobald eine Körperanalysewaage synchronisiert."
+      }
+    },
+    "navTotalBodyWater": "Körperwasser",
+    "boneMass": {
+      "title": "Knochenmasse",
+      "description": "Deine Knochenmasse im Zeitverlauf, in Kilogramm.",
+      "chartTitle": "Knochenmasse",
+      "emptyState": {
+        "title": "Noch keine Knochenmassedaten",
+        "description": "Knochenmassewerte erscheinen hier, sobald eine Körperanalysewaage synchronisiert."
+      }
+    },
+    "navBoneMass": "Knochenmasse",
+    "flightsClimbed": {
+      "title": "Treppen",
+      "description": "Stockwerke, die du jeden Tag erklommen hast.",
+      "chartTitle": "Treppen pro Tag",
+      "emptyState": {
+        "title": "Noch keine Treppendaten",
+        "description": "Treppenwerte erscheinen hier, sobald Apple Health einen Tag synchronisiert."
+      }
+    },
+    "navFlightsClimbed": "Treppen",
+    "walkingRunningDistance": {
+      "title": "Geh- + Laufstrecke",
+      "description": "Geh- und Laufstrecke pro Tag, in Kilometern.",
+      "chartTitle": "Strecke pro Tag",
+      "emptyState": {
+        "title": "Noch keine Streckendaten",
+        "description": "Tagesstrecke erscheint hier, sobald Apple Health einen Tag synchronisiert."
+      }
+    },
+    "navWalkingRunningDistance": "Strecke",
+    "fatFreeMass": {
+      "title": "Fettfreie Masse",
+      "description": "Deine fettfreie Masse im Zeitverlauf, in Kilogramm.",
+      "chartTitle": "Fettfreie Masse",
+      "emptyState": {
+        "title": "Noch keine Daten zur fettfreien Masse",
+        "description": "Werte erscheinen hier, sobald eine Körperanalysewaage synchronisiert."
+      }
+    },
+    "navFatFreeMass": "Fettfreie Masse",
+    "fatMass": {
+      "title": "Fettmasse",
+      "description": "Deine Fettmasse im Zeitverlauf, in Kilogramm.",
+      "chartTitle": "Fettmasse",
+      "emptyState": {
+        "title": "Noch keine Fettmassedaten",
+        "description": "Fettmassewerte erscheinen hier, sobald eine Körperanalysewaage synchronisiert."
+      }
+    },
+    "navFatMass": "Fettmasse",
+    "muscleMass": {
+      "title": "Muskelmasse",
+      "description": "Deine Muskelmasse im Zeitverlauf, in Kilogramm.",
+      "chartTitle": "Muskelmasse",
+      "emptyState": {
+        "title": "Noch keine Muskelmassedaten",
+        "description": "Muskelmassewerte erscheinen hier, sobald eine Körperanalysewaage synchronisiert."
+      }
+    },
+    "navMuscleMass": "Muskelmasse",
+    "skinTemperature": {
+      "title": "Hauttemperatur",
+      "description": "Deine Handgelenk-Hauttemperatur im Zeitverlauf, in Grad Celsius.",
+      "chartTitle": "Hauttemperatur",
+      "emptyState": {
+        "title": "Noch keine Hauttemperaturdaten",
+        "description": "Werte erscheinen hier, sobald ein Wearable die nächtliche Temperatur synchronisiert."
+      }
+    },
+    "navSkinTemperature": "Hauttemperatur",
+    "pulseWaveVelocity": {
+      "title": "Pulswellengeschwindigkeit",
+      "description": "Deine arterielle Pulswellengeschwindigkeit im Zeitverlauf, in m/s — höhere Werte deuten auf steifere Arterien hin.",
+      "chartTitle": "Pulswellengeschwindigkeit",
+      "emptyState": {
+        "title": "Noch keine Daten",
+        "description": "Werte erscheinen hier, sobald ein kompatibles Withings-Gerät synchronisiert."
+      }
+    },
+    "navPulseWaveVelocity": "Pulswellengeschwindigkeit",
+    "vascularAge": {
+      "title": "Gefäßalter",
+      "description": "Dein geschätztes Gefäßalter im Zeitverlauf, in Jahren.",
+      "chartTitle": "Gefäßalter",
+      "emptyState": {
+        "title": "Noch keine Gefäßalterdaten",
+        "description": "Schätzungen erscheinen hier, sobald ein kompatibles Withings-Gerät synchronisiert."
+      }
+    },
+    "navVascularAge": "Gefäßalter",
+    "visceralFat": {
+      "title": "Viszeralfett",
+      "description": "Dein Viszeralfett-Index im Zeitverlauf.",
+      "chartTitle": "Viszeralfett",
+      "emptyState": {
+        "title": "Noch keine Viszeralfettdaten",
+        "description": "Werte erscheinen hier, sobald eine kompatible Körperanalysewaage synchronisiert."
+      }
+    },
+    "navVisceralFat": "Viszeralfett",
+    "audioExposureEnv": {
+      "title": "Umgebungslärm",
+      "description": "Dein täglicher mittlerer Umgebungs-Geräuschpegel, in dBA.",
+      "chartTitle": "Umgebungs-Geräuschpegel",
+      "emptyState": {
+        "title": "Noch keine Umgebungslärmdaten",
+        "description": "Pegelwerte erscheinen hier, sobald Apple Health synchronisiert."
+      }
+    },
+    "navAudioExposureEnv": "Umgebungslärm",
+    "audioExposureHeadphone": {
+      "title": "Kopfhörerpegel",
+      "description": "Dein täglicher mittlerer Kopfhörerpegel, in dBA.",
+      "chartTitle": "Kopfhörer-Lautstärke",
+      "emptyState": {
+        "title": "Noch keine Kopfhörerdaten",
+        "description": "Pegelwerte erscheinen hier, sobald Apple Health synchronisiert."
+      }
+    },
+    "navAudioExposureHeadphone": "Kopfhörerpegel",
+    "timeInDaylight": {
+      "title": "Zeit im Tageslicht",
+      "description": "Minuten im Tageslicht pro Tag.",
+      "chartTitle": "Tageslicht pro Tag",
+      "emptyState": {
+        "title": "Noch keine Tageslichtdaten",
+        "description": "Tageslichtwerte erscheinen hier, sobald Apple Health einen Tag synchronisiert."
+      }
+    },
+    "navTimeInDaylight": "Tageslicht",
+    "walkingSteadiness": {
+      "title": "Gangstabilität",
+      "description": "Deine Gangstabilität im Zeitverlauf, in Prozent.",
+      "chartTitle": "Gangstabilität",
+      "emptyState": {
+        "title": "Noch keine Gangstabilitätsdaten",
+        "description": "Werte erscheinen hier, sobald Apple Health synchronisiert."
+      }
+    },
+    "navWalkingSteadiness": "Gangstabilität",
+    "audioExposureEvent": {
+      "title": "Laute Lärmereignisse",
+      "description": "Tage mit einem lauten Umgebungsereignis.",
+      "chartTitle": "Lärmereignisse pro Tag",
+      "emptyState": {
+        "title": "Noch keine Lärmereignisdaten",
+        "description": "Lärmereignisse erscheinen hier, sobald Apple Health synchronisiert."
+      }
+    },
+    "navAudioExposureEvent": "Lärmereignisse",
+    "respiratoryRate": {
+      "title": "Atemfrequenz",
+      "description": "Deine Atemfrequenz im Zeitverlauf, in Atemzügen pro Minute.",
+      "chartTitle": "Atemfrequenz",
+      "emptyState": {
+        "title": "Noch keine Atemfrequenzdaten",
+        "description": "Werte erscheinen hier, sobald Apple Health Schlaf- oder Trainingsatmung synchronisiert."
+      }
+    },
+    "navRespiratoryRate": "Atemfrequenz",
+    "leanBodyMass": {
+      "title": "Magermasse",
+      "description": "Deine Magermasse im Zeitverlauf, in Kilogramm.",
+      "chartTitle": "Magermasse",
+      "emptyState": {
+        "title": "Noch keine Magermassedaten",
+        "description": "Werte erscheinen hier, sobald eine Körperanalysewaage synchronisiert."
+      }
+    },
+    "navLeanBodyMass": "Magermasse",
+    "walkingHeartRateAverage": {
+      "title": "Geh-Puls",
+      "description": "Dein durchschnittlicher Puls beim Gehen, in bpm.",
+      "chartTitle": "Durchschnittlicher Geh-Puls",
+      "emptyState": {
+        "title": "Noch keine Geh-Puls-Daten",
+        "description": "Werte erscheinen hier, sobald Apple Health synchronisiert."
+      }
+    },
+    "navWalkingHeartRateAverage": "Geh-Puls",
+    "walkingAsymmetry": {
+      "title": "Gangasymmetrie",
+      "description": "Deine Gangasymmetrie im Zeitverlauf, in Prozent.",
+      "chartTitle": "Gangasymmetrie",
+      "emptyState": {
+        "title": "Noch keine Gangasymmetriedaten",
+        "description": "Werte erscheinen hier, sobald Apple Health synchronisiert."
+      }
+    },
+    "navWalkingAsymmetry": "Gangasymmetrie",
+    "walkingDoubleSupport": {
+      "title": "Doppelstandphase",
+      "description": "Der Anteil jedes Schritts mit beiden Füßen am Boden, in Prozent.",
+      "chartTitle": "Doppelstandphase",
+      "emptyState": {
+        "title": "Noch keine Doppelstanddaten",
+        "description": "Werte erscheinen hier, sobald Apple Health synchronisiert."
+      }
+    },
+    "navWalkingDoubleSupport": "Doppelstandphase",
+    "walkingStepLength": {
+      "title": "Schrittlänge",
+      "description": "Deine durchschnittliche Schrittlänge im Zeitverlauf, in Metern.",
+      "chartTitle": "Schrittlänge",
+      "emptyState": {
+        "title": "Noch keine Schrittlängendaten",
+        "description": "Werte erscheinen hier, sobald Apple Health synchronisiert."
+      }
+    },
+    "navWalkingStepLength": "Schrittlänge",
+    "walkingSpeed": {
+      "title": "Gehgeschwindigkeit",
+      "description": "Deine durchschnittliche Gehgeschwindigkeit im Zeitverlauf, in km/h.",
+      "chartTitle": "Gehgeschwindigkeit (km/h)",
+      "emptyState": {
+        "title": "Noch keine Gehgeschwindigkeitsdaten",
+        "description": "Werte erscheinen hier, sobald Apple Health synchronisiert."
+      }
+    },
+    "navWalkingSpeed": "Gehgeschwindigkeit"
   },
   "thresholds": {
     "defaultLabel": "Default",
@@ -1513,6 +2399,27 @@
       "title": "Willkommen zurück",
       "body": "Das Onboarding hast du bereits abgeschlossen. Möchtest du etwas anpassen, findest du alles in den Einstellungen.",
       "cta": "Zum Dashboard"
+    },
+    "welcome": {
+      "title": "Willkommen bei HealthLog",
+      "carouselLabel": "Begrüßungs-Karussell",
+      "slideOf": "Folie {current} von {total}",
+      "prevSlide": "Vorherige Folie",
+      "nextSlide": "Nächste Folie",
+      "gotoSlide": "Zu Folie {index} springen",
+      "cta": "Los geht's",
+      "slide1": {
+        "title": "Alles, was zählt",
+        "body": "Gewicht, Blutdruck, Glukose, Schlaf, Stimmung — alles in einem Verlauf, der dir gehört."
+      },
+      "slide2": {
+        "title": "Verbinde deine Quellen",
+        "body": "Synchronisiere mit Apple Health und Withings oder trage Werte manuell ein. Deine Daten bleiben auf deinem Server."
+      },
+      "slide3": {
+        "title": "Erkenne das Muster",
+        "body": "Tageszusammenfassungen, Trend-Diagramme und ein Coach, der zeigt was sich verändert hat — alles auf deinem Gerät."
+      }
     }
   },
   "gettingStarted": {
@@ -1707,6 +2614,19 @@
     "timezoneHint": "Wird für Diagrammachsen, Erinnerungszeiten, Export-Zeitstempel und den Coach-Kontext verwendet. Gespeicherte Daten bleiben unverändert.",
     "timezoneInvalid": "Keine gültige IANA-Zeitzone.",
     "profileSaved": "Profil gespeichert",
+    "avatar": {
+      "title": "Profilfoto",
+      "description": "Lade ein Foto hoch, das auf deinem eigenen Server gespeichert wird. Es erscheint überall in der App anstelle eines externen Avatar-Dienstes.",
+      "upload": "Foto hochladen",
+      "replace": "Foto ersetzen",
+      "remove": "Entfernen",
+      "hint": "JPEG, PNG oder WebP. Bis zu 2 MB und 2048×2048 Pixel.",
+      "uploaded": "Profilfoto aktualisiert",
+      "removed": "Profilfoto entfernt",
+      "invalidType": "Nicht unterstützter Bildtyp. Verwende JPEG, PNG oder WebP.",
+      "tooLarge": "Das Bild überschreitet das Limit von 2 MB.",
+      "error": "Profilfoto konnte nicht aktualisiert werden. Bitte versuche es erneut."
+    },
     "changePassword": "Passwort ändern",
     "changePasswordDescription": "Ersetze dein aktuelles Passwort durch ein neues.",
     "passwordReset": "Passwort-Reset",
@@ -1879,6 +2799,16 @@
         "saveError": "Speichern fehlgeschlagen. Bitte erneut versuchen."
       }
     },
+    "dashboard": {
+      "units": {
+        "title": "Einheiten",
+        "description": "Lege fest, wie Distanzen und Geschwindigkeiten in Diagrammen und Kacheln angezeigt werden.",
+        "metric": "Metrisch",
+        "imperial": "Imperial",
+        "saved": "Einheiten-Einstellung gespeichert.",
+        "saveError": "Einheiten-Einstellung konnte nicht gespeichert werden."
+      }
+    },
     "withings": "Withings",
     "withingsDescription": "Verbinde deine Withings-Waage und Blutdruckmessgeräte.",
     "withingsCredentials": "API-Zugangsdaten",
@@ -2045,6 +2975,54 @@
       "nextRetry": "Nächster Versuch",
       "reEnable": "Wieder aktivieren",
       "sendTest": "Test senden"
+    },
+    "identity": {
+      "description": "Optionale Angaben für die Gesundheitsakte (PDF-Deckblatt + FHIR-Export). Alle Felder sind freiwillig.",
+      "fullName": "Vollständiger Name",
+      "fullNamePlaceholder": "z. B. Erika Mustermann",
+      "insurer": "Krankenkasse",
+      "insurerPlaceholder": "z. B. AOK Bayern",
+      "insuranceNumber": "Versichertennummer (KVNR)",
+      "insuranceNumberHint": "10 Zeichen: ein Buchstabe + neun Ziffern (z. B. A123456780)."
+    },
+    "healthRecord": {
+      "title": "Gesundheitsakte exportieren",
+      "description": "Erstelle eine vollständige Gesundheitsakte für die ärztliche Vorlage — als PDF, strukturiert (FHIR) oder als kombiniertes Paket.",
+      "format": "Format",
+      "format_pdf": "PDF",
+      "format_fhir": "Strukturiert (FHIR)",
+      "format_package": "Paket: PDF + FHIR",
+      "range": "Zeitraum",
+      "range90": "Letzte 90 Tage",
+      "range180": "Letzte 6 Monate",
+      "range365": "Letzte 12 Monate",
+      "practiceName": "Praxis (optional)",
+      "practiceNamePlaceholder": "z. B. Dr. med. Mustermann",
+      "includedData": "Enthaltene Daten",
+      "groupVitals": "Vitalwerte",
+      "groupCardio": "Herz & Fitness",
+      "groupActivity": "Aktivität & Schlaf",
+      "weight": "Gewicht",
+      "bp": "Blutdruck",
+      "pulse": "Puls",
+      "oxygenSaturation": "Sauerstoffsättigung",
+      "bodyFat": "Körperfett",
+      "bodyComposition": "Körperzusammensetzung",
+      "restingHeartRate": "Ruhepuls",
+      "hrv": "Herzfrequenzvariabilität",
+      "vo2max": "VO₂max",
+      "steps": "Schritte",
+      "distance": "Distanz",
+      "sleep": "Schlaf",
+      "glucose": "Blutzucker",
+      "medications": "Medikamente & Einnahmetreue",
+      "mood": "Stimmung (standardmäßig aus — sensible Daten)",
+      "bmi": "BMI",
+      "includeCharts": "Trend-Diagramme einbetten (nur PDF)",
+      "includeAiSummary": "KI-Zusammenfassung anhängen (nicht klinisch validiert)",
+      "fhirNote": "Die strukturierte Ausgabe folgt dem FHIR-R4-Standard (ePA-kompatibel).",
+      "generate": "Erstellen",
+      "error": "Export fehlgeschlagen ({code})."
     }
   },
   "admin": {
@@ -2120,6 +3098,7 @@
     "telegramGlobal": "Telegram-Benachrichtigungen erlauben.",
     "ntfyGlobal": "ntfy-Benachrichtigungen erlauben.",
     "webPushGlobal": "Browser-Push-Benachrichtigungen erlauben.",
+    "moodLogGlobal": "moodLog-Erinnerungen erlauben.",
     "integrationWebPush": "Web Push",
     "integrationBugReport": "Bug-Reports",
     "offlineGeoLabel": "Geodaten",
@@ -2831,14 +3810,31 @@
     },
     "moodReminder": {
       "title": "Tägliche Stimmungs-Erinnerung",
-      "description": "Sanfter Anstoß um 22:00 Uhr, falls du heute noch keine Stimmung erfasst hast. Greift nur auf bereits eingerichtete Kanäle (Telegram, ntfy, Web Push, Apple Push) zurück und schweigt, sobald du heute geloggt hast.",
+      "description": "Sanfter Anstoß zur eingestellten Zeit, falls du heute noch keine Stimmung erfasst hast. Greift nur auf bereits eingerichtete Kanäle (Telegram, ntfy, Web Push, Apple Push) zurück und schweigt, sobald du heute geloggt hast.",
       "toggleAria": "Tägliche Stimmungs-Erinnerung umschalten",
-      "statusOn": "Aktiv um 22:00 deiner Zeit",
+      "statusOn": "Aktiv zu deiner eingestellten Zeit",
       "statusOff": "Aus",
       "enabledToast": "Stimmungs-Erinnerung aktiviert.",
       "disabledToast": "Stimmungs-Erinnerung deaktiviert.",
-      "saveError": "Speichern fehlgeschlagen. Bitte später erneut versuchen."
-    }
+      "saveError": "Speichern fehlgeschlagen. Bitte später erneut versuchen.",
+      "hourLabel": "Erinnerungszeit",
+      "hourAria": "Stunde der Stimmungs-Erinnerung",
+      "hourSavedToast": "Erinnerungszeit aktualisiert."
+    },
+    "eventMedicationReminder": "Medikamenten-Erinnerung",
+    "eventMedicationReminderDesc": "Wird zu jeder geplanten Einnahmezeit gesendet.",
+    "eventMeasurementAnomaly": "Auffälliger Messwert",
+    "eventMeasurementAnomalyDesc": "Wird gesendet, wenn ein Wert deutlich außerhalb deines üblichen Bereichs liegt.",
+    "eventComplianceLow": "Niedrige Einnahmequote",
+    "eventComplianceLowDesc": "Wird gesendet, wenn deine Einnahmequote in den letzten Tagen unter 80 % fällt.",
+    "eventWithingsSyncFailed": "Withings-Sync fehlgeschlagen",
+    "eventWithingsSyncFailedDesc": "Wird gesendet, wenn die Withings-Synchronisierung mehrere Versuche in Folge scheitert.",
+    "eventSystemAlert": "Systemmeldung",
+    "eventSystemAlertDesc": "Allgemeine Mitteilungen vom HealthLog-Server, etwa Wartungsfenster oder Konto-Hinweise.",
+    "eventPersonalRecord": "Persönlicher Rekord",
+    "eventPersonalRecordDesc": "Wird gesendet, wenn ein Messwert deine bisherige Bestmarke übertrifft.",
+    "eventMoodReminder": "Stimmungs-Erinnerung",
+    "eventMoodReminderDesc": "Tägliche Erinnerung, deine aktuelle Stimmung zu protokollieren."
   },
   "i18n": {
     "maintainershipBanner": {

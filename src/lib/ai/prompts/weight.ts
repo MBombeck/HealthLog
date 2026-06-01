@@ -1,47 +1,27 @@
 import type { Locale } from "@/lib/i18n/config";
 import { getBaseSystemPrompt } from "./base-system";
 
-const WEIGHT_SECTION_DE = `FACHSPEZIFISCH — GEWICHT:
-- BMI-Kontext immer mitbewerten (Größe aus Profil, falls verfügbar).
-- WHO BMI-Klassifikation: Untergewicht < 18.5, Normalgewicht 18.5-24.9, Übergewicht 25.0-29.9, Adipositas I 30.0-34.9, II 35.0-39.9, III ≥ 40.0.
-- Trend-Analyse: 7-Tage, 30-Tage und 90-Tage gleitende Durchschnitte vergleichen.
-- Plateau-Erkennung: Gewichtsveränderung < ±0.5 kg über > 14 Tage als Plateau identifizieren.
-- Realistische Zielprojektion: Maximal 0.5-1.0 kg/Woche als nachhaltiger Gewichtsverlust (DGE-Empfehlung).
-- Gewichts-Blutdruck-Korrelation: Nur erwähnen wenn weightVsSystolic im Snapshot vorhanden und |r| > 0.4. Pro kg Gewichtsreduktion ca. 1 mmHg systolische Senkung.
-- Medikamenten-Einfluss: Gewichtsrelevante Medikamente identifizieren (z.B. Betablocker, Cortison).
-- Tageszeit-Schwankungen: Morgen- vs. Abendmessungen differenzieren (1-2 kg normal).
-- Vergleiche das aktuelle 7-Tage-Mittel (historicalComparison.weight.current7dAvg) mit dem 30-Tage-Baseline (previous30dAvg). Bei >2 kg Differenz: klinisch bewerten und Ursachen diskutieren.
-- Plateau-Definition: <0.5 kg Veränderung über >14 Tage (prüfe ob avg7 ≈ avg30 ≈ avg90).
-- Nutze allTimeMin/allTimeMax/allTimeAvg um den aktuellen Wert historisch einzuordnen.
-- Gewichtsmeilensteine (klinisch signifikant):
-  * 5% Verlust vom Startgewicht (allTimeMax): Metabolischer Benefit, KV-Risikoreduktion
-  * 10% Verlust: Erheblicher klinischer Nutzen
-  * Wenn erreicht: Explizit anerkennen und klinischen Kontext geben
-- Zu schneller Verlust: > 1 kg/Woche über > 2 Wochen = Risiko für Muskelmasseverlust, nicht nachhaltig
-- Body-Composition-Divergenz: Falls bodyCompositionDivergence.flag = true: "Gewicht stabil, aber Körperfettanteil steigend — möglicher Muskelmasseverlust. Krafttraining empfehlen."
-- Schlaf-Gewicht-Verbindung: Falls sleep.avg7 < 6h UND weight.slope30 > 0: "Schlafmangel stört metabolische Regulation und kann Gewichtszunahme begünstigen."
-- Inline-Chart: Bei einem klar gewichtsfokussierten summary- oder finding-Text kannst du genau einen Token (metric:WEIGHT, optional auch metric:BODY_FAT für Körperzusammensetzung) im Text einbetten, um das Diagramm darunter einzublenden.`;
+const WEIGHT_SECTION_DE = `METRIK — GEWICHT:
+- Der Snapshot trägt weight.summary + weight.series (graded). weight.latestDayFocus zeigt den jüngsten Tageswert, den Schritt zum vorherigen Messtag und ggf. den Blutdruck desselben Tages.
+- Fokus dieser Karte ist der kontinuierliche TREND und das TEMPO über die Zeit (kg/Woche, Plateaus, Meilensteine), nicht die WHO-Band-Einordnung — die trägt die BMI-Karte. Den BMI-Wert nur als Nebenbezug nennen, nie das Band als zentrale Aussage hier.
+- Wochen-/Monatstrend zählt, nicht der Einzelwert: Vergleiche das recent-Mittel mit dem weekly/monthly-Mittel der Person. Tageschwankungen von 1-2 kg (Wasser, Tageszeit) sind normal und kein Befund.
+- Plateau: Verändert sich das Mittel über > ~2 Wochen um < 0.5 kg, ist das ein Plateau — bei einem Abnehmenden ehrlich benennen, ohne zu entmutigen.
+- Tempo: Nachhaltiger Verlust liegt bei ~0.5-1.0 kg/Woche (DGE). Anhaltend > 1 kg/Woche ist eher Wasser/Muskel als Fett — vorsichtig einordnen.
+- Meilensteine gegen das eigene Maximum: ~5 % Verlust vom höchsten Wert (series-Max) bringt bereits metabolischen Nutzen, ~10 % einen deutlichen — wenn erreicht, ausdrücklich anerkennen.
+- BMI-Bezug nur als knapper Nebensatz, wenn die Größe im Profil vorliegt (sonst nicht behaupten); die WHO-Band-Einordnung selbst gehört auf die BMI-Karte, nicht hierher.
+- Zusammenhänge: weightVsSystolic.correlation / weightVsMeanBloodPressure.correlation und moodContext.moodVsWeightCorrelation nur erwähnen, wenn vorhanden und |r| > 0.4 — als Zusammenhang, nie als Ursache.
+- Eine Botschaft: Schließe mit EINEM machbaren Schritt, der zur Richtung passt (z.B. bei einem Plateau zur selben Tageszeit wiegen, um den echten Trend zu sehen, statt am Tagesrauschen zu hängen).`;
 
-const WEIGHT_SECTION_EN = `DOMAIN — WEIGHT:
-- Always include BMI context (height from profile, if available).
-- WHO BMI classification: Underweight < 18.5, Normal 18.5-24.9, Overweight 25.0-29.9, Obesity I 30.0-34.9, II 35.0-39.9, III ≥ 40.0.
-- Trend analysis: Compare 7-day, 30-day and 90-day moving averages.
-- Plateau detection: Flag a weight change < ±0.5 kg over > 14 days as a plateau.
-- Realistic target projection: At most 0.5-1.0 kg/week is sustainable weight loss (DGE recommendation).
-- Weight-BP correlation: Mention only if weightVsSystolic is present in the snapshot and |r| > 0.4. Roughly 1 mmHg systolic drop per kg lost.
-- Medication influence: Identify weight-relevant medications (e.g. beta-blockers, cortisone).
-- Time-of-day swings: Differentiate morning vs. evening readings (1-2 kg normal).
-- Compare the current 7-day mean (historicalComparison.weight.current7dAvg) with the 30-day baseline (previous30dAvg). For deltas > 2 kg: assess clinically and discuss likely causes.
-- Plateau definition: < 0.5 kg change over > 14 days (check whether avg7 ≈ avg30 ≈ avg90).
-- Use allTimeMin/allTimeMax/allTimeAvg to anchor the current value historically.
-- Weight milestones (clinically significant):
-  * 5% loss from starting weight (allTimeMax): metabolic benefit, CV risk reduction
-  * 10% loss: substantial clinical benefit
-  * If reached: acknowledge explicitly and give clinical context
-- Too rapid loss: > 1 kg/week sustained > 2 weeks = risk of muscle-mass loss, not sustainable
-- Body-composition divergence: If bodyCompositionDivergence.flag = true: "Weight stable but body-fat percentage rising — possible muscle-mass loss. Recommend strength training."
-- Sleep-weight link: If sleep.avg7 < 6h AND weight.slope30 > 0: "Sleep loss disrupts metabolic regulation and can favour weight gain."
-- Inline chart: When a summary or finding text is centred on weight, embed exactly one token (metric:WEIGHT, or metric:BODY_FAT for body-composition findings) inside that text to inline the chart underneath.`;
+const WEIGHT_SECTION_EN = `METRIC — WEIGHT:
+- The snapshot carries weight.summary + weight.series (graded). weight.latestDayFocus shows the latest daily value, the step from the previous measured day and, where present, the same-day blood pressure.
+- This card's focus is the continuous TREND and PACE over time (kg/week, plateaus, milestones), not WHO-band placement — the BMI card carries that. Mention the BMI value only as a side reference, never make the band the central message here.
+- The weekly/monthly trend matters, not the single value: compare the recent mean with the person's weekly/monthly mean. Day-to-day swings of 1-2 kg (water, time of day) are normal and not a finding.
+- Plateau: if the mean moves < 0.5 kg over > ~2 weeks, that is a plateau — name it honestly for someone who is losing, without discouraging.
+- Pace: sustainable loss is ~0.5-1.0 kg/week (DGE). Sustained > 1 kg/week is more likely water/muscle than fat — frame cautiously.
+- Milestones against their own maximum: ~5% loss from the highest value (series max) already brings metabolic benefit, ~10% a substantial one — acknowledge explicitly when reached.
+- BMI reference only as a brief aside when height is in the profile (do not claim it otherwise); the WHO-band placement itself belongs on the BMI card, not here.
+- Associations: mention weightVsSystolic.correlation / weightVsMeanBloodPressure.correlation and moodContext.moodVsWeightCorrelation only when present and |r| > 0.4 — as an association, never a cause.
+- One message: close with ONE doable step that fits the direction (e.g. on a plateau, weigh at the same time of day to see the real trend rather than the daily noise).`;
 
 export function getWeightSystemPrompt(locale: Locale): string {
   const section = locale === "en" ? WEIGHT_SECTION_EN : WEIGHT_SECTION_DE;
@@ -62,14 +42,12 @@ export function getWeightUserPrompt(
       : "";
   if (locale === "en") {
     return `Date: ${todayKey} (Europe/Berlin)
-Analyse the weight trajectory with focus on trends, BMI classification and links to other vital signs.
-Use the temporal layers (avg7, avg30, avg90, allTime) and the historical comparison for a nuanced assessment.${ctxBlock}
+Write one short assessment of this person's weight: name the current level and direction, place the recent days against their own weekly/monthly baseline as a continuous trend and pace (kg/week, plateau, milestone — not the single value, and not the WHO band, which the BMI card covers), and close with one doable step. Judge confidence from the measurement count and recency.${ctxBlock}
 
 ${snapshotJson}`;
   }
   return `Datum: ${todayKey} (Europe/Berlin)
-Analysiere die Gewichtsentwicklung mit Fokus auf Trends, BMI-Klassifikation und Zusammenhang mit anderen Vitalwerten.
-Nutze die temporalen Schichten (avg7, avg30, avg90, allTime) und den historischen Vergleich für eine differenzierte Bewertung.${ctxBlock}
+Schreibe eine kurze Einschätzung zum Gewicht dieser Person: benenne Niveau und Richtung, ordne die jüngsten Tage gegen die eigene Wochen-/Monats-Baseline als kontinuierlichen Trend und Tempo ein (kg/Woche, Plateau, Meilenstein — nicht der Einzelwert und nicht das WHO-Band, das die BMI-Karte trägt) und schließe mit einem machbaren Schritt. Konfidenz aus Messanzahl und Aktualität ableiten.${ctxBlock}
 
 ${snapshotJson}`;
 }

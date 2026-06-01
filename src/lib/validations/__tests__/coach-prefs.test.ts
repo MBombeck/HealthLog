@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  DEFAULT_COACH_CLUSTERS,
   DEFAULT_COACH_PREFS,
   coachPrefsSchema,
   parseCoachPrefs,
@@ -122,5 +123,52 @@ describe("parseCoachPrefs", () => {
       showEvidenceByDefault: false,
     };
     expect(parseCoachPrefs(legacy).defaultWindow).toBe("allTime");
+  });
+
+  // ── v1.7.0 dataClusters ──
+  it("leaves dataClusters undefined for legacy rows (back-compat sentinel)", () => {
+    // A row persisted before v1.7.0 has no `dataClusters` key. The
+    // field must stay `undefined` so the snapshot builder expands the
+    // legacy default cluster set rather than an empty array.
+    const legacy = {
+      tone: "warm" as const,
+      verbosity: "default" as const,
+      excludeMetrics: [] as const,
+      showEvidenceByDefault: false,
+      defaultWindow: "allTime" as const,
+    };
+    expect(parseCoachPrefs(legacy).dataClusters).toBeUndefined();
+    expect(parseCoachPrefs(null).dataClusters).toBeUndefined();
+    expect(parseCoachPrefs({}).dataClusters).toBeUndefined();
+  });
+
+  it("round-trips an explicit dataClusters array", () => {
+    const out = parseCoachPrefs({
+      dataClusters: ["cardio", "glucose", "workouts"],
+    });
+    expect(out.dataClusters).toEqual(["cardio", "glucose", "workouts"]);
+  });
+
+  it("honours an explicit empty dataClusters array as everything-off", () => {
+    const out = coachPrefsSchema.parse({ dataClusters: [] });
+    expect(out.dataClusters).toEqual([]);
+  });
+
+  it("falls back to defaults when dataClusters carries an unknown cluster", () => {
+    // Shape drift — an unknown cluster string fails the enum, the whole
+    // parse fails, and parseCoachPrefs returns the legacy defaults
+    // (dataClusters undefined → legacy cluster expansion).
+    const out = parseCoachPrefs({ dataClusters: ["cardio", "astrology"] });
+    expect(out).toEqual(DEFAULT_COACH_PREFS);
+    expect(out.dataClusters).toBeUndefined();
+  });
+
+  it("DEFAULT_COACH_CLUSTERS preserves the legacy five domains' clusters", () => {
+    expect([...DEFAULT_COACH_CLUSTERS].sort()).toEqual([
+      "body",
+      "cardio",
+      "medication",
+      "mood",
+    ]);
   });
 });

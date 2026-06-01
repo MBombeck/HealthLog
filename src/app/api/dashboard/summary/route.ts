@@ -53,7 +53,7 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
-import { defaultLocale, type Locale } from "@/lib/i18n/config";
+import { defaultLocale, locales, type Locale } from "@/lib/i18n/config";
 import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { projectTodayIntakesAndRecompute } from "@/lib/medications/scheduling/project-today-intakes";
@@ -76,10 +76,26 @@ type MetricKind =
 interface MetricCard {
   id: string;
   kind: MetricKind;
-  title: string;
+  /**
+   * v1.5.x — i18n key for the metric's display title (e.g.
+   * `dashboard.metric.title.weight`). Clients resolve the key against
+   * their own locale bundle: the PWA via `useTranslations()`, the iOS
+   * client via its bundled `Localizable.xcstrings`. The previous wire
+   * shape carried a German string literal which injected DE into an
+   * English-locale iOS UI.
+   */
+  titleKey: string;
   latestValue: number | null;
   secondaryValue: number | null;
-  unit: string;
+  /**
+   * v1.5.x — i18n key for the metric's display unit (e.g.
+   * `dashboard.metric.unit.weight`). Same resolution contract as
+   * `titleKey`. SI tokens like `kg`, `mmHg`, `bpm`, `mg/dL` are
+   * identical across every shipped locale; per-kind keys keep the
+   * door open for locale-specific overrides (e.g. Imperial units)
+   * without another wire-shape change.
+   */
+  unitKey: string;
   trend: "up" | "down" | "flat" | "unknown";
   sparkline: number[];
   updatedAt: string | null;
@@ -96,37 +112,50 @@ interface MetricCard {
    * v1.4.33 maintainer-item-1 — ISO timestamp of the metric's single
    * most recent reading. When `allTimeCount > 0` but the latest
    * reading is older than 7 days, the iOS tile renders a muted
-   * "Letzter Wert vor Xd" caption so the user understands the value
-   * isn't stale silently. `null` when the metric has no readings at
-   * all.
+   * "last reading N days ago" caption so the user understands the
+   * value isn't stale silently. `null` when the metric has no readings
+   * at all.
    */
   lastSeenAt: string | null;
 }
 
-const METRIC_TITLES: Record<MetricKind, string> = {
-  weight: "Gewicht",
-  bloodPressure: "Blutdruck",
-  pulse: "Puls",
-  bodyFat: "Körperfett",
-  glucose: "Blutzucker",
-  sleep: "Schlaf",
-  steps: "Schritte",
-  totalBodyWater: "Gesamtkörperwasser",
-  boneMass: "Knochenmasse",
-  oxygenSaturation: "Sauerstoffsättigung",
+/**
+ * v1.5.x — wire i18n keys, not translated strings.
+ *
+ * The legacy maps emitted German literals like "Gewicht" / "Schritte"
+ * which injected into an English iOS UI once the iOS app flipped its
+ * source language. Clients now resolve these keys against their own
+ * locale bundle (the PWA via `useTranslations()`, iOS via
+ * `Localizable.xcstrings`). The server payload becomes language-neutral
+ * and the response shrinks slightly.
+ *
+ * One key per `MetricKind` — symmetric maps so a new kind has to add
+ * both a title and a unit key (Type-checked: `Record<MetricKind, string>`).
+ */
+const METRIC_TITLE_KEYS: Record<MetricKind, string> = {
+  weight: "dashboard.metric.title.weight",
+  bloodPressure: "dashboard.metric.title.bloodPressure",
+  pulse: "dashboard.metric.title.pulse",
+  bodyFat: "dashboard.metric.title.bodyFat",
+  glucose: "dashboard.metric.title.glucose",
+  sleep: "dashboard.metric.title.sleep",
+  steps: "dashboard.metric.title.steps",
+  totalBodyWater: "dashboard.metric.title.totalBodyWater",
+  boneMass: "dashboard.metric.title.boneMass",
+  oxygenSaturation: "dashboard.metric.title.oxygenSaturation",
 };
 
-const METRIC_UNITS: Record<MetricKind, string> = {
-  weight: "kg",
-  bloodPressure: "mmHg",
-  pulse: "bpm",
-  bodyFat: "%",
-  glucose: "mg/dL",
-  sleep: "h",
-  steps: "Schritte",
-  totalBodyWater: "kg",
-  boneMass: "kg",
-  oxygenSaturation: "%",
+const METRIC_UNIT_KEYS: Record<MetricKind, string> = {
+  weight: "dashboard.metric.unit.weight",
+  bloodPressure: "dashboard.metric.unit.bloodPressure",
+  pulse: "dashboard.metric.unit.pulse",
+  bodyFat: "dashboard.metric.unit.bodyFat",
+  glucose: "dashboard.metric.unit.glucose",
+  sleep: "dashboard.metric.unit.sleep",
+  steps: "dashboard.metric.unit.steps",
+  totalBodyWater: "dashboard.metric.unit.totalBodyWater",
+  boneMass: "dashboard.metric.unit.boneMass",
+  oxygenSaturation: "dashboard.metric.unit.oxygenSaturation",
 };
 
 function trendOf(values: number[]): MetricCard["trend"] {
@@ -287,8 +316,17 @@ function buildContext(
   user: { displayName: string | null; username: string; locale: string | null },
 ): SummaryBuilderContext {
   const greetingName = user.displayName ?? user.username;
-  const locale: Locale =
-    user.locale === "de" || user.locale === "en" ? user.locale : defaultLocale;
+  // v1.5.x — accept every shipped locale (de / en / es / fr / it / pl)
+  // so the greeting + streak label resolve against the user's
+  // configured language. The legacy narrowing dropped fr/es/it/pl back
+  // to the default; that bug is masked for the title/unit fields by
+  // the new key-based wire shape but still mattered for the strings
+  // that stay translated server-side.
+  const locale: Locale = (locales as readonly string[]).includes(
+    user.locale ?? "",
+  )
+    ? (user.locale as Locale)
+    : defaultLocale;
   return { greetingName, locale };
 }
 
@@ -319,6 +357,8 @@ async function projectAndReadTodaysIntakes(
   return prisma.medicationIntakeEvent.findMany({
     where: {
       userId,
+      // v1.7.0 sync — exclude tombstoned rows from the today tile.
+      deletedAt: null,
       scheduledFor: { gte: todayStart, lt: todayEnd },
     },
     select: { id: true, takenAt: true, skipped: true },
@@ -440,6 +480,8 @@ async function buildDashboardSummary(
       prisma.medicationIntakeEvent.findMany({
         where: {
           userId,
+          // v1.7.0 sync — exclude tombstoned rows from streak counting.
+          deletedAt: null,
           scheduledFor: { gte: streakWindowStart },
           OR: [{ takenAt: { not: null } }, { skipped: true }],
         },
@@ -568,10 +610,10 @@ async function buildDashboardSummary(
     metrics.push({
       id: "weight",
       kind: "weight",
-      title: METRIC_TITLES.weight,
+      titleKey: METRIC_TITLE_KEYS.weight,
       latestValue: latest?.value ?? null,
       secondaryValue: null,
-      unit: METRIC_UNITS.weight,
+      unitKey: METRIC_UNIT_KEYS.weight,
       trend: trendOf(spark),
       sparkline: spark,
       updatedAt: latest?.at?.toISOString() ?? meta.lastSeenAt,
@@ -606,10 +648,10 @@ async function buildDashboardSummary(
       metrics.push({
         id: "bp",
         kind: "bloodPressure",
-        title: METRIC_TITLES.bloodPressure,
+        titleKey: METRIC_TITLE_KEYS.bloodPressure,
         latestValue: latestSys?.value ?? null,
         secondaryValue: latestDia?.value ?? null,
-        unit: METRIC_UNITS.bloodPressure,
+        unitKey: METRIC_UNIT_KEYS.bloodPressure,
         trend: trendOf(sysSpark),
         sparkline: sysSpark,
         updatedAt:
@@ -633,10 +675,10 @@ async function buildDashboardSummary(
       metrics.push({
         id: "pulse",
         kind: "pulse",
-        title: METRIC_TITLES.pulse,
+        titleKey: METRIC_TITLE_KEYS.pulse,
         latestValue: latest?.value ?? null,
         secondaryValue: null,
-        unit: METRIC_UNITS.pulse,
+        unitKey: METRIC_UNIT_KEYS.pulse,
         trend: trendOf(spark),
         sparkline: spark,
         updatedAt: latest?.at?.toISOString() ?? meta.lastSeenAt,
@@ -658,10 +700,10 @@ async function buildDashboardSummary(
       metrics.push({
         id: "bodyFat",
         kind: "bodyFat",
-        title: METRIC_TITLES.bodyFat,
+        titleKey: METRIC_TITLE_KEYS.bodyFat,
         latestValue: latest?.value ?? null,
         secondaryValue: null,
-        unit: METRIC_UNITS.bodyFat,
+        unitKey: METRIC_UNIT_KEYS.bodyFat,
         trend: trendOf(spark),
         sparkline: spark,
         updatedAt: latest?.at.toISOString() ?? meta.lastSeenAt,
@@ -692,10 +734,10 @@ async function buildDashboardSummary(
     metrics.push({
       id: kind,
       kind,
-      title: METRIC_TITLES[kind],
+      titleKey: METRIC_TITLE_KEYS[kind],
       latestValue: latest?.value ?? null,
       secondaryValue: null,
-      unit: METRIC_UNITS[kind],
+      unitKey: METRIC_UNIT_KEYS[kind],
       trend: trendOf(spark),
       sparkline: spark,
       updatedAt: latest?.at.toISOString() ?? meta.lastSeenAt,

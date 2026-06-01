@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 import { STORAGE_STATE_PATH } from "./setup/global-setup";
+import {
+  mockDashboardSnapshot,
+  WEIGHT_ONLY_SUMMARIES,
+} from "./utils/mock-dashboard-snapshot";
 
 /**
  * v1.4.18 — per-chart overlay-controls popover.
@@ -19,6 +23,11 @@ test.describe("chart overlay controls", () => {
   test.use({ storageState: STORAGE_STATE_PATH });
 
   test.beforeEach(async ({ page }) => {
+    // v1.7.2 — snapshot flag default-ON; mock the snapshot cell with a
+    // WEIGHT-only populated summary so the weight chart card paints.
+    // Legacy mocks below stay for the reversible `=false` path.
+    await mockDashboardSnapshot(page, { summaries: WEIGHT_ONLY_SUMMARIES });
+
     // Mock analytics + measurements so the dashboard paints at least
     // one chart card. Same seed shape the dashboard.spec.ts uses.
     //

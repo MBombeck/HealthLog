@@ -59,6 +59,14 @@ export interface DoctorReportData {
     dateOfBirth: string | null;
     gender: string | null;
     heightCm: number | null;
+    // v1.7.0 — optional patient-identity fields for the export cover +
+    // FHIR Patient. `fullName` + `insurerName` are plaintext columns; the
+    // KVNR is NOT carried here (it's encrypted at rest and decrypted by
+    // the route, then handed to the builders separately). Optional in the
+    // type so pre-v1.7.0 fixtures that omit them still typecheck — the
+    // renderer treats absent and null identically.
+    fullName?: string | null;
+    insurerName?: string | null;
   };
   /**
    * Free-text practice / clinic name printed on the cover. `null` omits the
@@ -296,7 +304,8 @@ export async function collectDoctorReportData(
         },
       }),
       prisma.medicationIntakeEvent.findMany({
-        where: { userId, scheduledFor: { gte: start, lte: end } },
+        // v1.7.0 sync — exclude tombstoned rows from the doctor report.
+        where: { userId, deletedAt: null, scheduledFor: { gte: start, lte: end } },
         include: { medication: { select: { name: true } } },
         orderBy: { scheduledFor: "asc" },
       }),
@@ -306,7 +315,8 @@ export async function collectDoctorReportData(
       // and then dropped".
       sections.mood
         ? prisma.moodEntry.findMany({
-            where: { userId, moodLoggedAt: { gte: start, lte: end } },
+            // v1.7.0 sync — exclude tombstoned rows from the doctor report.
+            where: { userId, deletedAt: null, moodLoggedAt: { gte: start, lte: end } },
             orderBy: { moodLoggedAt: "asc" },
           })
         : Promise.resolve([]),
@@ -319,6 +329,11 @@ export async function collectDoctorReportData(
           heightCm: true,
           glucoseUnit: true,
           thresholdsJson: true,
+          // v1.7.0 — patient-identity fields for the export cover + FHIR
+          // Patient. KVNR is encrypted (and not selected here) — the route
+          // decrypts it and hands it to the builders.
+          fullName: true,
+          insurerName: true,
         },
       }),
     ]);
@@ -558,6 +573,8 @@ export async function collectDoctorReportData(
         : null,
       gender: userProfile?.gender ?? null,
       heightCm: userProfile?.heightCm ?? null,
+      fullName: userProfile?.fullName ?? null,
+      insurerName: userProfile?.insurerName ?? null,
     },
     practiceName,
     measurements: filteredByType,

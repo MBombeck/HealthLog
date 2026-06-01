@@ -46,7 +46,12 @@ import {
   type RollupCoverageMap,
 } from "@/lib/rollups/measurement-coverage";
 import { readBestGranularityRollups } from "@/lib/rollups/measurement-read-wmy";
-import { calculateCompliance } from "./compliance";
+import {
+  buildComplianceMedicationContext,
+  calculateCompliance,
+  lastNonSkippedTakenAt,
+} from "./compliance";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import {
   computeHealthScore,
   defaultWeightTargetFromHeight,
@@ -278,6 +283,8 @@ export async function computeUserHealthScoreFastPath(
     prisma.moodEntry.findMany({
       where: {
         userId,
+        // v1.7.0 sync — exclude tombstoned rows.
+        deletedAt: null,
         moodLoggedAt: { gte: prevSince30d, lte: now },
       },
       select: { score: true, moodLoggedAt: true },
@@ -288,10 +295,29 @@ export async function computeUserHealthScoreFastPath(
       select: {
         id: true,
         createdAt: true,
+        // v1.7.0 SB-SCHED-2 — the medication course-window fields the
+        // canonical engine needs to expand expected slots.
+        startsOn: true,
+        endsOn: true,
+        oneShot: true,
         schedules: {
           select: {
             windowStart: true,
             windowEnd: true,
+            // v1.5.0 — cadence-aware compliance reads daysOfWeek so a
+            // weekly med (Mondays only) doesn't get a 30-day denominator
+            // that depresses the score by ~85 percentage points. Closes #214.
+            daysOfWeek: true,
+            // v1.7.0 SB-SCHED-2 — widen the select so the engine reads
+            // RRULE / rolling / PRN / cyclic, not just the legacy
+            // daysOfWeek string.
+            rrule: true,
+            rollingIntervalDays: true,
+            timesOfDay: true,
+            reminderGraceMinutes: true,
+            scheduleType: true,
+            cyclicOnWeeks: true,
+            cyclicOffWeeks: true,
           },
         },
       },
@@ -305,6 +331,8 @@ export async function computeUserHealthScoreFastPath(
     const intakeEvents = await prisma.medicationIntakeEvent.findMany({
       where: {
         userId,
+        // v1.7.0 sync — exclude tombstoned rows.
+        deletedAt: null,
         medicationId: { in: medIds },
         scheduledFor: { gte: prevSince30d, lte: now },
       },
@@ -321,9 +349,25 @@ export async function computeUserHealthScoreFastPath(
       if (list) list.push(ev);
       else eventsByMed.set(ev.medicationId, [ev]);
     }
+    // v1.7.0 SB-SCHED-2 — resolve the user timezone once so the
+    // compliance pillar routes its denominator through the canonical
+    // engine. The pinned `now` is kept so the pillar still agrees with
+    // the score's other pillars.
+    const userTz = await resolveUserTimezone(userId);
     medicationCompliance30 = medications.map((med) => {
       const events = eventsByMed.get(med.id) ?? [];
-      return calculateCompliance(events, med.schedules, 30, med.createdAt).rate;
+      const medicationContext = buildComplianceMedicationContext(
+        med,
+        lastNonSkippedTakenAt(events),
+        userTz,
+      );
+      // v1.5.0 — pass the helper's pinned `now` so the cadence-aware
+      // window math agrees with the score's other pillars (which also
+      // anchor to the same `now`). Closes #214.
+      return calculateCompliance(events, med.schedules, 30, med.createdAt, {
+        now,
+        medicationContext,
+      }).rate;
     });
     medicationCompliance30Previous = medications.map((med) => {
       const events = (eventsByMed.get(med.id) ?? []).filter(
@@ -336,8 +380,15 @@ export async function computeUserHealthScoreFastPath(
         takenAt: e.takenAt ? new Date(e.takenAt.getTime() + 7 * DAY_MS) : null,
         skipped: e.skipped,
       }));
-      return calculateCompliance(shifted, med.schedules, 30, med.createdAt)
-        .rate;
+      const medicationContext = buildComplianceMedicationContext(
+        med,
+        lastNonSkippedTakenAt(shifted),
+        userTz,
+      );
+      return calculateCompliance(shifted, med.schedules, 30, med.createdAt, {
+        now,
+        medicationContext,
+      }).rate;
     });
   }
 

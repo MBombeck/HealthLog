@@ -355,11 +355,11 @@ function ChatBubble({
   // as expanded vs collapsed.
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   if (role === "user") {
-    // v1.4.22 B3 — pull the user's Gravatar so the user bubble's
-    // avatar matches the Coach avatar in size and visual weight.
-    // Falls back to the generic person glyph when the user hasn't
-    // configured an email (or the Gravatar lookup returned null).
-    const gravatarUrl = user?.gravatarUrl ?? null;
+    // v1.5.5 — pull the user's self-hosted avatar so the user
+    // bubble matches the Coach avatar in size and visual weight.
+    // Falls back to initials when the user has not uploaded an
+    // avatar. Replaces the Gravatar leak (v1.4.22 B3).
+    const avatarUrl = user?.avatarUrl ?? null;
     const initials = user?.username
       ? user.username.slice(0, 2).toUpperCase()
       : null;
@@ -377,10 +377,10 @@ function ChatBubble({
         >
           {content}
         </div>
-        {gravatarUrl ? (
+        {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={gravatarUrl}
+            src={avatarUrl}
             alt=""
             aria-hidden="true"
             data-slot="coach-bubble-user-avatar"

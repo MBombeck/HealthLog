@@ -1,0 +1,45 @@
+# Keep the BuildKit build context small and free of secrets / scratch.
+# Mirrors `.gitignore` for the files that matter, with a few additions
+# (planning scratch, e2e storage state) that aren't in version control
+# but live in the working tree.
+
+# Local environment files. The image reads its runtime config from the
+# compose `environment:` block at boot — `.env` should never ship.
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Version control + CI metadata.
+.git
+.github
+.gitleaks.toml
+
+# Build / install output that gets regenerated inside the builder stage.
+node_modules
+.next
+out
+coverage
+test-results
+playwright-report
+e2e-results
+.eslintcache
+
+# Persisted session state from e2e runs.
+e2e/setup/storageState.json
+
+# Planning scratch + per-release audit notes (operator-local).
+.planning
+docs/audit
+
+# Captures from local debugging sessions.
+*.har
+*.heapsnapshot
+
+# Editor / agent worktrees + caches.
+.claude
+.cursor
+.aider*
+.vscode
+.idea
+.DS_Store

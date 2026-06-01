@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 
 /**
- * v1.4.25 W16a — VO2 max chart-row card for `/insights/puls`.
+ * v1.4.25 W16a — VO2 max chart-row card for `/insights/pulse`.
  *
  * The dashboard already carries an opt-in VO2 max trend tile (W8d.5);
  * this is the deeper Insights surface. Renders one HealthChart for the

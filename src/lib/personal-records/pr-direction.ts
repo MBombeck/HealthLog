@@ -59,6 +59,16 @@ export function getPRDirection(
     // Mobility section treats higher as the achievement (the
     // recovery direction from a low-steadiness window).
     case "WALKING_STEADINESS":
+    // v1.5.5 — lean body mass is the muscle-mass-adjacent body-comp
+    // axis where higher is the goal.
+    case "LEAN_BODY_MASS":
+    // v1.5.5 follow-up — walking speed is a well-established
+    // clinical fitness marker (often called the "sixth vital
+    // sign" in older-adult medicine); faster gait correlates
+    // with cardiovascular fitness, sarcopenia recovery, and
+    // overall mobility resilience. MAX direction matches Apple's
+    // own Mobility-section framing.
+    case "WALKING_SPEED":
       return PersonalRecordDirection.MAX;
 
     // MIN direction — lower value is the record.
@@ -70,6 +80,11 @@ export function getPRDirection(
     case "PULSE_WAVE_VELOCITY":
     case "AUDIO_EXPOSURE_ENV":
     case "AUDIO_EXPOSURE_HEADPHONE":
+    // v1.5.5 — gait asymmetry + double-support percentages: Apple's
+    // Mobility section frames lower as the achievement (more
+    // symmetric gait + shorter double-support fraction = healthier).
+    case "WALKING_ASYMMETRY":
+    case "WALKING_DOUBLE_SUPPORT":
       return PersonalRecordDirection.MIN;
 
     // Explicitly no PersonalRecord — see comment block above.
@@ -88,6 +103,21 @@ export function getPRDirection(
     // a row" is interesting but better surfaced as a streak than a
     // PR direction. Defer.
     case "AUDIO_EXPOSURE_EVENT":
+    // v1.5.5 — homeostatic / display-only metrics. Respiratory rate
+    // is goal-neutral (homeostatic), walking HR average is fitness
+    // dependent without a clean direction (a higher value can be
+    // either ill or harder-effort), and BMI direction is user-goal
+    // dependent — defer until the worker can read User.thresholdsJson.
+    case "RESPIRATORY_RATE":
+    case "WALKING_HEART_RATE_AVERAGE":
+    case "BODY_MASS_INDEX":
+    // v1.5.5 follow-up — walking step length is a state metric:
+    // taller users have longer strides regardless of fitness, and
+    // there is no clean "higher is better" axis (very long strides
+    // can also signal an unsafe overstride). Defer to a null PR
+    // direction; the future worker can still surface trend deltas
+    // without claiming a record direction.
+    case "WALKING_STEP_LENGTH":
       return null;
   }
 }

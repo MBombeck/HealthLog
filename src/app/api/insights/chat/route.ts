@@ -29,10 +29,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
-import { apiSuccess } from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { requireAssistantSurface } from "@/lib/feature-flags";
 
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
@@ -153,6 +154,22 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
     );
   }
   const { conversationId, message, locale: bodyLocale, scope } = parsed.data;
+
+  // Per-user request-rate ceiling layered in front of the daily budget
+  // gate. The budget catches the cost dimension; this catches the
+  // request-rate dimension (a tight loop or a stolen session can burn
+  // the budget in seconds while pinning Prisma + provider slots before
+  // the budget arithmetic catches up). 20 / minute is well outside any
+  // realistic interactive use — a human can't type that fast, the iOS
+  // client paces from user gestures.
+  const rl = await checkRateLimit(`coach-chat:${userId}`, 20, 60 * 1000);
+  if (!rl.allowed) {
+    annotate({
+      action: { name: "insights.coach.rate-limited" },
+      meta: { userId, resetAt: rl.resetAt },
+    });
+    return apiError("Too many Coach requests, please wait a moment", 429);
+  }
 
   await enforceBudget(userId);
 
@@ -426,6 +443,10 @@ Reply now as the assistant, in ${locale === "de" ? "German" : "English"}.`;
       promptVersion: PROMPT_VERSION,
       conversationId: workingConversationId,
       historyTurns: window.length,
+      // v1.7.0 — count of provenance metrics the snapshot surfaced
+      // this turn (a proxy for cluster breadth) so the dashboards can
+      // correlate reply shape with cluster activation.
+      clusterCount: snapshot.provenance.metrics.length,
     },
   });
 

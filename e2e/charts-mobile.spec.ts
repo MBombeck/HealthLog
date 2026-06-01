@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { STORAGE_STATE_PATH } from "./setup/global-setup";
+import { mockDashboardSnapshot } from "./utils/mock-dashboard-snapshot";
 
 /**
  * v1.4.19 A2 — mobile-viewport regression spec for chart cards.
@@ -30,6 +31,11 @@ test.describe("charts — mobile-viewport regression", () => {
 
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "chromium-mobile", "mobile-only spec");
+
+    // v1.7.2 — snapshot flag default-ON; mock the snapshot cell with the
+    // same populated four-metric set so the charts paint. Legacy mocks
+    // below stay for the reversible `=false` path.
+    await mockDashboardSnapshot(page);
 
     // Mock analytics + measurements so the chart wrappers all clear
     // their data-floor gates. Same pattern as `dashboard.spec.ts`.

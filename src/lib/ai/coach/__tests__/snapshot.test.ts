@@ -160,16 +160,27 @@ describe("buildCoachSnapshot", () => {
     expect(out.provenance.windows).toContain("lastYear");
   });
 
-  it("defaults to all-source last30days when no scope is provided", async () => {
+  // v1.7.0 — the default source set now expands the legacy default
+  // clusters (cardio + body + mood + medication) instead of a flat
+  // five-source list. The legacy core sources (bp/weight/pulse/mood/
+  // compliance) are still present; the additive members (HRV, resting
+  // HR, body-composition, …) ride along but only surface a block when
+  // the user has rows for them. This is the documented additive
+  // default + PROMPT_VERSION bump, not strict legacy byte-parity.
+  it("expands the default clusters when no scope is provided", async () => {
     const out = await buildCoachSnapshot("user-1");
     const parsed = JSON.parse(out.snapshotJson);
-    expect(parsed.scope.sources).toEqual([
-      "bp",
-      "weight",
-      "pulse",
-      "mood",
-      "compliance",
-    ]);
+    const sources = parsed.scope.sources as string[];
+    for (const core of ["bp", "weight", "pulse", "mood", "compliance"]) {
+      expect(sources).toContain(core);
+    }
+    // Additive members from the cardio + body clusters.
+    expect(sources).toContain("hrv");
+    expect(sources).toContain("body_fat");
+    // Clusters that are OFF by default contribute no sources.
+    expect(sources).not.toContain("steps");
+    expect(sources).not.toContain("glucose");
+    expect(sources).not.toContain("workouts");
     expect(parsed.scope.window).toBe("last30days");
   });
 

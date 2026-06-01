@@ -68,6 +68,39 @@ export const coachScopeSourceSchema = z.enum([
   "distance",
   "vo2_max",
   "body_temp",
+  // ── v1.7.0 clustered sources ──
+  // Cardiovascular composition / vascular metrics.
+  "walking_hr",
+  "respiratory_rate",
+  "spo2",
+  "pulse_wave_velocity",
+  "vascular_age",
+  // Body composition (mass + ratio metrics beyond plain weight).
+  "body_fat",
+  "fat_mass",
+  "fat_free_mass",
+  "muscle_mass",
+  "lean_body_mass",
+  "bone_mass",
+  "total_body_water",
+  "bmi",
+  "visceral_fat",
+  // Metabolic.
+  "glucose",
+  // Mobility & gait.
+  "walking_steadiness",
+  "walking_asymmetry",
+  "walking_double_support",
+  "walking_step_length",
+  "walking_speed",
+  // Environment / exposure.
+  "audio_env",
+  "audio_headphone",
+  "audio_event",
+  "daylight",
+  "skin_temp",
+  // Workout model (read from the `Workout` table, not `Measurement`).
+  "workouts",
 ]);
 
 export const coachScopeSchema = z.object({
@@ -79,8 +112,13 @@ export const coachScopeSchema = z.object({
    * still seeds 5 to keep the prompt budget tight for accounts without
    * Apple Health data; iOS clients pass the extended set when they
    * have HealthKit-derived rows.
+   *
+   * v1.7.0 — cap raised to 40 to admit the full clustered taxonomy
+   * (10 clusters expand to ~38 sources). The snapshot's soft
+   * char-cap + progressive degradation is the real prompt-budget
+   * backstop now, not the source count.
    */
-  sources: z.array(coachScopeSourceSchema).max(14).optional(),
+  sources: z.array(coachScopeSourceSchema).max(40).optional(),
   /** Window the day-level timeline covers. Defaults to last30days. */
   window: coachScopeWindowSchema.optional(),
 });
@@ -134,6 +172,62 @@ export const coachKeyValueSchema = z.object({
 export type CoachKeyValue = z.infer<typeof coachKeyValueSchema>;
 
 /**
+ * Stable provenance metric keys — the source-chip + evidence row read
+ * these and translate them client-side. `general` is the empty-snapshot
+ * sentinel; everything else is a real metric topic.
+ *
+ * v1.7.0 — extended to mirror the clustered source taxonomy so the
+ * chips + counts reflect every block the snapshot can now emit. Each
+ * `CoachScopeSource` that produces a snapshot block has a matching key
+ * here; `workouts` doubles as both a scope source and a provenance
+ * metric (it reads the `Workout` model rather than `Measurement`).
+ */
+export type CoachProvenanceMetric =
+  | "bp"
+  | "weight"
+  | "pulse"
+  | "mood"
+  | "compliance"
+  | "general"
+  // ── v1.4.23 Apple Health additive ──
+  | "hrv"
+  | "sleep"
+  | "resting_hr"
+  | "steps"
+  | "active_energy"
+  | "flights"
+  | "distance"
+  | "vo2_max"
+  | "body_temp"
+  // ── v1.7.0 clustered additions ──
+  | "walking_hr"
+  | "respiratory_rate"
+  | "spo2"
+  | "pulse_wave_velocity"
+  | "vascular_age"
+  | "body_fat"
+  | "fat_mass"
+  | "fat_free_mass"
+  | "muscle_mass"
+  | "lean_body_mass"
+  | "bone_mass"
+  | "total_body_water"
+  | "bmi"
+  | "visceral_fat"
+  | "glucose"
+  | "walking_steadiness"
+  | "walking_asymmetry"
+  | "walking_double_support"
+  | "walking_step_length"
+  | "walking_speed"
+  | "audio_env"
+  | "audio_headphone"
+  | "audio_event"
+  | "daylight"
+  | "skin_temp"
+  | "workouts";
+
+/**
  * Provenance envelope attached to assistant messages.
  *
  * NOTE: labels only — never raw values from the snapshot itself. The
@@ -161,48 +255,12 @@ export interface CoachProvenance {
    * values; the prompt's GROUND RULE 12 tells the model to treat the
    * tokens as additive rather than required.
    */
-  metrics: ReadonlyArray<
-    | "bp"
-    | "weight"
-    | "pulse"
-    | "mood"
-    | "compliance"
-    | "general"
-    // ── v1.4.23 Apple Health additive ──
-    | "hrv"
-    | "sleep"
-    | "resting_hr"
-    | "steps"
-    | "active_energy"
-    | "flights"
-    | "distance"
-    | "vo2_max"
-    | "body_temp"
-  >;
+  metrics: ReadonlyArray<CoachProvenanceMetric>;
   /**
    * Sample-count summary per metric — opaque labels, no raw timestamps
    * or values. Optional; absent when the snapshot was empty.
    */
-  counts?: Partial<
-    Record<
-      | "bp"
-      | "weight"
-      | "pulse"
-      | "mood"
-      | "compliance"
-      // ── v1.4.23 Apple Health additive ──
-      | "hrv"
-      | "sleep"
-      | "resting_hr"
-      | "steps"
-      | "active_energy"
-      | "flights"
-      | "distance"
-      | "vo2_max"
-      | "body_temp",
-      number
-    >
-  >;
+  counts?: Partial<Record<CoachProvenanceMetric, number>>;
   /**
    * v1.4.22 — load-bearing numbers the Coach drew on for this turn,
    * surfaced in the collapsible evidence block under the assistant

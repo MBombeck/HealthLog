@@ -2,6 +2,7 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { getEvent } from "@/lib/logging/context";
+import { safeFetch } from "@/lib/safe-fetch";
 import packageJson from "../../../../../package.json";
 
 export const dynamic = "force-dynamic";
@@ -80,7 +81,7 @@ export const GET = apiHandler(async () => {
   let release: GithubReleaseShape | null = null;
   const callStart = Date.now();
   try {
-    const res = await fetch(RELEASES_URL, {
+    const res = await safeFetch(RELEASES_URL, {
       headers: { Accept: "application/vnd.github+json" },
       // GitHub anon rate limit is 60/hr per IP — tight but not zero.
       // We don't pass a token because the repo is public and the route

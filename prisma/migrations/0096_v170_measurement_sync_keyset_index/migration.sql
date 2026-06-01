@@ -1,0 +1,33 @@
+-- v1.7.0 — supporting index for the `/api/sync/changes` delta feed.
+--
+-- The measurements delta feed keyset-walks `prisma.measurement.findMany`
+-- filtered on `user_id` with `ORDER BY updated_at ASC, id ASC` and
+-- `take limit+1` (src/app/api/sync/changes/route.ts). The existing
+-- indexes on `measurements` cover `(user_id, type, measured_at)` and
+-- `(external_id)` — neither serves the `(user_id, updated_at, id)`
+-- order. Without this index Postgres filters by `user_id` then sorts
+-- the user's entire measurement set in memory on every page, and the
+-- route allows 120 pulls/min/user, so a multi-device offline drain on a
+-- heavy Apple-Health tenant becomes a per-user full sort per page.
+--
+-- The composite `(user_id, updated_at, id)` index lets the keyset
+-- pagination read straight off the index in order, with `id` as the
+-- tiebreaker for same-millisecond `updated_at` rows.
+--
+-- Additive + order-safe: a pure `CREATE INDEX IF NOT EXISTS`, no column
+-- add, no backfill, no rewrite of `measurements`.
+--
+-- Lock note: this is a plain, non-`CONCURRENTLY` index build, so it runs
+-- inside Prisma's migration transaction and holds an ACCESS EXCLUSIVE
+-- lock on `measurements` for the build's duration. The index covers
+-- every row (no partial predicate), so on the largest multi-year
+-- HealthKit tenants the build is the slowest of the v1.7.0 set; run the
+-- deploy at a low-traffic window on such deployments. A `CONCURRENTLY`
+-- build cannot run inside the migration transaction; a plain build is
+-- acceptable at this table size in the maintenance window.
+--
+-- Reversibility: down migration is
+--   DROP INDEX IF EXISTS "measurements_user_id_updated_at_id_idx";
+
+CREATE INDEX IF NOT EXISTS "measurements_user_id_updated_at_id_idx"
+  ON "measurements" ("user_id", "updated_at", "id");

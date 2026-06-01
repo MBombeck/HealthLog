@@ -2,6 +2,7 @@ import type { WideEvent } from "./types";
 import { getLoggingConfig } from "./config";
 import { shouldEmit } from "./sampler";
 import { appendLogEvent } from "./in-memory-buffer";
+import { safeFetch } from "@/lib/safe-fetch";
 
 /** Event auf stdout als einzelne JSON-Zeile schreiben */
 function emitToStdout(event: WideEvent): void {
@@ -64,12 +65,17 @@ async function flushLokiBuffer(): Promise<void> {
   }
 
   try {
-    await fetch(`${config.lokiEndpoint}/loki/api/v1/push`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ streams }),
-      signal: AbortSignal.timeout(10_000),
-    });
+    await safeFetch(
+      `${config.lokiEndpoint}/loki/api/v1/push`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ streams }),
+      },
+      // Operator-configured Loki endpoint — pin the connect-time IP
+      // against DNS rebinding.
+      { timeoutMs: 10_000, requirePublicHost: true },
+    );
   } catch {
     // Events gehen verloren — akzeptabel fuer Logging
   }

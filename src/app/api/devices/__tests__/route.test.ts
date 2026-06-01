@@ -35,6 +35,14 @@ vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue({
+    allowed: true,
+    remaining: 19,
+    resetAt: new Date(Date.now() + 15 * 60 * 1000),
+  }),
+}));
+
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: () => null })),
   cookies: vi.fn(async () => ({
@@ -47,6 +55,7 @@ vi.mock("next/headers", () => ({
 import { POST } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -71,6 +80,13 @@ beforeEach(() => {
     id: "ch-1",
   } as never);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
+  // `resetAllMocks` strips the top-level `.mockResolvedValue(...)`
+  // declaration too, so re-arm the rate-limit success path here.
+  vi.mocked(checkRateLimit).mockResolvedValue({
+    allowed: true,
+    remaining: 19,
+    resetAt: new Date(Date.now() + 15 * 60 * 1000),
+  } as never);
 });
 
 describe("POST /api/devices", () => {

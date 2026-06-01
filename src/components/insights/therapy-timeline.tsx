@@ -11,7 +11,7 @@ import {
 } from "@/lib/medications/injection-sites";
 
 /**
- * v1.4.25 W4d — therapy-timeline view for /insights/medikamente.
+ * v1.4.25 W4d — therapy-timeline view for /insights/medications.
  *
  * Renders a chronological list of GLP-1 therapy events: dose changes,
  * injections (with site if recorded), inventory events, side-effect tag

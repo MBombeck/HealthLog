@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { MockAIProvider } from "../mock-client";
 import { OpenAIClient } from "../openai-client";
 import { AnthropicClient } from "../anthropic-client";
@@ -32,6 +32,14 @@ function assertCompletionResult(result: CompletionResult): void {
 describe("AIProvider contract", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    // The local-provider contract test points at a localhost OpenAI-
+    // compatible server (Ollama / LM Studio). safeFetch enforces the
+    // SSRF guard unless the operator explicitly opts in.
+    vi.stubEnv("ALLOW_LOCAL_AI_PRIVATE_HOSTS", "true");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("MockAIProvider — default response satisfies CompletionResult shape", async () => {

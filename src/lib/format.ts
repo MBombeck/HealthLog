@@ -109,13 +109,33 @@ export function formatDateOrRelative(
   // model them and "in 3 min" would mislead in a health-log context.
   if (diffMs < 0) return formatDateTime(iso);
   if (diffMs < 60_000) return t("insights.relativeJustNow");
+  // v1.4.49.2 — One/Other pluralisation. Mirrors the
+  // `src/lib/i18n/relative-time.ts:24-48` pattern (which got this fix in
+  // v1.4.43 H6 for the "vor 1 Minuten" bug). This twin helper was missed
+  // in the v1.4.43 sweep, so the bare `t("insights.relativeMinutesAgo",
+  // { count })` and `t("insights.relativeHoursAgo", { count })` calls
+  // returned the key itself — the translation bundle only carries the
+  // pluralised `*One` / `*Other` variants. Reported by Marc as raw
+  // `insights.relativeHoursAgo` leaking onto medication cards, recent-
+  // achievements, admin sections, and every other consumer of
+  // `formatDateOrRelative`.
   const minutes = Math.floor(diffMs / 60_000);
   if (minutes < 60) {
-    return t("insights.relativeMinutesAgo", { count: minutes });
+    return t(
+      minutes === 1
+        ? "insights.relativeMinutesAgoOne"
+        : "insights.relativeMinutesAgoOther",
+      { count: minutes },
+    );
   }
   const hours = Math.floor(minutes / 60);
   if (hours < 24) {
-    return t("insights.relativeHoursAgo", { count: hours });
+    return t(
+      hours === 1
+        ? "insights.relativeHoursAgoOne"
+        : "insights.relativeHoursAgoOther",
+      { count: hours },
+    );
   }
   return formatDateTime(iso);
 }

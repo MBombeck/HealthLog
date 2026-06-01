@@ -24,12 +24,22 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    medication: { findUnique: vi.fn() },
+    medication: {
+      findUnique: vi.fn(),
+      // v1.8.2 — the slot-snap resolver loads the medication via
+      // findFirst; default to a schedule-less med so the resolver returns
+      // null (unscheduled path) and the original insert behaviour holds.
+      findFirst: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+    },
     medicationIntakeEvent: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
       count: vi.fn(),
       create: vi.fn(),
+      // v1.8.2 reconcile — the shared slot upsert updates in place.
+      update: vi.fn(),
     },
     auditLog: { create: vi.fn() },
     $transaction: vi.fn(),
@@ -118,7 +128,12 @@ describe("GET /api/medications/[id]/intake — status filter", () => {
 
     const where = vi.mocked(prisma.medicationIntakeEvent.findMany).mock
       .calls[0][0]?.where;
-    expect(where).toEqual({ medicationId: "med-1", userId: "user-1" });
+    // v1.7.0 sync — list filters out tombstoned rows.
+    expect(where).toEqual({
+      medicationId: "med-1",
+      userId: "user-1",
+      deletedAt: null,
+    });
   });
 
   it("applies no status filter when explicitly passed `status=all`", async () => {
@@ -130,7 +145,11 @@ describe("GET /api/medications/[id]/intake — status filter", () => {
 
     const where = vi.mocked(prisma.medicationIntakeEvent.findMany).mock
       .calls[0][0]?.where;
-    expect(where).toEqual({ medicationId: "med-1", userId: "user-1" });
+    expect(where).toEqual({
+      medicationId: "med-1",
+      userId: "user-1",
+      deletedAt: null,
+    });
   });
 
   it("filters to confirmed-taken rows for `status=taken`", async () => {
@@ -140,6 +159,7 @@ describe("GET /api/medications/[id]/intake — status filter", () => {
     expect(where).toEqual({
       medicationId: "med-1",
       userId: "user-1",
+      deletedAt: null,
       takenAt: { not: null },
       skipped: false,
     });
@@ -152,6 +172,7 @@ describe("GET /api/medications/[id]/intake — status filter", () => {
     expect(where).toEqual({
       medicationId: "med-1",
       userId: "user-1",
+      deletedAt: null,
       skipped: true,
     });
   });
@@ -163,6 +184,7 @@ describe("GET /api/medications/[id]/intake — status filter", () => {
     expect(where).toEqual({
       medicationId: "med-1",
       userId: "user-1",
+      deletedAt: null,
       OR: [{ takenAt: { not: null }, skipped: false }, { skipped: true }],
     });
   });
@@ -180,6 +202,7 @@ describe("GET /api/medications/[id]/intake — status filter", () => {
     expect(countArgs?.where).toEqual({
       medicationId: "med-1",
       userId: "user-1",
+      deletedAt: null,
       OR: [{ takenAt: { not: null }, skipped: false }, { skipped: true }],
     });
   });
@@ -264,5 +287,249 @@ describe("v1.4.43 W6 — multi-issue 422 envelope", () => {
     );
     const res = await POST(postReq({ takenAt: "junk" }), ROUTE_PARAMS);
     expect(res.status).toBe(422);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────
+// v1.5.0 — POST intake on a one-shot medication still deactivates
+// ────────────────────────────────────────────────────────────────────
+
+describe("POST /api/medications/[id]/intake — one-shot lifecycle", () => {
+  function postReq(body: unknown): NextRequest {
+    return new NextRequest("http://localhost/api/medications/med-1/intake", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
+  it("flips active to false after logging a live intake on a one-shot medication", async () => {
+    const createdEvent = {
+      id: "evt-1",
+      userId: "user-1",
+      medicationId: "med-1",
+      scheduledFor: new Date(),
+      takenAt: new Date(),
+      skipped: false,
+    };
+    vi.mocked(prisma.$transaction).mockResolvedValue([createdEvent] as never);
+    // v1.8.2 — slot-snap resolver loads the med; no schedules → null slot
+    // → original insert + dedup path preserved.
+    vi.mocked(prisma.medication.findFirst).mockResolvedValueOnce({
+      id: "med-1",
+      startsOn: null,
+      endsOn: null,
+      oneShot: true,
+      createdAt: new Date(),
+      schedules: [],
+    } as never);
+    vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValueOnce(
+      null as never, // dedup probe
+    );
+    // Reconcile probes — first call is the medication shape, second is
+    // the live-intake probe (a live intake exists because the POST just
+    // created one), and the update fires with active:false.
+    vi.mocked(prisma.medication.findUnique).mockResolvedValueOnce({
+      oneShot: true,
+      active: true,
+    } as never);
+    vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValueOnce({
+      id: "evt-1",
+    } as never);
+    vi.mocked(prisma.medication.updateMany).mockResolvedValueOnce({
+      count: 1,
+    } as never);
+
+    const res = await POST(
+      postReq({ takenAt: new Date().toISOString(), skipped: false }),
+      ROUTE_PARAMS,
+    );
+    expect(res.status).toBe(201);
+
+    expect(prisma.medication.updateMany).toHaveBeenCalledWith({
+      where: { id: "med-1", userId: "user-1", oneShot: true },
+      data: { active: false },
+    });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────
+// v1.8.2 reconcile — slot-snap upsert invariants through the route
+// ────────────────────────────────────────────────────────────────────
+
+describe("POST /api/medications/[id]/intake — v1.8.2 reconcile (M2 inventory)", () => {
+  function postReq(body: unknown): NextRequest {
+    return new NextRequest("http://localhost/api/medications/med-1/intake", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
+  // A scheduled med (07:00 / 19:00) so the resolver returns a canonical
+  // slot and the write routes through the shared upsert.
+  const SCHEDULED_MED = {
+    id: "med-1",
+    startsOn: null,
+    endsOn: null,
+    oneShot: false,
+    createdAt: new Date("2026-01-01T00:00:00Z"),
+    schedules: [
+      {
+        id: "s1",
+        windowStart: "07:00",
+        windowEnd: "07:00",
+        daysOfWeek: null,
+        timesOfDay: ["07:00", "19:00"],
+        reminderGraceMinutes: null,
+        rrule: null,
+        rollingIntervalDays: null,
+        scheduleType: "SCHEDULED",
+        cyclicOnWeeks: null,
+        cyclicOffWeeks: null,
+      },
+    ],
+  };
+
+  it("does NOT decrement inventory on a re-post of an already-taken slot (M2)", async () => {
+    const { consumeOneDose } = await import(
+      "@/lib/medications/inventory/service"
+    );
+    // Resolver load → scheduled med.
+    vi.mocked(prisma.medication.findFirst).mockResolvedValueOnce(
+      SCHEDULED_MED as never,
+    );
+    // Slot find (shared upsert) → an existing TAKEN row at the 07:00 slot.
+    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValueOnce([
+      {
+        id: "row-taken",
+        takenAt: new Date("2026-06-15T05:01:00Z"),
+        skipped: false,
+        idempotencyKey: null,
+        scheduledFor: new Date("2026-06-15T05:00:00Z"),
+        source: "WEB",
+        createdAt: new Date("2026-06-15T05:01:00Z"),
+      },
+    ] as never);
+    vi.mocked(prisma.medicationIntakeEvent.update).mockResolvedValueOnce({
+      id: "row-taken",
+      takenAt: new Date("2026-06-15T05:02:00Z"),
+      skipped: false,
+      scheduledFor: new Date("2026-06-15T05:00:00Z"),
+      source: "WEB",
+    } as never);
+    vi.mocked(prisma.medication.update).mockResolvedValue({} as never);
+    // Reconcile probes (non-one-shot → noop).
+    vi.mocked(prisma.medication.findUnique).mockResolvedValue({
+      oneShot: false,
+      active: true,
+    } as never);
+
+    const res = await POST(
+      postReq({
+        scheduledFor: "2026-06-15T05:00:30.000Z",
+        takenAt: "2026-06-15T05:02:00.000Z",
+      }),
+      ROUTE_PARAMS,
+    );
+    expect(res.status).toBe(201);
+    // Re-post of an already-taken slot → no pending→taken transition →
+    // inventory must NOT be consumed.
+    expect(consumeOneDose).not.toHaveBeenCalled();
+    // The row was updated, not duplicated.
+    expect(prisma.medicationIntakeEvent.update).toHaveBeenCalledTimes(1);
+    expect(prisma.medicationIntakeEvent.create).not.toHaveBeenCalled();
+  });
+
+  it("DOES decrement inventory on a genuine pending→taken move (M2)", async () => {
+    const { consumeOneDose } = await import(
+      "@/lib/medications/inventory/service"
+    );
+    vi.mocked(prisma.medication.findFirst).mockResolvedValueOnce(
+      SCHEDULED_MED as never,
+    );
+    // Slot find → a PENDING REMINDER row (no takenAt).
+    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValueOnce([
+      {
+        id: "row-pending",
+        takenAt: null,
+        skipped: false,
+        idempotencyKey: null,
+        scheduledFor: new Date("2026-06-15T05:00:00Z"),
+        source: "REMINDER",
+        createdAt: new Date("2026-06-15T00:00:00Z"),
+      },
+    ] as never);
+    vi.mocked(prisma.medicationIntakeEvent.update).mockResolvedValueOnce({
+      id: "row-pending",
+      takenAt: new Date("2026-06-15T05:02:00Z"),
+      skipped: false,
+      scheduledFor: new Date("2026-06-15T05:00:00Z"),
+      source: "REMINDER",
+    } as never);
+    vi.mocked(prisma.medication.update).mockResolvedValue({} as never);
+    vi.mocked(prisma.medication.findUnique).mockResolvedValue({
+      oneShot: false,
+      active: true,
+    } as never);
+
+    const res = await POST(
+      postReq({
+        scheduledFor: "2026-06-15T05:00:30.000Z",
+        takenAt: "2026-06-15T05:02:00.000Z",
+      }),
+      ROUTE_PARAMS,
+    );
+    expect(res.status).toBe(201);
+    expect(consumeOneDose).toHaveBeenCalledTimes(1);
+  });
+
+  it("re-finds and updates the slot when the create races a P2002 (C1)", async () => {
+    vi.mocked(prisma.medication.findFirst).mockResolvedValueOnce(
+      SCHEDULED_MED as never,
+    );
+    // First slot find → empty. Create throws P2002. Re-find → the racing
+    // pending row. Update applies the taken write onto it.
+    vi.mocked(prisma.medicationIntakeEvent.findMany)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([
+        {
+          id: "row-raced",
+          takenAt: null,
+          skipped: false,
+          idempotencyKey: null,
+          scheduledFor: new Date("2026-06-15T05:00:00Z"),
+          source: "REMINDER",
+          createdAt: new Date("2026-06-15T00:00:00Z"),
+        },
+      ] as never);
+    vi.mocked(prisma.medicationIntakeEvent.create).mockRejectedValueOnce(
+      Object.assign(new Error("unique"), { code: "P2002" }),
+    );
+    vi.mocked(prisma.medicationIntakeEvent.update).mockResolvedValueOnce({
+      id: "row-raced",
+      takenAt: new Date("2026-06-15T05:02:00Z"),
+      skipped: false,
+      scheduledFor: new Date("2026-06-15T05:00:00Z"),
+      source: "REMINDER",
+    } as never);
+    vi.mocked(prisma.medication.update).mockResolvedValue({} as never);
+    vi.mocked(prisma.medication.findUnique).mockResolvedValue({
+      oneShot: false,
+      active: true,
+    } as never);
+
+    const res = await POST(
+      postReq({
+        scheduledFor: "2026-06-15T05:00:30.000Z",
+        takenAt: "2026-06-15T05:02:00.000Z",
+      }),
+      ROUTE_PARAMS,
+    );
+    // The dose tap is NOT dropped — converges to the racing row, 201.
+    expect(res.status).toBe(201);
+    expect(prisma.medicationIntakeEvent.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "row-raced" } }),
+    );
   });
 });

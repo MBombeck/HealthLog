@@ -176,7 +176,12 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     seedGlp1Details(client, med7p5.id, {});
 
     const html = render(
-      <Glp1MedicationCard medication={med7p5} onEdit={() => {}} />,
+      <Glp1MedicationCard
+        medication={med7p5}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
 
@@ -189,6 +194,49 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     expect(html).not.toMatch(/lucide-syringe/i);
   });
 
+  it("collapses edit / history / advanced into a single overflow kebab + navigable header", () => {
+    // v1.7.2 W3 — the four former header icon-buttons collapse into one
+    // kebab; the card header links to the detail page. The menu items
+    // (edit / history / advanced) render inside the portalled dropdown
+    // content, so SSR markup carries only the kebab trigger + the header
+    // link, not the individual action buttons.
+    const client = makeClient();
+    seedCompliance(client, med7p5.id);
+    seedGlp1Details(client, med7p5.id, {});
+
+    const onEdit = vi.fn();
+    const onOpenHistory = vi.fn();
+    const onOpenAdvanced = vi.fn();
+
+    const html = render(
+      <Glp1MedicationCard
+        medication={med7p5}
+        onEdit={onEdit}
+        onOpenHistory={onOpenHistory}
+        onOpenAdvanced={onOpenAdvanced}
+      />,
+      client,
+    );
+
+    expect(html).toContain('aria-label="More options"');
+    expect(html).toContain('data-slot="medication-card-header-link"');
+    expect(html).toContain('href="/medications/med-glp1-1"');
+    // No standalone chevron / sliders icon-buttons survive in the header.
+    expect(html).not.toContain("lucide-chevron-right");
+
+    // Smoke-check the handler contract — SSR can't fire DOM events, so
+    // invoke the handlers the way each menu item's onClick would and pin
+    // the medication-object payload the parent routes / sheets against.
+    onOpenHistory(med7p5);
+    onOpenAdvanced(med7p5);
+    expect(onOpenHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "med-glp1-1", treatmentClass: "GLP1" }),
+    );
+    expect(onOpenAdvanced).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "med-glp1-1", treatmentClass: "GLP1" }),
+    );
+  });
+
   it("renders the default MedicationCard when treatmentClass is null/undefined (back-compat)", () => {
     // The page dispatcher renders MedicationCard for everything that
     // isn't `"GLP1"`. We verify the default card's output stays free
@@ -198,7 +246,12 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     seedCompliance(client, defaultMed.id);
 
     const html = render(
-      <MedicationCard medication={defaultMed} onEdit={() => {}} />,
+      <MedicationCard
+        medication={defaultMed}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
 
@@ -217,7 +270,12 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     seedGlp1Details(client, med7p5.id, {});
 
     const html = render(
-      <Glp1MedicationCard medication={med7p5} onEdit={() => {}} />,
+      <Glp1MedicationCard
+        medication={med7p5}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
 
@@ -239,7 +297,12 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     });
 
     const html = render(
-      <Glp1MedicationCard medication={med7p5} onEdit={() => {}} />,
+      <Glp1MedicationCard
+        medication={med7p5}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
 
@@ -280,7 +343,12 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     });
 
     const html = render(
-      <Glp1MedicationCard medication={med7p5} onEdit={() => {}} />,
+      <Glp1MedicationCard
+        medication={med7p5}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
 
@@ -306,7 +374,12 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     });
 
     const html = render(
-      <Glp1MedicationCard medication={med7p5} onEdit={() => {}} />,
+      <Glp1MedicationCard
+        medication={med7p5}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
 
@@ -333,7 +406,12 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     });
 
     const html = render(
-      <Glp1MedicationCard medication={med7p5} onEdit={() => {}} />,
+      <Glp1MedicationCard
+        medication={med7p5}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
 
@@ -354,7 +432,12 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     });
 
     const html = render(
-      <Glp1MedicationCard medication={med7p5} onEdit={() => {}} />,
+      <Glp1MedicationCard
+        medication={med7p5}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
 
@@ -362,15 +445,12 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     expect(html).not.toContain("Low stock");
   });
 
-  it("side-effect quick-log moves into the header actions overflow", () => {
-    // v1.4.37 W4b — the side-effect quick-log no longer sits in the
-    // primary actions row (which used to read as a three-button row
-    // and broke symmetry with the generic Ramipril card). It now
-    // lives behind a kebab overflow in the header `actions` slot.
-    // SSR doesn't open Radix Portal content, so we assert the trigger
-    // surfaces with the localised `common.moreOptions` aria-label and
-    // smoke-check that invoking the handler delivers the GLP-1
-    // medication object the parent prefills MoodEntry with.
+  it("folds the side-effect quick-log into the same overflow kebab", () => {
+    // v1.7.2 W3 — the side-effect quick-log folds into the SAME overflow
+    // menu as edit / history / advanced, so the GLP-1 header carries one
+    // kebab whether or not the hand-off is wired (parity with the generic
+    // card). SSR doesn't open Radix Portal content, so we assert the
+    // single trigger surfaces and smoke-check the handler payload.
     const client = makeClient();
     seedCompliance(client, med7p5.id);
     seedGlp1Details(client, med7p5.id, {});
@@ -380,13 +460,16 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
       <Glp1MedicationCard
         medication={med7p5}
         onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
         onLogSideEffect={handler}
       />,
       client,
     );
 
-    // Kebab trigger renders with the localised aria-label.
-    expect(html).toContain('aria-label="More options"');
+    // Exactly one kebab trigger with the localised aria-label.
+    const triggers = html.match(/aria-label="More options"/g) ?? [];
+    expect(triggers).toHaveLength(1);
     // The side-effect button must no longer ride alongside
     // Eingenommen / Übersprungen in the primary actions row.
     expect(html).not.toMatch(
@@ -401,21 +484,26 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     );
   });
 
-  it("omits the overflow kebab when onLogSideEffect is not supplied", () => {
-    // Back-compat: the overflow is opt-in via the prop. Pages that
-    // haven't wired the MoodEntry hand-off yet render Mounjaro with
-    // exactly the same header-actions shape as Ramipril (history +
-    // edit, no kebab) so the medications list stays symmetric.
+  it("still renders the single kebab when onLogSideEffect is not supplied", () => {
+    // v1.7.2 W3 — the kebab is unconditional now (it always carries edit
+    // / history / advanced); the side-effect item is the only opt-in
+    // part. Mounjaro and Ramipril therefore share the same one-kebab
+    // header shape regardless of the hand-off prop.
     const client = makeClient();
     seedCompliance(client, med7p5.id);
     seedGlp1Details(client, med7p5.id, {});
 
     const html = render(
-      <Glp1MedicationCard medication={med7p5} onEdit={() => {}} />,
+      <Glp1MedicationCard
+        medication={med7p5}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
 
-    expect(html).not.toContain('aria-label="More options"');
+    expect(html).toContain('aria-label="More options"');
   });
 
   it("AI-disabled state: no Coach hand-off button is rendered today", () => {
@@ -430,7 +518,12 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     seedGlp1Details(client, med7p5.id, {});
 
     const html = render(
-      <Glp1MedicationCard medication={med7p5} onEdit={() => {}} />,
+      <Glp1MedicationCard
+        medication={med7p5}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
 
@@ -450,7 +543,12 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     seedGlp1Details(client, paused.id, {});
 
     const html = render(
-      <Glp1MedicationCard medication={paused} onEdit={() => {}} />,
+      <Glp1MedicationCard
+        medication={paused}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
 
@@ -459,11 +557,10 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     expect(html).toContain("opacity-60");
     expect(html).toContain("Paused since");
     // Primary actions ("Taken" / "Skipped") are suppressed for
-    // inactive medications. The header-actions overflow trigger is
-    // unconditionally absent when `onLogSideEffect` is not supplied
-    // (this test fixture doesn't wire it), so Mounjaro and Ramipril
-    // headers stay shape-equivalent in the paused state.
-    expect(html).not.toContain('aria-label="More options"');
+    // inactive medications, but the header overflow kebab (edit /
+    // history / advanced) still renders so the user can reach those
+    // actions on a paused medication.
+    expect(html).toContain('aria-label="More options"');
   });
 
   it("renders German copy under the 'de' locale", () => {
@@ -479,7 +576,12 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     });
 
     const html = render(
-      <Glp1MedicationCard medication={med7p5} onEdit={() => {}} />,
+      <Glp1MedicationCard
+        medication={med7p5}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
       "de",
     );

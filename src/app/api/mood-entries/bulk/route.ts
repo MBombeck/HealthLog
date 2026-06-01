@@ -46,6 +46,7 @@ import {
 import { moodDateKey, DEFAULT_TIMEZONE } from "@/lib/mood/date-key";
 import { invalidateUserMood } from "@/lib/cache/invalidate";
 import { recomputeMoodBucketsForEntry } from "@/lib/rollups/mood-rollups";
+import { pushMoodEntriesToMoodLog } from "@/lib/moodlog/push";
 
 const MAX_ENTRIES_PER_BATCH = 500;
 const BATCH_RATE_LIMIT_MAX = 60;
@@ -278,6 +279,40 @@ async function postBulk(request: NextRequest): Promise<Response> {
           mood_rollup_write_error:
             rollupErr instanceof Error ? rollupErr.message : String(rollupErr),
         },
+      });
+    }
+  }
+
+  // v1.4.50 — reverse-sync the freshly-inserted batch to MoodLog so
+  // an iOS one-shot backfill surfaces in both apps. Duplicates and
+  // skips do NOT push (MoodLog already has them — or we'd just be
+  // retrying a known failure). The helper filters MOODLOG-sourced
+  // rows internally so a re-ingest of a MoodLog pull doesn't echo.
+  if (inserted > 0) {
+    const pushBatch: Array<{
+      date: string;
+      moodLoggedAt: Date;
+      mood: string;
+      note: string | null;
+      tags: string | null;
+      source: string;
+    }> = [];
+    for (let i = 0; i < entries.length; i++) {
+      if (results[i]?.status !== "inserted") continue;
+      const e = entries[i];
+      const tz = user.timezone ?? DEFAULT_TIMEZONE;
+      pushBatch.push({
+        date: moodDateKey(e.moodLoggedAt, tz),
+        moodLoggedAt: e.moodLoggedAt,
+        mood: e.mood,
+        note: e.note ?? null,
+        tags: e.tags ? JSON.stringify(e.tags) : null,
+        source: e.source,
+      });
+    }
+    if (pushBatch.length > 0) {
+      void pushMoodEntriesToMoodLog(user.id, pushBatch).catch(() => {
+        /* helper wraps errors in wide-event warnings; defence-in-depth */
       });
     }
   }

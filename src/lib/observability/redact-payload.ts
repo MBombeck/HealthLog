@@ -26,6 +26,7 @@
 
 export const SENSITIVE_KEY_PATTERNS: readonly RegExp[] = [
   /password/i,
+  /passphrase/i,
   /token/i,
   /secret/i,
   /apikey/i,
@@ -34,6 +35,24 @@ export const SENSITIVE_KEY_PATTERNS: readonly RegExp[] = [
   /csrfstate/i,
   /csrf[_-]state/i,
   /nonce/i,
+  // Credential-adjacent keys that aren't already covered by the broader
+  // `token` / `secret` patterns. TOTP / email-OTP one-time codes,
+  // account-recovery codes, and the observability DSNs that double as
+  // auth (Glitchtip / Sentry-style `https://<key>@host`) all carry
+  // material worth keeping out of wide-event excerpts.
+  /otp/i,
+  /recovery/i,
+  /dsn/i,
+  // v1.7.0 — health-insurance identity. `insuranceNumber` / `kvnr`
+  // (the German statutory-insurance number) is encrypted at rest and is
+  // absent from every current wide-event excerpt, but the field name
+  // belongs on the denylist as defence-in-depth: if a future change
+  // routes a profile body through `buildPayloadDiagnostic` /
+  // `redactSensitiveFields`, the value redacts instead of landing
+  // verbatim. Also covers `insurerName`.
+  /insurance/i,
+  /insurer/i,
+  /kvnr/i,
 ];
 
 const REDACTED = "[redacted]";

@@ -1,9 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { LocalOpenAICompatibleClient } from "../local-client";
 
 describe("LocalOpenAICompatibleClient", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    // These tests cover the operator-opt-in path (LM Studio / Ollama on
+    // an RFC1918 host). The safeFetch wrapper enforces the SSRF guard
+    // unless the operator explicitly accepts a private host.
+    vi.stubEnv("ALLOW_LOCAL_AI_PRIVATE_HOSTS", "true");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("targets the configured baseUrl + /chat/completions", async () => {

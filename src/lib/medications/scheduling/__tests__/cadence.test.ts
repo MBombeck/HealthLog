@@ -43,6 +43,52 @@ describe("expandScheduleSlots", () => {
     expect(slots).toHaveLength(5);
   });
 
+  it("fans out a twice-daily schedule into one slot per timesOfDay entry", () => {
+    const sched: ScheduleLike = {
+      windowStart: "07:00",
+      windowEnd: "07:30",
+      daysOfWeek: null,
+      timesOfDay: ["07:00", "19:00"],
+    };
+    // Single UTC day: expect a 07:00 and a 19:00 slot, not just one.
+    const slots = expandScheduleSlots(
+      sched,
+      0,
+      d("2025-06-02T00:00:00Z"),
+      d("2025-06-03T00:00:00Z"),
+      d("2025-06-02T00:00:00Z"),
+      "UTC",
+    );
+    expect(slots).toHaveLength(2);
+    expect(slots.map((s) => s.windowStart.toISOString())).toEqual([
+      "2025-06-02T07:00:00.000Z",
+      "2025-06-02T19:00:00.000Z",
+    ]);
+    // Each emitted window keeps the legacy windowEnd - windowStart span.
+    for (const s of slots) {
+      expect(s.windowEnd.getTime() - s.windowStart.getTime()).toBe(
+        30 * 60 * 1000,
+      );
+    }
+  });
+
+  it("emits one slot at windowStart when no first-class timesOfDay is set", () => {
+    // Byte-stable legacy path — the absence of timesOfDay must not
+    // change the pre-fix single-window behaviour the chart relied on.
+    const sched: ScheduleLike = {
+      windowStart: "08:00",
+      windowEnd: "09:00",
+      daysOfWeek: null,
+    };
+    const slots = expandScheduleSlots(
+      sched,
+      0,
+      d("2025-06-02T00:00:00"),
+      d("2025-06-03T00:00:00"),
+    );
+    expect(slots).toHaveLength(1);
+  });
+
   it("respects daysOfWeek (Mon + Wed + Fri)", () => {
     const sched: ScheduleLike = {
       windowStart: "08:00",

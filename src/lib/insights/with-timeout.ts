@@ -1,25 +1,30 @@
+import { annotate } from "@/lib/logging/context";
+
 /**
- * v1.4.28 R3a FB-D2 — race an awaited promise against a hard timeout.
+ * Race an awaited promise against a hard timeout.
  *
  * The seven `*-status.ts` routes await `provider.generateCompletion()`
- * with no client-side timeout. When the upstream provider stalls (cold
- * cache, transient brown-out) React-Query's three default retries plus
- * default exponential backoff stacks on top of the upstream latency
- * and the InsightStatusCard spins for up to 90 s before the user sees
- * either the cached fallback text or a generic failure.
+ * and need an upper bound so a stalled provider does not pin the
+ * InsightStatusCard behind React-Query's retries. `withTimeout` resolves
+ * with the wrapped promise's value when it lands inside the budget, or
+ * the `fallback` value otherwise.
  *
- * `withTimeout(promise, ms, fallback)` resolves with the wrapped
- * promise's value when it lands inside the budget, or the `fallback`
- * value otherwise. Use the `signal` payload to abort upstream work so
- * the original promise does not keep consuming a provider slot after
- * the caller has moved on.
+ * Returns a typed envelope so the call site can distinguish a real
+ * timeout from an upstream error from a normal value, and react
+ * differently to each — a timeout/error must NOT be persisted as a
+ * day-long cache entry the way a real assessment is.
  *
- * Returns a typed envelope so the call site can distinguish "timed
- * out" from "the upstream returned this value" without re-encoding
- * the fallback as a magic string.
+ * The budget matches the provider clients' own 60 s ceiling. The
+ * earlier 20 s cap fired below the providers' floor on cold starts and
+ * model warm-ups, converting healthy-but-slow generations into the
+ * generic fallback; aligning the two lets a slow-but-valid round-trip
+ * land instead of being discarded.
  */
 export interface TimeoutEnvelope<T> {
+  /** True when the budget expired before the upstream settled. */
   timedOut: boolean;
+  /** True when the upstream rejected before the budget expired. */
+  errored: boolean;
   value: T;
 }
 
@@ -35,7 +40,11 @@ export function withTimeout<T>(
     timer = setTimeout(() => {
       if (settled) return;
       settled = true;
-      resolve({ timedOut: true, value: fallback });
+      annotate({
+        action: { name: "insights.status.provider_timeout" },
+        meta: { timeout_ms: ms },
+      });
+      resolve({ timedOut: true, errored: false, value: fallback });
     }, ms);
 
     start()
@@ -46,26 +55,35 @@ export function withTimeout<T>(
           clearTimeout(timer);
           timer = null;
         }
-        resolve({ timedOut: false, value });
+        resolve({ timedOut: false, errored: false, value });
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (settled) return;
         settled = true;
         if (timer) {
           clearTimeout(timer);
           timer = null;
         }
-        // Upstream errored before the timeout fired — surface the
-        // fallback so the route still returns a deterministic shape
-        // and the caller does not have to learn another failure mode.
-        resolve({ timedOut: true, value: fallback });
+        // Upstream errored before the timeout fired. Surface it as a
+        // distinct `errored` envelope and annotate the reason so a real
+        // provider failure is observable in the wide events instead of
+        // being silently swallowed into the timeout path.
+        const reason =
+          error instanceof Error ? error.message : String(error ?? "unknown");
+        annotate({
+          action: { name: "insights.status.provider_error" },
+          meta: { reason: reason.slice(0, 240) },
+        });
+        resolve({ timedOut: false, errored: true, value: fallback });
       });
   });
 }
 
 /**
- * The 20-second cap shipped in v1.4.28. Provider round-trips that
- * exceed this budget are converted to a cached-fallback render with a
- * "couldn't reach provider" caption on the InsightStatusCard.
+ * Status-path provider budget, aligned with the provider clients' own
+ * 60 s ceiling. A round-trip that exceeds this is treated as a transient
+ * miss — the caller returns the deterministic fallback for this render
+ * WITHOUT persisting it as the day's assessment, so the next mount
+ * re-attempts a real generation.
  */
-export const STATUS_PROVIDER_TIMEOUT_MS = 20_000;
+export const STATUS_PROVIDER_TIMEOUT_MS = 60_000;

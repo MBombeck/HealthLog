@@ -6,6 +6,7 @@ import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { isPublicUrl } from "@/lib/validations/notifications";
+import { safeFetch, SafeFetchError } from "@/lib/safe-fetch";
 
 export const dynamic = "force-dynamic";
 
@@ -110,20 +111,23 @@ export const POST = apiHandler(async (request: NextRequest) => {
   probeUrl.searchParams.set("from", yesterday);
   probeUrl.searchParams.set("to", today);
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   const start = performance.now();
 
   try {
-    const res = await fetch(probeUrl.toString(), {
-      method: "GET",
-      headers: { Authorization: `Bearer ${apiKey}` },
-      signal: controller.signal,
-      cache: "no-store",
-      // `manual` neutralises the redirect-follow SSRF where a public host
-      // serves a 302 to 169.254.169.254 (cloud metadata) or RFC1918 ranges.
-      redirect: "manual",
-    });
+    // safeFetch keeps the manual-redirect guard (the apiKey would
+    // otherwise leak on a 302 to 169.254.169.254 / RFC1918) and adds
+    // the AbortSignal.timeout convention. requirePublicHost layers in
+    // the connect-time IP pin so a DNS rebinding cannot flip the host
+    // between accept and dispatch (issue #217).
+    const res = await safeFetch(
+      probeUrl.toString(),
+      {
+        method: "GET",
+        headers: { Authorization: `Bearer ${apiKey}` },
+        cache: "no-store",
+      },
+      { timeoutMs: TIMEOUT_MS, requirePublicHost: true },
+    );
     const latencyMs = Math.round(performance.now() - start);
 
     // 3xx in `manual` redirect mode → we never followed; treat as success
@@ -155,7 +159,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
     });
   } catch (e) {
     const err = e as Error;
-    const isAbort = err.name === "AbortError";
+    const isAbort =
+      (e instanceof SafeFetchError && e.kind === "timeout") ||
+      err.name === "AbortError";
     const code = isAbort ? "timeout" : "connection_failed";
     annotate({
       meta: {
@@ -168,7 +174,5 @@ export const POST = apiHandler(async (request: NextRequest) => {
       502,
       { errorCode: code },
     );
-  } finally {
-    clearTimeout(timer);
   }
 });

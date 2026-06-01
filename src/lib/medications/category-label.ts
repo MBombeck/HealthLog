@@ -29,6 +29,8 @@ const MEDICATION_CATEGORY_KEYS: Record<string, string> = {
   HORMONE: "medications.categoryHormone",
   SKIN: "medications.categorySkin",
   SLEEP_AID: "medications.categorySleepAid",
+  DIABETES: "medications.categoryDiabetes",
+  ANTIBIOTIC: "medications.categoryAntibiotic",
   OTHER: "medications.categoryOther",
 };
 

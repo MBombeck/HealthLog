@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   Compass,
+  ImageUp,
   KeyRound,
   Loader2,
   Save,
@@ -25,6 +26,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -112,6 +118,10 @@ export function AccountSection() {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState<string>("");
   const [timezone, setTimezone] = useState<string>("Europe/Berlin");
+  // v1.7.0 — optional patient-identity fields for the health-record export.
+  const [fullName, setFullName] = useState("");
+  const [insurerName, setInsurerName] = useState("");
+  const [insuranceNumber, setInsuranceNumber] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [saveMsgType, setSaveMsgType] = useState<"success" | "error" | null>(
@@ -177,6 +187,9 @@ export function AccountSection() {
     );
     setGender(user.gender ?? "");
     setTimezone(resolveInitialTimezone(user.timezone, detectBrowserTimezone()));
+    setFullName(user.fullName ?? "");
+    setInsurerName(user.insurerName ?? "");
+    setInsuranceNumber(user.insuranceNumber ?? "");
   }
 
   async function handleSaveProfile(e: React.FormEvent) {
@@ -198,6 +211,9 @@ export function AccountSection() {
           heightCm: heightCm ? parseFloat(heightCm) : null,
           dateOfBirth: dateOfBirth || null,
           gender: gender || null,
+          fullName: fullName.trim() || null,
+          insurerName: insurerName.trim() || null,
+          insuranceNumber: insuranceNumber.trim() || null,
         }),
       }),
       user && timezone && timezone !== user.timezone
@@ -376,6 +392,9 @@ export function AccountSection() {
       </header>
 
       {/* Profile card */}
+      {/* Profile photo card */}
+      <AvatarSection />
+
       <div className="bg-card border-border rounded-xl border p-6">
         <div className="mb-4 flex items-center gap-2">
           <User className="text-primary h-5 w-5" />
@@ -486,6 +505,57 @@ export function AccountSection() {
           </div>
 
           <TimezonePicker value={timezone} onChange={setTimezone} />
+
+          {/* v1.7.0 — optional patient-identity fields surfaced on the
+              health-record export cover + FHIR Patient. All optional;
+              the KVNR is validated server-side and stored encrypted. */}
+          <div className="border-border space-y-4 border-t pt-4">
+            <p className="text-muted-foreground text-xs">
+              {t("settings.identity.description")}
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="full-name">{t("settings.identity.fullName")}</Label>
+              <Input
+                id="full-name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder={t("settings.identity.fullNamePlaceholder")}
+                maxLength={120}
+                autoComplete="name"
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="insurer">{t("settings.identity.insurer")}</Label>
+                <Input
+                  id="insurer"
+                  value={insurerName}
+                  onChange={(e) => setInsurerName(e.target.value)}
+                  placeholder={t("settings.identity.insurerPlaceholder")}
+                  maxLength={120}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="insurance-number">
+                  {t("settings.identity.insuranceNumber")}
+                </Label>
+                <Input
+                  id="insurance-number"
+                  value={insuranceNumber}
+                  onChange={(e) =>
+                    setInsuranceNumber(e.target.value.toUpperCase())
+                  }
+                  placeholder="A123456780"
+                  maxLength={10}
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                />
+                <p className="text-muted-foreground text-xs">
+                  {t("settings.identity.insuranceNumberHint")}
+                </p>
+              </div>
+            </div>
+          </div>
 
           {saveMsg && (
             <p
@@ -951,6 +1021,170 @@ function PasskeyListSection({ isAuthenticated }: { isAuthenticated: boolean }) {
           <AlertTriangle className="h-4 w-4" />
           {deleteMsg}
         </div>
+      )}
+    </div>
+  );
+}
+
+// Accepted upload types + byte cap mirror the server contract in
+// `src/app/api/user/avatar/route.ts` so the client rejects an obvious
+// bad file before the round-trip. The server still re-validates by
+// magic-byte sniff — this is a UX shortcut, not the security boundary.
+const ACCEPTED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const AVATAR_MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
+
+function getAvatarInitials(name: string): string {
+  return name
+    .split(/[\s._-]+/)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+function AvatarSection() {
+  const { t } = useTranslations();
+  const { user, refetch } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
+
+  const upload = useMutation({
+    mutationFn: async (file: File) => {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch("/api/user/avatar", { method: "POST", body });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (res.status === 415) throw new Error(t("settings.avatar.invalidType"));
+        if (res.status === 413) throw new Error(t("settings.avatar.tooLarge"));
+        throw new Error(json.error || t("settings.avatar.error"));
+      }
+    },
+    onSuccess: async () => {
+      setMsgType("success");
+      setMsg(t("settings.avatar.uploaded"));
+      await refetch();
+    },
+    onError: (err: Error) => {
+      setMsgType("error");
+      setMsg(err.message);
+    },
+  });
+
+  const remove = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/user/avatar", { method: "DELETE" });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error || t("settings.avatar.error"));
+      }
+    },
+    onSuccess: async () => {
+      setMsgType("success");
+      setMsg(t("settings.avatar.removed"));
+      await refetch();
+    },
+    onError: (err: Error) => {
+      setMsgType("error");
+      setMsg(err.message);
+    },
+  });
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    // Reset so re-selecting the same file still fires `onChange`.
+    e.target.value = "";
+    if (!file) return;
+    setMsg(null);
+    setMsgType(null);
+    if (!ACCEPTED_AVATAR_TYPES.includes(file.type)) {
+      setMsgType("error");
+      setMsg(t("settings.avatar.invalidType"));
+      return;
+    }
+    if (file.size > AVATAR_MAX_UPLOAD_BYTES) {
+      setMsgType("error");
+      setMsg(t("settings.avatar.tooLarge"));
+      return;
+    }
+    upload.mutate(file);
+  }
+
+  if (!user) return null;
+  const avatarUrl = user.avatarUrl ?? null;
+  const busy = upload.isPending || remove.isPending;
+
+  return (
+    <div className="bg-card border-border rounded-xl border p-6">
+      <div className="mb-4 flex items-center gap-2">
+        <ImageUp className="text-primary h-5 w-5" />
+        <h2 className="text-lg font-semibold">{t("settings.avatar.title")}</h2>
+      </div>
+      <p className="text-muted-foreground mb-4 text-sm">
+        {t("settings.avatar.description")}
+      </p>
+      <div className="flex items-center gap-4">
+        <Avatar className="size-16">
+          {avatarUrl && <AvatarImage src={avatarUrl} alt={user.username} />}
+          <AvatarFallback className="text-base">
+            {getAvatarInitials(user.username)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex flex-wrap gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handleFile}
+          />
+          <Button
+            variant="outline"
+            disabled={busy}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {upload.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
+            ) : (
+              <ImageUp className="mr-2 h-4 w-4" />
+            )}
+            {avatarUrl
+              ? t("settings.avatar.replace")
+              : t("settings.avatar.upload")}
+          </Button>
+          {avatarUrl && (
+            <Button
+              variant="ghost"
+              className="text-destructive"
+              disabled={busy}
+              onClick={() => {
+                setMsg(null);
+                setMsgType(null);
+                remove.mutate();
+              }}
+            >
+              {remove.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              {t("settings.avatar.remove")}
+            </Button>
+          )}
+        </div>
+      </div>
+      <p className="text-muted-foreground mt-3 text-xs">
+        {t("settings.avatar.hint")}
+      </p>
+      {msg && (
+        <p
+          role="alert"
+          className={`mt-3 text-sm ${
+            msgType === "success" ? "text-dracula-green" : "text-destructive"
+          }`}
+        >
+          {msg}
+        </p>
       )}
     </div>
   );

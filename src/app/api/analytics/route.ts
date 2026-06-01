@@ -1,4 +1,3 @@
-import pLimit from "p-limit";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
@@ -9,50 +8,13 @@ import { summarize, type DataPoint } from "@/lib/analytics/trends";
 import { computeSummariesSlice } from "@/lib/analytics/summaries-slice";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
-import type {
-  MeasurementSource,
-  MeasurementType,
-} from "@/generated/prisma/client";
-import { measurementTypeEnum } from "@/lib/validations/measurement";
-import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
 import { ensureUserRollupsFresh } from "@/lib/rollups/measurement-rollups";
 import { probeRollupCoverage } from "@/lib/rollups/measurement-coverage";
 import { computeBpInTargetFastPath } from "@/lib/analytics/bp-in-target-fast-path";
 import { computeUserHealthScoreFastPath } from "@/lib/analytics/health-score-fast-path";
 import { computeCorrelationHypothesesFastPath } from "@/lib/analytics/correlations-fast-path";
-import {
-  cumulativeMetricKey,
-  isCumulativeDaySumType,
-  pickCumulativeDaySum,
-} from "@/lib/measurements/cumulative-day-sum";
 
 export const dynamic = "force-dynamic";
-
-/**
- * v1.4.40 W-POOL — bound the per-type analytics fan-out below to ≤ 4
- * concurrent Prisma round-trips.
- *
- * The v1.4.39 empirical cold-mount trace
- * (`.planning/round-v1439-empirical-trace.md` § B1) recorded thick
- * `/api/analytics` running 15× `fetchMeasurementSeriesChunked` in
- * parallel via a bare `Promise.all` (this file's `route.ts:261-269`
- * pre-fix), each pulling chunked findMany pages of 5 000 rows. The
- * combined fan-out held ≥ 8 of the default-10 `pg.Pool` slots for
- * 6.5 s on Marc's 347k-row tenant, starving every other Wave-B / C
- * dashboard query.
- *
- * Capping the concurrency to 4 keeps the same total work but holds
- * at most 4 pool slots for the analytics branch at any moment. With
- * the W-POOL ceiling raised to 20 (`src/lib/db.ts:getPoolMax`),
- * every other dashboard query has ≥ 16 free slots regardless of how
- * many types analytics is mid-walk over. The thick endpoint pays a
- * small (~10–15 %) absolute wall-clock cost on a single cold mount —
- * 15 chunks across 4 lanes = 4 batches instead of 1 — but is already
- * wrapped in the 60s `caches.analytics` LRU so the user-visible
- * impact is only the very first mount, in exchange for the chart-tile
- * burst paying ~5 s less of pool wait time on every mount thereafter.
- */
-export const ANALYTICS_TYPE_FETCH_CONCURRENCY = 4;
 
 /**
  * v1.4.33 C1 — pull `?slice=…` from either a NextRequest (the
@@ -213,200 +175,45 @@ async function buildAnalyticsResponse(user: AuthedUser) {
   // `berlinDayKey()` helper was retired in v1.4.40).
   const userTz = user.timezone ?? DEFAULT_TIMEZONE;
 
-  // Derived from canonical enum so a new measurement type is auto-summarised
-  // by /api/analytics (V3 audit: enum drift cousins).
-  const types = [...measurementTypeEnum.options] as MeasurementType[];
-
-  // v1.4.23 Sr-H1 — every per-type read goes through the chunked helper
-  // so the route's working set stays bounded at MEASUREMENT_CHUNK_SIZE
-  // rows per Prisma round-trip even for users with multi-year HealthKit
-  // sync history. `summarize()` requires the full series (slope7/30/90,
-  // anomalies) so groupBy cannot replace this read; the chunked path is
-  // the smallest pagination contract that still satisfies the helper.
-  // v1.4.25 W5e — per-metric-class source priority pulled once. The
-  // aggregator passes the persisted JSON straight through so the
-  // helper's `parseSourcePriority` runs and falls back to defaults
-  // when the column is null or malformed.
-  const sourcePriorityJson = user.sourcePriorityJson;
-
-  // v1.4.39 W-SINCE — defense-in-depth row cap on the per-type live
-  // read. The v1.4.38.8 per-type fast-path gate (commit 8a8150d2)
-  // narrowed `isFullyCovered` from "all types covered" to "these
-  // specific types covered" inside the three downstream fast-paths
-  // (bp_in_target / health_score / correlations). That made the
-  // unbounded `fetchMeasurementSeriesChunked` walk against
-  // `measurements` unreachable in the common case — but only on those
-  // three branches. This per-type loop (A2 in the v1.4.38 perf audit)
-  // has no fast-path gate at all; it always runs live SQL.
+  // v1.4.49.1 — replace the 15-way per-type `fetchMeasurementSeriesChunked`
+  // fan-out with the slim rollup-tier reader. The previous live walk
+  // against `measurements` (425-day window, ≥ 50 Prisma round-trips on a
+  // 15-type tenant) saturated the `p-limit(4)` slot pool for ~8 s on the
+  // production 467 k-row account — and because Prisma's 20-slot pool was
+  // simultaneously claimed by those slots, the concurrent
+  // `?slice=summaries` request (only ~9 small queries) queued behind it
+  // and observed the same ~8 s wall-clock.
   //
-  // Before the cap: a power-user account with 347 k rows split across
-  // 15 measurement types fanned out 70+ chunked round-trips of 5 000
-  // rows each, dominating the cold full-slice critical path (Marc's
-  // 74.6 s cold mount).
+  // `computeSummariesSlice` reads `measurement_rollups` DAY buckets
+  // (sub-second) plus one 90-day narrow `$queryRaw` for the windowed
+  // avg / slope / r² columns, and falls back to a split-aggregate live
+  // path for users with incomplete rollup coverage. Response shape is
+  // identical to the previous fan-out output for every field the
+  // dashboard actually consumes:
+  //   - `count / latest / min / max / mean` from DAY buckets
+  //   - `avg7 / avg30 / slope7 / slope30 / slope90` from the narrow query
+  //   - `avg30LastMonth` from the same narrow query (added in this
+  //     release; previously only the live walk produced it)
+  //   - `avg30LastYear` populated for any type whose WMY tier carries
+  //     the year-ago window
+  //   - `lastSeenByType` from the `DISTINCT ON (type)` latest read
   //
-  // After the cap: the trailing 425 days bound the per-type walk
-  // while preserving `summarize().avg30LastYear` (points 365-395 days
-  // ago) and `summarize().avg30LastMonth` (30-60 days ago) for the
-  // dashboard's year-over-year and month-over-month comparison tiles.
-  // Cumulative HealthKit types (ACTIVITY_STEPS, ACTIVE_ENERGY, …)
-  // collapse to one-row-per-day after the per-day-sum pass downstream
-  // so a 425-day window stays bounded (≤ ~25 k rows per type on a
-  // saturated tenant).
-  //
-  // QA Specialist-H2 (v1.4.39): the original 90-day cap stripped the
-  // year-ago window so `summary.avg30LastYear` returned null on every
-  // fall-through path, making the "vs last year" tile render "no
-  // prior data" on every cold mount. The 425-day cap (365 + 30 + 30
-  // buffer) keeps the year-ago window populated; the slim slice
-  // (`?slice=summaries`) and the rollup-backed comprehensive
-  // aggregator already operate on tighter windows so this cap only
-  // affects the legacy live-fallback path the fast-path gate misses.
-  const ANALYTICS_LIVE_WINDOW_DAYS = 425;
-  const liveSince = new Date(
-    Date.now() - ANALYTICS_LIVE_WINDOW_DAYS * 24 * 60 * 60 * 1000,
-  );
+  // The two fields the slim path leaves at default values are
+  // `anomalyCount` (always 0) — the insights pipeline consumes it from
+  // its own `comprehensive-aggregator` narrow query, never from this
+  // route — and `avg30LastYear` on types with no WMY coverage, which
+  // matches the pre-fix behaviour for tenants whose year-ago window
+  // happened to fall outside the 425-day floor.
+  const slim = await computeSummariesSlice(user.id);
+  const results = slim.summaries;
+  const lastSeenByType = slim.lastSeenByType;
 
-  // v1.4.34 IW-B — capture the most-recent `measuredAt` per type so the
-  // dashboard tile strip can render an "Letzter Wert vor Xd" caption on
-  // tiles whose latest reading is older than a week. The series read
-  // already orders ascending (`fetchMeasurementSeriesChunked`'s stable
-  // `(measuredAt, id)` order); the last entry is the freshest sample.
-  //
-  // v1.4.38 — the cached body now carries only `lastSeenAt` (ISO);
-  // `daysAgo` is derived in the GET wrapper per call. Storing the
-  // computed delta inside the cache let the value stale across day
-  // boundaries (60s TTL straddling midnight could surface a "vor 3d"
-  // caption that should read "vor 4d"). The ISO timestamp does not
-  // age, so re-deriving on read costs nothing and pins the caption
-  // to the real wall-clock at every request.
-  const lastSeenByType: Record<string, { lastSeenAt: string } | null> = {};
-
-  let totalRowsReadForAggregate = 0;
-  // v1.4.40 W-POOL — bounded-concurrency wrapper for the 15-way
-  // per-type fan-out below. See `ANALYTICS_TYPE_FETCH_CONCURRENCY`
-  // above + `.planning/round-v1439-empirical-trace.md` § B1 for the
-  // pool-saturation root cause. Same total work, ≤ 4 pool slots held
-  // by this branch at any moment.
-  const typeFetchLimit = pLimit(ANALYTICS_TYPE_FETCH_CONCURRENCY);
-  const measurementsByType = await Promise.all(
-    types.map((type) =>
-      typeFetchLimit(() =>
-      fetchMeasurementSeriesChunked(user.id, type, {
-        includeSleepStage: true,
-        // v1.4.39 W-SINCE — trailing 425-day floor for the live read.
-        // Wide enough to populate `summarize().avg30LastYear` (the
-        // year-ago comparison tile) while still bounding the per-type
-        // row count. See comment block above.
-        since: liveSince,
-      }).then((measurements) => {
-        totalRowsReadForAggregate += measurements.length;
-        // v1.4.34 IW-B — record the freshest `measuredAt` for this type
-        // (or null when the user has never logged this metric). The
-        // helper returns rows sorted ascending so `.at(-1)` is the
-        // most-recent point without an extra pass.
-        const latest = measurements.at(-1);
-        if (latest) {
-          lastSeenByType[type] = {
-            lastSeenAt: latest.measuredAt.toISOString(),
-          };
-        } else {
-          lastSeenByType[type] = null;
-        }
-        // v1.4.23 — Apple Health's sleep ingest stores one row per
-        // stage per night. Summarising the raw rows would treat each
-        // stage as its own datapoint and grossly understate "average
-        // sleep". Aggregate per Berlin day before summarising so the
-        // summary matches the user's intuition (one number per night
-        // = total minutes asleep).
-        let datapoints: DataPoint[];
-        if (type === "SLEEP_DURATION") {
-          // v1.4.25 W5e — pick ONE source per day before summing the
-          // night's stages. With only WITHINGS + MANUAL today, the
-          // picker passes everything through; once iOS passthrough
-          // lands (v1.5) the picker prevents double-counted nights
-          // (HealthKit forwards Withings' Sleep summary to iOS in
-          // addition to ScanWatch's own stream).
-          const sleepRows = pickCanonicalSourceRows(
-            measurements,
-            "sleep",
-            sourcePriorityJson,
-            (d) => userDayKey(d, userTz),
-          ).canonicalRows;
-          datapoints = pickCumulativeDaySum(sleepRows, (d) =>
-            userDayKey(d, userTz),
-          );
-        } else if (isCumulativeDaySumType(type)) {
-          // v1.4.36 W4c — broaden the SLEEP_DURATION day-bucket-sum
-          // pattern to every cumulative metric (steps, active energy,
-          // walking + running distance, flights climbed, time in
-          // daylight). Apple Health writes minute-level slices for
-          // these series; the dashboard tile was reading the
-          // *latest slice* via `summary.latest` instead of the day's
-          // total, which Marc reported as "Steps tile shows
-          // last-measurement-not-day-sum". After the per-day sum
-          // collapse, `summary.latest` is the most-recent day's
-          // total — exactly what the tile expects.
-          //
-          // Map cumulative MeasurementType → SourcePriorityMetricKey
-          // for the canonical-row picker. TIME_IN_DAYLIGHT has no
-          // dedicated priority ladder (no clinical-grade competitor
-          // to Apple Health for daylight minutes today) so it falls
-          // through `pickCanonicalSourceRows`'s "no ladder"
-          // pass-through branch — we ALWAYS bucket-and-sum it
-          // regardless of source.
-          const metricKey = cumulativeMetricKey(type);
-          const canonicalRows = metricKey
-            ? pickCanonicalSourceRows(
-                measurements,
-                metricKey,
-                sourcePriorityJson,
-                (d) => userDayKey(d, userTz),
-              ).canonicalRows
-            : measurements;
-          datapoints = pickCumulativeDaySum(canonicalRows, (d) =>
-            userDayKey(d, userTz),
-          );
-        } else {
-          datapoints = measurements.map(
-            (m): DataPoint => ({
-              date: m.measuredAt,
-              value: m.value,
-            }),
-          );
-        }
-        return {
-          type,
-          summary: summarize(datapoints),
-        };
-      }),
-      ),
-    ),
-  );
-
-  const results: Record<string, ReturnType<typeof summarize>> = {};
-  for (const { type, summary } of measurementsByType) {
-    results[type] = summary;
-  }
-
-  // v1.4.23 Sr-H1 — slow-query attribution. Total rows pulled across
-  // every per-type chunked read so ops can spot outlier users whose
-  // analytics requests dominate the route's tail latency.
-  //
-  // v1.4.39 W-SINCE — also surface `live_since` (ISO) so the next
-  // perf-verify can see how far back the live-fallback read actually
-  // went. With the 425-day cap in place this should be ~now-425d on
-  // every full-slice request; an older value would signal that a
-  // future refactor accidentally widened the window again.
-  annotate({
-    meta: {
-      analytics: {
-        bp_aggregate: {
-          row_count: totalRowsReadForAggregate,
-          live_since: liveSince.toISOString(),
-        },
-      },
-    },
-  });
+  // `computeSummariesSlice` annotates `action: "analytics.get.slim"`
+  // for telemetry on the slim route. Restore the default-slice action
+  // name so the wide-event reflects the route the client actually
+  // called (otherwise every default-slice request would appear in the
+  // logs under the slim action).
+  annotate({ action: { name: "analytics.get" } });
 
   // v1.4.23 — sleep-stage breakdown for the trailing 30 days. Only
   // included when the user has stage-tagged rows in window; null
@@ -665,106 +472,15 @@ async function computeSleepStageBreakdown(
 // route. The new helper also tightens the scan window to 28 days and
 // emits a sentinel on `meta.correlations.window_days` / `degraded`.
 
-/**
- * v1.4.23 Sr-H1 — paged read of every Measurement of a given type for
- * a single user.
- *
- * Boundary contract:
- *   - The route's per-type loop, the BD-Zielbereich BP windowing, and
- *     the correlation-hypothesis reads ALL pull through this helper so
- *     no analytics path holds an unbounded `findMany` against
- *     `measurement` any more.
- *   - `summarize()` (slope7/30/90, anomaly z-scores) and
- *     `computeBpInTargetWindows` (paired sys/dia matching) both need
- *     row-level access that `prisma.groupBy` cannot provide; chunked
- *     paging is the smallest contract that bounds the working set
- *     without changing the helpers.
- *   - The cursor is `id` with a stable `(measuredAt, id)` order so two
- *     rows sharing a timestamp (bulk-imported manual entries) don't
- *     stall the cursor or duplicate a row across pages.
- *
- * Page size is `MEASUREMENT_CHUNK_SIZE`; the safety-bound loop caps
- * total pages at 1 000 (= 5 M rows) which is well above any plausible
- * single-user single-type plausibility range — defence in depth against
- * a cursor-staleness infinite-loop bug.
- *
- * `since` lets the correlation path pull only the trailing 30 days
- * without first reading older rows. `includeSleepStage` opts the
- * per-type loop into the SLEEP_DURATION-only field.
- */
-const MEASUREMENT_CHUNK_SIZE = 5000;
-
-interface ChunkedRow {
-  measuredAt: Date;
-  value: number;
-  sleepStage: string | null;
-  /** v1.4.25 W5e — needed by `pickCanonicalSourceRows` so the SLEEP /
-   *  cumulative aggregators can pick ONE source per day when more than
-   *  one ingest path contributes to the same metric. */
-  source: MeasurementSource;
-  /** v1.4.25 W8c — second axis of the canonical picker. Nullable until
-   *  the iOS app starts shipping HKDevice.model with each sample;
-   *  legacy / Withings rows stay NULL and the picker treats them as
-   *  `unknown`. Carried on every type's read so the cumulative-metric
-   *  path can break Apple-Watch-vs-iPhone ties.
-   */
-  deviceType: string | null;
-  /** v1.4.25 W8c — feeds the per-MeasurementType device-type override
-   *  inside the picker. The picker keys
-   *  `deviceTypePriority[type]` off this so the user's "phone wins for
-   *  steps but watch wins for HR" config is honoured. */
-  type: MeasurementType;
-}
-
-async function fetchMeasurementSeriesChunked(
-  userId: string,
-  type: MeasurementType,
-  options: { since?: Date; includeSleepStage?: boolean } = {},
-): Promise<ChunkedRow[]> {
-  const out: ChunkedRow[] = [];
-  let cursorId: string | undefined;
-  for (let page = 0; page < 1000; page++) {
-    const chunk = await prisma.measurement.findMany({
-      where: {
-        userId,
-        type,
-        ...(options.since ? { measuredAt: { gte: options.since } } : {}),
-        deletedAt: null,
-      },
-      orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
-      select: {
-        id: true,
-        measuredAt: true,
-        value: true,
-        source: true,
-        // v1.4.25 W8c — read deviceType so the canonical picker can
-        // honour the per-metric / per-device override. Nullable until
-        // iOS sends it.
-        deviceType: true,
-        ...(options.includeSleepStage ? { sleepStage: true } : {}),
-      },
-      take: MEASUREMENT_CHUNK_SIZE,
-      ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
-    });
-    if (chunk.length === 0) break;
-    for (const row of chunk) {
-      out.push({
-        measuredAt: row.measuredAt,
-        value: row.value,
-        source: row.source,
-        deviceType: row.deviceType ?? null,
-        type,
-        sleepStage:
-          "sleepStage" in row
-            ? ((row.sleepStage as string | null) ?? null)
-            : null,
-      });
-    }
-    if (chunk.length < MEASUREMENT_CHUNK_SIZE) break;
-    cursorId = chunk[chunk.length - 1].id;
-  }
-  return out;
-}
+// v1.4.49.1 — the chunked `fetchMeasurementSeriesChunked` helper and
+// its supporting types / constants relocated entirely. The default
+// slice now delegates the per-type summaries work to
+// `computeSummariesSlice` (rollup-tier, sub-second on covered tenants)
+// so the legacy 15-way live walk against `measurements` no longer has
+// a caller. The slim slice was already independent of it. Deleting the
+// dead code here removes the pool-starvation surface that gated the
+// concurrent slim slice and prevents future regressions from
+// accidentally reintroducing the fan-out.
 
 // v1.4.37 W2 — `WEEKDAY_FORMATTER_CACHE`, `getWeekdayFormatter`,
 // `dateFromDayKey`, `ISO_WEEKDAY`, and `isoWeekdayInTz` relocated

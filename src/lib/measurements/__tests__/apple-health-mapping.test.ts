@@ -3,8 +3,10 @@ import {
   APPLE_HEALTH_SLEEP_STAGE_MAP,
   APPLE_HEALTH_TYPE_MAP,
   CUMULATIVE_HK_TYPES,
+  HIGH_FREQUENCY_MEAN_TYPES,
   HK_QUANTITY_TYPE_DEFERRED,
   dailyStatsExternalId,
+  hkIdentifierForType,
   mapAppleHealthEntry,
 } from "../apple-health-mapping";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
@@ -346,6 +348,186 @@ describe("mapAppleHealthEntry", () => {
   });
 });
 
+describe("v1.5.5 iOS-coord additions — six previously-deferred identifiers", () => {
+  it("maps every one of the six identifiers", () => {
+    const expected: Array<[string, string]> = [
+      ["HKQuantityTypeIdentifierRespiratoryRate", "RESPIRATORY_RATE"],
+      ["HKQuantityTypeIdentifierBodyMassIndex", "BODY_MASS_INDEX"],
+      ["HKQuantityTypeIdentifierLeanBodyMass", "LEAN_BODY_MASS"],
+      [
+        "HKQuantityTypeIdentifierWalkingHeartRateAverage",
+        "WALKING_HEART_RATE_AVERAGE",
+      ],
+      [
+        "HKQuantityTypeIdentifierWalkingAsymmetryPercentage",
+        "WALKING_ASYMMETRY",
+      ],
+      [
+        "HKQuantityTypeIdentifierWalkingDoubleSupportPercentage",
+        "WALKING_DOUBLE_SUPPORT",
+      ],
+    ];
+    for (const [hkId, type] of expected) {
+      const mapping = APPLE_HEALTH_TYPE_MAP[hkId];
+      expect(mapping, `${hkId} should be mapped`).toBeDefined();
+      expect(mapping.measurementType).toBe(type);
+    }
+  });
+
+  it("scales the gait percent identifiers ×100 server-side (project convention)", () => {
+    const asym =
+      APPLE_HEALTH_TYPE_MAP
+        .HKQuantityTypeIdentifierWalkingAsymmetryPercentage;
+    const ds =
+      APPLE_HEALTH_TYPE_MAP
+        .HKQuantityTypeIdentifierWalkingDoubleSupportPercentage;
+    // Apple ships these as 0..1 fractions; HealthLog stores 0..100.
+    expect(asym.convertToDbUnit(0.07)).toBeCloseTo(7);
+    expect(ds.convertToDbUnit(0.2)).toBeCloseTo(20);
+    expect(asym.dbUnit).toBe("%");
+    expect(ds.dbUnit).toBe("%");
+  });
+
+  it("keeps identity conversion for the non-percent additions", () => {
+    expect(
+      APPLE_HEALTH_TYPE_MAP.HKQuantityTypeIdentifierRespiratoryRate.convertToDbUnit(
+        16,
+      ),
+    ).toBe(16);
+    expect(
+      APPLE_HEALTH_TYPE_MAP.HKQuantityTypeIdentifierBodyMassIndex.convertToDbUnit(
+        24.5,
+      ),
+    ).toBe(24.5);
+    expect(
+      APPLE_HEALTH_TYPE_MAP.HKQuantityTypeIdentifierLeanBodyMass.convertToDbUnit(
+        62,
+      ),
+    ).toBe(62);
+    expect(
+      APPLE_HEALTH_TYPE_MAP.HKQuantityTypeIdentifierWalkingHeartRateAverage.convertToDbUnit(
+        96,
+      ),
+    ).toBe(96);
+  });
+
+  it("removes the six identifiers from the deferred set", () => {
+    const previouslyDeferred = [
+      "HKQuantityTypeIdentifierRespiratoryRate",
+      "HKQuantityTypeIdentifierBodyMassIndex",
+      "HKQuantityTypeIdentifierLeanBodyMass",
+      "HKQuantityTypeIdentifierWalkingHeartRateAverage",
+      "HKQuantityTypeIdentifierWalkingAsymmetryPercentage",
+      "HKQuantityTypeIdentifierWalkingDoubleSupportPercentage",
+    ];
+    for (const id of previouslyDeferred) {
+      expect(
+        HK_QUANTITY_TYPE_DEFERRED.has(id),
+        `${id} should no longer be deferred`,
+      ).toBe(false);
+    }
+  });
+
+  it("round-trips a respiratory-rate sample through mapAppleHealthEntry", () => {
+    const out = mapAppleHealthEntry({
+      hkIdentifier: "HKQuantityTypeIdentifierRespiratoryRate",
+      value: 16,
+      unit: "count/min",
+      startDate: "2026-05-28T03:00:00.000Z",
+      endDate: "2026-05-28T07:00:00.000Z",
+    });
+    expect(out).toEqual({
+      type: "RESPIRATORY_RATE",
+      value: 16,
+      unit: "breaths/min",
+      takenAt: new Date("2026-05-28T07:00:00.000Z"),
+    });
+  });
+
+  it("round-trips a walking-asymmetry sample with ×100 scaling", () => {
+    const out = mapAppleHealthEntry({
+      hkIdentifier: "HKQuantityTypeIdentifierWalkingAsymmetryPercentage",
+      value: 0.07,
+      unit: "%",
+      startDate: "2026-05-28T08:00:00.000Z",
+      endDate: "2026-05-28T08:00:00.000Z",
+    });
+    expect(out).not.toBeNull();
+    expect(out!.type).toBe("WALKING_ASYMMETRY");
+    expect(out!.unit).toBe("%");
+    expect(out!.value).toBeCloseTo(7);
+  });
+});
+
+describe("v1.5.5 iOS-coord follow-up — raw-SI gait pair", () => {
+  it("maps walkingStepLength + walkingSpeed to the new MeasurementTypes", () => {
+    const sl = APPLE_HEALTH_TYPE_MAP.HKQuantityTypeIdentifierWalkingStepLength;
+    const sp = APPLE_HEALTH_TYPE_MAP.HKQuantityTypeIdentifierWalkingSpeed;
+    expect(sl).toBeDefined();
+    expect(sp).toBeDefined();
+    expect(sl.measurementType).toBe("WALKING_STEP_LENGTH");
+    expect(sp.measurementType).toBe("WALKING_SPEED");
+    expect(sl.dbUnit).toBe("m");
+    expect(sp.dbUnit).toBe("m/s");
+  });
+
+  it("passes raw SI values through unchanged (no ×100 scaling)", () => {
+    // Crucial convention pin: the percent gait metrics scale ×100
+    // server-side because Apple ships 0..1 fractions; step length
+    // and speed are already in metres / metres-per-second and MUST
+    // round-trip as identity. A future contributor wiring a new
+    // gait identifier should add to the right bucket — this test
+    // is the regression sentinel for that decision.
+    const sl = APPLE_HEALTH_TYPE_MAP.HKQuantityTypeIdentifierWalkingStepLength;
+    const sp = APPLE_HEALTH_TYPE_MAP.HKQuantityTypeIdentifierWalkingSpeed;
+    expect(sl.convertToDbUnit(0.72)).toBe(0.72);
+    expect(sl.convertToDbUnit(1.5)).toBe(1.5);
+    expect(sp.convertToDbUnit(1.3)).toBe(1.3);
+    expect(sp.convertToDbUnit(2.1)).toBe(2.1);
+  });
+
+  it("removes both identifiers from the deferred set", () => {
+    expect(
+      HK_QUANTITY_TYPE_DEFERRED.has("HKQuantityTypeIdentifierWalkingStepLength"),
+    ).toBe(false);
+    expect(
+      HK_QUANTITY_TYPE_DEFERRED.has("HKQuantityTypeIdentifierWalkingSpeed"),
+    ).toBe(false);
+  });
+
+  it("round-trips a walking-step-length sample through mapAppleHealthEntry", () => {
+    const out = mapAppleHealthEntry({
+      hkIdentifier: "HKQuantityTypeIdentifierWalkingStepLength",
+      value: 0.72,
+      unit: "m",
+      startDate: "2026-05-28T09:00:00.000Z",
+      endDate: "2026-05-28T09:00:00.000Z",
+    });
+    expect(out).toEqual({
+      type: "WALKING_STEP_LENGTH",
+      value: 0.72,
+      unit: "m",
+      takenAt: new Date("2026-05-28T09:00:00.000Z"),
+    });
+  });
+
+  it("round-trips a walking-speed sample through mapAppleHealthEntry", () => {
+    const out = mapAppleHealthEntry({
+      hkIdentifier: "HKQuantityTypeIdentifierWalkingSpeed",
+      value: 1.34,
+      unit: "m/s",
+      startDate: "2026-05-28T09:00:00.000Z",
+      endDate: "2026-05-28T09:00:00.000Z",
+    });
+    expect(out).toEqual({
+      type: "WALKING_SPEED",
+      value: 1.34,
+      unit: "m/s",
+      takenAt: new Date("2026-05-28T09:00:00.000Z"),
+    });
+  });
+});
+
 describe("v1.4.30 Tier-1 additions (R-F T1.4 + T1.5)", () => {
   it("maps appleWalkingSteadiness to WALKING_STEADINESS with × 100 scaling", () => {
     const mapping =
@@ -439,5 +621,40 @@ describe("dailyStatsExternalId (v1.4.30 — R-A Option A handoff lock)", () => {
         "HKQuantityTypeIdentifierTimeInDaylight",
       ].sort(),
     );
+  });
+});
+
+describe("HIGH_FREQUENCY_MEAN_TYPES (v1.7.0)", () => {
+  it("is strictly disjoint from CUMULATIVE_HK_TYPES", () => {
+    for (const type of HIGH_FREQUENCY_MEAN_TYPES) {
+      expect(CUMULATIVE_HK_TYPES.has(type)).toBe(false);
+    }
+    for (const type of CUMULATIVE_HK_TYPES) {
+      expect(HIGH_FREQUENCY_MEAN_TYPES.has(type)).toBe(false);
+    }
+  });
+
+  it("excludes PULSE — correlation/scatter read raw PULSE rows", () => {
+    expect(HIGH_FREQUENCY_MEAN_TYPES.has("PULSE" as MeasurementType)).toBe(
+      false,
+    );
+  });
+
+  it("covers the genuinely-orphan high-frequency spot metrics", () => {
+    expect(Array.from(HIGH_FREQUENCY_MEAN_TYPES).sort()).toEqual(
+      [
+        "RESPIRATORY_RATE",
+        "AUDIO_EXPOSURE_ENV",
+        "AUDIO_EXPOSURE_HEADPHONE",
+        "WALKING_SPEED",
+        "WALKING_STEP_LENGTH",
+      ].sort(),
+    );
+  });
+
+  it("every mean type resolves to a HealthKit identifier", () => {
+    for (const type of HIGH_FREQUENCY_MEAN_TYPES) {
+      expect(hkIdentifierForType(type)).not.toBeNull();
+    }
   });
 });

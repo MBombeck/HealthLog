@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/db";
-import { resolveProvider } from "@/lib/ai/provider";
 import {
   getBloodPressureSystemPrompt,
   getBloodPressureUserPrompt,
@@ -14,7 +13,12 @@ import {
   pearsonCorrelation,
   type PairedPoint,
 } from "@/lib/analytics/correlations";
-import { calculateCompliance } from "@/lib/analytics/compliance";
+import {
+  buildComplianceMedicationContext,
+  calculateCompliance,
+  lastNonSkippedTakenAt,
+} from "@/lib/analytics/compliance";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { getMedicationCategories } from "@/lib/medication-category";
 import { sanitizeForPrompt } from "@/lib/insights/sanitize";
 import { getNoKeyBloodPressureStatusText } from "@/lib/insights/no-key-fallbacks";
@@ -23,59 +27,35 @@ import {
   dayOffsetToBerlinDayKey,
   type DailyBucket,
 } from "@/lib/insights/bucket-series";
-import { stripChartTokens } from "@/lib/insights/chart-tokens";
 import {
-  withTimeout,
-  STATUS_PROVIDER_TIMEOUT_MS,
-} from "@/lib/insights/with-timeout";
-import { persistTimeoutStubAndReturn } from "@/lib/insights/persist-timeout-stub";
+  buildGradedSeriesFromPoints,
+  buildGradedSeriesWithRollups,
+  degradeStatusSnapshotToBudget,
+} from "@/lib/insights/graded-series";
+import {
+  type SupportedLocale,
+  normalizeLocale,
+  normalizeSummaryText,
+  parseSummaryFromContent,
+  persistStatusInsight,
+  round,
+  summarizeSeries,
+} from "@/lib/insights/status-shared";
+import { runStatusCompletion } from "@/lib/insights/status-provider";
+import {
+  readFreshStatusText,
+  resolveReadOnlyStatusMiss,
+} from "@/lib/insights/status-cache";
+import { returnTimeoutFallback } from "@/lib/insights/timeout-fallback";
 import { annotate } from "@/lib/logging/context";
 import { toBerlinDayKey } from "@/lib/tz/resolver";
 
-type SupportedLocale = "de" | "en";
-
-function round(value: number, digits = 1): number {
-  const factor = 10 ** digits;
-  return Math.round(value * factor) / factor;
-}
-
-function normalizeSummaryText(value: string): string {
-  return stripChartTokens(value).replace(/\s+/g, " ").trim();
-}
-
-function normalizeLocale(value: string | null | undefined): SupportedLocale {
-  return value === "en" ? "en" : "de";
-}
-
-function summarizeSeries(series: Array<{ value: number }>) {
-  if (series.length === 0) return null;
-  const first = series[0].value;
-  const last = series[series.length - 1].value;
-  // v1.4.33 — fold sum/min/max into a single walk. The previous
-  // `Math.min(...series.map(...))` / `Math.max(...series.map(...))`
-  // spread tripped V8's ~125 000-arg ceiling on the bound /api/analytics
-  // path; see `.planning/round-v1433-analytics-500-report.md` §"Carry-
-  // over". These helpers are fed bounded windows today so the crash
-  // never reached them, but the spread allocates a transient args array
-  // on every call — the fold is both stack-safe and cheaper.
-  let sum = 0;
-  let minVal = series[0].value;
-  let maxVal = series[0].value;
-  for (const entry of series) {
-    sum += entry.value;
-    if (entry.value < minVal) minVal = entry.value;
-    if (entry.value > maxVal) maxVal = entry.value;
-  }
-  return {
-    points: series.length,
-    start: round(first, 2),
-    end: round(last, 2),
-    delta: round(last - first, 2),
-    mean: round(sum / series.length, 2),
-    min: round(minVal, 2),
-    max: round(maxVal, 2),
-  };
-}
+/**
+ * Cap on the embedded correlation / paired-daily arrays. The Pearson
+ * coefficients stay computed over the full overlap; only the row-by-row
+ * lists the prompt carries are trimmed to their most recent entries.
+ */
+const CORRELATION_PAIR_CAP = 30;
 
 /**
  * Pair two daily-bucket series on `dayOffset`. The synthesised `date`
@@ -117,25 +97,57 @@ export async function generateBloodPressureStatusForUser(
   options?: {
     locale?: string | null;
     force?: boolean;
+    /** v1.8.3 — read-only navigation path; see weight-status for the rationale. */
+    readOnly?: boolean;
   },
 ): Promise<{
   hasProvider: boolean;
   text: string | null;
   cached: boolean;
   updatedAt: string | null;
+  preparing?: boolean;
 }> {
   const locale = normalizeLocale(options?.locale);
   const force = options?.force === true;
+  const readOnly = options?.readOnly === true;
   const cacheAction = `insights.blood-pressure-status.${locale}`;
   const todayKey = toBerlinDayKey(new Date());
 
-  const provider = await resolveProvider(userId);
-  if (provider.type === "none") {
+  const cached = await readFreshStatusText({
+    userId,
+    cacheAction,
+    todayKey,
+    force,
+  });
+  if (cached) {
     return {
-      hasProvider: false,
-      text: getNoKeyBloodPressureStatusText(locale),
+      hasProvider: true,
+      text: cached.text,
       cached: true,
+      updatedAt: cached.updatedAt,
+    };
+  }
+
+  if (readOnly) {
+    const outcome = await resolveReadOnlyStatusMiss({
+      userId,
+      metric: "blood-pressure",
+      locale,
+    });
+    if (outcome === "no-provider") {
+      return {
+        hasProvider: false,
+        text: getNoKeyBloodPressureStatusText(locale),
+        cached: true,
+        updatedAt: null,
+      };
+    }
+    return {
+      hasProvider: true,
+      text: null,
+      cached: false,
       updatedAt: null,
+      preparing: true,
     };
   }
 
@@ -145,35 +157,6 @@ export async function generateBloodPressureStatusForUser(
       dateOfBirth: true,
     },
   });
-
-  const latestCache = await prisma.auditLog.findFirst({
-    where: { userId, action: cacheAction },
-    orderBy: { createdAt: "desc" },
-    select: { createdAt: true, details: true },
-  });
-
-  if (!force && latestCache?.details) {
-    try {
-      const parsed = JSON.parse(latestCache.details) as {
-        dateKey?: string;
-        text?: string;
-      };
-      if (
-        parsed.dateKey === todayKey &&
-        typeof parsed.text === "string" &&
-        parsed.text.trim().length > 0
-      ) {
-        return {
-          hasProvider: true,
-          text: parsed.text,
-          cached: true,
-          updatedAt: latestCache.createdAt.toISOString(),
-        };
-      }
-    } catch {
-      // ignore invalid cache payload
-    }
-  }
 
   // v1.4.28 FB-D2 — cap the snapshot input. The downstream
   // `applyPayloadBudget` trims further; this `take` keeps the read
@@ -284,6 +267,8 @@ export async function generateBloodPressureStatusForUser(
       : await prisma.medicationIntakeEvent.findMany({
           where: {
             userId,
+            // v1.7.0 sync — exclude tombstoned rows.
+            deletedAt: null,
             medicationId: {
               in: bpMedications.map((medication) => medication.id),
             },
@@ -297,6 +282,10 @@ export async function generateBloodPressureStatusForUser(
           },
         });
 
+  // v1.7.0 SB-SCHED-2 — resolve the user timezone once so the BP-status
+  // compliance gate routes its denominator through the canonical engine.
+  const userTz = await resolveUserTimezone(userId);
+
   const medicationCompliance = bpMedications.map((medication) => {
     const eventsForMedication = bpMedicationEvents
       .filter((event) => event.medicationId === medication.id)
@@ -306,17 +295,24 @@ export async function generateBloodPressureStatusForUser(
         skipped: event.skipped,
       }));
 
+    const medicationContext = buildComplianceMedicationContext(
+      medication,
+      lastNonSkippedTakenAt(eventsForMedication),
+      userTz,
+    );
     const compliance7 = calculateCompliance(
       eventsForMedication,
       medication.schedules,
       7,
       medication.createdAt,
+      { medicationContext },
     );
     const compliance30 = calculateCompliance(
       eventsForMedication,
       medication.schedules,
       30,
       medication.createdAt,
+      { medicationContext },
     );
 
     return {
@@ -379,6 +375,27 @@ export async function generateBloodPressureStatusForUser(
   );
   const moodMean = moodSummary?.mean ?? null;
 
+  // Compact graded series for the prompt. The `*Series.daily` buckets
+  // above stay for the correlation pairing + in-target gate; only the
+  // graded shape is embedded so the full daily arrays never ship.
+  const gradedFromDaily = (buckets: DailyBucket[]) =>
+    buildGradedSeriesFromPoints(
+      buckets.map((b) => ({
+        measuredAt: new Date(dayOffsetToBerlinDayKey(now, b.dayOffset)),
+        value: b.value,
+      })),
+      now,
+    );
+  // The two BP channels source their recent / weekly slices from a
+  // bounded raw read and their monthly / yearly tail from the MONTH /
+  // YEAR rollup tier (full-history in-memory fallback on a cold-tier
+  // coverage miss). Mood has no rollup tier, so it stays an in-memory fold.
+  const [sysGraded, diaGraded] = await Promise.all([
+    buildGradedSeriesWithRollups(userId, "BLOOD_PRESSURE_SYS", now),
+    buildGradedSeriesWithRollups(userId, "BLOOD_PRESSURE_DIA", now),
+  ]);
+  const moodGraded = gradedFromDaily(moodSeries.daily);
+
   const continuityVsSystolicPairs: PairedPoint[] = continuityVsSystolicSeries
     .map((entry) => {
       if (entry.continuityPct == null) return null;
@@ -428,13 +445,13 @@ export async function generateBloodPressureStatusForUser(
         summary: summarizeSeries(
           sysSeries.daily.map((bucket) => ({ value: bucket.value })),
         ),
-        series: sysSeries,
+        series: sysGraded,
       },
       diastolic: {
         summary: summarizeSeries(
           diaSeries.daily.map((bucket) => ({ value: bucket.value })),
         ),
-        series: diaSeries,
+        series: diaGraded,
       },
       paired: {
         summary: summarizeSeries(
@@ -442,7 +459,7 @@ export async function generateBloodPressureStatusForUser(
             value: (entry.sys + entry.dia) / 2,
           })),
         ),
-        series: pairedBloodPressure,
+        series: pairedBloodPressure.slice(-CORRELATION_PAIR_CAP),
       },
       targets: bpTargets
         ? {
@@ -454,7 +471,7 @@ export async function generateBloodPressureStatusForUser(
     },
     weightVsSystolic: {
       correlation: weightVsSystolicCorrelation,
-      pairs: weightVsSystolicPairs.map((entry) => ({
+      pairs: weightVsSystolicPairs.slice(-CORRELATION_PAIR_CAP).map((entry) => ({
         day: entry.dayKey,
         weight: round(entry.a, 2),
         systolic: round(entry.b, 2),
@@ -464,7 +481,7 @@ export async function generateBloodPressureStatusForUser(
       expectedIntakesPerDay: expectedBpIntakesPerDay,
       medicationCount: bpMedications.length,
       correlation: continuityVsSystolicCorrelation,
-      series: continuityVsSystolicSeries,
+      series: continuityVsSystolicSeries.slice(-CORRELATION_PAIR_CAP),
     },
     bpMedications: medicationCompliance,
     moodContext:
@@ -473,7 +490,7 @@ export async function generateBloodPressureStatusForUser(
             points: moodSeries.daily.length,
             mean: moodMean,
             latest: moodSeries.daily[0]?.value ?? null,
-            series: moodSeries,
+            series: moodGraded,
             moodVsSystolicCorrelation: (() => {
               const moodVsSysPairs = pairDailyBuckets(
                 moodSeries.daily,
@@ -486,11 +503,17 @@ export async function generateBloodPressureStatusForUser(
         : null,
   };
 
+  const shed = degradeStatusSnapshotToBudget(
+    snapshot as unknown as Record<string, unknown>,
+  );
   const snapshotJson = JSON.stringify(snapshot, null, 2);
 
   annotate({
     action: { name: cacheAction },
-    meta: { payload_size_bytes: snapshotJson.length },
+    meta: {
+      payload_size_bytes: snapshotJson.length,
+      ...(shed.length > 0 ? { snapshot_shed: shed } : {}),
+    },
   });
 
   const previousContext = await getPreviousInsightContext(
@@ -504,86 +527,61 @@ export async function generateBloodPressureStatusForUser(
     locale,
   );
 
-  // v1.4.28 FB-D2 — 20 s timeout race; fall back to the no-key text
-  // on stall so the InsightStatusCard renders deterministically.
-  const raced = await withTimeout(
-    () =>
-      provider.generateCompletion({
-        systemPrompt: getBloodPressureSystemPrompt(locale),
-        userPrompt: getBloodPressureUserPrompt(
-          snapshotJson,
-          todayKey,
-          locale,
-          previousContextBlock,
-        ),
-        temperature: 0.3,
-        maxTokens: 1000,
-      }),
-    STATUS_PROVIDER_TIMEOUT_MS,
-    null,
-  );
-
-  if (raced.timedOut || raced.value === null) {
-    // v1.4.37 — persist a sentinel row keyed to today so the next
-    // mount short-circuits at the cache lookup above instead of
-    // re-racing the same 20 s provider call on every cold visit.
-    // See `persistTimeoutStubAndReturn` for the full rationale.
-    return persistTimeoutStubAndReturn({
-      userId,
-      cacheAction,
+  const outcome = await runStatusCompletion({
+    userId,
+    cacheAction,
+    systemPrompt: getBloodPressureSystemPrompt(locale),
+    userPrompt: getBloodPressureUserPrompt(
+      snapshotJson,
       todayKey,
       locale,
-      providerType: provider.type,
+      previousContextBlock,
+    ),
+    temperature: 0.3,
+    maxTokens: 1000,
+  });
+
+  if (outcome.kind === "none") {
+    return {
+      hasProvider: false,
+      text: getNoKeyBloodPressureStatusText(locale),
+      cached: true,
+      updatedAt: null,
+    };
+  }
+  if (outcome.kind === "timeout" || outcome.kind === "error") {
+    return returnTimeoutFallback({
+      cacheAction,
+      reason: outcome.kind,
+      userId,
+      todayKey,
       stubText: getNoKeyBloodPressureStatusText(locale),
     });
   }
 
-  const result = raced.value;
-  const content = result.content;
-  if (typeof content !== "string" || content.trim().length === 0) {
-    throw new Error("AI returned empty content for blood-pressure-status");
-  }
-
-  let summary = "";
-  try {
-    const parsed = JSON.parse(content) as { summary?: string };
-    if (typeof parsed.summary === "string") {
-      summary = parsed.summary;
-    } else {
-      summary = content;
-    }
-  } catch {
-    summary = content;
-  }
-
-  summary = normalizeSummaryText(summary);
+  const summary = normalizeSummaryText(parseSummaryFromContent(outcome.content));
   if (!summary) {
     throw new Error(
       "Blood-pressure-status summary was empty after normalization",
     );
   }
 
-  const created = await prisma.auditLog.create({
-    data: {
-      userId,
-      action: cacheAction,
-      details: JSON.stringify({
-        dateKey: todayKey,
-        locale,
-        text: summary,
-        providerType: provider.type,
-        model: result.model ?? "unknown",
-        tokensUsed: result.tokensUsed ?? null,
-      }),
-    },
-    select: { createdAt: true },
+  const updatedAt = await persistStatusInsight({
+    userId,
+    cacheAction,
+    todayKey,
+    locale,
+    text: summary,
+    providerType: outcome.providerType,
+    model: outcome.model,
+    tokensUsed: outcome.tokensUsed,
   });
 
   return {
     hasProvider: true,
     text: summary,
     cached: false,
-    updatedAt: created.createdAt.toISOString(),
+    updatedAt,
   };
 }
 

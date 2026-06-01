@@ -135,9 +135,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
     meta: {
       since: parsed.since,
       count: samples.length,
-      // Memory total in bytes is useful so the chart can render an
-      // absolute label ("4.2 GiB / 8 GiB") in the tooltip without a
-      // second round-trip. Latest row wins; falls back to 0 on empty.
+      // Memory total in bytes feeds the tooltip's absolute label
+      // ("X.X / Y.Y GiB") so the percentage isn't read in a vacuum.
+      // Latest row wins; falls back to 0 on empty.
       memTotalBytes: rows.length
         ? Number(rows[rows.length - 1].memTotalBytes)
         : 0,

@@ -19,7 +19,7 @@ import {
   resolveDashboardLayout,
   serializeDashboardLayout,
   DEFAULT_DASHBOARD_LAYOUT,
-  DASHBOARD_WIDGET_IDS,
+  DASHBOARD_WIDGET_CATALOGUE_IDS,
   COMPARISON_BASELINES,
   CHART_OVERLAY_KEYS,
   type ChartOverlayPrefsMap,
@@ -32,17 +32,22 @@ import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { redactSensitiveFields } from "@/lib/observability/redact-payload";
 import type { NextRequest } from "next/server";
 
-// Single source of truth — every widget id rendered by the Settings →
-// Dashboard UI (`src/components/settings/dashboard-layout-section.tsx`
-// iterates the full layout from `DEFAULT_DASHBOARD_LAYOUT`). Missing
-// one here makes the PUT 422 silently — the toast surfaces "Layout
-// konnte nicht gespeichert werden" — and the user's tile-toggle looks
-// like it does nothing because the save round-trip never completes.
-// v1.4.16 A5 root-cause: `achievements` was absent from this enum so
-// every save attempted with the achievements widget present (i.e.
-// every save against the default layout) was rejected. We now derive
-// the enum from `DASHBOARD_WIDGET_IDS` so the two lists cannot drift.
-const widgetIdEnum = z.enum(DASHBOARD_WIDGET_IDS);
+// Single source of truth — every widget id the layout accepts. The
+// Settings → Dashboard UI iterates the full layout; missing an id here
+// used to make the PUT 422 silently (the toast surfaced "Layout konnte
+// nicht gespeichert werden") and the user's tile-toggle looked like it
+// did nothing because the save round-trip never completed. v1.4.16 A5
+// root-cause: `achievements` was absent so every save against the
+// default layout was rejected.
+//
+// v1.7.0 W1 — widened from the 16 web-known ids to the full 27-id
+// catalogue (16 web + 11 iOS-only). The native client materialises the
+// 11 HK-completeness tiles in its own default layout and PUTs the union;
+// accepting + persisting all 27 lets iOS drop its local merge
+// workarounds (`byMergingIosOnlyDefaults` / `byRestoringIosOnlyWidgets`).
+// The web surface still renders only its 16 tiles and retains the other
+// 11 untouched in the stored blob.
+const widgetIdEnum = z.enum(DASHBOARD_WIDGET_CATALOGUE_IDS);
 
 // v1.4.43 B2 — dedup helper extracted to `src/lib/audit-dedup.ts` so both
 // `/api/dashboard/widgets` and `/api/dashboard/chart-overlay-prefs` share
@@ -65,7 +70,10 @@ const layoutSchema = z.object({
       }),
     )
     .min(1)
-    .max(20),
+    // v1.7.0 W1 — raised from 20 to 30 so the full 27-id catalogue PUT
+    // (web 16 + iOS-only 11) fits with headroom; the enum still bounds
+    // each id to one of the 27.
+    .max(30),
   // v1.4.16 phase B8 — comparison baseline (Vormonat / Vorjahr) rides
   // on the layout blob per research §7 Q3 (no Prisma migration). Optional
   // so v1.4.15 clients that don't know the field can still PUT.
@@ -136,6 +144,47 @@ export const PUT = apiHandler(async (request: NextRequest) => {
 
   const { data: body, error: jsonError } = await safeJson(request);
   if (jsonError) return jsonError;
+
+  // v1.7.0 W1 — accept-and-ignore widget ids OUTSIDE the 27-id catalogue
+  // on write. The 27 ids (16 web + 11 iOS-only) all validate + persist;
+  // only a genuinely-unknown id (a retired tile, or a typo) is filtered
+  // out here BEFORE Zod so it can't 422 the whole blob. The strict enum
+  // still validates the surviving ids, so a malformed entry (non-string
+  // id, missing `order`) still 422s. An id outside the catalogue
+  // silently vanishes — acceptable, and greppable via the annotation.
+  const knownWidgetIds = new Set<string>(DASHBOARD_WIDGET_CATALOGUE_IDS);
+  if (
+    body &&
+    typeof body === "object" &&
+    Array.isArray((body as { widgets?: unknown }).widgets)
+  ) {
+    const widgetsBody = body as {
+      widgets: Array<{ id?: unknown }>;
+    };
+    const droppedIds = widgetsBody.widgets
+      .map((w) => w?.id)
+      .filter(
+        (id): id is string =>
+          typeof id === "string" && !knownWidgetIds.has(id),
+      );
+    if (droppedIds.length > 0) {
+      widgetsBody.widgets = widgetsBody.widgets.filter(
+        (w) => !(typeof w?.id === "string" && !knownWidgetIds.has(w.id)),
+      );
+      // v1.7.0 — the unknown-id filter runs over the FULL incoming
+      // `widgets` array BEFORE Zod's `.max(20)` applies, so `droppedIds`
+      // is bounded only by the request body limit. Cap the logged array
+      // (keep the full `dropped_count`) so a single large request can't
+      // push thousands of strings into one wide-event line.
+      annotate({
+        action: { name: "dashboard.widgets.unknown-id-dropped" },
+        meta: {
+          dropped_ids: droppedIds.slice(0, 20),
+          dropped_count: droppedIds.length,
+        },
+      });
+    }
+  }
 
   const parsed = layoutSchema.safeParse(body);
   if (!parsed.success) {

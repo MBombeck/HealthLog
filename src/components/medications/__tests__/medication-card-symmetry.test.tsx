@@ -11,17 +11,22 @@ import {
 
 /**
  * v1.4.37 W4b — symmetry contract between the generic medication card
- * (Ramipril/non-GLP-1) and the GLP-1 variant (Mounjaro). Marc reported
- * during the v1.4.37 UX audit that the two cards "felt different"
- * even though both should read as the same row shape. These tests pin
- * the load-bearing structural seams so a future refactor can't quietly
- * regress the parity.
+ * (Ramipril/non-GLP-1) and the GLP-1 variant (Mounjaro). The two cards
+ * must read as the same row shape. These tests pin the load-bearing
+ * structural seams so a future refactor can't quietly regress parity.
+ *
+ * v1.7.2 W3 — the four former header icon-buttons (open / edit / history
+ * / advanced) collapsed into a SINGLE overflow kebab on both cards; the
+ * card header itself links to the detail page (the former chevron
+ * target). The GLP-1 card folds its "Log side effect" item into the same
+ * kebab. Radix dropdown content is portalled, so SSR markup only carries
+ * the kebab trigger (the menu items render on open at runtime).
  *
  * What we assert:
- *   1. Header `actions` cluster — both cards always render `History`
- *      and `Pencil` icon buttons. The Mounjaro card optionally renders
- *      an additional kebab when `onLogSideEffect` is wired; absent the
- *      prop the headers are byte-shape equivalent.
+ *   1. Header `actions` — both cards render exactly one kebab trigger
+ *      (`common.moreOptions` aria-label) and a navigable header link to
+ *      the detail page. No standalone chevron / pencil / history /
+ *      sliders icon-buttons survive in the header.
  *   2. Category-label badge — both cards consult the same
  *      `getMedicationCategoryLabel` lookup. No card hard-codes the
  *      `medications.treatmentClassGlp1` string into the slot.
@@ -29,8 +34,7 @@ import {
  *      configured schedule window and `lastTakenAt` is null/older, both
  *      cards render the `medications.takeNow` localised text.
  *   4. Primary actions row — exactly two buttons (Eingenommen /
- *      Übersprungen). The side-effect quick-log lives in the header
- *      overflow when wired, not in this row.
+ *      Übersprungen).
  *   5. Purple dose accent — both cards render
  *      `font-medium text-purple-400` on the upcoming schedule dose.
  */
@@ -124,50 +128,52 @@ const mounjaro: Glp1Medication = {
 };
 
 describe("medication card symmetry — Ramipril vs Mounjaro", () => {
-  it("both cards render History + Pencil header buttons", () => {
+  it("both cards collapse the header actions into a single kebab + navigable header link", () => {
     const client = makeClient();
     seedCompliance(client, ramipril.id);
     seedCompliance(client, mounjaro.id);
     seedGlp1Details(client, mounjaro.id);
 
     const ramiprilHtml = render(
-      <MedicationCard medication={ramipril} onEdit={() => {}} />,
+      <MedicationCard
+        medication={ramipril}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
     const mounjaroHtml = render(
-      <Glp1MedicationCard medication={mounjaro} onEdit={() => {}} />,
+      <Glp1MedicationCard
+        medication={mounjaro}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
 
-    for (const html of [ramiprilHtml, mounjaroHtml]) {
-      expect(html).toContain("lucide-history");
-      expect(html).toContain("lucide-pencil");
+    for (const [html, href] of [
+      [ramiprilHtml, `/medications/${ramipril.id}`],
+      [mounjaroHtml, `/medications/${mounjaro.id}`],
+    ] as const) {
+      // v1.7.2 W3 — exactly one overflow kebab; the four former icon
+      // buttons (chevron / pencil / history / sliders) are gone from the
+      // header. The menu items render on open (portalled), not in SSR.
+      expect(html).toContain('aria-label="More options"');
+      expect(html).not.toContain("lucide-chevron-right");
+      // The card body itself navigates to the detail page.
+      expect(html).toContain(
+        'data-slot="medication-card-header-link"',
+      );
+      expect(html).toContain(`href="${href}"`);
     }
   });
 
-  it("neither card paints a kebab when no overflow prop is wired", () => {
-    // Symmetry default: without onLogSideEffect, the Mounjaro header
-    // shape matches the Ramipril header exactly (history + edit only).
-    const client = makeClient();
-    seedCompliance(client, ramipril.id);
-    seedCompliance(client, mounjaro.id);
-    seedGlp1Details(client, mounjaro.id);
-
-    const ramiprilHtml = render(
-      <MedicationCard medication={ramipril} onEdit={() => {}} />,
-      client,
-    );
-    const mounjaroHtml = render(
-      <Glp1MedicationCard medication={mounjaro} onEdit={() => {}} />,
-      client,
-    );
-
-    for (const html of [ramiprilHtml, mounjaroHtml]) {
-      expect(html).not.toContain('aria-label="More options"');
-    }
-  });
-
-  it("Mounjaro gains a kebab when onLogSideEffect is supplied (GLP-1-only)", () => {
+  it("Mounjaro keeps the single kebab even when onLogSideEffect is supplied (GLP-1-only)", () => {
+    // The side-effect quick-log folds into the SAME overflow menu, so the
+    // GLP-1 header shape stays byte-symmetric with the generic card: one
+    // kebab trigger, no extra control.
     const client = makeClient();
     seedCompliance(client, mounjaro.id);
     seedGlp1Details(client, mounjaro.id);
@@ -176,12 +182,16 @@ describe("medication card symmetry — Ramipril vs Mounjaro", () => {
       <Glp1MedicationCard
         medication={mounjaro}
         onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
         onLogSideEffect={() => {}}
       />,
       client,
     );
 
-    expect(html).toContain('aria-label="More options"');
+    // Exactly one kebab trigger.
+    const triggers = html.match(/aria-label="More options"/g) ?? [];
+    expect(triggers).toHaveLength(1);
   });
 
   it("category label uses the shared category-map lookup on both cards", () => {
@@ -191,11 +201,21 @@ describe("medication card symmetry — Ramipril vs Mounjaro", () => {
     seedGlp1Details(client, mounjaro.id);
 
     const ramiprilHtml = render(
-      <MedicationCard medication={ramipril} onEdit={() => {}} />,
+      <MedicationCard
+        medication={ramipril}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
     const mounjaroHtml = render(
-      <Glp1MedicationCard medication={mounjaro} onEdit={() => {}} />,
+      <Glp1MedicationCard
+        medication={mounjaro}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
 
@@ -214,11 +234,21 @@ describe("medication card symmetry — Ramipril vs Mounjaro", () => {
     seedGlp1Details(client, mounjaro.id);
 
     const ramiprilHtml = render(
-      <MedicationCard medication={ramipril} onEdit={() => {}} />,
+      <MedicationCard
+        medication={ramipril}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
     const mounjaroHtml = render(
-      <Glp1MedicationCard medication={mounjaro} onEdit={() => {}} />,
+      <Glp1MedicationCard
+        medication={mounjaro}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
 
@@ -237,13 +267,20 @@ describe("medication card symmetry — Ramipril vs Mounjaro", () => {
     seedGlp1Details(client, mounjaro.id);
 
     const ramiprilHtml = render(
-      <MedicationCard medication={ramipril} onEdit={() => {}} />,
+      <MedicationCard
+        medication={ramipril}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
     const mounjaroHtml = render(
       <Glp1MedicationCard
         medication={mounjaro}
         onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
         onLogSideEffect={() => {}}
       />,
       client,
@@ -304,11 +341,21 @@ describe("medication card symmetry — Ramipril vs Mounjaro", () => {
     seedGlp1Details(client, mounjaroFuture.id);
 
     const ramiprilHtml = render(
-      <MedicationCard medication={ramiprilFuture} onEdit={() => {}} />,
+      <MedicationCard
+        medication={ramiprilFuture}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
     const mounjaroHtml = render(
-      <Glp1MedicationCard medication={mounjaroFuture} onEdit={() => {}} />,
+      <Glp1MedicationCard
+        medication={mounjaroFuture}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+        onOpenAdvanced={() => {}}
+      />,
       client,
     );
 

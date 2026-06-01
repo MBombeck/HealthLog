@@ -264,7 +264,7 @@ describe("Withings OAuth handshake (real Postgres)", () => {
 
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toContain(
-      "withings=error&reason=state",
+      "withings=error&reason=csrf1",
     );
 
     // No upstream call was made — the state check short-circuited the

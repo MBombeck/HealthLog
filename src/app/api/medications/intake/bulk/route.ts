@@ -47,6 +47,10 @@ import {
   recomputeMedicationComplianceForDay,
   dayKeyForScheduledFor,
 } from "@/lib/rollups/medication-compliance-rollups";
+import {
+  applyCanonicalSlotWrite,
+  resolveSlotInstantForWrite,
+} from "@/lib/medications/scheduling/slot-upsert";
 
 const MAX_ENTRIES_PER_BATCH = 500;
 const BATCH_RATE_LIMIT_MAX = 60;
@@ -70,7 +74,12 @@ const bulkPayloadSchema = z.object({
   entries: z.array(bulkEntrySchema).min(1).max(MAX_ENTRIES_PER_BATCH),
 });
 
-type EntryStatus = "inserted" | "duplicate" | "skipped";
+// v1.8.2 — `updated` joins the per-entry status vocabulary: a write that
+// snaps onto an existing scheduled-slot row (e.g. the pending REMINDER
+// row) updates it in place rather than inserting. The iOS sync engine
+// treats `updated` the same as `inserted` for cursor advancement — both
+// mean "the server accepted this entry and produced a row id".
+type EntryStatus = "inserted" | "updated" | "duplicate" | "skipped";
 interface EntryResult {
   index: number;
   status: EntryStatus;
@@ -154,6 +163,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
 
   const results: EntryResult[] = [];
   let inserted = 0;
+  let updated = 0;
   let duplicates = 0;
   const skipped: Array<{ index: number; reason: string }> = [];
   // v1.4.39 W-MED — collect distinct `(medicationId, dayKey)` pairs
@@ -173,31 +183,93 @@ async function postBulk(request: NextRequest): Promise<Response> {
     }
 
     try {
-      const scheduledFor = entry.scheduledFor ?? new Date();
-      // The idempotencyKey, when supplied, has a UNIQUE index. A
-      // re-submission of the same key returns the existing row via
-      // P2002 → status: "duplicate".
-      const row = await prisma.medicationIntakeEvent.create({
-        data: {
+      const incomingScheduledFor =
+        entry.scheduledFor ?? entry.takenAt ?? new Date();
+
+      // v1.8.2 — source-agnostic slot snap. iOS posts the "Genommen"
+      // reminder action here (source API); without this it inserted a
+      // SECOND row for a slot already carrying the projector/worker's
+      // pending REMINDER row (the unique key includes `source`, and the
+      // iOS-vs-server `scheduledFor` drifts by a minute). Snap onto the
+      // canonical slot instant and update the existing row in place.
+      const canonicalSlot = await resolveSlotInstantForWrite({
+        userId: user.id,
+        medicationId: entry.medicationId,
+        userTz: user.timezone,
+        incoming: incomingScheduledFor,
+      });
+
+      const scheduledFor = canonicalSlot ?? incomingScheduledFor;
+
+      // C2 — classify the incoming write. An offline-sync replay echoes a
+      // PENDING projection (no `takenAt`, `skipped:false`) for a slot the
+      // user may already have actioned; that echo must NEVER clear a
+      // recorded `takenAt`. An explicit `takenAt` or `skipped:true` is a
+      // real user action and applies last-write-wins.
+      const isExplicitTaken = !entry.skipped && entry.takenAt !== undefined;
+      const isExplicitSkip = entry.skipped === true;
+
+      if (canonicalSlot) {
+        // Scheduled dose — converge onto the one canonical slot row through
+        // the shared upsert: H1 deterministic selection, C2 no-downgrade
+        // guard, and a C1 race-safe create that re-finds + updates on a
+        // P2002 collision rather than misclassifying it as a duplicate and
+        // dropping the dose.
+        const applied = await applyCanonicalSlotWrite({
+          client: prisma,
           userId: user.id,
           medicationId: entry.medicationId,
-          scheduledFor,
+          canonicalSlot,
           takenAt: entry.takenAt ?? null,
           skipped: entry.skipped,
-          source: "API",
+          isExplicitTaken,
+          isExplicitSkip,
           idempotencyKey: entry.idempotencyKey ?? null,
-        },
-      });
-      inserted += 1;
-      results.push({ index: i, status: "inserted", id: row.id });
+          createSource: "API",
+        });
+        if (applied.noDowngradeNoOp) {
+          // C2 — pending echo onto an already-actioned slot. Report it as a
+          // duplicate so the iOS cursor advances WITHOUT downgrading the
+          // recorded dose.
+          duplicates += 1;
+          results.push({ index: i, status: "duplicate", id: applied.row.id });
+        } else if (applied.outcome === "updated") {
+          updated += 1;
+          results.push({ index: i, status: "updated", id: applied.row.id });
+        } else {
+          inserted += 1;
+          results.push({ index: i, status: "inserted", id: applied.row.id });
+        }
+      } else {
+        // Unscheduled / PRN — insert. The idempotencyKey, when supplied,
+        // has a UNIQUE index; a re-submission returns the existing row via
+        // P2002 → status: "duplicate".
+        const row = await prisma.medicationIntakeEvent.create({
+          data: {
+            userId: user.id,
+            medicationId: entry.medicationId,
+            scheduledFor,
+            takenAt: entry.takenAt ?? null,
+            skipped: entry.skipped,
+            source: "API",
+            idempotencyKey: entry.idempotencyKey ?? null,
+          },
+        });
+        inserted += 1;
+        results.push({ index: i, status: "inserted", id: row.id });
+      }
       const dayKey = dayKeyForScheduledFor(scheduledFor, user.timezone);
       touchedDays.set(`${entry.medicationId}|${dayKey}`, {
         medicationId: entry.medicationId,
         dayKey,
       });
     } catch (err: unknown) {
-      // P2002 = unique-constraint violation; the idempotencyKey
-      // already exists → "duplicate", not an error.
+      // P2002 = unique-constraint violation. Two shapes reach here:
+      //   1. an idempotencyKey collision on the unscheduled/PRN insert →
+      //      "duplicate" (the canonical-slot path already absorbs its own
+      //      same-slot P2002 race inside `applyCanonicalSlotWrite`);
+      //   2. a same-slot collision on the unscheduled insert. In both
+      //      cases we surface the existing row id so the cursor advances.
       if (
         typeof err === "object" &&
         err !== null &&
@@ -231,6 +303,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
     details: {
       processed: entries.length,
       inserted,
+      updated,
       duplicates,
       skipped: skipped.length,
     },
@@ -241,6 +314,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
     meta: {
       processed: entries.length,
       inserted,
+      updated,
       duplicates,
       skipped: skipped.length,
     },
@@ -249,7 +323,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
   // v1.4.34 IW-G — bust per-user medications + compliance + achievement
   // caches when at least one row landed so the next read reflects the
   // ingested batch.
-  if (inserted > 0) {
+  if (inserted > 0 || updated > 0) {
     invalidateUserMedications(user.id);
   }
 
@@ -282,6 +356,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
   return apiSuccess({
     processed: entries.length,
     inserted,
+    updated,
     duplicates,
     skipped,
     entries: results,

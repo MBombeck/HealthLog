@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { encrypt, decrypt } from "@/lib/crypto";
+import { safeFetch } from "@/lib/safe-fetch";
 
 /**
  * Codex / ChatGPT-OAuth flow — implemented against `docs/codex-protocol-spec.md`,
@@ -173,7 +174,7 @@ export interface DeviceCodeStart {
 }
 
 export async function requestDeviceCode(): Promise<DeviceCodeStart> {
-  const res = await fetch(`${ISSUER}/api/accounts/deviceauth/usercode`, {
+  const res = await safeFetch(`${ISSUER}/api/accounts/deviceauth/usercode`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ client_id: getCodexClientId() }),
@@ -214,7 +215,7 @@ export async function pollDeviceCode(params: {
   deviceAuthId: string;
   userCode: string;
 }): Promise<DevicePollResult> {
-  const res = await fetch(`${ISSUER}/api/accounts/deviceauth/token`, {
+  const res = await safeFetch(`${ISSUER}/api/accounts/deviceauth/token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -240,7 +241,7 @@ export async function pollDeviceCode(params: {
   // Standard PKCE exchange against the OAuth token endpoint, with the
   // device-auth callback URI Hydra associates with this authorization
   // code internally.
-  const tokenRes = await fetch(`${ISSUER}/oauth/token`, {
+  const tokenRes = await safeFetch(`${ISSUER}/oauth/token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -276,7 +277,7 @@ export async function pollDeviceCode(params: {
 export async function refreshDeviceTokens(
   refreshToken: string,
 ): Promise<CodexCreds> {
-  const res = await fetch(`${ISSUER}/oauth/token`, {
+  const res = await safeFetch(`${ISSUER}/oauth/token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

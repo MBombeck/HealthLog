@@ -39,8 +39,8 @@ export const GET = apiHandler(async () => {
 
   const payload: BackupsList = {
     rows,
-    // Mirrors the value surfaced by `/api/admin/status-overview` so the
-    // backups page and the status card grid agree.
+    // Matches the retention window the backup-prune job enforces so the
+    // backups page states the same number the worker acts on.
     retentionDays: 90,
   };
 

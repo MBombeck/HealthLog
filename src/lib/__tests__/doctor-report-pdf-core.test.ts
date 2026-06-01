@@ -3,6 +3,7 @@ import { PDFParse } from "pdf-parse";
 import {
   buildDoctorReportPdfDocument,
   renderDoctorReportPdfBytes,
+  sanitiseForPdf,
   DOCTOR_REPORT_VITAL_TYPES,
   DOCTOR_REPORT_TYPE_LABEL_KEYS,
   DOCTOR_REPORT_TYPE_UNIT_KEYS,
@@ -180,6 +181,96 @@ describe("buildDoctorReportPdfDocument", () => {
       now: FIXED_NOW,
     });
     expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// ── WinAnsi sanitiser ── the rendered Helvetica is WinAnsi-encoded; glyphs
+// outside it (trend arrows, superscripts) resolve to the .notdef box at a
+// fallback advance width and stretch the surrounding line. The sanitiser
+// maps every offender the report can emit onto a WinAnsi-safe equivalent.
+describe("sanitiseForPdf", () => {
+  it("maps trend arrows to ASCII equivalents", () => {
+    expect(sanitiseForPdf("↑")).toBe("^");
+    expect(sanitiseForPdf("↓")).toBe("v");
+    expect(sanitiseForPdf("→")).toBe("->");
+  });
+
+  it("maps the superscript-two in kg/m² to a plain 2", () => {
+    expect(sanitiseForPdf("kg/m²")).toBe("kg/m2");
+  });
+
+  it("leaves WinAnsi-safe glyphs (umlauts, ß, em-dash) untouched", () => {
+    expect(sanitiseForPdf("Müller — Größe")).toBe("Müller — Größe");
+  });
+
+  it("renders the GLP-1 weight summary without any non-WinAnsi glyph", async () => {
+    const data = makeData({
+      glp1: {
+        weightStartKg: 92,
+        weightEndKg: 86,
+        weightDeltaKg: -6,
+        medications: [],
+        sideEffects: [],
+      } as unknown as DoctorReportData["glp1"],
+    });
+    const bytes = renderDoctorReportPdfBytes(data, {
+      t: getServerTranslator("de").t,
+      locale: "de",
+      now: FIXED_NOW,
+    });
+    const text = await extractText(bytes);
+    // The arrow separator must have been folded to ASCII; no raw arrow in
+    // the document text layer.
+    expect(text).not.toMatch(/[↑↓→²]/);
+    expect(text).toContain("->");
+  });
+});
+
+// ── chart time axis ── the sparkline must anchor the trend in real time so a
+// reader can tell whether the curve spans a week or a year.
+describe("doctor-report sparkline time axis", () => {
+  it("prints the series start and end dates under the chart", async () => {
+    const data = makeData({
+      measurements: {
+        WEIGHT: [
+          { value: 82, measuredAt: "2026-02-05T08:00:00.000Z" },
+          { value: 81, measuredAt: "2026-03-10T08:00:00.000Z" },
+          { value: 79.5, measuredAt: "2026-04-28T08:00:00.000Z" },
+        ],
+      },
+    });
+    const bytes = renderDoctorReportPdfBytes(data, {
+      t: getServerTranslator("de").t,
+      locale: "de",
+      includeCharts: true,
+      now: FIXED_NOW,
+    });
+    const text = await extractText(bytes);
+    // dd.mm short labels (Berlin tz). First + last sample dates.
+    expect(text).toContain("05.02.");
+    expect(text).toContain("28.04.");
+  });
+});
+
+// ── page-break discipline ── a long table must not orphan its heading or
+// collide with the footer; the renderer paginates without throwing.
+describe("doctor-report pagination", () => {
+  it("paginates a long compliance table across pages without throwing", () => {
+    const compliance: DoctorReportData["compliance"] = {};
+    for (let i = 0; i < 60; i++) {
+      compliance[`Medication ${i}`] = {
+        total: 90,
+        taken: 80,
+        skipped: 5,
+        missed: 5,
+      };
+    }
+    const doc = buildDoctorReportPdfDocument(makeData({ compliance }), {
+      t: getServerTranslator("de").t,
+      locale: "de",
+      now: FIXED_NOW,
+    });
+    expect(doc.getNumberOfPages()).toBeGreaterThan(1);
   });
 });
 

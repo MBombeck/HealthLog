@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "@/lib/query-keys";
 import {
@@ -33,5 +33,37 @@ export function useCoachPrefs(opts?: { enabled?: boolean }) {
       return env.data;
     },
     enabled: opts?.enabled,
+  });
+}
+
+/**
+ * v1.7.2 — shared writer for the Coach preferences row. Both the
+ * settings sheet and the chat-side sources rail persist the same
+ * `coachPrefsJson` through `PUT /api/auth/me/coach-prefs`, so the write
+ * path lives here next to the reader. On success the canonical defaulted
+ * shape the route echoes back is seeded into the `coachPrefs()` cache so
+ * every surface that reads the hook re-renders against one source of
+ * truth — the rail and the cog can never drift.
+ */
+export function useSaveCoachPrefs(opts?: { onSuccess?: () => void }) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: queryKeys.coachPrefs(),
+    mutationFn: async (next: CoachPrefs) => {
+      const res = await fetch("/api/auth/me/coach-prefs", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+      if (!res.ok) throw new Error("coach-prefs.save_failed");
+      return (await res.json()) as { data: CoachPrefs };
+    },
+    onSuccess: (envelope) => {
+      queryClient.setQueryData<CoachPrefs>(
+        queryKeys.coachPrefs(),
+        envelope.data,
+      );
+      opts?.onSuccess?.();
+    },
   });
 }

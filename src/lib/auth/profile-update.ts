@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { profileSchema } from "@/lib/validations/auth";
 import { isValidTimezone } from "@/lib/tz/format";
+import { encrypt } from "@/lib/crypto";
 import { z } from "zod/v4";
 
 const extendedProfileSchema = profileSchema.extend({
@@ -35,6 +36,14 @@ export interface ApplyProfileResult {
     timezone: string;
     locale: string | null;
     moodReminderEnabled: boolean;
+    // v1.7.0 — patient-identity fields. `insuranceNumber` is returned in
+    // plaintext (decrypted on read by the route) so the client can render
+    // the value back into the form; the route is responsible for the read
+    // decryption. Here we only echo the two plaintext columns and a
+    // boolean presence flag for the encrypted KVNR.
+    fullName: string | null;
+    insurerName: string | null;
+    hasInsuranceNumber: boolean;
   };
 }
 
@@ -94,6 +103,25 @@ export async function applyProfileUpdate(
   if (data.moodReminderEnabled !== undefined) {
     updates.moodReminderEnabled = data.moodReminderEnabled;
   }
+  // v1.7.0 — patient-identity fields. Plaintext for fullName/insurerName;
+  // KVNR is encrypted at rest. An empty string collapses to null so the
+  // export cover + FHIR Patient omit the line entirely.
+  if (data.fullName !== undefined) {
+    updates.fullName =
+      data.fullName === null || data.fullName === "" ? null : data.fullName;
+  }
+  if (data.insurerName !== undefined) {
+    updates.insurerName =
+      data.insurerName === null || data.insurerName === ""
+        ? null
+        : data.insurerName;
+  }
+  if (data.insuranceNumber !== undefined) {
+    updates.insuranceNumberEncrypted =
+      data.insuranceNumber === null || data.insuranceNumber === ""
+        ? null
+        : encrypt(data.insuranceNumber);
+  }
 
   // v1.4.18 — capture the prior locale so we can emit a separate
   // `settings.locale.update` audit row when the locale actually
@@ -142,6 +170,9 @@ export async function applyProfileUpdate(
       timezone: updatedUser.timezone,
       locale: updatedUser.locale,
       moodReminderEnabled: updatedUser.moodReminderEnabled,
+      fullName: updatedUser.fullName,
+      insurerName: updatedUser.insurerName,
+      hasInsuranceNumber: updatedUser.insuranceNumberEncrypted != null,
     },
   };
 }

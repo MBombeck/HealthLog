@@ -12,6 +12,7 @@ import {
 } from "@/lib/api-response";
 import { updateMeasurementSchema } from "@/lib/validations/measurement";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
+import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 import { recomputeBucketsForMeasurement } from "@/lib/rollups/measurement-rollups";
 import { Prisma } from "@/generated/prisma/client";
 import { NextRequest } from "next/server";
@@ -24,8 +25,12 @@ export const GET = apiHandler(
 
     const { id } = await params;
 
-    const measurement = await prisma.measurement.findUnique({
-      where: { id },
+    // v1.7.0 — filter `deletedAt: null` so a soft-deleted (tombstoned)
+    // row 404s on a direct GET, matching the list / analytics / rollup
+    // read invariant. `findFirst` (not `findUnique`) because `deletedAt`
+    // is not part of a unique index.
+    const measurement = await prisma.measurement.findFirst({
+      where: { id, deletedAt: null },
     });
 
     if (!measurement || measurement.userId !== user.id) {
@@ -50,8 +55,11 @@ export const PUT = apiHandler(
 
     const { id } = await params;
 
-    const existing = await prisma.measurement.findUnique({
-      where: { id },
+    // v1.7.0 — refuse to resurrect-edit a tombstoned row. The
+    // `deletedAt: null` filter makes a soft-deleted measurement 404 on
+    // PUT rather than letting an `update` re-write a still-tombstoned row.
+    const existing = await prisma.measurement.findFirst({
+      where: { id, deletedAt: null },
     });
 
     if (!existing || existing.userId !== user.id) {
@@ -165,6 +173,18 @@ export const PUT = apiHandler(
       console.warn("[measurements] rollup recompute failed", err);
     }
 
+    // v1.8.0 — drop the cached per-metric assessment rows this edit
+    // dirties so the next mount / nightly warm pass regenerates against
+    // the new value. An edit can re-type a row, so invalidate both the
+    // old and the new type's scopes. Fire-and-forget: never blocks the
+    // user's edit.
+    invalidateStatusInsightsForTypes(user.id, [
+      existing.type,
+      measurement.type,
+    ]).catch((err) => {
+      console.warn("[measurements] status-insight invalidate failed", err);
+    });
+
     return apiSuccess(measurement);
   },
 );
@@ -183,7 +203,21 @@ export const DELETE = apiHandler(
       return apiError("Measurement not found", 404);
     }
 
-    await prisma.measurement.delete({ where: { id } });
+    // v1.7.0 — soft-delete instead of a hard `delete`. Setting `deletedAt`
+    // (+ bumping `syncVersion`) leaves the row in place so the
+    // `/api/sync/changes` delta feed can surface it as a tombstone to
+    // paired clients that were offline at delete time. Every list /
+    // analytics / rollup read already filters `deletedAt: null`
+    // (see `measurements/route.ts:100`), so the row is invisible to
+    // normal reads from this point on. A row that is already tombstoned
+    // re-bumps `syncVersion` harmlessly (idempotent re-delete).
+    await prisma.measurement.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        syncVersion: { increment: 1 },
+      },
+    });
 
     await auditLog("measurement.delete", {
       userId: user.id,
@@ -216,6 +250,13 @@ export const DELETE = apiHandler(
     } catch (err) {
       console.warn("[measurements] rollup recompute failed", err);
     }
+
+    // v1.8.0 — drop the cached per-metric assessment rows this deletion
+    // dirties so the next mount / nightly warm pass regenerates against
+    // the reduced history. Fire-and-forget: never blocks the user's delete.
+    invalidateStatusInsightsForTypes(user.id, [existing.type]).catch((err) => {
+      console.warn("[measurements] status-insight invalidate failed", err);
+    });
 
     return apiSuccess({ deleted: true });
   },

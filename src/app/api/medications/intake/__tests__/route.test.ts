@@ -6,6 +6,7 @@ vi.mock("@/lib/db", () => ({
     medicationIntakeEvent: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       update: vi.fn(),
       // v1.4.39 W-SERVER-FIX — `scope=today` now backfills missing
       // rows for schedules whose window opens today (covers daily
@@ -162,6 +163,10 @@ describe("GET /api/medications/intake", () => {
     vi.mocked(prisma.medication.findMany).mockResolvedValue([
       {
         id: "med-ramipril",
+        startsOn: null,
+        endsOn: null,
+        oneShot: false,
+        createdAt: new Date("2026-01-01T00:00:00Z"),
         schedules: [
           {
             id: "sched-morgens",
@@ -169,6 +174,10 @@ describe("GET /api/medications/intake", () => {
             windowStart: "07:00",
             windowEnd: "09:00",
             daysOfWeek: null,
+            timesOfDay: [],
+            reminderGraceMinutes: null,
+            rrule: null,
+            rollingIntervalDays: null,
           },
         ],
       },
@@ -237,6 +246,10 @@ describe("GET /api/medications/intake", () => {
     vi.mocked(prisma.medication.findMany).mockResolvedValue([
       {
         id: "med-ramipril",
+        startsOn: null,
+        endsOn: null,
+        oneShot: false,
+        createdAt: new Date("2026-01-01T00:00:00Z"),
         schedules: [
           {
             id: "sched-morgens",
@@ -244,6 +257,10 @@ describe("GET /api/medications/intake", () => {
             windowStart: "07:00",
             windowEnd: "09:00",
             daysOfWeek: null,
+            timesOfDay: [],
+            reminderGraceMinutes: null,
+            rrule: null,
+            rollingIntervalDays: null,
           },
         ],
       },
@@ -312,7 +329,9 @@ describe("POST /api/medications/intake", () => {
 
   it("returns 404 when the event isn't owned by the user", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(prisma.medicationIntakeEvent.findUnique).mockResolvedValue({
+    // v1.7.0 sync — the status toggle looks the row up via `findFirst`
+    // with a `deletedAt: null` guard.
+    vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValue({
       id: "e1",
       userId: "someone-else",
       medicationId: "m1",
@@ -329,7 +348,7 @@ describe("POST /api/medications/intake", () => {
 
   it("marks event as skipped", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(prisma.medicationIntakeEvent.findUnique).mockResolvedValue({
+    vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValue({
       id: "e1",
       userId: "user-1",
       medicationId: "m1",
@@ -342,9 +361,10 @@ describe("POST /api/medications/intake", () => {
     } as never);
     const res = await POST(req({ intakeId: "e1", status: "skipped" }));
     expect(res.status).toBe(200);
+    // v1.7.0 sync — the skip toggle bumps syncVersion.
     expect(prisma.medicationIntakeEvent.update).toHaveBeenCalledWith({
       where: { id: "e1" },
-      data: { takenAt: null, skipped: true },
+      data: { takenAt: null, skipped: true, syncVersion: { increment: 1 } },
     });
   });
 });
@@ -363,12 +383,26 @@ describe("v1.4.39 W-MED — compliance rollup read swap", () => {
     // runs. The pre-fix shape hard-coded `2026-05-18`, which fell out
     // of the trailing-7-day window on every subsequent wall-clock
     // day and silently shifted the body.data tail off the seed.
+    //
+    // v1.4.49.4 — compute todayKey in the SAME zone the route uses
+    // (`readMedicationCompliance` → `userDayKey(now, safeTz)`), not in
+    // UTC. SESSION_OK carries no `timezone`, so the route falls
+    // through to `DEFAULT_TIMEZONE = "Europe/Berlin"`. The pre-fix
+    // UTC computation diverged from the route's Berlin computation by
+    // one calendar day during the 22:00-24:00 UTC window every night,
+    // causing the test to fail deterministically once the clock
+    // crossed midnight Berlin while still on the previous UTC day.
     const todayKey = (() => {
       const now = new Date();
-      const y = now.getUTCFullYear();
-      const m = String(now.getUTCMonth() + 1).padStart(2, "0");
-      const d = String(now.getUTCDate()).padStart(2, "0");
-      return `${y}-${m}-${d}`;
+      const fmt = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Europe/Berlin",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      });
+      // `en-CA` short-date format is `YYYY-MM-DD`, matching the
+      // route's `userDayKey` output (see `src/lib/tz/resolver.ts`).
+      return fmt.format(now);
     })();
     vi.mocked(prisma.medicationComplianceRollup.findMany).mockResolvedValue([
       { day: todayKey, scheduled: 3, taken: 2, skipped: 1 },

@@ -71,8 +71,21 @@ model User {
   // Per-user dashboard layout — widget visibility + ordering.
   // Shape: { "widgets": [{ "id": "weight", "visible": true, "order": 0 }, ...], "version": 1 }
   dashboardWidgetsJson    Json?   @map("dashboard_widgets_json")
+  // Per-user insights tile layout — tile visibility + ordering for the
+  // `/insights` surface. Mirrors `dashboardWidgetsJson` so the iOS
+  // client and the web Settings UI can persist insights tile order +
+  // visibility through the same shape. Null = default layout (see
+  // `src/lib/insights-layout.ts:DEFAULT_INSIGHTS_LAYOUT`). The GET
+  // endpoint never lazy-writes — the column only carries data once
+  // the user has explicitly saved a layout.
+  // Shape: { "tiles": [{ "id": "blutdruck", "visible": true, "order": 0 }, ...], "version": 1 }
+  insightsLayoutJson      Json?   @map("insights_layout_json")
   // Blood-glucose display unit preference. Canonical storage is mg/dL.
   glucoseUnit             String? @map("glucose_unit") // "mg/dL" | "mmol/L" | null = default "mg/dL"
+  // v1.7.0 unit pref — global metric/imperial display preference.
+  // Canonical storage stays SI; this only selects the display-time
+  // transform branch (km/h vs mph, km vs mi). Null = default "metric".
+  unitPreference          String? @map("unit_preference") // "metric" | "imperial" | null = default "metric"
   // AI provider selection for insights. Null = OPENAI fallback.
   aiProvider              String? @map("ai_provider") // "OPENAI" | "ANTHROPIC" | "LOCAL" | "CHATGPT_OAUTH"
   aiModel                 String? @map("ai_model")
@@ -264,6 +277,33 @@ model User {
   // `useAuth()` hook.
   disableCoach Boolean @default(false) @map("disable_coach")
 
+  // v1.5.5 — self-hosted avatar storage.
+  //
+  // Replaces the Gravatar third-party leak (the old `getGravatarUrl`
+  // path hashed the email with SHA-256 and shipped the digest to
+  // www.gravatar.com on every authenticated page load, which let
+  // Automattic correlate the digest against its own table of known
+  // emails). The bytes live on the User row so the standard pg_dump
+  // backup path already covers them — no new filesystem volume to
+  // mount, no new Docker compose change.
+  //
+  // `avatarBytes` carries the raw image (JPEG / PNG / WebP), hard-
+  // capped at 2 MiB by the upload route and at 2048×2048 by the
+  // post-decode dimension check. `avatarContentType` carries the
+  // sniffed MIME (`image/jpeg`, `image/png`, `image/webp`); the
+  // value is never trusted from the multipart header — it is
+  // resolved from the file's magic bytes. `avatarUpdatedAt` is the
+  // cache-bust anchor: the /api/auth/me profile response appends
+  // the unix-ms suffix to the avatar URL so a re-upload paints
+  // fresh client-side without an HTTP cache flush.
+  //
+  // Null on all three columns = the user has not uploaded an
+  // avatar and the profile response returns `avatarUrl: null`. The
+  // client falls back to the username initials.
+  avatarBytes       Bytes?    @map("avatar_bytes")
+  avatarContentType String?   @map("avatar_content_type")
+  avatarUpdatedAt   DateTime? @map("avatar_updated_at")
+
   // Relations
   passkeys               Passkey[]
   sessions               Session[]
@@ -358,6 +398,19 @@ model User {
   // `reminder-worker.ts`).
   pushAttempts                PushAttempt[]
 
+  // v1.7.0 profile — optional patient-identity fields surfaced on the
+  // health-record export cover (PDF) and the FHIR `Patient` resource.
+  // `fullName` + `insurerName` are plaintext (consistent with the other
+  // plaintext profile columns: dateOfBirth, gender, heightCm). The German
+  // KVNR (`insuranceNumber`) is a quasi-identifier, so it is stored
+  // AES-256-GCM encrypted under the active key via `src/lib/crypto.ts`
+  // (column suffix `*Encrypted` per the project convention). All three are
+  // optional — an unset field collapses its cover line / FHIR slot exactly
+  // like the existing `practiceName`.
+  fullName                 String? @map("full_name")
+  insurerName              String? @map("insurer_name")
+  insuranceNumberEncrypted String? @map("insurance_number_encrypted")
+
   @@map("users")
 }
 
@@ -443,6 +496,25 @@ enum MeasurementType {
   // ── v1.4.30 R-F T1.4 + T1.5 Tier-1 additions ──
   WALKING_STEADINESS // percent (0-100, scaled ×100 from Apple's 0..1 fraction) — HealthKit `appleWalkingSteadiness` (iOS 15+). Daily rollup. Falls + mobility-risk signal Apple's own Health app shows prominently in the Mobility section.
   AUDIO_EXPOSURE_EVENT // count (event flag: 1 per fired loud-listening event) — HealthKit `environmentalAudioExposureEvent` + `headphoneAudioExposureEvent` category-events. Apple fires these when the rolling 7-day average crosses the WHO 80-dBA threshold. The notes field carries the source identifier (env vs headphone).
+  // ── v1.5.5 iOS-coord additions — six identifiers the deferred list refused to map. ──
+  // Each one was emitted by the iOS app, dropped server-side with a
+  // per-entry `skipped:"unmappable_identifier"`, and ack-200'd to the
+  // client. iOS read 200 as success, advanced its sync anchor, and the
+  // samples were lost forever. Now mapped end-to-end.
+  RESPIRATORY_RATE // count/min — HealthKit `respiratoryRate`. Watch + iPhone sleep + workout sampling.
+  BODY_MASS_INDEX // kg/m² — HealthKit `bodyMassIndex`. iOS computes it from weight + height before upload; we still store it as a first-class metric for trend display.
+  LEAN_BODY_MASS // kg — HealthKit `leanBodyMass`. Body-composition counterpart to FAT_MASS; pairs with WEIGHT − FAT_MASS for sanity checks.
+  WALKING_HEART_RATE_AVERAGE // bpm — HealthKit `walkingHeartRateAverage`. Daily rollup; cardio-fitness signal distinct from RESTING_HEART_RATE and spot PULSE.
+  WALKING_ASYMMETRY // percent (0-100, scaled ×100 from Apple's 0..1 fraction) — HealthKit `walkingAsymmetryPercentage`. Mobility section sibling to WALKING_STEADINESS.
+  WALKING_DOUBLE_SUPPORT // percent (0-100, scaled ×100 from Apple's 0..1 fraction) — HealthKit `walkingDoubleSupportPercentage`. Mobility section sibling.
+  // ── v1.5.5 iOS-coord follow-up — gait raw-SI pair ──
+  // Both identifiers flow over the wire in raw SI units (no ×100
+  // scaling). The percent gait metrics above use the server-side
+  // scaling path because Apple ships them as 0..1 fractions; the two
+  // below are already in metres and metres-per-second respectively
+  // and pass through `convertToDbUnit` as identity.
+  WALKING_STEP_LENGTH // metres — HealthKit `walkingStepLength`. Mobility section gait metric; adult walking typically 0.5–0.8 m.
+  WALKING_SPEED // metres per second — HealthKit `walkingSpeed`. Mobility section gait metric; healthy adult casual gait ≈ 1.2–1.4 m/s.
 
   @@map("measurement_type")
 }
@@ -555,6 +627,17 @@ model Measurement {
   @@unique([userId, type, source, externalId])
   @@index([userId, type, measuredAt])
   @@index([externalId])
+  // v1.7.0 — supports the `/api/sync/changes` keyset feed, which walks
+  // `where userId` ordered by `(updatedAt asc, id asc)` with `take
+  // limit+1`. Without this index Postgres filters by `userId` then sorts
+  // the user's entire measurement set per page; the delta drain allows
+  // 120 pulls/min/user. See migration 0096.
+  @@index([userId, updatedAt, id])
+  // `measurements_legacy_step_consolidation_idx` is a partial index
+  // over `type = 'ACTIVITY_STEPS' AND deleted_at IS NULL` — see
+  // migration 0087. It accelerates the v1.5.6 legacy step-consolidation
+  // discovery scan. Prisma can't express a partial-predicate index, so
+  // it lives in raw migration SQL and is intentionally omitted here.
   @@map("measurements")
 }
 
@@ -763,6 +846,33 @@ enum MedicationCategory {
   @@map("medication_category")
 }
 
+/// v1.6.0 — route of administration, decoupled from `treatmentClass`.
+/// Drives the injection-site picker (available for any INJECTION, not
+/// only GLP-1) and the one-time-injection shape (`oneShot = true` +
+/// `deliveryForm = INJECTION`). ORAL is the backfilled default for every
+/// pre-v1.6.0 row. OTHER is the catch-all for topical / inhaled / nasal
+/// routes that don't need injection-site tracking.
+enum MedicationDeliveryForm {
+  ORAL
+  INJECTION
+  OTHER
+
+  @@map("medication_delivery_form")
+}
+
+/// v1.7.0 — schedule-type discriminator. SCHEDULED is the default (rrule
+/// / rolling / legacy cadence as today). PRN = as-needed: never
+/// projected, never reminded, excluded from compliance expected-count,
+/// still loggable. CYCLIC = N weeks on / M weeks off from the anchor;
+/// within an on-week the rrule / legacy cadence applies as usual.
+enum MedicationScheduleType {
+  SCHEDULED
+  PRN
+  CYCLIC
+
+  @@map("medication_schedule_type")
+}
+
 model Medication {
   id                   String             @id @default(cuid())
   userId               String             @map("user_id")
@@ -784,6 +894,39 @@ model Medication {
   notificationsEnabled Boolean            @default(true) @map("notifications_enabled")
   pausedAt             DateTime?          @map("paused_at")
   snoozedUntil         DateTime?          @map("snoozed_until")
+  /// v1.5 — date the medication course begins. Anchors RRULE BYDAY /
+  /// BYMONTHDAY patterns and the rolling-interval countdown's first
+  /// window. NULL = "active from creation" (the legacy implicit
+  /// behaviour preserved for backwards compatibility). Required when
+  /// `oneShot` is true.
+  startsOn             DateTime?          @map("starts_on") @db.Date
+  /// v1.5 — date the medication course ends. Reminder worker stops
+  /// minting slots past this date. NULL = no end date (chronic).
+  /// When `oneShot` is true, `endsOn` always equals `startsOn`.
+  endsOn               DateTime?          @map("ends_on") @db.Date
+  /// v1.5 — single-administration medication (flu shot, vaccine,
+  /// post-op single dose, etc.). When true the medication has at
+  /// most one MedicationIntakeEvent and `active` flips to false once
+  /// that intake is logged. Mutually exclusive with rolling or
+  /// recurring schedules; the form layer enforces the constraint and
+  /// the migration backfills `oneShot = false` for every existing
+  /// row.
+  oneShot              Boolean            @default(false) @map("one_shot")
+  /// v1.6.0 — route of administration. Decoupled from `treatmentClass`
+  /// so the injection-site picker can surface for any INJECTION dose.
+  /// A one-time injection is `oneShot = true` + `deliveryForm =
+  /// INJECTION`. The migration backfills ORAL for every existing row.
+  deliveryForm         MedicationDeliveryForm @default(ORAL) @map("delivery_form")
+  /// v1.7.0 — iOS Live Activity opt-in for this medication's reminders.
+  /// Default false; existing rows backfill false. The server stores +
+  /// echoes the flag; the iOS client owns the ActivityKit lifecycle. No
+  /// server-side behaviour hangs off it.
+  liveActivityEnabled  Boolean            @default(false) @map("live_activity_enabled")
+  /// v1.7.0 — iOS 26 AlarmKit critical-reminder opt-in. Critical alarms
+  /// bypass the device mute switch / Focus. Default false; the server
+  /// stores the preference only — it does not itself authorise anything
+  /// server-side.
+  criticalAlarmEnabled Boolean            @default(false) @map("critical_alarm_enabled")
   createdAt            DateTime           @default(now()) @map("created_at")
   updatedAt            DateTime           @updatedAt @map("updated_at")
 
@@ -829,7 +972,55 @@ model MedicationSchedule {
   windowEnd    String  @map("window_end") // HH:mm format, e.g. "10:00"
   label        String? // e.g. "Morning", "Evening"
   dose         String? // Per-schedule dose override; null = use Medication.dose
-  daysOfWeek   String? @map("days_of_week") // Comma-separated day numbers (0=Sun..6=Sat), null = daily
+  /// Legacy string encoding of the cadence ("null | 1,3,5 | i2;1,3,5").
+  /// Kept for reads of pre-v1.5 rows. v1.5 writes go to `rrule` or
+  /// `rollingIntervalDays`; the migration backfills `rrule` for every
+  /// existing row and v1.5.1 flips the readers to consult the new
+  /// fields first. v1.6.0 drops this column.
+  daysOfWeek   String? @map("days_of_week")
+  /// v1.5 — one or more `HH:mm` strings naming the times the dose is
+  /// taken (in the user's timezone). Replaces the legacy single
+  /// `windowStart` mental model — patients think in points-in-time,
+  /// not in windows. Migration backfills `[windowStart]` for every
+  /// pre-v1.5 row.
+  timesOfDay  String[] @default([]) @map("times_of_day")
+  /// v1.5 — reminder grace window in minutes. Replaces the implicit
+  /// `windowEnd - windowStart` computation for late-dose
+  /// classification. NULL falls back to the legacy math (the
+  /// reminder worker honours `windowEnd` when this is null).
+  reminderGraceMinutes Int? @map("reminder_grace_minutes")
+  /// v1.5 — RFC 5545 RRULE string for calendar-anchored cadences
+  /// (every N weeks, monthly, quarterly, yearly). Examples:
+  ///   FREQ=DAILY
+  ///   FREQ=WEEKLY;BYDAY=MO,WE,FR
+  ///   FREQ=WEEKLY;INTERVAL=2;BYDAY=WE
+  ///   FREQ=MONTHLY;BYMONTHDAY=1
+  ///   FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=10
+  ///   FREQ=YEARLY;BYMONTH=1;BYMONTHDAY=1
+  /// Mutually exclusive with `rollingIntervalDays` — enforced by the
+  /// `medication_schedules_rrule_xor_rolling` CHECK constraint added
+  /// in the v1.5 migration.
+  rrule        String? @map("rrule")
+  /// v1.5 — flexible-rolling interval in days, counted forward from
+  /// the latest `MedicationIntakeEvent.takenAt` for the parent
+  /// medication. NULL when the schedule is calendar-anchored.
+  /// Mutually exclusive with `rrule`. Range 1..365 enforced at the
+  /// Zod layer; the column itself is unconstrained at the DB so
+  /// future extensions don't need a new migration.
+  rollingIntervalDays Int? @map("rolling_interval_days")
+  /// v1.7.0 — schedule-type discriminator. SCHEDULED = the existing rrule
+  /// / rolling / legacy cadence. PRN = as-needed (never projected,
+  /// reminded, or counted in compliance expected; still loggable).
+  /// CYCLIC = N weeks on / M weeks off, gating whichever inner cadence
+  /// the rrule / legacy fields describe. Backfills SCHEDULED.
+  scheduleType MedicationScheduleType @default(SCHEDULED) @map("schedule_type")
+  /// v1.7.0 — cyclic "on" weeks. Only meaningful when
+  /// `scheduleType = CYCLIC`. The phase repeats (cyclicOnWeeks on, then
+  /// cyclicOffWeeks off) from the medication's `startsOn ?? createdAt`.
+  cyclicOnWeeks  Int? @map("cyclic_on_weeks")
+  /// v1.7.0 — cyclic "off" weeks. Only meaningful when
+  /// `scheduleType = CYCLIC`.
+  cyclicOffWeeks Int? @map("cyclic_off_weeks")
 
   medication       Medication                @relation(fields: [medicationId], references: [id], onDelete: Cascade)
   telegramMessages TelegramReminderMessage[]
@@ -896,6 +1087,21 @@ model MedicationIntakeEvent {
   /// is the only surface that writes this column). Existing rows stay
   /// NULL forever and the read paths treat NULL as "no site recorded".
   injectionSite  InjectionSite? @map("injection_site")
+  // v1.7.0 sync — server-set mutation timestamp. The model had no
+  // `updatedAt`; the offline-sync keyset feed orders on it, so it is
+  // added here. `@updatedAt` makes Prisma maintain it on every write.
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  // v1.7.0 sync — reconciliation counter. An intake is an immutable
+  // fact, so a "correction" is a tombstone + re-insert rather than an
+  // in-place edit; syncVersion still bumps on the soft-delete write so
+  // the feed echoes a monotonic value. Default 0 for legacy rows.
+  syncVersion    Int            @default(0) @map("sync_version")
+  // v1.7.0 sync — soft-delete tombstone. The user-facing per-event
+  // DELETE route flips this (and bumps syncVersion) rather than removing
+  // the row, so `/api/sync/changes` surfaces the deletion as a tombstone
+  // keyed on the server `id`. NULL = live; non-NULL = tombstoned.
+  // Read paths (today / compliance / lists) filter `deletedAt: null`.
+  deletedAt      DateTime?      @map("deleted_at")
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
@@ -910,6 +1116,9 @@ model MedicationIntakeEvent {
   /// inserts (WEB / TELEGRAM / IMPORT) on the same slot.
   @@unique([userId, medicationId, scheduledFor, source])
   @@index([userId, medicationId, scheduledFor])
+  // v1.7.0 sync — keyset support for the `/api/sync/changes` intake feed
+  // (`where userId` ordered by `(updatedAt asc, id asc)`).
+  @@index([userId, updatedAt, id])
   @@map("medication_intake_events")
 }
 
@@ -1141,11 +1350,16 @@ model TelegramReminderMessage {
   phase        ReminderPhase
   sentAt       DateTime      @default(now()) @map("sent_at")
   date         String // YYYY-MM-DD for day grouping
+  /// v1.7.0 — time-of-day this reminder belongs to (HH:mm, user-local).
+  /// Empty string = the single legacy window (pre-v1.7 rows + single-time
+  /// schedules). Part of the dedup key so a multi-time schedule dispatches
+  /// once per time-of-day per phase per day instead of once per day.
+  timeOfDay    String        @default("") @map("time_of_day")
 
   medication Medication         @relation(fields: [medicationId], references: [id], onDelete: Cascade)
   schedule   MedicationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
 
-  @@unique([medicationId, scheduleId, date, phase])
+  @@unique([medicationId, scheduleId, date, phase, timeOfDay], map: "telegram_reminder_messages_med_sched_date_phase_tod_key")
   @@index([medicationId, date])
   @@map("telegram_reminder_messages")
 }
@@ -1309,11 +1523,28 @@ model MoodEntry {
   syncedAt     DateTime @default(now()) @map("synced_at")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
+  // v1.7.0 sync — LWW reconciliation counter for the offline-sync feed.
+  // Monotonically bumped on every server-side mutation (update +
+  // soft-delete). Mood is last-writer-wins by syncVersion: the higher
+  // value wins. Default 0 for the additive migration so legacy rows
+  // round-trip unchanged.
+  syncVersion  Int       @default(0) @map("sync_version")
+  // v1.7.0 sync — soft-delete tombstone. The user-facing DELETE route
+  // flips this (and bumps syncVersion) rather than removing the row, so
+  // the `/api/sync/changes` feed surfaces the deletion as a tombstone
+  // keyed on the server `id` to paired clients offline at delete time.
+  // NULL = live row; non-NULL = tombstoned at the recorded instant.
+  // Every list / detail / analytics / rollup read filters
+  // `deletedAt: null` so tombstoned rows never surface in normal reads.
+  deletedAt    DateTime? @map("deleted_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date, moodLoggedAt])
   @@index([userId, date])
+  // v1.7.0 sync — keyset support for the `/api/sync/changes` mood feed
+  // (`where userId` ordered by `(updatedAt asc, id asc)`).
+  @@index([userId, updatedAt, id])
   @@map("mood_entries")
 }
 
@@ -1806,6 +2037,13 @@ model Device {
   model           String?
   apnsToken       String?  @map("apns_token")
   apnsEnvironment String?  @map("apns_environment") // "sandbox" | "production"
+  /// v1.7.0 — per-device medication-delivery override. NULL = inherit the
+  /// user-level roaming default
+  /// (`User.notificationPrefs.medication.deliveryDefault`). "server"
+  /// forces server APNs for this device; "client" forces local. Stored +
+  /// echoed in v1.7.0; cron suppression stays user-level (APNs fans out to
+  /// all the user's devices and iOS dedupes locally).
+  medicationDelivery String? @map("medication_delivery")
   lastSeen        DateTime @default(now()) @map("last_seen")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")

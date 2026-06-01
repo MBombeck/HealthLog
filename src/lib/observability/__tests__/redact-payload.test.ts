@@ -115,16 +115,52 @@ describe("redactSensitiveFields", () => {
     // one of the documented patterns.
     const required = [
       "password",
+      "passphrase",
       "token",
       "secret",
       "apikey",
       "authorization",
       "csrfstate",
       "nonce",
+      "otp",
+      "recoveryCode",
+      "glitchtipDsn",
     ];
     for (const key of required) {
       const matched = SENSITIVE_KEY_PATTERNS.some((re) => re.test(key));
       expect(matched, `pattern set should match ${key}`).toBe(true);
     }
+  });
+
+  it("redacts the credential-adjacent additions (passphrase / otp / recovery / dsn)", () => {
+    const body = {
+      backupPassphrase: "correct horse battery staple",
+      emailOtp: "123456",
+      recoveryCode: "abcd-efgh-ijkl",
+      glitchtipDsn: "https://abc@glitchtip.example/1",
+      benignField: "kept",
+    };
+    expect(redactSensitiveFields(body)).toEqual({
+      backupPassphrase: "[redacted]",
+      emailOtp: "[redacted]",
+      recoveryCode: "[redacted]",
+      glitchtipDsn: "[redacted]",
+      benignField: "kept",
+    });
+  });
+
+  it("redacts the health-insurance identity additions (insuranceNumber / kvnr / insurerName)", () => {
+    const body = {
+      insuranceNumber: "A123456780",
+      kvnr: "A123456780",
+      insurerName: "Example Krankenkasse",
+      benignField: "kept",
+    };
+    expect(redactSensitiveFields(body)).toEqual({
+      insuranceNumber: "[redacted]",
+      kvnr: "[redacted]",
+      insurerName: "[redacted]",
+      benignField: "kept",
+    });
   });
 });

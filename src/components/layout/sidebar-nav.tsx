@@ -100,7 +100,7 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
   const logout = useLogout();
   const { theme, setTheme } = useTheme();
   const { t } = useTranslations();
-  const gravatarUrl = user?.gravatarUrl ?? null;
+  const avatarUrl = user?.avatarUrl ?? null;
 
   if (!user) return null;
 
@@ -122,7 +122,7 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
     >
       <div className="flex items-center gap-3 px-2 py-2">
         <Avatar className="h-9 w-9 shrink-0">
-          {gravatarUrl && <AvatarImage src={gravatarUrl} alt={user.username} />}
+          {avatarUrl && <AvatarImage src={avatarUrl} alt={user.username} />}
           <AvatarFallback className="bg-primary/15 text-primary text-xs font-medium">
             {getInitials(user.username)}
           </AvatarFallback>
@@ -197,8 +197,8 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
               className="hover:bg-accent focus-visible:ring-ring/50 shrink-0 rounded-md p-1.5 transition-colors focus:outline-none focus-visible:ring-[3px]"
             >
               <Avatar className="h-8 w-8">
-                {gravatarUrl && (
-                  <AvatarImage src={gravatarUrl} alt={user.username} />
+                {avatarUrl && (
+                  <AvatarImage src={avatarUrl} alt={user.username} />
                 )}
                 <AvatarFallback className="bg-primary/15 text-primary text-xs font-medium">
                   {getInitials(user.username)}
@@ -216,7 +216,7 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
     <div className="border-sidebar-border border-t p-3">
       <div className="flex items-center gap-3 px-2 py-1">
         <Avatar className="h-8 w-8 shrink-0">
-          {gravatarUrl && <AvatarImage src={gravatarUrl} alt={user.username} />}
+          {avatarUrl && <AvatarImage src={avatarUrl} alt={user.username} />}
           <AvatarFallback className="bg-primary/15 text-primary text-xs font-medium">
             {getInitials(user.username)}
           </AvatarFallback>

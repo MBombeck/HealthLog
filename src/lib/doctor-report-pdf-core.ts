@@ -18,6 +18,93 @@ import type { DoctorReportData } from "./doctor-report-data";
 
 type T = (key: string, params?: Record<string, string | number>) => string;
 
+/**
+ * jsPDF's built-in Helvetica is WinAnsi-encoded. Latin-1 glyphs (umlauts,
+ * ß, em-/en-dash, typographic quotes, °, µ) carry correct metrics, but any
+ * code point outside WinAnsi resolves to the `.notdef` box at a single
+ * fallback advance width. The widths then disagree with the drawn glyph and
+ * the surrounding words stretch / shift — the visible "stretched line" bug.
+ *
+ * This sanitiser maps every glyph the report can emit that falls outside
+ * WinAnsi onto a WinAnsi-safe equivalent, applied centrally to every string
+ * just before it reaches `doc.text` / `doc.splitTextToSize` (see
+ * `patchPdfTextSanitiser`). The offenders that actually occur in the report
+ * are the trend arrows (↑ ↓ →) injected by `trendArrow()` + the `glp1WeightSummary`
+ * separator, and the superscript-two in "kg/m²". The mapping is exhaustive
+ * for those and degrades gracefully for any future stray symbol.
+ *
+ * Premium follow-up (documented, not a hotfix blocker): embed a Unicode TTF
+ * (e.g. DejaVuSans) via `doc.addFileToVFS` / `addFont` so the arrows and
+ * superscripts render as their true glyphs instead of ASCII equivalents.
+ */
+const WINANSI_REPLACEMENTS: Record<string, string> = {
+  // Trend arrows → ASCII so the metrics match the drawn glyph.
+  "↑": "^", // ↑ up
+  "↓": "v", // ↓ down
+  "→": "->", // → right (also the glp1 weight separator)
+  "←": "<-", // ←
+  "↔": "<->", // ↔
+  // Super-/subscripts used in "kg/m²".
+  "²": "2", // ²
+  "³": "3", // ³
+  "¹": "1", // ¹
+  // Defensive: a few maths/symbol glyphs that are outside WinAnsi but read
+  // fine as ASCII, in case a future string introduces them.
+  "≈": "~", // ≈
+  "≤": "<=", // ≤
+  "≥": ">=", // ≥
+  "×": "x", // ×
+  "€": "EUR", // €
+};
+
+const WINANSI_REPLACE_RE = new RegExp(
+  `[${Object.keys(WINANSI_REPLACEMENTS).join("")}]`,
+  "g",
+);
+
+/** Map non-WinAnsi glyphs onto safe equivalents. Pure; exported for tests. */
+export function sanitiseForPdf(text: string): string {
+  return text.replace(WINANSI_REPLACE_RE, (ch) => WINANSI_REPLACEMENTS[ch] ?? ch);
+}
+
+/**
+ * Patch `doc.text` + `doc.splitTextToSize` on a single jsPDF instance so
+ * every drawn string (direct text, wrapped paragraphs, AND `jspdf-autotable`
+ * cells — which route their content through `doc.text` too) passes through
+ * `sanitiseForPdf` first. One choke point instead of a sanitiser call at
+ * every site keeps the renderer readable and guarantees coverage.
+ */
+function patchPdfTextSanitiser(doc: jsPDF): void {
+  const clean = (value: unknown): unknown =>
+    typeof value === "string"
+      ? sanitiseForPdf(value)
+      : Array.isArray(value)
+        ? value.map((v) => (typeof v === "string" ? sanitiseForPdf(v) : v))
+        : value;
+
+  const originalText = doc.text.bind(doc);
+  doc.text = function patchedText(
+    this: jsPDF,
+    ...args: Parameters<jsPDF["text"]>
+  ): jsPDF {
+    const next = [...args] as unknown[];
+    next[0] = clean(next[0]);
+    return originalText(...(next as Parameters<jsPDF["text"]>));
+  } as jsPDF["text"];
+
+  const originalSplit = doc.splitTextToSize.bind(doc);
+  doc.splitTextToSize = function patchedSplit(
+    this: jsPDF,
+    ...args: Parameters<jsPDF["splitTextToSize"]>
+  ): ReturnType<jsPDF["splitTextToSize"]> {
+    const next = [...args] as unknown[];
+    next[0] = clean(next[0]);
+    return originalSplit(
+      ...(next as Parameters<jsPDF["splitTextToSize"]>),
+    );
+  } as jsPDF["splitTextToSize"];
+}
+
 export interface DoctorReportRenderOptions {
   t: T;
   locale: Locale;
@@ -34,6 +121,25 @@ export interface DoctorReportRenderOptions {
    * Eastern-time rows even when generated in the browser.
    */
   userTz?: string;
+  /**
+   * v1.7.0 — decrypted KVNR (German insurance number). Printed on the
+   * cover when present; the column is encrypted at rest, so the route
+   * decrypts it and hands the plaintext in here. Null/undefined omits
+   * the cover line exactly like an unset practice name.
+   */
+  insuranceNumber?: string | null;
+  /**
+   * v1.7.0 — embed jsPDF-native trend sparklines per primary vital.
+   * Defaults to `true`. Off produces a compact text-only report.
+   */
+  includeCharts?: boolean;
+  /**
+   * v1.7.0 — optional AI summary text. OUT of the clinical PDF by
+   * default; rendered ONLY when the user explicitly opts in, under a
+   * clearly-labelled "AI summary — not clinically validated" heading.
+   * Null/undefined/empty omits the section entirely.
+   */
+  aiSummary?: string | null;
 }
 
 /**
@@ -134,6 +240,208 @@ function getBpClassificationKey(sys: number, dia: number): string {
   return "doctorReport.bpHypertensionGrade3";
 }
 
+/** Primary vitals that get a trend sparkline + a summary trend arrow. */
+const SPARKLINE_TYPES = [
+  "WEIGHT",
+  "BLOOD_PRESSURE_SYS",
+  "PULSE",
+] as const;
+
+type FormatNum = (value: number, decimals?: number) => string;
+
+/** First-half vs second-half mean → "↑" / "↓" / "→". */
+function trendArrow(values: number[]): "↑" | "↓" | "→" {
+  if (values.length < 2) return "→";
+  const mid = Math.floor(values.length / 2);
+  const firstHalf = values.slice(0, mid);
+  const secondHalf = values.slice(mid);
+  const mean = (arr: number[]) =>
+    arr.reduce((a, b) => a + b, 0) / arr.length;
+  const delta = mean(secondHalf) - mean(firstHalf);
+  // Threshold at ~1% of the first-half mean so flat series read "→".
+  const threshold = Math.abs(mean(firstHalf)) * 0.01;
+  if (delta > threshold) return "↑";
+  if (delta < -threshold) return "↓";
+  return "→";
+}
+
+/**
+ * Deterministic clinical-summary lines. Pure data — no AI. Mirrors the
+ * existing BP/BMI classification approach: factual, reproducible.
+ */
+function buildClinicalSummaryLines(
+  data: DoctorReportData,
+  t: T,
+  num: FormatNum,
+): string[] {
+  const lines: string[] = [];
+
+  const totalReadings = Object.values(data.measurements).reduce(
+    (sum, arr) => sum + arr.length,
+    0,
+  );
+  const paramCount = Object.keys(data.stats).length;
+  if (totalReadings > 0) {
+    lines.push(
+      t("doctorReport.summaryReadings", {
+        days: data.period.days,
+        count: totalReadings,
+        params: paramCount,
+      }),
+    );
+  }
+
+  // Per-primary-vital latest + trend arrow.
+  for (const type of SPARKLINE_TYPES) {
+    const series = data.measurements[type];
+    const stat = data.stats[type];
+    if (!series || series.length === 0 || !stat) continue;
+    const arrow = trendArrow(series.map((p) => p.value));
+    lines.push(
+      t("doctorReport.summaryTrend", {
+        label: t(DOCTOR_REPORT_TYPE_LABEL_KEYS[type] ?? ""),
+        latest: num(stat.latest, 1),
+        arrow,
+      }),
+    );
+  }
+
+  // Medication-adherence headline (weighted mean across meds).
+  const compEntries = Object.values(data.compliance);
+  const totalDoses = compEntries.reduce((s, c) => s + c.total, 0);
+  const totalTaken = compEntries.reduce((s, c) => s + c.taken, 0);
+  if (totalDoses > 0) {
+    lines.push(
+      t("doctorReport.summaryAdherence", {
+        rate: num((totalTaken / totalDoses) * 100, 1),
+      }),
+    );
+  }
+
+  return lines;
+}
+
+/** A single charted reading. */
+type SparklinePoint = { value: number; measuredAt: string };
+
+/** Label band (5 mm) + plot (16 mm) + axis-date line (4.5 mm) + trailing gap. */
+const SPARKLINE_HEIGHT = 5 + 16 + 4.5 + 2;
+
+/**
+ * Rough autoTable height estimate (mm) used by the page-break guards so a
+ * heading + its table do not orphan. The grid theme at fontSize 9 +
+ * cellPadding 3 renders header + each body row at ~9 mm. Deliberately a
+ * conservative over-estimate — a slightly early break is harmless, a missed
+ * one tears the module.
+ */
+function estimateTableHeight(rowCount: number): number {
+  const HEADER_MM = 9;
+  const ROW_MM = 9;
+  return HEADER_MM + rowCount * ROW_MM;
+}
+
+/**
+ * Draw a jsPDF-native trend sparkline (label + min/max ticks + polyline +
+ * a time axis). Returns the new `y` cursor below the drawn chart. Vector-only
+ * — uses `doc.lines()`, no raster image, no native canvas module.
+ *
+ * Each point carries its `measuredAt` so the x-axis is anchored in real time:
+ * points are positioned by their timestamp across the report window, and the
+ * first/last dates are printed under the baseline. Without the axis a reader
+ * cannot tell whether the trend spans a week or a year.
+ */
+function drawSparkline(
+  doc: jsPDF,
+  opts: {
+    x: number;
+    y: number;
+    width: number;
+    label: string;
+    points: SparklinePoint[];
+    num: FormatNum;
+    unit: string;
+    dateShort: (iso: string) => string;
+  },
+): number {
+  const { x, y, width, label, points, num, unit, dateShort } = opts;
+  const chartHeight = 16;
+  const labelHeight = 5;
+  const axisLabelHeight = 4.5;
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(30, 30, 30);
+  doc.text(label, x, y + labelHeight - 1.5);
+
+  const values = points.map((p) => p.value);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+
+  const chartTop = y + labelHeight;
+  const chartBottom = chartTop + chartHeight;
+  // Reserve a right gutter for the min/max value labels.
+  const gutter = 22;
+  const chartWidth = width - gutter;
+
+  // Baseline box.
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.2);
+  doc.line(x, chartBottom, x + chartWidth, chartBottom);
+
+  // X position is anchored in time: map each reading's timestamp across the
+  // [first, last] span. When every timestamp collapses to one instant fall
+  // back to even spacing so a same-day cluster still plots.
+  const times = points.map((p) => new Date(p.measuredAt).getTime());
+  const tMin = Math.min(...times);
+  const tMax = Math.max(...times);
+  const tSpan = tMax - tMin;
+  const plotted = points.map((p, i) => {
+    const frac =
+      tSpan > 0
+        ? (times[i] - tMin) / tSpan
+        : points.length > 1
+          ? i / (points.length - 1)
+          : 0;
+    return {
+      px: x + frac * chartWidth,
+      py: chartBottom - ((p.value - min) / range) * chartHeight,
+    };
+  });
+  doc.setDrawColor(80, 110, 200);
+  doc.setLineWidth(0.4);
+  const deltas: [number, number][] = [];
+  for (let i = 1; i < plotted.length; i++) {
+    deltas.push([
+      plotted[i].px - plotted[i - 1].px,
+      plotted[i].py - plotted[i - 1].py,
+    ]);
+  }
+  if (deltas.length > 0) {
+    doc.lines(deltas, plotted[0].px, plotted[0].py);
+  }
+
+  // Min/max labels in the right gutter.
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(120, 120, 120);
+  const unitSuffix = unit ? ` ${unit}` : "";
+  doc.text(`${num(max, 1)}${unitSuffix}`, x + chartWidth + 2, chartTop + 2);
+  doc.text(`${num(min, 1)}${unitSuffix}`, x + chartWidth + 2, chartBottom);
+
+  // Time axis: first date left-aligned, last date right-aligned under the
+  // baseline so the trend's span is unambiguous.
+  const axisY = chartBottom + axisLabelHeight - 1;
+  const startLabel = dateShort(points[0]!.measuredAt);
+  const endLabel = dateShort(points[points.length - 1]!.measuredAt);
+  doc.text(startLabel, x, axisY);
+  if (endLabel !== startLabel) {
+    doc.text(endLabel, x + chartWidth, axisY, { align: "right" });
+  }
+
+  return chartBottom + axisLabelHeight + 2;
+}
+
 /**
  * Render the doctor report into a `jsPDF` instance.
  *
@@ -145,7 +453,15 @@ export function buildDoctorReportPdfDocument(
   data: DoctorReportData,
   options: DoctorReportRenderOptions,
 ): jsPDF {
-  const { t, locale, now = new Date(), userTz } = options;
+  const {
+    t,
+    locale,
+    now = new Date(),
+    userTz,
+    insuranceNumber = null,
+    includeCharts = true,
+    aiSummary = null,
+  } = options;
   const formatters = makeFormatters(locale, userTz);
   const num = (value: number, decimals = 1) =>
     formatters.number(value, decimals);
@@ -160,9 +476,47 @@ export function buildDoctorReportPdfDocument(
   };
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  // Route every drawn string through the WinAnsi sanitiser so non-WinAnsi
+  // glyphs (trend arrows, superscripts) can never stretch a line.
+  patchPdfTextSanitiser(doc);
+  // v1.7.0 — document metadata (PDF/A-leaning). jsPDF embeds the standard
+  // Helvetica fonts and pulls no external resources; setting the document
+  // properties + a deterministic creation date gives most practice systems
+  // an acceptable file without the full PDF/A-1b XMP/OutputIntent work
+  // (documented as a follow-up, not a release blocker).
+  doc.setProperties({
+    title: t("doctorReport.title"),
+    subject: t("doctorReport.subtitle"),
+    creator: "HealthLog",
+    author: data.patient.fullName ?? data.patient.username ?? "HealthLog",
+  });
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
+  // Bottom safe area: the three-line footer disclaimer sits in the last
+  // ~14 mm; reserve it plus a small breathing gap so body content never
+  // collides with the footer or runs off the page. `contentMaxY` is the
+  // single source of truth every break check + autoTable bottom margin
+  // refers to — no more scattered `y > 240` magic numbers.
+  const FOOTER_HEIGHT = 16;
+  const bottomMargin = 6;
+  const contentMaxY = pageHeight - bottomMargin - FOOTER_HEIGHT;
+  const tableBottomMargin = bottomMargin + FOOTER_HEIGHT;
   let y = margin;
+
+  /**
+   * Page-break guard. Adds a page and resets the cursor to the top margin
+   * when the upcoming block (height `needed`, in mm) would not fit above
+   * `contentMaxY`. Call BEFORE drawing a module heading so a heading never
+   * gets orphaned at the bottom of a page. Returns the (possibly reset) y.
+   */
+  const ensureSpace = (current: number, needed: number): number => {
+    if (current + needed > contentMaxY) {
+      doc.addPage();
+      return margin;
+    }
+    return current;
+  };
 
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
@@ -201,8 +555,12 @@ export function buildDoctorReportPdfDocument(
   doc.setFontSize(9);
   doc.setTextColor(80, 80, 80);
   const patientInfo: string[] = [];
-  if (data.patient.username) {
-    patientInfo.push(`${t("doctorReport.patient")}: ${data.patient.username}`);
+  // v1.7.0 — prefer the legal full name on the cover; fall back to the
+  // username when no full name is set (collapses exactly like the
+  // practice name when neither is present).
+  const patientName = data.patient.fullName ?? data.patient.username ?? null;
+  if (patientName) {
+    patientInfo.push(`${t("doctorReport.patient")}: ${patientName}`);
   }
   if (data.patient.dateOfBirth) {
     patientInfo.push(
@@ -223,6 +581,18 @@ export function buildDoctorReportPdfDocument(
       `${t("doctorReport.height")}: ${data.patient.heightCm} cm`,
     );
   }
+  // v1.7.0 — optional insurer + KVNR. Each line collapses when its field
+  // is unset, mirroring the existing practice-name behaviour.
+  if (data.patient.insurerName) {
+    patientInfo.push(
+      `${t("doctorReport.insurer")}: ${data.patient.insurerName}`,
+    );
+  }
+  if (insuranceNumber) {
+    patientInfo.push(
+      `${t("doctorReport.insuranceNumber")}: ${insuranceNumber}`,
+    );
+  }
   // Reporting period uses the explicit `start`/`end` from the data payload
   // (set by `normaliseDateRange()`). For older payloads that only carried
   // `since`, fall back to (since, now()) to preserve previous behaviour.
@@ -241,6 +611,38 @@ export function buildDoctorReportPdfDocument(
   }
   y += 4;
 
+  // v1.7.0 — deterministic clinical-summary block. Pure data (NOT AI),
+  // built from the same aggregated stats the tables print. Gives a
+  // physician a one-paragraph orientation before the detail tables.
+  const summaryLines = buildClinicalSummaryLines(data, t, num);
+  if (summaryLines.length > 0) {
+    // Keep the heading with at least its first line (heading 5 mm + one body
+    // line 4.5 mm + trailing gap).
+    y = ensureSpace(y, 5 + 4.5 + 4);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 30, 30);
+    doc.text(t("doctorReport.summaryTitle"), margin, y);
+    y += 5;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(60, 60, 60);
+    for (const line of summaryLines) {
+      const wrapped = doc.splitTextToSize(line, pageWidth - 2 * margin);
+      for (const w of wrapped) {
+        if (y + 4.5 > contentMaxY) {
+          doc.addPage();
+          y = margin;
+        }
+        doc.text(w, margin, y);
+        y += 4.5;
+      }
+    }
+    y += 4;
+  }
+
+  // Vitals heading — keep it with the start of its table.
+  y = ensureSpace(y, 6 + 18);
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(30, 30, 30);
@@ -309,16 +711,59 @@ export function buildDoctorReportPdfDocument(
         fontStyle: "bold",
       },
       alternateRowStyles: { fillColor: [252, 252, 252] },
-      margin: { left: margin, right: margin },
+      margin: {
+        left: margin,
+        right: margin,
+        top: margin,
+        bottom: tableBottomMargin,
+      },
     });
     y =
       (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
         .finalY + 8;
   }
 
+  // v1.7.0 — jsPDF-native trend sparklines per primary vital. Vector
+  // polylines drawn with `doc.lines()` — zero new dependency, no native
+  // canvas module, isomorphic. Selection-gated via `includeCharts`.
+  if (includeCharts) {
+    const chartTypes = SPARKLINE_TYPES.filter(
+      (type) => (data.measurements[type]?.length ?? 0) >= 2,
+    );
+    if (chartTypes.length > 0) {
+      // Keep the heading with at least the first chart.
+      y = ensureSpace(y, 6 + SPARKLINE_HEIGHT + 4);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(30, 30, 30);
+      doc.text(t("doctorReport.chartsTitle"), margin, y);
+      y += 6;
+      for (const type of chartTypes) {
+        const series = data.measurements[type] ?? [];
+        // A chart never tears across a page boundary — break before drawing
+        // it whole.
+        y = ensureSpace(y, SPARKLINE_HEIGHT + 4);
+        const label = t(DOCTOR_REPORT_TYPE_LABEL_KEYS[type] ?? "");
+        y = drawSparkline(doc, {
+          x: margin,
+          y,
+          width: pageWidth - 2 * margin,
+          label,
+          points: series,
+          num,
+          unit: unitFor(type),
+          dateShort: (iso) => formatters.dateShort(iso),
+        });
+        y += 4;
+      }
+      y += 2;
+    }
+  }
+
   const sysStat = data.stats.BLOOD_PRESSURE_SYS;
   const diaStat = data.stats.BLOOD_PRESSURE_DIA;
   if (sysStat && diaStat) {
+    y = ensureSpace(y, 5 + 8);
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text(t("doctorReport.bpClassificationTitle"), margin, y);
@@ -336,6 +781,7 @@ export function buildDoctorReportPdfDocument(
   }
 
   if (data.bmi) {
+    y = ensureSpace(y, 5 + 8);
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text(t("doctorReport.bmiTitle"), margin, y);
@@ -359,10 +805,7 @@ export function buildDoctorReportPdfDocument(
     (ctx) => data.glucoseStats?.[ctx],
   );
   if (loggedGlucose.length > 0) {
-    if (y > 240) {
-      doc.addPage();
-      y = margin;
-    }
+    y = ensureSpace(y, 5 + 5 + 3);
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text(t("doctorReport.glucoseClassificationTitle"), margin, y);
@@ -380,6 +823,10 @@ export function buildDoctorReportPdfDocument(
         : s.avg < range.min
           ? "doctorReport.glucoseBelowTarget"
           : "doctorReport.glucoseAboveTarget";
+      if (y + 5 > contentMaxY) {
+        doc.addPage();
+        y = margin;
+      }
       doc.text(
         t("doctorReport.glucoseRow", {
           label: t(GLUCOSE_LABEL_KEYS[ctx]),
@@ -399,10 +846,9 @@ export function buildDoctorReportPdfDocument(
 
   const complianceEntries = Object.entries(data.compliance);
   if (complianceEntries.length > 0) {
-    if (y > 240) {
-      doc.addPage();
-      y = margin;
-    }
+    // Keep the heading with the table header + first row (~6 mm heading +
+    // ~9 mm header + ~9 mm row).
+    y = ensureSpace(y, 6 + estimateTableHeight(Math.min(complianceEntries.length, 1)));
 
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
@@ -448,7 +894,12 @@ export function buildDoctorReportPdfDocument(
         fontStyle: "bold",
       },
       alternateRowStyles: { fillColor: [252, 252, 252] },
-      margin: { left: margin, right: margin },
+      margin: {
+        left: margin,
+        right: margin,
+        top: margin,
+        bottom: tableBottomMargin,
+      },
     });
     y =
       (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
@@ -461,10 +912,8 @@ export function buildDoctorReportPdfDocument(
   // current drug + dose, full titration history, weight curve over
   // the report window, side-effect frequency, and compliance %.
   if (data.glp1) {
-    if (y > 220) {
-      doc.addPage();
-      y = margin;
-    }
+    // Keep the GLP-1 heading with its first content line.
+    y = ensureSpace(y, 6 + 6 + 5);
 
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
@@ -491,10 +940,8 @@ export function buildDoctorReportPdfDocument(
     }
 
     for (const med of data.glp1.medications) {
-      if (y > 240) {
-        doc.addPage();
-        y = margin;
-      }
+      // Keep the med name with at least its first detail line.
+      y = ensureSpace(y, 5 + 5);
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
       doc.text(med.name, margin, y);
@@ -532,6 +979,9 @@ export function buildDoctorReportPdfDocument(
           `${num(dc.value, 2)} ${dc.unit}`,
           dc.note ?? "",
         ]);
+        // A titration history reads as one block — break before it if the
+        // whole table would not fit, and tell autoTable not to split a row.
+        y = ensureSpace(y, estimateTableHeight(historyRows.length));
         autoTable(doc, {
           startY: y,
           head: [
@@ -543,6 +993,7 @@ export function buildDoctorReportPdfDocument(
           ],
           body: historyRows,
           theme: "grid",
+          rowPageBreak: "avoid",
           styles: {
             fontSize: 9,
             cellPadding: 3,
@@ -556,7 +1007,12 @@ export function buildDoctorReportPdfDocument(
             fontStyle: "bold",
           },
           alternateRowStyles: { fillColor: [252, 252, 252] },
-          margin: { left: margin, right: margin },
+          margin: {
+            left: margin,
+            right: margin,
+            top: margin,
+            bottom: tableBottomMargin,
+          },
         });
         y =
           (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
@@ -565,15 +1021,14 @@ export function buildDoctorReportPdfDocument(
     }
 
     if (data.glp1.sideEffects.length > 0) {
-      if (y > 240) {
-        doc.addPage();
-        y = margin;
-      }
+      const seRows = data.glp1.sideEffects.map((s) => [s.tag, String(s.count)]);
+      // Keep the heading with the table; the side-effect tally reads as one
+      // block.
+      y = ensureSpace(y, 5 + estimateTableHeight(seRows.length));
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
       doc.text(t("doctorReport.glp1SideEffectsTitle"), margin, y);
       y += 5;
-      const seRows = data.glp1.sideEffects.map((s) => [s.tag, String(s.count)]);
       autoTable(doc, {
         startY: y,
         head: [
@@ -581,6 +1036,7 @@ export function buildDoctorReportPdfDocument(
         ],
         body: seRows,
         theme: "grid",
+        rowPageBreak: "avoid",
         styles: {
           fontSize: 9,
           cellPadding: 3,
@@ -594,7 +1050,12 @@ export function buildDoctorReportPdfDocument(
           fontStyle: "bold",
         },
         alternateRowStyles: { fillColor: [252, 252, 252] },
-        margin: { left: margin, right: margin },
+        margin: {
+          left: margin,
+          right: margin,
+          top: margin,
+          bottom: tableBottomMargin,
+        },
       });
       y =
         (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
@@ -603,10 +1064,10 @@ export function buildDoctorReportPdfDocument(
   }
 
   if (data.mood) {
-    if (y > 240) {
-      doc.addPage();
-      y = margin;
-    }
+    const moodRowCount = Object.keys(data.mood.distribution).length;
+    // Keep the heading + summary line with the start of the distribution
+    // table.
+    y = ensureSpace(y, 6 + 6 + estimateTableHeight(Math.min(moodRowCount, 1)));
 
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
@@ -660,11 +1121,60 @@ export function buildDoctorReportPdfDocument(
         textColor: [30, 30, 30],
         fontStyle: "bold",
       },
-      margin: { left: margin, right: margin },
+      margin: {
+        left: margin,
+        right: margin,
+        top: margin,
+        bottom: tableBottomMargin,
+      },
     });
     y =
       (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
         .finalY + 8;
+  }
+
+  // v1.7.0 — optional AI summary. OUT of the clinical PDF by default;
+  // rendered ONLY when the user explicitly opted in. Clearly labelled and
+  // flagged as not clinically validated so a physician never mistakes it
+  // for a machine-generated diagnosis.
+  const aiText = typeof aiSummary === "string" ? aiSummary.trim() : "";
+  if (aiText.length > 0) {
+    // Keep the heading + the first disclaimer line together.
+    y = ensureSpace(y, 5 + 4 + 4.5);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(120, 80, 0);
+    doc.text(t("doctorReport.aiSummaryTitle"), margin, y);
+    y += 5;
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(150, 110, 40);
+    const disclaimer = doc.splitTextToSize(
+      t("doctorReport.aiSummaryDisclaimer"),
+      pageWidth - 2 * margin,
+    );
+    for (const line of disclaimer) {
+      if (y + 4 > contentMaxY) {
+        doc.addPage();
+        y = margin;
+      }
+      doc.text(line, margin, y);
+      y += 4;
+    }
+    y += 2;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(60, 60, 60);
+    const wrapped = doc.splitTextToSize(aiText, pageWidth - 2 * margin);
+    for (const line of wrapped) {
+      if (y + 4.5 > contentMaxY) {
+        doc.addPage();
+        y = margin;
+      }
+      doc.text(line, margin, y);
+      y += 4.5;
+    }
+    y += 4;
   }
 
   const addFooter = (pageDoc: jsPDF) => {

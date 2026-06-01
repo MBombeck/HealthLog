@@ -18,7 +18,7 @@ const mockUserRef = {
     username: "marc",
     email: "marc@example.com",
     role: "USER" as "USER" | "ADMIN",
-    gravatarUrl: null,
+    avatarUrl: null,
   },
 };
 vi.mock("@/hooks/use-auth", () => ({
@@ -89,7 +89,7 @@ describe("<SidebarNav> admin entry mirrors Settings (no sub-item expansion)", ()
   // sub-items on `/admin/*` was unwanted UX — the in-shell `<AdminShell>`
   // already provides per-section nav inside the page. The Admin entry
   // must behave EXACTLY like the Settings entry: a single link with no
-  // sub-list at any route, regardless of where the gravatar dropdown is.
+  // sub-list at any route, regardless of where the avatar dropdown is.
 
   it("does not render admin entries at all for a regular user", () => {
     const html = render({ role: "USER", pathname: "/admin/system-status" });

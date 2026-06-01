@@ -4,12 +4,12 @@ import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import {
   apiSuccess,
-  apiError,
   getClientIp,
   returnAllZodIssues,
   safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import {
   recomputeMedicationComplianceForDay,
   dayKeyForScheduledFor,
@@ -32,10 +32,10 @@ export const POST = apiHandler(
     const { user } = await requireAuth();
 
     const { id } = await params;
-    const medication = await prisma.medication.findUnique({ where: { id } });
-    if (!medication || medication.userId !== user.id) {
-      return apiError("Medication not found", 404);
-    }
+    // v1.5.5 C-E3-3 — route ownership through the shared helper so the
+    // 404 leak shape stays identical across every `[id]/**` handler.
+    const guard = await assertMedicationOwnership(id, user.id);
+    if (guard) return guard;
 
     const { data: body, error: jsonError } = await safeJson(request);
 

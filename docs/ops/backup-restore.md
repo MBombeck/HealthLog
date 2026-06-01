@@ -1,4 +1,4 @@
-# Off-host backup & restore (v1.4 G1)
+# Off-host backup & restore
 
 HealthLog ships with an optional daily off-host backup that ships every
 user's JSON dump, encrypted with AES-256-GCM under a SEPARATE key

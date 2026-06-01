@@ -18,6 +18,13 @@ interface InsightStatusCardProps {
   cached: boolean;
   updatedAt: string | null;
   loading?: boolean;
+  /**
+   * v1.8.3 — the read-only status route enqueued an out-of-band generation
+   * and the assessment isn't warm yet. Render the same skeleton geometry as
+   * `loading` but with a "preparing" caption so the user understands the
+   * card is being assembled, not stuck. The client polls until text lands.
+   */
+  preparing?: boolean;
 }
 
 // ─── Main Component ───────────────────────────────────────
@@ -30,6 +37,7 @@ export function InsightStatusCard({
   cached,
   updatedAt,
   loading = false,
+  preparing = false,
 }: InsightStatusCardProps) {
   const { t } = useTranslations();
   const flags = useFeatureFlags();
@@ -37,6 +45,36 @@ export function InsightStatusCard({
   // app-wide. The delta number stays; the LLM narration card is
   // suppressed in full so the layout collapses naturally.
   if (!flags.insightStatus) return null;
+
+  // v1.8.3 — preparing: the read-only route enqueued a generation and the
+  // client is polling. Render the loading skeleton geometry with a
+  // preparing caption so the card reads as "assembling", not stuck. Only
+  // shown when a provider is configured (the route returns the no-key
+  // fallback otherwise).
+  if (preparing && hasProvider && !text) {
+    return (
+      <Card
+        aria-busy="true"
+        aria-live="polite"
+        data-testid="insight-status-card-preparing"
+      >
+        <CardHeader className="pb-2">
+          <div className="flex items-center gap-2">
+            {icon}
+            <CardTitle className="text-base">{title}</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="bg-muted h-3.5 w-full animate-pulse rounded motion-reduce:animate-none" />
+          <div className="bg-muted h-3.5 w-11/12 animate-pulse rounded motion-reduce:animate-none" />
+          <div className="bg-muted h-3.5 w-9/12 animate-pulse rounded motion-reduce:animate-none" />
+          <p className="text-muted-foreground text-xs">
+            {t("insights.assessmentPreparing")}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (loading) {
     // v1.4.37 — structured skeleton over the centred spinner. When the

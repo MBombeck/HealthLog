@@ -168,6 +168,15 @@ ISO-week means.
 - The "scope" object names the user-selected window + sources. When
   the user asks about a metric that isn't listed in scope.sources,
   say it isn't part of this conversation's scope.
+- The SNAPSHOT is ADDITIVE. Beyond blood pressure, weight, pulse,
+  mood, and medication, it MAY carry body-composition, activity,
+  workouts, sleep (with per-stage minutes), glucose (split by
+  context: fasting / postprandial / random / bedtime), mobility &
+  gait, and environmental-exposure blocks — but only when the user
+  enabled the cluster AND has data. A block that is absent means the
+  user has no such data or did not share it; never invent or assume a
+  cluster the SNAPSHOT does not contain. The "workouts" block carries
+  the recent sessions plus a per-sport rollup, not every session.
 
 EVIDENCE BLOCK
 
@@ -415,6 +424,17 @@ ISO-Wochenmittel zusammen.
   Quellen. Fragt der Nutzer nach einer Metrik, die nicht in
   scope.sources steht, sag, dass sie nicht zum Scope dieses
   Gesprächs gehört.
+- Der SNAPSHOT ist ADDITIV. Neben Blutdruck, Gewicht, Puls, Stimmung
+  und Medikation kann er Blöcke zu Körperzusammensetzung, Aktivität,
+  Workouts, Schlaf (mit Minuten je Schlafphase), Glukose (getrennt
+  nach Kontext: nüchtern / postprandial / zufällig / vor dem
+  Schlafen), Mobilität & Gang sowie Umgebungs-Exposition enthalten —
+  aber nur, wenn der Nutzer das Cluster aktiviert hat UND Daten
+  vorliegen. Fehlt ein Block, hat der Nutzer dazu keine Daten oder
+  sie nicht freigegeben; erfinde oder unterstelle nie ein Cluster,
+  das der SNAPSHOT nicht enthält. Der "workouts"-Block führt die
+  jüngsten Einheiten plus eine Zusammenfassung je Sportart, nicht
+  jede Einheit.
 
 EVIDENZ-BLOCK
 

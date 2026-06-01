@@ -3,6 +3,7 @@
  * Docs: https://developer.withings.com/api-reference
  */
 import { getEvent } from "@/lib/logging/context";
+import { safeFetch } from "@/lib/safe-fetch";
 import {
   WithingsApiError,
   classifyWithingsResponse,
@@ -109,7 +110,7 @@ export async function exchangeCode(
   });
 
   const start = performance.now();
-  const res = await fetch(WITHINGS_TOKEN_URL, {
+  const res = await safeFetch(WITHINGS_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: params.toString(),
@@ -152,7 +153,7 @@ export async function refreshAccessToken(
   });
 
   const start = performance.now();
-  const res = await fetch(WITHINGS_TOKEN_URL, {
+  const res = await safeFetch(WITHINGS_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: params.toString(),
@@ -269,7 +270,7 @@ export async function fetchMeasurements(
     });
 
     const pageStart = performance.now();
-    const res = await fetch(WITHINGS_MEASURE_URL, {
+    const res = await safeFetch(WITHINGS_MEASURE_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -346,7 +347,7 @@ export async function subscribeWebhook(
   });
 
   const start = performance.now();
-  const res = await fetch(WITHINGS_NOTIFY_URL, {
+  const res = await safeFetch(WITHINGS_NOTIFY_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -397,7 +398,7 @@ export async function unsubscribeWebhook(
   });
 
   const start = performance.now();
-  const res = await fetch(WITHINGS_NOTIFY_URL, {
+  const res = await safeFetch(WITHINGS_NOTIFY_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",

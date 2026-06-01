@@ -4,7 +4,7 @@
  * Returns a chronological merge of every GLP-1-relevant event the user
  * has logged: dose changes, injections (with site if recorded),
  * inventory events, and side-effect-tagged mood entries from the
- * trailing 90 days. Used by /insights/medikamente's TherapyTimeline
+ * trailing 90 days. Used by /insights/medications' TherapyTimeline
  * component. Web-only users without a GLP-1 medication get
  * `hasGlp1: false` so the component hides cleanly.
  */
@@ -93,7 +93,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const ninetyDaysAgo = new Date();
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
   const moods = await prisma.moodEntry.findMany({
-    where: { userId: user.id, moodLoggedAt: { gte: ninetyDaysAgo } },
+    // v1.7.0 sync — exclude tombstoned rows.
+    where: { userId: user.id, deletedAt: null, moodLoggedAt: { gte: ninetyDaysAgo } },
     select: { moodLoggedAt: true, tags: true },
     orderBy: { moodLoggedAt: "desc" },
   });

@@ -39,23 +39,23 @@ import type {
  * through to `null` and render as a plain row (no link wrap).
  */
 const METRIC_HREF: Record<DailyBriefingKeyFinding["sourceMetric"], string | null> = {
-  bp: "/insights/blutdruck",
-  weight: "/insights/gewicht",
-  pulse: "/insights/puls",
-  mood: "/insights/stimmung",
-  compliance: "/insights/medikamente",
+  bp: "/insights/blood-pressure",
+  weight: "/insights/weight",
+  pulse: "/insights/pulse",
+  mood: "/insights/mood",
+  compliance: "/insights/medications",
   // Apple Health / GLP-1 additive metrics — no dedicated sub-page yet.
   // They render as static rows; v1.4.28 can wire each as they ship.
   hrv: null,
-  sleep: "/insights/schlaf",
+  sleep: "/insights/sleep",
   resting_hr: null,
   steps: null,
   active_energy: null,
   flights: null,
   distance: null,
-  vo2_max: "/insights/puls",
+  vo2_max: "/insights/pulse",
   body_temp: null,
-  glp1_plateau: "/insights/medikamente",
+  glp1_plateau: "/insights/medications",
 };
 
 /**

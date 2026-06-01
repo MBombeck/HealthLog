@@ -184,6 +184,7 @@ export async function recomputeMedicationComplianceForDay(
       FROM "medication_intake_events"
       WHERE "user_id"        = ${userId}
         AND "medication_id"  = ${medicationId}
+        AND "deleted_at"     IS NULL
         AND "scheduled_for" >= ${start}
         AND "scheduled_for" <  ${windowEnd}
     )
@@ -215,6 +216,7 @@ export async function recomputeMedicationComplianceForDay(
         FROM "medication_intake_events"
         WHERE "user_id"        = ${userId}
           AND "medication_id"  = ${medicationId}
+          AND "deleted_at"     IS NULL
           AND "scheduled_for" >= ${start}
           AND "scheduled_for" <  ${windowEnd}
       )
@@ -375,6 +377,7 @@ export async function hasMedicationComplianceCoverage(
         SELECT COUNT(DISTINCT to_char("scheduled_for" AT TIME ZONE ${safeTz}, 'YYYY-MM-DD'))::bigint
         FROM "medication_intake_events"
         WHERE "user_id" = ${userId}
+          AND "deleted_at" IS NULL
           AND "scheduled_for" >= ${oldestStart}
       ) AS event_days
   `;
@@ -426,6 +429,7 @@ export async function recomputeUserMedicationCompliance(
       to_char("scheduled_for" AT TIME ZONE ${safeTz}, 'YYYY-MM-DD') AS "day"
     FROM "medication_intake_events"
     WHERE "user_id" = ${userId}
+      AND "deleted_at" IS NULL
       AND "scheduled_for" >= ${oldestStart}
   `;
 
@@ -523,6 +527,7 @@ export async function enqueueBootTimeMedicationComplianceBackfill(): Promise<{
         ON r."user_id" = mie."user_id"
        AND r."medication_id" = mie."medication_id"
       WHERE mie."scheduled_for" >= ${cutoff}
+        AND mie."deleted_at" IS NULL
         AND r."day" IS NULL
     `;
 

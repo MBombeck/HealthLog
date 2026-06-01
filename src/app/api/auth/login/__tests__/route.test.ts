@@ -47,7 +47,14 @@ vi.mock("@/lib/db-compat", () => ({
 }));
 
 vi.mock("@/lib/auth/hmac", () => ({
-  hashToken: vi.fn((raw: string) => `hashed:${raw}`),
+  // Return a deterministic hex string that does NOT echo the raw
+  // value — mirrors the real HMAC-SHA256 shape. The audit row's
+  // privacy contract is "the typed identifier never serialises into
+  // the row's body", so the mock must not embed the raw input.
+  hashToken: vi.fn(
+    (raw: string) =>
+      "aa".repeat(32) + (raw.length % 8).toString(16),
+  ),
 }));
 
 vi.mock("@/lib/logging/transports", () => ({

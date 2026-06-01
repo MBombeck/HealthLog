@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { safeFetch } from "@/lib/safe-fetch";
 import type { AIProvider, CompletionParams, CompletionResult } from "./types";
 import {
   getCachedCodexSlug,
@@ -283,7 +284,7 @@ export class CodexClient implements AIProvider {
   ): Promise<Response> {
     const sessionId = randomUUID();
     const threadId = randomUUID();
-    return fetch(CODEX_ENDPOINT, {
+    return safeFetch(CODEX_ENDPOINT, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -320,7 +321,10 @@ export class CodexClient implements AIProvider {
         // Required field; empty array when not asking for reasoning.
         include: [],
       }),
-    });
+      // SSE streaming completion — match the 60 s budget the other AI
+      // clients use so a long generation is not clipped by the 15 s
+      // default while still bounding a tar-pit upstream.
+    }, { timeoutMs: 60_000 });
   }
 
   /**

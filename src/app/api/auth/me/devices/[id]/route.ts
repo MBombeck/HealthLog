@@ -23,15 +23,74 @@
  * leave the device row alive with all its tokens revoked.
  */
 import { NextRequest } from "next/server";
+import { z } from "zod/v4";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiError, apiSuccess } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  returnAllZodIssues,
+  safeJson,
+} from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
+import { prisma } from "@/lib/db";
+import { deviceDeliverySchema } from "@/lib/validations/notification-prefs";
 import { revokeDeviceCascade } from "@/lib/devices/revoke";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
+
+/**
+ * v1.7.0 — per-device medication-delivery override. NULL clears the
+ * override (the device inherits the user-level roaming default).
+ */
+const devicePatchSchema = z.object({
+  medicationDelivery: deviceDeliverySchema,
+});
+
+export const PATCH = apiHandler(
+  async (request: NextRequest, context: RouteContext) => {
+    const { user } = await requireAuth();
+    const { id } = await context.params;
+
+    const { data: body, error: jsonError } = await safeJson(request);
+    if (jsonError) return jsonError;
+    const parsed = devicePatchSchema.safeParse(body);
+    if (!parsed.success) {
+      return returnAllZodIssues(parsed.error, 422);
+    }
+
+    // Ownership boundary — scope the update by userId so a cross-user id
+    // can't be patched, and 404 rather than leak existence.
+    const result = await prisma.device.updateMany({
+      where: { id, userId: user.id },
+      data: { medicationDelivery: parsed.data.medicationDelivery },
+    });
+    if (result.count === 0) {
+      return apiError("Device not found", 404);
+    }
+
+    const device = await prisma.device.findUnique({
+      where: { id },
+      select: { id: true, medicationDelivery: true },
+    });
+
+    annotate({
+      action: {
+        name: "auth.me.devices.update",
+        entity_type: "device",
+        entity_id: id,
+      },
+      meta: { medication_delivery: parsed.data.medicationDelivery ?? "inherit" },
+    });
+
+    return apiSuccess({
+      id,
+      medicationDelivery: device?.medicationDelivery ?? null,
+    });
+  },
+);
 
 export const DELETE = apiHandler(
   async (_request: NextRequest, context: RouteContext) => {

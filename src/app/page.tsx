@@ -22,6 +22,7 @@ import { convertGlucose, resolveGlucoseUnit } from "@/lib/glucose";
 import { cn } from "@/lib/utils";
 import {
   resolveDashboardLayout,
+  DASHBOARD_WIDGET_IDS,
   type DashboardLayout,
 } from "@/lib/dashboard-layout";
 import type { DashboardAnalyticsData as AnalyticsData } from "@/types/analytics";
@@ -75,6 +76,8 @@ const MedicationComplianceChart = dynamic(
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
+import { useDashboardSnapshot } from "@/lib/queries/use-dashboard-snapshot";
+import { isDashboardSnapshotEnabled } from "@/lib/dashboard/snapshot-flag";
 import type { DataSummary } from "@/lib/analytics/trends";
 import { mergeSlimAndThickAnalytics } from "@/lib/analytics/merge-slim-thick";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
@@ -113,6 +116,34 @@ function getHourForTimeZone(timeZone?: string): number {
   }
 }
 
+/**
+ * v1.7.0 — first-paint gate for the dashboard tile strip.
+ *
+ * `primaryLoading` must come from whichever query actually drives the
+ * tiles: the snapshot cell by default, the slim analytics cell when
+ * `NEXT_PUBLIC_DASHBOARD_SNAPSHOT=false`. A disabled TanStack query reports
+ * `isLoading: false` (idle fetch status), so keying off the wrong
+ * source flashes the empty state for the whole fetch. Pure + exported
+ * so the gate has direct unit coverage without mounting the page.
+ */
+export function resolveDashboardFirstPaintGate(input: {
+  trendCardCount: number;
+  chartCount: number;
+  configuredTileCount: number;
+  primaryLoading: boolean;
+}): { showTileStripSkeleton: boolean; showEmptyState: boolean } {
+  const showTileStripSkeleton =
+    input.trendCardCount === 0 &&
+    input.primaryLoading &&
+    input.configuredTileCount > 0;
+  const showEmptyState =
+    input.trendCardCount === 0 &&
+    input.chartCount === 0 &&
+    !showTileStripSkeleton &&
+    !input.primaryLoading;
+  return { showTileStripSkeleton, showEmptyState };
+}
+
 function getRangeColorClass(
   value: number | null | undefined,
   config: RangeDisplayConfig,
@@ -123,9 +154,9 @@ function getRangeColorClass(
   const inOrange =
     !inGreen && value >= range.orangeMin && value <= range.orangeMax;
 
-  if (inGreen) return "text-green-400";
-  if (inOrange) return "text-orange-400";
-  return "text-red-400";
+  if (inGreen) return "text-success";
+  if (inOrange) return "text-warning";
+  return "text-destructive";
 }
 
 function getRangeHint(
@@ -142,20 +173,22 @@ function getRangeHint(
   return (
     <>
       <p>
-        <span className="font-bold text-green-400">
+        <span className="text-success font-bold">
           {t("charts.colorGreen")}
         </span>{" "}
         {format(range.greenMin)}-{format(range.greenMax)} {unit}
       </p>
       <p>
-        <span className="font-bold text-orange-400">
+        <span className="text-warning font-bold">
           {t("charts.colorOrange")}
         </span>{" "}
         {format(range.orangeMin)}-{format(range.greenMin)} {t("common.or")}{" "}
         {format(range.greenMax)}-{format(range.orangeMax)} {unit}
       </p>
       <p>
-        <span className="font-bold text-red-400">{t("charts.colorRed")}</span>{" "}
+        <span className="text-destructive font-bold">
+          {t("charts.colorRed")}
+        </span>{" "}
         {"< "}
         {format(range.orangeMin)} {t("common.or")} {"> "}
         {format(range.orangeMax)} {unit}
@@ -212,9 +245,46 @@ export default function DashboardPage() {
   // Both queries share `caches.analytics` server-side so warm hits
   // stay free, and TanStack's parallel-mounting keeps the network fan-
   // out flat.
-  const analyticsSlimQuery = useAnalyticsQuery({ slice: "summaries" });
-  const analyticsThickQuery = useAnalyticsQuery();
+  // Unified first-paint snapshot (reversible rollout flag, default ON).
+  // Every tile hydrates from ONE un-gated `/api/dashboard/snapshot` cell
+  // so the whole strip shares one completion moment and the
+  // `/api/auth/me` round-trip leaves the cold critical path. Set
+  // `NEXT_PUBLIC_DASHBOARD_SNAPSHOT=false` to fall back to the legacy
+  // four independent cells.
+  const snapshotEnabled = isDashboardSnapshotEnabled();
+  const snapshotQuery = useDashboardSnapshot(snapshotEnabled);
+
+  const analyticsSlimQuery = useAnalyticsQuery({
+    slice: "summaries",
+    enabled: !snapshotEnabled && isAuthenticated,
+  });
+  const analyticsThickQuery = useAnalyticsQuery({
+    enabled: !snapshotEnabled && isAuthenticated,
+  });
   const data = useMemo<AnalyticsData | undefined>(() => {
+    // v1.7.0 W6 — snapshot path: assemble the same `AnalyticsData`
+    // shape from the single snapshot cell so every downstream tile
+    // reads unchanged. `extras` is null on a rollup-coverage miss
+    // (two-phase contract) → the BD-Zielbereich + glucose fields stay
+    // undefined and those tiles render their per-tile shimmer while the
+    // rest of the strip paints.
+    if (snapshotEnabled) {
+      const snap = snapshotQuery.data;
+      if (!snap) return undefined;
+      return {
+        summaries: snap.tiles.summaries,
+        lastSeenByType: snap.tiles.lastSeenByType,
+        bpInTargetPct: snap.extras?.bpInTargetPct ?? null,
+        bpInTargetPct7d: snap.extras?.bpInTargetPct7d ?? null,
+        bpInTargetPct30d: snap.extras?.bpInTargetPct30d ?? null,
+        bpInTargetPctAllTime: snap.extras?.bpInTargetPctAllTime ?? null,
+        bpInTargetPctPriorMonth: snap.extras?.bpInTargetPctPriorMonth ?? null,
+        bpInTargetPctPriorYear: snap.extras?.bpInTargetPctPriorYear ?? null,
+        glucoseByContext: snap.extras?.glucoseByContext as
+          | Record<string, DataSummary>
+          | undefined,
+      };
+    }
     // v1.4.39.3 — the merge moved to `mergeSlimAndThickAnalytics` so
     // the empty-slim-vs-populated-thick edge has direct unit
     // coverage. Pre-fix the inline `slim?.summaries ?? thick?.summaries`
@@ -242,9 +312,14 @@ export default function DashboardPage() {
         | Record<string, DataSummary>
         | undefined,
     };
-  }, [analyticsSlimQuery.data, analyticsThickQuery.data]);
+  }, [
+    snapshotEnabled,
+    snapshotQuery.data,
+    analyticsSlimQuery.data,
+    analyticsThickQuery.data,
+  ]);
 
-  const { data: layoutData } = useQuery({
+  const { data: layoutDataLegacy } = useQuery({
     queryKey: queryKeys.dashboardWidgets(),
     queryFn: async () => {
       const res = await fetch("/api/dashboard/widgets");
@@ -252,11 +327,14 @@ export default function DashboardPage() {
       const json = await res.json();
       return json.data as DashboardLayout;
     },
-    enabled: isAuthenticated,
+    enabled: !snapshotEnabled && isAuthenticated,
     ...DASHBOARD_QUERY_OPTS,
   });
+  const layoutData = snapshotEnabled
+    ? snapshotQuery.data?.layout
+    : layoutDataLegacy;
 
-  const { data: moodData } = useQuery({
+  const { data: moodDataLegacy } = useQuery({
     queryKey: queryKeys.moodAnalytics(),
     queryFn: async () => {
       const res = await fetch("/api/mood/analytics");
@@ -267,9 +345,18 @@ export default function DashboardPage() {
         summary: DataSummary;
       };
     },
-    enabled: isAuthenticated,
+    enabled: !snapshotEnabled && isAuthenticated,
     ...DASHBOARD_QUERY_OPTS,
   });
+  const moodData = snapshotEnabled
+    ? snapshotQuery.data
+      ? {
+          entries: snapshotQuery.data.tiles.mood.entries,
+          summary: (snapshotQuery.data.tiles.mood.summary ??
+            undefined) as DataSummary,
+        }
+      : undefined
+    : moodDataLegacy;
 
   // v1.4.27 B1 — the dashboard's `<InsightsCardPreview>` retired (it
   // duplicated the much-richer `/insights` advisor surface). The advisor
@@ -1316,13 +1403,32 @@ export default function DashboardPage() {
         // configured tile count so the strip's footprint is reserved
         // during the slow window. The skeleton swaps in for the real
         // strip the moment `analyticsSlimQuery.isLoading` flips false.
+        // v1.7.0 — count only WEB-known tiles. The stored layout now
+        // round-trips the 11 iOS-only ids (so the native client can drop
+        // its merge workarounds), but the web dashboard has no tile
+        // component for them; including them here would over-reserve the
+        // skeleton silhouette by rows that never paint.
+        const webWidgetIds = new Set<string>(DASHBOARD_WIDGET_IDS);
         const configuredTileCount = layout.widgets.filter(
-          (w) => w.tileVisible ?? w.visible,
+          (w) => webWidgetIds.has(w.id) && (w.tileVisible ?? w.visible),
         ).length;
-        const showTileStripSkeleton =
-          trendCards.length === 0 &&
-          analyticsSlimQuery.isLoading &&
-          configuredTileCount > 0;
+        // v1.7.0 — the primary data source differs by flag. In snapshot
+        // mode `analyticsSlimQuery` is `enabled: false`, and a disabled
+        // TanStack query reports `fetchStatus: "idle"` → `isLoading` is
+        // always `false`. Gating the skeleton on the slim query then
+        // never fires under snapshot mode, so the empty-state branch
+        // below flashes for the whole snapshot fetch. Key the loading
+        // flag off whichever query is actually driving the tiles.
+        const primaryLoading = snapshotEnabled
+          ? snapshotQuery.isLoading
+          : analyticsSlimQuery.isLoading;
+        const { showTileStripSkeleton, showEmptyState } =
+          resolveDashboardFirstPaintGate({
+            trendCardCount: trendCards.length,
+            chartCount: charts.length,
+            configuredTileCount,
+            primaryLoading,
+          });
 
         // v1.4.15 phase-C5: dashboard fully-empty state. When no tile
         // and no chart has data the dashboard would otherwise paint a
@@ -1338,11 +1444,7 @@ export default function DashboardPage() {
         // v1.4.43 W11 — the empty-state only fires once the slim slice
         // resolves with no tiles to show. While slim is in flight the
         // skeleton strip below carries the layout footprint.
-        if (
-          trendCards.length === 0 &&
-          charts.length === 0 &&
-          !showTileStripSkeleton
-        ) {
+        if (showEmptyState) {
           return (
             <EmptyState
               icon={<Activity className="size-6" />}

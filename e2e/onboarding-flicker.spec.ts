@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 import { STORAGE_STATE_PATH } from "./setup/global-setup";
+import {
+  mockDashboardSnapshot,
+  WEIGHT_ONLY_SUMMARIES,
+} from "./utils/mock-dashboard-snapshot";
 
 /**
  * v1.4.15 phase-A3 fix #3 — onboarding card flicker on dashboard load.
@@ -102,6 +106,17 @@ test.describe("dashboard onboarding card flicker guard", () => {
         }),
       }),
     );
+    // v1.7.2 — snapshot flag default-ON. The dashboard tile strip reads
+    // the snapshot cell; mock it with the populated WEIGHT summary
+    // (count 30 >= the 5-reading setup gate) and the same ~250 ms delay
+    // so the page's snapshot-driven tiles resolve on the same race
+    // window as the slowed analytics query the checklist reads. (The
+    // `GettingStartedChecklist` itself reads `/api/analytics?slice=...`
+    // unconditionally, so its flicker gate is unchanged.)
+    await mockDashboardSnapshot(page, {
+      summaries: WEIGHT_ONLY_SUMMARIES,
+      delayMs: 250,
+    });
     // Same `/api/dashboard/widgets` stub as the incomplete-onboarding
     // test below — keeps the dashboard from error-boundary-bailing
     // when this query 500s in CI without a real session.
@@ -192,6 +207,10 @@ test.describe("dashboard onboarding card flicker guard", () => {
         }),
       }),
     );
+    // v1.7.2 — snapshot flag default-ON. Empty snapshot summaries keep
+    // the tile strip blank (the user is still in setup) so the page
+    // renders the onboarding card path deterministically.
+    await mockDashboardSnapshot(page, { summaries: {} });
     await page.route("**/api/mood/analytics", (route) =>
       route.fulfill({
         status: 200,

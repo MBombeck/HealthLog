@@ -80,8 +80,12 @@ export function redactSecrets(input: string): string {
       // these prefixes (CLAUDE.md headless-client-API patterns); this
       // is the matching egress guard for log/error surfaces.
       .replace(/(^|[^A-Za-z0-9])hl[kr]_[A-Fa-f0-9]{32,}/g, "$1[REDACTED]")
+      // v1.7.0 — `insurance`/`insuranceNumber`/`kvnr` (German statutory-
+      // insurance number) added as defence-in-depth: the value is
+      // encrypted at rest and never deliberately logged, but a stray
+      // query-string leak (`?kvnr=…`) is scrubbed at the egress boundary.
       .replace(
-        /([?&])(secret|code|token|api[_-]?key)=[^&\s]+/gi,
+        /([?&])(secret|code|token|api[_-]?key|insurance(?:number)?|kvnr)=[^&\s]+/gi,
         "$1$2=[REDACTED]",
       )
   );

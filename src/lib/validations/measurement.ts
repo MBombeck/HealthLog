@@ -35,6 +35,18 @@ export const measurementTypeEnum = z.enum([
   // ── v1.4.30 R-F T1.4 + T1.5 ──
   "WALKING_STEADINESS",
   "AUDIO_EXPOSURE_EVENT",
+  // ── v1.5.5 iOS-coord — six previously-deferred HK identifiers wired end-to-end ──
+  "RESPIRATORY_RATE",
+  "BODY_MASS_INDEX",
+  "LEAN_BODY_MASS",
+  "WALKING_HEART_RATE_AVERAGE",
+  "WALKING_ASYMMETRY",
+  "WALKING_DOUBLE_SUPPORT",
+  // ── v1.5.5 iOS-coord follow-up — raw-SI gait pair ──
+  // Both ship raw SI on the wire (metres / metres-per-second); see
+  // the convention block in `apple-health-mapping.ts`.
+  "WALKING_STEP_LENGTH",
+  "WALKING_SPEED",
 ]);
 
 export const glucoseContextEnum = z.enum([
@@ -97,6 +109,29 @@ const unitMap: Record<string, string> = {
   // 0–1440 covers the 24-hour day; in practice indoor users sit near 0
   // and outdoor athletes accumulate a few hours.
   TIME_IN_DAYLIGHT: "minutes",
+  // ── v1.5.5 iOS-coord additions ──
+  // Respiratory rate breaths-per-minute — the HK identifier ships as
+  // `count/min`; we keep the more conventional clinical label.
+  RESPIRATORY_RATE: "breaths/min",
+  // BMI kg/m² — HealthKit ships the unitless ratio; the canonical
+  // display string mirrors clinical convention.
+  BODY_MASS_INDEX: "kg/m²",
+  // Lean body mass kg — body-composition partner to FAT_MASS.
+  LEAN_BODY_MASS: "kg",
+  // Walking heart rate average bpm — daily rollup; distinct from
+  // RESTING_HEART_RATE (sleep-window minimum) and spot PULSE.
+  WALKING_HEART_RATE_AVERAGE: "bpm",
+  // Walking gait percent (0-100 after server-side ×100 scaling).
+  // Same convention as WALKING_STEADINESS / BODY_FAT / OXYGEN_SATURATION
+  // — see the project convention block in `apple-health-mapping.ts`.
+  WALKING_ASYMMETRY: "%",
+  WALKING_DOUBLE_SUPPORT: "%",
+  // ── v1.5.5 iOS-coord follow-up — raw-SI gait pair ──
+  // Step length is metres; speed is metres per second. Both flow
+  // raw on the wire — no server-side scaling. The unit strings
+  // match HealthKit's `m` / `m/s` defaults.
+  WALKING_STEP_LENGTH: "m",
+  WALKING_SPEED: "m/s",
 };
 
 export function getUnitForType(type: string): string {
@@ -176,6 +211,34 @@ const VALUE_RANGES: Record<string, { min: number; max: number }> = {
   // Time in daylight (minutes/day) — full 24-hour window. Outdoor work
   // tops the range; sedentary indoor days sit near 0.
   TIME_IN_DAYLIGHT: { min: 0, max: 1440 },
+  // ── v1.5.5 iOS-coord additions ──
+  // Respiratory rate breaths/min — adult range ~12-20 at rest; severe
+  // distress can spike past 40; bradypnea floor ~4. Generous bounds.
+  RESPIRATORY_RATE: { min: 3, max: 60 },
+  // BMI kg/m² — sub-12 is starvation-class, 70 covers extreme obesity.
+  // Outside the band is almost certainly a height-or-weight typo.
+  BODY_MASS_INDEX: { min: 8, max: 70 },
+  // Lean body mass kg — adult plausibility, ~25 kg (small adult) to
+  // 150 kg (extreme lean athlete). Same shape as FAT_FREE_MASS.
+  LEAN_BODY_MASS: { min: 10, max: 250 },
+  // Walking heart rate average bpm — endurance athletes can sit in
+  // the high 70s while walking; ailing or post-stimulant readings can
+  // touch 200. Same upper bound as the spot PULSE / RESTING_HEART_RATE.
+  WALKING_HEART_RATE_AVERAGE: { min: 30, max: 220 },
+  // Gait percent (0-100). Apple ships these as 0..1 fractions; after
+  // the ×100 server-side scaling the canonical band is 0..100.
+  WALKING_ASYMMETRY: { min: 0, max: 100 },
+  WALKING_DOUBLE_SUPPORT: { min: 0, max: 100 },
+  // ── v1.5.5 iOS-coord follow-up — raw-SI gait pair ──
+  // Step length (metres) — adult walking sits around 0.5–0.8 m; the
+  // 0.1 floor captures shuffling gait and the 2.0 ceiling covers
+  // unusually tall sprinters without catching obvious sensor noise.
+  WALKING_STEP_LENGTH: { min: 0.1, max: 2.0 },
+  // Walking speed (m/s) — healthy adult casual gait ≈ 1.2–1.4 m/s;
+  // brisk walking tops out near 2.2 m/s before transitioning to a
+  // run. The 0.1 floor captures a very slow shuffle; 3.0 covers
+  // race-walking record territory.
+  WALKING_SPEED: { min: 0.1, max: 3.0 },
 };
 
 export function validateMeasurementRange(
@@ -189,12 +252,20 @@ export function validateMeasurementRange(
   return null;
 }
 
+/**
+ * v1.6.0 — notes cap raised from 25 to 200. A 25-char limit could not
+ * hold a meaningful clinical note ("took after large meal, felt dizzy
+ * standing up"). The DB column is unbounded `String?`; this is the
+ * single source of truth the client char-counters import.
+ */
+export const MEASUREMENT_NOTES_MAX_LENGTH = 200;
+
 export const createMeasurementSchema = z
   .object({
     type: measurementTypeEnum,
     value: z.number(),
     measuredAt: z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
-    notes: z.string().max(25).optional(),
+    notes: z.string().max(MEASUREMENT_NOTES_MAX_LENGTH).optional(),
     source: measurementSourceEnum.optional().default("MANUAL"),
     // Only applies when type === BLOOD_GLUCOSE. Mirrored by a CHECK
     // constraint in Postgres (see migration 0021).
@@ -230,7 +301,10 @@ export const updateMeasurementSchema = z.object({
     .optional(),
   notes: z
     .string()
-    .max(25, "Note cannot exceed 25 characters")
+    .max(
+      MEASUREMENT_NOTES_MAX_LENGTH,
+      `Note cannot exceed ${MEASUREMENT_NOTES_MAX_LENGTH} characters`,
+    )
     .nullable()
     .optional(),
 });

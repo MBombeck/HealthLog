@@ -1,41 +1,23 @@
 import type { Locale } from "@/lib/i18n/config";
 import { getBaseSystemPrompt } from "./base-system";
 
-const GENERAL_SECTION_DE = `FACHSPEZIFISCH — GESAMTBEWERTUNG:
-- Integriere alle verfügbaren Vitalparameter zu einem kohärenten Gesamtbild.
-- Priorisiere nach klinischer Relevanz: Kritische Abweichungen > moderate Trends > stabile Parameter.
-- Identifiziere die wichtigste einzelne Handlungsempfehlung ("One Thing").
-- Risikostratifizierung: Bewerte das kardiovaskuläre Gesamtrisiko basierend auf der Kombination aller Faktoren.
-- Medikamenten-Adhärenz: Gesamteinnahmetreue bewerten und Zusammenhang mit Vitalwerten benennen.
-- Stimmung: Falls vorhanden, als kontextuellen Faktor einbeziehen (nicht übergewichten).
-- Positive Entwicklungen explizit hervorheben — Motivation ist therapeutisch relevant.
-- Korrelationen nur erwähnen wenn der jeweilige r-Wert im Snapshot vorhanden und |r| > 0.4 ist. Falls ein Korrelationsfeld nicht im Snapshot vorhanden ist, keine Korrelation interpretieren oder erfinden. Vergleiche die aktuellen 7-Tage-Werte mit den Langzeit-Durchschnitten (avg90, allTime).
-- Nutze historicalComparison um aktuelle Veränderungen gegenüber der etablierten Baseline einzuordnen.
-- Falls Alter und Geschlecht bekannt sind, alters- und geschlechtsspezifische Risikobewertung anwenden.
-- Schlaf: Falls sleep-Daten vorhanden, Schlafqualität in die Gesamtbewertung einbeziehen. < 6h/Nacht als Risikofaktor für Hypertonie und Gewichtszunahme benennen.
-- Aktivität: Falls activity-Daten vorhanden, Schrittzahl bewerten (≥ 8.000/Tag — Saint-Maurice et al., JAMA 2020; Mortalitäts-Plateau 8.000–12.000). Hinweis: WHO publiziert Aktivitätszeit (Min/Woche), KEIN Schritt-Soll — bitte keine "WHO ≥ 8.000 Schritte"-Formulierung. Zusammenhang mit Puls- und Gewichtstrend herstellen.
-- Rate-Pressure Product: Falls ratePressureProduct vorhanden, als Indikator für kardiale Belastung in die Risikostratifizierung einbeziehen. > 12.000 = erhöhter myokardialer Sauerstoffbedarf.
-- Body-Composition-Divergenz: Falls bodyCompositionDivergence.flag = true, als Frühzeichen für sarkopenische Adipositas in die Gesamtbewertung aufnehmen.
-- Saisonale Variation: Falls seasonalVariation vorhanden, saisonale Blutdruckschwankungen kontextualisieren und ggf. beruhigend einordnen.
-- Inline-Chart: Wenn die summary oder ein finding klar auf eine einzelne Metrik fokussiert (z.B. einen kritischen systolischen Trend), kannst du genau einen passenden Token aus der Allowlist im Text einbetten — der erste klar metrik-zentrierte Absatz erhält das Diagramm darunter.`;
+const GENERAL_SECTION_DE = `METRIK — GESAMTBEWERTUNG:
+- Der Snapshot trägt measurementSeries (eine Map je Metriktyp mit summary + graded series), medicationAdherence (summary + series), bloodPressureTargets (falls vorhanden) und moodContext (falls ≥ 3 Tage). dataCoverage.avgDaysBetweenMeasurements zeigt die Messdichte.
+- LÄNGE (überschreibt das Single-Metrik-Budget): Diese Sektion deckt bis zu sechs Metriken ab — schreibe 3-5 Sätze, ca. 50-80 Wörter. Trotzdem knapp und ohne Fülltext.
+- Fasse die verfügbaren Parameter zu EINEM kohärenten Bild zusammen — nicht jeden einzeln aufzählen. Nenne HÖCHSTENS zwei Metriken namentlich (die auffälligsten), den Rest nur, wenn er auffällig vom eigenen Mittel abweicht. Priorisiere: das Auffälligste zuerst, Stabiles nur knapp.
+- Pro Metrik dieselbe Logik: das recent-Mittel gegen das weekly/monthly-Mittel der Person stellen und nur signifikante Abweichungen von der eigenen Baseline melden.
+- Positives ausdrücklich anerkennen — ein stabiler oder sich verbessernder Wert ist eine echte Botschaft, kein Lückenfüller.
+- Zusammenhänge nur erwähnen, wenn ein r-Wert im Snapshot vorhanden und |r| > 0.4 ist — als Zusammenhang, nie als Ursache. Stimmung als Kontext einbeziehen, nicht übergewichten.
+- Eine Botschaft: Auch über alle Metriken hinweg endet die Einschätzung mit GENAU EINER wichtigsten, machbaren Empfehlung ("eine Sache").`;
 
-const GENERAL_SECTION_EN = `DOMAIN — OVERALL ASSESSMENT:
-- Integrate every available vital parameter into a single coherent picture.
-- Prioritise by clinical relevance: critical deviations > moderate trends > stable parameters.
-- Identify the single most important call to action ("One Thing").
-- Risk stratification: Assess overall cardiovascular risk from the combination of all factors.
-- Medication adherence: Score total adherence and link it to vital-sign movement.
-- Mood: If present, include as a contextual factor (do not over-weight).
-- Highlight positive developments explicitly — motivation is therapeutically relevant.
-- Mention correlations only when the relevant r-value is present in the snapshot and |r| > 0.4. If a correlation field is missing, do not interpret or invent one. Compare current 7-day values to long-term averages (avg90, allTime).
-- Use historicalComparison to anchor current changes against the established baseline.
-- If age and sex are known, apply age- and sex-specific risk assessment.
-- Sleep: When sleep data is present, fold sleep quality into the overall picture. < 6h/night = risk factor for hypertension and weight gain.
-- Activity: When activity data is present, evaluate step count (≥ 8,000/day — Saint-Maurice et al., JAMA 2020; benefit accumulates through ~12,000 steps/day, not a plateau). Note: WHO publishes activity *time* (min/week), NOT a step quota — do not phrase the target as "WHO ≥ 8,000 steps". Tie back to pulse and weight trends.
-- Rate-pressure product: When ratePressureProduct is present, include it as a cardiac-load indicator. > 12,000 = elevated myocardial oxygen demand.
-- Body-composition divergence: If bodyCompositionDivergence.flag = true, treat as an early sign of sarcopenic obesity.
-- Seasonal variation: When seasonalVariation is present, contextualise seasonal BP swings and reassure where appropriate.
-- Inline chart: When a summary or finding centres on a single metric (e.g. a critical systolic trend), embed exactly one matching token from the allowlist in the text — the first clearly metric-focused paragraph receives the chart underneath.`;
+const GENERAL_SECTION_EN = `METRIC — OVERALL ASSESSMENT:
+- The snapshot carries measurementSeries (a map per metric type with summary + graded series), medicationAdherence (summary + series), bloodPressureTargets (when present) and moodContext (when ≥ 3 days). dataCoverage.avgDaysBetweenMeasurements shows the measurement density.
+- LENGTH (overrides the single-metric budget): this section spans up to six metrics — write 3-5 sentences, roughly 50-80 words. Still concise, no filler.
+- Pull the available parameters into ONE coherent picture — do not list each separately. Name AT MOST two metrics by name (the most notable ones); mention the rest only when they deviate notably from their own mean. Prioritise: the most notable first, stable values only briefly.
+- Same logic per metric: place the recent mean against the person's weekly/monthly mean and report only significant deviations from their own baseline.
+- Acknowledge the positive explicitly — a stable or improving value is a real message, not filler.
+- Mention associations only when an r-value is present in the snapshot and |r| > 0.4 — as an association, never a cause. Include mood as context, do not over-weight it.
+- One message: even across all metrics, close with EXACTLY ONE most-important, doable suggestion ("one thing").`;
 
 export function getGeneralStatusSystemPrompt(locale: Locale): string {
   const section = locale === "en" ? GENERAL_SECTION_EN : GENERAL_SECTION_DE;
@@ -60,14 +42,12 @@ export function getGeneralStatusUserPrompt(
       : "";
   if (locale === "en") {
     return `Date: ${todayKey} (Europe/Berlin)
-Produce a comprehensive overall assessment across every available health metric.
-Focus on the interplay between parameters and identify the single most important call to action.${ctxBlock}
+Write one short overall assessment across the available health metrics: name what stands out, place the recent days against the person's own weekly/monthly baseline, and close with the single most important doable step. Judge confidence from the measurement count, density and recency.${ctxBlock}
 
 ${snapshotJson}`;
   }
   return `Datum: ${todayKey} (Europe/Berlin)
-Erstelle eine umfassende Gesamtbewertung aller verfügbaren Gesundheitsdaten.
-Fokussiere auf das Zusammenspiel der verschiedenen Parameter und identifiziere die wichtigste Handlungsempfehlung.${ctxBlock}
+Schreibe eine kurze Gesamteinschätzung über die verfügbaren Gesundheitsdaten: benenne das Auffälligste, ordne die jüngsten Tage gegen die eigene Wochen-/Monats-Baseline ein und schließe mit dem einen wichtigsten machbaren Schritt. Konfidenz aus Messanzahl, Dichte und Aktualität ableiten.${ctxBlock}
 
 ${snapshotJson}`;
 }

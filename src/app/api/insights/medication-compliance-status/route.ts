@@ -23,9 +23,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
   });
   const locale = resolveMedicationComplianceStatusLocale(resolved);
 
+  // v1.8.3 — read-only: serve the cache, enqueue generation out of band on
+  // a miss. The GET never awaits the provider, so opening /insights/<metric>
+  // can no longer pin the main thread behind a cold LLM round-trip.
   const result = await generateMedicationComplianceStatusForUser(user.id, {
     locale,
     force: false,
+    readOnly: true,
   });
 
   annotate({ action: { name: "insights.medication-compliance-status" } });

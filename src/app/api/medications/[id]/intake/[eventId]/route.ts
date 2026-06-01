@@ -11,6 +11,7 @@ import {
   sanitiseZodIssues,
 } from "@/lib/api-response";
 import { updateIntakeEventSchema } from "@/lib/validations/medication";
+import { reconcileOneShotState } from "@/lib/medications/lifecycle";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
 import { NextRequest } from "next/server";
@@ -23,8 +24,10 @@ export const PUT = apiHandler(
 
     const { id, eventId } = await params;
 
-    const event = await prisma.medicationIntakeEvent.findUnique({
-      where: { id: eventId },
+    // v1.7.0 sync — a tombstoned event 404s on PUT; the `deletedAt: null`
+    // filter refuses to resurrect-edit a soft-deleted intake.
+    const event = await prisma.medicationIntakeEvent.findFirst({
+      where: { id: eventId, deletedAt: null },
     });
 
     if (!event || event.userId !== user.id || event.medicationId !== id) {
@@ -75,6 +78,10 @@ export const PUT = apiHandler(
         ...(data.scheduledFor !== undefined && {
           scheduledFor: data.scheduledFor,
         }),
+        // v1.7.0 sync — bump the reconciliation counter on every
+        // server-side mutation so the `/api/sync/changes` feed echoes a
+        // monotonic value to paired clients.
+        syncVersion: { increment: 1 },
       },
     });
 
@@ -119,6 +126,12 @@ export const PUT = apiHandler(
       });
     }
 
+    // v1.5.0 — re-evaluate the one-shot active flag. A skip-flip on the
+    // single live intake of a one-shot medication should reactivate it
+    // (the dose is no longer logged), and the reverse case should
+    // deactivate again. No-op for non-one-shot medications.
+    await reconcileOneShotState(prisma, id, user.id);
+
     return apiSuccess(updated);
   },
 );
@@ -137,7 +150,21 @@ export const DELETE = apiHandler(
       return apiError("Intake not found", 404);
     }
 
-    await prisma.medicationIntakeEvent.delete({ where: { id: eventId } });
+    // v1.7.0 sync — soft-delete instead of a hard `delete`. An intake is
+    // an immutable fact, so a "correction" is a tombstone + re-insert
+    // (never an in-place edit). Setting `deletedAt` (+ bumping
+    // `syncVersion`) leaves the row in place so the `/api/sync/changes`
+    // feed surfaces the deletion as a tombstone keyed on the server `id`
+    // to paired clients offline at delete time. Every today / compliance
+    // / list read filters `deletedAt: null`, so the row is invisible to
+    // normal reads from here on. A re-delete re-bumps harmlessly.
+    await prisma.medicationIntakeEvent.update({
+      where: { id: eventId },
+      data: {
+        deletedAt: new Date(),
+        syncVersion: { increment: 1 },
+      },
+    });
 
     const ip = getClientIp(request) ?? "unknown";
     await auditLog("medication.intake.delete", {
@@ -168,6 +195,12 @@ export const DELETE = apiHandler(
       scheduledFor: event.scheduledFor,
       tz: user.timezone,
     });
+
+    // v1.5.0 — re-evaluate the one-shot active flag. Deleting the
+    // single live intake of a one-shot medication reactivates it so
+    // the dashboard / lists / worker pick it back up. No-op for
+    // non-one-shot medications.
+    await reconcileOneShotState(prisma, id, user.id);
 
     return apiSuccess({ deleted: true });
   },

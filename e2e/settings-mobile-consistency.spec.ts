@@ -41,18 +41,41 @@ test.describe("Settings mobile consistency (Pixel 5)", () => {
     await page.waitForLoadState("networkidle");
     await expect(page.getByLabel(/username/i)).toBeVisible();
 
-    const formInputs = await page
-      .locator(
-        'section input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), section select',
-      )
-      .evaluateAll((els) =>
-        els.map((el) => ({
-          id: el.id || el.getAttribute("name") || "",
-          tag: el.tagName,
-          type: el.getAttribute("type") || "",
-          height: Math.round(el.getBoundingClientRect().height),
-        })),
-      );
+    const formInputs = (
+      await page
+        .locator(
+          'section input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), section select',
+        )
+        .evaluateAll((els) =>
+          els.map((el) => {
+            const rect = el.getBoundingClientRect();
+            const style = getComputedStyle(el);
+            return {
+              id: el.id || el.getAttribute("name") || "",
+              tag: el.tagName,
+              type: el.getAttribute("type") || "",
+              height: Math.round(rect.height),
+              width: Math.round(rect.width),
+              hidden:
+                el.classList.contains("sr-only") ||
+                style.display === "none" ||
+                style.visibility === "hidden",
+            };
+          }),
+        )
+    ).filter(
+      // The avatar profile-photo upload uses the accessible
+      // visually-hidden <input type="file"> pattern: the input itself
+      // is sr-only / zero-size and the real 44 px touch target is the
+      // styled label/button that triggers it. The touch-target sweep
+      // must measure that visible affordance, not the hidden input, so
+      // exempt file inputs that are hidden or collapsed to zero size.
+      (inp) =>
+        !(
+          inp.type === "file" &&
+          (inp.hidden || inp.height === 0 || inp.width === 0)
+        ),
+    );
 
     expect(formInputs.length).toBeGreaterThan(0);
     for (const inp of formInputs) {

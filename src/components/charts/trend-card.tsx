@@ -268,7 +268,29 @@ export function TrendCard({
         className="mt-2 flex min-w-0 items-baseline gap-x-1.5"
         data-slot="trend-card-value-row"
       >
-        <span className="min-w-0 truncate text-3xl leading-none font-semibold tracking-tight tabular-nums">
+        <span
+          className={cn(
+            "min-w-0 truncate font-semibold tracking-tight tabular-nums",
+            // v1.4.49.4 — paired values (BP systolic/diastolic) render
+            // as `131/85` and outgrow the `text-3xl` footprint on the
+            // narrowest grid columns, ellipsis-clipping to "13…" on the
+            // dashboard. The truncate stays as a defence-in-depth safety
+            // net, but paired tiles drop one font step (text-3xl →
+            // text-2xl) so the full pair stays visible at every column
+            // width. Single-value tiles (weight, pulse, glucose, …)
+            // keep text-3xl because their value never threatens the
+            // budget on its own.
+            secondary ? "text-2xl" : "text-3xl",
+            // `leading-none` must come AFTER the font-size class in the
+            // cn() arg list. Tailwind v4 `text-3xl` / `text-2xl` ship
+            // their own default `line-height`, so `twMerge` would
+            // otherwise drop the explicit `leading-none` per the
+            // last-wins rule and break the W20a across-tile baseline
+            // alignment (digits line up at the same y-coordinate
+            // across every tile in the strip).
+            "leading-none",
+          )}
+        >
           {latest !== null ? renderPair(latest, secondary?.latest) : "—"}
         </span>
         <span className="text-muted-foreground shrink-0 text-sm tabular-nums">

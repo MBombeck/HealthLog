@@ -6,7 +6,12 @@
 import { prisma } from "@/lib/db";
 import { summarize } from "@/lib/analytics/trends";
 import type { DataPoint } from "@/lib/analytics/trends";
-import { calculateCompliance } from "@/lib/analytics/compliance";
+import {
+  buildComplianceMedicationContext,
+  calculateCompliance,
+  lastNonSkippedTakenAt,
+} from "@/lib/analytics/compliance";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
 import {
@@ -631,7 +636,8 @@ export async function extractFeatures(
     moodTotalEntries = moodRollupDayRows.reduce((s, r) => s + r.count, 0);
     // Latest score = newest individual entry (one bounded row).
     const latestEntry = await prisma.moodEntry.findFirst({
-      where: { userId },
+      // v1.7.0 sync — exclude tombstoned rows.
+      where: { userId, deletedAt: null },
       orderBy: { moodLoggedAt: "desc" },
       select: { score: true },
     });
@@ -641,7 +647,8 @@ export async function extractFeatures(
     // unbounded `findMany`) so even a cache miss is capped.
     const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
     const moodEntriesRaw = await prisma.moodEntry.findMany({
-      where: { userId, moodLoggedAt: { gte: oneYearAgo } },
+      // v1.7.0 sync — exclude tombstoned rows.
+      where: { userId, deletedAt: null, moodLoggedAt: { gte: oneYearAgo } },
       orderBy: { moodLoggedAt: "asc" },
       select: { score: true, moodLoggedAt: true, date: true },
     });
@@ -894,6 +901,8 @@ export async function extractFeatures(
     const allEvents = await prisma.medicationIntakeEvent.findMany({
       where: {
         userId,
+        // v1.7.0 sync — exclude tombstoned rows.
+        deletedAt: null,
         medicationId: { in: medications.map((med) => med.id) },
         scheduledFor: { gte: ninetyDaysAgo },
       },
@@ -920,11 +929,27 @@ export async function extractFeatures(
       eventsByMed.set(e.medicationId, list);
     }
 
+    // v1.7.0 SB-SCHED-2 — resolve the user timezone once so every
+    // per-med compliance call can route its denominator through the
+    // canonical engine (RRULE / rolling / one-shot / PRN / cyclic).
+    const userTz = await resolveUserTimezone(userId);
+
     features.medications = medications.map((med) => {
       const mapped = eventsByMed.get(med.id) ?? [];
-      const c7 = calculateCompliance(mapped, med.schedules, 7, med.createdAt);
-      const c30 = calculateCompliance(mapped, med.schedules, 30, med.createdAt);
-      const c90 = calculateCompliance(mapped, med.schedules, 90, med.createdAt);
+      const medicationContext = buildComplianceMedicationContext(
+        med,
+        lastNonSkippedTakenAt(mapped),
+        userTz,
+      );
+      const c7 = calculateCompliance(mapped, med.schedules, 7, med.createdAt, {
+        medicationContext,
+      });
+      const c30 = calculateCompliance(mapped, med.schedules, 30, med.createdAt, {
+        medicationContext,
+      });
+      const c90 = calculateCompliance(mapped, med.schedules, 90, med.createdAt, {
+        medicationContext,
+      });
 
       return {
         name: med.name,

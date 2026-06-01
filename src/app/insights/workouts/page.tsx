@@ -35,6 +35,7 @@ export default function InsightsWorkoutsPage() {
     <SubPageShell
       title={t("insights.workouts.title")}
       description={t("insights.workouts.description")}
+      explainerMetric="workouts"
     >
       {isLoading ? (
         <div data-slot="workouts-loading" className="space-y-2">

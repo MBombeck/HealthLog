@@ -1,17 +1,37 @@
 "use client";
 
-import { useEffect, use } from "react";
+/**
+ * v1.7.0 — full intake-history view.
+ *
+ * Reached directly from the detail-page header's History button. This
+ * surface is intake-history ONLY: the estimated drug-level curve, the
+ * side-effect logbook, the schedule ("Rhythmus") editor and the
+ * titration ladder no longer dominate here. The only editable units
+ * are individual intakes (edit / delete / bulk-delete via the shared
+ * `<IntakeHistoryEditable>`); CSV import is present but de-emphasised
+ * as a ghost action in the header.
+ *
+ * Sort defaults to `scheduledFor desc` so the order reads
+ * today → yesterday → … and skipped rows (`takenAt: null`) never float
+ * to the top (O-1).
+ *
+ * The estimated active-ingredient curve stays available as a
+ * default-CLOSED disclosure at the bottom for GLP-1 medications (O-2);
+ * it is genuine history context but opt-in, not the default read.
+ */
+
+import { useEffect, useState, use } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, Loader2, Upload } from "lucide-react";
+import Link from "next/link";
+
 import { Button } from "@/components/ui/button";
 import { DrugLevelChart } from "@/components/medications/DrugLevelChart";
-import { SideEffectsSection } from "@/components/medications/SideEffectsSection";
-import { SchedulingSection } from "@/components/medications/SchedulingSection";
 import { TitrationSection } from "@/components/medications/TitrationSection";
-import { IntakeHistoryListV2 } from "@/components/medications/intake-history-list-v2";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import Link from "next/link";
+import { IntakeHistoryEditable } from "@/components/medications/intake-history-editable";
+import { IntakeImportDialog } from "@/components/medications/intake-import-dialog";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -24,6 +44,8 @@ export default function IntakeHistoryPage({
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const { t } = useTranslations();
+
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -56,93 +78,88 @@ export default function IntakeHistoryPage({
     );
   }
 
-  // D-H8 — bump the sibling-section stride from `space-y-4` (16 px)
-  // to `space-y-6` (24 px) so the medication-detail page matches the
-  // `/insights/*` sub-page stride. The earlier 16 px gap rode tight
-  // against each section's 1 px border (~14 px optical gap) and read
-  // dense after the heading collapse landed in the canonical
-  // `<MedicationDetailSection>`.
+  const isGlp1 = medication?.treatmentClass === "GLP1";
+
   return (
     <div className="space-y-6">
+      {/* Back to the medication detail page — history is a drill-down
+          OF the medication, not a sibling of the list. */}
       <Button
         variant="ghost"
         size="sm"
         className="text-muted-foreground -ml-2 gap-1"
         asChild
       >
-        <Link href="/medications">
-          <ArrowLeft className="h-4 w-4" />
-          {t("medications.back")}
+        <Link href={`/medications/${id}`}>
+          <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+          {t("medications.detail.history.back")}
         </Link>
       </Button>
 
       {medication && (
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
             <h1 className="text-2xl font-bold tracking-tight">
               {medication.name}
             </h1>
-            <p className="text-muted-foreground hidden text-sm sm:block">
-              {medication.dose}
+            <p className="text-muted-foreground text-sm">{medication.dose}</p>
+            <p className="text-muted-foreground text-xs">
+              {t("medications.detail.history.subtitle")}
             </p>
           </div>
+          {/* De-emphasised import — ghost / muted, not a prominent CTA. */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setImportOpen(true)}
+            className="text-muted-foreground min-h-11 sm:min-h-9"
+            data-slot="history-import-trigger"
+          >
+            <Upload aria-hidden="true" className="h-4 w-4" />
+            {t("medications.detail.intake.importButton")}
+          </Button>
         </div>
       )}
 
-      {/* v1.4.25 W19c-Frontend — Research-mode-gated drug-level chart.
-          Renders only for GLP-1 medications; the component itself
-          gates further on Research Mode + version-aligned
-          acknowledgment, so this page can mount it unconditionally
-          for any GLP-1 row and trust the chart's internal logic. */}
-      {medication?.treatmentClass === "GLP1" && (
-        <DrugLevelChart
-          medication={{
-            id: medication.id,
-            name: medication.name,
-            dose: medication.dose,
-          }}
-        />
-      )}
-
-      {/* v1.4.25 W19d — GLP-1 side-effect logbook. Sits between the
-          drug-level chart and the intake history so the user lands on
-          the cycle context (where am I in the curve), then on the
-          symptom record, then on the dose-by-dose timeline. Mounted
-          only for GLP-1 medications; future waves (W19e reminders,
-          W19f titration ladder) hang off this same surface. */}
-      {medication?.treatmentClass === "GLP1" && (
-        <SideEffectsSection medicationId={id} />
-      )}
-
-      {/* v1.4.25 W19e — GLP-1 cadence visualisation + compliance chips.
-          Sits between the side-effect logbook and the intake history so
-          the user lands on cycle context (drug-level), then symptom
-          record, then schedule cadence + adherence, then the
-          dose-by-dose timeline. */}
-      {medication?.treatmentClass === "GLP1" && (
-        <SchedulingSection
+      {medication && (
+        <IntakeHistoryEditable
           medicationId={id}
-          reminderEnabled={medication.notificationsEnabled ?? true}
+          pageSize={25}
+          defaultSortBy="scheduledFor"
         />
       )}
 
-      {/* v1.4.25 W19f — GLP-1 titration-ladder display. Read-only EMA
-          reference visual showing the standard dose-escalation schedule
-          with the user's current step highlighted. Sits between
-          SchedulingSection and the bottom of the page; v1.4.28 retired
-          the IntakeHistoryList block that used to anchor the per-dose
-          timeline below this section. */}
-      {medication?.treatmentClass === "GLP1" && (
-        <TitrationSection medicationId={id} />
+      {/* O-2 — estimated active-ingredient curve + titration ladder as a
+          default-CLOSED disclosure for GLP-1 medications. Genuine
+          context, but opt-in so the intake table stays the dominant
+          surface. The chart itself gates further on Research Mode. */}
+      {medication && isGlp1 && (
+        <details
+          className="border-border/60 rounded-md border"
+          data-slot="history-drug-level-disclosure"
+        >
+          <summary className="text-foreground flex min-h-11 cursor-pointer items-center px-3 text-sm font-medium select-none sm:min-h-9">
+            {t("medications.detail.history.drugLevelDisclosure")}
+          </summary>
+          <div className="border-border/60 space-y-6 border-t px-3 py-3">
+            <DrugLevelChart
+              medication={{
+                id: medication.id,
+                name: medication.name,
+                dose: medication.dose,
+              }}
+            />
+            <TitrationSection medicationId={id} />
+          </div>
+        </details>
       )}
 
-      {/* v1.4.36 W4a — Lite intake-history table mounted for ALL
-          medication kinds. v1.4.28 dropped the v1 component on the
-          assumption it had no other consumer; the standalone history
-          page lost its dose timeline as a side-effect. The v2 is
-          read-only (no inline CRUD) — edit/delete still flow through
-          the regular intake routes. */}
-      {medication && <IntakeHistoryListV2 medicationId={id} />}
+      {importOpen && (
+        <IntakeImportDialog
+          medicationId={id}
+          onClose={() => setImportOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -1,0 +1,44 @@
+-- v1.5.5 — per-user insights tile layout.
+--
+-- Mirrors `dashboard_widgets_json` for the `/insights` surface. iOS
+-- v0.8.0 audit flagged that insights tile order + visibility lived in
+-- the iOS client's local state only, so reordering a tile on one
+-- device never propagated to the web Settings UI or to a second iOS
+-- install signed into the same account. This column closes that
+-- cross-device drift by giving the new `GET / PUT /api/insights/layout`
+-- endpoint somewhere to persist the user's choice.
+--
+-- Shape:
+--   {
+--     "version": 1,
+--     "tiles": [
+--       { "id": "<tile-id>", "visible": <bool>, "order": <int 0..> },
+--       …
+--     ]
+--   }
+--
+-- Default `NULL`, which the application resolver
+-- (`src/lib/insights-layout.ts:resolveInsightsLayout`) reads as
+-- "use `DEFAULT_INSIGHTS_LAYOUT`". The GET endpoint never lazy-writes
+-- on read — the column only carries data once the user has explicitly
+-- saved a layout, matching the dashboard-widgets contract.
+--
+-- Idempotent guard (`IF NOT EXISTS`) matches the 0067 / 0070 / 0071 /
+-- 0075 / 0078 / 0079 pattern so reruns are safe on environments where
+-- the migration has already been applied.
+--
+-- Reversibility: down migration is
+--   ALTER TABLE "users" DROP COLUMN IF EXISTS "insights_layout_json";
+-- A roll-back loses the saved layout for every user who set one (they
+-- fall back to the default order), but the application reads tolerate
+-- a missing column / null row and the resolver returns the default
+-- layout in either case, so a partial deploy where the schema is
+-- rolled back ahead of the app code keeps working.
+
+-- No additional index — reads at request time are per-user
+-- (`WHERE id = $1`), matching the convention set by
+-- `dashboard_widgets_json`, `thresholds_json`, `source_priority_json`,
+-- and `doctor_report_prefs_json` on the same table (no GIN index on
+-- any of them).
+ALTER TABLE "users"
+    ADD COLUMN IF NOT EXISTS "insights_layout_json" JSONB;

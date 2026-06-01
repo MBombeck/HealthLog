@@ -131,6 +131,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
     const events = await prisma.medicationIntakeEvent.findMany({
       where: {
         userId: user.id,
+        // v1.7.0 sync — exclude tombstoned rows from the today list.
+        deletedAt: null,
         scheduledFor: { gte: todayStart, lt: todayEnd },
       },
       orderBy: { scheduledFor: "asc" },
@@ -256,7 +258,8 @@ async function buildComplianceBuckets(
   const nowMs = Date.now();
   const start = new Date(nowMs - days * 86_400_000);
   const events = await prisma.medicationIntakeEvent.findMany({
-    where: { userId, scheduledFor: { gte: start } },
+    // v1.7.0 sync — exclude tombstoned rows from the compliance buckets.
+    where: { userId, deletedAt: null, scheduledFor: { gte: start } },
     select: { scheduledFor: true, takenAt: true, skipped: true },
   });
 
@@ -313,8 +316,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const { intakeId, status, takenAt, snoozedUntil } = parsed.data;
 
-  const existing = await prisma.medicationIntakeEvent.findUnique({
-    where: { id: intakeId },
+  // v1.7.0 sync — a tombstoned intake 404s on a status toggle; the
+  // `deletedAt: null` filter refuses to mutate a soft-deleted row.
+  const existing = await prisma.medicationIntakeEvent.findFirst({
+    where: { id: intakeId, deletedAt: null },
   });
   if (!existing || existing.userId !== user.id) {
     return apiError("Intake event not found", 404);
@@ -327,7 +332,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
     [updated] = await prisma.$transaction([
       prisma.medicationIntakeEvent.update({
         where: { id: intakeId },
-        data: { takenAt: takenAt ?? new Date(), skipped: false },
+        // v1.7.0 sync — bump the reconciliation counter on every
+        // server-side mutation so the delta feed echoes a monotonic value.
+        data: {
+          takenAt: takenAt ?? new Date(),
+          skipped: false,
+          syncVersion: { increment: 1 },
+        },
       }),
       prisma.medication.update({
         where: { id: existing.medicationId },
@@ -337,7 +348,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
   } else if (status === "skipped") {
     updated = await prisma.medicationIntakeEvent.update({
       where: { id: intakeId },
-      data: { takenAt: null, skipped: true },
+      // v1.7.0 sync — bump the reconciliation counter on the skip toggle.
+      data: { takenAt: null, skipped: true, syncVersion: { increment: 1 } },
     });
   } else {
     // snoozed: snoozedUntil lives on the Medication row.

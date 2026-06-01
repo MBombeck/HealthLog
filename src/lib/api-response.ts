@@ -199,13 +199,45 @@ export function apiError(
 /**
  * Safely parse JSON body from a request.
  * Returns the parsed body or a 400 error response if parsing fails.
+ *
+ * `opts.maxBytes` opts a route into a hard body-size cap. The check
+ * runs against the raw text rather than the parsed object, so a
+ * gigabyte payload never reaches `JSON.parse` and never lands in
+ * heap. Single-record routes can pass a tight cap (a few KB); batch
+ * routes that legitimately accept large payloads can pass a larger
+ * one (a few hundred KB). When `maxBytes` is omitted the route
+ * inherits the Next.js runtime default — pre-existing behaviour, no
+ * regression risk for callers that haven't adopted the parameter.
  */
 export async function safeJson<T = unknown>(
   request: Request,
+  opts?: { maxBytes?: number },
 ): Promise<{ data: T; error?: never } | { data?: never; error: Response }> {
   const ct = request.headers.get("content-type");
   if (!ct || !ct.includes("application/json")) {
     return { error: apiError("Content-Type must be application/json", 415) };
+  }
+  if (opts?.maxBytes !== undefined) {
+    let raw: string;
+    try {
+      raw = await request.text();
+    } catch {
+      return { error: apiError("Invalid request body", 400) };
+    }
+    if (raw.length > opts.maxBytes) {
+      return {
+        error: apiError(
+          `Request body exceeds ${opts.maxBytes} bytes`,
+          413,
+        ),
+      };
+    }
+    try {
+      const data = JSON.parse(raw) as T;
+      return { data };
+    } catch {
+      return { error: apiError("Invalid JSON body", 400) };
+    }
   }
   try {
     const data = (await request.json()) as T;

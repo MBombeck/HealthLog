@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { getEvent } from "@/lib/logging/context";
 import { isPublicUrl } from "@/lib/validations/notifications";
+import { safeFetch } from "@/lib/safe-fetch";
 import {
   isReauthRequired,
   recordSyncFailure,
@@ -87,23 +88,22 @@ export async function syncMoodLogEntries(
   url.searchParams.set("from", from);
   url.searchParams.set("to", to);
 
-  const controller = new AbortController();
-  const timeoutMs = opts?.fullSync ? 60000 : 15000;
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
+  // safeFetch keeps the no-redirect-follow guard (the apiKey would
+  // otherwise leak on an attacker-controlled 302 hop) and adds a hard
+  // upper bound via AbortSignal.timeout. requirePublicHost routes the
+  // dial through the pinned-IP dispatcher so a DNS rebinding cannot
+  // flip a public hostname to 169.254.169.254 / RFC1918 between the
+  // input-time accept and the connect call.
+  const timeoutMs = opts?.fullSync ? 60_000 : 15_000;
   let response: Response;
   const fetchStart = performance.now();
   try {
-    response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      signal: controller.signal,
-      // SSRF defence-in-depth: do NOT follow redirects. A public
-      // host that 302s to an RFC1918 target would otherwise leak
-      // the apiKey to the internal hop.
-      redirect: "manual",
-    });
+    response = await safeFetch(
+      url.toString(),
+      { headers: { Authorization: `Bearer ${apiKey}` } },
+      { timeoutMs, requirePublicHost: true },
+    );
   } catch (err) {
-    clearTimeout(timeout);
     getEvent()?.addExternalCall({
       service: "moodlog",
       method: "syncMoodLogEntries",
@@ -118,8 +118,6 @@ export async function syncMoodLogEntries(
       errorCode: "fetch_failed",
     });
     return 0;
-  } finally {
-    clearTimeout(timeout);
   }
   getEvent()?.addExternalCall({
     service: "moodlog",
@@ -195,7 +193,16 @@ export async function syncMoodLogEntries(
   const entries = (data as { entries: unknown[] }).entries;
 
   // 4. Upsert entries (note field is intentionally NOT imported)
+  //
+  // v1.4.50 — entries MoodLog re-exports with `loggedVia: "HEALTHLOG"`
+  // are echoes of rows HealthLog pushed via the reverse-sync POST.
+  // Re-importing them would flip the `source` column from the original
+  // attribution (MANUAL / WEB / TELEGRAM / iOS) to MOODLOG, losing the
+  // provenance the user already established and double-counting the
+  // entry in any source-segregated dashboard. Skip them on the pull
+  // side so the loop closes at one round-trip.
   let imported = 0;
+  let echoSkipped = 0;
   for (const e of entries) {
     const entry = e as {
       time: string;
@@ -203,7 +210,12 @@ export async function syncMoodLogEntries(
       mood: string;
       score: number;
       tags?: string[];
+      loggedVia?: string;
     };
+    if (entry.loggedVia === "HEALTHLOG") {
+      echoSkipped += 1;
+      continue;
+    }
     try {
       const moodLoggedAt = new Date(entry.time);
       const date = entry.date;
@@ -244,6 +256,19 @@ export async function syncMoodLogEntries(
     data: { moodLogLastSyncedAt: now },
   });
   await recordSyncSuccess(userId, "moodlog");
+
+  // v1.4.50 — annotate the echo-skip count so an operator can see how
+  // many reverse-sync entries the pull side filtered out per cycle.
+  // Should match the user's recent `pushMoodEntriesToMoodLog` count;
+  // a divergent number signals either a stale MoodLog deploy
+  // (pre-HEALTHLOG-source) or a configuration drift.
+  if (echoSkipped > 0) {
+    getEvent()?.addExternalCall({
+      service: "moodlog",
+      method: "syncMoodLogEntries.echoSkipped",
+      duration_ms: 0,
+    });
+  }
 
   // v1.4.39 W-MOOD — re-fold the rollup tier after a sync. The
   // sync upserts a batch spanning many days; one bounded

@@ -41,6 +41,15 @@ export const GET = apiHandler(
     const { user } = await requireAuth();
     const { id } = await params;
 
+    // v1.5.5 F-1 C-4 — close the §10 invariant 24 gap. The destructive
+    // sweep in af224964 lifted every sibling `[id]/**` handler onto the
+    // shared ownership helper; the glp1 GET still hand-rolled the
+    // `findUnique + userId compare` pattern. Routing it through the
+    // same predicate keeps the 404 leak shape identical across every
+    // handler in the directory.
+    const guard = await assertMedicationOwnership(id, user.id);
+    if (guard) return guard;
+
     const medication = await prisma.medication.findUnique({
       where: { id },
       include: {
@@ -56,7 +65,7 @@ export const GET = apiHandler(
       },
     });
 
-    if (!medication || medication.userId !== user.id) {
+    if (!medication) {
       return apiError("Medication not found", 404);
     }
 

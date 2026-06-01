@@ -3,6 +3,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { MetricExplainer } from "@/components/insights/metric-explainer";
 import { useScrollResetOnRoute } from "@/hooks/use-scroll-reset-on-route";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +36,14 @@ export interface SubPageShellProps {
    */
   description?: string;
   /**
+   * v1.8.0 — when set, a `?` glyph next to the heading opens a static
+   * "What is X?" explainer (popover on desktop, bottom-sheet on phones).
+   * The value is the metric key feeding
+   * `insights.subPage.explainer.<metric>{Title,Body}`. Omitted on the
+   * mother page; every routed metric sub-page passes its key.
+   */
+  explainerMetric?: string;
+  /**
    * v1.4.27 MB7 / CF-35 — opt-in programmatic focus on mount.
    *
    * The legacy default-on `focus()` call moved screen-reader focus to
@@ -56,6 +65,7 @@ export function SubPageShell({
   title,
   badge,
   description,
+  explainerMetric,
   focusOnMount = false,
   children,
 }: SubPageShellProps) {
@@ -99,6 +109,9 @@ export function SubPageShell({
           >
             {title}
           </h1>
+          {explainerMetric ? (
+            <MetricExplainer metric={explainerMetric} />
+          ) : null}
           {badge ? (
             <Badge variant="outline" className="border text-xs">
               {badge}

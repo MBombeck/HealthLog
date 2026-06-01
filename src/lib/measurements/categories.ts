@@ -64,6 +64,9 @@ export const MEASUREMENT_CATEGORIES: ReadonlyMap<
   ["PULSE", "vitals"],
   ["OXYGEN_SATURATION", "vitals"],
   ["BODY_TEMPERATURE", "vitals"],
+  // v1.5.5 — respiratory rate sits alongside SpO2 + body temp as a
+  // point-in-time clinical vital.
+  ["RESPIRATORY_RATE", "vitals"],
 
   // ── Body composition ──
   ["WEIGHT", "body"],
@@ -74,6 +77,10 @@ export const MEASUREMENT_CATEGORIES: ReadonlyMap<
   ["TOTAL_BODY_WATER", "body"],
   ["BONE_MASS", "body"],
   ["VISCERAL_FAT", "body"],
+  // v1.5.5 — BMI + lean body mass round out the body-composition
+  // surface (FAT_MASS already covers the fat side).
+  ["BODY_MASS_INDEX", "body"],
+  ["LEAN_BODY_MASS", "body"],
 
   // ── Activity (cumulative + fitness + mobility) ──
   ["ACTIVITY_STEPS", "activity"],
@@ -82,6 +89,14 @@ export const MEASUREMENT_CATEGORIES: ReadonlyMap<
   ["WALKING_RUNNING_DISTANCE", "activity"],
   ["VO2_MAX", "activity"],
   ["WALKING_STEADINESS", "activity"],
+  // v1.5.5 — gait + walking-HR-average sit alongside walking
+  // steadiness as Apple-Health Mobility-section signals.
+  ["WALKING_ASYMMETRY", "activity"],
+  ["WALKING_DOUBLE_SUPPORT", "activity"],
+  ["WALKING_HEART_RATE_AVERAGE", "activity"],
+  // v1.5.5 follow-up — gait raw-SI pair join the same Mobility cluster.
+  ["WALKING_STEP_LENGTH", "activity"],
+  ["WALKING_SPEED", "activity"],
 
   // ── Sleep ──
   ["SLEEP_DURATION", "sleep"],

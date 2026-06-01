@@ -18,31 +18,10 @@ import {
   Server,
   Users,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/format";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
-import { queryKeys } from "@/lib/query-keys";
-import { StatusItem, useSystemStatus } from "./_shared";
-
-interface VersionResponse {
-  version: string;
-  buildSha: string | null;
-  builtAt: string | null;
-  offlineGeoEnabled?: boolean;
-}
-
-function useOfflineGeoState() {
-  return useQuery({
-    queryKey: queryKeys.publicVersion(),
-    queryFn: async () => {
-      const res = await fetch("/api/version");
-      if (!res.ok) throw new Error("Failed to load version");
-      return (await res.json()).data as VersionResponse;
-    },
-    staleTime: 5 * 60_000,
-  });
-}
+import { StatusItem, usePublicVersion, useSystemStatus } from "./_shared";
 
 // v1.4.16 phase B3: Recharts is ~108 KiB Brotli — defer-load the host
 // metrics chart so the system-status page only ships it when an admin
@@ -66,7 +45,7 @@ export function SystemStatusSection() {
   const { t } = useTranslations();
   const fmt = useFormatters();
   const { data: status, isError, refetch, isFetching } = useSystemStatus();
-  const { data: version } = useOfflineGeoState();
+  const { data: version } = usePublicVersion();
 
   return (
     <div className="space-y-6">

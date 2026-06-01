@@ -147,15 +147,21 @@ export function SettingsShell({ active, children }: SettingsShellProps) {
   const { t } = useTranslations();
   const activeSlug = deriveActiveSlug(pathname, active);
 
-  // v1.4.33 IW4 — scroll the active chip into view inside the
-  // horizontal mobile strip. On a 393 CSS px viewport the strip
-  // is 11 chips wide and the rightmost four sit below the fold; a
-  // user who tapped one of those chips lands on the new route
-  // with the strip still scrolled to the leftmost chip, which
-  // reads as if the navigation is broken. `inline: "center"`
-  // anchors the active chip in the visible middle of its scroll
-  // container so the user keeps spatial orientation between
-  // sections.
+  // v1.4.33 IW4 — keep the active chip in view inside the horizontal
+  // mobile strip. On a 393 CSS px viewport the strip is wider than the
+  // viewport and the rightmost chips sit off-screen; a user who tapped
+  // one of those chips lands on the new route with the strip still
+  // scrolled to the leftmost chip, which reads as if the navigation is
+  // broken. We pin the active chip to the left edge of the strip.
+  //
+  // v1.7.0 — adjust only the strip's own horizontal scroll offset
+  // (via `scrollTo({ left })`) instead of `Element.scrollIntoView()`.
+  // `scrollIntoView` walks every scrollable ancestor and adjusts both
+  // axes, so on mobile it also nudged the whole document vertically on
+  // each route change — a dizzy auto-scroll that fired on every settings
+  // sub-page tap. Scrolling the strip's own `scrollLeft` confines the
+  // motion to its horizontal axis and never touches the page scroll
+  // position.
   const mobileStripRef = React.useRef<HTMLElement | null>(null);
   React.useEffect(() => {
     if (typeof window === "undefined") return;
@@ -163,13 +169,13 @@ export function SettingsShell({ active, children }: SettingsShellProps) {
     if (!strip) return;
     const active = strip.querySelector<HTMLElement>('[aria-current="page"]');
     if (!active) return;
-    active.scrollIntoView({
-      block: "nearest",
-      // v1.4.36 W4b — `inline: "start"` pins the active chip to the
-      // left edge of the scroller. `inline: "center"` over-scrolled
-      // and the first one or two chips were unreachable on narrow
-      // viewports.
-      inline: "start",
+    // Land the active chip at the strip's left edge, clamped to the
+    // scrollable range. `offsetLeft` is relative to the strip's padding
+    // box, which is the origin for `scrollLeft`.
+    const maxScroll = strip.scrollWidth - strip.clientWidth;
+    const target = Math.max(0, Math.min(active.offsetLeft, maxScroll));
+    strip.scrollTo({
+      left: target,
       // v1.4.43 W5-H5 — respect `prefers-reduced-motion`.
       behavior: scrollBehaviorForUser(),
     });

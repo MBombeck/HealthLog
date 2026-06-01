@@ -78,6 +78,9 @@ export const PUT = apiHandler(async (req: Request) => {
       verbosity: parsed.data.verbosity,
       excludeCount: parsed.data.excludeMetrics.length,
       showEvidence: parsed.data.showEvidenceByDefault,
+      // v1.7.0 — `null` when the caller left `dataClusters` absent
+      // (legacy defaults stay in force); otherwise the selected count.
+      clusterCount: parsed.data.dataClusters?.length ?? null,
     },
   });
   return apiSuccess(parsed.data);

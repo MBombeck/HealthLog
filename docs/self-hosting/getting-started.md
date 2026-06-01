@@ -122,6 +122,26 @@ bare Nginx — including the `X-Forwarded-For` chain shape that the
 rate-limiter trusts and the `TRUST_PROXY_HOPS` env var that pins how
 many hops to read back.
 
+## Build-time feature toggles
+
+A small number of toggles are `NEXT_PUBLIC_*` variables: the framework
+inlines them into the client bundle at **build time**, so the pre-built
+GHCR image cannot read them at runtime. Setting them in `.env` or the
+compose `environment:` block has no effect — they only take hold when
+you build your own image. They are intentionally absent from the
+compose runtime whitelist for that reason.
+
+| Variable | Default | Effect when set |
+| --- | --- | --- |
+| `NEXT_PUBLIC_DASHBOARD_SNAPSHOT` | on | The dashboard hydrates every above-the-fold tile from the single `GET /api/dashboard/snapshot` cell so the whole strip shares one completion moment. Build with `NEXT_PUBLIC_DASHBOARD_SNAPSHOT=false` to fall back to the legacy four-cell path. |
+
+To flip one, rebuild the image with the variable exported:
+
+```bash
+NEXT_PUBLIC_DASHBOARD_SNAPSHOT=false pnpm build
+# or pass it as a Dockerfile build ARG / Docker build --build-arg
+```
+
 ## 7. Where to go next
 
 | Next step | File |

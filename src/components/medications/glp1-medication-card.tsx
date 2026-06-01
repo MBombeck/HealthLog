@@ -2,32 +2,14 @@
 
 import { useEffect, useReducer, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
-import {
-  AlertCircle,
-  AlertTriangle,
-  Check,
-  CircleCheck,
-  Flame,
-  History,
-  Loader2,
-  MoreVertical,
-  Pencil,
-  SkipForward,
-  Stethoscope,
-} from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { MedicationCardHeader } from "@/components/medications/MedicationCardHeader";
-import { Progress } from "@/components/ui/progress";
+import { MedicationCardMenu } from "@/components/medications/medication-card-menu";
+import { MedicationStateBadges } from "@/components/medications/card-parts/medication-state-badges";
+import { MedicationStatusPill } from "@/components/medications/card-parts/medication-status-pill";
+import { MedicationComplianceBars } from "@/components/medications/card-parts/medication-compliance-bars";
+import { MedicationIntakeActions } from "@/components/medications/card-parts/medication-intake-actions";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import {
   invalidateKeys,
@@ -35,7 +17,6 @@ import {
   queryKeys,
 } from "@/lib/query-keys";
 import { formatDateTime, formatTime } from "@/lib/format";
-import { formatTimeWindowRange } from "@/lib/time-window-format";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import {
   nextInjectionSite,
@@ -120,6 +101,18 @@ interface DetailsResponse {
 interface Glp1MedicationCardProps {
   medication: Glp1Medication;
   onEdit: (med: Glp1Medication) => void;
+  /**
+   * v1.7.1 — routes to the medication's full intake-history view
+   * (`/medications/{id}/history`), mirroring the generic medication card
+   * and the detail-header History button. The parent owns the navigation.
+   */
+  onOpenHistory: (med: Glp1Medication) => void;
+  /**
+   * v1.7.1 — opens the shared `<AdvancedSettingsSheet>` (mounted by the
+   * list page) for this medication, mirroring the generic medication card
+   * and the detail-header sliders button.
+   */
+  onOpenAdvanced: (med: Glp1Medication) => void;
   onLogSideEffect?: (med: Glp1Medication) => void;
 }
 
@@ -173,10 +166,12 @@ function predictNextWeeklyDate(
 export function Glp1MedicationCard({
   medication,
   onEdit,
+  onOpenHistory,
+  onOpenAdvanced,
   onLogSideEffect,
 }: Glp1MedicationCardProps) {
   const queryClient = useQueryClient();
-  const { t, locale } = useTranslations();
+  const { t } = useTranslations();
   const fmt = useFormatters();
   const [intakeLoading, setIntakeLoading] = useState<string | null>(null);
   const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
@@ -308,74 +303,31 @@ export function Glp1MedicationCard({
   }
 
   const stateBadges = (
-    <>
-      {!medication.notificationsEnabled && (
-        <Badge variant="secondary" className="text-xs">
-          {t("medications.withoutNotification")}
-        </Badge>
-      )}
-      {!medication.active && (
-        <Badge variant="secondary" className="text-xs">
-          {medication.pausedAt
-            ? `${t("medications.pausedSince")} ${formatDateTime(medication.pausedAt)}`
-            : t("medications.inactive")}
-        </Badge>
-      )}
-    </>
+    <MedicationStateBadges
+      notificationsEnabled={medication.notificationsEnabled}
+      active={medication.active}
+      pausedAt={medication.pausedAt}
+    />
   );
 
+  // The four former header icon-buttons (open / edit / history /
+  // advanced) collapse into a SINGLE overflow menu so the GLP-1 card
+  // stays symmetric with the generic medication card. The card header
+  // itself links to the detail page (the former chevron target). The
+  // optional side-effect quick-log would fold in as a last menu item
+  // when `onLogSideEffect` is wired, but the medications list page does
+  // not wire it — side-effect logging lives on the detail page's
+  // SideEffectsSection — so the menu renders the same items as the
+  // generic card.
   const headerActions = (
-    <>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="min-h-11 min-w-11"
-        asChild
-        aria-label={t("medications.intakeHistory")}
-      >
-        <Link href={`/medications/${medication.id}/history`}>
-          <History className="h-4 w-4" />
-        </Link>
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="min-h-11 min-w-11"
-        onClick={() => onEdit(medication)}
-        aria-label={t("common.edit")}
-      >
-        <Pencil className="h-4 w-4" />
-      </Button>
-      {/* v1.4.37 W4b — GLP-1 specifics (side-effect quick-log etc.)
-          live in the header actions overflow so the primary action
-          row stays the canonical two-button shape (Eingenommen /
-          Übersprungen) shared with the generic medication card. The
-          kebab only renders when at least one overflow item is wired
-          for this medication kind. */}
-      {onLogSideEffect && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="min-h-11 min-w-11"
-              aria-label={t("common.moreOptions")}
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem
-              onClick={() => onLogSideEffect(medication)}
-              className="whitespace-nowrap"
-            >
-              <Stethoscope className="mr-2 h-4 w-4" />
-              {t("medications.glp1LogSideEffect")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-    </>
+    <MedicationCardMenu
+      onEdit={() => onEdit(medication)}
+      onOpenHistory={() => onOpenHistory(medication)}
+      onOpenAdvanced={() => onOpenAdvanced(medication)}
+      onLogSideEffect={
+        onLogSideEffect ? () => onLogSideEffect(medication) : undefined
+      }
+    />
   );
 
   const categoryLabel = getMedicationCategoryLabel(medication.category, t);
@@ -388,57 +340,22 @@ export function Glp1MedicationCard({
         categoryLabel={categoryLabel}
         stateBadges={stateBadges}
         actions={headerActions}
+        href={`/medications/${medication.id}`}
+        linkLabel={t("medications.openDetailPage")}
       />
 
       <CardContent className="space-y-3.5">
-        {/* v1.4.37 W4b — take-now / overdue / very-overdue pill,
-            byte-equivalent with the generic medication card. The
-            GLP-1 card historically omitted this row, which made
-            Mounjaro feel different from Ramipril on the medications
-            grid even though the underlying schedule contract is
-            the same shape. */}
+        {/* Take-now / overdue / very-overdue pill, shared with the
+            generic medication card. The GLP-1 card historically
+            omitted this row, which made Mounjaro feel different from
+            Ramipril on the medications grid even though the underlying
+            schedule contract is the same shape. */}
         {currentWindowStatus.status && (
-          <p className="text-sm">
-            <span
-              className={
-                "inline-flex items-center gap-1 font-medium " +
-                (currentWindowStatus.status === "in_window"
-                  ? "text-success"
-                  : currentWindowStatus.status === "late"
-                    ? "text-dracula-yellow"
-                    : "text-warning")
-              }
-            >
-              {/* v1.4.38 W-D P2-3 — pair the colour with a Lucide
-                  glyph so colour-blind users (red-green) can
-                  disambiguate take-now from late from very-late.
-                  WCAG 1.4.1 (Use of Color). */}
-              {currentWindowStatus.status === "in_window" ? (
-                <CircleCheck className="size-3.5 shrink-0" aria-hidden="true" />
-              ) : currentWindowStatus.status === "late" ? (
-                <AlertCircle className="size-3.5 shrink-0" aria-hidden="true" />
-              ) : (
-                <AlertTriangle
-                  className="size-3.5 shrink-0"
-                  aria-hidden="true"
-                />
-              )}
-              {currentWindowStatus.status === "in_window"
-                ? t("medications.takeNow")
-                : currentWindowStatus.status === "late"
-                  ? t("medications.overdue")
-                  : t("medications.veryOverdue")}
-            </span>
-            <span className="text-muted-foreground hidden sm:inline">
-              {" "}
-              —{" "}
-              {formatTimeWindowRange(
-                currentWindowStatus.schedule!.windowStart,
-                currentWindowStatus.schedule!.windowEnd,
-                locale,
-              )}
-            </span>
-          </p>
+          <MedicationStatusPill
+            status={currentWindowStatus.status}
+            windowStart={currentWindowStatus.schedule!.windowStart}
+            windowEnd={currentWindowStatus.schedule!.windowEnd}
+          />
         )}
 
         {/* Injection state — last + next */}
@@ -498,81 +415,25 @@ export function Glp1MedicationCard({
             Glp1InventoryDTO slot on /api/medications/[id]/glp1 stays
             in the response shape; only the web mounts are gone. */}
 
-        {/* Compliance bars — identical to the generic card so the page
+        {/* Compliance bars — shared with the generic card so the page
             grid stays harmonious. */}
         {medication.active && compliance && (
-          <div className="space-y-2.5">
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {t("medications.compliance7d")}
-                </span>
-                <span className="font-medium">{rate7}%</span>
-              </div>
-              {/* v1.4.33 IW9 — aria-label so the bar has an accessible name. */}
-              <Progress
-                value={rate7}
-                className="h-2"
-                aria-label={t("medications.compliance7d")}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {t("medications.compliance30d")}
-                </span>
-                <span className="font-medium">{rate30}%</span>
-              </div>
-              <Progress
-                value={rate30}
-                className="h-2"
-                aria-label={t("medications.compliance30d")}
-              />
-            </div>
-            {streak > 0 && (
-              <div className="flex items-center gap-4 text-xs">
-                <span className="text-dracula-orange flex items-center gap-1 font-medium">
-                  <Flame className="h-3.5 w-3.5" />
-                  {streak} {t("medications.dayStreak")}
-                </span>
-              </div>
-            )}
-          </div>
+          <MedicationComplianceBars
+            rate7={rate7}
+            rate30={rate30}
+            streak={streak}
+          />
         )}
 
-        {/* Primary actions row — byte-equivalent with the generic
-            medication card. v1.4.37 W4b moved the GLP-1-specific
-            side-effect quick-log out of this row and into the
-            header-actions overflow (kebab) so Mounjaro and Ramipril
-            share the canonical two-button primary row. */}
+        {/* Primary actions row — shared with the generic medication
+            card. The GLP-1-specific side-effect quick-log lives in the
+            header-actions overflow (kebab), not this row, so Mounjaro
+            and Ramipril share the canonical two-button primary row. */}
         {medication.active && (
-          <div className="flex gap-2">
-            <Button
-              className="min-h-11 flex-1"
-              onClick={() => recordIntake(false)}
-              disabled={!!intakeLoading}
-            >
-              {intakeLoading === "take" ? (
-                <Loader2 className="mr-1 h-4 w-4 animate-spin motion-reduce:animate-none" />
-              ) : (
-                <Check className="mr-1 h-4 w-4" />
-              )}
-              {t("medications.taken")}
-            </Button>
-            <Button
-              variant="outline"
-              className="min-h-11"
-              onClick={() => recordIntake(true)}
-              disabled={!!intakeLoading}
-            >
-              {intakeLoading === "skip" ? (
-                <Loader2 className="mr-1 h-4 w-4 animate-spin motion-reduce:animate-none" />
-              ) : (
-                <SkipForward className="mr-1 h-4 w-4" />
-              )}
-              {t("medications.skipped")}
-            </Button>
-          </div>
+          <MedicationIntakeActions
+            intakeLoading={intakeLoading}
+            onRecordIntake={recordIntake}
+          />
         )}
       </CardContent>
     </Card>

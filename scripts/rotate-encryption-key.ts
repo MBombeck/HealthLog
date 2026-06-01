@@ -11,6 +11,7 @@
  *   pnpm tsx scripts/rotate-encryption-key.ts v2
  */
 import "dotenv/config";
+import { Buffer } from "node:buffer";
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { decrypt, encrypt, extractKeyId, getActiveKeyId } from "@/lib/crypto";
@@ -92,6 +93,7 @@ async function main() {
       codexRefreshTokenEncrypted: true,
       aiAnthropicKeyEncrypted: true,
       aiLocalKeyEncrypted: true,
+      aiOpenaiKeyEncrypted: true,
       moodLogWebhookSecret: true,
       telegramBotToken: true,
       moodLogUrlEncrypted: true,
@@ -106,6 +108,7 @@ async function main() {
     "codexRefreshTokenEncrypted",
     "aiAnthropicKeyEncrypted",
     "aiLocalKeyEncrypted",
+    "aiOpenaiKeyEncrypted",
     "moodLogWebhookSecret",
     "telegramBotToken",
     "moodLogUrlEncrypted",
@@ -223,6 +226,67 @@ async function main() {
       ),
     );
   }
+
+  // ───── IntegrationStatus.lastError ─────
+  // Per `prisma/schema.prisma:1441` — AES-256-GCM ciphertext of an
+  // upstream error payload. Skipped historically; drop the legacy
+  // key while a row still lives here and the admin status view 500s.
+  const statuses = await prisma.integrationStatus.findMany({
+    select: { id: true, lastError: true },
+  });
+  results.push(
+    await rotateField(
+      "IntegrationStatus",
+      "lastError",
+      statuses,
+      (s) => s.lastError,
+      async (id, ciphertext) => {
+        await prisma.integrationStatus.update({
+          where: { id },
+          data: { lastError: ciphertext },
+        });
+      },
+    ),
+  );
+
+  // ───── CoachMessage.encryptedContent ─────
+  // Per `prisma/schema.prisma:1983` — `Bytes` column carrying the
+  // UTF-8 ciphertext of every persisted Coach message. The encrypt /
+  // decrypt helpers operate on strings, so we go through a Buffer
+  // round-trip identical to `src/lib/ai/coach/persistence.ts:60-71`.
+  const coachMessages = await prisma.coachMessage.findMany({
+    select: { id: true, encryptedContent: true },
+  });
+  const coachResult: RotationResult = {
+    table: "CoachMessage",
+    field: "encryptedContent",
+    scanned: coachMessages.length,
+    rotated: 0,
+    errors: 0,
+  };
+  for (const row of coachMessages) {
+    const buf = row.encryptedContent;
+    if (!buf || buf.byteLength === 0) continue;
+    const asString = Buffer.from(buf).toString("utf8");
+    if (!shouldRotate(asString)) continue;
+    try {
+      const rotated = encrypt(decrypt(asString));
+      const encoded = Buffer.from(rotated, "utf8");
+      const next = new Uint8Array(new ArrayBuffer(encoded.byteLength));
+      next.set(encoded);
+      await prisma.coachMessage.update({
+        where: { id: row.id },
+        data: { encryptedContent: next },
+      });
+      coachResult.rotated++;
+    } catch (err) {
+      coachResult.errors++;
+      console.error(
+        `[CoachMessage.encryptedContent] row ${row.id}: ${(err as Error).message}`,
+      );
+    }
+  }
+  results.push(coachResult);
 
   console.log("\n=== Rotation summary ===");
   let totalRotated = 0;

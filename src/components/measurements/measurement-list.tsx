@@ -60,6 +60,7 @@ import { formatDateOrRelative, formatDateTime } from "@/lib/format";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { CUMULATIVE_DAY_SUM_TYPES } from "@/lib/measurements/cumulative-day-sum";
 import { invalidateKeys, measurementDependentKeys } from "@/lib/query-keys";
+import { MEASUREMENT_NOTES_MAX_LENGTH } from "@/lib/validations/measurement";
 import { DateTimeInput } from "@/components/ui/date-input";
 import {
   MEASUREMENT_TYPE_LABEL_KEYS as TYPE_LABEL_KEYS,
@@ -105,11 +106,14 @@ interface MeasurementListProps {
 }
 
 const PAGE_SIZE = 25;
-const MAX_COMMENT_LENGTH = 25;
+// Input cap mirrors the server Zod bound. The list preview truncates at
+// a shorter width so a long note does not stretch a list row.
+const MAX_COMMENT_LENGTH = MEASUREMENT_NOTES_MAX_LENGTH;
+const COMMENT_PREVIEW_LENGTH = 40;
 
 function truncateComment(comment: string): string {
-  if (comment.length <= MAX_COMMENT_LENGTH) return comment;
-  return `${comment.slice(0, MAX_COMMENT_LENGTH - 1)}…`;
+  if (comment.length <= COMMENT_PREVIEW_LENGTH) return comment;
+  return `${comment.slice(0, COMMENT_PREVIEW_LENGTH - 1)}…`;
 }
 
 function toDateTimeLocalValue(isoString: string): string {

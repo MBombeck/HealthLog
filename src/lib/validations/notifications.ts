@@ -61,6 +61,74 @@ function isPrivateIpv4(ip: [number, number, number, number]): boolean {
   return false;
 }
 
+/**
+ * Decide whether a raw IP address string (as returned by `dns.lookup`)
+ * points at a public range — i.e. is safe to dial.
+ *
+ * Used by the pinned dispatcher (issue #217) inside undici's connect
+ * hook to defeat DNS rebinding: even when `isPublicUrl` accepted the
+ * hostname at input time, the resolver can flip between accept and
+ * dispatch. This second check runs against the literal address the
+ * connection would target.
+ *
+ * Accepts:
+ *  - dotted-quad IPv4 ("203.0.113.5", "10.0.0.1")
+ *  - IPv6 literal ("2001:db8::1", "::1", "fe80::1", "::ffff:127.0.0.1")
+ *
+ * Rejects every range `isPublicUrl` would reject at input time plus
+ * IPv4-mapped IPv6 (resolvers occasionally emit these).
+ */
+export function isPublicIp(ip: string): boolean {
+  if (!ip) return false;
+  const lower = ip.toLowerCase();
+
+  // IPv4 dotted-quad (what dns.lookup with family=4 returns).
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(lower)) {
+    const parsed = parseIpv4Strict(lower);
+    if (!parsed) return false;
+    return !isPrivateIpv4(parsed);
+  }
+
+  // IPv6. Only strings with a colon make it past the previous check.
+  if (lower.includes(":")) {
+    if (lower === "::1" || lower === "::") return false;
+    if (lower.startsWith("fe80:")) return false;
+    if (/^fc[0-9a-f]{0,2}:/.test(lower)) return false;
+    if (/^fd[0-9a-f]{0,2}:/.test(lower)) return false;
+
+    // IPv4-mapped IPv6 dotted form ("::ffff:127.0.0.1"). Some resolvers
+    // emit this when an AAAA falls through to a synthesized A.
+    const mappedDotted = lower.match(/^(?:::ffff:)(\d+\.\d+\.\d+\.\d+)$/);
+    if (mappedDotted) {
+      const parsed = parseIpv4Strict(mappedDotted[1]);
+      if (!parsed || isPrivateIpv4(parsed)) return false;
+      return true;
+    }
+
+    // IPv4-mapped IPv6 hex pair form ("::ffff:7f00:1").
+    const mappedHex = lower.match(
+      /^(?:::ffff:)([0-9a-f]{1,4}):([0-9a-f]{1,4})$/,
+    );
+    if (mappedHex) {
+      const high = parseInt(mappedHex[1], 16);
+      const low = parseInt(mappedHex[2], 16);
+      const parsed: [number, number, number, number] = [
+        (high >> 8) & 0xff,
+        high & 0xff,
+        (low >> 8) & 0xff,
+        low & 0xff,
+      ];
+      if (isPrivateIpv4(parsed)) return false;
+      return true;
+    }
+    return true;
+  }
+
+  // Anything else (non-IP string, malformed) — refuse rather than
+  // dispatch.
+  return false;
+}
+
 export function isPublicUrl(url: string): boolean {
   try {
     // Pre-URL guard #1: the WHATWG URL parser interprets leading-zero IPv4

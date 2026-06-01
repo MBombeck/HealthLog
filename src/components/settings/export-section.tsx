@@ -41,6 +41,7 @@ import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ArztberichtHeroCard } from "@/components/settings/arztbericht-hero-card";
+import { HealthRecordExportPanel } from "@/components/settings/health-record-export-panel";
 import { useTranslations } from "@/lib/i18n/context";
 
 type ExportFormat = "CSV" | "JSON";
@@ -90,6 +91,11 @@ export function ExportSection() {
           alongside the four CSV/JSON exports. The hero now sits at the
           top of the page; the same generation flow runs underneath. */}
       <ArztberichtHeroCard />
+
+      {/* v1.7.0 — full health-record export. PDF + FHIR R4 + a combined
+          zip package, with grouped data-section toggles and a format
+          switch. Sits above the secondary CSV/JSON cards. */}
+      <HealthRecordExportPanel />
 
       {/* v1.4.37 W7a — secondary export options. The doctor-report
           card moved into the hero above, so this group renders the

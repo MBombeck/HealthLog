@@ -14,6 +14,7 @@ import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 import { CoachLaunchButton } from "@/components/insights/coach-launch-button";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
 import { MetricEmptyState } from "@/components/insights/metric-empty-state";
+import { MetricTargetSummary } from "@/components/insights/metric-target-summary";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 
 /**
@@ -58,6 +59,7 @@ export default function InsightsBmiPage() {
       <SubPageShell
         title={t("insights.bmiSectionTitle")}
         description={t("insights.subPage.bmiDescription")}
+        explainerMetric="bmi"
       >
         <MetricEmptyState
           icon={<Ruler className="size-6" />}
@@ -81,6 +83,7 @@ export default function InsightsBmiPage() {
       <SubPageShell
         title={t("insights.bmiSectionTitle")}
         description={t("insights.subPage.bmiDescription")}
+        explainerMetric="bmi"
       >
         <EmptyState
           icon={<Ruler className="size-6" />}
@@ -106,6 +109,7 @@ export default function InsightsBmiPage() {
     <SubPageShell
       title={t("insights.bmiSectionTitle")}
       description={t("insights.subPage.bmiDescription")}
+      explainerMetric="bmi"
     >
       <HealthChartDynamic
         chartKey="bmi"
@@ -119,6 +123,8 @@ export default function InsightsBmiPage() {
         userTimezone={user?.timezone}
       />
 
+      <MetricTargetSummary slug="bmi" />
+
       <InsightStatusCard
         title={t("insights.assessmentTitle")}
         icon={<Ruler className="h-5 w-5" />}
@@ -127,6 +133,7 @@ export default function InsightsBmiPage() {
         cached={status?.cached ?? false}
         updatedAt={status?.updatedAt ?? null}
         loading={isStatusLoading}
+        preparing={status?.preparing ?? false}
       />
 
       <CoachLaunchButton />

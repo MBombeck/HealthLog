@@ -3,6 +3,7 @@ import { loginPasswordSchema } from "@/lib/validations/auth";
 import { verifyPassword } from "@/lib/auth/password";
 import { createSession } from "@/lib/auth/session";
 import { auditLog } from "@/lib/auth/audit";
+import { hashToken } from "@/lib/auth/hmac";
 import {
   apiSuccess,
   apiError,
@@ -54,6 +55,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const { email, password } = parsed.data;
   const identifier = email.trim();
+  // HMAC of the typed identifier — keyed by `API_TOKEN_HMAC_KEY`,
+  // mirrors the `/api/auth/check-user` pattern. The raw identifier
+  // stays out of the audit row (H-1 contract); the hash gives a
+  // future spray-detector a forensic anchor it can correlate across
+  // IPs without having to look up users by email.
+  const identifierHash = hashToken(identifier);
 
   const user = await prisma.user.findFirst({
     where: {
@@ -67,10 +74,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (!user || !user.passwordHash) {
     // v1.4.43 W3-SECURITY (H-1): never write the typed identifier into
     // the audit row — `reason` already tells the operator what
-    // happened, and PII must not land in operator artefacts.
+    // happened, and PII must not land in operator artefacts. The
+    // HMAC anchor below is one-way — recoverable only with the HMAC
+    // key (operator secret), used purely to group same-identifier
+    // attempts across IPs.
     await auditLog("auth.login.failed", {
       ipAddress: ip,
-      details: { reason: "user_not_found_or_no_password" },
+      details: { reason: "user_not_found_or_no_password", identifierHash },
     });
     return apiError("Invalid credentials", 401);
   }
@@ -80,7 +90,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     await auditLog("auth.login.failed", {
       userId: user.id,
       ipAddress: ip,
-      details: { reason: "invalid_password" },
+      details: { reason: "invalid_password", identifierHash },
     });
     return apiError("Invalid credentials", 401);
   }

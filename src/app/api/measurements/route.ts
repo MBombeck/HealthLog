@@ -28,6 +28,7 @@ import {
 } from "@/lib/measurements/drain-per-sample-cumulative";
 import { withIdempotency } from "@/lib/idempotency";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
+import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 import {
   recomputeBucketsForMeasurement,
   collapseToTypeDayKeys,
@@ -664,6 +665,16 @@ async function postMeasurement(request: NextRequest) {
       for (const k of keys) {
         await recomputeBucketsForMeasurement(user.id, k.type, k.measuredAt);
       }
+
+      // v1.8.0 — drop the cached per-metric assessment rows the ingested
+      // types dirty so the next mount / nightly warm pass regenerates
+      // them against the new data. Fire-and-forget: never blocks ingest.
+      invalidateStatusInsightsForTypes(
+        user.id,
+        keys.map((k) => k.type),
+      ).catch((err) => {
+        console.warn("[measurements] status-insight invalidate failed", err);
+      });
     } catch (err) {
       console.warn("[measurements] rollup recompute failed", err);
     }
@@ -767,6 +778,13 @@ async function postMeasurement(request: NextRequest) {
   } catch (err) {
     console.warn("[measurements] rollup recompute failed", err);
   }
+
+  // v1.8.0 — drop the cached per-metric assessment rows this type
+  // dirties so the next mount / nightly warm pass regenerates against
+  // the new row. Fire-and-forget: never blocks the user's write.
+  invalidateStatusInsightsForTypes(user.id, [measurement.type]).catch((err) => {
+    console.warn("[measurements] status-insight invalidate failed", err);
+  });
 
   return apiSuccess(measurement, 201);
 }

@@ -148,6 +148,10 @@ export function HostMetricsChart() {
     [data?.samples],
   );
 
+  // Total physical memory (latest sample) — lets the tooltip pair the
+  // percentage with an absolute "X.X GiB / Y.Y GiB" label. 0 ⇒ omit.
+  const memTotalGiB = (data?.meta.memTotalBytes ?? 0) / 1_073_741_824;
+
   // Loading skeleton: same footprint as the chart so the panel doesn't
   // jump when data lands. Animated only when motion isn't reduced.
   if (isLoading) {
@@ -282,6 +286,13 @@ export function HostMetricsChart() {
                   return [fmt.number(value, 2), name];
                 }
                 if (name === t("admin.hostMetrics.memUsedPercent")) {
+                  if (memTotalGiB > 0) {
+                    const usedGiB = (value / 100) * memTotalGiB;
+                    return [
+                      `${fmt.number(value, 1)} % · ${fmt.number(usedGiB, 1)} / ${fmt.number(memTotalGiB, 1)} GiB`,
+                      name,
+                    ];
+                  }
                   return [`${fmt.number(value, 1)} %`, name];
                 }
                 if (name === t("admin.hostMetrics.diskBusyPercent")) {

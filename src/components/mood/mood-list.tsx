@@ -63,6 +63,7 @@ import {
   MOOD_SCORE_BY_ENUM,
 } from "@/lib/mood/labels";
 import { invalidateKeys, moodDependentKeys } from "@/lib/query-keys";
+import { useRovingRadioGroup } from "@/hooks/use-roving-radio-group";
 
 // Re-export the score map under the legacy local name to keep the
 // rest of this file unchanged. v1.4.27 B6 / BL-P6-11 — the single
@@ -118,6 +119,13 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
 
   const [editing, setEditing] = useState<MoodEntry | null>(null);
   const [editMood, setEditMood] = useState("");
+  const { getRadioProps: getEditMoodRadioProps } = useRovingRadioGroup({
+    count: MOOD_LEVELS_LIST.length,
+    selectedIndex: MOOD_LEVELS_LIST.indexOf(
+      editMood as (typeof MOOD_LEVELS_LIST)[number],
+    ),
+    onSelect: (index) => setEditMood(MOOD_LEVELS_LIST[index]!),
+  });
   const [editTagsInput, setEditTagsInput] = useState("");
   const [editMoodLoggedAt, setEditMoodLoggedAt] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
@@ -538,7 +546,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                   aria-labelledby="edit-mood-level-label"
                   className="grid grid-cols-5 gap-2"
                 >
-                  {MOOD_LEVELS_LIST.map((level) => {
+                  {MOOD_LEVELS_LIST.map((level, index) => {
                     const isSelected = editMood === level;
                     return (
                       <button
@@ -547,6 +555,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                         role="radio"
                         aria-checked={isSelected}
                         onClick={() => setEditMood(level)}
+                        {...getEditMoodRadioProps(index)}
                         className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-center transition-colors ${
                           isSelected
                             ? "border-primary bg-primary/10 text-primary border-2"

@@ -88,4 +88,32 @@ describe("<MedicationCardHeader>", () => {
     expect(categoryIdx).toBeGreaterThan(-1);
     expect(stateRowIdx).toBeGreaterThan(categoryIdx);
   });
+
+  it("wraps the name/dose/category region in a detail-page link when href is set (v1.7.2 W3)", () => {
+    const html = render(
+      <MedicationCardHeader
+        name="Ramipril"
+        dose="5 mg"
+        categoryLabel="Blood Pressure"
+        href="/medications/med-1"
+        linkLabel="Open medication detail page"
+      />,
+    );
+    expect(html).toContain('data-slot="medication-card-header-link"');
+    expect(html).toContain('href="/medications/med-1"');
+    expect(html).toContain('aria-label="Open medication detail page"');
+    // The title still rides inside the link region.
+    expect(html).toContain("Ramipril 5 mg");
+  });
+
+  it("falls back to a non-navigating div when href is omitted", () => {
+    const html = render(
+      <MedicationCardHeader
+        name="Ramipril"
+        dose="5 mg"
+        categoryLabel="Blood Pressure"
+      />,
+    );
+    expect(html).not.toContain('data-slot="medication-card-header-link"');
+  });
 });

@@ -1,0 +1,24 @@
+-- v1.5.4 — Clinical category bucket additions.
+--
+-- The medication's clinical category lives in a side-table
+-- (`medication_categories`) with a TEXT column rather than a Prisma
+-- enum, so adding a new bucket does not require an ALTER TYPE. The
+-- migration is documentation-only — the new "DIABETES" and
+-- "ANTIBIOTIC" values are enforced at the Zod layer
+-- (`MEDICATION_CATEGORY_VALUES` in src/lib/validations/medication.ts)
+-- and the side-table's `normalizeCategory` helper accepts them on
+-- the same path as the pre-existing buckets.
+--
+-- The modal-wizard's Step 2 taxonomy adds Diabetes and Antibiotikum
+-- as first-class rows. The mapping table (see
+-- src/components/medications/wizard/wizard-payload.ts —
+-- WIZARD_TREATMENT_MAPPING) writes "DIABETES" and "ANTIBIOTIC" to
+-- the side-table for those rows instead of collapsing them into
+-- "OTHER".
+--
+-- No SQL changes are needed — the index on `category` already covers
+-- the new values, and existing rows retain their previous bucket.
+
+-- Force a non-empty migration body so prisma records the new step
+-- in the `_prisma_migrations` ledger.
+SELECT 1 WHERE FALSE;

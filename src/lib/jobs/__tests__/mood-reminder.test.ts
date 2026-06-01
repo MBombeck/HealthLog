@@ -51,6 +51,7 @@ interface FakePrismaState {
     id: string;
     timezone: string;
     locale: string | null;
+    notificationPrefs?: unknown;
   }>;
   moodEntries: Array<{ userId: string; date: string }>;
   dispatches: Array<{ userId: string; date: string }>;
@@ -162,6 +163,37 @@ describe("evaluateMoodReminderWindow", () => {
     expect(r.fire).toBe(true);
     expect(r.localDate).toBe("2026-05-17");
   });
+
+  it("an unset reminderHour defaults to 22:00 (back-compat)", () => {
+    const at22 = new Date("2026-05-17T20:00:00Z"); // 22:00 Berlin
+    const r = evaluateMoodReminderWindow(
+      { timezone: "Europe/Berlin", moodReminderEnabled: true },
+      at22,
+    );
+    expect(r.fire).toBe(true);
+    expect(MOOD_REMINDER_LOCAL_HOUR).toBe(22);
+  });
+
+  it("v1.7.0 — fires in the user's chosen hour (09:00) instead of 22:00", () => {
+    const at09 = new Date("2026-05-17T07:00:00Z"); // 09:00 Berlin
+    const r = evaluateMoodReminderWindow(
+      { timezone: "Europe/Berlin", moodReminderEnabled: true, reminderHour: 9 },
+      at09,
+    );
+    expect(r.fire).toBe(true);
+    expect(r.localDate).toBe("2026-05-17");
+    expect(r.localHour).toBe(9);
+  });
+
+  it("v1.7.0 — does NOT fire at 22:00 when the user chose 09:00", () => {
+    const at22 = new Date("2026-05-17T20:00:00Z"); // 22:00 Berlin
+    const r = evaluateMoodReminderWindow(
+      { timezone: "Europe/Berlin", moodReminderEnabled: true, reminderHour: 9 },
+      at22,
+    );
+    expect(r.fire).toBe(false);
+    expect(r.localHour).toBe(22);
+  });
 });
 
 describe("buildMoodReminderPayload", () => {
@@ -238,6 +270,77 @@ describe("runMoodReminderTick", () => {
     expect(typeof call.metadata?.scheduledAt).toBe("string");
     expect(state.dispatches).toHaveLength(1);
     expect(state.dispatches[0]).toEqual({ userId: "u-1", date: "2026-05-17" });
+  });
+
+  it("v1.7.0 — fires in the user's per-user hour from notificationPrefs", async () => {
+    const at09 = new Date("2026-05-17T07:00:00Z"); // 09:00 Berlin
+    const state: FakePrismaState = {
+      candidates: [
+        {
+          id: "u-1",
+          timezone: "Europe/Berlin",
+          locale: "de",
+          notificationPrefs: { mood: { reminderHour: 9 } },
+        },
+      ],
+      moodEntries: [],
+      dispatches: [],
+      raceUserIds: new Set(),
+    };
+    const prisma = makePrisma(state);
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    const summary = await runMoodReminderTick(prisma as never, at09, {
+      dispatch,
+    });
+
+    expect(summary.dispatched).toBe(1);
+    expect(dispatch).toHaveBeenCalledTimes(1);
+  });
+
+  it("v1.7.0 — does NOT fire at 22:00 for a user who chose 09:00", async () => {
+    const state: FakePrismaState = {
+      candidates: [
+        {
+          id: "u-1",
+          timezone: "Europe/Berlin",
+          locale: "de",
+          notificationPrefs: { mood: { reminderHour: 9 } },
+        },
+      ],
+      moodEntries: [],
+      dispatches: [],
+      raceUserIds: new Set(),
+    };
+    const prisma = makePrisma(state);
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    const summary = await runMoodReminderTick(prisma as never, inWindow, {
+      dispatch,
+    });
+
+    expect(summary.dispatched).toBe(0);
+    expect(summary.skippedOutsideWindow).toBe(1);
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  it("v1.7.0 — an unset notificationPrefs still fires at the default 22:00", async () => {
+    const state: FakePrismaState = {
+      candidates: [
+        { id: "u-1", timezone: "Europe/Berlin", locale: "de" },
+      ],
+      moodEntries: [],
+      dispatches: [],
+      raceUserIds: new Set(),
+    };
+    const prisma = makePrisma(state);
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    const summary = await runMoodReminderTick(prisma as never, inWindow, {
+      dispatch,
+    });
+
+    expect(summary.dispatched).toBe(1);
   });
 
   it("does NOT dispatch for users outside the 22:00 window", async () => {

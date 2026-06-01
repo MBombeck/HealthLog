@@ -11,7 +11,11 @@ import {
   getStepsRange,
   getBpTargetsByAge,
 } from "@/lib/analytics/classifications";
-import { calculateCompliance } from "@/lib/analytics/compliance";
+import {
+  buildComplianceMedicationContext,
+  calculateCompliance,
+  lastNonSkippedTakenAt,
+} from "@/lib/analytics/compliance";
 import { pairByTimestamp } from "@/lib/analytics/correlations";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
 import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
@@ -872,6 +876,8 @@ async function buildTargetsResponse(user: AuthedUser) {
     const intakeEvents = await prisma.medicationIntakeEvent.findMany({
       where: {
         userId,
+        // v1.7.0 sync — exclude tombstoned rows.
+        deletedAt: null,
         medicationId: {
           in: activeMedications.map((medication) => medication.id),
         },
@@ -890,17 +896,26 @@ async function buildTargetsResponse(user: AuthedUser) {
       const medicationEvents = intakeEvents.filter(
         (event) => event.medicationId === medication.id,
       );
+      // v1.7.0 SB-SCHED-2 — engine-routed denominator (userTz resolved
+      // above at the route entry).
+      const medicationContext = buildComplianceMedicationContext(
+        medication,
+        lastNonSkippedTakenAt(medicationEvents),
+        userTz,
+      );
       const compliance7 = calculateCompliance(
         medicationEvents,
         medication.schedules,
         7,
         medication.createdAt,
+        { medicationContext },
       );
       const compliance30 = calculateCompliance(
         medicationEvents,
         medication.schedules,
         30,
         medication.createdAt,
+        { medicationContext },
       );
 
       return {
@@ -1038,7 +1053,8 @@ async function buildTargetsResponse(user: AuthedUser) {
   const moodSince = new Date(Date.now() - moodRollupWindowMs);
   const moodRollups = await readMoodDayRollups(userId, moodSince);
   const latestMoodEntry = await prisma.moodEntry.findFirst({
-    where: { userId },
+    // v1.7.0 sync — exclude tombstoned rows.
+    where: { userId, deletedAt: null },
     orderBy: { moodLoggedAt: "desc" },
     select: { score: true, moodLoggedAt: true },
   });
@@ -1064,7 +1080,8 @@ async function buildTargetsResponse(user: AuthedUser) {
     // trailing 30-day window only (instead of every entry ever) \u2014 that's
     // the bound the legacy code was missing.
     const recentRawMood = await prisma.moodEntry.findMany({
-      where: { userId, moodLoggedAt: { gte: thirtyDaysAgoMood } },
+      // v1.7.0 sync — exclude tombstoned rows.
+      where: { userId, deletedAt: null, moodLoggedAt: { gte: thirtyDaysAgoMood } },
       orderBy: { moodLoggedAt: "asc" },
       select: { score: true, moodLoggedAt: true },
     });

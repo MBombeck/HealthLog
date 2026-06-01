@@ -18,7 +18,7 @@
  * per webhook invocation; acceptable for small deployments and easily
  * upgraded later by adding an HMAC lookup column.
  */
-import { encrypt, decrypt } from "@/lib/crypto";
+import { encrypt, decrypt, extractKeyId } from "@/lib/crypto";
 
 export function encryptMoodLogSecret(plaintext: string): string {
   return encrypt(plaintext);
@@ -26,14 +26,21 @@ export function encryptMoodLogSecret(plaintext: string): string {
 
 export function readMoodLogSecret(stored: string | null): string | null {
   if (!stored) return null;
-  try {
+  // Anything carrying a `<keyId>.<payload>` envelope must decrypt
+  // cleanly. A failure here means either the active key map no longer
+  // includes the version this row was written under (rotation playbook
+  // not finished) or the ciphertext was tampered with directly in the
+  // column. Returning the raw envelope bytes as if they were the
+  // plaintext secret would silently turn a corrupted row into an
+  // attacker-chosen webhook secret — so surface the failure instead.
+  if (extractKeyId(stored) !== null) {
     return decrypt(stored);
-  } catch {
-    // Legacy plaintext — keep returning it so the integration keeps
-    // working until the next write rotates it. Operators can force a
-    // migration by hitting the rotation endpoint.
-    return stored;
   }
+  // Legacy plaintext path — unprefixed values predate the encrypt-at-
+  // rest contract. Return as-is so the integration keeps working until
+  // the next write rotates them; `rotateLegacyMoodLogSecrets()` runs
+  // at boot to convert them.
+  return stored;
 }
 
 /**
@@ -42,12 +49,11 @@ export function readMoodLogSecret(stored: string | null): string | null {
  */
 export function isLegacyPlaintext(stored: string | null): boolean {
   if (!stored) return false;
-  try {
-    decrypt(stored);
-    return false;
-  } catch {
-    return true;
-  }
+  // A row is legacy plaintext only when it does NOT carry the
+  // `<keyId>.<payload>` envelope. Envelope-shaped rows are encrypted —
+  // even ones we currently can't decrypt (which should fail loud, not
+  // get re-rotated as if they were plaintext).
+  return extractKeyId(stored) === null;
 }
 
 interface MoodLogSecretMigrationDeps {

@@ -76,6 +76,8 @@ describe("GET /api/sync/state (real Postgres)", () => {
         lastSyncedAt: string | null;
         serverNow: string;
         measurements: { lastUpdatedAt: string | null; liveCount: number; tombstonedCount: number };
+        mood: { lastUpdatedAt: string | null; liveCount: number; tombstonedCount: number };
+        intakes: { lastUpdatedAt: string | null; liveCount: number; tombstonedCount: number };
       };
     };
     expect(json.data.userId).toBe(TEST_USER_ID);
@@ -83,6 +85,11 @@ describe("GET /api/sync/state (real Postgres)", () => {
     expect(json.data.lastSyncedAt).toBeNull();
     expect(json.data.measurements.liveCount).toBe(0);
     expect(json.data.measurements.tombstonedCount).toBe(0);
+    // v1.7.0 — mood + intake blocks now report on the same shape.
+    expect(json.data.mood.liveCount).toBe(0);
+    expect(json.data.mood.tombstonedCount).toBe(0);
+    expect(json.data.intakes.liveCount).toBe(0);
+    expect(json.data.intakes.tombstonedCount).toBe(0);
 
     // Server-side, lastSyncedAt now carries a value.
     const after = await getPrismaClient().user.findUnique({

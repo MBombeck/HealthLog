@@ -38,6 +38,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
+import { toast } from "sonner";
 
 interface InsightsSettings {
   codexStatus: string;
@@ -1796,12 +1797,20 @@ function RuntimeActionsRow({
 
   async function togglePrivacy() {
     const next = privacyMode === "raw" ? "aggregated" : "raw";
-    await fetch("/api/insights/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ privacyMode: next }),
-    });
-    onPrivacyChanged();
+    // Privacy mode is a sensitive control: only reflect the new mode
+    // once the server confirms it. A swallowed 4xx/5xx would leave the
+    // UI showing a setting the server never accepted.
+    try {
+      const res = await fetch("/api/insights/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ privacyMode: next }),
+      });
+      if (!res.ok) throw new Error("request failed");
+      onPrivacyChanged();
+    } catch {
+      toast.error(t("settings.savingError"));
+    }
   }
 
   const lastInsightLine = lastInsightAt

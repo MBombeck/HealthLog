@@ -203,6 +203,59 @@ describe("GET /api/export/medications", () => {
     expect(body).not.toContain("# Intake history");
     expect(prisma.medicationIntakeEvent.findMany).not.toHaveBeenCalled();
   });
+
+  it("scopes both queries to a single medication when medicationId is set", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(checkRateLimit).mockResolvedValue({
+      allowed: true,
+      remaining: 9,
+      resetAt: Date.now() + 3600_000,
+    });
+    vi.mocked(prisma.medication.findMany).mockResolvedValue([
+      { name: "Aspirin", dose: "100mg", active: true, schedules: [] },
+    ] as never);
+    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
+      [] as never,
+    );
+
+    const { GET } = await import("../medications/route");
+    const res = await GET(
+      mkReq(
+        "http://localhost/api/export/medications?intake=true&medicationId=med-9",
+      ),
+    );
+    expect(res.status).toBe(200);
+    // The medication list is narrowed by id AND userId (IDOR-safe).
+    expect(prisma.medication.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user-1", id: "med-9" },
+      }),
+    );
+    // The intake history is filtered to the same medication.
+    expect(prisma.medicationIntakeEvent.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ medicationId: "med-9" }),
+      }),
+    );
+  });
+
+  it("404s a scoped export when the medication is not the caller's", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(checkRateLimit).mockResolvedValue({
+      allowed: true,
+      remaining: 9,
+      resetAt: Date.now() + 3600_000,
+    });
+    // userId-narrowed query resolves to no row for a foreign id.
+    vi.mocked(prisma.medication.findMany).mockResolvedValue([] as never);
+
+    const { GET } = await import("../medications/route");
+    const res = await GET(
+      mkReq("http://localhost/api/export/medications?medicationId=not-mine"),
+    );
+    expect(res.status).toBe(404);
+    expect(prisma.medicationIntakeEvent.findMany).not.toHaveBeenCalled();
+  });
 });
 
 describe("GET /api/export/mood", () => {

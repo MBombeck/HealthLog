@@ -287,7 +287,8 @@ export async function buildGlp1SnapshotBlock(
   // to each — the Coach can disambiguate from context.
   const moodCutoff = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
   const moods: RawMoodEntry[] = await prisma.moodEntry.findMany({
-    where: { userId, moodLoggedAt: { gte: moodCutoff } },
+    // v1.7.0 sync — exclude tombstoned rows.
+    where: { userId, deletedAt: null, moodLoggedAt: { gte: moodCutoff } },
     select: { moodLoggedAt: true, tags: true },
   });
   const tagCounts = new Map<string, number>();

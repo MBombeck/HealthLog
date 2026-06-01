@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/db";
-import { resolveProvider } from "@/lib/ai/provider";
 import {
   getPulseSystemPrompt,
   getPulseUserPrompt,
@@ -14,84 +13,85 @@ import {
 } from "@/lib/analytics/pulse-targets";
 import { getNoKeyPulseStatusText } from "@/lib/insights/no-key-fallbacks";
 import { applyPayloadBudget } from "@/lib/insights/bucket-series";
-import { stripChartTokens } from "@/lib/insights/chart-tokens";
 import {
-  withTimeout,
-  STATUS_PROVIDER_TIMEOUT_MS,
-} from "@/lib/insights/with-timeout";
-import { persistTimeoutStubAndReturn } from "@/lib/insights/persist-timeout-stub";
+  buildGradedSeriesFromPoints,
+  buildGradedSeriesWithRollups,
+  degradeStatusSnapshotToBudget,
+} from "@/lib/insights/graded-series";
+import {
+  type SupportedLocale,
+  normalizeLocale,
+  normalizeSummaryText,
+  parseSummaryFromContent,
+  persistStatusInsight,
+  round,
+  summarizeSeries,
+} from "@/lib/insights/status-shared";
+import { runStatusCompletion } from "@/lib/insights/status-provider";
+import {
+  readFreshStatusText,
+  resolveReadOnlyStatusMiss,
+} from "@/lib/insights/status-cache";
+import { returnTimeoutFallback } from "@/lib/insights/timeout-fallback";
 import { annotate } from "@/lib/logging/context";
 import { toBerlinDayKey } from "@/lib/tz/resolver";
-
-type SupportedLocale = "de" | "en";
-
-function round(value: number, digits = 1): number {
-  const factor = 10 ** digits;
-  return Math.round(value * factor) / factor;
-}
-
-function normalizeSummaryText(value: string): string {
-  return stripChartTokens(value).replace(/\s+/g, " ").trim();
-}
-
-function normalizeLocale(value: string | null | undefined): SupportedLocale {
-  return value === "en" ? "en" : "de";
-}
-
-function summarizeSeries(series: Array<{ value: number }>) {
-  if (series.length === 0) return null;
-  const first = series[0].value;
-  const last = series[series.length - 1].value;
-  // v1.4.33 — fold sum/min/max into a single walk. The previous
-  // `Math.min(...series.map(...))` / `Math.max(...series.map(...))`
-  // spread tripped V8's ~125 000-arg ceiling on the bound /api/analytics
-  // path; see `.planning/round-v1433-analytics-500-report.md` §"Carry-
-  // over". These helpers are fed bounded windows today so the crash
-  // never reached them, but the spread allocates a transient args array
-  // on every call — the fold is both stack-safe and cheaper.
-  let sum = 0;
-  let minVal = series[0].value;
-  let maxVal = series[0].value;
-  for (const entry of series) {
-    sum += entry.value;
-    if (entry.value < minVal) minVal = entry.value;
-    if (entry.value > maxVal) maxVal = entry.value;
-  }
-  return {
-    points: series.length,
-    start: round(first, 2),
-    end: round(last, 2),
-    delta: round(last - first, 2),
-    mean: round(sum / series.length, 2),
-    min: round(minVal, 2),
-    max: round(maxVal, 2),
-  };
-}
 
 export async function generatePulseStatusForUser(
   userId: string,
   options?: {
     locale?: string | null;
     force?: boolean;
+    /** v1.8.3 — read-only navigation path; see weight-status for the rationale. */
+    readOnly?: boolean;
   },
 ): Promise<{
   hasProvider: boolean;
   text: string | null;
   cached: boolean;
   updatedAt: string | null;
+  preparing?: boolean;
 }> {
   const locale = normalizeLocale(options?.locale);
   const force = options?.force === true;
+  const readOnly = options?.readOnly === true;
   const cacheAction = `insights.pulse-status.${locale}`;
   const todayKey = toBerlinDayKey(new Date());
 
-  const provider = await resolveProvider(userId);
-  if (provider.type === "none") {
+  const cached = await readFreshStatusText({
+    userId,
+    cacheAction,
+    todayKey,
+    force,
+  });
+  if (cached) {
     return {
-      hasProvider: false,
-      text: getNoKeyPulseStatusText(locale),
+      hasProvider: true,
+      text: cached.text,
       cached: true,
+      updatedAt: cached.updatedAt,
+    };
+  }
+
+  if (readOnly) {
+    const outcome = await resolveReadOnlyStatusMiss({
+      userId,
+      metric: "pulse",
+      locale,
+    });
+    if (outcome === "no-provider") {
+      return {
+        hasProvider: false,
+        text: getNoKeyPulseStatusText(locale),
+        cached: true,
+        updatedAt: null,
+      };
+    }
+    return {
+      hasProvider: true,
+      text: null,
+      cached: false,
       updatedAt: null,
+      preparing: true,
     };
   }
 
@@ -102,35 +102,6 @@ export async function generatePulseStatusForUser(
       gender: true,
     },
   });
-
-  const latestCache = await prisma.auditLog.findFirst({
-    where: { userId, action: cacheAction },
-    orderBy: { createdAt: "desc" },
-    select: { createdAt: true, details: true },
-  });
-
-  if (!force && latestCache?.details) {
-    try {
-      const parsed = JSON.parse(latestCache.details) as {
-        dateKey?: string;
-        text?: string;
-      };
-      if (
-        parsed.dateKey === todayKey &&
-        typeof parsed.text === "string" &&
-        parsed.text.trim().length > 0
-      ) {
-        return {
-          hasProvider: true,
-          text: parsed.text,
-          cached: true,
-          updatedAt: latestCache.createdAt.toISOString(),
-        };
-      }
-    } catch {
-      // ignore invalid cache payload
-    }
-  }
 
   // v1.4.28 FB-D2 — cap the snapshot input. The downstream
   // `applyPayloadBudget` trims further but the unbounded findMany was
@@ -152,13 +123,18 @@ export async function generatePulseStatusForUser(
 
   const now = new Date();
 
-  const pulseSeries = applyPayloadBudget(
-    measurements.map((measurement) => ({
-      measuredAt: measurement.measuredAt,
-      value: measurement.value,
-    })),
-    { now },
-  );
+  const pulsePoints = measurements.map((measurement) => ({
+    measuredAt: measurement.measuredAt,
+    value: measurement.value,
+  }));
+  // `applyPayloadBudget` daily buckets still drive the derived stats
+  // below (latest, in-target %, delta). They are NOT embedded in the
+  // prompt — the compact graded series replaces the full daily array.
+  const pulseSeries = applyPayloadBudget(pulsePoints, { now });
+  // Primary metric: recent / weekly fold from the bounded raw read, the
+  // monthly / yearly tail comes from the MONTH / YEAR rollup tier (with
+  // a full-history in-memory fallback on a cold-tier coverage miss).
+  const pulseGraded = await buildGradedSeriesWithRollups(userId, "PULSE", now);
   const pulseSummary = summarizeSeries(
     pulseSeries.daily.map((bucket) => ({ value: bucket.value })),
   );
@@ -175,13 +151,12 @@ export async function generatePulseStatusForUser(
     })
     .then((rows) => rows.reverse());
 
-  const moodSeries = applyPayloadBudget(
-    moodEntries.map((entry) => ({
-      measuredAt: entry.moodLoggedAt,
-      value: entry.score,
-    })),
-    { now },
-  );
+  const moodPoints = moodEntries.map((entry) => ({
+    measuredAt: entry.moodLoggedAt,
+    value: entry.score,
+  }));
+  const moodSeries = applyPayloadBudget(moodPoints, { now });
+  const moodGraded = buildGradedSeriesFromPoints(moodPoints, now);
   const moodSummary = summarizeSeries(
     moodSeries.daily.map((bucket) => ({ value: bucket.value })),
   );
@@ -245,7 +220,7 @@ export async function generatePulseStatusForUser(
     },
     pulse: {
       summary: pulseSummary,
-      series: pulseSeries,
+      series: pulseGraded,
       latestDayFocus: latestPulse
         ? {
             dayOffset: latestPulse.dayOffset,
@@ -270,16 +245,22 @@ export async function generatePulseStatusForUser(
             points: moodSeries.daily.length,
             mean: moodMean,
             latest: moodSeries.daily[0]?.value ?? null,
-            series: moodSeries,
+            series: moodGraded,
           }
         : null,
   };
 
+  const shed = degradeStatusSnapshotToBudget(
+    snapshot as unknown as Record<string, unknown>,
+  );
   const snapshotJson = JSON.stringify(snapshot, null, 2);
 
   annotate({
     action: { name: cacheAction },
-    meta: { payload_size_bytes: snapshotJson.length },
+    meta: {
+      payload_size_bytes: snapshotJson.length,
+      ...(shed.length > 0 ? { snapshot_shed: shed } : {}),
+    },
   });
 
   const previousContext = await getPreviousInsightContext(
@@ -293,90 +274,59 @@ export async function generatePulseStatusForUser(
     locale,
   );
 
-  // v1.4.28 FB-D2 — cap the provider round-trip at 20 s. On timeout
-  // (or upstream failure) return the no-key fallback text in a
-  // cached-style envelope so the status card renders deterministically
-  // instead of spinning behind React-Query's default retry ladder.
-  // v1.4.41 — the timeout branch now persists a sentinel keyed to
-  // today (see `persistTimeoutStubAndReturn`) so subsequent mounts
-  // short-circuit at the cache lookup instead of re-racing the
-  // upstream call. The daily pre-warm job overwrites the stub.
-  const raced = await withTimeout(
-    () =>
-      provider.generateCompletion({
-        systemPrompt: getPulseSystemPrompt(locale),
-        userPrompt: getPulseUserPrompt(
-          snapshotJson,
-          todayKey,
-          locale,
-          previousContextBlock,
-        ),
-        temperature: 0.3,
-        maxTokens: 1000,
-      }),
-    STATUS_PROVIDER_TIMEOUT_MS,
-    null,
-  );
-
-  if (raced.timedOut || raced.value === null) {
-    // v1.4.37 — persist a sentinel row keyed to today so the next
-    // mount short-circuits at the cache lookup above instead of
-    // re-racing the same 20 s provider call on every cold visit.
-    // See `persistTimeoutStubAndReturn` for the full rationale.
-    return persistTimeoutStubAndReturn({
-      userId,
-      cacheAction,
+  const outcome = await runStatusCompletion({
+    userId,
+    cacheAction,
+    systemPrompt: getPulseSystemPrompt(locale),
+    userPrompt: getPulseUserPrompt(
+      snapshotJson,
       todayKey,
       locale,
-      providerType: provider.type,
+      previousContextBlock,
+    ),
+    temperature: 0.3,
+    maxTokens: 1000,
+  });
+
+  if (outcome.kind === "none") {
+    return {
+      hasProvider: false,
+      text: getNoKeyPulseStatusText(locale),
+      cached: true,
+      updatedAt: null,
+    };
+  }
+  if (outcome.kind === "timeout" || outcome.kind === "error") {
+    return returnTimeoutFallback({
+      cacheAction,
+      reason: outcome.kind,
+      userId,
+      todayKey,
       stubText: getNoKeyPulseStatusText(locale),
     });
   }
 
-  const result = raced.value;
-  const content = result.content;
-  if (typeof content !== "string" || content.trim().length === 0) {
-    throw new Error("AI returned empty content for pulse-status");
-  }
-
-  let summary = "";
-  try {
-    const parsed = JSON.parse(content) as { summary?: string };
-    if (typeof parsed.summary === "string") {
-      summary = parsed.summary;
-    } else {
-      summary = content;
-    }
-  } catch {
-    summary = content;
-  }
-
-  summary = normalizeSummaryText(summary);
+  const summary = normalizeSummaryText(parseSummaryFromContent(outcome.content));
   if (!summary) {
     throw new Error("Pulse-status summary was empty after normalization");
   }
 
-  const created = await prisma.auditLog.create({
-    data: {
-      userId,
-      action: cacheAction,
-      details: JSON.stringify({
-        dateKey: todayKey,
-        locale,
-        text: summary,
-        providerType: provider.type,
-        model: result.model ?? "unknown",
-        tokensUsed: result.tokensUsed ?? null,
-      }),
-    },
-    select: { createdAt: true },
+  const updatedAt = await persistStatusInsight({
+    userId,
+    cacheAction,
+    todayKey,
+    locale,
+    text: summary,
+    providerType: outcome.providerType,
+    model: outcome.model,
+    tokensUsed: outcome.tokensUsed,
   });
 
   return {
     hasProvider: true,
     text: summary,
     cached: false,
-    updatedAt: created.createdAt.toISOString(),
+    updatedAt,
   };
 }
 

@@ -261,7 +261,7 @@ describe("Coach disable cascade invariant", () => {
   // directly. Cross-cut gates on sub-pages (`/targets` page drawer,
   // `<TargetCard>` per-card CTA) sit OUTSIDE the fixture and are owned
   // by sibling invariants. A future contributor who lands a new Coach
-  // mount on (e.g.) `/insights/blutdruck/page.tsx` would not trip the
+  // mount on (e.g.) `/insights/blood-pressure/page.tsx` would not trip the
   // surface-count check at all — the new site is on a sub-page and
   // would silently leak.
   //

@@ -32,6 +32,23 @@ const ZIP64_EOCD_RECORD = 0x06064b50;
 const CENTRAL_FILE_HEADER = 0x02014b50;
 const LOCAL_FILE_HEADER = 0x04034b50;
 
+/**
+ * Hard cap on the decompressed `export.xml` size. Apple Health exports
+ * for heavy multi-year accounts settle in the low single-digit GB
+ * range; 8 GiB leaves a wide ceiling for any legitimate user while
+ * making zip-bomb expansion (1000:1 deflate ratios are easily
+ * crafted) refuse the inflate before it OOMs the process.
+ */
+const MAX_DECOMPRESSED_BYTES = 8 * 1024 * 1024 * 1024;
+/**
+ * Pre-flight refusal threshold for the central-directory's advertised
+ * ratio. Legitimate Apple Health XML compresses at maybe 10–20× under
+ * DEFLATE; anything claiming a 200× expansion is a synthesized bomb.
+ * This is a coarse signal — the `maxOutputLength` ceiling on the
+ * inflate call below is the load-bearing defence.
+ */
+const MAX_COMPRESSION_RATIO = 200;
+
 /** A single entry within the archive's central directory. */
 interface CentralDirectoryEntry {
   fileName: string;
@@ -83,6 +100,30 @@ export function extractExportXml(archivePath: string): UnzipResult {
     throw new Error(
       `Unsupported ZIP compression method ${exportXmlEntry.compressionMethod}`
         + " for export.xml (expected 0=stored or 8=deflate)",
+    );
+  }
+
+  // Pre-flight zip-bomb defence. The central directory's advertised
+  // `uncompressedSize` is attacker-controlled (a malicious archive can
+  // lie), so this catches honest-but-oversized payloads early; the
+  // load-bearing defence is the `maxOutputLength` cap inside
+  // `extractEntry()` which trips on the actual inflate output.
+  if (exportXmlEntry.uncompressedSize > MAX_DECOMPRESSED_BYTES) {
+    throw new Error(
+      `export.xml declares an uncompressed size of ${exportXmlEntry.uncompressedSize} bytes`
+        + ` — refusing to extract (cap is ${MAX_DECOMPRESSED_BYTES} bytes).`,
+    );
+  }
+  if (
+    exportXmlEntry.compressedSize > 0
+    && exportXmlEntry.uncompressedSize / exportXmlEntry.compressedSize
+      > MAX_COMPRESSION_RATIO
+  ) {
+    throw new Error(
+      `export.xml advertises a ${(
+        exportXmlEntry.uncompressedSize / exportXmlEntry.compressedSize
+      ).toFixed(0)}× compression ratio (cap is ${MAX_COMPRESSION_RATIO}×)`
+        + " — refusing as a suspected zip bomb.",
     );
   }
 
@@ -236,8 +277,11 @@ function extractEntry(buf: Buffer, entry: CentralDirectoryEntry): Buffer {
   if (entry.compressionMethod === 0) {
     return compressed;
   }
-  // Method 8 — DEFLATE.
-  return inflateRawSync(compressed);
+  // Method 8 — DEFLATE. `maxOutputLength` instructs `node:zlib` to
+  // refuse expansion past the cap with a thrown error, defeating
+  // zip-bomb amplification even when the central-directory metadata
+  // lies about the uncompressed size.
+  return inflateRawSync(compressed, { maxOutputLength: MAX_DECOMPRESSED_BYTES });
 }
 
 /**

@@ -87,9 +87,13 @@ function buildUser(disableCoach: boolean): AuthUser {
     timezone: "Europe/Berlin",
     onboardingCompletedAt: null,
     onboardingTourCompleted: true,
-    gravatarUrl: null,
+    avatarUrl: null,
     glucoseUnit: null,
+    unitPreference: "metric",
     disableCoach,
+    fullName: null,
+    insurerName: null,
+    insuranceNumber: null,
   };
 }
 
@@ -348,6 +352,14 @@ describe("Coach per-user disableCoach invariant", () => {
     "src/app/targets/page.tsx",
     // - Settings → Insights toggle reads + writes the flag.
     "src/components/settings/ai-section.tsx",
+    // v1.7.0 W6 — the unified dashboard snapshot builder reads
+    // `user.disableCoach` to gate the embedded daily briefing to
+    // `briefingState: "disabled"`. Covered by the briefingState matrix
+    // in `src/lib/dashboard/__tests__/snapshot.test.ts`. The route is
+    // a thin pass-through of the resolved session user into the
+    // builder.
+    "src/lib/dashboard/snapshot.ts",
+    "src/app/api/dashboard/snapshot/route.ts",
   ];
 
   /**

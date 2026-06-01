@@ -1,16 +1,9 @@
 "use client";
 
-import {
-  Activity,
-  Eye,
-  Heart,
-  HeartPulse,
-  Pill,
-  Scale,
-  Smile,
-} from "lucide-react";
+import { useState } from "react";
+import { Activity, Eye, Loader2 } from "lucide-react";
 
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -20,151 +13,83 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
-import type {
-  CoachScope,
-  CoachScopeSource,
-  CoachScopeWindow,
-} from "@/lib/ai/coach/types";
+import { useCoachPrefs, useSaveCoachPrefs } from "@/hooks/use-coach-prefs";
+import { CLUSTER_SOURCES } from "@/lib/ai/coach/clusters";
+import {
+  DEFAULT_COACH_CLUSTERS,
+  coachDataClusterEnum,
+  type CoachDataCluster,
+  type CoachDefaultWindow,
+  type CoachPrefs,
+} from "@/lib/validations/coach-prefs";
 
 /**
- * v1.4.20 phase B2b — "What I can see" rail.
+ * v1.7.2 — "What I can see" rail, backed by the persisted Coach prefs.
  *
- * Right-column companion in the Coach drawer. Lists the data sources
- * the assistant draws on so the user can build trust in the
- * provenance.
+ * The rail and the settings-cog sheet now drive the SAME persisted
+ * `coachPrefsJson` row: the cluster toggles write `dataClusters` and the
+ * window picker writes `defaultWindow` through
+ * `PUT /api/auth/me/coach-prefs`. There is no ephemeral per-conversation
+ * scope any more — what the rail shows is exactly what the chat route
+ * ships to the model (the snapshot builder expands the saved clusters
+ * when the request carries no explicit `scope.sources`). A toggle here
+ * persists immediately and the cog reflects it on its next open, and
+ * vice-versa.
  *
- * v1.4.20.1 — controls promoted from a static legend to a real scope
- * picker:
- *   - per-source checkboxes (BP / Weight / Pulse / Mood / Compliance)
- *     so the user can include/exclude a source from the next Coach
- *     turn
- *   - a window selector (last 7 / 30 / 90 days, all time) feeding
- *     `buildCoachSnapshot`'s timeline window
- * Scope state lives in the parent drawer so `useSendCoachMessage`
- * can pass it through to the route on each send. The rail itself
- * stays presentational — it reads the current scope and emits an
- * `onScopeChange` whenever the user toggles a control. No
- * conversation-level persistence in v1.4.20.1; the rail resets to
- * "all sources, last 30 days" each time the drawer mounts fresh.
+ * The rail is self-contained: it reads `useCoachPrefs` and writes via
+ * `useSaveCoachPrefs`, so callers mount it with no props. The cluster
+ * member count beneath each label spells out the scope so the user can
+ * see how much data each toggle pulls in.
  */
+const CLUSTER_OPTIONS: ReadonlyArray<CoachDataCluster> =
+  coachDataClusterEnum.options;
 
-const ALL_SOURCES: ReadonlyArray<CoachScopeSource> = [
-  "bp",
-  "weight",
-  "pulse",
-  "mood",
-  "compliance",
-];
-
-const DEFAULT_WINDOW: CoachScopeWindow = "last30days";
-
-/**
- * Default scope used by the drawer's initial mount. Exported so the
- * parent can seed its own state without re-deriving the same values.
- */
-export const DEFAULT_COACH_SCOPE: Required<
-  Pick<CoachScope, "sources" | "window">
-> = {
-  sources: [...ALL_SOURCES],
-  window: DEFAULT_WINDOW,
-};
-
-export interface SourcesRailProps {
-  className?: string;
-  /**
-   * Current scope. When omitted the rail paints with the all-source
-   * last-30-days defaults — useful in storyboards / unit tests that
-   * just want to see the legend.
-   */
-  scope?: CoachScope;
-  /**
-   * Fired when the user toggles a checkbox or changes the window.
-   * The parent merges the change into its scope state. When omitted
-   * the controls still render but stay read-only — keeps the legend
-   * surface stable for callers that don't yet wire scope through.
-   */
-  onScopeChange?: (next: {
-    sources: CoachScopeSource[];
-    window: CoachScopeWindow;
-  }) => void;
-}
-
-interface SourceRow {
-  key: CoachScopeSource;
-  metricKey: string;
-  Icon: React.ComponentType<{ className?: string }>;
-  accentClass: string;
-}
-
-const ROWS: SourceRow[] = [
-  {
-    key: "bp",
-    metricKey: "insights.coach.metric.bp",
-    Icon: HeartPulse,
-    accentClass: "text-dracula-purple",
-  },
-  {
-    key: "weight",
-    metricKey: "insights.coach.metric.weight",
-    Icon: Scale,
-    accentClass: "text-dracula-cyan",
-  },
-  {
-    key: "pulse",
-    metricKey: "insights.coach.metric.pulse",
-    Icon: Heart,
-    accentClass: "text-dracula-pink",
-  },
-  {
-    key: "mood",
-    metricKey: "insights.coach.metric.mood",
-    Icon: Smile,
-    accentClass: "text-dracula-green",
-  },
-  {
-    key: "compliance",
-    metricKey: "insights.coach.metric.compliance",
-    Icon: Pill,
-    accentClass: "text-dracula-orange",
-  },
-];
-
-const WINDOW_OPTIONS: ReadonlyArray<CoachScopeWindow> = [
+const WINDOW_OPTIONS: ReadonlyArray<CoachDefaultWindow> = [
   "last7days",
   "last30days",
   "last90days",
   "allTime",
 ];
 
-export function SourcesRail({
-  className,
-  scope,
-  onScopeChange,
-}: SourcesRailProps) {
+export interface SourcesRailProps {
+  className?: string;
+}
+
+export function SourcesRail({ className }: SourcesRailProps) {
   const { t } = useTranslations();
 
-  const activeSources = new Set<CoachScopeSource>(
-    scope?.sources && scope.sources.length > 0
-      ? scope.sources
-      : DEFAULT_COACH_SCOPE.sources,
-  );
-  const activeWindow: CoachScopeWindow = scope?.window ?? DEFAULT_WINDOW;
-  const interactive = !!onScopeChange;
+  const { data: prefs } = useCoachPrefs();
+  const save = useSaveCoachPrefs();
 
-  function toggleSource(key: CoachScopeSource) {
-    if (!onScopeChange) return;
-    const next = new Set(activeSources);
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
-    onScopeChange({ sources: Array.from(next), window: activeWindow });
+  // The persisted set drives the switches: `undefined` (never picked) →
+  // legacy defaults, otherwise the explicit array (including the empty
+  // "everything off" state). Track the cluster being written so its
+  // switch shows a tiny spinner instead of the whole rail freezing.
+  const enabledClusters = new Set<CoachDataCluster>(
+    prefs?.dataClusters ?? DEFAULT_COACH_CLUSTERS,
+  );
+  const activeWindow: CoachDefaultWindow = prefs?.defaultWindow ?? "allTime";
+  const [pending, setPending] = useState<CoachDataCluster | "window" | null>(
+    null,
+  );
+
+  function persist(next: CoachPrefs, marker: CoachDataCluster | "window") {
+    setPending(marker);
+    save.mutate(next, { onSettled: () => setPending(null) });
   }
 
-  function setWindow(next: CoachScopeWindow) {
-    if (!onScopeChange) return;
-    onScopeChange({
-      sources: Array.from(activeSources),
-      window: next,
-    });
+  function toggleCluster(cluster: CoachDataCluster, next: boolean) {
+    if (!prefs) return;
+    const current = prefs.dataClusters ?? Array.from(DEFAULT_COACH_CLUSTERS);
+    const dataClusters = next
+      ? Array.from(new Set([...current, cluster]))
+      : current.filter((c) => c !== cluster);
+    persist({ ...prefs, dataClusters }, cluster);
+  }
+
+  function setWindow(next: CoachDefaultWindow) {
+    if (!prefs) return;
+    persist({ ...prefs, defaultWindow: next }, "window");
   }
 
   return (
@@ -172,13 +97,6 @@ export function SourcesRail({
       data-slot="coach-sources-rail"
       className={cn("flex h-full min-h-0 flex-col gap-3 p-3", className)}
     >
-      {/* v1.4.33 — promote the rail label from a `<span>` to a real
-          `<h3>` so the rail carries a semantic outline on desktop
-          where it mounts inline next to the message thread. The
-          mobile rail-tray wraps the rail inside its own `SheetTitle`
-          (an `<h2>`), so the rail's own `<h3>` simply nests beneath
-          it — the heading hierarchy stays consistent across
-          viewports. */}
       <h3
         data-slot="coach-sources-rail-heading"
         className="text-muted-foreground flex items-center gap-1.5 px-1 text-[11px] font-medium tracking-wide uppercase"
@@ -187,10 +105,9 @@ export function SourcesRail({
         {t("insights.coach.sourcesTitle")}
       </h3>
 
-      {/* Window selector — every row below is filtered to the picked
-          window when the next Coach message goes out. 36px touch
-          target on the trigger so the rail stays mobile-friendly when
-          it surfaces inside the side-tray on `<xl`. */}
+      {/* Window selector — persists to `coachPrefs.defaultWindow` so the
+          chosen timeframe sticks across drawer opens and matches what
+          the cog sheet shows. */}
       <div data-slot="coach-sources-window" className="flex flex-col gap-1">
         <label
           htmlFor="coach-sources-window-select"
@@ -200,8 +117,8 @@ export function SourcesRail({
         </label>
         <Select
           value={activeWindow}
-          onValueChange={(v) => setWindow(v as CoachScopeWindow)}
-          disabled={!interactive}
+          onValueChange={(v) => setWindow(v as CoachDefaultWindow)}
+          disabled={!prefs}
         >
           <SelectTrigger
             id="coach-sources-window-select"
@@ -221,75 +138,66 @@ export function SourcesRail({
         </Select>
       </div>
 
+      {/* Persisted cluster toggles — the same set the settings cog
+          edits. Toggling writes `dataClusters` immediately; the member
+          count hint shows the scope each cluster pulls in. */}
       <ul
         data-slot="coach-sources-list"
-        className="flex flex-1 flex-col gap-1.5"
+        className="flex flex-1 flex-col gap-1.5 overflow-y-auto"
       >
-        {ROWS.map((row) => {
-          const checked = activeSources.has(row.key);
-          const checkboxId = `coach-sources-toggle-${row.key}`;
+        {CLUSTER_OPTIONS.map((cluster) => {
+          const checked = enabledClusters.has(cluster);
+          const switchId = `coach-sources-cluster-${cluster}`;
+          const memberCount = CLUSTER_SOURCES[cluster].length;
           return (
             <li
-              key={row.key}
+              key={cluster}
               data-slot="coach-sources-row"
-              data-source={row.key}
+              data-source={cluster}
               data-active={checked ? "true" : "false"}
               className={cn(
-                "border-border/60 bg-muted/30 flex items-center gap-2",
+                "border-border/60 bg-muted/30 flex items-center gap-2.5",
                 "rounded-md border px-2.5",
-                // 36px target so a finger tap reliably lands on the
-                // checkbox on mobile (the side-tray surface).
-                "min-h-9 py-1.5",
+                "min-h-11 py-1.5",
                 !checked && "opacity-60",
               )}
             >
-              {/* v1.4.27 R3d MB4 / CF-40 — swap the raw HTML checkbox
-                  for the shadcn `<Checkbox>` primitive so the rail
-                  ships a real focus ring, a proper keyboard contract
-                  (Space toggles, Tab moves), and a touch-friendly
-                  hit target on the side-tray surface. The wrapping
-                  `<label htmlFor={checkboxId}>` below still acts as
-                  the row-wide tap target on mobile. */}
-              <Checkbox
-                id={checkboxId}
-                checked={checked}
-                disabled={!interactive}
-                onCheckedChange={() => toggleSource(row.key)}
-                data-slot="coach-sources-checkbox"
-                aria-label={t(row.metricKey)}
-                className="cursor-pointer"
-              />
-              <row.Icon
-                className={cn("size-3.5", row.accentClass)}
-                aria-hidden="true"
-              />
-              <label
-                htmlFor={checkboxId}
-                className={cn(
-                  "text-foreground flex-1 cursor-pointer text-xs font-medium",
-                  !interactive && "cursor-default",
-                )}
-              >
-                {t(row.metricKey)}
-              </label>
-              {/* Fresh / stale indicator — v1.4.20 was a static dot
-                  with no real freshness state behind it (v1.4.21 plugs
-                  in <IntegrationStatusPill>). aria-hidden so SR users
-                  don't hear "Fresh" five times in a row for what is
-                  actually a placeholder. */}
-              <span
-                aria-hidden="true"
-                className="bg-dracula-green size-1.5 rounded-full"
-              />
+              <div className="flex min-w-0 flex-1 flex-col">
+                <label
+                  htmlFor={switchId}
+                  className="text-foreground cursor-pointer text-xs font-medium"
+                >
+                  {t(`insights.coach.cluster.${cluster}.label`)}
+                </label>
+                <span className="text-muted-foreground text-[10px] leading-snug">
+                  {t("insights.coach.sourcesMemberCount", {
+                    count: memberCount,
+                  })}
+                </span>
+              </div>
+              {pending === cluster ? (
+                <Loader2
+                  className="text-muted-foreground size-4 shrink-0 animate-spin motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Switch
+                  id={switchId}
+                  data-slot="coach-sources-checkbox"
+                  checked={checked}
+                  disabled={!prefs || pending !== null}
+                  onCheckedChange={(next) => toggleCluster(cluster, next)}
+                  aria-label={t(`insights.coach.cluster.${cluster}.label`)}
+                  className="cursor-pointer"
+                />
+              )}
             </li>
           );
         })}
       </ul>
-      {/* v1.4.22 B4: the rail's footer now carries the medical
-          disclaimer (relocated from below the composer). The
-          source-picker section above stands on its own as the rail's
-          primary content — users see the disclaimer once, in a calm
-          place, instead of every time they look at the input. */}
+
+      {/* Medical disclaimer footer (relocated from the composer in
+          v1.4.22). */}
       <div
         data-slot="coach-sources-disclaimer"
         className="border-border/50 mt-auto flex items-start gap-2 border-t pt-3"

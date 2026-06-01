@@ -5,6 +5,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { getValidToken } from "@/lib/withings/sync";
+import { safeFetch, SafeFetchError } from "@/lib/safe-fetch";
 
 export const dynamic = "force-dynamic";
 
@@ -95,21 +96,21 @@ export const POST = apiHandler(async (request: NextRequest) => {
     lastupdate: Math.floor(Date.now() / 1000 - 60).toString(),
   });
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   const start = performance.now();
 
   try {
-    const res = await fetch(WITHINGS_MEASURE_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Bearer ${tokenInfo.accessToken}`,
+    const res = await safeFetch(
+      WITHINGS_MEASURE_URL,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Bearer ${tokenInfo.accessToken}`,
+        },
+        body: params.toString(),
       },
-      body: params.toString(),
-      signal: controller.signal,
-      redirect: "manual",
-    });
+      { timeoutMs: TIMEOUT_MS },
+    );
     const latencyMs = Math.round(performance.now() - start);
 
     if (!res.ok) {
@@ -156,7 +157,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
     });
   } catch (e) {
     const err = e as Error;
-    const isAbort = err.name === "AbortError";
+    // safeFetch wraps timeouts into SafeFetchError{kind:"timeout"};
+    // legacy AbortError name is preserved for compatibility with any
+    // future direct-fetch path that still reaches this catch.
+    const isAbort =
+      (e instanceof SafeFetchError && e.kind === "timeout") ||
+      err.name === "AbortError";
     const code = isAbort ? "timeout" : "connection_failed";
     annotate({
       meta: {
@@ -169,8 +175,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
       502,
       { errorCode: code },
     );
-  } finally {
-    clearTimeout(timer);
   }
 });
 

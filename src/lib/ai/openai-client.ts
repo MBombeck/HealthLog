@@ -1,3 +1,4 @@
+import { safeFetch } from "@/lib/safe-fetch";
 import type { AIProvider, CompletionParams, CompletionResult } from "./types";
 
 interface OpenAIClientConfig {
@@ -30,23 +31,29 @@ export class OpenAIClient implements AIProvider {
   ): Promise<CompletionResult> {
     const url = `${this.config.baseUrl.replace(/\/$/, "")}/chat/completions`;
 
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this.config.apiKey}`,
+    const res = await safeFetch(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.config.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: this.config.model,
+          messages: [
+            { role: "system", content: params.systemPrompt },
+            { role: "user", content: params.userPrompt },
+          ],
+          temperature: params.temperature ?? 0.3,
+          max_tokens: params.maxTokens ?? 1000,
+          response_format: { type: "json_object" },
+        }),
       },
-      body: JSON.stringify({
-        model: this.config.model,
-        messages: [
-          { role: "system", content: params.systemPrompt },
-          { role: "user", content: params.userPrompt },
-        ],
-        temperature: params.temperature ?? 0.3,
-        max_tokens: params.maxTokens ?? 1000,
-        response_format: { type: "json_object" },
-      }),
-    });
+      // 60 s ceiling so a tar-pit upstream cannot pin a worker
+      // indefinitely. Real completions land well inside this budget.
+      { timeoutMs: 60_000 },
+    );
 
     if (!res.ok) {
       // Pull as much of the body as we can so upstream incidents (OpenAI 5xx,

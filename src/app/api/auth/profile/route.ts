@@ -31,5 +31,8 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     dateOfBirth: result.user.dateOfBirth,
     gender: result.user.gender,
     timezone: result.user.timezone,
+    fullName: result.user.fullName,
+    insurerName: result.user.insurerName,
+    hasInsuranceNumber: result.user.hasInsuranceNumber,
   });
 });

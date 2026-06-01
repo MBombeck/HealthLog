@@ -18,7 +18,13 @@ import { join } from "node:path";
  * strip paints from the slim slice as soon as it lands; thick fields
  * stream in afterwards. Without this dual-mount the cold-mount UX
  * waterfall regresses to the v1.4.39.1 behaviour, so the test pins the
- * exact two call shapes.
+ * two call shapes.
+ *
+ * v1.7.0 W6 — both calls now carry an `enabled` gate so the unified
+ * snapshot rollout flag can disable them in favour of a single
+ * `/api/dashboard/snapshot` cell. With the flag OFF (default) the
+ * slim/thick split still drives the page, so the protective intent
+ * holds; the matchers only relaxed to tolerate the `enabled` arg.
  */
 const ROOT = join(__dirname, "../../..");
 const PAGE_PATH = join(ROOT, "src/app/page.tsx");
@@ -31,10 +37,11 @@ describe("v1.4.39.2 — dashboard analytics slim/thick split", () => {
   it("mounts both the slim slice and the thick slice in parallel", () => {
     const src = load(PAGE_PATH);
     // Slim slice — `?slice=summaries` paints the per-type tile strip.
-    expect(src).toMatch(/useAnalyticsQuery\(\{\s*slice:\s*"summaries"\s*\}\)/);
-    // Thick slice — the bare `useAnalyticsQuery()` (no slice) feeds
-    // the BD-Zielbereich + glucose tiles. Both must coexist.
-    expect(src).toMatch(/useAnalyticsQuery\(\)/);
+    expect(src).toMatch(/useAnalyticsQuery\(\{\s*\n?\s*slice:\s*"summaries"/);
+    // Thick slice — the no-slice `useAnalyticsQuery` feeds the
+    // BD-Zielbereich + glucose tiles. Both must coexist. The thick
+    // call now opens with `{ enabled:` (no `slice` key).
+    expect(src).toMatch(/useAnalyticsQuery\(\{\s*\n?\s*enabled:/);
   });
 
   it("merges slim and thick results so call-sites stay shape-stable", () => {

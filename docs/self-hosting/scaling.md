@@ -1,4 +1,4 @@
-# Scaling: web/worker container split (v1.4 G3)
+# Scaling: web/worker container split
 
 The default `docker compose up` launches a single container that runs
 both the Next.js HTTP server AND the pg-boss worker. That works fine
@@ -51,7 +51,7 @@ dependency is Postgres; both wait on `db: condition: service_healthy`.
   cross-mode invocation aborts immediately instead of silently doubling
   cron load.
 
-## Postgres connection-pool sizing (v1.4.40 W-POOL)
+## Postgres connection-pool sizing
 
 Every container that boots the HealthLog image opens its own
 `pg.Pool` against the configured `DATABASE_URL`. The pool ceiling is
@@ -97,7 +97,7 @@ services:
 Rules of thumb:
 
 - Each web replica's hottest path (`/api/analytics` fan-out, capped at
-  `p-limit(4)` per v1.4.40 W-POOL) consumes 4 concurrent slots. Keep
+  `p-limit(4)`) consumes 4 concurrent slots. Keep
   `DATABASE_POOL_MAX ≥ 8` so a single power-user request never
   exhausts the pool of one container.
 - Worker replicas mostly use 1 connection per active pg-boss job;
@@ -118,6 +118,5 @@ fan-out — keeps 16 slots free for the rest of the dashboard while
 still sitting well under Postgres's 100-slot stock ceiling.
 
 The implementation lives in `src/lib/db.ts → getPoolMax()`; the
-rationale and the audit trail live in
-`.planning/round-v1439-empirical-trace.md § B2` and the v1.4.40
-W-POOL phase report.
+20-slot default was chosen after measuring on a 4-CPU production
+container — see the inline rationale in `getPoolMax()`.

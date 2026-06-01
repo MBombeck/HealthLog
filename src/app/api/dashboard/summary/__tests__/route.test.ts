@@ -131,6 +131,14 @@ describe("GET /api/dashboard/summary", () => {
     expect(body.data.metrics).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: "weight" })]),
     );
+    // v1.5.x — wire shape carries i18n keys, not translated strings.
+    // The previous shape emitted "Gewicht" / "kg" / "Schritte" verbatim,
+    // which injected DE into an English iOS UI.
+    const weightCard = body.data.metrics.find((m) => m.id === "weight") as
+      | { titleKey: string; unitKey: string }
+      | undefined;
+    expect(weightCard?.titleKey).toBe("dashboard.metric.title.weight");
+    expect(weightCard?.unitKey).toBe("dashboard.metric.unit.weight");
     expect(
       body.data.metrics.find((m) => m.id === "bp"),
       "bp must not emit when allTimeCount === 0 (REG-11)",
@@ -536,6 +544,10 @@ describe("GET /api/dashboard/summary", () => {
     vi.mocked(prisma.medication.findMany).mockResolvedValue([
       {
         id: "med-ramipril",
+        startsOn: null,
+        endsOn: null,
+        oneShot: false,
+        createdAt: new Date("2026-01-01T00:00:00Z"),
         schedules: [
           {
             id: "sched-morgens",
@@ -543,6 +555,10 @@ describe("GET /api/dashboard/summary", () => {
             windowStart: "07:00",
             windowEnd: "09:00",
             daysOfWeek: null,
+            timesOfDay: [],
+            reminderGraceMinutes: null,
+            rrule: null,
+            rollingIntervalDays: null,
           },
         ],
       },
@@ -607,6 +623,68 @@ describe("GET /api/dashboard/summary", () => {
     ]);
   });
 
+  it("projects one row per timesOfDay for a twice-daily schedule", async () => {
+    // A single MedicationSchedule row carrying two first-class
+    // `timesOfDay` is two distinct dose slots per day. Pre-fix the
+    // projector minted only the `windowStart` slot, so the second daily
+    // dose never appeared in the today-tile and the event-count
+    // compliance rollup read half the expected doses (a 2×/day med
+    // showed 50%). Assert the backfill mints both slots.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-21T03:00:00.000Z"));
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.medication.findMany).mockResolvedValue([
+      {
+        id: "med-twice-daily",
+        startsOn: null,
+        endsOn: null,
+        oneShot: false,
+        createdAt: new Date("2026-01-01T00:00:00Z"),
+        schedules: [
+          {
+            id: "sched-bid",
+            medicationId: "med-twice-daily",
+            windowStart: "07:00",
+            windowEnd: "07:30",
+            daysOfWeek: null,
+            timesOfDay: ["07:00", "19:00"],
+            reminderGraceMinutes: null,
+            rrule: null,
+            rollingIntervalDays: null,
+          },
+        ],
+      },
+    ] as never);
+    vi.mocked(prisma.medicationIntakeEvent.findMany).mockImplementation(((
+      args: unknown,
+    ) => {
+      const a = args as { where: { OR?: unknown }; select?: { id?: boolean } };
+      if (a.where.OR) return Promise.resolve([]) as never;
+      if (!a.select?.id) return Promise.resolve([]) as never;
+      return Promise.resolve([]) as never;
+    }) as never);
+    vi.mocked(prisma.medicationIntakeEvent.createMany).mockResolvedValue({
+      count: 2,
+    } as never);
+
+    const res = await callGet(makeReq());
+    expect(res.status).toBe(200);
+    expect(prisma.medicationIntakeEvent.createMany).toHaveBeenCalledTimes(1);
+    const args = vi.mocked(prisma.medicationIntakeEvent.createMany).mock
+      .calls[0][0] as {
+      data: Array<{ medicationId: string; scheduledFor: Date }>;
+    };
+    expect(args.data).toHaveLength(2);
+    const hours = args.data
+      .map((r) => new Date(r.scheduledFor).getUTCHours())
+      .sort((a, b) => a - b);
+    // 07:00 and 19:00 in the default zone (Europe/Berlin, UTC+2 in May)
+    // materialise to 05:00 and 17:00 UTC. The assertion that matters is
+    // two distinct slots, not one.
+    expect(hours).toEqual([5, 17]);
+    vi.useRealTimers();
+  });
+
   it("is idempotent on a second pass (v1.4.39 W-SERVER-FIX-2)", async () => {
     // When the existence probe already sees a row for the projected
     // slot (e.g. the intake route or the reminder worker minted it
@@ -624,6 +702,10 @@ describe("GET /api/dashboard/summary", () => {
     vi.mocked(prisma.medication.findMany).mockResolvedValue([
       {
         id: "med-ramipril",
+        startsOn: null,
+        endsOn: null,
+        oneShot: false,
+        createdAt: new Date("2026-01-01T00:00:00Z"),
         schedules: [
           {
             id: "sched-morgens",
@@ -631,6 +713,10 @@ describe("GET /api/dashboard/summary", () => {
             windowStart: "07:00",
             windowEnd: "09:00",
             daysOfWeek: null,
+            timesOfDay: [],
+            reminderGraceMinutes: null,
+            rrule: null,
+            rollingIntervalDays: null,
           },
         ],
       },

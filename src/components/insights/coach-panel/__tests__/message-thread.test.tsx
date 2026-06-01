@@ -3,11 +3,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
 
-// The user bubble pulls `useAuth().user.gravatarUrl` to mirror the
-// Coach avatar (v1.4.22 B3). SSR rendering through `renderToStaticMarkup`
-// has no TanStack-Query provider, so we mock the hook the same way
+// The user bubble pulls `useAuth().user.avatarUrl` to mirror the
+// Coach avatar (v1.5.5 — self-hosted avatar; replaces v1.4.22 B3
+// Gravatar leak). SSR rendering through `renderToStaticMarkup` has
+// no TanStack-Query provider, so we mock the hook the same way
 // `recommendation-feedback.test.tsx` does — returning a tester user
-// with no Gravatar so we exercise the initials fallback path by
+// with no avatar so we exercise the initials fallback path by
 // default, and override per-test where needed.
 const useAuthMock = vi.fn<
   () => {
@@ -15,7 +16,7 @@ const useAuthMock = vi.fn<
       id: string;
       username: string;
       role: string;
-      gravatarUrl: string | null;
+      avatarUrl: string | null;
     };
     isAuthenticated: boolean;
     isLoading: boolean;
@@ -25,7 +26,7 @@ const useAuthMock = vi.fn<
     id: "test-user",
     username: "tester",
     role: "USER",
-    gravatarUrl: null,
+    avatarUrl: null,
   },
   isAuthenticated: true,
   isLoading: false,
@@ -377,15 +378,15 @@ describe("<MessageThread>", () => {
     expect(html).not.toContain("What I&#x27;m looking at");
   });
 
-  it("renders the user bubble with a Gravatar when one is set (B3 parity)", () => {
-    // v1.4.22 B3 — the user-bubble avatar uses the same dimensions
-    // as the Coach avatar and pulls the Gravatar URL from useAuth.
+  it("renders the user bubble with the self-hosted avatar when one is set (v1.5.5)", () => {
+    // The user-bubble avatar uses the same dimensions as the Coach
+    // avatar and pulls the self-hosted avatar URL from useAuth.
     useAuthMock.mockReturnValueOnce({
       user: {
         id: "u-1",
         username: "marc",
         role: "USER",
-        gravatarUrl: "https://www.gravatar.com/avatar/abc123?s=64&d=mp",
+        avatarUrl: "/api/user/avatar/u-1?v=1700000000000",
       },
       isAuthenticated: true,
       isLoading: false,
@@ -393,15 +394,15 @@ describe("<MessageThread>", () => {
     const html = render(<MessageThread conversation={baseConversation} />);
     expect(html).toContain('data-slot="coach-bubble-user-avatar"');
     expect(html).toMatch(
-      /<img[^>]+src="https:\/\/www\.gravatar\.com\/avatar\/abc123/,
+      /<img[^>]+src="\/api\/user\/avatar\/u-1\?v=1700000000000/,
     );
     expect(html).toMatch(
       /data-slot="coach-bubble-user-avatar"[^>]*class="[^"]*size-8/,
     );
   });
 
-  it("falls back to initials when no Gravatar URL is present", () => {
-    // Default mock returns gravatarUrl: null → initials path.
+  it("falls back to initials when no avatar URL is present", () => {
+    // Default mock returns avatarUrl: null → initials path.
     const html = render(<MessageThread conversation={baseConversation} />);
     expect(html).toContain('data-slot="coach-bubble-user-avatar"');
     expect(html).toMatch(/data-slot="coach-bubble-user-avatar"[^>]*>TE</);

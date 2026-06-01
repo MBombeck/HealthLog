@@ -181,7 +181,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   // already-onboarded ones, so for our pre-seeded completed e2e user
   // the cookie is absent and the proxy passes the dashboard through.
   state.cookies = state.cookies.filter((c) =>
-    ["healthlog_session", "healthlog_locale", "hl_onboarding"].includes(c.name),
+    ["healthlog_session", "healthlog-locale", "hl_onboarding"].includes(c.name),
   );
   await writeFile(STORAGE_STATE_PATH, JSON.stringify(state, null, 2));
   await ctx.dispose();

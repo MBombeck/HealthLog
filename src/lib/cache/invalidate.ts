@@ -21,6 +21,27 @@
 import { caches } from "./server-cache";
 
 /**
+ * v1.7.0 W6 — server cache key for the unified dashboard first-paint
+ * snapshot. Lives under the analytics cache bucket so the existing
+ * `caches.analytics.deleteByPrefix(`${userId}|`)` sweep on a
+ * measurement / mood / medication write already covers it; the widget
+ * + insight invalidators that DON'T touch the analytics bucket call
+ * `invalidateUserDashboardSnapshot` explicitly. Exported so the cache
+ * key stays single-source-of-truth across the route and the tests.
+ */
+export function dashboardSnapshotCacheKey(userId: string): string {
+  return `${userId}|dashboard-snapshot`;
+}
+
+/**
+ * Drop the unified dashboard snapshot for a single user. Cheap
+ * point-delete; safe to call redundantly.
+ */
+export function invalidateUserDashboardSnapshot(userId: string): void {
+  caches.analytics.delete(dashboardSnapshotCacheKey(userId));
+}
+
+/**
  * Invalidate every cache that may reflect a user's measurement set.
  *
  * Covers: analytics aggregate, achievement progress, workouts cache.
@@ -28,6 +49,9 @@ import { caches } from "./server-cache";
  * because mood writes don't change measurement rows.
  */
 export function invalidateUserMeasurements(userId: string): void {
+  // The `${userId}|` prefix sweep covers the slim / thick analytics
+  // cells, the iOS summary cell, AND the v1.7.0 dashboard snapshot
+  // (`${userId}|dashboard-snapshot`) in one pass.
   caches.analytics.deleteByPrefix(`${userId}|`);
   caches.achievements.deleteByPrefix(userId);
   caches.workouts.deleteByPrefix(`${userId}|`);
@@ -82,6 +106,36 @@ export function invalidateUserMedications(userId: string): void {
  */
 export function invalidateUserDashboardWidgets(userId: string): void {
   caches.dashboardWidgets.deleteByPrefix(userId);
+  // v1.7.0 W6 — the layout rides inside the unified snapshot now, so a
+  // tile reorder / visibility toggle must also drop the snapshot. The
+  // widget invalidator does NOT touch the analytics bucket, so the
+  // prefix sweep above does not cover the snapshot key — drop it
+  // explicitly.
+  invalidateUserDashboardSnapshot(userId);
+}
+
+/**
+ * v1.7.0 — invalidate caches a fresh comprehensive-insight write
+ * dirties. The dashboard snapshot embeds the pre-generated daily
+ * briefing read-only, so a new generation must evict it; the next
+ * snapshot then carries the new briefing. Called directly from the
+ * `/api/insights/generate` POST after its own cache write, and from
+ * `generateComprehensiveInsight` after its write — so the
+ * `insight-pregenerate` cron evicts through the generator, not by
+ * calling this itself.
+ */
+export function invalidateUserInsights(userId: string): void {
+  invalidateUserDashboardSnapshot(userId);
+}
+
+/**
+ * Invalidate the insights tile-layout cache for a single user. Called
+ * from the insights-layout PUT / DELETE endpoints when the user
+ * reorders / disables a tile so the next `/insights` mount paints the
+ * new layout.
+ */
+export function invalidateUserInsightsLayout(userId: string): void {
+  caches.insightsLayout.deleteByPrefix(userId);
 }
 
 /**

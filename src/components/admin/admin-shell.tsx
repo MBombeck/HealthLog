@@ -17,18 +17,20 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  AlertTriangle,
   Bell,
   Database,
   FileText,
   Info,
   KeyRound,
   Inbox,
+  MessageSquare,
   Plug,
+  Radio,
   ScrollText,
   Server,
   Settings,
   ShieldAlert,
+  SlidersHorizontal,
   Sparkles,
   Users,
   type LucideIcon,
@@ -65,12 +67,12 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
   {
     slug: "services",
     titleKey: "admin.section.services.title",
-    icon: Plug,
+    icon: Radio,
   },
   {
     slug: "integrations",
     titleKey: "admin.section.integrations.title",
-    icon: AlertTriangle,
+    icon: Plug,
   },
   {
     slug: "ai-quality",
@@ -80,12 +82,12 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
   {
     slug: "assistant",
     titleKey: "admin.section.assistant.title",
-    icon: Sparkles,
+    icon: SlidersHorizontal,
   },
   {
     slug: "coach-feedback",
     titleKey: "admin.section.coach-feedback.title",
-    icon: Sparkles,
+    icon: MessageSquare,
   },
   {
     slug: "feedback",

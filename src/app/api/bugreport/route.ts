@@ -11,6 +11,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
+import { safeFetch } from "@/lib/safe-fetch";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
@@ -120,7 +121,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   // Create the issue
-  const issueRes = await fetch(
+  const issueRes = await safeFetch(
     `https://api.github.com/repos/${ghRepo}/issues`,
     {
       method: "POST",
@@ -158,7 +159,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     // GitHub doesn't support base64 in comments, so we note the limitation
     const commentBody = `### Screenshot\n\n![Screenshot](data:image/${ext};base64,${base64Data.slice(0, 100)}...)\n\n*Note: The full screenshot was truncated due to size limits. Please contact the user directly.*`;
 
-    await fetch(
+    await safeFetch(
       `https://api.github.com/repos/${ghRepo}/issues/${issue.number}/comments`,
       {
         method: "POST",

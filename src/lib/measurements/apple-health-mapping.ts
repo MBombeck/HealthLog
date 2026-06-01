@@ -95,6 +95,53 @@ export const APPLE_HEALTH_SLEEP_STAGE_MAP: Record<number, SleepStage> = {
  *   fraction; HealthLog stores percent (0..100).
  * - `HKQuantityTypeIdentifierBodyFatPercentage` ships as a 0..1
  *   fraction; HealthLog stores percent (0..100).
+ *
+ * ── Project convention: server-side scaling is canonical ─────────────
+ *
+ * Every HealthKit value travels over the wire as the raw HK reading.
+ * Whatever ×100 / unit-bend / clamp the canonical DB shape needs, the
+ * server applies it at ingest inside `convertToDbUnit`. Two reasons:
+ *
+ *   1. The wire contract is the HK contract — iOS clients (and any
+ *      future Health Connect / Garmin / Fitbit bridge) emit the
+ *      native sensor reading without per-platform pre-massaging.
+ *   2. The conversion lives next to the canonical DB unit + the
+ *      plausibility-range guard, so a future contributor adding a
+ *      new identifier touches one file instead of three.
+ *
+ * The pre-existing precedents already follow the convention:
+ *
+ *   - `HKQuantityTypeIdentifierOxygenSaturation` (0..1 → 0..100)
+ *   - `HKQuantityTypeIdentifierBodyFatPercentage` (0..1 → 0..100)
+ *   - `HKQuantityTypeIdentifierAppleWalkingSteadiness` (0..1 → 0..100)
+ *
+ * The v1.5.5 gait additions (`walkingAsymmetryPercentage` +
+ * `walkingDoubleSupportPercentage`) extend the precedent. Older iOS
+ * releases pre-multiplied those two identifiers by ×100 before
+ * upload (a footgun the audit team flagged); the iOS client is on
+ * track to drop the pre-multiplication so every HK percent flows
+ * through the same canonical server-side scaling path. The coord
+ * note in `.planning/ios-coord/` documents the one-release shim and
+ * the migration window.
+ *
+ * ── Convention split — percent vs raw SI ───────────────────────────
+ *
+ * The ×100 scaling applies ONLY to identifiers Apple ships as a
+ * 0..1 fraction:
+ *
+ *   - `oxygenSaturation`
+ *   - `bodyFatPercentage`
+ *   - `appleWalkingSteadiness`
+ *   - `walkingAsymmetryPercentage`
+ *   - `walkingDoubleSupportPercentage`
+ *
+ * Identifiers that already ride raw SI units on the wire pass
+ * through `convertToDbUnit` as identity — no scaling, no clamp. The
+ * v1.5.5 follow-up additions `walkingStepLength` (metres) and
+ * `walkingSpeed` (metres per second) belong to this second bucket
+ * and must NOT be scaled. A future contributor adding a new gait
+ * metric: check Apple's HK unit; percent → ×100 path, m/m·s/kg/etc
+ * → identity path.
  */
 export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
   // ── Body composition ────────────────────────────────────────
@@ -322,6 +369,107 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     convertToDbUnit: () => 1,
     aggregation: "sum",
   },
+
+  // ── v1.5.5 iOS-coord — six previously-deferred identifiers ───
+  // Background: each entry below sat in `HK_QUANTITY_TYPE_DEFERRED`.
+  // `mapAppleHealthEntry()` returned null; the batch route emitted
+  // 200 with a per-entry `skipped:"unmappable_identifier"`; the iOS
+  // app read 200 as success and advanced its sync anchor. Result:
+  // every sample carrying one of these identifiers was lost
+  // forever, no retry path. Wired through end-to-end now.
+
+  // Respiratory rate — count-per-minute breaths. Watch + iPhone
+  // sample this during sleep + workouts. Mean aggregation matches
+  // Apple's own Health-app display (resting RR averaged over the
+  // sleep window).
+  HKQuantityTypeIdentifierRespiratoryRate: {
+    hkIdentifier: "HKQuantityTypeIdentifierRespiratoryRate",
+    measurementType: "RESPIRATORY_RATE",
+    hkUnit: "count/min",
+    dbUnit: "breaths/min",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  // BMI — iOS computes it from weight + height before upload. We
+  // still want a first-class metric for trend display so the iOS
+  // chart can read a single series instead of recomputing per
+  // datapoint. Unit-less ratio on the wire; canonical label is
+  // `kg/m²` to match clinical convention.
+  HKQuantityTypeIdentifierBodyMassIndex: {
+    hkIdentifier: "HKQuantityTypeIdentifierBodyMassIndex",
+    measurementType: "BODY_MASS_INDEX",
+    hkUnit: "count",
+    dbUnit: "kg/m²",
+    convertToDbUnit: (v) => v,
+    aggregation: "latest",
+  },
+  // Lean body mass — body-composition counterpart to FAT_MASS.
+  // Apple ships this in kg; canonical DB unit is kg too.
+  HKQuantityTypeIdentifierLeanBodyMass: {
+    hkIdentifier: "HKQuantityTypeIdentifierLeanBodyMass",
+    measurementType: "LEAN_BODY_MASS",
+    hkUnit: "kg",
+    dbUnit: "kg",
+    convertToDbUnit: (v) => v,
+    aggregation: "latest",
+  },
+  // Walking heart-rate average — distinct from RESTING_HEART_RATE
+  // (sleep-window minimum) and spot PULSE. Daily rollup.
+  HKQuantityTypeIdentifierWalkingHeartRateAverage: {
+    hkIdentifier: "HKQuantityTypeIdentifierWalkingHeartRateAverage",
+    measurementType: "WALKING_HEART_RATE_AVERAGE",
+    hkUnit: "count/min",
+    dbUnit: "bpm",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  // Walking asymmetry — Apple ships as a 0..1 fraction; HealthLog
+  // stores 0..100 (same convention as walking steadiness, body fat,
+  // oxygen saturation). See the "server-side scaling is canonical"
+  // block above for the rationale. The iOS client's previous
+  // pre-upload ×100 multiplication is the documented migration item.
+  HKQuantityTypeIdentifierWalkingAsymmetryPercentage: {
+    hkIdentifier: "HKQuantityTypeIdentifierWalkingAsymmetryPercentage",
+    measurementType: "WALKING_ASYMMETRY",
+    hkUnit: "%",
+    dbUnit: "%",
+    convertToDbUnit: (v) => v * 100,
+    aggregation: "latest",
+  },
+  // Walking double-support percentage — gait companion metric.
+  // Same ×100 server-side scaling convention.
+  HKQuantityTypeIdentifierWalkingDoubleSupportPercentage: {
+    hkIdentifier: "HKQuantityTypeIdentifierWalkingDoubleSupportPercentage",
+    measurementType: "WALKING_DOUBLE_SUPPORT",
+    hkUnit: "%",
+    dbUnit: "%",
+    convertToDbUnit: (v) => v * 100,
+    aggregation: "latest",
+  },
+
+  // ── v1.5.5 iOS-coord follow-up — raw-SI gait pair ───────────
+  // Walking step length — Apple ships raw metres; canonical DB
+  // unit is metres too. NO scaling — the ×100 convention applies
+  // ONLY to the percent gait metrics above. See the convention
+  // block at the top of this file for the split.
+  HKQuantityTypeIdentifierWalkingStepLength: {
+    hkIdentifier: "HKQuantityTypeIdentifierWalkingStepLength",
+    measurementType: "WALKING_STEP_LENGTH",
+    hkUnit: "m",
+    dbUnit: "m",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  // Walking speed — Apple ships raw metres-per-second; canonical
+  // DB unit is m/s too. NO scaling — see the convention block.
+  HKQuantityTypeIdentifierWalkingSpeed: {
+    hkIdentifier: "HKQuantityTypeIdentifierWalkingSpeed",
+    measurementType: "WALKING_SPEED",
+    hkUnit: "m/s",
+    dbUnit: "m/s",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
 };
 
 /**
@@ -345,6 +493,40 @@ export const CUMULATIVE_HK_TYPES: ReadonlySet<MeasurementType> = new Set<Measure
   "FLIGHTS_CLIMBED",
   "WALKING_RUNNING_DISTANCE",
   "TIME_IN_DAYLIGHT",
+]);
+
+/**
+ * v1.7.0 — high-frequency *spot* HealthKit metrics that arrive at
+ * sampling granularity (tens-to-hundreds of rows per day) but whose
+ * correct daily reduction is the MEAN, not the SUM. Summing a day's
+ * walking-speed or respiratory-rate samples is meaningless; the
+ * per-day mean is the right consolidation.
+ *
+ * The nightly daily-mean drain (`drainDailyMean`) walks this set per
+ * user × type × completed day, UPSERTs one `stats:<HK>:<day>` row at
+ * local-noon carrying the day's mean, and SOFT-deletes the per-sample
+ * rows (tombstone, audit-trail preserving — the legacy-step choice).
+ *
+ * Disjoint from `CUMULATIVE_HK_TYPES` by construction — a type in both
+ * would be reduced by SUM and MEAN at once and corrupt the value. The
+ * disjointness is asserted in `apple-health-mapping.test.ts`.
+ *
+ * PULSE is deliberately EXCLUDED even though it is high-frequency:
+ * correlation + scatter analytics read raw PULSE rows, so draining it
+ * to a daily grain would change those inputs. PULSE keeps raw storage;
+ * its DISPLAY stays daily-aggregated via the read-path AVG (PULSE is
+ * not in `CUMULATIVE_HK_TYPES`, so the daily read averages it).
+ *
+ * Like the cumulative drain, the daily-mean drain scopes to
+ * `source = 'APPLE_HEALTH'` only — manual + Withings spot rows for the
+ * same type stay untouched.
+ */
+export const HIGH_FREQUENCY_MEAN_TYPES: ReadonlySet<MeasurementType> = new Set<MeasurementType>([
+  "RESPIRATORY_RATE",
+  "AUDIO_EXPOSURE_ENV",
+  "AUDIO_EXPOSURE_HEADPHONE",
+  "WALKING_SPEED",
+  "WALKING_STEP_LENGTH",
 ]);
 
 /**
@@ -417,12 +599,13 @@ export function hkIdentifierForType(
  * `__tests__/apple-health-mapping.test.ts` flags double-bookings.
  */
 export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
-  // Body composition / vitals — v1.5
-  "HKQuantityTypeIdentifierBodyMassIndex", // computed from weight + height — never stored
+  // Body composition / vitals
+  // v1.5.5 — `BodyMassIndex`, `LeanBodyMass`, `RespiratoryRate`,
+  // `WalkingHeartRateAverage`, `WalkingAsymmetryPercentage`,
+  // `WalkingDoubleSupportPercentage` moved into the mapping table.
+  // The remaining identifiers below stay deferred until a sibling
+  // MeasurementType lands.
   "HKQuantityTypeIdentifierHeight", // already on User.heightCm
-  "HKQuantityTypeIdentifierLeanBodyMass",
-  "HKQuantityTypeIdentifierRespiratoryRate",
-  "HKQuantityTypeIdentifierWalkingHeartRateAverage",
   "HKQuantityTypeIdentifierHeartRateRecoveryOneMinute",
   "HKQuantityTypeIdentifierAppleSleepingWristTemperature",
   "HKQuantityTypeIdentifierBasalEnergyBurned",
@@ -430,10 +613,8 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   "HKQuantityTypeIdentifierAppleStandTime", // implied by Workout rows
   "HKCategoryTypeIdentifierAppleStandHour", // implied by Workout rows
   // Running / walking form — v1.5+
-  "HKQuantityTypeIdentifierWalkingSpeed",
-  "HKQuantityTypeIdentifierWalkingStepLength",
-  "HKQuantityTypeIdentifierWalkingAsymmetryPercentage",
-  "HKQuantityTypeIdentifierWalkingDoubleSupportPercentage",
+  // v1.5.5 — `WalkingStepLength` + `WalkingSpeed` moved into the
+  // mapping table (raw SI on the wire — metres and m/s respectively).
   "HKQuantityTypeIdentifierStairAscentSpeed",
   "HKQuantityTypeIdentifierStairDescentSpeed",
   "HKQuantityTypeIdentifierSixMinuteWalkTestDistance",

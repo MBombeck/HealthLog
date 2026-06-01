@@ -19,6 +19,10 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+vi.mock("@/lib/medications/route-guards", () => ({
+  assertMedicationOwnership: vi.fn().mockResolvedValue(null),
+}));
+
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 
 vi.mock("@/lib/auth/audit", () => ({
@@ -49,11 +53,12 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
-import { POST } from "../route";
+import { GET, POST } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { auditLog } from "@/lib/auth/audit";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -77,6 +82,7 @@ beforeEach(() => {
     remaining: 29,
     resetAt: Date.now() + 60_000,
   });
+  vi.mocked(assertMedicationOwnership).mockResolvedValue(null);
 });
 
 describe("POST /api/medications/[id]/glp1", () => {
@@ -97,10 +103,9 @@ describe("POST /api/medications/[id]/glp1", () => {
 
   it("returns 404 when the medication belongs to a different user", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(prisma.medication.findUnique).mockResolvedValue({
-      id: "med-1",
-      userId: "OTHER",
-    } as never);
+    vi.mocked(assertMedicationOwnership).mockResolvedValueOnce(
+      new Response(null, { status: 404 }) as never,
+    );
     const res = await POST(
       jsonReq({
         doseChange: {
@@ -385,5 +390,41 @@ describe("POST /api/medications/[id]/glp1 — 422 multi-issue (v1.4.43 W6)", () 
       details: { issues: Array<unknown> };
     };
     expect(body.details.issues.length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("GET /api/medications/[id]/glp1 — ownership helper (F-1 C-4)", () => {
+  function getReq(): NextRequest {
+    return new NextRequest("http://localhost/api/medications/med-1/glp1");
+  }
+
+  it("routes ownership through assertMedicationOwnership", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.medication.findUnique).mockResolvedValue({
+      id: "med-1",
+      userId: "user-1",
+      doseChanges: [],
+      inventoryEvents: [],
+      intakeEvents: [],
+      schedules: [],
+      dosesPerUnit: null,
+    } as never);
+    const res = await GET(getReq(), {
+      params: Promise.resolve({ id: "med-1" }),
+    });
+    expect(res.status).toBe(200);
+    expect(assertMedicationOwnership).toHaveBeenCalledWith("med-1", "user-1");
+  });
+
+  it("returns the shared helper's 404 without reading the medication", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(assertMedicationOwnership).mockResolvedValueOnce(
+      new Response(null, { status: 404 }) as never,
+    );
+    const res = await GET(getReq(), {
+      params: Promise.resolve({ id: "med-1" }),
+    });
+    expect(res.status).toBe(404);
+    expect(prisma.medication.findUnique).not.toHaveBeenCalled();
   });
 });
