@@ -513,7 +513,7 @@ A SwiftUI iOS companion that lives on the same `/api` surfaces as the web client
 ### What the phone unlocks
 
 - **HealthKit two-way sync.** Today's step count, weight, blood pressure, HRV, sleep, glucose, etc. read live from Apple Health and round-trip to your server through `HKObserverQuery` + `HKAnchoredObjectQuery` + a `BGProcessingTask` for guaranteed delivery. `HKMetadataKeyExternalUUID` on every iOS-side write keeps the server and Apple Health from echoing each other.
-- **Medication reminders that actually fire.** Local notifications with action buttons (Genommen / Snooze 15 min / Übersprungen) that hit the server's mark-intake endpoint directly — without opening the app.
+- **Medication reminders that actually fire.** Local notifications with action buttons (Taken / Snooze 15 min / Skipped) that hit the server's mark-intake endpoint directly — without opening the app.
 - **On-device AI Coach.** A conversational surface powered by Apple's Foundation Models framework on iOS 26+ Apple-Intelligence-eligible iPhones. The prompt and the response never leave the device — your numbers, your health questions, your phone.
 - **Passkey-first auth.** Sign in with Face ID or Touch ID via WebAuthn; email + magic-link is the fallback. SPKI public-key pinning on every authenticated request, Keychain with `afterFirstUnlockThisDeviceOnly`, and a log sanitizer that filters tokens and hostnames out of every line.
 - **Doctor-report export.** Generate a FHIR-flavoured PDF bundle from the iPhone based on the LOINC mappings reviewed on the server's clinician surface.
