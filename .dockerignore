@@ -7,30 +7,41 @@
 # compose `environment:` block at boot — `.env` should never ship.
 .env
 .env.*
-!.env.example
-!.env.production.example
+.env.example
+.env.production.example
 
 # Version control + CI metadata.
 .git
 .github
+.gitignore
 .gitleaks.toml
 
 # Build / install output that gets regenerated inside the builder stage.
 node_modules
 .next
 out
+dist
 coverage
 test-results
 playwright-report
+playwright/.cache
+playwright.config.ts
+vitest.config.mts
+vitest.integration.config.mts
+tests
+tests/
+e2e
+e2e/
 e2e-results
 .eslintcache
+eslint-plugins
+eslint-plugins/
+knip.json
 
-# Persisted session state from e2e runs.
-e2e/setup/storageState.json
-
-# Planning scratch + per-release audit notes (operator-local).
-.planning
-docs/audit
+# Generated local cache files
+*.tsbuildinfo
+next-env.d.ts
+public/sw-version.js
 
 # Captures from local debugging sessions.
 *.har
@@ -43,3 +54,34 @@ docs/audit
 .vscode
 .idea
 .DS_Store
+*.swp
+*.swo
+
+# Logs / Debug
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Docker compose / local ops files
+docker-compose*.yml
+compose*.yml
+Dockerfile
+.dockerignore
+
+# Documentation not needed for runtime image
+README.md
+CHANGELOG.md
+CLAUDE.md
+CONTRIBUTING.md
+CONTRIBUTING-AI.md
+CODE_OF_CONDUCT.md
+SECURITY.md
+LICENSE.md
+LICENSE
+AGENTS.md
+.planning
+docs
+docs/*.md
+docs/**/*.md
