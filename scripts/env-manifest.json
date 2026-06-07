@@ -15,7 +15,7 @@
         {
           "name": "POSTGRES_PASSWORD",
           "purpose": "Database password for the bundled `db` service in docker-compose.yml.",
-          "example": "<openssl rand -base64 24>"
+          "example": "<openssl rand -hex 32>"
         },
         {
           "name": "NEXT_PUBLIC_APP_URL",

@@ -38,7 +38,7 @@ HealthLog needs three secrets before it will boot. Generate them with
 `openssl` and append to `.env`:
 
 ```bash
-echo "POSTGRES_PASSWORD=$(openssl rand -base64 24)" >> .env
+echo "POSTGRES_PASSWORD=$(openssl rand -hex 32)" >> .env
 echo "ENCRYPTION_KEY=$(openssl rand -hex 32)"       >> .env
 echo "API_TOKEN_HMAC_KEY=$(openssl rand -hex 32)"   >> .env
 ```
