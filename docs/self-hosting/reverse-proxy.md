@@ -97,15 +97,12 @@ In the NPM UI:
 6. **Advanced tab — Custom Nginx Configuration:**
 
    ```nginx
-   proxy_set_header X-Real-IP $remote_addr;
-   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-   proxy_set_header X-Forwarded-Proto $scheme;
-   proxy_set_header Host $host;
-   proxy_http_version 1.1;
-   proxy_set_header Upgrade $http_upgrade;
-   proxy_set_header Connection "upgrade";
    proxy_read_timeout 300s;
    ```
+
+   Nginx Proxy Manager configures the standard forwarded headers
+   automatically and adds the WebSocket upgrade directives when
+   Websockets Support is enabled.
 
    The 300-second read timeout matters for long-running insight
    generations — anything shorter will cut streamed responses mid-flight.
