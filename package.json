@@ -75,7 +75,7 @@
     "next-themes": "^0.4.6",
     "nodemailer": "^9.0.1",
     "p-limit": "^7.3.0",
-    "pg-boss": "^12.18.2",
+    "pg-boss": "^12.20.0",
     "prisma": "^7.8.0",
     "qrcode": "^1.5.4",
     "radix-ui": "^1.4.3",
