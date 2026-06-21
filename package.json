@@ -115,7 +115,7 @@
     "knip": "^6.16.1",
     "lefthook": "^2.1.9",
     "pdf-parse": "^2.4.5",
-    "pg": "^8.21.0",
+    "pg": "^8.22.0",
     "prettier": "^3.8.4",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "shadcn": "^4.9.0",
