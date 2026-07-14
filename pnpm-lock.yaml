@@ -103,8 +103,8 @@ importers:
         specifier: ^7.3.0
         version: 7.3.0
       pg-boss:
-        specifier: ^12.20.0
-        version: 12.20.0
+        specifier: ^12.26.0
+        version: 12.26.0
       prisma:
         specifier: ^7.8.0
         version: 7.8.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(magicast@0.5.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@6.0.3)
@@ -3729,8 +3729,8 @@ packages:
     resolution: {integrity: sha512-piICUB6ei4IlTv1+653yq5+KoqfBYmj9bw6LqXoOneTMDXk5nM1qt12mFW1caG3LlJXEKW1Bp0WggEmIfQB34g==}
     engines: {node: '>= 14'}
 
-  cron-parser@5.6.0:
-    resolution: {integrity: sha512-6159NDv4eDOjXYDmMTkvUtaVcIrNZI779ydTMOfDdi9fSjhPqmySx0icCHX2+nOyXgNSw6sFCsgLKxYs/2KPuQ==}
+  cron-parser@5.6.2:
+    resolution: {integrity: sha512-yJ/G1LVir6CnlkLI40CsampPLKl1SprGGlUagWtGJxewytRVYezv5xVyzzbT+Pvzx+VIRvZVF7/a0eEMTxdnTA==}
     engines: {node: '>=18'}
 
   cross-spawn@7.0.6:
@@ -5565,8 +5565,8 @@ packages:
   performance-now@2.1.0:
     resolution: {integrity: sha512-7EAHlyLHI56VEIdK57uwHdHKIaAGbnXPiw0yWbarQZOKaKpvUIgW0jWRVLiatnM+XXlSwsanIBH/hzGMJulMow==}
 
-  pg-boss@12.20.0:
-    resolution: {integrity: sha512-9YMoy8so5nXCzfCYwDfjW+3+nLPrcxRwSDrle8KMqqGDbS8jwzRN2ybT2dTHh8UnIvYtTHE2fFx2kOcTn3Pg3w==}
+  pg-boss@12.26.0:
+    resolution: {integrity: sha512-qMLyokiG2/Ey8U3sptl0We4nRGr1iveHL/lQ7g6n7cI/ubp9HVJZJnfPf6B9jzAbpd55uSdltKL/DMkyBC0ynw==}
     engines: {node: '>=22.12.0'}
     hasBin: true
 
@@ -6487,10 +6487,6 @@ packages:
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
     engines: {node: '>= 0.8.0'}
-
-  type-fest@5.7.0:
-    resolution: {integrity: sha512-1URUxUqfHFM1c+zfSPsa3gnkO7Aq21qyH75SIduNYz4SzY964rn1X2vCMQaHSHhktiw+0kPa2iyb6PUpXqB6Vg==}
-    engines: {node: '>=20'}
 
   type-fest@5.8.0:
     resolution: {integrity: sha512-YGYEVz3Fm5iy/AybuA0oyNFq7H4CgQNfRp/qfe8nurE1kuCeNm3/vfm9X4Mtl+qLyaKJUh5xrFZwogr41SMjYA==}
@@ -10457,7 +10453,7 @@ snapshots:
       crc-32: 1.2.2
       readable-stream: 4.7.0
 
-  cron-parser@5.6.0:
+  cron-parser@5.6.2:
     dependencies:
       luxon: 3.7.2
 
@@ -12422,9 +12418,9 @@ snapshots:
   performance-now@2.1.0:
     optional: true
 
-  pg-boss@12.20.0:
+  pg-boss@12.26.0:
     dependencies:
-      cron-parser: 5.6.0
+      cron-parser: 5.6.2
       pg: 8.22.0
       serialize-error: 13.0.1
     transitivePeerDependencies:
@@ -13014,7 +13010,7 @@ snapshots:
   serialize-error@13.0.1:
     dependencies:
       non-error: 0.1.0
-      type-fest: 5.7.0
+      type-fest: 5.8.0
 
   serve-static@2.2.1:
     dependencies:
@@ -13540,14 +13536,9 @@ snapshots:
     dependencies:
       prelude-ls: 1.2.1
 
-  type-fest@5.7.0:
-    dependencies:
-      tagged-tag: 1.0.0
-
   type-fest@5.8.0:
     dependencies:
       tagged-tag: 1.0.0
-    optional: true
 
   type-is@2.1.0:
     dependencies:
