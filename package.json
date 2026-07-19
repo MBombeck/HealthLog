@@ -125,7 +125,7 @@
     "knip": "^6.16.1",
     "lefthook": "^2.1.10",
     "pdf-parse": "^2.4.5",
-    "pdfjs-dist": "5.4.296",
+    "pdfjs-dist": "6.1.200",
     "pg": "^8.22.0",
     "prettier": "^3.9.1",
     "prettier-plugin-tailwindcss": "^0.8.0",
