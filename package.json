@@ -128,7 +128,7 @@
     "pdfjs-dist": "5.4.296",
     "pg": "^8.22.0",
     "prettier": "^3.9.1",
-    "prettier-plugin-tailwindcss": "^0.8.0",
+    "prettier-plugin-tailwindcss": "^0.8.1",
     "shadcn": "^4.13.0",
     "tailwindcss": "^4",
     "testcontainers": "^12.0.3",
