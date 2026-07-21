@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [1.31.6] — 2026-07-21
+
+- **The hardened runtime image can run database migrations again.** The
+  isolated Prisma CLI now exposes its pinned `dotenv` and `prisma/config`
+  dependencies to the copied production configuration while package managers
+  remain absent from the final image.
+
+No migrations. No breaking changes.
+
 ## [1.31.5] — 2026-07-21
 
 - **The production image no longer ships build-time package managers.** pnpm 11

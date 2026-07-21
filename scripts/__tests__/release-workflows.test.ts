@@ -249,6 +249,13 @@ describe("release container inputs", () => {
     expect(dockerfile).toContain(
       "ln -sfn /opt/prisma-cli/node_modules/.bin/tsx /usr/local/bin/healthlog-tsx",
     );
+    expect(dockerfile).toContain("dotenv@17.4.2");
+    expect(dockerfile).toContain(
+      "ln -sfn /opt/prisma-cli/node_modules/dotenv /app/node_modules/dotenv",
+    );
+    expect(dockerfile).toContain(
+      "ln -sfn /opt/prisma-cli/node_modules/prisma /app/node_modules/prisma",
+    );
   });
 
   it("keeps linked worktrees out of the Docker build context", () => {

@@ -126,14 +126,17 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/src/generated ./src/generated
 
-# Install the migration CLI plus a pinned launcher for the maintenance scripts
-# already shipped in the standalone tree. Then strip npm/Corepack and caches:
-# package managers are build-time tools, not runtime surface.
+# Install the migration CLI, its config dependency, and a pinned launcher for
+# the maintenance scripts already shipped in the standalone tree. The Prisma
+# config loads dotenv from /app, so expose the isolated copy there before
+# stripping npm/Corepack and their caches from the runtime surface.
 RUN mkdir -p /opt/prisma-cli && \
     cd /opt/prisma-cli && \
     npm init -y && \
-    npm install --omit=dev prisma@7.8 @prisma/engines@7.8 tsx@4.23.1 && \
+    npm install --omit=dev prisma@7.8 @prisma/engines@7.8 tsx@4.23.1 dotenv@17.4.2 && \
     ln -sfn /opt/prisma-cli/node_modules/.bin/tsx /usr/local/bin/healthlog-tsx && \
+    ln -sfn /opt/prisma-cli/node_modules/dotenv /app/node_modules/dotenv && \
+    ln -sfn /opt/prisma-cli/node_modules/prisma /app/node_modules/prisma && \
     rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /root/.cache/node/corepack /root/.npm && \
     rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/pnpm /usr/local/bin/pnpx
 
