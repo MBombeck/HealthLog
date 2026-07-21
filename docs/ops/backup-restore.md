@@ -84,9 +84,9 @@ pnpm dlx tsx scripts/restore-backup.ts \
   /tmp/restored.json
 ```
 
-The production standalone image strips `tsx`, so a bare
-`pnpm tsx scripts/...` fails inside the container — always invoke
-one-shot scripts via `pnpm dlx tsx`.
+Run this command from a source checkout with the production backup variables
+exported. The script imports the full application dependency graph, which the
+minimal production image does not expose as an operator scripting environment.
 
 The script downloads the object, decrypts it, and writes the JSON dump
 to disk. Importing the JSON back into a HealthLog instance is left to

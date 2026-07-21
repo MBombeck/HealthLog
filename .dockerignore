@@ -49,6 +49,7 @@ public/sw-version.js
 
 # Editor / agent worktrees + caches.
 .claude
+.worktrees
 .cursor
 .aider*
 .vscode

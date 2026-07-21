@@ -64,32 +64,25 @@
  *
  * SELF-CONTAINED by design (v1.16.0)
  * ----------------------------------
- * The production standalone image ships neither the project
- * `node_modules` tree nor the `@/` path alias, so the previous
- * `dotenv/config` + `@/lib/db` import chain died with "Cannot find
- * module" inside the container. This script therefore depends on
- * exactly ONE package — `pg` — and reads `DATABASE_URL` straight from
- * the environment (no dotenv). Inside the production image `pg` resolves
- * via `NODE_PATH=/opt/pg-boss/node_modules` (Dockerfile installs
- * `pg@8.x` there); in a repo checkout it resolves from the project
- * `node_modules`. The `pnpm dlx` invocation below supplies `tsx` (the
- * standalone image strips it) and pins `pg` for any environment where
- * neither resolution path exists.
+ * The production standalone image does not expose the project package
+ * manager. It provides a pinned `healthlog-tsx` maintenance launcher, while
+ * `pg` resolves from the standalone runtime tree. In a repo checkout, run the
+ * same script through `pnpm dlx --package pg --package tsx tsx ...`.
  *
- * Usage
- * -----
+ * Usage inside the production container
+ * -------------------------------------
  *   # dry-run (DATABASE_URL must point at the target database)
- *   pnpm dlx --package pg --package tsx tsx scripts/repair-intake-anomalies.ts
+ *   healthlog-tsx scripts/repair-intake-anomalies.ts
  *
  *   # scoped dry-run
- *   pnpm dlx --package pg --package tsx tsx scripts/repair-intake-anomalies.ts --user <id>
+ *   healthlog-tsx scripts/repair-intake-anomalies.ts --user <id>
  *
  *   # apply
- *   pnpm dlx --package pg --package tsx tsx scripts/repair-intake-anomalies.ts --fix
- *   pnpm dlx --package pg --package tsx tsx scripts/repair-intake-anomalies.ts --fix --tombstone-implausible
+ *   healthlog-tsx scripts/repair-intake-anomalies.ts --fix
+ *   healthlog-tsx scripts/repair-intake-anomalies.ts --fix --tombstone-implausible
  *
  *   # create the proposed schedule revisions + startsOn fixes (defect 5)
- *   pnpm dlx --package pg --package tsx tsx scripts/repair-intake-anomalies.ts --backfill-eras
+ *   healthlog-tsx scripts/repair-intake-anomalies.ts --backfill-eras
  */
 import { Client, types } from "pg";
 
@@ -425,7 +418,7 @@ async function main(): Promise<void> {
   if (!process.env.DATABASE_URL) {
     console.error(
       `${TAG} DATABASE_URL must be set (no dotenv — export it or prefix ` +
-        `the command: DATABASE_URL='postgresql://…' pnpm dlx …)`,
+        `the command: DATABASE_URL='postgresql://…' healthlog-tsx …)`,
     );
     process.exit(1);
   }

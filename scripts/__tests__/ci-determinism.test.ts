@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { parse } from "yaml";
 
 import integrationConfig from "../../vitest.integration.config.mts";
+import unitConfig from "../../vitest.config.mts";
 
 function repositoryRoot(): string {
   const testPath = expect.getState().testPath;
@@ -75,6 +76,12 @@ describe("Playwright CI determinism", () => {
   });
 });
 
+describe("local worktree isolation", () => {
+  it("keeps nested worktree suites out of the root unit run", () => {
+    expect(unitConfig.test?.exclude ?? []).toContain(".worktrees/**");
+  });
+});
+
 describe("integration environment isolation", () => {
   it("registers a worker setup bridge and authoritative test secrets", () => {
     const test = integrationConfig.test;
@@ -114,11 +121,11 @@ describe("container dependency installation", () => {
 
 describe("production dependency advisory floors", () => {
   it("pins vulnerable transitive ranges to compatible patched versions", () => {
-    const packageJson = JSON.parse(readRepoFile("package.json")) as {
-      pnpm?: { overrides?: Record<string, string> };
+    const workspace = parse(readRepoFile("pnpm-workspace.yaml")) as {
+      overrides?: Record<string, string>;
     };
 
-    expect(packageJson.pnpm?.overrides).toMatchObject({
+    expect(workspace.overrides).toMatchObject({
       "dompurify@<=3.4.10": "^3.4.11",
       "postcss@<8.5.10": "^8.5.10",
       "@hono/node-server@<1.19.13": "^1.19.13",

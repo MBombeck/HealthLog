@@ -13,10 +13,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // v1.4.41 — ignore local tool worktrees so a worktree on an older
-    // commit can't poison `pnpm lint` locally.
-    // CI never sees this path; the rule is for the dev environment.
+    // v1.31.4 — ignore local tool worktrees so a worktree on another
+    // commit cannot poison `pnpm lint` locally.
+    // CI never sees these paths; the rules protect the dev environment.
     ".claude/**",
+    ".worktrees/**",
     // The project-local ESLint rule plugin is CommonJS (require/module
     // .exports) by ESLint convention; it is not application source and
     // is not linted by the app's TypeScript ruleset.

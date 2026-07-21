@@ -4,11 +4,17 @@ One-shot operator and build scripts. These are not part of the running applicati
 
 ## How to run them
 
+From a source checkout:
+
 ```bash
 pnpm dlx tsx scripts/<file>.ts
 ```
 
-Use `pnpm dlx tsx`, not bare `pnpm tsx`. The production standalone image strips `tsx`, so the bare invocation fails inside the container. `scripts/` is excluded from the project typecheck.
+The production image intentionally removes npm, pnpm, and Corepack. Only
+container-safe scripts named by an operator runbook use its pinned
+`healthlog-tsx` launcher; scripts that import the full application dependency
+graph must run from a source checkout. `scripts/` is excluded from the project
+typecheck.
 
 ## What lives here
 

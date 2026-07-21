@@ -1,3 +1,20 @@
-ignoredBuiltDependencies:
-  - sharp
-  - unrs-resolver
+overrides:
+  "dompurify@<=3.4.10": "^3.4.11"
+  "postcss@<8.5.10": "^8.5.10"
+  "@hono/node-server@<1.19.13": "^1.19.13"
+  "hono@<4.12.25": "^4.12.25"
+  "picomatch@<4.0.4": "^4.0.4"
+
+allowBuilds:
+  "@prisma/engines": true
+  prisma: true
+  core-js: false
+  cpu-features: false
+  esbuild: false
+  lefthook: false
+  msw: false
+  protobufjs: false
+  sharp: false
+  ssh2: false
+  tesseract.js: false
+  unrs-resolver: false

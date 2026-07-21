@@ -20,6 +20,10 @@
 - **Concurrent iOS registrations no longer fail intermittently.** Device and
   APNs notification-channel reconciliation now share one database lock and
   transaction, so simultaneous first registration remains idempotent.
+- **The production image no longer ships build-time package managers.** pnpm 11
+  verifies the lockfile under explicit build-script policy, npm and Corepack
+  are removed after migrations are prepared, and linked worktrees stay out of
+  local Docker build contexts.
 
 No migrations. No breaking changes.
 

@@ -46,24 +46,23 @@ metadata (`medication_schedules`):
 Always. The default mode only reports and never mutates:
 
 ```bash
-# inside the app container (or any checkout) — DATABASE_URL must point
-# at the target database
-pnpm dlx --package pg --package tsx tsx scripts/repair-intake-anomalies.ts
+# inside the production app container — DATABASE_URL is inherited
+healthlog-tsx scripts/repair-intake-anomalies.ts
 
 # scoped to one account
-pnpm dlx --package pg --package tsx tsx scripts/repair-intake-anomalies.ts --user <userId>
+healthlog-tsx scripts/repair-intake-anomalies.ts --user <userId>
+
+# source-checkout equivalent
+pnpm dlx --package pg --package tsx tsx scripts/repair-intake-anomalies.ts
 ```
 
 The script is self-contained: its only import is `pg` and it reads
 `DATABASE_URL` straight from the environment (no dotenv, no `@/` path
-alias, no `src/` imports). That matters in the production container —
-the standalone image ships no project `node_modules`, so the previous
-revision died there with `Cannot find module 'dotenv/config'`. Inside
-the image `pg` resolves via `NODE_PATH=/opt/pg-boss/node_modules`; in a
-checkout it resolves from the project `node_modules`; the
-`--package pg --package tsx` pins cover any environment with neither.
-Use `pnpm dlx`, not bare `pnpm tsx` — the standalone image also strips
-`tsx`.
+alias, no `src/` imports). The production image provides the pinned
+`healthlog-tsx` launcher and resolves `pg` from its standalone runtime tree
+without retaining a package manager. In a source checkout, `pg` resolves from
+the project `node_modules`; `pnpm dlx --package pg --package tsx ...` also
+works in an environment where neither dependency is installed.
 
 The dry-run prints every duplicate group (which row would be kept, which
 would be tombstoned), a table of implausible rows (id, medication,
@@ -74,7 +73,7 @@ would write), and a table of stale-anchor pending rows.
 ## Applying the fix
 
 ```bash
-pnpm dlx --package pg --package tsx tsx scripts/repair-intake-anomalies.ts --fix
+healthlog-tsx scripts/repair-intake-anomalies.ts --fix
 ```
 
 `--fix` does five things:
@@ -92,7 +91,7 @@ pnpm dlx --package pg --package tsx tsx scripts/repair-intake-anomalies.ts --fix
   in explicitly:
 
   ```bash
-  pnpm dlx --package pg --package tsx tsx scripts/repair-intake-anomalies.ts --fix --tombstone-implausible
+  healthlog-tsx scripts/repair-intake-anomalies.ts --fix --tombstone-implausible
   ```
 
   `--tombstone-implausible` is refused without `--fix`.
@@ -139,7 +138,7 @@ slot anchors:
 The default run only **reports** the proposals. Apply them explicitly:
 
 ```bash
-pnpm dlx --package pg --package tsx tsx scripts/repair-intake-anomalies.ts --backfill-eras
+healthlog-tsx scripts/repair-intake-anomalies.ts --backfill-eras
 ```
 
 Review the dry-run table first — the inference is a heuristic. A wrongly

@@ -1,11 +1,8 @@
 /**
  * Test script for notification delivery and reminder check.
  *
- * Usage (inside Docker container):
- *   npx tsx scripts/test-notifications.ts
- *
- * Or from host:
- *   docker compose exec app npx tsx scripts/test-notifications.ts
+ * Usage (from a source checkout with the target environment exported):
+ *   pnpm dlx tsx scripts/test-notifications.ts
  *
  * What it does:
  *   1. Lists all configured notification channels

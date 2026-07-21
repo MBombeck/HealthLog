@@ -232,16 +232,28 @@ describe("release container inputs", () => {
     );
   });
 
-  it("uses the packageManager pnpm version instead of a moving tag", () => {
+  it("pins pnpm for builds and removes package managers from runtime", () => {
     const dockerfile = readRepoFile("Dockerfile");
     const packageJson = JSON.parse(readRepoFile("package.json")) as {
       packageManager: string;
     };
-    expect(packageJson.packageManager).toBe("pnpm@10.31.0");
+    expect(packageJson.packageManager).toBe("pnpm@11.15.1");
     expect(dockerfile).not.toContain("pnpm@latest");
     expect(
-      dockerfile.match(/corepack prepare pnpm@10\.31\.0 --activate/g),
-    ).toHaveLength(3);
+      dockerfile.match(/corepack prepare pnpm@11\.15\.1 --activate/g),
+    ).toHaveLength(2);
+    expect(dockerfile).toContain(
+      "rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /root/.cache/node/corepack",
+    );
+    expect(dockerfile).toContain("tsx@4.23.1");
+    expect(dockerfile).toContain(
+      "ln -sfn /opt/prisma-cli/node_modules/.bin/tsx /usr/local/bin/healthlog-tsx",
+    );
+  });
+
+  it("keeps linked worktrees out of the Docker build context", () => {
+    const dockerignore = readRepoFile(".dockerignore");
+    expect(dockerignore.split(/\r?\n/)).toContain(".worktrees");
   });
 
   it("bundles Prisma's adapter and verifies only runtime externals", () => {

@@ -14,9 +14,8 @@
  *   BACKUP_S3_SECRET_KEY=...      \
  *   BACKUP_S3_REGION=auto         \
  *   BACKUP_ENCRYPTION_KEY=<hex64> \
- *   pnpm tsx scripts/restore-backup.ts 2026-05-08/user-clx123.json.enc /tmp/restored.json
+ *   pnpm dlx tsx scripts/restore-backup.ts 2026-05-08/user-clx123.json.enc /tmp/restored.json
  */
-import "dotenv/config";
 import { writeFileSync } from "node:fs";
 import {
   loadOffhostConfig,
@@ -82,7 +81,7 @@ async function main() {
     ?.slice("--user-id=".length);
   if (!key) {
     console.error(
-      "Usage: pnpm tsx scripts/restore-backup.ts <s3-key> [output-file] [--user-id=<id>]",
+      "Usage: pnpm dlx tsx scripts/restore-backup.ts <s3-key> [output-file] [--user-id=<id>]",
     );
     process.exit(1);
   }

@@ -1,6 +1,6 @@
 # ── Stage 1: Dependencies ──────────────────────────────────
 FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS deps
-RUN corepack enable && corepack prepare pnpm@10.31.0 --activate
+RUN corepack enable && corepack prepare pnpm@11.15.1 --activate
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -9,7 +9,7 @@ RUN pnpm install --frozen-lockfile --prod=false
 
 # ── Stage 2: Build ─────────────────────────────────────────
 FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS builder
-RUN corepack enable && corepack prepare pnpm@10.31.0 --activate
+RUN corepack enable && corepack prepare pnpm@11.15.1 --activate
 WORKDIR /app
 
 # v1.4.43 B11 — version build-arg threaded into the layer cache key.
@@ -50,8 +50,7 @@ FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb
 # `tzdata` is required so Europe/Berlin schedules (pg-boss cron, locale-aware
 # timestamp formatting) resolve to the actual offset instead of silently
 # falling back to UTC on Alpine images that ship without it.
-RUN apk add --no-cache tzdata && \
-    corepack enable && corepack prepare pnpm@10.31.0 --activate
+RUN apk add --no-cache tzdata
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -127,11 +126,16 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/src/generated ./src/generated
 
-# Install Prisma CLI + engines for runtime migrations (isolated from Next standalone tree)
+# Install the migration CLI plus a pinned launcher for the maintenance scripts
+# already shipped in the standalone tree. Then strip npm/Corepack and caches:
+# package managers are build-time tools, not runtime surface.
 RUN mkdir -p /opt/prisma-cli && \
     cd /opt/prisma-cli && \
     npm init -y && \
-    npm install --omit=dev prisma@7.8 @prisma/engines@7.8
+    npm install --omit=dev prisma@7.8 @prisma/engines@7.8 tsx@4.23.1 && \
+    ln -sfn /opt/prisma-cli/node_modules/.bin/tsx /usr/local/bin/healthlog-tsx && \
+    rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /root/.cache/node/corepack /root/.npm && \
+    rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/pnpm /usr/local/bin/pnpx
 
 # v1.4.27 B3 — offline GeoLite2 databases for IP→location and IP→ASN
 # lookups. The MMDB files live in `/opt/geolite2/` and are read by
