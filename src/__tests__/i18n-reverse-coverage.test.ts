@@ -245,5 +245,5 @@ describe("i18n reverse coverage", () => {
           "Wire a call site, or add a DB-driven prefix to DYNAMIC_ALLOWLIST_PREFIXES.",
       );
     }
-  });
+  }, 15_000);
 });

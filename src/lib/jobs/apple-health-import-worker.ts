@@ -1,5 +1,5 @@
 /**
- * v1.4.34 — pg-boss handler for the `apple-health-import` queue.
+ * v1.4.34 — pg-boss handler for the revision-2 Apple Health import queue.
  *
  * The kick-off endpoint (`POST /api/import/apple-health-export`,
  * `POST /api/admin/import-apple-health-export`) writes the upload to
@@ -38,8 +38,14 @@ import {
 } from "@/lib/measurements/import-apple-health-export";
 import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
 
-/** Queue name for the Apple Health export ingest. */
-export const APPLE_HEALTH_IMPORT_QUEUE = "apple-health-import";
+/** Queue name isolated from revision-1 workers during rolling deployments. */
+export const APPLE_HEALTH_IMPORT_V2_QUEUE = "apple-health-import-v2";
+
+/** Queue used by pre-revision-2 binaries; new workers only bridge its backlog. */
+export const APPLE_HEALTH_IMPORT_LEGACY_QUEUE = "apple-health-import";
+
+/** Parser semantics carried by every newly-created ImportJob. */
+export const APPLE_HEALTH_IMPORT_PARSER_REVISION = 2;
 
 /** Concurrency cap per worker host. */
 export const APPLE_HEALTH_IMPORT_CONCURRENCY = 1;
@@ -97,6 +103,58 @@ function getWorkerPrisma(): PrismaClient {
 }
 
 /**
+ * Move a job claimed from the legacy queue onto the revision-2 queue without
+ * parsing it under the wrong revision. The existing ImportJob id remains the
+ * status handle; only its pg-boss mirror id and truthful parser revision move.
+ */
+export async function migrateLegacyAppleHealthImport(
+  job: Job<AppleHealthImportPayload>,
+): Promise<void> {
+  const prisma = getWorkerPrisma();
+  let importJob = await prisma.importJob.findUnique({
+    where: { pgBossJobId: job.id },
+  });
+  if (!importJob) {
+    const { promise, resolve } = Promise.withResolvers<void>();
+    setTimeout(resolve, 250);
+    await promise;
+    importJob = await prisma.importJob.findUnique({
+      where: { pgBossJobId: job.id },
+    });
+  }
+  if (!importJob) {
+    throw new Error(`No ImportJob mirror for legacy pg-boss job ${job.id}`);
+  }
+  if (importJob.status === "done" || importJob.status === "failed") {
+    return;
+  }
+
+  const boss = getGlobalBoss();
+  if (!boss) {
+    throw new Error("Cannot bridge legacy Apple Health import without pg-boss");
+  }
+  const v2BossJobId = await boss.send(
+    APPLE_HEALTH_IMPORT_V2_QUEUE,
+    job.data,
+    APPLE_HEALTH_IMPORT_SEND_OPTIONS,
+  );
+  if (!v2BossJobId) {
+    throw new Error("Failed to enqueue bridged Apple Health import");
+  }
+
+  await prisma.importJob.update({
+    where: { id: importJob.id },
+    data: {
+      pgBossJobId: v2BossJobId,
+      parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
+      status: "queued",
+      failureReason: null,
+      completedAt: null,
+    },
+  });
+}
+
+/**
  * Persist a progress snapshot onto the mirror `ImportJob` row. The
  * worker calls this every `PROGRESS_TICK_RECORDS` records parsed +
  * once on terminal `done`.
@@ -151,6 +209,7 @@ export async function handleAppleHealthImport(
         pgBossJobId: job.id,
         status: "queued",
         uploadBytes,
+        parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
       },
     });
   }
@@ -348,6 +407,8 @@ const LIVE_PG_BOSS_STATES = new Set(["active", "created", "retry"]);
  * it last shut down — flip it to `failed` with `interrupted_by_restart`
  * so the operator can re-upload (and, post-issue-#486, so the kick-off
  * dedup no longer short-circuits future re-uploads onto a dead job).
+ * Revision-1 rows are deliberately excluded: during a rolling deployment
+ * their backing jobs live on the legacy queue and remain owned by old workers.
  *
  * The reconcile is deliberately NOT unconditional. In a multi-replica
  * or rolling-deploy topology a booting worker must not flip a row that
@@ -373,7 +434,10 @@ const LIVE_PG_BOSS_STATES = new Set(["active", "created", "retry"]);
 export async function reconcileOrphanImportJobs(): Promise<void> {
   const prisma = getWorkerPrisma();
   const candidates = await prisma.importJob.findMany({
-    where: { status: { in: ["unpacking", "parsing", "upserting"] } },
+    where: {
+      parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
+      status: { in: ["unpacking", "parsing", "upserting"] },
+    },
     select: { id: true, pgBossJobId: true, updatedAt: true },
   });
   if (candidates.length === 0) return;
@@ -395,7 +459,7 @@ export async function reconcileOrphanImportJobs(): Promise<void> {
     let live = false;
     try {
       const job = await boss.getJobById(
-        APPLE_HEALTH_IMPORT_QUEUE,
+        APPLE_HEALTH_IMPORT_V2_QUEUE,
         row.pgBossJobId,
       );
       live = job !== null && LIVE_PG_BOSS_STATES.has(job.state);

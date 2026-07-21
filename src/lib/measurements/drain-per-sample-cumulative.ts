@@ -6,20 +6,18 @@
  *
  * Scope per `CUMULATIVE_HK_TYPES`:
  *   ACTIVITY_STEPS, ACTIVE_ENERGY_BURNED, FLIGHTS_CLIMBED,
- *   WALKING_RUNNING_DISTANCE, TIME_IN_DAYLIGHT
+ *   WALKING_RUNNING_DISTANCE, TIME_IN_DAYLIGHT, FALL_COUNT
  *
  * Per user × type × calendar day (anchored to `User.timezone`):
- *   1. SELECT all `Measurement` rows with `source = 'APPLE_HEALTH'` and
- *      `type = <cumulative type>` and `measuredAt` within that user's
- *      calendar day boundary and `externalId NOT LIKE 'stats:%'`.
- *   2. If 0 rows → continue.
- *   3. If 1 row whose externalId already follows the `stats:...`
- *      shape → continue (already collapsed).
- *   4. SUM the values; pick canonical timestamp = midday UTC of the
- *      user's calendar day (matches the Withings activity-sync
- *      convention per R-A §5 / W17b).
- *   5. UPSERT a row with `externalId = dailyStatsExternalId(...)`,
- *      `value = sumValue`, `measuredAt = canonicalTimestamp`.
+ *   1. SELECT live APPLE_HEALTH rows for the cumulative type and day.
+ *   2. Bucket only non-`stats:` source rows and sum their values.
+ *   3. Resolve the canonical `stats:<HKType>:<day>` row under an advisory
+ *      transaction lock.
+ *   4. If it is HEALTHKIT_STATISTICS or EXPORT_XML_SOURCE_MAX, leave its
+ *      value/provenance untouched and drain only the source rows.
+ *   5. Otherwise preserve legacy late-increment semantics, explicitly stamp
+ *      LEGACY_UNKNOWN, and increment syncVersion; fresh/adopted rows are also
+ *      LEGACY_UNKNOWN.
  *   6. DELETE the original per-sample rows in the same transaction.
  *
  * Designed to be invoked by both:
@@ -32,7 +30,11 @@
  * committing.
  */
 import { Prisma } from "@/generated/prisma/client";
-import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
+import type {
+  MeasurementAggregationProvenance,
+  MeasurementType,
+  PrismaClient,
+} from "@/generated/prisma/client";
 import { isP2002 as isUniqueConstraintViolation } from "@/lib/prisma-errors";
 import { recomputeBucketsForMeasurement } from "@/lib/rollups/measurement-rollups";
 
@@ -71,6 +73,11 @@ export type { PerSampleRow };
 
 /** Prefix marking an already-collapsed daily-stats row. */
 const DAILY_STATS_PREFIX = "stats:";
+const AUTHORITATIVE_AGGREGATION_PROVENANCE =
+  new Set<MeasurementAggregationProvenance>([
+    "HEALTHKIT_STATISTICS",
+    "EXPORT_XML_SOURCE_MAX",
+  ]);
 
 /**
  * v1.4.38 — canonical cutoff for the nightly scheduled drain. Rows
@@ -284,7 +291,7 @@ export async function drainPerSampleCumulative(
           // present, this is the existing collapsed daily total.
           const eidRow = await tx.measurement.findFirst({
             where: { userId, type, source: "APPLE_HEALTH", externalId },
-            select: { id: true, value: true },
+            select: { id: true, value: true, aggregationProvenance: true },
             orderBy: { id: "asc" },
           });
           // Index-B row: occupies the canonical local-noon instant
@@ -297,7 +304,7 @@ export async function drainPerSampleCumulative(
               measuredAt: canonicalTimestamp,
               sleepStage: null,
             },
-            select: { id: true },
+            select: { id: true, aggregationProvenance: true },
             orderBy: { id: "asc" },
           });
 
@@ -305,66 +312,63 @@ export async function drainPerSampleCumulative(
           // and stamping the target externalId onto it would collide with it.
           const adoptTarget = eidRow ?? slotRow;
 
-          // Fold semantics. When the index-A `stats:` total already exists,
-          // late per-sample rows are GENUINE additional readings, so the
-          // correct merge is `existing + late sum` (a blind overwrite with the
-          // partial late sum would shrink the day — the original samples are
-          // already hard-deleted). When adopting a NON-stats slot row (a
-          // per-sample row that fell on local noon, itself part of this
-          // bucket), its value is already inside `reducedValue`, so the merged
-          // value is just `reducedValue`. A fresh day mints `reducedValue`.
-          //
-          // Concurrency guard (paired with the advisory lock above): a sibling
-          // fold that committed just before this one may have already merged
-          // some or all of these per-sample rows into `eidRow` and hard-deleted
-          // them. Trusting the pre-scan `reducedValue` for the increment would
-          // then re-add a sibling's already-folded work → the permanent 2×.
-          // Re-read the still-present contributors inside the locked
-          // transaction: whatever survives is the genuine un-folded increment
-          // (all of `reducedValue` on a clean single run; zero for a
-          // serialised-second run whose rows the winner already drained).
+          // Only legacy aggregates may retain the historical late-increment
+          // behaviour. Native HealthKit statistics and export.xml source-max
+          // estimates are authoritative results from their own pipelines:
+          // this maintenance drain may remove their legacy source rows, but
+          // must never alter their value or provenance.
+          const adoptProvenance = adoptTarget?.aggregationProvenance;
+          const protectedAggregate =
+            adoptProvenance != null &&
+            AUTHORITATIVE_AGGREGATION_PROVENANCE.has(adoptProvenance);
+
+          // Re-read contributors under the advisory lock. A serialized loser
+          // sees zero live rows and therefore performs no canonical update.
           const liveIncrement =
-            eidRow !== null
+            eidRow !== null && !protectedAggregate
               ? (
                   await tx.measurement.findMany({
                     where: { id: { in: sourceRowIds } },
                     select: { value: true },
                   })
-                ).reduce((sum, r) => sum + r.value, 0)
+                ).reduce((sum, row) => sum + row.value, 0)
               : 0;
           const mergedValue =
             eidRow !== null ? eidRow.value + liveIncrement : reducedValue;
 
           let canonicalRowId: string;
           if (adoptTarget) {
-            // Pin the adopted row to local-noon only when the canonical slot
-            // is free or already this row — a DIFFERENT row occupying the slot
-            // would otherwise collide on index B. In that rare case (a tz/DST
-            // shift between mints) the row keeps its existing instant; the
-            // `stats:` externalId is the identity, measuredAt is secondary.
-            const slotIsFreeForTarget =
-              slotRow === null || slotRow.id === adoptTarget.id;
-            await tx.measurement.update({
-              where: { id: adoptTarget.id },
-              data: {
-                value: mergedValue,
-                externalId,
-                deletedAt: null,
-                ...(slotIsFreeForTarget
-                  ? { measuredAt: canonicalTimestamp }
-                  : {}),
-              },
-            });
             canonicalRowId = adoptTarget.id;
+            if (!protectedAggregate && (eidRow === null || liveIncrement > 0)) {
+              // Pin the adopted row to local-noon only when the canonical slot
+              // is free or already this row. A different row occupying the
+              // slot would collide on the natural identity.
+              const slotIsFreeForTarget =
+                slotRow === null || slotRow.id === adoptTarget.id;
+              await tx.measurement.update({
+                where: { id: adoptTarget.id },
+                data: {
+                  value: mergedValue,
+                  externalId,
+                  deletedAt: null,
+                  aggregationProvenance: "LEGACY_UNKNOWN",
+                  aggregationContributorCount: null,
+                  aggregationSelectedSourceHash: null,
+                  syncVersion: { increment: 1 },
+                  ...(slotIsFreeForTarget
+                    ? { measuredAt: canonicalTimestamp }
+                    : {}),
+                },
+              });
+            }
           } else {
             const created = await tx.measurement.create({
               data: {
                 userId,
                 type,
                 value: reducedValue,
-                // pick the canonical unit from an existing row; the per-sample
-                // rows all carry the same unit on a given type. dayRows always
-                // has ≥1 row (empty buckets are skipped).
+                // Pick the canonical unit from an existing row; the per-sample
+                // rows all carry the same unit on a given type.
                 unit:
                   dayRows[0]?.value !== undefined
                     ? await resolveCanonicalUnit(tx, userId, type)
@@ -372,6 +376,7 @@ export async function drainPerSampleCumulative(
                 source: "APPLE_HEALTH",
                 measuredAt: canonicalTimestamp,
                 externalId,
+                aggregationProvenance: "LEGACY_UNKNOWN",
               },
               select: { id: true },
             });

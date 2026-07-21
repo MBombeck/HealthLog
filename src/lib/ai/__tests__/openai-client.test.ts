@@ -60,6 +60,9 @@ describe("OpenAIClient", () => {
     expect(body.response_format).toEqual({ type: "json_object" });
     // No seed passed → field omitted from the body entirely.
     expect(body).not.toHaveProperty("seed");
+    expect(body.max_tokens).toBe(1000);
+    expect(body.temperature).toBe(0.3);
+    expect(body).not.toHaveProperty("max_completion_tokens");
   });
 
   it("forces JSON mode only when responseFormat is json AND no tools (M-1)", async () => {
@@ -145,6 +148,118 @@ describe("OpenAIClient", () => {
 
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(body.seed).toBe(1234);
+  });
+
+  it.each([
+    ["gpt-5.4-nano", 1000, "https://api.openai.com/v1"],
+    ["gpt-5-2025-08-07", 321, "https://api.openai.com/v1"],
+    ["o1", 321, "https://api.openai.com/v1"],
+    ["o3-mini", 321, "https://api.openai.com/v1"],
+    ["o4-mini-2025-04-16", 321, "https://api.openai.com/v1"],
+    ["gpt-5.4-mini", 321, "https://API.OPENAI.COM:443/v1/"],
+  ])(
+    "uses the canonical modern token wire for %s",
+    async (model, expectedBudget, baseUrl) => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            choices: [{ message: { content: "ok" } }],
+            usage: { total_tokens: 5 },
+          }),
+      });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const client = new OpenAIClient({
+        apiKey: "sk-test",
+        model,
+        baseUrl,
+      });
+
+      await client.generateCompletion(
+        singleUserTurn({
+          system: "test",
+          user: "test",
+          temperature: 0.7,
+          ...(expectedBudget === 1000 ? {} : { maxTokens: expectedBudget }),
+          seed: 1234,
+        }),
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.max_completion_tokens).toBe(expectedBudget);
+      expect(body).not.toHaveProperty("max_tokens");
+      expect(body).not.toHaveProperty("temperature");
+      expect(body).not.toHaveProperty("seed");
+    },
+  );
+
+  it("keeps the legacy sampling wire for canonical GPT-4 models", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          choices: [{ message: { content: "ok" } }],
+          usage: { total_tokens: 5 },
+        }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const client = new OpenAIClient({
+      apiKey: "sk-test",
+      model: "gpt-4o-mini",
+      baseUrl: "https://api.openai.com/v1",
+    });
+
+    await client.generateCompletion(
+      singleUserTurn({
+        system: "test",
+        user: "test",
+        temperature: 0.7,
+        maxTokens: 321,
+        seed: 1234,
+      }),
+    );
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.max_tokens).toBe(321);
+    expect(body.temperature).toBe(0.7);
+    expect(body.seed).toBe(1234);
+    expect(body).not.toHaveProperty("max_completion_tokens");
+  });
+
+  it("keeps the legacy sampling wire for GPT-5-named models on compatible gateways", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          choices: [{ message: { content: "ok" } }],
+          usage: { total_tokens: 5 },
+        }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const client = new OpenAIClient({
+      apiKey: "sk-test",
+      model: "gpt-5.4-nano",
+      baseUrl: "https://gateway.example.com/v1",
+    });
+
+    await client.generateCompletion(
+      singleUserTurn({
+        system: "test",
+        user: "test",
+        temperature: 0.7,
+        maxTokens: 321,
+        seed: 1234,
+      }),
+    );
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.max_tokens).toBe(321);
+    expect(body.temperature).toBe(0.7);
+    expect(body.seed).toBe(1234);
+    expect(body).not.toHaveProperty("max_completion_tokens");
   });
 
   it("throws on non-ok response", async () => {

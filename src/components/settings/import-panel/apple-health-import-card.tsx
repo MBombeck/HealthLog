@@ -27,8 +27,29 @@ interface JobStatus {
   result: {
     totals?: { recordsRead?: number; rowsUpserted?: number };
     clinical?: { skipped?: number };
+    cumulativeEstimates?: { days?: number; rows?: number };
   } | null;
   failureReason: string | null;
+}
+
+export function AppleHealthEstimateWarning({ days }: { days: number }) {
+  const { t } = useTranslations();
+  return (
+    <p
+      data-testid="apple-health-estimate-warning"
+      className="text-foreground flex items-start gap-2 text-xs"
+    >
+      <AlertCircle
+        className="text-warning mt-0.5 size-3.5 shrink-0"
+        aria-hidden="true"
+      />
+      <span>
+        {t("settings.sections.export.import.appleHealth.estimateWarning", {
+          count: days,
+        })}
+      </span>
+    </p>
+  );
 }
 
 export function AppleHealthImportCard() {
@@ -232,6 +253,11 @@ export function AppleHealthImportCard() {
               })}
             </span>
           </div>
+        )}
+        {isDone && (status?.result?.cumulativeEstimates?.days ?? 0) > 0 && (
+          <AppleHealthEstimateWarning
+            days={status?.result?.cumulativeEstimates?.days ?? 0}
+          />
         )}
         {(isFailed || uploadError) && (
           <p

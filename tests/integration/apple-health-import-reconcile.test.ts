@@ -22,6 +22,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { getPrismaClient, truncateAllTables } from "./setup";
 import {
   reconcileOrphanImportJobs,
+  APPLE_HEALTH_IMPORT_PARSER_REVISION,
   _setWorkerPrismaForTests,
 } from "@/lib/jobs/apple-health-import-worker";
 
@@ -75,6 +76,7 @@ describe("reconcileOrphanImportJobs — liveness gate (issue #486)", () => {
         pgBossJobId: "boss-active-fresh",
         status: "parsing",
         uploadBytes: 100,
+        parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
       },
     });
     bossMock.getJobById.mockResolvedValue({
@@ -98,6 +100,7 @@ describe("reconcileOrphanImportJobs — liveness gate (issue #486)", () => {
         pgBossJobId: "boss-gone",
         status: "upserting",
         uploadBytes: 100,
+        parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
       },
     });
     bossMock.getJobById.mockResolvedValue(null);
@@ -118,6 +121,7 @@ describe("reconcileOrphanImportJobs — liveness gate (issue #486)", () => {
         pgBossJobId: "boss-terminal",
         status: "parsing",
         uploadBytes: 100,
+        parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
       },
     });
     bossMock.getJobById.mockResolvedValue({
@@ -140,6 +144,7 @@ describe("reconcileOrphanImportJobs — liveness gate (issue #486)", () => {
         pgBossJobId: "boss-stale-active",
         status: "parsing",
         uploadBytes: 100,
+        parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
       },
     });
     await backdateHeartbeat(row.id, 45);
@@ -163,6 +168,7 @@ describe("reconcileOrphanImportJobs — liveness gate (issue #486)", () => {
         pgBossJobId: "boss-none",
         status: "parsing",
         uploadBytes: 100,
+        parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
       },
     });
     bossMock.handle = null; // getGlobalBoss() → null
@@ -171,6 +177,26 @@ describe("reconcileOrphanImportJobs — liveness gate (issue #486)", () => {
 
     const after = await prisma.importJob.findUnique({ where: { id: row.id } });
     expect(after!.status).toBe("failed");
+  });
+
+  it("leaves a legacy-default revision-1 row to a revision-1 worker", async () => {
+    const prisma = getPrismaClient();
+    const user = await createUser("recon-legacy-revision");
+    const row = await prisma.importJob.create({
+      data: {
+        userId: user.id,
+        pgBossJobId: "boss-legacy",
+        status: "parsing",
+        uploadBytes: 100,
+      },
+    });
+
+    expect(row.parserRevision).toBe(1);
+    await reconcileOrphanImportJobs();
+
+    const after = await prisma.importJob.findUnique({ where: { id: row.id } });
+    expect(after!.status).toBe("parsing");
+    expect(bossMock.getJobById).not.toHaveBeenCalled();
   });
 
   it("leaves terminal rows untouched", async () => {
@@ -197,7 +223,12 @@ describe("kick-off dedup — status-scoped lookup (issue #486)", () => {
   // Mirrors the exact `findFirst` the kick-off routes run.
   async function dedupLookup(userId: string, sha: string) {
     return getPrismaClient().importJob.findFirst({
-      where: { userId, uploadSha256: sha, status: { not: "failed" } },
+      where: {
+        userId,
+        uploadSha256: sha,
+        parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
+        status: { not: "failed" },
+      },
       orderBy: { startedAt: "desc" },
     });
   }
@@ -212,6 +243,7 @@ describe("kick-off dedup — status-scoped lookup (issue #486)", () => {
         failureReason: "ENOENT: no such file or directory",
         uploadBytes: 100,
         uploadSha256: "sha-failed",
+        parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
         completedAt: new Date(),
       },
     });
@@ -228,6 +260,7 @@ describe("kick-off dedup — status-scoped lookup (issue #486)", () => {
         status: "done",
         uploadBytes: 100,
         uploadSha256: "sha-viable",
+        parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
         completedAt: new Date(),
       },
     });
@@ -245,6 +278,7 @@ describe("kick-off dedup — status-scoped lookup (issue #486)", () => {
         status: "failed",
         uploadBytes: 100,
         uploadSha256: "sha-mixed",
+        parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
         completedAt: new Date(),
       },
     });
@@ -254,11 +288,42 @@ describe("kick-off dedup — status-scoped lookup (issue #486)", () => {
         status: "done",
         uploadBytes: 100,
         uploadSha256: "sha-mixed",
+        parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
         completedAt: new Date(),
       },
     });
 
     const hit = await dedupLookup(user.id, "sha-mixed");
     expect(hit!.id).toBe(done.id);
+  });
+  it("allows a revision-1 archive to be reprocessed at revision 2", async () => {
+    const prisma = getPrismaClient();
+    const user = await createUser("dedup-parser-revision");
+    await prisma.importJob.create({
+      data: {
+        userId: user.id,
+        status: "done",
+        uploadBytes: 100,
+        uploadSha256: "sha-parser-revision",
+        parserRevision: 1,
+        completedAt: new Date(),
+      },
+    });
+
+    expect(await dedupLookup(user.id, "sha-parser-revision")).toBeNull();
+
+    const current = await prisma.importJob.create({
+      data: {
+        userId: user.id,
+        status: "done",
+        uploadBytes: 100,
+        uploadSha256: "sha-parser-revision",
+        parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
+        completedAt: new Date(),
+      },
+    });
+    expect((await dedupLookup(user.id, "sha-parser-revision"))?.id).toBe(
+      current.id,
+    );
   });
 });

@@ -208,6 +208,7 @@ describe("buildMedsTodayBlock — tally", () => {
       nextDueOverdue: false,
       nextDueMedicationName: null,
       nextDueMedicationId: null,
+      dueCandidates: [],
     });
   });
 
@@ -315,6 +316,63 @@ describe("buildMedsTodayBlock — next due (real engine)", () => {
     // Tomorrow's 11:00 Berlin anchor.
     expect(block.nextDueAt).toBe("2026-06-11T09:00:00.000Z");
     expect(block.nextDueOverdue).toBe(false);
+  });
+
+  it("preserves equal-time medications and orders the overdue candidate first", async () => {
+    medications = [
+      medication({
+        id: "med-mounjaro",
+        name: "Mounjaro",
+        startsOn: new Date("2026-06-10T00:00:00.000Z"),
+        schedules: [
+          dailySchedule({
+            id: "sched-mounjaro",
+            medicationId: "med-mounjaro",
+            windowStart: "11:00",
+            windowEnd: "11:00",
+            timesOfDay: ["11:00"],
+            rrule: null,
+            rollingIntervalDays: 7,
+          }),
+        ],
+      }),
+      medication({
+        id: "med-ramipril",
+        name: "Ramipril",
+        schedules: [
+          dailySchedule({
+            id: "sched-ramipril",
+            medicationId: "med-ramipril",
+            windowStart: "11:00",
+            windowEnd: "11:00",
+            timesOfDay: ["11:00"],
+          }),
+        ],
+      }),
+    ];
+
+    const block = await buildMedsTodayBlock(fakePrisma, "user-1", BERLIN, NOW);
+
+    expect(block.dueCandidates).toEqual([
+      {
+        medicationId: "med-ramipril",
+        medicationName: "Ramipril",
+        dueAt: "2026-06-10T09:00:00.000Z",
+        overdue: true,
+        availableFrom: "2026-06-10T07:00:00.000Z",
+      },
+      {
+        medicationId: "med-mounjaro",
+        medicationName: "Mounjaro",
+        dueAt: "2026-06-10T09:00:00.000Z",
+        overdue: false,
+        availableFrom: "2026-06-09T08:00:00.000Z",
+      },
+    ]);
+    expect(block.nextDueAt).toBe("2026-06-10T09:00:00.000Z");
+    expect(block.nextDueOverdue).toBe(true);
+    expect(block.nextDueMedicationName).toBe("Ramipril");
+    expect(block.nextDueMedicationId).toBe("med-ramipril");
   });
 
   it("returns null next-due when no schedule has an upcoming slot", async () => {

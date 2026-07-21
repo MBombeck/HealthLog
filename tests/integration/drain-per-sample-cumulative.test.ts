@@ -92,6 +92,10 @@ describe("drainPerSampleCumulative (real Postgres)", () => {
     expect(remaining[0].measuredAt.toISOString()).toBe(
       "2026-05-16T10:00:00.000Z",
     );
+    expect(remaining[0]).toMatchObject({
+      aggregationProvenance: "LEGACY_UNKNOWN",
+      syncVersion: 1,
+    });
   });
 
   it("is idempotent — a second run after a successful drain is a no-op", async () => {
@@ -217,6 +221,93 @@ describe("drainPerSampleCumulative (real Postgres)", () => {
       where: { userId: TEST_USER_ID, type: "PULSE" },
     });
     expect(remaining).toHaveLength(2);
+  });
+
+  it.each(["HEALTHKIT_STATISTICS", "EXPORT_XML_SOURCE_MAX"] as const)(
+    "drains source rows without mutating an authoritative %s total",
+    async (aggregationProvenance) => {
+      const prisma = getPrismaClient();
+      await prisma.measurement.createMany({
+        data: [
+          {
+            userId: TEST_USER_ID,
+            type: "ACTIVITY_STEPS",
+            value: 5_400,
+            unit: "steps",
+            source: "APPLE_HEALTH",
+            measuredAt: new Date("2026-05-16T10:00:00.000Z"),
+            externalId: "stats:HKQuantityTypeIdentifierStepCount:2026-05-16",
+            aggregationProvenance,
+          },
+          {
+            userId: TEST_USER_ID,
+            type: "ACTIVITY_STEPS",
+            value: 500,
+            unit: "steps",
+            source: "APPLE_HEALTH",
+            measuredAt: new Date("2026-05-16T20:00:00.000Z"),
+            externalId: `late-${aggregationProvenance}`,
+          },
+        ],
+      });
+
+      await drainPerSampleCumulative(prisma, {
+        userId: TEST_USER_ID,
+        log: () => {},
+      });
+
+      const remaining = await prisma.measurement.findMany({
+        where: { userId: TEST_USER_ID, type: "ACTIVITY_STEPS" },
+      });
+      expect(remaining).toHaveLength(1);
+      expect(remaining[0]).toMatchObject({
+        value: 5_400,
+        aggregationProvenance,
+        syncVersion: 1,
+      });
+    },
+  );
+
+  it("keeps legacy late-increment semantics and bumps syncVersion", async () => {
+    const prisma = getPrismaClient();
+    await prisma.measurement.createMany({
+      data: [
+        {
+          userId: TEST_USER_ID,
+          type: "ACTIVITY_STEPS",
+          value: 5_400,
+          unit: "steps",
+          source: "APPLE_HEALTH",
+          measuredAt: new Date("2026-05-16T10:00:00.000Z"),
+          externalId: "stats:HKQuantityTypeIdentifierStepCount:2026-05-16",
+          aggregationProvenance: "LEGACY_UNKNOWN",
+        },
+        {
+          userId: TEST_USER_ID,
+          type: "ACTIVITY_STEPS",
+          value: 500,
+          unit: "steps",
+          source: "APPLE_HEALTH",
+          measuredAt: new Date("2026-05-16T20:00:00.000Z"),
+          externalId: "late-legacy",
+        },
+      ],
+    });
+
+    await drainPerSampleCumulative(prisma, {
+      userId: TEST_USER_ID,
+      log: () => {},
+    });
+
+    const remaining = await prisma.measurement.findMany({
+      where: { userId: TEST_USER_ID, type: "ACTIVITY_STEPS" },
+    });
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0]).toMatchObject({
+      value: 5_900,
+      aggregationProvenance: "LEGACY_UNKNOWN",
+      syncVersion: 2,
+    });
   });
 
   it("skips rows already in stats:... shape (re-running after an earlier drain)", async () => {

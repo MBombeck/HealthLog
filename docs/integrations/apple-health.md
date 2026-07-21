@@ -112,29 +112,50 @@ mapped set (workout routes, ECG voltage traces) is counted in
 ### Cumulative HK type → daily aggregate
 
 Cumulative quantity types — steps, active energy, walking/running
-distance, flights climbed — get **collapsed into one row per
-user-local day** to match the iOS daily-aggregation convention.
+distance, flights climbed, time in daylight, and fall count — get
+**collapsed into one estimated row per user-local day**. `export.xml`
+contains source-specific records, not HealthKit's canonical daily
+statistics, so the importer does not sum different devices or apps
+into a source-blind total.
 
+- Records are grouped by type, local day, and a SHA-256 hash of the
+  available source name, source version, and device attributes.
+  Values sum within each identified source-day; the largest
+  source-day subtotal is selected deterministically. If every source
+  attribute is absent, records remain separate rather than being
+  trusted as one source. Raw source and device labels are not
+  persisted.
+- The row records `EXPORT_XML_SOURCE_MAX` provenance, its distinct
+  contributor count, and the selected non-identifying source hash.
 - External ID format: `stats:<HKType>:<YYYY-MM-DD>` (e.g.
   `stats:HKQuantityTypeIdentifierStepCount:2026-05-15`).
 - The day boundary respects the user's timezone preference. The
   worker defaults to `Europe/Berlin` when no preference is set
-  (`src/lib/jobs/apple-health-import-worker.ts:132-133`).
-- A second import of the same archive re-folds the same days onto
-  the same external IDs — the values update in place rather than
-  duplicating.
+  (`src/lib/jobs/apple-health-import-worker.ts`).
+- XML intervals are not reconstructed or split. A record crossing
+  midnight is assigned using its mapped timestamp and remains covered
+  by the explicit estimate contract.
+- A second import re-folds the same days onto the same external IDs.
+  Equal-authority estimates update idempotently rather than duplicate.
+
+The terminal job result exposes
+`cumulativeEstimates: { days, rows }`; the web import card warns when
+one or more cumulative days used this estimate path.
 
 ### Re-import idempotency
 
 The two-axis idempotency story:
 
 1. **File-level** — re-uploading the same `export.zip` (same SHA-256
-   of bytes) short-circuits to the previous job before the parser
-   even starts.
+   of bytes) short-circuits to the previous job only when that job
+   used the current parser revision. Existing jobs are revision 1;
+   new jobs use revision 2, so a pre-fix successful archive can be
+   deliberately processed again under the corrected aggregation.
 2. **Record-level** — when an older `export.zip` is re-exported from
    iOS (same history, slightly newer device timestamps), every
-   record's external ID stays stable. The upsert path matches on
-   `(userId, externalId)` and updates instead of inserting.
+   record's external ID stays stable. The serialized reconciliation
+   path matches the canonical identity and updates instead of
+   inserting.
 
 Practically: a user who exports monthly and re-imports each archive
 sees fresh data merged in without duplicates. The job result line
@@ -150,13 +171,33 @@ is identical to the user-facing flow.
 
 The `ImportJob` row carries `triggeredByAdminId = admin.id` so the
 status endpoint admits both the target user and the triggering
-admin. Idempotency is scoped by target user — an admin re-uploading
-the same archive for the same user resolves to the previous job.
+admin. Idempotency is scoped by target user and parser revision — an
+admin re-uploading the same archive for the same user resolves to the
+previous current-revision job.
 
 Typical use: migrating a friend's history into their HealthLog
 account when they cannot run the import themselves, or backfilling
 a household member's data after the admin received the `export.zip`
 out of band.
+
+## Aggregate authority and recovery
+
+Native HealthKit daily statistics submitted by the iOS batch endpoint
+are canonical and carry `HEALTHKIT_STATISTICS` provenance. XML
+source-maximum estimates carry `EXPORT_XML_SOURCE_MAX`. Both use the
+same serialized reconciler with this ordering:
+
+`LEGACY_UNKNOWN < EXPORT_XML_SOURCE_MAX < HEALTHKIT_STATISTICS`
+
+A later XML import cannot overwrite native statistics. Native
+statistics repair an XML estimate or legacy row in either arrival
+order, and every material reconciled update or resurrection increments
+`syncVersion`. Existing Apple Health `stats:*` rows are migrated to
+`LEGACY_UNKNOWN`; they are never guessed or heuristically promoted.
+To recover an already-corrupted legacy total, the user must re-upload
+the original archive under parser revision 2 or sync native HealthKit
+statistics. Without either input, the correct per-source total cannot
+be reconstructed from the stored aggregate.
 
 ## Source-priority interaction
 
@@ -169,12 +210,12 @@ max). The defaults live in `src/lib/validations/source-priority.ts:205-220`.
 
 Concrete consequences:
 
-- If you already sync steps from a Withings ScanWatch and also import
-  Apple Health, the Apple-Health-aggregated stream wins for the day —
-  iOS HealthKit folds the watch sensor + iPhone motion data into a
-  single canonical stream, so it is the most complete cumulative
-  source. The Withings rows stay in the database as an audit trail
-  but drop out of the per-day aggregation.
+- Native HealthKit cumulative statistics are the canonical Apple
+  Health stream for a day and outrank both XML estimates and Withings
+  cumulative rows. An XML upload chooses the largest source subtotal
+  only; it never claims to reproduce HealthKit's device de-duplication.
+  Lower-priority rows stay in the database as an audit trail but drop
+  out of the displayed per-day aggregation.
 - If you weigh yourself on a Withings scale and also import Apple
   Health (which received the same reading via the Health Mate iOS
   app), the Withings row wins for display. Apple Health is

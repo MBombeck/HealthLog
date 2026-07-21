@@ -188,9 +188,29 @@ describe("POST /api/admin/import-apple-health-export", () => {
     expect(body.data.jobId).not.toBe("old-failed-job");
     expect(mocks.bossSend).toHaveBeenCalledTimes(1);
     expect(mocks.importJobCreate).toHaveBeenCalledTimes(1);
+    expect(mocks.importJobCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ parserRevision: 2 }),
+      }),
+    );
+    expect(mocks.bossSend).toHaveBeenCalledWith(
+      "apple-health-import-v2",
+      expect.objectContaining({
+        userId: "user-2",
+        triggeredByAdminId: "admin-1",
+      }),
+      expect.objectContaining({ retryLimit: 0 }),
+    );
+    expect(mocks.importJobUpdate).toHaveBeenCalledWith({
+      where: { id: "ij-1" },
+      data: { pgBossJobId: "boss-job-1" },
+    });
     expect(mocks.importJobFindFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ status: { not: "failed" } }),
+        where: expect.objectContaining({
+          status: { not: "failed" },
+          parserRevision: 2,
+        }),
       }),
     );
     expect(mocks.unlink).not.toHaveBeenCalled();
@@ -211,5 +231,10 @@ describe("POST /api/admin/import-apple-health-export", () => {
     expect(mocks.bossSend).not.toHaveBeenCalled();
     expect(mocks.importJobCreate).not.toHaveBeenCalled();
     expect(mocks.unlink).toHaveBeenCalledWith(STAGED_PATH);
+    expect(mocks.importJobFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ parserRevision: 2 }),
+      }),
+    );
   });
 });

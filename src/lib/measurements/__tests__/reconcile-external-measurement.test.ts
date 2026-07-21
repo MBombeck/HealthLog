@@ -39,6 +39,9 @@ function row(overrides: Record<string, unknown> = {}): Record<string, unknown> {
     notesEncrypted: null,
     externalId: "sleep:new",
     externalSourceVersion: null,
+    aggregationProvenance: null,
+    aggregationContributorCount: null,
+    aggregationSelectedSourceHash: null,
     glucoseContext: null,
     sleepStage: "DEEP",
     rhythmClassification: null,
@@ -208,6 +211,167 @@ describe("reconcileExternalMeasurement", () => {
 
     expect(verdict.status).toBe("duplicate");
     expect(measurement.update).not.toHaveBeenCalled();
+  });
+
+  it("keeps a higher-authority native aggregate unchanged when XML arrives later", async () => {
+    const native = row({
+      id: "native-stats",
+      type: "ACTIVITY_STEPS",
+      value: 8_600,
+      unit: "steps",
+      source: "APPLE_HEALTH",
+      measuredAt: new Date("2026-07-20T10:00:00.000Z"),
+      sleepStage: null,
+      externalId: "stats:HKQuantityTypeIdentifierStepCount:2026-07-20",
+      aggregationProvenance: "HEALTHKIT_STATISTICS",
+      aggregationContributorCount: null,
+      aggregationSelectedSourceHash: null,
+    });
+    const { tx, measurement } = transaction([native]);
+
+    const verdict = await reconcileExternalMeasurement(
+      tx,
+      desired({
+        type: "ACTIVITY_STEPS",
+        value: 8_526,
+        unit: "steps",
+        source: "APPLE_HEALTH",
+        measuredAt: new Date("2026-07-20T10:00:00.000Z"),
+        sleepStage: null,
+        externalId: "stats:HKQuantityTypeIdentifierStepCount:2026-07-20",
+        aggregationProvenance: "EXPORT_XML_SOURCE_MAX",
+        aggregationContributorCount: 2,
+        aggregationSelectedSourceHash: "source-hash",
+      }),
+      { exactExternalMatch: "update" },
+    );
+
+    expect(verdict).toMatchObject({
+      status: "duplicate",
+      row: { id: "native-stats" },
+    });
+    expect(measurement.update).not.toHaveBeenCalled();
+  });
+
+  it("retires a lower-authority external collision without changing the native natural-key row", async () => {
+    const xmlExternal = row({
+      id: "xml-external",
+      type: "ACTIVITY_STEPS",
+      value: 8_526,
+      unit: "steps",
+      source: "APPLE_HEALTH",
+      measuredAt: new Date("2026-07-20T09:00:00.000Z"),
+      sleepStage: null,
+      externalId: "stats:HKQuantityTypeIdentifierStepCount:2026-07-20",
+      aggregationProvenance: "EXPORT_XML_SOURCE_MAX",
+    });
+    const nativeNatural = row({
+      id: "native-natural",
+      type: "ACTIVITY_STEPS",
+      value: 8_600,
+      unit: "steps",
+      source: "APPLE_HEALTH",
+      measuredAt: new Date("2026-07-20T10:00:00.000Z"),
+      sleepStage: null,
+      externalId: "stats:legacy-native-id",
+      externalSourceVersion: "native-v1",
+      deviceType: "Apple Watch",
+      aggregationProvenance: "HEALTHKIT_STATISTICS",
+    });
+    const { tx, measurement } = transaction([xmlExternal, nativeNatural]);
+
+    const verdict = await reconcileExternalMeasurement(
+      tx,
+      desired({
+        type: "ACTIVITY_STEPS",
+        value: 8_526,
+        unit: "steps",
+        source: "APPLE_HEALTH",
+        measuredAt: new Date("2026-07-20T10:00:00.000Z"),
+        sleepStage: null,
+        externalId: "stats:HKQuantityTypeIdentifierStepCount:2026-07-20",
+        aggregationProvenance: "EXPORT_XML_SOURCE_MAX",
+      }),
+      { exactExternalMatch: "update" },
+    );
+
+    expect(verdict).toMatchObject({
+      status: "duplicate",
+      row: {
+        id: "native-natural",
+        aggregationProvenance: "HEALTHKIT_STATISTICS",
+      },
+      retiredCollisionId: "xml-external",
+    });
+    expect(measurement.update).toHaveBeenCalledTimes(1);
+    expect(measurement.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "xml-external" },
+        data: expect.objectContaining({
+          measuredAt: new Date(0),
+          externalId:
+            "retired:xml-external:stats:HKQuantityTypeIdentifierStepCount:2026-07-20",
+          deletedAt: expect.any(Date),
+          syncVersion: { increment: 1 },
+        }),
+      }),
+    );
+  });
+
+  it("allows native statistics to repair a legacy aggregate", async () => {
+    const legacy = row({
+      id: "legacy-stats",
+      type: "ACTIVITY_STEPS",
+      value: 15_608,
+      unit: "steps",
+      source: "APPLE_HEALTH",
+      measuredAt: new Date("2026-07-20T10:00:00.000Z"),
+      sleepStage: null,
+      externalId: "stats:HKQuantityTypeIdentifierStepCount:2026-07-20",
+      aggregationProvenance: "LEGACY_UNKNOWN",
+    });
+    const { tx, measurement } = transaction([legacy]);
+    measurement.update.mockResolvedValue(
+      row({
+        ...legacy,
+        value: 8_600,
+        aggregationProvenance: "HEALTHKIT_STATISTICS",
+      }),
+    );
+
+    const verdict = await reconcileExternalMeasurement(
+      tx,
+      desired({
+        type: "ACTIVITY_STEPS",
+        value: 8_600,
+        unit: "steps",
+        source: "APPLE_HEALTH",
+        measuredAt: new Date("2026-07-20T10:00:00.000Z"),
+        sleepStage: null,
+        externalId: "stats:HKQuantityTypeIdentifierStepCount:2026-07-20",
+        aggregationProvenance: "HEALTHKIT_STATISTICS",
+        aggregationContributorCount: null,
+        aggregationSelectedSourceHash: null,
+      }),
+      { exactExternalMatch: "update" },
+    );
+
+    expect(verdict).toMatchObject({
+      status: "updated",
+      row: { id: "legacy-stats" },
+    });
+    expect(measurement.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "legacy-stats" },
+        data: expect.objectContaining({
+          value: 8_600,
+          aggregationProvenance: "HEALTHKIT_STATISTICS",
+          aggregationContributorCount: null,
+          aggregationSelectedSourceHash: null,
+          syncVersion: { increment: 1 },
+        }),
+      }),
+    );
   });
 
   it("rolls back its savepoint and returns failed for a non-benign write error", async () => {

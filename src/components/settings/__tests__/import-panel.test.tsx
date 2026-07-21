@@ -26,6 +26,8 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/settings/export",
 }));
 
+import type { Locale } from "@/lib/i18n/config";
+import { AppleHealthEstimateWarning } from "../import-panel/apple-health-import-card";
 import { I18nProvider } from "@/lib/i18n/context";
 import {
   ImportPanel,
@@ -33,9 +35,10 @@ import {
   EXAMPLE_CSV,
   parseImportJson,
 } from "../import-panel";
+
 import { parseCsvMeasurements } from "@/lib/import/csv-measurements";
 
-function render(node: React.ReactElement, locale: "en" | "de" = "en") {
+function render(node: React.ReactElement, locale: Locale = "en") {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
@@ -96,6 +99,20 @@ describe("<ImportPanel> — SSR smoke", () => {
     expect(html).toContain("Import");
     expect(html).not.toContain("settings.sections.export.import.");
   });
+});
+
+describe("<AppleHealthEstimateWarning>", () => {
+  it.each(["en", "de", "es", "fr", "it", "pl"] as const)(
+    "renders localized estimate disclosure for %s",
+    (locale) => {
+      const html = render(<AppleHealthEstimateWarning days={3} />, locale);
+      expect(html).toContain('data-testid="apple-health-estimate-warning"');
+      expect(html).toContain("3");
+      expect(html).not.toContain(
+        "settings.sections.export.import.appleHealth.estimateWarning",
+      );
+    },
+  );
 });
 
 describe("EXAMPLE_IMPORT payload", () => {

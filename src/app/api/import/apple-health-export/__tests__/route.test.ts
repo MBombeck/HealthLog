@@ -170,10 +170,27 @@ describe("POST /api/import/apple-health-export — dedup by content hash (issue 
     expect(body.data.jobId).not.toBe("old-failed-job");
     expect(mocks.bossSend).toHaveBeenCalledTimes(1);
     expect(mocks.importJobCreate).toHaveBeenCalledTimes(1);
+    expect(mocks.importJobCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ parserRevision: 2 }),
+      }),
+    );
+    expect(mocks.bossSend).toHaveBeenCalledWith(
+      "apple-health-import-v2",
+      expect.objectContaining({ userId: "user-1" }),
+      expect.objectContaining({ retryLimit: 0 }),
+    );
+    expect(mocks.importJobUpdate).toHaveBeenCalledWith({
+      where: { id: "ij-1" },
+      data: { pgBossJobId: "boss-job-1" },
+    });
     // The dedup lookup must exclude failed rows.
     expect(mocks.importJobFindFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ status: { not: "failed" } }),
+        where: expect.objectContaining({
+          status: { not: "failed" },
+          parserRevision: 2,
+        }),
       }),
     );
     // A fresh job was staged — nothing to unlink on this path.
@@ -196,5 +213,10 @@ describe("POST /api/import/apple-health-export — dedup by content hash (issue 
     expect(mocks.importJobCreate).not.toHaveBeenCalled();
     // The freshly staged upload is redundant and must be cleaned up.
     expect(mocks.unlink).toHaveBeenCalledWith(STAGED_PATH);
+    expect(mocks.importJobFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ parserRevision: 2 }),
+      }),
+    );
   });
 });

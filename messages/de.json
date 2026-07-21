@@ -4519,6 +4519,7 @@
             "failed": "Der Import ist fehlgeschlagen.",
             "rowsImported": "Bisher {count} Einträge importiert",
             "doneSummary": "Fertig — {imported} von {read} Datensätzen importiert, {skipped} klinische Datensätze übersprungen.",
+            "estimateWarning": "Kumulative Summen für {count} Tag(e) wurden anhand der größten Exportquelle geschätzt. Native Apple-Health-Statistiken bleiben maßgeblich.",
             "phase": {
               "queued": "In Warteschlange…",
               "unpacking": "Archiv wird entpackt…",

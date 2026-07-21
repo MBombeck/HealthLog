@@ -1,6 +1,7 @@
 import {
   Prisma,
   type Measurement,
+  type MeasurementAggregationProvenance,
   type Prisma as PrismaTypes,
 } from "@/generated/prisma/client";
 
@@ -15,6 +16,7 @@ const rowSelect = {
   sleepStage: true,
   externalId: true,
   deletedAt: true,
+  aggregationProvenance: true,
 } satisfies PrismaTypes.MeasurementSelect;
 
 export type ExternalMeasurementWrite = Omit<
@@ -72,6 +74,22 @@ export interface MeasurementReconciliationOptions {
    * collision merges, and tombstone resurrection always reconcile.
    */
   exactExternalMatch?: "update" | "duplicate";
+}
+
+const AGGREGATION_AUTHORITY: Readonly<
+  Record<MeasurementAggregationProvenance, number>
+> = {
+  LEGACY_UNKNOWN: 1,
+  EXPORT_XML_SOURCE_MAX: 2,
+  HEALTHKIT_STATISTICS: 3,
+};
+
+function aggregationAuthority(
+  value: MeasurementAggregationProvenance | null | undefined,
+): number {
+  return value === null || value === undefined
+    ? 0
+    : AGGREGATION_AUTHORITY[value];
 }
 
 function errorVerdict(err: unknown): MeasurementReconciliationVerdict {
@@ -162,6 +180,7 @@ async function lockAndReloadCandidates(
 async function retireCollision(
   tx: PrismaTypes.TransactionClient,
   row: PrismaTypes.MeasurementGetPayload<{ select: typeof rowSelect }>,
+  releaseExternalId = false,
 ): Promise<void> {
   let measuredAt = new Date(0);
   while (
@@ -183,6 +202,9 @@ async function retireCollision(
     where: { id: row.id },
     data: {
       measuredAt,
+      ...(releaseExternalId
+        ? { externalId: `retired:${row.id}:${row.externalId}` }
+        : {}),
       deletedAt: new Date(),
       syncVersion: { increment: 1 },
     },
@@ -240,12 +262,38 @@ export async function reconcileExternalMeasurement(
       return { status: "inserted", row: created };
     }
 
-    const canonical = externalHit ?? naturalHit!;
+    let canonical = externalHit ?? naturalHit!;
+    if (
+      desired.aggregationProvenance != null &&
+      externalHit &&
+      naturalHit &&
+      aggregationAuthority(naturalHit.aggregationProvenance) >
+        aggregationAuthority(externalHit.aggregationProvenance)
+    ) {
+      canonical = naturalHit;
+    }
     const redundant =
       externalHit && naturalHit && externalHit.id !== naturalHit.id
-        ? naturalHit
+        ? canonical.id === externalHit.id
+          ? naturalHit
+          : externalHit
         : undefined;
     const exactExternalMatch = externalHit?.id === naturalHit?.id;
+    if (
+      desired.aggregationProvenance != null &&
+      aggregationAuthority(desired.aggregationProvenance) <
+        aggregationAuthority(canonical.aggregationProvenance)
+    ) {
+      if (redundant) {
+        await retireCollision(tx, redundant, true);
+      }
+      await tx.$executeRawUnsafe(`RELEASE SAVEPOINT ${SAVEPOINT}`);
+      return {
+        status: "duplicate",
+        row: canonical,
+        ...(redundant ? { retiredCollisionId: redundant.id } : {}),
+      };
+    }
 
     if (
       options.exactExternalMatch === "duplicate" &&

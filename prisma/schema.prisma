@@ -1592,6 +1592,14 @@ enum SleepStage {
   @@map("sleep_stage")
 }
 
+enum MeasurementAggregationProvenance {
+  HEALTHKIT_STATISTICS
+  EXPORT_XML_SOURCE_MAX
+  LEGACY_UNKNOWN
+
+  @@map("measurement_aggregation_provenance")
+}
+
 model Measurement {
   id                    String                @id @default(cuid())
   userId                String                @map("user_id")
@@ -1625,6 +1633,18 @@ model Measurement {
   // sample's `metadata.HKWasUserEntered`, Withings model code, …).
   // Stored as a string so the ingest path can replay it back unchanged.
   externalSourceVersion String?               @map("external_source_version")
+  // Authority of an aggregate stored under a `stats:*` identity. NULL for
+  // ordinary point/sample rows. Native HealthKit statistics outrank the
+  // source-day estimate derived from export.xml; migrated ambiguous rows are
+  // explicitly LEGACY_UNKNOWN until a native sync or archive reprocess repairs
+  // them.
+  aggregationProvenance         MeasurementAggregationProvenance? @map("aggregation_provenance")
+  // Distinct source identities contributing to an export.xml source-day
+  // estimate. Source labels themselves are never persisted.
+  aggregationContributorCount   Int?                             @map("aggregation_contributor_count")
+  // SHA-256 of the deterministically selected source identity. Non-identifying
+  // provenance for repeatability without retaining device/source labels.
+  aggregationSelectedSourceHash String?                          @map("aggregation_selected_source_hash")
   // Only set for BLOOD_GLUCOSE measurements. NULL for all others.
   glucoseContext        GlucoseContext?       @map("glucose_context")
   // v1.4.23 — per-stage sleep label. NULL for non-sleep rows; non-NULL
@@ -4284,6 +4304,9 @@ model ImportJob {
   /// kick-off endpoint short-circuit a re-upload of the exact same
   /// file back to the existing job id without re-queueing.
   uploadSha256       String?   @map("upload_sha256")
+  /// Parser semantics revision. Existing archives migrated at revision 1 can
+  /// be deliberately reprocessed when the current parser revision advances.
+  parserRevision     Int       @default(1) @map("parser_revision")
   /// Apple's `ExportDate` attribute string-formatted, parsed during
   /// the unpack phase. NULL until the parser sees it.
   exportedAt         DateTime? @map("exported_at")

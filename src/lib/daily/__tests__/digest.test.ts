@@ -236,6 +236,49 @@ describe("buildDailyDigest — worth-a-look rail item builders", () => {
     expect(dose?.actions[0].href).toBe("/medications");
   });
 
+  it("emits one medication-specific card and link per actionable candidate", () => {
+    const d = buildDailyDigest(
+      input({
+        medsToday: meds({
+          activeCount: 2,
+          dueCandidates: [
+            {
+              medicationId: "med-ramipril",
+              medicationName: "Ramipril",
+              dueAt: new Date(NOW.getTime() - 30 * 60_000).toISOString(),
+              overdue: true,
+              availableFrom: new Date(
+                NOW.getTime() - 2 * 60 * 60_000,
+              ).toISOString(),
+            },
+            {
+              medicationId: "med-mounjaro",
+              medicationName: "Mounjaro",
+              dueAt: new Date(NOW.getTime() - 30 * 60_000).toISOString(),
+              overdue: false,
+              availableFrom: new Date(
+                NOW.getTime() - 24 * 60 * 60_000,
+              ).toISOString(),
+            },
+          ],
+        }),
+      }),
+      t,
+    );
+
+    const doses = d.worthALook.filter((item) => item.kind === "dose_window");
+    expect(doses).toHaveLength(2);
+    expect(doses.map((item) => item.status)).toEqual(["warning", "info"]);
+    expect(doses.map((item) => item.body)).toEqual([
+      t("daily.item.doseWindow.overdueBodyNamed", { name: "Ramipril" }),
+      t("daily.item.doseWindow.bodyNamed", { name: "Mounjaro" }),
+    ]);
+    expect(doses.map((item) => item.actions[0]?.href)).toEqual([
+      "/medications?highlight=med-ramipril",
+      "/medications?highlight=med-mounjaro",
+    ]);
+  });
+
   it("does NOT emit a dose-window item when the medications module is off", () => {
     const d = buildDailyDigest(
       input({
@@ -334,6 +377,58 @@ describe("buildDailyDigest — worth-a-look rail item builders", () => {
     expect(d.worthALook.some((i) => i.kind === "dose_window")).toBe(false);
   });
 
+  it("shows a weekly future slot once its engine-derived availability window opens", () => {
+    const d = buildDailyDigest(
+      input({
+        medsToday: meds({
+          dueCandidates: [
+            {
+              medicationId: "med-weekly",
+              medicationName: "Weekly dose",
+              dueAt: new Date(NOW.getTime() + 24 * 60 * 60_000).toISOString(),
+              overdue: false,
+              availableFrom: new Date(NOW.getTime() - 60_000).toISOString(),
+            },
+          ],
+        }),
+      }),
+      t,
+    );
+
+    expect(
+      d.worthALook.filter((item) => item.kind === "dose_window"),
+    ).toHaveLength(1);
+  });
+
+  it("respects an explicit weekly availability boundary exactly", () => {
+    const candidate = {
+      medicationId: "med-weekly",
+      medicationName: "Weekly dose",
+      dueAt: new Date(NOW.getTime() + 24 * 60 * 60_000).toISOString(),
+      overdue: false,
+      availableFrom: NOW.toISOString(),
+    };
+
+    const atBoundary = buildDailyDigest(
+      input({ medsToday: meds({ dueCandidates: [candidate] }) }),
+      t,
+    );
+    const beforeBoundary = buildDailyDigest(
+      input({
+        now: new Date(NOW.getTime() - 1),
+        medsToday: meds({ dueCandidates: [candidate] }),
+      }),
+      t,
+    );
+
+    expect(
+      atBoundary.worthALook.some((item) => item.kind === "dose_window"),
+    ).toBe(true);
+    expect(
+      beforeBoundary.worthALook.some((item) => item.kind === "dose_window"),
+    ).toBe(false);
+  });
+
   it("keeps a dose beyond the takeable lead off the rail", () => {
     const d = buildDailyDigest(
       input({
@@ -350,9 +445,7 @@ describe("buildDailyDigest — worth-a-look rail item builders", () => {
     expect(d.worthALook.some((i) => i.kind === "dose_window")).toBe(false);
   });
 
-  it("renders neither face for a cached block whose anchor has since passed", () => {
-    // `MedsTodayBlock` contract: a past `nextDueAt` with `nextDueOverdue:
-    // false` means the anchor passed AFTER the block was built.
+  it("keeps a stale cached non-overdue scalar calm instead of dropping or escalating it", () => {
     const d = buildDailyDigest(
       input({
         medsToday: meds({
@@ -363,7 +456,11 @@ describe("buildDailyDigest — worth-a-look rail item builders", () => {
       }),
       t,
     );
-    expect(d.worthALook.some((i) => i.kind === "dose_window")).toBe(false);
+    const dose = d.worthALook.find((item) => item.kind === "dose_window");
+    expect(dose?.status).toBe("info");
+    expect(dose?.body).toBe(
+      t("daily.item.doseWindow.bodyNamed", { name: "Ramipril" }),
+    );
   });
 
   it("maps one sync-issue item per broken integration", () => {

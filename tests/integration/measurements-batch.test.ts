@@ -9,10 +9,14 @@
  *   - Idempotency-Key replay returns the cached envelope
  */
 import { NextRequest } from "next/server";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { cookieJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
+import { streamParseExportXml } from "@/lib/measurements/import-apple-health-export";
 
 const TEST_USER_ID = "user-batch-ingest-test";
 
@@ -86,6 +90,41 @@ function makeRequest(
     method: "POST",
     headers,
     body: JSON.stringify(body),
+  });
+}
+
+function writeCumulativeXml(firstValue = 8_526, secondValue = 7_082): string {
+  const tmp = mkdtempSync(join(tmpdir(), "healthlog-aggregate-authority-"));
+  const xmlPath = join(tmp, "export.xml");
+  writeFileSync(
+    xmlPath,
+    `<?xml version="1.0" encoding="UTF-8"?>
+<HealthData locale="en_US">
+  <Record type="HKQuantityTypeIdentifierStepCount" unit="count"
+          startDate="2026-07-20 08:00:00 +0200"
+          endDate="2026-07-20 08:30:00 +0200"
+          value="${firstValue}" sourceName="iPhone" sourceVersion="18.5"/>
+  <Record type="HKQuantityTypeIdentifierStepCount" unit="count"
+          startDate="2026-07-20 09:00:00 +0200"
+          endDate="2026-07-20 09:30:00 +0200"
+          value="${secondValue}" sourceName="Zepp" sourceVersion="9.1"/>
+</HealthData>`,
+  );
+  return xmlPath;
+}
+
+function nativeStepsRequest(value: number): NextRequest {
+  return makeRequest({
+    entries: [
+      {
+        hkIdentifier: "HKQuantityTypeIdentifierStepCount",
+        value,
+        unit: "count",
+        startDate: "2026-07-20T00:00:00.000Z",
+        endDate: "2026-07-20T18:00:00.000Z",
+        externalId: "stats:HKQuantityTypeIdentifierStepCount:2026-07-20",
+      },
+    ],
   });
 }
 
@@ -560,6 +599,12 @@ describe("POST /api/measurements/batch (real Postgres)", () => {
       });
       expect(stored).toHaveLength(1);
       expect(stored[0]!.value).toBeCloseTo(5200, 5);
+      expect(stored[0]).toMatchObject({
+        aggregationProvenance: "HEALTHKIT_STATISTICS",
+        aggregationContributorCount: null,
+        aggregationSelectedSourceHash: null,
+        syncVersion: 2,
+      });
     });
 
     it("sample-class externalIds (non-stats:* prefix) keep the strict duplicate contract", async () => {
@@ -1151,6 +1196,142 @@ describe("POST /api/measurements/batch (real Postgres)", () => {
         where: { userId: TEST_USER_ID, externalId: "uuid-source-bad-001" },
       });
       expect(stored).toHaveLength(0);
+    });
+  });
+  describe("Apple aggregate authority reconciliation", () => {
+    it("promotes an XML estimate to native HealthKit statistics", async () => {
+      const prisma = getPrismaClient();
+      await streamParseExportXml({
+        xmlPath: writeCumulativeXml(),
+        userId: TEST_USER_ID,
+        userTimezone: "Europe/Berlin",
+        prisma,
+      });
+      const estimated = await prisma.measurement.findMany({
+        where: {
+          userId: TEST_USER_ID,
+          externalId: "stats:HKQuantityTypeIdentifierStepCount:2026-07-20",
+        },
+      });
+      expect(estimated).toHaveLength(1);
+      expect(estimated[0]).toMatchObject({
+        value: 8_526,
+        aggregationProvenance: "EXPORT_XML_SOURCE_MAX",
+        aggregationContributorCount: 2,
+        syncVersion: 1,
+      });
+
+      const { POST } = await import("@/app/api/measurements/batch/route");
+      const response = await POST(nativeStepsRequest(8_600));
+      expect(response.status).toBe(200);
+
+      const canonical = await prisma.measurement.findMany({
+        where: {
+          userId: TEST_USER_ID,
+          externalId: "stats:HKQuantityTypeIdentifierStepCount:2026-07-20",
+        },
+      });
+      expect(canonical).toHaveLength(1);
+      expect(canonical[0]).toMatchObject({
+        value: 8_600,
+        aggregationProvenance: "HEALTHKIT_STATISTICS",
+        aggregationContributorCount: null,
+        aggregationSelectedSourceHash: null,
+        syncVersion: 2,
+      });
+    });
+
+    it("keeps native statistics authoritative when XML arrives later", async () => {
+      const { POST } = await import("@/app/api/measurements/batch/route");
+      expect((await POST(nativeStepsRequest(8_600))).status).toBe(200);
+
+      const result = await streamParseExportXml({
+        xmlPath: writeCumulativeXml(),
+        userId: TEST_USER_ID,
+        userTimezone: "Europe/Berlin",
+        prisma: getPrismaClient(),
+      });
+      expect(result.cumulativeEstimates).toEqual({ days: 1, rows: 1 });
+      expect(result.perType.ACTIVITY_STEPS).toMatchObject({
+        inserted: 0,
+        updated: 0,
+      });
+
+      const canonical = await getPrismaClient().measurement.findMany({
+        where: {
+          userId: TEST_USER_ID,
+          externalId: "stats:HKQuantityTypeIdentifierStepCount:2026-07-20",
+        },
+      });
+      expect(canonical).toHaveLength(1);
+      expect(canonical[0]).toMatchObject({
+        value: 8_600,
+        aggregationProvenance: "HEALTHKIT_STATISTICS",
+        syncVersion: 1,
+      });
+    });
+
+    it("re-imports an XML estimate onto one row with monotonic syncVersion", async () => {
+      const prisma = getPrismaClient();
+      const xmlPath = writeCumulativeXml();
+      await streamParseExportXml({
+        xmlPath,
+        userId: TEST_USER_ID,
+        userTimezone: "Europe/Berlin",
+        prisma,
+      });
+      await streamParseExportXml({
+        xmlPath,
+        userId: TEST_USER_ID,
+        userTimezone: "Europe/Berlin",
+        prisma,
+      });
+
+      const rows = await prisma.measurement.findMany({
+        where: {
+          userId: TEST_USER_ID,
+          externalId: "stats:HKQuantityTypeIdentifierStepCount:2026-07-20",
+        },
+      });
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        value: 8_526,
+        aggregationProvenance: "EXPORT_XML_SOURCE_MAX",
+        aggregationContributorCount: 2,
+        syncVersion: 2,
+      });
+    });
+
+    it("repairs an explicitly legacy aggregate with native statistics", async () => {
+      const prisma = getPrismaClient();
+      await prisma.measurement.create({
+        data: {
+          userId: TEST_USER_ID,
+          type: "ACTIVITY_STEPS",
+          value: 15_608,
+          unit: "steps",
+          source: "APPLE_HEALTH",
+          measuredAt: new Date("2026-07-20T10:00:00.000Z"),
+          externalId: "stats:HKQuantityTypeIdentifierStepCount:2026-07-20",
+          aggregationProvenance: "LEGACY_UNKNOWN",
+        },
+      });
+
+      const { POST } = await import("@/app/api/measurements/batch/route");
+      expect((await POST(nativeStepsRequest(8_600))).status).toBe(200);
+
+      const repaired = await prisma.measurement.findMany({
+        where: {
+          userId: TEST_USER_ID,
+          externalId: "stats:HKQuantityTypeIdentifierStepCount:2026-07-20",
+        },
+      });
+      expect(repaired).toHaveLength(1);
+      expect(repaired[0]).toMatchObject({
+        value: 8_600,
+        aggregationProvenance: "HEALTHKIT_STATISTICS",
+        syncVersion: 2,
+      });
     });
   });
 });

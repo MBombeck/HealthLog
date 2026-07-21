@@ -38,9 +38,11 @@ import {
   type IntakeAutoSkipPayload,
 } from "@/lib/jobs/intake-auto-skip";
 import {
-  APPLE_HEALTH_IMPORT_QUEUE,
+  APPLE_HEALTH_IMPORT_V2_QUEUE,
+  APPLE_HEALTH_IMPORT_LEGACY_QUEUE,
   APPLE_HEALTH_IMPORT_CONCURRENCY,
   handleAppleHealthImport,
+  migrateLegacyAppleHealthImport,
   type AppleHealthImportPayload,
 } from "@/lib/jobs/apple-health-import-worker";
 import {
@@ -304,7 +306,8 @@ const allQueues = [
   // this entry the schedule silently no-ops and pending rows older than
   // 24 h pile up unflipped.
   INTAKE_AUTO_SKIP_QUEUE,
-  APPLE_HEALTH_IMPORT_QUEUE,
+  APPLE_HEALTH_IMPORT_V2_QUEUE,
+  APPLE_HEALTH_IMPORT_LEGACY_QUEUE,
   // v1.8.2 — one-time duplicate dose-slot cleanup. Boot discovery enqueues
   // one job per user holding two live intake rows that snap to the same
   // canonical slot (the pre-fix REMINDER-pending + API-taken pair). Also
@@ -472,9 +475,10 @@ const schedules: ScheduleEntry[] = [
  *     become one. That is exactly the class of silent work-dropping a policy is
  *     supposed to prevent, so the queue keeps `standard` until the enqueue side
  *     gives the explicit-range variant a key of its own.
- *   - APPLE_HEALTH_IMPORT_QUEUE, DATA_BACKUP_QUEUE and PR_DETECTION_QUEUE send
- *     keylessly by design (each import / backup / detection run is a distinct
- *     unit of work). A policy would coalesce independent runs.
+ *   - APPLE_HEALTH_IMPORT_V2_QUEUE, APPLE_HEALTH_IMPORT_LEGACY_QUEUE,
+ *     DATA_BACKUP_QUEUE and PR_DETECTION_QUEUE send keylessly by design (each
+ *     import / backup / detection run is a distinct unit of work). A policy
+ *     would coalesce independent runs.
  */
 const queuePolicies: QueuePolicyTable = {
   // Per-user, boot- and cron-discovery driven, self-converging one-shots. The
@@ -672,7 +676,7 @@ export async function registerMaintenanceQueues(
   // caps at 1 because the parse loop is CPU-bound and a concurrent
   // second 1 GB import would race the first for RSS.
   await boss.work<AppleHealthImportPayload>(
-    APPLE_HEALTH_IMPORT_QUEUE,
+    APPLE_HEALTH_IMPORT_V2_QUEUE,
     { localConcurrency: APPLE_HEALTH_IMPORT_CONCURRENCY },
     async (jobs) => {
       // pg-boss v12 work callbacks always receive an array (batched
@@ -680,6 +684,18 @@ export async function registerMaintenanceQueues(
       // process each job sequentially.
       for (const job of jobs) {
         await handleAppleHealthImport(job);
+      }
+    },
+  );
+  // Drain pre-revision-2 backlog by moving each claimed legacy job onto the
+  // isolated v2 queue. This preserves the ImportJob status id without letting
+  // the current parser execute under a revision-1 mirror.
+  await boss.work<AppleHealthImportPayload>(
+    APPLE_HEALTH_IMPORT_LEGACY_QUEUE,
+    { localConcurrency: APPLE_HEALTH_IMPORT_CONCURRENCY },
+    async (jobs) => {
+      for (const job of jobs) {
+        await migrateLegacyAppleHealthImport(job);
       }
     },
   );

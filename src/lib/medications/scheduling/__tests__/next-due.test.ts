@@ -344,6 +344,49 @@ describe("computeDisplayDue — open overdue slot", () => {
   });
 });
 
+describe("computeDisplayDue — canonical availability start", () => {
+  const weekly = makeDailySchedule({
+    id: "sched-weekly",
+    windowStart: "08:00",
+    windowEnd: "08:00",
+    timesOfDay: ["08:00"],
+    daysOfWeek: "3",
+    rrule: "FREQ=WEEKLY;BYDAY=WE",
+  });
+
+  it("carries the weekly default band's early start for a future slot", () => {
+    const due = computeDisplayDue({
+      medication: makeMedication(),
+      schedules: [weekly],
+      now: d("2026-06-09T05:30:00Z"),
+      userTz: BERLIN,
+      lastIntakeAt: null,
+    });
+
+    expect(due?.at.toISOString()).toBe("2026-06-10T06:00:00.000Z");
+    expect(due?.overdue).toBe(false);
+    expect(due?.availableFrom?.toISOString()).toBe("2026-06-09T05:00:00.000Z");
+  });
+
+  it("uses an explicit weekly dose-window boundary instead of the default day-scale lead", () => {
+    const due = computeDisplayDue({
+      medication: makeMedication(),
+      schedules: [
+        {
+          ...weekly,
+          doseWindows: [{ timeOfDay: "08:00", start: "06:00", end: "10:00" }],
+        },
+      ],
+      now: d("2026-06-09T05:30:00Z"),
+      userTz: BERLIN,
+      lastIntakeAt: null,
+    });
+
+    expect(due?.at.toISOString()).toBe("2026-06-10T06:00:00.000Z");
+    expect(due?.availableFrom?.toISOString()).toBe("2026-06-10T03:00:00.000Z");
+  });
+});
+
 /**
  * v1.16.9 — an AD-HOC row (`scheduledFor === takenAt`) must never
  * ±6h-resolve a DIFFERENT slot. The proven failure: twice-daily 08:00 /

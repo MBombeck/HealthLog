@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+## [1.31.7] — 2026-07-20
+
+- **Current OpenAI reasoning models use their supported request contract.**
+  Official GPT-5, o1, o3, and o4 models receive `max_completion_tokens`
+  without unsupported `temperature` or `seed` fields; compatible custom
+  gateways retain the legacy parameters they advertise.
+- **Apple Health XML cumulative totals no longer add overlapping sources.**
+  Imports aggregate each source/day independently and select the highest
+  source subtotal, while explicit provenance prevents XML estimates or late
+  legacy samples from overwriting authoritative native HealthKit statistics.
+  Existing legacy aggregates can be repaired by re-uploading their archive.
+- **Every currently actionable medication reaches Today.** Equal-time doses no
+  longer collapse to one row, overdue doses win deterministic ties, and weekly
+  or custom intake windows use the scheduling engine's real availability
+  boundary. The shared digest fixes both the web start page and iOS Home.
+
+Migration `0263_apple_health_aggregate_authority`. No breaking changes.
+
 ## [1.31.6] — 2026-07-21
 
 - **The hardened runtime image can run database migrations again.** The

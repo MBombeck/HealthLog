@@ -4519,6 +4519,7 @@
             "failed": "Import nie powiódł się.",
             "rowsImported": "Zaimportowano dotąd {count} wierszy",
             "doneSummary": "Gotowe — zaimportowano {imported} z {read} rekordów, pominięto {skipped} rekordów klinicznych.",
+            "estimateWarning": "Łączne wartości dla {count} dni oszacowano na podstawie największego źródła w eksporcie. Natywne statystyki Apple Health pozostają nadrzędne.",
             "phase": {
               "queued": "W kolejce…",
               "unpacking": "Rozpakowywanie archiwum…",

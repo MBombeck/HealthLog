@@ -97,6 +97,130 @@ describe("external measurement identity reconciliation (real Postgres)", () => {
     });
   });
 
+  it("retires a lower-authority XML collision while preserving the native aggregate", async () => {
+    const prisma = getPrismaClient();
+    const user = await createUser("identity-native-authority");
+    const nativeMeasuredAt = new Date("2026-07-20T10:00:00.000Z");
+    const xmlExternal = await prisma.measurement.create({
+      data: {
+        ...desired(
+          user.id,
+          "stats:HKQuantityTypeIdentifierStepCount:2026-07-20",
+          {
+            type: "ACTIVITY_STEPS",
+            value: 8_526,
+            unit: "steps",
+            source: "APPLE_HEALTH",
+            measuredAt: new Date("2026-07-20T09:00:00.000Z"),
+            sleepStage: null,
+            aggregationProvenance: "EXPORT_XML_SOURCE_MAX",
+            aggregationContributorCount: 2,
+            aggregationSelectedSourceHash: "xml-source-hash",
+          },
+        ),
+      },
+    });
+    const native = await prisma.measurement.create({
+      data: {
+        ...desired(user.id, "stats:legacy-native-id", {
+          type: "ACTIVITY_STEPS",
+          value: 8_600,
+          unit: "steps",
+          source: "APPLE_HEALTH",
+          measuredAt: nativeMeasuredAt,
+          sleepStage: null,
+          externalSourceVersion: "native-v1",
+          deviceType: "Apple Watch",
+          aggregationProvenance: "HEALTHKIT_STATISTICS",
+          aggregationContributorCount: null,
+          aggregationSelectedSourceHash: null,
+        }),
+      },
+    });
+
+    const verdict = await reconcile(
+      desired(user.id, "stats:HKQuantityTypeIdentifierStepCount:2026-07-20", {
+        type: "ACTIVITY_STEPS",
+        value: 8_526,
+        unit: "steps",
+        source: "APPLE_HEALTH",
+        measuredAt: nativeMeasuredAt,
+        sleepStage: null,
+        aggregationProvenance: "EXPORT_XML_SOURCE_MAX",
+        aggregationContributorCount: 2,
+        aggregationSelectedSourceHash: "xml-source-hash",
+      }),
+      { exactExternalMatch: "update" },
+    );
+
+    expect(verdict).toMatchObject({
+      status: "duplicate",
+      row: { id: native.id, externalId: "stats:legacy-native-id" },
+      retiredCollisionId: xmlExternal.id,
+    });
+    const liveRows = await prisma.measurement.findMany({
+      where: { userId: user.id, deletedAt: null },
+    });
+    expect(liveRows).toHaveLength(1);
+    expect(liveRows[0]).toMatchObject({
+      id: native.id,
+      value: 8_600,
+      unit: "steps",
+      measuredAt: nativeMeasuredAt,
+      externalId: "stats:legacy-native-id",
+      externalSourceVersion: "native-v1",
+      deviceType: "Apple Watch",
+      aggregationProvenance: "HEALTHKIT_STATISTICS",
+      aggregationContributorCount: null,
+      aggregationSelectedSourceHash: null,
+    });
+    expect(
+      await prisma.measurement.findUniqueOrThrow({
+        where: { id: xmlExternal.id },
+      }),
+    ).toMatchObject({
+      externalId: `retired:${xmlExternal.id}:stats:HKQuantityTypeIdentifierStepCount:2026-07-20`,
+      deletedAt: expect.any(Date),
+    });
+
+    const nativeUpdate = await reconcile(
+      desired(user.id, "stats:HKQuantityTypeIdentifierStepCount:2026-07-20", {
+        type: "ACTIVITY_STEPS",
+        value: 8_700,
+        unit: "steps",
+        source: "APPLE_HEALTH",
+        measuredAt: nativeMeasuredAt,
+        sleepStage: null,
+        externalSourceVersion: "native-v2",
+        deviceType: "Apple Watch",
+        aggregationProvenance: "HEALTHKIT_STATISTICS",
+        aggregationContributorCount: null,
+        aggregationSelectedSourceHash: null,
+      }),
+      { exactExternalMatch: "update" },
+    );
+
+    expect(nativeUpdate).toMatchObject({
+      status: "updated",
+      row: {
+        id: native.id,
+        externalId: "stats:HKQuantityTypeIdentifierStepCount:2026-07-20",
+      },
+    });
+    expect(
+      await prisma.measurement.findMany({
+        where: { userId: user.id, deletedAt: null },
+      }),
+    ).toEqual([
+      expect.objectContaining({
+        id: native.id,
+        value: 8_700,
+        externalSourceVersion: "native-v2",
+        aggregationProvenance: "HEALTHKIT_STATISTICS",
+      }),
+    ]);
+  });
+
   it("adopts a live natural-key row when a new external id collides", async () => {
     const prisma = getPrismaClient();
     const user = await createUser("identity-natural-live");

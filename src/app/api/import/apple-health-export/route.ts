@@ -4,7 +4,7 @@
  *
  * Streams the upload directly to disk (`/tmp/healthlog-upload-*.bin`)
  * without buffering the full body in memory, creates an `ImportJob`
- * row in `queued`, and enqueues an `apple-health-import` pg-boss job.
+ * row in `queued`, and enqueues an `apple-health-import-v2` pg-boss job.
  * Returns `{ jobId }` so the client can poll
  * `GET /api/import/apple-health-export/[jobId]/status`.
  *
@@ -29,7 +29,8 @@ import { auditLog } from "@/lib/auth/audit";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import {
-  APPLE_HEALTH_IMPORT_QUEUE,
+  APPLE_HEALTH_IMPORT_V2_QUEUE,
+  APPLE_HEALTH_IMPORT_PARSER_REVISION,
   APPLE_HEALTH_IMPORT_SEND_OPTIONS,
   type AppleHealthImportPayload,
 } from "@/lib/jobs/apple-health-import-worker";
@@ -118,6 +119,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     where: {
       userId: user.id,
       uploadSha256: uploaded.sha256,
+      parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
       status: { not: "failed" },
     },
     orderBy: { startedAt: "desc" },
@@ -154,6 +156,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       status: "queued",
       uploadBytes: uploaded.bytes,
       uploadSha256: uploaded.sha256,
+      parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
     },
   });
 
@@ -167,7 +170,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // first run, so a redelivery could only fail on the deleted `/tmp`
   // file and mask the real outcome (see the worker's send-options doc).
   const bossJobId = await boss.send(
-    APPLE_HEALTH_IMPORT_QUEUE,
+    APPLE_HEALTH_IMPORT_V2_QUEUE,
     payload,
     APPLE_HEALTH_IMPORT_SEND_OPTIONS,
   );

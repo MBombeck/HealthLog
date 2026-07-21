@@ -356,7 +356,13 @@ describe("drainPerSampleCumulative — cutoffHours", () => {
 // externalId first, then adopts it in place (`update`) or mints a fresh row
 // (`create`).
 describe("drainPerSampleCumulative — late-sync fold into existing total", () => {
-  function buildFoldMock(existingTotal: number | null) {
+  function buildFoldMock(
+    existingTotal: number | null,
+    aggregationProvenance:
+      | "HEALTHKIT_STATISTICS"
+      | "EXPORT_XML_SOURCE_MAX"
+      | "LEGACY_UNKNOWN" = "LEGACY_UNKNOWN",
+  ) {
     const findManyUser = vi
       .fn()
       .mockResolvedValue([{ id: "user-1", timezone: "Europe/Berlin" }]);
@@ -414,7 +420,11 @@ describe("drainPerSampleCumulative — late-sync fold into existing total", () =
         if ("externalId" in args.where) {
           return existingTotal === null
             ? null
-            : { id: "stats-row", value: existingTotal };
+            : {
+                id: "stats-row",
+                value: existingTotal,
+                aggregationProvenance,
+              };
         }
         if ("measuredAt" in args.where) return null; // no index-B collision
         return { unit: "count" }; // resolveCanonicalUnit
@@ -436,6 +446,7 @@ describe("drainPerSampleCumulative — late-sync fold into existing total", () =
       } as unknown as PrismaClient,
       update,
       create,
+      deleteMany,
     };
   }
 
@@ -451,6 +462,10 @@ describe("drainPerSampleCumulative — late-sync fold into existing total", () =
     expect(update).toHaveBeenCalledTimes(1);
     const updateArg = update.mock.calls[0]?.[0] as { data: { value: number } };
     expect(updateArg.data.value).toBe(9500);
+    expect(updateArg.data).toMatchObject({
+      aggregationProvenance: "LEGACY_UNKNOWN",
+      syncVersion: { increment: 1 },
+    });
   });
 
   it("mints the partial sum when no collapsed total exists yet", async () => {
@@ -464,7 +479,28 @@ describe("drainPerSampleCumulative — late-sync fold into existing total", () =
     expect(create).toHaveBeenCalledTimes(1);
     const createArg = create.mock.calls[0]?.[0] as { data: { value: number } };
     expect(createArg.data.value).toBe(500);
+    expect(createArg.data).toMatchObject({
+      aggregationProvenance: "LEGACY_UNKNOWN",
+    });
   });
+
+  it.each(["HEALTHKIT_STATISTICS", "EXPORT_XML_SOURCE_MAX"] as const)(
+    "drains late source rows without changing %s authority",
+    async (aggregationProvenance) => {
+      const { prisma, update, create, deleteMany } = buildFoldMock(
+        9_000,
+        aggregationProvenance,
+      );
+
+      await drainPerSampleCumulative(prisma, { log: () => {} });
+
+      expect(update).not.toHaveBeenCalled();
+      expect(create).not.toHaveBeenCalled();
+      expect(deleteMany).toHaveBeenCalledWith({
+        where: { id: { in: ["late-1", "late-2"], not: "stats-row" } },
+      });
+    },
+  );
 
   it("recomputes the DAY rollup bucket for the drained day so the stale sum self-heals", async () => {
     vi.mocked(recomputeBucketsForMeasurement).mockClear();
@@ -745,11 +781,10 @@ describe("drainPerSampleCumulative — concurrent fold does not double-count (F2
 
     // The advisory lock fired for the bucket.
     expect($queryRaw).toHaveBeenCalledTimes(1);
-    // The row is adopted in place and left at 9000 — NOT 9500. Pre-fix the
-    // merge added the stale `reducedValue` (500) onto the committed total.
+    // The row is left at 9000 — NOT 9500 — without a non-material update or
+    // syncVersion bump. Pre-fix the merge added the stale reducedValue (500)
+    // onto the committed total.
     expect(create).not.toHaveBeenCalled();
-    expect(update).toHaveBeenCalledTimes(1);
-    const updateArg = update.mock.calls[0]?.[0] as { data: { value: number } };
-    expect(updateArg.data.value).toBe(9000);
+    expect(update).not.toHaveBeenCalled();
   });
 });

@@ -4519,6 +4519,7 @@
             "failed": "L'importazione non è riuscita.",
             "rowsImported": "{count} righe importate finora",
             "doneSummary": "Fatto: {imported} di {read} record importati, {skipped} record clinici saltati.",
+            "estimateWarning": "I totali cumulativi di {count} giorno/i sono stati stimati dalla fonte di esportazione più alta. Le statistiche native di Apple Salute restano autorevoli.",
             "phase": {
               "queued": "In coda…",
               "unpacking": "Estrazione dell'archivio…",

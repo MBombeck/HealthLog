@@ -15,7 +15,7 @@ vi.mock("@/lib/arrivals/emit-shared", () => ({
   emitDataArrival: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import {
   hashSampleKey,
   parseRecordValue,
@@ -27,6 +27,10 @@ import {
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";
 import { emitDataArrival } from "@/lib/arrivals/emit-shared";
+import {
+  APPLE_HEALTH_TYPE_MAP,
+  CUMULATIVE_HK_TYPES,
+} from "../apple-health-mapping";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -173,10 +177,42 @@ function makeFakePrisma(
     workouts.push({ id: `w${nextId++}`, ...create });
   };
 
-  return {
+  const fake = {
     _measurements: measurements,
     _workouts: workouts,
+    $queryRaw: async () => [],
+    $executeRawUnsafe: async () => 0,
+    $transaction: async (
+      callback: (tx: unknown) => Promise<unknown>,
+    ): Promise<unknown> => callback(fake),
     measurement: {
+      create: async ({ data }: { data: Row }) => {
+        injectMeasurementRace(data);
+        if (
+          measurements.some(
+            (measurement) =>
+              (measurement.userId === data.userId &&
+                measurement.type === data.type &&
+                measurement.source === data.source &&
+                measurement.externalId === data.externalId) ||
+              naturalKeyMatch(measurement, data),
+          )
+        ) {
+          throw new Prisma.PrismaClientKnownRequestError(
+            "Unique constraint failed",
+            { code: "P2002", clientVersion: "test" },
+          );
+        }
+        const created: Row = {
+          id: `m${nextId++}`,
+          syncVersion: 1,
+          deletedAt: null,
+          sleepStage: null,
+          ...data,
+        };
+        measurements.push(created);
+        return created;
+      },
       createManyAndReturn: async ({ data }: { data: Row[] }) => {
         const returned: Row[] = [];
         for (const create of data) {
@@ -210,20 +246,61 @@ function makeFakePrisma(
       }: {
         where: {
           userId: string;
-          source: string;
-          OR: Array<Record<string, unknown>>;
+          source?: unknown;
+          OR?: Array<Record<string, unknown>>;
         };
       }) => {
-        return measurements
-          .filter((m) => {
-            if (m.userId !== where.userId || m.source !== where.source)
-              return false;
-            return where.OR.some(
-              (clause) =>
-                m.type === clause.type && m.externalId === clause.externalId,
-            );
-          })
-          .map((m) => ({ type: m.type, externalId: m.externalId }));
+        const externalClause = where.OR?.find(
+          (clause) => typeof clause.externalId === "string",
+        );
+        const externalId =
+          typeof externalClause?.externalId === "string"
+            ? externalClause.externalId
+            : null;
+        if (
+          externalId?.startsWith("stats:") &&
+          measurementRaceExternalIds.has(externalId) &&
+          !injectedMeasurementRaces.has(externalId)
+        ) {
+          const naturalClause = where.OR?.find(
+            (clause) => clause.measuredAt instanceof Date,
+          );
+          injectedMeasurementRaces.add(externalId);
+          measurements.push({
+            id: `m${nextId++}`,
+            userId: where.userId,
+            type: externalClause?.type,
+            source: externalClause?.source,
+            externalId,
+            measuredAt: naturalClause?.measuredAt,
+            sleepStage: naturalClause?.sleepStage ?? null,
+            deletedAt: null,
+            syncVersion: 1,
+            aggregationProvenance: "HEALTHKIT_STATISTICS",
+          });
+        }
+        return measurements.filter((measurement) => {
+          if (measurement.userId !== where.userId) return false;
+          if (
+            where.source !== undefined &&
+            measurement.source !== where.source
+          ) {
+            return false;
+          }
+          if (!where.OR) return true;
+          return where.OR.some(
+            (clause) =>
+              (clause.type === undefined || measurement.type === clause.type) &&
+              (clause.source === undefined ||
+                measurement.source === clause.source) &&
+              (clause.externalId === undefined ||
+                measurement.externalId === clause.externalId) &&
+              (clause.measuredAt === undefined ||
+                sameMeasuredAt(measurement.measuredAt, clause.measuredAt)) &&
+              (clause.sleepStage === undefined ||
+                sameStage(measurement.sleepStage, clause.sleepStage)),
+          );
+        });
       },
       findUnique: async ({
         where,
@@ -244,7 +321,15 @@ function makeFakePrisma(
       // Natural-key probe used by the rescue path. Tombstone-inclusive: no
       // `deletedAt` filter is applied here or by the caller.
       findFirst: async ({ where }: { where: Record<string, unknown> }) => {
-        const match = measurements.find((m) => naturalKeyMatch(m, where));
+        const excludedId =
+          typeof where.id === "object" && where.id !== null && "not" in where.id
+            ? where.id.not
+            : undefined;
+        const match = measurements.find(
+          (measurement) =>
+            measurement.id !== excludedId &&
+            naturalKeyMatch(measurement, where),
+        );
         return match ? { id: match.id } : null;
       },
       update: async ({
@@ -276,7 +361,19 @@ function makeFakePrisma(
             { code: "P2025", clientVersion: "test" },
           );
         }
-        measurements[idx] = { ...measurements[idx], ...data };
+        const syncVersion =
+          typeof data.syncVersion === "object" &&
+          data.syncVersion !== null &&
+          "increment" in data.syncVersion &&
+          typeof data.syncVersion.increment === "number"
+            ? Number(measurements[idx].syncVersion ?? 1) +
+              data.syncVersion.increment
+            : data.syncVersion;
+        measurements[idx] = {
+          ...measurements[idx],
+          ...data,
+          ...(syncVersion === undefined ? {} : { syncVersion }),
+        };
         return measurements[idx];
       },
       upsert: async ({
@@ -398,6 +495,7 @@ function makeFakePrisma(
       },
     },
   };
+  return fake;
 }
 
 describe("parseRecordValue", () => {
@@ -492,6 +590,143 @@ describe("hashSampleKey", () => {
       "2026-05-14 08:14:00 +0200",
     );
     expect(a).not.toBe(b);
+  });
+});
+const cumulativeMappings = Object.values(APPLE_HEALTH_TYPE_MAP).filter(
+  (mapping) => CUMULATIVE_HK_TYPES.has(mapping.measurementType),
+);
+
+function cumulativeExportXml(
+  hkIdentifier: string,
+  hkUnit: string,
+  rows: Array<{ value: number; sourceName: string; hour: number }>,
+): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<HealthData locale="en_US">
+${rows
+  .map(
+    ({ value, sourceName, hour }) => `  <Record type="${hkIdentifier}"
+          unit="${hkUnit}"
+          startDate="2026-05-14 ${String(hour).padStart(2, "0")}:00:00 +0200"
+          endDate="2026-05-14 ${String(hour).padStart(2, "0")}:30:00 +0200"
+          value="${value}"
+          sourceName="${sourceName}"
+          sourceVersion="1.0"/>`,
+  )
+  .join("\n")}
+</HealthData>`;
+}
+
+async function importCumulativeFixture(xml: string) {
+  const tmp = mkdtempSync(join(tmpdir(), "healthlog-parser-cumulative-test-"));
+  const xmlPath = join(tmp, "export.xml");
+  writeFileSync(xmlPath, xml);
+  const prisma = makeFakePrisma();
+  const result = await streamParseExportXml({
+    xmlPath,
+    userId: "user-cumulative",
+    userTimezone: "Europe/Berlin",
+    // The fake implements the importer-facing subset of PrismaClient.
+    prisma: prisma as unknown as PrismaClient,
+  });
+  return { prisma, result };
+}
+
+describe("streamParseExportXml — cumulative source-day estimates", () => {
+  it("covers exactly the six cumulative HealthKit measurement types", () => {
+    expect(CUMULATIVE_HK_TYPES.size).toBe(6);
+    expect(
+      new Set(cumulativeMappings.map((mapping) => mapping.measurementType)),
+    ).toEqual(CUMULATIVE_HK_TYPES);
+  });
+
+  it("stores 8,526 rather than source-blind 15,608 for overlapping iPhone and Zepp steps", async () => {
+    const { prisma, result } = await importCumulativeFixture(
+      cumulativeExportXml("HKQuantityTypeIdentifierStepCount", "count", [
+        { value: 8_526, sourceName: "iPhone", hour: 8 },
+        { value: 7_082, sourceName: "Zepp", hour: 9 },
+      ]),
+    );
+
+    expect(prisma._measurements).toHaveLength(1);
+    expect(prisma._measurements[0]).toMatchObject({
+      value: 8_526,
+      aggregationProvenance: "EXPORT_XML_SOURCE_MAX",
+      aggregationContributorCount: 2,
+    });
+    expect(prisma._measurements[0]?.aggregationSelectedSourceHash).toMatch(
+      /^[a-f0-9]{64}$/,
+    );
+    expect(result.cumulativeEstimates).toEqual({ days: 1, rows: 1 });
+  });
+
+  it.each(cumulativeMappings)(
+    "selects the largest source-day subtotal for $measurementType",
+    async (mapping) => {
+      const { prisma } = await importCumulativeFixture(
+        cumulativeExportXml(mapping.hkIdentifier, mapping.hkUnit, [
+          { value: 30, sourceName: "Source A", hour: 8 },
+          { value: 20, sourceName: "Source B", hour: 9 },
+        ]),
+      );
+
+      expect(prisma._measurements).toHaveLength(1);
+      expect(prisma._measurements[0]).toMatchObject({
+        type: mapping.measurementType,
+        value: 30,
+        aggregationProvenance: "EXPORT_XML_SOURCE_MAX",
+        aggregationContributorCount: 2,
+      });
+    },
+  );
+
+  it.each(cumulativeMappings)(
+    "sums non-overlapping $measurementType rows from the same source",
+    async (mapping) => {
+      const { prisma } = await importCumulativeFixture(
+        cumulativeExportXml(mapping.hkIdentifier, mapping.hkUnit, [
+          { value: 30, sourceName: "Source A", hour: 8 },
+          { value: 20, sourceName: "Source A", hour: 9 },
+        ]),
+      );
+
+      expect(prisma._measurements).toHaveLength(1);
+      expect(prisma._measurements[0]).toMatchObject({
+        type: mapping.measurementType,
+        value: 50,
+        aggregationContributorCount: 1,
+      });
+    },
+  );
+  it("folds unattributed cumulative records into one bounded source bucket", async () => {
+    const { prisma } = await importCumulativeFixture(`<?xml version="1.0"?>
+<HealthData locale="en_US">
+  <Record type="HKQuantityTypeIdentifierStepCount" unit="count"
+          startDate="2026-05-14 08:00:00 +0200"
+          endDate="2026-05-14 08:30:00 +0200" value="60"/>
+  <Record type="HKQuantityTypeIdentifierStepCount" unit="count"
+          startDate="2026-05-14 09:00:00 +0200"
+          endDate="2026-05-14 09:30:00 +0200" value="40"/>
+</HealthData>`);
+
+    expect(prisma._measurements).toHaveLength(1);
+    expect(prisma._measurements[0]).toMatchObject({
+      value: 100,
+      aggregationContributorCount: 1,
+    });
+  });
+
+  it("rejects a source-day subtotal outside the aggregate range", async () => {
+    const { prisma, result } = await importCumulativeFixture(
+      cumulativeExportXml("HKQuantityTypeIdentifierStepCount", "count", [
+        { value: 150_000, sourceName: "Source A", hour: 8 },
+        { value: 150_000, sourceName: "Source A", hour: 9 },
+      ]),
+    );
+
+    expect(prisma._measurements).toHaveLength(0);
+    expect(result.unknown["ACTIVITY_STEPS::aggregate_out_of_range"]).toBe(1);
+    expect(result.cumulativeEstimates).toEqual({ days: 0, rows: 0 });
   });
 });
 
@@ -615,8 +850,8 @@ describe("streamParseExportXml — statement-level insertion identity", () => {
       xmlPath,
       userId: "user-1",
       userTimezone: "Europe/Berlin",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      prisma: prisma as any,
+      // The fake implements the importer-facing subset of PrismaClient.
+      prisma: prisma as unknown as PrismaClient,
       spotBatchSize: 10,
     });
 
@@ -625,9 +860,11 @@ describe("streamParseExportXml — statement-level insertion identity", () => {
       inserted: 1,
       updated: 0,
     });
+    // The concurrently visible native statistics row is authoritative, so the
+    // XML estimate is an intentional no-op.
     expect(result.perType.ACTIVITY_STEPS).toMatchObject({
       inserted: 0,
-      updated: 1,
+      updated: 0,
     });
 
     const arrivalRows = vi.mocked(emitInsertedMeasurementArrivals).mock
@@ -907,7 +1144,7 @@ describe("streamParseExportXml — memory ceiling", () => {
           ` unit="count"` +
           ` startDate="${ts}"` +
           ` endDate="${ts}"` +
-          ` value="${(i % 200) + 1}"/>\n`,
+          ` value="1"/>\n`,
       );
     }
     writeFileSync(xmlPath, header + rows.join("") + footer);
@@ -931,6 +1168,11 @@ describe("streamParseExportXml — memory ceiling", () => {
     // The cumulative fold collapses all 10 000 records into one daily
     // bucket (they all land on the same date in the fixture).
     expect(result.perType.ACTIVITY_STEPS?.inserted).toBe(1);
+    expect(prisma._measurements).toHaveLength(1);
+    expect(prisma._measurements[0]).toMatchObject({
+      value: 10_000,
+      aggregationContributorCount: 1,
+    });
 
     // Heap delta should be modest — we tolerate a generous 100 MB so a
     // GC-related spike doesn't flake the test, but a regression that

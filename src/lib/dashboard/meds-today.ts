@@ -44,6 +44,15 @@ import {
 } from "@/lib/medications/scheduling/next-due";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
 
+export interface MedsTodayDueCandidate {
+  medicationId: string;
+  medicationName: string;
+  dueAt: string;
+  overdue: boolean;
+  /** Canonical attribution-band start for this slot (ISO8601). */
+  availableFrom: string;
+}
+
 export interface MedsTodayBlock {
   /** Active medications (paused courses excluded). */
   activeCount: number;
@@ -75,6 +84,11 @@ export interface MedsTodayBlock {
    * list.
    */
   nextDueMedicationId: string | null;
+  /**
+   * Every active medication's current display-due candidate. Optional only so
+   * older cached snapshots remain valid; the live builder always emits it.
+   */
+  dueCandidates?: MedsTodayDueCandidate[];
 }
 
 export async function buildMedsTodayBlock(
@@ -183,13 +197,7 @@ export async function buildMedsTodayBlock(
       eraStartByMedId.set(f.medicationId, f._max.validUntil);
   }
 
-  // Earliest display-due across active medications. An open overdue
-  // slot's anchor is in the past, so the minimum naturally prefers it
-  // over any future slot.
-  let nextDueAt: Date | null = null;
-  let nextDueOverdue = false;
-  let nextDueMedicationName: string | null = null;
-  let nextDueMedicationId: string | null = null;
+  const dueCandidates: MedsTodayDueCandidate[] = [];
   for (const m of medications) {
     const display = computeDisplayDue({
       medication: {
@@ -207,22 +215,32 @@ export async function buildMedsTodayBlock(
       eraStart: eraStartByMedId.get(m.id) ?? null,
     });
     if (!display) continue;
-    if (nextDueAt === null || display.at.getTime() < nextDueAt.getTime()) {
-      nextDueAt = display.at;
-      nextDueOverdue = display.overdue;
-      nextDueMedicationName = m.name;
-      nextDueMedicationId = m.id;
-    }
+    dueCandidates.push({
+      medicationId: m.id,
+      medicationName: m.name,
+      dueAt: display.at.toISOString(),
+      overdue: display.overdue,
+      availableFrom: (display.availableFrom ?? display.at).toISOString(),
+    });
   }
+  dueCandidates.sort(
+    (a, b) =>
+      Number(b.overdue) - Number(a.overdue) ||
+      a.availableFrom.localeCompare(b.availableFrom) ||
+      a.dueAt.localeCompare(b.dueAt) ||
+      a.medicationId.localeCompare(b.medicationId),
+  );
+  const next = dueCandidates[0] ?? null;
 
   return {
     activeCount: medications.length,
     scheduledToday: todayEvents.length,
     takenToday,
     skippedToday,
-    nextDueAt: nextDueAt ? nextDueAt.toISOString() : null,
-    nextDueOverdue,
-    nextDueMedicationName,
-    nextDueMedicationId,
+    nextDueAt: next?.dueAt ?? null,
+    nextDueOverdue: next?.overdue ?? false,
+    nextDueMedicationName: next?.medicationName ?? null,
+    nextDueMedicationId: next?.medicationId ?? null,
+    dueCandidates,
   };
 }

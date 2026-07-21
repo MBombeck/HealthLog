@@ -1,5 +1,6 @@
 import { safeFetch } from "@/lib/safe-fetch";
 import type { AIProvider, CompletionParams, CompletionResult } from "./types";
+import { selectOpenAIChatCompletionsCapabilities } from "./openai-capabilities";
 import {
   buildOpenAIMessages,
   buildOpenAITools,
@@ -60,6 +61,18 @@ export class OpenAIClient implements AIProvider {
     // therefore stay out of JSON mode, and every tool round is non-JSON by
     // construction. Insight/extraction callers opt in with `responseFormat:"json"`.
     const useJsonFormat = params.responseFormat === "json" && !hasTools;
+    const capabilities = selectOpenAIChatCompletionsCapabilities(
+      this.config.baseUrl,
+      this.config.model,
+    );
+    const tokenBudget = params.maxTokens ?? 1000;
+    const capabilityParams = capabilities.supportsSamplingControls
+      ? {
+          [capabilities.tokenBudgetField]: tokenBudget,
+          temperature: params.temperature ?? 0.3,
+          ...(params.seed !== undefined ? { seed: params.seed } : {}),
+        }
+      : { [capabilities.tokenBudgetField]: tokenBudget };
 
     const res = await safeFetch(
       url,
@@ -72,15 +85,10 @@ export class OpenAIClient implements AIProvider {
         body: JSON.stringify({
           model: this.config.model,
           messages,
-          temperature: params.temperature ?? 0.3,
-          max_tokens: params.maxTokens ?? 1000,
+          ...capabilityParams,
           ...(useJsonFormat
             ? { response_format: { type: "json_object" } }
             : {}),
-          // Deterministic seed for reproducible reference output; omitted
-          // (undefined → dropped by JSON.stringify) when the caller does
-          // not pin one (e.g. the seedless daily-briefing re-roll).
-          ...(params.seed !== undefined ? { seed: params.seed } : {}),
           ...(tools ? { tools } : {}),
           ...(params.toolChoice ? { tool_choice: params.toolChoice } : {}),
         }),

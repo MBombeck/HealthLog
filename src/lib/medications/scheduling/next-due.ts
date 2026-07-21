@@ -146,9 +146,14 @@ export function computeNextDueAt(input: {
   return earliest;
 }
 
-/** The instant a medication card should surface, plus its overdue state. */
+/** The instant a medication card should surface, plus its canonical band state. */
 export interface DisplayDue {
   at: Date;
+  /**
+   * Earliest instant at which the canonical attribution band accepts this
+   * slot. This is cadence- and per-dose-window-aware.
+   */
+  availableFrom?: Date;
   /**
    * True when `at` is an OPEN overdue slot: its anchor has passed but `now`
    * is still inside the slot's catch-up band (`anchor < now ≤ overdueEnd`)
@@ -190,12 +195,19 @@ export function computeDisplayDue(
   input: ComputeDisplayDueInput,
 ): DisplayDue | null {
   const open = findOpenOverdueSlot(input);
-  if (open) return { at: open, overdue: true };
+  if (open) return { ...open, overdue: true };
   const next = computeNextDueAt(input);
-  return next ? { at: next, overdue: false } : null;
+  if (!next) return null;
+  return {
+    at: next,
+    availableFrom: findAvailabilityStart(input, next) ?? next,
+    overdue: false,
+  };
 }
 
-function findOpenOverdueSlot(input: ComputeDisplayDueInput): Date | null {
+function findOpenOverdueSlot(
+  input: ComputeDisplayDueInput,
+): { at: Date; availableFrom: Date } | null {
   const { medication, schedules, now, userTz, lastIntakeAt } = input;
   if (schedules.length === 0) return null;
 
@@ -208,7 +220,7 @@ function findOpenOverdueSlot(input: ComputeDisplayDueInput): Date | null {
   if (floor.getTime() >= now.getTime()) return null;
 
   const ctx = buildRecurrenceContext({ medication, userTz, lastIntakeAt });
-  let latest: Date | null = null;
+  let latest: { at: Date; availableFrom: Date } | null = null;
   for (const schedule of schedules) {
     const { bands } = buildBandsForMedication({
       medication,
@@ -229,8 +241,57 @@ function findOpenOverdueSlot(input: ComputeDisplayDueInput): Date | null {
       if (anchor >= now.getTime()) continue;
       if (now.getTime() > band.overdueEnd.getTime()) continue;
       if (isResolved(band.at)) continue;
-      if (latest === null || anchor > latest.getTime()) latest = band.at;
+      if (
+        latest === null ||
+        anchor > latest.at.getTime() ||
+        (anchor === latest.at.getTime() &&
+          band.earlyStart.getTime() < latest.availableFrom.getTime())
+      ) {
+        latest = { at: band.at, availableFrom: band.earlyStart };
+      }
     }
   }
   return latest;
+}
+
+function findAvailabilityStart(
+  input: ComputeDisplayDueInput,
+  at: Date,
+): Date | null {
+  const ctx = buildRecurrenceContext({
+    medication: input.medication,
+    userTz: input.userTz,
+    lastIntakeAt: input.lastIntakeAt,
+  });
+  const from = new Date(at.getTime() - OVERDUE_LOOKBACK_MS);
+  let earliest: Date | null = null;
+
+  for (const scheduleRow of input.schedules) {
+    const schedule = buildCanonicalSchedule(scheduleRow);
+    const intakeInstants =
+      schedule.rollingIntervalDays === null
+        ? input.lastIntakeAt
+          ? [input.lastIntakeAt]
+          : []
+        : [input.lastIntakeAt, at].filter(
+            (instant): instant is Date => instant !== null,
+          );
+    const { bands } = buildBandsForMedication({
+      medication: input.medication,
+      schedule,
+      ctx,
+      userTz: input.userTz,
+      range: { from, to: at },
+      now: input.now,
+      intakeInstants,
+    });
+    for (const band of bands) {
+      if (band.at.getTime() !== at.getTime()) continue;
+      if (earliest === null || band.earlyStart.getTime() < earliest.getTime()) {
+        earliest = band.earlyStart;
+      }
+    }
+  }
+
+  return earliest;
 }
