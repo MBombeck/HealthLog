@@ -120,6 +120,49 @@ describe("search", () => {
     expect(result.results.map((r) => r.id)).toContain("lab:LDL");
     expect(result.results.some((r) => r.id.startsWith("med:"))).toBe(false);
   });
+  it("keeps distinct lab analytes stable across cursor pages", async () => {
+    vi.mocked(buildCoachDataInventory).mockResolvedValue({
+      entries: [],
+      window: "90d",
+      restMode: false,
+      cycleEnabled: false,
+    } as never);
+    vi.mocked(prisma.medication.findMany).mockResolvedValue([]);
+
+    const analytes = Array.from({ length: 60 }, (_, index) => ({
+      analyte: `Analyte ${String(index).padStart(2, "0")}`,
+    }));
+    let callCount = 0;
+    vi.mocked(prisma.labResult.findMany).mockImplementation((args) => {
+      const ordered =
+        (args as { orderBy?: { analyte?: string } }).orderBy?.analyte === "asc";
+      const rows =
+        ordered || callCount++ % 2 === 0 ? analytes : [...analytes].reverse();
+      return Promise.resolve(rows) as ReturnType<
+        typeof prisma.labResult.findMany
+      >;
+    });
+
+    const def = tool("search");
+    const first = (await def.run(CTX, { query: "" })) as {
+      results: Array<{ id: string }>;
+      nextCursor?: string;
+    };
+    const second = (await def.run(CTX, {
+      query: "",
+      cursor: first.nextCursor,
+    })) as {
+      results: Array<{ id: string }>;
+    };
+
+    const labIds = [...first.results, ...second.results]
+      .map((result) => result.id)
+      .filter((id) => id.startsWith("lab:"));
+    expect(new Set(labIds)).toHaveLength(60);
+    expect(prisma.labResult.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { analyte: "asc" } }),
+    );
+  });
 });
 
 describe("fetch", () => {

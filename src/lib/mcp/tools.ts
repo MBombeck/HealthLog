@@ -385,6 +385,7 @@ function searchAndFetchTools(): McpToolDefinition[] {
           where: { userId: ctx.userId, deletedAt: null },
           select: { analyte: true },
           distinct: ["analyte"],
+          orderBy: { analyte: "asc" },
           take: SEARCH_RESULT_SCAN_CAP,
         });
         for (const lab of labs) {

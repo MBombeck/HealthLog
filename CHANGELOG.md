@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- **MCP search cursors keep lab results stable across pages.** Distinct analyte
+  names are ordered before offset pagination, preventing repeated or skipped
+  lab entries when a client follows `nextCursor`.
+
 ## [1.31.7] — 2026-07-20
 
 - **Current OpenAI reasoning models use their supported request contract.**
