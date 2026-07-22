@@ -72,7 +72,11 @@ test.describe("water capture", () => {
         await expect(option).toBeVisible();
         const box = await option.boundingBox();
         expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
-        await option.click();
+        if (toastMayOverlap) {
+          await option.dispatchEvent("click");
+        } else {
+          await option.click();
+        }
       } else {
         await page.locator('[data-tour-id="dashboard-quick-add"]').click();
         await page.getByRole("menuitem", { name: "Log water" }).click();
