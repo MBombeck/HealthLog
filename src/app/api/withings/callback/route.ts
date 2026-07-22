@@ -171,6 +171,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     const tokens = await exchangeCode(code, creds);
 
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+    const subscriptionRetryAt = new Date();
 
     // v1.4.25 W5d — persist the OAuth scope we requested. The token
     // response doesn't echo the granted scopes back as a top-level
@@ -187,6 +188,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
         refreshToken: encrypt(tokens.refresh_token),
         tokenExpiresAt: expiresAt,
         scope: WITHINGS_OAUTH_SCOPE,
+        webhookSubscriptionState: Prisma.DbNull,
+        webhookSubscriptionRetryAt: subscriptionRetryAt,
       },
       create: {
         userId: user.id,
@@ -195,12 +198,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
         refreshToken: encrypt(tokens.refresh_token),
         tokenExpiresAt: expiresAt,
         scope: WITHINGS_OAUTH_SCOPE,
+        webhookSubscriptionState: Prisma.DbNull,
+        webhookSubscriptionRetryAt: subscriptionRetryAt,
       },
     });
 
-    // Subscribe to webhooks in background
-    setupWebhook(user.id).catch((err) =>
-      getEvent()?.addWarning("Webhook setup failed: " + err),
+    // Reconcile every category from a clean state after connect/reconnect.
+    setupWebhook(user.id).catch(() =>
+      getEvent()?.addWarning("Webhook setup failed"),
     );
 
     await auditLog("withings.connect", {
@@ -220,8 +225,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
     );
     response.cookies.delete(WITHINGS_OAUTH_STATE_COOKIE);
     return response;
-  } catch (err) {
-    getEvent()?.setError(err);
+  } catch {
+    getEvent()?.setError(new Error("Withings callback failed"));
     return NextResponse.redirect(
       new URL(
         "/settings/integrations?withings=error&reason=token",

@@ -4,7 +4,7 @@ import { apiSuccess, apiError } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
-import { getValidToken } from "@/lib/fitbit/sync";
+import { getValidToken } from "@/lib/fitbit/sync-core";
 import { FITBIT_API_BASE } from "@/lib/fitbit/client";
 import { safeFetch, SafeFetchError } from "@/lib/safe-fetch";
 

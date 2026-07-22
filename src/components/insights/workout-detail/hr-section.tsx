@@ -53,6 +53,7 @@ export function WorkoutDetailHrSection({
         <TileHeader
           icon={HeartPulse}
           title={t("insights.workouts.detail.hrChartTitle")}
+          titleAs="h2"
         />
         {series.source === "pulse_window" ? (
           <p

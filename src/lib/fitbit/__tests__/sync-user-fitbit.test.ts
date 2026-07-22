@@ -92,9 +92,9 @@ vi.mock("../sync-workout", () => ({
 
 import {
   handleCollectionFetchError,
-  syncUserFitbit,
   upsertFitbitMeasurements,
-} from "../sync";
+} from "../sync-core";
+import { syncUserFitbit } from "../sync";
 import { FitbitApiError } from "../response-classifier";
 import { prisma } from "@/lib/db";
 

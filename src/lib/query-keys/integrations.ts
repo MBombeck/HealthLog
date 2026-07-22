@@ -66,6 +66,10 @@ export const integrationKeys = {
 
   moodlogStatus: () => ["moodlog-status"] as const,
   integrationsStatus: () => ["integrations", "status"] as const,
+  // Apple Health live-sync freshness comes from the existing HealthKit config
+  // endpoint. It is intentionally separate from the OAuth integration ledger:
+  // a received-data timestamp proves ingest activity, not a web connection.
+  healthKitStatus: () => ["integrations", "healthkit"] as const,
 
   /**
    * v1.15.7 — in-flight Apple Health `export.zip` import. Keyed by the

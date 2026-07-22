@@ -3,6 +3,8 @@
 import { useEffect, useRef } from "react";
 import { useReportWebVitals } from "next/web-vitals";
 
+import { apiFetchRaw } from "@/lib/api/api-fetch";
+
 /**
  * v1.4.28 R3d — client-side mount that pipes Web Vitals measurements
  * to `/api/internal/web-vitals`.
@@ -78,7 +80,7 @@ export function WebVitalsReporter() {
     // Fallback for non-`sendBeacon` browsers — `keepalive` keeps the
     // request alive past navigation. We deliberately ignore the
     // response (it's a beacon, not a transaction).
-    void fetch(url, {
+    void apiFetchRaw(url, {
       method: "POST",
       body,
       headers: { "Content-Type": "application/json" },

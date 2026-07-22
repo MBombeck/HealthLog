@@ -78,7 +78,7 @@ import {
   classificationToFailureKind,
   getValidToken,
   upsertFitbitMeasurements,
-} from "../sync";
+} from "../sync-core";
 
 beforeEach(() => {
   vi.clearAllMocks();

@@ -51,7 +51,8 @@ type ConsumptionClient = Pick<
 type TxClient = Pick<
   PrismaClient,
   "medication" | "medicationIntakeEvent" | "medicationInventoryItem"
->;
+> &
+  Partial<Pick<PrismaClient, "$queryRaw">>;
 
 /** One consumed slice of the stamp: `units` taken from `itemId`. */
 export interface InventoryConsumptionEntry {
@@ -73,6 +74,16 @@ async function runAtomically<T>(
     return client.$transaction((tx) => fn(tx as TxClient));
   }
   return fn(client);
+}
+
+async function lockMedicationInventory(
+  tx: TxClient,
+  medicationId: string,
+): Promise<void> {
+  if (typeof tx.$queryRaw !== "function") return;
+  await tx.$queryRaw(
+    Prisma.sql`SELECT 1 AS "locked" FROM (SELECT pg_advisory_xact_lock(hashtextextended(${medicationId}, 0))) AS lock`,
+  );
 }
 
 /** Parse a stamp column value defensively — a malformed stamp refunds
@@ -138,6 +149,7 @@ export async function consumeForIntake(input: {
   const { client, userId, medicationId, eventId, intakeAt } = input;
   try {
     await runAtomically(client, async (tx) => {
+      await lockMedicationInventory(tx, medicationId);
       // Atomic claim — gate check and stamp reservation in ONE
       // conditional UPDATE. A plain read-then-write gate is not safe
       // under READ COMMITTED: two concurrent consume calls for the same
@@ -288,6 +300,168 @@ export async function consumeForIntake(input: {
   }
 }
 
+export interface ImportedIntakeConsumption {
+  eventId: string;
+  intakeAt: Date;
+}
+
+/**
+ * Consume inventory for one bounded import chunk.
+ *
+ * The caller passes only rows returned by `createManyAndReturn`, so every event
+ * is fresh and invisible outside the caller's transaction. One medication
+ * advisory lock serializes chunks for the same medication, one inventory read
+ * feeds the entire chunk, and each touched item is written once. Event stamps
+ * keep a retry observable exactly once.
+ *
+ * Unlike the request-time single-event hook, this strict batch variant throws:
+ * the import worker owns the surrounding transaction and must roll the event
+ * inserts back when inventory bookkeeping cannot complete.
+ */
+export async function consumeImportedIntakesBatch(input: {
+  client: ConsumptionClient;
+  userId: string;
+  medicationId: string;
+  events: readonly ImportedIntakeConsumption[];
+}): Promise<void> {
+  const { client, userId, medicationId, events } = input;
+  if (events.length === 0) return;
+
+  await runAtomically(client, async (tx) => {
+    await lockMedicationInventory(tx, medicationId);
+
+    const claimed = await tx.medicationIntakeEvent.updateMany({
+      where: {
+        id: { in: events.map(({ eventId }) => eventId) },
+        userId,
+        medicationId,
+        deletedAt: null,
+        takenAt: { not: null },
+        skipped: false,
+        inventoryConsumption: { equals: Prisma.AnyNull },
+      },
+      data: { inventoryConsumption: [] },
+    });
+    if (claimed.count !== events.length) {
+      throw new Error("Imported intake inventory claim was not exclusive");
+    }
+
+    const medication = await tx.medication.findFirst({
+      where: { id: medicationId, userId },
+      select: { unitsPerDose: true },
+    });
+    if (!medication) {
+      throw new Error("Imported intake medication no longer exists");
+    }
+    const unitsPerDose = Number(medication.unitsPerDose);
+    if (!(unitsPerDose > 0)) {
+      throw new Error("Imported intake medication has an invalid dose size");
+    }
+
+    const [inUse, active] = await Promise.all([
+      tx.medicationInventoryItem.findMany({
+        where: {
+          userId,
+          medicationId,
+          state: "IN_USE",
+          unitsRemaining: { gt: 0 },
+        },
+        orderBy: [
+          { expiresAt: { sort: "asc", nulls: "last" } },
+          { createdAt: "asc" },
+        ],
+      }),
+      tx.medicationInventoryItem.findMany({
+        where: {
+          userId,
+          medicationId,
+          state: "ACTIVE",
+          unitsRemaining: { gt: 0 },
+        },
+        orderBy: [
+          { printedExpiry: { sort: "asc", nulls: "last" } },
+          { purchasedAt: { sort: "asc", nulls: "last" } },
+          { createdAt: "asc" },
+        ],
+      }),
+    ]);
+
+    const items = [...inUse, ...active].map((item) => ({
+      ...item,
+      unitsRemaining: Number(item.unitsRemaining),
+    }));
+    const changedItems = new Map<string, (typeof items)[number]>();
+    const stamps = new Map<string, InventoryConsumptionEntry[]>();
+    const nowMs = Date.now();
+    let totalConsumed = 0;
+    let autoOpened = 0;
+
+    for (const event of events) {
+      let owed = unitsPerDose;
+      const stamp: InventoryConsumptionEntry[] = [];
+      for (const item of items) {
+        if (owed <= 0) break;
+        if (item.unitsRemaining <= 0) continue;
+        if (item.state !== "IN_USE" && item.state !== "ACTIVE") continue;
+
+        const take = Math.min(owed, item.unitsRemaining);
+        const wasUnopened = item.firstUseAt === null;
+        const nextFirstUseAt = item.firstUseAt ?? event.intakeAt;
+        item.unitsRemaining -= take;
+        item.firstUseAt = nextFirstUseAt;
+        item.expiresAt = computeExpiresAt(nextFirstUseAt, item.printedExpiry);
+        item.state = computeInventoryState(
+          {
+            state: item.state,
+            unitsTotal: Number(item.unitsTotal),
+            unitsRemaining: item.unitsRemaining,
+            firstUseAt: nextFirstUseAt,
+            printedExpiry: item.printedExpiry,
+          },
+          nowMs,
+        );
+        changedItems.set(item.id, item);
+        stamp.push({ itemId: item.id, units: take });
+        totalConsumed += take;
+        owed -= take;
+        if (wasUnopened) autoOpened += 1;
+      }
+      stamps.set(event.eventId, stamp);
+    }
+
+    await Promise.all([
+      ...[...changedItems.values()].map((item) =>
+        tx.medicationInventoryItem.update({
+          where: { id: item.id },
+          data: {
+            state: item.state,
+            unitsRemaining: item.unitsRemaining,
+            firstUseAt: item.firstUseAt,
+            expiresAt: item.expiresAt,
+          },
+        }),
+      ),
+      ...events.map(({ eventId }) =>
+        tx.medicationIntakeEvent.update({
+          where: { id: eventId },
+          data: { inventoryConsumption: toJson(stamps.get(eventId) ?? []) },
+        }),
+      ),
+    ]);
+
+    annotate({
+      action: { name: "medication.inventory.consumed" },
+      meta: {
+        medication_id: medicationId,
+        units: totalConsumed,
+        item_ids: [...changedItems.keys()],
+        auto_opened: autoOpened,
+        event_count: events.length,
+      },
+    });
+  });
+}
+
 /**
  * Refund the consumption a stamped intake event recorded and clear
  * the stamp.
@@ -316,6 +490,7 @@ export async function restoreForIntake(input: {
         },
       });
       if (!event || event.inventoryConsumption === null) return;
+      await lockMedicationInventory(tx, event.medicationId);
       const stampValue = event.inventoryConsumption;
 
       // Atomic claim — clear the stamp ONLY while it still holds the

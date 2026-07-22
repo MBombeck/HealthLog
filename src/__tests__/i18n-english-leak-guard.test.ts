@@ -112,6 +112,7 @@ const LEGIT_IDENTICAL = new Set<string>([
   "settings.moodLogUrl",
   "settings.sections.export.import.appleHealth.title",
   "settings.sections.sources.sourceLabels.APPLE_HEALTH",
+  "settings.appleHealth.title",
   "mood.tag.fastFood",
   // Technical / config labels conventionally kept verbatim.
   "admin.hostMetrics.diskBusyPercent",

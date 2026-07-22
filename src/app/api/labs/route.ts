@@ -167,7 +167,9 @@ async function postLabResult(request: NextRequest) {
       .catch(() => {
         /* swallow — the 422 response is the contract */
       });
-    return returnAllZodIssues(parsed.error, 422);
+    return returnAllZodIssues(parsed.error, 422, {
+      errorCode: "labs.create.invalid",
+    });
   }
 
   const {
@@ -209,7 +211,9 @@ async function postLabResult(request: NextRequest) {
       },
     });
     if (!found) {
-      return apiError("Biomarker not found", 404);
+      return apiError("Biomarker not found", 404, {
+        errorCode: "labs.biomarker.notFound",
+      });
     }
     biomarker = found;
   } else {

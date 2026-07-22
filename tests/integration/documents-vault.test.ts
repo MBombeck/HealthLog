@@ -269,10 +269,10 @@ describe("document vault — policy error contract", () => {
   });
 
   it("cannot be overshot by concurrent uploads racing the quota gate", async () => {
-    // Four DISTINCT same-sized files fired in parallel against a quota that
-    // fits exactly two. Without the per-user advisory lock in the upload
-    // transaction every request reads the same pre-insert SUM and all four
-    // land — a burst could overshoot the quota by rate-limit × cap.
+    // The production admission gate allows two same-user uploads in flight,
+    // so seed one file, then race two DISTINCT files for the one remaining
+    // quota slot. Without the per-user advisory lock both contenders read the
+    // same pre-insert SUM and land, overshooting the quota.
     const user = await seedVaultUser("vault-quota-race");
     const files = Array.from({ length: 4 }, (_, i) => {
       const filler = Buffer.alloc(2048, i + 1);
@@ -285,11 +285,22 @@ describe("document vault — policy error contract", () => {
     });
     const { post } = await routes();
 
-    const results = await Promise.all(
-      files.map((bytes, i) => post(uploadRequest(bytes, `race-${i}.pdf`))),
+    const first = await post(uploadRequest(files[0], "race-0.pdf"));
+    const contenders = await Promise.all(
+      files
+        .slice(1, 3)
+        .map((bytes, i) => post(uploadRequest(bytes, `race-${i + 1}.pdf`))),
     );
+    const last = await post(uploadRequest(files[3], "race-3.pdf"));
+    const results = [first, ...contenders, last];
     const statuses = results.map((r) => r.status).sort();
     expect(statuses).toEqual([201, 201, 413, 413]);
+    const bodies = await Promise.all(results.map((result) => result.json()));
+    expect(
+      bodies
+        .filter((_, index) => results[index].status === 413)
+        .map((body) => body.meta.reason),
+    ).toEqual(["quotaExceeded", "quotaExceeded"]);
 
     const rows = await getPrismaClient().inboundDocument.findMany({
       where: { userId: user.id },

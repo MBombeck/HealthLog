@@ -87,7 +87,9 @@ export const PUT = apiHandler(
 
     const existing = await prisma.biomarker.findFirst({ where: { id } });
     if (!existing || existing.userId !== user.id) {
-      return apiError("Biomarker not found", 404);
+      return apiError("Biomarker not found", 404, {
+        errorCode: "labs.biomarker.notFound",
+      });
     }
 
     const { data: body, error: jsonError } = await safeJson(request, {
@@ -115,7 +117,9 @@ export const PUT = apiHandler(
         .catch(() => {
           /* swallow — the 422 response is the contract */
         });
-      return returnAllZodIssues(parsed.error, 422);
+      return returnAllZodIssues(parsed.error, 422, {
+        errorCode: "labs.biomarker.update.invalid",
+      });
     }
 
     const d = parsed.data;
@@ -127,7 +131,9 @@ export const PUT = apiHandler(
         select: { id: true },
       });
       if (clash) {
-        return apiError("A biomarker with this name already exists", 409);
+        return apiError("A biomarker with this name already exists", 409, {
+          errorCode: "labs.biomarker.duplicate",
+        });
       }
     }
 
@@ -152,7 +158,9 @@ export const PUT = apiHandler(
         effectiveBound(d.upperBound, existing.upperBound),
       )
     ) {
-      return apiError("lowerBound must not exceed upperBound", 422);
+      return apiError("lowerBound must not exceed upperBound", 422, {
+        errorCode: "labs.biomarker.update.referenceRangeInvalid",
+      });
     }
     if (d.context !== undefined) {
       data.contextEncrypted = d.context

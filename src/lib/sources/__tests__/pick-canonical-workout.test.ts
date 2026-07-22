@@ -68,6 +68,19 @@ describe("pickCanonicalWorkout — fixture (a) two-source same workout", () => {
     expect(result.clusters[0].pickedSource).toBe("APPLE_HEALTH");
   });
 
+  it("keeps every workout from the winning source in one cluster", () => {
+    const result = pickCanonicalWorkout([
+      row("apple-1", "APPLE_HEALTH", "2026-05-14T07:30:00.000Z"),
+      row("withings-1", "WITHINGS", "2026-05-14T07:31:00.000Z"),
+      row("apple-2", "APPLE_HEALTH", "2026-05-14T07:32:00.000Z"),
+    ]);
+
+    expect(result.canonical.map((item) => item.id)).toEqual([
+      "apple-1",
+      "apple-2",
+    ]);
+  });
+
   it("still picks APPLE_HEALTH when the Withings row arrives first", () => {
     const result = pickCanonicalWorkout([
       row("withings-1", "WITHINGS", "2026-05-14T07:30:00.000Z"),
@@ -164,6 +177,20 @@ describe("pickCanonicalWorkout — proximity-window boundary", () => {
     expect(result.canonical).toHaveLength(1);
   });
 
+  it("anchors a cluster to its first row instead of chaining neighbours", () => {
+    const result = pickCanonicalWorkout([
+      row("anchor", "APPLE_HEALTH", "2026-05-14T07:30:00.000Z"),
+      row("neighbour", "WITHINGS", "2026-05-14T07:34:00.000Z"),
+      row("chained", "WITHINGS", "2026-05-14T07:38:00.000Z"),
+    ]);
+
+    expect(result.clusters).toHaveLength(2);
+    expect(result.canonical.map((item) => item.id)).toEqual([
+      "anchor",
+      "chained",
+    ]);
+  });
+
   it("keeps two rows just outside the proximity window", () => {
     // 5 minutes and 1 second — picker rejects, two clusters.
     const result = pickCanonicalWorkout([
@@ -203,16 +230,13 @@ describe("pickCanonicalWorkout — determinism", () => {
     expect(a.canonical.map((r) => r.id)).toEqual(b.canonical.map((r) => r.id));
   });
 
-  it("breaks same-timestamp ties via id ordering", () => {
+  it("preserves same-source workouts at the same timestamp", () => {
     const result = pickCanonicalWorkout([
       row("a-2", "APPLE_HEALTH", "2026-05-14T07:30:00.000Z"),
       row("a-1", "APPLE_HEALTH", "2026-05-14T07:30:00.000Z"),
     ]);
-    // Both rows are APPLE_HEALTH within the same cluster — the picker
-    // keeps the lexicographically-earlier `id` so the choice is
-    // independent of the caller's input order.
-    expect(result.canonical).toHaveLength(1);
-    expect(result.canonical[0].id).toBe("a-1");
+
+    expect(result.canonical.map((item) => item.id)).toEqual(["a-1", "a-2"]);
   });
 });
 
@@ -238,6 +262,55 @@ describe("pickCanonicalWorkout — field-merge (v1.29.x, WHOOP HR-loss fix)", ()
     expect(winner.avgHeartRate).toBe(142);
     expect(winner.maxHeartRate).toBe(168);
     expect(result.clusters[0].picked.avgHeartRate).toBe(142);
+  });
+
+  it("backfills a lower-priority donor only onto its nearest winning-source workout", () => {
+    const fixtures = [
+      row(
+        "apple-earlier",
+        "APPLE_HEALTH",
+        "2026-05-14T07:30:00.000Z",
+        "running",
+        {
+          avgHeartRate: null,
+        },
+      ),
+      row(
+        "apple-later",
+        "APPLE_HEALTH",
+        "2026-05-14T07:34:00.000Z",
+        "running",
+        {
+          avgHeartRate: null,
+        },
+      ),
+      row("whoop-later", "WHOOP", "2026-05-14T07:34:00.000Z", "running", {
+        avgHeartRate: 151,
+      }),
+    ];
+
+    for (const input of [fixtures, [...fixtures].reverse()]) {
+      const result = pickCanonicalWorkout(input);
+
+      expect(
+        result.canonical.map(({ id, source, avgHeartRate }) => ({
+          id,
+          source,
+          avgHeartRate,
+        })),
+      ).toEqual([
+        {
+          id: "apple-earlier",
+          source: "APPLE_HEALTH",
+          avgHeartRate: null,
+        },
+        {
+          id: "apple-later",
+          source: "APPLE_HEALTH",
+          avgHeartRate: 151,
+        },
+      ]);
+    }
   });
 
   it("never overwrites a field the base row already has", () => {
@@ -338,25 +411,21 @@ describe("pickCanonicalWorkout — field-merge (v1.29.x, WHOOP HR-loss fix)", ()
   });
 });
 
-describe("pickCanonicalWorkout — Strava brick-workout collapse (data-integrity audit H4)", () => {
-  // Before the Strava sport-map fix, `mapActivity()` wrote the raw Strava
-  // label ("Ride", "Run") straight into `sportType` — neither string is a
-  // member of `workoutSportTypeEnum`, so `isSpecificSportType()` classified
-  // BOTH rows as generic. Two generic rows are always sport-compatible
-  // (`genericPairing` in pick-canonical-workout.ts), so a same-source brick
-  // session — a Strava ride ending ~15:00 immediately followed by a Strava
-  // run starting 15:03 — clustered into ONE cluster and the ladder pick
-  // kept only one leg, silently dropping the other from every list, tile,
-  // and total.
-  it("pre-fix: two raw (non-canonical) Strava labels close in time COLLAPSE into one cluster", () => {
+describe("pickCanonicalWorkout — Strava brick-workout regression", () => {
+  // Legacy Strava labels ("Ride", "Run") are both generic to this picker,
+  // so they share a cluster. The source is identical, however, which means
+  // both legs are distinct records and must survive.
+  it("preserves two same-source raw Strava workouts in one cluster", () => {
     const result = pickCanonicalWorkout([
       row("strava-ride", "STRAVA", "2026-06-01T15:00:00.000Z", "Ride"),
       row("strava-run", "STRAVA", "2026-06-01T15:03:00.000Z", "Run"),
     ]);
-    // This is the confirmed bug, pinned so a future change can't silently
-    // "fix" clustering itself and mask a regression in the sport-map layer.
+
     expect(result.clusters).toHaveLength(1);
-    expect(result.canonical).toHaveLength(1);
+    expect(result.canonical.map((item) => item.id)).toEqual([
+      "strava-ride",
+      "strava-run",
+    ]);
   });
 
   it("post-fix: a canonical Strava Ride + Run pair survives as two distinct rows", () => {

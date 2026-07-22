@@ -3,10 +3,9 @@
  *
  * Generalises the v1.4.33 Coach snapshot cache shape
  * (`src/lib/ai/coach/snapshot.ts:292-336`, commit `af17db5d`) into a
- * reusable primitive. Same recipe: `Map<string, { expiresAt, value }>`
- * gives us insertion-order iteration for LRU touch, a hard cap on
- * entries to bound memory, and a `pending` map so concurrent reads of
- * the same cold key fan into a single builder call.
+ * reusable primitive. A `Map` gives insertion-order iteration for LRU touch,
+ * entry-count and optional weighted caps bound memory, and a `pending` map
+ * lets concurrent reads of the same cold key share one builder call.
  *
  * Design notes:
  *
@@ -36,11 +35,23 @@
  *     reaching into the private `Map`.
  */
 
-export interface ServerCacheOptions {
+import type { WorkoutsProjection } from "@/lib/workouts/list-read";
+
+export interface ServerCacheOptions<T = unknown> {
   /** Hard cap on entries. Oldest entry is evicted on overflow. */
   readonly maxEntries: number;
   /** Time-to-live in milliseconds. Expired entries miss on read. */
   readonly ttlMs: number;
+  /**
+   * Optional hard cap on the combined weight of resident entries.
+   * Entries are evicted from the LRU end until both caps are satisfied.
+   */
+  readonly maxWeight?: number;
+  /**
+   * Returns a positive capacity weight for one entry. Defaults to 1, making
+   * `maxWeight` equivalent to a second entry-count cap when omitted.
+   */
+  readonly weightOf?: (value: T, key: string) => number;
   /**
    * v1.12.1 — stale-while-revalidate window in milliseconds. When set,
    * an entry whose `ttlMs` has lapsed but is still inside
@@ -88,15 +99,16 @@ interface PendingBuild<T> {
 export class ServerCache<T> {
   private readonly map = new Map<
     string,
-    { expiresAt: number; staleUntil: number; value: T }
+    { expiresAt: number; staleUntil: number; value: T; weight: number }
   >();
   private readonly pending = new Map<string, PendingBuild<T>>();
   private hits = 0;
   private misses = 0;
   private evictions = 0;
   private stampedes = 0;
+  private totalWeight = 0;
 
-  constructor(private readonly opts: ServerCacheOptions) {}
+  constructor(private readonly opts: ServerCacheOptions<T>) {}
 
   /**
    * Fence + detach the in-flight builder for one key (no-op when none).
@@ -160,11 +172,18 @@ export class ServerCache<T> {
    * `wrap()` path because the bare `get` is also called from tests
    * and from the test escape hatch.
    */
+  private entryWeight(key: string, value: T): number {
+    if (this.opts.maxWeight === undefined) return 1;
+    const weight = this.opts.weightOf?.(value, key) ?? 1;
+    return Number.isFinite(weight) && weight > 0 ? Math.ceil(weight) : 1;
+  }
+
   get(key: string): T | null {
     const entry = this.map.get(key);
     if (!entry) return null;
     if (entry.expiresAt <= Date.now()) {
       this.map.delete(key);
+      this.totalWeight -= entry.weight;
       return null;
     }
     // LRU touch — re-insertion moves the key to the end of the Map's
@@ -175,8 +194,8 @@ export class ServerCache<T> {
   }
 
   /**
-   * Insert or overwrite. Evicts the oldest entry if the cap is hit.
-   *
+   * Insert or overwrite. Evicts least-recently-used entries until every
+   * configured capacity limit is satisfied.
    * `ttlMsOverride` lets a single key carry a longer (or shorter) TTL
    * than the bucket default without splitting it into a separate cache
    * instance — used by the dashboard-snapshot key, which must outlive
@@ -185,17 +204,16 @@ export class ServerCache<T> {
    * prefix-sweep invalidation.
    */
   set(key: string, value: T, ttlMsOverride?: number): void {
-    // The key might already exist (eviction-by-set is a write through
-    // the same slot — no cap eviction needed). Delete-then-set to keep
-    // the LRU ordering predictable.
-    if (this.map.has(key)) {
+    const weight = this.entryWeight(key, value);
+    if (this.opts.maxWeight !== undefined && weight > this.opts.maxWeight) {
+      return;
+    }
+    // The key might already exist. Remove its old weight before replacing it,
+    // then reinsert at the most-recently-used end.
+    const existing = this.map.get(key);
+    if (existing) {
       this.map.delete(key);
-    } else if (this.map.size >= this.opts.maxEntries) {
-      const oldest = this.map.keys().next().value;
-      if (oldest !== undefined) {
-        this.map.delete(oldest);
-        this.evictions += 1;
-      }
+      this.totalWeight -= existing.weight;
     }
     const now = Date.now();
     const expiresAt = now + (ttlMsOverride ?? this.opts.ttlMs);
@@ -206,7 +224,22 @@ export class ServerCache<T> {
       // so `getAllowStale` behaves exactly like `get`.
       staleUntil: expiresAt + (this.opts.staleTtlMs ?? 0),
       value,
+      weight,
     });
+    this.totalWeight += weight;
+
+    while (
+      this.map.size > this.opts.maxEntries ||
+      (this.opts.maxWeight !== undefined &&
+        this.totalWeight > this.opts.maxWeight)
+    ) {
+      const oldest = this.map.keys().next().value;
+      if (oldest === undefined) break;
+      const evicted = this.map.get(oldest);
+      this.map.delete(oldest);
+      this.totalWeight -= evicted?.weight ?? 0;
+      this.evictions += 1;
+    }
   }
 
   /**
@@ -222,6 +255,7 @@ export class ServerCache<T> {
     const now = Date.now();
     if (entry.staleUntil <= now) {
       this.map.delete(key);
+      this.totalWeight -= entry.weight;
       return null;
     }
     // LRU touch.
@@ -271,7 +305,10 @@ export class ServerCache<T> {
     // v1.16.9 — fence the in-flight builder so a pre-write build can
     // neither be joined by post-evict reads nor commit its result.
     this.detachPending(key);
-    return this.map.delete(key);
+    const entry = this.map.get(key);
+    const removed = this.map.delete(key);
+    if (removed && entry) this.totalWeight -= entry.weight;
+    return removed;
   }
 
   /**
@@ -288,7 +325,9 @@ export class ServerCache<T> {
     let removed = 0;
     for (const key of this.map.keys()) {
       if (key.startsWith(prefix)) {
+        const entry = this.map.get(key);
         this.map.delete(key);
+        this.totalWeight -= entry?.weight ?? 0;
         removed += 1;
       }
     }
@@ -409,6 +448,7 @@ export class ServerCache<T> {
   /** Reset every counter + entry. Test-only escape hatch. */
   __resetForTests(): void {
     this.map.clear();
+    this.totalWeight = 0;
     // Fence any in-flight builder so a build crossing a test boundary
     // cannot commit into the next test's clean cache.
     for (const slot of this.pending.values()) {
@@ -511,10 +551,19 @@ export const caches = {
     maxEntries: 500,
     ttlMs: 300_000,
   }),
-  workouts: new ServerCache<unknown>({
+  // Retain at most 50k canonical workout rows across all filter projections.
+  // The selected row shape is fixed and narrow, so row count is a stable
+  // byte proxy without serializing or walking every field on each cache set.
+  // A projection larger than the entire budget is returned to its caller but
+  // immediately evicted rather than monopolizing process memory.
+  workouts: new ServerCache<WorkoutsProjection>({
     name: "workouts",
     maxEntries: 1000,
+    // A row-weight budget prevents a handful of full-history projections
+    // from looking as cheap as tiny lists under the entry-count cap.
+    maxWeight: 50_000,
     ttlMs: 60_000,
+    weightOf: (projection) => Math.max(1, projection.canonical.length),
   }),
   medicationsIntake: new ServerCache<unknown>({
     name: "medicationsIntake",

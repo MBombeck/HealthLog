@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
+import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
 import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
 
@@ -17,7 +18,7 @@ export function useGlobalExcludedInjectionSites(): InjectionSiteKey[] {
   const { data } = useQuery({
     queryKey: queryKeys.injectionSitePrefs(),
     queryFn: async () => {
-      const res = await fetch("/api/auth/me/injection-site-prefs");
+      const res = await apiFetchRaw("/api/auth/me/injection-site-prefs");
       if (!res.ok) return [] as InjectionSiteKey[];
       const json = await res.json();
       return (json.data?.globalExcludedInjectionSites ??

@@ -34,21 +34,55 @@ vi.mock("@/lib/jobs/reminder/shared", () => ({
 vi.mock("@/lib/jobs/workout-insight-generate-shared", () => ({
   enqueueWorkoutInsight: vi.fn(async () => ({ enqueued: true })),
 }));
+vi.mock("@/lib/arrivals/reaction-line-shared", () => ({
+  enqueueReactionLine: vi.fn(async () => undefined),
+}));
 
-// Typed explicitly (rather than via a named implementation param) so
-// `.mock.calls[N][0]` below keeps its one-argument shape without a param
-// sitting unused in the implementation itself.
+type ExistingReaction = {
+  id: string;
+  occurredAt: Date;
+  generationReservedTokens: number | null;
+  generationBudgetDateKey: string | null;
+  generationProviderInvokedAt: Date | null;
+};
+
 const createMany: Mock<(args: unknown) => Promise<{ count: number }>> = vi.fn(
   async () => ({ count: 1 }),
 );
 const updateMany: Mock<(args: unknown) => Promise<{ count: number }>> = vi.fn(
   async () => ({ count: 1 }),
 );
-const fakePrisma = { arrivalReaction: { createMany, updateMany } };
+const queryRaw: Mock<(...args: unknown[]) => Promise<ExistingReaction[]>> =
+  vi.fn(async () => [
+    {
+      id: "reaction-1",
+      occurredAt: new Date("2026-07-14T06:15:00.000Z"),
+      generationReservedTokens: null,
+      generationBudgetDateKey: null,
+      generationProviderInvokedAt: null,
+    },
+  ]);
+const executeRaw: Mock<(...args: unknown[]) => Promise<number>> = vi.fn(
+  async () => 1,
+);
+const transactionPrisma = {
+  arrivalReaction: { updateMany },
+  $queryRaw: queryRaw,
+  $executeRaw: executeRaw,
+};
+const transaction: Mock<
+  (fn: (tx: typeof transactionPrisma) => Promise<unknown>) => Promise<unknown>
+> = vi.fn(async (fn) => fn(transactionPrisma));
+const fakePrisma = {
+  arrivalReaction: { createMany },
+  $transaction: transaction,
+};
 
 const { runDataArrival } = await import("../data-arrival");
 const { enqueueWorkoutInsight } =
   await import("@/lib/jobs/workout-insight-generate-shared");
+const { enqueueReactionLine } =
+  await import("@/lib/arrivals/reaction-line-shared");
 
 type Runnable = Parameters<typeof runDataArrival>[1];
 
@@ -68,6 +102,18 @@ function arrival(overrides: Partial<Runnable> = {}): Runnable {
 beforeEach(() => {
   createMany.mockClear().mockResolvedValue({ count: 1 });
   updateMany.mockClear().mockResolvedValue({ count: 1 });
+  queryRaw.mockClear().mockResolvedValue([
+    {
+      id: "reaction-1",
+      occurredAt: new Date("2026-07-14T06:15:00.000Z"),
+      generationReservedTokens: null,
+      generationBudgetDateKey: null,
+      generationProviderInvokedAt: null,
+    },
+  ]);
+  executeRaw.mockClear().mockResolvedValue(1);
+  transaction.mockClear();
+  vi.mocked(enqueueReactionLine).mockClear();
   vi.mocked(enqueueWorkoutInsight).mockClear();
 });
 
@@ -94,6 +140,58 @@ describe("data-arrival worker", () => {
     const first = await runDataArrival(fakePrisma as never, arrival());
     if (first.status !== "processed") throw new Error("unreachable");
     expect(first.actions).toContain("line_pending");
+  });
+
+  it("replaces and re-enqueues a strictly newer same-day arrival", async () => {
+    createMany.mockResolvedValue({ count: 0 });
+    queryRaw.mockResolvedValue([
+      {
+        id: "reaction-1",
+        occurredAt: new Date("2026-07-14T06:00:00.000Z"),
+        generationReservedTokens: null,
+        generationBudgetDateKey: null,
+        generationProviderInvokedAt: null,
+      },
+    ]);
+
+    const result = await runDataArrival(
+      fakePrisma as never,
+      arrival({ refId: "weight-new" }),
+    );
+
+    expect(result).toMatchObject({ status: "processed", dedup: false });
+    if (result.status !== "processed") throw new Error("unreachable");
+    expect(result.actions).toContain("marker_replaced");
+    expect(result.actions).toContain("line_pending");
+    expect(enqueueReactionLine).toHaveBeenCalledWith({
+      userId: "user-1",
+      kind: "weight",
+      localDate: "2026-07-14",
+      revision: "2026-07-14T06:15:00.000Z",
+    });
+    expect(updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          lineEncrypted: null,
+          generatedAt: null,
+          generationClaimId: null,
+          generationClaimedAt: null,
+          generationReservedTokens: null,
+          generationBudgetDateKey: null,
+          generationProviderInvokedAt: null,
+        }),
+      }),
+    );
+  });
+
+  it("does not re-enqueue an equal or older same-day arrival", async () => {
+    createMany.mockResolvedValue({ count: 0 });
+
+    const result = await runDataArrival(fakePrisma as never, arrival());
+
+    expect(result).toMatchObject({ status: "processed", dedup: true });
+    expect(enqueueReactionLine).not.toHaveBeenCalled();
+    expect(updateMany).not.toHaveBeenCalled();
   });
 
   it("a second workout the same day still fans out, despite the day marker", async () => {
@@ -146,6 +244,15 @@ describe("data-arrival worker", () => {
 
   it("moves the marker and referent forward together, never backwards", async () => {
     createMany.mockResolvedValue({ count: 0 });
+    queryRaw.mockResolvedValue([
+      {
+        id: "reaction-1",
+        occurredAt: new Date("2026-07-14T06:00:00.000Z"),
+        generationReservedTokens: null,
+        generationBudgetDateKey: null,
+        generationProviderInvokedAt: null,
+      },
+    ]);
     await runDataArrival(
       fakePrisma as never,
       arrival({ kind: "workout", refId: "w-new" }),

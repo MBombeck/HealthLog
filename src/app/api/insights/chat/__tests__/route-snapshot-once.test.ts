@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createHash } from "node:crypto";
 
 /**
  * v1.19.1 (C4) — token-efficiency contract. The full SNAPSHOT block (the
@@ -183,6 +184,26 @@ function lastUserPrompt(): string {
   return typeof userTurn?.content === "string" ? userTurn.content : "";
 }
 
+function lastProviderRequest(): { system: string; user: string } {
+  const calls = runStreamingRawCompletionWithFallback.mock
+    .calls as unknown as Array<
+    [
+      {
+        params: {
+          system: string;
+          messages: Array<{ role: string; content: string }>;
+        };
+      },
+    ]
+  >;
+  const params = calls[calls.length - 1][0].params;
+  return {
+    system: params.system,
+    user:
+      params.messages.find((message) => message.role === "user")?.content ?? "",
+  };
+}
+
 describe("coach chat — snapshot sent once per conversation (C4)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -197,6 +218,20 @@ describe("coach chat — snapshot sent once per conversation (C4)", () => {
     const prompt = lastUserPrompt();
     expect(prompt).toContain(SNAPSHOT_JSON);
     expect(prompt).toContain(GROUNDING);
+  });
+
+  it("preserves the exact first-turn provider request bytes", async () => {
+    await postAndDrain({ message: "How is my BP?" });
+    const request = lastProviderRequest();
+
+    expect({
+      system: createHash("sha256").update(request.system).digest("hex"),
+      user: createHash("sha256").update(request.user).digest("hex"),
+    }).toEqual({
+      system:
+        "af01480eff5efcf94708812d55adacd1d197382112ada9f21150d841969c670a",
+      user: "8f33d9d501db243e630ae88ca1680b426892520674b22547a17b9740b758d5b5",
+    });
   });
 
   it("does NOT re-ship the snapshot figures on a follow-up turn", async () => {

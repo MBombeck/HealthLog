@@ -47,7 +47,7 @@ vi.mock("../credentials", () => ({
 }));
 vi.mock("../client", () => ({ refreshAccessToken: vi.fn() }));
 
-import { upsertGoogleHealthMeasurements } from "../sync";
+import { upsertGoogleHealthMeasurements } from "../sync-core";
 
 const STEPS_READING = {
   type: "ACTIVITY_STEPS",

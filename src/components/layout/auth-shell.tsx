@@ -278,12 +278,14 @@ export function AuthShell({
         it). Focus restores both — the element jumps back into the
         viewport and becomes clickable.
       */}
-      <a
-        href="#main-content"
-        className="bg-primary text-primary-foreground pointer-events-none fixed top-2 left-2 z-[100] -translate-y-full rounded-md px-4 py-2 text-sm font-medium opacity-0 transition-transform focus:pointer-events-auto focus:translate-y-0 focus:opacity-100"
-      >
-        {t("nav.skipToContent")}
-      </a>
+      <nav aria-label={t("nav.skipToContent")}>
+        <a
+          href="#main-content"
+          className="bg-primary text-primary-foreground pointer-events-none fixed top-2 left-2 z-[100] -translate-y-full rounded-md px-4 py-2 text-sm font-medium opacity-0 transition-transform focus:pointer-events-auto focus:translate-y-0 focus:opacity-100"
+        >
+          {t("nav.skipToContent")}
+        </a>
+      </nav>
       <div className="flex h-dvh flex-col md:flex-row">
         <SidebarNav />
         {/* `min-w-0` lets the content column shrink below its children's

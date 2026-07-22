@@ -206,7 +206,7 @@ test.describe("mobile-viewport smoke", () => {
     // 1) The center capture action opens the capture picker.
     await page.getByTestId("bottom-nav-capture").click();
     await expect(page.getByTestId("capture-picker-options")).toBeVisible();
-    for (const kind of ["measurement", "medication", "mood"]) {
+    for (const kind of ["measurement", "medication", "mood", "water"]) {
       await expect(page.getByTestId(`capture-picker-${kind}`)).toBeVisible();
     }
     // Dismiss the picker before opening the hub.

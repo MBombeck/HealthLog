@@ -48,7 +48,7 @@ import {
   upsertGoogleHealthMeasurements,
   type GoogleHealthMeasurementUpsert,
   type GoogleHealthResourceSyncOptions,
-} from "./sync";
+} from "./sync-core";
 import { getEvent } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 

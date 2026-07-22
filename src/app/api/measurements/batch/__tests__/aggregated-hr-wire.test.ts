@@ -17,6 +17,9 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    user: {
+      update: vi.fn(),
+    },
     measurement: {
       findMany: vi.fn(),
       createManyAndReturn: vi.fn(),

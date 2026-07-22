@@ -140,6 +140,510 @@ describe("buildCoachSnapshot", () => {
     });
   });
 
+  it("characterizes the complete public output for core, additive, profile, and native blocks", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-20T12:00:00.000Z"));
+    try {
+      const measurementRows = [
+        daysAgo(20, 122, "BLOOD_PRESSURE_SYS"),
+        daysAgo(20, 78, "BLOOD_PRESSURE_DIA"),
+        daysAgo(10, 128, "BLOOD_PRESSURE_SYS"),
+        daysAgo(10, 82, "BLOOD_PRESSURE_DIA"),
+        daysAgo(20, 81.4, "WEIGHT"),
+        daysAgo(4, 80.8, "WEIGHT"),
+        daysAgo(20, 67, "PULSE"),
+        daysAgo(3, 63, "PULSE"),
+        daysAgo(18, 7_200, "ACTIVITY_STEPS"),
+        daysAgo(2, 8_400, "ACTIVITY_STEPS"),
+        daysAgo(12, 24.8, "BODY_MASS_INDEX"),
+        daysAgo(5, 24.6, "BODY_MASS_INDEX"),
+        daysAgo(15, 33.2, "SKIN_TEMPERATURE"),
+        daysAgo(1, 33.5, "SKIN_TEMPERATURE"),
+      ];
+      const dayStrainRows = [
+        { value: 11.24, measuredAt: daysAgo(6, 0, "DAY_STRAIN").measuredAt },
+        { value: 13.87, measuredAt: daysAgo(1, 0, "DAY_STRAIN").measuredAt },
+      ];
+      prismaMock.measurement.findMany.mockImplementation(
+        (args?: { where?: { type?: string | { in?: string[] } } }) => {
+          if (args?.where?.type === "DAY_STRAIN") {
+            return Promise.resolve(dayStrainRows);
+          }
+          if (
+            typeof args?.where?.type === "object" &&
+            Array.isArray(args.where.type.in)
+          ) {
+            return Promise.resolve([...measurementRows]);
+          }
+          return Promise.resolve([]);
+        },
+      );
+      prismaMock.moodEntry.findMany.mockResolvedValue([
+        { moodLoggedAt: daysAgo(16, 0, "MOOD").measuredAt, score: 3 },
+        { moodLoggedAt: daysAgo(2, 0, "MOOD").measuredAt, score: 5 },
+      ]);
+      prismaMock.user.findUnique.mockResolvedValue({
+        coachPrefsJson: null,
+        timezone: "UTC",
+        locale: "en",
+        sourcePriorityJson: null,
+        gender: null,
+        cycleProfile: null,
+        glucoseUnit: null,
+        hasDiabetes: false,
+      });
+      featuresMock.mockResolvedValue({
+        bloodPressure: {
+          avgSys30: 125,
+          avgDia30: 80,
+          coverage: { count: 4 },
+        },
+        weight: { latest: 80.8, bmi: 24.7, coverage: { count: 2 } },
+        pulse: { avg7: 63, coverage: { count: 2 } },
+        mood: { avg30: 4, coverage: { count: 2 } },
+        context: { heightCm: 181, ageYears: 41, gender: "MALE" },
+      });
+
+      const out = await buildCoachSnapshot("characterization-user", {
+        window: "last30days",
+        sources: [
+          "bp",
+          "weight",
+          "pulse",
+          "mood",
+          "steps",
+          "bmi",
+          "skin_temp",
+          "hrv",
+        ],
+      });
+
+      expect(out.snapshotJson).toBe(JSON.stringify(out.sections, null, 2));
+      expect(out).toMatchInlineSnapshot(`
+        {
+          "provenance": {
+            "counts": {
+              "bmi": 2,
+              "bp": 4,
+              "mood": 2,
+              "pulse": 2,
+              "skin_temp": 2,
+              "steps": 2,
+              "weight": 2,
+            },
+            "metrics": [
+              "bp",
+              "weight",
+              "pulse",
+              "mood",
+              "bmi",
+              "steps",
+              "skin_temp",
+            ],
+            "windows": [
+              "last30days",
+              "last90days",
+              "last7days",
+            ],
+          },
+          "referenceGrounding": "REFERENCE GROUNDING (general guidance — not a diagnosis)
+        These are published POPULATION reference bands for context only — they
+        are not personal medical advice, not a diagnosis, and not a target set
+        for this user. The user's own baseline always leads the read. Cite a
+        band only to orient a reply ("the general reference range is …"); never
+        tell the user they "have" or "don't have" a condition from a band.
+        Blood pressure follows the European ESH 2023 line; US (ACC/AHA) and
+        ESC framings differ and are context, not the call. This block does not
+        change any safety rule above — keep deferring dose / diagnosis / drug-
+        level questions to the user's clinician exactly as instructed.
+
+        - blood pressure (systolic): general reference ≤120 mmHg (ESH 2023 (2023)). Yours sits just outside the general reference band.
+        - BMI: general reference 18.5–24.9 kg/m² (WHO 2000 BMI (2000)). Yours sits inside the general reference band.
+
+        Reminder: ranges are general guidance, not personal medical advice.",
+          "sections": {
+            "anthropometrics": {
+              "ageYears": 41,
+              "gender": "MALE",
+              "heightCm": 181,
+            },
+            "bloodPressure": {
+              "aggregate": {
+                "avgDia30": 80,
+                "avgSys30": 125,
+                "coverage": {
+                  "count": 4,
+                },
+              },
+              "timeline": {
+                "recent": [
+                  {
+                    "date": "2026-07-10",
+                    "dia": 82,
+                    "sys": 128,
+                    "weekday": "Fri",
+                  },
+                ],
+                "weeklyDia": [
+                  {
+                    "count": 1,
+                    "mean": 78,
+                    "weekISO": "2026-W27",
+                  },
+                ],
+                "weeklySys": [
+                  {
+                    "count": 1,
+                    "mean": 122,
+                    "weekISO": "2026-W27",
+                  },
+                ],
+              },
+            },
+            "bodyMassIndex": {
+              "timeline": {
+                "recent": [
+                  {
+                    "date": "2026-07-08",
+                    "value": 24.8,
+                    "weekday": "Wed",
+                  },
+                  {
+                    "date": "2026-07-15",
+                    "value": 24.6,
+                    "weekday": "Wed",
+                  },
+                ],
+                "weekly": [],
+              },
+            },
+            "dayStrain": {
+              "days": 2,
+              "latest": 13.9,
+              "note": "Device-native day strain; prefer over derived.STRAIN_SCORE (computed 0-100 proxy).",
+              "recentMean": 12.6,
+              "scale": "0-21",
+              "source": "WHOOP-native",
+            },
+            "mood": {
+              "aggregate": {
+                "avg30": 4,
+                "coverage": {
+                  "count": 2,
+                },
+              },
+              "timeline": {
+                "recent": [
+                  {
+                    "date": "2026-07-18",
+                    "value": 5,
+                    "weekday": "Sat",
+                  },
+                ],
+                "weekly": [
+                  {
+                    "count": 1,
+                    "mean": 3,
+                    "weekISO": "2026-W27",
+                  },
+                ],
+              },
+            },
+            "pulse": {
+              "aggregate": {
+                "avg7": 63,
+                "coverage": {
+                  "count": 2,
+                },
+              },
+              "timeline": {
+                "recent": [
+                  {
+                    "date": "2026-07-17",
+                    "value": 63,
+                    "weekday": "Fri",
+                  },
+                ],
+                "weekly": [
+                  {
+                    "count": 1,
+                    "mean": 67,
+                    "weekISO": "2026-W27",
+                  },
+                ],
+              },
+            },
+            "scope": {
+              "sources": [
+                "bp",
+                "weight",
+                "pulse",
+                "mood",
+                "steps",
+                "bmi",
+                "skin_temp",
+                "hrv",
+              ],
+              "timelineRecentDays": 14,
+              "window": "last30days",
+            },
+            "skinTemperature": {
+              "timeline": {
+                "recent": [
+                  {
+                    "date": "2026-07-19",
+                    "value": 33.5,
+                    "weekday": "Sun",
+                  },
+                ],
+                "weekly": [
+                  {
+                    "count": 1,
+                    "mean": 33.2,
+                    "weekISO": "2026-W27",
+                  },
+                ],
+              },
+            },
+            "steps": {
+              "timeline": {
+                "recent": [
+                  {
+                    "date": "2026-07-18",
+                    "value": 8400,
+                    "weekday": "Sat",
+                  },
+                ],
+                "weekly": [
+                  {
+                    "count": 1,
+                    "mean": 7200,
+                    "weekISO": "2026-W27",
+                  },
+                ],
+              },
+            },
+            "weight": {
+              "aggregate": {
+                "bmi": 24.7,
+                "coverage": {
+                  "count": 2,
+                },
+                "latest": 80.8,
+              },
+              "timeline": {
+                "recent": [
+                  {
+                    "date": "2026-07-16",
+                    "value": 80.8,
+                    "weekday": "Thu",
+                  },
+                ],
+                "weekly": [
+                  {
+                    "count": 1,
+                    "mean": 81.4,
+                    "weekISO": "2026-W27",
+                  },
+                ],
+              },
+            },
+          },
+          "snapshotJson": "{
+          "bloodPressure": {
+            "aggregate": {
+              "avgSys30": 125,
+              "avgDia30": 80,
+              "coverage": {
+                "count": 4
+              }
+            },
+            "timeline": {
+              "recent": [
+                {
+                  "date": "2026-07-10",
+                  "weekday": "Fri",
+                  "sys": 128,
+                  "dia": 82
+                }
+              ],
+              "weeklySys": [
+                {
+                  "weekISO": "2026-W27",
+                  "mean": 122,
+                  "count": 1
+                }
+              ],
+              "weeklyDia": [
+                {
+                  "weekISO": "2026-W27",
+                  "mean": 78,
+                  "count": 1
+                }
+              ]
+            }
+          },
+          "weight": {
+            "aggregate": {
+              "latest": 80.8,
+              "bmi": 24.7,
+              "coverage": {
+                "count": 2
+              }
+            },
+            "timeline": {
+              "recent": [
+                {
+                  "date": "2026-07-16",
+                  "weekday": "Thu",
+                  "value": 80.8
+                }
+              ],
+              "weekly": [
+                {
+                  "weekISO": "2026-W27",
+                  "mean": 81.4,
+                  "count": 1
+                }
+              ]
+            }
+          },
+          "pulse": {
+            "aggregate": {
+              "avg7": 63,
+              "coverage": {
+                "count": 2
+              }
+            },
+            "timeline": {
+              "recent": [
+                {
+                  "date": "2026-07-17",
+                  "weekday": "Fri",
+                  "value": 63
+                }
+              ],
+              "weekly": [
+                {
+                  "weekISO": "2026-W27",
+                  "mean": 67,
+                  "count": 1
+                }
+              ]
+            }
+          },
+          "mood": {
+            "aggregate": {
+              "avg30": 4,
+              "coverage": {
+                "count": 2
+              }
+            },
+            "timeline": {
+              "recent": [
+                {
+                  "date": "2026-07-18",
+                  "weekday": "Sat",
+                  "value": 5
+                }
+              ],
+              "weekly": [
+                {
+                  "weekISO": "2026-W27",
+                  "mean": 3,
+                  "count": 1
+                }
+              ]
+            }
+          },
+          "bodyMassIndex": {
+            "timeline": {
+              "recent": [
+                {
+                  "date": "2026-07-08",
+                  "weekday": "Wed",
+                  "value": 24.8
+                },
+                {
+                  "date": "2026-07-15",
+                  "weekday": "Wed",
+                  "value": 24.6
+                }
+              ],
+              "weekly": []
+            }
+          },
+          "steps": {
+            "timeline": {
+              "recent": [
+                {
+                  "date": "2026-07-18",
+                  "weekday": "Sat",
+                  "value": 8400
+                }
+              ],
+              "weekly": [
+                {
+                  "weekISO": "2026-W27",
+                  "mean": 7200,
+                  "count": 1
+                }
+              ]
+            }
+          },
+          "skinTemperature": {
+            "timeline": {
+              "recent": [
+                {
+                  "date": "2026-07-19",
+                  "weekday": "Sun",
+                  "value": 33.5
+                }
+              ],
+              "weekly": [
+                {
+                  "weekISO": "2026-W27",
+                  "mean": 33.2,
+                  "count": 1
+                }
+              ]
+            }
+          },
+          "anthropometrics": {
+            "heightCm": 181,
+            "ageYears": 41,
+            "gender": "MALE"
+          },
+          "dayStrain": {
+            "source": "WHOOP-native",
+            "scale": "0-21",
+            "latest": 13.9,
+            "recentMean": 12.6,
+            "days": 2,
+            "note": "Device-native day strain; prefer over derived.STRAIN_SCORE (computed 0-100 proxy)."
+          },
+          "scope": {
+            "window": "last30days",
+            "sources": [
+              "bp",
+              "weight",
+              "pulse",
+              "mood",
+              "steps",
+              "bmi",
+              "skin_temp",
+              "hrv"
+            ],
+            "timelineRecentDays": 14
+          }
+        }",
+        }
+      `);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("returns a 'general'-only provenance when nothing is in the log", async () => {
     const out = await buildCoachSnapshot("user-1");
     expect(out.provenance.metrics).toContain("general");

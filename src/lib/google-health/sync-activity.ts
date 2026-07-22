@@ -42,7 +42,7 @@ import {
   upsertGoogleHealthMeasurements,
   type GoogleHealthMeasurementUpsert,
   type GoogleHealthResourceSyncOptions,
-} from "./sync";
+} from "./sync-core";
 import { annotate } from "@/lib/logging/context";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 

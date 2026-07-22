@@ -37,7 +37,7 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import { apiGet, apiPost } from "@/lib/api/api-fetch";
+import { apiFetchRaw, apiGet, apiPost } from "@/lib/api/api-fetch";
 
 type ChannelType = "TELEGRAM" | "NTFY" | "WEB_PUSH" | "APNS";
 
@@ -97,7 +97,9 @@ export function NotificationStatusCard() {
 
   const test = useMutation({
     mutationFn: async (channel: ChannelStatus) => {
-      const res = await fetch(TEST_ENDPOINTS[channel.type], { method: "POST" });
+      const res = await apiFetchRaw(TEST_ENDPOINTS[channel.type], {
+        method: "POST",
+      });
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
         throw new Error((json as { error?: string }).error ?? "test_failed");

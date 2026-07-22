@@ -69,8 +69,14 @@ async function primeAllCaches(): Promise<void> {
   await cached(caches.achievements, USER_A, async () => ({ ach: 1 }));
   await cached(caches.achievements, USER_B, async () => ({ ach: 2 }));
 
-  await cached(caches.workouts, `${USER_A}|3|0||`, async () => ({ w: 1 }));
-  await cached(caches.workouts, `${USER_B}|3|0||`, async () => ({ w: 2 }));
+  await cached(caches.workouts, `${USER_A}|3|0||`, async () => ({
+    canonical: [],
+    rawCount: 1,
+  }));
+  await cached(caches.workouts, `${USER_B}|3|0||`, async () => ({
+    canonical: [],
+    rawCount: 2,
+  }));
 
   await cached(caches.moodAnalytics, USER_A, async () => ({ mood: 1 }));
   await cached(caches.moodAnalytics, USER_B, async () => ({ mood: 2 }));

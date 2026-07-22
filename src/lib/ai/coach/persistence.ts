@@ -12,6 +12,7 @@
  */
 import { prisma } from "@/lib/db";
 import { decryptFromBytes, encryptToBytes } from "./bytes-codec";
+import { COACH_CONVERSATION_TITLE_MAX } from "./types";
 
 import type {
   CoachConversationAttachmentDTO,
@@ -21,8 +22,6 @@ import type {
   CoachMessageRole,
   CoachProvenance,
 } from "./types";
-
-const TITLE_MAX = 80;
 
 /**
  * Title-from-message — first 80 chars trimmed, ellipsis on overflow.
@@ -38,13 +37,16 @@ export function summariseTitle(input: string): string {
   // a half "?"). The visible-length metric is grapheme count, not
   // UTF-16 code units.
   const points = [...collapsed];
-  if (points.length <= TITLE_MAX) return collapsed;
+  if (points.length <= COACH_CONVERSATION_TITLE_MAX) return collapsed;
   // Cut at TITLE_MAX-1 code points and append a single-character
   // ellipsis so the visible width matches TITLE_MAX. Cuts at the word
   // boundary when one is within reach of the limit.
-  const sliced = points.slice(0, TITLE_MAX - 1).join("");
+  const sliced = points.slice(0, COACH_CONVERSATION_TITLE_MAX - 1).join("");
   const lastSpace = sliced.lastIndexOf(" ");
-  const cut = lastSpace > TITLE_MAX - 20 ? sliced.slice(0, lastSpace) : sliced;
+  const cut =
+    lastSpace > COACH_CONVERSATION_TITLE_MAX - 20
+      ? sliced.slice(0, lastSpace)
+      : sliced;
   return `${cut.trimEnd()}…`;
 }
 
@@ -507,6 +509,23 @@ export async function listConversations(
     }),
     nextCursor,
   };
+}
+
+/**
+ * Rename one owned conversation. The owner constraint lives in the write
+ * predicate itself so a foreign id and a missing id are indistinguishable and
+ * no check-then-write race can cross account boundaries.
+ */
+export async function renameConversation(
+  userId: string,
+  conversationId: string,
+  title: string,
+): Promise<{ id: string; title: string } | null> {
+  const { count } = await prisma.coachConversation.updateMany({
+    where: { id: conversationId, userId },
+    data: { title },
+  });
+  return count === 1 ? { id: conversationId, title } : null;
 }
 
 /**

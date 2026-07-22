@@ -118,7 +118,7 @@ import {
   WHOOP_DEFAULT_OVERLAP_MS,
   WHOOP_FULL_SYNC_ANCHOR,
   WHOOP_RECOVERY_SLEEP_OVERLAP_MS,
-} from "../sync";
+} from "../sync-core";
 import { WhoopApiError } from "../response-classifier";
 import { syncUserRecovery } from "../sync-recovery";
 
@@ -223,6 +223,20 @@ describe("getValidToken — rotating refresh", () => {
     const result = await getValidToken("user1");
 
     expect(result?.accessToken).toBe("live-access");
+    expect(refreshAccessTokenMock).not.toHaveBeenCalled();
+    expect(prismaMock.whoopConnection.update).not.toHaveBeenCalled();
+  });
+
+  it("treats an ownership-loser connection with no WHOOP user id as unavailable", async () => {
+    prismaMock.whoopConnection.findUnique.mockResolvedValue({
+      id: "conn1",
+      whoopUserId: null,
+      accessToken: "enc(live-access)",
+      refreshToken: "enc(live-refresh)",
+      tokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    });
+
+    await expect(getValidToken("user1")).resolves.toBeNull();
     expect(refreshAccessTokenMock).not.toHaveBeenCalled();
     expect(prismaMock.whoopConnection.update).not.toHaveBeenCalled();
   });

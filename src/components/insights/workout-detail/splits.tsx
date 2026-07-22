@@ -38,6 +38,7 @@ export function WorkoutDetailSplits({ workout }: WorkoutDetailSplitsProps) {
         <TileHeader
           icon={Flag}
           title={t("insights.workouts.detail.splitsTitle")}
+          titleAs="h2"
         />
       </CardHeader>
       <CardContent>

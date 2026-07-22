@@ -5,6 +5,7 @@ import { CheckCircle2, Loader2, Plug, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
+import { apiFetchRaw } from "@/lib/api/api-fetch";
 
 /**
  * Shared "Test connection" UX for the settings integrations + notifications
@@ -46,7 +47,7 @@ export function TestConnectionButton({
     setTesting(true);
     setResult(null);
     try {
-      const res = await fetch(endpoint, { method: "POST" });
+      const res = await apiFetchRaw(endpoint, { method: "POST" });
       const json = (await res.json().catch(() => ({}))) as TestResponse;
 
       if (res.ok && json.data?.ok !== false) {

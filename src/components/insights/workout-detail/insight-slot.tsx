@@ -44,6 +44,7 @@ export function WorkoutInsightCard({
         <TileHeader
           icon={Sparkles}
           title={t("insights.workouts.detail.insightTitle")}
+          titleAs="h2"
         />
       </CardHeader>
       <CardContent>

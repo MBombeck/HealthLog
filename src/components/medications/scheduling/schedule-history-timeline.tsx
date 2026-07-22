@@ -225,7 +225,7 @@ export function ScheduleHistoryTimeline({
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="text-muted-foreground hover:text-foreground size-8"
+                      className="text-muted-foreground hover:text-foreground size-11 sm:size-8"
                       aria-label={t(
                         "medications.detail.zeitplan.history.editAria",
                       )}
@@ -239,7 +239,7 @@ export function ScheduleHistoryTimeline({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="text-muted-foreground hover:text-destructive size-8"
+                        className="text-muted-foreground hover:text-destructive size-11 sm:size-8"
                         aria-label={t(
                           "medications.detail.zeitplan.history.deleteAria",
                         )}

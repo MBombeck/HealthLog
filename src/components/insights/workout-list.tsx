@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Map as MapIcon, HeartPulse } from "lucide-react";
+import { HeartPulse, Loader2, Map as MapIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { getNumberFormat, getDateTimeFormat } from "@/lib/intl/formatter-cache";
@@ -12,6 +12,7 @@ import {
 } from "@/lib/format-locale";
 import { iconForSport } from "@/lib/workouts/sport-icons";
 import type { WorkoutListEntry } from "@/hooks/use-workouts";
+import { Button } from "@/components/ui/button";
 
 /**
  * v1.4.32 — workout list row primitive.
@@ -69,9 +70,20 @@ function formatDate(
 export interface WorkoutListProps {
   workouts: WorkoutListEntry[];
   className?: string;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  isFetchNextPageError?: boolean;
+  onLoadMore?: () => void;
 }
 
-export function WorkoutList({ workouts, className }: WorkoutListProps) {
+export function WorkoutList({
+  workouts,
+  className,
+  hasNextPage = false,
+  isFetchingNextPage = false,
+  isFetchNextPageError = false,
+  onLoadMore,
+}: WorkoutListProps) {
   const { t, locale } = useTranslations();
   const timeFormat = useTimeFormatPreference();
 
@@ -152,6 +164,47 @@ export function WorkoutList({ workouts, className }: WorkoutListProps) {
           </li>
         );
       })}
+      {hasNextPage ? (
+        <li
+          data-slot="workout-list-load-more"
+          className="flex flex-col items-center gap-2 p-3"
+        >
+          {isFetchNextPageError ? (
+            <p
+              id="workout-list-load-more-error"
+              role="alert"
+              className="text-destructive text-center text-sm"
+            >
+              {t("insights.workouts.loadMoreError")}
+            </p>
+          ) : null}
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11 min-w-44"
+            disabled={isFetchingNextPage}
+            aria-busy={isFetchingNextPage || undefined}
+            aria-describedby={
+              isFetchNextPageError ? "workout-list-load-more-error" : undefined
+            }
+            onClick={onLoadMore}
+          >
+            {isFetchingNextPage ? (
+              <>
+                <Loader2
+                  className="size-4 animate-spin motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
+                {t("insights.workouts.loadingMore")}
+              </>
+            ) : isFetchNextPageError ? (
+              t("common.retry")
+            ) : (
+              t("insights.workouts.loadMore")
+            )}
+          </Button>
+        </li>
+      ) : null}
     </ul>
   );
 }

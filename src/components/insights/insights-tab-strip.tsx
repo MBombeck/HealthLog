@@ -18,6 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useMounted } from "@/hooks/use-mounted";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
@@ -648,6 +649,7 @@ function InsightsTabStripImpl({
 }: InsightsTabStripProps) {
   const { t } = useTranslations();
   const pathname = usePathname();
+  const mounted = useMounted();
   // v1.4.31 — memoise the pill list so the strip's main render
   // path doesn't rebuild the array on every parent re-render. The
   // strip is wrapped in `React.memo` (see export below); the memo
@@ -765,6 +767,7 @@ function InsightsTabStripImpl({
     <nav
       data-slot="insights-tab-strip"
       data-tour-id="insights-hero"
+      data-hydrated={mounted ? "true" : undefined}
       aria-label={t("insights.navAriaLabel")}
       // v1.4.28 FB-D3 — `touch-action: pan-y` lets vertical swipes that
       // begin on the sticky strip scroll the page through it. The

@@ -28,6 +28,14 @@ function render(node: React.ReactNode) {
   );
 }
 
+function expectSingleSectionHeading(html: string, title: string) {
+  const headings = Array.from(
+    html.matchAll(/<h2(?:\s[^>]*)?>(.*?)<\/h2>/g),
+    (match) => match[1],
+  );
+  expect(headings).toEqual([title]);
+}
+
 const FIXTURE: WorkoutDetailPayload = {
   id: "w-1",
   sportType: "running",
@@ -68,6 +76,7 @@ describe("<WorkoutDetailHeader>", () => {
 describe("<WorkoutDetailStats>", () => {
   it("renders one tile per available field", () => {
     const html = render(<WorkoutDetailStats workout={FIXTURE} />);
+    expectSingleSectionHeading(html, "Stats");
     expect(html).toContain("Duration");
     expect(html).toContain("Distance");
     expect(html).toContain("Active energy");
@@ -141,6 +150,7 @@ describe("<WorkoutDetailRoute>", () => {
       },
     };
     const html = render(<WorkoutDetailRoute workout={withRoute} />);
+    expectSingleSectionHeading(html, "Route");
     expect(html).toContain('data-slot="workout-detail-route"');
     expect(html).toContain("<path");
     expect(html).toContain("Export GPX");
@@ -183,6 +193,7 @@ describe("<WorkoutDetailHrSection>", () => {
       },
     };
     const html = render(<WorkoutDetailHrSection workout={withHr} />);
+    expectSingleSectionHeading(html, "Heart rate");
     expect(html).toContain('data-slot="workout-detail-hr"');
     expect(html).toContain('data-slot="workout-detail-hr-provenance"');
     expect(html).toContain("From your heart-rate data");
@@ -228,6 +239,7 @@ describe("<WorkoutDetailZones>", () => {
       },
     };
     const html = render(<WorkoutDetailZones workout={withZones} />);
+    expectSingleSectionHeading(html, "Effort zones");
     expect(html).toContain('data-slot="workout-detail-zones"');
     expect(html).toContain("Effort zones");
     expect(html).toContain("Z3");
@@ -248,6 +260,7 @@ describe("<WorkoutDetailSplits>", () => {
       ],
     };
     const html = render(<WorkoutDetailSplits workout={withSplits} />);
+    expectSingleSectionHeading(html, "Splits");
     expect(html).toContain('data-slot="workout-detail-splits"');
     expect(html).toContain("5:00");
     expect(html).toContain("4:48 /km");
@@ -257,6 +270,7 @@ describe("<WorkoutDetailSplits>", () => {
 describe("<WorkoutDetailDayLinks>", () => {
   it("renders the that-day navigation links", () => {
     const html = render(<WorkoutDetailDayLinks workout={FIXTURE} />);
+    expectSingleSectionHeading(html, "That day");
     expect(html).toContain('data-slot="workout-detail-day-links"');
     expect(html).toContain('href="/insights/pulse"');
     expect(html).toContain('href="/insights/sleep"');
@@ -282,6 +296,7 @@ describe("<WorkoutInsightCard>", () => {
         }}
       />,
     );
+    expectSingleSectionHeading(html, "Activity insight");
     expect(html).toContain("A steady, aerobic-leaning ride.");
     expect(html).toContain('data-slot="workout-detail-insight"');
   });

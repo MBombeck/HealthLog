@@ -10,6 +10,14 @@ function render(node: React.ReactNode, locale: "en" | "de" = "en") {
   );
 }
 
+function classesForSlot(html: string, slot: string): string[] {
+  const elements =
+    html.match(new RegExp(`<[^>]+data-slot="${slot}"[^>]*>`, "g")) ?? [];
+  return elements.map(
+    (element) => element.match(/\bclass="([^"]*)"/)?.[1] ?? "",
+  );
+}
+
 describe("<SourceChips>", () => {
   it("renders nothing when provenance is null", () => {
     const html = render(<SourceChips provenance={null} />);
@@ -54,6 +62,29 @@ describe("<SourceChips>", () => {
       />,
     );
     expect(html).toContain("n=7");
+  });
+
+  it("uses full semantic text color on source labels", () => {
+    const html = render(
+      <SourceChips
+        provenance={{
+          windows: ["last7days"],
+          metrics: ["bp"],
+          counts: { bp: 7 },
+        }}
+      />,
+    );
+    const classNames = [
+      ...classesForSlot(html, "coach-source-chip"),
+      ...classesForSlot(html, "coach-source-window"),
+      ...classesForSlot(html, "coach-source-count"),
+    ];
+
+    expect(classNames).toHaveLength(3);
+    for (const className of classNames) {
+      expect(className.split(/\s+/)).toContain("text-info");
+      expect(className).not.toMatch(/\b(?:opacity-\d+|text-\S+\/\d+)\b/);
+    }
   });
 
   it("does not render n=0 chips for zero counts", () => {

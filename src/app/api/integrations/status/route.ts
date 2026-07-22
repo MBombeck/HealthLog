@@ -110,6 +110,7 @@ export const GET = apiHandler(async () => {
       where: { userId: user.id },
       select: {
         tokenExpiresAt: true,
+        whoopUserId: true,
         lastSyncedAt: true,
         createdAt: true,
         backfillCompletedAt: true,
@@ -152,6 +153,7 @@ export const GET = apiHandler(async () => {
   );
 
   const now = Date.now();
+  const whoopConnected = !!whoopConn?.whoopUserId;
 
   return apiSuccess({
     threshold: getPersistentFailureThreshold(),
@@ -196,14 +198,22 @@ export const GET = apiHandler(async () => {
         configured:
           !!dbUser?.whoopClientIdEncrypted &&
           !!dbUser?.whoopClientSecretEncrypted,
-        connected: !!whoopConn,
-        connectedAt: whoopConn?.createdAt?.toISOString() ?? null,
-        legacyLastSyncedAt: whoopConn?.lastSyncedAt?.toISOString() ?? null,
-        tokenExpiresAt: whoopConn?.tokenExpiresAt?.toISOString() ?? null,
-        tokenExpired: whoopConn
-          ? whoopConn.tokenExpiresAt.getTime() <= now
+        connected: whoopConnected,
+        connectedAt: whoopConnected
+          ? (whoopConn?.createdAt.toISOString() ?? null)
           : null,
-        backfillCompleted: whoopConn ? !!whoopConn.backfillCompletedAt : null,
+        legacyLastSyncedAt: whoopConnected
+          ? (whoopConn?.lastSyncedAt?.toISOString() ?? null)
+          : null,
+        tokenExpiresAt: whoopConnected
+          ? (whoopConn?.tokenExpiresAt.toISOString() ?? null)
+          : null,
+        tokenExpired: whoopConnected
+          ? (whoopConn?.tokenExpiresAt.getTime() ?? 0) <= now
+          : null,
+        backfillCompleted: whoopConnected
+          ? !!whoopConn?.backfillCompletedAt
+          : null,
         metricFreshness: metricFreshness.whoop ?? [],
       } satisfies IntegrationViewModel & WhoopExtras,
       {

@@ -24,6 +24,10 @@ vi.mock("next/dynamic", () => ({
   },
 }));
 
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/insights/body-temperature",
+}));
+
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({
     user: { timezone: "UTC", dateOfBirth: null, gender: null },
@@ -118,6 +122,41 @@ describe("<HealthKitMetricPage> status mount", () => {
       "HEART_RATE_VARIABILITY",
       true,
     );
+  });
+
+  it("exposes the manual capture type on the populated branch", () => {
+    analyticsMock.mockReturnValue({
+      data: { summaries: { HEART_RATE_VARIABILITY: { count: 12 } } },
+      isEmpty: false,
+    });
+    metricStatusMock.mockReturnValue({ data: undefined, isLoading: false });
+
+    const html = render(
+      <HealthKitMetricPage
+        {...baseProps}
+        emptyStateCtaType={null}
+        captureType="BODY_TEMPERATURE"
+      />,
+    );
+
+    expect(html).toContain('data-slot="metric-add-reading"');
+    expect(html).toContain(
+      "/measurements?add=BODY_TEMPERATURE&amp;returnTo=%2Finsights%2Fbody-temperature",
+    );
+  });
+
+  it("does not expose capture for a populated device-only metric", () => {
+    analyticsMock.mockReturnValue({
+      data: { summaries: { HEART_RATE_VARIABILITY: { count: 12 } } },
+      isEmpty: false,
+    });
+    metricStatusMock.mockReturnValue({ data: undefined, isLoading: false });
+
+    const html = render(
+      <HealthKitMetricPage {...baseProps} emptyStateCtaType={null} />,
+    );
+
+    expect(html).not.toContain('data-slot="metric-add-reading"');
   });
 
   it("does not mount the assessment card when statusMetric is omitted", () => {

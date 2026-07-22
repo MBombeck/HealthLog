@@ -14,20 +14,18 @@
  *    module-graph test (`__tests__/data-arrival-provider-isolation.test.ts`)
  *    fails if a provider module ever becomes reachable from here.
  *
- * 2. **A refusal is `skipped`, never `failed`.** Every business refusal — the
- *    module is off, the day's marker already exists, a later slice's cap is
- *    exhausted — returns a status. It does NOT throw. This is not a stylistic
+ * 2. **A refusal is `skipped`, never `failed`.** Every business refusal — an
+ *    unknown kind, an equal/older marker, or a later slice's exhausted cap —
+ *    returns a status. It does NOT throw. This is not a stylistic
  *    choice: pg-boss retries a failed job, and retrying against a ceiling that
  *    does not move until the local day rolls over is an unbounded loop. Only a
  *    genuine transient fault (pool exhaustion, a dropped connection) is allowed
  *    to escape and earn its two backed-off retries.
  *
- * The marker is claimed FIRST, before any fan-out. That ordering is deliberate:
- * the S4 morning-refresh trigger stamps its debounce marker only AFTER a
- * non-failed run, so a persistently failing downstream let every subsequent
- * sleep batch re-enqueue — an unbounded chain. Claiming up front means a
- * downstream failure costs at most the retries of ONE job, never a growing
- * queue.
+ * The marker is established FIRST, before any fan-out. A strictly newer
+ * same-day arrival advances it under a row lock and invalidates stale line
+ * ownership first. This ordering bounds downstream failures and prevents old
+ * generation workers from publishing against a replacement.
  */
 import type { Job } from "pg-boss";
 
@@ -55,18 +53,28 @@ export type ArrivalOutcome =
   | { status: "skipped"; reason: string }
   | { status: "processed"; actions: string[]; dedup: boolean };
 
+type ReactionClaim = "inserted" | "advanced" | "unchanged";
+
+interface LockedReaction {
+  id: string;
+  occurredAt: Date;
+  generationReservedTokens: number | null;
+  generationBudgetDateKey: string | null;
+  generationProviderInvokedAt: Date | null;
+}
+
 /**
- * Claim the day's reaction row for this (user, kind, localDate).
+ * Insert the day's marker, or atomically advance it to a newer arrival.
  *
- * `createMany` + `skipDuplicates` compiles to INSERT … ON CONFLICT DO NOTHING,
- * which is exactly the primitive wanted here and — unlike `upsert` — reports
- * whether THIS caller won the race. A returned count of 1 means we own today's
- * reaction for this kind; 0 means someone else already does.
+ * Advancing invalidates every generation field so an old worker cannot publish
+ * a sentence about the superseded referent. A pre-provider token reservation is
+ * refunded while the row lock is held; a reservation whose provider boundary
+ * was crossed remains charged because spend may already have happened.
  */
 async function claimReaction(
   prisma: ReturnType<typeof getWorkerPrisma>,
   arrival: DataArrival,
-): Promise<{ claimed: boolean }> {
+): Promise<ReactionClaim> {
   const occurredAt = new Date(arrival.occurredAt);
 
   const inserted = await prisma.arrivalReaction.createMany({
@@ -82,23 +90,63 @@ async function claimReaction(
     skipDuplicates: true,
   });
 
-  if (inserted.count > 0) return { claimed: true };
+  if (inserted.count > 0) return "inserted";
 
-  // Lost the claim — another arrival of this kind already landed today. Keep
-  // the marker's timestamp and referent moving together so the "just in"
-  // surface and reaction evidence both describe the NEWEST arrival, but never
-  // move either backwards on a slightly-out-of-order sync.
-  await prisma.arrivalReaction.updateMany({
-    where: {
-      userId: arrival.userId,
-      kind: arrival.kind,
-      localDate: arrival.localDate,
-      occurredAt: { lt: occurredAt },
-    },
-    data: { occurredAt, arrivedAt: new Date(), refId: arrival.refId ?? null },
+  return prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<LockedReaction[]>`
+      SELECT
+        id,
+        occurred_at AS "occurredAt",
+        generation_reserved_tokens AS "generationReservedTokens",
+        generation_budget_date_key AS "generationBudgetDateKey",
+        generation_provider_invoked_at AS "generationProviderInvokedAt"
+      FROM arrival_reactions
+      WHERE user_id = ${arrival.userId}
+        AND kind = ${arrival.kind}
+        AND local_date = ${arrival.localDate}
+      FOR UPDATE
+    `;
+    const current = rows[0];
+    if (!current || current.occurredAt.getTime() >= occurredAt.getTime()) {
+      return "unchanged";
+    }
+
+    if (
+      current.generationReservedTokens != null &&
+      current.generationBudgetDateKey != null &&
+      current.generationProviderInvokedAt == null
+    ) {
+      await tx.$executeRaw`
+        UPDATE coach_usage
+        SET total_tokens = GREATEST(
+              0,
+              total_tokens - ${current.generationReservedTokens}
+            ),
+            message_count = GREATEST(0, message_count - 1),
+            updated_at = NOW()
+        WHERE user_id = ${arrival.userId}
+          AND date_key = ${current.generationBudgetDateKey}
+      `;
+    }
+
+    const advanced = await tx.arrivalReaction.updateMany({
+      where: { id: current.id, occurredAt: { lt: occurredAt } },
+      data: {
+        occurredAt,
+        arrivedAt: new Date(),
+        refId: arrival.refId ?? null,
+        lineEncrypted: null,
+        generatedAt: null,
+        generationClaimId: null,
+        generationClaimedAt: null,
+        generationReservedTokens: null,
+        generationBudgetDateKey: null,
+        generationProviderInvokedAt: null,
+      },
+    });
+
+    return advanced.count === 1 ? "advanced" : "unchanged";
   });
-
-  return { claimed: false };
 }
 
 /**
@@ -115,8 +163,14 @@ export async function runDataArrival(
     return { status: "skipped", reason: "unknown_kind" };
   }
 
-  const { claimed } = await claimReaction(prisma, arrival);
-  const actions: string[] = [claimed ? "claimed" : "marker_refreshed"];
+  const reactionClaim = await claimReaction(prisma, arrival);
+  const actions: string[] = [
+    reactionClaim === "inserted"
+      ? "claimed"
+      : reactionClaim === "advanced"
+        ? "marker_replaced"
+        : "marker_refreshed",
+  ];
 
   switch (arrival.kind) {
     case "sleep_night":
@@ -160,16 +214,16 @@ export async function runDataArrival(
       break;
   }
 
-  if (claimed) {
-    // The day's single reaction line. Gated on `claimed` precisely BECAUSE the
-    // unique row is the throttle: this is the only pass that can have won the
-    // claim, so there is no code path to a second generation for this kind
-    // today. The enqueue helper is provider-free by construction (see its
-    // docblock and the module-graph guard) — this worker still spends nothing.
+  if (reactionClaim !== "unchanged") {
+    // A fresh marker and a strictly newer replacement both need a line. The
+    // replacement transaction cleared the old generation owner first, and the
+    // enqueue key includes this arrival revision so an older in-flight job
+    // cannot suppress it at the queue boundary.
     await enqueueReactionLine({
       userId: arrival.userId,
       kind: arrival.kind,
       localDate: arrival.localDate,
+      revision: arrival.occurredAt,
     });
     actions.push("line_pending");
   }
@@ -185,7 +239,11 @@ export async function runDataArrival(
     // A cache miss is never worth failing a job over.
   }
 
-  return { status: "processed", actions, dedup: !claimed };
+  return {
+    status: "processed",
+    actions,
+    dedup: reactionClaim === "unchanged",
+  };
 }
 
 export async function handleDataArrival(

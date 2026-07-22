@@ -6,13 +6,16 @@ import { apiError, getClientIp } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
   toCSV,
-  formatMeasurementsForExport,
   formatMedicationsForExport,
   formatIntakeEventsForExport,
   formatMoodEntriesForExport,
+  type ExportableRecord,
 } from "@/lib/export";
-import { shapeMeasurementNotes, shapeMoodNote } from "@/lib/crypto/note-cipher";
-import { findMeasurementsPaged } from "@/lib/export/paged-measurements";
+import { shapeMoodNote } from "@/lib/crypto/note-cipher";
+import {
+  formatMeasurementPageChunks,
+  iterateMeasurementPages,
+} from "@/lib/export/paged-measurements";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { NextRequest, NextResponse } from "next/server";
@@ -52,26 +55,28 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
 
   const userId = user.id;
+  await auditLog("export.download", {
+    userId,
+    ipAddress: getClientIp(request),
+    details: { format, type, outcome: "attempted" },
+  });
+  annotate({
+    meta: {
+      export_format: format,
+      export_type: type,
+      export_outcome: "attempted",
+    },
+  });
   const [userTz, sourcePriorityJson] = await Promise.all([
     resolveUserTimezone(userId),
     loadUserSourcePriority(userId),
   ]);
-
   const data: Record<string, unknown> = {};
+  let measurementChunks: AsyncIterable<ExportableRecord[]> | null = null;
 
   if (type === "measurements" || type === "all") {
-    // v1.28.25 — keyset-paginated read with a narrow select. The legacy
-    // export has no date window, so a CGM / per-sample-HR account holds a
-    // six-figure row set; one unbounded full-width `findMany` here was the
-    // scale hazard. The select carries exactly the fields the formatter +
-    // note decryption consume (`ExportMeasurement` + `shapeMeasurementNotes`
-    // + the `id` cursor key) — no Bytes column beyond the note ciphertext
-    // the export must decrypt.
-    const measurements = await findMeasurementsPaged(
+    const pageIterator = iterateMeasurementPages(
       prisma,
-      // v1.4.41 W-DELETED-2 — exclude soft-deleted measurements from
-      // the legacy /api/export endpoint so CSV + JSON downloads stay
-      // consistent with the live measurement reads.
       { userId, deletedAt: null },
       {
         id: true,
@@ -86,19 +91,18 @@ export const GET = apiHandler(async (request: NextRequest) => {
         sleepStage: true,
         deviceType: true,
       },
-    );
-    // v1.11.5 — sleep collapses to one row per night by default (the
-    // formatter's `night` granularity), matching the per-type CSV route.
-    // Thread the user's source-priority so a multi-source night dedups to
-    // the same canonical source the UI shows.
-    const measurementRecords = formatMeasurementsForExport(
-      // v1.23 — decrypt notes before formatting; strip the ciphertext column.
-      measurements.map(shapeMeasurementNotes),
+    )[Symbol.asyncIterator]();
+    const firstPage = await pageIterator.next();
+    measurementChunks = formatMeasurementPageChunks(
+      prefetchedPages(pageIterator, firstPage),
       userTz,
-      { sleepTz: userTz, sourcePriorityJson },
+      {
+        granularity: "night",
+        sourcePriorityJson,
+        // Preserve the legacy endpoint's canonical storage-unit contract.
+        glucoseUnit: "mg/dL",
+      },
     );
-    data.measurements =
-      format === "csv" ? toCSV(measurementRecords) : measurementRecords;
   }
 
   if (type === "medications" || type === "all") {
@@ -115,8 +119,6 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   if (type === "intake" || type === "all") {
     const events = await prisma.medicationIntakeEvent.findMany({
-      // v1.7.0 sync — exclude tombstoned rows from the export (mirrors
-      // the measurement export's `deletedAt: null` filter above).
       where: { userId, deletedAt: null },
       include: { medication: { select: { name: true } } },
       orderBy: { scheduledFor: "desc" },
@@ -129,7 +131,6 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   if (type === "mood" || type === "all") {
     const moodEntries = await prisma.moodEntry.findMany({
-      // v1.7.0 sync — exclude tombstoned rows from the export.
       where: { userId, deletedAt: null },
       orderBy: { moodLoggedAt: "desc" },
     });
@@ -140,36 +141,50 @@ export const GET = apiHandler(async (request: NextRequest) => {
         : formatMoodEntriesForExport(decryptedMood, userTz);
   }
 
-  await auditLog("export.download", {
-    userId,
-    ipAddress: getClientIp(request),
-    details: { format, type },
-  });
+  const filename = `healthlog-export-${new Date().toISOString().slice(0, 10)}`;
 
-  annotate({ meta: { export_format: format, export_type: type } });
+  if (measurementChunks && format === "csv") {
+    return new NextResponse(
+      streamText(legacyCsvChunks(measurementChunks, data)),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": `attachment; filename="${filename}.csv"`,
+        },
+      },
+    );
+  }
+
+  if (measurementChunks) {
+    return new NextResponse(
+      streamText(legacyJsonChunks(measurementChunks, data)),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Disposition": `attachment; filename="${filename}.json"`,
+        },
+      },
+    );
+  }
 
   if (format === "csv") {
-    // For CSV with all types, combine into separate sections
     const csvParts: string[] = [];
-    if (data.measurements) {
-      csvParts.push("# Measurements\n" + data.measurements);
-    }
-    if (data.medications) {
+    if (typeof data.medications === "string" && data.medications.length > 0) {
       csvParts.push("# Medications\n" + data.medications);
     }
-    if (data.intakeEvents) {
+    if (typeof data.intakeEvents === "string" && data.intakeEvents.length > 0) {
       csvParts.push("# Intake Events\n" + data.intakeEvents);
     }
-    if (data.moodEntries) {
+    if (typeof data.moodEntries === "string" && data.moodEntries.length > 0) {
       csvParts.push("# Mood Entries\n" + data.moodEntries);
     }
-    const csvContent = csvParts.join("\n\n");
-
-    return new NextResponse(csvContent, {
+    return new NextResponse(csvParts.join("\n\n"), {
       status: 200,
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="healthlog-export-${new Date().toISOString().slice(0, 10)}.csv"`,
+        "Content-Disposition": `attachment; filename="${filename}.csv"`,
       },
     });
   }
@@ -179,8 +194,100 @@ export const GET = apiHandler(async (request: NextRequest) => {
     {
       status: 200,
       headers: {
-        "Content-Disposition": `attachment; filename="healthlog-export-${new Date().toISOString().slice(0, 10)}.json"`,
+        "Content-Disposition": `attachment; filename="${filename}.json"`,
       },
     },
   );
 });
+
+async function* prefetchedPages<T>(
+  iterator: AsyncIterator<T[]>,
+  first: IteratorResult<T[]>,
+): AsyncGenerator<readonly T[], void, void> {
+  try {
+    let next = first;
+    while (!next.done) {
+      yield next.value;
+      next = await iterator.next();
+    }
+  } finally {
+    await iterator.return?.();
+  }
+}
+
+async function* legacyCsvChunks(
+  measurementChunks: AsyncIterable<ExportableRecord[]>,
+  data: Record<string, unknown>,
+): AsyncGenerator<string, void, void> {
+  let wroteSection = false;
+  let wroteMeasurementHeader = false;
+  for await (const records of measurementChunks) {
+    const csv = toCSV(records);
+    if (csv.length === 0) continue;
+    if (!wroteMeasurementHeader) {
+      wroteMeasurementHeader = true;
+      wroteSection = true;
+      yield `# Measurements\n${csv}`;
+      continue;
+    }
+    const headerEnd = csv.indexOf("\n");
+    if (headerEnd >= 0 && headerEnd + 1 < csv.length) {
+      yield `\n${csv.slice(headerEnd + 1)}`;
+    }
+  }
+
+  const staticSections: Array<[string, unknown]> = [
+    ["Medications", data.medications],
+    ["Intake Events", data.intakeEvents],
+    ["Mood Entries", data.moodEntries],
+  ];
+  for (const [heading, value] of staticSections) {
+    if (typeof value !== "string" || value.length === 0) continue;
+    yield `${wroteSection ? "\n\n" : ""}# ${heading}\n${value}`;
+    wroteSection = true;
+  }
+}
+
+async function* legacyJsonChunks(
+  measurementChunks: AsyncIterable<ExportableRecord[]>,
+  data: Record<string, unknown>,
+): AsyncGenerator<string, void, void> {
+  yield '{"data":{"measurements":[';
+  let wroteMeasurement = false;
+  for await (const records of measurementChunks) {
+    if (records.length === 0) continue;
+    const json = records.map((record) => JSON.stringify(record)).join(",");
+    yield `${wroteMeasurement ? "," : ""}${json}`;
+    wroteMeasurement = true;
+  }
+  yield "]";
+
+  const staticKeys = ["medications", "intakeEvents", "moodEntries"] as const;
+  for (const key of staticKeys) {
+    if (!(key in data)) continue;
+    yield `,${JSON.stringify(key)}:${JSON.stringify(data[key])}`;
+  }
+  yield "}}";
+}
+
+function streamText(chunks: AsyncIterable<string>): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  const iterator = chunks[Symbol.asyncIterator]();
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      try {
+        const next = await iterator.next();
+        if (next.done) {
+          controller.close();
+          return;
+        }
+        controller.enqueue(encoder.encode(next.value));
+      } catch (error) {
+        controller.error(error);
+      }
+    },
+    async cancel() {
+      await iterator.return?.();
+    },
+  });
+}

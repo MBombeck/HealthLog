@@ -63,6 +63,13 @@ import {
   enqueueBootTimeLabBiomarkerBackfill,
   type LabBiomarkerBackfillPayload,
 } from "@/lib/jobs/lab-biomarker-backfill";
+import {
+  INTEGRATION_BACKFILL_ADMISSION_QUEUE,
+  INTEGRATION_BACKFILL_GLOBAL_CONCURRENCY,
+  bootStaggerSecondsFor,
+  enqueueIntegrationBackfillAdmission,
+  type IntegrationBackfillAdmissionPayload,
+} from "@/lib/jobs/integration-backfill-admission";
 import { workerLog } from "./shared";
 import {
   createAndSchedule,
@@ -282,6 +289,10 @@ const allQueues = [
   // v1.18.1 — one-shot backfill that links legacy free-text lab readings to
   // a user-scoped Biomarker catalog entry (group by `lower(analyte)`).
   LAB_BIOMARKER_BACKFILL_QUEUE,
+  // Shared durable drain for every full-history integration job. Source queues
+  // retain their per-connection singleton keys; this queue supplies the one
+  // cross-provider execution lane.
+  INTEGRATION_BACKFILL_ADMISSION_QUEUE,
   // v1.17.0 — Nightscout CGM poll sync. Poll-only (no webhook, no OAuth, no
   // backfill queue — the hourly window walks the recent SGV set).
   NIGHTSCOUT_SYNC_QUEUE,
@@ -393,6 +404,11 @@ const queuePolicies: QueuePolicyTable = {
     reason:
       "Per-user one-shot catalog link-up; discovery drops the user once no unlinked lab readings remain.",
   },
+  [INTEGRATION_BACKFILL_ADMISSION_QUEUE]: {
+    policy: "exclusive",
+    reason:
+      "Shared full-history drain; keyed per source job so boot rediscovery cannot duplicate queued, active, or retrying work.",
+  },
 };
 
 /**
@@ -403,6 +419,91 @@ export async function registerIntegrationSyncQueues(
   boss: PgBoss,
 ): Promise<readonly string[]> {
   await createAndSchedule(boss, allQueues, schedules, queuePolicies);
+  // pg-boss scopes groupConcurrency to one queue name, so every provider
+  // reaches this shared durable queue before doing full-history work. The
+  // common group is enforced in PostgreSQL across worker processes/nodes.
+
+  await boss.work<IntegrationBackfillAdmissionPayload>(
+    INTEGRATION_BACKFILL_ADMISSION_QUEUE,
+    {
+      localConcurrency: INTEGRATION_BACKFILL_GLOBAL_CONCURRENCY,
+      groupConcurrency: INTEGRATION_BACKFILL_GLOBAL_CONCURRENCY,
+    },
+    async (jobs) => {
+      for (const job of jobs) {
+        const { kind, data } = job.data;
+        const { userId } = data;
+        switch (kind) {
+          case "whoop-backfill": {
+            const { imported } = await runWhoopBackfillForUser(userId);
+            workerLog(
+              "info",
+              `[whoop-backfill] user=${userId} imported=${imported}`,
+            );
+            break;
+          }
+          case "fitbit-backfill": {
+            const { imported } = await runFitbitBackfillForUser(userId);
+            workerLog(
+              "info",
+              `[fitbit-backfill] user=${userId} imported=${imported}`,
+            );
+            break;
+          }
+          case "google-health-backfill": {
+            const { imported } = await runGoogleHealthBackfillForUser(userId);
+            workerLog(
+              "info",
+              `[google-health-backfill] user=${userId} imported=${imported}`,
+            );
+            break;
+          }
+          case "google-health-sleep-repair": {
+            const { imported } =
+              await runGoogleHealthSleepRepairForUser(userId);
+            workerLog(
+              "info",
+              `[google-health-sleep-repair] user=${userId} imported=${imported}`,
+            );
+            break;
+          }
+          case "sleep-timeline-backfill": {
+            if (!data.provider) {
+              throw new Error(
+                "sleep-timeline backfill admission requires a provider",
+              );
+            }
+            const { deleted, imported } = await runSleepTimelineBackfillForUser(
+              userId,
+              data.provider,
+            );
+            workerLog(
+              "info",
+              `[sleep-timeline-backfill] user=${userId} provider=${data.provider} deleted=${deleted} imported=${imported}`,
+            );
+            break;
+          }
+          case "lab-biomarker-backfill": {
+            const { markers, linked } =
+              await runLabBiomarkerBackfillForUser(userId);
+            workerLog(
+              "info",
+              `[lab-biomarker-backfill] user=${userId} markers=${markers} linked=${linked}`,
+            );
+            break;
+          }
+          case "strava-backfill": {
+            const { imported } = await runStravaBackfillForUser(userId);
+            workerLog(
+              "info",
+              `[strava-backfill] user=${userId} imported=${imported}`,
+            );
+            break;
+          }
+        }
+      }
+    },
+  );
 
   await boss.work<WithingsSyncPayload>(
     WITHINGS_SYNC_QUEUE,
@@ -452,20 +553,17 @@ export async function registerIntegrationSyncQueues(
     { localConcurrency: 1 },
     handleWhoopCycleSync,
   );
-  // v1.11.0 — self-converging WHOOP backfill. The boot enqueue below sends one
-  // full-history sync per un-backfilled connection; this handler runs it and
-  // stamps `backfillCompletedAt` so the discovery query drops the account.
+  // v1.11.0 — self-converging WHOOP backfill. This source queue retains the
+  // per-connection singleton and forwards admitted work to the shared drain.
   await boss.work<WhoopBackfillPayload>(
     WHOOP_BACKFILL_QUEUE,
     { localConcurrency: WHOOP_BACKFILL_CONCURRENCY },
     async (jobs) => {
       for (const job of jobs) {
-        const { userId } = job.data;
-        const { imported } = await runWhoopBackfillForUser(userId);
-        workerLog(
-          "info",
-          `[whoop-backfill] user=${userId} imported=${imported}`,
-        );
+        await enqueueIntegrationBackfillAdmission(boss, {
+          kind: "whoop-backfill",
+          data: job.data,
+        });
       }
     },
   );
@@ -487,20 +585,17 @@ export async function registerIntegrationSyncQueues(
     { localConcurrency: 1 },
     handleFitbitSync,
   );
-  // v1.12.0 — self-converging Fitbit backfill. The boot enqueue below sends one
-  // full-history sync per un-backfilled connection; this handler runs it and
-  // stamps `backfillCompletedAt` so the discovery query drops the account.
+  // v1.12.0 — self-converging Fitbit backfill. This source queue retains the
+  // per-connection singleton and forwards admitted work to the shared drain.
   await boss.work<FitbitBackfillPayload>(
     FITBIT_BACKFILL_QUEUE,
     { localConcurrency: FITBIT_BACKFILL_CONCURRENCY },
     async (jobs) => {
       for (const job of jobs) {
-        const { userId } = job.data;
-        const { imported } = await runFitbitBackfillForUser(userId);
-        workerLog(
-          "info",
-          `[fitbit-backfill] user=${userId} imported=${imported}`,
-        );
+        await enqueueIntegrationBackfillAdmission(boss, {
+          kind: "fitbit-backfill",
+          data: job.data,
+        });
       }
     },
   );
@@ -516,40 +611,33 @@ export async function registerIntegrationSyncQueues(
     { localConcurrency: 1 },
     handleGoogleHealthSync,
   );
-  // v1.26.0 — self-converging Google Health backfill. The boot enqueue below
-  // sends one full-history sync per un-backfilled connection; this handler runs
-  // it and stamps `backfillCompletedAt` so the discovery query drops the
-  // account.
+  // v1.26.0 — self-converging Google Health backfill. This source queue
+  // retains the per-connection singleton and forwards admitted work to the
+  // shared drain.
   await boss.work<GoogleHealthBackfillPayload>(
     GOOGLE_HEALTH_BACKFILL_QUEUE,
     { localConcurrency: GOOGLE_HEALTH_BACKFILL_CONCURRENCY },
     async (jobs) => {
       for (const job of jobs) {
-        const { userId } = job.data;
-        const { imported } = await runGoogleHealthBackfillForUser(userId);
-        workerLog(
-          "info",
-          `[google-health-backfill] user=${userId} imported=${imported}`,
-        );
+        await enqueueIntegrationBackfillAdmission(boss, {
+          kind: "google-health-backfill",
+          data: job.data,
+        });
       }
     },
   );
-  // v1.28.x — one-shot Google Health sleep duplicate repair. The boot enqueue
-  // below sends one full sleep-history re-read per un-repaired connection; this
-  // handler runs it (watermark-safe — `syncUserSleep` never stamps
-  // `lastSyncedAt`) and stamps `sleepRepairedAt` so the discovery query drops
-  // the account.
+  // v1.28.x — one-shot Google Health sleep duplicate repair. This source
+  // queue retains the per-connection singleton and forwards the watermark-safe
+  // full sleep-history re-read to the shared drain.
   await boss.work<GoogleHealthSleepRepairPayload>(
     GOOGLE_HEALTH_SLEEP_REPAIR_QUEUE,
     { localConcurrency: GOOGLE_HEALTH_SLEEP_REPAIR_CONCURRENCY },
     async (jobs) => {
       for (const job of jobs) {
-        const { userId } = job.data;
-        const { imported } = await runGoogleHealthSleepRepairForUser(userId);
-        workerLog(
-          "info",
-          `[google-health-sleep-repair] user=${userId} imported=${imported}`,
-        );
+        await enqueueIntegrationBackfillAdmission(boss, {
+          kind: "google-health-sleep-repair",
+          data: job.data,
+        });
       }
     },
   );
@@ -558,43 +646,32 @@ export async function registerIntegrationSyncQueues(
     { localConcurrency: 1 },
     handleGoogleHealthOAuthStateCleanup,
   );
-  // v1.17.1 — one-shot sleep-timeline backfill. The boot enqueue below sends
-  // one job per (user, provider) whose sleep rows predate the stamp/shape fix;
-  // this handler deletes the affected rows, re-syncs, and stamps the marker so
-  // the discovery query drops the connection.
+  // v1.17.1 — one-shot sleep-timeline backfill. This source queue retains the
+  // per-(user, provider) singleton and forwards admitted work to the shared
+  // drain.
   await boss.work<SleepTimelineBackfillPayload>(
     SLEEP_TIMELINE_BACKFILL_QUEUE,
     { localConcurrency: SLEEP_TIMELINE_BACKFILL_CONCURRENCY },
     async (jobs) => {
       for (const job of jobs) {
-        const { userId, provider } = job.data;
-        const { deleted, imported } = await runSleepTimelineBackfillForUser(
-          userId,
-          provider,
-        );
-        workerLog(
-          "info",
-          `[sleep-timeline-backfill] user=${userId} provider=${provider} deleted=${deleted} imported=${imported}`,
-        );
+        await enqueueIntegrationBackfillAdmission(boss, {
+          kind: "sleep-timeline-backfill",
+          data: job.data,
+        });
       }
     },
   );
-  // v1.18.1 — one-shot lab-biomarker backfill. The boot enqueue below sends
-  // one job per user holding un-linked free-text lab readings; this handler
-  // groups them by `lower(analyte)`, mints/reuses a Biomarker per group, and
-  // links the rows. Idempotent — a re-run links only what is still un-linked.
+  // v1.18.1 — one-shot lab-biomarker backfill. This source queue retains the
+  // per-user singleton and forwards admitted work to the shared drain.
   await boss.work<LabBiomarkerBackfillPayload>(
     LAB_BIOMARKER_BACKFILL_QUEUE,
     { localConcurrency: LAB_BIOMARKER_BACKFILL_CONCURRENCY },
     async (jobs) => {
       for (const job of jobs) {
-        const { userId } = job.data;
-        const { markers, linked } =
-          await runLabBiomarkerBackfillForUser(userId);
-        workerLog(
-          "info",
-          `[lab-biomarker-backfill] user=${userId} markers=${markers} linked=${linked}`,
-        );
+        await enqueueIntegrationBackfillAdmission(boss, {
+          kind: "lab-biomarker-backfill",
+          data: job.data,
+        });
       }
     },
   );
@@ -627,20 +704,17 @@ export async function registerIntegrationSyncQueues(
     { localConcurrency: 1 },
     handleStravaSync,
   );
-  // v1.28.x — self-converging Strava backfill. The boot enqueue below sends one
-  // full-history sync per un-backfilled connection; this handler runs it and
-  // stamps `stravaBackfillCompletedAt` so the discovery query drops the account.
+  // v1.28.x — self-converging Strava backfill. This source queue retains the
+  // per-connection singleton and forwards admitted work to the shared drain.
   await boss.work<StravaBackfillPayload>(
     STRAVA_BACKFILL_QUEUE,
     { localConcurrency: STRAVA_BACKFILL_CONCURRENCY },
     async (jobs) => {
       for (const job of jobs) {
-        const { userId } = job.data;
-        const { imported } = await runStravaBackfillForUser(userId);
-        workerLog(
-          "info",
-          `[strava-backfill] user=${userId} imported=${imported}`,
-        );
+        await enqueueIntegrationBackfillAdmission(boss, {
+          kind: "strava-backfill",
+          data: job.data,
+        });
       }
     },
   );
@@ -663,7 +737,9 @@ export async function enqueueIntegrationSyncBootDiscovery(): Promise<void> {
   // and enqueues one full-history sync per account. A completed backfill stamps
   // `backfillCompletedAt`, dropping the connection from the discovery set.
   try {
-    const { enqueued, skipped, error } = await enqueueBootTimeWhoopBackfill();
+    const { enqueued, skipped, error } = await enqueueBootTimeWhoopBackfill(
+      bootStaggerSecondsFor("whoop-backfill"),
+    );
     if (error) {
       workerLog("error", `[whoop-backfill] boot discovery failed: ${error}`);
     } else {
@@ -683,7 +759,9 @@ export async function enqueueIntegrationSyncBootDiscovery(): Promise<void> {
   // v1.12.0 — Fitbit backfill. Finds every Fitbit connection not yet
   // backfilled and enqueues one full-history sync per account.
   try {
-    const { enqueued, skipped, error } = await enqueueBootTimeFitbitBackfill();
+    const { enqueued, skipped, error } = await enqueueBootTimeFitbitBackfill(
+      bootStaggerSecondsFor("fitbit-backfill"),
+    );
     if (error) {
       workerLog("error", `[fitbit-backfill] boot discovery failed: ${error}`);
     } else {
@@ -704,7 +782,9 @@ export async function enqueueIntegrationSyncBootDiscovery(): Promise<void> {
   // yet backfilled and enqueues one full-history sync per account.
   try {
     const { enqueued, skipped, error } =
-      await enqueueBootTimeGoogleHealthBackfill();
+      await enqueueBootTimeGoogleHealthBackfill(
+        bootStaggerSecondsFor("google-health-backfill"),
+      );
     if (error) {
       workerLog(
         "error",
@@ -729,7 +809,9 @@ export async function enqueueIntegrationSyncBootDiscovery(): Promise<void> {
   // account; a completed pass stamps `sleepRepairedAt`.
   try {
     const { enqueued, skipped, error } =
-      await enqueueBootTimeGoogleHealthSleepRepair();
+      await enqueueBootTimeGoogleHealthSleepRepair(
+        bootStaggerSecondsFor("google-health-sleep-repair"),
+      );
     if (error) {
       workerLog(
         "error",
@@ -754,7 +836,9 @@ export async function enqueueIntegrationSyncBootDiscovery(): Promise<void> {
   // job per (user, provider). A completed pass stamps `sleepTimelineBackfillAt`.
   try {
     const { enqueued, skipped, error } =
-      await enqueueBootTimeSleepTimelineBackfill();
+      await enqueueBootTimeSleepTimelineBackfill(
+        bootStaggerSecondsFor("sleep-timeline-backfill"),
+      );
     if (error) {
       workerLog(
         "error",
@@ -777,7 +861,9 @@ export async function enqueueIntegrationSyncBootDiscovery(): Promise<void> {
   // v1.28.x — Strava backfill. Finds every Strava connection not yet
   // backfilled and enqueues one full-history sync per account.
   try {
-    const { enqueued, skipped, error } = await enqueueBootTimeStravaBackfill();
+    const { enqueued, skipped, error } = await enqueueBootTimeStravaBackfill(
+      bootStaggerSecondsFor("strava-backfill"),
+    );
     if (error) {
       workerLog("error", `[strava-backfill] boot discovery failed: ${error}`);
     } else {
@@ -799,7 +885,9 @@ export async function enqueueIntegrationSyncBootDiscovery(): Promise<void> {
   // links every reading, dropping the user from the discovery set.
   try {
     const { enqueued, skipped, error } =
-      await enqueueBootTimeLabBiomarkerBackfill();
+      await enqueueBootTimeLabBiomarkerBackfill(
+        bootStaggerSecondsFor("lab-biomarker-backfill"),
+      );
     if (error) {
       workerLog(
         "error",

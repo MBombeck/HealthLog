@@ -34,6 +34,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/lib/i18n/context";
 import { invalidateKeys, medicationDependentKeys } from "@/lib/query-keys";
 import { ApiError, apiPost } from "@/lib/api/api-fetch";
+import {
+  MedicationIntakeImportError,
+  waitForMedicationIntakeImport,
+} from "@/lib/medications/intake-import-poll";
 
 export interface IntakeImportDialogProps {
   medicationId: string | null;
@@ -104,11 +108,12 @@ export function IntakeImportDialog({
       }
 
       try {
-        const d = await apiPost<{
-          imported: number;
-          skippedDuplicates: number;
-          skippedInvalid: number;
+        const kickoff = await apiPost<{
+          jobId: string;
+          status: "queued";
+          statusUrl: string;
         }>(`/api/medications/${medicationId}/intake/import`, data);
+        const d = await waitForMedicationIntakeImport(kickoff.statusUrl);
         setResult(
           t("medications.importResult", { imported: d.imported }) +
             (d.skippedDuplicates > 0
@@ -121,6 +126,11 @@ export function IntakeImportDialog({
         setResultType("success");
         void invalidateKeys(queryClient, medicationDependentKeys);
       } catch (err) {
+        if (err instanceof MedicationIntakeImportError) {
+          setResult(t("medications.importFailed"));
+          setResultType("error");
+          return;
+        }
         if (!(err instanceof ApiError)) throw err;
         setResult(err.message || t("medications.importFailed"));
         setResultType("error");

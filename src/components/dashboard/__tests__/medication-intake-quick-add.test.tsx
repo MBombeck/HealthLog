@@ -50,9 +50,9 @@ vi.mock("@/hooks/use-auth", () => ({
 
 import {
   MedicationIntakeQuickAdd,
-  pickDefaultMedicationId,
   type MedicationOption,
 } from "../medication-intake-quick-add";
+import { pickDefaultMedicationId } from "@/lib/medications/default-medication";
 
 function makeMed(
   id: string,
@@ -271,6 +271,41 @@ describe("<MedicationIntakeQuickAdd> — SSR contract", () => {
     expect(
       html.match(/min-h-11 sm:min-h-9/g)?.length ?? 0,
     ).toBeGreaterThanOrEqual(1);
+  });
+
+  it("renders the current-window medication as selected ahead of array order", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-12T08:00:00.000Z"));
+    mockUseQuery.mockReturnValue({
+      data: [
+        makeMed("first", { name: "Alpha" }),
+        makeMed("due", {
+          name: "Zulu",
+          nextDueAt: "2026-05-12T07:00:00.000Z",
+          nextDueOverdue: false,
+          schedules: [
+            {
+              id: "due-schedule",
+              windowStart: "08:00",
+              windowEnd: "11:00",
+              daysOfWeek: null,
+              label: null,
+              dose: null,
+            },
+          ],
+        }),
+      ],
+      isLoading: false,
+    });
+
+    try {
+      const html = renderSSR(<MedicationIntakeQuickAdd />);
+      expect(html).toMatch(
+        /data-slot="select-value"[^>]*>[\s\S]*?Zulu[\s\S]*?<\/span>/,
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("does not leak raw i18n keys in either locale", () => {

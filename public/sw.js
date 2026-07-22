@@ -36,7 +36,7 @@ try {
 // v1.4.38.4 → v1.4.42. Do not hand-edit; bump `package.json` and rebuild.
 const CACHE_VERSION =
   (typeof self !== "undefined" && self.__APP_VERSION__) ||
-  /* @sw-version-fallback */ "v1.31.8";
+  /* @sw-version-fallback */ "v1.32.0";
 const STATIC_CACHE = `healthlog-static-${CACHE_VERSION}`;
 const PAGE_CACHE = `healthlog-pages-${CACHE_VERSION}`;
 // v1.18.6 — read-only data cache for a curated allowlist of safe GET `/api/*`
@@ -202,9 +202,12 @@ async function cacheFirst(request, cacheName) {
 
   const response = await fetch(request);
   if (response.ok) {
-    const cache = await caches.open(cacheName);
-    cache.put(request, response.clone());
-    trimCache(cacheName, MAX_STATIC_ENTRIES);
+    await bestEffortCacheWrite(
+      cacheName,
+      request,
+      response.clone(),
+      MAX_STATIC_ENTRIES,
+    );
   }
   return response;
 }
@@ -225,7 +228,6 @@ async function cacheFirst(request, cacheName) {
  * refusal discipline the idempotency cache uses.
  */
 async function networkFirstApi(request) {
-  const cache = await caches.open(DATA_CACHE);
 
   try {
     const response = await fetch(request);
@@ -236,17 +238,21 @@ async function networkFirstApi(request) {
       .text()
       .catch(() => undefined);
     if (isCacheableApiResponse(response, bodyText)) {
-      const toStore = new Response(bodyText, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: response.headers,
-      });
-      await cache.put(request, toStore);
-      trimCache(DATA_CACHE, MAX_DATA_ENTRIES);
+      await bestEffortCacheWrite(
+        DATA_CACHE,
+        request,
+        new Response(bodyText, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers,
+        }),
+        MAX_DATA_ENTRIES,
+      );
     }
     return response;
   } catch {
     // Network failed (offline) — serve the last cached copy if we have one.
+    const cache = await caches.open(DATA_CACHE);
     const cached = await cache.match(request);
     if (cached) return cached;
 
@@ -303,9 +309,14 @@ async function networkFirst(event, cacheName) {
       (event.preloadResponse ? await event.preloadResponse : null) ||
       (await fetch(request));
     if (response.ok && isCacheableNavigation(request, response)) {
-      const cache = await caches.open(cacheName);
-      cache.put(request, response.clone());
-      trimCache(cacheName, MAX_PAGE_ENTRIES);
+      event.waitUntil(
+        bestEffortCacheWrite(
+          cacheName,
+          request,
+          response.clone(),
+          MAX_PAGE_ENTRIES,
+        ),
+      );
     }
     return response;
   } catch {
@@ -333,6 +344,27 @@ async function networkFirst(event, cacheName) {
         headers: { "Content-Type": "text/html; charset=utf-8" },
       },
     );
+  }
+}
+
+/**
+ * Cache a successful network response without making CacheStorage
+ * availability part of the fetch contract. Quota, eviction, or trim failures
+ * are intentionally swallowed: caching may improve a later request, but it
+ * must never replace this request's already-successful network response.
+ */
+async function bestEffortCacheWrite(
+  cacheName,
+  request,
+  response,
+  maxEntries,
+) {
+  try {
+    const cache = await caches.open(cacheName);
+    await cache.put(request, response);
+    await trimCache(cacheName, maxEntries);
+  } catch {
+    // CacheStorage is an optional optimization.
   }
 }
 

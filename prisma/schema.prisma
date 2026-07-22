@@ -737,6 +737,7 @@ model User {
   // pg-boss job state so the polling endpoint can read live per-
   // phase progress without round-tripping through pg-boss internals.
   importJobs                  ImportJob[]
+  medicationIntakeImportJobs MedicationIntakeImportJob[]
   // v1.5.0 — persistent measurement rollup table. Carries the
   // count/min/max/mean/sd/slope/r2 stats per (type, granularity,
   // bucketStart) so the analytics + comprehensive read paths bypass
@@ -2419,6 +2420,7 @@ model Medication {
 
   schedules         MedicationSchedule[]
   intakeEvents      MedicationIntakeEvent[]
+  intakeImportJobs MedicationIntakeImportJob[]
   phaseConfig       ReminderPhaseConfig?
   telegramMessages  TelegramReminderMessage[]
   doseChanges       MedicationDoseChange[]
@@ -3398,11 +3400,17 @@ model WithingsConnection {
   /// and re-syncs with the corrected END stamp, then sets this so the discovery
   /// query drops the connection. Null = backfill not yet run.
   sleepTimelineBackfillAt DateTime? @map("sleep_timeline_backfill_at")
+  /// v1.32 — durable per-category webhook subscription outcomes. The JSON
+  /// payload is versioned and validated before use; the timestamp mirrors the
+  /// earliest transient/pending category retry for indexed hourly discovery.
+  webhookSubscriptionState   Json?     @map("webhook_subscription_state")
+  webhookSubscriptionRetryAt DateTime? @map("webhook_subscription_retry_at")
   createdAt               DateTime  @default(now()) @map("created_at")
   updatedAt               DateTime  @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([webhookSubscriptionRetryAt])
   @@map("withings_connections")
 }
 
@@ -3452,7 +3460,7 @@ model WithingsOAuthState {
 model WhoopConnection {
   id                      String    @id @default(cuid())
   userId                  String    @unique @map("user_id")
-  whoopUserId             String    @map("whoop_user_id")
+  whoopUserId             String?   @unique @map("whoop_user_id")
   accessToken             String    @map("access_token") // encrypted at app level
   refreshToken            String    @map("refresh_token") // encrypted at app level
   tokenExpiresAt          DateTime  @map("token_expires_at")
@@ -4331,6 +4339,33 @@ model ImportJob {
   @@index([userId, startedAt])
   @@index([status])
   @@map("import_jobs")
+}
+
+// Durable medication-intake CSV imports. The validated, normalized payload
+// stays in Postgres so retries never depend on request-process memory.
+model MedicationIntakeImportJob {
+  id            String    @id @default(cuid())
+  userId        String    @map("user_id")
+  medicationId  String    @map("medication_id")
+  pgBossJobId   String?   @unique @map("pg_boss_job_id")
+  status        String    @default("queued")
+  payload       Json
+  progress      Json      @default("{}")
+  result        Json?
+  failureReason String?   @map("failure_reason")
+  heartbeatAt   DateTime? @map("heartbeat_at")
+  startedAt     DateTime? @map("started_at")
+  completedAt   DateTime? @map("completed_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([medicationId, createdAt])
+  @@index([status, heartbeatAt])
+  @@map("medication_intake_import_jobs")
 }
 
 // ─── Rate Limiting ──────────────────────────────────────────
@@ -5376,11 +5411,10 @@ model InsightNarrative {
 // `data-arrival` worker after a SALIENT ingest — never by a backfill, which
 // the seam classifier drops before anything is enqueued.
 //
-// The unique index is load-bearing three times over: it is the "just in"
-// marker the reaction surfaces read, it is the at-most-one-generated-line
-// per kind per day claim (inserted with ON CONFLICT DO NOTHING, so a lost
-// race means another worker already owns today's line), and it is the audit
-// trail for what the spine actually reacted to.
+// The unique index is load-bearing twice over: it is the "just in" marker the
+// reaction surfaces read and the durable identity whose newest same-day
+// revision owns generation. A strictly newer arrival atomically invalidates
+// stale generation state; equal or older deliveries are deduplicated.
 model ArrivalReaction {
   id            String    @id @default(cuid())
   userId        String    @map("user_id")
@@ -5417,8 +5451,8 @@ model ArrivalReaction {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // The once-per-kind-per-local-day claim. Do not relax this to include
-  // `refId` — the day scope is the throttle.
+  // One mutable marker per kind and local day. Do not include `refId`: newer
+  // same-day referents replace this row atomically.
   @@unique([userId, kind, localDate])
   // The reaction surfaces read "today's rows for this user".
   @@index([userId, localDate])

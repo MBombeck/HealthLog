@@ -103,7 +103,7 @@ export function ThresholdsEditorSection({ id }: { id: string }) {
       const url = metric
         ? `/api/user/thresholds?metric=${metric}`
         : "/api/user/thresholds";
-      const res = await fetch(url, { method: "DELETE" });
+      const res = await apiFetchRaw(url, { method: "DELETE" });
       if (!res.ok) throw new Error("reset failed");
     },
     onSuccess: () => {

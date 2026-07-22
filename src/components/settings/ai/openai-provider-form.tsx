@@ -7,7 +7,7 @@
  * pick is visible to every code path that reads the row.
  * ──────────────────────────────────────────────────────────────── */
 
-import { useState } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Save } from "lucide-react";
 
@@ -42,6 +42,7 @@ export function OpenAIProviderForm({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
+  const submitInFlightRef = useRef(false);
 
   const seededKey =
     userProvider != null
@@ -92,10 +93,25 @@ export function OpenAIProviderForm({
       setOk(false);
       setMsg(e instanceof Error ? e.message : t("settings.ai.errorGeneric"));
     },
+    onSettled: () => {
+      submitInFlightRef.current = false;
+    },
   });
 
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submitInFlightRef.current || saveMutation.isPending) return;
+    submitInFlightRef.current = true;
+    saveMutation.mutate();
+  }
+
   return (
-    <div data-testid="ai-provider-config-openai" className="space-y-4">
+    <form
+      data-testid="ai-provider-config-openai"
+      className="space-y-4"
+      onSubmit={submit}
+      noValidate
+    >
       <div>
         <Label htmlFor="ai-openai-key">
           {t("settings.ai.openai.apiKey")}
@@ -185,9 +201,10 @@ export function OpenAIProviderForm({
 
       <div className="flex flex-wrap gap-2">
         <Button
+          type="submit"
           size="sm"
           className="min-h-11 sm:min-h-9"
-          onClick={() => saveMutation.mutate()}
+          aria-busy={saveMutation.isPending || undefined}
           disabled={saveMutation.isPending}
         >
           {saveMutation.isPending ? (
@@ -204,6 +221,6 @@ export function OpenAIProviderForm({
           {msg}
         </p>
       )}
-    </div>
+    </form>
   );
 }

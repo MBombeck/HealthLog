@@ -88,6 +88,7 @@ import { getSession } from "@/lib/auth/session";
 import { createTagLinks } from "@/lib/mood/tag-links";
 import { recomputeMoodBucketsForEntry } from "@/lib/rollups/mood-rollups";
 import { pushMoodEntriesToMoodLog } from "@/lib/moodlog/push";
+import { Prisma } from "@/generated/prisma/client";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -217,11 +218,13 @@ describe("POST /api/mood-entries — 422 multi-issue (v1.4.43 W6)", () => {
       details: {
         issues: Array<{ path: string; code: string; message: string }>;
       };
+      meta?: { errorCode?: string };
     };
     expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
     for (const issue of body.details.issues) {
       expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
     }
+    expect(body.meta?.errorCode).toBe("mood.create.invalid");
   });
 
   it("surfaces THREE simultaneous validation errors", async () => {
@@ -257,6 +260,23 @@ describe("POST /api/mood-entries — 422 multi-issue (v1.4.43 W6)", () => {
     );
     const res = await POST(postReq({ mood: "junk" }));
     expect(res.status).toBe(422);
+  });
+
+  it("pins the duplicate-timestamp conflict code", async () => {
+    txClient.moodEntry.create.mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+      }),
+    );
+    const res = await POST(
+      postReq({
+        mood: "GUT",
+        moodLoggedAt: "2026-07-10T08:00:00.000Z",
+      }),
+    );
+    expect(res.status).toBe(409);
+    expect((await res.json()).meta?.errorCode).toBe("mood.duplicate_timestamp");
   });
 });
 

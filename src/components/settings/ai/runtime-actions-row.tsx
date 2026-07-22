@@ -202,6 +202,7 @@ export function RuntimeActionsRow({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <Button
+          type="button"
           size="sm"
           variant="outline"
           className="min-h-11 sm:min-h-9"

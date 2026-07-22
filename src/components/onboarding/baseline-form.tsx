@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { useTranslations } from "@/lib/i18n/context";
 import { apiGet, apiPost, apiPut } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { queryKeys } from "@/lib/query-keys";
 import {
   AnamnesisCard,
@@ -145,9 +146,7 @@ export function BaselineForm() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.auth() });
       router.push("/onboarding/4");
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : t("onboarding.errorGeneric");
-      toast.error(message);
+      toast.error(localizedApiError(err, t, "onboarding.errorGeneric"));
       setSaving(false);
     }
   }

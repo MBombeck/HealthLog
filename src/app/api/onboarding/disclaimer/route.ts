@@ -36,7 +36,9 @@ export const POST = apiHandler(async (request) => {
 
   const parsed = z.safeParse(bodySchema, rawBody);
   if (!parsed.success) {
-    return apiError("Invalid input", 422);
+    return apiError("Invalid input", 422, {
+      errorCode: "onboarding.disclaimer.invalid",
+    });
   }
 
   // The server pins the canonical version it stamps — the body version is

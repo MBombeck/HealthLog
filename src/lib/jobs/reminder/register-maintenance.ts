@@ -46,6 +46,12 @@ import {
   type AppleHealthImportPayload,
 } from "@/lib/jobs/apple-health-import-worker";
 import {
+  MEDICATION_INTAKE_IMPORT_QUEUE,
+  MEDICATION_INTAKE_IMPORT_CONCURRENCY,
+  handleMedicationIntakeImport,
+  type MedicationIntakeImportQueuePayload,
+} from "@/lib/jobs/medication-intake-import";
+import {
   INTAKE_SLOT_DEDUP_QUEUE,
   INTAKE_SLOT_DEDUP_CONCURRENCY,
   dedupeUserIntakeSlots,
@@ -308,6 +314,7 @@ const allQueues = [
   INTAKE_AUTO_SKIP_QUEUE,
   APPLE_HEALTH_IMPORT_V2_QUEUE,
   APPLE_HEALTH_IMPORT_LEGACY_QUEUE,
+  MEDICATION_INTAKE_IMPORT_QUEUE,
   // v1.8.2 — one-time duplicate dose-slot cleanup. Boot discovery enqueues
   // one job per user holding two live intake rows that snap to the same
   // canonical slot (the pre-fix REMINDER-pending + API-taken pair). Also
@@ -696,6 +703,18 @@ export async function registerMaintenanceQueues(
     async (jobs) => {
       for (const job of jobs) {
         await migrateLegacyAppleHealthImport(job);
+      }
+    },
+  );
+  await boss.work<MedicationIntakeImportQueuePayload>(
+    MEDICATION_INTAKE_IMPORT_QUEUE,
+    {
+      localConcurrency: MEDICATION_INTAKE_IMPORT_CONCURRENCY,
+      includeMetadata: true,
+    },
+    async (jobs) => {
+      for (const job of jobs) {
+        await handleMedicationIntakeImport(job);
       }
     },
   );

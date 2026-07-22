@@ -7,6 +7,8 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import type { QueryClient, QueryKey } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import type {
   CoachConversationAttachmentDTO,
@@ -20,7 +22,14 @@ import type {
   CoachUsage,
 } from "@/lib/ai/coach/types";
 import type { CoachSuggestedAction } from "@/lib/ai/coach/suggest-action";
-import { apiDelete, apiFetchRaw, apiGet, apiPost } from "@/lib/api/api-fetch";
+import { useTranslations } from "@/lib/i18n/context";
+import {
+  apiDelete,
+  apiFetchRaw,
+  apiGet,
+  apiPatch,
+  apiPost,
+} from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
 
 /**
@@ -44,6 +53,107 @@ const QUERY_KEYS = {
   list: () => queryKeys.coachConversations(),
   one: (id: string) => queryKeys.coachConversation(id),
 };
+
+export interface RenameCoachConversationInput {
+  id: string;
+  title: string;
+}
+
+export type CoachConversationRenameSnapshot = Array<
+  readonly [QueryKey, unknown]
+>;
+
+function renameConversationInCache(
+  data: unknown,
+  input: RenameCoachConversationInput,
+): unknown {
+  if (!data || typeof data !== "object") return data;
+
+  if ("pages" in data && Array.isArray(data.pages)) {
+    let changed = false;
+    const pages = data.pages.map((page) => {
+      const renamed = renameConversationInCache(page, input);
+      changed ||= renamed !== page;
+      return renamed;
+    });
+    return changed ? { ...data, pages } : data;
+  }
+
+  if ("conversations" in data && Array.isArray(data.conversations)) {
+    let changed = false;
+    const conversations = data.conversations.map((conversation) => {
+      if (
+        conversation &&
+        typeof conversation === "object" &&
+        "id" in conversation &&
+        conversation.id === input.id
+      ) {
+        changed = true;
+        return { ...conversation, title: input.title };
+      }
+      return conversation;
+    });
+    return changed ? { ...data, conversations } : data;
+  }
+
+  if ("id" in data && data.id === input.id && "title" in data) {
+    return { ...data, title: input.title };
+  }
+  return data;
+}
+
+/**
+ * Capture and update every currently materialised conversation cache. Search
+ * variants live below the list prefix, while the open thread has its own key.
+ */
+export async function applyOptimisticCoachConversationRename(
+  queryClient: QueryClient,
+  input: RenameCoachConversationInput,
+): Promise<CoachConversationRenameSnapshot> {
+  const detailKey = queryKeys.coachConversation(input.id);
+  await Promise.all([
+    queryClient.cancelQueries({ queryKey: QUERY_KEYS.list() }),
+    queryClient.cancelQueries({ queryKey: detailKey }),
+  ]);
+
+  const snapshot: CoachConversationRenameSnapshot = [
+    ...queryClient.getQueriesData({ queryKey: QUERY_KEYS.list() }),
+    ...queryClient.getQueriesData({ queryKey: detailKey, exact: true }),
+  ];
+  for (const [key, previous] of snapshot) {
+    queryClient.setQueryData(key, renameConversationInCache(previous, input));
+  }
+  return snapshot;
+}
+
+export function restoreCoachConversationRename(
+  queryClient: QueryClient,
+  snapshot: CoachConversationRenameSnapshot,
+): void {
+  for (const [key, previous] of snapshot) {
+    queryClient.setQueryData(key, previous);
+  }
+}
+
+export async function invalidateCoachConversationRename(
+  queryClient: QueryClient,
+  id: string,
+): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.list() }),
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.one(id) }),
+  ]);
+}
+
+export async function patchCoachConversationTitle(
+  input: RenameCoachConversationInput,
+): Promise<RenameCoachConversationInput> {
+  const title = input.title.trim();
+  return apiPatch<RenameCoachConversationInput>(
+    `/api/insights/chat/${encodeURIComponent(input.id)}`,
+    { title },
+  );
+}
 
 /**
  * The single (first) page of conversations. Used ONLY for the
@@ -285,6 +395,32 @@ export function useDeleteCoachConversationWithUndo() {
   }, []);
 
   return { pendingDeleteIds, requestDelete, undoDelete };
+}
+
+/**
+ * Shared rename mutation for every Coach history surface. It snapshots each
+ * materialised list/search/detail cache before the optimistic write and
+ * restores those exact data references if persistence fails.
+ */
+export function useRenameCoachConversation() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslations();
+
+  return useMutation({
+    mutationFn: patchCoachConversationTitle,
+    onMutate: (input: RenameCoachConversationInput) =>
+      applyOptimisticCoachConversationRename(queryClient, {
+        ...input,
+        title: input.title.trim(),
+      }),
+    onError: (_error, _input, snapshot) => {
+      if (snapshot) restoreCoachConversationRename(queryClient, snapshot);
+      toast.error(t("insights.coach.rename.error"));
+    },
+    onSettled: (_data, _error, input) => {
+      void invalidateCoachConversationRename(queryClient, input.id);
+    },
+  });
 }
 
 /**

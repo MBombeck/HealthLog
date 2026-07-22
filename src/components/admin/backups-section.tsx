@@ -414,7 +414,10 @@ export function BackupsSection() {
           </div>
           <p className="text-muted-foreground text-xs">
             {t("admin.section.backups.uploadDescription")}{" "}
-            <span className="opacity-80">
+            <span
+              data-slot="backup-upload-help"
+              className="text-muted-foreground"
+            >
               {t("admin.section.backups.uploadHelp")}
             </span>
           </p>

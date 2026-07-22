@@ -47,6 +47,7 @@
  *
  * Audit anchor: `.planning/round-v1438-perf-analysis.md` §2.5 + §5 P4.
  */
+import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
@@ -153,6 +154,8 @@ export function dayKeyForScheduledFor(
   return userDayKey(scheduledFor, safeTimezone(tz));
 }
 
+type MedicationComplianceRollupClient = Pick<PrismaClient, "$executeRaw">;
+
 /**
  * Recompute the rollup row for one `(userId, medicationId, dayKey)`
  * tuple. Reads every `MedicationIntakeEvent` whose `scheduledFor` lands
@@ -170,8 +173,8 @@ export async function recomputeMedicationComplianceForDay(
   medicationId: string,
   dayKey: string,
   tz: string | null | undefined,
+  client: MedicationComplianceRollupClient = prisma,
 ): Promise<void> {
-  const client = prisma;
   const safeTz = safeTimezone(tz);
   const start = startOfDayUtcInTz(dayKey, safeTz);
   const end = new Date(start.getTime() + 86_400_000);

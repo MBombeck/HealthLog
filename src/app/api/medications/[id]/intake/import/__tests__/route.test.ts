@@ -1,42 +1,44 @@
 /**
- * v1.4.43 W6 — multi-issue 422 envelope on POST
- * /api/medications/[id]/intake/import. Preserves the
- * `medication.intake.import.invalid_format` errorCode meta so the CSV
- * import client UI can branch on the prefix semantics.
+ * Durable medication-intake import kickoff contracts.
  *
- * v1.29 perf fix — the per-row `findUnique` duplicate probe was replaced by
- * one indexed `findMany` existence read over every row's idempotencyKey
- * before the write loop. `create` + `consumeForIntake` stay per-row.
+ * The request process validates and persists the complete payload, then
+ * returns a polling handle without performing intake writes itself.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
+vi.mock("@/lib/db", () => {
+  const prismaMock = {
+    $queryRaw: vi.fn().mockResolvedValue([{ id: "m1" }]),
     medication: {
       findUnique: vi.fn(),
     },
-    medicationIntakeEvent: {
-      findMany: vi.fn(),
+    medicationIntakeImportJob: {
       create: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+      findFirst: vi.fn(),
     },
     auditLog: { create: vi.fn() },
-  },
-}));
+  };
+  return {
+    prisma: {
+      ...prismaMock,
+      $transaction: vi.fn((callback: (tx: typeof prismaMock) => unknown) =>
+        callback(prismaMock),
+      ),
+    },
+    toJson: (value: unknown) => value,
+  };
+});
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
 }));
-vi.mock("@/lib/cache/invalidate", () => ({
-  invalidateUserMedications: vi.fn(),
-}));
-vi.mock("@/lib/medications/inventory/consumption", () => ({
-  consumeForIntake: vi.fn().mockResolvedValue(undefined),
-}));
-vi.mock("@/lib/rollups/medication-compliance-rollups", () => ({
-  recomputeMedicationComplianceForDay: vi.fn().mockResolvedValue(undefined),
-  dayKeyForScheduledFor: vi.fn().mockReturnValue("2026-01-01"),
+
+vi.mock("@/lib/jobs/boss-instance", () => ({
+  getGlobalBoss: vi.fn(),
 }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
 vi.mock("@/lib/db-compat", () => ({
@@ -51,18 +53,14 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
-// (#22) — silent cross-device intake sync. Mocked so the route test can
-// assert the hook without reaching the APNs senders or the coalescing
-// timers.
-vi.mock("@/lib/notifications/medication-intake-sync", () => ({
-  queueMedicationIntakeSync: vi.fn(),
-}));
-
 import { POST } from "../route";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
-import { consumeForIntake } from "@/lib/medications/inventory/consumption";
+import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import {
+  MEDICATION_INTAKE_IMPORT_QUEUE,
+  MEDICATION_INTAKE_IMPORT_STALE_AFTER_MS,
+} from "@/lib/jobs/medication-intake-import";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -79,16 +77,28 @@ function postReq(body: unknown): NextRequest {
 
 const ROUTE_CTX = { params: Promise.resolve({ id: "m1" }) };
 
-/** Mirrors the route's own dedup-key derivation for a zaehler-less row. */
-function keyFor(medId: string, datum: string, uhrzeit: string): string {
-  const takenAt = new Date(`${datum}T${uhrzeit}`);
-  return `import-${medId}-${takenAt.getTime()}`;
-}
+const CREATED_JOB = {
+  id: "job-1",
+  status: "queued",
+};
 
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
+  vi.mocked(getGlobalBoss).mockReturnValue({
+    send: vi.fn().mockResolvedValue("boss-1"),
+  } as never);
+  vi.mocked(prisma.medicationIntakeImportJob.create).mockResolvedValue(
+    CREATED_JOB as never,
+  );
+  vi.mocked(prisma.medicationIntakeImportJob.update).mockResolvedValue(
+    CREATED_JOB as never,
+  );
+  vi.mocked(prisma.medicationIntakeImportJob.updateMany).mockResolvedValue({
+    count: 0,
+  });
+  vi.mocked(prisma.medicationIntakeImportJob.findFirst).mockResolvedValue(null);
   vi.mocked(prisma.medication.findUnique).mockResolvedValue({
     id: "m1",
     userId: "user-1",
@@ -176,72 +186,161 @@ describe("POST /api/medications/[id]/intake/import — 422 multi-issue (v1.4.43 
       postReq([{ datum: "not-a-date", uhrzeit: "07:00:00" }]),
       ROUTE_CTX,
     );
+
     expect(res.status).toBe(422);
+  });
+  it("rejects an impossible calendar timestamp before creating a job", async () => {
+    const res = await POST(
+      postReq([{ datum: "2026-02-30", uhrzeit: "07:00:00" }]),
+      ROUTE_CTX,
+    );
+
+    expect(res.status).toBe(422);
+    expect(prisma.medicationIntakeImportJob.create).not.toHaveBeenCalled();
+    expect(getGlobalBoss).not.toHaveBeenCalled();
   });
 });
 
-describe("POST /api/medications/[id]/intake/import — inventory consumption", () => {
-  beforeEach(() => {
-    // Fresh imports: the batched existence read finds no prior rows, and
-    // create echoes an id.
-    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue([]);
-    let n = 0;
-    vi.mocked(prisma.medicationIntakeEvent.create).mockImplementation(
-      (async () => ({ id: `evt-${++n}`, takenAt: new Date() })) as never,
-    );
-  });
-
-  it("consumes stock once per freshly imported taken dose", async () => {
+describe("POST /api/medications/[id]/intake/import — durable kickoff", () => {
+  it("returns 202 with an owner-pollable job handle", async () => {
     const res = await POST(
       postReq([
-        { datum: "2026-01-01", uhrzeit: "07:00:00" },
-        { datum: "2026-01-01", uhrzeit: "19:00:00" },
-        { datum: "2026-01-02", uhrzeit: "07:00:00" },
-      ]),
-      ROUTE_CTX,
-    );
-    expect(res.status).toBe(201);
-    const body = (await res.json()) as { data: { imported: number } };
-    expect(body.data.imported).toBe(3);
-    expect(consumeForIntake).toHaveBeenCalledTimes(3);
-    const call = vi.mocked(consumeForIntake).mock.calls[0]?.[0];
-    expect(call?.medicationId).toBe("m1");
-    expect(call?.userId).toBe("user-1");
-    expect(call?.eventId).toBe("evt-1");
-
-    // The three-row import reads existence in ONE indexed query, not one
-    // findUnique probe per row.
-    expect(prisma.medicationIntakeEvent.findMany).toHaveBeenCalledTimes(1);
-    const findManyArg = vi.mocked(prisma.medicationIntakeEvent.findMany).mock
-      .calls[0]?.[0] as { where: { idempotencyKey: { in: string[] } } };
-    expect(findManyArg.where.idempotencyKey.in).toHaveLength(3);
-
-    // (#22) — the whole import queues exactly ONE cross-device sync
-    // fan-out, not one per imported row.
-    expect(queueMedicationIntakeSync).toHaveBeenCalledTimes(1);
-  });
-
-  it("does not consume for duplicate (already-imported) rows", async () => {
-    // First entry's key is already present — the batched existence read
-    // reports it, the second entry's key is absent (fresh).
-    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue([
-      { idempotencyKey: keyFor("m1", "2026-01-01", "07:00:00") },
-    ] as never);
-    const res = await POST(
-      postReq([
-        { datum: "2026-01-01", uhrzeit: "07:00:00" },
+        { datum: "2026-01-01", uhrzeit: "07:00:00", zaehler: 41 },
         { datum: "2026-01-01", uhrzeit: "19:00:00" },
       ]),
       ROUTE_CTX,
     );
-    expect(res.status).toBe(201);
-    const body = (await res.json()) as {
-      data: { imported: number; skippedDuplicates: number };
+
+    expect(res.status).toBe(202);
+    await expect(res.json()).resolves.toEqual({
+      data: {
+        jobId: "job-1",
+        status: "queued",
+        statusUrl: "/api/medications/m1/intake/import/job-1/status",
+      },
+      error: null,
+    });
+
+    expect(prisma.medicationIntakeImportJob.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: "user-1",
+        medicationId: "m1",
+        status: "queued",
+        payload: {
+          entries: [
+            {
+              idempotencyKey: "import-m1-41",
+              takenAt: expect.any(String),
+            },
+            {
+              idempotencyKey: expect.stringMatching(/^import-m1-\d+$/),
+              takenAt: expect.any(String),
+            },
+          ],
+        },
+        progress: expect.objectContaining({
+          processed: 0,
+          imported: 0,
+          skippedDuplicates: 0,
+          total: 2,
+        }),
+      }),
+    });
+
+    const boss = vi.mocked(getGlobalBoss).mock.results[0]?.value as {
+      send: ReturnType<typeof vi.fn>;
     };
-    expect(body.data.imported).toBe(1);
-    expect(body.data.skippedDuplicates).toBe(1);
-    // Only the fresh row consumes — the duplicate never re-creates an event,
-    // so re-import cannot double-decrement.
-    expect(consumeForIntake).toHaveBeenCalledTimes(1);
+    expect(boss.send).toHaveBeenCalledWith(
+      MEDICATION_INTAKE_IMPORT_QUEUE,
+      { jobId: "job-1" },
+      expect.objectContaining({ retryLimit: expect.any(Number) }),
+    );
+  });
+
+  it("fails stale abandoned work and admits a replacement job", async () => {
+    const now = new Date("2026-07-21T12:00:00.000Z");
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+
+    try {
+      vi.mocked(prisma.medicationIntakeImportJob.updateMany).mockResolvedValue({
+        count: 1,
+      });
+
+      const res = await POST(
+        postReq([{ datum: "2026-01-01", uhrzeit: "07:00:00" }]),
+        ROUTE_CTX,
+      );
+
+      expect(res.status).toBe(202);
+      expect(prisma.medicationIntakeImportJob.updateMany).toHaveBeenCalledWith({
+        where: expect.objectContaining({
+          medicationId: "m1",
+          userId: "user-1",
+          status: { in: ["queued", "running"] },
+          OR: expect.arrayContaining([
+            {
+              heartbeatAt: {
+                lt: new Date(
+                  now.getTime() - MEDICATION_INTAKE_IMPORT_STALE_AFTER_MS,
+                ),
+              },
+            },
+          ]),
+        }),
+        data: expect.objectContaining({
+          status: "failed",
+          failureReason: "Medication intake import abandoned",
+          completedAt: now,
+        }),
+      });
+      expect(prisma.medicationIntakeImportJob.create).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps a fresh queued or running job as the single active import", async () => {
+    vi.mocked(prisma.medicationIntakeImportJob.findFirst).mockResolvedValue({
+      id: "active-job",
+      status: "running",
+    } as never);
+
+    const res = await POST(
+      postReq([{ datum: "2026-01-01", uhrzeit: "07:00:00" }]),
+      ROUTE_CTX,
+    );
+
+    expect(res.status).toBe(409);
+    await expect(res.json()).resolves.toEqual({
+      data: null,
+      error: "Medication intake import already in progress",
+    });
+    expect(prisma.medicationIntakeImportJob.create).not.toHaveBeenCalled();
+    expect(getGlobalBoss).not.toHaveBeenCalled();
+  });
+
+  it("marks enqueue failure terminal and never exposes the queue error", async () => {
+    const queueError = "postgres://queue-user:secret@example.test exploded";
+    const send = vi.fn().mockRejectedValue(new Error(queueError));
+    vi.mocked(getGlobalBoss).mockReturnValue({ send } as never);
+
+    const res = await POST(
+      postReq([{ datum: "2026-01-01", uhrzeit: "07:00:00" }]),
+      ROUTE_CTX,
+    );
+
+    expect(res.status).toBe(503);
+    const body = await res.text();
+    expect(body).not.toContain(queueError);
+    expect(body).not.toContain("secret");
+    expect(prisma.medicationIntakeImportJob.update).toHaveBeenCalledWith({
+      where: { id: "job-1" },
+      data: expect.objectContaining({
+        status: "failed",
+        failureReason: "Background worker enqueue failed",
+        completedAt: expect.any(Date),
+      }),
+    });
   });
 });

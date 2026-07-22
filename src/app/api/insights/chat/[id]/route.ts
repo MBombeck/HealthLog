@@ -1,28 +1,45 @@
 /**
- * GET  /api/insights/chat/[id] — fetch one conversation with all
- *                                 messages decrypted on the fly.
+ * GET    /api/insights/chat/[id] — fetch one conversation with all
+ *                                  messages decrypted on the fly.
+ * PATCH  /api/insights/chat/[id] — rename one conversation.
  * DELETE /api/insights/chat/[id] — hard-delete the conversation +
  *                                  every message under it.
  *
- * Ownership: both verbs verify the conversation belongs to the
+ * Ownership: every verb verifies the conversation belongs to the
  * authenticated user. A foreign id maps to 404 (NOT 403) so the
  * existence channel never leaks across accounts.
  */
 import type { NextRequest } from "next/server";
+import { z } from "zod/v4";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiSuccess, apiError } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiError,
+  getClientIp,
+  returnAllZodIssues,
+  safeJson,
+} from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { requireAssistantSurface } from "@/lib/feature-flags";
+import { auditLog } from "@/lib/auth/audit";
+import { COACH_CONVERSATION_TITLE_MAX } from "@/lib/ai/coach/types";
 
 import {
   deleteConversation,
   fetchConversationWithMessages,
+  renameConversation,
 } from "@/lib/ai/coach/persistence";
 
 interface RouteCtx {
   params: Promise<{ id: string }>;
 }
+
+const renameConversationSchema = z
+  .object({
+    title: z.string().trim().min(1).max(COACH_CONVERSATION_TITLE_MAX),
+  })
+  .strict();
 
 export const GET = apiHandler(async (_request: NextRequest, ctx: RouteCtx) => {
   const auth = await requireAuth();
@@ -53,6 +70,45 @@ export const GET = apiHandler(async (_request: NextRequest, ctx: RouteCtx) => {
   });
 
   return apiSuccess(detail);
+});
+
+export const PATCH = apiHandler(async (request: NextRequest, ctx: RouteCtx) => {
+  const auth = await requireAuth();
+  await requireAssistantSurface("coach");
+  const { id } = await ctx.params;
+  if (!id) return apiError("coach.conversation.notFound", 404);
+
+  const { data: rawBody, error: jsonError } = await safeJson(request, {
+    maxBytes: 4 * 1024,
+  });
+  if (jsonError) return jsonError;
+
+  const parsed = renameConversationSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return returnAllZodIssues(parsed.error, 422, {
+      errorCode: "coach.conversation.invalidTitle",
+    });
+  }
+
+  const renamed = await renameConversation(auth.user.id, id, parsed.data.title);
+  if (!renamed) {
+    return apiError("coach.conversation.notFound", 404);
+  }
+
+  await auditLog("coach.conversation.rename", {
+    userId: auth.user.id,
+    ipAddress: getClientIp(request),
+    details: { conversationId: id },
+  });
+  annotate({
+    action: {
+      name: "insights.coach.rename",
+      entity_type: "coach_conversation",
+      entity_id: id,
+    },
+  });
+
+  return apiSuccess(renamed);
 });
 
 export const DELETE = apiHandler(

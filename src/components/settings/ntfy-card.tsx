@@ -12,6 +12,11 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { TestConnectionButton } from "@/components/settings/test-connection-button";
+import {
+  optimisticallySetChannelEnabled,
+  persistChannelEnabled,
+  rollbackChannelEnabled,
+} from "@/components/settings/notification-channel-toggle";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
@@ -82,6 +87,39 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
     },
   });
 
+  const toggleEnabled = useMutation<
+    void,
+    Error,
+    boolean,
+    NtfySettings | undefined
+  >({
+    mutationFn: (enabled) =>
+      persistChannelEnabled("/api/settings/ntfy", enabled, t("common.error")),
+    onMutate: async (enabled) => {
+      const queryKey = queryKeys.settingsNtfy();
+      await queryClient.cancelQueries({ queryKey });
+      setSaveMsg(null);
+      setSaveMsgType(null);
+      return optimisticallySetChannelEnabled<NtfySettings>(
+        queryClient,
+        queryKey,
+        enabled,
+      );
+    },
+    onSuccess: () => {
+      setSaveMsg(t("settings.saved"));
+      setSaveMsgType("success");
+    },
+    onError: (err, _enabled, previous) => {
+      rollbackChannelEnabled(queryClient, queryKeys.settingsNtfy(), previous);
+      setSaveMsg(err.message);
+      setSaveMsgType("error");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.settingsNtfy() });
+    },
+  });
+
   return (
     <SettingsCard>
       <SettingsCardHeader
@@ -96,8 +134,8 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
           <Switch
             id="ntfy-toggle"
             checked={settings?.enabled ?? false}
-            onCheckedChange={(checked) => save.mutate(checked)}
-            disabled={save.isPending}
+            onCheckedChange={(checked) => toggleEnabled.mutate(checked)}
+            disabled={save.isPending || toggleEnabled.isPending}
           />
         </div>
 
@@ -161,7 +199,7 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
             />
             <Button
               type="submit"
-              disabled={save.isPending}
+              disabled={save.isPending || toggleEnabled.isPending}
               className="min-h-11"
             >
               {save.isPending && (

@@ -16,6 +16,27 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
 
+const moduleGate = vi.hoisted(() => ({ nutrientsEnabled: true }));
+
+vi.mock("@/hooks/use-module-enabled", () => ({
+  useModuleEnabled: (moduleKey: string) =>
+    moduleKey === "nutrients" ? moduleGate.nutrientsEnabled : true,
+}));
+
+vi.mock("@/components/ui/dropdown-menu", () => ({
+  DropdownMenu: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DropdownMenuItem: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+}));
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({
     user: { username: "tester", timezone: "Europe/Berlin" },
@@ -53,5 +74,32 @@ describe("<DashboardHeader> — greeting", () => {
   it("renders a real page-level h1 with the dashboard title", () => {
     const html = renderSSR(<DashboardHeader onQuickEntry={() => undefined} />);
     expect(html).toMatch(/<h1[^>]*>Dashboard<\/h1>/);
+  });
+});
+
+describe("<DashboardHeader> — nutrients module gate", () => {
+  it("hides only the water quick-add item when nutrients are disabled", () => {
+    moduleGate.nutrientsEnabled = false;
+
+    const html = renderSSR(
+      <DashboardHeader onQuickEntry={() => undefined} />,
+      "en",
+    );
+
+    expect(html).not.toContain("Log water");
+    expect(html).toContain("Log measurement");
+    expect(html).toContain("Log mood");
+    expect(html).toContain("Log medication intake");
+  });
+
+  it("keeps the water quick-add item available when nutrients are enabled", () => {
+    moduleGate.nutrientsEnabled = true;
+
+    const html = renderSSR(
+      <DashboardHeader onQuickEntry={() => undefined} />,
+      "en",
+    );
+
+    expect(html).toContain("Log water");
   });
 });

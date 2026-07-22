@@ -11,6 +11,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { locales, defaultLocale, type Locale } from "./config";
 import {
   DISPLAY_TIMEZONE,
@@ -116,7 +117,7 @@ function persistLocale(newLocale: Locale) {
 // and idempotent on the server: a 401 on a public page, an offline blip or a
 // no-op equal value all fail silently and never block the UI flip.
 function persistLocaleToServer(newLocale: Locale) {
-  void fetch("/api/auth/me/locale", {
+  void apiFetchRaw("/api/auth/me/locale", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ locale: newLocale }),

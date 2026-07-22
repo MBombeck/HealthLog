@@ -16,17 +16,10 @@
  * covers the incremental window comfortably; a deep backfill is bounded by the
  * backfill horizon `afterDate`. A per-endpoint 403 soft-skips the resource.
  */
-import {
-  fetchActivityList,
-  mapWorkout,
-  readActivityList,
-  type FitbitMappedWorkout,
-} from "./client";
-import {
-  getValidToken,
-  handleCollectionFetchError,
-  type FitbitResourceSyncOptions,
-} from "./sync";
+import { fetchActivityList, mapWorkout, readActivityList } from "./client";
+import type { FitbitMappedWorkout } from "./client";
+import { getValidToken, handleCollectionFetchError } from "./sync-core";
+import type { FitbitResourceSyncOptions } from "./sync-core";
 import { prisma } from "@/lib/db";
 import { emitInsertedWorkoutArrival } from "@/lib/arrivals/workout-emit";
 import { annotate, getEvent } from "@/lib/logging/context";

@@ -29,7 +29,7 @@ vi.mock("../client", async (importOriginal) => {
   };
 });
 
-vi.mock("../sync", () => ({
+vi.mock("../sync-core", () => ({
   getValidToken: vi.fn(async () => ({
     accessToken: "token",
     connection: { id: "c1", googleUserId: "g1" },

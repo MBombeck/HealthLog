@@ -39,7 +39,7 @@ export const GET = apiHandler(async () => {
     },
   });
 
-  if (!connection) {
+  if (!connection?.whoopUserId) {
     return apiSuccess({ connected: false, configured });
   }
 

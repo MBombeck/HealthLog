@@ -1,10 +1,10 @@
 /**
  * `GET /api/insights/targets` response builder.
  *
- * Extracted from the route handler (v1.18.6) so the ~1.4k-line domain
- * function lives under `src/lib/targets/` next to the other targets
- * helpers and can be unit-tested without the route shell. The route is
- * now auth → `cachedSwr(buildTargetsResponse)` → `apiSuccess`.
+ * Owns the bounded repository fan-out and public response composition. Pure
+ * section builders live beside this module so timezone, classification, and
+ * ordering rules can be tested without the route or database shell. The route
+ * remains auth → `cachedSwr(buildTargetsResponse)` → `apiSuccess`.
  *
  * Every per-day bucket key resolves against the user's display timezone
  * (`userDayKey`) so streaks, "last met goal", and the consistency strip
@@ -12,48 +12,23 @@
  */
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
-import {
-  classifyBMI,
-  classifyBP,
-  classifySleepDuration,
-  classifyBodyFat,
-  classifySteps,
-  getWeightRange,
-  getSleepDurationRange,
-  getStepsRange,
-  getBpTargetsByAge,
-} from "@/lib/analytics/classifications";
-import {
-  buildComplianceMedicationContext,
-  calculateCompliance,
-  lastNonSkippedTakenAt,
-  SCHEDULE_COMPLIANCE_SELECT,
-} from "@/lib/analytics/compliance";
-import { pairByTimestamp } from "@/lib/analytics/correlations";
-import {
-  reconstructSleepNights,
-  type SleepStageRow,
-} from "@/lib/analytics/sleep-night";
-import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
-import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
-import {
-  classifyPulseByTarget,
-  getPersonalizedPulseTarget,
-} from "@/lib/analytics/pulse-targets";
-import { resolveRestingPulseSeries } from "@/lib/analytics/resting-pulse";
+import { SCHEDULE_COMPLIANCE_SELECT } from "@/lib/analytics/compliance";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import pLimit from "p-limit";
-import type {
-  MeasurementType,
-  GlucoseContext,
-} from "@/generated/prisma/client";
+import type { MeasurementType } from "@/generated/prisma/client";
 import type { ThresholdOverridesJson } from "@/lib/analytics/effective-range";
-import { getBodyFatTargetRange } from "@/lib/analytics/value-bands";
 import { resolveGlucoseUnit } from "@/lib/glucose";
-import { resolveGlucoseTarget } from "@/lib/targets/glucose-targets";
 import {
   ensureUserMoodRollupsFresh,
   readMoodDayRollups,
 } from "@/lib/rollups/mood-rollups";
+import { buildGlucoseTargets } from "./glucose-builder";
+import { buildMedicationTarget } from "./medication-builder";
+import { buildMoodTargets } from "./mood-builder";
+import { buildSleepTarget } from "./sleep-builder";
+import { buildTargetPageSummary } from "./summary-builder";
+import { buildVitalTargets } from "./vitals-builder";
+import type { TargetItem, TargetMoodEntry, TargetValueByType } from "./types";
 
 import type { User } from "@/generated/prisma/client";
 
@@ -70,64 +45,6 @@ function getAge(dateOfBirth: Date): number {
   return age;
 }
 
-interface TargetItem {
-  type: string;
-  label: string;
-  current: number | null;
-  average30: number | null;
-  trend: "up" | "down" | "stable" | null;
-  unit: string;
-  range: { min: number; max: number } | null;
-  classification: { category: string; color: string } | null;
-  source: string;
-  /**
-   * v1.4.25 W3e — consistency strip support. Berlin-tz day buckets over
-   * the last 7 days. `daysInRange7d` is the count of days whose mean
-   * reading landed inside the target's green band; `daysLogged7d` is
-   * how many of those days had at least one reading (so the strip can
-   * render filled / hollow / dimmed dots without ambiguity).
-   *
-   * `lastMetGoalAt` is the most recent Berlin-tz day whose mean reading
-   * was in the green band (ISO date YYYY-MM-DD), or null if the user
-   * has not hit goal in the last 30 days.
-   *
-   * `streakDays` is the count of consecutive Berlin days ending today
-   * where the day's mean was in the green band. Capped at 365.
-   *
-   * `insufficientData` is true when the target has fewer than 3
-   * readings over the last 30 days OR fewer than 1 day of data in the
-   * last 7 days. The page hides the strip + percentage when this is
-   * true.
-   */
-  daysInRange7d: number;
-  daysLogged7d: number;
-  daysInRange30d: number;
-  daysLogged30d: number;
-  lastMetGoalAt: string | null;
-  streakDays: number;
-  insufficientData: boolean;
-  /**
-   * v1.4.25 W3e — per-day classification of the last 7 Berlin-tz days
-   * for the consistency strip. Index 0 is six days ago, index 6 is
-   * today. `null` slots represent days with no readings; non-null
-   * slots represent days whose mean reading landed in the named band.
-   */
-  consistency7d: ReadonlyArray<"in" | "near" | "out" | null>;
-  details?: {
-    medications?: Array<{
-      name: string;
-      compliance7: number;
-      compliance30: number;
-    }>;
-  };
-}
-
-interface TargetPageSummary {
-  targetsMetThisWeek: number;
-  totalTargets: number;
-  streakHighlight: { metric: string; days: number } | null;
-}
-
 /**
  * The authenticated-user shape the builder reads directly. The profile
  * fields (height / dob / gender / glucose unit / thresholds) are re-read
@@ -142,60 +59,28 @@ export type AuthedUser = Pick<User, "id" | "timezone">;
  */
 export async function buildTargetsResponse(user: AuthedUser) {
   const userId = user.id;
-
-  // v1.4.25 W7b — every per-day bucket key in this route resolves
-  // against the user's display timezone so a Pacific/Auckland user gets
-  // their Auckland-day streaks, their Auckland-day "last met goal" date,
-  // and their Auckland-day consistency strip. Falls back to
-  // Europe/Berlin when the column is somehow missing (defensive — the
-  // schema's NOT NULL default normally pins it).
-  const userTz = user.timezone ?? DEFAULT_TIMEZONE;
-  const dayKey = (d: Date): string => userDayKey(d, userTz);
-
-  // Fetch latest measurements for each type
-  // v1.11.5 — SLEEP_DURATION is handled by a dedicated per-night
-  // reconstruction read below (the generic per-type average treats each
-  // stage row as an independent reading and would inflate the night total),
-  // so it is intentionally excluded from this generic set.
+  const timezone = user.timezone ?? DEFAULT_TIMEZONE;
+  const queryNow = new Date();
   const types: MeasurementType[] = [
     "WEIGHT",
     "BLOOD_PRESSURE_SYS",
     "BLOOD_PRESSURE_DIA",
     "PULSE",
-    // v1.15.12 A2 — the "Resting pulse" tile scores RESTING_HEART_RATE
-    // (Apple's clean daily resting figure) against the resting band,
-    // falling back to a low-percentile PULSE proxy. Pull the resting rows
-    // alongside so the consistency strip uses resting data, not raw HR
-    // polluted by workout samples.
     "RESTING_HEART_RATE",
     "BODY_FAT",
     "ACTIVITY_STEPS",
   ];
+  const thirtyDaysAgo = new Date(queryNow.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const oneYearAgo = new Date(queryNow.getTime() - 365 * 24 * 60 * 60 * 1000);
+  const moodSince = new Date(
+    queryNow.getTime() - 5 * 365 * 24 * 60 * 60 * 1000,
+  );
 
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
-
-  // Mood-rollup warm-up fires before the parallel read below so a legacy
-  // account converges onto the rollup tier on a subsequent request; the
-  // read itself never blocks on the warm-up (fire-and-forget).
   void ensureUserMoodRollupsFresh(userId);
-  // Five-year window mirrors `/api/mood/analytics` so existing rollup
-  // coverage is consulted; the trailing 30-day filter happens in JS
-  // because the consistency strip already walks per-day buckets.
-  const moodRollupWindowMs = 5 * 365 * 24 * 60 * 60 * 1000;
-  const moodSince = new Date(Date.now() - moodRollupWindowMs);
 
-  // v1.16.8 — ONE parallel round of every independent read. The cold
-  // build used to await eight queries strictly in sequence (profile →
-  // measurements → latest-per-type → sleep → medications → intakes →
-  // mood → glucose), stacking their round-trip latencies into the >1 s
-  // wall-clock the production trace showed. All of them are independent
-  // (the intake read depends only on the medication ids, so the pair
-  // chains inside its own slot); fan them out together and the cold
-  // build pays roughly the slowest query instead of the sum. The
-  // fan-out is bounded by the project's `p-limit(4)` discipline (parity
-  // with the derived batch route) so one cold build never claims eight
-  // connections from the shared Prisma pool at once.
+  // All independent reads stay in one bounded fan-out. The medication event
+  // read is the sole dependent query and remains chained to its medication
+  // list inside one concurrency slot.
   const limit = pLimit(4);
   const [
     dbUser,
@@ -207,7 +92,6 @@ export async function buildTargetsResponse(user: AuthedUser) {
     latestMoodEntry,
     glucoseRows,
   ] = await Promise.all([
-    // User profile (height / age / gender / thresholds / source priority).
     limit(() =>
       prisma.user.findUnique({
         where: { id: userId },
@@ -216,20 +100,12 @@ export async function buildTargetsResponse(user: AuthedUser) {
           dateOfBirth: true,
           gender: true,
           glucoseUnit: true,
-          // v1.18.6 — diabetes opt-in selects the tighter ADA glycemic goal
-          // band for glucose targets (resolved below via resolveGlucoseTarget).
           hasDiabetes: true,
           thresholdsJson: true,
-          // v1.11.5 — needed to collapse a dual-source sleep night to one
-          // canonical source before reconstructing per-night asleep totals.
           sourcePriorityJson: true,
         },
       }),
     ),
-    // All measurements in the last 30 days for the generic type set.
-    // Soft-delete filter mirrors the W-DELETED pattern: tombstoned rows
-    // must not contribute to tile averages / latest values once iOS sync
-    // starts emitting deletions.
     limit(() =>
       prisma.measurement.findMany({
         where: {
@@ -242,29 +118,15 @@ export async function buildTargetsResponse(user: AuthedUser) {
         select: { type: true, value: true, measuredAt: true },
       }),
     ),
-    // Absolute latest measurement per type within a one-year floor.
-    //
-    // Prisma's `distinct` does not compile to Postgres `DISTINCT ON` — the
-    // driver dedups after pulling the rows, so even with the 365-day floor
-    // a dense-type tenant (per-sample PULSE, hourly HR buckets) shipped a
-    // year of raw rows back to Node only to drop all but seven (audit
-    // Critical Finding #2, v1.4.40 flagged the unbounded variant; the
-    // bounded one stayed O(rows-in-year)). Real `DISTINCT ON` resolves it
-    // index-side: one row per type, ordered walk over the existing
-    // `(user_id, type, measured_at)` index. The 365-day floor keeps its
-    // documented product semantics — a metric not measured in over a year
-    // reads `current: null` instead of pulling a stale reading forward.
     limit(() => {
-      // Whitelist-splice: `types` is the closed compile-time enum list
-      // above; assert each member against the enum-literal shape before
-      // splicing (same pattern as the rollup aggregates in
-      // `measurement-rollups.ts`). user id + date bind as $1 / $2.
-      for (const t of types) {
-        if (!/^[A-Z0-9_]+$/.test(t)) {
-          throw new Error(`invalid measurement type: ${t}`);
+      for (const type of types) {
+        if (!/^[A-Z0-9_]+$/.test(type)) {
+          throw new Error(`invalid measurement type: ${type}`);
         }
       }
-      const typeList = types.map((t) => `'${t}'::"measurement_type"`).join(",");
+      const typeList = types
+        .map((type) => `'${type}'::"measurement_type"`)
+        .join(",");
       return prisma.$queryRawUnsafe<
         Array<{ type: MeasurementType; value: number }>
       >(
@@ -281,7 +143,6 @@ export async function buildTargetsResponse(user: AuthedUser) {
         oneYearAgo,
       );
     }),
-    // Sleep stage rows for the per-night reconstruction (section 4).
     limit(() =>
       prisma.measurement.findMany({
         where: {
@@ -291,8 +152,6 @@ export async function buildTargetsResponse(user: AuthedUser) {
           deletedAt: null,
         },
         orderBy: { measuredAt: "asc" },
-        // Writer-level collapse: two HealthKit apps behind one source (watch
-        // stages vs phone in-bed) must not blend into one night.
         select: {
           value: true,
           measuredAt: true,
@@ -302,21 +161,12 @@ export async function buildTargetsResponse(user: AuthedUser) {
         },
       }),
     ),
-    // Active medications + their 30-day intake events (section 8). The
-    // intake read depends on the medication ids, so the pair chains
-    // inside this slot while riding the outer fan-out.
     limit(async () => {
       const activeMedications = await prisma.medication.findMany({
-        // v1.16.11 — as-needed (PRN) medications never surface a
-        // compliance rate (no expected doses).
         where: { userId, active: true, asNeeded: false },
-        // v1.15.20 — schedules through the shared compliance select so the
-        // configured per-dose windows reach this surface like every other.
         include: {
           schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
-          // v1.16.3 — archived schedule eras for era-aware compliance.
           scheduleRevisions: { orderBy: { validFrom: "asc" } },
-          // v1.25 H-MED1 — pause eras so paused days drop out of the denominator.
           pauseEras: { select: { pausedAt: true, resumedAt: true } },
         },
         orderBy: { name: "asc" },
@@ -327,7 +177,6 @@ export async function buildTargetsResponse(user: AuthedUser) {
       const intakeEvents = await prisma.medicationIntakeEvent.findMany({
         where: {
           userId,
-          // v1.7.0 sync — exclude tombstoned rows.
           deletedAt: null,
           medicationId: {
             in: activeMedications.map((medication) => medication.id),
@@ -344,22 +193,14 @@ export async function buildTargetsResponse(user: AuthedUser) {
       });
       return { activeMedications, intakeEvents };
     }),
-    // Mood day rollups (section 9).
     limit(() => readMoodDayRollups(userId, moodSince)),
-    // Latest raw mood entry — bounded `take: 1` via the index.
     limit(() =>
       prisma.moodEntry.findFirst({
-        // v1.7.0 sync — exclude tombstoned rows.
         where: { userId, deletedAt: null },
         orderBy: { moodLoggedAt: "desc" },
         select: { score: true, moodLoggedAt: true },
       }),
     ),
-    // Glucose rows (section 10). Same one-year floor as the
-    // latest-per-type read above — the previous unbounded scan pulled a
-    // heavy logger's full history back to Node on every cold build; a
-    // context whose newest reading is over a year old now reports no
-    // card, matching the per-type tile posture.
     limit(() =>
       prisma.measurement.findMany({
         where: {
@@ -374,947 +215,12 @@ export async function buildTargetsResponse(user: AuthedUser) {
     ),
   ]);
 
-  const age = dbUser?.dateOfBirth ? getAge(new Date(dbUser.dateOfBirth)) : null;
-  const gender = (dbUser?.gender as "MALE" | "FEMALE" | null) ?? null;
-  const heightCm = dbUser?.heightCm ?? null;
-
-  const latestByType: Record<string, number | null> = {};
-  const avg30ByType: Record<string, number | null> = {};
-
-  for (const t of types) {
-    const latest = latestEverByType.find((row) => row.type === t);
-    latestByType[t] = latest?.value ?? null;
-
-    const recentOfType = recentMeasurements.filter((m) => m.type === t);
-    if (recentOfType.length > 0) {
-      const sum = recentOfType.reduce((acc, m) => acc + m.value, 0);
-      avg30ByType[t] = Math.round((sum / recentOfType.length) * 10) / 10;
-    } else {
-      avg30ByType[t] = null;
-    }
-  }
-
-  // Compute trend (compare first half of 30-day data to second half)
-  function computeTrend(
-    type: MeasurementType,
-  ): "up" | "down" | "stable" | null {
-    const data = recentMeasurements
-      .filter((m) => m.type === type)
-      .sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime());
-    if (data.length < 4) return null;
-
-    const mid = Math.floor(data.length / 2);
-    const firstHalf = data.slice(0, mid);
-    const secondHalf = data.slice(mid);
-
-    const avgFirst =
-      firstHalf.reduce((s, m) => s + m.value, 0) / firstHalf.length;
-    const avgSecond =
-      secondHalf.reduce((s, m) => s + m.value, 0) / secondHalf.length;
-
-    const diff = avgSecond - avgFirst;
-    const threshold = avgFirst * 0.02; // 2% change threshold
-
-    if (diff > threshold) return "up";
-    if (diff < -threshold) return "down";
-    return "stable";
-  }
-
-  // --------------------------------------------------------------------
-  // v1.4.25 W3e — consistency helper. Buckets readings by Berlin-tz day
-  // and classifies each day's mean against the target's green band.
-  // Single helper shared by every target type so the rule stays stable
-  // (mean reading per day → in-range / near-range / out-of-range).
-  // --------------------------------------------------------------------
-  const last7DayKeys: string[] = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-    last7DayKeys.push(dayKey(d));
-  }
-
-  type DayBand = "in" | "near" | "out";
-
-  interface ConsistencyOutput {
-    daysInRange7d: number;
-    daysLogged7d: number;
-    daysInRange30d: number;
-    daysLogged30d: number;
-    lastMetGoalAt: string | null;
-    streakDays: number;
-    insufficientData: boolean;
-    consistency7d: ReadonlyArray<DayBand | null>;
-  }
-
-  const EMPTY_CONSISTENCY: ConsistencyOutput = {
-    daysInRange7d: 0,
-    daysLogged7d: 0,
-    daysInRange30d: 0,
-    daysLogged30d: 0,
-    lastMetGoalAt: null,
-    streakDays: 0,
-    insufficientData: true,
-    consistency7d: [null, null, null, null, null, null, null] as const,
-  };
-
-  /**
-   * Bucket a series of `{ measuredAt, value }` events by Berlin-tz day,
-   * classify each day's mean against the target band, and roll up the
-   * 7-day strip + 30-day stats + recency + streak.
-   *
-   * `classify(meanValue)` returns the band the day's mean falls into.
-   * Pass `null` to mean "no band — skip this day for classification".
-   */
-  function rollupConsistency(
-    events: ReadonlyArray<{ measuredAt: Date; value: number }>,
-    classify: (mean: number) => DayBand | null,
-    totalReadingsThreshold = 3,
-  ): ConsistencyOutput {
-    if (events.length < totalReadingsThreshold) {
-      // Cold-start path. Still emit the per-day strip if we have any
-      // recent readings, but mark insufficient so the UI hides the %.
-      const partial = computeStrip(events, classify);
-      return {
-        ...EMPTY_CONSISTENCY,
-        consistency7d: partial.consistency7d,
-        daysLogged7d: partial.daysLogged7d,
-        daysInRange7d: partial.daysInRange7d,
-        insufficientData: true,
-      };
-    }
-
-    const byDay = new Map<string, { sum: number; count: number }>();
-    for (const ev of events) {
-      const day = dayKey(ev.measuredAt);
-      const bucket = byDay.get(day) ?? { sum: 0, count: 0 };
-      bucket.sum += ev.value;
-      bucket.count += 1;
-      byDay.set(day, bucket);
-    }
-
-    const stripPart = computeStrip(events, classify);
-
-    // 30-day stats: walk the last 30 Berlin-tz day keys.
-    let daysInRange30d = 0;
-    let daysLogged30d = 0;
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-      const key = dayKey(d);
-      const bucket = byDay.get(key);
-      if (!bucket) continue;
-      daysLogged30d += 1;
-      const mean = bucket.sum / bucket.count;
-      if (classify(mean) === "in") daysInRange30d += 1;
-    }
-
-    // lastMetGoalAt: walk back from today until a day is in range.
-    let lastMetGoalAt: string | null = null;
-    for (let i = 0; i < 30; i++) {
-      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-      const key = dayKey(d);
-      const bucket = byDay.get(key);
-      if (!bucket) continue;
-      const mean = bucket.sum / bucket.count;
-      if (classify(mean) === "in") {
-        lastMetGoalAt = key;
-        break;
-      }
-    }
-
-    // streakDays: consecutive days ending today that are in-range. A
-    // day with no reading breaks the streak (the user did not meet the
-    // goal that day, even if today is in-range).
-    let streakDays = 0;
-    for (let i = 0; i < 365; i++) {
-      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-      const key = dayKey(d);
-      const bucket = byDay.get(key);
-      if (!bucket) break;
-      const mean = bucket.sum / bucket.count;
-      if (classify(mean) !== "in") break;
-      streakDays += 1;
-    }
-
-    // insufficientData: < 3 readings total OR < 1 day in the last 7.
-    const insufficientData =
-      events.length < totalReadingsThreshold || stripPart.daysLogged7d < 1;
-
-    return {
-      daysInRange7d: stripPart.daysInRange7d,
-      daysLogged7d: stripPart.daysLogged7d,
-      daysInRange30d,
-      daysLogged30d,
-      lastMetGoalAt,
-      streakDays,
-      insufficientData,
-      consistency7d: stripPart.consistency7d,
-    };
-  }
-
-  function computeStrip(
-    events: ReadonlyArray<{ measuredAt: Date; value: number }>,
-    classify: (mean: number) => DayBand | null,
-  ): {
-    consistency7d: ReadonlyArray<DayBand | null>;
-    daysInRange7d: number;
-    daysLogged7d: number;
-  } {
-    const byDay = new Map<string, { sum: number; count: number }>();
-    for (const ev of events) {
-      const day = dayKey(ev.measuredAt);
-      const bucket = byDay.get(day) ?? { sum: 0, count: 0 };
-      bucket.sum += ev.value;
-      bucket.count += 1;
-      byDay.set(day, bucket);
-    }
-    const strip: Array<DayBand | null> = [];
-    let daysInRange7d = 0;
-    let daysLogged7d = 0;
-    for (const key of last7DayKeys) {
-      const bucket = byDay.get(key);
-      if (!bucket) {
-        strip.push(null);
-        continue;
-      }
-      daysLogged7d += 1;
-      const mean = bucket.sum / bucket.count;
-      const band = classify(mean);
-      strip.push(band);
-      if (band === "in") daysInRange7d += 1;
-    }
-    return { consistency7d: strip, daysInRange7d, daysLogged7d };
-  }
-
-  /**
-   * Helper: classify a value against a target range with an orange band
-   * symmetrical to the green band (the same heuristic RangeBar uses
-   * client-side). When `min`/`max` is null we treat the input as
-   * unclassifiable and return null.
-   */
-  function makeRangeClassifier(
-    range: { min: number; max: number } | null,
-    options?: { orangeMin?: number; orangeMax?: number },
-  ): (mean: number) => DayBand | null {
-    if (!range) return () => null;
-    const span = range.max - range.min;
-    const orangeMin = options?.orangeMin ?? range.min - span * 0.3;
-    const orangeMax = options?.orangeMax ?? range.max + span * 0.3;
-    return (mean: number) => {
-      if (mean >= range.min && mean <= range.max) return "in";
-      if (mean >= orangeMin && mean <= orangeMax) return "near";
-      return "out";
-    };
-  }
-
-  /**
-   * Per-day BP-in-target classifier: a day is "in" if every BP pair on
-   * that day (sys+dia matched within 5 min) passes `isBpReadingInTarget`.
-   * "near" if at least one pair passes; "out" otherwise.
-   *
-   * Returns a function (day-key, dayEvents) → band. We pre-compute the
-   * by-day map once because the route already paginates BP twice (sys
-   * + dia) and we want to avoid quadratic work.
-   */
-  function buildBpPairsByDay(): Map<string, DayBand | null> {
-    if (!bpRange) return new Map();
-    const sysByDay = new Map<string, Array<{ date: Date; value: number }>>();
-    const diaByDay = new Map<string, Array<{ date: Date; value: number }>>();
-    for (const m of recentMeasurements) {
-      if (m.type === "BLOOD_PRESSURE_SYS") {
-        const k = dayKey(m.measuredAt);
-        const arr = sysByDay.get(k) ?? [];
-        arr.push({ date: m.measuredAt, value: m.value });
-        sysByDay.set(k, arr);
-      } else if (m.type === "BLOOD_PRESSURE_DIA") {
-        const k = dayKey(m.measuredAt);
-        const arr = diaByDay.get(k) ?? [];
-        arr.push({ date: m.measuredAt, value: m.value });
-        diaByDay.set(k, arr);
-      }
-    }
-    const out = new Map<string, DayBand | null>();
-    const allKeys = new Set([...sysByDay.keys(), ...diaByDay.keys()]);
-    for (const key of allKeys) {
-      const sys = sysByDay.get(key) ?? [];
-      const dia = diaByDay.get(key) ?? [];
-      const pairs = pairByTimestamp(sys, dia, 5 * 60 * 1000);
-      if (pairs.length === 0) {
-        out.set(key, null);
-        continue;
-      }
-      const inCount = pairs.filter((p) =>
-        isBpReadingInTarget(p.a, p.b, bpRange),
-      ).length;
-      if (inCount === pairs.length) out.set(key, "in");
-      else if (inCount > 0) out.set(key, "near");
-      else out.set(key, "out");
-    }
-    return out;
-  }
-
-  // We need bpRange before the per-target loop runs so the helpers above
-  // can use it; reorder the local so it's available.
-  const bpRange = age != null ? getBpTargetsByAge(age, gender) : null;
-
-  /**
-   * Roll up consistency for a target whose bands come from a pre-mapped
-   * `dayBandByKey` map (used for BP-in-target and medication compliance
-   * which have day-level classification rather than mean-classification).
-   */
-  function rollupFromDayMap(
-    dayBandByKey: Map<string, DayBand | null>,
-    totalDaysThreshold = 3,
-  ): ConsistencyOutput {
-    const loggedKeys = Array.from(dayBandByKey.entries()).filter(
-      ([, v]) => v !== null,
-    );
-    if (loggedKeys.length < totalDaysThreshold) {
-      // Cold-start: still emit the strip.
-      const strip: Array<DayBand | null> = last7DayKeys.map(
-        (k) => dayBandByKey.get(k) ?? null,
-      );
-      const daysLogged7d = strip.filter((b) => b !== null).length;
-      const daysInRange7d = strip.filter((b) => b === "in").length;
-      return {
-        ...EMPTY_CONSISTENCY,
-        consistency7d: strip,
-        daysLogged7d,
-        daysInRange7d,
-        insufficientData: true,
-      };
-    }
-
-    const strip: Array<DayBand | null> = last7DayKeys.map(
-      (k) => dayBandByKey.get(k) ?? null,
-    );
-    const daysLogged7d = strip.filter((b) => b !== null).length;
-    const daysInRange7d = strip.filter((b) => b === "in").length;
-
-    let daysInRange30d = 0;
-    let daysLogged30d = 0;
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-      const key = dayKey(d);
-      const band = dayBandByKey.get(key);
-      if (!band) continue;
-      daysLogged30d += 1;
-      if (band === "in") daysInRange30d += 1;
-    }
-
-    let lastMetGoalAt: string | null = null;
-    for (let i = 0; i < 30; i++) {
-      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-      const key = dayKey(d);
-      if (dayBandByKey.get(key) === "in") {
-        lastMetGoalAt = key;
-        break;
-      }
-    }
-
-    let streakDays = 0;
-    for (let i = 0; i < 365; i++) {
-      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-      const key = dayKey(d);
-      const band = dayBandByKey.get(key);
-      if (band === undefined || band === null) break;
-      if (band !== "in") break;
-      streakDays += 1;
-    }
-
-    return {
-      daysInRange7d,
-      daysLogged7d,
-      daysInRange30d,
-      daysLogged30d,
-      lastMetGoalAt,
-      streakDays,
-      insufficientData: loggedKeys.length < totalDaysThreshold,
-      consistency7d: strip,
-    };
-  }
-
-  // Memo: pre-compute the BP-pairs day map once.
-  const bpPairsByDay = buildBpPairsByDay();
-
-  // Build target items
-  const targets: TargetItem[] = [];
-
-  // 1. Weight
-  const weightRange = heightCm ? getWeightRange(heightCm) : null;
-  let weightClassification: { category: string; color: string } | null = null;
-  if (latestByType.WEIGHT != null && heightCm) {
-    const heightM = heightCm / 100;
-    const bmi = latestByType.WEIGHT / (heightM * heightM);
-    const cls = classifyBMI(bmi);
-    weightClassification = { category: cls.category, color: cls.color };
-  }
-  {
-    const consistency = rollupConsistency(
-      recentMeasurements.filter((m) => m.type === "WEIGHT"),
-      makeRangeClassifier(weightRange),
-    );
-    targets.push({
-      type: "WEIGHT",
-      label: "Weight",
-      current: latestByType.WEIGHT ?? null,
-      average30: avg30ByType.WEIGHT ?? null,
-      trend: computeTrend("WEIGHT"),
-      unit: "kg",
-      range: weightRange,
-      classification: weightClassification,
-      source: "WHO BMI",
-      ...consistency,
-    });
-  }
-
-  // 2. Blood Pressure (sys/dia combined)
-  // `bpRange` is hoisted to the helpers block above so the BP-pairs
-  // day-map can use it; do not redeclare here.
-  let bpClassification: { category: string; color: string } | null = null;
-  if (
-    latestByType.BLOOD_PRESSURE_SYS != null &&
-    latestByType.BLOOD_PRESSURE_DIA != null
-  ) {
-    const cls = classifyBP(
-      latestByType.BLOOD_PRESSURE_SYS,
-      latestByType.BLOOD_PRESSURE_DIA,
-    );
-    bpClassification = { category: cls.category, color: cls.color };
-  }
-  {
-    // Per-day BP classifier reuses the sys+dia paired classifier from
-    // `bpPairsByDay`. This is the right semantic for "in target band"
-    // because a systolic in range with a diastolic out of range is
-    // still an out-of-target reading.
-    const consistency = rollupFromDayMap(bpPairsByDay);
-    targets.push({
-      type: "BLOOD_PRESSURE",
-      label: "Blood pressure",
-      current: latestByType.BLOOD_PRESSURE_SYS ?? null,
-      average30: avg30ByType.BLOOD_PRESSURE_SYS ?? null,
-      trend: computeTrend("BLOOD_PRESSURE_SYS"),
-      unit: "mmHg",
-      range: bpRange ? { min: bpRange.sysLow, max: bpRange.sysHigh } : null,
-      classification: bpClassification,
-      source: "ESH 2023",
-      ...consistency,
-      // Extra fields for diastolic
-    } as TargetItem);
-  }
-
-  // 2b. Blood pressure target-hit rate over 30 days
-  if (bpRange) {
-    const sysPoints = recentMeasurements
-      .filter((measurement) => measurement.type === "BLOOD_PRESSURE_SYS")
-      .map((measurement) => ({
-        date: measurement.measuredAt,
-        value: measurement.value,
-      }));
-    const diaPoints = recentMeasurements
-      .filter((measurement) => measurement.type === "BLOOD_PRESSURE_DIA")
-      .map((measurement) => ({
-        date: measurement.measuredAt,
-        value: measurement.value,
-      }));
-
-    const bpPairs = pairByTimestamp(sysPoints, diaPoints, 5 * 60 * 1000);
-    // v1.4.16 A2 — one-sided ceiling semantics with hypotension
-    // floor. See lib/analytics/bp-in-target.ts.
-    const bpInTargetCount = bpPairs.filter((pair) =>
-      isBpReadingInTarget(pair.a, pair.b, bpRange),
-    ).length;
-    const bpInTargetRate =
-      bpPairs.length > 0
-        ? Math.round((bpInTargetCount / bpPairs.length) * 100 * 10) / 10
-        : null;
-
-    // BP-in-target consistency mirrors the BP pair-by-day map above:
-    // a day is "in" when every pair on that day clears the BP target.
-    const inTargetConsistency = rollupFromDayMap(bpPairsByDay);
-    targets.push({
-      type: "BLOOD_PRESSURE_IN_TARGET",
-      label: "Blood pressure on target",
-      current: bpInTargetRate,
-      average30: bpInTargetRate,
-      trend: null,
-      unit: "%",
-      range: { min: 70, max: 100 },
-      classification:
-        bpInTargetRate != null
-          ? bpInTargetRate >= 70
-            ? { category: "Good", color: "var(--success)" }
-            : bpInTargetRate >= 40
-              ? { category: "Moderate", color: "var(--dracula-yellow)" }
-              : { category: "Low", color: "var(--destructive)" }
-          : null,
-      source: "ESH 2023",
-      ...inTargetConsistency,
-    });
-  }
-
-  // 3. Resting pulse
-  //
-  // v1.15.12 A2 — judge the RESTING band against a RESTING series, not
-  // the raw PULSE stream (which Apple Health fills with workout HR). We
-  // prefer RESTING_HEART_RATE; when the user has none we fall back to a
-  // low-percentile-of-daily-PULSE proxy. The resting series drives the
-  // tile's current / average / consistency / classification so a workout
-  // burst no longer reads "outside target".
-  const pulseTarget = getPersonalizedPulseTarget(age, gender);
-  {
-    const restingResolved = resolveRestingPulseSeries({
-      restingSamples: recentMeasurements
-        .filter((m) => m.type === "RESTING_HEART_RATE")
-        .map((m) => ({ measuredAt: m.measuredAt, value: m.value })),
-      pulseSamples: recentMeasurements
-        .filter((m) => m.type === "PULSE")
-        .map((m) => ({ measuredAt: m.measuredAt, value: m.value })),
-      dayKeyOf: dayKey,
-    });
-    const restingEvents = restingResolved.series;
-    // Current = most recent resting value; average30 = resting mean.
-    const restingCurrent =
-      restingEvents.length > 0
-        ? restingEvents[restingEvents.length - 1].value
-        : null;
-    const restingAvg30 =
-      restingEvents.length > 0
-        ? Math.round(
-            (restingEvents.reduce((s, e) => s + e.value, 0) /
-              restingEvents.length) *
-              10,
-          ) / 10
-        : null;
-
-    let pulseClassification: { category: string; color: string } | null = null;
-    if (restingCurrent != null) {
-      const cls = classifyPulseByTarget(restingCurrent, pulseTarget);
-      pulseClassification = { category: cls.category, color: cls.color };
-    }
-
-    const pulseRange = {
-      min: pulseTarget.greenMin,
-      max: pulseTarget.greenMax,
-    };
-    const consistency = rollupConsistency(
-      restingEvents,
-      makeRangeClassifier(pulseRange, {
-        orangeMin: pulseTarget.orangeMin,
-        orangeMax: pulseTarget.orangeMax,
-      }),
-    );
-    // Trend over the resting series (first-half vs second-half mean).
-    let restingTrend: "up" | "down" | "stable" | null = null;
-    if (restingEvents.length >= 4) {
-      const sorted = [...restingEvents].sort(
-        (a, b) => a.measuredAt.getTime() - b.measuredAt.getTime(),
-      );
-      const mid = Math.floor(sorted.length / 2);
-      const avgFirst =
-        sorted.slice(0, mid).reduce((s, e) => s + e.value, 0) / mid;
-      const avgSecond =
-        sorted.slice(mid).reduce((s, e) => s + e.value, 0) /
-        (sorted.length - mid);
-      const diff = avgSecond - avgFirst;
-      const threshold = avgFirst * 0.02;
-      restingTrend =
-        diff > threshold ? "up" : diff < -threshold ? "down" : "stable";
-    }
-
-    targets.push({
-      type: "PULSE",
-      label: "Resting pulse",
-      current: restingCurrent,
-      average30: restingAvg30,
-      trend: restingTrend,
-      unit: "bpm",
-      range: pulseRange,
-      classification: pulseClassification,
-      source:
-        restingResolved.which === "proxy"
-          ? `${pulseTarget.source} (estimated from heart rate)`
-          : pulseTarget.source,
-      ...consistency,
-    });
-  }
-
-  // 4. Sleep Duration
-  //
-  // v1.11.5 (deferred v1.11.4 QA L3) — SLEEP_DURATION is stored one row per
-  // STAGE per night in MINUTES. The generic per-type path treated every stage
-  // row as an independent reading, summing IN_BED + AWAKE + the bare ASLEEP
-  // aggregate + the granular CORE/DEEP/REM rows over 30 days and dividing by
-  // the row count — and then fed those MINUTES straight into a target range
-  // expressed in HOURS. The result was a bogus ~16 h/day average. Reconstruct
-  // per-night TIME-ASLEEP through the shared helper (which dedups dual-source
-  // nights, excludes IN_BED/AWAKE, and counts only the granular partition when
-  // present), convert to HOURS, then classify and roll up consistency on the
-  // per-night hour totals so this surface matches the dashboard / series /
-  // overview headline.
-  const sleepRange = getSleepDurationRange();
-  {
-    // `sleepStageRows` resolved in the parallel read at the top.
-    const nights = reconstructSleepNights(
-      sleepStageRows as SleepStageRow[],
-      userTz,
-      dbUser?.sourcePriorityJson ?? null,
-    )
-      .filter((n) => n.asleepMinutes > 0)
-      .sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime());
-
-    const round1 = (n: number): number => Math.round(n * 100) / 100;
-    // One event per night carrying the night's asleep HOURS — the right unit
-    // for the 7–9 h target band and for the per-day consistency bucketing.
-    const sleepEvents = nights.map((n) => ({
-      measuredAt: n.measuredAt,
-      value: round1(n.asleepMinutes / 60),
-    }));
-
-    const latestNight = nights.length > 0 ? nights[nights.length - 1] : null;
-    const currentSleepHours = latestNight
-      ? round1(latestNight.asleepMinutes / 60)
-      : null;
-    const avgSleepHours =
-      sleepEvents.length > 0
-        ? round1(
-            sleepEvents.reduce((s, e) => s + e.value, 0) / sleepEvents.length,
-          )
-        : null;
-
-    let sleepClassification: { category: string; color: string } | null = null;
-    if (currentSleepHours != null) {
-      const cls = classifySleepDuration(currentSleepHours);
-      sleepClassification = { category: cls.category, color: cls.color };
-    }
-
-    // Trend over the per-night hour series (first vs second half), mirroring
-    // `computeTrend` but on reconstructed nights rather than raw stage rows.
-    let sleepTrend: "up" | "down" | "stable" | null = null;
-    if (sleepEvents.length >= 4) {
-      const mid = Math.floor(sleepEvents.length / 2);
-      const firstHalf = sleepEvents.slice(0, mid);
-      const secondHalf = sleepEvents.slice(mid);
-      const avgFirst =
-        firstHalf.reduce((s, e) => s + e.value, 0) / firstHalf.length;
-      const avgSecond =
-        secondHalf.reduce((s, e) => s + e.value, 0) / secondHalf.length;
-      const diff = avgSecond - avgFirst;
-      const threshold = avgFirst * 0.02;
-      if (diff > threshold) sleepTrend = "up";
-      else if (diff < -threshold) sleepTrend = "down";
-      else sleepTrend = "stable";
-    }
-
-    const consistency = rollupConsistency(
-      sleepEvents,
-      makeRangeClassifier(sleepRange),
-    );
-    targets.push({
-      type: "SLEEP_DURATION",
-      label: "Sleep duration",
-      current: currentSleepHours,
-      average30: avgSleepHours,
-      trend: sleepTrend,
-      unit: "h",
-      range: sleepRange,
-      classification: sleepClassification,
-      source: "AASM/SRS",
-      ...consistency,
-    });
-  }
-
-  // 5. BMI (derived from weight + height)
-  if (heightCm) {
-    const heightM = heightCm / 100;
-    const heightSq = heightM * heightM;
-    const latestWeight = latestByType.WEIGHT ?? null;
-    const currentBmi =
-      latestWeight != null
-        ? Math.round((latestWeight / heightSq) * 10) / 10
-        : null;
-
-    // Compute 30-day average BMI from average weight
-    const avgWeight = avg30ByType.WEIGHT ?? null;
-    const avgBmi =
-      avgWeight != null ? Math.round((avgWeight / heightSq) * 10) / 10 : null;
-
-    let bmiClassification: { category: string; color: string } | null = null;
-    if (currentBmi != null) {
-      const cls = classifyBMI(currentBmi);
-      bmiClassification = { category: cls.category, color: cls.color };
-    }
-
-    // BMI consistency derives from the weight series: divide each
-    // bucket by height\u00B2 so the day's mean BMI is classified against
-    // the BMI range bar (18.5 \u2014 24.9).
-    const bmiRange = { min: 18.5, max: 24.9 };
-    const bmiEvents = recentMeasurements
-      .filter((m) => m.type === "WEIGHT")
-      .map((m) => ({ measuredAt: m.measuredAt, value: m.value / heightSq }));
-    const consistency = rollupConsistency(
-      bmiEvents,
-      makeRangeClassifier(bmiRange),
-    );
-    targets.push({
-      type: "BMI",
-      label: "BMI",
-      current: currentBmi,
-      average30: avgBmi,
-      trend: computeTrend("WEIGHT"), // BMI trend follows weight trend
-      unit: "kg/m\u00B2",
-      range: bmiRange,
-      classification: bmiClassification,
-      source: "WHO",
-      ...consistency,
-    });
-  }
-
-  // 6. Body Fat
-  let bodyFatClassification: { category: string; color: string } | null = null;
-  if (latestByType.BODY_FAT != null && age != null) {
-    const cls = classifyBodyFat(latestByType.BODY_FAT, gender, age);
-    bodyFatClassification = { category: cls.category, color: cls.color };
-  }
-  // Single source of truth for the body-fat green band lives in
-  // `value-bands.ts`. v1.3.3 had three different hardcoded ranges across
-  // value-bands.ts / targets/route.ts / classifications.ts; the v1.4
-  // marathon consolidated them onto `getBodyFatTargetRange` (ACE
-  // fitness + acceptable bands).
-  const bodyFatRange = age != null ? getBodyFatTargetRange(gender) : null;
-  {
-    const consistency = rollupConsistency(
-      recentMeasurements.filter((m) => m.type === "BODY_FAT"),
-      makeRangeClassifier(bodyFatRange),
-    );
-    targets.push({
-      type: "BODY_FAT",
-      label: "Body fat",
-      current: latestByType.BODY_FAT ?? null,
-      average30: avg30ByType.BODY_FAT ?? null,
-      trend: computeTrend("BODY_FAT"),
-      unit: "%",
-      range: bodyFatRange,
-      classification: bodyFatClassification,
-      source: "ACE",
-      ...consistency,
-    });
-  }
-
-  // 7. Activity Steps
-  const stepsRange = getStepsRange();
-  let stepsClassification: { category: string; color: string } | null = null;
-  if (avg30ByType.ACTIVITY_STEPS != null) {
-    const cls = classifySteps(avg30ByType.ACTIVITY_STEPS);
-    stepsClassification = { category: cls.category, color: cls.color };
-  }
-  {
-    const consistency = rollupConsistency(
-      recentMeasurements.filter((m) => m.type === "ACTIVITY_STEPS"),
-      makeRangeClassifier(stepsRange),
-    );
-    targets.push({
-      type: "ACTIVITY_STEPS",
-      label: "Steps/day",
-      current: latestByType.ACTIVITY_STEPS ?? null,
-      average30: avg30ByType.ACTIVITY_STEPS ?? null,
-      trend: computeTrend("ACTIVITY_STEPS"),
-      unit: "steps",
-      range: stepsRange,
-      classification: stepsClassification,
-      // WHO publishes activity *time* (150–300 min/wk moderate),
-      // not a step quota. The closest peer-reviewed dose-response
-      // for the 8 000–15 000 band is Saint-Maurice JAMA 2020. The
-      // AI prompts at src/lib/ai/prompts/base-system.ts and
-      // src/lib/ai/prompts/general-status.ts already enforce this
-      // attribution; this surface label was the last "WHO" mislabel
-      // in the codebase.
-      source: "Saint-Maurice JAMA 2020",
-      ...consistency,
-    });
-  }
-
-  // 8. Medication Compliance (average across active medications) —
-  // `activeMedications` + their 30-day `intakeEvents` resolved in the
-  // parallel read at the top.
-  const { activeMedications, intakeEvents } = medicationBundle;
-
-  if (activeMedications.length > 0) {
-    const medicationStats = activeMedications.map((medication) => {
-      const medicationEvents = intakeEvents.filter(
-        (event) => event.medicationId === medication.id,
-      );
-      // v1.7.0 SB-SCHED-2 — engine-routed denominator (userTz resolved
-      // above at the route entry).
-      const medicationContext = buildComplianceMedicationContext(
-        medication,
-        lastNonSkippedTakenAt(medicationEvents),
-        userTz,
-      );
-      const compliance7 = calculateCompliance(
-        medicationEvents,
-        medication.schedules,
-        7,
-        medication.createdAt,
-        { medicationContext },
-      );
-      const compliance30 = calculateCompliance(
-        medicationEvents,
-        medication.schedules,
-        30,
-        medication.createdAt,
-        { medicationContext },
-      );
-
-      return {
-        name: medication.name,
-        compliance7: compliance7.rate,
-        compliance30: compliance30.rate,
-        totalExpected7: compliance7.totalExpected,
-        taken7: compliance7.taken,
-        totalExpected30: compliance30.totalExpected,
-        taken30: compliance30.taken,
-      };
-    });
-
-    const totalExpected7 = medicationStats.reduce(
-      (sum, medication) => sum + medication.totalExpected7,
-      0,
-    );
-    const totalTaken7 = medicationStats.reduce(
-      (sum, medication) => sum + medication.taken7,
-      0,
-    );
-    const totalExpected30 = medicationStats.reduce(
-      (sum, medication) => sum + medication.totalExpected30,
-      0,
-    );
-    const totalTaken30 = medicationStats.reduce(
-      (sum, medication) => sum + medication.taken30,
-      0,
-    );
-
-    const complianceRate7 =
-      totalExpected7 > 0
-        ? Math.round(
-            (Math.min(1, totalTaken7 / totalExpected7) * 100 + Number.EPSILON) *
-              10,
-          ) / 10
-        : null;
-    const complianceRate30 =
-      totalExpected30 > 0
-        ? Math.round(
-            (Math.min(1, totalTaken30 / totalExpected30) * 100 +
-              Number.EPSILON) *
-              10,
-          ) / 10
-        : complianceRate7;
-
-    // Per-day compliance: for each Berlin-tz day, classify as "in" if
-    // every scheduled dose that day was taken; "near" if at least one
-    // was taken; "out" if all were skipped/missed; null if there were
-    // no scheduled doses (the user's regimen excluded that day).
-    const dayCountsByKey = new Map<
-      string,
-      { taken: number; expected: number }
-    >();
-    for (const event of intakeEvents) {
-      const key = dayKey(event.scheduledFor);
-      const cur = dayCountsByKey.get(key) ?? { taken: 0, expected: 0 };
-      cur.expected += 1;
-      if (event.takenAt && !event.skipped) cur.taken += 1;
-      dayCountsByKey.set(key, cur);
-    }
-    const dayBandByKey = new Map<string, DayBand | null>();
-    for (const [key, counts] of dayCountsByKey.entries()) {
-      if (counts.expected === 0) {
-        dayBandByKey.set(key, null);
-        continue;
-      }
-      const ratio = counts.taken / counts.expected;
-      if (ratio >= 0.99) dayBandByKey.set(key, "in");
-      else if (ratio >= 0.5) dayBandByKey.set(key, "near");
-      else dayBandByKey.set(key, "out");
-    }
-    const consistency = rollupFromDayMap(dayBandByKey);
-    targets.push({
-      type: "MEDICATION_COMPLIANCE",
-      label: "Medication compliance",
-      current: complianceRate7,
-      average30: complianceRate30,
-      trend: null,
-      unit: "%",
-      range: { min: 90, max: 100 },
-      classification:
-        complianceRate7 != null
-          ? complianceRate7 >= 90
-            ? { category: "Very good", color: "var(--success)" }
-            : complianceRate7 >= 70
-              ? { category: "Good", color: "var(--dracula-yellow)" }
-              : { category: "Low", color: "var(--destructive)" }
-          : null,
-      source: "7-day",
-      details: {
-        medications: medicationStats.map((medication) => ({
-          name: medication.name,
-          compliance7: medication.compliance7,
-          compliance30: medication.compliance30,
-        })),
-      },
-      ...consistency,
-    });
-  }
-
-  // 9. Mood targets (if mood data exists)
-  //
-  // v1.4.40 \u2014 swap the unbounded `prisma.moodEntry.findMany({ where: {
-  // userId } })` for the persistent mood-rollup DAY tier (audit Critical
-  // Finding #2). The tile reads:
-  //   - per-day mean over the trailing 30 days (avg30, trend, stability)
-  //   - the consistency strip (in/near/out band per day)
-  //   - the latest score for the "current" reading + classification
-  //
-  // Rollup row = `{bucketStart, mean, count, minScore, maxScore}` per
-  // calendar day. Per-day mean replaces the per-entry score series the
-  // legacy path passed to `rollupConsistency` \u2014 the helper buckets by
-  // day-key anyway, so feeding one row per day with the pre-computed
-  // mean is mathematically identical to feeding N raw entries that
-  // collapse to the same mean.
-  //
-  // The "latest score" needs a single raw entry (the newest one), so we
-  // pull it with `take: 1` \u2014 bounded by the index, never an unbounded
-  // scan. The "\u2265 3 entries threshold" gate uses the rollup count sum so
-  // the cold-start branch stays consistent with the legacy semantics
-  // (which counted raw entries, not raw days).
-  //
-  // Coverage-fallback: when the user has mood entries but zero rollup
-  // rows yet (legacy account before the boot-time backfill caught up)
-  // we run the legacy live walk once and fire the warm-up so the next
-  // request lands on the rollup tier. Same posture as
-  // `/api/mood/analytics`. The warm-up trigger + the `moodRollups` /
-  // `latestMoodEntry` reads moved into the parallel round at the top.
-  const thirtyDaysAgoMood = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-
-  // Build a per-day event list for the consistency strip + 30-day stats.
-  // Use the rollup tier when populated; fall back to a bounded raw walk
-  // when the user has mood entries but zero rollup coverage yet.
-  let moodDailyEvents: Array<{ measuredAt: Date; value: number }>;
-  let moodEntryCount: number;
-  let moodSumScores: number;
-  let moodVarianceN: number;
-  let moodSumSquares: number;
-  if (moodRollups.length > 0) {
-    moodEntryCount = moodRollups.reduce((s, r) => s + r.count, 0);
-    moodDailyEvents = moodRollups
-      .filter((r) => r.bucketStart >= thirtyDaysAgoMood)
-      .map((r) => ({ measuredAt: r.bucketStart, value: r.mean }));
-    moodSumScores = moodDailyEvents.reduce((s, e) => s + e.value, 0);
-    moodVarianceN = moodDailyEvents.length;
-    moodSumSquares = moodDailyEvents.reduce((s, e) => s + e.value * e.value, 0);
-  } else if (latestMoodEntry !== null) {
-    // Coverage-fallback: rollups empty but raw entries exist. Pull the
-    // trailing 30-day window only (instead of every entry ever) \u2014 that's
-    // the bound the legacy code was missing.
-    const recentRawMood = await prisma.moodEntry.findMany({
-      // v1.7.0 sync — exclude tombstoned rows.
+  // Rollup coverage fallback stays an explicit repository read here rather
+  // than hiding persistence inside the pure mood section builder.
+  let recentRawMood: TargetMoodEntry[] | null = null;
+  if (moodRollups.length === 0 && latestMoodEntry !== null) {
+    const thirtyDaysAgoMood = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    recentRawMood = await prisma.moodEntry.findMany({
       where: {
         userId,
         deletedAt: null,
@@ -1323,252 +229,114 @@ export async function buildTargetsResponse(user: AuthedUser) {
       orderBy: { moodLoggedAt: "asc" },
       select: { score: true, moodLoggedAt: true },
     });
-    moodEntryCount = recentRawMood.length;
-    moodDailyEvents = recentRawMood.map((e) => ({
-      measuredAt: e.moodLoggedAt,
-      value: e.score,
-    }));
-    moodSumScores = recentRawMood.reduce((s, e) => s + e.score, 0);
-    moodVarianceN = recentRawMood.length;
-    moodSumSquares = recentRawMood.reduce((s, e) => s + e.score * e.score, 0);
-  } else {
-    moodEntryCount = 0;
-    moodDailyEvents = [];
-    moodSumScores = 0;
-    moodVarianceN = 0;
-    moodSumSquares = 0;
   }
 
-  if (moodEntryCount >= 3) {
-    const latestMoodScore = latestMoodEntry?.score ?? null;
+  const now = new Date();
 
-    const moodAvg30 =
-      moodDailyEvents.length > 0
-        ? Math.round((moodSumScores / moodDailyEvents.length) * 10) / 10
-        : null;
-
-    // Mood trend: compare first half to second half of last 30 days.
-    // The rollup tier carries one DataPoint per day (the daily mean),
-    // matching the legacy comparison semantics on single-entry days.
-    let moodTrend: "up" | "down" | "stable" | null = null;
-    if (moodDailyEvents.length >= 4) {
-      const sorted = [...moodDailyEvents].sort(
-        (a, b) => a.measuredAt.getTime() - b.measuredAt.getTime(),
-      );
-      const mid = Math.floor(sorted.length / 2);
-      const firstHalf = sorted.slice(0, mid);
-      const secondHalf = sorted.slice(mid);
-      const avgFirst =
-        firstHalf.reduce((s, e) => s + e.value, 0) / firstHalf.length;
-      const avgSecond =
-        secondHalf.reduce((s, e) => s + e.value, 0) / secondHalf.length;
-      const diff = avgSecond - avgFirst;
-      if (diff > 0.2) moodTrend = "up";
-      else if (diff < -0.2) moodTrend = "down";
-      else moodTrend = "stable";
-    }
-
-    const moodClassification =
-      latestMoodScore != null
-        ? latestMoodScore >= 3.5
-          ? { category: "Good", color: "var(--success)" }
-          : latestMoodScore >= 2
-            ? { category: "Moderate", color: "var(--dracula-yellow)" }
-            : { category: "Low", color: "var(--destructive)" }
-        : null;
-
-    const moodRange = { min: 3.5, max: 5 };
-    const moodConsistency = rollupConsistency(
-      moodDailyEvents,
-      makeRangeClassifier(moodRange, { orangeMin: 2, orangeMax: 5 }),
+  const age = dbUser?.dateOfBirth ? getAge(new Date(dbUser.dateOfBirth)) : null;
+  const gender = (dbUser?.gender as "MALE" | "FEMALE" | null) ?? null;
+  const heightCm = dbUser?.heightCm ?? null;
+  const latestByType: TargetValueByType = {};
+  const average30ByType: TargetValueByType = {};
+  for (const type of types) {
+    latestByType[type] =
+      latestEverByType.find((row) => row.type === type)?.value ?? null;
+    const recent = recentMeasurements.filter(
+      (measurement) => measurement.type === type,
     );
-    targets.push({
-      type: "MOOD_SCORE",
-      label: "Mood",
-      current: latestMoodScore,
-      average30: moodAvg30,
-      trend: moodTrend,
-      unit: "/ 5",
-      range: moodRange,
-      classification: moodClassification,
-      source: "moodLog",
-      ...moodConsistency,
-    });
-
-    // Mood stability: standard deviation of the recent series. The
-    // rollup tier surfaces one mean per day, which is the right
-    // resolution for "is the user's mood stable across days" \u2014 a power
-    // user logging multiple times per day with a wide intraday spread
-    // still gets a "stable" badge if the daily mean barely moves. The
-    // legacy path conflated intraday variance with day-to-day stability
-    // by passing per-entry scores; the rollup-tier semantic is closer
-    // to what the UI label suggests.
-    if (moodVarianceN >= 5) {
-      const seriesMean = moodSumScores / moodVarianceN;
-      const variance = moodSumSquares / moodVarianceN - seriesMean * seriesMean;
-      const stdDev = Math.round(Math.sqrt(Math.max(0, variance)) * 100) / 100;
-
-      const stabilityClassification =
-        stdDev <= 0.5
-          ? { category: "Very stable", color: "var(--success)" }
-          : stdDev <= 1.0
-            ? { category: "Stable", color: "var(--dracula-yellow)" }
-            : { category: "Fluctuating", color: "var(--destructive)" };
-
-      // Mood stability is computed from the same recent-mood window;
-      // consistency mirrors MOOD_SCORE so the strip aligns with the
-      // user's logging cadence rather than introducing a synthetic
-      // "\u03C3 in range per day" rule that would be hard to reason about.
-      targets.push({
-        type: "MOOD_STABILITY",
-        label: "Mood stability",
-        current: stdDev,
-        average30: stdDev,
-        trend: null,
-        unit: "\u03C3",
-        range: { min: 0, max: 0.5 },
-        classification: stabilityClassification,
-        source: "moodLog",
-        ...moodConsistency,
-      });
-    }
-  }
-
-  // 10. Blood glucose — one card per logged context.
-  const glucoseContexts: GlucoseContext[] = [
-    "FASTING",
-    "POSTPRANDIAL",
-    "RANDOM",
-    "BEDTIME",
-  ];
-  const glucoseUnit = resolveGlucoseUnit(dbUser?.glucoseUnit ?? null);
-  const overrides = (dbUser?.thresholdsJson ??
-    null) as ThresholdOverridesJson | null;
-  const profileForRange = {
-    heightCm,
-    dateOfBirth: dbUser?.dateOfBirth ?? null,
-    gender: dbUser?.gender ?? null,
-  };
-  // `glucoseRows` resolved (one-year floor) in the parallel read at the top.
-  const thirtyDaysAgoGlucose = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-
-  const labelKeyByContext: Record<GlucoseContext, string> = {
-    FASTING: "targets.glucoseFasting",
-    POSTPRANDIAL: "targets.glucosePostprandial",
-    RANDOM: "targets.glucoseRandom",
-    BEDTIME: "targets.glucoseBedtime",
-  };
-
-  for (const ctx of glucoseContexts) {
-    const ctxRows = glucoseRows.filter((r) => r.glucoseContext === ctx);
-    if (ctxRows.length === 0) continue;
-    const latest = ctxRows[0].value;
-    const recent = ctxRows.filter((r) => r.measuredAt >= thirtyDaysAgoGlucose);
-    const avg30 =
+    average30ByType[type] =
       recent.length > 0
         ? Math.round(
-            (recent.reduce((s, r) => s + r.value, 0) / recent.length) * 10,
+            (recent.reduce((sum, measurement) => sum + measurement.value, 0) /
+              recent.length) *
+              10,
           ) / 10
         : null;
-
-    // v1.18.6 — diabetes-aware target band. When the user has declared
-    // diabetes (and has NOT pinned a custom override) the tighter ADA glycemic
-    // GOAL band wins; otherwise the general non-diabetic band (or the override)
-    // is used exactly as before. The flag is never inferred from a value.
-    const resolved = resolveGlucoseTarget({
-      context: ctx,
-      hasDiabetes: dbUser?.hasDiabetes ?? false,
-      profile: profileForRange,
-      overrides,
-    });
-    const effRange = resolved.range;
-    const range = effRange
-      ? { min: effRange.greenMin, max: effRange.greenMax }
-      : null;
-
-    let classification: { category: string; color: string } | null = null;
-    if (range && effRange) {
-      if (latest >= range.min && latest <= range.max) {
-        classification = { category: "Optimal", color: "var(--success)" };
-      } else if (latest >= effRange.orangeMin && latest <= effRange.orangeMax) {
-        classification = {
-          category: "Elevated",
-          color: "var(--dracula-yellow)",
-        };
-      } else {
-        classification = { category: "High", color: "var(--destructive)" };
-      }
-    }
-
-    const consistency = rollupConsistency(
-      recent.map((r) => ({ measuredAt: r.measuredAt, value: r.value })),
-      makeRangeClassifier(
-        range,
-        effRange
-          ? { orangeMin: effRange.orangeMin, orangeMax: effRange.orangeMax }
-          : undefined,
-      ),
-    );
-    targets.push({
-      type: `BLOOD_GLUCOSE_${ctx}`,
-      label: labelKeyByContext[ctx],
-      current: latest,
-      average30: avg30,
-      trend: null,
-      unit: glucoseUnit,
-      range,
-      classification,
-      source:
-        resolved.source === "custom"
-          ? "Custom"
-          : resolved.source === "ADA goal (diabetes)"
-            ? "ADA goal (diabetes)"
-            : "ADA 2024 / DDG",
-      ...consistency,
-    });
   }
 
-  // --------------------------------------------------------------------
-  // v1.4.25 W3e — page summary. "X of Y targets met this week" is the
-  // single most-asked-about glanceable answer. We define "met this
-  // week" as the target having `daysInRange7d >= 4` AND not flagged as
-  // `insufficientData`. The streak highlight surfaces the metric with
-  // the longest current ≥ 3 day streak; nothing renders client-side
-  // when no target hits the bar.
-  // --------------------------------------------------------------------
-  const targetsMetThisWeek = targets.filter(
-    (target) => !target.insufficientData && target.daysInRange7d >= 4,
-  ).length;
-  let streakHighlight: TargetPageSummary["streakHighlight"] = null;
-  for (const target of targets) {
-    if (target.streakDays < 3) continue;
-    if (!streakHighlight || target.streakDays > streakHighlight.days) {
-      streakHighlight = { metric: target.type, days: target.streakDays };
-    }
-  }
-  const pageSummary: TargetPageSummary = {
-    targetsMetThisWeek,
-    totalTargets: targets.length,
-    streakHighlight,
-  };
+  const vitalSection = buildVitalTargets({
+    recentMeasurements,
+    latestByType,
+    average30ByType,
+    heightCm,
+    age,
+    gender,
+    timezone,
+    now,
+  });
+  const sleepTarget = buildSleepTarget({
+    sleepStageRows,
+    timezone,
+    sourcePriorityJson: dbUser?.sourcePriorityJson ?? null,
+    now,
+  });
+  const pulseIndex = vitalSection.targets.findIndex(
+    (target) => target.type === "PULSE",
+  );
+  const targets: TargetItem[] = [
+    ...vitalSection.targets.slice(0, pulseIndex + 1),
+    sleepTarget,
+    ...vitalSection.targets.slice(pulseIndex + 1),
+  ];
 
+  const medicationTarget = buildMedicationTarget({
+    activeMedications: medicationBundle.activeMedications,
+    intakeEvents: medicationBundle.intakeEvents,
+    timezone,
+    now,
+  });
+  if (medicationTarget) targets.push(medicationTarget);
+
+  targets.push(
+    ...buildMoodTargets({
+      moodRollups,
+      recentRawMood,
+      latestMoodEntry,
+      timezone,
+      now,
+    }),
+  );
+
+  const glucoseUnit = resolveGlucoseUnit(dbUser?.glucoseUnit ?? null);
+  targets.push(
+    ...buildGlucoseTargets({
+      rows: glucoseRows,
+      profile: {
+        heightCm,
+        dateOfBirth: dbUser?.dateOfBirth ?? null,
+        gender: dbUser?.gender ?? null,
+        glucoseUnit: dbUser?.glucoseUnit ?? null,
+        hasDiabetes: dbUser?.hasDiabetes ?? false,
+        thresholdsJson: (dbUser?.thresholdsJson ??
+          null) as ThresholdOverridesJson | null,
+      },
+      timezone,
+      now,
+    }),
+  );
+
+  const pageSummary = buildTargetPageSummary(targets);
   annotate({
     action: { name: "insights.targets" },
     meta: {
       targetCount: targets.length,
-      targetsMetThisWeek,
-      streakHighlightMetric: streakHighlight?.metric ?? null,
+      targetsMetThisWeek: pageSummary.targetsMetThisWeek,
+      streakHighlightMetric: pageSummary.streakHighlight?.metric ?? null,
     },
   });
 
   return {
     targets,
     pageSummary,
-    // Extra diastolic data for BP display
     bpDiastolic: {
       current: latestByType.BLOOD_PRESSURE_DIA ?? null,
-      average30: avg30ByType.BLOOD_PRESSURE_DIA ?? null,
-      range: bpRange ? { min: bpRange.diaLow, max: bpRange.diaHigh } : null,
+      average30: average30ByType.BLOOD_PRESSURE_DIA ?? null,
+      range: vitalSection.bpRange
+        ? {
+            min: vitalSection.bpRange.diaLow,
+            max: vitalSection.bpRange.diaHigh,
+          }
+        : null,
     },
     profile: {
       heightCm,

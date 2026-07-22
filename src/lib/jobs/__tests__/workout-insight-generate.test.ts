@@ -242,6 +242,24 @@ describe("Activity Insight — the gate stack", () => {
     );
   });
 
+  it("gate 3 — starts a midday cap window at exact local midnight", async () => {
+    vi.mocked(resolveUserTimezone).mockResolvedValue("Europe/Berlin");
+    vi.mocked(prisma.workoutInsight.count).mockResolvedValue(4 as never);
+
+    const outcome = await runWorkoutInsightGenerate(
+      { userId: USER, workoutId: WORKOUT },
+      new Date("2026-07-18T15:00:45.678Z"),
+    );
+
+    const where = vi.mocked(prisma.workoutInsight.count).mock.calls[0][0]
+      ?.where as { generatedAt: { gte: Date } };
+    expect(where.generatedAt.gte.toISOString()).toBe(
+      "2026-07-17T22:00:00.000Z",
+    );
+    expect(outcome).toEqual({ status: "skipped", reason: "daily_cap" });
+    expect(runStatusCompletion).not.toHaveBeenCalled();
+  });
+
   it("gate 4 — a re-post whose evidence is unchanged costs nothing", async () => {
     // Learn the hash this evidence produces by letting one run through, then
     // replay it as an already-stored row. Hard-coding the digest would pin the

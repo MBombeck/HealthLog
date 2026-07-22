@@ -35,8 +35,8 @@
  *     user's location history; the climb figure the narrative needs is
  *     already the numeric `elevationM` column.
  *
- * The conversation-level tenancy narrow (`{ id, userId }`) lives at the call
- * site in the chat route; this module never widens it.
+ * The conversation-level tenancy narrow (`{ id, userId }`) lives in the
+ * explicit-dependency workout evidence builder; this module never widens it.
  */
 import { workoutSportTypeEnum } from "@/lib/validations/workout";
 import type { HrSeriesPoint } from "@/lib/workouts/hr-series";

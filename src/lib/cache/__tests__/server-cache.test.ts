@@ -117,6 +117,102 @@ describe("ServerCache LRU eviction", () => {
     expect(cache.get("b")).toBe(2);
   });
 });
+describe("ServerCache weighted LRU eviction", () => {
+  it("evicts least-recently-used entries until the weight cap is satisfied", () => {
+    const cache = new ServerCache<string>({
+      maxEntries: 10,
+      maxWeight: 5,
+      ttlMs: 60_000,
+      weightOf: (value) => value.length,
+    });
+    cache.set("a", "aa");
+    cache.set("b", "bb");
+    expect(cache.get("a")).toBe("aa");
+
+    cache.set("c", "cc");
+
+    expect(cache.get("a")).toBe("aa");
+    expect(cache.get("b")).toBeNull();
+    expect(cache.get("c")).toBe("cc");
+    expect(cache.stats().evictions).toBe(1);
+  });
+
+  it("updates weight bookkeeping when replacing a resident key", () => {
+    const cache = new ServerCache<string>({
+      maxEntries: 10,
+      maxWeight: 3,
+      ttlMs: 60_000,
+      weightOf: (value) => value.length,
+    });
+    cache.set("a", "aa");
+    cache.set("b", "b");
+
+    cache.set("a", "a");
+    cache.set("c", "c");
+
+    expect(cache.get("a")).toBe("a");
+    expect(cache.get("b")).toBe("b");
+    expect(cache.get("c")).toBe("c");
+    expect(cache.stats().evictions).toBe(0);
+  });
+
+  it("normalizes zero and non-finite weights to one", () => {
+    const weights: Record<string, number> = {
+      zero: 0,
+      nan: Number.NaN,
+      infinity: Number.POSITIVE_INFINITY,
+    };
+    const cache = new ServerCache<string>({
+      maxEntries: 10,
+      maxWeight: 2,
+      ttlMs: 60_000,
+      weightOf: (_value, key) => weights[key] ?? 1,
+    });
+
+    cache.set("zero", "a");
+    cache.set("nan", "b");
+    cache.set("infinity", "c");
+
+    expect(cache.get("zero")).toBeNull();
+    expect(cache.get("nan")).toBe("b");
+    expect(cache.get("infinity")).toBe("c");
+    expect(cache.stats().evictions).toBe(1);
+  });
+
+  it("rejects an oversized entry without evicting resident entries", () => {
+    const cache = new ServerCache<string>({
+      maxEntries: 10,
+      maxWeight: 3,
+      ttlMs: 60_000,
+      weightOf: (value) => value.length,
+    });
+    cache.set("a", "a");
+    cache.set("b", "b");
+
+    cache.set("oversized", "four");
+
+    expect(cache.get("a")).toBe("a");
+    expect(cache.get("b")).toBe("b");
+    expect(cache.get("oversized")).toBeNull();
+    expect(cache.stats().size).toBe(2);
+    expect(cache.stats().evictions).toBe(0);
+  });
+  it("keeps the resident value when its oversized replacement is rejected", () => {
+    const cache = new ServerCache<string>({
+      maxEntries: 10,
+      maxWeight: 3,
+      ttlMs: 60_000,
+      weightOf: (value) => value.length,
+    });
+    cache.set("a", "a");
+
+    cache.set("a", "four");
+
+    expect(cache.get("a")).toBe("a");
+    expect(cache.stats().size).toBe(1);
+    expect(cache.stats().evictions).toBe(0);
+  });
+});
 
 describe("ServerCache.deleteByPrefix", () => {
   it("removes every key with a matching prefix", () => {
@@ -619,6 +715,19 @@ describe("global cache registry", () => {
     expect(caches.workouts).toBeDefined();
     expect(caches.medicationsIntake).toBeDefined();
     expect(caches.moodAnalytics).toBeDefined();
+  });
+
+  it("bounds workout projections by retained row weight", () => {
+    const mediumHistory = {
+      canonical: Array<unknown>(30_000),
+      rawCount: 30_000,
+    };
+
+    caches.workouts.set("user-1|first", mediumHistory as never);
+    caches.workouts.set("user-2|second", mediumHistory as never);
+
+    expect(caches.workouts.get("user-1|first")).toBeNull();
+    expect(caches.workouts.get("user-2|second")).not.toBeNull();
   });
 
   it("__resetAllCachesForTests clears every registry instance", async () => {

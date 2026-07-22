@@ -61,7 +61,7 @@ vi.mock("@/lib/google-health/client", () => ({ refreshAccessToken: vi.fn() }));
 import {
   GOOGLE_HEALTH_TOKEN_HARD_FAIL,
   noteHardFailure,
-} from "@/lib/google-health/sync";
+} from "@/lib/google-health/sync-core";
 import {
   enqueueBootTimeGoogleHealthSleepRepair,
   runGoogleHealthSleepRepairForUser,

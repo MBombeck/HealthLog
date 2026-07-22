@@ -9,7 +9,7 @@
  * confirms. Reuses the labs design language via `ResponsiveSheet` + the labs
  * row editor.
  */
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
 import { Loader2, ScanLine, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -35,6 +35,20 @@ export type OcrMode = "vision" | "text";
 
 const ACCEPT = "image/jpeg,image/png,image/webp,application/pdf";
 const ACCEPT_IMAGE_ONLY = "image/jpeg,image/png,image/webp";
+type FilePickerInput = {
+  files: ArrayLike<File> | null;
+  value: string;
+};
+
+export function handleFilePickerChange(
+  input: FilePickerInput,
+  onFilePicked: (file: File) => void,
+) {
+  const file = input.files?.[0];
+  // Reset so re-picking the same file fires `change` again.
+  input.value = "";
+  if (file) onFilePicked(file);
+}
 
 /** Map a confirmed review row to the commit payload, or null when invalid. */
 function toCommitRow(row: OcrReviewRow): OcrCommitRowInput | null {
@@ -105,7 +119,7 @@ export function OcrReviewDialog({
   onCommitted: () => void;
 }) {
   const { t } = useTranslations();
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const pickerId = useId();
   const [stage, setStage] = useState<Stage>("pick");
   const [rows, setRows] = useState<OcrReviewRow[]>([]);
   // S9 — in vision mode the picked file is retained so, on commit, it can be
@@ -217,25 +231,20 @@ export function OcrReviewDialog({
       }
     >
       {stage === "pick" ? (
-        <div className="space-y-4 py-2">
+        <div className="relative py-2">
           <input
-            ref={inputRef}
+            id={pickerId}
             type="file"
             accept={allowPdf ? ACCEPT : ACCEPT_IMAGE_ONLY}
-            className="sr-only"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              // Reset so re-picking the same file fires `change` again.
-              e.target.value = "";
-              if (file) onFilePicked(file);
-            }}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => inputRef.current?.click()}
             disabled={extract.isPending}
-            className="border-muted-foreground/25 hover:bg-muted/50 h-auto min-h-44 w-full flex-col gap-3 rounded-lg border-dashed p-6 text-center whitespace-normal"
+            className="peer absolute inset-0 z-10 h-full w-full cursor-pointer rounded-lg opacity-0 disabled:cursor-not-allowed"
+            onChange={(event) =>
+              handleFilePickerChange(event.currentTarget, onFilePicked)
+            }
+          />
+          <label
+            htmlFor={pickerId}
+            className="border-muted-foreground/25 hover:bg-muted/50 peer-focus-visible:ring-ring flex min-h-44 w-full flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-6 text-center whitespace-normal peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-50"
           >
             {extract.isPending ? (
               <>
@@ -272,7 +281,7 @@ export function OcrReviewDialog({
                 ) : null}
               </>
             )}
-          </Button>
+          </label>
         </div>
       ) : (
         <div className="space-y-3 py-2">

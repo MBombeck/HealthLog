@@ -151,6 +151,16 @@ describe("withings/callback atomic nonce consumption (M3)", () => {
     // Exactly one delete-attempt per leg — the atomic shape collapses
     // findUnique + delete into a single round-trip.
     expect(deleteMock).toHaveBeenCalledTimes(2);
+    const upsert = vi.mocked(prisma.withingsConnection.upsert).mock
+      .calls[0]![0];
+    expect(upsert.update).toMatchObject({
+      webhookSubscriptionState: Prisma.DbNull,
+      webhookSubscriptionRetryAt: expect.any(Date),
+    });
+    expect(upsert.create).toMatchObject({
+      webhookSubscriptionState: Prisma.DbNull,
+      webhookSubscriptionRetryAt: expect.any(Date),
+    });
 
     // Exactly one leg landed on `withings=connected`, exactly one
     // landed on the replay branch (`withings=error&reason=replay`).

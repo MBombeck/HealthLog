@@ -4,7 +4,7 @@ import { apiSuccess, apiError } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
-import { getValidToken } from "@/lib/google-health/sync";
+import { getValidToken } from "@/lib/google-health/sync-core";
 import {
   GOOGLE_HEALTH_ACTIVITY_PAGE_SIZE,
   GOOGLE_HEALTH_API_BASE,

@@ -46,6 +46,7 @@ export function WorkoutDetailZones({ workout }: WorkoutDetailZonesProps) {
         <TileHeader
           icon={Gauge}
           title={t("insights.workouts.detail.zonesTitle")}
+          titleAs="h2"
         />
         <p className="text-muted-foreground text-xs">
           {zones.model === "whoop"

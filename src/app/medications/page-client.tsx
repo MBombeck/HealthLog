@@ -637,11 +637,19 @@ export default function MedicationsPageClient() {
             id: m.id,
             name: m.name,
             dose: m.dose,
+            active: m.active,
+            lastTakenAt: m.lastTakenAt,
+            todayEventCount: m.todayEventCount ?? 0,
+            nextDueAt: m.nextDueAt,
+            nextDueOverdue: m.nextDueOverdue,
             schedules: m.schedules.map((s) => ({
               windowStart: s.windowStart,
+              windowEnd: s.windowEnd,
+              daysOfWeek: s.daysOfWeek,
               label: s.label,
               dose: s.dose,
               timesOfDay: s.timesOfDay,
+              doseWindows: s.doseWindows,
             })),
           }))}
         />

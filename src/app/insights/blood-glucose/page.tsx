@@ -62,6 +62,7 @@ export default function InsightsBlutzuckerPage() {
       statMedianLabel={t("insights.bloodGlucose.medianLabel")}
       emptyStateIcon={<Droplet className="size-6" />}
       emptyStateCtaType={null}
+      captureType="BLOOD_GLUCOSE"
       targetSummarySlug="blood-glucose"
       afterChart={<GlucoseClinicalPanel />}
       coachPrefill="I haven't logged any blood glucose yet — what does this metric tell me about my health, and how do I improve it?"

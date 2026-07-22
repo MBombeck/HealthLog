@@ -73,9 +73,9 @@ vi.mock("../sync-body", () => ({
 
 import {
   handleCollectionFetchError,
-  syncUserWhoop,
   syncWhoopResourceWithStatus,
-} from "../sync";
+} from "../sync-core";
+import { syncUserWhoop } from "../sync";
 import { WhoopApiError } from "../response-classifier";
 
 /** A resource sync that 403s its collection and soft-skips, like the real one. */

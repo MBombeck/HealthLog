@@ -345,6 +345,369 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
     expect(glucoseCall?.where?.measuredAt?.gte).toBeInstanceOf(Date);
   });
 
+  it("pins the complete ordered public response for representative populated data", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-21T12:00:00.000Z"));
+
+    try {
+      const atNoon = (day: number) =>
+        new Date(`2026-07-${String(day).padStart(2, "0")}T12:00:00.000Z`);
+      const genericRows = [
+        ...[18, 19, 20, 21].map((day) => ({
+          type: "WEIGHT",
+          value: 70,
+          measuredAt: atNoon(day),
+        })),
+        ...[18, 19, 20, 21].flatMap((day) => [
+          {
+            type: "BLOOD_PRESSURE_SYS",
+            value: 125,
+            measuredAt: atNoon(day),
+          },
+          {
+            type: "BLOOD_PRESSURE_DIA",
+            value: 75,
+            measuredAt: atNoon(day),
+          },
+        ]),
+        ...[18, 19, 20, 21].map((day) => ({
+          type: "RESTING_HEART_RATE",
+          value: 60,
+          measuredAt: atNoon(day),
+        })),
+        ...[18, 19, 20, 21].map((day) => ({
+          type: "BODY_FAT",
+          value: 18,
+          measuredAt: atNoon(day),
+        })),
+        ...[18, 19, 20, 21].map((day) => ({
+          type: "ACTIVITY_STEPS",
+          value: 10_000,
+          measuredAt: atNoon(day),
+        })),
+      ];
+      const sleepRows = [18, 19, 20, 21].map((day) => ({
+        value: 480,
+        measuredAt: atNoon(day),
+        sleepStage: null,
+        source: "MANUAL",
+        deviceType: null,
+      }));
+      const glucoseRows = [19, 20, 21].map((day) => ({
+        value: 90,
+        measuredAt: atNoon(day),
+        glucoseContext: "FASTING",
+      }));
+      (
+        prisma.measurement.findMany as ReturnType<typeof vi.fn>
+      ).mockImplementation(
+        async (args: { where?: { type?: string | { in: string[] } } }) => {
+          if (args.where?.type === "SLEEP_DURATION") return sleepRows;
+          if (args.where?.type === "BLOOD_GLUCOSE") return glucoseRows;
+          return genericRows;
+        },
+      );
+      (prisma.$queryRawUnsafe as ReturnType<typeof vi.fn>).mockResolvedValue([
+        { type: "WEIGHT", value: 70 },
+        { type: "BLOOD_PRESSURE_SYS", value: 125 },
+        { type: "BLOOD_PRESSURE_DIA", value: 75 },
+        { type: "RESTING_HEART_RATE", value: 60 },
+        { type: "BODY_FAT", value: 18 },
+        { type: "ACTIVITY_STEPS", value: 10_000 },
+      ]);
+      (
+        prisma.moodEntryRollup.findMany as ReturnType<typeof vi.fn>
+      ).mockResolvedValue(
+        [17, 18, 19, 20, 21].map((day) => ({
+          userId: SESSION_USER.id,
+          granularity: "DAY",
+          bucketStart: atNoon(day),
+          count: 1,
+          mean: 4,
+          minScore: 4,
+          maxScore: 4,
+          sd: null,
+          computedAt: atNoon(day),
+        })),
+      );
+      (
+        prisma.moodEntry.findFirst as ReturnType<typeof vi.fn>
+      ).mockResolvedValue({
+        score: 4,
+        moodLoggedAt: atNoon(21),
+      });
+      (
+        prisma.medication.findMany as ReturnType<typeof vi.fn>
+      ).mockResolvedValue([
+        {
+          id: "med-1",
+          name: "Vitamin D",
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          startsOn: null,
+          endsOn: null,
+          oneShot: false,
+          schedules: [],
+          scheduleRevisions: [],
+          pauseEras: [],
+        },
+      ]);
+
+      const res = await callGet(makeReq());
+      expect(res.status).toBe(200);
+      const body = await res.json();
+
+      const fourDaysInRange = {
+        daysInRange7d: 4,
+        daysLogged7d: 4,
+        daysInRange30d: 4,
+        daysLogged30d: 4,
+        lastMetGoalAt: "2026-07-21",
+        streakDays: 4,
+        insufficientData: false,
+        consistency7d: [null, null, null, "in", "in", "in", "in"],
+      };
+      const fiveDaysInRange = {
+        daysInRange7d: 5,
+        daysLogged7d: 5,
+        daysInRange30d: 5,
+        daysLogged30d: 5,
+        lastMetGoalAt: "2026-07-21",
+        streakDays: 5,
+        insufficientData: false,
+        consistency7d: [null, null, "in", "in", "in", "in", "in"],
+      };
+      expect(body.data).toEqual({
+        targets: [
+          {
+            type: "WEIGHT",
+            label: "Weight",
+            current: 70,
+            average30: 70,
+            trend: "stable",
+            unit: "kg",
+            range: { min: 59.9, max: 80.7 },
+            classification: {
+              category: "Normal",
+              color: "var(--success)",
+            },
+            source: "WHO BMI",
+            ...fourDaysInRange,
+          },
+          {
+            type: "BLOOD_PRESSURE",
+            label: "Blood pressure",
+            current: 125,
+            average30: 125,
+            trend: "stable",
+            unit: "mmHg",
+            range: { min: 120, max: 129 },
+            classification: {
+              category: "Normal",
+              color: "var(--info)",
+            },
+            source: "ESH 2023",
+            ...fourDaysInRange,
+          },
+          {
+            type: "BLOOD_PRESSURE_IN_TARGET",
+            label: "Blood pressure on target",
+            current: 100,
+            average30: 100,
+            trend: null,
+            unit: "%",
+            range: { min: 70, max: 100 },
+            classification: {
+              category: "Good",
+              color: "var(--success)",
+            },
+            source: "ESH 2023",
+            ...fourDaysInRange,
+          },
+          {
+            type: "PULSE",
+            label: "Resting pulse",
+            current: 60,
+            average30: 60,
+            trend: "stable",
+            unit: "bpm",
+            range: { min: 61, max: 77 },
+            classification: {
+              category: "Slightly low",
+              color: "var(--warning)",
+            },
+            source: "CDC/NCHS",
+            daysInRange7d: 0,
+            daysLogged7d: 4,
+            daysInRange30d: 0,
+            daysLogged30d: 4,
+            lastMetGoalAt: null,
+            streakDays: 0,
+            insufficientData: false,
+            consistency7d: [null, null, null, "near", "near", "near", "near"],
+          },
+          {
+            type: "SLEEP_DURATION",
+            label: "Sleep duration",
+            current: 8,
+            average30: 8,
+            trend: "stable",
+            unit: "h",
+            range: { min: 7, max: 9 },
+            classification: {
+              category: "On target",
+              color: "var(--success)",
+            },
+            source: "AASM/SRS",
+            ...fourDaysInRange,
+          },
+          {
+            type: "BMI",
+            label: "BMI",
+            current: 21.6,
+            average30: 21.6,
+            trend: "stable",
+            unit: "kg/m²",
+            range: { min: 18.5, max: 24.9 },
+            classification: {
+              category: "Normal",
+              color: "var(--success)",
+            },
+            source: "WHO",
+            ...fourDaysInRange,
+          },
+          {
+            type: "BODY_FAT",
+            label: "Body fat",
+            current: 18,
+            average30: 18,
+            trend: "stable",
+            unit: "%",
+            range: { min: 14, max: 24 },
+            classification: {
+              category: "Acceptable",
+              color: "var(--warning)",
+            },
+            source: "ACE",
+            ...fourDaysInRange,
+          },
+          {
+            type: "ACTIVITY_STEPS",
+            label: "Steps/day",
+            current: 10_000,
+            average30: 10_000,
+            trend: "stable",
+            unit: "steps",
+            range: { min: 8_000, max: 15_000 },
+            classification: {
+              category: "Very active",
+              color: "var(--success)",
+            },
+            source: "Saint-Maurice JAMA 2020",
+            ...fourDaysInRange,
+          },
+          {
+            type: "MEDICATION_COMPLIANCE",
+            label: "Medication compliance",
+            current: null,
+            average30: null,
+            trend: null,
+            unit: "%",
+            range: { min: 90, max: 100 },
+            classification: null,
+            source: "7-day",
+            details: {
+              medications: [
+                {
+                  name: "Vitamin D",
+                  compliance7: 100,
+                  compliance30: 100,
+                },
+              ],
+            },
+            daysInRange7d: 0,
+            daysLogged7d: 0,
+            daysInRange30d: 0,
+            daysLogged30d: 0,
+            lastMetGoalAt: null,
+            streakDays: 0,
+            insufficientData: true,
+            consistency7d: [null, null, null, null, null, null, null],
+          },
+          {
+            type: "MOOD_SCORE",
+            label: "Mood",
+            current: 4,
+            average30: 4,
+            trend: "stable",
+            unit: "/ 5",
+            range: { min: 3.5, max: 5 },
+            classification: {
+              category: "Good",
+              color: "var(--success)",
+            },
+            source: "moodLog",
+            ...fiveDaysInRange,
+          },
+          {
+            type: "MOOD_STABILITY",
+            label: "Mood stability",
+            current: 0,
+            average30: 0,
+            trend: null,
+            unit: "σ",
+            range: { min: 0, max: 0.5 },
+            classification: {
+              category: "Very stable",
+              color: "var(--success)",
+            },
+            source: "moodLog",
+            ...fiveDaysInRange,
+          },
+          {
+            type: "BLOOD_GLUCOSE_FASTING",
+            label: "targets.glucoseFasting",
+            current: 90,
+            average30: 90,
+            trend: null,
+            unit: "mg/dL",
+            range: { min: 70, max: 99 },
+            classification: {
+              category: "Optimal",
+              color: "var(--success)",
+            },
+            source: "ADA 2024 / DDG",
+            daysInRange7d: 3,
+            daysLogged7d: 3,
+            daysInRange30d: 3,
+            daysLogged30d: 3,
+            lastMetGoalAt: "2026-07-21",
+            streakDays: 3,
+            insufficientData: false,
+            consistency7d: [null, null, null, null, "in", "in", "in"],
+          },
+        ],
+        pageSummary: {
+          targetsMetThisWeek: 9,
+          totalTargets: 12,
+          streakHighlight: { metric: "MOOD_SCORE", days: 5 },
+        },
+        bpDiastolic: {
+          current: 75,
+          average30: 75,
+          range: { min: 70, max: 79 },
+        },
+        profile: {
+          heightCm: 180,
+          age: 41,
+          gender: "MALE",
+          glucoseUnit: "mg/dL",
+        },
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("serves a warm repeat from the server cache without re-querying (v1.16.8)", async () => {
     const first = await callGet(makeReq());
     expect(first.status).toBe(200);

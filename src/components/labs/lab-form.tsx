@@ -19,7 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError, apiGet, apiPost } from "@/lib/api/api-fetch";
+import { apiGet, apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { formatReferenceRange } from "@/lib/labs/reference-range";
 import { formatLabValue } from "@/lib/labs/format-value";
 import { useTranslations } from "@/lib/i18n/context";
@@ -226,9 +227,7 @@ export function LabForm({
         onSuccess?.(created);
       }
     } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : t("labs.form.saveError");
-      setError(message);
+      setError(localizedApiError(err, t, "labs.form.saveError"));
     } finally {
       setPendingAction(null);
     }

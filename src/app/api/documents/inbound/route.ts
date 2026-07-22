@@ -27,7 +27,7 @@ import { createHash } from "node:crypto";
 
 import { NextResponse } from "next/server";
 
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireAuth, type AuthContext } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -45,6 +45,7 @@ import { enqueueDocumentIndex } from "@/lib/jobs/document-index";
 import { enqueueDocumentSummary } from "@/lib/jobs/document-summary";
 import { enqueueDocumentThumbnail } from "@/lib/jobs/document-thumbnail";
 import {
+  acquireDocumentUploadSlot,
   detectDocumentType,
   resolveDocumentLimits,
 } from "@/lib/documents/upload-policy";
@@ -76,6 +77,7 @@ const UPLOAD_WINDOW_MS = 60 * 60 * 1000;
  * exact per-file cap is re-enforced on the extracted file bytes below.
  */
 const MULTIPART_OVERHEAD_BYTES = 64 * 1024;
+const UPLOAD_BODY_TIMEOUT_MS = 30_000;
 
 /** Parse a YYYY-MM-DD form field into a UTC midnight Date. */
 function isoDateToUtc(value: string): Date {
@@ -140,10 +142,11 @@ async function duplicateResponse(
   );
 }
 
-/** POST — store an uploaded document encrypted at rest. No extraction. */
-async function postUpload(request: Request): Promise<Response> {
-  const { user } = await requireAuth();
-
+/** Process one admitted upload. The caller owns and releases its memory slot. */
+async function processUpload(
+  request: Request,
+  user: AuthContext["user"],
+): Promise<Response> {
   // Opt-in module gate — even a valid Bearer token is refused when the surface
   // is off (it ships dark; the user turns it on deliberately).
   const gate = await requireModuleEnabled(user.id, "inboundDocuments");
@@ -176,13 +179,24 @@ async function postUpload(request: Request): Promise<Response> {
 
   let formData: FormData;
   try {
-    const bytes = await readBoundedBody(request.body, bodyCap);
-    formData = await new Response(new Blob([bytes]), {
+    const bytes = await readBoundedBody(request.body, bodyCap, {
+      signal: request.signal,
+      deadline: Date.now() + UPLOAD_BODY_TIMEOUT_MS,
+    });
+    formData = await new Request(request.url, {
+      method: "POST",
       headers: { "content-type": request.headers.get("content-type") ?? "" },
+      body: bytes,
     }).formData();
   } catch (err) {
     if (err instanceof BodyTooLargeError) {
       return fileTooLarge(limits.maxFileBytes);
+    }
+    if (err instanceof DOMException && err.name === "AbortError") {
+      return apiError("Upload body read timed out.", 408, {
+        errorCode: "documents.inbound.uploadTimeout",
+        reason: "uploadTimeout",
+      });
     }
     return apiError("Invalid multipart body", 400);
   }
@@ -395,6 +409,30 @@ async function postUpload(request: Request): Promise<Response> {
     ),
     201,
   );
+}
+
+/** Authenticate and reserve memory capacity before any request-body read. */
+async function postUpload(request: Request): Promise<Response> {
+  const { user } = await requireAuth();
+  const releaseUploadSlot = acquireDocumentUploadSlot(user.id);
+  if (!releaseUploadSlot) {
+    const response = apiError(
+      "Too many uploads are already in progress. Try again shortly.",
+      429,
+      {
+        errorCode: "documents.inbound.uploadBusy",
+        reason: "uploadBusy",
+      },
+    );
+    response.headers.set("Retry-After", "1");
+    return response;
+  }
+
+  try {
+    return await processUpload(request, user);
+  } finally {
+    releaseUploadSlot();
+  }
 }
 
 export const POST = apiHandler(withIdempotency<[Request]>(postUpload));

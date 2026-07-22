@@ -8,6 +8,7 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { QueryErrorCard } from "@/components/ui/query-error-card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,7 +43,7 @@ import {
   severityLikertLabel,
 } from "@/lib/medications/side-effects/taxonomy";
 import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
-import { apiDelete, apiPost } from "@/lib/api/api-fetch";
+import { apiDelete, apiFetchEnvelope, apiPost } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
 
 /**
@@ -128,19 +129,18 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
 
   const listKey = queryKeys.medicationSideEffects(medicationId);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: listKey,
     queryFn: async () => {
       // Last 30 days, newest-first.
       const to = new Date();
       const from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
       const url = `/api/medications/${medicationId}/side-effects?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}&limit=100`;
-      const res = await fetch(url);
-      if (!res.ok) return { items: [] as SideEffectRow[], meta: { total: 0 } };
-      const json = (await res.json()) as {
-        data: { items: SideEffectRow[]; meta: { total: number } };
-      };
-      return json.data;
+      const { data: payload } = await apiFetchEnvelope<{
+        items: SideEffectRow[];
+        meta: { total: number };
+      }>(url);
+      return payload;
     },
     staleTime: 30 * 1000,
   });
@@ -272,13 +272,17 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
         </div>
       )}
 
-      {!isLoading && items.length === 0 && (
+      {!isLoading && isError && (
+        <QueryErrorCard onRetry={() => void refetch()} />
+      )}
+
+      {!isLoading && !isError && items.length === 0 && (
         <p className="text-muted-foreground py-1">
           {t("medications.sideEffects.emptyState")}
         </p>
       )}
 
-      {!isLoading && items.length > 0 && (
+      {!isLoading && !isError && items.length > 0 && (
         <div className="space-y-2">
           <p className="text-muted-foreground text-xs tracking-wide uppercase">
             {t("medications.sideEffects.recentTitle")}

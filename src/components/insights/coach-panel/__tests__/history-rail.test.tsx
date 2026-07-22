@@ -176,6 +176,17 @@ describe("<HistoryRail>", () => {
     expect(buttons.length).toBe(2);
   });
 
+  it("renders an accessible rename button for each conversation row", () => {
+    const client = makeClientWithConversations(samplePage);
+    const html = render(
+      <HistoryRail activeId={null} onSelect={() => {}} />,
+      client,
+    );
+    const buttons = html.match(/data-slot="coach-conversation-rename"/g) ?? [];
+    expect(buttons.length).toBe(2);
+    expect(html).toContain('aria-label="Rename conversation"');
+  });
+
   // v1.30.2 (QoL H1) — infinite history: reachability beyond the first page.
   it("renders every conversation across multiple cached pages (not just page one)", () => {
     const client = makeClientWithPages([

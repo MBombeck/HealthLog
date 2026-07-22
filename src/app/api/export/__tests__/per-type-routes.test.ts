@@ -96,6 +96,7 @@ describe("GET /api/export/measurements", () => {
     });
     vi.mocked(prisma.measurement.findMany).mockResolvedValue([
       {
+        id: "measurement-weight-1",
         type: "WEIGHT",
         value: 80,
         unit: "kg",
@@ -166,6 +167,7 @@ describe("GET /api/export/measurements", () => {
     } as never);
     vi.mocked(prisma.measurement.findMany).mockResolvedValue([
       {
+        id: "measurement-glucose-mmol",
         type: "BLOOD_GLUCOSE",
         value: 100,
         unit: "mg/dL",
@@ -196,6 +198,7 @@ describe("GET /api/export/measurements", () => {
     } as never);
     vi.mocked(prisma.measurement.findMany).mockResolvedValue([
       {
+        id: "measurement-glucose-mgdl",
         type: "BLOOD_GLUCOSE",
         value: 100,
         unit: "mg/dL",

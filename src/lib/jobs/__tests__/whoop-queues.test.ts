@@ -95,12 +95,14 @@ describe("reminder-worker — WHOOP sync queues", () => {
       /boss\.work[\s\S]{0,160}WHOOP_CYCLE_SYNC_QUEUE[\s\S]{0,160}handleWhoopCycleSync/,
     );
     expect(source).toMatch(
-      /boss\.work[\s\S]{0,200}WHOOP_BACKFILL_QUEUE[\s\S]{0,200}runWhoopBackfillForUser/,
+      /boss\.work[\s\S]{0,200}WHOOP_BACKFILL_QUEUE[\s\S]{0,260}enqueueIntegrationBackfillAdmission/,
     );
   });
 
   it("wires the self-converging WHOOP backfill boot discovery", () => {
-    expect(source).toMatch(/enqueueBootTimeWhoopBackfill\(\)/);
+    expect(source).toMatch(
+      /enqueueBootTimeWhoopBackfill\(\s*bootStaggerSecondsFor\("whoop-backfill"\)/,
+    );
   });
 
   it("imports the WHOOP per-resource sync routines", () => {

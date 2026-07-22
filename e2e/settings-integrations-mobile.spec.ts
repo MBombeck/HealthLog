@@ -198,3 +198,44 @@ test.describe("/settings/integrations Pixel-5 layout", () => {
     }
   });
 });
+
+test.describe("Apple Health guidance", () => {
+  test.use({ storageState: STORAGE_STATE_PATH });
+
+  test("opens on Integrations and reaches the one-shot import fallback", async ({
+    page,
+  }) => {
+    await page.route("**/api/integrations/healthkit", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: { entries: [], lastSyncedAt: null },
+          error: null,
+        }),
+      }),
+    );
+
+    await page.goto("/settings/integrations");
+
+    const card = page.getByTestId("apple-health-card");
+    await expect(card).toBeVisible();
+    await expect(card).toContainText("HealthLog iOS app");
+    await expect(card).toContainText("not a web or OAuth connection");
+    await expect(page.getByTestId("apple-health-status")).toHaveAttribute(
+      "data-state",
+      "setup",
+    );
+
+    const importLink = page.getByTestId("apple-health-import-link");
+    await expect(importLink).toHaveAttribute(
+      "href",
+      "/settings/export#settings-section-import-title",
+    );
+    await page.goto("/settings/export#settings-section-import-title");
+    await expect(page).toHaveURL(
+      /\/settings\/export#settings-section-import-title$/,
+    );
+    await expect(page.getByTestId("import-card-apple-health")).toBeVisible();
+  });
+});

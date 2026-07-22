@@ -102,6 +102,7 @@ export function WorkoutDetailRoute({ workout }: WorkoutDetailRouteProps) {
         <TileHeader
           icon={MapIcon}
           title={t("insights.workouts.detail.routeTitle")}
+          titleAs="h2"
           right={
             <Button
               type="button"

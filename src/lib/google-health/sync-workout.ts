@@ -25,7 +25,7 @@ import {
   handleCollectionFetchError,
   noteHardFailure,
   type GoogleHealthResourceSyncOptions,
-} from "./sync";
+} from "./sync-core";
 import { prisma } from "@/lib/db";
 import { emitInsertedWorkoutArrival } from "@/lib/arrivals/workout-emit";
 import { annotate, getEvent } from "@/lib/logging/context";

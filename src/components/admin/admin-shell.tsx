@@ -372,16 +372,15 @@ export function AdminShell({ active, children }: AdminShellProps) {
           </ul>
         </aside>
 
-        {/* Main column (cards) — row 2 / col 2, the grid's `1fr` row, so it
+        {/* Cards column — row 2 / col 2, the grid's `1fr` row, so it
             stretches to fill the shared `SUB_SHELL_GRID_FLOOR` on the grid
             (matches `<SettingsShell>`) without over-shooting. The loading-jump
             floor lives on the GRID, not here: a column-level
             `min-h-[calc(100dvh-12rem)]` reserve (the pre-#154 shape this used
             to carry) over-reserves on short sections and on mobile, scrolling
-            the page into a dark band below the last card. */}
-        <main className="min-w-0 md:col-start-2 md:row-start-2">
-          {children}
-        </main>
+            the page into a dark band below the last card. AuthShell already
+            owns the page's single `<main>` landmark. */}
+        <div className="min-w-0 md:col-start-2 md:row-start-2">{children}</div>
       </div>
     </div>
   );

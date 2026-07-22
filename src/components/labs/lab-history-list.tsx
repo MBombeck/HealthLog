@@ -12,6 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import {
+  SeededFormDiscardDialog,
+  useSeededFormDismissal,
+} from "@/components/forms/use-seeded-form-dismissal";
+import {
   Table,
   TableBody,
   TableCell,
@@ -21,13 +25,8 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useTableSort } from "@/hooks/use-table-sort";
-import {
-  ApiError,
-  apiDelete,
-  apiGet,
-  apiPost,
-  apiPut,
-} from "@/lib/api/api-fetch";
+import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { formatDateShort } from "@/lib/format";
 import { formatLabReading } from "@/lib/labs/format-value";
 import { resolveNoteForUpdate } from "@/lib/labs/note-update";
@@ -92,6 +91,12 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
   const [editValueText, setEditValueText] = useState("");
   const [editTakenAt, setEditTakenAt] = useState("");
   const [editNote, setEditNote] = useState("");
+  const [editSeed, setEditSeed] = useState({
+    value: "",
+    valueText: "",
+    takenAt: "",
+    note: "",
+  });
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   // True when the decrypted-note GET failed to load for the row being edited.
@@ -149,21 +154,44 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
     onSuccess: () => {
       invalidate();
       toast.success(t("labs.editedToast"));
-      closeEdit();
+      setEditSeed({
+        value: editValue,
+        valueText: editValueText,
+        takenAt: editTakenAt,
+        note: editNote,
+      });
+      dismissEdit();
     },
     onError: (err) => {
-      setEditError(err instanceof ApiError ? err.message : t("labs.editError"));
+      setEditError(localizedApiError(err, t, "labs.editError"));
     },
+  });
+  const editDismissal = useSeededFormDismissal({
+    seed: editSeed,
+    value: {
+      value: editValue,
+      valueText: editValueText,
+      takenAt: editTakenAt,
+      note: editNote,
+    },
+    blocked: updateMutation.isPending,
   });
 
   async function openEdit(reading: LabResultDto) {
+    const seed = {
+      value: reading.value !== null ? String(reading.value) : "",
+      valueText: reading.valueText ?? "",
+      takenAt: toDateTimeLocal(reading.takenAt),
+      note: "",
+    };
     setEditingId(reading.id);
     const qualitative = reading.value === null;
     setEditIsQualitative(qualitative);
-    setEditValue(reading.value !== null ? String(reading.value) : "");
-    setEditValueText(reading.valueText ?? "");
-    setEditTakenAt(toDateTimeLocal(reading.takenAt));
-    setEditNote("");
+    setEditValue(seed.value);
+    setEditValueText(seed.valueText);
+    setEditTakenAt(seed.takenAt);
+    setEditNote(seed.note);
+    setEditSeed(seed);
     setEditError(null);
     setNoteLoadFailed(false);
     setHasNote(reading.hasNote);
@@ -174,6 +202,7 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
         `/api/labs/${reading.id}`,
       );
       setEditNote(detail.note ?? "");
+      setEditSeed({ ...seed, note: detail.note ?? "" });
     } catch {
       // The note couldn't be loaded. Flag it so the submit path omits `note`
       // (preserving the stored ciphertext) rather than sending `null` and
@@ -184,10 +213,13 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
     }
   }
 
-  function closeEdit() {
-    if (updateMutation.isPending) return;
+  function dismissEdit() {
     setEditingId(null);
     setEditError(null);
+  }
+
+  function closeEdit() {
+    editDismissal.requestClose(dismissEdit);
   }
 
   function submitEdit(e: React.FormEvent) {
@@ -431,6 +463,11 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
           </div>
         </form>
       </ResponsiveSheet>
+      <SeededFormDiscardDialog
+        open={editDismissal.discardDialogOpen}
+        onConfirm={editDismissal.confirmDiscard}
+        onCancel={editDismissal.cancelDiscard}
+      />
     </>
   );
 }

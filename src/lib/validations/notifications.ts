@@ -7,6 +7,10 @@ export const notificationPreferenceSchema = z.object({
   enabled: z.boolean(),
 });
 
+export const notificationChannelEnabledSchema = z.strictObject({
+  enabled: z.boolean(),
+});
+
 /**
  * Parse a dotted-quad IPv4 string into normalized octets.
  *

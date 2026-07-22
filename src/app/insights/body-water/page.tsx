@@ -26,6 +26,7 @@ export default function InsightsKoerperwasserPage() {
       yAxisUnit="kg"
       emptyStateIcon={<Droplet className="size-6" />}
       emptyStateCtaType={null}
+      captureType="TOTAL_BODY_WATER"
       coachPrefill="I haven't logged any total body water yet — what does this metric tell me about my health, and how do I improve it?"
     />
   );

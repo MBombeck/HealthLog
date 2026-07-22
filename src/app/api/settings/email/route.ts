@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/db";
 import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
-import { emailSettingsSchema } from "@/lib/validations/notifications";
+import {
+  emailSettingsSchema,
+  notificationChannelEnabledSchema,
+} from "@/lib/validations/notifications";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { NextRequest } from "next/server";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
@@ -53,6 +56,51 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   });
 
   if (jsonError) return jsonError;
+
+  const enabledOnly = notificationChannelEnabledSchema.safeParse(body);
+  if (enabledOnly.success) {
+    const { enabled } = enabledOnly.data;
+
+    if (enabled) {
+      const existing = await prisma.notificationChannel.findUnique({
+        where: { userId_type: { userId: user.id, type: "EMAIL" } },
+      });
+
+      let hasRecipient = false;
+      if (existing) {
+        try {
+          const config = JSON.parse(decrypt(existing.config)) as {
+            recipient?: string;
+          };
+          hasRecipient = !!config.recipient;
+        } catch {
+          hasRecipient = false;
+        }
+      }
+
+      if (!hasRecipient) {
+        return apiError(
+          "A recipient address is required when email is enabled",
+          422,
+        );
+      }
+    }
+
+    const result = await prisma.notificationChannel.updateMany({
+      where: { userId: user.id, type: "EMAIL" },
+      data: { enabled },
+    });
+    if (enabled && result.count === 0) {
+      return apiError(
+        "A recipient address is required when email is enabled",
+        422,
+      );
+    }
+
+    annotate({ action: { name: "settings.email.update" }, meta: { enabled } });
+    return apiSuccess({ saved: true });
+  }
+
   const parsed = emailSettingsSchema.safeParse(body);
   if (!parsed.success) return apiError("Invalid data", 422);
 

@@ -32,7 +32,7 @@ import {
   markResourceSynced,
   resolveResourceCursor,
   WHOOP_RECOVERY_SLEEP_OVERLAP_MS,
-} from "./sync";
+} from "./sync-core";
 import { mapWhoopSportType } from "./sport-map";
 import { prisma } from "@/lib/db";
 import { emitInsertedWorkoutArrival } from "@/lib/arrivals/workout-emit";

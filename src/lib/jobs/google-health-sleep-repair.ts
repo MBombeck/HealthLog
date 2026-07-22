@@ -26,12 +26,13 @@
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
 import { isReauthRequired } from "@/lib/integrations/status";
 import {
   GOOGLE_HEALTH_INTEGRATION_KEY,
   GOOGLE_HEALTH_TOKEN_HARD_FAIL,
   runWithGoogleHealthHardFailLedger,
-} from "@/lib/google-health/sync";
+} from "@/lib/google-health/sync-core";
 import { syncUserSleep } from "@/lib/google-health/sync-sleep";
 
 export const GOOGLE_HEALTH_SLEEP_REPAIR_QUEUE = "google-health-sleep-repair";
@@ -128,7 +129,9 @@ export async function runGoogleHealthSleepRepairForUser(
  * Best-effort: errors are returned through the result value so the worker boot
  * never fails because of a repair miss.
  */
-export async function enqueueBootTimeGoogleHealthSleepRepair(): Promise<{
+export async function enqueueBootTimeGoogleHealthSleepRepair(
+  startAfterSeconds: number = 0,
+): Promise<{
   enqueued: number;
   skipped: number;
   error: string | null;
@@ -155,12 +158,14 @@ export async function enqueueBootTimeGoogleHealthSleepRepair(): Promise<{
         userId,
         enqueuedAt: new Date().toISOString(),
       };
-      const jobId = await boss.send(GOOGLE_HEALTH_SLEEP_REPAIR_QUEUE, payload, {
-        retryLimit: 3,
-        retryDelay: 60,
-        retryBackoff: true,
-        singletonKey: `google-health-sleep-repair|${userId}`,
-      });
+      const jobId = await boss.send(
+        GOOGLE_HEALTH_SLEEP_REPAIR_QUEUE,
+        payload,
+        integrationBackfillSourceOptions(
+          `google-health-sleep-repair|${userId}`,
+          startAfterSeconds,
+        ),
+      );
       if (jobId) {
         enqueued += 1;
       } else {

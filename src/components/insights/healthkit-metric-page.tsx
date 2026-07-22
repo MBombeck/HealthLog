@@ -34,11 +34,10 @@ import { SubPageShell } from "@/components/insights/sub-page-shell";
  * envelope:
  *
  *   1. `<SubPageShell>` with a localised title + description.
- *   2. Empty-state CTA when the user has no observations for the
+ *   2. Optional empty-state CTA when the user has no observations for the
  *      metric — points at `/measurements?add=<TYPE>` so the existing
- *      quick-entry dialog can light up. The CTA target is optional;
- *      Apple-Health-only metrics (active energy, body temperature)
- *      pass `null` to render an onboarding hint without a dead link.
+ *      quick-entry dialog can light up. Device-led empty states may omit it
+ *      even when the populated page offers manual contextual capture.
  *   3. `<HealthChartDynamic>` mounted on the canonical
  *      `ChartOverlayKey` so the chart-cog popover persists per metric.
  *   4. A header-height Coach launch icon (`coachLaunch` on the shell) —
@@ -96,11 +95,16 @@ export interface HealthKitMetricPageProps {
   /** Optional value bands (Apple-Health-style target zone shading). */
   valueBands?: ComponentProps<typeof HealthChartDynamic>["valueBands"];
   /**
-   * Optional empty-state CTA target. `null` renders the empty state
-   * without a primary action (Apple-Health-only metrics that have no
-   * manual entry form). String values land in `/measurements?add=<x>`.
+   * Optional empty-state CTA target. `null` renders the empty state without a
+   * primary action. String values land in `/measurements?add=<x>`.
    */
   emptyStateCtaType?: string | null;
+  /**
+   * Manual capture type for the populated-page header action. When omitted,
+   * the empty-state CTA type is reused; pass it explicitly when a metric is
+   * manually supported but its empty state deliberately remains device-led.
+   */
+  captureType?: string | null;
   /** Icon node mounted in the empty-state card. */
   emptyStateIcon: ReactNode;
   /**
@@ -197,6 +201,7 @@ export function HealthKitMetricPage({
   yAxisUnit,
   valueBands,
   emptyStateCtaType,
+  captureType,
   emptyStateIcon,
   coachPrefill,
   valueScale,
@@ -372,6 +377,10 @@ export function HealthKitMetricPage({
         />
       }
       coachLaunch
+      captureType={
+        (captureType === undefined ? emptyStateCtaType : captureType) ??
+        undefined
+      }
       showAllValuesType={effectiveType}
     >
       <HealthChartDynamic

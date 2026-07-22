@@ -66,7 +66,7 @@ describe("reminder-worker — Fitbit sync queues", () => {
       /boss\.work[\s\S]{0,160}FITBIT_SYNC_QUEUE[\s\S]{0,160}handleFitbitSync/,
     );
     expect(source).toMatch(
-      /boss\.work[\s\S]{0,200}FITBIT_BACKFILL_QUEUE[\s\S]{0,200}runFitbitBackfillForUser/,
+      /boss\.work[\s\S]{0,200}FITBIT_BACKFILL_QUEUE[\s\S]{0,260}enqueueIntegrationBackfillAdmission/,
     );
     expect(source).toMatch(
       /boss\.work[\s\S]{0,160}FITBIT_OAUTH_STATE_CLEANUP_QUEUE[\s\S]{0,160}handleFitbitOAuthStateCleanup/,
@@ -74,7 +74,9 @@ describe("reminder-worker — Fitbit sync queues", () => {
   });
 
   it("wires the self-converging Fitbit backfill boot discovery", () => {
-    expect(source).toMatch(/enqueueBootTimeFitbitBackfill\(\)/);
+    expect(source).toMatch(
+      /enqueueBootTimeFitbitBackfill\(\s*bootStaggerSecondsFor\("fitbit-backfill"\)/,
+    );
   });
 
   it("imports the Fitbit sync driver + backfill exports", () => {

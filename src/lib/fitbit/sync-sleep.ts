@@ -28,9 +28,11 @@ import {
   getValidToken,
   handleCollectionFetchError,
   upsertFitbitMeasurements,
-  type FitbitMeasurementUpsert,
-  type FitbitResourceSyncOptions,
-} from "./sync";
+} from "./sync-core";
+import type {
+  FitbitMeasurementUpsert,
+  FitbitResourceSyncOptions,
+} from "./sync-core";
 import { annotate } from "@/lib/logging/context";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";

@@ -3,7 +3,7 @@
  * token refresh, and webhook subscription management.
  */
 import { prisma } from "@/lib/db";
-import type { MeasurementType } from "@/generated/prisma/client";
+import type { MeasurementType, Prisma } from "@/generated/prisma/client";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { getUnitForType } from "@/lib/validations/measurement";
 import {
@@ -65,13 +65,22 @@ export function getWithingsWebhookCallbackUrl(): string {
   return `${baseUrl}/${encodeURIComponent(secret)}`;
 }
 
+export interface WithingsValidToken {
+  accessToken: string;
+  connection: { id: string; withingsUserId: string };
+}
+
+export interface GetValidWithingsTokenOptions {
+  throwOnRefreshFailure?: boolean;
+}
+
 /**
  * Get valid access token for a user, refreshing if expired.
  */
-export async function getValidToken(userId: string): Promise<{
-  accessToken: string;
-  connection: { id: string; withingsUserId: string };
-} | null> {
+export async function getValidToken(
+  userId: string,
+  options: GetValidWithingsTokenOptions = {},
+): Promise<WithingsValidToken | null> {
   const connection = await prisma.withingsConnection.findUnique({
     where: { userId },
   });
@@ -146,8 +155,9 @@ export async function getValidToken(userId: string): Promise<{
       };
     }, PROVIDER_REFRESH_TRANSACTION_OPTIONS);
   } catch (err) {
-    getEvent()?.addWarning(`Token refresh failed for user ${userId}: ${err}`);
+    getEvent()?.addWarning(`Token refresh failed for user ${userId}`);
     await recordWithingsSyncFailure(userId, err);
+    if (options.throwOnRefreshFailure) throw err;
     return null;
   }
 }
@@ -489,47 +499,326 @@ export function extractWithingsStatus(message: string): string | undefined {
 }
 
 /**
- * Withings notify appli categories HealthLog cares about today. Each
- * category requires its own subscribe call.
- *
- * - 1 — weight + body composition (meastypes 1, 5, 6, 8, 88)
- * - 2 — temperature (meastypes 12, 71, 73)
- * - 4 — pressure family (BP dia 9, BP sys 10, pulse 11, SpO2 54)
- * - 16 — activity (steps, distance, active energy, floors climbed);
- *        v1.4.25 W17b webhook-primary trigger for the new
- *        `syncUserActivity` routine.
- * - 44 — sleep v2 (per-stage segments + nightly summary); v1.4.25 W17c
- *        webhook-primary trigger for the new `syncUserSleep` routine.
- *
- * Without 2 and 4, BP and temperature readings flow only through the
- * hourly poll fallback. Adding them removes up to an hour of latency
- * on a freshly-taken BP reading without changing the OAuth scope. The
- * activity + sleep categories require the `user.activity` scope from
- * W5d; legacy connections that never reconnected sit on `user.metrics`
- * only and the subscribe call returns 503/293 — `setupWebhook` logs
- * the failure and keeps the remaining appli subscriptions.
+ * Withings notify appli categories HealthLog ingests. Each category requires
+ * an independent upstream subscription.
  */
 export const WITHINGS_NOTIFY_APPLIS = [1, 2, 4, 16, 44] as const;
 
+export type WithingsNotifyAppli = (typeof WITHINGS_NOTIFY_APPLIS)[number];
+export type WithingsNotifyAppliKey = `${WithingsNotifyAppli}`;
+export type WithingsWebhookSubscriptionStatus =
+  "pending" | "success" | "transient" | "persistent" | "reauth_required";
+
+export interface WithingsWebhookSubscriptionOutcome {
+  status: WithingsWebhookSubscriptionStatus;
+  attemptCount: number;
+  lastAttemptAt: string | null;
+  nextRetryAt: string | null;
+  withingsStatus: number | null;
+}
+
+export interface WithingsWebhookSubscriptionStateV1 {
+  version: 1;
+  outcomes: Record<WithingsNotifyAppliKey, WithingsWebhookSubscriptionOutcome>;
+}
+
+export const WITHINGS_SUBSCRIPTION_BASE_RETRY_MS = 5 * 60 * 1000;
+export const WITHINGS_SUBSCRIPTION_MAX_RETRY_MS = 24 * 60 * 60 * 1000;
+
+const WITHINGS_SUBSCRIPTION_STATUSES: Record<
+  WithingsWebhookSubscriptionStatus,
+  true
+> = {
+  pending: true,
+  success: true,
+  transient: true,
+  persistent: true,
+  reauth_required: true,
+};
+
+function createPendingSubscriptionOutcome(
+  now: Date,
+): WithingsWebhookSubscriptionOutcome {
+  return {
+    status: "pending",
+    attemptCount: 0,
+    lastAttemptAt: null,
+    nextRetryAt: now.toISOString(),
+    withingsStatus: null,
+  };
+}
+
+export function createPendingWithingsWebhookSubscriptionState(
+  now: Date = new Date(),
+): WithingsWebhookSubscriptionStateV1 {
+  return {
+    version: 1,
+    outcomes: Object.fromEntries(
+      WITHINGS_NOTIFY_APPLIS.map((appli) => [
+        String(appli),
+        createPendingSubscriptionOutcome(now),
+      ]),
+    ) as WithingsWebhookSubscriptionStateV1["outcomes"],
+  };
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isDateStringOrNull(value: unknown): value is string | null {
+  return (
+    value === null ||
+    (typeof value === "string" && Number.isFinite(Date.parse(value)))
+  );
+}
+
+function parseSubscriptionOutcome(
+  value: unknown,
+): WithingsWebhookSubscriptionOutcome | null {
+  if (!isObject(value)) return null;
+  if (
+    typeof value.status !== "string" ||
+    !WITHINGS_SUBSCRIPTION_STATUSES[
+      value.status as WithingsWebhookSubscriptionStatus
+    ] ||
+    !Number.isSafeInteger(value.attemptCount) ||
+    (value.attemptCount as number) < 0 ||
+    !isDateStringOrNull(value.lastAttemptAt) ||
+    !isDateStringOrNull(value.nextRetryAt) ||
+    !(
+      value.withingsStatus === null ||
+      (typeof value.withingsStatus === "number" &&
+        Number.isSafeInteger(value.withingsStatus))
+    )
+  ) {
+    return null;
+  }
+
+  const status = value.status as WithingsWebhookSubscriptionStatus;
+  if (
+    (status === "transient" || status === "pending") &&
+    value.nextRetryAt === null
+  ) {
+    return null;
+  }
+  if (
+    status !== "transient" &&
+    status !== "pending" &&
+    value.nextRetryAt !== null
+  ) {
+    return null;
+  }
+
+  return {
+    status,
+    attemptCount: value.attemptCount as number,
+    lastAttemptAt: value.lastAttemptAt,
+    nextRetryAt: value.nextRetryAt,
+    withingsStatus: value.withingsStatus as number | null,
+  };
+}
+
 /**
- * Subscribe to every Withings notify category HealthLog ingests. Each
- * appli is its own subscribe call upstream; a failure on one category
- * is logged and we continue with the rest, because losing one webhook
- * is strictly better than rolling back all three.
+ * Persisted JSON is an untrusted compatibility boundary. Unknown versions or
+ * malformed outcomes reset to a fully pending v1 state rather than silently
+ * treating a category as subscribed.
  */
-export async function setupWebhook(userId: string): Promise<void> {
-  const tokenInfo = await getValidToken(userId);
-  if (!tokenInfo) return;
+export function parseWithingsWebhookSubscriptionState(
+  value: unknown,
+  now: Date = new Date(),
+): WithingsWebhookSubscriptionStateV1 {
+  const pending = createPendingWithingsWebhookSubscriptionState(now);
+  if (!isObject(value) || value.version !== 1 || !isObject(value.outcomes)) {
+    return pending;
+  }
+
+  const outcomes = { ...pending.outcomes };
+  for (const appli of WITHINGS_NOTIFY_APPLIS) {
+    const key = String(appli) as WithingsNotifyAppliKey;
+    const raw = value.outcomes[key];
+    if (raw === undefined) continue;
+    const parsed = parseSubscriptionOutcome(raw);
+    if (!parsed) return pending;
+    outcomes[key] = parsed;
+  }
+  return { version: 1, outcomes };
+}
+
+function subscriptionBackoffMs(attemptCount: number): number {
+  const exponent = Math.min(Math.max(attemptCount - 1, 0), 30);
+  return Math.min(
+    WITHINGS_SUBSCRIPTION_BASE_RETRY_MS * 2 ** exponent,
+    WITHINGS_SUBSCRIPTION_MAX_RETRY_MS,
+  );
+}
+
+function earliestSubscriptionRetryAt(
+  state: WithingsWebhookSubscriptionStateV1,
+): Date | null {
+  let earliest: number | null = null;
+  for (const outcome of Object.values(state.outcomes)) {
+    if (
+      (outcome.status !== "pending" && outcome.status !== "transient") ||
+      outcome.nextRetryAt === null
+    ) {
+      continue;
+    }
+    const timestamp = Date.parse(outcome.nextRetryAt);
+    if (earliest === null || timestamp < earliest) earliest = timestamp;
+  }
+  return earliest === null ? null : new Date(earliest);
+}
+
+async function persistWithingsWebhookSubscriptionState(
+  connectionId: string,
+  state: WithingsWebhookSubscriptionStateV1,
+): Promise<void> {
+  await prisma.withingsConnection.update({
+    where: { id: connectionId },
+    data: {
+      webhookSubscriptionState: state as unknown as Prisma.InputJsonValue,
+      webhookSubscriptionRetryAt: earliestSubscriptionRetryAt(state),
+    },
+  });
+}
+
+function subscriptionFailureOutcome(
+  previous: WithingsWebhookSubscriptionOutcome,
+  err: unknown,
+  now: Date,
+): WithingsWebhookSubscriptionOutcome {
+  const classified = classifyError(err);
+  const classification = classified === "success" ? "transient" : classified;
+  const attemptCount = previous.attemptCount + 1;
+  const withingsStatus =
+    err instanceof WithingsApiError &&
+    typeof err.withingsStatus === "number" &&
+    Number.isSafeInteger(err.withingsStatus)
+      ? err.withingsStatus
+      : null;
+  return {
+    status: classification,
+    attemptCount,
+    lastAttemptAt: now.toISOString(),
+    nextRetryAt:
+      classification === "transient"
+        ? new Date(
+            now.getTime() + subscriptionBackoffMs(attemptCount),
+          ).toISOString()
+        : null,
+    withingsStatus,
+  };
+}
+
+async function reconcileWithingsWebhookSubscriptions(
+  userId: string,
+  now: Date,
+): Promise<void> {
+  const connection = await prisma.withingsConnection.findUnique({
+    where: { userId },
+    select: {
+      id: true,
+      webhookSubscriptionState: true,
+    },
+  });
+  if (!connection) return;
+
+  const state = parseWithingsWebhookSubscriptionState(
+    connection.webhookSubscriptionState,
+    now,
+  );
+  const dueApplis = WITHINGS_NOTIFY_APPLIS.filter((appli) => {
+    const outcome = state.outcomes[String(appli) as WithingsNotifyAppliKey];
+    return (
+      (outcome.status === "pending" || outcome.status === "transient") &&
+      outcome.nextRetryAt !== null &&
+      Date.parse(outcome.nextRetryAt) <= now.getTime()
+    );
+  });
+  if (dueApplis.length === 0) return;
+
+  let tokenInfo: WithingsValidToken | null;
+  try {
+    tokenInfo = await getValidToken(userId, { throwOnRefreshFailure: true });
+  } catch (err) {
+    for (const appli of dueApplis) {
+      const key = String(appli) as WithingsNotifyAppliKey;
+      state.outcomes[key] = subscriptionFailureOutcome(
+        state.outcomes[key],
+        err,
+        now,
+      );
+      await persistWithingsWebhookSubscriptionState(connection.id, state);
+    }
+    return;
+  }
+
+  if (!tokenInfo) {
+    for (const appli of dueApplis) {
+      const key = String(appli) as WithingsNotifyAppliKey;
+      const previous = state.outcomes[key];
+      state.outcomes[key] = {
+        status: "reauth_required",
+        attemptCount: previous.attemptCount + 1,
+        lastAttemptAt: now.toISOString(),
+        nextRetryAt: null,
+        withingsStatus: null,
+      };
+      await persistWithingsWebhookSubscriptionState(connection.id, state);
+    }
+    return;
+  }
 
   const callbackUrl = getWithingsWebhookCallbackUrl();
-  for (const appli of WITHINGS_NOTIFY_APPLIS) {
+  for (const appli of dueApplis) {
+    const key = String(appli) as WithingsNotifyAppliKey;
+    const previous = state.outcomes[key];
     try {
       await subscribeWebhook(tokenInfo.accessToken, callbackUrl, appli);
+      state.outcomes[key] = {
+        status: "success",
+        attemptCount: previous.attemptCount + 1,
+        lastAttemptAt: now.toISOString(),
+        nextRetryAt: null,
+        withingsStatus: null,
+      };
       getEvent()?.addMeta(`webhook_subscribed_${appli}`, userId);
     } catch (err) {
+      state.outcomes[key] = subscriptionFailureOutcome(previous, err, now);
+      const outcome = state.outcomes[key];
       getEvent()?.addWarning(
-        `Webhook subscribe (appli=${appli}) failed for user ${userId}: ${err}`,
+        `Webhook subscription failed (appli=${appli}, classification=${outcome.status}, status=${outcome.withingsStatus ?? "unknown"})`,
       );
     }
+    await persistWithingsWebhookSubscriptionState(connection.id, state);
   }
+}
+
+/**
+ * Initial setup and reconnect both reconcile the durable state. Successful
+ * categories are retained; reconnect resets the JSON before calling this.
+ */
+export async function setupWebhook(
+  userId: string,
+  now: Date = new Date(),
+): Promise<void> {
+  await reconcileWithingsWebhookSubscriptions(userId, now);
+}
+
+/**
+ * Hourly repair discovers only rows whose indexed retry timestamp is due, then
+ * narrows again to due pending/transient categories inside the validated JSON.
+ */
+export async function retryDueWithingsWebhookSubscriptions(
+  now: Date = new Date(),
+): Promise<number> {
+  const connections = await prisma.withingsConnection.findMany({
+    where: { webhookSubscriptionRetryAt: { lte: now } },
+    select: { userId: true },
+  });
+  for (const connection of connections) {
+    await reconcileWithingsWebhookSubscriptions(connection.userId, now);
+  }
+  return connections.length;
 }

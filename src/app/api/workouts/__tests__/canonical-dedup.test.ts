@@ -16,7 +16,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
+import { __resetAllCachesForTests, caches } from "@/lib/cache/server-cache";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -279,6 +279,73 @@ describe("GET /api/workouts — canonical dedup", () => {
 
     expect(body.data.workouts).toHaveLength(3);
     expect(body.data.meta.limit).toBe(3);
+  });
+  it("normalizes empty filters into the unfiltered cache key", async () => {
+    vi.mocked(prisma.workout.findMany).mockResolvedValue([] as never);
+
+    for (const query of [
+      "",
+      "?since=&until=&sportType=",
+      "?since=%20&until=%09&sportType=%20%20",
+    ]) {
+      const res = await GET(makeRequest(query));
+      expect(res.status).toBe(200);
+    }
+
+    expect(prisma.workout.findMany).toHaveBeenCalledTimes(1);
+    expect(caches.workouts.stats().size).toBe(1);
+  });
+
+  it("canonicalizes equivalent timestamps and trimmed sport types before keying", async () => {
+    vi.mocked(prisma.workout.findMany).mockResolvedValue([] as never);
+
+    const first = await GET(
+      makeRequest(
+        "?since=2026-01-01T00%3A00%3A00Z&until=2026-01-02T00%3A00%3A00Z&sportType=%20running%20",
+      ),
+    );
+    const second = await GET(
+      makeRequest(
+        "?since=2025-12-31T19%3A00%3A00-05%3A00&until=2026-01-01T19%3A00%3A00-05%3A00&sportType=running",
+      ),
+    );
+
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect(prisma.workout.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.workout.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          userId: "user-1",
+          sportType: "running",
+          startedAt: {
+            gte: new Date("2026-01-01T00:00:00.000Z"),
+            lte: new Date("2026-01-02T00:00:00.000Z"),
+          },
+        },
+      }),
+    );
+  });
+
+  it("rejects invalid filters without querying or minting cache keys", async () => {
+    const adversarialQueries = [
+      ...Array.from(
+        { length: 128 },
+        (_, index) => `?since=not-a-date-${index}`,
+      ),
+      "?until=2026-02-30T00%3A00%3A00Z",
+      "?sportType=not-a-sport",
+      "?since=2026-01-02T00%3A00%3A00Z&until=2026-01-01T00%3A00%3A00Z",
+    ];
+    for (const query of adversarialQueries) {
+      const res = await GET(makeRequest(query));
+      const body = await res.json();
+      expect(res.status).toBe(422);
+      expect(body.error).toBe("Validation failed");
+    }
+
+    expect(prisma.workout.findMany).not.toHaveBeenCalled();
+    expect(caches.workouts.stats().size).toBe(0);
   });
 
   it("paginates across cluster boundaries without double-counting deduped rows", async () => {

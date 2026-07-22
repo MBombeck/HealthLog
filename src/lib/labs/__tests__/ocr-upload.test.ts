@@ -1,8 +1,13 @@
 import { Buffer } from "node:buffer";
 
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { detectOcrMimeType, OCR_MAX_BYTES } from "../ocr-upload";
+import {
+  BodyTooLargeError,
+  detectOcrMimeType,
+  OCR_MAX_BYTES,
+  readBoundedBody,
+} from "../ocr-upload";
 
 /** Pad a magic-byte header out to the 12-byte minimum the sniffer needs. */
 function withMagic(bytes: number[]): Buffer {
@@ -45,5 +50,116 @@ describe("detectOcrMimeType", () => {
 
   it("caps uploads at 12 MiB", () => {
     expect(OCR_MAX_BYTES).toBe(12 * 1024 * 1024);
+  });
+});
+
+describe("readBoundedBody", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("cancels immediately when a chunk crosses the byte cap", async () => {
+    let pulls = 0;
+    const cancel = vi.fn();
+    const stream = new ReadableStream<Uint8Array>(
+      {
+        pull(controller) {
+          pulls += 1;
+          if (pulls === 1) {
+            controller.enqueue(new Uint8Array(5));
+            return;
+          }
+          controller.error(new Error("reader continued after overflow"));
+        },
+        cancel,
+      },
+      { highWaterMark: 0 },
+    );
+
+    await expect(readBoundedBody(stream, 4)).rejects.toBeInstanceOf(
+      BodyTooLargeError,
+    );
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(pulls).toBe(1);
+  });
+
+  it("cancels a non-ending read when its AbortSignal fires", async () => {
+    let controller: ReadableStreamDefaultController<Uint8Array>;
+    const cancel = vi.fn();
+    const stream = new ReadableStream<Uint8Array>({
+      start(value) {
+        controller = value;
+      },
+      cancel,
+    });
+    const abort = new AbortController();
+
+    const result = readBoundedBody(stream, 16, { signal: abort.signal });
+    abort.abort();
+    try {
+      controller!.close();
+    } catch {
+      // A correctly cancelled stream is already closed.
+    }
+
+    await expect(result).rejects.toMatchObject({ name: "AbortError" });
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  it("cancels a slow read at an absolute deadline", async () => {
+    vi.useFakeTimers();
+    const cancel = vi.fn();
+    let controller: ReadableStreamDefaultController<Uint8Array>;
+    const stream = new ReadableStream<Uint8Array>({
+      start(value) {
+        controller = value;
+        setTimeout(() => {
+          try {
+            controller.close();
+          } catch {
+            // A deadline cancellation closes it first.
+          }
+        }, 200);
+      },
+      cancel,
+    });
+
+    const result = readBoundedBody(stream, 16, {
+      deadline: Date.now() + 100,
+    });
+    const assertion = expect(result).rejects.toMatchObject({
+      name: "AbortError",
+    });
+    await vi.advanceTimersByTimeAsync(200);
+    await assertion;
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  it("combines every independently aligned chunk", async () => {
+    const first = new Uint8Array([1, 2]);
+    const second = new Uint8Array([3, 4]);
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(first);
+        controller.enqueue(second);
+        controller.close();
+      },
+    });
+
+    await expect(readBoundedBody(stream, 4)).resolves.toEqual(
+      new Uint8Array([1, 2, 3, 4]),
+    );
+  });
+
+  it("reuses an aligned single chunk instead of copying the whole body", async () => {
+    const chunk = new Uint8Array([1, 2, 3, 4]);
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(chunk);
+        controller.close();
+      },
+    });
+
+    await expect(readBoundedBody(stream, 4)).resolves.toBe(chunk);
   });
 });

@@ -145,7 +145,10 @@ describe("MoodList — rated factor editing", () => {
     expect(listSrc).toContain(
       "const [editRatedFactors, setEditRatedFactors] = useState<",
     );
-    expect(listSrc).toContain("setEditRatedFactors(entry.ratedFactors ?? [])");
+    expect(listSrc).toContain(
+      "ratedFactors: [...(entry.ratedFactors ?? [])].sort",
+    );
+    expect(listSrc).toContain("setEditRatedFactors(seed.ratedFactors)");
     expect(listSrc).toMatch(
       /<MoodTagPicker[\s\S]*ratedFactors=\{editRatedFactors\}[\s\S]*onRateFactor=\{rateEditFactor\}/,
     );

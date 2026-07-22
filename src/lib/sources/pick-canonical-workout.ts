@@ -32,18 +32,17 @@
  *      and keep the first source that has a row in the cluster as the
  *      BASE of the canonical row. All other rows from the same cluster
  *      are dropped from the canonical list.
- *   3. Field-merge (multi-element clusters only): the base row is
- *      backfilled with any of `avgHeartRate`, `maxHeartRate`,
- *      `totalEnergyKcal`, `totalDistanceM`, `elevationM` it is itself
- *      missing, from the ladder-highest cluster member that HAS that
- *      field — so a higher-priority twin with a null HR (e.g. a
- *      Withings summary) doesn't discard the HR a lower-priority twin
- *      (e.g. WHOOP) actually recorded. The same step adopts a specific
- *      sport type from a member when the base row's own sportType is
- *      generic (`"other"` / unrecognised). Every OTHER field on the
- *      base row (id, source, startedAt, route, metadata, ...) is
- *      untouched — the merge only ever fills a gap, never overwrites a
- *      value the base row already has.
+ *   3. Field-merge (multi-element clusters only): each workout from the
+ *      winning source is backfilled only from losing-source members matched
+ *      to that workout by sport identity and start-time proximity. A donor is
+ *      assigned to one deterministic best winner (exact sport before generic
+ *      compatibility, then nearest timestamp). Missing `avgHeartRate`,
+ *      `maxHeartRate`, `totalEnergyKcal`, `totalDistanceM`, and `elevationM`
+ *      fields come from the ladder-highest matched donor that has the field.
+ *      The same step adopts a specific sport type when the base row is generic
+ *      (`"other"` / unrecognised). Every OTHER field on the base row (id,
+ *      source, startedAt, route, metadata, ...) is untouched — the merge only
+ *      ever fills a gap, never overwrites a value the base row already has.
  *   4. Single-element clusters (no near-duplicate) pass through
  *      unchanged regardless of source — no merge step runs.
  *
@@ -131,6 +130,50 @@ function isSpecificSportType(value: string): boolean {
     value !== "other" &&
     (workoutSportTypeEnum.options as readonly string[]).includes(value)
   );
+}
+
+function areSportTypesCompatible(left: string, right: string): boolean {
+  return (
+    left === right || !isSpecificSportType(left) || !isSpecificSportType(right)
+  );
+}
+
+/**
+ * Match one losing-source donor to one winning-source workout. Exact sport
+ * identity is stronger than generic compatibility; within the same identity
+ * strength, the nearest start wins. `winners` is already startedAt/id-sorted,
+ * so an exact tie resolves deterministically to the first winner.
+ */
+function findMatchingWinner<T extends WorkoutPickerRow>(
+  donor: T,
+  winners: readonly T[],
+  proximityMs: number,
+): T | undefined {
+  let best: T | undefined;
+  let bestHasExactSport = false;
+  let bestDeltaMs = Infinity;
+
+  for (const winner of winners) {
+    if (!areSportTypesCompatible(winner.sportType, donor.sportType)) continue;
+
+    const deltaMs = Math.abs(
+      winner.startedAt.getTime() - donor.startedAt.getTime(),
+    );
+    if (deltaMs > proximityMs) continue;
+
+    const hasExactSport = winner.sportType === donor.sportType;
+    if (
+      !best ||
+      (hasExactSport && !bestHasExactSport) ||
+      (hasExactSport === bestHasExactSport && deltaMs < bestDeltaMs)
+    ) {
+      best = winner;
+      bestHasExactSport = hasExactSport;
+      bestDeltaMs = deltaMs;
+    }
+  }
+
+  return best;
 }
 
 /** Ladder position of `source`, or `ladder.length` (last) when the source
@@ -247,35 +290,28 @@ export interface PickCanonicalWorkoutOptions {
   sourcePriority?: readonly MeasurementSource[];
   /**
    * Cluster window. Defaults to `DEFAULT_WORKOUT_PROXIMITY_MINUTES`.
-   * Workouts whose start timestamps are within ±this many minutes of
-   * an already-clustered workout join the same cluster; outside the
-   * window they form a new cluster even with the same sport type.
+   * Workouts whose start timestamps are within this many minutes of
+   * the cluster anchor join that cluster; later neighbours cannot extend
+   * the window.
    */
   proximityMinutes?: number;
 }
 
 /**
  * Pick the canonical-source workout list. See file-level docs for the
- * algorithm; returns a subset of the input plus a per-cluster pick
- * record useful for debug overlays / audit logging.
+ * algorithm; returns the surviving input rows plus one representative
+ * record per overlap cluster for debug overlays and audit logging.
  */
 export function pickCanonicalWorkout<T extends WorkoutPickerRow>(
   rows: readonly T[],
   options: PickCanonicalWorkoutOptions = {},
 ): {
   canonical: T[];
-  /**
-   * One entry per cluster. Useful when the caller wants to log
-   * "we dropped a WITHINGS row in favour of an APPLE_HEALTH twin"
-   * without re-running the picker.
-   */
   clusters: Array<{
-    /** Every row that clustered together, UNMERGED — the raw inputs the
-     *  merge step read from. */
+    /** Every row that clustered together, unmerged. */
     members: T[];
     pickedSource: MeasurementSource;
-    /** The ladder winner AFTER the step-3 field-merge — the same object
-     *  that landed in `canonical` for this cluster. */
+    /** Representative winning row after cross-source field merge. */
     picked: T;
   }>;
 } {
@@ -311,34 +347,19 @@ export function pickCanonicalWorkout<T extends WorkoutPickerRow>(
   // way — the core invariant is unchanged.
   const clusters: T[][] = [];
   for (const row of sorted) {
-    // Find an existing cluster whose latest member is within the
-    // proximity window and sport-compatible. Walking from the most
-    // recent cluster backward is O(k) per row where k is the open
-    // cluster count; for the workout volume HealthLog ingests (single
-    // user, tens of workouts per week) this is well below the
-    // measurement bucket-map cost.
+    // Compare against the first row in the cluster. A later neighbour
+    // inside the window must not extend the cluster beyond its anchor.
     let placed = false;
     for (let i = clusters.length - 1; i >= 0; i--) {
       const cluster = clusters[i];
       const head = cluster[0];
       const sameSport = head.sportType === row.sportType;
-      if (!sameSport) {
-        const genericPairing =
-          !isSpecificSportType(head.sportType) ||
-          !isSpecificSportType(row.sportType);
-        if (!genericPairing) continue;
-      }
-      const last = cluster[cluster.length - 1];
-      if (row.startedAt.getTime() - last.startedAt.getTime() <= proximityMs) {
+      if (!areSportTypesCompatible(head.sportType, row.sportType)) continue;
+      if (row.startedAt.getTime() - head.startedAt.getTime() <= proximityMs) {
         cluster.push(row);
         placed = true;
         break;
       }
-      // Sorted input + outside-window, exact sport match: every
-      // earlier cluster of the same sport is even further away, no
-      // point continuing. A generic↔specific pairing has no such
-      // monotonic guarantee once different-sport clusters interleave
-      // in time, so keep scanning rather than abort the whole search.
       if (sameSport) break;
     }
     if (!placed) {
@@ -346,9 +367,8 @@ export function pickCanonicalWorkout<T extends WorkoutPickerRow>(
     }
   }
 
-  // Per-cluster: walk the ladder, keep the first source with a row.
-  // Ties within a source are broken by the sorted-id order baked in
-  // above.
+  // Preserve single-source clusters. For a real cross-source overlap,
+  // select the winning source and retain every workout it contributed.
   const canonical: T[] = [];
   const clusterRecords: Array<{
     members: T[];
@@ -356,14 +376,13 @@ export function pickCanonicalWorkout<T extends WorkoutPickerRow>(
     picked: T;
   }> = [];
   for (const cluster of clusters) {
-    // Single-element fast path — no contention.
-    if (cluster.length === 1) {
-      const only = cluster[0];
-      canonical.push(only);
+    const sources = new Set(cluster.map((row) => row.source));
+    if (sources.size === 1) {
+      canonical.push(...cluster);
       clusterRecords.push({
         members: cluster,
-        pickedSource: only.source,
-        picked: only,
+        pickedSource: cluster[0].source,
+        picked: cluster[0],
       });
       continue;
     }
@@ -375,10 +394,6 @@ export function pickCanonicalWorkout<T extends WorkoutPickerRow>(
         break;
       }
     }
-    // Fallback: none of the ladder entries appear in the cluster
-    // (impossible with the current four-member enum + four-member
-    // default ladder, but the helper accepts a custom ladder). Keep
-    // every row so the picker never silently drops data.
     if (!pickedSource) {
       canonical.push(...cluster);
       clusterRecords.push({
@@ -388,13 +403,27 @@ export function pickCanonicalWorkout<T extends WorkoutPickerRow>(
       });
       continue;
     }
-    const winning = cluster.find((row) => row.source === pickedSource)!;
-    const merged = mergeClusterFields(winning, cluster, ladder);
-    canonical.push(merged);
+    const winningRows = cluster.filter((row) => row.source === pickedSource);
+    const membersByWinner = new Map<T, T[]>(
+      winningRows.map((winner) => [winner, [winner]]),
+    );
+    for (const donor of cluster) {
+      if (donor.source === pickedSource) continue;
+      const matchedWinner = findMatchingWinner(donor, winningRows, proximityMs);
+      if (matchedWinner) membersByWinner.get(matchedWinner)?.push(donor);
+    }
+    const winners = winningRows.map((winner) =>
+      mergeClusterFields(
+        winner,
+        membersByWinner.get(winner) ?? [winner],
+        ladder,
+      ),
+    );
+    canonical.push(...winners);
     clusterRecords.push({
       members: cluster,
       pickedSource,
-      picked: merged,
+      picked: winners[0],
     });
   }
 

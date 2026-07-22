@@ -144,7 +144,7 @@ export async function processWhoopNotification(
     return NextResponse.json({ status: "ignored" }, { status: 200 });
   }
 
-  const connection = await prisma.whoopConnection.findFirst({
+  const connection = await prisma.whoopConnection.findUnique({
     where: { whoopUserId },
     select: { userId: true },
   });

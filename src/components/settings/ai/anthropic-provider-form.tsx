@@ -4,7 +4,7 @@
  * Anthropic form — API key + model dropdown.
  * ──────────────────────────────────────────────────────────────── */
 
-import { useState } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Save } from "lucide-react";
 
@@ -37,6 +37,7 @@ export function AnthropicProviderForm({
   const [customModel, setCustomModel] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
+  const submitInFlightRef = useRef(false);
 
   const seededKey =
     userProvider != null
@@ -85,10 +86,25 @@ export function AnthropicProviderForm({
       setOk(false);
       setMsg(e instanceof Error ? e.message : t("settings.ai.errorGeneric"));
     },
+    onSettled: () => {
+      submitInFlightRef.current = false;
+    },
   });
 
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submitInFlightRef.current || saveMutation.isPending) return;
+    submitInFlightRef.current = true;
+    saveMutation.mutate();
+  }
+
   return (
-    <div data-testid="ai-provider-config-anthropic" className="space-y-4">
+    <form
+      data-testid="ai-provider-config-anthropic"
+      className="space-y-4"
+      onSubmit={submit}
+      noValidate
+    >
       <div>
         <Label htmlFor="ai-anthropic-key">
           {t("settings.ai.anthropicKeyLabel")}
@@ -148,9 +164,10 @@ export function AnthropicProviderForm({
 
       <div>
         <Button
+          type="submit"
           size="sm"
           className="min-h-11 sm:min-h-9"
-          onClick={() => saveMutation.mutate()}
+          aria-busy={saveMutation.isPending || undefined}
           disabled={saveMutation.isPending}
         >
           {saveMutation.isPending ? (
@@ -167,6 +184,6 @@ export function AnthropicProviderForm({
           {msg}
         </p>
       )}
-    </div>
+    </form>
   );
 }

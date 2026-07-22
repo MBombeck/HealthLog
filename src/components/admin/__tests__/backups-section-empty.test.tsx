@@ -47,9 +47,9 @@ vi.mock("@/hooks/use-auth", () => ({
 import { I18nProvider } from "@/lib/i18n/context";
 import { BackupsSection } from "../backups-section";
 
-function render() {
+function render(locale: "en" | "de" = "en") {
   return renderToStaticMarkup(
-    <I18nProvider initialLocale="en">
+    <I18nProvider initialLocale={locale}>
       <BackupsSection />
     </I18nProvider>,
   );
@@ -77,6 +77,25 @@ describe("BackupsSection — empty state", () => {
     // one occurrence.
     const matches = (html.match(/Backup now/g) ?? []).length;
     expect(matches).toBeGreaterThanOrEqual(2);
+  });
+
+  it("uses the full muted semantic color for localized upload help", () => {
+    const english = render();
+    const german = render("de");
+    const helpElement = english.match(
+      /<[^>]+data-slot="backup-upload-help"[^>]*>/,
+    )?.[0];
+    const className = helpElement?.match(/\bclass="([^"]*)"/)?.[1] ?? "";
+
+    expect(english).toContain(
+      "JSON file matching the current backup schema. Max 10 MB.",
+    );
+    expect(german).toContain(
+      "JSON-Datei passend zum aktuellen Backup-Schema. Max. 10 MB.",
+    );
+    expect(helpElement).toBeDefined();
+    expect(className.split(/\s+/)).toContain("text-muted-foreground");
+    expect(className).not.toMatch(/\b(?:opacity-\d+|text-\S+\/\d+)\b/);
   });
 
   it("warns in both catalogs that restore overwrites instance-wide settings", () => {

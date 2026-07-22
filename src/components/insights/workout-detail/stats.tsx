@@ -10,7 +10,7 @@ import {
   Timer,
 } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import type { WorkoutDetailPayload } from "@/hooks/use-workouts";
@@ -157,9 +157,12 @@ export function WorkoutDetailStats({ workout }: WorkoutDetailStatsProps) {
   return (
     <Card data-slot="workout-detail-stats">
       <CardHeader>
-        <CardTitle className="text-base">
+        <h2
+          data-slot="card-title"
+          className="text-base leading-none font-semibold"
+        >
           {t("insights.workouts.detail.statsTitle")}
-        </CardTitle>
+        </h2>
       </CardHeader>
       <CardContent className="space-y-3">
         <div

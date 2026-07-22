@@ -118,6 +118,21 @@
       ]
     },
     {
+      "name": "AI Provider",
+      "description": "Optional runtime policy and output tuning for user-configured AI providers. Each variable stands alone and has a safe default when unset.",
+      "required": false,
+      "variables": [
+        {
+          "name": "ALLOW_LOCAL_AI_PRIVATE_HOSTS",
+          "purpose": "Local-AI SSRF opt-in. Unset rejects private/internal hosts; set an exact comma-separated host allowlist or \"true\" to allow any private host."
+        },
+        {
+          "name": "INSIGHTS_MAX_TOKENS",
+          "purpose": "Daily-briefing output-token ceiling. Default 2500, clamped to 500-8000."
+        }
+      ]
+    },
+    {
       "name": "APNs (iOS push)",
       "description": "All four core APNS_* vars together. Missing any disables APNs silently — the v1.4.40 AP-2 gap that motivated this manifest. allOrNone trips the synthetic <all-or-none> required row whenever 1-3 of the 4 are set.",
       "required": false,

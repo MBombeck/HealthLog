@@ -46,6 +46,55 @@
     "durationHoursMinutes": "{hours} godz. {minutes} min",
     "durationMinutes": "{minutes} min"
   },
+  "apiErrors": {
+    "measurement": {
+      "create": { "invalid": "Sprawdź dane pomiaru i spróbuj ponownie." },
+      "duplicate_timestamp": "Pomiar dla tego czasu już istnieje."
+    },
+    "mood": {
+      "list": { "invalid": "Filtry listy nastroju są nieprawidłowe." },
+      "create": { "invalid": "Sprawdź wpis nastroju i spróbuj ponownie." },
+      "update": { "invalid": "Sprawdź wpis nastroju i spróbuj ponownie." },
+      "duplicate_timestamp": "Wpis nastroju dla tego czasu już istnieje.",
+      "not_found": "Ten wpis nastroju nie jest już dostępny.",
+      "ratedFactor": {
+        "out_of_range": "Ocena czynnika jest poza dozwolonym zakresem."
+      }
+    },
+    "labs": {
+      "create": { "invalid": "Sprawdź wynik badania i spróbuj ponownie." },
+      "result": { "notFound": "Ten wynik badania nie jest już dostępny." },
+      "biomarker": {
+        "notFound": "Ten biomarker nie jest już dostępny.",
+        "duplicate": "Biomarker o tej nazwie już istnieje.",
+        "create": { "invalid": "Sprawdź dane biomarkera i spróbuj ponownie." },
+        "update": {
+          "invalid": "Sprawdź dane biomarkera i spróbuj ponownie.",
+          "referenceRangeInvalid": "Dolna wartość referencyjna nie może przekraczać górnej."
+        }
+      },
+      "update": {
+        "invalid": "Sprawdź wynik badania i spróbuj ponownie.",
+        "linkedFieldsImmutable": "Edytuj biomarker, aby zmienić nazwę, jednostkę, panel lub zakres referencyjny.",
+        "qualitativeExpected": "Wprowadź wynik tekstowy dla tego odczytu jakościowego.",
+        "numericExpected": "Wprowadź liczbę dla tego odczytu ilościowego.",
+        "referenceRangeInvalid": "Dolna wartość referencyjna nie może przekraczać górnej."
+      }
+    },
+    "onboarding": {
+      "disclaimer": { "invalid": "Potwierdź ponownie informację medyczną." },
+      "tour": { "invalid": "Nie udało się zapisać postępu prezentacji." },
+      "complete": { "invalid": "Sprawdź dane profilu i spróbuj ponownie." },
+      "user": { "notFound": "Nie znaleziono Twojego konta." },
+      "step": {
+        "rateLimited": "Zbyt wiele prób. Zaczekaj i spróbuj ponownie.",
+        "invalid": "Nie udało się zapisać tego kroku wprowadzenia.",
+        "completed": "Wprowadzenie zostało już ukończone.",
+        "outOfOrder": "Twój postęp się zmienił. Odśwież stronę i kontynuuj.",
+        "concurrent": "Twój postęp się zmienił. Odśwież stronę i kontynuuj."
+      }
+    }
+  },
   "doctorReport": {
     "title": "Raport zdrowotny",
     "subtitle": "HealthLog — Osobisty raport zdrowotny",
@@ -255,7 +304,9 @@
       "medication": "Lek",
       "medicationDescription": "Oznacz dawkę jako przyjętą",
       "mood": "Nastrój",
-      "moodDescription": "Zapisz nastrój i tagi"
+      "moodDescription": "Zapisz nastrój i tagi",
+      "water": "Woda",
+      "waterDescription": "Szybko dodaj ilość wypitej wody"
     },
     "cycle": "Cykl",
     "labs": "Wyniki badań",
@@ -358,6 +409,7 @@
     "quickAddMeasurement": "Zarejestruj pomiar",
     "quickAddMood": "Zarejestruj nastrój",
     "quickAddMedicationIntake": "Zarejestruj przyjęcie",
+    "quickAddWater": "Zapisz wodę",
     "customizeDashboard": "Dostosuj pulpit",
     "medicationIntakeQuickAdd": {
       "sheetTitle": "Zarejestruj przyjęcie leku",
@@ -2331,6 +2383,13 @@
       "historyEmpty": "Twoje rozmowy pojawią się tutaj. Zadaj pytanie, aby zacząć.",
       "historyDeleteAria": "Usuń rozmowę",
       "historyDeleted": "Rozmowa usunięta",
+      "rename": {
+        "action": "Zmień nazwę rozmowy",
+        "input": "Tytuł rozmowy",
+        "save": "Zapisz tytuł",
+        "cancel": "Anuluj zmianę nazwy",
+        "error": "Nie udało się zapisać tytułu rozmowy."
+      },
       "historySearchEmpty": "Żadna rozmowa nie pasuje do wyszukiwania.",
       "historyLoadingMore": "Wczytywanie…",
       "sourcesTitle": "Do czego mam dostęp",
@@ -3042,7 +3101,10 @@
         "mixedCardio": "Cardio mieszane",
         "other": "Inne"
       },
-      "loadError": "Nie udało się wczytać treningów"
+      "loadError": "Nie udało się wczytać treningów",
+      "loadMore": "Wczytaj więcej treningów",
+      "loadingMore": "Wczytywanie kolejnych treningów",
+      "loadMoreError": "Nie udało się wczytać kolejnych treningów"
     },
     "bloodGlucose": {
       "title": "Poziom glukozy",
@@ -5747,6 +5809,22 @@
       "token": "Wymiana tokenu ze Strava nie powiodła się. Rozpocznij połączenie ponownie.",
       "rate_limited": "Zbyt wiele prób połączenia. Poczekaj chwilę i spróbuj ponownie.",
       "generic": "Nieznany błąd podczas łączenia. Rozpocznij połączenie ponownie."
+    },
+    "appleHealth": {
+      "title": "Apple Health",
+      "description": "Synchronizacja na żywo odbywa się przez aplikację HealthLog na iOS, a nie przez połączenie internetowe ani OAuth.",
+      "status": {
+        "checking": "Sprawdzanie danych Apple Health…",
+        "dataReceived": "Odebrano dane Apple Health",
+        "setup": "Skonfiguruj w aplikacji iOS",
+        "unavailable": "Stan Apple Health jest niedostępny"
+      },
+      "lastDataLabel": "Najnowsze dane Apple Health:",
+      "setupTitle": "Włącz synchronizację na żywo",
+      "permissionStep": "W aplikacji HealthLog na iOS otwórz Ustawienia → Apple Health i zezwól na udostępnianie wybranych kategorii zdrowotnych.",
+      "backgroundStep": "Pozostaw włączone odświeżanie aplikacji w tle. Aplikacja synchronizuje nowe dane automatycznie na pierwszym planie oraz gdy iOS przydzieli jej czas w tle.",
+      "importNote": "Potrzebujesz starszej historii lub nie możesz użyć aplikacji iOS? Przesłanie pliku XML/ZIP z Apple Health jest jednorazową alternatywą i nie włącza synchronizacji na żywo.",
+      "importAction": "Otwórz jednorazowy import"
     },
     "garminInfo": {
       "title": "Garmin",
@@ -8771,6 +8849,7 @@
       "quickAddCustomPlaceholder": "250",
       "quickAddSubmit": "Dodaj",
       "quickAddError": "Nie udało się zapisać — spróbuj ponownie.",
+      "quickAddSuccess": "Dodano {amount} mL wody.",
       "editTotal": "Edytuj dzisiejszą sumę"
     },
     "caffeine": {

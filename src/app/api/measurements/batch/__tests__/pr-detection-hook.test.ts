@@ -12,6 +12,9 @@ const reconcileOverrideMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    user: {
+      update: vi.fn(),
+    },
     measurement: {
       findMany: vi.fn(),
       createManyAndReturn: vi.fn(),
@@ -130,6 +133,7 @@ beforeEach(() => {
       externalId,
     }));
   }) as never);
+  vi.mocked(prisma.user.update).mockResolvedValue({} as never);
 });
 
 describe("POST /api/measurements/batch — PR detection enqueue (v1.4.25 W16c)", () => {
@@ -140,6 +144,28 @@ describe("POST /api/measurements/batch — PR detection enqueue (v1.4.25 W16c)",
     expect(enqueuePrDetection).toHaveBeenCalledWith("user-1", {
       silent: false,
     });
+  });
+
+  it("stamps HealthKit sync status after a durable Apple Health write", async () => {
+    const res = await POST(makeRequest({ entries: [validStepEntry("ext-a")] }));
+
+    expect(res.status).toBe(200);
+    expect(prisma.user.update).toHaveBeenCalledTimes(1);
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "user-1" },
+      data: { healthKitLastSyncedAt: expect.any(Date) },
+    });
+  });
+
+  it("does not stamp HealthKit sync status for a manual-only batch", async () => {
+    const res = await POST(
+      makeRequest({
+        entries: [{ ...validStepEntry("ext-manual"), source: "MANUAL" }],
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
   it("surfaces a hard reconciliation failure without checkpointing it", async () => {
@@ -163,6 +189,7 @@ describe("POST /api/measurements/batch — PR detection enqueue (v1.4.25 W16c)",
       error: null,
     });
     expect(enqueuePrDetection).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
   it("sets silent=true once the batch crosses the 50-entry threshold", async () => {

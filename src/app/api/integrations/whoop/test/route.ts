@@ -4,7 +4,7 @@ import { apiSuccess, apiError } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
-import { getValidToken } from "@/lib/whoop/sync";
+import { getValidToken } from "@/lib/whoop/sync-core";
 import { safeFetch, SafeFetchError } from "@/lib/safe-fetch";
 
 export const dynamic = "force-dynamic";

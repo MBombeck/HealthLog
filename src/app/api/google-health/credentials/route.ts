@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { isP2025 } from "@/lib/prisma-errors";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
@@ -87,7 +88,9 @@ export const DELETE = apiHandler(async () => {
 
   await prisma.googleHealthConnection
     .delete({ where: { userId: user.id } })
-    .catch(() => {});
+    .catch((err) => {
+      if (!isP2025(err)) throw err;
+    });
 
   await prisma.user.update({
     where: { id: user.id },

@@ -459,4 +459,83 @@ describe("per-user timezone — Pacific/Auckland end-to-end", () => {
     expect(recent.some((r) => r.date === aucklandDay)).toBe(true);
     expect(recent.some((r) => r.date === berlinDay)).toBe(false);
   });
+  it("buckets long dense measurement series by the user's local day", async () => {
+    const prisma = getPrismaClient();
+    const me = await prisma.user.create({
+      data: {
+        username: "la-series-user",
+        email: "la-series@example.test",
+        role: "USER",
+        timezone: "America/Los_Angeles",
+      },
+    });
+    const session = await prisma.session.create({
+      data: { userId: me.id, expiresAt: new Date(Date.now() + 60_000) },
+    });
+    cookieJar.set("healthlog_session", session.id);
+
+    const base = new Date();
+    base.setUTCDate(base.getUTCDate() - 2);
+    base.setUTCHours(0, 30, 0, 0);
+    const samples = [
+      { measuredAt: base, value: 10 },
+      {
+        measuredAt: new Date(base.getTime() + 8 * 60 * 60_000),
+        value: 30,
+      },
+      {
+        measuredAt: new Date(base.getTime() + 24 * 60 * 60_000),
+        value: 50,
+      },
+      {
+        measuredAt: new Date(base.getTime() + 32 * 60 * 60_000),
+        value: 70,
+      },
+    ];
+    await prisma.measurement.createMany({
+      data: samples.map((sample) => ({
+        userId: me.id,
+        type: "PULSE" as const,
+        value: sample.value,
+        unit: "bpm",
+        measuredAt: sample.measuredAt,
+        source: "MANUAL" as const,
+      })),
+    });
+
+    const { GET } = await import("@/app/api/measurements/series/route");
+    const { NextRequest } = await import("next/server");
+    const res = await GET(
+      new NextRequest(
+        "http://localhost/api/measurements/series?kind=pulse&days=91",
+      ),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: {
+        points: Array<{ id: string; at: string; value: number }>;
+        stats: { count: number };
+      };
+    };
+    const { userDayKey } = await import("@/lib/tz/resolver");
+    const expected = [
+      { day: userDayKey(samples[0].measuredAt, me.timezone), value: 10 },
+      { day: userDayKey(samples[1].measuredAt, me.timezone), value: 40 },
+      { day: userDayKey(samples[3].measuredAt, me.timezone), value: 70 },
+    ];
+
+    expect(body.data.points).toHaveLength(3);
+    expect(
+      body.data.points.map((point) => ({
+        day: point.id.replace("day:", ""),
+        value: point.value,
+      })),
+    ).toEqual(expected);
+    expect(
+      body.data.points.map((point) =>
+        userDayKey(new Date(point.at), me.timezone),
+      ),
+    ).toEqual(expected.map(({ day }) => day));
+    expect(body.data.stats.count).toBe(4);
+  });
 });

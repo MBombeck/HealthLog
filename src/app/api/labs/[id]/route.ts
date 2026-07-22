@@ -96,7 +96,9 @@ export const PUT = apiHandler(
       where: { id, deletedAt: null },
     });
     if (!existing || existing.userId !== user.id) {
-      return apiError("Lab result not found", 404);
+      return apiError("Lab result not found", 404, {
+        errorCode: "labs.result.notFound",
+      });
     }
 
     const { data: body, error: jsonError } = await safeJson(request, {
@@ -124,7 +126,9 @@ export const PUT = apiHandler(
         .catch(() => {
           /* swallow — the 422 response is the contract */
         });
-      return returnAllZodIssues(parsed.error, 422);
+      return returnAllZodIssues(parsed.error, 422, {
+        errorCode: "labs.update.invalid",
+      });
     }
 
     const d = parsed.data;
@@ -147,6 +151,7 @@ export const PUT = apiHandler(
       return apiError(
         "analyte / unit / panel / reference range are resolved from the linked biomarker and cannot be edited on a linked reading",
         422,
+        { errorCode: "labs.update.linkedFieldsImmutable" },
       );
     }
 
@@ -159,12 +164,14 @@ export const PUT = apiHandler(
       return apiError(
         "This is a qualitative reading — edit its result text, not a numeric value",
         422,
+        { errorCode: "labs.update.qualitativeExpected" },
       );
     }
     if (!rowIsQualitative && d.valueText !== undefined) {
       return apiError(
         "This is a numeric reading — edit its value, not a qualitative result",
         422,
+        { errorCode: "labs.update.numericExpected" },
       );
     }
 
@@ -197,7 +204,9 @@ export const PUT = apiHandler(
         effectiveBound(d.referenceHigh, existing.referenceHigh),
       )
     ) {
-      return apiError("referenceLow must not exceed referenceHigh", 422);
+      return apiError("referenceLow must not exceed referenceHigh", 422, {
+        errorCode: "labs.update.referenceRangeInvalid",
+      });
     }
     if (d.note !== undefined) {
       data.noteEncrypted = d.note ? encryptNoteToBytes(d.note) : null;

@@ -27,7 +27,7 @@ vi.mock("@/lib/withings/client", async (importOriginal) => ({
 }));
 
 import { encrypt, decrypt } from "@/lib/crypto";
-import { getValidToken as getValidWhoopToken } from "@/lib/whoop/sync";
+import { getValidToken as getValidWhoopToken } from "@/lib/whoop/sync-core";
 import { syncUserRecovery } from "@/lib/whoop/sync-recovery";
 import { getValidToken as getValidWithingsToken } from "@/lib/withings/sync";
 

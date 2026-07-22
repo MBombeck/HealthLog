@@ -28,6 +28,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import {
+  SeededFormDiscardDialog,
+  useSeededFormDismissal,
+} from "@/components/forms/use-seeded-form-dismissal";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -357,6 +361,11 @@ export function MeasurementList({
   const [editValue, setEditValue] = useState("");
   const [editMeasuredAt, setEditMeasuredAt] = useState("");
   const [editNotes, setEditNotes] = useState("");
+  const [editSeed, setEditSeed] = useState({
+    value: "",
+    measuredAt: "",
+    notes: "",
+  });
   const [editError, setEditError] = useState<string | null>(null);
   const [editDeleteDialogOpen, setEditDeleteDialogOpen] = useState(false);
   // v1.4.27 MB3 — link the edit dialog error banner to the inputs via
@@ -642,8 +651,12 @@ export function MeasurementList({
     onSuccess: async () => {
       await invalidateKeys(queryClient, measurementDependentKeys);
       await refetchInactiveDailyReads(queryClient);
-      setEditing(null);
-      setEditError(null);
+      setEditSeed({
+        value: editValue,
+        measuredAt: editMeasuredAt,
+        notes: editNotes,
+      });
+      dismissEdit();
     },
     onError: (err) => {
       // v1.4.28 FB-B1 — the PUT route returns a 409 with
@@ -672,6 +685,15 @@ export function MeasurementList({
       );
     },
   });
+  const editDismissal = useSeededFormDismissal({
+    seed: editSeed,
+    value: {
+      value: editValue,
+      measuredAt: editMeasuredAt,
+      notes: editNotes,
+    },
+    blocked: updateMutation.isPending || deleteMutation.isPending,
+  });
 
   // v1.4.37 W7c — the collapsed daily view paints up to 5000
   // synthesised rows in one shot (one row per day for the
@@ -688,18 +710,27 @@ export function MeasurementList({
       return;
     }
 
+    const seed = {
+      value: String(measurement.value),
+      measuredAt: toDateTimeLocalValue(measurement.measuredAt),
+      notes: (measurement.notes ?? "").slice(0, MAX_COMMENT_LENGTH),
+    };
     setEditing(measurement);
-    setEditValue(String(measurement.value));
-    setEditMeasuredAt(toDateTimeLocalValue(measurement.measuredAt));
-    setEditNotes((measurement.notes ?? "").slice(0, MAX_COMMENT_LENGTH));
+    setEditValue(seed.value);
+    setEditMeasuredAt(seed.measuredAt);
+    setEditNotes(seed.notes);
+    setEditSeed(seed);
     setEditError(null);
   }
 
-  function closeEdit() {
-    if (updateMutation.isPending || deleteMutation.isPending) return;
+  function dismissEdit() {
     setEditing(null);
     setEditError(null);
     setEditDeleteDialogOpen(false);
+  }
+
+  function closeEdit() {
+    editDismissal.requestClose(dismissEdit);
   }
 
   async function deleteEditingMeasurement() {
@@ -708,7 +739,7 @@ export function MeasurementList({
     try {
       setEditError(null);
       await deleteMutation.mutateAsync(editing.id);
-      closeEdit();
+      dismissEdit();
     } catch {
       setEditError(t("measurements.deleteError"));
     }
@@ -1557,6 +1588,11 @@ export function MeasurementList({
           </form>
         )}
       </ResponsiveSheet>
+      <SeededFormDiscardDialog
+        open={editDismissal.discardDialogOpen}
+        onConfirm={editDismissal.confirmDiscard}
+        onCancel={editDismissal.cancelDiscard}
+      />
     </>
   );
 }

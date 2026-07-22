@@ -4,6 +4,9 @@
  * centralized factory; aggregated in `./index.ts`.
  */
 export const nutrientKeys = {
+  /** Prefix for invalidating every nutrient read. */
+  nutrientsRoot: () => ["nutrients"] as const,
+
   /** Per-nutrient window summary from `GET /api/nutrients?days=N`. */
   nutrientIntake: (days: number) => ["nutrients", "intake", days] as const,
   /**

@@ -14,11 +14,10 @@
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
 import { isReauthRequired } from "@/lib/integrations/status";
-import {
-  GOOGLE_HEALTH_INTEGRATION_KEY,
-  syncUserGoogleHealth,
-} from "@/lib/google-health/sync";
+import { GOOGLE_HEALTH_INTEGRATION_KEY } from "@/lib/google-health/sync-core";
+import { syncUserGoogleHealth } from "@/lib/google-health/sync";
 
 export const GOOGLE_HEALTH_BACKFILL_QUEUE = "google-health-backfill";
 
@@ -101,7 +100,9 @@ export async function runGoogleHealthBackfillForUser(
  * Best-effort: errors are returned through the result value so the worker boot
  * never fails because of a backfill miss.
  */
-export async function enqueueBootTimeGoogleHealthBackfill(): Promise<{
+export async function enqueueBootTimeGoogleHealthBackfill(
+  startAfterSeconds: number = 0,
+): Promise<{
   enqueued: number;
   skipped: number;
   error: string | null;
@@ -128,12 +129,14 @@ export async function enqueueBootTimeGoogleHealthBackfill(): Promise<{
         userId,
         enqueuedAt: new Date().toISOString(),
       };
-      const jobId = await boss.send(GOOGLE_HEALTH_BACKFILL_QUEUE, payload, {
-        retryLimit: 3,
-        retryDelay: 60,
-        retryBackoff: true,
-        singletonKey: `google-health-backfill|${userId}`,
-      });
+      const jobId = await boss.send(
+        GOOGLE_HEALTH_BACKFILL_QUEUE,
+        payload,
+        integrationBackfillSourceOptions(
+          `google-health-backfill|${userId}`,
+          startAfterSeconds,
+        ),
+      );
       if (jobId) {
         enqueued += 1;
       } else {

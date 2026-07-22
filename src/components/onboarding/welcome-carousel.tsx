@@ -22,6 +22,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { scrollBehaviorForUser } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { queryKeys } from "@/lib/query-keys";
 import { DISCLAIMER_VERSION } from "@/lib/onboarding/disclaimer";
 
@@ -156,9 +157,7 @@ export function WelcomeCarousel() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.auth() });
       router.push("/onboarding/1");
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : t("onboarding.errorGeneric");
-      toast.error(message);
+      toast.error(localizedApiError(err, t, "onboarding.errorGeneric"));
       setAdvancing(false);
     }
   }

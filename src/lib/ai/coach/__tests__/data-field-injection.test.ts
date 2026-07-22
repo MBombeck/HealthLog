@@ -225,13 +225,12 @@ describe("fence escape — a data field cannot close its container", () => {
  * assemblies actually route through the fence.
  */
 describe("fence call sites", () => {
-  it("the Coach chat route fences the SNAPSHOT payload", () => {
+  it("the Coach chat route delegates SNAPSHOT assembly to the fenced builder", () => {
     const source = readFileSync(
       resolve(process.cwd(), "src/app/api/insights/chat/route.ts"),
       "utf-8",
     );
-    expect(source).toContain("fenceHealthData(");
-    // The raw payload must never be spliced in alongside the fenced one.
+    expect(source).toContain("buildCoachProviderPrompts({");
     expect(source).not.toMatch(/SNAPSHOT\n\$\{snapshot\.snapshotJson/);
   });
 

@@ -3,7 +3,7 @@
 import { Activity, Loader2 } from "lucide-react";
 
 import { useTranslations } from "@/lib/i18n/context";
-import { useWorkouts } from "@/hooks/use-workouts";
+import { useInfiniteWorkouts } from "@/hooks/use-workouts";
 import { useModulePageGuard } from "@/hooks/use-module-page-guard";
 import { MetricEmptyState } from "@/components/insights/metric-empty-state";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
@@ -20,11 +20,9 @@ import { QueryErrorCard } from "@/components/ui/query-error-card";
  * single row. The page is the user-visible surface for the workout
  * data the iOS client already syncs.
  *
- * v1.30.14 — the `page.tsx` RSC wrapper server-prefetches this list's
- * `useWorkouts({ limit: 100 })` cell so the first paint shows the rows
- * instead of the loading skeleton (the "Sport lädt langsam" report).
- * The `useWorkouts` cell keeps its own fetch — the prefetch only warms
- * the cache; a background refresh still runs when the data goes stale.
+ * v1.32 — the `page.tsx` RSC wrapper server-prefetches the first page in
+ * TanStack's infinite-data shape. Explicit "Load more" requests append
+ * canonical offset pages while keeping the already-rendered history visible.
  *
  * Renders three states:
  *   - loading shell while the workouts query resolves,
@@ -37,13 +35,17 @@ import { QueryErrorCard } from "@/components/ui/query-error-card";
 export default function InsightsWorkoutsPageClient() {
   const { t } = useTranslations();
   const { ready } = useModulePageGuard("workouts");
-  // `isError` / `refetch` were already on the hook and simply not read here, so
-  // a failed list read fell through every branch to `null` and painted a titled
-  // shell with nothing in it — no message, no way back. Not the empty state,
-  // but just as opaque.
-  const { data, isLoading, isEmpty, isError, refetch } = useWorkouts({
-    limit: 100,
-  });
+  const {
+    workouts,
+    isLoading,
+    isEmpty,
+    isError,
+    isFetchNextPageError,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+  } = useInfiniteWorkouts({ limit: 100 });
 
   // v1.18.0 B1 — bounce a direct URL hit on a disabled-workouts account.
   if (!ready) {
@@ -83,8 +85,14 @@ export default function InsightsWorkoutsPageClient() {
           cta={null}
           coachPrefill="I haven't logged any workouts yet — why does tracking them matter, and what should I focus on first?"
         />
-      ) : data ? (
-        <WorkoutList workouts={data.workouts} />
+      ) : workouts.length > 0 ? (
+        <WorkoutList
+          workouts={workouts}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+          isFetchNextPageError={isFetchNextPageError}
+          onLoadMore={fetchNextPage}
+        />
       ) : null}
     </SubPageShell>
   );

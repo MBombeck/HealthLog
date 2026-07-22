@@ -20,6 +20,7 @@ import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useLoadMoreSentinel } from "@/hooks/use-load-more-sentinel";
 
 import { COACH_SCROLLBAR } from "./message-thread";
+import { ConversationRename } from "./conversation-rename";
 import {
   useCoachConversationHistory,
   useDeleteCoachConversationWithUndo,
@@ -208,7 +209,7 @@ export function HistoryRail({
                 data-slot="coach-history-item"
                 data-active={isActive ? "true" : undefined}
                 className={cn(
-                  "group flex items-center gap-1.5 rounded-lg px-2.5 py-2",
+                  "group relative flex items-center gap-1.5 rounded-lg px-2.5 py-2",
                   "text-sm transition-colors",
                   isActive
                     ? "bg-primary/15 text-foreground"
@@ -245,6 +246,7 @@ export function HistoryRail({
                     {formatRelativeTime(c.updatedAt, t, locale)}
                   </span>
                 </button>
+                <ConversationRename id={c.id} title={c.title} compact />
                 {/* v1.4.27 R3d MB2 — drop the hover-only `opacity-0`
                     reveal: touch surfaces have no hover, so the delete
                     affordance was invisible on mobile. The button

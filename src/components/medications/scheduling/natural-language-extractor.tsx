@@ -49,6 +49,7 @@ import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/lib/i18n/context";
+import { apiFetchRaw } from "@/lib/api/api-fetch";
 
 import type { MedicationExtractionResult } from "@/lib/ai/coach/medication-extract-prompt";
 
@@ -135,7 +136,7 @@ export function NaturalLanguageExtractor({
     abortRef.current = controller;
 
     try {
-      const res = await fetch(endpoint, {
+      const res = await apiFetchRaw(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: trimmed, locale }),

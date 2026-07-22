@@ -100,6 +100,57 @@ describe("pickCanonicalWorkoutRows", () => {
     ]);
   });
 
+  it("preserves same-source workouts inside one canonical slot", () => {
+    const rows: RowFixture[] = [
+      {
+        id: "first",
+        startedAt: new Date("2026-05-16T08:01:00Z"),
+        sportType: "running",
+        source: "APPLE_HEALTH",
+      },
+      {
+        id: "second",
+        startedAt: new Date("2026-05-16T08:03:00Z"),
+        sportType: "running",
+        source: "APPLE_HEALTH",
+      },
+    ];
+
+    expect(pickCanonicalWorkoutRows(rows).map((row) => row.id)).toEqual([
+      "first",
+      "second",
+    ]);
+  });
+
+  it("does not chain neighbouring workouts across fixed canonical slots", () => {
+    const rows: RowFixture[] = [
+      {
+        id: "first",
+        startedAt: new Date("2026-05-16T08:04:00Z"),
+        sportType: "running",
+        source: "APPLE_HEALTH",
+      },
+      {
+        id: "middle",
+        startedAt: new Date("2026-05-16T08:08:00Z"),
+        sportType: "running",
+        source: "WITHINGS",
+      },
+      {
+        id: "last",
+        startedAt: new Date("2026-05-16T08:12:00Z"),
+        sportType: "running",
+        source: "WITHINGS",
+      },
+    ];
+
+    expect(pickCanonicalWorkoutRows(rows).map((row) => row.id)).toEqual([
+      "first",
+      "middle",
+      "last",
+    ]);
+  });
+
   it("keeps workouts of different sports that start in the same minute", () => {
     const rows: RowFixture[] = [
       {

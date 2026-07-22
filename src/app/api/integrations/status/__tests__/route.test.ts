@@ -52,6 +52,7 @@ import { GET } from "../route";
 import { prisma } from "@/lib/db";
 
 const userFind = prisma.user.findUnique as ReturnType<typeof vi.fn>;
+const whoopFind = prisma.whoopConnection.findUnique as ReturnType<typeof vi.fn>;
 
 type Entry = {
   integration: string;
@@ -110,5 +111,31 @@ describe("/api/integrations/status — Polar/Oura fold (04-M2)", () => {
     const polar = entries.find((e) => e.integration === "polar")!;
     expect(polar.connected).toBe(false);
     expect(polar.configured).toBe(false);
+  });
+});
+
+describe("/api/integrations/status — WHOOP identity ownership", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    userFind.mockResolvedValue({
+      whoopClientIdEncrypted: "id",
+      whoopClientSecretEncrypted: "secret",
+    });
+  });
+
+  it("reports an identity-cleared duplicate row as disconnected", async () => {
+    whoopFind.mockResolvedValue({
+      whoopUserId: null,
+      tokenExpiresAt: new Date(Date.now() + 3_600_000),
+      lastSyncedAt: null,
+      createdAt: new Date("2026-06-01T00:00:00Z"),
+      backfillCompletedAt: null,
+    });
+
+    const entries = await fetchEntries();
+    const whoop = entries.find((entry) => entry.integration === "whoop");
+
+    expect(whoop?.connected).toBe(false);
+    expect(whoop?.configured).toBe(true);
   });
 });

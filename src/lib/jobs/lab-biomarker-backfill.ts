@@ -26,6 +26,7 @@
  */
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
 import { annotate } from "@/lib/logging/context";
 
 export const LAB_BIOMARKER_BACKFILL_QUEUE = "lab-biomarker-backfill";
@@ -169,7 +170,9 @@ export async function runLabBiomarkerBackfillForUser(
  * Best-effort: errors come back through the result value so worker boot never
  * fails because of a backfill miss.
  */
-export async function enqueueBootTimeLabBiomarkerBackfill(): Promise<{
+export async function enqueueBootTimeLabBiomarkerBackfill(
+  startAfterSeconds: number = 0,
+): Promise<{
   enqueued: number;
   skipped: number;
   error: string | null;
@@ -200,12 +203,14 @@ export async function enqueueBootTimeLabBiomarkerBackfill(): Promise<{
         userId,
         enqueuedAt: new Date().toISOString(),
       };
-      const jobId = await boss.send(LAB_BIOMARKER_BACKFILL_QUEUE, payload, {
-        retryLimit: 3,
-        retryDelay: 60,
-        retryBackoff: true,
-        singletonKey: `lab-biomarker-backfill|${userId}`,
-      });
+      const jobId = await boss.send(
+        LAB_BIOMARKER_BACKFILL_QUEUE,
+        payload,
+        integrationBackfillSourceOptions(
+          `lab-biomarker-backfill|${userId}`,
+          startAfterSeconds,
+        ),
+      );
       if (jobId) enqueued += 1;
       else skipped += 1;
     }

@@ -31,8 +31,10 @@ vi.mock("@/lib/integrations/status", () => ({
   isReauthRequired: isReauthRequiredMock,
 }));
 
-vi.mock("@/lib/google-health/sync", () => ({
+vi.mock("@/lib/google-health/sync-core", () => ({
   GOOGLE_HEALTH_INTEGRATION_KEY: "google-health",
+}));
+vi.mock("@/lib/google-health/sync", () => ({
   syncUserGoogleHealth: (...a: unknown[]) => syncUserGoogleHealthMock(...a),
 }));
 

@@ -33,7 +33,7 @@ vi.mock("../client", () => ({
   mapSleepSessionDetailed: mapSleepSessionDetailedMock,
 }));
 
-vi.mock("../sync", () => ({
+vi.mock("../sync-core", () => ({
   getValidToken: vi.fn(async () => ({ accessToken: "tok" })),
   handleCollectionFetchError: vi.fn(() => 0),
   noteHardFailure: vi.fn(),

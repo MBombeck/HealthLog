@@ -56,7 +56,7 @@ type ExportFormat = "CSV" | "JSON" | "FHIR";
  * one place.
  */
 async function downloadFromUrl(url: string, filename: string): Promise<void> {
-  const res = await fetch(url, { credentials: "include" });
+  const res = await apiFetchRaw(url, { credentials: "include" });
   if (!res.ok) {
     throw new Error(`Download failed (${res.status})`);
   }

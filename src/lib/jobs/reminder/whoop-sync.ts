@@ -21,7 +21,7 @@ import {
   syncUserWorkout,
   syncWhoopWorkoutById,
 } from "@/lib/whoop/sync-workout";
-import { syncWhoopResourceWithStatus } from "@/lib/whoop/sync";
+import { syncWhoopResourceWithStatus } from "@/lib/whoop/sync-core";
 import { enqueueReminderSatisfy } from "@/lib/jobs/reminder-satisfy";
 import { getWorkerPrisma } from "./shared";
 

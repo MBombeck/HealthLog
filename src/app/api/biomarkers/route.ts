@@ -118,7 +118,9 @@ async function postBiomarker(request: NextRequest) {
       .catch(() => {
         /* swallow — the 422 response is the contract */
       });
-    return returnAllZodIssues(parsed.error, 422);
+    return returnAllZodIssues(parsed.error, 422, {
+      errorCode: "labs.biomarker.create.invalid",
+    });
   }
 
   const { name, unit, lowerBound, upperBound, context, panel } = parsed.data;
@@ -131,7 +133,9 @@ async function postBiomarker(request: NextRequest) {
     select: { id: true },
   });
   if (existing) {
-    return apiError("A biomarker with this name already exists", 409);
+    return apiError("A biomarker with this name already exists", 409, {
+      errorCode: "labs.biomarker.duplicate",
+    });
   }
 
   // Field-by-field assignment — never spread `parsed.data`.

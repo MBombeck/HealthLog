@@ -45,6 +45,14 @@ describe("Playwright CI determinism", () => {
     expect(config.retries).toBe(2);
     expect(config.failOnFlakyTests).toBe(true);
     expect(config.reporter).toEqual([["github"], ["html", { open: "never" }]]);
+    expect(config.webServer).toMatchObject({
+      command: expect.stringContaining(
+        `${JSON.stringify(process.execPath)} .next/standalone/server.js`,
+      ),
+      env: expect.objectContaining({
+        NATIVE_CANVAS: "off",
+      }),
+    });
   });
 
   it("retains the Playwright report after every workflow outcome", () => {

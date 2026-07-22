@@ -19,7 +19,7 @@ import {
   upsertWhoopMeasurements,
   WHOOP_RECOVERY_SLEEP_OVERLAP_MS,
   type WhoopMeasurementUpsert,
-} from "./sync";
+} from "./sync-core";
 import { prisma } from "@/lib/db";
 
 export async function syncUserRecovery(

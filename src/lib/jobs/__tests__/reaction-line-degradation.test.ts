@@ -106,6 +106,7 @@ const JOB = {
   userId: "u1",
   kind: "sleep_night" as const,
   localDate: "2026-07-16",
+  revision: "2026-07-16T08:55:00.000Z",
 };
 
 const t = getServerTranslator("en").t;
@@ -331,6 +332,41 @@ describe("reaction line — degradation", () => {
     const outcome = await runReactionLine(JOB);
 
     expect(outcome).toEqual({ status: "skipped", reason: "already_claimed" });
+    expect(reserveBudget).not.toHaveBeenCalled();
+  });
+
+  it("rejects a stale job when the marker advances after its initial read", async () => {
+    const currentRevision = new Date("2026-07-16T09:05:00.000Z");
+    const generateCompletion = vi.fn().mockResolvedValue({
+      content: "Stale evidence must not be published.",
+      tokensUsed: 300,
+      cachedInputTokens: 0,
+    });
+    resolveProviderChain.mockResolvedValue([
+      { providerType: "openai", instance: { generateCompletion } },
+    ]);
+    updateMany.mockImplementation(async (args: unknown) => {
+      const operation = args as {
+        where?: { occurredAt?: Date };
+        data?: { generationClaimId?: string };
+      };
+      if (operation.data?.generationClaimId) {
+        const intendedRevision = operation.where?.occurredAt;
+        return {
+          count:
+            intendedRevision === undefined ||
+            intendedRevision.getTime() === currentRevision.getTime()
+              ? 1
+              : 0,
+        };
+      }
+      return { count: 1 };
+    });
+
+    const outcome = await runReactionLine(JOB);
+
+    expect(outcome).toEqual({ status: "skipped", reason: "already_claimed" });
+    expect(generateCompletion).not.toHaveBeenCalled();
     expect(reserveBudget).not.toHaveBeenCalled();
   });
 

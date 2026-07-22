@@ -25,6 +25,7 @@ import { Download, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useTranslations } from "@/lib/i18n/context";
+import { apiFetchRaw } from "@/lib/api/api-fetch";
 
 export interface DataPortabilityRowProps {
   medicationId: string;
@@ -33,7 +34,7 @@ export interface DataPortabilityRowProps {
 }
 
 async function downloadFromUrl(url: string, filename: string): Promise<void> {
-  const res = await fetch(url, { credentials: "include" });
+  const res = await apiFetchRaw(url, { credentials: "include" });
   if (!res.ok) {
     throw new Error(`Download failed (${res.status})`);
   }

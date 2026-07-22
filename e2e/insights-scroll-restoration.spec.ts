@@ -29,6 +29,12 @@ test.describe("v1.4.28 — insights scroll restoration", () => {
   }) => {
     await page.goto("/insights", { waitUntil: "domcontentloaded" });
 
+    // A visible server-rendered link is not yet an interactive React link.
+    // Wait for this client component's hydration boundary before scrolling or
+    // clicking so the pointer gesture cannot race React replacing the anchor.
+    const tabStrip = page.locator("[data-slot='insights-tab-strip']");
+    await expect(tabStrip).toHaveAttribute("data-hydrated", "true");
+
     // v1.25.1 — the app-wide scroll-to-top resets the `#main-content`
     // scroll container on every route change (auth-shell), with a
     // `window.scrollTo(0,0)` fallback for the body-scrolled shells. The
@@ -53,18 +59,24 @@ test.describe("v1.4.28 — insights scroll restoration", () => {
         window.scrollTo({ top: 600, behavior: "auto" });
       }
     });
+    await expect.poll(readScrollTop).toBeGreaterThan(100);
 
-    // Click the first available sub-page pill.
-    const subPagePill = page
-      .locator("[data-slot='insights-tab-strip-pill']")
-      .nth(1);
+    // Recovery is always present and remains a direct link across responsive
+    // pill grouping. Target its route contract instead of a mutable list index.
+    const subPagePill = tabStrip.locator(
+      "[data-slot='insights-tab-strip-pill'][href='/insights/recovery']",
+    );
     await expect(subPagePill).toBeVisible();
     await subPagePill.click();
-    await page.waitForURL(/\/insights\//);
+    await expect(page).toHaveURL(/\/insights\/recovery\/?$/);
 
-    // Back to the mother page via the overview pill (pill index 0).
-    await page.locator("[data-slot='insights-tab-strip-pill']").first().click();
-    await page.waitForURL(/\/insights\/?$/);
+    // Back to the mother page through the overview pill.
+    const overviewPill = tabStrip.locator(
+      "[data-slot='insights-tab-strip-pill'][href='/insights']",
+    );
+    await expect(overviewPill).toBeVisible();
+    await overviewPill.click();
+    await expect(page).toHaveURL(/\/insights\/?$/);
 
     // The shell's route-change effect resets the scroll on the next tick;
     // `useScrollResetOnRoute` defers to `requestAnimationFrame`. Wait for it
@@ -91,6 +103,12 @@ test.describe("v1.4.28 — insights scroll restoration", () => {
   }) => {
     await page.goto("/insights", { waitUntil: "domcontentloaded" });
     const nav = page.locator("[data-slot='insights-tab-strip']");
+    const innerScroller = nav.locator(
+      "[data-slot='insights-tab-strip-scroller']",
+    );
+    await expect(nav).toHaveAttribute("data-hydrated", "true");
+    await expect(innerScroller).toBeVisible();
+
     const navOverflowX = await nav.evaluate(
       (el) => getComputedStyle(el).overflowX,
     );
@@ -100,7 +118,6 @@ test.describe("v1.4.28 — insights scroll restoration", () => {
     expect(navOverflowX).not.toBe("auto");
     expect(navOverflowX).not.toBe("scroll");
 
-    const innerScroller = nav.locator("> div > div").first();
     const innerOverflowX = await innerScroller.evaluate(
       (el) => getComputedStyle(el).overflowX,
     );

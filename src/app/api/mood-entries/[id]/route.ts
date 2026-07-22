@@ -13,6 +13,7 @@ import {
   getScoreForMood,
 } from "@/lib/validations/moodlog";
 import { NextRequest } from "next/server";
+import { Prisma } from "@/generated/prisma/client";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { moodDateKey, DEFAULT_TIMEZONE } from "@/lib/mood/date-key";
@@ -75,7 +76,9 @@ export const PUT = apiHandler(
     });
 
     if (!existing || existing.userId !== user.id) {
-      return apiError("Mood entry not found", 404);
+      return apiError("Mood entry not found", 404, {
+        errorCode: "mood.not_found",
+      });
     }
 
     const { data: body, error: jsonError } = await safeJson(request, {
@@ -108,7 +111,9 @@ export const PUT = apiHandler(
         .catch(() => {
           /* swallow — 422 response is the contract */
         });
-      return returnAllZodIssues(parsed.error, 422);
+      return returnAllZodIssues(parsed.error, 422, {
+        errorCode: "mood.update.invalid",
+      });
     }
 
     const data = parsed.data;
@@ -207,6 +212,14 @@ export const PUT = apiHandler(
         });
         return apiError(error.message, 422, {
           errorCode: "mood.ratedFactor.out_of_range",
+        });
+      }
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        return apiError("A mood entry with this data already exists", 409, {
+          errorCode: "mood.duplicate_timestamp",
         });
       }
       throw error;

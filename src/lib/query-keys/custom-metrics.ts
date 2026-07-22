@@ -13,6 +13,10 @@ export const customMetrics = {
   /** A single custom-metric detail. */
   customMetricDetail: (id: string) => ["custom-metrics", "detail", id] as const,
 
+  /** Prefix for invalidating every sorted feed of one custom metric. */
+  customMetricEntriesPrefix: (customMetricId: string) =>
+    ["custom-metric-entries", customMetricId] as const,
+
   /** Paginated (offset) value feed for one custom metric. */
   customMetricEntries: (params: { customMetricId: string; sortDir: string }) =>
     ["custom-metric-entries", params.customMetricId, params.sortDir] as const,

@@ -67,6 +67,17 @@ function render(
   );
 }
 
+function actionMarkup(html: string, slot: string): string[] {
+  return (
+    html.match(
+      new RegExp(
+        `<button(?=[^>]*data-slot="${slot}")[^>]*>[\\s\\S]*?</button>`,
+        "g",
+      ),
+    ) ?? []
+  );
+}
+
 const MANUAL_ERA: ScheduleRevisionRow = {
   id: "rev-manual",
   validFrom: "2026-03-12T00:00:00.000Z",
@@ -140,6 +151,27 @@ describe("ScheduleHistoryTimeline", () => {
     expect(html.match(/zeitplan-history-edit/g)).toHaveLength(2);
     expect(html).toContain("Ära bearbeiten");
     expect(html).toContain("Frühere Ären ausblenden");
+  });
+
+  it("uses non-overlapping 44px mobile era actions with compact icons", () => {
+    const client = makeClient();
+    seed(client, {
+      currentSince: "2026-06-01T00:00:00.000Z",
+      revisions: [MANUAL_ERA, ARCHIVED_ERA],
+    });
+    const html = render(client, { defaultExpanded: true });
+    const editButtons = actionMarkup(html, "zeitplan-history-edit");
+    const deleteButtons = actionMarkup(html, "zeitplan-history-delete");
+    expect(editButtons).toHaveLength(2);
+    expect(deleteButtons).toHaveLength(1);
+    for (const button of [...editButtons, ...deleteButtons]) {
+      expect(button).toContain("size-11");
+      expect(button).toContain("sm:size-8");
+      expect(button).toContain("size-4");
+    }
+    expect(editButtons[0]).toContain('aria-label="Ära bearbeiten"');
+    expect(deleteButtons[0]).toContain('aria-label="Ära löschen"');
+    expect(html).toContain('class="flex shrink-0 items-center"');
   });
 
   it("renders the add-era CTA without a toggle when no era exists", () => {

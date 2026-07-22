@@ -47,6 +47,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { useTranslations } from "@/lib/i18n/context";
+import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { invalidateKeys, medicationDependentKeys } from "@/lib/query-keys";
 
 import { NaturalLanguageExtractor } from "@/components/medications/scheduling/natural-language-extractor";
@@ -315,7 +316,7 @@ function WizardDialogShell({
           : "/api/medications";
       const method = mode === "edit" ? "PUT" : "POST";
 
-      const res = await fetch(url, {
+      const res = await apiFetchRaw(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

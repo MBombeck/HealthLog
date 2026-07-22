@@ -24,7 +24,6 @@
  */
 import {
   FITBIT_RANGE_DAYS,
-  type FitbitMappedMeasurement,
   fetchBodyFatRange,
   fetchHrvRange,
   fetchRespiratoryRateRange,
@@ -38,14 +37,17 @@ import {
   mapRestingHeartRate,
   mapWeight,
 } from "./client";
+import type { FitbitMappedMeasurement } from "./client";
 import {
   chunkDateRanges,
   getValidToken,
   handleCollectionFetchError,
   upsertFitbitMeasurements,
-  type FitbitMeasurementUpsert,
-  type FitbitResourceSyncOptions,
-} from "./sync";
+} from "./sync-core";
+import type {
+  FitbitMeasurementUpsert,
+  FitbitResourceSyncOptions,
+} from "./sync-core";
 
 /** One mappable metric: a range fetcher + a body mapper + a verb. */
 interface MetricResource {

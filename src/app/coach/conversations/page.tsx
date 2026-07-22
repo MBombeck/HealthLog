@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { COACH_SCROLLBAR } from "@/components/insights/coach-panel/message-thread";
+import { ConversationRename } from "@/components/insights/coach-panel/conversation-rename";
 import {
   useCoachConversationHistory,
   useDeleteCoachConversationWithUndo,
@@ -256,7 +257,7 @@ function CoachConversationsBody() {
                       key={c.id}
                       data-slot="coach-conversations-item"
                       className={cn(
-                        "group flex items-center gap-1.5 rounded-xl px-3 py-2.5",
+                        "group relative flex items-center gap-1.5 rounded-xl px-3 py-2.5",
                         "text-sm transition-colors",
                         "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
                       )}
@@ -293,6 +294,7 @@ function CoachConversationsBody() {
                           {formatRelativeTime(c.updatedAt, t, locale)}
                         </span>
                       </button>
+                      <ConversationRename id={c.id} title={c.title} />
                       <Button
                         type="button"
                         variant="ghost"

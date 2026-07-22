@@ -47,20 +47,16 @@
  *      with HealthKit's `startDate`, which Apple aggregates to the
  *      same instant across paired sensors. A 90-second cushion
  *      covers HK's documented ±60s smoothing plus a small buffer.
- *   2. Within each group, prefer in order:
- *      `APPLE_HEALTH ≻ WITHINGS ≻ MANUAL ≻ IMPORT`. The literal
- *      source ladder is sourced from `DEFAULT_WORKOUT_SOURCE_PRIORITY`
- *      in `src/lib/sources/pick-canonical-workout.ts` (the v1.4.25
- *      W16a scaffolding) so both pickers consult a single source of
- *      truth — adding a new source enum value is a one-place change.
- *      Per the scope memo the legacy `STRAVA_IMPORT` reference maps
- *      to the actual `IMPORT` enum value (the codebase has no
- *      separate Strava source today; Strava XML imports ride the
- *      generic `IMPORT` bucket).
- *   3. Tie-breaker: higher `caloriesKcal` (more sensor data — a row
- *      with HR-derived calories beats a row with a zero / null
- *      total). Then earliest `createdAt` so re-running the picker
- *      with the same inputs picks the same survivor every time.
+ *   2. Groups containing one source are not duplicates and remain
+ *      unchanged. For a cross-source group, select the winning source
+ *      in order `APPLE_HEALTH ≻ WITHINGS ≻ MANUAL ≻ IMPORT`, then keep
+ *      every row from that source. The literal source ladder comes from
+ *      `DEFAULT_WORKOUT_SOURCE_PRIORITY` so both pickers share one source
+ *      of truth.
+ *   3. When two sources share a priority tier, prefer the source whose
+ *      best candidate has higher `caloriesKcal`, then earliest `createdAt`,
+ *      then input order. These tie-breakers choose a source; they never
+ *      collapse multiple workouts recorded by that winning source.
  *
  * Purity contract
  * ───────────────
@@ -213,9 +209,9 @@ function compareCandidates<T extends WorkoutRow>(
 /**
  * Pick canonical rows across sources for an inbound ingest batch.
  *
- * Group by `(userId, activityType, startedAt ± 90 s)`; within each
- * group the comparator selects one survivor (the rest drop). No
- * cross-source overlap → the row passes through. The returned
+ * Group by `(userId, activityType, startedAt ± 90 s)`; a group with
+ * multiple sources keeps every row from its highest-priority source.
+ * Single-source overlaps pass through unchanged. The returned
  * array preserves the input order of the surviving rows so a
  * caller that pre-sorted by `startedAt ASC` keeps that ordering
  * downstream.
@@ -257,7 +253,10 @@ export function dedupeWorkoutBatch<T extends WorkoutRow>(
   // anchor row sets the window comparison reference.
   const groups: Tagged[][] = [];
 
-  for (const entry of tagged) {
+  for (const entry of [...tagged].sort((a, b) => {
+    const delta = a.row.startedAt.getTime() - b.row.startedAt.getTime();
+    return delta || a.origIndex - b.origIndex;
+  })) {
     let placed = false;
     for (const group of groups) {
       const anchor = group[0]!.row;
@@ -277,21 +276,19 @@ export function dedupeWorkoutBatch<T extends WorkoutRow>(
     }
   }
 
-  // Pick one survivor per group, then re-emit in original input
-  // order. The comparator sees `index` via the original input
-  // ordinal (overrides any caller-supplied `index` so the helper
-  // is self-contained — but a caller who set `index` explicitly
-  // still wins because we layer the explicit value on top below).
+  // Preserve single-source groups. For genuine cross-source overlaps,
+  // select the winning source and retain every row it contributed.
   const survivors: Tagged[] = [];
   for (const group of groups) {
     if (group.length === 1) {
       survivors.push(group[0]!);
       continue;
     }
-    // Annotate each member with its origIndex as the row's `index`
-    // for the comparator, but only when the caller didn't already
-    // set one. Caller-supplied indices outrank insertion order so
-    // a deliberate "I want this row first" hint survives.
+    const sources = new Set(group.map((entry) => entry.row.source));
+    if (sources.size === 1) {
+      survivors.push(...group);
+      continue;
+    }
     const annotated = group.map((entry) => ({
       ...entry,
       row: {
@@ -300,12 +297,10 @@ export function dedupeWorkoutBatch<T extends WorkoutRow>(
       } as T,
     }));
     annotated.sort((a, b) => compareCandidates(a.row, b.row, ladder));
-    // Preserve the picker's input-order survival by remembering the
-    // ORIGINAL row reference (not the annotated copy) so the caller
-    // gets back exactly what it passed in.
-    const winner = annotated[0]!;
-    const original = group.find((g) => g.origIndex === winner.origIndex)!;
-    survivors.push(original);
+    const winningSource = annotated[0]!.row.source;
+    survivors.push(
+      ...group.filter((entry) => entry.row.source === winningSource),
+    );
   }
 
   survivors.sort((a, b) => a.origIndex - b.origIndex);

@@ -195,7 +195,11 @@ test.describe("achievements page renders all four card states", () => {
 
     // Page heading present
     await expect(
-      page.getByRole("heading", { name: "Achievements" }),
+      page.getByRole("main").getByRole("heading", {
+        name: "Achievements",
+        level: 1,
+        exact: true,
+      }),
     ).toBeVisible({ timeout: 5000 });
 
     // Unlocked public — title visible

@@ -16,6 +16,7 @@ import { WHOOP_BACKFILL_QUEUE } from "@/lib/jobs/whoop-backfill";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { markReconnected } from "@/lib/integrations/status";
 import { Prisma } from "@/generated/prisma/client";
+import { isP2002 } from "@/lib/prisma-errors";
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 
@@ -174,31 +175,44 @@ export const GET = apiHandler(async (request: NextRequest) => {
     const profile = await fetchProfile(tokens.access_token);
     const whoopUserId = String(profile.user_id);
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
-
-    await prisma.whoopConnection.upsert({
-      where: { userId },
-      update: {
-        whoopUserId,
-        accessToken: encrypt(tokens.access_token),
-        refreshToken: encrypt(tokens.refresh_token),
-        tokenExpiresAt: expiresAt,
-        scope: tokens.scope ?? WHOOP_OAUTH_SCOPE,
-        backfillCompletedAt: null,
-      },
-      create: {
-        userId,
-        whoopUserId,
-        accessToken: encrypt(tokens.access_token),
-        refreshToken: encrypt(tokens.refresh_token),
-        tokenExpiresAt: expiresAt,
-        scope: tokens.scope ?? WHOOP_OAUTH_SCOPE,
-      },
+    const owner = await prisma.whoopConnection.findUnique({
+      where: { whoopUserId },
+      select: { userId: true },
     });
+    if (owner && owner.userId !== userId) {
+      annotate({ meta: { reason: "owner_conflict" } });
+      return outcomeRedirect(returnScheme, "error", "owner_conflict");
+    }
 
-    await auditLog("whoop.connect", {
-      userId,
-      details: { whoopUserId },
-    });
+    try {
+      await prisma.whoopConnection.upsert({
+        where: { userId },
+        update: {
+          whoopUserId,
+          accessToken: encrypt(tokens.access_token),
+          refreshToken: encrypt(tokens.refresh_token),
+          tokenExpiresAt: expiresAt,
+          scope: tokens.scope ?? WHOOP_OAUTH_SCOPE,
+          backfillCompletedAt: null,
+        },
+        create: {
+          userId,
+          whoopUserId,
+          accessToken: encrypt(tokens.access_token),
+          refreshToken: encrypt(tokens.refresh_token),
+          tokenExpiresAt: expiresAt,
+          scope: tokens.scope ?? WHOOP_OAUTH_SCOPE,
+        },
+      });
+    } catch (err) {
+      if (isP2002(err)) {
+        annotate({ meta: { reason: "owner_conflict" } });
+        return outcomeRedirect(returnScheme, "error", "owner_conflict");
+      }
+      throw err;
+    }
+
+    await auditLog("whoop.connect", { userId });
 
     // Re-completing OAuth clears any prior reauth-required state.
     await markReconnected(userId, "whoop");

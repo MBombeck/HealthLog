@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/db";
 import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
-import { webhookSettingsSchema } from "@/lib/validations/notifications";
+import {
+  notificationChannelEnabledSchema,
+  webhookSettingsSchema,
+} from "@/lib/validations/notifications";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { NextRequest } from "next/server";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
@@ -56,6 +59,54 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   });
 
   if (jsonError) return jsonError;
+
+  const enabledOnly = notificationChannelEnabledSchema.safeParse(body);
+  if (enabledOnly.success) {
+    const { enabled } = enabledOnly.data;
+
+    if (enabled) {
+      const existing = await prisma.notificationChannel.findUnique({
+        where: { userId_type: { userId: user.id, type: "WEBHOOK" } },
+      });
+
+      let hasUrl = false;
+      if (existing) {
+        try {
+          const config = JSON.parse(decrypt(existing.config)) as {
+            url?: string;
+          };
+          hasUrl = !!config.url;
+        } catch {
+          hasUrl = false;
+        }
+      }
+
+      if (!hasUrl) {
+        return apiError(
+          "Webhook URL is required when the webhook is enabled",
+          422,
+        );
+      }
+    }
+
+    const result = await prisma.notificationChannel.updateMany({
+      where: { userId: user.id, type: "WEBHOOK" },
+      data: { enabled },
+    });
+    if (enabled && result.count === 0) {
+      return apiError(
+        "Webhook URL is required when the webhook is enabled",
+        422,
+      );
+    }
+
+    annotate({
+      action: { name: "settings.webhook.update" },
+      meta: { enabled },
+    });
+    return apiSuccess({ saved: true });
+  }
+
   const parsed = webhookSettingsSchema.safeParse(body);
   if (!parsed.success) return apiError("Invalid data", 422);
 

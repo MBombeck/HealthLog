@@ -59,7 +59,7 @@ vi.mock("../credentials", () => ({
 }));
 vi.mock("../client", () => ({ refreshAccessToken: vi.fn() }));
 
-import { upsertFitbitMeasurements } from "../sync";
+import { upsertFitbitMeasurements } from "../sync-core";
 
 const STEPS_READING = {
   type: "ACTIVITY_STEPS",

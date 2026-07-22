@@ -13,6 +13,7 @@
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
 import { syncUserFitbit } from "@/lib/fitbit/sync";
 
 export const FITBIT_BACKFILL_QUEUE = "fitbit-backfill";
@@ -66,7 +67,9 @@ export async function runFitbitBackfillForUser(
  * Best-effort: errors are returned through the result value so the worker boot
  * never fails because of a backfill miss.
  */
-export async function enqueueBootTimeFitbitBackfill(): Promise<{
+export async function enqueueBootTimeFitbitBackfill(
+  startAfterSeconds: number = 0,
+): Promise<{
   enqueued: number;
   skipped: number;
   error: string | null;
@@ -93,12 +96,14 @@ export async function enqueueBootTimeFitbitBackfill(): Promise<{
         userId,
         enqueuedAt: new Date().toISOString(),
       };
-      const jobId = await boss.send(FITBIT_BACKFILL_QUEUE, payload, {
-        retryLimit: 3,
-        retryDelay: 60,
-        retryBackoff: true,
-        singletonKey: `fitbit-backfill|${userId}`,
-      });
+      const jobId = await boss.send(
+        FITBIT_BACKFILL_QUEUE,
+        payload,
+        integrationBackfillSourceOptions(
+          `fitbit-backfill|${userId}`,
+          startAfterSeconds,
+        ),
+      );
       if (jobId) {
         enqueued += 1;
       } else {

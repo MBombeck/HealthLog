@@ -283,11 +283,18 @@ test.describe("document vault — AI assist + content search", () => {
     await expect(hint).toBeVisible();
     const indexAll = page.locator('[data-slot="content-index-all"]');
     await expect(indexAll).toBeVisible();
-    await indexAll.click();
-
-    await expect(
-      page.getByText("Indexing 5 document(s) in the background."),
-    ).toBeVisible();
+    const reindexRequest = page.waitForRequest(
+      (request) =>
+        request.method() === "POST" &&
+        new URL(request.url()).pathname === "/api/documents/inbound/reindex",
+    );
+    await Promise.all([
+      reindexRequest,
+      expect(
+        page.getByText("Indexing 5 document(s) in the background."),
+      ).toBeVisible(),
+      indexAll.click(),
+    ]);
     expect(reindexCalls).toBe(1);
   });
 

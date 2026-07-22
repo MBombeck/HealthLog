@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { queryKeys } from "@/lib/query-keys";
 
 /**
@@ -131,9 +132,7 @@ export function GoalsChipPicker({ userId: _userId }: GoalsChipPickerProps) {
       await queryClient.invalidateQueries({ queryKey: queryKeys.auth() });
       router.push("/onboarding/2");
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : t("onboarding.errorGeneric");
-      toast.error(message);
+      toast.error(localizedApiError(err, t, "onboarding.errorGeneric"));
       setAdvancing(false);
     }
   }

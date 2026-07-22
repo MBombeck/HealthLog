@@ -19,8 +19,9 @@ vi.mock("../client", () => ({
 
 const getValidToken = vi.fn();
 const markResourceSynced = vi.fn();
-vi.mock("../sync", async () => {
-  const actual = await vi.importActual<typeof import("../sync")>("../sync");
+vi.mock("../sync-core", async () => {
+  const actual =
+    await vi.importActual<typeof import("../sync-core")>("../sync-core");
   return {
     ...actual,
     getValidToken: (...a: unknown[]) => getValidToken(...a),
@@ -52,7 +53,7 @@ import { syncUserWorkout, syncWhoopWorkoutById } from "../sync-workout";
 import {
   WHOOP_FULL_SYNC_ANCHOR,
   WHOOP_RECOVERY_SLEEP_OVERLAP_MS,
-} from "../sync";
+} from "../sync-core";
 
 const LAST_SYNCED = new Date("2026-06-10T12:00:00.000Z");
 

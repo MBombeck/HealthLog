@@ -226,6 +226,7 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   "src/app/api/medications/[id]/intake/[eventId]/route.ts",
   "src/app/api/medications/[id]/intake/bulk-delete/route.ts",
   "src/app/api/medications/[id]/intake/import/route.ts",
+  "src/app/api/medications/[id]/intake/import/[jobId]/status/route.ts",
   "src/app/api/medications/[id]/intake/purge/route.ts",
   "src/app/api/medications/[id]/inventory/route.ts",
   "src/app/api/medications/[id]/inventory/[itemId]/route.ts",

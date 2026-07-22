@@ -58,8 +58,8 @@ vi.mock("../client", async (orig) => {
   };
 });
 
-vi.mock("../sync", async (orig) => {
-  const actual = await orig<typeof import("../sync")>();
+vi.mock("../sync-core", async (orig) => {
+  const actual = await orig<typeof import("../sync-core")>();
   return {
     ...actual,
     getValidToken: (...a: unknown[]) => getValidTokenMock(...a),
@@ -233,7 +233,7 @@ describe("syncUserBody — tier degradation", () => {
 
     // A 401 is not a per-class tier gate: it propagates so the connection
     // parks (vs the 403 case above, which returns 0). The catch delegates to
-    // the shared `handleCollectionFetchError` (sync.ts), whose "401 records a
+    // the shared `handleCollectionFetchError` (sync-core.ts), whose "401 records a
     // reauth failure + rethrows" contract is unit-tested in sync.test.ts; here
     // we assert the resource sync surfaces the error and writes nothing.
     await expect(syncUserBody("user1")).rejects.toThrow();

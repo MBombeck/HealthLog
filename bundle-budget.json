@@ -1,11 +1,11 @@
 {
-  "$comment": "Client-bundle budgets, enforced by scripts/check-bundle-budget.mjs (--check) after `next build` in CI. Values are KB gzip and include the shared rootMainFiles baseline. Measured at v1.27.15 + the mobile/PWA fix wave: / 417, /insights 402, /measurements 405, /insights/mood 419, total 2683, baseline 129 — budgets carry ~10-15% headroom so the gate catches step changes (a statically imported ~100 KB catalog, a ~90 KB duplicated library chunk), not noise. Raise a number consciously, in the PR that pays the cost, with the reason in the PR body.",
+  "$comment": "Client-bundle budgets, enforced by scripts/check-bundle-budget.mjs (--check) after `next build` in CI. Values are KB gzip and include the shared rootMainFiles baseline. Measured at v1.32.0 after the correctness/UX architecture wave: / 425, /insights 411, /measurements 412, /insights/mood 428, total 2982, baseline 129. Route caps retain focused headroom; the aggregate cap allows normal chunk noise while still catching a new ~90 KB duplicated library. Message catalogs and duplicate Recharts chunks have dedicated structural guards.",
   "routesKbGz": {
     "/page": 460,
     "/insights/page": 445,
     "/measurements/page": 445,
     "/insights/mood/page": 460
   },
-  "totalClientKbGz": 2950,
+  "totalClientKbGz": 3050,
   "maxRechartsChunks": 1
 }

@@ -46,6 +46,71 @@
     "durationHoursMinutes": "{hours} h {minutes} min",
     "durationMinutes": "{minutes} min"
   },
+  "apiErrors": {
+    "measurement": {
+      "create": {
+        "invalid": "Vérifiez les données de la mesure et réessayez."
+      },
+      "duplicate_timestamp": "Une mesure existe déjà pour cette heure."
+    },
+    "mood": {
+      "list": {
+        "invalid": "Les filtres de la liste d’humeur ne sont pas valides."
+      },
+      "create": { "invalid": "Vérifiez l’entrée d’humeur et réessayez." },
+      "update": { "invalid": "Vérifiez l’entrée d’humeur et réessayez." },
+      "duplicate_timestamp": "Une entrée d’humeur existe déjà pour cette heure.",
+      "not_found": "Cette entrée d’humeur n’est plus disponible.",
+      "ratedFactor": {
+        "out_of_range": "Une évaluation est hors de la plage autorisée."
+      }
+    },
+    "labs": {
+      "create": {
+        "invalid": "Vérifiez le résultat de laboratoire et réessayez."
+      },
+      "result": {
+        "notFound": "Ce résultat de laboratoire n’est plus disponible."
+      },
+      "biomarker": {
+        "notFound": "Ce biomarqueur n’est plus disponible.",
+        "duplicate": "Un biomarqueur portant ce nom existe déjà.",
+        "create": {
+          "invalid": "Vérifiez les informations du biomarqueur et réessayez."
+        },
+        "update": {
+          "invalid": "Vérifiez les informations du biomarqueur et réessayez.",
+          "referenceRangeInvalid": "La valeur de référence basse ne doit pas dépasser la valeur haute."
+        }
+      },
+      "update": {
+        "invalid": "Vérifiez le résultat de laboratoire et réessayez.",
+        "linkedFieldsImmutable": "Modifiez le biomarqueur pour changer son nom, son unité, son panel ou sa plage de référence.",
+        "qualitativeExpected": "Saisissez un résultat textuel pour cette mesure qualitative.",
+        "numericExpected": "Saisissez un nombre pour cette mesure numérique.",
+        "referenceRangeInvalid": "La valeur de référence basse ne doit pas dépasser la valeur haute."
+      }
+    },
+    "onboarding": {
+      "disclaimer": {
+        "invalid": "Veuillez confirmer à nouveau l’avertissement médical."
+      },
+      "tour": {
+        "invalid": "La progression de la visite n’a pas pu être enregistrée."
+      },
+      "complete": {
+        "invalid": "Vérifiez les informations du profil et réessayez."
+      },
+      "user": { "notFound": "Votre compte est introuvable." },
+      "step": {
+        "rateLimited": "Trop de tentatives. Patientez puis réessayez.",
+        "invalid": "Cette étape d’accueil n’a pas pu être enregistrée.",
+        "completed": "L’accueil est déjà terminé.",
+        "outOfOrder": "Votre progression a changé. Actualisez la page et continuez.",
+        "concurrent": "Votre progression a changé. Actualisez la page et continuez."
+      }
+    }
+  },
   "doctorReport": {
     "title": "Rapport de santé",
     "subtitle": "HealthLog — Rapport personnel de santé",
@@ -255,7 +320,9 @@
       "medication": "Médicament",
       "medicationDescription": "Marquer une dose comme prise",
       "mood": "Humeur",
-      "moodDescription": "Enregistrer l'humeur et les tags"
+      "moodDescription": "Enregistrez votre humeur et des étiquettes",
+      "water": "Eau",
+      "waterDescription": "Ajoutez rapidement votre consommation d’eau"
     },
     "cycle": "Cycle",
     "labs": "Analyses",
@@ -358,6 +425,7 @@
     "quickAddMeasurement": "Saisir une mesure",
     "quickAddMood": "Saisir une humeur",
     "quickAddMedicationIntake": "Saisir une prise",
+    "quickAddWater": "Saisir de l’eau",
     "customizeDashboard": "Personnaliser le tableau de bord",
     "medicationIntakeQuickAdd": {
       "sheetTitle": "Saisir une prise de médicament",
@@ -2331,6 +2399,13 @@
       "historyEmpty": "Tes conversations s’affichent ici. Lance une question pour commencer.",
       "historyDeleteAria": "Supprimer la conversation",
       "historyDeleted": "Conversation supprimée",
+      "rename": {
+        "action": "Renommer la conversation",
+        "input": "Titre de la conversation",
+        "save": "Enregistrer le titre",
+        "cancel": "Annuler le renommage",
+        "error": "Impossible d’enregistrer le titre de la conversation."
+      },
       "historySearchEmpty": "Aucune conversation ne correspond à ta recherche.",
       "historyLoadingMore": "Chargement…",
       "sourcesTitle": "Ce à quoi j’accède",
@@ -3042,7 +3117,10 @@
         "mixedCardio": "Cardio mixte",
         "other": "Autre"
       },
-      "loadError": "Tes séances n'ont pas pu être chargées"
+      "loadError": "Tes séances n'ont pas pu être chargées",
+      "loadMore": "Charger plus de séances",
+      "loadingMore": "Chargement de séances supplémentaires",
+      "loadMoreError": "Les séances supplémentaires n'ont pas pu être chargées"
     },
     "bloodGlucose": {
       "title": "Glycémie",
@@ -5747,6 +5825,22 @@
       "token": "L'échange de jeton avec Strava a échoué. Relance la connexion.",
       "rate_limited": "Trop de tentatives de connexion. Attends un instant et réessaie.",
       "generic": "Erreur inconnue lors de la connexion. Relance la connexion."
+    },
+    "appleHealth": {
+      "title": "Apple Health",
+      "description": "La synchronisation en direct passe par l’app HealthLog pour iOS, et non par une connexion web ou OAuth.",
+      "status": {
+        "checking": "Vérification des données Apple Health…",
+        "dataReceived": "Données Apple Health reçues",
+        "setup": "Configurer dans l’app iOS",
+        "unavailable": "Statut Apple Health indisponible"
+      },
+      "lastDataLabel": "Dernières données Apple Health :",
+      "setupTitle": "Activer la synchronisation en direct",
+      "permissionStep": "Dans l’app HealthLog pour iOS, ouvre Réglages → Apple Health et autorise les catégories de santé que tu souhaites partager.",
+      "backgroundStep": "Laisse l’actualisation en arrière-plan activée. L’app synchronise automatiquement les nouvelles données au premier plan et lorsque iOS lui accorde du temps en arrière-plan.",
+      "importNote": "Besoin d’un ancien historique ou impossible d’utiliser l’app iOS ? L’envoi XML/ZIP Apple Health est une solution ponctuelle et n’active pas la synchronisation en direct.",
+      "importAction": "Ouvrir l’import ponctuel"
     },
     "garminInfo": {
       "title": "Garmin",
@@ -8771,6 +8865,7 @@
       "quickAddCustomPlaceholder": "250",
       "quickAddSubmit": "Ajouter",
       "quickAddError": "Échec de l'enregistrement — réessayez.",
+      "quickAddSuccess": "{amount} mL d’eau ajoutés.",
       "editTotal": "Modifier le total du jour"
     },
     "caffeine": {

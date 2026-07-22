@@ -85,12 +85,16 @@ function makeRequest(body: { workouts: WorkoutFixture[] }): NextRequest {
   });
 }
 
-function workout(externalId: string, minuteOffset: number): WorkoutFixture {
+function workout(
+  externalId: string,
+  minuteOffset: number,
+  source = "APPLE_HEALTH",
+): WorkoutFixture {
   return {
     sportType: "running",
     startedAt: new Date(2026, 4, 14, 6, minuteOffset).toISOString(),
     endedAt: new Date(2026, 4, 14, 7, minuteOffset).toISOString(),
-    source: "APPLE_HEALTH",
+    source,
     externalId,
   };
 }
@@ -177,20 +181,20 @@ describe("POST /api/workouts/batch — concurrent-write race", () => {
   it("two batches with one overlapping externalId resolve to a single DB row each", async () => {
     const { POST } = await import("@/app/api/workouts/batch/route");
 
-    // Batch A — two entries one minute apart plus one shared key. The
-    // v1.4.42 `dedupeWorkoutBatch` picker collapses the minute-1 +
-    // minute-2 pair (same activity, within the 90 s window) to one
+    // Batch A — a cross-source pair one minute apart plus one shared key.
+    // The v1.4.42 `dedupeWorkoutBatch` picker collapses the Apple Health +
+    // Manual pair (same activity, within the 90 s window) to one
     // surviving row, leaving 2 effective rows per batch.
     const batchA: WorkoutFixture[] = [
       workout("hk-uuid-only-a-0", 1),
-      workout("hk-uuid-only-a-1", 2),
+      workout("hk-uuid-only-a-1", 2, "MANUAL"),
       workout("hk-uuid-shared", 10),
     ];
-    // Batch B — same shape, different externalIds for the unique pair
-    // but the SAME shared key.
+    // Batch B — same cross-source shape, different externalIds for the
+    // unique pair but the SAME shared key.
     const batchB: WorkoutFixture[] = [
       workout("hk-uuid-only-b-0", 21),
-      workout("hk-uuid-only-b-1", 22),
+      workout("hk-uuid-only-b-1", 22, "MANUAL"),
       workout("hk-uuid-shared", 10),
     ];
 
@@ -202,16 +206,24 @@ describe("POST /api/workouts/batch — concurrent-write race", () => {
     expect(resB.status).toBe(200);
 
     const aJson = (await resA.json()) as {
-      data: { inserted: number; duplicates: number };
+      data: { processed: number; inserted: number; duplicates: number };
     };
     const bJson = (await resB.json()) as typeof aJson;
 
-    // Three unique tuples land in the DB after write-time dedup + the
-    // composite unique index: one survivor from A's minute-1/2 pair,
-    // one survivor from B's minute-21/22 pair, and one shared-key row
+    // Three unique tuples land in the DB after write-time cross-source
+    // dedup + the composite unique index: one survivor from A's minute-1/2
+    // pair, one survivor from B's minute-21/22 pair, and one shared-key row
     // (either as A's "inserted" or B's "inserted" — never both). The
     // sum of the two batches' inserted counts equals the row count.
     expect(aJson.data.inserted + bJson.data.inserted).toBe(3);
+    // The two canonical drops plus the losing shared-key insert must be
+    // observable as duplicates rather than being counted as inserts.
+    expect(aJson.data.duplicates + bJson.data.duplicates).toBe(3);
+    for (const json of [aJson, bJson]) {
+      expect(json.data.inserted + json.data.duplicates).toBe(
+        json.data.processed,
+      );
+    }
 
     const stored = await getPrismaClient().workout.findMany({
       where: { userId: TEST_USER_ID },

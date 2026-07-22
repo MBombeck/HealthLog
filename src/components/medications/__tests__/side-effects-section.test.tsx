@@ -1,8 +1,44 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import type { ReactNode } from "react";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { I18nProvider } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
+import en from "../../../../messages/en.json";
+
+const errorCardCapture = vi.hoisted(() => ({
+  onRetry: undefined as (() => void) | undefined,
+}));
+
+type QueryErrorCardProps = {
+  title?: ReactNode;
+  description?: ReactNode;
+  onRetry?: () => void;
+  retryLabel?: string;
+  className?: string;
+};
+
+type QueryErrorCardModule = {
+  QueryErrorCard: (props: QueryErrorCardProps) => ReactNode;
+};
+
+vi.mock("@/components/ui/query-error-card", async () => {
+  // `vi.importActual` is required here so the wrapper can capture the retry
+  // callback while preserving the shared card's real accessible markup/copy.
+  const actual = await vi.importActual<QueryErrorCardModule>(
+    "@/components/ui/query-error-card",
+  );
+
+  return {
+    ...actual,
+    QueryErrorCard: (props: QueryErrorCardProps) => {
+      errorCardCapture.onRetry = props.onRetry;
+      return actual.QueryErrorCard(props);
+    },
+  };
+});
+
 import { SideEffectsSection } from "@/components/medications/side-effects-section";
 
 /**
@@ -32,6 +68,7 @@ function makeClient() {
         // Synchronous resolution of seeded data is the test contract.
         staleTime: Number.POSITIVE_INFINITY,
         refetchOnMount: false,
+        retryOnMount: false,
       },
     },
   });
@@ -49,7 +86,7 @@ function seedSideEffects(
     notes: string | null;
   }>,
 ) {
-  client.setQueryData(["medications", medId, "side-effects", "list"], {
+  client.setQueryData(queryKeys.medicationSideEffects(medId), {
     items: rows,
     meta: { total: rows.length },
   });
@@ -69,6 +106,138 @@ function render(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  errorCardCapture.onRetry = undefined;
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+function emptySideEffectsResponse(): Response {
+  return new Response(
+    JSON.stringify({
+      data: { items: [], meta: { total: 0 } },
+      error: null,
+    }),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    },
+  );
+}
+
+async function executeSideEffectsQuery(
+  client: QueryClient,
+  medicationId: string,
+): Promise<void> {
+  const queryKey = queryKeys.medicationSideEffects(medicationId);
+  const queryFn = client.getQueryCache().find({ queryKey, exact: true })
+    ?.options.queryFn;
+  if (typeof queryFn !== "function") {
+    throw new Error("Side-effects query function was not registered");
+  }
+  try {
+    await client.fetchQuery({ queryKey, queryFn });
+  } catch {
+    // The settled error is the state under test.
+  }
+}
+
+async function waitForQueryStatus(
+  client: QueryClient,
+  medicationId: string,
+  status: "error" | "success",
+): Promise<void> {
+  await vi.waitFor(() => {
+    expect(
+      client.getQueryState(queryKeys.medicationSideEffects(medicationId))
+        ?.status,
+    ).toBe(status);
+  });
+}
+
+describe("<SideEffectsSection> — failed reads", () => {
+  it.each([
+    {
+      failure: "HTTP",
+      response: () =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({ data: null, error: "service unavailable" }),
+            {
+              status: 503,
+              headers: { "Content-Type": "application/json" },
+            },
+          ),
+        ),
+    },
+    {
+      failure: "non-JSON",
+      response: () =>
+        Promise.resolve(
+          new Response("<html>not json</html>", {
+            status: 200,
+            headers: { "Content-Type": "text/html" },
+          }),
+        ),
+    },
+    {
+      failure: "rejected",
+      response: () => Promise.reject(new TypeError("network unavailable")),
+    },
+  ])(
+    "renders Retry instead of the empty state after a $failure failure",
+    async ({ response }) => {
+      const client = makeClient();
+      const fetchMock = vi.fn(response);
+      vi.stubGlobal("fetch", fetchMock);
+
+      render(<SideEffectsSection medicationId="med-failure" />, client);
+      await executeSideEffectsQuery(client, "med-failure");
+      await waitForQueryStatus(client, "med-failure", "error");
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const html = render(
+        <SideEffectsSection medicationId="med-failure" />,
+        client,
+      );
+
+      expect(html).toContain('data-slot="query-error-card"');
+      expect(html).toContain('role="alert"');
+      expect(html).toContain(en.common.loadFailed);
+      expect(html).toContain(en.common.retry);
+      expect(html).not.toContain(en.medications.sideEffects.emptyState);
+    },
+  );
+
+  it("retries the failed query and renders the genuine empty response", async () => {
+    const client = makeClient();
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("network unavailable"))
+      .mockResolvedValueOnce(emptySideEffectsResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<SideEffectsSection medicationId="med-retry" />, client);
+    await executeSideEffectsQuery(client, "med-retry");
+    await waitForQueryStatus(client, "med-retry", "error");
+    const errorHtml = render(
+      <SideEffectsSection medicationId="med-retry" />,
+      client,
+    );
+    expect(errorHtml).toContain(en.common.retry);
+    expect(errorCardCapture.onRetry).toBeTypeOf("function");
+
+    errorCardCapture.onRetry?.();
+    await waitForQueryStatus(client, "med-retry", "success");
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const recoveredHtml = render(
+      <SideEffectsSection medicationId="med-retry" />,
+      client,
+    );
+    expect(recoveredHtml).not.toContain('data-slot="query-error-card"');
+    expect(recoveredHtml).toContain(en.medications.sideEffects.emptyState);
+  });
 });
 
 describe("<SideEffectsSection> — surface render", () => {

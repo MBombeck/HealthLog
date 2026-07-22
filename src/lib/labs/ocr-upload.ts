@@ -28,42 +28,101 @@ export class BodyTooLargeError extends Error {
   }
 }
 
+export interface BoundedBodyReadOptions {
+  /** Cancels the body read when the request itself is aborted. */
+  signal?: AbortSignal;
+  /** Absolute Unix timestamp in milliseconds after which the read is cancelled. */
+  deadline?: number;
+}
+
 /**
- * Read a request body stream into a single buffer while counting bytes,
- * throwing `BodyTooLargeError` the moment the running total passes `maxBytes`.
- * Reads the body exactly once (no clone, no tee) so a cap trip frees the
- * allocation immediately. Keeps draining the stream to its natural close
- * rather than cancelling mid-transfer (an abrupt cancel races the undici
- * producer and surfaces as an unhandled rejection). Verbatim port of the
- * avatar route's reader.
+ * Read a request body stream into a single buffer while counting bytes.
+ *
+ * Overflow, request abort, and deadline expiry cancel the reader immediately,
+ * so a producer cannot keep the request alive after the result is known. The
+ * body is read exactly once (no clone or tee). An aligned single chunk is
+ * returned directly; multi-chunk bodies incur only the unavoidable final
+ * contiguous allocation.
  */
 export async function readBoundedBody(
   body: ReadableStream<Uint8Array> | null,
   maxBytes: number,
+  options: BoundedBodyReadOptions = {},
 ): Promise<Uint8Array<ArrayBuffer>> {
   if (!body) return new Uint8Array(0);
   const reader = body.getReader();
   const chunks: Uint8Array[] = [];
   let retained = 0;
-  let overflow = false;
+  let aborted = false;
+  let abortReason: unknown;
+
+  const cancel = (reason: unknown) => {
+    if (aborted) return;
+    aborted = true;
+    abortReason = reason;
+    void reader.cancel(reason).catch(() => {
+      // The read result is already settled; cancellation failure is immaterial.
+    });
+  };
+  const abortFromSignal = () => {
+    cancel(
+      options.signal?.reason ??
+        new DOMException("Request body read aborted", "AbortError"),
+    );
+  };
+
+  options.signal?.addEventListener("abort", abortFromSignal, { once: true });
+  if (options.signal?.aborted) abortFromSignal();
+
+  const deadlineDelay =
+    options.deadline === undefined
+      ? undefined
+      : Math.max(0, options.deadline - Date.now());
+  const deadlineTimer =
+    deadlineDelay === undefined
+      ? undefined
+      : setTimeout(() => {
+          cancel(
+            new DOMException(
+              "Request body read deadline exceeded",
+              "AbortError",
+            ),
+          );
+        }, deadlineDelay);
+
   try {
     for (;;) {
+      if (aborted) throw abortReason;
       const { done, value } = await reader.read();
+      if (aborted) throw abortReason;
       if (done) break;
-      if (overflow) continue;
       if (retained + value.byteLength > maxBytes) {
         chunks.length = 0;
         retained = 0;
-        overflow = true;
-        continue;
+        const error = new BodyTooLargeError();
+        cancel(error);
+        throw error;
       }
       chunks.push(value);
       retained += value.byteLength;
     }
   } finally {
+    clearTimeout(deadlineTimer);
+    options.signal?.removeEventListener("abort", abortFromSignal);
     reader.releaseLock();
   }
-  if (overflow) throw new BodyTooLargeError();
+
+  const onlyChunk = chunks[0];
+  if (
+    chunks.length === 1 &&
+    onlyChunk !== undefined &&
+    onlyChunk.buffer instanceof ArrayBuffer &&
+    onlyChunk.byteOffset === 0 &&
+    onlyChunk.byteLength === onlyChunk.buffer.byteLength
+  ) {
+    return onlyChunk as Uint8Array<ArrayBuffer>;
+  }
+
   const out = new Uint8Array(retained);
   let offset = 0;
   for (const chunk of chunks) {

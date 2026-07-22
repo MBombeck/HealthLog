@@ -38,7 +38,7 @@ const {
   // resolve the token — so the ledger registration happens inside the cycle's
   // ALS scope.
   resourceFake: async (userId: string): Promise<number> => {
-    const { getValidToken } = await import("../sync");
+    const { getValidToken } = await import("../sync-core");
     return (await getValidToken(userId)) ? 1 : 0;
   },
 }));
@@ -73,8 +73,8 @@ import {
   getValidToken,
   handleCollectionFetchError,
   runWithGoogleHealthHardFailLedger,
-  syncUserGoogleHealth,
-} from "../sync";
+} from "../sync-core";
+import { syncUserGoogleHealth } from "../sync";
 import { GoogleHealthApiError } from "../response-classifier";
 
 /** A connection whose access token is inside the 5-min refresh buffer. */

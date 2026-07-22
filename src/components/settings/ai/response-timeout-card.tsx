@@ -11,7 +11,7 @@
  * (~120 s, `AI_BUDGETS.comprehensive.timeoutMs`).
  * ──────────────────────────────────────────────────────────────── */
 
-import { useState } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Save } from "lucide-react";
 
@@ -35,6 +35,7 @@ export function ResponseTimeoutCard({
   const [value, setValue] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
+  const submitInFlightRef = useRef(false);
 
   // Seed from the persisted value once it arrives (seed-on-data pattern).
   const seededKey =
@@ -74,10 +75,24 @@ export function ResponseTimeoutCard({
       setOk(false);
       setMsg(e instanceof Error ? e.message : t("settings.ai.errorGeneric"));
     },
+    onSettled: () => {
+      submitInFlightRef.current = false;
+    },
   });
 
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submitInFlightRef.current || saveMutation.isPending) return;
+    submitInFlightRef.current = true;
+    saveMutation.mutate();
+  }
+
   return (
-    <div className="bg-muted/50 space-y-3 rounded-lg p-4">
+    <form
+      className="bg-muted/50 space-y-3 rounded-lg p-4"
+      onSubmit={submit}
+      noValidate
+    >
       <div>
         <p className="text-sm font-medium">
           {t("settings.ai.responseTimeoutHeading")}
@@ -104,9 +119,10 @@ export function ResponseTimeoutCard({
       </div>
       <div>
         <Button
+          type="submit"
           size="sm"
           className="min-h-11 sm:min-h-9"
-          onClick={() => saveMutation.mutate()}
+          aria-busy={saveMutation.isPending || undefined}
           disabled={saveMutation.isPending}
         >
           {saveMutation.isPending ? (
@@ -122,6 +138,6 @@ export function ResponseTimeoutCard({
           {msg}
         </p>
       )}
-    </div>
+    </form>
   );
 }

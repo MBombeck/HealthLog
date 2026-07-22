@@ -28,7 +28,10 @@ import {
   restorePersistedQueryCache,
   startPersistingQueryCache,
 } from "@/lib/pwa/query-persister";
-import { QUERY_CLIENT_DEFAULT_OPTIONS } from "@/lib/pwa/query-client-options";
+import {
+  QUERY_CLIENT_DEFAULT_OPTIONS,
+  subscribeToMeaningfulVisibilityRefresh,
+} from "@/lib/pwa/query-client-options";
 
 const SHELL_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "";
 
@@ -187,6 +190,17 @@ function DashboardSnapshotPreloader() {
   return null;
 }
 
+// ── Meaningful PWA resume refresh ────────────────────
+
+function QueryVisibilityRefreshBridge() {
+  const queryClient = useQueryClient();
+  useEffect(
+    () => subscribeToMeaningfulVisibilityRefresh(queryClient),
+    [queryClient],
+  );
+  return null;
+}
+
 // ── Offline query persistence ────────────────────────
 //
 // v1.18.6 — hydrate the last-synced query cache from IndexedDB before the
@@ -264,6 +278,7 @@ export function Providers({
       <ThemeProvider>
         <I18nProvider initialLocale={initialLocale}>
           <QueryPersistenceBridge />
+          <QueryVisibilityRefreshBridge />
           <DashboardSnapshotPreloader />
           <OfflineMutationToaster />
           {children}

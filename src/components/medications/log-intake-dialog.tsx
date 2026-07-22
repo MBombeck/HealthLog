@@ -32,22 +32,24 @@ import { DateTimeField } from "@/components/ui/date-time-field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
 import { useTranslations } from "@/lib/i18n/context";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  resolveMedicationSelectionId,
+  type DefaultMedicationOption,
+} from "@/lib/medications/default-medication";
+import type { ScheduleWindowInput } from "@/lib/medications/window-status";
 import { formatDose } from "@/lib/medications/format-dose";
 import {
   runLogIntake,
   runUndoIntake,
 } from "@/components/medications/use-medication-intake";
 
-interface LogIntakeSchedule {
-  windowStart: string;
+interface LogIntakeSchedule extends ScheduleWindowInput {
   label: string | null;
   dose: string | null;
-  timesOfDay?: string[];
 }
 
-export interface LogIntakeMedication {
-  id: string;
-  name: string;
+export interface LogIntakeMedication extends DefaultMedicationOption {
   dose: string;
   schedules: LogIntakeSchedule[];
 }
@@ -115,11 +117,22 @@ export function LogIntakeDialog({
 }: LogIntakeDialogProps) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userTz = user?.timezone || "Europe/Berlin";
   const formId = useId();
 
-  const [medicationId, setMedicationId] = useState<string>(
-    () => medications[0]?.id ?? "",
+  const [medicationOverride, setMedicationOverride] = useState<string | null>(
+    null,
   );
+  const [selectionNow] = useState(() => new Date());
+  const medicationId =
+    resolveMedicationSelectionId(
+      medications,
+      medicationOverride,
+      selectionNow,
+      undefined,
+      userTz,
+    ) ?? "";
   const [slot, setSlot] = useState<string>(NO_SLOT);
   const [takenAt, setTakenAt] = useState<string>(() =>
     toDateTimeLocal(new Date()),
@@ -156,7 +169,7 @@ export function LogIntakeDialog({
   const dose = doseOverride ?? configuredDose;
 
   function handleMedicationChange(id: string) {
-    setMedicationId(id);
+    setMedicationOverride(id);
     // Reset the slot when switching medications — the prior slot may not
     // exist on the new schedule. The dose override resets too so the new
     // medication's configured dose flows through.

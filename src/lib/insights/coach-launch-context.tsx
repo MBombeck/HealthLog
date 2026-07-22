@@ -62,9 +62,13 @@ export interface CoachLaunchScope {
   window?: CoachScopeWindow;
 }
 
+export type CoachCloseIntent = "dismiss" | "navigate";
+
 interface CoachLaunchValue {
   /** Whether the Coach drawer is currently open. */
   open: boolean;
+  /** Why the most recent drawer close happened, or null while it is open. */
+  closeIntent: CoachCloseIntent | null;
   /** Current prefill string (or null when the next open should start blank). */
   prefill: string | null;
   /**
@@ -129,14 +133,11 @@ interface CoachLaunchValue {
     seedPrefill?: string | null,
   ) => () => void;
   /**
-   * Direct setter for the open state — the drawer's `onOpenChange`
-   * consumes it on close. Kept (rather than collapsed into a
-   * `closeCoach()` helper) because `<LayoutCoachMount>` forwards the
-   * raw setter to the Sheet's controlled-state contract, which expects
-   * a boolean callback. v1.4.28 R3c (BK-F-M4) audit: exactly one
-   * consumer, no drift.
+   * Direct setter for the drawer's controlled open state. Navigation actions
+   * identify themselves so the originating surface can preserve its return
+   * entry; Sheet dismissals use the default `dismiss` intent.
    */
-  setOpen: (next: boolean) => void;
+  setOpen: (next: boolean, closeIntent?: CoachCloseIntent) => void;
 }
 
 /**
@@ -192,6 +193,7 @@ export interface CoachLaunchProviderProps {
 
 export function CoachLaunchProvider({ children }: CoachLaunchProviderProps) {
   const [open, setOpen] = useState<boolean>(false);
+  const [closeIntent, setCloseIntent] = useState<CoachCloseIntent | null>(null);
   const [prefill, setPrefill] = useState<string | null>(null);
   // Whether the next open auto-sends its prefill as the first turn.
   const [autoSend, setAutoSend] = useState<boolean>(false);
@@ -235,6 +237,7 @@ export function CoachLaunchProvider({ children }: CoachLaunchProviderProps) {
       setAutoSend(resolved.autoSend);
       setDocumentId(resolved.documentId);
       setWorkoutId(resolved.workoutId);
+      setCloseIntent(null);
       setOpen(true);
     },
     [],
@@ -257,22 +260,27 @@ export function CoachLaunchProvider({ children }: CoachLaunchProviderProps) {
     [],
   );
 
-  const handleSetOpen = useCallback((next: boolean) => {
-    setOpen(next);
-    if (!next) {
-      // Drop the prefill + scope + document + workout + auto-send on close so
-      // the next open starts clean.
-      setPrefill(null);
-      setScope(null);
-      setAutoSend(false);
-      setDocumentId(null);
-      setWorkoutId(null);
-    }
-  }, []);
+  const handleSetOpen = useCallback(
+    (next: boolean, nextCloseIntent: CoachCloseIntent = "dismiss") => {
+      setOpen(next);
+      setCloseIntent(next ? null : nextCloseIntent);
+      if (!next) {
+        // Drop the prefill + scope + document + workout + auto-send on close so
+        // the next open starts clean.
+        setPrefill(null);
+        setScope(null);
+        setAutoSend(false);
+        setDocumentId(null);
+        setWorkoutId(null);
+      }
+    },
+    [],
+  );
 
   const value = useMemo<CoachLaunchValue>(
     () => ({
       open,
+      closeIntent,
       prefill,
       autoSend,
       scope,
@@ -283,6 +291,7 @@ export function CoachLaunchProvider({ children }: CoachLaunchProviderProps) {
       setOpen: handleSetOpen,
     }),
     [
+      closeIntent,
       open,
       prefill,
       autoSend,

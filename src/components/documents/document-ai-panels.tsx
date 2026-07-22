@@ -147,7 +147,7 @@ export function AssistSuggestionReview({
           type="button"
           variant="ghost"
           size="icon"
-          className="size-7 shrink-0"
+          className="size-11 shrink-0 sm:size-7"
           onClick={onDismiss}
           aria-label={t("documents.assist.dismiss")}
         >
@@ -233,7 +233,7 @@ export function DocumentSummaryPanel({
           type="button"
           variant="ghost"
           size="icon"
-          className="size-7 shrink-0"
+          className="size-11 shrink-0 sm:size-7"
           onClick={onClose}
           aria-label={t("documents.summary.close")}
         >

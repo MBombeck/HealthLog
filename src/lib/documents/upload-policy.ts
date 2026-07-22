@@ -47,6 +47,43 @@ export const DOCUMENT_HARD_MAX_FILE_BYTES = 104_857_600;
 /** Default per-user quota: 1 GiB. */
 export const DOCUMENT_DEFAULT_QUOTA_BYTES = 1_073_741_824;
 
+/** In-memory admission bounds for body accumulation in one server process. */
+export const DOCUMENT_UPLOAD_GLOBAL_CONCURRENCY = 4;
+export const DOCUMENT_UPLOAD_PER_USER_CONCURRENCY = 2;
+
+let activeDocumentUploads = 0;
+const activeDocumentUploadsByUser = new Map<string, number>();
+
+/**
+ * Reserve one process-local document upload slot. The returned release is
+ * idempotent so a defensive second cleanup cannot corrupt the counters.
+ */
+export function acquireDocumentUploadSlot(userId: string): (() => void) | null {
+  const activeForUser = activeDocumentUploadsByUser.get(userId) ?? 0;
+  if (
+    activeDocumentUploads >= DOCUMENT_UPLOAD_GLOBAL_CONCURRENCY ||
+    activeForUser >= DOCUMENT_UPLOAD_PER_USER_CONCURRENCY
+  ) {
+    return null;
+  }
+
+  activeDocumentUploads += 1;
+  activeDocumentUploadsByUser.set(userId, activeForUser + 1);
+  let released = false;
+
+  return () => {
+    if (released) return;
+    released = true;
+    activeDocumentUploads -= 1;
+    const remainingForUser = (activeDocumentUploadsByUser.get(userId) ?? 1) - 1;
+    if (remainingForUser === 0) {
+      activeDocumentUploadsByUser.delete(userId);
+    } else {
+      activeDocumentUploadsByUser.set(userId, remainingForUser);
+    }
+  };
+}
+
 export interface DocumentLimits {
   /** Per-file upload cap in bytes (admin-tunable, clamped to the ceiling). */
   maxFileBytes: number;

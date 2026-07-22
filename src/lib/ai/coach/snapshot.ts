@@ -60,7 +60,6 @@ import {
 } from "./clusters";
 import type {
   CoachProvenance,
-  CoachProvenanceMetric,
   CoachScope,
   CoachScopeSource,
   CoachScopeWindow,
@@ -71,15 +70,10 @@ import {
   writeSnapshotCache,
 } from "./snapshot-cache";
 import {
-  bpBandFromRows,
-  bucketWeekly,
   buildCoarseTimelineTail,
-  buildDailyBpRows,
-  buildDailyValueRows,
   resolveScope,
   windowToDays,
   type CoarseTimelineTail,
-  type DailyValueRow,
 } from "./snapshot-series";
 import { buildWorkoutsBlock } from "./snapshot-blocks/workouts-block";
 import {
@@ -91,6 +85,12 @@ import {
   buildSleepTimelineBlock,
 } from "./snapshot-blocks/sleep-block";
 import { buildComplianceBlock } from "./snapshot-blocks/compliance-block";
+import { buildCoreMetricsBlocks } from "./snapshot-blocks/core-metrics-block";
+import { buildValueSeriesBlocks } from "./snapshot-blocks/value-series-blocks";
+import {
+  buildDayStrainBlock,
+  buildProfileContextBlocks,
+} from "./snapshot-blocks/context-blocks";
 
 // Test-only escape hatch — the suites import it from this module.
 export { __resetCoachSnapshotCacheForTests } from "./snapshot-cache";
@@ -433,27 +433,6 @@ async function buildCoachSnapshotImpl(
   // unset (the grounding line still cites its band with an insufficient
   // placement only if it is added with a null value; we omit such metrics).
   const groundingValues = new Map<ReferenceMetric, number>();
-  // Additive `MeasurementType` → reference metric, for the value-block loop.
-  const TYPE_TO_REFERENCE_METRIC: Record<string, ReferenceMetric> = {
-    RESTING_HEART_RATE: "RESTING_HEART_RATE",
-    OXYGEN_SATURATION: "OXYGEN_SATURATION",
-    RESPIRATORY_RATE: "RESPIRATORY_RATE",
-    PULSE_WAVE_VELOCITY: "PULSE_WAVE_VELOCITY",
-    BODY_TEMPERATURE: "BODY_TEMPERATURE",
-    BODY_MASS_INDEX: "BMI",
-    VISCERAL_FAT: "VISCERAL_FAT",
-    ACTIVITY_STEPS: "STEPS",
-  };
-  /** Mean of the most recent N daily-value rows (already user-tz day means). */
-  const recentRowsMean = (
-    rows: DailyValueRow[],
-    take = DAILY_TIMELINE_DAYS,
-  ): number | null => {
-    if (rows.length === 0) return null;
-    const slice = rows.slice(-take);
-    const sum = slice.reduce((s, r) => s + r.value, 0);
-    return sum / slice.length;
-  };
 
   // v1.7.0 — block registry. Maps each emitted snapshot top-level key
   // to the cluster it belongs to so the soft-cap degradation pass
@@ -979,135 +958,25 @@ async function buildCoachSnapshotImpl(
     labsBlockPromise,
   ]);
 
-  // v1.30.4 (HRV union) — accepts either a single `MeasurementType` or a
-  // union of types (e.g. HRV's SDNN + RMSSD flavours) so a caller can
-  // resolve "whichever the user actually has" the same way the app's HRV
-  // sub-page does, without a second query.
-  const byType = (t: string | readonly string[]) => {
-    const wanted = Array.isArray(t) ? new Set(t) : null;
-    return measurementRows
-      .filter((r) => (wanted ? wanted.has(r.type) : r.type === t))
-      .map((r) => ({
-        measuredAt: r.measuredAt,
-        value: r.value,
-      }));
-  };
-
-  if (wantsBp && features.bloodPressure) {
-    const sysRows = byType("BLOOD_PRESSURE_SYS");
-    const diaRows = byType("BLOOD_PRESSURE_DIA");
-    const recentDaily = buildDailyBpRows(
-      sysRows,
-      diaRows,
-      recentCutoff,
-      userTz,
-    );
-    const olderSys = sysRows.filter((r) => r.measuredAt < recentCutoff);
-    const olderDia = diaRows.filter((r) => r.measuredAt < recentCutoff);
-    // v1.22 (W6) — the user's own usual range (median ± k·MAD), computed from
-    // the BP rows ALREADY in memory (no extra DB read) with the same
-    // `buildBaselineBand` statistic the baseline engine uses, so the Coach can
-    // quote the real band verbatim instead of fabricating one from window means
-    // (the "153–150" bug). Omitted below the engine's 7-day history floor — a
-    // never-fabricated range.
-    const sysBand = bpBandFromRows(sysRows);
-    const diaBand = bpBandFromRows(diaRows);
-    const bpUsualRange =
-      sysBand || diaBand
-        ? {
-            ...(sysBand ? { sys: sysBand } : {}),
-            ...(diaBand ? { dia: diaBand } : {}),
-          }
-        : undefined;
-    snapshot.bloodPressure = {
-      aggregate: features.bloodPressure,
-      timeline: {
-        recent: recentDaily,
-        weeklySys: bucketWeekly(olderSys, userTz),
-        weeklyDia: bucketWeekly(olderDia, userTz),
-        ...(bpCoarseTail ? { coarse: bpCoarseTail } : {}),
-      },
-      ...(bpUsualRange ? { usualRange: bpUsualRange } : {}),
-    };
-    metrics.add("bp");
-    windows.add("last30days");
-    windows.add("last90days");
-    counts.bp = features.bloodPressure.coverage?.count ?? undefined;
-    registerBlock("bloodPressure", "bp");
-    // W7 grounding: systolic 30-day mean against the ESH 2023 office bands.
-    const sys30 =
-      features.bloodPressure.avgSys30 ?? features.bloodPressure.allTimeAvgSys;
-    if (sys30 != null) groundingValues.set("BLOOD_PRESSURE", sys30);
-  }
-  if (wantsWeight && features.weight) {
-    const rows = byType("WEIGHT");
-    snapshot.weight = {
-      aggregate: features.weight,
-      timeline: {
-        recent: buildDailyValueRows(rows, recentCutoff, userTz),
-        weekly: bucketWeekly(
-          rows.filter((r) => r.measuredAt < recentCutoff),
-          userTz,
-        ),
-        ...(weightCoarseTail ? { coarse: weightCoarseTail } : {}),
-      },
-    };
-    metrics.add("weight");
-    windows.add("last7days");
-    windows.add("last30days");
-    counts.weight = features.weight.coverage?.count ?? undefined;
-    registerBlock("weight", "weight");
-    // W7 grounding: weight has no population band, but the derived BMI does.
-    // Use the features-computed BMI (same value the weight tile shows) so the
-    // grounding reads the WHO band. A dedicated BODY_MASS_INDEX block (below)
-    // wins if the user also syncs a measured BMI series.
-    if (features.weight.bmi != null) {
-      groundingValues.set("BMI", features.weight.bmi);
-    }
-  }
-  if (wantsPulse && features.pulse) {
-    const rows = byType("PULSE");
-    snapshot.pulse = {
-      aggregate: features.pulse,
-      timeline: {
-        recent: buildDailyValueRows(rows, recentCutoff, userTz),
-        weekly: bucketWeekly(
-          rows.filter((r) => r.measuredAt < recentCutoff),
-          userTz,
-        ),
-        ...(pulseCoarseTail ? { coarse: pulseCoarseTail } : {}),
-      },
-    };
-    metrics.add("pulse");
-    windows.add("last7days");
-    windows.add("last30days");
-    windows.add("last90days");
-    counts.pulse = features.pulse.coverage?.count ?? undefined;
-    registerBlock("pulse", "pulse");
-  }
-  if (wantsMood && features.mood && moodRows) {
-    // Mood entries live on a separate model — read in parallel above.
-    const normalised = moodRows.map((m) => ({
-      measuredAt: m.moodLoggedAt,
-      value: m.score,
-    }));
-    snapshot.mood = {
-      aggregate: features.mood,
-      timeline: {
-        recent: buildDailyValueRows(normalised, recentCutoff, userTz),
-        weekly: bucketWeekly(
-          normalised.filter((r) => r.measuredAt < recentCutoff),
-          userTz,
-        ),
-      },
-    };
-    metrics.add("mood");
-    windows.add("last7days");
-    windows.add("last30days");
-    counts.mood = features.mood.coverage?.count ?? undefined;
-    registerBlock("mood", "mood");
-  }
-
+  buildCoreMetricsBlocks({
+    sources,
+    features,
+    measurementRows,
+    moodRows,
+    recentCutoff,
+    userTz,
+    coarseTails: {
+      bp: bpCoarseTail,
+      weight: weightCoarseTail,
+      pulse: pulseCoarseTail,
+    },
+    snapshot,
+    windows,
+    metrics,
+    counts,
+    registerBlock,
+    groundingValues,
+  });
   // Medication compliance lives outside the structured features — the block
   // is assembled in `snapshot-blocks/compliance-block.ts` from the ledger
   // reads above.
@@ -1125,279 +994,18 @@ async function buildCoachSnapshotImpl(
     });
   }
 
-  // ── v1.4.23 Apple Health additive blocks ─────────────────────────
-  //
-  // Each new HealthKit-derived metric ships as a timeline-only block
-  // (recent day rows + older weekly buckets). The aggregate features
-  // pipeline doesn't carry them yet — that's a v1.5 follow-up — but
-  // the timeline alone is enough for the Coach to ground "your HRV
-  // last Tuesday was X" replies in real numbers without inventing a
-  // baseline. The block is omitted entirely when the user has no rows
-  // for that metric, so accounts without iOS data never see a void
-  // section in the prompt.
-  type ValueMetric = Exclude<
-    CoachProvenanceMetric,
-    "general" | "bp" | "weight" | "pulse" | "mood" | "compliance" | "glucose"
-  >;
-  type ValueBlock = {
-    metric: ValueMetric;
-    source: CoachScopeSource;
-    snapshotKey: string;
-    // v1.30.4 (HRV union) — most metrics are a single `MeasurementType`;
-    // hrv resolves a union of SDNN + RMSSD (see `byType` above).
-    type: string | readonly string[];
-  };
-  // v1.4.23 W6 (S-04) / v1.7.0 — every single-`MeasurementType`
-  // additive series ships as a timeline-only block (recent day rows +
-  // older weekly buckets). One entry per source; `source` drives both
-  // the `sources.has` gate and the cluster lookup (for the
-  // multi-cluster window cap + degradation priority). `glucose` and
-  // `workouts` are NOT in this table — they have dedicated branches
-  // (glucose carries `glucoseContext`, workouts reads the Workout
-  // model). The block is omitted entirely when the user has no rows,
-  // so accounts without that data never see a void section.
-  const valueBlocks: ValueBlock[] = [
-    // ── cardio ──
-    {
-      metric: "hrv",
-      source: "hrv",
-      snapshotKey: "heartRateVariability",
-      type: ["HEART_RATE_VARIABILITY", "HRV_RMSSD"],
-    },
-    {
-      metric: "resting_hr",
-      source: "resting_hr",
-      snapshotKey: "restingHeartRate",
-      type: "RESTING_HEART_RATE",
-    },
-    {
-      metric: "walking_hr",
-      source: "walking_hr",
-      snapshotKey: "walkingHeartRateAverage",
-      type: "WALKING_HEART_RATE_AVERAGE",
-    },
-    {
-      metric: "respiratory_rate",
-      source: "respiratory_rate",
-      snapshotKey: "respiratoryRate",
-      type: "RESPIRATORY_RATE",
-    },
-    {
-      metric: "spo2",
-      source: "spo2",
-      snapshotKey: "oxygenSaturation",
-      type: "OXYGEN_SATURATION",
-    },
-    {
-      metric: "pulse_wave_velocity",
-      source: "pulse_wave_velocity",
-      snapshotKey: "pulseWaveVelocity",
-      type: "PULSE_WAVE_VELOCITY",
-    },
-    {
-      metric: "vascular_age",
-      source: "vascular_age",
-      snapshotKey: "vascularAge",
-      type: "VASCULAR_AGE",
-    },
-    // ── body composition ──
-    {
-      metric: "body_fat",
-      source: "body_fat",
-      snapshotKey: "bodyFat",
-      type: "BODY_FAT",
-    },
-    {
-      metric: "fat_mass",
-      source: "fat_mass",
-      snapshotKey: "fatMass",
-      type: "FAT_MASS",
-    },
-    {
-      metric: "fat_free_mass",
-      source: "fat_free_mass",
-      snapshotKey: "fatFreeMass",
-      type: "FAT_FREE_MASS",
-    },
-    {
-      metric: "muscle_mass",
-      source: "muscle_mass",
-      snapshotKey: "muscleMass",
-      type: "MUSCLE_MASS",
-    },
-    {
-      metric: "lean_body_mass",
-      source: "lean_body_mass",
-      snapshotKey: "leanBodyMass",
-      type: "LEAN_BODY_MASS",
-    },
-    {
-      metric: "bone_mass",
-      source: "bone_mass",
-      snapshotKey: "boneMass",
-      type: "BONE_MASS",
-    },
-    {
-      metric: "total_body_water",
-      source: "total_body_water",
-      snapshotKey: "totalBodyWater",
-      type: "TOTAL_BODY_WATER",
-    },
-    {
-      metric: "bmi",
-      source: "bmi",
-      snapshotKey: "bodyMassIndex",
-      type: "BODY_MASS_INDEX",
-    },
-    {
-      metric: "visceral_fat",
-      source: "visceral_fat",
-      snapshotKey: "visceralFat",
-      type: "VISCERAL_FAT",
-    },
-    // ── activity ──
-    {
-      metric: "steps",
-      source: "steps",
-      snapshotKey: "steps",
-      type: "ACTIVITY_STEPS",
-    },
-    {
-      metric: "active_energy",
-      source: "active_energy",
-      snapshotKey: "activeEnergy",
-      type: "ACTIVE_ENERGY_BURNED",
-    },
-    {
-      metric: "flights",
-      source: "flights",
-      snapshotKey: "flightsClimbed",
-      type: "FLIGHTS_CLIMBED",
-    },
-    {
-      metric: "distance",
-      source: "distance",
-      snapshotKey: "walkingRunningDistance",
-      type: "WALKING_RUNNING_DISTANCE",
-    },
-    {
-      metric: "vo2_max",
-      source: "vo2_max",
-      snapshotKey: "vo2Max",
-      type: "VO2_MAX",
-    },
-    // ── mobility & gait ──
-    {
-      metric: "walking_steadiness",
-      source: "walking_steadiness",
-      snapshotKey: "walkingSteadiness",
-      type: "WALKING_STEADINESS",
-    },
-    {
-      metric: "walking_asymmetry",
-      source: "walking_asymmetry",
-      snapshotKey: "walkingAsymmetry",
-      type: "WALKING_ASYMMETRY",
-    },
-    {
-      metric: "walking_double_support",
-      source: "walking_double_support",
-      snapshotKey: "walkingDoubleSupport",
-      type: "WALKING_DOUBLE_SUPPORT",
-    },
-    {
-      metric: "walking_step_length",
-      source: "walking_step_length",
-      snapshotKey: "walkingStepLength",
-      type: "WALKING_STEP_LENGTH",
-    },
-    {
-      metric: "walking_speed",
-      source: "walking_speed",
-      snapshotKey: "walkingSpeed",
-      type: "WALKING_SPEED",
-    },
-    // ── environment / exposure ──
-    {
-      metric: "audio_env",
-      source: "audio_env",
-      snapshotKey: "audioExposureEnvironment",
-      type: "AUDIO_EXPOSURE_ENV",
-    },
-    {
-      metric: "audio_headphone",
-      source: "audio_headphone",
-      snapshotKey: "audioExposureHeadphone",
-      type: "AUDIO_EXPOSURE_HEADPHONE",
-    },
-    {
-      metric: "audio_event",
-      source: "audio_event",
-      snapshotKey: "audioExposureEvent",
-      type: "AUDIO_EXPOSURE_EVENT",
-    },
-    {
-      metric: "daylight",
-      source: "daylight",
-      snapshotKey: "timeInDaylight",
-      type: "TIME_IN_DAYLIGHT",
-    },
-    {
-      metric: "skin_temp",
-      source: "skin_temp",
-      snapshotKey: "skinTemperature",
-      type: "SKIN_TEMPERATURE",
-    },
-    {
-      metric: "body_temp",
-      source: "body_temp",
-      snapshotKey: "bodyTemperature",
-      type: "BODY_TEMPERATURE",
-    },
-  ];
-  for (const block of valueBlocks) {
-    if (!sources.has(block.source)) continue;
-    const blockCutoff = additiveCutoff(block.source);
-    const rows = byType(block.type).filter((r) => r.measuredAt >= blockCutoff);
-    if (rows.length === 0) {
-      const cluster = sourceCluster(block.source);
-      if (cluster) {
-        annotate({
-          action: { name: "coach.cluster.empty_skipped" },
-          meta: { cluster, source: block.source },
-        });
-      }
-      continue;
-    }
-    snapshot[block.snapshotKey] = {
-      timeline: {
-        recent: buildDailyValueRows(rows, recentCutoff, userTz),
-        weekly: bucketWeekly(
-          rows.filter((r) => r.measuredAt < recentCutoff),
-          userTz,
-        ),
-      },
-    };
-    metrics.add(block.metric);
-    counts[block.metric] = rows.length;
-    registerBlock(block.snapshotKey, block.source);
-    // W7 grounding: when this additive series maps to a reference metric,
-    // record the recent daily mean (same per-day means the timeline shows).
-    // Union-type blocks (hrv) never carry a reference-metric grounding
-    // entry today, so the lookup only fires for a plain string type.
-    // (`typeof === "string"` narrows cleanly here; `Array.isArray` does not
-    // exclude a `readonly string[]` arm from the `string` union.)
-    const refMetric =
-      typeof block.type === "string"
-        ? TYPE_TO_REFERENCE_METRIC[block.type]
-        : undefined;
-    if (refMetric) {
-      const recentRows = buildDailyValueRows(rows, recentCutoff, userTz);
-      const mean = recentRowsMean(recentRows);
-      if (mean != null) groundingValues.set(refMetric, mean);
-    }
-  }
-
+  buildValueSeriesBlocks({
+    sources,
+    measurementRows,
+    additiveCutoff,
+    recentCutoff,
+    userTz,
+    snapshot,
+    metrics,
+    counts,
+    registerBlock,
+    groundingValues,
+  });
   // ── v1.7.0 sleep block (with optional per-stage enrichment) ───────
   // Assembled in `snapshot-blocks/sleep-block.ts` from the dedicated
   // stage-bearing rows read in parallel above.
@@ -1465,48 +1073,15 @@ async function buildCoachSnapshotImpl(
     });
   }
 
-  // ── v1.4.25 W4d — GLP-1 weeklyContext block ──────────────────────
-  //
-  // Only emitted when the user has at least one active GLP-1 medication
-  // (Medication.treatmentClass = GLP1). Web-only generic accounts never
-  // pay the read cost — the helper short-circuits to `null` after a
-  // single indexed Prisma lookup.
-  //
-  // The block names the drug, current dose, titration history, last +
-  // next injection, pen inventory, and recent side-effect tags. The
-  // Coach's GROUND RULE 9 forbids dose prescriptions — this block
-  // exists so the reply can SAY "your Mounjaro 7.5 mg" instead of
-  // "your medication", never to make recommendations.
-  // v1.4.36 W3 T2 — gated on `medications` exclusion. When excluded
-  // we skip the Prisma lookup entirely so the read cost vanishes too.
-  if (!excludesMedications && glp1Block) {
-    // The GLP-1 block is read in parallel above (null when excluded or
-    // when the account has no active GLP-1 medication).
-    snapshot.weeklyContext = { glp1: glp1Block };
-    metrics.add("compliance");
-    registerBlock("weeklyContext", "compliance");
-  }
-
-  // v1.4.36 W3 T2 — anthropometrics block (height / age / gender).
-  // Sourced from `features.context`, which already reads
-  // `User.heightCm / dateOfBirth / gender`. Gated on the
-  // `anthropometrics` exclusion AND on at least one non-null field
-  // — accounts with no profile info never see an empty block. The
-  // `ctx?` guard tolerates mocked feature shapes in the test suite
-  // that don't populate the `context` object.
-  if (!excludesAnthropometrics) {
-    const ctx = features.context;
-    if (
-      ctx &&
-      (ctx.heightCm !== null || ctx.ageYears !== null || ctx.gender !== null)
-    ) {
-      snapshot.anthropometrics = {
-        heightCm: ctx.heightCm,
-        ageYears: ctx.ageYears,
-        gender: ctx.gender,
-      };
-    }
-  }
+  buildProfileContextBlocks({
+    excludesMedications,
+    excludesAnthropometrics,
+    glp1Block,
+    profile: features.context,
+    snapshot,
+    metrics,
+    registerBlock,
+  });
 
   // ── v1.10.0 — derived wellness layer (compact summaries) ─────────────
   //
@@ -1527,32 +1102,12 @@ async function buildCoachSnapshotImpl(
       registerBlock("derived", "hrv");
     }
 
-    // ── v1.17.0 — WHOOP-native day strain ────────────────────────────────
-    // The device's gold-standard strain on its native 0–21 scale, kept
-    // distinct from the COMPUTED `derived.STRAIN_SCORE` (0–100). When both
-    // exist we surface the native number AND flag it as the device signal
-    // so the model prefers it (native-over-computed, mirroring recovery).
-    // Omitted for every account without a DAY_STRAIN row.
-    if (dayStrainRows && dayStrainRows.length > 0) {
-      const latest = dayStrainRows[dayStrainRows.length - 1];
-      const recent = dayStrainRows.filter((r) => r.measuredAt >= recentCutoff);
-      const mean =
-        recent.length > 0
-          ? Math.round(
-              (recent.reduce((sum, r) => sum + r.value, 0) / recent.length) *
-                10,
-            ) / 10
-          : Math.round(latest.value * 10) / 10;
-      snapshot.dayStrain = {
-        source: "WHOOP-native",
-        scale: "0-21",
-        latest: Math.round(latest.value * 10) / 10,
-        recentMean: mean,
-        days: dayStrainRows.length,
-        note: "Device-native day strain; prefer over derived.STRAIN_SCORE (computed 0-100 proxy).",
-      };
-      registerBlock("dayStrain", "hrv");
-    }
+    buildDayStrainBlock({
+      rows: dayStrainRows,
+      recentCutoff,
+      snapshot,
+      registerBlock,
+    });
 
     // ── v1.11.0 (Epic B, Pillar 3) — short-horizon trajectory block ──────
     // Additive, lowest-signal block: per in-scope metric a compact

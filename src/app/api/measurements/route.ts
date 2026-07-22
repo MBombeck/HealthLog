@@ -789,7 +789,9 @@ async function postMeasurement(request: NextRequest) {
         .catch(() => {
           /* swallow — 422 response is the contract */
         });
-      return returnAllZodIssues(parsed.error, 422);
+      return returnAllZodIssues(parsed.error, 422, {
+        errorCode: "measurement.create.invalid",
+      });
     }
 
     const results = await prisma.$transaction(
@@ -944,7 +946,9 @@ async function postMeasurement(request: NextRequest) {
       .catch(() => {
         /* swallow — 422 response is the contract */
       });
-    return returnAllZodIssues(parsed.error, 422);
+    return returnAllZodIssues(parsed.error, 422, {
+      errorCode: "measurement.create.invalid",
+    });
   }
 
   const {
@@ -985,7 +989,9 @@ async function postMeasurement(request: NextRequest) {
       err instanceof Prisma.PrismaClientKnownRequestError &&
       err.code === "P2002"
     ) {
-      return apiError("A measurement with this data already exists", 409);
+      return apiError("A measurement with this data already exists", 409, {
+        errorCode: "measurement.duplicate_timestamp",
+      });
     }
     throw err;
   }

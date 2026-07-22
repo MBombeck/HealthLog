@@ -4,7 +4,7 @@
  * Local (OpenAI-compatible) form — base URL + optional key + model.
  * ──────────────────────────────────────────────────────────────── */
 
-import { useState } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Save } from "lucide-react";
 
@@ -38,6 +38,7 @@ export function LocalProviderForm({
   const [customModel, setCustomModel] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
+  const submitInFlightRef = useRef(false);
 
   const seededKey =
     userProvider != null
@@ -85,10 +86,25 @@ export function LocalProviderForm({
       setOk(false);
       setMsg(e instanceof Error ? e.message : t("settings.ai.errorGeneric"));
     },
+    onSettled: () => {
+      submitInFlightRef.current = false;
+    },
   });
 
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submitInFlightRef.current || saveMutation.isPending) return;
+    submitInFlightRef.current = true;
+    saveMutation.mutate();
+  }
+
   return (
-    <div data-testid="ai-provider-config-local" className="space-y-4">
+    <form
+      data-testid="ai-provider-config-local"
+      className="space-y-4"
+      onSubmit={submit}
+      noValidate
+    >
       {/* v1.28.28 (#470) — name the gateway path explicitly. The Local
           provider is the ONE user-level custom-URL provider, so it is also
           the documented way to reach LiteLLM / OpenRouter / vLLM and any
@@ -156,9 +172,10 @@ export function LocalProviderForm({
 
       <div>
         <Button
+          type="submit"
           size="sm"
           className="min-h-11 sm:min-h-9"
-          onClick={() => saveMutation.mutate()}
+          aria-busy={saveMutation.isPending || undefined}
           disabled={saveMutation.isPending}
         >
           {saveMutation.isPending ? (
@@ -175,6 +192,6 @@ export function LocalProviderForm({
           {msg}
         </p>
       )}
-    </div>
+    </form>
   );
 }

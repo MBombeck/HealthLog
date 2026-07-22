@@ -24,6 +24,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import {
+  SeededFormDiscardDialog,
+  useSeededFormDismissal,
+} from "@/components/forms/use-seeded-form-dismissal";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -83,6 +87,7 @@ import {
 import { useRovingRadioGroup } from "@/hooks/use-roving-radio-group";
 import { MoodTagPicker, type RatedFactor } from "./mood-tag-picker";
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 
 // Re-export the score map under the legacy local name to keep the
 // rest of this file unchanged. v1.4.27 B6 / BL-P6-11 — the single
@@ -178,6 +183,21 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
   const [editRatedFactors, setEditRatedFactors] = useState<RatedFactor[]>([]);
   const [editNote, setEditNote] = useState("");
   const [editMoodLoggedAt, setEditMoodLoggedAt] = useState("");
+  const [editSeed, setEditSeed] = useState<{
+    mood: string;
+    tagsInput: string;
+    tagKeys: string[];
+    ratedFactors: RatedFactor[];
+    note: string;
+    moodLoggedAt: string;
+  }>({
+    mood: "",
+    tagsInput: "",
+    tagKeys: [],
+    ratedFactors: [],
+    note: "",
+    moodLoggedAt: "",
+  });
   const [editError, setEditError] = useState<string | null>(null);
 
   function toggleEditTagKey(key: string) {
@@ -390,32 +410,69 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
     onSuccess: async () => {
       await invalidateKeys(queryClient, moodDependentKeys);
       await refetchInactiveDailyReads(queryClient);
-      setEditing(null);
-      setEditError(null);
+      setEditSeed({
+        mood: editMood,
+        tagsInput: editTagsInput,
+        tagKeys: [...editTagKeys].sort(),
+        ratedFactors: [...editRatedFactors].sort((a, b) =>
+          a.key.localeCompare(b.key),
+        ),
+        note: editNote,
+        moodLoggedAt: editMoodLoggedAt,
+      });
+      dismissEdit();
     },
     onError: (err) => {
-      setEditError(err instanceof Error ? err.message : t("mood.saveError"));
+      setEditError(localizedApiError(err, t, "mood.saveError"));
     },
+  });
+  const editDismissal = useSeededFormDismissal({
+    seed: editSeed,
+    value: {
+      mood: editMood,
+      tagsInput: editTagsInput,
+      tagKeys: [...editTagKeys].sort(),
+      ratedFactors: [...editRatedFactors].sort((a, b) =>
+        a.key.localeCompare(b.key),
+      ),
+      note: editNote,
+      moodLoggedAt: editMoodLoggedAt,
+    },
+    blocked: updateMutation.isPending || deleteMutation.isPending,
   });
 
   const totalPages = data ? Math.ceil(data.meta.total / PAGE_SIZE) : 0;
 
   function startEdit(entry: MoodEntry) {
+    const seed = {
+      mood: entry.mood,
+      tagsInput: entry.tags.join(", "),
+      tagKeys: [...(entry.tagKeys ?? [])].sort(),
+      ratedFactors: [...(entry.ratedFactors ?? [])].sort((a, b) =>
+        a.key.localeCompare(b.key),
+      ),
+      note: entry.note ?? "",
+      moodLoggedAt: toDateTimeLocalValue(entry.moodLoggedAt),
+    };
     setEditing(entry);
-    setEditMood(entry.mood);
-    setEditTagsInput(entry.tags.join(", "));
-    setEditTagKeys(entry.tagKeys ?? []);
-    setEditRatedFactors(entry.ratedFactors ?? []);
-    setEditNote(entry.note ?? "");
-    setEditMoodLoggedAt(toDateTimeLocalValue(entry.moodLoggedAt));
+    setEditMood(seed.mood);
+    setEditTagsInput(seed.tagsInput);
+    setEditTagKeys(seed.tagKeys);
+    setEditRatedFactors(seed.ratedFactors);
+    setEditNote(seed.note);
+    setEditMoodLoggedAt(seed.moodLoggedAt);
+    setEditSeed(seed);
     setEditError(null);
   }
 
-  function closeEdit() {
-    if (updateMutation.isPending || deleteMutation.isPending) return;
+  function dismissEdit() {
     setEditing(null);
     setEditError(null);
     setEditDeleteDialogOpen(false);
+  }
+
+  function closeEdit() {
+    editDismissal.requestClose(dismissEdit);
   }
 
   async function deleteEditingEntry() {
@@ -424,7 +481,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
     try {
       setEditError(null);
       await deleteMutation.mutateAsync(editing.id);
-      closeEdit();
+      dismissEdit();
     } catch {
       setEditError(t("mood.deleteError"));
     }
@@ -1044,6 +1101,11 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
           </form>
         )}
       </ResponsiveSheet>
+      <SeededFormDiscardDialog
+        open={editDismissal.discardDialogOpen}
+        onConfirm={editDismissal.confirmDiscard}
+        onCancel={editDismissal.cancelDiscard}
+      />
     </>
   );
 }

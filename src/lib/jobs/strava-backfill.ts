@@ -17,6 +17,7 @@
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
 import { syncUserStrava } from "@/lib/strava/sync";
 
 export const STRAVA_BACKFILL_QUEUE = "strava-backfill";
@@ -71,7 +72,9 @@ export async function runStravaBackfillForUser(
  * Best-effort: errors come back through the result value so the worker boot
  * never fails because of a backfill miss.
  */
-export async function enqueueBootTimeStravaBackfill(): Promise<{
+export async function enqueueBootTimeStravaBackfill(
+  startAfterSeconds: number = 0,
+): Promise<{
   enqueued: number;
   skipped: number;
   error: string | null;
@@ -101,12 +104,14 @@ export async function enqueueBootTimeStravaBackfill(): Promise<{
         userId,
         enqueuedAt: new Date().toISOString(),
       };
-      const jobId = await boss.send(STRAVA_BACKFILL_QUEUE, payload, {
-        retryLimit: 3,
-        retryDelay: 60,
-        retryBackoff: true,
-        singletonKey: `strava-backfill|${userId}`,
-      });
+      const jobId = await boss.send(
+        STRAVA_BACKFILL_QUEUE,
+        payload,
+        integrationBackfillSourceOptions(
+          `strava-backfill|${userId}`,
+          startAfterSeconds,
+        ),
+      );
       if (jobId) {
         enqueued += 1;
       } else {

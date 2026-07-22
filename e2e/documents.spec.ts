@@ -99,6 +99,42 @@ async function runAxe(page: Page) {
   return blocking;
 }
 
+async function mockDocumentCoach(page: Page): Promise<void> {
+  const fulfil = (
+    route: Parameters<Parameters<Page["route"]>[1]>[0],
+    data: unknown,
+  ) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data, error: null }),
+    });
+
+  await page.route("**/api/documents/inbound/usage", (route) =>
+    fulfil(route, {
+      usedBytes: 4096,
+      quotaBytes: 1_073_741_824,
+      maxFileBytes: DEFAULT_MAX_FILE_BYTES,
+      acceptedExtensions: [".pdf", ".png", ".jpg", ".jpeg", ".webp"],
+      linkedEpisodes: [],
+      assistAvailable: true,
+      contentIndex: { enabled: true, indexedCount: 1, totalCount: 1 },
+    }),
+  );
+  await page.route("**/api/documents/inbound/capability", (route) =>
+    fulfil(route, {
+      available: true,
+      mode: "vision",
+      reason: null,
+      pdfSupported: true,
+      egress: "external",
+    }),
+  );
+  await page.route("**/api/auth/me/documents-auto-ai-read", (route) =>
+    fulfil(route, { documentsAutoAiRead: false }),
+  );
+}
+
 test.describe("document vault", () => {
   test.use({ storageState: STORAGE_STATE_PATH });
 
@@ -191,6 +227,121 @@ test.describe("document vault", () => {
     await expect(page).not.toHaveURL(/doc=/);
   });
 
+  test("ordinary card selection owns doc history and preserves unrelated query state", async ({
+    page,
+  }) => {
+    await page.goto(`/documents?episode=${KNIE_EPISODE_ID}&view=compact&q=MRT`);
+    await expect(openButton(page, "MRT Knie")).toBeVisible();
+    await openButton(page, "MRT Knie").click();
+    const detail = page.getByRole("dialog", { name: "MRT Knie" });
+
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("doc"))
+      .toBe(MRT_DOC_ID);
+    expect(new URL(page.url()).searchParams.get("episode")).toBe(
+      KNIE_EPISODE_ID,
+    );
+    expect(new URL(page.url()).searchParams.get("view")).toBe("compact");
+    expect(new URL(page.url()).searchParams.get("q")).toBe("MRT");
+
+    await page.goBack();
+    await expect(detail).not.toBeVisible();
+    expect(new URL(page.url()).searchParams.get("doc")).toBeNull();
+    expect(new URL(page.url()).searchParams.get("view")).toBe("compact");
+
+    await page.goForward();
+    await expect(detail).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(detail).not.toBeVisible();
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("doc"))
+      .toBeNull();
+    expect(new URL(page.url()).searchParams.get("episode")).toBe(
+      KNIE_EPISODE_ID,
+    );
+    expect(new URL(page.url()).searchParams.get("view")).toBe("compact");
+    expect(new URL(page.url()).searchParams.get("q")).toBe("MRT");
+  });
+
+  test("Coach close and overlay dismissal consume the document handoff", async ({
+    page,
+  }) => {
+    await mockDocumentCoach(page);
+    await page.goto(`/documents?episode=${KNIE_EPISODE_ID}&view=compact&q=MRT`);
+    await expect(openButton(page, "MRT Knie")).toBeVisible();
+    await openButton(page, "MRT Knie").click();
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("doc"))
+      .toBe(MRT_DOC_ID);
+
+    const detail = page.getByRole("dialog", { name: "MRT Knie" });
+    await detail.locator('[data-slot="document-chat-open"]').click();
+    const drawer = page.locator('[data-slot="coach-drawer"]');
+    await expect(drawer).toBeVisible();
+    await expect(detail).not.toBeVisible();
+
+    await drawer.locator('[data-slot="coach-drawer-close"]').click();
+    await expect(drawer).not.toBeVisible();
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("doc"))
+      .toBeNull();
+    expect(new URL(page.url()).searchParams.get("episode")).toBe(
+      KNIE_EPISODE_ID,
+    );
+    expect(new URL(page.url()).searchParams.get("view")).toBe("compact");
+    expect(new URL(page.url()).searchParams.get("q")).toBe("MRT");
+    await expect(detail).not.toBeVisible();
+
+    await page.reload();
+    await expect(detail).not.toBeVisible();
+    expect(new URL(page.url()).searchParams.get("doc")).toBeNull();
+
+    await expect(openButton(page, "MRT Knie")).toBeVisible();
+    await openButton(page, "MRT Knie").click();
+    await expect(detail).toBeVisible();
+    await detail.locator('[data-slot="document-chat-open"]').click();
+    await expect(drawer).toBeVisible();
+    await page
+      .locator('[data-slot="sheet-overlay"]')
+      .last()
+      .click({ position: { x: 2, y: 2 } });
+    await expect(drawer).not.toBeVisible();
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("doc"))
+      .toBeNull();
+    await expect(detail).not.toBeVisible();
+  });
+
+  test("Ask Coach maximize then browser back restores the selected document", async ({
+    page,
+  }) => {
+    await mockDocumentCoach(page);
+    await page.goto(`/documents?episode=${KNIE_EPISODE_ID}&view=compact&q=MRT`);
+    await expect(openButton(page, "MRT Knie")).toBeVisible();
+    await openButton(page, "MRT Knie").click();
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("doc"))
+      .toBe(MRT_DOC_ID);
+
+    const detail = page.getByRole("dialog", { name: "MRT Knie" });
+    await detail.locator('[data-slot="document-chat-open"]').click();
+    const drawer = page.locator('[data-slot="coach-drawer"]');
+    await expect(drawer).toBeVisible();
+    await drawer.locator('[data-slot="coach-drawer-maximize"]').click();
+    await expect.poll(() => new URL(page.url()).pathname).toBe("/coach");
+    expect(new URL(page.url()).searchParams.get("doc")).toBe(MRT_DOC_ID);
+
+    await page.goBack();
+    await expect.poll(() => new URL(page.url()).pathname).toBe("/documents");
+    await expect(detail).toBeVisible();
+    const restoredUrl = new URL(page.url());
+    expect(restoredUrl.searchParams.get("doc")).toBe(MRT_DOC_ID);
+    expect(restoredUrl.searchParams.get("episode")).toBe(KNIE_EPISODE_ID);
+    expect(restoredUrl.searchParams.get("view")).toBe("compact");
+    expect(restoredUrl.searchParams.get("q")).toBe("MRT");
+  });
+
   test("the condition page links into the vault and back", async ({ page }) => {
     await page.goto(`/illness/${KNIE_EPISODE_ID}`);
     const card = page.locator('[data-slot="episode-documents-card"]');
@@ -210,10 +361,16 @@ test.describe("document vault", () => {
     await page.goto("/documents");
     await uploadViaPicker(page, `${title}.pdf`, uniquePdf(title));
     await page.getByRole("searchbox", { name: "Search documents" }).fill(title);
+    // The uploaded card is optimistic and can paint before the 200 ms search
+    // draft is committed to the URL. Opening it earlier races that pending
+    // replace against the detail's `?doc=` history entry and closes the sheet.
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("q"))
+      .toBe(title);
     await expect(openButton(page, `${title}.pdf`)).toBeVisible();
 
     await openButton(page, `${title}.pdf`).click();
-    const sheet = page.getByRole("dialog");
+    const sheet = page.getByRole("dialog", { name: `${title}.pdf` });
     await expect(sheet).toBeVisible();
     await sheet.getByRole("button", { name: "Delete" }).click();
 

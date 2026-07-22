@@ -29,7 +29,8 @@ import {
   measurementDependentKeys,
   refetchInactiveDailyReads,
 } from "@/lib/query-keys";
-import { ApiError, apiPost } from "@/lib/api/api-fetch";
+import { apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { MEASUREMENT_NOTES_MAX_LENGTH } from "@/lib/validations/measurement";
 import {
   getLastUsedMeasurementType,
@@ -351,11 +352,7 @@ export function MeasurementForm({
       toast.success(t("common.saved"));
       onSuccess?.();
     } catch (err) {
-      setError(
-        err instanceof ApiError && err.message
-          ? err.message
-          : t("measurements.saveError"),
-      );
+      setError(localizedApiError(err, t, "measurements.saveError"));
     } finally {
       setLoading(false);
     }

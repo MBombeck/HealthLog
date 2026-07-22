@@ -23,10 +23,11 @@ import {
   medicationDependentKeys,
   queryKeys,
 } from "@/lib/query-keys";
+import type { ScheduleWindowInput } from "@/lib/medications/window-status";
 import {
-  reduceCurrentWindowStatus,
-  type ScheduleWindowInput,
-} from "@/lib/medications/window-status";
+  resolveMedicationSelectionId,
+  type DefaultMedicationOption,
+} from "@/lib/medications/default-medication";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiError, apiGet, apiPost } from "@/lib/api/api-fetch";
 import { runUndoIntake } from "@/components/medications/use-medication-intake";
@@ -73,23 +74,9 @@ interface Schedule extends ScheduleWindowInput {
   dose: string | null;
 }
 
-export interface MedicationOption {
-  id: string;
-  name: string;
+export interface MedicationOption extends DefaultMedicationOption {
   dose: string;
-  active: boolean;
   schedules: Schedule[];
-  lastTakenAt: string | null;
-  todayEventCount: number | null;
-  /**
-   * v1.16.9 — the server display-due verdict from `GET /api/medications`
-   * (`nextDueAt` + `nextDueOverdue`). Threaded into the default pick so
-   * the quick-add gates its "due now" heuristic exactly like the cards:
-   * a rolling cadence whose next dose is days away must not pre-select.
-   * Optional for older mocks; absent keeps the legacy band-only pick.
-   */
-  nextDueAt?: string | null;
-  nextDueOverdue?: boolean;
 }
 
 interface MedicationIntakeQuickAddProps {
@@ -110,67 +97,6 @@ function getDefaultIntakeAtValue(): string {
   const offset = now.getTimezoneOffset();
   const local = new Date(now.getTime() - offset * 60 * 1000);
   return local.toISOString().slice(0, 16);
-}
-
-/**
- * Pick the medication that should be pre-selected when the sheet opens.
- *
- * Priority:
- *   1. The active medication whose schedule window is currently open
- *      (or late / very_late) — this is the "due now" surface.
- *   2. The single active medication when the user has exactly one.
- *   3. The first active medication alphabetically (stable fallback).
- *
- * Returns the medication id or `null` when no active medication exists.
- */
-export function pickDefaultMedicationId(
-  options: MedicationOption[],
-  now: Date = new Date(),
-  thresholds: { lateMinutes: number; missedMinutes: number } = {
-    lateMinutes: 120,
-    missedMinutes: 240,
-  },
-  /**
-   * v1.16.9 — the profile timezone the "due now" heuristic reasons in
-   * (the same source the cards use). Berlin stays the last-resort
-   * fallback for logged-out mounts and legacy fixtures.
-   */
-  tz: string = "Europe/Berlin",
-): string | null {
-  const actives = options.filter((m) => m.active);
-  if (actives.length === 0) return null;
-  if (actives.length === 1) return actives[0].id;
-
-  const due = actives.find((m) => {
-    // v1.16.9 — the same server display-due gate the cards apply: a
-    // future (non-overdue) next-due suppresses the overdue tiers and a
-    // day-scale dose taken early in its period must not pre-select.
-    const nextDueMs = m.nextDueAt ? new Date(m.nextDueAt).getTime() : NaN;
-    const status = reduceCurrentWindowStatus({
-      schedules: m.schedules,
-      now,
-      lateMinutes: thresholds.lateMinutes,
-      missedMinutes: thresholds.missedMinutes,
-      active: true,
-      lastTakenAt: m.lastTakenAt,
-      todayEventCount: m.todayEventCount ?? 0,
-      tz,
-      nextDue:
-        m.nextDueAt === undefined
-          ? undefined
-          : Number.isFinite(nextDueMs)
-            ? { at: new Date(nextDueMs), overdue: m.nextDueOverdue === true }
-            : null,
-    });
-    return status.status !== null && status.takenEarlyDaysAgo === null;
-  });
-  if (due) return due.id;
-
-  // Stable alphabetical fallback when nothing is currently due.
-  const sorted = [...actives].sort((a, b) =>
-    a.name.localeCompare(b.name, "de", { sensitivity: "base" }),
-  );
-  return sorted[0]?.id ?? null;
 }
 
 export function MedicationIntakeQuickAdd({
@@ -235,16 +161,20 @@ export function MedicationIntakeQuickAdd({
   const [takenAt, setTakenAt] = useState<string>(getDefaultIntakeAtValue);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectionNow] = useState(() => new Date());
 
   const errorId = useId();
   const errorDescriptor = error ? errorId : undefined;
   const formId = useId();
 
-  const defaultMedicationId = useMemo(
-    () => pickDefaultMedicationId(medications, new Date(), undefined, userTz),
-    [medications, userTz],
-  );
-  const medicationId = medicationOverride ?? defaultMedicationId ?? "";
+  const medicationId =
+    resolveMedicationSelectionId(
+      medications,
+      medicationOverride,
+      selectionNow,
+      undefined,
+      userTz,
+    ) ?? "";
   const selectedMedication = medications.find((m) => m.id === medicationId);
   const dose = doseOverride ?? selectedMedication?.dose ?? "";
 
@@ -431,7 +361,22 @@ export function MedicationIntakeQuickAdd({
               placeholder={t(
                 "dashboard.medicationIntakeQuickAdd.medicationPlaceholder",
               )}
-            />
+            >
+              {selectedMedication ? (
+                <span className="flex items-center gap-2">
+                  <Pill
+                    className="text-muted-foreground h-4 w-4"
+                    aria-hidden="true"
+                  />
+                  <span>{selectedMedication.name}</span>
+                  {selectedMedication.dose ? (
+                    <span className="text-muted-foreground text-xs">
+                      ({selectedMedication.dose})
+                    </span>
+                  ) : null}
+                </span>
+              ) : null}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {sortedMedications.map((m) => (

@@ -9,8 +9,8 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { findFirst, bossSend, updateMany, deleteMany } = vi.hoisted(() => ({
-  findFirst: vi.fn(),
+const { findUnique, bossSend, updateMany, deleteMany } = vi.hoisted(() => ({
+  findUnique: vi.fn(),
   bossSend: vi.fn(),
   updateMany: vi.fn(),
   deleteMany: vi.fn(),
@@ -18,7 +18,7 @@ const { findFirst, bossSend, updateMany, deleteMany } = vi.hoisted(() => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    whoopConnection: { findFirst: (...a: unknown[]) => findFirst(...a) },
+    whoopConnection: { findUnique: (...a: unknown[]) => findUnique(...a) },
     measurement: { updateMany: (...a: unknown[]) => updateMany(...a) },
     workout: { deleteMany: (...a: unknown[]) => deleteMany(...a) },
   },
@@ -42,7 +42,7 @@ import { processWhoopNotification } from "../webhook-handler";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  findFirst.mockResolvedValue({ userId: "user-1" });
+  findUnique.mockResolvedValue({ userId: "user-1" });
   bossSend.mockResolvedValue("job-id");
 });
 
@@ -75,7 +75,7 @@ describe("processWhoopNotification — fetch-by-id enqueue", () => {
   });
 
   it("returns 200 for an unknown user without enqueuing", async () => {
-    findFirst.mockResolvedValue(null);
+    findUnique.mockResolvedValue(null);
 
     const res = await processWhoopNotification({
       user_id: 7,

@@ -229,6 +229,17 @@ describe("queryKeys factory", () => {
     expect(key[0]).toBe("workouts");
     expect(key[1]).toBe("recent");
   });
+
+  it("exposes a per-metric custom-entry prefix for broad invalidation", () => {
+    expect(queryKeys.customMetricEntriesPrefix("metric-1")).toEqual([
+      "custom-metric-entries",
+      "metric-1",
+    ]);
+  });
+
+  it("exposes the nutrients prefix for broad invalidation", () => {
+    expect(queryKeys.nutrientsRoot()).toEqual(["nutrients"]);
+  });
 });
 
 describe("dependent-key bundles", () => {
@@ -345,23 +356,22 @@ describe("dependent-key bundles", () => {
 });
 
 /**
- * v1.4.40 W-RSC — factory-bypass guard.
+ * Factory-bypass source guard.
  *
- * Walks every `.ts` / `.tsx` file in `src/components/charts` and
- * `src/app/page.tsx` (the dashboard + chart files we own in this wave)
- * and fails if a literal `queryKey: [...]` slipped past the factory.
- * Acts as a lint-style enforcement check in the absence of a custom
- * ESLint rule — keeps the CI gate cheap and the failure message
- * pointed at the exact file the contributor needs to fix.
- *
- * The audit (`.planning/round-v1439-arch-qa-frontend.md` §H1) found
- * 154 bare queryKey sites at v1.4.39.3. We intentionally scope this
- * guard tight to the dashboard + chart files this wave touched so a
- * future wave can extend the directory list as it migrates the
- * remaining sites — opt-in expansion beats a giant red CI on
- * landing.
+ * Components and hooks are client-facing by convention. App and lib modules
+ * join the guarded surface when they declare `"use client"`. Tests and the
+ * factory definition directory are excluded because they intentionally build
+ * literal fixtures and key tuples.
  */
 describe("queryKey factory enforcement", () => {
+  const repoRoot = join(__dirname, "..", "..", "..");
+  const sourceRoots = [
+    join(repoRoot, "src", "components"),
+    join(repoRoot, "src", "hooks"),
+    join(repoRoot, "src", "app"),
+    join(repoRoot, "src", "lib"),
+  ];
+
   function listFiles(dir: string): string[] {
     const entries = readdirSync(dir);
     const out: string[] = [];
@@ -369,72 +379,55 @@ describe("queryKey factory enforcement", () => {
       const full = join(dir, name);
       const st = statSync(full);
       if (st.isDirectory()) {
-        if (name === "__tests__" || name === "node_modules") continue;
+        if (
+          name === "__tests__" ||
+          name === "__mocks__" ||
+          name === "node_modules"
+        ) {
+          continue;
+        }
         out.push(...listFiles(full));
-      } else if (name.endsWith(".ts") || name.endsWith(".tsx")) {
+      } else if (
+        (name.endsWith(".ts") || name.endsWith(".tsx")) &&
+        !/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(name)
+      ) {
         out.push(full);
       }
     }
     return out;
   }
 
-  const repoRoot = join(__dirname, "..", "..", "..");
-  // Files this wave migrated to the factory. Extend this list as
-  // future waves migrate their own surface; the audit-H1 long tail
-  // (admin/, settings/, medications/, integrations) stays out of the
-  // guard's scope until a follow-up wave routes those keys.
-  const guardedRoots = [
-    join(repoRoot, "src", "components", "charts"),
-    join(repoRoot, "src", "components", "comparison"),
-    join(repoRoot, "src", "app", "page.tsx"),
-    join(repoRoot, "src", "hooks", "use-auth.ts"),
-    // v1.4.41 W-FRONTEND-FACTORY — auth, notifications, and the
-    // about-section migrated to the factory.
-    join(repoRoot, "src", "app", "auth"),
-    join(repoRoot, "src", "app", "notifications"),
-    join(repoRoot, "src", "components", "settings", "about-section.tsx"),
-    // v1.4.42 W3-QUERYKEY-LONGTAIL — settings / medications /
-    // admin / hooks now route every read through the factory.
-    join(repoRoot, "src", "components", "settings"),
-    join(repoRoot, "src", "components", "medications"),
-    join(repoRoot, "src", "components", "admin"),
-    join(repoRoot, "src", "hooks"),
-    join(repoRoot, "src", "app", "medications", "page.tsx"),
-    join(repoRoot, "src", "app", "medications", "[id]", "history", "page.tsx"),
-  ];
-
-  function collect(): string[] {
-    const all: string[] = [];
-    for (const root of guardedRoots) {
-      const st = statSync(root);
-      if (st.isDirectory()) {
-        all.push(...listFiles(root));
-      } else {
-        all.push(root);
-      }
+  function isClientSource(file: string, text: string): boolean {
+    const relative = file.slice(repoRoot.length + 1).replaceAll("\\", "/");
+    if (
+      relative.startsWith("src/components/") ||
+      relative.startsWith("src/hooks/")
+    ) {
+      return true;
     }
-    return all;
+    return /^\s*["']use client["'];/.test(text);
   }
 
-  it("no guarded file declares a bare-literal `queryKey:` (factory enforcement)", () => {
+  it("no client module declares a bare-literal TanStack key", () => {
     const offenders: Array<{ file: string; line: number; snippet: string }> =
       [];
-    const files = collect();
+    const files = sourceRoots.flatMap(listFiles).filter(
+      (file) =>
+        !file
+          .slice(repoRoot.length + 1)
+          .replaceAll("\\", "/")
+          .startsWith("src/lib/query-keys/"),
+    );
+
     for (const file of files) {
       const text = readFileSync(file, "utf8");
+      if (!isClientSource(file, text)) continue;
+
       const lines = text.split("\n");
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        // Match `queryKey:` followed by a `[` on the same line. We
-        // explicitly allow `queryKey: queryKeys.<entry>(…)` patterns
-        // and any indirect identifier the call site passes through
-        // (a `key` local, a `listKey` constant, etc.) so the guard
-        // only flags the literal-array shape that drove audit-H1.
-        const match = line.match(/queryKey\s*:\s*\[/);
-        if (!match) continue;
-        // Strip trailing comments + JSX comments before deciding.
         const trimmed = line.replace(/\/\/.*$/, "").trim();
-        if (!/queryKey\s*:\s*\[/.test(trimmed)) continue;
+        if (!/(?:queryKey|mutationKey)\s*:\s*\[/.test(trimmed)) continue;
         offenders.push({
           file: file.slice(repoRoot.length + 1),
           line: i + 1,
@@ -445,7 +438,7 @@ describe("queryKey factory enforcement", () => {
 
     expect(
       offenders,
-      `Factory bypass — every \`queryKey:\` in guarded files must go through \`queryKeys.<entry>()\`. ` +
+      `Factory bypass — every client TanStack key must come from \`queryKeys.<entry>()\`. ` +
         `Offenders:\n${offenders
           .map((o) => `  ${o.file}:${o.line}  ${o.snippet}`)
           .join("\n")}`,

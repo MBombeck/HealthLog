@@ -12,7 +12,10 @@ import {
   SheetDescription,
   SheetTitle,
 } from "@/components/ui/sheet";
-import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
+import type {
+  CoachCloseIntent,
+  CoachLaunchScope,
+} from "@/lib/insights/coach-launch-context";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { useIsMobile } from "@/hooks/use-is-mobile";
@@ -73,7 +76,7 @@ export function coachMaximizeHref(
  */
 export interface CoachDrawerProps {
   open: boolean;
-  onOpenChange: (next: boolean) => void;
+  onOpenChange: (next: boolean, closeIntent?: CoachCloseIntent) => void;
   /** Optional pre-fill for the input box (suggested-prompt chip click). */
   prefill?: string | null;
   /**
@@ -166,7 +169,7 @@ export function CoachDrawer({
     );
     // Close the drawer (aborts any in-flight stream via `handleOpenChange`)
     // then route to the dedicated page.
-    onOpenChange(false);
+    onOpenChange(false, "navigate");
     resetRef.current?.();
     router.push(href);
   }, [onOpenChange, router, documentId, workoutId]);
@@ -177,7 +180,7 @@ export function CoachDrawer({
   // Coach page. The former `?view=conversations` in-page slide-in drawer is
   // gone; selecting a row there routes back to `/coach?c=<id>`.
   const handleOpenConversations = useCallback(() => {
-    onOpenChange(false);
+    onOpenChange(false, "navigate");
     resetRef.current?.();
     router.push("/coach/conversations");
   }, [onOpenChange, router]);

@@ -18,9 +18,16 @@ import {
   type ThresholdOverridesJson,
 } from "@/lib/analytics/effective-range";
 import { resolveGlucoseUnit, thresholdMetricForContext } from "@/lib/glucose";
-import { computeGlucoseClinicalMetrics } from "@/lib/analytics/glucose-metrics";
+import {
+  computeGlucoseClinicalMetrics,
+  CV_INSTABILITY_THRESHOLD,
+  estimatedA1c,
+  gmi,
+  type GlucoseClinicalMetrics,
+} from "@/lib/analytics/glucose-metrics";
 import type {
   GlucoseContext,
+  MeasurementSource,
   MeasurementType,
 } from "@/generated/prisma/client";
 import { getEvent } from "@/lib/logging/context";
@@ -63,6 +70,305 @@ const GLUCOSE_CONTEXTS: GlucoseContext[] = [
   "RANDOM",
   "BEDTIME",
 ];
+
+const DENSE_REPORT_RAW_WINDOW_DAYS = 90;
+
+interface DenseMeasurementBucket {
+  bucketStart: Date;
+  type: MeasurementType;
+  source: MeasurementSource;
+  deviceType: string | null;
+  glucoseContext: GlucoseContext | null;
+  count: number;
+  sumValue: number;
+  minValue: number;
+  maxValue: number;
+  latestAt: Date;
+  latestValue: number;
+  clinicalCount: number;
+  clinicalSum: number | null;
+  clinicalSumSquares: number | null;
+  clinicalFirstAt: Date | null;
+  clinicalLastAt: Date | null;
+  clinicalTirCount: number;
+  clinicalTbr1Count: number;
+  clinicalTbr2Count: number;
+  clinicalTar1Count: number;
+  clinicalTar2Count: number;
+  clinicalLowRiskSum: number | null;
+  clinicalHighRiskSum: number | null;
+}
+
+interface DenseMeasurementSummary {
+  byType: Record<string, Array<{ value: number; measuredAt: string }>>;
+  stats: Record<string, DoctorReportStats>;
+  glucoseStats: Record<string, DoctorReportStats>;
+  glucoseClinical: GlucoseClinicalMetrics;
+}
+
+interface DenseStatsAccumulator {
+  count: number;
+  sum: number;
+  min: number;
+  max: number;
+  latestAt: Date;
+  latest: number;
+}
+
+function emptyGlucoseClinical(windowDays: number): GlucoseClinicalMetrics {
+  return {
+    stillLearning: true,
+
+    stillLearningReason: `No glucose readings in the last ${windowDays} days.`,
+    windowDays,
+    actualSpanDays: 0,
+    readingCount: 0,
+    meanMgdl: null,
+    distribution: null,
+    gmi: null,
+    estimatedA1c: null,
+    variability: null,
+    advanced: null,
+    isSpotEstimate: true,
+  };
+}
+
+function glucoseClinicalFromBuckets(
+  buckets: readonly DenseMeasurementBucket[],
+  windowDays: number,
+): GlucoseClinicalMetrics {
+  let count = 0;
+  let sum = 0;
+  let sumSquares = 0;
+  let firstAt: Date | null = null;
+  let lastAt: Date | null = null;
+  let tir = 0;
+  let tbr1 = 0;
+  let tbr2 = 0;
+  let tar1 = 0;
+  let tar2 = 0;
+  let lowRisk = 0;
+  let highRisk = 0;
+
+  for (const bucket of buckets) {
+    if (bucket.type !== "BLOOD_GLUCOSE" || bucket.clinicalCount === 0) {
+      continue;
+    }
+    count += bucket.clinicalCount;
+    sum += bucket.clinicalSum ?? 0;
+    sumSquares += bucket.clinicalSumSquares ?? 0;
+    tir += bucket.clinicalTirCount;
+    tbr1 += bucket.clinicalTbr1Count;
+    tbr2 += bucket.clinicalTbr2Count;
+    tar1 += bucket.clinicalTar1Count;
+    tar2 += bucket.clinicalTar2Count;
+    lowRisk += bucket.clinicalLowRiskSum ?? 0;
+    highRisk += bucket.clinicalHighRiskSum ?? 0;
+    if (
+      bucket.clinicalFirstAt &&
+      (!firstAt || bucket.clinicalFirstAt < firstAt)
+    ) {
+      firstAt = bucket.clinicalFirstAt;
+    }
+    if (bucket.clinicalLastAt && (!lastAt || bucket.clinicalLastAt > lastAt)) {
+      lastAt = bucket.clinicalLastAt;
+    }
+  }
+
+  if (count === 0 || !firstAt || !lastAt) {
+    return emptyGlucoseClinical(windowDays);
+  }
+
+  const meanMgdl = sum / count;
+  const actualSpanDays =
+    (lastAt.getTime() - firstAt.getTime()) / (24 * 60 * 60 * 1000);
+  const variance =
+    count >= 2
+      ? Math.max(0, (sumSquares - (sum * sum) / count) / (count - 1))
+      : null;
+  const sd = variance === null ? null : Math.sqrt(variance);
+  const cv = sd === null || meanMgdl === 0 ? null : (sd / meanMgdl) * 100;
+  const fraction = (n: number) => n / count;
+  const minutes = (n: number) => fraction(n) * 1440;
+  const roundedSpan = Math.max(0, Math.round(actualSpanDays));
+  let stillLearningReason: string | null = null;
+  if (count < 14) {
+    stillLearningReason = `Still learning — ${count} reading${
+      count === 1 ? "" : "s"
+    } over ${roundedSpan} day${
+      roundedSpan === 1 ? "" : "s"
+    }; at least 14 are needed for a meaningful estimate.`;
+  } else if (actualSpanDays < 7) {
+    stillLearningReason = `Still learning — readings span only ${roundedSpan} day${
+      roundedSpan === 1 ? "" : "s"
+    }; at least 7 days of coverage are needed.`;
+  }
+
+  return {
+    stillLearning: stillLearningReason !== null,
+    stillLearningReason,
+    windowDays,
+    actualSpanDays,
+    readingCount: count,
+    meanMgdl,
+    distribution: {
+      tir: fraction(tir),
+      tbrLevel1: fraction(tbr1),
+      tbrLevel2: fraction(tbr2),
+      tarLevel1: fraction(tar1),
+      tarLevel2: fraction(tar2),
+      minutesEquivalent: {
+        tir: minutes(tir),
+        tbrLevel1: minutes(tbr1),
+        tbrLevel2: minutes(tbr2),
+        tarLevel1: minutes(tar1),
+        tarLevel2: minutes(tar2),
+      },
+    },
+    gmi: gmi(meanMgdl),
+    estimatedA1c: estimatedA1c(meanMgdl),
+    variability:
+      sd === null || cv === null
+        ? null
+        : { sd, cv, unstable: cv >= CV_INSTABILITY_THRESHOLD },
+    advanced: {
+      jIndex: sd === null ? null : 0.001 * (meanMgdl + sd) ** 2,
+      lbgi: lowRisk / count,
+      hbgi: highRisk / count,
+    },
+    isSpotEstimate: count / Math.max(actualSpanDays, 1) < 24,
+  };
+}
+
+function summariseDenseBuckets(
+  rows: readonly DenseMeasurementBucket[],
+  timezone: string,
+  sourcePriorityJson: unknown,
+  windowDays: number,
+): DenseMeasurementSummary {
+  const canonical = collapseMeasurementsToCanonical(
+    rows.map((row) => ({
+      ...row,
+      value: row.sumValue / row.count,
+      measuredAt: row.bucketStart,
+    })),
+    timezone,
+    sourcePriorityJson,
+  );
+  const byType: DenseMeasurementSummary["byType"] = {};
+  const statsAcc = new Map<string, DenseStatsAccumulator>();
+  const glucoseStatsAcc = new Map<string, DenseStatsAccumulator>();
+
+  const byTypeDay = new Map<
+    string,
+    {
+      type: string;
+      bucketStart: Date;
+      count: number;
+      sum: number;
+      min: number;
+      max: number;
+      latestAt: Date;
+      latest: number;
+    }
+  >();
+  for (const row of canonical) {
+    const key = `${row.type}:${row.bucketStart.toISOString()}`;
+    const current = byTypeDay.get(key);
+    if (!current) {
+      byTypeDay.set(key, {
+        type: row.type,
+        bucketStart: row.bucketStart,
+        count: row.count,
+        sum: row.sumValue,
+        min: row.minValue,
+        max: row.maxValue,
+        latestAt: row.latestAt,
+        latest: row.latestValue,
+      });
+      continue;
+    }
+    current.count += row.count;
+    current.sum += row.sumValue;
+    current.min = Math.min(current.min, row.minValue);
+    current.max = Math.max(current.max, row.maxValue);
+    if (row.latestAt > current.latestAt) {
+      current.latestAt = row.latestAt;
+      current.latest = row.latestValue;
+    }
+  }
+
+  const accumulate = (
+    target: Map<string, DenseStatsAccumulator>,
+    key: string,
+    row: DenseStatsAccumulator,
+  ) => {
+    const current = target.get(key);
+    if (!current) {
+      target.set(key, { ...row });
+      return;
+    }
+    current.count += row.count;
+    current.sum += row.sum;
+    current.min = Math.min(current.min, row.min);
+    current.max = Math.max(current.max, row.max);
+    if (row.latestAt > current.latestAt) {
+      current.latestAt = row.latestAt;
+      current.latest = row.latest;
+    }
+  };
+
+  for (const row of byTypeDay.values()) {
+    (byType[row.type] ??= []).push({
+      value: row.sum / row.count,
+      measuredAt: row.bucketStart.toISOString(),
+    });
+    accumulate(statsAcc, row.type, row);
+  }
+
+  for (const row of canonical) {
+    if (row.type !== "BLOOD_GLUCOSE" || !row.glucoseContext) continue;
+    accumulate(glucoseStatsAcc, row.glucoseContext, {
+      count: row.count,
+      sum: row.sumValue,
+      min: row.minValue,
+      max: row.maxValue,
+      latestAt: row.latestAt,
+      latest: row.latestValue,
+    });
+  }
+
+  for (const entries of Object.values(byType)) {
+    entries.sort((a, b) => a.measuredAt.localeCompare(b.measuredAt));
+  }
+  const stats: DenseMeasurementSummary["stats"] = {};
+  for (const [key, value] of statsAcc) {
+    stats[key] = {
+      count: value.count,
+      avg: value.sum / value.count,
+      min: value.min,
+      max: value.max,
+      latest: value.latest,
+    };
+  }
+  const glucoseStats: DenseMeasurementSummary["glucoseStats"] = {};
+  for (const [key, value] of glucoseStatsAcc) {
+    glucoseStats[key] = {
+      count: value.count,
+      avg: value.sum / value.count,
+      min: value.min,
+      max: value.max,
+      latest: value.latest,
+    };
+  }
+
+  return {
+    byType,
+    stats,
+    glucoseStats,
+    glucoseClinical: glucoseClinicalFromBuckets(canonical, windowDays),
+  };
+}
 
 /**
  * Aggregate the doctor-report payload for a user over a `[start, end]` range.
@@ -158,12 +464,9 @@ export async function collectDoctorReportData(
   // sleep nights, glucose panel, recovery summary — sits behind the same
   // gate that drives its exclusion here).
   //
-  // NOTE a closed include-list is NOT possible here: every ungated type in
-  // the window lands in `stats` / `measurements`, which the clinician share
-  // view and the MCP doctor-visit summary iterate wholesale
-  // (`Object.entries(data.stats)`). Dense ENABLED types (BLOOD_GLUCOSE
-  // minute-grain for a glucose-module user, hourly PULSE) therefore remain a
-  // known load — the per-day bucket tier is the follow-up for that.
+  // Every sparse type keeps the raw-row path. On long windows, the two
+  // sample-dense types move to one SQL row per local day/source/device/context;
+  // the canonical-source picker then works over that bounded intermediate set.
   const excludedMeasurementTypes: MeasurementType[] = [];
   if (sections.bp === false) {
     excludedMeasurementTypes.push("BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA");
@@ -178,7 +481,33 @@ export async function collectDoctorReportData(
     }
   }
 
-  const [measurements, medications, intakeEvents, moodEntries, userProfile] =
+  const userProfile = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      username: true,
+      dateOfBirth: true,
+      gender: true,
+      heightCm: true,
+      glucoseUnit: true,
+      thresholdsJson: true,
+      timezone: true,
+      sourcePriorityJson: true,
+      fullName: true,
+      insurerName: true,
+      insurerIkNumber: true,
+    },
+  });
+  const reportTz = userProfile?.timezone ?? "Europe/Berlin";
+  const aggregateDenseTypes = days > DENSE_REPORT_RAW_WINDOW_DAYS;
+  const densePulse =
+    aggregateDenseTypes && !excludedMeasurementTypes.includes("PULSE");
+  const denseGlucose =
+    aggregateDenseTypes && !excludedMeasurementTypes.includes("BLOOD_GLUCOSE");
+  const rawExcludedMeasurementTypes = [...excludedMeasurementTypes];
+  if (densePulse) rawExcludedMeasurementTypes.push("PULSE");
+  if (denseGlucose) rawExcludedMeasurementTypes.push("BLOOD_GLUCOSE");
+
+  const [measurements, medications, intakeEvents, moodEntries, denseBuckets] =
     await Promise.all([
       prisma.measurement.findMany({
         // v1.4.41 W-DELETED-2 — exclude soft-deleted measurements from
@@ -188,8 +517,8 @@ export async function collectDoctorReportData(
           userId,
           measuredAt: { gte: start, lte: end },
           deletedAt: null,
-          ...(excludedMeasurementTypes.length > 0
-            ? { type: { notIn: excludedMeasurementTypes } }
+          ...(rawExcludedMeasurementTypes.length > 0
+            ? { type: { notIn: rawExcludedMeasurementTypes } }
             : {}),
         },
         orderBy: { measuredAt: "asc" },
@@ -291,33 +620,161 @@ export async function collectDoctorReportData(
             select: { score: true, tags: true },
           })
         : Promise.resolve([]),
-      prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-          username: true,
-          dateOfBirth: true,
-          gender: true,
-          heightCm: true,
-          glucoseUnit: true,
-          thresholdsJson: true,
-          // v1.17 W1a — the user timezone anchors the ledger compliance
-          // band minter (matches the detail page's dose-day attribution).
-          timezone: true,
-          // v1.17.1 — source-priority feeds the per-night sleep reconstruction
-          // so the report's SLEEP_DURATION resolves the same canonical night
-          // (multi-source de-dup) the dashboard + iOS feed show.
-          sourcePriorityJson: true,
-          // v1.7.0 — patient-identity fields for the export cover + FHIR
-          // Patient. KVNR is encrypted (and not selected here) — the route
-          // decrypts it and hands it to the builders.
-          fullName: true,
-          insurerName: true,
-          insurerIkNumber: true,
-        },
-      }),
+      densePulse || denseGlucose
+        ? prisma.$queryRaw<DenseMeasurementBucket[]>`
+            WITH localized AS (
+              SELECT
+                m."id",
+                m."type",
+                m."source",
+                m."device_type",
+                m."glucose_context",
+                m."value",
+                m."measured_at",
+                date_trunc(
+                  'day',
+                  (m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${reportTz}
+                ) AS local_day
+              FROM measurements m
+              WHERE m."user_id" = ${userId}
+                AND m."measured_at" >= ${start}
+                AND m."measured_at" <= ${end}
+                AND m."deleted_at" IS NULL
+                AND (
+                  (${densePulse} AND m."type" = 'PULSE'::"measurement_type")
+                  OR
+                  (${denseGlucose} AND m."type" = 'BLOOD_GLUCOSE'::"measurement_type")
+                )
+            ),
+            scored AS (
+              SELECT
+                localized.*,
+                CASE
+                  WHEN "value" > 0
+                  THEN 1.509 * (power(ln("value"), 1.084) - 5.381)
+                  ELSE NULL
+                END AS risk_transform
+              FROM localized
+            ),
+            latest_rows AS (
+              SELECT DISTINCT ON (
+                local_day,
+                "type",
+                "source",
+                "device_type",
+                "glucose_context"
+              )
+                local_day,
+                "type",
+                "source",
+                "device_type",
+                "glucose_context",
+                "measured_at" AS latest_at,
+                "value" AS latest_value
+              FROM localized
+              ORDER BY
+                local_day,
+                "type",
+                "source",
+                "device_type",
+                "glucose_context",
+                "measured_at" DESC,
+                "id" DESC
+            ),
+            grouped AS (
+              SELECT
+                local_day,
+                "type",
+                "source",
+                "device_type",
+                "glucose_context",
+                COUNT(*)::int AS sample_count,
+                SUM("value")::double precision AS sum_value,
+                MIN("value")::double precision AS min_value,
+                MAX("value")::double precision AS max_value,
+                COUNT(*) FILTER (WHERE "value" > 0)::int AS clinical_count,
+                SUM("value") FILTER (WHERE "value" > 0)::double precision
+                  AS clinical_sum,
+                SUM("value" * "value") FILTER (WHERE "value" > 0)::double precision
+                  AS clinical_sum_squares,
+                MIN("measured_at") FILTER (WHERE "value" > 0) AS clinical_first_at,
+                MAX("measured_at") FILTER (WHERE "value" > 0) AS clinical_last_at,
+                COUNT(*) FILTER (WHERE "value" BETWEEN 70 AND 180)::int
+                  AS clinical_tir_count,
+                COUNT(*) FILTER (WHERE "value" > 0 AND "value" < 70)::int
+                  AS clinical_tbr1_count,
+                COUNT(*) FILTER (WHERE "value" > 0 AND "value" < 54)::int
+                  AS clinical_tbr2_count,
+                COUNT(*) FILTER (WHERE "value" > 180)::int
+                  AS clinical_tar1_count,
+                COUNT(*) FILTER (WHERE "value" > 250)::int
+                  AS clinical_tar2_count,
+                SUM(
+                  CASE
+                    WHEN risk_transform < 0
+                    THEN 10 * risk_transform * risk_transform
+                    ELSE 0
+                  END
+                ) FILTER (WHERE risk_transform IS NOT NULL)::double precision
+                  AS clinical_low_risk_sum,
+                SUM(
+                  CASE
+                    WHEN risk_transform > 0
+                    THEN 10 * risk_transform * risk_transform
+                    ELSE 0
+                  END
+                ) FILTER (WHERE risk_transform IS NOT NULL)::double precision
+                  AS clinical_high_risk_sum
+              FROM scored
+              GROUP BY
+                local_day,
+                "type",
+                "source",
+                "device_type",
+                "glucose_context"
+            )
+            SELECT
+              grouped.local_day AT TIME ZONE ${reportTz} AS "bucketStart",
+              grouped."type",
+              grouped."source",
+              grouped."device_type" AS "deviceType",
+              grouped."glucose_context" AS "glucoseContext",
+              grouped.sample_count AS "count",
+              grouped.sum_value AS "sumValue",
+              grouped.min_value AS "minValue",
+              grouped.max_value AS "maxValue",
+              latest_rows.latest_at AS "latestAt",
+              latest_rows.latest_value::double precision AS "latestValue",
+              grouped.clinical_count AS "clinicalCount",
+              grouped.clinical_sum AS "clinicalSum",
+              grouped.clinical_sum_squares AS "clinicalSumSquares",
+              grouped.clinical_first_at AS "clinicalFirstAt",
+              grouped.clinical_last_at AS "clinicalLastAt",
+              grouped.clinical_tir_count AS "clinicalTirCount",
+              grouped.clinical_tbr1_count AS "clinicalTbr1Count",
+              grouped.clinical_tbr2_count AS "clinicalTbr2Count",
+              grouped.clinical_tar1_count AS "clinicalTar1Count",
+              grouped.clinical_tar2_count AS "clinicalTar2Count",
+              grouped.clinical_low_risk_sum AS "clinicalLowRiskSum",
+              grouped.clinical_high_risk_sum AS "clinicalHighRiskSum"
+            FROM grouped
+            INNER JOIN latest_rows
+              ON latest_rows.local_day = grouped.local_day
+              AND latest_rows."type" = grouped."type"
+              AND latest_rows."source" = grouped."source"
+              AND latest_rows."device_type" IS NOT DISTINCT FROM grouped."device_type"
+              AND latest_rows."glucose_context" IS NOT DISTINCT FROM grouped."glucose_context"
+            ORDER BY "bucketStart" ASC, grouped."type" ASC
+          `
+        : Promise.resolve([]),
     ]);
 
-  const reportTz = userProfile?.timezone ?? "Europe/Berlin";
+  const denseSummary = summariseDenseBuckets(
+    denseBuckets,
+    reportTz,
+    userProfile?.sourcePriorityJson ?? null,
+    days,
+  );
 
   // v1.18.0 — collapse each multi-source metric to its CANONICAL source before
   // grouping, so the report's per-type avg/min/max match the dashboard rather
@@ -340,6 +797,9 @@ export async function collectDoctorReportData(
       value: m.value,
       measuredAt: m.measuredAt.toISOString(),
     });
+  }
+  for (const [type, entries] of Object.entries(denseSummary.byType)) {
+    byType[type] = entries;
   }
   // measuredAt-ascending within each type so `latest` (last element) is the
   // most recent reading after the canonical collapse reorders by bucket.
@@ -387,6 +847,7 @@ export async function collectDoctorReportData(
       latest: values[values.length - 1],
     };
   }
+  Object.assign(stats, denseSummary.stats);
 
   // v1.17 W1a — medication compliance through the dose-ledger authority (the
   // same engine the detail page uses), NOT a raw-row tally. Routes each
@@ -542,7 +1003,9 @@ export async function collectDoctorReportData(
   const bmi = bmiRaw !== null ? Math.round(bmiRaw * 10) / 10 : null;
 
   // Per-context glucose stats + effective ranges (canonical mg/dL).
-  const glucoseStats: Record<string, DoctorReportStats> = {};
+  const glucoseStats: Record<string, DoctorReportStats> = denseGlucose
+    ? { ...denseSummary.glucoseStats }
+    : {};
   const glucoseRanges: Record<string, { min: number; max: number }> = {};
   // v1.18.0 — when the glucose module is disabled, no glucose row enters the
   // panel: stats, ranges, and the clinical metrics all collapse to empty so the
@@ -558,15 +1021,19 @@ export async function collectDoctorReportData(
     gender: userProfile?.gender ?? null,
   };
   for (const ctx of GLUCOSE_CONTEXTS) {
-    const rows = glucoseRows.filter((m) => m.glucoseContext === ctx);
-    if (rows.length === 0) continue;
-    const values = rows.map((r) => r.value);
-    glucoseStats[ctx] = {
-      avg: values.reduce((a, b) => a + b, 0) / values.length,
-      ...minMaxOf(values),
-      count: values.length,
-      latest: values[values.length - 1],
-    };
+    if (!denseGlucose) {
+      const rows = glucoseRows.filter((m) => m.glucoseContext === ctx);
+      if (rows.length === 0) continue;
+      const values = rows.map((r) => r.value);
+      glucoseStats[ctx] = {
+        avg: values.reduce((a, b) => a + b, 0) / values.length,
+        ...minMaxOf(values),
+        count: values.length,
+        latest: values[values.length - 1],
+      };
+    } else if (!glucoseStats[ctx]) {
+      continue;
+    }
     const eff = getEffectiveRange(
       thresholdMetricForContext(ctx),
       profileForRange,
@@ -584,10 +1051,12 @@ export async function collectDoctorReportData(
   // tabulates; `now: end` anchors the window to the report's upper bound. The
   // learning gate keeps a thin period from asserting a clinical AGP off spot
   // data. Values stay canonical mg/dL; the renderer converts with `glucoseUnit`.
-  const glucoseClinical = computeGlucoseClinicalMetrics(
-    glucoseRows.map((r) => ({ measuredAt: r.measuredAt, mgdl: r.value })),
-    { windowDays: days, now: end },
-  );
+  const glucoseClinical = denseGlucose
+    ? denseSummary.glucoseClinical
+    : computeGlucoseClinicalMetrics(
+        glucoseRows.map((r) => ({ measuredAt: r.measuredAt, mgdl: r.value })),
+        { windowDays: days, now: end },
+      );
 
   // `practiceName` is sanitised to a single-line string with a hard length
   // cap. The PDF cover prints it verbatim — never let unbounded input land in

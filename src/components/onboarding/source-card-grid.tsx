@@ -24,6 +24,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { queryKeys } from "@/lib/query-keys";
 
 /**
@@ -139,9 +140,7 @@ export function SourceCardGrid() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.auth() });
       router.push("/onboarding/3");
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : t("onboarding.errorGeneric");
-      toast.error(message);
+      toast.error(localizedApiError(err, t, "onboarding.errorGeneric"));
       setAdvancing(false);
     }
   }

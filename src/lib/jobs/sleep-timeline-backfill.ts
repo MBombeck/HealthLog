@@ -33,6 +33,7 @@
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
 import { syncUserWhoop } from "@/lib/whoop/sync";
 import { syncUserSleep as syncWithingsSleep } from "@/lib/withings/sync-sleep";
 
@@ -103,7 +104,9 @@ export async function runSleepTimelineBackfillForUser(
  * Best-effort: errors are returned through the result value so worker boot
  * never fails because of a backfill miss.
  */
-export async function enqueueBootTimeSleepTimelineBackfill(): Promise<{
+export async function enqueueBootTimeSleepTimelineBackfill(
+  startAfterSeconds: number = 0,
+): Promise<{
   enqueued: number;
   skipped: number;
   error: string | null;
@@ -146,12 +149,14 @@ export async function enqueueBootTimeSleepTimelineBackfill(): Promise<{
         provider,
         enqueuedAt: new Date().toISOString(),
       };
-      const jobId = await boss.send(SLEEP_TIMELINE_BACKFILL_QUEUE, payload, {
-        retryLimit: 3,
-        retryDelay: 60,
-        retryBackoff: true,
-        singletonKey: `sleep-timeline-backfill|${provider}|${userId}`,
-      });
+      const jobId = await boss.send(
+        SLEEP_TIMELINE_BACKFILL_QUEUE,
+        payload,
+        integrationBackfillSourceOptions(
+          `sleep-timeline-backfill|${provider}|${userId}`,
+          startAfterSeconds,
+        ),
+      );
       if (jobId) {
         enqueued += 1;
       } else {

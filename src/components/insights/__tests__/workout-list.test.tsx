@@ -68,4 +68,34 @@ describe("<WorkoutList>", () => {
     expect(html).toContain("freediving");
     expect(html).not.toContain("insights.workouts.sport.");
   });
+  it("renders an accessible load-more control and its pending/error states", () => {
+    const ready = render(
+      <WorkoutList workouts={[ROW]} hasNextPage onLoadMore={() => {}} />,
+    );
+    expect(ready).toContain('data-slot="workout-list-load-more"');
+    expect(ready).toContain("Load more workouts");
+
+    const pending = render(
+      <WorkoutList
+        workouts={[ROW]}
+        hasNextPage
+        isFetchingNextPage
+        onLoadMore={() => {}}
+      />,
+    );
+    expect(pending).toContain('aria-busy="true"');
+    expect(pending).toContain("Loading more workouts");
+
+    const failed = render(
+      <WorkoutList
+        workouts={[ROW]}
+        hasNextPage
+        isFetchNextPageError
+        onLoadMore={() => {}}
+      />,
+    );
+    expect(failed).toContain('role="alert"');
+    expect(failed).toContain("More workouts could not be loaded");
+    expect(failed).toContain(">Retry<");
+  });
 });

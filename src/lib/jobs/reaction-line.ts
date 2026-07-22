@@ -322,6 +322,7 @@ async function reserveClaimBudget(
   rowId: string,
   generationClaimId: string,
   userId: string,
+  revision: Date,
   dateKey: string,
   cap: number,
 ): Promise<ReactionReservation> {
@@ -330,6 +331,7 @@ async function reserveClaimBudget(
       where: {
         id: rowId,
         userId,
+        occurredAt: revision,
         generatedAt: null,
         generationClaimId,
         generationProviderInvokedAt: null,
@@ -360,7 +362,7 @@ async function reserveClaimBudget(
         WHERE user_id = ${userId} AND date_key = ${dateKey}
       `;
       await tx.arrivalReaction.updateMany({
-        where: { id: rowId, userId, generationClaimId },
+        where: { id: rowId, userId, occurredAt: revision, generationClaimId },
         data: { generationClaimId: null, generationClaimedAt: null },
       });
       return { allowed: false, reserved, dateKey };
@@ -370,6 +372,7 @@ async function reserveClaimBudget(
       where: {
         id: rowId,
         userId,
+        occurredAt: revision,
         generatedAt: null,
         generationClaimId,
         generationProviderInvokedAt: null,
@@ -397,6 +400,11 @@ async function reserveClaimBudget(
 export async function runReactionLine(
   job: ReactionLineJob,
 ): Promise<ReactionLineOutcome> {
+  const revision = new Date(job.revision);
+  if (Number.isNaN(revision.getTime())) {
+    return { status: "skipped", reason: "invalid_revision" };
+  }
+
   const row = await prisma.arrivalReaction.findUnique({
     where: {
       userId_kind_localDate: {
@@ -404,6 +412,7 @@ export async function runReactionLine(
         kind: job.kind,
         localDate: job.localDate,
       },
+      occurredAt: revision,
     },
     select: {
       id: true,
@@ -452,6 +461,7 @@ export async function runReactionLine(
     where: {
       id: row.id,
       userId: job.userId,
+      occurredAt: revision,
       generatedAt: null,
       generationProviderInvokedAt: null,
       OR: [
@@ -474,6 +484,7 @@ export async function runReactionLine(
       where: {
         id: row.id,
         userId: job.userId,
+        occurredAt: revision,
         generationClaimId,
         generationProviderInvokedAt: null,
       },
@@ -485,6 +496,7 @@ export async function runReactionLine(
       where: {
         id: row.id,
         userId: job.userId,
+        occurredAt: revision,
         generationClaimId,
         generationProviderInvokedAt: { not: null },
       },
@@ -512,6 +524,7 @@ export async function runReactionLine(
         row.id,
         generationClaimId,
         job.userId,
+        revision,
         buildDateKey(),
         resolveDailyCap(chain),
       );
@@ -551,6 +564,7 @@ export async function runReactionLine(
     where: {
       id: row.id,
       userId: job.userId,
+      occurredAt: revision,
       generatedAt: null,
       generationClaimId,
       generationProviderInvokedAt: null,
@@ -633,6 +647,7 @@ export async function runReactionLine(
     where: {
       id: row.id,
       userId: job.userId,
+      occurredAt: revision,
       generationClaimId,
       generationProviderInvokedAt: providerInvokedAt,
       generatedAt: null,

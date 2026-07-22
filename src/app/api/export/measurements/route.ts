@@ -22,9 +22,11 @@ import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { apiError, getClientIp } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { toCSV, formatMeasurementsForExport } from "@/lib/export";
-import { findMeasurementsPaged } from "@/lib/export/paged-measurements";
-import { shapeMeasurementNotes } from "@/lib/crypto/note-cipher";
+import { toCSV, type ExportableRecord } from "@/lib/export";
+import {
+  formatMeasurementPageChunks,
+  iterateMeasurementPages,
+} from "@/lib/export/paged-measurements";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { resolveGlucoseUnit } from "@/lib/glucose";
@@ -41,79 +43,122 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   const { since, until } = parseRange(request.url);
   const where = buildWhere(user.id, { since, until });
-  // v1.11.5 — sleep export defaults to one row per night; `granularity=raw`
-  // keeps the per-stage rows for power users.
   const granularity =
     new URL(request.url).searchParams.get("granularity") === "raw"
       ? "raw"
       : "night";
-
-  const [measurements, userTz, sourcePriorityJson, profile] = await Promise.all(
-    [
-      // v1.28.25 — keyset-paginated read with a narrow select. The route
-      // keeps its contract (an absent `since`/`until` means the full
-      // history), but the read is now chunked so an unbounded window on a
-      // CGM / per-sample-HR account never materialises the whole table in
-      // one query. The select is exactly the formatter's `ExportMeasurement`
-      // shape + note decryption + the `id` cursor key.
-      findMeasurementsPaged(prisma, where, {
-        id: true,
-        type: true,
-        value: true,
-        unit: true,
-        measuredAt: true,
-        source: true,
-        notes: true,
-        notesEncrypted: true,
-        glucoseContext: true,
-        sleepStage: true,
-        deviceType: true,
-      }),
-      resolveUserTimezone(user.id),
-      loadUserSourcePriority(user.id),
-      // v1.16.16 — resolve the glucose display unit so BLOOD_GLUCOSE rows
-      // export in the user's unit (matching FHIR), not raw stored mg/dL.
-      prisma.user.findUnique({
-        where: { id: user.id },
-        select: { glucoseUnit: true },
-      }),
-    ],
-  );
-  const glucoseUnit = resolveGlucoseUnit(profile?.glucoseUnit ?? null);
-
-  const csv = toCSV(
-    formatMeasurementsForExport(
-      measurements.map(shapeMeasurementNotes),
-      userTz,
-      {
-        granularity,
-        sleepTz: userTz,
-        sourcePriorityJson,
-        glucoseUnit,
-      },
-    ),
-  );
-
   await auditLog("user.export.measurements", {
     userId: user.id,
     ipAddress: getClientIp(request),
     details: {
-      count: measurements.length,
+      outcome: "attempted",
       since: since?.toISOString() ?? null,
       until: until?.toISOString() ?? null,
     },
   });
-
   annotate({
     meta: {
-      export_count: measurements.length,
+      export_outcome: "attempted",
       export_since: since?.toISOString() ?? null,
       export_until: until?.toISOString() ?? null,
     },
   });
+  const pageIterator = iterateMeasurementPages(prisma, where, {
+    id: true,
+    type: true,
+    value: true,
+    unit: true,
+    measuredAt: true,
+    source: true,
+    notes: true,
+    notesEncrypted: true,
+    glucoseContext: true,
+    sleepStage: true,
+    deviceType: true,
+  })[Symbol.asyncIterator]();
 
-  return csvResponse(csv, `healthlog-measurements-${user.id}`);
+  // Prime one bounded page before sending headers. Authentication, metadata,
+  // and first-query failures therefore keep the historical API error
+  // behaviour; later pages are pulled only as the client consumes the body.
+  const [firstPage, userTz, sourcePriorityJson, profile] = await Promise.all([
+    pageIterator.next(),
+    resolveUserTimezone(user.id),
+    loadUserSourcePriority(user.id),
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { glucoseUnit: true },
+    }),
+  ]).catch(async (error: unknown) => {
+    await pageIterator.return?.();
+    throw error;
+  });
+  const glucoseUnit = resolveGlucoseUnit(profile?.glucoseUnit ?? null);
+  const pages = prefetchedPages(pageIterator, firstPage);
+  const recordChunks = formatMeasurementPageChunks(pages, userTz, {
+    granularity,
+    sourcePriorityJson,
+    glucoseUnit,
+  });
+  const body = streamText(csvChunks(recordChunks));
+
+  return csvResponse(body, `healthlog-measurements-${user.id}`);
 });
+
+async function* prefetchedPages<T>(
+  iterator: AsyncIterator<T[]>,
+  first: IteratorResult<T[]>,
+): AsyncGenerator<readonly T[], void, void> {
+  try {
+    let next = first;
+    while (!next.done) {
+      yield next.value;
+      next = await iterator.next();
+    }
+  } finally {
+    await iterator.return?.();
+  }
+}
+
+async function* csvChunks(
+  chunks: AsyncIterable<ExportableRecord[]>,
+): AsyncGenerator<string, void, void> {
+  let wroteHeader = false;
+  for await (const records of chunks) {
+    const csv = toCSV(records);
+    if (csv.length === 0) continue;
+    if (!wroteHeader) {
+      wroteHeader = true;
+      yield csv;
+      continue;
+    }
+    const headerEnd = csv.indexOf("\n");
+    if (headerEnd >= 0 && headerEnd + 1 < csv.length) {
+      yield `\n${csv.slice(headerEnd + 1)}`;
+    }
+  }
+}
+
+function streamText(chunks: AsyncIterable<string>): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  const iterator = chunks[Symbol.asyncIterator]();
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      try {
+        const next = await iterator.next();
+        if (next.done) {
+          controller.close();
+          return;
+        }
+        controller.enqueue(encoder.encode(next.value));
+      } catch (error) {
+        controller.error(error);
+      }
+    },
+    async cancel() {
+      await iterator.return?.();
+    },
+  });
+}
 
 function parseRange(url: string): {
   since: Date | undefined;
@@ -159,7 +204,10 @@ function buildWhere(
   return where;
 }
 
-function csvResponse(body: string, prefix: string): NextResponse {
+function csvResponse(
+  body: ReadableStream<Uint8Array>,
+  prefix: string,
+): NextResponse {
   const stamp = new Date().toISOString().slice(0, 10);
   return new NextResponse(body, {
     status: 200,

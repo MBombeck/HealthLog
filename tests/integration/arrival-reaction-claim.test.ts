@@ -147,6 +147,125 @@ describe("ArrivalReaction — the day claim", () => {
     expect(row?.occurredAt.toISOString()).toBe(late.toISOString());
   });
 
+  it("replaces a generated marker and rejects the stale generation owner", async () => {
+    const prisma = getPrismaClient();
+    const user = await createUser("arrival-replacement");
+    const early = new Date("2026-07-14T06:00:00Z");
+    const late = new Date("2026-07-14T18:00:00Z");
+    const providerInvokedAt = new Date("2026-07-14T06:01:00Z");
+    const existing = await prisma.arrivalReaction.create({
+      data: {
+        ...marker(user.id, "weight", early),
+        refId: "old-ref",
+        lineEncrypted: Buffer.from("old-ciphertext"),
+        generatedAt: new Date("2026-07-14T06:02:00Z"),
+        generationClaimId: "old-claim",
+        generationClaimedAt: providerInvokedAt,
+        generationReservedTokens: 220,
+        generationBudgetDateKey: "2026-07-14",
+        generationProviderInvokedAt: providerInvokedAt,
+      },
+    });
+    await prisma.coachUsage.create({
+      data: {
+        userId: user.id,
+        dateKey: "2026-07-14",
+        totalTokens: 220,
+        messageCount: 1,
+      },
+    });
+
+    const { runDataArrival } = await import("@/lib/jobs/data-arrival");
+    const outcome = await runDataArrival(prisma as never, {
+      userId: user.id,
+      kind: "weight",
+      salience: "salient",
+      localDate: LOCAL_DATE,
+      occurredAt: late.toISOString(),
+      count: 1,
+      source: "withings",
+      refId: "new-ref",
+    });
+
+    expect(outcome).toMatchObject({ status: "processed", dedup: false });
+    const replaced = await prisma.arrivalReaction.findUniqueOrThrow({
+      where: { id: existing.id },
+    });
+    expect(replaced).toMatchObject({
+      occurredAt: late,
+      refId: "new-ref",
+      lineEncrypted: null,
+      generatedAt: null,
+      generationClaimId: null,
+      generationClaimedAt: null,
+      generationReservedTokens: null,
+      generationBudgetDateKey: null,
+      generationProviderInvokedAt: null,
+    });
+
+    const staleCommit = await prisma.arrivalReaction.updateMany({
+      where: {
+        id: existing.id,
+        generationClaimId: "old-claim",
+        generationProviderInvokedAt: providerInvokedAt,
+      },
+      data: {
+        lineEncrypted: Buffer.from("stale-ciphertext"),
+        generatedAt: new Date(),
+      },
+    });
+    expect(staleCommit.count).toBe(0);
+
+    const usage = await prisma.coachUsage.findUniqueOrThrow({
+      where: {
+        userId_dateKey: { userId: user.id, dateKey: "2026-07-14" },
+      },
+    });
+    expect(usage).toMatchObject({ totalTokens: 220, messageCount: 1 });
+  });
+
+  it("refunds a superseded pre-provider reservation", async () => {
+    const prisma = getPrismaClient();
+    const user = await createUser("arrival-reservation-refund");
+    const early = new Date("2026-07-14T06:00:00Z");
+    const late = new Date("2026-07-14T18:00:00Z");
+    await prisma.arrivalReaction.create({
+      data: {
+        ...marker(user.id, "weight", early),
+        generationClaimId: "pre-provider-claim",
+        generationClaimedAt: new Date("2026-07-14T06:01:00Z"),
+        generationReservedTokens: 220,
+        generationBudgetDateKey: "2026-07-14",
+      },
+    });
+    await prisma.coachUsage.create({
+      data: {
+        userId: user.id,
+        dateKey: "2026-07-14",
+        totalTokens: 500,
+        messageCount: 2,
+      },
+    });
+
+    const { runDataArrival } = await import("@/lib/jobs/data-arrival");
+    await runDataArrival(prisma as never, {
+      userId: user.id,
+      kind: "weight",
+      salience: "salient",
+      localDate: LOCAL_DATE,
+      occurredAt: late.toISOString(),
+      count: 1,
+      source: "withings",
+    });
+
+    const usage = await prisma.coachUsage.findUniqueOrThrow({
+      where: {
+        userId_dateKey: { userId: user.id, dateKey: "2026-07-14" },
+      },
+    });
+    expect(usage).toMatchObject({ totalTokens: 280, messageCount: 1 });
+  });
+
   it("stores the line as encrypted bytes, and tolerates its absence", async () => {
     const prisma = getPrismaClient();
     const user = await createUser("arrival-crypto");

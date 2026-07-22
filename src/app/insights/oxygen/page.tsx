@@ -36,6 +36,7 @@ export default function InsightsOxygenSaturationPage() {
       ]}
       emptyStateIcon={<Wind className="size-6" />}
       emptyStateCtaType={null}
+      captureType="OXYGEN_SATURATION"
       coachPrefill="I haven't logged any oxygen-saturation data yet — what does SpO₂ tell me, and what range should I aim for?"
     />
   );

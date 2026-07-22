@@ -42,7 +42,8 @@ import {
   moodDependentKeys,
   refetchInactiveDailyReads,
 } from "@/lib/query-keys";
-import { ApiError, apiPost } from "@/lib/api/api-fetch";
+import { apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { SheetSection, SheetSectionCount } from "@/components/ui/sheet-section";
 import { MoodTagPicker, type RatedFactor } from "./mood-tag-picker";
 import { MoodQuickTags } from "./mood-quick-tags";
@@ -224,11 +225,7 @@ export function MoodForm({ onSuccess, onCancel, footerSlot }: MoodFormProps) {
       toast.success(t("common.saved"));
       onSuccess?.();
     } catch (err) {
-      setError(
-        err instanceof ApiError && err.message
-          ? err.message
-          : t("mood.saveError"),
-      );
+      setError(localizedApiError(err, t, "mood.saveError"));
     } finally {
       setLoading(false);
     }
@@ -287,8 +284,7 @@ export function MoodForm({ onSuccess, onCancel, footerSlot }: MoodFormProps) {
 
   // v1.17.0 — the "Note & details" badge counts the free-text tags entered
   // plus the note (when present), so a collapsed section communicates what
-  // it holds. The auto-populated timestamp is excluded (it always carries a
-  // default, so it would never read as "empty").
+  // it holds.
   const freeTextTagCount = tagsInput
     .split(",")
     .map((s) => s.trim())
@@ -365,6 +361,20 @@ export function MoodForm({ onSuccess, onCancel, footerSlot }: MoodFormProps) {
             onExpand={() => setMoreTagsOpen(true)}
           />
 
+          <FieldGroup htmlFor="mood-logged-at" label={t("mood.timestamp")}>
+            <DateTimeField
+              id="mood-logged-at"
+              value={moodLoggedAt}
+              onChange={setMoodLoggedAt}
+              // v1.17 W1b — match the server bound: no future instant.
+              max={getDefaultMoodLoggedAtValue()}
+              required
+              aria-required="true"
+              aria-invalid={!!error || undefined}
+              aria-describedby={errorDescriptor}
+            />
+          </FieldGroup>
+
           {/* v1.17.0 — "More tags": the full structured-tag taxonomy
               (binary tiles + custom). Controlled so the Quick row's "+" can
               open it; the badge reports how many tags are selected. */}
@@ -399,8 +409,8 @@ export function MoodForm({ onSuccess, onCancel, footerSlot }: MoodFormProps) {
           </SheetSection>
 
           {/* v1.17.0 — "Note & details": free-text tags, GLP-1 quick-tags,
-              the note field, and the timestamp. The badge counts whichever
-              of these carry input. */}
+              and the note field. The badge counts whichever of these carry
+              input. */}
           <SheetSection
             title={t("mood.sectionNoteDetails")}
             icon={<StickyNote />}
@@ -516,20 +526,6 @@ export function MoodForm({ onSuccess, onCancel, footerSlot }: MoodFormProps) {
                 placeholder={t("mood.notePlaceholder")}
                 maxLength={NOTE_MAX_LENGTH}
                 rows={3}
-              />
-            </FieldGroup>
-
-            <FieldGroup htmlFor="mood-logged-at" label={t("mood.timestamp")}>
-              <DateTimeField
-                id="mood-logged-at"
-                value={moodLoggedAt}
-                onChange={setMoodLoggedAt}
-                // v1.17 W1b — match the server bound: no future instant.
-                max={getDefaultMoodLoggedAtValue()}
-                required
-                aria-required="true"
-                aria-invalid={!!error || undefined}
-                aria-describedby={errorDescriptor}
               />
             </FieldGroup>
           </SheetSection>

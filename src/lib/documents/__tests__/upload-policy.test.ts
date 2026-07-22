@@ -20,6 +20,9 @@ vi.mock("@/lib/db", () => ({
 import { prisma } from "@/lib/db";
 import {
   DOCUMENT_DEFAULT_MAX_FILE_BYTES,
+  acquireDocumentUploadSlot,
+  DOCUMENT_UPLOAD_GLOBAL_CONCURRENCY,
+  DOCUMENT_UPLOAD_PER_USER_CONCURRENCY,
   DOCUMENT_DEFAULT_QUOTA_BYTES,
   DOCUMENT_HARD_MAX_FILE_BYTES,
   detectDocumentType,
@@ -273,6 +276,36 @@ describe("servingClassFor", () => {
     ]) {
       expect(servingClassFor(mime)).toBe("attachment");
     }
+  });
+});
+
+describe("document upload concurrency slots", () => {
+  it("bounds concurrent uploads per user and releases exactly once", () => {
+    const releases = Array.from(
+      { length: DOCUMENT_UPLOAD_PER_USER_CONCURRENCY },
+      () => acquireDocumentUploadSlot("slot-user"),
+    );
+    expect(releases.every(Boolean)).toBe(true);
+    expect(acquireDocumentUploadSlot("slot-user")).toBeNull();
+
+    releases[0]!();
+    releases[0]!();
+    const replacement = acquireDocumentUploadSlot("slot-user");
+    expect(replacement).not.toBeNull();
+
+    replacement!();
+    for (const release of releases.slice(1)) release!();
+  });
+
+  it("bounds total concurrent uploads across different users", () => {
+    const releases = Array.from(
+      { length: DOCUMENT_UPLOAD_GLOBAL_CONCURRENCY },
+      (_, index) => acquireDocumentUploadSlot(`global-slot-user-${index}`),
+    );
+    expect(releases.every(Boolean)).toBe(true);
+    expect(acquireDocumentUploadSlot("global-slot-overflow")).toBeNull();
+
+    for (const release of releases) release!();
   });
 });
 

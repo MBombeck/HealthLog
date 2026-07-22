@@ -1,8 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { SubPageShell } from "../sub-page-shell";
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/insights/weight",
+}));
 
 /**
  * v1.4.25 W4 — `<SubPageShell>` unit tests.
@@ -134,6 +138,36 @@ describe("<SubPageShell>", () => {
     // neighbour's clickable edge.
     expect(html).toContain("items-center gap-3");
     expect(html).not.toContain("items-center gap-0.5");
+  });
+
+  it("links a populated metric capture action to a preselected one-shot form", () => {
+    const html = render(
+      <SubPageShell
+        title="Weight"
+        captureType="WEIGHT"
+        showAllValuesType="WEIGHT"
+      >
+        <span />
+      </SubPageShell>,
+    );
+
+    const idx = html.indexOf('data-slot="metric-add-reading"');
+    expect(idx).toBeGreaterThan(-1);
+    expect(idx).toBeLessThan(html.indexOf("</header>"));
+    expect(html).toContain('aria-label="Add: Weight"');
+    expect(html).toContain(
+      "/measurements?add=WEIGHT&amp;returnTo=%2Finsights%2Fweight",
+    );
+  });
+
+  it("omits the populated metric capture action without a capture type", () => {
+    const html = render(
+      <SubPageShell title="Weight" showAllValuesType="WEIGHT">
+        <span />
+      </SubPageShell>,
+    );
+
+    expect(html).not.toContain('data-slot="metric-add-reading"');
   });
 
   it("omits the show-all-values control without a type", () => {

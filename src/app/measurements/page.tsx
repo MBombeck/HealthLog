@@ -20,6 +20,18 @@ import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Plus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "@/lib/i18n/context";
+import { SUB_PAGE_SLUGS } from "@/lib/insights/sub-page-metric";
+
+const INSIGHT_METRIC_RETURN_PATHS: Readonly<Record<string, true>> =
+  Object.fromEntries(
+    SUB_PAGE_SLUGS.map((slug) => [`/insights/${slug}`, true] as const),
+  );
+
+export function resolveMeasurementReturnTo(
+  returnTo: string | null | undefined,
+): string | null {
+  return returnTo && INSIGHT_METRIC_RETURN_PATHS[returnTo] ? returnTo : null;
+}
 
 export default function MeasurementsPage() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -45,6 +57,11 @@ export default function MeasurementsPage() {
   // effect, so that path stays render-driven.
   const addParam = searchParams.get("add");
   const initialAdd = addParam ? resolveAddToken(addParam) : null;
+  const returnToParam = searchParams.get("returnTo");
+  const initialReturnTo = resolveMeasurementReturnTo(returnToParam);
+  const addRequestParam = addParam
+    ? `${addParam}\u0000${returnToParam ?? ""}`
+    : null;
   // v1.18.7 (Wave E) — a `?type=<MEASUREMENT_TYPE>` deep link (e.g. the
   // Vorsorge card's "Show measurements") seeds the list's type filter on
   // first paint. Captured once via a lazy initializer so the value is
@@ -61,8 +78,11 @@ export default function MeasurementsPage() {
   const [defaultType, setDefaultType] = useState<string | undefined>(
     () => initialAdd ?? undefined,
   );
-  const [consumedAddParam, setConsumedAddParam] = useState<string | null>(
-    () => addParam,
+  const [returnTo, setReturnTo] = useState<string | null>(
+    () => initialReturnTo,
+  );
+  const [consumedAddRequest, setConsumedAddRequest] = useState<string | null>(
+    () => addRequestParam,
   );
   // v1.4.27 R4 RC2 — DOM handle the form portals its action row into so
   // the Sheet branch can sticky-pin Save / Cancel.
@@ -81,19 +101,18 @@ export default function MeasurementsPage() {
     disabled: dialogOpen,
   });
 
-  // Later client-side navigation landed on `?add=` again (the first
-  // load is consumed by the initializers above, so on the server this
-  // is always a no-op: `consumedAddParam` starts as the param itself).
-  if (addParam && addParam !== consumedAddParam) {
-    setConsumedAddParam(addParam);
-    // v1.4.34 IW-G — `resolveAddToken` is the single source of truth
-    // for legacy aliases (`GLUCOSE`, `TEMPERATURE`, …) plus the
-    // canonical form values. Unknown tokens still drop silently so a
-    // stale link cannot trap the user on a broken form.
+  // Later client-side navigation landed on `?add=` again. Once the effect
+  // below strips the request, clear the consumed key so repeating the same
+  // type later is still treated as a new one-shot capture.
+  if (!addRequestParam && consumedAddRequest !== null) {
+    setConsumedAddRequest(null);
+  } else if (addRequestParam && addRequestParam !== consumedAddRequest) {
+    setConsumedAddRequest(addRequestParam);
     const resolved = resolveAddToken(addParam);
     if (resolved) {
       setDefaultType(resolved);
       setDialogOpen(true);
+      setReturnTo(resolveMeasurementReturnTo(returnToParam));
     }
   }
 
@@ -104,8 +123,8 @@ export default function MeasurementsPage() {
   // Effect-driven (client-only) because `router.replace` is not callable
   // during SSR.
   useEffect(() => {
-    if (addParam || typeParam) router.replace("/measurements");
-  }, [addParam, typeParam, router]);
+    if (addParam || typeParam || returnToParam) router.replace("/measurements");
+  }, [addParam, typeParam, returnToParam, router]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -133,7 +152,10 @@ export default function MeasurementsPage() {
         actions={
           <Button
             className="min-h-11 sm:min-h-9"
-            onClick={() => setDialogOpen(true)}
+            onClick={() => {
+              setReturnTo(null);
+              setDialogOpen(true);
+            }}
           >
             <Plus className="h-4 w-4" />
             {t("measurements.addMeasurement")}
@@ -145,7 +167,10 @@ export default function MeasurementsPage() {
         open={dialogOpen}
         onOpenChange={(open) => {
           setDialogOpen(open);
-          if (!open) setDefaultType(undefined);
+          if (!open) {
+            setDefaultType(undefined);
+            setReturnTo(null);
+          }
         }}
         title={t("measurements.addMeasurement")}
         footer={<div ref={setFooterEl} className="flex w-full" />}
@@ -153,19 +178,26 @@ export default function MeasurementsPage() {
         <MeasurementForm
           defaultType={defaultType}
           onSuccess={() => {
+            const destination = returnTo;
             setDialogOpen(false);
             setDefaultType(undefined);
+            setReturnTo(null);
+            if (destination) router.replace(destination);
           }}
           onCancel={() => {
             setDialogOpen(false);
             setDefaultType(undefined);
+            setReturnTo(null);
           }}
           footerSlot={footerEl}
         />
       </ResponsiveSheet>
 
       <MeasurementList
-        onAddFirst={() => setDialogOpen(true)}
+        onAddFirst={() => {
+          setReturnTo(null);
+          setDialogOpen(true);
+        }}
         initialType={initialType}
       />
 

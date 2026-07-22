@@ -21,7 +21,6 @@
  */
 import {
   FITBIT_RANGE_DAYS,
-  type FitbitMappedMeasurement,
   fetchActivitySeries,
   fetchVo2MaxRange,
   mapActiveCalories,
@@ -30,14 +29,17 @@ import {
   mapSteps,
   mapVo2Max,
 } from "./client";
+import type { FitbitMappedMeasurement } from "./client";
 import {
   chunkDateRanges,
   getValidToken,
   handleCollectionFetchError,
   upsertFitbitMeasurements,
-  type FitbitMeasurementUpsert,
-  type FitbitResourceSyncOptions,
-} from "./sync";
+} from "./sync-core";
+import type {
+  FitbitMeasurementUpsert,
+  FitbitResourceSyncOptions,
+} from "./sync-core";
 import { annotate } from "@/lib/logging/context";
 
 /** One mappable activity metric: a range fetcher + a body mapper + a verb. */

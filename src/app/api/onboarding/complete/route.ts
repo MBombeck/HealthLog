@@ -28,7 +28,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (jsonError) return jsonError;
   const result = z.safeParse(onboardingSchema, body);
   if (!result.success) {
-    return apiError("Invalid input", 422);
+    return apiError("Invalid input", 422, {
+      errorCode: "onboarding.complete.invalid",
+    });
   }
 
   const data: Record<string, unknown> = {

@@ -34,7 +34,7 @@ vi.mock("../credentials", () => ({
 }));
 vi.mock("../client", () => ({ refreshAccessToken: vi.fn() }));
 
-import { replaceStaleGoogleHealthSleep } from "../sync";
+import { replaceStaleGoogleHealthSleep } from "../sync-core";
 
 beforeEach(() => {
   updateManyMock.mockClear();

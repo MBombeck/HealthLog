@@ -21,7 +21,11 @@
  * rather than parking the whole integration — see `isCollectionForbidden`.
  */
 import { fetchBodyMeasurement, mapBody } from "./client";
-import { getValidToken, handleCollectionFetchError, markSynced } from "./sync";
+import {
+  getValidToken,
+  handleCollectionFetchError,
+  markSynced,
+} from "./sync-core";
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
 

@@ -93,7 +93,14 @@ test.describe("settings AI codex device flow (mocked)", () => {
       }),
     );
 
+    // Hydration gate — the settings query is fired by the same client
+    // boundary that renders the Codex form, so its response proves React
+    // has attached the CTA's click handler. On mobile the SSR-painted button
+    // can otherwise be clicked before hydration and the event is lost.
+    const codexFormHydrated = page.waitForResponse("**/api/insights/settings");
+
     await page.goto("/settings/ai", { waitUntil: "domcontentloaded" });
+    await codexFormHydrated;
 
     // Step 1 — CTA visible
     const cta = page.getByRole("button", {

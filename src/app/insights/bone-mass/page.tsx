@@ -26,6 +26,7 @@ export default function InsightsKnochenmassePage() {
       yAxisUnit="kg"
       emptyStateIcon={<Bone className="size-6" />}
       emptyStateCtaType={null}
+      captureType="BONE_MASS"
       coachPrefill="I haven't logged any bone mass yet — what does this metric tell me about my health, and how do I improve it?"
     />
   );

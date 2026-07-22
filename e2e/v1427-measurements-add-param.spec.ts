@@ -5,21 +5,14 @@ import { STORAGE_STATE_PATH } from "./setup/global-setup";
 /**
  * v1.4.27 MB6 — `/measurements?add=<TYPE>` consumer.
  *
- * The insights empty-state CTAs link here with a `?add=<TYPE>` query
- * param. The page reads the param during render, opens the
- * Add-Measurement primitive, pre-selects the matching type, then
- * `router.replace("/measurements")` strips the query so the back
- * button drops the user on the bare list instead of re-opening the
- * dialog.
+ * Insight metric actions link here with `?add=<TYPE>` and an optional,
+ * allowlisted `returnTo`. The page opens the responsive capture primitive,
+ * pre-selects the matching type, and strips the query without losing the
+ * one-shot return context.
  *
- * Three contracts under test:
- *   1. The primitive opens on first paint.
- *   2. The form's type combobox shows the requested type.
- *   3. The URL settles on `/measurements` (no `?add=`).
- *
- * Pixel 5 is the load-bearing project — every CTA hop originates from
- * the mobile-first empty-state surfaces. Desktop Chrome covers the
- * regression path through the dashboard quick-entry.
+ * The browser contract covers the populated-page action, legacy preselection,
+ * failure retention, success return, and rejection of an external destination.
+ * Playwright runs every case in both the desktop Chromium and Pixel 5 projects.
  */
 test.describe("v1.4.27 — /measurements?add= consumer", () => {
   test.use({ storageState: STORAGE_STATE_PATH });
@@ -49,6 +42,57 @@ test.describe("v1.4.27 — /measurements?add= consumer", () => {
     );
   });
 
+  test("a populated metric action opens the matching preselected capture", async ({
+    page,
+  }) => {
+    await page.route(/\/api\/analytics(\?|$)/, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: {
+            summaries: {
+              WEIGHT: {
+                latest: 78.4,
+                count: 4,
+                min: 77.9,
+                max: 78.8,
+                mean: 78.3,
+                median: 78.25,
+              },
+            },
+            bpInTargetPct: null,
+            glucoseByContext: {},
+          },
+          error: null,
+        }),
+      }),
+    );
+
+    await page.goto("/insights/weight", { waitUntil: "domcontentloaded" });
+    // The action is server-rendered before React can handle client navigation.
+    // Pin the click to the Insights surface's existing hydration contract so
+    // it cannot race hydration and get replayed as a no-op.
+    await expect(
+      page.locator('[data-slot="insights-tab-strip"]'),
+    ).toHaveAttribute("data-hydrated", "true");
+
+    const capture = page.locator('[data-slot="metric-add-reading"]');
+    await expect(capture).toBeVisible();
+    await expect(capture).toHaveAttribute(
+      "href",
+      "/measurements?add=WEIGHT&returnTo=%2Finsights%2Fweight",
+    );
+    await capture.click();
+    await expect(page).toHaveURL(/\/measurements(?:\?|$)/);
+
+    const content = page.locator('[data-slot="responsive-sheet-content"]');
+    await expect(content).toBeVisible();
+    await expect(content.getByRole("combobox").first()).toContainText(
+      /weight|gewicht/i,
+    );
+  });
+
   for (const { param, label } of [
     { param: "WEIGHT", label: /weight|gewicht/i },
     { param: "BLOOD_PRESSURE", label: /blood pressure|blutdruck/i },
@@ -75,6 +119,117 @@ test.describe("v1.4.27 — /measurements?add= consumer", () => {
       await expect.poll(() => new URL(page.url()).search).toBe("");
     });
   }
+
+  test("keeps the one-shot sheet and entered values when the write fails", async ({
+    page,
+  }) => {
+    await page.route("**/api/measurements*", async (route) => {
+      if (route.request().method() === "POST") {
+        await route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ data: null, error: "Write failed" }),
+        });
+        return;
+      }
+      await route.fallback();
+    });
+
+    await page.goto("/measurements?add=WEIGHT&returnTo=%2Finsights%2Fweight", {
+      waitUntil: "domcontentloaded",
+    });
+
+    const content = page.locator('[data-slot="responsive-sheet-content"]');
+    await expect(content).toBeVisible();
+    await expect(content.getByRole("combobox").first()).toContainText(
+      /weight|gewicht/i,
+    );
+    await content.locator("#value").fill("78.4");
+    await content.locator("#notes").fill("Keep this note");
+    await page
+      .getByRole("button", { name: /save|speichern/i })
+      .last()
+      .click();
+
+    await expect(content.getByRole("alert")).toBeVisible();
+    await expect(content.locator("#value")).toHaveValue("78.4");
+    await expect(content.locator("#notes")).toHaveValue("Keep this note");
+    await expect(content).toBeVisible();
+    expect(new URL(page.url()).pathname).toBe("/measurements");
+  });
+
+  test("returns to the validated metric route only after a successful write", async ({
+    page,
+  }) => {
+    await page.route("**/api/measurements*", async (route) => {
+      if (route.request().method() === "POST") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            data: { id: "contextual-e2e", success: true },
+            error: null,
+          }),
+        });
+        return;
+      }
+      await route.fallback();
+    });
+
+    await page.goto("/measurements?add=WEIGHT&returnTo=%2Finsights%2Fweight", {
+      waitUntil: "domcontentloaded",
+    });
+
+    const content = page.locator('[data-slot="responsive-sheet-content"]');
+    await expect(content.getByRole("combobox").first()).toContainText(
+      /weight|gewicht/i,
+    );
+    await content.locator("#value").fill("78.4");
+    await Promise.all([
+      page.waitForURL((url) => url.pathname === "/insights/weight"),
+      page
+        .getByRole("button", { name: /save|speichern/i })
+        .last()
+        .click(),
+    ]);
+  });
+
+  test("rejects an external return target after a successful write", async ({
+    page,
+  }) => {
+    await page.route("**/api/measurements*", async (route) => {
+      if (route.request().method() === "POST") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            data: { id: "contextual-e2e", success: true },
+            error: null,
+          }),
+        });
+        return;
+      }
+      await route.fallback();
+    });
+
+    await page.goto(
+      "/measurements?add=WEIGHT&returnTo=https%3A%2F%2Fevil.example%2Fsteal",
+      { waitUntil: "domcontentloaded" },
+    );
+    const appOrigin = new URL(page.url()).origin;
+
+    const content = page.locator('[data-slot="responsive-sheet-content"]');
+    await content.locator("#value").fill("78.4");
+    await page
+      .getByRole("button", { name: /save|speichern/i })
+      .last()
+      .click();
+
+    await expect(content).toHaveCount(0);
+    const settled = new URL(page.url());
+    expect(settled.origin).toBe(appOrigin);
+    expect(settled.pathname).toBe("/measurements");
+  });
 
   test("unknown ?add value is dropped silently and the page renders empty", async ({
     page,

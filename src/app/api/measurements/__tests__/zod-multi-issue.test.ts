@@ -55,6 +55,7 @@ vi.mock("next/headers", () => ({
 import { GET, POST } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+import { Prisma } from "@/generated/prisma/client";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -148,6 +149,7 @@ describe("POST /api/measurements — single — 422 multi-issue (v1.4.43 W6)", (
       details: {
         issues: Array<{ path: string; code: string; message: string }>;
       };
+      meta?: { errorCode?: string };
     };
     expect(body.data).toBeNull();
     expect(body.error).toBe("Validation failed");
@@ -155,6 +157,7 @@ describe("POST /api/measurements — single — 422 multi-issue (v1.4.43 W6)", (
     for (const issue of body.details.issues) {
       expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
     }
+    expect(body.meta?.errorCode).toBe("measurement.create.invalid");
   });
 
   it("surfaces THREE simultaneous validation errors", async () => {
@@ -188,6 +191,26 @@ describe("POST /api/measurements — single — 422 multi-issue (v1.4.43 W6)", (
     const res = await POST(postReq({ measuredAt: "junk" }));
     expect(res.status).toBe(422);
   });
+
+  it("pins the duplicate-timestamp conflict code", async () => {
+    vi.mocked(prisma.measurement.create).mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+      }),
+    );
+    const res = await POST(
+      postReq({
+        type: "WEIGHT",
+        value: 70,
+        measuredAt: "2026-07-10T08:00:00.000Z",
+      }),
+    );
+    expect(res.status).toBe(409);
+    expect((await res.json()).meta?.errorCode).toBe(
+      "measurement.duplicate_timestamp",
+    );
+  });
 });
 
 describe("POST /api/measurements — batch — 422 multi-issue (v1.4.43 W6)", () => {
@@ -202,8 +225,10 @@ describe("POST /api/measurements — batch — 422 multi-issue (v1.4.43 W6)", ()
     expect(res.status).toBe(422);
     const body = (await res.json()) as {
       details: { issues: Array<{ path: string; code: string }> };
+      meta?: { errorCode?: string };
     };
     expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
+    expect(body.meta?.errorCode).toBe("measurement.create.invalid");
   });
 
   it("surfaces THREE simultaneous validation errors across the batch", async () => {

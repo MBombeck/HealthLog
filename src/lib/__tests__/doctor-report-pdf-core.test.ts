@@ -588,3 +588,122 @@ describe("doctor-report illness section", () => {
     expect(text).not.toContain("Conditions & illnesses");
   });
 });
+
+describe("extracted doctor-report section boundaries", () => {
+  it("header/profile prefers the legal name and renders insurance identity", async () => {
+    const data = makeData({
+      patient: {
+        ...makeData().patient,
+        fullName: "Ada Lovelace",
+        username: "ignored-handle",
+        insurerName: "Example Health",
+      },
+    });
+    const bytes = renderDoctorReportPdfBytes(data, {
+      t: getServerTranslator("en").t,
+      locale: "en",
+      now: FIXED_NOW,
+      insuranceNumber: "A123456789",
+    });
+    const text = await extractText(bytes);
+    expect(text).toContain("Ada Lovelace");
+    expect(text).not.toContain("ignored-handle");
+    expect(text).toContain("Example Health");
+    expect(text).toContain("A123456789");
+  });
+
+  it("measurements/charts keeps the table but omits chart drawing when disabled", async () => {
+    const { t } = getServerTranslator("en");
+    const text = await extractText(
+      renderDoctorReportPdfBytes(makeData(), {
+        t,
+        locale: "en",
+        now: FIXED_NOW,
+        includeCharts: false,
+      }),
+    );
+    expect(text).toContain(t("doctorReport.vitalsTitle"));
+    expect(text).not.toContain(t("doctorReport.chartsTitle"));
+  });
+
+  it("medications/mood/wellness omits empty optional sections", async () => {
+    const { t } = getServerTranslator("en");
+    const text = await extractText(
+      renderDoctorReportPdfBytes(
+        makeData({
+          compliance: {},
+          mood: null,
+          wellnessScores: [],
+          cycle: null,
+        }),
+        { t, locale: "en", now: FIXED_NOW },
+      ),
+    );
+    expect(text).not.toContain(t("doctorReport.complianceTitle"));
+    expect(text).not.toContain(t("doctorReport.moodTitle"));
+    expect(text).not.toContain(t("doctorReport.wellnessTitle"));
+    expect(text).not.toContain(t("doctorReport.cycleTitle"));
+  });
+
+  it("clinical records/notes ignores a whitespace-only optional summary", async () => {
+    const { t } = getServerTranslator("en");
+    const text = await extractText(
+      renderDoctorReportPdfBytes(makeData(), {
+        t,
+        locale: "en",
+        now: FIXED_NOW,
+        aiSummary: "   \n\t ",
+      }),
+    );
+    expect(text).not.toContain(t("doctorReport.aiSummaryTitle"));
+  });
+
+  it("footer is drawn once on every dynamically added page", async () => {
+    const compliance: DoctorReportData["compliance"] = {};
+    for (let i = 0; i < 60; i += 1) {
+      compliance[`Medication ${i}`] = {
+        total: 90,
+        taken: 80,
+        skipped: 5,
+        missed: 5,
+      };
+    }
+    const { t } = getServerTranslator("en");
+    const data = makeData({ compliance });
+    const options = { t, locale: "en" as const, now: FIXED_NOW };
+    const doc = buildDoctorReportPdfDocument(data, options);
+    const text = await extractText(renderDoctorReportPdfBytes(data, options));
+    const footerCount =
+      text.split(t("doctorReport.footerDisclaimer1")).length - 1;
+
+    expect(doc.getNumberOfPages()).toBeGreaterThan(1);
+    expect(footerCount).toBe(doc.getNumberOfPages());
+  });
+
+  it("preserves the baseline section order and exact page count", async () => {
+    const { t } = getServerTranslator("en");
+    const data = makeData();
+    const options = { t, locale: "en" as const, now: FIXED_NOW };
+    const text = await extractText(renderDoctorReportPdfBytes(data, options));
+    const orderedHeadings = [
+      t("doctorReport.title"),
+      t("doctorReport.summaryTitle"),
+      t("doctorReport.vitalsTitle"),
+      t("doctorReport.chartsTitle"),
+      t("doctorReport.bpClassificationTitle"),
+      t("doctorReport.bmiTitle"),
+      t("doctorReport.glucoseClassificationTitle"),
+      t("doctorReport.complianceTitle"),
+      t("doctorReport.moodTitle"),
+    ];
+    let previous = -1;
+    for (const heading of orderedHeadings) {
+      const index = text.indexOf(heading, previous + 1);
+      expect(index, `missing heading: ${heading}`).toBeGreaterThan(previous);
+      previous = index;
+    }
+    expect(buildDoctorReportPdfDocument(data, options).getNumberOfPages()).toBe(
+      2,
+    );
+  });
+});

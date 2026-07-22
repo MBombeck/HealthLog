@@ -97,6 +97,7 @@ export default function InsightsGewichtPage() {
         />
       }
       coachLaunch
+      captureType="WEIGHT"
       showAllValuesType="WEIGHT"
     >
       <HealthChartDynamic

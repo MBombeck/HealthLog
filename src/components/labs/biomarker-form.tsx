@@ -18,7 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError, apiPost, apiPut } from "@/lib/api/api-fetch";
+import { apiPost, apiPut } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import {
   BIOMARKER_CATALOG,
   BIOMARKER_PANELS,
@@ -131,11 +132,7 @@ export function BiomarkerForm({
       );
       onSuccess?.(saved);
     } catch (err) {
-      const message =
-        err instanceof ApiError
-          ? err.message
-          : t("labs.biomarker.form.saveError");
-      setError(message);
+      setError(localizedApiError(err, t, "labs.biomarker.form.saveError"));
     } finally {
       setSubmitting(false);
     }

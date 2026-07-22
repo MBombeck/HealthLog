@@ -106,6 +106,11 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { enqueueDocumentIndex } from "@/lib/jobs/document-index";
+import {
+  acquireDocumentUploadSlot,
+  DOCUMENT_UPLOAD_GLOBAL_CONCURRENCY,
+  DOCUMENT_UPLOAD_PER_USER_CONCURRENCY,
+} from "@/lib/documents/upload-policy";
 
 const post = POST as unknown as (r: Request) => Promise<Response>;
 const get = GET as unknown as (r: Request) => Promise<Response>;
@@ -310,6 +315,96 @@ describe("POST /api/documents/inbound (vault upload)", () => {
     res = await post(mkUpload({ episodeIds: ["ep-foreign"] }));
     expect(res.status).toBe(404);
     expect(txCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects before reading the body when the user's upload slots are full", async () => {
+    const releases = Array.from(
+      { length: DOCUMENT_UPLOAD_PER_USER_CONCURRENCY },
+      () => acquireDocumentUploadSlot("user-1"),
+    );
+    let bodyRead = false;
+    const unreadBody = new ReadableStream<Uint8Array>(
+      {
+        pull(controller) {
+          bodyRead = true;
+          controller.error(new Error("body must not be read"));
+        },
+      },
+      { highWaterMark: 0 },
+    );
+    const request = new Request("http://localhost/api/documents/inbound", {
+      method: "POST",
+      body: unreadBody,
+      duplex: "half",
+    } as RequestInit & { duplex: "half" });
+
+    try {
+      const res = await post(request);
+      expect(res.status).toBe(429);
+      await expect(res.json()).resolves.toMatchObject({
+        meta: { reason: "uploadBusy" },
+      });
+      expect(bodyRead).toBe(false);
+      expect(txCreate).not.toHaveBeenCalled();
+    } finally {
+      for (const release of releases) release!();
+    }
+  });
+
+  it("rejects before reading the body when process-wide upload slots are full", async () => {
+    const releases = Array.from(
+      { length: DOCUMENT_UPLOAD_GLOBAL_CONCURRENCY },
+      (_, index) => acquireDocumentUploadSlot(`other-user-${index}`),
+    );
+    try {
+      const res = await post(mkUpload());
+      expect(res.status).toBe(429);
+      await expect(res.json()).resolves.toMatchObject({
+        meta: { reason: "uploadBusy" },
+      });
+      expect(txCreate).not.toHaveBeenCalled();
+    } finally {
+      for (const release of releases) release!();
+    }
+  });
+
+  it("releases an upload slot after an invalid multipart body", async () => {
+    const invalid = new Request("http://localhost/api/documents/inbound", {
+      method: "POST",
+      headers: { "content-type": "multipart/form-data; boundary=incomplete" },
+      body: "--incomplete\r\n",
+    });
+    const invalidResponse = await post(invalid);
+    expect(invalidResponse.status).toBe(400);
+
+    const held = acquireDocumentUploadSlot("user-1");
+    expect(held).not.toBeNull();
+    try {
+      const validResponse = await post(mkUpload());
+      expect(validResponse.status).toBe(201);
+    } finally {
+      held!();
+    }
+  });
+
+  it("does not make another whole-body Blob copy before multipart parsing", async () => {
+    const request = mkUpload();
+    const NativeBlob = globalThis.Blob;
+    let blobConstructions = 0;
+    class CountingBlob extends NativeBlob {
+      constructor(parts?: BlobPart[], options?: BlobPropertyBag) {
+        blobConstructions += 1;
+        super(parts, options);
+      }
+    }
+    globalThis.Blob = CountingBlob;
+    try {
+      const res = await post(request);
+      expect(res.status).toBe(201);
+      expect(blobConstructions).toBe(0);
+    } finally {
+      globalThis.Blob = NativeBlob;
+    }
   });
 });
 

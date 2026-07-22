@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Save, Shield, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import {
+  SeededFormDiscardDialog,
+  useSeededFormDismissal,
+} from "@/components/forms/use-seeded-form-dismissal";
 import { Input } from "@/components/ui/input";
 import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
@@ -43,6 +47,10 @@ export function AccountSection() {
   // settled (React #418 family).
   const mounted = useMounted();
   const router = useRouter();
+  const navigate = useCallback(
+    (target: string) => router.push(target),
+    [router],
+  );
 
   const [email, setEmail] = useState("");
   const [heightCm, setHeightCm] = useState("");
@@ -53,6 +61,16 @@ export function AccountSection() {
   const [fullName, setFullName] = useState("");
   const [insurerName, setInsurerName] = useState("");
   const [insuranceNumber, setInsuranceNumber] = useState("");
+  const [profileSeed, setProfileSeed] = useState({
+    email: "",
+    heightCm: "",
+    dateOfBirth: "",
+    gender: "",
+    timezone: "Europe/Berlin",
+    fullName: "",
+    insurerName: "",
+    insuranceNumber: "",
+  });
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<StatusMessage | null>(null);
   const [saveMsgType, setSaveMsgType] = useState<"success" | "error" | null>(
@@ -88,26 +106,62 @@ export function AccountSection() {
   // satisfying the strict `react-hooks/set-state-in-effect` rule.
   const [seededUserId, setSeededUserId] = useState<string | null>(null);
   if (user && user.id !== seededUserId) {
-    setSeededUserId(user.id);
-    setEmail(user.email ?? "");
-    setHeightCm(user.heightCm?.toString() ?? "");
-    setDateOfBirth(
-      user.dateOfBirth
+    const seed = {
+      email: user.email ?? "",
+      heightCm: user.heightCm?.toString() ?? "",
+      dateOfBirth: user.dateOfBirth
         ? new Date(user.dateOfBirth).toISOString().slice(0, 10)
         : "",
-    );
-    setGender(user.gender ?? "");
-    setTimezone(resolveInitialTimezone(user.timezone, detectBrowserTimezone()));
-    setFullName(user.fullName ?? "");
-    setInsurerName(user.insurerName ?? "");
-    setInsuranceNumber(user.insuranceNumber ?? "");
+      gender: user.gender ?? "",
+      timezone: resolveInitialTimezone(user.timezone, detectBrowserTimezone()),
+      fullName: user.fullName ?? "",
+      insurerName: user.insurerName ?? "",
+      insuranceNumber: user.insuranceNumber ?? "",
+    };
+    setSeededUserId(user.id);
+    setEmail(seed.email);
+    setHeightCm(seed.heightCm);
+    setDateOfBirth(seed.dateOfBirth);
+    setGender(seed.gender);
+    setTimezone(seed.timezone);
+    setFullName(seed.fullName);
+    setInsurerName(seed.insurerName);
+    setInsuranceNumber(seed.insuranceNumber);
+    setProfileSeed(seed);
   }
+
+  const profileDismissal = useSeededFormDismissal({
+    seed: profileSeed,
+    value: {
+      email,
+      heightCm,
+      dateOfBirth,
+      gender,
+      timezone,
+      fullName,
+      insurerName,
+      insuranceNumber,
+    },
+    blocked: saving,
+    guardNavigation: true,
+    navigate,
+  });
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setSaveMsg(null);
     setSaveMsgType(null);
+    const savedProfile = {
+      email: email.trim(),
+      heightCm,
+      dateOfBirth,
+      gender,
+      timezone,
+      fullName: fullName.trim(),
+      insurerName: insurerName.trim(),
+      insuranceNumber: insuranceNumber.trim(),
+    };
 
     // The timezone is owned by a dedicated route (v1.4.25 W7) so the
     // resolver cache can be invalidated without piping the flag
@@ -118,13 +172,15 @@ export function AccountSection() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: email.trim() || null,
-          heightCm: heightCm ? parseFloat(heightCm) : null,
-          dateOfBirth: dateOfBirth || null,
-          gender: gender || null,
-          fullName: fullName.trim() || null,
-          insurerName: insurerName.trim() || null,
-          insuranceNumber: insuranceNumber.trim() || null,
+          email: savedProfile.email || null,
+          heightCm: savedProfile.heightCm
+            ? parseFloat(savedProfile.heightCm)
+            : null,
+          dateOfBirth: savedProfile.dateOfBirth || null,
+          gender: savedProfile.gender || null,
+          fullName: savedProfile.fullName || null,
+          insurerName: savedProfile.insurerName || null,
+          insuranceNumber: savedProfile.insuranceNumber || null,
         }),
       }),
       user && timezone && timezone !== user.timezone
@@ -146,6 +202,11 @@ export function AccountSection() {
       }
       setSaveMsg({ key: "settings.profileSaved" });
       setSaveMsgType("success");
+      setEmail(savedProfile.email);
+      setFullName(savedProfile.fullName);
+      setInsurerName(savedProfile.insurerName);
+      setInsuranceNumber(savedProfile.insuranceNumber);
+      setProfileSeed(savedProfile);
       await refetch();
     } else if (!tzRes.ok) {
       // The dedicated tz endpoint owns the IANA validation error
@@ -579,6 +640,11 @@ export function AccountSection() {
           </Button>
         </form>
       </ResponsiveSheet>
+      <SeededFormDiscardDialog
+        open={profileDismissal.discardDialogOpen}
+        onConfirm={profileDismissal.confirmDiscard}
+        onCancel={profileDismissal.cancelDiscard}
+      />
     </div>
   );
 }

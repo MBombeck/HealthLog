@@ -70,7 +70,7 @@ describe("reminder-worker — Google Health sync queues", () => {
       /boss\.work[\s\S]{0,200}GOOGLE_HEALTH_SYNC_QUEUE[\s\S]{0,200}handleGoogleHealthSync/,
     );
     expect(source).toMatch(
-      /boss\.work[\s\S]{0,320}GOOGLE_HEALTH_BACKFILL_QUEUE[\s\S]{0,320}runGoogleHealthBackfillForUser/,
+      /boss\.work[\s\S]{0,320}GOOGLE_HEALTH_BACKFILL_QUEUE[\s\S]{0,320}enqueueIntegrationBackfillAdmission/,
     );
     expect(source).toMatch(
       /boss\.work[\s\S]{0,200}GOOGLE_HEALTH_OAUTH_STATE_CLEANUP_QUEUE[\s\S]{0,200}handleGoogleHealthOAuthStateCleanup/,
@@ -78,7 +78,9 @@ describe("reminder-worker — Google Health sync queues", () => {
   });
 
   it("wires the self-converging Google Health backfill boot discovery", () => {
-    expect(source).toMatch(/enqueueBootTimeGoogleHealthBackfill\(\)/);
+    expect(source).toMatch(
+      /enqueueBootTimeGoogleHealthBackfill\(\s*bootStaggerSecondsFor\("google-health-backfill"\)/,
+    );
   });
 
   it("imports the Google Health sync driver + backfill exports", () => {

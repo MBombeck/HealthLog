@@ -14,16 +14,56 @@
  * for one filter within the 60 s TTL. Mirrors `src/lib/medications/list-read.ts`
  * and `src/lib/dashboard/snapshot-read.ts`.
  */
+import { z } from "zod/v4";
+
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
-import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
+import { cached, caches } from "@/lib/cache/server-cache";
+import { workoutSportTypeEnum } from "@/lib/validations/workout";
 
-export interface WorkoutFilterParams {
-  readonly since: string | null;
-  readonly until: string | null;
-  readonly sportType: string | null;
+function emptyQueryValueToUndefined(value: unknown): unknown {
+  if (value == null) return undefined;
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  return trimmed === "" ? undefined : trimmed;
 }
+
+const normalizedTimestampFilter = z
+  .preprocess(
+    emptyQueryValueToUndefined,
+    z.iso
+      .datetime({ offset: true })
+      .transform((value) => new Date(value).toISOString())
+      .optional(),
+  )
+  .transform((value) => value ?? null);
+
+const normalizedSportTypeFilter = z
+  .preprocess(emptyQueryValueToUndefined, workoutSportTypeEnum.optional())
+  .transform((value) => value ?? null);
+
+export const workoutListFilterSchema = z
+  .object({
+    since: normalizedTimestampFilter,
+    until: normalizedTimestampFilter,
+    sportType: normalizedSportTypeFilter,
+  })
+  .superRefine((filters, ctx) => {
+    if (
+      filters.since !== null &&
+      filters.until !== null &&
+      filters.since > filters.until
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["until"],
+        message: "until must be at or after since",
+      });
+    }
+  });
+
+export type WorkoutFilterParams = z.infer<typeof workoutListFilterSchema>;
 
 interface CanonicalWorkoutRow {
   id: string;
@@ -198,19 +238,20 @@ export async function readWorkoutsListCached(
     sportType: string | null;
   },
 ): Promise<WorkoutsResult> {
-  // Deliberately excludes `limit`/`offset` — every page of one filter
-  // combination shares this cached projection.
-  const projectionKey = `${userId}|${params.since ?? ""}|${params.until ?? ""}|${params.sportType ?? ""}`;
+  const filters = workoutListFilterSchema.parse({
+    since: params.since,
+    until: params.until,
+    sportType: params.sportType,
+  });
+
+  // Deliberately excludes `limit`/`offset` — every page of one normalized
+  // filter combination shares this cached projection.
+  const projectionKey = `${userId}|${filters.since ?? ""}|${filters.until ?? ""}|${filters.sportType ?? ""}`;
 
   const projection = await cached(
-    caches.workouts as ServerCache<WorkoutsProjection>,
+    caches.workouts,
     projectionKey,
-    () =>
-      buildWorkoutsProjection(userId, {
-        since: params.since,
-        until: params.until,
-        sportType: params.sportType,
-      }),
+    () => buildWorkoutsProjection(userId, filters),
     annotate,
   );
 

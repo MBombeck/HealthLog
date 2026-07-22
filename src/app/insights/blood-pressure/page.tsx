@@ -158,6 +158,7 @@ export default function InsightsBlutdruckPage() {
           timeZone={user?.timezone ?? undefined}
         />
       }
+      captureType="BLOOD_PRESSURE"
       showAllValuesType="BLOOD_PRESSURE_SYS"
     >
       <HealthChartDynamic

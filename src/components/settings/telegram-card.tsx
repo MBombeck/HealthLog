@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, MessageCircle, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,11 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { TestConnectionButton } from "@/components/settings/test-connection-button";
+import {
+  optimisticallySetChannelEnabled,
+  persistChannelEnabled,
+  rollbackChannelEnabled,
+} from "@/components/settings/notification-channel-toggle";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
@@ -31,7 +36,6 @@ export function TelegramCard({
   const queryClient = useQueryClient();
   const [botToken, setBotToken] = useState("");
   const [chatId, setChatId] = useState("");
-  const [enabled, setEnabled] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
@@ -48,15 +52,53 @@ export function TelegramCard({
   // pattern instead of setState-in-effect. This avoids the strict
   // `react-hooks/set-state-in-effect` lint failure that the legacy file
   // disabled at module scope.
-  const settingsKey = settings
-    ? `${settings.enabled}|${settings.chatId ?? ""}`
-    : null;
+  const settingsKey = settings ? (settings.chatId ?? "") : null;
   const [seededKey, setSeededKey] = useState<string | null>(null);
   if (settingsKey && settingsKey !== seededKey) {
     setSeededKey(settingsKey);
-    setEnabled(settings!.enabled);
     if (settings!.chatId) setChatId(settings!.chatId);
   }
+
+  const toggleEnabled = useMutation<
+    void,
+    Error,
+    boolean,
+    TelegramSettings | undefined
+  >({
+    mutationFn: (enabled) =>
+      persistChannelEnabled(
+        "/api/settings/telegram",
+        enabled,
+        t("settings.savingError"),
+      ),
+    onMutate: async (enabled) => {
+      const queryKey = queryKeys.telegramSettings();
+      await queryClient.cancelQueries({ queryKey });
+      setMsg(null);
+      setMsgType(null);
+      return optimisticallySetChannelEnabled<TelegramSettings>(
+        queryClient,
+        queryKey,
+        enabled,
+      );
+    },
+    onSuccess: () => {
+      setMsg(t("settings.saved"));
+      setMsgType("success");
+    },
+    onError: (err, _enabled, previous) => {
+      rollbackChannelEnabled(
+        queryClient,
+        queryKeys.telegramSettings(),
+        previous,
+      );
+      setMsg(err.message);
+      setMsgType("error");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.telegramSettings() });
+    },
+  });
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -64,7 +106,9 @@ export function TelegramCard({
     setMsg(null);
     setMsgType(null);
 
-    const body: Record<string, unknown> = { enabled };
+    const body: Record<string, unknown> = {
+      enabled: settings?.enabled ?? false,
+    };
     if (botToken.trim()) body.botToken = botToken.trim();
     if (chatId !== (settings?.chatId ?? "")) body.chatId = chatId;
 
@@ -137,8 +181,9 @@ export function TelegramCard({
           <div className="flex items-center gap-3">
             <Switch
               id="tg-enabled"
-              checked={enabled}
-              onCheckedChange={setEnabled}
+              checked={settings?.enabled ?? false}
+              onCheckedChange={(checked) => toggleEnabled.mutate(checked)}
+              disabled={saving || toggleEnabled.isPending}
             />
             <Label htmlFor="tg-enabled" className="cursor-pointer">
               {t("settings.enableNotifications")}
@@ -167,7 +212,11 @@ export function TelegramCard({
               endpoint="/api/settings/telegram/test"
               disabled={!settings?.hasBotToken}
             />
-            <Button type="submit" disabled={saving} className="min-h-11">
+            <Button
+              type="submit"
+              disabled={saving || toggleEnabled.isPending}
+              className="min-h-11"
+            >
               {saving ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
               ) : (

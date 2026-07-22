@@ -2,6 +2,45 @@
 
 ## [Unreleased]
 
+## [1.32.0] — 2026-07-22
+
+- **Provider ingestion and daily reactions now preserve the correct identity.**
+  Arrival reactions are bound to the exact marker revision, workout selection
+  matches field donors to the correct surviving session, long-range buckets
+  honor the user's timezone, MCP pages stay stable, and one Withings
+  subscription repair can no longer block fallback polling for other users.
+- **Large reads and writes are bounded end to end.** Measurement exports stream
+  in pages without splitting sleep sessions, oversized projections cannot evict
+  the shared cache, dense reports and metric series use database aggregation,
+  upload reads have byte, time, and concurrency limits, full-history backfills
+  share admission control, and medication imports use durable chunks with
+  resumable, bounded final rollups.
+- **Capture and history flows are complete on mobile and desktop.** Workout
+  history loads beyond the first page, metric pages open preselected capture
+  forms and return to their origin, failed water submissions retain their draft,
+  and confirmed discards clear it.
+- **Interactive forms share one safe dismissal contract.** Dirty forms require
+  confirmation across tracked Back and Forward traversals, Apple Health setup
+  exposes successful native syncs, document selection is consumed on Coach
+  dismissal but preserved across full-page Coach navigation, conversation
+  titles can be renamed with rollback, and hidden tabs refresh meaningful
+  server state.
+- **Accessibility coverage now exercises representative authenticated routes,
+  themes, dialogs, and sheets.** Small text keeps compliant contrast, OCR uses a
+  visible labeled control, workout sections use real headings, and compact
+  actions retain 44-pixel touch targets.
+- **Client and API boundaries are explicit.** Localized stable error codes cover
+  measurement, mood, lab, and onboarding failures; client fetches and query
+  keys are lint-enforced; AI overrides are documented; and large Coach,
+  report, target, and provider modules now use one-way focused builders.
+
+- **Production image processing uses the patched Sharp 0.35 runtime.** This
+  closes the current high-severity libvips advisory chain inherited through
+  Next.js while retaining verified production-build compatibility.
+
+Migrations `0264_whoop_owner_identity`, `0265_withings_subscription_state`, and
+`0266_medication_intake_import_jobs`. No breaking changes.
+
 ## [1.31.8] — 2026-07-21
 
 - **MCP search cursors keep lab results stable across pages.** Distinct analyte

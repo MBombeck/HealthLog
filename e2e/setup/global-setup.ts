@@ -97,6 +97,8 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     // that tries to click a header / sidebar / quick-add button times
     // out (50+ failed CI runs since v1.4.13). Specs that need the
     // tour can opt back in by mocking `/api/auth/me`.
+    // Nutrients is intentionally opt-in in production. The shared fixture
+    // enables it because the water-capture specs exercise that real gate.
     await pool.query(
       `INSERT INTO users
         (id, username, email, password_hash, role,
@@ -105,14 +107,16 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
          codex_connection_status,
          insights_privacy_mode,
          onboarding_completed_at,
-         onboarding_tour_completed)
+         onboarding_tour_completed,
+         module_preferences_json)
        VALUES ($1, $2, $3, $4, $5,
                $6, $6,
                180, $7, 'MALE',
                'disconnected',
                'aggregated',
                $6,
-               true)
+               true,
+               '{"nutrients":true}'::jsonb)
        ON CONFLICT (username) DO UPDATE SET
          email = EXCLUDED.email,
          password_hash = EXCLUDED.password_hash,
@@ -129,7 +133,8 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
          insights_cached_at = NULL,
          insights_cached_text = NULL,
          onboarding_completed_at = EXCLUDED.onboarding_completed_at,
-         onboarding_tour_completed = EXCLUDED.onboarding_tour_completed`,
+         onboarding_tour_completed = EXCLUDED.onboarding_tour_completed,
+         module_preferences_json = EXCLUDED.module_preferences_json`,
       [
         cuid(),
         E2E_USER.username,
@@ -139,6 +144,19 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
         now,
         dob,
       ],
+    );
+
+    // Repeated local E2E runs reuse the same seeded account and database.
+    // Its owner-scoped share-link bucket lasts an hour, so otherwise the third
+    // run can start above the 20-operation ceiling and fail before exercising
+    // the share flow. Reset only this fixture user's bucket; never touch
+    // unrelated rate-limit state in a developer database.
+    await pool.query(
+      `DELETE FROM rate_limits
+       WHERE key = 'share-link:' || (
+         SELECT id::text FROM users WHERE username = $1
+       )`,
+      [E2E_USER.username],
     );
 
     // Opt the seed account into cycle tracking. The user is seeded as

@@ -46,6 +46,67 @@
     "durationHoursMinutes": "{hours} Std. {minutes} Min.",
     "durationMinutes": "{minutes} Min."
   },
+  "apiErrors": {
+    "measurement": {
+      "create": { "invalid": "Prüfe die Messdaten und versuche es erneut." },
+      "duplicate_timestamp": "Für diesen Zeitpunkt ist bereits eine Messung vorhanden."
+    },
+    "mood": {
+      "list": { "invalid": "Die Filter der Stimmungsliste sind ungültig." },
+      "create": {
+        "invalid": "Prüfe den Stimmungseintrag und versuche es erneut."
+      },
+      "update": {
+        "invalid": "Prüfe den Stimmungseintrag und versuche es erneut."
+      },
+      "duplicate_timestamp": "Für diesen Zeitpunkt ist bereits ein Stimmungseintrag vorhanden.",
+      "not_found": "Dieser Stimmungseintrag ist nicht mehr verfügbar.",
+      "ratedFactor": {
+        "out_of_range": "Eine Faktorbewertung liegt außerhalb des zulässigen Bereichs."
+      }
+    },
+    "labs": {
+      "create": { "invalid": "Prüfe den Laborwert und versuche es erneut." },
+      "result": { "notFound": "Dieser Laborwert ist nicht mehr verfügbar." },
+      "biomarker": {
+        "notFound": "Dieser Biomarker ist nicht mehr verfügbar.",
+        "duplicate": "Ein Biomarker mit diesem Namen ist bereits vorhanden.",
+        "create": {
+          "invalid": "Prüfe die Biomarker-Angaben und versuche es erneut."
+        },
+        "update": {
+          "invalid": "Prüfe die Biomarker-Angaben und versuche es erneut.",
+          "referenceRangeInvalid": "Der untere Referenzwert darf den oberen Wert nicht überschreiten."
+        }
+      },
+      "update": {
+        "invalid": "Prüfe den Laborwert und versuche es erneut.",
+        "linkedFieldsImmutable": "Bearbeite den Biomarker, um Name, Einheit, Panel oder Referenzbereich zu ändern.",
+        "qualitativeExpected": "Gib für diesen qualitativen Laborwert ein Textergebnis ein.",
+        "numericExpected": "Gib für diesen numerischen Laborwert eine Zahl ein.",
+        "referenceRangeInvalid": "Der untere Referenzwert darf den oberen Wert nicht überschreiten."
+      }
+    },
+    "onboarding": {
+      "disclaimer": {
+        "invalid": "Bestätige den medizinischen Hinweis bitte erneut."
+      },
+      "tour": {
+        "invalid": "Der Tour-Fortschritt konnte nicht gespeichert werden."
+      },
+      "complete": {
+        "invalid": "Prüfe die Profildaten und versuche es erneut."
+      },
+      "user": { "notFound": "Dein Konto wurde nicht gefunden." },
+      "step": {
+        "rateLimited": "Zu viele Versuche. Warte kurz und versuche es erneut.",
+        "invalid": "Dieser Onboarding-Schritt konnte nicht gespeichert werden.",
+        "completed": "Das Onboarding ist bereits abgeschlossen.",
+        "outOfOrder": "Dein Onboarding-Fortschritt hat sich geändert. Lade die Seite neu und fahre fort.",
+        "concurrent": "Dein Onboarding-Fortschritt hat sich geändert. Lade die Seite neu und fahre fort."
+      }
+    }
+  },
   "doctorReport": {
     "title": "Gesundheitsbericht",
     "subtitle": "HealthLog — Persönlicher Gesundheitsbericht",
@@ -255,7 +316,9 @@
       "medication": "Medikament",
       "medicationDescription": "Eine Dosis als genommen markieren",
       "mood": "Stimmung",
-      "moodDescription": "Stimmung und Tags erfassen"
+      "moodDescription": "Stimmung und Tags erfassen",
+      "water": "Wasser",
+      "waterDescription": "Wasseraufnahme schnell hinzufügen"
     },
     "cycle": "Zyklus",
     "labs": "Laborwerte",
@@ -358,6 +421,7 @@
     "quickAddMeasurement": "Messung erfassen",
     "quickAddMood": "Stimmung erfassen",
     "quickAddMedicationIntake": "Einnahme erfassen",
+    "quickAddWater": "Wasser erfassen",
     "customizeDashboard": "Dashboard anpassen",
     "medicationIntakeQuickAdd": {
       "sheetTitle": "Medikamenteneinnahme erfassen",
@@ -2331,6 +2395,13 @@
       "historyEmpty": "Deine Unterhaltungen erscheinen hier. Stell eine Frage, um zu starten.",
       "historyDeleteAria": "Unterhaltung löschen",
       "historyDeleted": "Unterhaltung gelöscht",
+      "rename": {
+        "action": "Unterhaltung umbenennen",
+        "input": "Titel der Unterhaltung",
+        "save": "Titel speichern",
+        "cancel": "Umbenennen abbrechen",
+        "error": "Der Titel der Unterhaltung konnte nicht gespeichert werden."
+      },
       "historySearchEmpty": "Keine Unterhaltungen entsprechen deiner Suche.",
       "historyLoadingMore": "Mehr wird geladen…",
       "sourcesTitle": "Worauf ich zugreife",
@@ -3042,7 +3113,10 @@
         "mixedCardio": "Mixed Cardio",
         "other": "Sonstiges"
       },
-      "loadError": "Deine Workouts konnten nicht geladen werden"
+      "loadError": "Deine Workouts konnten nicht geladen werden",
+      "loadMore": "Weitere Workouts laden",
+      "loadingMore": "Weitere Workouts werden geladen",
+      "loadMoreError": "Weitere Workouts konnten nicht geladen werden"
     },
     "bloodGlucose": {
       "title": "Blutzucker",
@@ -5747,6 +5821,22 @@
       "token": "Der Token-Austausch mit Strava ist fehlgeschlagen. Bitte starte die Verbindung erneut.",
       "rate_limited": "Zu viele Verbindungsversuche. Warte einen Moment und versuche es erneut.",
       "generic": "Unbekannter Fehler bei der Verbindung. Bitte starte die Verbindung erneut."
+    },
+    "appleHealth": {
+      "title": "Apple Health",
+      "description": "Die Live-Synchronisierung erfolgt über die HealthLog-iOS-App – nicht über eine Web- oder OAuth-Verbindung.",
+      "status": {
+        "checking": "Apple-Health-Daten werden geprüft…",
+        "dataReceived": "Apple-Health-Daten empfangen",
+        "setup": "In der iOS-App einrichten",
+        "unavailable": "Apple-Health-Status nicht verfügbar"
+      },
+      "lastDataLabel": "Letzte Apple-Health-Daten:",
+      "setupTitle": "Live-Synchronisierung aktivieren",
+      "permissionStep": "Öffne in der HealthLog-iOS-App Einstellungen → Apple Health und erlaube die Gesundheitskategorien, die du teilen möchtest.",
+      "backgroundStep": "Lass die Hintergrundaktualisierung aktiviert. Die App synchronisiert neue Daten automatisch im Vordergrund und wenn iOS Hintergrundzeit gewährt.",
+      "importNote": "Du brauchst ältere Daten oder kannst die iOS-App nicht nutzen? Der Apple-Health-XML/ZIP-Upload ist ein einmaliger Ersatzweg und aktiviert keine Live-Synchronisierung.",
+      "importAction": "Einmaligen Import öffnen"
     },
     "garminInfo": {
       "title": "Garmin",
@@ -8771,6 +8861,7 @@
       "quickAddCustomPlaceholder": "250",
       "quickAddSubmit": "Hinzufügen",
       "quickAddError": "Konnte nicht gespeichert werden — versuch's noch mal.",
+      "quickAddSuccess": "{amount} ml Wasser hinzugefügt.",
       "editTotal": "Heutige Summe bearbeiten"
     },
     "caffeine": {

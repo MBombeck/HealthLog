@@ -6,13 +6,13 @@ process.env.ENCRYPTION_KEY =
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
 const mocks = vi.hoisted(() => ({
-  findMeasurementsPaged: vi.fn(),
+  iterateMeasurementPages: vi.fn(),
   buildCycleBackupSection: vi.fn(),
   buildRecordsBackupSection: vi.fn(),
 }));
 
 vi.mock("@/lib/export/paged-measurements", () => ({
-  findMeasurementsPaged: mocks.findMeasurementsPaged,
+  iterateMeasurementPages: mocks.iterateMeasurementPages,
 }));
 vi.mock("@/lib/cycle/backup", () => ({
   buildCycleBackupSection: mocks.buildCycleBackupSection,
@@ -181,30 +181,38 @@ function makePrisma() {
 
 function installSectionMocks() {
   void measurementNote;
-  mocks.findMeasurementsPaged.mockResolvedValue([
-    {
-      id: "measurement-tombstone",
-      type: "SLEEP_DURATION",
-      value: 75,
-      valueMin: 60,
-      valueMax: 90,
-      unit: "minutes",
-      measuredAt: new Date("2026-07-19T07:00:00.000Z"),
-      source: "IMPORT",
-      notes: null,
-      notesEncrypted: measurementNote,
-      externalId: "oura-stage-deep",
-      externalSourceVersion: "oura-v3",
-      glucoseContext: null,
-      sleepStage: "DEEP",
-      rhythmClassification: null,
-      deviceType: "ring",
-      syncVersion: 7,
-      deletedAt,
-      createdAt: new Date("2026-07-19T07:01:00.000Z"),
-      updatedAt: new Date("2026-07-19T07:02:00.000Z"),
-    },
-  ]);
+  const measurement = {
+    id: "measurement-tombstone",
+    type: "SLEEP_DURATION",
+    value: 75,
+    valueMin: 60,
+    valueMax: 90,
+    unit: "minutes",
+    measuredAt: new Date("2026-07-19T07:00:00.000Z"),
+    source: "IMPORT",
+    notes: null,
+    notesEncrypted: measurementNote,
+    externalId: "oura-stage-deep",
+    externalSourceVersion: "oura-v3",
+    glucoseContext: null,
+    sleepStage: "DEEP",
+    rhythmClassification: null,
+    deviceType: "ring",
+    syncVersion: 7,
+    deletedAt,
+    createdAt: new Date("2026-07-19T07:01:00.000Z"),
+    updatedAt: new Date("2026-07-19T07:02:00.000Z"),
+  };
+  mocks.iterateMeasurementPages.mockImplementation(async function* () {
+    yield [measurement];
+    yield [
+      {
+        ...measurement,
+        id: "measurement-page-2",
+        measuredAt: new Date("2026-07-18T07:00:00.000Z"),
+      },
+    ];
+  });
   mocks.buildCycleBackupSection.mockResolvedValue({
     cycleProfile: null,
     cycles: [],
@@ -223,10 +231,11 @@ function installSectionMocks() {
       workouts: { included: "summary-only", note: "included" },
     },
   });
+  return measurement;
 }
 
 describe("buildFullBackupPayload disaster-recovery mode", () => {
-  it("preserves measurement and mood tombstones with stable ids", async () => {
+  it("preserves tombstones while consuming measurement pages into the final payload", async () => {
     installSectionMocks();
     const prisma = makePrisma();
 
@@ -239,7 +248,7 @@ describe("buildFullBackupPayload disaster-recovery mode", () => {
       },
     );
 
-    expect(mocks.findMeasurementsPaged).toHaveBeenCalledWith(
+    expect(mocks.iterateMeasurementPages).toHaveBeenCalledWith(
       prisma,
       { userId: "user-1" },
       expect.objectContaining({ id: true, deletedAt: true }),
@@ -287,6 +296,10 @@ describe("buildFullBackupPayload disaster-recovery mode", () => {
           createdAt: "2026-07-19T07:01:00.000Z",
           updatedAt: "2026-07-19T07:02:00.000Z",
         },
+        {
+          id: "measurement-page-2",
+          measuredAt: "2026-07-18T07:00:00.000Z",
+        },
       ],
       medications: [
         expect.objectContaining({
@@ -322,5 +335,20 @@ describe("buildFullBackupPayload disaster-recovery mode", () => {
         },
       ],
     });
+  });
+
+  it("propagates a failure from a later measurement page", async () => {
+    const measurement = installSectionMocks();
+    const failure = new Error("backup measurement page failed");
+    mocks.iterateMeasurementPages.mockImplementation(async function* () {
+      yield [measurement];
+      throw failure;
+    });
+
+    await expect(
+      buildFullBackupPayload(makePrisma() as never, "user-1", {
+        purpose: "disaster-recovery",
+      }),
+    ).rejects.toBe(failure);
   });
 });

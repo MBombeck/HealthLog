@@ -1,24 +1,27 @@
-import { prisma } from "@/lib/db";
+import { NextRequest } from "next/server";
+import { z } from "zod/v4";
+
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { annotate } from "@/lib/logging/context";
-import { auditLog } from "@/lib/auth/audit";
 import {
+  apiError,
   apiSuccess,
   getClientIp,
   returnAllZodIssues,
   safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
-import { assertMedicationOwnership } from "@/lib/medications/route-guards";
-import { consumeForIntake } from "@/lib/medications/inventory/consumption";
-import { invalidateUserMedications } from "@/lib/cache/invalidate";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import { auditLog } from "@/lib/auth/audit";
+import { prisma, toJson } from "@/lib/db";
+import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import {
-  recomputeMedicationComplianceForDay,
-  dayKeyForScheduledFor,
-} from "@/lib/rollups/medication-compliance-rollups";
-import { NextRequest } from "next/server";
-import { z } from "zod/v4";
+  MEDICATION_INTAKE_IMPORT_QUEUE,
+  MEDICATION_INTAKE_IMPORT_SEND_OPTIONS,
+  MEDICATION_INTAKE_IMPORT_STALE_AFTER_MS,
+  type MedicationImportPayload,
+  type MedicationImportProgress,
+} from "@/lib/jobs/medication-intake-import";
+import { annotate } from "@/lib/logging/context";
+import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 
 const importEntrySchema = z.object({
   datum: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -26,7 +29,29 @@ const importEntrySchema = z.object({
   zaehler: z.union([z.number().int(), z.string()]).optional(),
 });
 
-const importSchema = z.array(importEntrySchema).min(1).max(1000);
+function isValidImportTimestamp(datum: string, uhrzeit: string): boolean {
+  const [year, month, day] = datum.split("-").map(Number);
+  const [hour, minute, second] = uhrzeit.split(":").map(Number);
+  const value = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  return (
+    value.getUTCFullYear() === year &&
+    value.getUTCMonth() === month - 1 &&
+    value.getUTCDate() === day &&
+    value.getUTCHours() === hour &&
+    value.getUTCMinutes() === minute &&
+    value.getUTCSeconds() === second
+  );
+}
+
+const validatedImportEntrySchema = importEntrySchema.refine(
+  ({ datum, uhrzeit }) => isValidImportTimestamp(datum, uhrzeit),
+  { message: "Invalid date or time" },
+);
+
+const validatedImportSchema = z
+  .array(validatedImportEntrySchema)
+  .min(1)
+  .max(1000);
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -53,7 +78,7 @@ export const POST = apiHandler(
         ? Object.values(body).find((value) => Array.isArray(value))
         : null;
 
-    const parsed = importSchema.safeParse(payload);
+    const parsed = validatedImportSchema.safeParse(payload);
     if (!parsed.success) {
       // v1.4.43 W6 — CSV import; preserve the `Invalid format:` prefix
       // semantics for the existing client-side branch by setting the
@@ -92,161 +117,152 @@ export const POST = apiHandler(
     }
 
     const entries = parsed.data;
-    let imported = 0;
-    let skippedDuplicates = 0;
-    let skippedInvalid = 0;
-    // v1.4.39 W-MED — collect distinct day-keys touched by the import
-    // so the rollup pass fires once per day rather than once per row.
-    const touchedDays = new Set<string>();
-
-    // Perf — a CSV import can carry up to 1000 rows; the pre-fix loop ran a
-    // `findUnique` duplicate probe before every single `create`, up to 2000
-    // sequential round trips. Resolve `takenAt` + the dedup key for every
-    // row first, then read every key's existence in ONE indexed query
-    // (`idempotencyKey` carries its own unique index) before the write
-    // loop. `create` + `consumeForIntake` (inventory decrement) stay
-    // per-row — each has a real side effect keyed off the freshly-created
-    // event's id, so they aren't safely batchable without a deeper change
-    // to the inventory-consumption path.
-    interface PreparedIntake {
-      takenAt: Date;
-      idempotencyKey: string;
-    }
-    const prepared: PreparedIntake[] = [];
-    for (const entry of entries) {
-      // Parse as local datetime first; if invalid, fall back to CET offset.
-      let takenAt = new Date(`${entry.datum}T${entry.uhrzeit}`);
-      if (isNaN(takenAt.getTime())) {
-        takenAt = new Date(`${entry.datum}T${entry.uhrzeit}+01:00`);
-      }
-      if (isNaN(takenAt.getTime())) {
-        skippedInvalid++;
-        continue;
-      }
-
-      // Prefer explicit counter; otherwise use timestamp-based dedup key.
-      const idempotencyKey = entry.zaehler
-        ? `import-${id}-${String(entry.zaehler)}`
-        : `import-${id}-${takenAt.getTime()}`;
-
-      prepared.push({ takenAt, idempotencyKey });
-    }
-
-    const existingRows =
-      prepared.length > 0
-        ? await prisma.medicationIntakeEvent.findMany({
-            where: {
-              idempotencyKey: { in: prepared.map((p) => p.idempotencyKey) },
+    const normalized: MedicationImportPayload = {
+      entries: entries.map((entry) => {
+        const takenAt = new Date(`${entry.datum}T${entry.uhrzeit}`);
+        const idempotencyKey = entry.zaehler
+          ? `import-${id}-${String(entry.zaehler)}`
+          : `import-${id}-${takenAt.getTime()}`;
+        return { takenAt: takenAt.toISOString(), idempotencyKey };
+      }),
+    };
+    const progress: MedicationImportProgress = {
+      processed: 0,
+      total: normalized.entries.length,
+      imported: 0,
+      skippedDuplicates: 0,
+      touchedDays: [],
+      rollupProcessed: 0,
+    };
+    const admission = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`
+        SELECT "id"
+        FROM "medications"
+        WHERE "id" = ${id}
+          AND "user_id" = ${user.id}
+        FOR UPDATE
+      `;
+      const now = new Date();
+      const staleBefore = new Date(
+        now.getTime() - MEDICATION_INTAKE_IMPORT_STALE_AFTER_MS,
+      );
+      await tx.medicationIntakeImportJob.updateMany({
+        where: {
+          userId: user.id,
+          medicationId: id,
+          status: { in: ["queued", "running"] },
+          OR: [
+            { heartbeatAt: { lt: staleBefore } },
+            {
+              heartbeatAt: null,
+              startedAt: { lt: staleBefore },
             },
-            select: { idempotencyKey: true },
-          })
-        : [];
-    const existingKeys = new Set(
-      existingRows
-        .map((r) => r.idempotencyKey)
-        .filter((k): k is string => k !== null),
-    );
+            {
+              heartbeatAt: null,
+              startedAt: null,
+              createdAt: { lt: staleBefore },
+            },
+          ],
+        },
+        data: {
+          status: "failed",
+          failureReason: "Medication intake import abandoned",
+          heartbeatAt: now,
+          completedAt: now,
+        },
+      });
+      const activeJob = await tx.medicationIntakeImportJob.findFirst({
+        where: {
+          userId: user.id,
+          medicationId: id,
+          status: { in: ["queued", "running"] },
+        },
+        select: { id: true },
+      });
+      if (activeJob) return { active: true as const };
 
-    for (const { takenAt, idempotencyKey } of prepared) {
-      if (existingKeys.has(idempotencyKey)) {
-        skippedDuplicates++;
-        continue;
-      }
-
-      const created = await prisma.medicationIntakeEvent.create({
+      const importJob = await tx.medicationIntakeImportJob.create({
         data: {
           userId: user.id,
           medicationId: id,
-          scheduledFor: takenAt,
-          takenAt,
-          skipped: false,
-          source: "IMPORT",
-          idempotencyKey,
+          status: "queued",
+          payload: toJson(normalized),
+          progress: toJson(progress),
         },
       });
-      imported++;
-      // v1.16.13 — CSV import was the one intake seam that recorded a taken
-      // dose without decrementing tracked stock, so runway / days-left
-      // overstated. Consume exactly like the other taken paths: the stamp on
-      // the freshly-created event makes it exactly-once, the duplicate skip
-      // above means a re-import never re-creates the row (no double-decrement),
-      // and `consumeForIntake` no-ops for as-needed / no-inventory medications.
-      await consumeForIntake({
-        client: prisma,
-        userId: user.id,
-        medicationId: id,
-        eventId: created.id,
-        intakeAt: created.takenAt ?? takenAt,
+      return { active: false as const, importJob };
+    });
+    if (admission.active) {
+      return apiError("Medication intake import already in progress", 409);
+    }
+    const { importJob } = admission;
+
+    let bossJobId: string | null = null;
+    try {
+      const boss = getGlobalBoss();
+      if (!boss) throw new Error("worker unavailable");
+      bossJobId = await boss.send(
+        MEDICATION_INTAKE_IMPORT_QUEUE,
+        { jobId: importJob.id },
+        MEDICATION_INTAKE_IMPORT_SEND_OPTIONS,
+      );
+      if (!bossJobId) throw new Error("queue rejected job");
+      await prisma.medicationIntakeImportJob.update({
+        where: { id: importJob.id },
+        data: { pgBossJobId: bossJobId },
       });
-      touchedDays.add(dayKeyForScheduledFor(takenAt, user.timezone));
+    } catch {
+      const completedAt = new Date();
+      await prisma.medicationIntakeImportJob.update({
+        where: { id: importJob.id },
+        data: {
+          status: "failed",
+          failureReason: "Background worker enqueue failed",
+          heartbeatAt: completedAt,
+          completedAt,
+        },
+      });
+      await auditLog("medication.intake.import.kickoff.denied", {
+        userId: user.id,
+        ipAddress: getClientIp(request),
+        details: {
+          jobId: importJob.id,
+          medicationId: id,
+          reason: "enqueue_failed",
+        },
+      });
+      return apiError("Background worker is not available", 503);
     }
 
-    // v1.4.39 W-MED — fold the touched days into rollup rows after the
-    // insert loop completes. Best-effort: a populator failure logs but
-    // never rolls back the imported events.
-    for (const dayKey of touchedDays) {
-      try {
-        await recomputeMedicationComplianceForDay(
-          user.id,
-          id,
-          dayKey,
-          user.timezone,
-        );
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        annotate({
-          meta: {
-            medication_compliance_rollup_import_failed: true,
-            medication_compliance_rollup_import_error: message,
-            medication_compliance_rollup_day: dayKey,
-          },
-        });
-      }
-    }
-
-    // v1.15.20 — imported intakes change every cached medication read
-    // (list, intake caches, compliance payload). This write path was the
-    // one intake surface missing the flush.
-    if (imported > 0) {
-      invalidateUserMedications(user.id, { evict: true });
-    }
-
-    await auditLog("medication.intake.import", {
+    await auditLog("medication.intake.import.kickoff", {
       userId: user.id,
       ipAddress: getClientIp(request),
       details: {
+        jobId: importJob.id,
+        bossJobId,
         medicationId: id,
-        imported,
-        skippedDuplicates,
-        skippedInvalid,
-        total: entries.length,
+        total: normalized.entries.length,
       },
     });
-
     annotate({
       action: {
-        name: "medication.intake.import",
+        name: "medication.intake.import.kickoff",
         entity_type: "medication",
         entity_id: id,
       },
       meta: {
-        imported,
-        skippedDuplicates,
-        skippedInvalid,
-        total: entries.length,
+        job_id: importJob.id,
+        total: normalized.entries.length,
       },
     });
 
-    // (#22) — silent cross-device intake sync: imported rows change the
-    // intake state the user's other iOS devices render. Coalesced per
-    // user, best-effort — never affects the response.
-    if (imported > 0) {
-      queueMedicationIntakeSync({
-        userId: user.id,
-        originDeviceToken: request.headers.get("x-device-id"),
-      });
-    }
-
-    return apiSuccess({ imported, skippedDuplicates, skippedInvalid }, 201);
+    return apiSuccess(
+      {
+        jobId: importJob.id,
+        status: "queued" as const,
+        statusUrl: `/api/medications/${id}/intake/import/${importJob.id}/status`,
+      },
+      202,
+    );
   },
 );

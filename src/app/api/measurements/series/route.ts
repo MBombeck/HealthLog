@@ -25,7 +25,7 @@ import type { MeasurementType, SleepStage } from "@/generated/prisma/client";
 import { reconstructSleepNights } from "@/lib/analytics/sleep-night";
 import { VALUE_RANGES } from "@/lib/validations/measurement";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
-import { resolveUserTimezone } from "@/lib/tz/resolver";
+import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
 import { convertGlucose, resolveGlucoseUnit } from "@/lib/glucose";
 
 /**
@@ -361,6 +361,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // most `days` rows regardless of sample density. Parameter-bound
     // tagged-template `$queryRaw`, mirroring the rollup tier's
     // `date_trunc(... ) GROUP BY` aggregate (measurement-rollups.ts).
+    const userTz = await resolveUserTimezone(user.id);
     const type = KIND_TO_TYPE[kind];
     const bucketRows = await prisma.$queryRaw<
       Array<{
@@ -370,17 +371,28 @@ export const GET = apiHandler(async (request: NextRequest) => {
         max_value: number;
       }>
     >`
+      WITH localized AS (
+        SELECT
+          m."value",
+          m."value_min",
+          m."value_max",
+          date_trunc(
+            'day',
+            (m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${userTz}
+          ) AS local_day
+        FROM measurements m
+        WHERE m."user_id" = ${user.id}
+          AND m."type" = ${type}::"measurement_type"
+          AND m."measured_at" >= ${since}
+          AND m."deleted_at" IS NULL
+      )
       SELECT
-        date_trunc('day', m."measured_at")                          AS bucket_start,
-        AVG(m."value")::double precision                            AS mean,
-        MIN(COALESCE(m."value_min", m."value"))::double precision   AS min_value,
-        MAX(COALESCE(m."value_max", m."value"))::double precision   AS max_value
-      FROM measurements m
-      WHERE m."user_id" = ${user.id}
-        AND m."type" = ${type}::"measurement_type"
-        AND m."measured_at" >= ${since}
-        AND m."deleted_at" IS NULL
-      GROUP BY date_trunc('day', m."measured_at")
+        local_day AT TIME ZONE ${userTz}                         AS bucket_start,
+        AVG("value")::double precision                           AS mean,
+        MIN(COALESCE("value_min", "value"))::double precision    AS min_value,
+        MAX(COALESCE("value_max", "value"))::double precision    AS max_value
+      FROM localized
+      GROUP BY local_day
       ORDER BY bucket_start ASC
     `;
     // Stats stay aggregated over the RAW rows (not the day buckets) so the
@@ -410,7 +422,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
         AND m."deleted_at" IS NULL
     `;
     const round2 = (v: number) => Math.round(v * 100) / 100;
-    const dayId = (d: Date) => `day:${d.toISOString().slice(0, 10)}`;
+    const dayId = (d: Date) => `day:${userDayKey(d, userTz)}`;
     if (kind === "glucose") {
       // Same unit engine as the raw glucose branch: canonical mg/dL in
       // the DB, converted ONCE at serialization to the user's preference.

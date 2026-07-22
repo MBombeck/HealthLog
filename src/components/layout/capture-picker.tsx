@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Activity, Pill, Waves } from "lucide-react";
+import { Activity, GlassWater, Pill, Waves } from "lucide-react";
 
 import { MeasurementForm } from "@/components/measurements/measurement-form";
 import { MoodForm } from "@/components/mood/mood-form";
 import { MedicationIntakeQuickAdd } from "@/components/dashboard/medication-intake-quick-add";
+import { WaterQuickAddSheet } from "@/components/insights/nutrients/water-quick-add-sheet";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import {
   AlertDialog,
@@ -19,20 +20,20 @@ import {
 } from "@/components/ui/alert-dialog";
 import { sheetBodyHasUnsavedInput } from "@/components/dashboard/quick-entry-sheets";
 import { useTranslations } from "@/lib/i18n/context";
+import { useModuleEnabled } from "@/hooks/use-module-enabled";
 
 /**
  * The center "Log" capture action (iOS parity — the bottom bar's
  * middle slot is a capture CTA, not a destination). It opens a small
- * picker that routes to one of three existing quick-entry surfaces:
+ * picker that routes to four existing quick-entry surfaces:
  *
  *   - Measurement → `<MeasurementForm>` (the `/measurements` add form)
- *   - Medication  → `<MedicationIntakeQuickAdd>` (the dashboard intake
- *                   quick-add)
+ *   - Medication  → `<MedicationIntakeQuickAdd>` (dashboard quick-add)
  *   - Mood        → `<MoodForm>` (the `/mood` add form, 5-face flow)
+ *   - Water       → `<WaterQuickAddSheet>` (the hydration quick-add)
  *
- * All three forms share the `{ onSuccess, onCancel, footerSlot }`
- * contract and are designed to mount inside `<ResponsiveSheet>`, so the
- * picker reuses them verbatim rather than rebuilding any capture UI.
+ * The picker reuses each existing capture component rather than
+ * rebuilding parallel forms.
  *
  * Nothing here orphans a route: the same surfaces remain reachable
  * from their own pages (`/measurements`, `/mood`, dashboard) and from
@@ -45,7 +46,7 @@ import { useTranslations } from "@/lib/i18n/context";
  * instead of closing unconditionally.
  */
 
-type CaptureKind = "measurement" | "medication" | "mood";
+type CaptureKind = "measurement" | "medication" | "mood" | "water";
 
 interface CapturePickerProps {
   /** Whether the picker chooser sheet is open. */
@@ -56,6 +57,7 @@ interface CapturePickerProps {
 
 export function CapturePicker({ open, onOpenChange }: CapturePickerProps) {
   const { t } = useTranslations();
+  const nutrientsEnabled = useModuleEnabled("nutrients");
   const [kind, setKind] = useState<CaptureKind | null>(null);
   const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
   // v1.30.1 — mirrors `QuickEntrySheets`' `confirmDiscardOpen`: hold a
@@ -64,6 +66,7 @@ export function CapturePicker({ open, onOpenChange }: CapturePickerProps) {
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
 
   function chooseKind(next: CaptureKind) {
+    if (next === "water" && !nutrientsEnabled) return;
     // Close the chooser first, then open the form sheet so only one
     // bottom-sheet is mounted at a time (no stacked backdrops).
     onOpenChange(false);
@@ -110,12 +113,19 @@ export function CapturePicker({ open, onOpenChange }: CapturePickerProps) {
       description: t("nav.capture.moodDescription"),
       icon: Waves,
     },
+    {
+      kind: "water",
+      label: t("nav.capture.water"),
+      description: t("nav.capture.waterDescription"),
+      icon: GlassWater,
+    },
   ];
 
   const formTitleByKind: Record<CaptureKind, string> = {
     measurement: t("measurements.addMeasurement"),
     medication: t("nav.capture.medication"),
     mood: t("mood.addEntry"),
+    water: t("nutrients.hydration.quickAddTitle"),
   };
   // `kind === null` keeps the form sheet closed (the title is unread then);
   // the mood label is the harmless default, matching the prior ternary's
@@ -135,31 +145,33 @@ export function CapturePicker({ open, onOpenChange }: CapturePickerProps) {
           className="grid grid-cols-1 gap-2"
           data-testid="capture-picker-options"
         >
-          {options.map((opt) => (
-            <button
-              key={opt.kind}
-              type="button"
-              data-testid={`capture-picker-${opt.kind}`}
-              onClick={() => chooseKind(opt.kind)}
-              className="border-border hover:bg-accent/40 focus-visible:ring-ring/50 flex min-h-14 items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
-            >
-              <span className="bg-primary/10 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
-                <opt.icon className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-sm font-medium">{opt.label}</span>
-                <span className="text-muted-foreground block text-xs">
-                  {opt.description}
+          {options.map((opt) =>
+            opt.kind !== "water" || nutrientsEnabled ? (
+              <button
+                key={opt.kind}
+                type="button"
+                data-testid={`capture-picker-${opt.kind}`}
+                onClick={() => chooseKind(opt.kind)}
+                className="border-border hover:bg-accent/40 focus-visible:ring-ring/50 flex min-h-14 items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              >
+                <span className="bg-primary/10 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+                  <opt.icon className="h-5 w-5" aria-hidden="true" />
                 </span>
-              </span>
-            </button>
-          ))}
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium">{opt.label}</span>
+                  <span className="text-muted-foreground block text-xs">
+                    {opt.description}
+                  </span>
+                </span>
+              </button>
+            ) : null,
+          )}
         </div>
       </ResponsiveSheet>
 
       {/* The chosen capture surface, reusing the existing form. */}
       <ResponsiveSheet
-        open={kind !== null}
+        open={kind !== null && kind !== "water"}
         onOpenChange={handleFormOpenChange}
         title={formTitle}
         footer={<div ref={setFooterEl} className="flex w-full" />}
@@ -186,6 +198,14 @@ export function CapturePicker({ open, onOpenChange }: CapturePickerProps) {
           />
         )}
       </ResponsiveSheet>
+
+      {nutrientsEnabled && kind === "water" && (
+        <WaterQuickAddSheet
+          open
+          onOpenChange={handleFormOpenChange}
+          onSuccess={closeForm}
+        />
+      )}
 
       {/* v1.30.1 — confirm before discarding a partly-filled capture
           form when the sheet is dismissed by an overlay tap, Escape,

@@ -571,6 +571,26 @@ async function postBatch(request: NextRequest): Promise<Response> {
     }
   }
 
+  const healthKitSyncSucceeded =
+    failedCount === 0 &&
+    prepared.some((p) => {
+      if ((p.entry.source ?? "APPLE_HEALTH") !== "APPLE_HEALTH") return false;
+      const status = results[p.index]?.status;
+      return (
+        status === "inserted" || status === "updated" || status === "duplicate"
+      );
+    });
+
+  // This batch route is the native HealthKit ingestion boundary. Stamp only
+  // after every attempted write has reached a durable, non-failed verdict;
+  // MANUAL-only and skipped-only batches are not HealthKit syncs.
+  if (healthKitSyncSucceeded) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { healthKitLastSyncedAt: new Date() },
+    });
+  }
+
   const freshlyInsertedRows = insertedPrepared.map((p) => ({
     type: p.row.type as MeasurementType,
     measuredAt:

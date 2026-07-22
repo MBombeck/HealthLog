@@ -175,6 +175,7 @@ export default function InsightsPulsPage() {
         />
       }
       coachLaunch
+      captureType="PULSE"
       showAllValuesType="PULSE"
     >
       <HealthChartDynamic

@@ -53,6 +53,7 @@ import { withBackgroundEvent } from "@/lib/logging/background";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { userDayKey } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
+import { startOfLocalDayInTz } from "@/lib/tz/local-day";
 import { buildWorkoutHrSeries } from "@/lib/workouts/hr-series";
 import {
   buildWorkoutInsightEvidence,
@@ -260,7 +261,7 @@ export async function runWorkoutInsightGenerate(
   // The capacity check and durable claim write are one serialized PostgreSQL
   // transaction. A count performed before the write would let concurrent
   // workouts all observe the same free slot and exceed the cap.
-  const dayStart = startOfUserDay(now, tz);
+  const dayStart = startOfLocalDayInTz(now, tz);
   const localDate = userDayKey(now, tz);
   const claim = await claimWorkoutInsightGeneration({
     userId,
@@ -519,30 +520,6 @@ export async function runWorkoutInsightGenerate(
     providerType: outcome.providerType,
     length: screened.text.length,
   };
-}
-
-/** Midnight in the user's profile timezone, as an absolute instant. */
-function startOfUserDay(now: Date, tz: string): Date {
-  const key = userDayKey(now, tz);
-  // Walk back from `now` to the first instant whose day key differs. Bounded to
-  // 48 hourly steps, which covers every real offset including the half-hour and
-  // 45-minute zones plus a DST shift.
-  let cursor = now.getTime();
-  for (let i = 0; i < 48; i++) {
-    const next = cursor - 3_600_000;
-    if (userDayKey(new Date(next), tz) !== key) {
-      // Refine to the minute so a cap window is not up to an hour wide.
-      for (let m = 0; m < 60; m++) {
-        const candidate = cursor - m * 60_000;
-        if (userDayKey(new Date(candidate), tz) !== key) {
-          return new Date(candidate + 60_000);
-        }
-      }
-      return new Date(cursor);
-    }
-    cursor = next;
-  }
-  return new Date(now.getTime() - MS_PER_DAY);
 }
 
 export async function handleWorkoutInsightGenerate(

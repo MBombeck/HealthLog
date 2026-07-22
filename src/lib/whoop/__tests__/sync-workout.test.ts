@@ -16,8 +16,9 @@ vi.mock("../client", () => ({
   KJ_TO_KCAL: 0.239006,
 }));
 
-vi.mock("../sync", async () => {
-  const actual = await vi.importActual<typeof import("../sync")>("../sync");
+vi.mock("../sync-core", async () => {
+  const actual =
+    await vi.importActual<typeof import("../sync-core")>("../sync-core");
   return {
     ...actual,
     getValidToken: vi.fn(),

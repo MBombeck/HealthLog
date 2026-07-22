@@ -59,8 +59,11 @@ import { NextRequest } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { apiSuccess } from "@/lib/api-response";
-import { readWorkoutsListCached } from "@/lib/workouts/list-read";
+import { apiSuccess, returnAllZodIssues } from "@/lib/api-response";
+import {
+  readWorkoutsListCached,
+  workoutListFilterSchema,
+} from "@/lib/workouts/list-read";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 
 const DEFAULT_LIMIT = 50;
@@ -90,16 +93,19 @@ export const GET = apiHandler(async (request: NextRequest) => {
     0,
     parseInt(searchParams.get("offset") ?? "0", 10) || 0,
   );
-  const since = searchParams.get("since");
-  const until = searchParams.get("until");
-  const sportType = searchParams.get("sportType");
+  const filterResult = workoutListFilterSchema.safeParse({
+    since: searchParams.get("since"),
+    until: searchParams.get("until"),
+    sportType: searchParams.get("sportType"),
+  });
+  if (!filterResult.success) {
+    return returnAllZodIssues(filterResult.error);
+  }
 
   const result = await readWorkoutsListCached(user.id, {
     limit,
     offset,
-    since,
-    until,
-    sportType,
+    ...filterResult.data,
   });
 
   return apiSuccess(result);

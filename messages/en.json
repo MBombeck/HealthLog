@@ -46,6 +46,57 @@
     "durationHoursMinutes": "{hours}h {minutes}m",
     "durationMinutes": "{minutes}m"
   },
+  "apiErrors": {
+    "measurement": {
+      "create": { "invalid": "Check the measurement details and try again." },
+      "duplicate_timestamp": "A measurement already exists for this time."
+    },
+    "mood": {
+      "list": { "invalid": "The mood list filters are invalid." },
+      "create": { "invalid": "Check the mood entry and try again." },
+      "update": { "invalid": "Check the mood entry and try again." },
+      "duplicate_timestamp": "A mood entry already exists for this time.",
+      "not_found": "This mood entry is no longer available.",
+      "ratedFactor": {
+        "out_of_range": "A factor rating is outside its allowed range."
+      }
+    },
+    "labs": {
+      "create": { "invalid": "Check the lab result and try again." },
+      "result": { "notFound": "This lab result is no longer available." },
+      "biomarker": {
+        "notFound": "This biomarker is no longer available.",
+        "duplicate": "A biomarker with this name already exists.",
+        "create": { "invalid": "Check the biomarker details and try again." },
+        "update": {
+          "invalid": "Check the biomarker details and try again.",
+          "referenceRangeInvalid": "The lower reference value must not exceed the upper value."
+        }
+      },
+      "update": {
+        "invalid": "Check the lab result and try again.",
+        "linkedFieldsImmutable": "Edit the biomarker to change its name, unit, panel, or reference range.",
+        "qualitativeExpected": "Enter a text result for this qualitative reading.",
+        "numericExpected": "Enter a number for this numeric reading.",
+        "referenceRangeInvalid": "The lower reference value must not exceed the upper value."
+      }
+    },
+    "onboarding": {
+      "disclaimer": {
+        "invalid": "Please confirm the medical disclaimer again."
+      },
+      "tour": { "invalid": "The tour progress could not be saved." },
+      "complete": { "invalid": "Check the profile details and try again." },
+      "user": { "notFound": "Your account could not be found." },
+      "step": {
+        "rateLimited": "Too many attempts. Please wait and try again.",
+        "invalid": "This onboarding step could not be saved.",
+        "completed": "Onboarding is already complete.",
+        "outOfOrder": "Your onboarding progress changed. Refresh and continue.",
+        "concurrent": "Your onboarding progress changed. Refresh and continue."
+      }
+    }
+  },
   "doctorReport": {
     "title": "Health Report",
     "subtitle": "HealthLog — Personal Health Report",
@@ -255,7 +306,9 @@
       "medication": "Medication",
       "medicationDescription": "Mark a dose as taken",
       "mood": "Mood",
-      "moodDescription": "Log your mood and tags"
+      "moodDescription": "Log your mood and tags",
+      "water": "Water",
+      "waterDescription": "Quickly add your water intake"
     },
     "cycle": "Cycle",
     "labs": "Labs",
@@ -358,6 +411,7 @@
     "quickAddMeasurement": "Log measurement",
     "quickAddMood": "Log mood",
     "quickAddMedicationIntake": "Log medication intake",
+    "quickAddWater": "Log water",
     "customizeDashboard": "Customize dashboard",
     "medicationIntakeQuickAdd": {
       "sheetTitle": "Log medication intake",
@@ -2331,6 +2385,13 @@
       "historyEmpty": "Your conversations will appear here. Ask anything to start.",
       "historyDeleteAria": "Delete conversation",
       "historyDeleted": "Conversation deleted",
+      "rename": {
+        "action": "Rename conversation",
+        "input": "Conversation title",
+        "save": "Save title",
+        "cancel": "Cancel rename",
+        "error": "Conversation title could not be saved."
+      },
       "historySearchEmpty": "No conversations match your search.",
       "historyLoadingMore": "Loading more…",
       "sourcesTitle": "What I can see",
@@ -3042,7 +3103,10 @@
         "mixedCardio": "Mixed cardio",
         "other": "Other"
       },
-      "loadError": "Your workouts could not be loaded"
+      "loadError": "Your workouts could not be loaded",
+      "loadMore": "Load more workouts",
+      "loadingMore": "Loading more workouts",
+      "loadMoreError": "More workouts could not be loaded"
     },
     "bloodGlucose": {
       "title": "Blood Glucose",
@@ -5747,6 +5811,22 @@
       "token": "The token exchange with Strava failed. Please start the connection again.",
       "rate_limited": "Too many connection attempts. Wait a moment and try again.",
       "generic": "Unknown error while connecting. Please start the connection again."
+    },
+    "appleHealth": {
+      "title": "Apple Health",
+      "description": "Live sync comes from the HealthLog iOS app. It is not a web or OAuth connection.",
+      "status": {
+        "checking": "Checking Apple Health data…",
+        "dataReceived": "Apple Health data received",
+        "setup": "Set up in iOS app",
+        "unavailable": "Apple Health status unavailable"
+      },
+      "lastDataLabel": "Last Apple Health data:",
+      "setupTitle": "Turn on live sync",
+      "permissionStep": "In the HealthLog iOS app, open Settings → Apple Health and allow the health categories you want to share.",
+      "backgroundStep": "Keep Background App Refresh enabled. The app syncs new data automatically in the foreground and when iOS grants background time.",
+      "importNote": "Need older history or cannot use the iOS app? The Apple Health XML/ZIP upload is a one-shot fallback and does not enable live sync.",
+      "importAction": "Open one-shot import"
     },
     "garminInfo": {
       "title": "Garmin",
@@ -8771,6 +8851,7 @@
       "quickAddCustomPlaceholder": "250",
       "quickAddSubmit": "Add",
       "quickAddError": "Couldn't save that — try again.",
+      "quickAddSuccess": "{amount} mL water added.",
       "editTotal": "Edit today's total"
     },
     "caffeine": {

@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Quick-entry sheets for the dashboard: measurement, mood, and
- * medication-intake forms behind the shared ResponsiveSheet primitive
+ * Quick-entry sheets for the dashboard: measurement, mood, medication
+ * intake, and water behind the shared ResponsiveSheet primitive
  * (bottom-sheet on `<md`, centred Dialog on `md+`), plus the
  * confirm-before-discard guard for dirty forms.
  *
@@ -24,10 +24,11 @@ import {
 import { MeasurementForm } from "@/components/measurements/measurement-form";
 import { MoodForm } from "@/components/mood/mood-form";
 import { MedicationIntakeQuickAdd } from "@/components/dashboard/medication-intake-quick-add";
+import { WaterQuickAddSheet } from "@/components/insights/nutrients/water-quick-add-sheet";
 import { useTranslations } from "@/lib/i18n/context";
 
 export type QuickEntryDialog =
-  "measurement" | "mood" | "medicationIntake" | null;
+  "measurement" | "mood" | "medicationIntake" | "water" | null;
 
 /**
  * v1.11.3 F3 — guard the quick-entry sheets against an accidental
@@ -173,6 +174,11 @@ export function QuickEntrySheets({
           footerSlot={medicationIntakeFooterEl}
         />
       </ResponsiveSheet>
+      <WaterQuickAddSheet
+        open={open === "water"}
+        onOpenChange={handleQuickEntryOpenChange}
+        onSuccess={onClose}
+      />
 
       {/* v1.11.3 F3 — confirm before discarding a partly-filled
           quick-entry form when the sheet is dismissed by an overlay

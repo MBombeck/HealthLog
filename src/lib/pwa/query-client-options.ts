@@ -1,4 +1,49 @@
-import type { DefaultOptions } from "@tanstack/react-query";
+import type { DefaultOptions, QueryClient } from "@tanstack/react-query";
+
+export const MEANINGFUL_HIDDEN_INTERVAL_MS = 60_000;
+
+interface VisibilityTarget {
+  readonly visibilityState: DocumentVisibilityState;
+  addEventListener(type: "visibilitychange", listener: EventListener): void;
+  removeEventListener(type: "visibilitychange", listener: EventListener): void;
+}
+
+/**
+ * Refresh stale server state when an installed PWA resumes after a meaningful
+ * absence. The hidden timestamp is consumed by the first matching visible
+ * event, so duplicate browser lifecycle events cannot trigger a refresh burst.
+ */
+export function subscribeToMeaningfulVisibilityRefresh(
+  queryClient: QueryClient,
+  visibilityTarget: VisibilityTarget = document,
+  now: () => number = Date.now,
+): () => void {
+  let hiddenAt: number | null = null;
+
+  const onVisibilityChange = () => {
+    if (visibilityTarget.visibilityState === "hidden") {
+      hiddenAt ??= now();
+      return;
+    }
+
+    if (visibilityTarget.visibilityState !== "visible" || hiddenAt === null) {
+      return;
+    }
+
+    const hiddenFor = now() - hiddenAt;
+    hiddenAt = null;
+    if (hiddenFor < MEANINGFUL_HIDDEN_INTERVAL_MS) return;
+
+    void queryClient.refetchQueries({ type: "active", stale: true });
+  };
+
+  visibilityTarget.addEventListener("visibilitychange", onVisibilityChange);
+  return () =>
+    visibilityTarget.removeEventListener(
+      "visibilitychange",
+      onVisibilityChange,
+    );
+}
 
 /**
  * Shared TanStack Query default options for the app's single `QueryClient`.

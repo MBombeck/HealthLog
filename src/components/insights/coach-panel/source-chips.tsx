@@ -86,7 +86,7 @@ export function SourceChips({ provenance, className }: SourceChipsProps) {
           data-slot="coach-source-chip"
           data-metric={chip.metric}
           className={cn(
-            "border-info/25 text-info/90",
+            "border-info/25 text-info",
             "inline-flex items-center gap-1 rounded-full border bg-transparent",
             "px-2 py-0.5 text-xs leading-none",
           )}
@@ -94,10 +94,14 @@ export function SourceChips({ provenance, className }: SourceChipsProps) {
           <Link2 className="h-2.5 w-2.5" aria-hidden="true" />
           <span className="font-medium">{chip.metricLabel}</span>
           {chip.windowLabel && (
-            <span className="opacity-75">· {chip.windowLabel}</span>
+            <span data-slot="coach-source-window" className="text-info">
+              · {chip.windowLabel}
+            </span>
           )}
           {typeof chip.count === "number" && chip.count > 0 && (
-            <span className="opacity-60">· n={chip.count}</span>
+            <span data-slot="coach-source-count" className="text-info">
+              · n={chip.count}
+            </span>
           )}
         </span>
       ))}

@@ -53,6 +53,7 @@ export function WorkoutDetailDayLinks({ workout }: WorkoutDetailDayLinksProps) {
         <TileHeader
           icon={CalendarDays}
           title={t("insights.workouts.detail.thatDayTitle")}
+          titleAs="h2"
         />
       </CardHeader>
       <CardContent>

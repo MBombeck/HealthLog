@@ -137,9 +137,7 @@ export async function openCreateWizard(page: Page): Promise<void> {
     {
       name: "healthlog-locale",
       value: "de",
-      url: page.url().startsWith("http")
-        ? new URL(page.url()).origin
-        : "http://localhost:3000",
+      url: new URL(process.env.E2E_BASE_URL ?? "http://localhost:3000").origin,
     },
   ]);
   await page.goto("/medications?new=1", { waitUntil: "load" });

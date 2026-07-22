@@ -10,7 +10,7 @@ vi.mock("@/lib/api-handler", () => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    whoopConnection: { findFirst: vi.fn() },
+    whoopConnection: { findUnique: vi.fn() },
     measurement: { updateMany: vi.fn() },
     workout: { deleteMany: vi.fn() },
   },
@@ -110,7 +110,7 @@ describe("POST /api/whoop/webhook/[token]", () => {
 
     expect(res.status).toBe(429);
     // No connection lookup happened — the rate limit short-circuited.
-    expect(prisma.whoopConnection.findFirst).not.toHaveBeenCalled();
+    expect(prisma.whoopConnection.findUnique).not.toHaveBeenCalled();
     expect(getGlobalBoss).not.toHaveBeenCalled();
   });
 
@@ -123,7 +123,7 @@ describe("POST /api/whoop/webhook/[token]", () => {
     const res = await POST(req, ctx("wrong-token"));
 
     expect(res.status).toBe(401);
-    expect(prisma.whoopConnection.findFirst).not.toHaveBeenCalled();
+    expect(prisma.whoopConnection.findUnique).not.toHaveBeenCalled();
   });
 
   it("rejects a forged HMAC signature with 401, no work done", async () => {
@@ -134,7 +134,7 @@ describe("POST /api/whoop/webhook/[token]", () => {
     const res = await POST(req, ctx(SECRET));
 
     expect(res.status).toBe(401);
-    expect(prisma.whoopConnection.findFirst).not.toHaveBeenCalled();
+    expect(prisma.whoopConnection.findUnique).not.toHaveBeenCalled();
   });
 
   it("rejects a stale timestamp with 401", async () => {
@@ -149,7 +149,7 @@ describe("POST /api/whoop/webhook/[token]", () => {
   it("enqueues the matching per-resource sync on a valid `*.updated`", async () => {
     const send = vi.fn().mockResolvedValue("job-id");
     vi.mocked(getGlobalBoss).mockReturnValue({ send } as never);
-    vi.mocked(prisma.whoopConnection.findFirst).mockResolvedValue({
+    vi.mocked(prisma.whoopConnection.findUnique).mockResolvedValue({
       userId: "user-1",
     } as never);
 
@@ -161,7 +161,7 @@ describe("POST /api/whoop/webhook/[token]", () => {
     const res = await POST(req, ctx(SECRET));
 
     expect(res.status).toBe(200);
-    expect(prisma.whoopConnection.findFirst).toHaveBeenCalledWith({
+    expect(prisma.whoopConnection.findUnique).toHaveBeenCalledWith({
       where: { whoopUserId: "42" },
       select: { userId: true },
     });
@@ -174,7 +174,7 @@ describe("POST /api/whoop/webhook/[token]", () => {
   });
 
   it("returns 200 unknown_user for an unrecognised WHOOP user (no retry storm)", async () => {
-    vi.mocked(prisma.whoopConnection.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.whoopConnection.findUnique).mockResolvedValue(null);
 
     const req = signedRequest({
       user_id: 99,
@@ -189,7 +189,7 @@ describe("POST /api/whoop/webhook/[token]", () => {
   });
 
   it("soft-deletes matching rows on a `*.deleted` event", async () => {
-    vi.mocked(prisma.whoopConnection.findFirst).mockResolvedValue({
+    vi.mocked(prisma.whoopConnection.findUnique).mockResolvedValue({
       userId: "user-1",
     } as never);
 

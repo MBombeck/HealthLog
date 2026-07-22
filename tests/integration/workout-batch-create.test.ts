@@ -336,15 +336,9 @@ describe("POST /api/workouts/batch (real Postgres)", () => {
     expect(stored).toBe(0);
   });
 
-  it("collapses same-instant cross-source twins via write-time dedup, then surfaces re-posts as duplicates", async () => {
+  it("preserves same-source workouts and surfaces exact re-posts as duplicates", async () => {
     const { POST } = await import("@/app/api/workouts/batch/route");
 
-    // Two entries share `sportType`, `startedAt`, and `source`. The
-    // v1.4.42 write-time cross-source picker (`dedupeWorkoutBatch`)
-    // groups by `(userId, activityType, startedAt ± 90 s)` and keeps
-    // ONE canonical row — the other lands as `duplicate` BEFORE
-    // reaching the DB. This is the Apple Watch + Withings ScanWatch
-    // case the picker exists to handle.
     const body = {
       workouts: [baseWorkout("hk-uuid-dup-1"), baseWorkout("hk-uuid-dup-2")],
     };
@@ -358,8 +352,8 @@ describe("POST /api/workouts/batch (real Postgres)", () => {
         entries: Array<{ status: string }>;
       };
     };
-    expect(firstJson.data.inserted).toBe(1);
-    expect(firstJson.data.duplicates).toBe(1);
+    expect(firstJson.data.inserted).toBe(2);
+    expect(firstJson.data.duplicates).toBe(0);
 
     const second = await POST(makeRequest(body));
     expect(second.status).toBe(200);
@@ -370,9 +364,6 @@ describe("POST /api/workouts/batch (real Postgres)", () => {
         entries: Array<{ status: string }>;
       };
     };
-    // The write-time dedup still fires on the second post (one twin
-    // collapses), and the surviving twin now collides with the row
-    // persisted by the first post — so both end up as `duplicate`.
     expect(secondJson.data.inserted).toBe(0);
     expect(secondJson.data.duplicates).toBe(2);
     expect(secondJson.data.entries.every((e) => e.status === "duplicate")).toBe(
@@ -382,9 +373,7 @@ describe("POST /api/workouts/batch (real Postgres)", () => {
     const stored = await getPrismaClient().workout.count({
       where: { userId: TEST_USER_ID },
     });
-    // Only the first-post survivor lives in the DB — write-time dedup
-    // dropped the other twin before any DB write.
-    expect(stored).toBe(1);
+    expect(stored).toBe(2);
   });
 
   it("replays a cached response when the same Idempotency-Key is reused", async () => {

@@ -73,7 +73,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
       action: { name: "onboarding.step" },
       meta: { outcome: "rate_limited" },
     });
-    return apiError("Too many onboarding writes, try again later", 429);
+    return apiError("Too many onboarding writes, try again later", 429, {
+      errorCode: "onboarding.step.rateLimited",
+    });
   }
 
   const { data: body, error: jsonError } = await safeJson<unknown>(request, {
@@ -87,7 +89,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
       action: { name: "onboarding.step" },
       meta: { outcome: "validation_failed" },
     });
-    return apiError("Invalid step payload", 422);
+    return apiError("Invalid step payload", 422, {
+      errorCode: "onboarding.step.invalid",
+    });
   }
   const { step, goals } = parsed.data;
 
@@ -102,7 +106,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
     },
   });
   if (!fresh) {
-    return apiError("User not found", 404);
+    return apiError("User not found", 404, {
+      errorCode: "onboarding.user.notFound",
+    });
   }
 
   if (fresh.onboardingCompletedAt) {
@@ -110,7 +116,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
       action: { name: "onboarding.step" },
       meta: { outcome: "already_completed" },
     });
-    return apiError("Onboarding already completed", 409);
+    return apiError("Onboarding already completed", 409, {
+      errorCode: "onboarding.step.completed",
+    });
   }
 
   const current = fresh.onboardingStep;
@@ -119,7 +127,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
       action: { name: "onboarding.step" },
       meta: { outcome: "out_of_order", current, requested: step },
     });
-    return apiError(`Step out of order — current step is ${current}`, 409);
+    return apiError(`Step out of order — current step is ${current}`, 409, {
+      errorCode: "onboarding.step.outOfOrder",
+    });
   }
 
   const completing = step === 4;
@@ -159,6 +169,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError(
       "Onboarding step changed concurrently, refresh and retry",
       409,
+      { errorCode: "onboarding.step.concurrent" },
     );
   }
   const updated = await prisma.user.findUniqueOrThrow({

@@ -12,7 +12,7 @@
  */
 import { useMemo } from "react";
 import Link from "next/link";
-import { Activity, Pill, Plus, Waves, Wrench } from "lucide-react";
+import { Activity, GlassWater, Pill, Plus, Waves, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -24,6 +24,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { useTranslations } from "@/lib/i18n/context";
 import { useAuth } from "@/hooks/use-auth";
 import { useMounted } from "@/hooks/use-mounted";
+import { useModuleEnabled } from "@/hooks/use-module-enabled";
 import { getHourForTimeZone } from "@/components/dashboard/range-display";
 import type { QuickEntryDialog } from "@/components/dashboard/quick-entry-sheets";
 
@@ -35,6 +36,7 @@ export function DashboardHeader({
   const { t } = useTranslations();
   const { user } = useAuth();
   const mounted = useMounted();
+  const nutrientsEnabled = useModuleEnabled("nutrients");
 
   // The pre-hero greeting derivation, kept hydration-safe: `user` comes
   // from the auth query, which can resolve before this boundary
@@ -153,6 +155,12 @@ export function DashboardHeader({
                 <Pill className="mr-2 h-4 w-4" aria-hidden="true" />
                 {t("dashboard.quickAddMedicationIntake")}
               </DropdownMenuItem>
+              {nutrientsEnabled && (
+                <DropdownMenuItem onClick={() => onQuickEntry("water")}>
+                  <GlassWater className="mr-2 h-4 w-4" aria-hidden="true" />
+                  {t("dashboard.quickAddWater")}
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </>

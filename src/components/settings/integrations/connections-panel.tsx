@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { AppleHealthCard } from "@/components/settings/integrations/apple-health-card";
 import { FitbitCard } from "@/components/settings/integrations/fitbit-card";
 import { GarminInfoNote } from "@/components/settings/integrations/garmin-info-note";
 import { GoogleHealthCard } from "@/components/settings/integrations/google-health-card";
@@ -284,6 +285,9 @@ export function ConnectionsPanel() {
       </div>
       <div id="google-health" className="scroll-mt-28">
         <GoogleHealthCard viewModel={googleHealthViewModel} />
+      </div>
+      <div id="apple-health" className="scroll-mt-28">
+        <AppleHealthCard enabled={isAuthenticated} />
       </div>
       <div id="polar" className="scroll-mt-28">
         <PolarCard enabled={isAuthenticated} viewModel={polarViewModel} />

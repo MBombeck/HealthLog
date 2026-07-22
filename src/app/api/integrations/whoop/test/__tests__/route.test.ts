@@ -28,14 +28,14 @@ vi.mock("@/lib/crypto", () => ({
   decrypt: vi.fn((x: string) => x),
 }));
 
-vi.mock("@/lib/whoop/sync", () => ({
+vi.mock("@/lib/whoop/sync-core", () => ({
   getValidToken: vi.fn(),
 }));
 
 import { POST } from "../route";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { getValidToken } from "@/lib/whoop/sync";
+import { getValidToken } from "@/lib/whoop/sync-core";
 
 interface ApiErrorEnvelope {
   data: null;

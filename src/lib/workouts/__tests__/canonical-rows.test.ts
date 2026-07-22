@@ -42,12 +42,7 @@ describe("dedupeWorkoutBatch", () => {
     expect(dedupeWorkoutBatch([])).toEqual([]);
   });
 
-  it("collapses exact duplicates from the same source", () => {
-    // Two rows from the SAME source at the SAME instant: a re-posted
-    // batch with the externalId differing (e.g. the iOS app split the
-    // workout into two HKWorkout entries by mistake) would otherwise
-    // double-count. The helper keeps one survivor — the higher-cal /
-    // earliest-createdAt row.
+  it("preserves overlapping workouts from the same source", () => {
     const a = row({
       id: "a",
       source: "APPLE_HEALTH",
@@ -61,10 +56,10 @@ describe("dedupeWorkoutBatch", () => {
       createdAt: new Date("2026-05-21T08:31:00Z"),
     });
 
-    const out = dedupeWorkoutBatch([a, b]);
-    expect(out).toHaveLength(1);
-    // Same calories → earliest createdAt wins (`a`).
-    expect(out[0]!.id).toBe("a");
+    expect(dedupeWorkoutBatch([a, b]).map((item) => item.id)).toEqual([
+      "a",
+      "b",
+    ]);
   });
 
   it("prefers the higher-priority source on a cross-source overlap inside the window", () => {
@@ -91,6 +86,30 @@ describe("dedupeWorkoutBatch", () => {
     // when WITHINGS has higher calories. The calories tie-break only
     // fires WITHIN a single source tier.
     expect(out[0]!.id).toBe("apple");
+  });
+
+  it("retains every row from the winning source in a cross-source overlap", () => {
+    const appleFirst = row({
+      id: "apple-first",
+      source: "APPLE_HEALTH",
+      startedAt: new Date("2026-05-21T08:00:00Z"),
+    });
+    const withings = row({
+      id: "withings",
+      source: "WITHINGS",
+      startedAt: new Date("2026-05-21T08:00:30Z"),
+    });
+    const appleSecond = row({
+      id: "apple-second",
+      source: "APPLE_HEALTH",
+      startedAt: new Date("2026-05-21T08:01:00Z"),
+    });
+
+    expect(
+      dedupeWorkoutBatch([appleFirst, withings, appleSecond]).map(
+        (item) => item.id,
+      ),
+    ).toEqual(["apple-first", "apple-second"]);
   });
 
   it("returns every row unchanged when no overlap exists", () => {
@@ -148,10 +167,7 @@ describe("dedupeWorkoutBatch", () => {
     expect(out.map((r) => r.id).sort()).toEqual(["strength", "walk"]);
   });
 
-  it("uses caloriesKcal as the tie-breaker when sources tie", () => {
-    // Apple Watch in the bag (no HR contact, calories=200) vs Apple
-    // Watch on the wrist (full HR series, calories=500). Same source,
-    // same instant, same activityType — calories wins.
+  it("preserves same-source workouts when calories differ", () => {
     const lo = row({
       id: "lo",
       source: "APPLE_HEALTH",
@@ -161,30 +177,16 @@ describe("dedupeWorkoutBatch", () => {
       id: "hi",
       source: "APPLE_HEALTH",
       caloriesKcal: 500,
-      // Stamp a later createdAt to prove the calories axis wins
-      // over the createdAt fallback.
       createdAt: new Date("2026-05-21T09:00:00Z"),
     });
-    const loWithEarlierCreated = row({
-      id: "lo-early",
-      source: "APPLE_HEALTH",
-      caloriesKcal: 200,
-      createdAt: new Date("2026-05-21T08:30:00Z"),
-    });
 
-    // Pair 1: hi vs lo → hi wins on calories.
-    expect(dedupeWorkoutBatch([lo, hi]).map((r) => r.id)).toEqual(["hi"]);
-
-    // Pair 2: hi vs lo-early → hi STILL wins because calories trump
-    // createdAt.
-    expect(
-      dedupeWorkoutBatch([loWithEarlierCreated, hi]).map((r) => r.id),
-    ).toEqual(["hi"]);
+    expect(dedupeWorkoutBatch([lo, hi]).map((item) => item.id)).toEqual([
+      "lo",
+      "hi",
+    ]);
   });
 
-  it("falls back to earliest createdAt when source + calories both tie", () => {
-    // The maintainer's ScanWatch on the wrist + ScanWatch in a desk drawer:
-    // unrealistic, but the case isolates the tie-breaker hierarchy.
+  it("preserves same-source input order when creation times differ", () => {
     const early = row({
       id: "early",
       source: "WITHINGS",
@@ -198,27 +200,23 @@ describe("dedupeWorkoutBatch", () => {
       createdAt: new Date("2026-05-21T08:45:00Z"),
     });
 
-    expect(dedupeWorkoutBatch([late, early]).map((r) => r.id)).toEqual([
+    expect(dedupeWorkoutBatch([late, early]).map((item) => item.id)).toEqual([
+      "late",
       "early",
     ]);
   });
 
-  it("keeps determinism via input order when every field ties", () => {
-    // Two manually-entered "running" workouts at the same instant
-    // with no calories and no createdAt — the helper falls back to
-    // the original input ordinal so re-running over the same input
-    // always picks the same survivor.
+  it("preserves same-source input order when every field ties", () => {
     const first = row({ id: "first", source: "MANUAL" });
     const second = row({ id: "second", source: "MANUAL" });
 
-    expect(dedupeWorkoutBatch([first, second]).map((r) => r.id)).toEqual([
+    expect(dedupeWorkoutBatch([first, second]).map((item) => item.id)).toEqual([
       "first",
-    ]);
-    // Reversed input → reversed survivor. Confirms the tie-breaker
-    // genuinely consults input order rather than a hidden field
-    // (e.g. `id` lexicographic).
-    expect(dedupeWorkoutBatch([second, first]).map((r) => r.id)).toEqual([
       "second",
+    ]);
+    expect(dedupeWorkoutBatch([second, first]).map((item) => item.id)).toEqual([
+      "second",
+      "first",
     ]);
   });
 
@@ -253,6 +251,58 @@ describe("dedupeWorkoutBatch", () => {
       "anchor",
       "outside",
     ]);
+  });
+
+  it("anchors overlap groups to the first row instead of chaining neighbours", () => {
+    const anchor = row({
+      id: "anchor",
+      source: "APPLE_HEALTH",
+      startedAt: new Date("2026-05-21T08:00:00Z"),
+    });
+    const neighbour = row({
+      id: "neighbour",
+      source: "WITHINGS",
+      startedAt: new Date(
+        anchor.startedAt.getTime() + WORKOUT_DEDUP_WINDOW_MS - 1_000,
+      ),
+    });
+    const chained = row({
+      id: "chained",
+      source: "WITHINGS",
+      startedAt: new Date(
+        anchor.startedAt.getTime() + 2 * (WORKOUT_DEDUP_WINDOW_MS - 1_000),
+      ),
+    });
+
+    expect(
+      dedupeWorkoutBatch([anchor, neighbour, chained]).map((item) => item.id),
+    ).toEqual(["anchor", "chained"]);
+  });
+
+  it("keeps anchor windows stable when the batch arrives out of order", () => {
+    const anchor = row({
+      id: "anchor",
+      source: "APPLE_HEALTH",
+      startedAt: new Date("2026-05-21T08:00:00Z"),
+    });
+    const neighbour = row({
+      id: "neighbour",
+      source: "WITHINGS",
+      startedAt: new Date(
+        anchor.startedAt.getTime() + WORKOUT_DEDUP_WINDOW_MS - 1_000,
+      ),
+    });
+    const chained = row({
+      id: "chained",
+      source: "WITHINGS",
+      startedAt: new Date(
+        anchor.startedAt.getTime() + 2 * (WORKOUT_DEDUP_WINDOW_MS - 1_000),
+      ),
+    });
+
+    expect(
+      dedupeWorkoutBatch([neighbour, chained, anchor]).map((item) => item.id),
+    ).toEqual(["chained", "anchor"]);
   });
 
   it("walks the full source ladder (APPLE_HEALTH > WITHINGS > MANUAL > IMPORT)", () => {

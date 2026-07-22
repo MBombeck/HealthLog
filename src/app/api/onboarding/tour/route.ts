@@ -55,7 +55,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const parsed = z.safeParse(tourBodySchema, body);
   if (!parsed.success) {
-    return apiError("Invalid input", 422);
+    return apiError("Invalid input", 422, {
+      errorCode: "onboarding.tour.invalid",
+    });
   }
 
   // Build the update field-by-field (no mass assignment). `completed`

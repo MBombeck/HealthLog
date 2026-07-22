@@ -3,7 +3,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ListOrdered } from "lucide-react";
+import { ListOrdered, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,13 @@ import { metricScopeFromExplainer } from "@/components/insights/coach-metric-sco
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
 import { useScrollResetOnRoute } from "@/hooks/use-scroll-reset-on-route";
 import { useTranslations } from "@/lib/i18n/context";
+import { SUB_PAGE_SLUGS } from "@/lib/insights/sub-page-metric";
 import { cn } from "@/lib/utils";
 
+const INSIGHT_METRIC_RETURN_PATHS: Readonly<Record<string, true>> =
+  Object.fromEntries(
+    SUB_PAGE_SLUGS.map((slug) => [`/insights/${slug}`, true] as const),
+  );
 /**
  * v1.4.25 W4 — common visual frame for each metric sub-page.
  *
@@ -127,6 +132,11 @@ export interface SubPageShellProps {
    */
   coachLaunch?: boolean;
   /**
+   * Canonical measurement-form type for the populated page's contextual
+   * capture action. Omit it for device-only or derived metrics.
+   */
+  captureType?: string;
+  /**
    * v1.8.5 W4b — a "show all readings" entry linking to the dedicated
    * `/insights/values/<type>` subpage. Sub-pages pass the metric's
    * `MeasurementType`.
@@ -153,6 +163,7 @@ export function SubPageShell({
   // stands) but now gates whether the page registers its metric as the
   // Coach launch context's ambient scope, so the FAB opens contextual.
   coachLaunch = false,
+  captureType,
   showAllValuesType,
   children,
 }: SubPageShellProps) {
@@ -163,6 +174,15 @@ export function SubPageShell({
   // where the user drilled in from (e.g. `weight → show all values → back to
   // weight`) rather than always returning to the Insights overview.
   const pathname = usePathname();
+  const captureReturnTo =
+    pathname && INSIGHT_METRIC_RETURN_PATHS[pathname] ? pathname : null;
+  const captureHref =
+    captureType && captureReturnTo
+      ? `/measurements?add=${encodeURIComponent(
+          captureType,
+        )}&returnTo=${encodeURIComponent(captureReturnTo)}`
+      : null;
+  const captureLabel = `${t("measurements.addMeasurement")}: ${title}`;
   // a11y: focus the heading on mount so a tab-strip navigation actually
   // moves screen-reader focus into the sub-page body. v1.4.27 MB7 /
   // CF-35 made the focus call opt-in via `focusOnMount` — the
@@ -283,6 +303,26 @@ export function SubPageShell({
               with a tighter gap the later sibling's invisible halo sat
               on top of its neighbour's clickable edge. */}
             <div className="flex shrink-0 items-center gap-3">
+              {captureHref ? (
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="icon"
+                  data-slot="metric-add-reading"
+                  className={cn(
+                    "text-muted-foreground hover:text-foreground relative size-10",
+                    "before:absolute before:-inset-1.5 before:content-['']",
+                  )}
+                >
+                  <Link
+                    href={captureHref}
+                    aria-label={captureLabel}
+                    title={captureLabel}
+                  >
+                    <Plus className="size-4" aria-hidden="true" />
+                  </Link>
+                </Button>
+              ) : null}
               {/* v1.16.8 — "show all readings" rides the header cluster
                 as an icon button, LEFT of the target-adjust gear (it
                 used to be a full-width outline button at the page foot).

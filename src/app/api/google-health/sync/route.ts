@@ -55,6 +55,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
     }
   }
 
-  const { imported } = await syncUserGoogleHealth(user.id, { fullSync });
+  const { imported, failed } = await syncUserGoogleHealth(user.id, {
+    fullSync,
+  });
+  if (failed) {
+    return apiError("Google Health sync failed", 502);
+  }
   return apiSuccess({ imported, fullSync });
 });

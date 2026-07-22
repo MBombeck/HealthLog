@@ -95,7 +95,7 @@ export function CustomMetricEntryForm({
         queryKey: queryKeys.customMetricDetail(customMetricId),
       });
       queryClient.invalidateQueries({
-        queryKey: ["custom-metric-entries", customMetricId],
+        queryKey: queryKeys.customMetricEntriesPrefix(customMetricId),
       });
       onSuccess?.();
     } catch (err) {

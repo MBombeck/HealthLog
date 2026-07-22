@@ -19,30 +19,27 @@ import type { ArrivalKind } from "./types";
 export const REACTION_LINE_QUEUE = "reaction-line-generate";
 
 /**
- * The generation job's payload. It carries the row's identity, not its
- * content: the worker re-reads the `ArrivalReaction` row it names, so a job
- * that sat in the queue while the day moved on can still decide honestly
- * whether the line is still wanted.
+ * The generation job's payload. It carries the row identity plus the exact
+ * marker revision the worker may generate. The worker binds every read and
+ * write to that revision so a queued job cannot follow a same-day replacement.
  */
 export interface ReactionLineJob {
   userId: string;
   kind: ArrivalKind;
   /** The user's profile-tz YYYY-MM-DD the marker is filed under. */
   localDate: string;
+  /** Exact `occurredAt` timestamp of the marker revision to generate. */
+  revision: string;
 }
 
 /**
- * Enqueue the day's single reaction-line generation for one arrival kind.
+ * Enqueue reaction-line generation for one arrival marker revision.
  *
- * The CALLER owns the throttle, and it is not a timer: the spine enqueues this
- * only on the pass that freshly INSERTED the day's `ArrivalReaction` row, so
- * the row's `@@unique([userId, kind, localDate])` constraint is what bounds
- * the spend to one call per kind per local day. There is deliberately no
- * second entry point — a surface that wants a line asks the spine for an
- * arrival, it does not call the generator.
- *
- * The singleton key restates that claim at the queue level so a retried spine
- * job cannot stack a second generation behind the first.
+ * The caller owns the durable throttle. Fresh inserts and strictly newer
+ * replacements enqueue after atomically establishing their marker revision;
+ * equal or older arrivals do not. The singleton key includes that revision so
+ * an older queued job cannot suppress a replacement. The worker re-reads and
+ * conditionally claims the row, which prevents stale jobs from publishing.
  *
  * Never throws. A queue that is not there means no line, and no line is a
  * fully-supported state.
@@ -59,7 +56,7 @@ export async function enqueueReactionLine(job: ReactionLineJob): Promise<void> {
     }
 
     await boss.send(REACTION_LINE_QUEUE, job, {
-      singletonKey: `reaction-line:${job.userId}:${job.kind}:${job.localDate}`,
+      singletonKey: `reaction-line:${job.userId}:${job.kind}:${job.localDate}:${job.revision}`,
       // Only failures before a provider invocation are retryable. Once the
       // durable worker state records that spend may have happened, the attempt
       // is terminal even if the provider or final persistence fails.

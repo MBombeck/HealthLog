@@ -42,6 +42,10 @@ import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh-indicator";
 import { apiGet, apiPost } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
+import {
+  type CoachCloseIntent,
+  useCoachLaunch,
+} from "@/lib/insights/coach-launch-context";
 import { invalidateKeys, queryKeys } from "@/lib/query-keys";
 import type { DocumentVaultFilters } from "@/lib/query-keys/documents";
 import {
@@ -79,6 +83,99 @@ interface ListPage {
   nextCursor: string | null;
 }
 
+// Strict end-of-input: `$` also accepts a trailing newline in JavaScript.
+const DOCUMENT_QUERY_ID_PATTERN = /^[a-zA-Z0-9_-]{1,40}(?![\s\S])/;
+const DOCUMENT_SELECTION_HISTORY_KEY = "__healthlogPushedDocumentSelection";
+
+export function documentSelectionHistoryState(
+  documentId: string,
+): Record<string, unknown> {
+  // Pass only application state here. Next's patched pushState copies its
+  // private router fields onto this object; copying history.state ourselves
+  // would include `__NA` and make that patch treat this as an internal write,
+  // skipping useSearchParams synchronization.
+  return { [DOCUMENT_SELECTION_HISTORY_KEY]: documentId };
+}
+
+export function documentSelectionHref(
+  pathname: string,
+  currentSearch: string,
+  documentId: string,
+): string | null {
+  if (!DOCUMENT_QUERY_ID_PATTERN.test(documentId)) return null;
+  const next = new URLSearchParams(currentSearch);
+  next.set("doc", documentId);
+  const search = next.toString();
+  return search ? `${pathname}?${search}` : pathname;
+}
+
+export function withoutDocumentSelectionHref(
+  pathname: string,
+  currentSearch: string,
+): string {
+  const next = new URLSearchParams(currentSearch);
+  next.delete("doc");
+  const search = next.toString();
+  return search ? `${pathname}?${search}` : pathname;
+}
+
+export function closeDocumentSelectionHistoryEntry(
+  history: {
+    readonly state: unknown;
+    back: () => void;
+    replaceState: (
+      data: unknown,
+      unused: string,
+      url?: string | URL | null,
+    ) => void;
+  },
+  pathname: string,
+  currentSearch: string,
+  documentId: string,
+): void {
+  const ownsCurrentEntry =
+    history.state !== null &&
+    typeof history.state === "object" &&
+    (history.state as Record<string, unknown>)[
+      DOCUMENT_SELECTION_HISTORY_KEY
+    ] === documentId;
+  if (ownsCurrentEntry) {
+    // Card selection owns the current pushed entry. Returning to its base
+    // consumes it, so the user's next Back reaches the prior distinct page.
+    history.back();
+    return;
+  }
+
+  // A deep link did not create a disposable entry on this page. Keep the user
+  // here and remove only the selection from the current URL.
+  history.replaceState(
+    null,
+    "",
+    withoutDocumentSelectionHref(pathname, currentSearch),
+  );
+}
+
+export function closeDocumentSelectionAfterCoachHandoff(
+  history: Parameters<typeof closeDocumentSelectionHistoryEntry>[0],
+  pathname: string,
+  currentSearch: string,
+  documentId: string,
+  handedOffDocumentId: string | null,
+  closeIntent: CoachCloseIntent | null | undefined,
+): string | null {
+  if (handedOffDocumentId === documentId && closeIntent === "navigate") {
+    return handedOffDocumentId;
+  }
+
+  closeDocumentSelectionHistoryEntry(
+    history,
+    pathname,
+    currentSearch,
+    documentId,
+  );
+  return handedOffDocumentId === documentId ? null : handedOffDocumentId;
+}
+
 export function DocumentsView() {
   const { t } = useTranslations();
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
@@ -86,6 +183,7 @@ export function DocumentsView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const coachLaunch = useCoachLaunch();
 
   const moduleEnabled = user?.modules?.inboundDocuments === true;
 
@@ -540,41 +638,78 @@ export function DocumentsView() {
   // ── Detail sheet ──────────────────────────────────────────────────────
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const openDetail = useCallback((id: string) => {
-    setDetailId(id);
-    setDetailOpen(true);
-  }, []);
+  const handedOffDocumentRef = useRef<string | null>(null);
 
-  // `?doc=<id>` deep link (used by the illness page's document rows): open
-  // the detail sheet once per value; closing the sheet strips the param so
-  // back/forward and refresh behave. Render-phase derived-state adjustment
-  // (the file's established pattern), consumed only once auth has resolved
-  // so a deep link never burns before the module flag is known. The id is
-  // shape-checked before it is interpolated into an API path.
-  const docParam = searchParams.get("doc");
-  const [consumedDocParam, setConsumedDocParam] = useState<string | null>(null);
-  if (!authLoading && moduleEnabled && docParam !== consumedDocParam) {
-    setConsumedDocParam(docParam);
-    if (docParam !== null && /^[a-zA-Z0-9_-]{1,40}$/.test(docParam)) {
-      setDetailId(docParam);
-      setDetailOpen(true);
-    }
+  const rawDocParam = searchParams.get("doc");
+  const docParam =
+    rawDocParam !== null && DOCUMENT_QUERY_ID_PATTERN.test(rawDocParam)
+      ? rawDocParam
+      : null;
+  const [observedDocParam, setObservedDocParam] = useState<string | null>(null);
+
+  // The query is the navigation owner: direct links, browser back, and browser
+  // forward all drive the same detail selection without remounting the route.
+  // Wait for auth so a deep link cannot be consumed before the module gate is
+  // known, and never interpolate an unvalidated id into the detail API path.
+  if (!authLoading && moduleEnabled && rawDocParam !== observedDocParam) {
+    setObservedDocParam(rawDocParam);
+    setDetailId(docParam);
+    setDetailOpen(docParam !== null);
   }
 
-  const handleDetailOpenChange = useCallback(
-    (open: boolean) => {
-      setDetailOpen(open);
-      if (!open && searchParams.get("doc")) {
-        const sp = new URLSearchParams(searchParams.toString());
-        sp.delete("doc");
-        const search = sp.toString();
-        router.replace(search ? `${pathname}?${search}` : pathname, {
-          scroll: false,
-        });
-      }
+  const openDetail = useCallback(
+    (id: string) => {
+      const href = documentSelectionHref(pathname, searchParams.toString(), id);
+      if (href === null) return;
+      handedOffDocumentRef.current = null;
+      setDetailId(id);
+      setDetailOpen(true);
+      window.history.pushState(documentSelectionHistoryState(id), "", href);
     },
-    [pathname, router, searchParams],
+    [pathname, searchParams],
   );
+
+  const handleDetailOpenChange = useCallback((open: boolean) => {
+    setDetailOpen(open);
+  }, []);
+
+  const coachOwnsDocument =
+    docParam !== null &&
+    coachLaunch?.open === true &&
+    coachLaunch.documentId === docParam;
+
+  useEffect(() => {
+    if (authLoading || !moduleEnabled) return;
+    if (docParam === null) {
+      handedOffDocumentRef.current = null;
+      return;
+    }
+    if (detailOpen) return;
+    if (coachOwnsDocument) {
+      // "Ask Coach" intentionally closes the sheet while the drawer owns the
+      // same document. Keep the return URL intact so maximize → browser-back
+      // can reconstruct the sheet from `?doc=`.
+      handedOffDocumentRef.current = docParam;
+      return;
+    }
+    handedOffDocumentRef.current = closeDocumentSelectionAfterCoachHandoff(
+      window.history,
+      pathname,
+      searchParams.toString(),
+      docParam,
+      handedOffDocumentRef.current,
+      coachLaunch?.closeIntent,
+    );
+  }, [
+    authLoading,
+    coachOwnsDocument,
+    coachLaunch?.closeIntent,
+    detailOpen,
+    docParam,
+    moduleEnabled,
+    pathname,
+    searchParams,
+  ]);
 
   // Hover/focus intent prefetches the detail METADATA (never the blob —
   // the blob fetch starts when the sheet mounts its preview element).

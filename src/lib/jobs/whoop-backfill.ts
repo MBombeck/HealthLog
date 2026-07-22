@@ -19,6 +19,7 @@
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
 import { syncUserWhoop } from "@/lib/whoop/sync";
 
 export const WHOOP_BACKFILL_QUEUE = "whoop-backfill";
@@ -72,7 +73,9 @@ export async function runWhoopBackfillForUser(
  * Best-effort: errors are returned through the result value so the worker boot
  * never fails because of a backfill miss.
  */
-export async function enqueueBootTimeWhoopBackfill(): Promise<{
+export async function enqueueBootTimeWhoopBackfill(
+  startAfterSeconds: number = 0,
+): Promise<{
   enqueued: number;
   skipped: number;
   error: string | null;
@@ -99,12 +102,14 @@ export async function enqueueBootTimeWhoopBackfill(): Promise<{
         userId,
         enqueuedAt: new Date().toISOString(),
       };
-      const jobId = await boss.send(WHOOP_BACKFILL_QUEUE, payload, {
-        retryLimit: 3,
-        retryDelay: 60,
-        retryBackoff: true,
-        singletonKey: `whoop-backfill|${userId}`,
-      });
+      const jobId = await boss.send(
+        WHOOP_BACKFILL_QUEUE,
+        payload,
+        integrationBackfillSourceOptions(
+          `whoop-backfill|${userId}`,
+          startAfterSeconds,
+        ),
+      );
       if (jobId) {
         enqueued += 1;
       } else {

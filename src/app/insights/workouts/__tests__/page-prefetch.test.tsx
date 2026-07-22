@@ -45,9 +45,8 @@ const LIST = {
 };
 
 /**
- * The key EXACTLY as `useWorkouts({ limit: 100 })` builds it — the hook spreads
- * its options object through, so `offset` / `since` / `sportType` arrive as
- * `undefined` rather than being omitted.
+ * The key EXACTLY as `useInfiniteWorkouts({ limit: 100 })` builds it. Offset
+ * stays out of the key because it is the infinite query's page parameter.
  */
 const CLIENT_KEY = queryKeys.workoutsRecentList({
   limit: 100,
@@ -85,7 +84,7 @@ describe("/insights/workouts RSC prefetch", () => {
     // The client cell looks this key up; a drift here silently no-ops the
     // prefetch and the skeleton flash comes back.
     expect(q!.queryHash).toBe(hashKey(CLIENT_KEY));
-    expect(q!.state.data).toEqual(LIST);
+    expect(q!.state.data).toEqual({ pages: [LIST], pageParams: [0] });
   });
 
   it("reads the same filter the client's `limit: 100` request would", async () => {
@@ -118,10 +117,15 @@ describe("/insights/workouts RSC prefetch", () => {
     const q = dehydratedQuery(el);
     // A Date must land as its ISO string — the shape the client's
     // (await res.json()).data would carry — never a live Date object.
-    expect(
-      (q!.state.data as { workouts: { startedAt: unknown }[] }).workouts[0]
-        .startedAt,
-    ).toBe(startedAt.toISOString());
+    expect(q!.state.data).toEqual({
+      pages: [
+        {
+          ...LIST,
+          workouts: [{ id: "w1", startedAt: startedAt.toISOString() }],
+        },
+      ],
+      pageParams: [0],
+    });
   });
 
   it("fails soft to the bare client when the read throws", async () => {

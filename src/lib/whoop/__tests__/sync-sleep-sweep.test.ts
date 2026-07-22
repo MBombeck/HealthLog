@@ -50,8 +50,8 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-vi.mock("../sync", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../sync")>()),
+vi.mock("../sync-core", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../sync-core")>()),
   getValidToken: vi.fn(async () => ({ accessToken: "tok" })),
   markResourceSynced: vi.fn(async () => {}),
   upsertWhoopMeasurements: upsertMeasurementsMock,

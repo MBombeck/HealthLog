@@ -1090,6 +1090,7 @@ export function CoachConversation({
         className={cn("flex min-h-0 flex-1 flex-col", className)}
       >
         {docScopeBanner}
+        {!heroActive ? <h1 className="sr-only">{title}</h1> : null}
         {/* v1.21.4 (A) — the page-toolbar gear was removed; Settings now lives
             in the composer's `+` actions menu alongside New chat and
             Conversations, keeping the page chrome to the composer alone. */}

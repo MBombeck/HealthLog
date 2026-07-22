@@ -35,7 +35,7 @@ import {
   type GoogleHealthMeasurementUpsert,
   type GoogleHealthResourceSyncOptions,
   type GoogleHealthSleepReplaceWindow,
-} from "./sync";
+} from "./sync-core";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";

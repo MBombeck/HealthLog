@@ -95,7 +95,7 @@ export default defineConfig({
   webServer: process.env.E2E_SKIP_WEB_SERVER
     ? undefined
     : {
-        command: "pnpm exec next start --port 3000",
+        command: `mkdir -p .next/standalone/.next/static .next/standalone/public && cp -R .next/static/. .next/standalone/.next/static && cp -R public/. .next/standalone/public && PORT=3000 HOSTNAME=127.0.0.1 ${JSON.stringify(process.execPath)} .next/standalone/server.js`,
         url: "http://localhost:3000/api/version",
         timeout: 60_000,
         reuseExistingServer: !process.env.CI,
@@ -103,6 +103,10 @@ export default defineConfig({
         stderr: "pipe",
         env: {
           ...process.env,
+          // Native document rendering is fail-soft and outside the browser
+          // suite. Disable it here so queued local thumbnail jobs cannot
+          // crash the shared server inside Skia during unrelated scenarios.
+          NATIVE_CANVAS: "off",
           // The dashboard RSC wrapper server-prefetches the snapshot into
           // the first HTML (HydrationBoundary). Playwright's route mocks
           // only see CLIENT fetches, so an SSR-embedded snapshot would

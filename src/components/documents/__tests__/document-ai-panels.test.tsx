@@ -27,6 +27,17 @@ function render(node: React.ReactNode) {
 
 const noop = () => {};
 
+function buttonMarkupByName(html: string, name: string): string {
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const markup = html.match(
+    new RegExp(
+      `<button(?=[^>]*aria-label="${escapedName}")[^>]*>[\\s\\S]*?</button>`,
+    ),
+  )?.[0];
+  expect(markup).toBeDefined();
+  return markup ?? "";
+}
+
 const suggestion = (
   overrides: Partial<DocumentSuggestionDto> = {},
 ): DocumentSuggestionDto => ({
@@ -112,6 +123,27 @@ describe("<AssistSuggestionReview>", () => {
     );
     expect(html).toContain("Nothing could be read from this document");
   });
+
+  it("keeps dismiss compact while providing a 44px mobile target", () => {
+    const html = render(
+      <AssistSuggestionReview
+        suggestion={suggestion()}
+        kindLabel="Lab result"
+        dateLabel="1 Mar 2026"
+        applied={{ title: false, kind: false, date: false }}
+        onUseTitle={noop}
+        onUseKind={noop}
+        onUseDate={noop}
+        onDismiss={noop}
+      />,
+    );
+    const dismiss = buttonMarkupByName(html, "Dismiss");
+    expect(dismiss).toContain("size-11");
+    expect(dismiss).toContain("sm:size-7");
+    expect(dismiss).toContain('aria-label="Dismiss"');
+    expect(dismiss).toContain("<svg");
+    expect(dismiss).toContain("size-4");
+  });
 });
 
 describe("<DocumentSummaryPanel>", () => {
@@ -169,5 +201,23 @@ describe("<DocumentSummaryPanel>", () => {
     );
     expect(html).toContain('role="alert"');
     expect(html).toContain("read the document");
+  });
+
+  it("keeps close compact while providing a 44px mobile target", () => {
+    const html = render(
+      <DocumentSummaryPanel
+        output="summary"
+        result={{ summary: "A lipid panel dated 1 March 2026." }}
+        isPending={false}
+        errorKey={null}
+        onClose={noop}
+      />,
+    );
+    const close = buttonMarkupByName(html, "Hide");
+    expect(close).toContain("size-11");
+    expect(close).toContain("sm:size-7");
+    expect(close).toContain('aria-label="Hide"');
+    expect(close).toContain("<svg");
+    expect(close).toContain("size-4");
   });
 });

@@ -35,7 +35,7 @@ vi.mock("../client", () => ({
   fetchDataPoints,
   mapWorkout,
 }));
-vi.mock("../sync", () => ({
+vi.mock("../sync-core", () => ({
   getValidToken,
   handleCollectionFetchError: vi.fn(),
   noteHardFailure: vi.fn(),

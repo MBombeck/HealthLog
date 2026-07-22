@@ -14,7 +14,7 @@ import {
   resolveResourceCursor,
   upsertWhoopMeasurements,
   type WhoopMeasurementUpsert,
-} from "./sync";
+} from "./sync-core";
 import { prisma } from "@/lib/db";
 
 export async function syncUserCycle(

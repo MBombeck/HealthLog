@@ -386,6 +386,9 @@ export interface CoachConversationAttachmentDTO {
   title: string | null;
 }
 
+/** Maximum user-visible length for generated and explicitly renamed titles. */
+export const COACH_CONVERSATION_TITLE_MAX = 80;
+
 export interface CoachConversationDTO {
   id: string;
   title: string;

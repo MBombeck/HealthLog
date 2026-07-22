@@ -98,6 +98,7 @@ export default function InsightsSchlafPage() {
           timeZone={user?.timezone ?? undefined}
         />
       }
+      captureType="SLEEP_DURATION"
       showAllValuesType="SLEEP_DURATION"
       /* No `statStrip`: `<SleepOverview>` already leads with the average
          nightly total + per-stage breakdown, so a duration-in-minutes

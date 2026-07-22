@@ -557,7 +557,7 @@ function ChatBubbleImpl({
           <div
             aria-hidden="true"
             data-slot="coach-bubble-user-avatar"
-            className="text-muted-foreground bg-muted/60 mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+            className="text-foreground bg-muted/60 mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
           >
             {initials ?? <User className="size-3.5" />}
           </div>

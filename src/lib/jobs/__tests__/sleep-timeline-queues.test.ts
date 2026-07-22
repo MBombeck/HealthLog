@@ -30,14 +30,16 @@ describe("reminder-worker — sleep-timeline backfill queue", () => {
     expect(block![1]!).toContain("SLEEP_TIMELINE_BACKFILL_QUEUE");
   });
 
-  it("wires a boss.work handler to the per-user runner", () => {
+  it("wires a boss.work handler through the shared admission queue", () => {
     expect(source).toMatch(
-      /boss\.work[\s\S]{0,260}SLEEP_TIMELINE_BACKFILL_QUEUE[\s\S]{0,260}runSleepTimelineBackfillForUser/,
+      /boss\.work[\s\S]{0,260}SLEEP_TIMELINE_BACKFILL_QUEUE[\s\S]{0,300}enqueueIntegrationBackfillAdmission/,
     );
   });
 
   it("wires the boot discovery", () => {
-    expect(source).toMatch(/enqueueBootTimeSleepTimelineBackfill\(\)/);
+    expect(source).toMatch(
+      /enqueueBootTimeSleepTimelineBackfill\(\s*bootStaggerSecondsFor\("sleep-timeline-backfill"\)/,
+    );
   });
 
   it("imports the backfill exports", () => {

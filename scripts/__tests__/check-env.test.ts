@@ -7,6 +7,8 @@
  * exit-code behaviour is best left to a smoke test in CI (deferred to
  * v1.4.43).
  */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { checkEnv, parseEnvFile } from "../check-env";
 
@@ -250,5 +252,41 @@ describe("checkEnv — optional groups (informational)", () => {
     const apnsKeyId = out.find((r) => r.variable === "APNS_KEY_ID")!;
     expect(apnsKeyId.present).toBe(false);
     expect(apnsKeyId.required).toBe(false);
+  });
+});
+
+describe("environment inventory", () => {
+  it("lists every optional AI runtime variable in compose, both examples, and the manifest", () => {
+    const repositoryRoot = join(__dirname, "../..");
+    const variableNames = [
+      "ALLOW_LOCAL_AI_PRIVATE_HOSTS",
+      "INSIGHTS_MAX_TOKENS",
+    ];
+    const compose = readFileSync(
+      join(repositoryRoot, "docker-compose.yml"),
+      "utf8",
+    );
+    const exampleEnvironments = [
+      readFileSync(join(repositoryRoot, ".env.example"), "utf8"),
+      readFileSync(join(repositoryRoot, ".env.production.example"), "utf8"),
+    ];
+    const manifest = JSON.parse(
+      readFileSync(join(repositoryRoot, "scripts/env-manifest.json"), "utf8"),
+    ) as {
+      groups: Array<{ variables: Array<{ name: string }> }>;
+    };
+    const manifestNames = manifest.groups.flatMap((group) =>
+      group.variables.map((variable) => variable.name),
+    );
+
+    for (const variableName of variableNames) {
+      expect(compose).toMatch(new RegExp(`^\\s*${variableName}:`, "m"));
+      for (const exampleEnvironment of exampleEnvironments) {
+        expect(exampleEnvironment).toMatch(
+          new RegExp(`^# ${variableName}=`, "m"),
+        );
+      }
+      expect(manifestNames).toContain(variableName);
+    }
   });
 });
