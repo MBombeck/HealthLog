@@ -22,6 +22,7 @@ import {
 } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { destroyAllSessions, createSession } from "@/lib/auth/session";
+import { revokeStepUpElevations } from "@/lib/auth/step-up";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { checkPasswordBreach } from "@/lib/auth/hibp";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
@@ -101,6 +102,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
     where: { id: user.id },
     data: { passwordHash: newHash },
   });
+
+  // v1.30.34 — a step-up elevation is a statement about a credential that no
+  // longer exists. Drop every one the account holds before the sessions go, so
+  // an elevation minted moments before the rotation cannot outlive it.
+  await revokeStepUpElevations(user.id);
 
   // Invalidate all existing sessions and create a fresh one.
   // v1.4.22 W5 reconcile (Sr-H1) — `createSession` re-anchors the

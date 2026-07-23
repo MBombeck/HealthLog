@@ -8,7 +8,7 @@ vi.mock("@/lib/auth/mfa-enrollment", () => ({
 
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: (fn: unknown) => fn,
-  requireCookieAuth: vi.fn(),
+  requireMfaManagementAuth: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -33,7 +33,7 @@ vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 
 import { POST as REGISTER_OPTIONS } from "../options/route";
 import { POST as REGISTER_VERIFY } from "../verify/route";
-import { requireCookieAuth } from "@/lib/api-handler";
+import { requireMfaManagementAuth } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
@@ -56,7 +56,12 @@ function verifyRequest(body: Record<string, unknown>): NextRequest {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  vi.mocked(requireCookieAuth).mockResolvedValue({ user: USER } as never);
+  vi.mocked(requireMfaManagementAuth).mockResolvedValue({
+    transport: "cookie",
+    user: USER,
+    session: { id: "sess-1" },
+    commitElevation: vi.fn().mockResolvedValue(undefined),
+  } as never);
   vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true } as never);
 });
 

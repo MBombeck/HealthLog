@@ -157,7 +157,10 @@ describe("DELETE /api/auth/me/sessions (sign out everywhere)", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.data.sessionsRevoked).toBe(3);
-    expect(destroyOtherSessions).toHaveBeenCalledWith("user-1", "sess-current");
+    expect(destroyOtherSessions).toHaveBeenCalledWith("user-1", {
+      kind: "session",
+      sessionId: "sess-current",
+    });
   });
 });
 

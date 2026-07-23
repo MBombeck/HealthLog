@@ -1601,13 +1601,96 @@ paths:
         "401": *a1
         "422": *a3
         "429": *a4
+  /api/auth/step-up/options:
+    post:
+      tags:
+        - Auth
+      summary: Begin a WebAuthn re-proof for a step-up elevation (Bearer only)
+      description: "Returns SimpleWebAuthn assertion options plus a challenge id to present at POST /api/auth/step-up.
+        `method: \"passkey\"` scopes the assertion to the account's primary passkeys; `method: \"webauthn\"` to its
+        registered second-factor security keys. Bearer-only: a cookie session is refused, because a browser re-proves
+        its factor at login and carries the result on its session row. Returns 409 when the account has no credential of
+        the requested kind — fall back to another arm of the mint."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StepUpOptionsRequest"
+      responses:
+        "200":
+          description: Assertion options issued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StepUpOptionsEnvelope"
+        "401": *a1
+        "409":
+          description: No passkey registered on this account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a3
+        "429": *a4
+  /api/auth/step-up:
+    post:
+      tags:
+        - Auth
+      summary: Mint a single-use step-up elevation (Bearer only)
+      description: >-
+        Re-prove a factor and receive an opaque elevation that authorises exactly ONE second-factor-management call.
+
+
+        WHICH factor you re-prove decides WHAT the elevation reaches. `password` reaches the same routes a plain cookie
+        session reaches. `totp`, `webauthn`, and `passkey` additionally satisfy the fresh-factor routes — MFA disable,
+        recovery-code regeneration, security-key removal — which is precisely the set of ceremonies for which the web
+        marks a session second-factor-verified. The response carries `satisfiesFreshFactor` so a client can choose the
+        right ceremony up front rather than discovering the refusal after spending a proof. A recovery code is NOT
+        accepted here; an account that has lost its authenticator manages its second factor on the web.
+
+
+        The elevation is bound to the exact token that minted it (another token, including the same account's, cannot
+        redeem it), single-use, and valid for five minutes — the same window the cookie path uses. Present it as
+        `X-Step-Up: hle_…` alongside the normal `Authorization: Bearer` header. It is spent only when the target route
+        is about to act, so a 429, a 422, or a wrong code does not burn it.
+
+
+        Presenting the token alone mints nothing: the body must carry a fresh factor proof. Every failure — wrong
+        password, no password set on an SSO-provisioned account, an assertion for another account, a stale challenge, a
+        replayed TOTP step — returns the same 401 with the same prose, and is audited server-side. Rate-limited per
+        account (5 / 15 min) and per source address.
+
+
+        Accepting routes (the complete set): POST /api/auth/me/mfa/totp/setup; POST /api/auth/me/mfa/totp/confirm; POST
+        /api/auth/me/mfa/disable; POST /api/auth/me/mfa/recovery-codes/regenerate; POST
+        /api/auth/me/mfa/webauthn/register/options; POST /api/auth/me/mfa/webauthn/register/verify; PATCH and DELETE
+        /api/auth/me/mfa/webauthn/{id}. The last three of those and disable require a fresh-factor proof. GET
+        /api/auth/me/mfa needs no elevation at all. Nothing else accepts one — admin endpoints stay cookie-only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StepUpMintRequest"
+      responses:
+        "200":
+          description: Factor re-proved — elevation issued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StepUpMintEnvelope"
+        "401": *a1
+        "422": *a3
+        "429": *a4
   /api/auth/me/mfa/totp/setup:
     post:
       tags:
         - Auth
-      summary: Begin TOTP enrollment (cookie session only)
+      summary: Begin TOTP enrollment (cookie session or step-up elevation)
       description: Generates and stores a pending (encrypted) TOTP secret and returns the otpauth URI + Base32 secret. MFA is
-        not active until /confirm. Cookie-only — a Bearer token cannot enrol MFA.
+        not active until /confirm. Accepts a cookie session, or a Bearer token presenting a single-use elevation from
+        POST /api/auth/step-up in the `X-Step-Up` header; a Bearer token alone is still refused.
       responses:
         "200":
           description: Pending secret created.
@@ -1628,9 +1711,10 @@ paths:
     post:
       tags:
         - Auth
-      summary: Confirm TOTP enrollment (cookie session only)
+      summary: Confirm TOTP enrollment (cookie session or step-up elevation)
       description: Verifies a code against the pending secret, activates the factor, and returns the one-time recovery codes.
-        Cookie-only.
+        Accepts a cookie session, or a Bearer token presenting a single-use elevation from POST /api/auth/step-up in the
+        `X-Step-Up` header; a Bearer token alone is still refused.
       requestBody:
         required: true
         content:
@@ -1664,8 +1748,9 @@ paths:
       tags:
         - Auth
       summary: Disable the second factor (step-up gated)
-      description: Requires a fresh second-factor step-up (cookie session) AND a current TOTP or recovery code. Clears the
-        secret and deletes recovery codes. Bearer can never satisfy the step-up gate.
+      description: Requires a fresh second-factor step-up AND a current TOTP or recovery code. Clears the secret and deletes
+        recovery codes. Accepts a cookie session, or a Bearer token presenting a single-use elevation from POST
+        /api/auth/step-up in the `X-Step-Up` header; a Bearer token alone is still refused.
       requestBody:
         required: true
         content:
@@ -1687,8 +1772,9 @@ paths:
       tags:
         - Auth
       summary: Regenerate recovery codes (step-up gated)
-      description: Invalidates the entire prior recovery-code set and returns a fresh batch once. Step-up gated; Bearer can
-        never satisfy the gate.
+      description: Invalidates the entire prior recovery-code set and returns a fresh batch once. Step-up gated. Accepts a
+        cookie session, or a Bearer token presenting a single-use elevation from POST /api/auth/step-up in the
+        `X-Step-Up` header; a Bearer token alone is still refused.
       responses:
         "200":
           description: Fresh recovery codes issued.
@@ -1703,9 +1789,11 @@ paths:
     get:
       tags:
         - Auth
-      summary: Second-factor status (cookie session only)
+      summary: Second-factor status (cookie session or Bearer token)
       description: Whether TOTP is active, how many recovery codes remain, and the registered WebAuthn security keys. Metadata
-        only — no secret, code, or public key. Cookie-only.
+        only — no secret, no code, no public key, no credential id. Plain authentication (cookie session or
+        cookie-equivalent token); unlike every mutation on this surface it needs no step-up elevation, because the
+        payload carries no credential material.
       responses:
         "200":
           description: Second-factor status.
@@ -1721,7 +1809,9 @@ paths:
       tags:
         - Auth
       summary: Begin registering a security key as a second factor
-      description: Returns SimpleWebAuthn creation options + a challenge id. Cookie-only — a Bearer token cannot enrol MFA.
+      description: Returns SimpleWebAuthn creation options + a challenge id. Accepts a cookie session, or a Bearer token
+        presenting a single-use elevation from POST /api/auth/step-up in the `X-Step-Up` header; a Bearer token alone is
+        still refused.
       responses:
         "200":
           description: Registration options issued.
@@ -1738,7 +1828,8 @@ paths:
         - Auth
       summary: Finish registering a security key as a second factor
       description: Verifies the attestation against the user-bound challenge and stores the credential in the second-factor
-        store (separate from primary passkeys). Cookie-only.
+        store (separate from primary passkeys). Accepts a cookie session, or a Bearer token presenting a single-use
+        elevation from POST /api/auth/step-up in the `X-Step-Up` header; a Bearer token alone is still refused.
       requestBody:
         required: true
         content:
@@ -1766,6 +1857,9 @@ paths:
       tags:
         - Auth
       summary: Rename a registered security key
+      description: Rename a registered second-factor security key. Accepts a cookie session, or a Bearer token presenting a
+        single-use elevation from POST /api/auth/step-up in the `X-Step-Up` header; a Bearer token alone is still
+        refused.
       parameters:
         - in: path
           name: id
@@ -1798,7 +1892,8 @@ paths:
       tags:
         - Auth
       summary: Remove a registered security key (step-up gated)
-      description: Requires a fresh second-factor step-up (cookie session). Bearer can never satisfy the gate.
+      description: Requires a fresh second-factor step-up. Accepts a cookie session, or a Bearer token presenting a single-use
+        elevation from POST /api/auth/step-up in the `X-Step-Up` header; a Bearer token alone is still refused.
       parameters:
         - in: path
           name: id
@@ -11412,6 +11507,134 @@ components:
         - code
         - codeVerifier
       description: Exchange a one-time native OIDC handoff code (+ its PKCE verifier) for the standard native token bundle.
+    StepUpOptionsRequest:
+      type: object
+      properties:
+        method:
+          type: string
+          enum:
+            - passkey
+            - webauthn
+          description: "`passkey` begins an assertion against the account's primary passkeys; `webauthn` against its registered
+            second-factor security keys."
+      required:
+        - method
+    StepUpMintRequest:
+      oneOf:
+        - type: object
+          properties:
+            method:
+              type: string
+              const: password
+            password:
+              type: string
+              minLength: 1
+              maxLength: 512
+          required:
+            - method
+            - password
+        - type: object
+          properties:
+            method:
+              type: string
+              const: totp
+            code:
+              type: string
+              pattern: ^\d{6}$
+          required:
+            - method
+            - code
+        - type: object
+          properties:
+            method:
+              type: string
+              const: webauthn
+            challengeId:
+              type: string
+              minLength: 1
+            credential:
+              type: object
+              properties:
+                id:
+                  type: string
+                rawId:
+                  type: string
+                type:
+                  type: string
+                  const: public-key
+                response:
+                  type: object
+                  propertyNames:
+                    type: string
+                  additionalProperties: {}
+                authenticatorAttachment:
+                  type: string
+                  enum:
+                    - platform
+                    - cross-platform
+                clientExtensionResults:
+                  type: object
+                  propertyNames:
+                    type: string
+                  additionalProperties: {}
+              required:
+                - id
+                - rawId
+                - type
+                - response
+              description: SimpleWebAuthn ceremony response payload.
+          required:
+            - method
+            - challengeId
+            - credential
+        - type: object
+          properties:
+            method:
+              type: string
+              const: passkey
+            challengeId:
+              type: string
+              minLength: 1
+            credential:
+              type: object
+              properties:
+                id:
+                  type: string
+                rawId:
+                  type: string
+                type:
+                  type: string
+                  const: public-key
+                response:
+                  type: object
+                  propertyNames:
+                    type: string
+                  additionalProperties: {}
+                authenticatorAttachment:
+                  type: string
+                  enum:
+                    - platform
+                    - cross-platform
+                clientExtensionResults:
+                  type: object
+                  propertyNames:
+                    type: string
+                  additionalProperties: {}
+              required:
+                - id
+                - rawId
+                - type
+                - response
+              description: SimpleWebAuthn ceremony response payload.
+          required:
+            - method
+            - challengeId
+            - credential
+      description: Re-prove a factor to mint a single-use, token-bound step-up elevation. `password` reaches the same routes a
+        plain cookie session reaches; `totp`, `webauthn`, and `passkey` additionally satisfy the fresh-factor routes
+        (disable, recovery-code rotation, security-key removal), matching exactly the ceremonies for which the web
+        stamps a session second-factor-verified.
+      type: object
     MfaDisableRequest:
       type: object
       properties:
@@ -15315,6 +15538,90 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    StepUpOptionsEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/StepUpOptionsResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    StepUpOptionsResponse:
+      type: object
+      properties:
+        options:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+          description: SimpleWebAuthn assertion options for the caller's passkeys.
+        challengeId:
+          type: string
+      required:
+        - options
+        - challengeId
+      additionalProperties: false
+    StepUpMintEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/StepUpMintResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    StepUpMintResponse:
+      type: object
+      properties:
+        elevation:
+          type: string
+          description: Opaque single-use elevation (`hle_<64hex>`). Present it in the `X-Step-Up` header on ONE
+            second-factor-management call. Returned exactly once; store it in memory only.
+        expiresAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        expiresInSeconds:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        method:
+          type: string
+          enum:
+            - password
+            - totp
+            - webauthn
+            - passkey
+          description: The factor that was re-proved.
+        satisfiesFreshFactor:
+          type: boolean
+          description: Whether this elevation reaches the fresh-factor routes (MFA disable, recovery-code regeneration,
+            security-key removal). False for a password proof — mirroring the web, where a password login never marks a
+            session second-factor-verified.
+      required:
+        - elevation
+        - expiresAt
+        - expiresInSeconds
+        - method
+        - satisfiesFreshFactor
       additionalProperties: false
     TotpSetupEnvelope:
       type: object

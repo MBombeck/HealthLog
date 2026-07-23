@@ -69,6 +69,7 @@ export async function truncateAllTables(client: PrismaClient): Promise<void> {
     "refresh_tokens",
     "reminder_phase_configs",
     "sessions",
+    "step_up_elevations",
     "telegram_reminder_messages",
     "telegram_scheduled_deletions",
     "user_achievements",

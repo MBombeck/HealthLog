@@ -658,6 +658,10 @@ model User {
   // skips the second factor (factor 2 only) within the window; the password
   // is still required. Revoked when the second factor is removed.
   trustedDevices              TrustedDevice[]
+  // v1.30.34 — short-lived, token-bound step-up elevations. The Bearer-transport
+  // equivalent of `Session.mfaVerifiedAt`: a token client re-proves a factor and
+  // receives one single-use elevation good for one MFA-management call.
+  stepUpElevations            StepUpElevation[]
   measurements                Measurement[]
   medications                 Medication[]
   intakeEvents                MedicationIntakeEvent[]
@@ -3214,10 +3218,69 @@ model ApiToken {
 
   user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   mcpConnection McpOAuthConnection? @relation(fields: [mcpConnectionId], references: [id], onDelete: SetNull)
+  // v1.30.34 — step-up elevations bound to this token. Cascade-deleted with it.
+  stepUpElevations StepUpElevation[]
 
   @@index([userId])
   @@index([mcpConnectionId])
   @@map("api_tokens")
+}
+
+// v1.30.34 — a step-up elevation: the Bearer-transport answer to
+// `Session.mfaVerifiedAt`.
+//
+// The web gates second-factor management on a freshness stamp written onto a
+// session row. A token client has no session row, so it had no way to express
+// "the human holding this device just re-proved a factor" and the whole
+// MFA-management surface was unreachable from a native client.
+//
+// A row here is that proof, and it is deliberately the weakest credential in
+// the tree:
+//   - it is minted ONLY after a password or primary-passkey re-proof, so
+//     presenting a stolen token gains nothing;
+//   - `apiTokenId` binds it to the exact token that re-proved, so a second
+//     token — the same user's included — cannot redeem it;
+//   - `consumedAt` makes it single-use, claimed by a conditional UPDATE so two
+//     concurrent redemptions cannot both win;
+//   - `expiresAt` caps it at minutes, matching the cookie path's step-up window.
+//
+// Only the hash of the opaque `hle_` secret is stored, so a table dump yields
+// nothing redeemable — the same posture as ApiToken, RefreshToken, and Session.
+// Revoking the token strands every elevation bound to it by construction:
+// redemption runs behind Bearer resolution, which refuses a revoked token.
+model StepUpElevation {
+  id         String    @id @default(cuid())
+  userId     String    @map("user_id")
+  // The `ApiToken` row this elevation is bound to. Cascade so a deleted token
+  // cannot leave a redeemable elevation behind.
+  apiTokenId String    @map("api_token_id")
+  // HMAC-SHA256 (`hashToken`) of the raw `hle_<64 hex>` secret. Unique so a
+  // redemption is a single indexed lookup and a collision cannot alias two rows.
+  tokenHash  String    @unique @map("token_hash")
+  // Which factor was re-proved: "password", "totp", "webauthn", or "passkey".
+  // This IS an authorisation input, not telemetry — see `FRESH_FACTOR_METHODS`
+  // in `@/lib/auth/step-up`. Only totp / webauthn / passkey satisfy a
+  // fresh-factor gate; password reaches what a plain cookie session reaches
+  // and stops there.
+  method     String
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiToken ApiToken @relation(fields: [apiTokenId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([apiTokenId])
+  @@index([expiresAt])
+  // NOTE: migration 0267 additionally creates a PARTIAL unique index —
+  // `(api_token_id) WHERE consumed_at IS NULL` — so at most one elevation per
+  // token is ever redeemable. Prisma cannot express a partial index, and a
+  // plain `@@unique([apiTokenId])` would be wrong: it would also forbid minting
+  // a second elevation after the first was legitimately consumed. The
+  // constraint therefore lives only in the migration, and the mint below
+  // handles its unique violation explicitly.
+  @@map("step_up_elevations")
 }
 
 // MCP OAuth connection — the revocable, theft-detectable anchor for a remote

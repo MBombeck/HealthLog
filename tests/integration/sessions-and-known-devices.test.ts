@@ -58,7 +58,10 @@ describe("destroyOtherSessions", () => {
       },
     });
 
-    const result = await destroyOtherSessions(user.id, current.id);
+    const result = await destroyOtherSessions(user.id, {
+      kind: "session",
+      sessionId: current.id,
+    });
     expect(result.sessionsRevoked).toBe(2);
 
     const remaining = await prisma.session.findMany({

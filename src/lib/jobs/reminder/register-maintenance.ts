@@ -145,6 +145,7 @@ import {
 } from "./backup-handlers";
 import {
   RateLimitCleanupPayload,
+  StepUpElevationCleanupPayload,
   IdempotencyCleanupPayload,
   AuditLogCleanupPayload,
   MoodReminderCleanupPayload,
@@ -158,6 +159,7 @@ import {
   handleRateLimitCleanup,
   handleIdempotencyCleanup,
   handleAuditLogCleanup,
+  handleStepUpElevationCleanup,
   CoachMessageCleanupPayload,
   handleCoachMessageCleanup,
   McpTokenCleanupPayload,
@@ -196,6 +198,12 @@ const RATE_LIMIT_CLEANUP_CRON = "*/5 * * * *"; // every 5 minutes
 const IDEMPOTENCY_CLEANUP_QUEUE = "idempotency-cleanup";
 
 const IDEMPOTENCY_CLEANUP_CRON = "0 3 * * *"; // daily at 03:00 (Europe/Berlin)
+
+const STEP_UP_ELEVATION_CLEANUP_QUEUE = "step-up-elevation-cleanup";
+
+// Every 15 minutes. An elevation lives five, so nothing lingers long; the
+// cadence only has to be short enough that the table stays small.
+const STEP_UP_ELEVATION_CLEANUP_CRON = "*/15 * * * *";
 
 const AUDIT_LOG_CLEANUP_QUEUE = "audit-log-cleanup";
 
@@ -300,6 +308,7 @@ const allQueues = [
   RATE_LIMIT_CLEANUP_QUEUE,
   IDEMPOTENCY_CLEANUP_QUEUE,
   AUDIT_LOG_CLEANUP_QUEUE,
+  STEP_UP_ELEVATION_CLEANUP_QUEUE,
   OFFHOST_BACKUP_QUEUE,
   RESTORE_DRILL_QUEUE,
   HOST_METRIC_QUEUE,
@@ -410,6 +419,7 @@ const schedules: ScheduleEntry[] = [
   [RATE_LIMIT_CLEANUP_QUEUE, RATE_LIMIT_CLEANUP_CRON],
   [IDEMPOTENCY_CLEANUP_QUEUE, IDEMPOTENCY_CLEANUP_CRON],
   [AUDIT_LOG_CLEANUP_QUEUE, AUDIT_LOG_CLEANUP_CRON],
+  [STEP_UP_ELEVATION_CLEANUP_QUEUE, STEP_UP_ELEVATION_CLEANUP_CRON],
   [OFFHOST_BACKUP_QUEUE, OFFHOST_BACKUP_CRON],
   [RESTORE_DRILL_QUEUE, RESTORE_DRILL_CRON],
   [HOST_METRIC_QUEUE, HOST_METRIC_CRON],
@@ -593,6 +603,11 @@ export async function registerMaintenanceQueues(
     AUDIT_LOG_CLEANUP_QUEUE,
     { localConcurrency: 1 },
     handleAuditLogCleanup,
+  );
+  await boss.work<StepUpElevationCleanupPayload>(
+    STEP_UP_ELEVATION_CLEANUP_QUEUE,
+    { localConcurrency: 1 },
+    handleStepUpElevationCleanup,
   );
   await boss.work<OffhostBackupPayload>(
     OFFHOST_BACKUP_QUEUE,

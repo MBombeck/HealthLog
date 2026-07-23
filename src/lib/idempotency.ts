@@ -430,7 +430,7 @@ export function withIdempotency<
       //               or any other word containing `sk-` would otherwise
       //               silently break idempotency for benign retries).
       const SECRET_PATTERN =
-        /(?:\b(?:hlk_|hlr_|hls_|hlv_)[A-Za-z0-9_-]+|\bsk-(?:ant-)?[A-Za-z0-9_-]{8,})/;
+        /(?:\b(?:hlk_|hlr_|hls_|hlv_|hle_)[A-Za-z0-9_-]+|\bsk-(?:ant-)?[A-Za-z0-9_-]{8,})/;
       const cloned = response.clone();
       const text = await cloned.text();
       if (!SECRET_PATTERN.test(text)) {

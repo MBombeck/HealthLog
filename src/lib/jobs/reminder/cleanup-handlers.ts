@@ -40,6 +40,10 @@ const PUSH_ATTEMPT_RETENTION_DAYS = 90;
 // the two never drift. Slots at 03:40 between push-attempt cleanup (03:35)
 // and the drain (03:45) inside the existing 03:xx maintenance window.
 
+export interface StepUpElevationCleanupPayload {
+  _?: never;
+}
+
 export interface RateLimitCleanupPayload {
   triggeredAt: string;
 }
@@ -223,6 +227,36 @@ export async function handleIdempotencyCleanup(
       evt.addMeta("idempotency_cleanup_deleted", deleted);
     } catch (err) {
       evt.addWarning(`idempotency-cleanup failed: ${err}`);
+    }
+  });
+}
+
+/**
+ * v1.30.34 — sweep expired step-up elevations.
+ *
+ * Hygiene, not enforcement: an expired row is already unredeemable because
+ * `claimStepUpElevation`'s predicate refuses it, so a missed run costs nothing
+ * but table space. It lives here rather than fire-and-forget on the mint request
+ * because a cross-tenant unbounded DELETE has no business competing with a
+ * user's request for a pool connection.
+ *
+ * The delete lives here rather than in `@/lib/auth/step-up` because it has to
+ * run on the WORKER Prisma client; a second copy of the predicate in the auth
+ * module would be dead code with a licence to drift.
+ */
+export async function handleStepUpElevationCleanup(
+  jobs: Job<StepUpElevationCleanupPayload>[],
+) {
+  void jobs;
+  await withBackgroundEvent("job.step_up_elevation_cleanup", async (evt) => {
+    const p = getWorkerPrisma();
+    try {
+      const { count } = await p.stepUpElevation.deleteMany({
+        where: { expiresAt: { lt: new Date() } },
+      });
+      evt.addMeta("step_up_elevation_cleanup_deleted", count);
+    } catch (err) {
+      evt.addWarning(`step-up-elevation-cleanup failed: ${err}`);
     }
   });
 }

@@ -88,7 +88,10 @@ export const GET = apiHandler(async () => {
 export const DELETE = apiHandler(async (request: NextRequest) => {
   const { user, session } = await requireAuth();
 
-  const { sessionsRevoked } = await destroyOtherSessions(user.id, session.id);
+  const { sessionsRevoked } = await destroyOtherSessions(user.id, {
+    kind: "session",
+    sessionId: session.id,
+  });
 
   await auditLog("auth.session.revoke_others", {
     userId: user.id,

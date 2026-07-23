@@ -7,7 +7,7 @@ vi.mock("@/lib/api-handler", async () => {
     );
   return {
     ...actual,
-    requireFreshMfa: vi.fn(),
+    requireMfaManagementAuth: vi.fn(),
   };
 });
 
@@ -39,7 +39,7 @@ vi.mock("@/lib/auth/mfa/verify-factor", () => ({
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
 
 import { POST } from "../route";
-import { requireFreshMfa } from "@/lib/api-handler";
+import { requireMfaManagementAuth } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
 import { destroyOtherSessions } from "@/lib/auth/session";
 import { verifyMfaFactor } from "@/lib/auth/mfa/verify-factor";
@@ -54,9 +54,11 @@ function req() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(requireFreshMfa).mockResolvedValue({
+  vi.mocked(requireMfaManagementAuth).mockResolvedValue({
+    transport: "cookie",
     user: { id: "u1" },
     session: { id: "sess-current" },
+    commitElevation: vi.fn().mockResolvedValue(undefined),
   } as never);
   vi.mocked(verifyMfaFactor).mockResolvedValue({ ok: true } as never);
   vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
@@ -74,7 +76,68 @@ describe("POST /api/auth/me/mfa/disable", () => {
   it("revokes other sessions + trusted devices (via destroyOtherSessions), keeping the current one", async () => {
     const res = await POST(req());
     expect(res.status).toBe(200);
-    expect(destroyOtherSessions).toHaveBeenCalledWith("u1", "sess-current");
+    expect(destroyOtherSessions).toHaveBeenCalledWith("u1", {
+      kind: "session",
+      sessionId: "sess-current",
+    });
+  });
+
+  it("spares the CALLER's own device login on the Bearer path", async () => {
+    // A Bearer caller has no session row. The earlier revision passed
+    // `session.id` — an ApiToken id on this arm — into a session-scoped query,
+    // so the "keep the current one" exclusion excluded nothing: every browser
+    // session went AND the caller's own refresh token was revoked, logging the
+    // app out at its next rotation. A cookie-shaped fixture could never see it.
+    vi.mocked(requireMfaManagementAuth).mockResolvedValue({
+      transport: "bearer",
+      user: { id: "u1" },
+      apiTokenId: "token-row-1",
+      accessTokenHash: "hash-of-caller-access-token",
+      commitElevation: vi.fn().mockResolvedValue(undefined),
+    } as never);
+
+    const res = await POST(req());
+
+    expect(res.status).toBe(200);
+    expect(destroyOtherSessions).toHaveBeenCalledWith("u1", {
+      kind: "accessToken",
+      accessTokenHash: "hash-of-caller-access-token",
+    });
+  });
+
+  it("spends the elevation before tearing the factor down", async () => {
+    const commitElevation = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(requireMfaManagementAuth).mockResolvedValue({
+      transport: "bearer",
+      user: { id: "u1" },
+      apiTokenId: "token-row-1",
+      accessTokenHash: "h",
+      commitElevation,
+    } as never);
+
+    await POST(req());
+
+    expect(commitElevation).toHaveBeenCalledTimes(1);
+  });
+
+  it("does NOT spend the elevation when the factor code is wrong", async () => {
+    const commitElevation = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(requireMfaManagementAuth).mockResolvedValue({
+      transport: "bearer",
+      user: { id: "u1" },
+      apiTokenId: "token-row-1",
+      accessTokenHash: "h",
+      commitElevation,
+    } as never);
+    vi.mocked(verifyMfaFactor).mockResolvedValue({
+      ok: false,
+      replay: false,
+    } as never);
+
+    const res = await POST(req());
+
+    expect(res.status).toBe(401);
+    expect(commitElevation).not.toHaveBeenCalled();
   });
 
   it("rejects a wrong current factor without revoking anything", async () => {

@@ -1,12 +1,13 @@
 /**
  * POST /api/auth/me/mfa/webauthn/register/verify
  *
- * Finish registering a WebAuthn security key as a second factor. Cookie-only.
- * Verifies the attestation against the user-bound challenge and stores the
- * credential in `WebauthnMfaCredential` (kept separate from primary passkeys).
+ * Finish registering a WebAuthn security key as a second factor. Takes a cookie
+ * session or a Bearer token presenting a single-use step-up elevation. Verifies
+ * the attestation against the user-bound challenge and stores the credential in
+ * `WebauthnMfaCredential` (kept separate from primary passkeys).
  */
 import { NextRequest } from "next/server";
-import { apiHandler, requireCookieAuth } from "@/lib/api-handler";
+import { apiHandler, requireMfaManagementAuth } from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
@@ -23,7 +24,8 @@ import { setMfaEnrollCookie } from "@/lib/auth/mfa-enrollment";
 export const dynamic = "force-dynamic";
 
 export const POST = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireCookieAuth();
+  const auth = await requireMfaManagementAuth();
+  const { user } = auth;
 
   const { data: body, error: jsonError } = await safeJson(request, {
     maxBytes: 64 * 1024,
@@ -44,6 +46,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (!verification.verified || !verification.registrationInfo) {
     return apiError("Security key verification failed", 400);
   }
+
+  // The attestation verified and the credential is about to be stored — a
+  // failed ceremony above must not have cost the caller their elevation.
+  await auth.commitElevation();
 
   const { registrationInfo } = verification;
   const created = await prisma.webauthnMfaCredential.create({

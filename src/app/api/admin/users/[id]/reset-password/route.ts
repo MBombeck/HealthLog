@@ -11,6 +11,7 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { destroyAllSessions } from "@/lib/auth/session";
+import { revokeStepUpElevations } from "@/lib/auth/step-up";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { checkPasswordBreach } from "@/lib/auth/hibp";
@@ -82,6 +83,11 @@ export const POST = apiHandler(
       where: { id },
       data: { passwordHash },
     });
+
+    // v1.30.34 — an operator-forced rotation invalidates the target's step-up
+    // elevations for the same reason a self-service change does: they attest to
+    // a credential that no longer exists.
+    await revokeStepUpElevations(id);
 
     // Invalidate all sessions of the target user
     await destroyAllSessions(id);

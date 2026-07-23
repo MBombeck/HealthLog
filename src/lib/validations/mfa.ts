@@ -57,7 +57,7 @@ export const mfaVerifySchema = z
  * `@simplewebauthn/server`; this just pins the envelope shape for OpenAPI and
  * the runtime `safeParse`.
  */
-const webauthnCredentialSchema = z
+export const webauthnCredentialSchema = z
   .object({
     id: z.string(),
     rawId: z.string(),

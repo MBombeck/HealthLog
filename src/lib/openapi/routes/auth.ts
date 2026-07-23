@@ -18,6 +18,10 @@ import {
   mfaWebauthnLoginVerifySchema,
 } from "@/lib/validations/mfa";
 import { oidcNativeTokenSchema } from "@/lib/validations/oidc-native";
+import {
+  stepUpMintSchema,
+  stepUpOptionsSchema,
+} from "@/lib/validations/step-up";
 import { dataEnvelope, stdResponses, errorEnvelope } from "./shared";
 
 // ── Sub-schemas owned here (route-specific shapes) ───────────────────
@@ -284,6 +288,44 @@ const checkUserResponse = z
       "Account-existence + credential shape. The response is identical whether or not the identifier matched (account-existence is the explicit contract iOS needs); the identifier is never echoed.",
   });
 
+/**
+ * Shared tail for every route the step-up elevation can unlock. Kept in one
+ * place so the published contract cannot describe the set inconsistently.
+ */
+const MFA_MANAGEMENT_AUTH_NOTE =
+  " Accepts a cookie session, or a Bearer token presenting a single-use elevation from POST /api/auth/step-up in the `X-Step-Up` header; a Bearer token alone is still refused.";
+
+// ── v1.30.34 step-up elevation (Bearer transport) ────────────────────
+
+const stepUpOptionsResponse = z
+  .object({
+    options: z
+      .record(z.string(), z.unknown())
+      .describe("SimpleWebAuthn assertion options for the caller's passkeys."),
+    challengeId: z.string(),
+  })
+  .meta({ id: "StepUpOptionsResponse" });
+
+const stepUpMintResponse = z
+  .object({
+    elevation: z
+      .string()
+      .describe(
+        "Opaque single-use elevation (`hle_<64hex>`). Present it in the `X-Step-Up` header on ONE second-factor-management call. Returned exactly once; store it in memory only.",
+      ),
+    expiresAt: z.iso.datetime({ offset: true }),
+    expiresInSeconds: z.number().int(),
+    method: z
+      .enum(["password", "totp", "webauthn", "passkey"])
+      .describe("The factor that was re-proved."),
+    satisfiesFreshFactor: z
+      .boolean()
+      .describe(
+        "Whether this elevation reaches the fresh-factor routes (MFA disable, recovery-code regeneration, security-key removal). False for a password proof — mirroring the web, where a password login never marks a session second-factor-verified.",
+      ),
+  })
+  .meta({ id: "StepUpMintResponse" });
+
 export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/auth/check-user": {
     post: {
@@ -392,12 +434,71 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
   },
+  "/api/auth/step-up/options": {
+    post: {
+      tags: ["Auth"],
+      summary:
+        "Begin a WebAuthn re-proof for a step-up elevation (Bearer only)",
+      description:
+        'Returns SimpleWebAuthn assertion options plus a challenge id to present at POST /api/auth/step-up. `method: "passkey"` scopes the assertion to the account\'s primary passkeys; `method: "webauthn"` to its registered second-factor security keys. Bearer-only: a cookie session is refused, because a browser re-proves its factor at login and carries the result on its session row. Returns 409 when the account has no credential of the requested kind — fall back to another arm of the mint.',
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: stepUpOptionsSchema } },
+      },
+      responses: {
+        "200": {
+          description: "Assertion options issued.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                stepUpOptionsResponse,
+                "StepUpOptionsEnvelope",
+              ),
+            },
+          },
+        },
+        "409": {
+          description: "No passkey registered on this account.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/auth/step-up": {
+    post: {
+      tags: ["Auth"],
+      summary: "Mint a single-use step-up elevation (Bearer only)",
+      description:
+        "Re-prove a factor and receive an opaque elevation that authorises exactly ONE second-factor-management call.\n\n" +
+        "WHICH factor you re-prove decides WHAT the elevation reaches. `password` reaches the same routes a plain cookie session reaches. `totp`, `webauthn`, and `passkey` additionally satisfy the fresh-factor routes — MFA disable, recovery-code regeneration, security-key removal — which is precisely the set of ceremonies for which the web marks a session second-factor-verified. The response carries `satisfiesFreshFactor` so a client can choose the right ceremony up front rather than discovering the refusal after spending a proof. A recovery code is NOT accepted here; an account that has lost its authenticator manages its second factor on the web.\n\n" +
+        "The elevation is bound to the exact token that minted it (another token, including the same account's, cannot redeem it), single-use, and valid for five minutes — the same window the cookie path uses. Present it as `X-Step-Up: hle_…` alongside the normal `Authorization: Bearer` header. It is spent only when the target route is about to act, so a 429, a 422, or a wrong code does not burn it.\n\n" +
+        "Presenting the token alone mints nothing: the body must carry a fresh factor proof. Every failure — wrong password, no password set on an SSO-provisioned account, an assertion for another account, a stale challenge, a replayed TOTP step — returns the same 401 with the same prose, and is audited server-side. Rate-limited per account (5 / 15 min) and per source address.\n\n" +
+        "Accepting routes (the complete set): POST /api/auth/me/mfa/totp/setup; POST /api/auth/me/mfa/totp/confirm; POST /api/auth/me/mfa/disable; POST /api/auth/me/mfa/recovery-codes/regenerate; POST /api/auth/me/mfa/webauthn/register/options; POST /api/auth/me/mfa/webauthn/register/verify; PATCH and DELETE /api/auth/me/mfa/webauthn/{id}. The last three of those and disable require a fresh-factor proof. GET /api/auth/me/mfa needs no elevation at all. Nothing else accepts one — admin endpoints stay cookie-only.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: stepUpMintSchema } },
+      },
+      responses: {
+        "200": {
+          description: "Factor re-proved — elevation issued.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(stepUpMintResponse, "StepUpMintEnvelope"),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
   "/api/auth/me/mfa/totp/setup": {
     post: {
       tags: ["Auth"],
-      summary: "Begin TOTP enrollment (cookie session only)",
+      summary: "Begin TOTP enrollment (cookie session or step-up elevation)",
       description:
-        "Generates and stores a pending (encrypted) TOTP secret and returns the otpauth URI + Base32 secret. MFA is not active until /confirm. Cookie-only — a Bearer token cannot enrol MFA.",
+        "Generates and stores a pending (encrypted) TOTP secret and returns the otpauth URI + Base32 secret. MFA is not active until /confirm." +
+        MFA_MANAGEMENT_AUTH_NOTE,
       responses: {
         "200": {
           description: "Pending secret created.",
@@ -418,9 +519,10 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/auth/me/mfa/totp/confirm": {
     post: {
       tags: ["Auth"],
-      summary: "Confirm TOTP enrollment (cookie session only)",
+      summary: "Confirm TOTP enrollment (cookie session or step-up elevation)",
       description:
-        "Verifies a code against the pending secret, activates the factor, and returns the one-time recovery codes. Cookie-only.",
+        "Verifies a code against the pending secret, activates the factor, and returns the one-time recovery codes." +
+        MFA_MANAGEMENT_AUTH_NOTE,
       requestBody: {
         required: true,
         content: { "application/json": { schema: totpConfirmSchema } },
@@ -451,7 +553,8 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Auth"],
       summary: "Disable the second factor (step-up gated)",
       description:
-        "Requires a fresh second-factor step-up (cookie session) AND a current TOTP or recovery code. Clears the secret and deletes recovery codes. Bearer can never satisfy the step-up gate.",
+        "Requires a fresh second-factor step-up AND a current TOTP or recovery code. Clears the secret and deletes recovery codes." +
+        MFA_MANAGEMENT_AUTH_NOTE,
       requestBody: {
         required: true,
         content: { "application/json": { schema: mfaDisableSchema } },
@@ -474,7 +577,8 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Auth"],
       summary: "Regenerate recovery codes (step-up gated)",
       description:
-        "Invalidates the entire prior recovery-code set and returns a fresh batch once. Step-up gated; Bearer can never satisfy the gate.",
+        "Invalidates the entire prior recovery-code set and returns a fresh batch once. Step-up gated." +
+        MFA_MANAGEMENT_AUTH_NOTE,
       responses: {
         "200": {
           description: "Fresh recovery codes issued.",
@@ -494,9 +598,9 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/auth/me/mfa": {
     get: {
       tags: ["Auth"],
-      summary: "Second-factor status (cookie session only)",
+      summary: "Second-factor status (cookie session or Bearer token)",
       description:
-        "Whether TOTP is active, how many recovery codes remain, and the registered WebAuthn security keys. Metadata only — no secret, code, or public key. Cookie-only.",
+        "Whether TOTP is active, how many recovery codes remain, and the registered WebAuthn security keys. Metadata only — no secret, no code, no public key, no credential id. Plain authentication (cookie session or cookie-equivalent token); unlike every mutation on this surface it needs no step-up elevation, because the payload carries no credential material.",
       responses: {
         "200": {
           description: "Second-factor status.",
@@ -515,7 +619,8 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Auth"],
       summary: "Begin registering a security key as a second factor",
       description:
-        "Returns SimpleWebAuthn creation options + a challenge id. Cookie-only — a Bearer token cannot enrol MFA.",
+        "Returns SimpleWebAuthn creation options + a challenge id." +
+        MFA_MANAGEMENT_AUTH_NOTE,
       responses: {
         "200": {
           description: "Registration options issued.",
@@ -537,7 +642,8 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Auth"],
       summary: "Finish registering a security key as a second factor",
       description:
-        "Verifies the attestation against the user-bound challenge and stores the credential in the second-factor store (separate from primary passkeys). Cookie-only.",
+        "Verifies the attestation against the user-bound challenge and stores the credential in the second-factor store (separate from primary passkeys)." +
+        MFA_MANAGEMENT_AUTH_NOTE,
       requestBody: {
         required: true,
         content: {
@@ -568,6 +674,9 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
     patch: {
       tags: ["Auth"],
       summary: "Rename a registered security key",
+      description:
+        "Rename a registered second-factor security key." +
+        MFA_MANAGEMENT_AUTH_NOTE,
       requestParams: { path: z.object({ id: z.string() }) },
       requestBody: {
         required: true,
@@ -596,7 +705,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Auth"],
       summary: "Remove a registered security key (step-up gated)",
       description:
-        "Requires a fresh second-factor step-up (cookie session). Bearer can never satisfy the gate.",
+        "Requires a fresh second-factor step-up." + MFA_MANAGEMENT_AUTH_NOTE,
       requestParams: { path: z.object({ id: z.string() }) },
       responses: {
         "200": {

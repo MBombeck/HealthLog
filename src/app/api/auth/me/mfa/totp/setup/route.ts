@@ -8,11 +8,17 @@
  * not active until `/confirm` verifies a code, so `totpConfirmedAt` stays
  * null here.
  *
- * Cookie-only (`requireCookieAuth`): an API token can never enrol MFA. The
- * recovery-code batch is issued at `/confirm` (after the factor is proven),
- * not here, so an abandoned setup never persists codes.
+ * Gated by `requireMfaManagementAuth`: a cookie session, or a Bearer token
+ * presenting a single-use step-up elevation minted against a re-proved factor.
+ * A token on its own can still never enrol MFA. The recovery-code batch is
+ * issued at `/confirm` (after the factor is proven), not here, so an abandoned
+ * setup never persists codes.
  */
-import { apiHandler, requireCookieAuth, HttpError } from "@/lib/api-handler";
+import {
+  apiHandler,
+  requireMfaManagementAuth,
+  HttpError,
+} from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -27,7 +33,8 @@ const SETUP_RATE_LIMIT = 5;
 const SETUP_WINDOW_MS = 15 * 60 * 1000;
 
 export const POST = apiHandler(async (req: Request) => {
-  const { user } = await requireCookieAuth();
+  const auth = await requireMfaManagementAuth();
+  const { user } = auth;
 
   const rl = await checkRateLimit(
     `mfa:setup:${user.id}`,
@@ -49,6 +56,9 @@ export const POST = apiHandler(async (req: Request) => {
     annotate({ action: { name: "auth.mfa.totp.setup.already_active" } });
     throw new HttpError(409, "A second factor is already active");
   }
+
+  // Rate limit and the already-active check have passed; the write is next.
+  await auth.commitElevation();
 
   const secret = generateTotpSecret();
   const account = user.email ?? user.username;

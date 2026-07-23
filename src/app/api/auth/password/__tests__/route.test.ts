@@ -24,6 +24,12 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+// v1.30.34 — the route drops the account's step-up elevations alongside its
+// sessions, so the rotation cannot leave a proof of the old credential standing.
+vi.mock("@/lib/auth/step-up", () => ({
+  revokeStepUpElevations: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("@/lib/auth/session", () => ({
   getSession: vi.fn(),
   destroyAllSessions: vi.fn().mockResolvedValue(undefined),

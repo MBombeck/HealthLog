@@ -2,8 +2,9 @@
  * POST /api/auth/me/mfa/disable
  *
  * Tear down the second factor. Double-gated:
- *  1. `requireFreshMfa` — a cookie session that completed a second factor
- *     within the step-up window (Bearer can never satisfy this).
+ *  1. `requireMfaManagementAuth({ freshFactor: true })` — a cookie session that
+ *     completed a second factor within the step-up window, OR a Bearer token
+ *     presenting a single-use elevation it minted by re-proving a factor.
  *  2. A current TOTP or recovery code in the body — proves live possession at
  *     the moment of the destructive action, not just a stale fresh-session.
  *
@@ -12,9 +13,8 @@
  */
 import {
   apiHandler,
-  requireFreshMfa,
+  requireMfaManagementAuth,
   HttpError,
-  MFA_STEP_UP_MAX_AGE_SECONDS,
 } from "@/lib/api-handler";
 import {
   apiError,
@@ -38,7 +38,8 @@ const DISABLE_WINDOW_MS = 15 * 60 * 1000;
 export const POST = apiHandler(async (req: Request) => {
   // Step-up gate first — throws StepUpRequiredError (401 + errorCode) if the
   // session is not freshly second-factor-verified.
-  const { user, session } = await requireFreshMfa(MFA_STEP_UP_MAX_AGE_SECONDS);
+  const auth = await requireMfaManagementAuth({ freshFactor: true });
+  const { user } = auth;
 
   const rl = await checkRateLimit(
     `mfa:disable:${user.id}`,
@@ -83,6 +84,11 @@ export const POST = apiHandler(async (req: Request) => {
     throw new HttpError(401, "Invalid code");
   }
 
+  // Every cheap check has passed and the teardown is next, so spend the
+  // elevation now. Placing it here rather than at the gate means a wrong code or
+  // a 429 above costs the caller nothing.
+  await auth.commitElevation();
+
   await prisma.$transaction(async (tx) => {
     await tx.user.update({
       where: { id: user.id },
@@ -100,7 +106,12 @@ export const POST = apiHandler(async (req: Request) => {
   // every "remember this device" trusted device (all handled by
   // destroyOtherSessions), keeping only the caller's current session. A stale
   // session or a trusted-device cookie must not survive the factor's removal.
-  await destroyOtherSessions(user.id, session.id);
+  await destroyOtherSessions(
+    user.id,
+    auth.transport === "cookie"
+      ? { kind: "session", sessionId: auth.session.id }
+      : { kind: "accessToken", accessTokenHash: auth.accessTokenHash },
+  );
 
   await auditLog("auth.mfa.disabled", {
     userId: user.id,

@@ -369,6 +369,16 @@ export async function destroyAllSessions(userId: string): Promise<void> {
 }
 
 /**
+ * How the caller of a "revoke everything else" action authenticated.
+ *
+ * Exists so the caller's own credential can be spared without any code having
+ * to guess what kind of id it is holding — see `destroyOtherSessions`.
+ */
+export type CurrentCredential =
+  | { kind: "session"; sessionId: string }
+  | { kind: "accessToken"; accessTokenHash: string };
+
+/**
  * v1.23 — "sign out everywhere" for the user-facing active-session surface
  * (issue #64). Distinct from `destroyAllSessions`: this keeps the caller's
  * CURRENT cookie session alive so clicking the button doesn't log the user out
@@ -382,20 +392,41 @@ export async function destroyAllSessions(userId: string): Promise<void> {
  */
 export async function destroyOtherSessions(
   userId: string,
-  currentSessionId: string,
+  current: CurrentCredential,
 ): Promise<{ sessionsRevoked: number }> {
+  // Which rows describe the CALLER depends on how the caller authenticated, and
+  // the two shapes are not interchangeable. A cookie caller is a `Session` row.
+  // A Bearer caller is an `ApiToken` whose device login is the `RefreshToken`
+  // carrying the matching `accessTokenHash` — it has no session row at all, so
+  // every session goes. Passing an ApiToken id in as a session id (which an
+  // earlier revision did) silently excluded nothing and revoked the caller's own
+  // refresh token, logging the calling device out at its next rotation.
+  const keptSessionId =
+    current.kind === "session" ? current.sessionId : undefined;
+  const keptRefreshWhere =
+    current.kind === "accessToken"
+      ? { accessTokenHash: { not: current.accessTokenHash } }
+      : {};
+
   const [deleted] = await prisma.$transaction([
     prisma.session.deleteMany({
-      where: { userId, id: { not: currentSessionId } },
+      where: {
+        userId,
+        ...(keptSessionId ? { id: { not: keptSessionId } } : {}),
+      },
     }),
     prisma.refreshToken.updateMany({
-      where: { userId, revokedAt: null },
+      where: { userId, revokedAt: null, ...keptRefreshWhere },
       data: { revokedAt: new Date() },
     }),
     // v1.23 — "sign out everywhere" also drops every trusted device so a
     // remembered browser can no longer skip the second factor (§1.7: a device
     // cookie is killed on sign-out-everywhere).
     prisma.trustedDevice.deleteMany({ where: { userId } }),
+    // v1.30.34 — and every step-up elevation. A user who signs out everywhere
+    // expects nothing to remain that could act on the account; a live elevation
+    // is exactly that.
+    prisma.stepUpElevation.deleteMany({ where: { userId } }),
   ]);
   return { sessionsRevoked: deleted.count };
 }
