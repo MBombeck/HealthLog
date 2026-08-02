@@ -651,12 +651,18 @@ const INSIGHTS_ROUTES: readonly RouteCase[] = [
   {
     name: "/insights overview",
     path: "/insights",
-    painted: (page) =>
-      page.locator('[data-slot="wellness-scores"]').filter({
-        has: page.locator(
-          '[data-slot="wellness-scores-grid"]:not([aria-busy="true"])',
-        ),
-      }),
+    // Wait for the page's own header region, not for the scores grid. The
+    // grid settling says nothing about whether the header has mounted, and
+    // the header is where this page's `<h1>` lives, so a scan gated on the
+    // grid can run against a page that has no heading yet and report a
+    // page-has-heading-one violation that is about timing rather than markup.
+    // That is how this case failed on a loaded mobile worker while desktop
+    // passed on the same tree.
+    //
+    // Deliberately the strip and not the `<h1>` inside it. Waiting for the
+    // heading itself would make axe's page-has-heading-one rule unable to
+    // fail here, which is worse than the flake it would hide.
+    painted: (page) => page.locator('[data-slot="insights-hero-strip"]'),
   },
   {
     name: "/insights/weight metric subpage",
