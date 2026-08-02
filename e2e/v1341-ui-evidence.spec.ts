@@ -65,6 +65,18 @@ test.describe("v1.34.1 deterministic UI evidence", () => {
   test("captures the five release-review surfaces", async ({
     page,
   }, testInfo) => {
+    // Five full page loads and five captures in one case, deliberately: the
+    // evidence set is only comparable if every shot comes from one consistent
+    // state, so splitting it into five cases would defeat its purpose. That is
+    // five times the work of an ordinary case against the same default budget,
+    // and it timed out twice on loaded runners while passing everywhere else.
+    //
+    // This raises the wall-clock allowance to match the work, and nothing else.
+    // Every capture still has to happen and still has to succeed; no assertion
+    // is relaxed. If this case starts timing out again, the honest reading is a
+    // real slowdown in one of the five surfaces, not a budget to raise further.
+    test.slow();
+
     await mkdir(EVIDENCE_DIR, { recursive: true });
 
     await page.setViewportSize({ width: 1440, height: 900 });
