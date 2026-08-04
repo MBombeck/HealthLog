@@ -9418,6 +9418,10 @@
     "row": {
       "readOnly": "Może czytać kartę",
       "canWrite": "Może czytać i dodawać wpisy",
+      "canManage": "Może czytać kartotekę, dodawać wpisy oraz zmieniać i usuwać to, co w niej jest",
+      "entireRecord": "Obejmuje całą kartotekę",
+      "sections": "Obejmuje: {sections}",
+      "noSections": "Nie obejmuje niczego: ten dostęp nie otwiera żadnej części kartoteki",
       "invited": "Zaproszono",
       "accepted": "Zaakceptowano",
       "expires": "Wygasa",
@@ -9439,6 +9443,19 @@
       "accessReadCapability": "Może czytać wszystko, co ta karta udostępnia. Nie może niczego dodać ani zmienić.",
       "accessWriteLabel": "Może przeglądać i dodawać",
       "accessWriteCapability": "Może też dodawać do kartoteki: pomiary, wyniki badań, nowy analit do śledzenia, wpis o chorobie, działanie niepożądane leku, nowy lek oraz oznaczyć dawkę jako przyjętą lub pominiętą. Nie może niczego edytować ani usuwać, nawet tego, co sama dodała, ani odłożyć żadnego z Twoich przypomnień. Tylko Ty możesz.",
+      "accessManageLabel": "Może zarządzać",
+      "accessManageCapability": "Może dodawać, zmieniać i usuwać wpisy w Twojej kartotece, także te, które wprowadziłeś samodzielnie, oraz czytać wygenerowane na jej podstawie analizy. Nie może zmienić Twojego logowania, ustawień bezpieczeństwa, połączonych usług ani tego, kto jeszcze ma dostęp. Możesz to zakończyć w dowolnym momencie.",
+      "manageStepUpNote": "Przy takim zaproszeniu prosimy o drugi składnik logowania, dlatego można to zrobić tylko w przeglądarce.",
+      "scopeLegend": "Co ta osoba może otworzyć",
+      "scopeAllLabel": "Cała kartoteka",
+      "scopeAllCapability": "Każda jej część, tak jak udostępnianie działało do tej pory.",
+      "scopeSomeLabel": "Tylko wybrane przez Ciebie sekcje",
+      "scopeSomeCapability": "Wszystko, czego nie wybierzesz, pozostaje dla niej zamknięte.",
+      "scopeManageNote": "Dostęp zarządzający zawsze obejmuje całą kartotekę.",
+      "scopeLeakNote": "Sekcja może wspominać o reszcie Twojego zdrowia w notatkach i nazwach. Udostępnienie sekcji oznacza udostępnienie wszystkiego, co w niej zapisano.",
+      "scopeAggregateNote": "Przegląd na pulpicie, wynik zdrowia i dzienne podsumowanie pojawiają się tylko wtedy, gdy udostępniona jest cała kartoteka.",
+      "scopeDocumentsNote": "Dokument może zawierać wszystko. Udostępnij tę sekcję tylko wtedy, gdy ta osoba może przeczytać całość.",
+      "scopeEmptyHint": "Wybierz co najmniej jedną sekcję albo wróć do udostępniania całej kartoteki.",
       "expiresLabel": "Dostęp kończy się (opcjonalnie)",
       "expiresHint": "Zostaw puste, aby dostęp trwał, dopóki ktoś go nie zakończy. Data jest sprawdzana przy każdym żądaniu, więc dostęp kończy się sam z końcem tego dnia.",
       "submit": "Wyślij zaproszenie",
@@ -9449,7 +9466,10 @@
       "errorSelf": "To twoje własne konto.",
       "errorInvalid": "Podaj nazwę użytkownika lub adres e-mail.",
       "errorRateLimited": "Zbyt wiele zaproszeń. Spróbuj później.",
-      "errorFailed": "Nie udało się wysłać zaproszenia. Spróbuj ponownie."
+      "errorFailed": "Nie udało się wysłać zaproszenia. Spróbuj ponownie.",
+      "errorScope": "Tych sekcji nie da się udostępnić w ten sposób. Wybierz co najmniej jedną sekcję albo udostępnij całą kartotekę.",
+      "errorManageBrowserOnly": "Dostęp zarządzający można przyznać tylko w przeglądarce, ponieważ wymaga drugiego składnika logowania.",
+      "errorStepUp": "Potwierdź drugi składnik logowania i spróbuj ponownie."
     },
     "given": {
       "title": "Kto może otworzyć moją kartę",
@@ -9474,6 +9494,7 @@
       "accept": "Akceptuj",
       "accepting": "Akceptowanie…",
       "writeConsent": "Jeśli zaakceptujesz, to, co dodasz, stanie się częścią karty użytkownika {name}. Później nie będziesz mieć możliwości zmiany ani usunięcia wpisów; może to zrobić tylko {name}.",
+      "manageConsent": "Jeśli zaakceptujesz, będziesz mieć możliwość uzupełniania kartoteki użytkownika {name}, a także zmieniania i usuwania tego, co już w niej jest, łącznie z wpisami samego {name}. Wszystko, co zrobisz, zostanie zapisane pod Twoim imieniem w widoku aktywności, a {name} może zakończyć Twój dostęp w dowolnej chwili.",
       "open": "Otwórz",
       "renounce": "Zwróć",
       "renounceTitle": "Zwrócić kartę użytkownika {name}?",
@@ -9516,6 +9537,40 @@
       "medicationCreate": "{name} dodał lek",
       "medicationIntake": "{name} zapisał przyjęcie dawki",
       "medicationIntakeRefused": "{name} próbował(a) zmienić dawkę lub odłożyć przypomnienie i został(a) odrzucony(-a)"
+    },
+    "section": {
+      "measurements": {
+        "label": "Pomiary",
+        "detail": "Waga, ciśnienie, tętno, glukoza, sen, treningi i śledzone przez Ciebie wartości."
+      },
+      "medications": {
+        "label": "Leki",
+        "detail": "Lista leków, harmonogramy, przyjęte dawki, działania niepożądane i stan zapasów."
+      },
+      "labs": {
+        "label": "Wyniki badań",
+        "detail": "Wyniki laboratoryjne i lista analitów, które za nimi stoją."
+      },
+      "profile": {
+        "label": "Historia zdrowia",
+        "detail": "Alergie, wywiad rodzinny i dane z Twojego profilu zdrowia."
+      },
+      "illness": {
+        "label": "Choroby",
+        "detail": "Epizody chorobowe i prowadzone przy nich wpisy dzienne."
+      },
+      "mind": {
+        "label": "Nastrój i zdrowie psychiczne",
+        "detail": "Wpisy o nastroju i historia kwestionariuszy zdrowia psychicznego."
+      },
+      "cycle": {
+        "label": "Cykl",
+        "detail": "Śledzenie cyklu."
+      },
+      "documents": {
+        "label": "Dokumenty",
+        "detail": "Wszystko, co jest przechowywane w sejfie dokumentów."
+      }
     }
   }
 }

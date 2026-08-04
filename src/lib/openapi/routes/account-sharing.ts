@@ -23,6 +23,7 @@
 import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
 
+import { SHARE_DOMAINS } from "@/lib/sharing/scope";
 import {
   inviteGrantSchema,
   switchAccountSchema,
@@ -32,7 +33,7 @@ import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 inviteGrantSchema.meta({
   id: "AccountGrantInvite",
   description:
-    "Offer access to another account on this instance. `identifier` is the invitee's username or e-mail, matched case-insensitively — the same identifier they sign in with. `expiresAt` is optional; omitted or null means the grant runs until somebody ends it. `access` is READ when omitted, so a client that does not know about the field keeps working: READ can read the record and change nothing, WRITE can additionally ADD entries (readings, results, observations, a medication, a marked dose) and can still edit or delete nothing, including its own. The level is fixed when the invitation is written — no endpoint raises a live grant, because that would widen what the delegate accepted without asking them again. The way up is a new invitation the delegate accepts.",
+    "Offer access to another account on this instance. `identifier` is the invitee's username or e-mail, matched case-insensitively — the same identifier they sign in with. `expiresAt` is optional; omitted or null means the grant runs until somebody ends it. `access` is READ when omitted, so a client that does not know about the field keeps working: READ can read the record and change nothing, WRITE can additionally ADD entries (readings, results, observations, a medication, a marked dose) and can still edit or delete nothing, including its own, and MANAGE can additionally change and remove entries, including ones the owner wrote, and read the generated insights — never the identity surfaces (login, second factor, connections, tokens, settings, or who else has access). `scope` narrows a READ or WRITE grant to named sections; omitted or null is the entire record, which is what every grant written before v1.37.0 means. An empty array, an unknown key, and any `scope` at all beside `access: MANAGE` are each 422 — management is whole-record by construction. Offering MANAGE additionally requires a fresh second factor when the account has one enrolled, which makes it cookie-only: a Bearer caller is refused with 403 `sharing.invite.manage_browser_only` and should send the person to a browser. The level and the scope are fixed when the invitation is written — no endpoint raises a live grant, because that would widen what the delegate accepted without asking them again. The way up is a new invitation the delegate accepts.",
 });
 
 switchAccountSchema.meta({
@@ -59,11 +60,23 @@ const grantState = z.enum(["PENDING", "ACTIVE", "EXPIRED", "REVOKED"]).meta({
     "What the grant is right now, resolved server-side against the request clock. Only ACTIVE confers anything. Ordering is stated rather than implied: a revoked grant reads REVOKED even if it also sat past its expiry, and an unaccepted invitation past its expiry reads EXPIRED rather than PENDING because it can no longer be accepted. Clients render this value and never re-derive it from the timestamps.",
 });
 
+const shareSection = z.enum(SHARE_DOMAINS).meta({
+  id: "ShareSection",
+  description:
+    "One section of a health record, as a grant may name it. A closed vocabulary of eight, derived by clustering the delegable read surfaces rather than from the module list — the two answer different questions and never share a spelling. The whole-record case is `null` on the field that carries these, never a member of this enum: a scope that named the whole record would be a narrowing that means its own absence.",
+});
+
 const grantView = z
   .object({
     id: z.string(),
     account: grantParty,
-    access: z.enum(["READ", "WRITE"]),
+    access: z.enum(["READ", "WRITE", "MANAGE"]),
+    scope: z
+      .array(shareSection)
+      .nullable()
+      .describe(
+        "The sections this grant opens, or null for the entire record. Null is a first-class value and the one every grant written before v1.37.0 carries; render it as the whole record, never as a legacy or unknown state. A MANAGE grant always carries null. An EMPTY array means the grant opens nothing — the fail-closed reading of a stored scope the server cannot parse — and the server will refuse every section for it, so render it as nothing rather than as everything. Ordered by the consent screen's own reading order.",
+      ),
     state: grantState,
     invitedAt: z.string(),
     acceptedAt: z.string().nullable(),
@@ -111,7 +124,12 @@ const switchResponse = z
         accountId: z.string(),
         username: z.string(),
         displayName: z.string().nullable(),
-        access: z.enum(["READ", "WRITE"]),
+        // The stored spelling, straight off the grant row the switch resolved
+        // — not the lower-case resolved level the account payload publishes.
+        // Two spellings of one fact is a wart this endpoint has carried since
+        // v1.36.0; it is documented rather than papered over, because a client
+        // reading either has to know which one it is holding.
+        access: z.enum(["READ", "WRITE", "MANAGE"]),
       })
       .nullable(),
   })
@@ -201,11 +219,26 @@ const accountAccessEntry = z
       ),
     username: z.string(),
     displayName: z.string().nullable(),
-    access: z.enum(["read", "write"]),
+    access: z
+      .enum(["read", "write", "manage"])
+      .describe(
+        "The grant's resolved level, under the name v1.36.0 published. Identical to `level` — both come from one server-side expression — and kept because shipped clients read it. New code reads `level`.",
+      ),
+    level: z
+      .enum(["read", "write", "manage"])
+      .describe(
+        "The grant's resolved level. `manage` additionally admits changing and removing entries on the delegable surfaces; it never reaches the identity surfaces (settings, connections, tokens, consent, grant management), which stay refused on an invited record at every level. Render it; never derive it from `canWrite`.",
+      ),
+    sections: z
+      .array(shareSection)
+      .nullable()
+      .describe(
+        "The sections of that record this caller may open, or null for the entire record. Null is first-class and is what every pre-v1.37.0 grant carries; a MANAGE grant always carries it too. A non-null array names the open sections and NOTHING else answers — a client that switches into a scoped record without honouring this gets the standard 403 on every out-of-scope route, fail-closed and byte-identical to every other sharing refusal, which is safe but reads as a wall of errors. An empty array means the grant opens nothing. Ordered by the consent screen's reading order.",
+      ),
     canWrite: z
       .boolean()
       .describe(
-        "Whether this caller may ADD to that record: true for an accepted WRITE grant, false for a READ one. It never means edit or delete, which stay with the owner at both levels. Resolved server-side. Render it; never derive it.",
+        "Whether this caller may ADD to that record: true for an accepted WRITE or MANAGE grant, false for a READ one. On its own it never means edit or delete — a WRITE grant adds and does nothing more. What MANAGE additionally admits is said by `level`. Resolved server-side. Render it; never derive it.",
       ),
   })
   .meta({
@@ -329,7 +362,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Account sharing"],
       summary: "Invite an account to this record",
       description:
-        "Offers access to somebody already registered on this instance, at READ or WRITE; the grant confers nothing until they accept it. An identifier that names no account answers 404 — a deliberate disclosure to an authenticated caller on a household instance, rate-limited to 10 invitations an hour, and the alternative (a silent pending row for a mistyped username) is worse. Refused while acting on another account, so a delegate can neither invite nor re-delegate.",
+        "Offers access to somebody already registered on this instance, at READ, WRITE or MANAGE and over the whole record or named sections; the grant confers nothing until they accept it. An identifier that names no account answers 404 — a deliberate disclosure to an authenticated caller on a household instance, rate-limited to 10 invitations an hour, and the alternative (a silent pending row for a mistyped username) is worse. Refused while acting on another account, so a delegate can neither invite nor re-delegate. Offering MANAGE is step-up gated (`requireFreshMfaIfEnrolled`, cookie-only): an enrolled account without a fresh factor gets 401 `auth.stepup.required`, and a Bearer caller gets 403 `sharing.invite.manage_browser_only` before anything else happens, because the gate it would hit resolves through the session cookie and would otherwise answer 'not authenticated' to a caller it had just authenticated.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: inviteGrantSchema } },
@@ -344,7 +377,16 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
-        "403": sharingRefusal,
+        "401": {
+          description:
+            "Offering MANAGE from an MFA-enrolled account without a recent second-factor proof (`meta.errorCode: auth.stepup.required`). Re-prove the factor and retry; READ and WRITE invitations are never gated.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "403": {
+          description:
+            "Refused. `meta.errorCode` is `sharing.not_permitted` when the request was made while acting on another account (grant management is never delegable), or `sharing.invite.manage_browser_only` when a Bearer caller tried to offer MANAGE — the step-up that gates it is cookie-only by construction, so the native client cannot mint it and should route the person to a browser rather than surface an error.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
         "404": {
           description: "No account on this instance carries that identifier.",
           content: { "application/json": { schema: errorEnvelope } },
@@ -356,7 +398,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "422": {
           description:
-            "Validation failed, or the invitation named the caller's own account (`meta.errorCode: sharing.invite.self`).",
+            "Validation failed, the invitation named the caller's own account (`meta.errorCode: sharing.invite.self`), or the scope cannot mean anything (`meta.errorCode: sharing.invite.invalid_scope` from the domain module; the request-shape refusal for an empty array, an unknown section or a scope beside MANAGE arrives as the ordinary multi-issue envelope naming the `scope` field).",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "429": {

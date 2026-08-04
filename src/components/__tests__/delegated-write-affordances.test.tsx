@@ -37,6 +37,8 @@ const OWNER = {
   username: "owner",
   displayName: "Margarethe",
   access: "read" as const,
+  level: "read" as const,
+  sections: null,
   canWrite: false,
 };
 
@@ -52,7 +54,7 @@ const READ_ONLY: AccountAccess = {
 };
 const WRITABLE: AccountAccess = {
   accounts: [OWNER],
-  active: { ...OWNER, access: "write", canWrite: true },
+  active: { ...OWNER, access: "write", level: "write", canWrite: true },
   canSwitch: true,
 };
 

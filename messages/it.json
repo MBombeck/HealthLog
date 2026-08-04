@@ -9418,6 +9418,10 @@
     "row": {
       "readOnly": "Può leggere la cartella",
       "canWrite": "Può leggere e aggiungere voci",
+      "canManage": "Può leggere la cartella, aggiungere voci e modificare o eliminare ciò che contiene",
+      "entireRecord": "Copre l'intera cartella",
+      "sections": "Copre: {sections}",
+      "noSections": "Non copre nulla: questo accesso non apre alcuna parte della cartella",
       "invited": "Invitato il",
       "accepted": "Accettato il",
       "expires": "Scade il",
@@ -9439,6 +9443,19 @@
       "accessReadCapability": "Può leggere tutto ciò che questa cartella condivide. Non può aggiungere né modificare nulla.",
       "accessWriteLabel": "Può vedere e aggiungere",
       "accessWriteCapability": "Può anche aggiungere alla cartella: misurazioni, risultati di laboratorio, un nuovo analita da seguire, una voce di malattia, un effetto collaterale di un farmaco, un nuovo farmaco e segnare una dose come presa o saltata. Non può modificare né eliminare nulla, nemmeno ciò che ha aggiunto, e non può rimandare uno dei tuoi promemoria. Solo tu puoi.",
+      "accessManageLabel": "Può gestire",
+      "accessManageCapability": "Può aggiungere, modificare ed eliminare voci della tua cartella, comprese quelle inserite da te, e può leggere le analisi generate a partire da essa. Non può cambiare il tuo accesso, le tue impostazioni di sicurezza, i tuoi servizi collegati né chi altro ha accesso. Puoi terminare tutto questo in qualsiasi momento.",
+      "manageStepUpNote": "Per offrirlo viene richiesto il tuo secondo fattore, quindi si può fare solo da browser.",
+      "scopeLegend": "Che cosa può aprire",
+      "scopeAllLabel": "Intera cartella",
+      "scopeAllCapability": "Ogni sua parte, come la condivisione ha sempre funzionato.",
+      "scopeSomeLabel": "Solo le sezioni che scegli",
+      "scopeSomeCapability": "Tutto ciò che non scegli resta chiuso per lei.",
+      "scopeManageNote": "L'accesso di gestione copre sempre l'intera cartella.",
+      "scopeLeakNote": "Una sezione può menzionare il resto della tua salute nelle note e nei nomi. Condividere una sezione significa condividere tutto ciò che vi è scritto.",
+      "scopeAggregateNote": "La panoramica della dashboard, il punteggio di salute e il riepilogo giornaliero compaiono solo se viene condivisa l'intera cartella.",
+      "scopeDocumentsNote": "Un documento può contenere qualsiasi cosa. Condividi questa sezione solo se quella persona può leggere tutto.",
+      "scopeEmptyHint": "Scegli almeno una sezione oppure torna a condividere l'intera cartella.",
       "expiresLabel": "L'accesso termina il (facoltativo)",
       "expiresHint": "Lascia vuoto per un accesso che dura finché qualcuno non lo termina. Una data qui viene controllata a ogni richiesta, quindi l'accesso si interrompe da solo alla fine di quel giorno.",
       "submit": "Invia invito",
@@ -9449,7 +9466,10 @@
       "errorSelf": "Questo è il tuo account.",
       "errorInvalid": "Inserisci un nome utente o un indirizzo e-mail.",
       "errorRateLimited": "Troppi inviti. Riprova più tardi.",
-      "errorFailed": "Non è stato possibile inviare l'invito. Riprova."
+      "errorFailed": "Non è stato possibile inviare l'invito. Riprova.",
+      "errorScope": "Queste sezioni non si possono condividere così. Scegli almeno una sezione oppure condividi l'intera cartella.",
+      "errorManageBrowserOnly": "L'accesso di gestione si può offrire solo da un browser, perché richiede il tuo secondo fattore.",
+      "errorStepUp": "Conferma il tuo secondo fattore e riprova."
     },
     "given": {
       "title": "Chi può aprire la mia cartella",
@@ -9474,6 +9494,7 @@
       "accept": "Accetta",
       "accepting": "Accettazione…",
       "writeConsent": "Se accetti, ciò che aggiungi entra a far parte della cartella di {name}. Dopo non potrai più modificare o rimuovere le voci; può farlo solo {name}.",
+      "manageConsent": "Se accetti, potrai aggiungere voci alla cartella di {name} e anche modificare o eliminare quelle già presenti, comprese quelle inserite da {name}. Tutto ciò che fai viene registrato con il tuo nome nella sua vista attività, e {name} può terminare il tuo accesso in qualsiasi momento.",
       "open": "Apri",
       "renounce": "Restituisci",
       "renounceTitle": "Restituire la cartella di {name}?",
@@ -9516,6 +9537,40 @@
       "medicationCreate": "{name} ha aggiunto un farmaco",
       "medicationIntake": "{name} ha registrato una dose",
       "medicationIntakeRefused": "{name} ha provato a modificare una dose o a rimandare un promemoria, ed è stato rifiutato"
+    },
+    "section": {
+      "measurements": {
+        "label": "Misurazioni",
+        "detail": "Peso, pressione, polso, glicemia, sonno, allenamenti e i valori che monitori."
+      },
+      "medications": {
+        "label": "Farmaci",
+        "detail": "L'elenco dei farmaci, gli orari, le dosi assunte, gli effetti collaterali e le scorte."
+      },
+      "labs": {
+        "label": "Esami di laboratorio",
+        "detail": "I risultati di laboratorio e l'elenco degli analiti che li compongono."
+      },
+      "profile": {
+        "label": "Anamnesi",
+        "detail": "Allergie, storia familiare e i dati del tuo profilo di salute."
+      },
+      "illness": {
+        "label": "Malattie",
+        "detail": "Gli episodi di malattia e i diari giornalieri collegati."
+      },
+      "mind": {
+        "label": "Umore e benessere mentale",
+        "detail": "Le voci sull'umore e lo storico dei questionari sulla salute mentale."
+      },
+      "cycle": {
+        "label": "Ciclo",
+        "detail": "Il monitoraggio del ciclo."
+      },
+      "documents": {
+        "label": "Documenti",
+        "detail": "Tutto ciò che è conservato nell'archivio documenti."
+      }
     }
   }
 }

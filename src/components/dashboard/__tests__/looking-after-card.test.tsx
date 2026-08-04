@@ -25,6 +25,8 @@ const GRANDMOTHER = {
   username: "gran",
   displayName: "Margarethe",
   access: "read" as const,
+  level: "read" as const,
+  sections: null,
   canWrite: false,
 };
 const FATHER = {
@@ -32,6 +34,8 @@ const FATHER = {
   username: "dad",
   displayName: null,
   access: "write" as const,
+  level: "write" as const,
+  sections: null,
   canWrite: true,
 };
 
@@ -107,7 +111,9 @@ describe("<LookingAfterCard>", () => {
     // about it this second. A grant that lapsed, or a level this build does
     // not honour, must not promise an add the next request would refuse.
     const html = render({
-      accounts: [{ ...FATHER, access: "write", canWrite: false }],
+      accounts: [
+        { ...FATHER, access: "write", level: "write", canWrite: false },
+      ],
       active: null,
       canSwitch: true,
     });

@@ -30,6 +30,8 @@ const OWNER = {
   username: "owner",
   displayName: "Margarethe",
   access: "write" as const,
+  level: "write" as const,
+  sections: null,
   canWrite: true,
 };
 
@@ -113,7 +115,12 @@ describe("CoachLaunchProvider", () => {
     for (const access of ["read", "write"] as const) {
       mockAccessRef.value = {
         accounts: [OWNER],
-        active: { ...OWNER, access, canWrite: access === "write" },
+        active: {
+          ...OWNER,
+          access,
+          level: access,
+          canWrite: access === "write",
+        },
         canSwitch: true,
       };
       const output: string[] = [];

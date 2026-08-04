@@ -70,7 +70,9 @@ interface AccountAccessEntry {
   accountId: string;
   username: string;
   displayName: string | null;
-  access: "read" | "write";
+  access: "read" | "write" | "manage";
+  level: "read" | "write" | "manage";
+  sections: string[] | null;
   canWrite: boolean;
 }
 
@@ -101,17 +103,25 @@ async function readMe(): Promise<{
 async function grantAccess(
   grantorId: string,
   granteeId: string,
-  extra: { expiresAt?: Date | null; acceptedAt?: Date | null } = {},
+  extra: {
+    expiresAt?: Date | null;
+    acceptedAt?: Date | null;
+    access?: "READ" | "WRITE" | "MANAGE";
+    scopeJson?: unknown;
+  } = {},
 ) {
   return getPrismaClient().accountGrant.create({
     data: {
       grantorId,
       granteeId,
-      access: "READ",
+      access: extra.access ?? "READ",
       invitedAt: new Date(),
       acceptedAt:
         extra.acceptedAt === undefined ? new Date() : extra.acceptedAt,
       expiresAt: extra.expiresAt ?? null,
+      ...(extra.scopeJson === undefined
+        ? {}
+        : { scopeJson: extra.scopeJson as never }),
     },
   });
 }
@@ -154,6 +164,8 @@ describe("accountAccess — what the payload publishes", () => {
         username: owner.username,
         displayName: owner.displayName,
         access: "read",
+        level: "read",
+        sections: null,
         canWrite: false,
       },
     ]);
@@ -201,6 +213,71 @@ describe("accountAccess — what the payload publishes", () => {
     expect(accountAccess.accounts).toEqual([]);
   });
 
+  it("publishes the sections a scoped grant opens, exactly as stored", async () => {
+    const owner = await makeUser("owner");
+    const delegate = await makeUser("delegate");
+    await grantAccess(owner.id, delegate.id, {
+      // Stored out of the consent screen's order on purpose: what the payload
+      // publishes is a resolved value in the reading order, not the column.
+      scopeJson: ["labs", "medications"],
+    });
+    await signIn(delegate.id);
+
+    const { accountAccess } = await readMe();
+
+    expect(accountAccess.accounts[0].sections).toEqual(["medications", "labs"]);
+    expect(accountAccess.accounts[0].level).toBe("read");
+  });
+
+  it("publishes the whole record as null, never as a list of eight", async () => {
+    // Null is the answer every pre-v1.37.0 grant carries and the one an owner
+    // who does not narrow still gives. Expanding it into all eight sections
+    // would turn a first-class value into a choice nobody made, and would
+    // start growing by release — a grant would quietly gain a section the
+    // owner never agreed to.
+    const owner = await makeUser("owner");
+    const delegate = await makeUser("delegate");
+    await grantAccess(owner.id, delegate.id);
+    await signIn(delegate.id);
+
+    const { accountAccess } = await readMe();
+
+    expect(accountAccess.accounts[0].sections).toBeNull();
+  });
+
+  it("publishes nothing at all for a scope it cannot read", async () => {
+    // Fail-closed, end to end. A blob this build cannot parse resolves to the
+    // empty set in the resolver, so the payload says the same: the grant
+    // opens nothing. A payload that reported null here would paint a full
+    // switcher entry for a grant the server refuses on every request.
+    const owner = await makeUser("owner");
+    const delegate = await makeUser("delegate");
+    await grantAccess(owner.id, delegate.id, { scopeJson: "garbage" });
+    await signIn(delegate.id);
+
+    const { accountAccess } = await readMe();
+
+    expect(accountAccess.accounts[0].sections).toEqual([]);
+  });
+
+  it("publishes a manage grant as manage, and as writable", async () => {
+    // The shipped expression was `access === "WRITE" ? "write" : "read"`,
+    // which would have published a grant that can delete entries as read-only
+    // — the payload understating access is the direction that reads as safe
+    // and is not, because the server would have gone on admitting the writes.
+    const owner = await makeUser("owner");
+    const delegate = await makeUser("delegate");
+    await grantAccess(owner.id, delegate.id, { access: "MANAGE" });
+    await signIn(delegate.id);
+
+    const { accountAccess } = await readMe();
+
+    expect(accountAccess.accounts[0].level).toBe("manage");
+    expect(accountAccess.accounts[0].access).toBe("manage");
+    expect(accountAccess.accounts[0].canWrite).toBe(true);
+    expect(accountAccess.accounts[0].sections).toBeNull();
+  });
+
   it("never lists a grant this account GAVE — the block is about what it may open", async () => {
     const owner = await makeUser("owner");
     const delegate = await makeUser("delegate");
@@ -236,6 +313,8 @@ describe("accountAccess — the active record", () => {
       username: owner.username,
       displayName: owner.displayName,
       access: "read",
+      level: "read",
+      sections: null,
       canWrite: false,
     });
     // The active entry is one of the listed ones, by construction. A banner

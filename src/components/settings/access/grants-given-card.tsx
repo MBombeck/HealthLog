@@ -128,10 +128,13 @@ export function GrantsGivenCard() {
  * exported from the invite card. The composition is the thing worth pinning:
  * which sentences appear, and which one is omitted when its number is unknown.
  *
- * Two extra sentences for a grant that could add entries, and only for one: a
- * read grant never put anything in the record, so telling its owner that
- * "anything they entered stays" would describe something that cannot have
- * happened. The last sentence is the honest bound on attribution — the activity
+ * Two extra sentences for a grant that could put something in the record, and
+ * only for one: a read grant never did, so telling its owner that "anything
+ * they entered stays" would describe something that cannot have happened. The
+ * condition is "not READ" rather than "is WRITE", so the level that can also
+ * change and remove entries carries both sentences too — for a manage grant
+ * the question "what happens to what they did" is the sharper one, not the
+ * softer. The last sentence is the honest bound on attribution — the activity
  * view answers "who entered what" for as long as the audit window reaches, and
  * that window is the operator's setting. It is said with the number the server
  * resolved, or not said at all.
@@ -149,7 +152,7 @@ export function revokeBody({
   retentionDays?: number;
 }): string {
   const lines = [t("recordSharing.given.revokeBody", { name })];
-  if (access === "WRITE") {
+  if (access !== "READ") {
     lines.push(t("recordSharing.given.revokeEntriesStay"));
     if (retentionDays !== undefined) {
       lines.push(

@@ -65,6 +65,7 @@ const BASE: GrantRow = {
   id: "g1",
   account: { id: "acct-1", username: "housemate", displayName: "Jo" },
   access: "READ",
+  scope: null,
   state: "PENDING",
   invitedAt: "2026-01-02T10:00:00.000Z",
   acceptedAt: null,
@@ -75,31 +76,55 @@ const BASE: GrantRow = {
 };
 
 describe("offering a level", () => {
-  it("offers both levels and preselects the narrower one", () => {
+  it("offers all three levels and preselects the narrowest", () => {
     const html = render(<GrantInviteCard />);
     expect(html).toContain('data-slot="grant-invite-access"');
     expect(html).toContain('data-access="READ"');
     expect(html).toContain('data-access="WRITE"');
+    expect(html).toContain('data-access="MANAGE"');
     // The narrow level is the one somebody chooses their way out of.
     expect(html).toContain('data-access="READ" data-selected="true"');
     expect(html).toContain('data-access="WRITE" data-selected="false"');
+    expect(html).toContain('data-access="MANAGE" data-selected="false"');
   });
 
-  it("shows keyboard focus on the option the radio is hidden inside", () => {
+  it("shows keyboard focus on every option the radio is hidden inside", () => {
     // The radio is `sr-only`, so the browser's own ring lands on a zero-size
     // box and tabbing through this fieldset moved an invisible selection —
     // WCAG 2.4.7, on the screen where somebody grants write access to their
     // health record. The label wears the ring instead, and `has-[:focus-visible]`
     // is what carries it from the input to the label.
+    //
+    // Both fieldsets are checked, not only the level one: v1.37.0 added a
+    // second group of radios in the same idiom, and a group that lost the ring
+    // would be the same defect shipped again one section further down.
     const html = render(<GrantInviteCard />);
-    const options = html.match(
+    const levels = html.match(
       /<label[^>]*data-slot="grant-invite-access-option"[^>]*>/g,
     );
-    expect(options).toHaveLength(2);
-    for (const option of options ?? []) {
+    const scopes = html.match(
+      /<label[^>]*data-slot="grant-invite-scope-option"[^>]*>/g,
+    );
+    expect(levels).toHaveLength(3);
+    expect(scopes).toHaveLength(2);
+    for (const option of [...(levels ?? []), ...(scopes ?? [])]) {
       expect(option, option).toContain("has-[:focus-visible]:ring-2");
       expect(option, option).toContain("has-[:focus-visible]:ring-ring/50");
     }
+  });
+
+  it("says plainly that manage can change and delete what the owner wrote", () => {
+    const html = render(<GrantInviteCard />);
+    // The clause that separates this level from the one below it. A rewrite
+    // that keeps "manage" and drops this is a rewrite that stops describing
+    // a delete button.
+    expect(html).toContain("add, change and remove entries in your record");
+    expect(html).toContain("including ones you entered yourself");
+    // And the fence, in the same breath. Consent to management is only
+    // meaningful beside what management does not reach.
+    expect(html).toContain("They cannot change your login");
+    expect(html).toContain("who else has access");
+    expect(html).toContain("You can end this at any time.");
   });
 
   it("says what the wider level actually does, and what it does not", () => {
@@ -140,6 +165,24 @@ describe("accepting a level", () => {
     expect(html).toContain('data-slot="grant-write-consent"');
     // In document order the consent sits ahead of the control it qualifies.
     expect(html.indexOf('data-slot="grant-write-consent"')).toBeLessThan(
+      html.indexOf('data-slot="grant-accept"'),
+    );
+  });
+
+  it("asks a manage invitation for its own, heavier consent", () => {
+    grantsRef.value = { given: [], received: [{ ...BASE, access: "MANAGE" }] };
+    const html = render(<GrantsReceivedCard />);
+
+    expect(html).toContain('data-grant-access="MANAGE"');
+    // The row states the level in its own words, not the write level's.
+    expect(html).toContain("change or remove what is in it");
+    expect(html).toContain('data-slot="grant-manage-consent"');
+    // Not the write sentence wearing a stronger adjective: a different
+    // responsibility gets a different sentence.
+    expect(html).not.toContain('data-slot="grant-write-consent"');
+    expect(html).toContain("change or remove what is already in it");
+    expect(html).toContain("recorded under your name");
+    expect(html.indexOf('data-slot="grant-manage-consent"')).toBeLessThan(
       html.indexOf('data-slot="grant-accept"'),
     );
   });
@@ -189,6 +232,21 @@ describe("ending an access, and what it says about what was entered", () => {
     const body = revokeBody({
       t,
       access: "WRITE",
+      name: "Jo",
+      retentionDays: 90,
+    });
+    expect(body).toContain("recordSharing.given.revokeEntriesStay");
+    expect(body).toContain('revokeAttribution({"days":90})');
+  });
+
+  it("tells a manage owner the same, because the question is sharper there", () => {
+    // The condition is "not READ" rather than "is WRITE". A manager put things
+    // in the record AND changed things in it, so "what happens to what they
+    // did" is the sentence this owner most needs, and a level check that
+    // listed WRITE by name would have dropped it exactly where it matters.
+    const body = revokeBody({
+      t,
+      access: "MANAGE",
       name: "Jo",
       retentionDays: 90,
     });

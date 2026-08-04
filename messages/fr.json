@@ -9418,6 +9418,10 @@
     "row": {
       "readOnly": "Peut lire le dossier",
       "canWrite": "Peut lire et ajouter des entrées",
+      "canManage": "Peut lire le dossier, y ajouter des entrées et modifier ou supprimer ce qui s'y trouve",
+      "entireRecord": "Couvre l'intégralité du dossier",
+      "sections": "Couvre : {sections}",
+      "noSections": "Ne couvre rien : cet accès n'ouvre aucune partie du dossier",
       "invited": "Invité le",
       "accepted": "Accepté le",
       "expires": "Expire le",
@@ -9439,6 +9443,19 @@
       "accessReadCapability": "Elle peut lire tout ce que ce dossier partage. Elle ne peut rien ajouter ni rien modifier.",
       "accessWriteLabel": "Peut consulter et ajouter",
       "accessWriteCapability": "Elle peut aussi ajouter au dossier : des mesures, des résultats de laboratoire, un nouvel analyte à suivre, une entrée de maladie, un effet indésirable lié à un médicament, un nouveau médicament, et marquer une dose comme prise ou sautée. Elle ne peut rien modifier ni supprimer, pas même ce qu'elle a ajouté, et elle ne peut pas reporter un de vos rappels. Vous seul le pouvez.",
+      "accessManageLabel": "Peut gérer",
+      "accessManageCapability": "Elle peut ajouter, modifier et supprimer des entrées de votre dossier, y compris celles que vous avez saisies vous-même, et lire les analyses qui en sont tirées. Elle ne peut modifier ni votre connexion, ni vos paramètres de sécurité, ni vos services connectés, ni la liste des personnes qui ont accès. Vous pouvez y mettre fin à tout moment.",
+      "manageStepUpNote": "Cette offre demande votre deuxième facteur, elle n'est donc possible que dans un navigateur.",
+      "scopeLegend": "Ce que cette personne peut ouvrir",
+      "scopeAllLabel": "Dossier complet",
+      "scopeAllCapability": "Toutes ses parties, comme le partage a toujours fonctionné.",
+      "scopeSomeLabel": "Seulement les rubriques que vous choisissez",
+      "scopeSomeCapability": "Tout ce que vous ne choisissez pas lui reste fermé.",
+      "scopeManageNote": "Un accès de gestion couvre toujours l'intégralité du dossier.",
+      "scopeLeakNote": "Une rubrique peut évoquer le reste de votre santé dans ses notes et ses intitulés. Partager une rubrique, c'est partager tout ce qui y est écrit.",
+      "scopeAggregateNote": "La vue d'ensemble du tableau de bord, le score de santé et le résumé quotidien n'apparaissent que si le dossier entier est partagé.",
+      "scopeDocumentsNote": "Un document peut contenir n'importe quoi. Ne partagez cette rubrique que si la personne peut tout lire.",
+      "scopeEmptyHint": "Choisissez au moins une rubrique, ou revenez au partage du dossier complet.",
       "expiresLabel": "L'accès prend fin le (facultatif)",
       "expiresHint": "Laissez ce champ vide pour un accès qui dure jusqu'à ce que quelqu'un y mette fin. Une date ici est vérifiée à chaque requête, l'accès s'arrête donc de lui-même à la fin de cette journée.",
       "submit": "Envoyer l'invitation",
@@ -9449,7 +9466,10 @@
       "errorSelf": "C'est votre propre compte.",
       "errorInvalid": "Saisissez un nom d'utilisateur ou une adresse e-mail.",
       "errorRateLimited": "Trop d'invitations. Veuillez réessayer plus tard.",
-      "errorFailed": "L'invitation n'a pas pu être envoyée. Veuillez réessayer."
+      "errorFailed": "L'invitation n'a pas pu être envoyée. Veuillez réessayer.",
+      "errorScope": "Ces rubriques ne peuvent pas être partagées ainsi. Choisissez au moins une rubrique, ou partagez le dossier complet.",
+      "errorManageBrowserOnly": "Un accès de gestion ne peut être proposé que depuis un navigateur, car il demande votre deuxième facteur.",
+      "errorStepUp": "Confirmez votre deuxième facteur, puis réessayez."
     },
     "given": {
       "title": "Qui peut ouvrir mon dossier",
@@ -9474,6 +9494,7 @@
       "accept": "Accepter",
       "accepting": "Acceptation…",
       "writeConsent": "Si vous acceptez, ce que vous ajoutez fait partie du dossier de {name}. Vous ne pourrez plus modifier ni supprimer vos entrées ensuite ; {name} est la seule personne à pouvoir le faire.",
+      "manageConsent": "Si vous acceptez, vous pourrez compléter le dossier de {name} mais aussi modifier ou supprimer ce qui s'y trouve déjà, y compris les entrées de {name}. Tout ce que vous faites apparaît à votre nom dans son journal d'activité, et {name} peut mettre fin à votre accès à tout moment.",
       "open": "Ouvrir",
       "renounce": "Rendre",
       "renounceTitle": "Rendre le dossier de {name} ?",
@@ -9516,6 +9537,40 @@
       "medicationCreate": "{name} a ajouté un médicament",
       "medicationIntake": "{name} a enregistré une prise",
       "medicationIntakeRefused": "{name} a tenté de modifier une dose ou de reporter un rappel, et a été refusé"
+    },
+    "section": {
+      "measurements": {
+        "label": "Mesures",
+        "detail": "Poids, tension artérielle, pouls, glycémie, sommeil, séances et les valeurs que vous suivez."
+      },
+      "medications": {
+        "label": "Médicaments",
+        "detail": "La liste des médicaments, leurs horaires, les prises, les effets indésirables et les stocks."
+      },
+      "labs": {
+        "label": "Résultats de laboratoire",
+        "detail": "Les résultats de laboratoire et la liste des analytes correspondants."
+      },
+      "profile": {
+        "label": "Antécédents de santé",
+        "detail": "Allergies, antécédents familiaux et les informations de votre profil de santé."
+      },
+      "illness": {
+        "label": "Maladies",
+        "detail": "Les épisodes de maladie et les journaux quotidiens qui s'y rattachent."
+      },
+      "mind": {
+        "label": "Humeur et santé mentale",
+        "detail": "Les entrées d'humeur et l'historique des questionnaires de santé mentale."
+      },
+      "cycle": {
+        "label": "Cycle",
+        "detail": "Le suivi du cycle."
+      },
+      "documents": {
+        "label": "Documents",
+        "detail": "Tout ce qui est conservé dans le coffre à documents."
+      }
     }
   }
 }

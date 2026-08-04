@@ -25,13 +25,28 @@ const READ_ONLY: AccountAccessEntry = {
   username: "owner",
   displayName: "Margarethe",
   access: "read",
+  level: "read",
+  sections: null,
   canWrite: false,
 };
 
 const WRITABLE: AccountAccessEntry = {
   ...READ_ONLY,
   access: "write",
+  level: "write",
   canWrite: true,
+};
+
+const MANAGING: AccountAccessEntry = {
+  ...READ_ONLY,
+  access: "manage",
+  level: "manage",
+  canWrite: true,
+};
+
+const SCOPED: AccountAccessEntry = {
+  ...READ_ONLY,
+  sections: ["medications", "labs"],
 };
 
 describe("resolveRecordCapabilities", () => {
@@ -44,6 +59,11 @@ describe("resolveRecordCapabilities", () => {
       canWrite: false,
       canAdd: true,
       canManage: true,
+      // No grant, so no level and no narrowing — not a fabricated "manage"
+      // over all eight sections, which a consumer would then have to tell
+      // apart from a real one.
+      level: null,
+      sections: null,
     });
     expect(resolveRecordCapabilities(undefined)).toEqual(
       resolveRecordCapabilities(null),
@@ -56,6 +76,8 @@ describe("resolveRecordCapabilities", () => {
       canWrite: false,
       canAdd: false,
       canManage: false,
+      level: "read",
+      sections: null,
     });
   });
 
@@ -67,6 +89,38 @@ describe("resolveRecordCapabilities", () => {
       canWrite: true,
       canAdd: true,
       canManage: false,
+      level: "write",
+      sections: null,
+    });
+  });
+
+  it("carries the level and the sections through untouched", () => {
+    // The two facts v1.37.0 adds are bound, not interpreted. `sections` is
+    // the server's list in the server's order; `level` is the server's word.
+    // Nothing here filters, sorts or re-spells either, because the moment
+    // this file starts deriving from them it becomes the second program
+    // deciding what a delegation covers.
+    expect(resolveRecordCapabilities(SCOPED).sections).toEqual([
+      "medications",
+      "labs",
+    ]);
+    expect(resolveRecordCapabilities(MANAGING).level).toBe("manage");
+  });
+
+  it("does not hand a manage grant the affordances its routes cannot answer yet", () => {
+    // The deliberate gap, pinned so it cannot close by accident. MANAGE will
+    // bring the edit and delete controls back, and it does so in the release
+    // where the routes behind them answer — not in the one that merely
+    // publishes the level. A `canManage: true` here today would paint
+    // controls that 403, which is the exact failure these booleans exist to
+    // prevent.
+    expect(resolveRecordCapabilities(MANAGING)).toEqual({
+      inSharedRecord: true,
+      canWrite: true,
+      canAdd: true,
+      canManage: false,
+      level: "manage",
+      sections: null,
     });
   });
 

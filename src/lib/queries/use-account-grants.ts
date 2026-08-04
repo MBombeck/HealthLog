@@ -26,6 +26,7 @@ import {
 
 import { apiDelete, apiGet, apiPost } from "@/lib/api/api-fetch";
 import { grantDependentKeys, queryKeys } from "@/lib/query-keys";
+import type { ShareDomain } from "@/lib/sharing/scope";
 
 /** The other party to a grant, as far as anyone is told about them. */
 export interface GrantParty {
@@ -36,10 +37,20 @@ export interface GrantParty {
 
 export type GrantState = "PENDING" | "ACTIVE" | "EXPIRED" | "REVOKED";
 
+/** The three levels an invitation can carry, spelled as the wire spells them. */
+export type GrantAccess = "READ" | "WRITE" | "MANAGE";
+
 export interface GrantRow {
   id: string;
   account: GrantParty;
-  access: "READ" | "WRITE";
+  access: GrantAccess;
+  /**
+   * The sections the grant opens, or null for the entire record. Resolved by
+   * the server in the consent screen's reading order; an empty array means the
+   * grant opens nothing, which is the fail-closed reading of a stored scope
+   * the server could not parse.
+   */
+  scope: ShareDomain[] | null;
   state: GrantState;
   invitedAt: string;
   acceptedAt: string | null;
@@ -126,7 +137,16 @@ export interface InviteInput {
    * level has not decided it, and this is the one moment the level can be
    * decided at all.
    */
-  access: "READ" | "WRITE";
+  access: GrantAccess;
+  /**
+   * Which sections it opens, or null for the entire record.
+   *
+   * Required for the same reason as `access` and stated as `null` rather than
+   * omitted, so that "the whole record" is something a caller says out loud.
+   * The server refuses an empty array, an unknown key, and any scope at all
+   * beside MANAGE.
+   */
+  scope: ShareDomain[] | null;
 }
 
 export function useInviteGrant() {

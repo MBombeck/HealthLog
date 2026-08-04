@@ -9418,6 +9418,10 @@
     "row": {
       "readOnly": "Can read the record",
       "canWrite": "Can read and add entries",
+      "canManage": "Can read the record, add to it, and change or remove what is in it",
+      "entireRecord": "Covers the entire record",
+      "sections": "Covers: {sections}",
+      "noSections": "Covers nothing — this access opens no part of the record",
       "invited": "Invited",
       "accepted": "Accepted",
       "expires": "Lapses",
@@ -9439,6 +9443,19 @@
       "accessReadCapability": "They can read everything this record shares. They cannot add or change anything.",
       "accessWriteLabel": "Can view and add",
       "accessWriteCapability": "They can also add to the record: readings, lab results, a new analyte to track, an illness entry, a side effect against a drug, a new medication, and marking a dose taken or skipped. They cannot edit or delete anything, not even what they added, and they cannot defer one of your reminders. Only you can.",
+      "accessManageLabel": "Can manage",
+      "accessManageCapability": "They can add, change and remove entries in your record, including ones you entered yourself, and they can read the insights generated from it. They cannot change your login, your security settings, your connections, or who else has access. You can end this at any time.",
+      "manageStepUpNote": "Offering this asks for your second factor, so it can only be done in a browser.",
+      "scopeLegend": "What they can open",
+      "scopeAllLabel": "Entire record",
+      "scopeAllCapability": "Every part of it, the way sharing has always worked.",
+      "scopeSomeLabel": "Only the sections you pick",
+      "scopeSomeCapability": "Everything you do not pick stays closed to them.",
+      "scopeManageNote": "Manage access always covers the entire record.",
+      "scopeLeakNote": "A section can mention the rest of your health in its notes and names. Sharing a section shares everything written in it.",
+      "scopeAggregateNote": "The dashboard overview, health score and daily digest only appear when the entire record is shared.",
+      "scopeDocumentsNote": "A document can contain anything. Share this only if they may read all of it.",
+      "scopeEmptyHint": "Pick at least one section, or go back to sharing the entire record.",
       "expiresLabel": "Access ends on (optional)",
       "expiresHint": "Leave this empty for access that lasts until somebody ends it. A date here is checked on every request, so access stops on its own at the end of that day.",
       "submit": "Send invitation",
@@ -9449,7 +9466,10 @@
       "errorSelf": "That is your own account.",
       "errorInvalid": "Please enter a username or e-mail address.",
       "errorRateLimited": "Too many invitations. Please try again later.",
-      "errorFailed": "The invitation could not be sent. Please try again."
+      "errorFailed": "The invitation could not be sent. Please try again.",
+      "errorScope": "Those sections cannot be shared like that. Pick at least one section, or share the entire record.",
+      "errorManageBrowserOnly": "Manage access can only be offered in a browser, because it asks for your second factor.",
+      "errorStepUp": "Confirm your second factor, then try again."
     },
     "given": {
       "title": "Who can open my record",
@@ -9474,6 +9494,7 @@
       "accept": "Accept",
       "accepting": "Accepting…",
       "writeConsent": "If you accept, what you add becomes part of {name}'s record. You will not be able to change or remove entries afterwards; only {name} can.",
+      "manageConsent": "If you accept, you can add to {name}'s record and also change or remove what is already in it, including entries {name} made themselves. Everything you do is recorded under your name in their activity view, and {name} can end your access at any time.",
       "open": "Open",
       "renounce": "Hand back",
       "renounceTitle": "Hand {name}'s record back?",
@@ -9516,6 +9537,40 @@
       "medicationCreate": "{name} added a medication",
       "medicationIntake": "{name} marked a dose",
       "medicationIntakeRefused": "{name} tried to change a dose or defer a reminder, and was refused"
+    },
+    "section": {
+      "measurements": {
+        "label": "Readings",
+        "detail": "Weight, blood pressure, pulse, glucose, sleep, workouts and the values you track."
+      },
+      "medications": {
+        "label": "Medications",
+        "detail": "The medication list, its schedules, the doses taken, side effects and stock."
+      },
+      "labs": {
+        "label": "Lab results",
+        "detail": "Lab results and the list of analytes behind them."
+      },
+      "profile": {
+        "label": "Health background",
+        "detail": "Allergies, family history and the facts in your health profile."
+      },
+      "illness": {
+        "label": "Illness",
+        "detail": "Illness episodes and the day logs kept under them."
+      },
+      "mind": {
+        "label": "Mood and mind",
+        "detail": "Mood entries and the history of the mental-health questionnaires."
+      },
+      "cycle": {
+        "label": "Cycle",
+        "detail": "Cycle tracking."
+      },
+      "documents": {
+        "label": "Documents",
+        "detail": "Everything stored in the document vault."
+      }
     }
   }
 }

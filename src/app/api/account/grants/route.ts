@@ -7,9 +7,19 @@
  * client that has to call twice will eventually render half an answer.
  *
  * `POST` offers a grant to somebody already registered on this instance, at
- * the level the owner chose. There is no route that raises a live grant: the
- * level is settled when the invitation is written and the only way to a wider
- * one is a fresh invitation the delegate accepts again.
+ * the level the owner chose and over the sections they chose. There is no
+ * route that raises a live grant: both are settled when the invitation is
+ * written and the only way to a wider one is a fresh invitation the delegate
+ * accepts again.
+ *
+ * v1.37.0 — offering MANAGE is the one act on this surface with friction on
+ * it. It asks for a fresh second factor when the account has one, which makes
+ * it cookie-only by construction: the step-up gate resolves through the
+ * session cookie and a token transport carries nothing that could satisfy it.
+ * That consequence is deliberate rather than an oversight — the native client
+ * cannot offer management of a health record, and the refusal below says so in
+ * a code rather than leaving a token caller with an authentication error on a
+ * request that authenticated fine.
  *
  * **Neither is delegable, and that is structural.** Both resolve through bare
  * `requireAuth()`, which refuses outright while the caller is acting on
@@ -31,7 +41,12 @@
  */
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import {
+  apiHandler,
+  requireAuth,
+  requireFreshMfaIfEnrolled,
+  MFA_STEP_UP_MAX_AGE_SECONDS,
+} from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
@@ -91,7 +106,8 @@ export const GET = apiHandler(async () => {
 });
 
 export const POST = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireAuth();
+  const auth = await requireAuth();
+  const user = auth.user;
 
   const rl = await checkRateLimit(
     `sharing:invite:${user.id}`,
@@ -114,7 +130,38 @@ export const POST = apiHandler(async (request: NextRequest) => {
     });
   }
 
-  const { identifier, expiresAt, access } = parsed.data;
+  const { identifier, expiresAt, access, scope } = parsed.data;
+
+  // ── The step-up, and only on the level that needs one ───────────────────
+  //
+  // MANAGE is the level that can rewrite and delete somebody's health record,
+  // so offering it is gated on a fresh second factor the way account deletion
+  // and the encrypted export are. READ and WRITE are untouched: an owner
+  // sharing a reading with their partner should not have to re-prove anything.
+  //
+  // It runs BEFORE the invitee lookup on purpose. That lookup answers 404 for
+  // an identifier nobody carries, which is a deliberate disclosure to an
+  // authenticated caller — but there is no reason to hand it out on a request
+  // that is about to be refused anyway.
+  //
+  // The transport is checked first and separately. `requireFreshMfaIfEnrolled`
+  // escalates to `requireFreshMfa`, which resolves through the session cookie
+  // and has no Bearer fall-through; a token caller would therefore be told
+  // "Not authenticated" by a route that had just authenticated them, which is
+  // the obscure failure this branch exists to prevent. The consequence is
+  // deliberate and documented (the native client cannot mint MANAGE): it is
+  // said here in a code a client can branch on, so the app can send the person
+  // to a browser instead of showing them a login error.
+  if (access === "MANAGE") {
+    if (auth.authMethod !== "cookie") {
+      return apiError(
+        "Manage access can only be offered from a browser session",
+        403,
+        { errorCode: "sharing.invite.manage_browser_only" },
+      );
+    }
+    await requireFreshMfaIfEnrolled(MFA_STEP_UP_MAX_AGE_SECONDS);
+  }
 
   // Either column, case-insensitively — the same lookup the login form does,
   // so the name somebody signs in with is the name they can be invited by.
@@ -142,26 +189,29 @@ export const POST = apiHandler(async (request: NextRequest) => {
       grantorId: user.id,
       granteeId: invitee.id,
       access,
-      // The entire record, which is what this endpoint has always offered and
-      // what every stored grant means. Named rather than defaulted, because
-      // the domain module takes the scope as a required argument for the same
-      // reason it takes the level as one: a scope nobody chose is not a scope.
-      // The consent surface that lets an owner narrow it lands beside this
-      // line, in this release.
-      scope: null,
+      // The sections the owner ticked, or null for the entire record. The
+      // schema is where an absent field becomes null, the same way it is where
+      // an absent level becomes READ; the domain module takes both as required
+      // arguments so neither is decided twice. It re-refuses an empty set, an
+      // unknown key and a scope beside MANAGE underneath this line — the
+      // schema is the legible refusal, that one is the floor.
+      scope: scope ?? null,
       expiresAt: expiresAt ? new Date(expiresAt) : null,
     });
 
-    // The level is on the audit row, not only in the response: "who was given
-    // what, and by whom" is the question this row exists to answer, and an
-    // entry that recorded the invitation without its level would answer half
-    // of it.
+    // The level AND the sections are on the audit row, not only in the
+    // response: "who was given what, and by whom" is the question this row
+    // exists to answer, and an entry that recorded the invitation without
+    // either would answer half of it. `null` is written as null rather than
+    // omitted, because "the entire record" is an answer and a missing key
+    // would read as a row from before the question was asked.
     await auditLog("sharing.grant.invited", {
       userId: user.id,
       details: {
         grantId: grant.id,
         granteeId: invitee.id,
         access: grant.access,
+        scope: scope ?? null,
       },
       ipAddress: getClientIp(request),
     }).catch(() => {});
@@ -171,6 +221,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
       meta: {
         grant_id: grant.id,
         access: grant.access,
+        // The count rather than the keys: a dashboard wants to know how often
+        // owners narrow, and which sections one household shares is not a
+        // thing to spread across the observability pipeline. Zero means the
+        // entire record.
+        scope_sections: scope?.length ?? 0,
         expires: expiresAt !== null && expiresAt !== undefined,
       },
     });
@@ -198,6 +253,16 @@ function grantErrorResponse(err: GrantError): Response {
     case "duplicate_live_grant":
       return apiError("That account already has access", 409, {
         errorCode: "sharing.invite.duplicate",
+      });
+    // The request shape refuses the same three cases earlier and more
+    // legibly (a 422 naming the `scope` field). Reaching this arm means a
+    // caller got past the schema with a scope the domain module will not
+    // store — an empty set, a key outside the vocabulary, or any scope beside
+    // MANAGE. Same status, its own code, so a client can tell "your sections
+    // are wrong" from "that is your own account".
+    case "invalid_scope":
+      return apiError("Those sections cannot be shared", 422, {
+        errorCode: "sharing.invite.invalid_scope",
       });
     default:
       return apiError("Invitation refused", 422, {

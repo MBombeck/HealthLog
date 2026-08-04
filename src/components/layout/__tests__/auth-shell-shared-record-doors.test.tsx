@@ -115,11 +115,14 @@ const OWNER_READ: AccountAccessEntry = {
   username: "grandma",
   displayName: "Margarethe",
   access: "read" as const,
+  level: "read" as const,
+  sections: null,
   canWrite: false,
 };
 const OWNER_WRITE: AccountAccessEntry = {
   ...OWNER_READ,
   access: "write",
+  level: "write",
   canWrite: true,
 };
 

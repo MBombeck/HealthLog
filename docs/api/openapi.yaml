@@ -12508,11 +12508,15 @@ paths:
       tags:
         - Account sharing
       summary: Invite an account to this record
-      description: Offers access to somebody already registered on this instance, at READ or WRITE; the grant confers nothing
-        until they accept it. An identifier that names no account answers 404 — a deliberate disclosure to an
-        authenticated caller on a household instance, rate-limited to 10 invitations an hour, and the alternative (a
-        silent pending row for a mistyped username) is worse. Refused while acting on another account, so a delegate can
-        neither invite nor re-delegate.
+      description: "Offers access to somebody already registered on this instance, at READ, WRITE or MANAGE and over the whole
+        record or named sections; the grant confers nothing until they accept it. An identifier that names no account
+        answers 404 — a deliberate disclosure to an authenticated caller on a household instance, rate-limited to 10
+        invitations an hour, and the alternative (a silent pending row for a mistyped username) is worse. Refused while
+        acting on another account, so a delegate can neither invite nor re-delegate. Offering MANAGE is step-up gated
+        (`requireFreshMfaIfEnrolled`, cookie-only): an enrolled account without a fresh factor gets 401
+        `auth.stepup.required`, and a Bearer caller gets 403 `sharing.invite.manage_browser_only` before anything else
+        happens, because the gate it would hit resolves through the session cookie and would otherwise answer 'not
+        authenticated' to a caller it had just authenticated."
       requestBody:
         required: true
         content:
@@ -12534,13 +12538,38 @@ paths:
                   default: READ
                   description: "READ can read the record and change nothing. WRITE can additionally ADD entries (readings, results,
                     observations, a medication, a marked dose) and can still edit or delete nothing, including its own.
-                    Omitted means READ, so a client that predates the field keeps working. The level is fixed when the
-                    invitation is written: no endpoint raises a live grant, because that would widen what the delegate
-                    accepted without asking them again. The way up is a new invitation the delegate accepts."
+                    MANAGE can additionally change and remove entries, including ones the owner wrote, and read the
+                    generated insights; it never reaches the identity surfaces (login, second factor, connections,
+                    tokens, settings, or who else has access). Omitted means READ, so a client that predates the field
+                    keeps working. The level is fixed when the invitation is written: no endpoint raises a live grant,
+                    because that would widen what the delegate accepted without asking them again. The way up is a new
+                    invitation the delegate accepts."
                   type: string
                   enum:
                     - READ
                     - WRITE
+                    - MANAGE
+                scope:
+                  description: "The sections of the record this invitation opens. Omitted or null means the entire record, which is what
+                    every grant written before v1.37.0 means and what an owner who does not narrow still gets. A
+                    non-null value is a non-empty array of section keys from the closed vocabulary; an empty array, an
+                    unknown key and the whole-record sentinel `record` are each refused. A stored scope never grows: a
+                    section added by a later release is not in a set an owner ticked before it existed."
+                  anyOf:
+                    - minItems: 1
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - measurements
+                          - medications
+                          - labs
+                          - profile
+                          - illness
+                          - mind
+                          - cycle
+                          - documents
+                    - type: "null"
               required:
                 - identifier
       responses:
@@ -12550,8 +12579,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AccountGrantEnvelope"
-        "401": *a1
-        "403": *a20
+        "401":
+          description: "Offering MANAGE from an MFA-enrolled account without a recent second-factor proof (`meta.errorCode:
+            auth.stepup.required`). Re-prove the factor and retry; READ and WRITE invitations are never gated."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Refused. `meta.errorCode` is `sharing.not_permitted` when the request was made while acting on another
+            account (grant management is never delegable), or `sharing.invite.manage_browser_only` when a Bearer caller
+            tried to offer MANAGE — the step-up that gates it is cookie-only by construction, so the native client
+            cannot mint it and should route the person to a browser rather than surface an error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "404":
           description: No account on this instance carries that identifier.
           content:
@@ -12566,8 +12609,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422":
-          description: "Validation failed, or the invitation named the caller's own account (`meta.errorCode:
-            sharing.invite.self`)."
+          description: "Validation failed, the invitation named the caller's own account (`meta.errorCode: sharing.invite.self`),
+            or the scope cannot mean anything (`meta.errorCode: sharing.invite.invalid_scope` from the domain module;
+            the request-shape refusal for an empty array, an unknown section or a scope beside MANAGE arrives as the
+            ordinary multi-issue envelope naming the `scope` field)."
           content:
             application/json:
               schema:
@@ -36698,20 +36743,61 @@ components:
           enum:
             - read
             - write
+            - manage
+          description: The grant's resolved level, under the name v1.36.0 published. Identical to `level` — both come from one
+            server-side expression — and kept because shipped clients read it. New code reads `level`.
+        level:
+          type: string
+          enum:
+            - read
+            - write
+            - manage
+          description: The grant's resolved level. `manage` additionally admits changing and removing entries on the delegable
+            surfaces; it never reaches the identity surfaces (settings, connections, tokens, consent, grant management),
+            which stay refused on an invited record at every level. Render it; never derive it from `canWrite`.
+        sections:
+          anyOf:
+            - type: array
+              items:
+                $ref: "#/components/schemas/ShareSection"
+            - type: "null"
+          description: The sections of that record this caller may open, or null for the entire record. Null is first-class and is
+            what every pre-v1.37.0 grant carries; a MANAGE grant always carries it too. A non-null array names the open
+            sections and NOTHING else answers — a client that switches into a scoped record without honouring this gets
+            the standard 403 on every out-of-scope route, fail-closed and byte-identical to every other sharing refusal,
+            which is safe but reads as a wall of errors. An empty array means the grant opens nothing. Ordered by the
+            consent screen's reading order.
         canWrite:
           type: boolean
-          description: "Whether this caller may ADD to that record: true for an accepted WRITE grant, false for a READ one. It
-            never means edit or delete, which stay with the owner at both levels. Resolved server-side. Render it; never
-            derive it."
+          description: "Whether this caller may ADD to that record: true for an accepted WRITE or MANAGE grant, false for a READ
+            one. On its own it never means edit or delete — a WRITE grant adds and does nothing more. What MANAGE
+            additionally admits is said by `level`. Resolved server-side. Render it; never derive it."
       required:
         - accountId
         - username
         - displayName
         - access
+        - level
+        - sections
         - canWrite
       additionalProperties: false
       description: "One account this caller may act on. No avatar is published: the avatar bytes are owner-scoped, so a URL
         here would resolve to a refusal. Clients paint their initials fallback."
+    ShareSection:
+      type: string
+      enum:
+        - measurements
+        - medications
+        - labs
+        - profile
+        - illness
+        - mind
+        - cycle
+        - documents
+      description: "One section of a health record, as a grant may name it. A closed vocabulary of eight, derived by
+        clustering the delegable read surfaces rather than from the module list — the two answer different questions and
+        never share a spelling. The whole-record case is `null` on the field that carries these, never a member of this
+        enum: a scope that named the whole record would be a narrowing that means its own absence."
     RecordActivityEnvelope:
       type: object
       properties:
@@ -36843,6 +36929,18 @@ components:
           enum:
             - READ
             - WRITE
+            - MANAGE
+        scope:
+          anyOf:
+            - type: array
+              items:
+                $ref: "#/components/schemas/ShareSection"
+            - type: "null"
+          description: The sections this grant opens, or null for the entire record. Null is a first-class value and the one every
+            grant written before v1.37.0 carries; render it as the whole record, never as a legacy or unknown state. A
+            MANAGE grant always carries null. An EMPTY array means the grant opens nothing — the fail-closed reading of
+            a stored scope the server cannot parse — and the server will refuse every section for it, so render it as
+            nothing rather than as everything. Ordered by the consent screen's own reading order.
         state:
           $ref: "#/components/schemas/AccountGrantState"
         invitedAt:
@@ -36874,6 +36972,7 @@ components:
         - id
         - account
         - access
+        - scope
         - state
         - invitedAt
         - acceptedAt
@@ -36960,6 +37059,18 @@ components:
           enum:
             - READ
             - WRITE
+            - MANAGE
+        scope:
+          anyOf:
+            - type: array
+              items:
+                $ref: "#/components/schemas/ShareSection"
+            - type: "null"
+          description: The sections this grant opens, or null for the entire record. Null is a first-class value and the one every
+            grant written before v1.37.0 carries; render it as the whole record, never as a legacy or unknown state. A
+            MANAGE grant always carries null. An EMPTY array means the grant opens nothing — the fail-closed reading of
+            a stored scope the server cannot parse — and the server will refuse every section for it, so render it as
+            nothing rather than as everything. Ordered by the consent screen's own reading order.
         state:
           $ref: "#/components/schemas/AccountGrantState"
         invitedAt:
@@ -36997,6 +37108,7 @@ components:
         - id
         - account
         - access
+        - scope
         - state
         - invitedAt
         - acceptedAt
@@ -37062,6 +37174,7 @@ components:
                   enum:
                     - READ
                     - WRITE
+                    - MANAGE
               required:
                 - accountId
                 - username

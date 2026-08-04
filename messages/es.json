@@ -9418,6 +9418,10 @@
     "row": {
       "readOnly": "Puede leer el historial",
       "canWrite": "Puede leer y añadir entradas",
+      "canManage": "Puede leer el historial, añadir entradas y cambiar o eliminar lo que hay en él",
+      "entireRecord": "Cubre todo el historial",
+      "sections": "Cubre: {sections}",
+      "noSections": "No cubre nada: este acceso no abre ninguna parte del historial",
       "invited": "Invitado",
       "accepted": "Aceptado",
       "expires": "Caduca",
@@ -9439,6 +9443,19 @@
       "accessReadCapability": "Puede leer todo lo que este historial comparte. No puede añadir ni cambiar nada.",
       "accessWriteLabel": "Puede ver y añadir",
       "accessWriteCapability": "También puede añadir a la ficha: mediciones, resultados de laboratorio, un nuevo analito a seguir, una entrada de enfermedad, un efecto secundario de un medicamento, un medicamento nuevo, y marcar una dosis como tomada u omitida. No puede editar ni borrar nada, ni siquiera lo que añadió, ni aplazar uno de tus recordatorios. Solo tú puedes.",
+      "accessManageLabel": "Puede gestionar",
+      "accessManageCapability": "Puede añadir, cambiar y eliminar entradas de tu ficha, incluidas las que has escrito tú, y puede leer los análisis generados a partir de ella. No puede cambiar tu inicio de sesión, tus ajustes de seguridad, tus servicios conectados ni quién más tiene acceso. Puedes terminarlo cuando quieras.",
+      "manageStepUpNote": "Ofrecerlo pide tu segundo factor, así que solo se puede hacer en un navegador.",
+      "scopeLegend": "Qué puede abrir",
+      "scopeAllLabel": "Todo el historial",
+      "scopeAllCapability": "Todas sus partes, tal y como ha funcionado siempre el uso compartido.",
+      "scopeSomeLabel": "Solo las secciones que elijas",
+      "scopeSomeCapability": "Todo lo que no elijas le queda cerrado.",
+      "scopeManageNote": "El acceso de gestión siempre cubre todo el historial.",
+      "scopeLeakNote": "Una sección puede mencionar el resto de tu salud en sus notas y en sus nombres. Compartir una sección comparte todo lo que hay escrito en ella.",
+      "scopeAggregateNote": "El resumen del panel, la puntuación de salud y el resumen diario solo aparecen cuando se comparte todo el historial.",
+      "scopeDocumentsNote": "Un documento puede contener cualquier cosa. Comparte esta sección solo si esa persona puede leerlo todo.",
+      "scopeEmptyHint": "Elige al menos una sección o vuelve a compartir todo el historial.",
       "expiresLabel": "El acceso termina el (opcional)",
       "expiresHint": "Déjalo vacío para un acceso que dure hasta que alguien lo termine. Una fecha aquí se comprueba en cada petición, así que el acceso se detiene solo al final de ese día.",
       "submit": "Enviar invitación",
@@ -9449,7 +9466,10 @@
       "errorSelf": "Esa es tu propia cuenta.",
       "errorInvalid": "Introduce un usuario o una dirección de correo.",
       "errorRateLimited": "Demasiadas invitaciones. Inténtalo más tarde.",
-      "errorFailed": "No se pudo enviar la invitación. Inténtalo de nuevo."
+      "errorFailed": "No se pudo enviar la invitación. Inténtalo de nuevo.",
+      "errorScope": "Esas secciones no se pueden compartir así. Elige al menos una sección o comparte todo el historial.",
+      "errorManageBrowserOnly": "El acceso de gestión solo se puede ofrecer desde un navegador, porque pide tu segundo factor.",
+      "errorStepUp": "Confirma tu segundo factor y vuelve a intentarlo."
     },
     "given": {
       "title": "Quién puede abrir mi historial",
@@ -9474,6 +9494,7 @@
       "accept": "Aceptar",
       "accepting": "Aceptando…",
       "writeConsent": "Si aceptas, lo que añadas pasa a formar parte del historial de {name}. Después no podrás cambiar ni eliminar entradas; solo {name} puede.",
+      "manageConsent": "Si aceptas, podrás añadir cosas al historial de {name} y también cambiar o eliminar lo que ya hay, incluidas las entradas del propio {name}. Todo lo que hagas queda registrado con tu nombre en su vista de actividad, y {name} puede terminar tu acceso cuando quiera.",
       "open": "Abrir",
       "renounce": "Devolver",
       "renounceTitle": "¿Devolver el historial de {name}?",
@@ -9516,6 +9537,40 @@
       "medicationCreate": "{name} añadió un medicamento",
       "medicationIntake": "{name} registró una dosis",
       "medicationIntakeRefused": "{name} intentó cambiar una dosis o aplazar un recordatorio, y fue rechazado"
+    },
+    "section": {
+      "measurements": {
+        "label": "Mediciones",
+        "detail": "Peso, tensión arterial, pulso, glucosa, sueño, entrenamientos y los valores que sigues."
+      },
+      "medications": {
+        "label": "Medicamentos",
+        "detail": "La lista de medicamentos, sus pautas, las dosis tomadas, los efectos secundarios y las existencias."
+      },
+      "labs": {
+        "label": "Resultados de laboratorio",
+        "detail": "Los resultados de laboratorio y la lista de analitos que hay detrás."
+      },
+      "profile": {
+        "label": "Antecedentes de salud",
+        "detail": "Alergias, antecedentes familiares y los datos de tu perfil de salud."
+      },
+      "illness": {
+        "label": "Enfermedades",
+        "detail": "Los episodios de enfermedad y los registros diarios asociados."
+      },
+      "mind": {
+        "label": "Ánimo y bienestar mental",
+        "detail": "Las entradas de ánimo y el historial de los cuestionarios de salud mental."
+      },
+      "cycle": {
+        "label": "Ciclo",
+        "detail": "El seguimiento del ciclo."
+      },
+      "documents": {
+        "label": "Documentos",
+        "detail": "Todo lo que está guardado en el archivo de documentos."
+      }
     }
   }
 }

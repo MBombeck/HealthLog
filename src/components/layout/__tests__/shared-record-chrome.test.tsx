@@ -57,6 +57,8 @@ const OWNER = {
   username: "grandma",
   displayName: "Margarethe",
   access: "read" as const,
+  level: "read" as const,
+  sections: null,
   canWrite: false,
 };
 
@@ -117,7 +119,12 @@ describe("<SharedRecordBanner>", () => {
   it("drops the read-only line when the server says the grant can write", () => {
     // Resolved server-side. The banner never decides what a grant permits; the
     // day a WRITE grant exists this line stops claiming otherwise on its own.
-    const writable = { ...OWNER, access: "write" as const, canWrite: true };
+    const writable = {
+      ...OWNER,
+      access: "write" as const,
+      level: "write" as const,
+      canWrite: true,
+    };
     const html = render(
       { accounts: [writable], active: writable, canSwitch: true },
       <SharedRecordBanner />,

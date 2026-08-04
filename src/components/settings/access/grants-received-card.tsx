@@ -93,13 +93,28 @@ export function GrantsReceivedCard() {
    *
    * A write invitation asks for something a read invitation does not: that the
    * person put entries into somebody else's health record under their own
-   * name, permanently, with no way to take one back. That is worth one
-   * sentence before the button rather than a sentence after the first entry.
+   * name, permanently, with no way to take one back. A manage invitation asks
+   * for more again — that they change and remove what the owner wrote — and it
+   * gets its own sentence rather than a stronger adjective on the write one,
+   * because the two are different responsibilities and the difference is the
+   * whole reason the third level exists. Both are worth one sentence before
+   * the button rather than a sentence after the first entry.
+   *
    * Shown only while the invitation is unanswered — once accepted, the level
-   * is the row's own line and this would be nagging.
+   * and the sections are the row's own lines and this would be nagging.
    */
   function renderConsent(grant: GrantRow) {
-    if (grant.state !== "PENDING" || grant.access !== "WRITE") return null;
+    if (grant.state !== "PENDING") return null;
+    if (grant.access === "MANAGE") {
+      return (
+        <p data-slot="grant-manage-consent" className="text-foreground text-sm">
+          {t("recordSharing.received.manageConsent", {
+            name: accountLabel(grant.account),
+          })}
+        </p>
+      );
+    }
+    if (grant.access !== "WRITE") return null;
     return (
       <p data-slot="grant-write-consent" className="text-foreground text-sm">
         {t("recordSharing.received.writeConsent", {

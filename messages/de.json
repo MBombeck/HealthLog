@@ -9418,6 +9418,10 @@
     "row": {
       "readOnly": "Darf die Akte lesen",
       "canWrite": "Darf lesen und Einträge anlegen",
+      "canManage": "Darf lesen, Einträge anlegen sowie Einträge ändern und löschen",
+      "entireRecord": "Umfasst die gesamte Akte",
+      "sections": "Umfasst: {sections}",
+      "noSections": "Umfasst nichts: dieser Zugriff öffnet keinen Teil der Akte",
       "invited": "Eingeladen",
       "accepted": "Angenommen",
       "expires": "Läuft ab",
@@ -9439,6 +9443,19 @@
       "accessReadCapability": "Sie kann alles lesen, was von dieser Akte geteilt wird. Hinzufügen oder ändern kann sie nichts.",
       "accessWriteLabel": "Darf lesen und hinzufügen",
       "accessWriteCapability": "Sie kann außerdem etwas zur Akte hinzufügen: Messwerte, Laborergebnisse, einen neuen Laborwert, einen Krankheitseintrag, eine Nebenwirkung zu einem Medikament, ein neues Medikament und eine Dosis als genommen oder ausgelassen markieren. Ändern oder löschen kann sie nichts, auch nicht das, was sie selbst eingetragen hat, und eine deiner Erinnerungen verschieben kann sie auch nicht. Das kannst nur du.",
+      "accessManageLabel": "Darf verwalten",
+      "accessManageCapability": "Sie kann Einträge in deiner Akte anlegen, ändern und löschen, auch solche, die du selbst erfasst hast, und sie kann die daraus erzeugten Auswertungen lesen. Deine Anmeldung, deine Sicherheitseinstellungen, deine Verbindungen und den Zugriff anderer Personen kann sie nicht ändern. Du kannst das jederzeit beenden.",
+      "manageStepUpNote": "Dafür wird dein zweiter Faktor abgefragt, deshalb geht das nur im Browser.",
+      "scopeLegend": "Was die Person öffnen darf",
+      "scopeAllLabel": "Gesamte Akte",
+      "scopeAllCapability": "Jeder Teil davon, so wie das Teilen bisher funktioniert hat.",
+      "scopeSomeLabel": "Nur die Bereiche, die du auswählst",
+      "scopeSomeCapability": "Alles, was du nicht auswählst, bleibt für sie verschlossen.",
+      "scopeManageNote": "Verwaltender Zugriff umfasst immer die gesamte Akte.",
+      "scopeLeakNote": "Ein Bereich kann in seinen Notizen und Bezeichnungen auch den Rest deiner Gesundheit erwähnen. Wer einen Bereich bekommt, bekommt alles, was darin steht.",
+      "scopeAggregateNote": "Die Übersicht auf dem Dashboard, der Health Score und die Tageszusammenfassung erscheinen nur, wenn die gesamte Akte geteilt ist.",
+      "scopeDocumentsNote": "Ein Dokument kann alles enthalten. Teile diesen Bereich nur, wenn die Person alles davon lesen darf.",
+      "scopeEmptyHint": "Wähle mindestens einen Bereich aus oder teile wieder die gesamte Akte.",
       "expiresLabel": "Zugriff endet am (optional)",
       "expiresHint": "Leer lassen für Zugriff, der gilt, bis ihn jemand beendet. Ein Datum wird bei jeder Anfrage geprüft, der Zugriff endet also am Ende dieses Tages von selbst.",
       "submit": "Einladung senden",
@@ -9449,7 +9466,10 @@
       "errorSelf": "Das ist dein eigenes Konto.",
       "errorInvalid": "Bitte einen Benutzernamen oder eine E-Mail-Adresse eingeben.",
       "errorRateLimited": "Zu viele Einladungen. Bitte später noch einmal versuchen.",
-      "errorFailed": "Die Einladung konnte nicht gesendet werden. Bitte noch einmal versuchen."
+      "errorFailed": "Die Einladung konnte nicht gesendet werden. Bitte noch einmal versuchen.",
+      "errorScope": "So lassen sich diese Bereiche nicht teilen. Wähle mindestens einen Bereich aus oder teile die gesamte Akte.",
+      "errorManageBrowserOnly": "Verwaltenden Zugriff kannst du nur im Browser vergeben, weil dabei dein zweiter Faktor abgefragt wird.",
+      "errorStepUp": "Bestätige deinen zweiten Faktor und versuche es erneut."
     },
     "given": {
       "title": "Wer meine Akte öffnen kann",
@@ -9474,6 +9494,7 @@
       "accept": "Annehmen",
       "accepting": "Wird angenommen…",
       "writeConsent": "Wenn du annimmst, wird das, was du hinzufügst, Teil der Akte von {name}. Ändern oder entfernen kannst du deine Einträge danach nicht mehr; das kann nur {name}.",
+      "manageConsent": "Wenn du annimmst, kannst du die Akte von {name} ergänzen und außerdem ändern oder löschen, was schon darin steht, auch Einträge von {name} selbst. Alles, was du tust, steht mit deinem Namen in der Aktivitätsübersicht, und {name} kann deinen Zugriff jederzeit beenden.",
       "open": "Öffnen",
       "renounce": "Zurückgeben",
       "renounceTitle": "Akte von {name} zurückgeben?",
@@ -9516,6 +9537,40 @@
       "medicationCreate": "{name} hat ein Medikament angelegt",
       "medicationIntake": "{name} hat eine Dosis eingetragen",
       "medicationIntakeRefused": "{name} wollte eine Dosis ändern oder eine Erinnerung verschieben und wurde abgewiesen"
+    },
+    "section": {
+      "measurements": {
+        "label": "Messwerte",
+        "detail": "Gewicht, Blutdruck, Puls, Glukose, Schlaf, Training und die Werte, die du selbst verfolgst."
+      },
+      "medications": {
+        "label": "Medikamente",
+        "detail": "Die Medikamentenliste, ihre Zeitpläne, eingenommene Dosen, Nebenwirkungen und der Bestand."
+      },
+      "labs": {
+        "label": "Laborwerte",
+        "detail": "Laborergebnisse und die Liste der Kennwerte dahinter."
+      },
+      "profile": {
+        "label": "Gesundheitliche Vorgeschichte",
+        "detail": "Allergien, Familienanamnese und die Angaben in deinem Gesundheitsprofil."
+      },
+      "illness": {
+        "label": "Krankheiten",
+        "detail": "Krankheitsverläufe und die Tageseinträge darunter."
+      },
+      "mind": {
+        "label": "Stimmung und Psyche",
+        "detail": "Stimmungseinträge und der Verlauf der psychologischen Fragebögen."
+      },
+      "cycle": {
+        "label": "Zyklus",
+        "detail": "Die Zyklusaufzeichnung."
+      },
+      "documents": {
+        "label": "Dokumente",
+        "detail": "Alles, was im Dokumententresor liegt."
+      }
     }
   }
 }

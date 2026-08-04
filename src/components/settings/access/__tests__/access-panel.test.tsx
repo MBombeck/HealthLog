@@ -63,6 +63,7 @@ const BASE: GrantRow = {
   id: "g1",
   account: { id: "acct-1", username: "housemate", displayName: "Jo" },
   access: "READ",
+  scope: null,
   state: "ACTIVE",
   invitedAt: "2026-01-02T10:00:00.000Z",
   acceptedAt: "2026-01-02T11:00:00.000Z",

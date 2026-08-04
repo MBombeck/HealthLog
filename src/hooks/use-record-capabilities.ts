@@ -47,6 +47,19 @@ import {
  * only which class of affordance a resolved level covers, and that mapping is
  * a property of the release, not of the caller.
  *
+ * ## The two facts this hook carries but does not yet act on
+ *
+ * v1.37.0 gives a grant a section set and a third level, and both arrive here
+ * (`sections`, `level`) as resolved values beside the booleans. Nothing in
+ * this file turns either into a capability, and that is the state of the
+ * release rather than an omission: the nav narrowing that reads `sections`
+ * and the return of the edit and delete affordances that reads `level` are
+ * the shared-session UX work, which lands after the routes that answer for a
+ * MANAGE grant exist. Publishing the facts here first is what lets those be
+ * a rendering change rather than a second access decision — and a control
+ * that appeared before its route answered would be the failure the two
+ * booleans above were written to end.
+ *
  * ## Absent, not disabled
  *
  * The consuming rule, stated once here because it belongs to the whole sweep:
@@ -66,6 +79,25 @@ export interface RecordCapabilities {
   canAdd: boolean;
   /** May the caller change what exists, or add what the delegation excludes. */
   canManage: boolean;
+  /**
+   * v1.37.0 — the resolved level of the grant on screen, or `null` in one's
+   * own record (which is not a grant and has no level).
+   *
+   * Bound from `accountAccess.active.level`, never derived. `canManage` is
+   * deliberately NOT computed from it in this release: the edit and delete
+   * affordances come back for `"manage"` when the routes that answer them
+   * land, and a control that appears before its route answers is the exact
+   * failure the two booleans above exist to prevent.
+   */
+  level: AccountAccessEntry["level"] | null;
+  /**
+   * v1.37.0 — the sections the grant opens, or `null` for the entire record
+   * (which is also what one's own record answers).
+   *
+   * Bound from `accountAccess.sections`. An empty array means the grant opens
+   * nothing; it is a real answer and reads as one.
+   */
+  sections: AccountAccessEntry["sections"];
 }
 
 /**
@@ -84,6 +116,12 @@ export function resolveRecordCapabilities(
       canWrite: false,
       canAdd: true,
       canManage: true,
+      // One's own record has no grant, so it has no level, and it is open in
+      // full. Null on both counts rather than a fabricated "manage" over all
+      // eight sections: the caller is not a delegate, and a consumer that had
+      // to tell those apart would have to guess.
+      level: null,
+      sections: null,
     };
   }
   return {
@@ -91,6 +129,8 @@ export function resolveRecordCapabilities(
     canWrite: active.canWrite,
     canAdd: active.canWrite,
     canManage: false,
+    level: active.level,
+    sections: active.sections,
   };
 }
 
