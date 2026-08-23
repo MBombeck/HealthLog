@@ -59,7 +59,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.4.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "@napi-rs/canvas": "1.0.2",
+    "@napi-rs/canvas": "1.0.7",
     "@node-rs/argon2": "^2.0.2",
     "@parse/node-apn": "^8.1.0",
     "@prisma/adapter-pg": "^7.9.1",
