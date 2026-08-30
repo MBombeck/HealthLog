@@ -62,7 +62,7 @@
     "@napi-rs/canvas": "1.0.7",
     "@node-rs/argon2": "^2.1.0",
     "@parse/node-apn": "^8.1.0",
-    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.8.0",
     "@simplewebauthn/browser": "^13.3.0",
     "@simplewebauthn/server": "^13.3.3",
