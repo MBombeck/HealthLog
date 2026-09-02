@@ -18,7 +18,19 @@ overrides:
   "hono@<4.12.25": "^4.12.25"
   "picomatch@<4.0.4": "^4.0.4"
   "body-parser@<2.3.0": "^2.3.0"
-  "fast-uri@<3.1.5": "^3.1.5"
+  # Two parser flaws: bracket-key comma parsing walks around `arrayLimit`, and
+  # an attacker-controlled `isBuffer` turns a request body into a hang. The
+  # copy is express 5's, reached through the MCP SDK's HTTP transport, so it
+  # sits on a request path. body-parser asks for ^6.15.2 and express for
+  # ^6.14.0, so 6.16.0 satisfies both without a major.
+  "qs@<6.16.0": "^6.16.0"
+  # Four advisories against the 3.1.x line, all in URI parsing: percent-encoded
+  # scheme normalization and skipped IDN handling let a crafted URL read as a
+  # different host than the one it resolves to, which is exactly the confusion
+  # the SSRF guard in `isPublicUrl` exists to prevent. The copies arrive under
+  # ajv, pulled in by @hookform/resolvers and the MCP SDK. 3.1.6 is the
+  # patched floor and stays on the same minor.
+  "fast-uri@<3.1.6": "^3.1.6"
   "flatted@<3.4.2": "^3.4.2"
   # The advisory covers 4.x only; the bound keeps a hypothetical 3.x consumer
   # off a major it never asked for.
