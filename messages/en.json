@@ -738,6 +738,7 @@
     "sourceMcp": "MCP",
     "sourceGoogleHealth": "Google Health",
     "sourceStrava": "Strava",
+    "sourceExternal": "External device",
     "bulkDeleteSuccess": "{count} measurements deleted",
     "bulkDeleteSuccessOne": "Measurement deleted",
     "bulkDeleteError": "Error deleting the selected measurements",
@@ -4904,7 +4905,8 @@
           "TELEGRAM": "Telegram",
           "MCP": "MCP",
           "GOOGLE_HEALTH": "Google Health",
-          "STRAVA": "Strava"
+          "STRAVA": "Strava",
+          "EXTERNAL": "External device"
         },
         "deviceLabels": {
           "watch": "Watch",
@@ -5898,7 +5900,7 @@
       "title": "Measurement tokens",
       "description": "Mint a token so a scale, a watch bridge or your home automation can add readings.",
       "detail": "The token is shown once.",
-      "scopeNote": "It can only add new readings to your own record — it cannot read your data, change or delete anything, or create another token. Readings arrive as if you had entered them by hand, so you can correct them yourself.",
+      "scopeNote": "It can only add new readings to your own record — it cannot read your data, change or delete anything, or create another token. Readings are marked as coming from an external device, so you can tell them apart later, and you can still correct them yourself.",
       "createFailed": "The token could not be created. Please try again."
     },
     "tokenMintMovedDescription": "Tokens are issued where they apply: above for measurements, or in a medication's own API endpoint for that one medication.",

@@ -738,6 +738,7 @@
     "sourceMcp": "MCP",
     "sourceGoogleHealth": "Google Health",
     "sourceStrava": "Strava",
+    "sourceExternal": "Appareil externe",
     "bulkDeleteSuccess": "{count} mesures supprimées",
     "bulkDeleteSuccessOne": "Mesure supprimée",
     "bulkDeleteError": "Erreur lors de la suppression des mesures sélectionnées",
@@ -4904,7 +4905,8 @@
           "TELEGRAM": "Telegram",
           "MCP": "MCP",
           "GOOGLE_HEALTH": "Google Health",
-          "STRAVA": "Strava"
+          "STRAVA": "Strava",
+          "EXTERNAL": "Appareil externe"
         },
         "deviceLabels": {
           "watch": "Montre",
@@ -5898,7 +5900,7 @@
       "title": "Jetons de mesures",
       "description": "Créez un jeton pour qu'une balance, une montre ou votre domotique ajoutent des mesures.",
       "detail": "Le jeton n'est affiché qu'une fois.",
-      "scopeNote": "Il peut uniquement ajouter de nouvelles mesures à votre propre dossier : il ne peut pas lire vos données, ni modifier ou supprimer quoi que ce soit, ni créer un autre jeton. Les mesures arrivent comme si vous les aviez saisies à la main, vous pouvez donc les corriger.",
+      "scopeNote": "Il peut uniquement ajouter de nouvelles mesures à votre propre dossier : il ne peut pas lire vos données, ni modifier ou supprimer quoi que ce soit, ni créer un autre jeton. Les mesures sont signalées comme provenant d'un appareil externe, ce qui vous permet de les reconnaître plus tard, et vous pouvez toujours les corriger.",
       "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer."
     },
     "tokenMintMovedDescription": "Les jetons sont émis là où ils s'appliquent : ci-dessus pour les mesures, ou dans le point de terminaison API d'un médicament pour ce seul médicament.",

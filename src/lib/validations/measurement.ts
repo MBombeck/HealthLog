@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { EXTERNAL_SOURCE } from "@/lib/measurements/external-source";
 import { validateEntryInstant } from "./entry-instant";
 
 export const measurementTypeEnum = z.enum([
@@ -222,6 +223,16 @@ export const measurementSourceEnum = z.enum([
   // from `WRITABLE_MEASUREMENT_SOURCES` + the batch allowlist so a client can
   // never forge a STRAVA-attributed row.
   "STRAVA",
+  // v1.38.x — measurements pushed in under a `measurements:write` Bearer
+  // token (a home-automation bridge, a scale's own uploader). Server-resolved
+  // from the credential rather than named by the caller, so it is deliberately
+  // absent from `WRITABLE_MEASUREMENT_SOURCES` and the batch allowlist — a
+  // source a client could assert would prove nothing about where the reading
+  // came from. Part of this enum so the read/response shapes (and the iOS
+  // decoder) can decode the rows it surfaces. Unlike the server-owned sources
+  // above these rows stay value-editable; see
+  // `USER_CORRECTABLE_MEASUREMENT_SOURCES`.
+  "EXTERNAL",
 ]);
 
 /**
@@ -250,6 +261,35 @@ export const WRITABLE_MEASUREMENT_SOURCES = ["MANUAL", "APPLE_HEALTH"] as const;
 export const writableMeasurementSourceEnum = z.enum(
   WRITABLE_MEASUREMENT_SOURCES,
 );
+
+/**
+ * v1.38.x — the subset of `MeasurementSource` whose VALUE the owner may still
+ * edit after the fact. A strictly different question from the one
+ * `WRITABLE_MEASUREMENT_SOURCES` answers, and the two are kept apart on
+ * purpose:
+ *
+ *   - writable  = "may a client ASSERT this source on a write?"
+ *   - correctable = "is the number this row carries the user's own to fix?"
+ *
+ * `EXTERNAL` is no on the first and yes on the second. A client naming it
+ * would be forging provenance, so it stays out of the write allowlist — which
+ * `/api/meta/capabilities` publishes as `ingest.writeAllowlist`, so widening
+ * that constant would tell every client the source is theirs to claim. But the
+ * hardware behind an ingest token is the user's own scale, not a provider's
+ * reading: the 409 that protects a Withings row ("the value is the provider's,
+ * editing it would forge a row the server never received") has no force here,
+ * and locking these rows would contradict what the settings card and the
+ * Home Assistant guide both promise.
+ *
+ * Read at exactly one call site — the value-edit gate in
+ * `PUT /api/measurements/[id]`. Everything else keeps reading
+ * `WRITABLE_MEASUREMENT_SOURCES`; folding the two back together re-conflates
+ * the questions above.
+ */
+export const USER_CORRECTABLE_MEASUREMENT_SOURCES = [
+  ...WRITABLE_MEASUREMENT_SOURCES,
+  EXTERNAL_SOURCE,
+] as const;
 
 const unitMap: Record<string, string> = {
   WEIGHT: "kg",

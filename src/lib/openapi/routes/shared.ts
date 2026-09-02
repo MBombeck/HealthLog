@@ -67,7 +67,7 @@ export const measurementTypeEnum = measurementTypeEnumBase.meta({
 export const measurementSourceEnum = measurementSourceEnumBase.meta({
   id: "MeasurementSource",
   description:
-    "Origin of the measurement. v1.4.23 added APPLE_HEALTH for the iOS HealthKit batch ingest path.",
+    "Origin of the measurement. v1.4.23 added APPLE_HEALTH for the iOS HealthKit batch ingest path. v1.38.x added EXTERNAL for rows pushed in under a narrow `measurements:write` Bearer — a scale, a watch bridge, a home-automation rule. No client may name that value on a write; the server resolves it from the credential.",
 });
 
 export const loginPasswordSchema = loginPasswordSchemaBase.meta({

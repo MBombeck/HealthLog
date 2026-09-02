@@ -1,5 +1,58 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- **Readings pushed in with a measurement token are now marked as coming
+  from an external device**, instead of being recorded as if you had typed
+  them in by hand. They show a badge in the measurements list and can be
+  picked out with the source filter there, so months later you can still
+  tell which readings came off the scale and which are your own. You can
+  still correct one if a sensor sends something wrong — readings owned by a
+  connected provider stay read-only, because the number is the provider's,
+  but these come off your own hardware.
+
+  Readings pushed in before this change stay marked as manually entered.
+  There is no way to sort them out after the fact: nothing recorded which
+  ones arrived through a token, and that is the gap this closes. If you want
+  a clean split, the readings from here on will have it.
+
+  One thing to check if you push through the batch endpoint: a re-push of
+  entries you had already sent may land a second copy, because a reading's
+  identity now includes where it came from. Delete the older pair if you see
+  duplicates.
+
+- **A push must not claim a source of its own.** Saying where a reading came
+  from is the server's job now, so a payload that names one — Apple Health,
+  manual, anything — is refused with a 422 rather than quietly relabelled,
+  and you find out on the first call instead of discovering later that your
+  rows say something you did not ask for. **If your automation sends a
+  `source` field, drop it**; the example in the Home Assistant guide never
+  did, so a setup copied from there needs no change. Apple Health is the one
+  that would have done real damage: that label is half of how the iOS app
+  recognises its own rows, and a bridge borrowing it corrupts the phone's
+  sync instead of merely mislabelling a reading.
+
+- **On a day where you both typed a reading in and had one pushed in, the
+  typed one now counts.** Several places have to settle on a single source
+  for a given day — the daily totals behind the charts, the health score,
+  the doctor report, the correlations and the personal-record detection —
+  and they do it by preferring whichever source ranks highest for that
+  metric. Your own entries rank; a pushed reading does not, so on a day that
+  has both, the pushed one steps aside.
+
+  Nothing is deleted or hidden. The pushed reading is still stored, still in
+  the measurements list, still on its own charts, and still there under the
+  source filter. It simply stops being counted twice on a day you also
+  entered the reading yourself — which is what happened before this change,
+  when both rows were labelled manual and both were indistinguishable. For a
+  running total like steps, that means a number that could previously be
+  inflated is now right.
+
+  A day with only pushed readings is unaffected: with nothing ranked to
+  prefer, everything is kept.
+
 ## [1.38.4] — 2026-09-02
 
 The shared AI key reaches the provider its address names, and the image

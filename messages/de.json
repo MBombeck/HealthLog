@@ -738,6 +738,7 @@
     "sourceMcp": "MCP",
     "sourceGoogleHealth": "Google Health",
     "sourceStrava": "Strava",
+    "sourceExternal": "Externes Gerät",
     "bulkDeleteSuccess": "{count} Messwerte gelöscht",
     "bulkDeleteSuccessOne": "Messwert gelöscht",
     "bulkDeleteError": "Fehler beim Löschen der ausgewählten Messungen",
@@ -4904,7 +4905,8 @@
           "TELEGRAM": "Telegram",
           "MCP": "MCP",
           "GOOGLE_HEALTH": "Google Health",
-          "STRAVA": "Strava"
+          "STRAVA": "Strava",
+          "EXTERNAL": "Externes Gerät"
         },
         "deviceLabels": {
           "watch": "Uhr",
@@ -5898,7 +5900,7 @@
       "title": "Messwert-Tokens",
       "description": "Erzeuge ein Token, damit eine Waage, eine Uhr oder deine Hausautomatisierung Werte eintragen kann.",
       "detail": "Das Token wird nur einmal angezeigt.",
-      "scopeNote": "Es kann ausschließlich neue Werte in deine eigene Akte eintragen — deine Daten nicht lesen, nichts ändern oder löschen und kein weiteres Token erstellen. Werte erscheinen wie von Hand eingetragen und lassen sich jederzeit korrigieren.",
+      "scopeNote": "Es kann ausschließlich neue Werte in deine eigene Akte eintragen — deine Daten nicht lesen, nichts ändern oder löschen und kein weiteres Token erstellen. Werte werden als von einem externen Gerät gekennzeichnet, damit du sie später erkennst, und lassen sich jederzeit korrigieren.",
       "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut."
     },
     "tokenMintMovedDescription": "Tokens werden dort ausgestellt, wo sie gelten: oben für Messwerte, oder im API-Endpoint eines Medikaments für genau dieses Medikament.",

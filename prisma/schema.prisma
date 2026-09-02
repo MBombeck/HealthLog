@@ -1737,6 +1737,21 @@ enum MeasurementSource {
   // mirrors this exact spelling so the `/api/sync/changes` delta feed decodes
   // the rows. Feeds Workout rows only — Strava exposes no daily metrics.
   STRAVA
+  // v1.38.x — measurements pushed in through a `measurements:write` Bearer
+  // token: a home-automation bridge, a smart scale's own uploader, any
+  // third-party sender the user pointed at their own record. Like TELEGRAM
+  // and MCP this is a user-driven write rather than a server-owned
+  // integration, but it does not enter through the cookie/Bearer client
+  // write path, so it carries its own source label — a hand-typed reading
+  // and a bridged one were otherwise indistinguishable after the fact. Its
+  // own value also gives those writes an isolated idempotency namespace
+  // `(userId, type, EXTERNAL, externalId)`. No client may NAME it: the batch
+  // + single-POST surfaces refuse any body that asserts a source under this
+  // scope, and the value is resolved server-side. Unlike the server-owned
+  // sources above the rows stay value-editable, since the hardware is the
+  // user's own. iOS DTO must mirror this exact spelling so the
+  // /api/sync/changes delta feed decodes the rows.
+  EXTERNAL
 
   @@map("measurement_source")
 }

@@ -39,20 +39,35 @@ It also cannot be pointed at somebody else's record. If an account has shared
 their record with you, this credential still will not write to it; use the web
 app for that.
 
-## Readings arrive as manually entered
+## Readings are marked as coming from an external device
 
-Rows written with this token carry `source: MANUAL`, the same label a reading
-you type in by hand gets. Two consequences worth knowing:
+Rows written with this token carry `source: EXTERNAL`. They show a badge in the
+measurements list and can be picked out with the source filter there, so months
+later you can still tell which readings came off the scale and which you typed
+in yourself. Three consequences worth knowing:
 
 - You can correct them in the UI. Readings owned by a connected provider are
-  read-only; these are not.
-- They do not claim to be from Apple Health. An entry that explicitly names
-  `APPLE_HEALTH` is refused with a 422 rather than quietly relabelled — that
-  source is half the deduplication key the iOS app writes into, and a bridge
-  borrowing it corrupts the phone's sync rather than merely mislabelling a row.
+  read-only, because the number is the provider's; these are your own hardware's
+  and stay editable.
+- **The payload must not name a source at all.** The server decides it from the
+  token. A body carrying `"source": "MANUAL"`, `"source": "APPLE_HEALTH"` or
+  anything else is refused with a 422 rather than quietly relabelled — you get
+  told on the first call instead of discovering later that your rows say
+  something you did not ask for. The example below sends no `source`, which is
+  all you need.
+- They do not claim to be from Apple Health. That source is half the
+  deduplication key the iOS app writes into, and a bridge borrowing it corrupts
+  the phone's sync rather than merely mislabelling a row. `EXTERNAL` gives these
+  writes their own namespace instead, so a bridge's ids can never collide with
+  the phone's.
 
 For the same reason, a push through this token does not move the native sync
 checkpoint. Your phone's own sync window is unaffected by your scale.
+
+If you were already pushing readings with an older build, those rows stay
+`MANUAL` — there is no way to tell them apart retroactively, which is the whole
+reason for this label. If a re-push of the same entries produces duplicates,
+delete the older pair.
 
 ## Home Assistant example
 

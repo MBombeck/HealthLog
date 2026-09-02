@@ -738,6 +738,7 @@
     "sourceMcp": "MCP",
     "sourceGoogleHealth": "Google Health",
     "sourceStrava": "Strava",
+    "sourceExternal": "외부 기기",
     "bulkDeleteSuccess": "{count}개 측정을 삭제했어요",
     "bulkDeleteSuccessOne": "측정을 삭제했어요",
     "bulkDeleteError": "선택한 측정을 삭제하지 못했어요",
@@ -4904,7 +4905,8 @@
           "TELEGRAM": "Telegram",
           "MCP": "MCP",
           "GOOGLE_HEALTH": "Google Health",
-          "STRAVA": "Strava"
+          "STRAVA": "Strava",
+          "EXTERNAL": "외부 기기"
         },
         "deviceLabels": {
           "watch": "워치",
@@ -5898,7 +5900,7 @@
       "title": "측정 토큰",
       "description": "체중계나 시계, 홈 오토메이션이 측정값을 기록할 수 있도록 토큰을 만들어요.",
       "detail": "토큰은 한 번만 표시돼요.",
-      "scopeNote": "본인 기록에 새 측정값을 추가하는 것만 할 수 있어요. 데이터를 읽거나, 무언가를 고치거나 지우거나, 다른 토큰을 만들 수는 없어요. 측정값은 직접 입력한 것처럼 들어오니 언제든 고칠 수 있어요.",
+      "scopeNote": "본인 기록에 새 측정값을 추가하는 것만 할 수 있어요. 데이터를 읽거나, 무언가를 고치거나 지우거나, 다른 토큰을 만들 수는 없어요. 측정값은 외부 기기에서 온 것으로 표시되니 나중에 구분할 수 있고, 언제든 고칠 수 있어요.",
       "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요."
     },
     "tokenMintMovedDescription": "토큰은 쓰이는 곳에서 발급돼요. 측정값은 위에서, 특정 약은 그 약의 API 엔드포인트에서 만들 수 있어요.",

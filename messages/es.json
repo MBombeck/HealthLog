@@ -738,6 +738,7 @@
     "sourceMcp": "MCP",
     "sourceGoogleHealth": "Google Health",
     "sourceStrava": "Strava",
+    "sourceExternal": "Dispositivo externo",
     "bulkDeleteSuccess": "{count} mediciones eliminadas",
     "bulkDeleteSuccessOne": "Medición eliminada",
     "bulkDeleteError": "Error al eliminar las mediciones seleccionadas",
@@ -4904,7 +4905,8 @@
           "TELEGRAM": "Telegram",
           "MCP": "MCP",
           "GOOGLE_HEALTH": "Google Health",
-          "STRAVA": "Strava"
+          "STRAVA": "Strava",
+          "EXTERNAL": "Dispositivo externo"
         },
         "deviceLabels": {
           "watch": "Reloj",
@@ -5898,7 +5900,7 @@
       "title": "Tokens de mediciones",
       "description": "Crea un token para que una báscula, un reloj o tu domótica añadan mediciones.",
       "detail": "El token se muestra una sola vez.",
-      "scopeNote": "Solo puede añadir mediciones nuevas a tu propio historial: no puede leer tus datos, ni modificar o borrar nada, ni crear otro token. Las mediciones llegan como si las hubieras introducido a mano, así que puedes corregirlas.",
+      "scopeNote": "Solo puede añadir mediciones nuevas a tu propio historial: no puede leer tus datos, ni modificar o borrar nada, ni crear otro token. Las mediciones se marcan como procedentes de un dispositivo externo, así las distingues más tarde, y puedes corregirlas igualmente.",
       "createFailed": "No se pudo crear el token. Inténtalo de nuevo."
     },
     "tokenMintMovedDescription": "Los tokens se emiten donde se aplican: arriba para las mediciones, o en el endpoint de API de un medicamento para ese medicamento concreto.",

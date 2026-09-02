@@ -4,6 +4,7 @@ import {
   isScopedCredential,
   requireRecordAuth,
 } from "@/lib/api-handler";
+import { EXTERNAL_SOURCE } from "@/lib/measurements/external-source";
 import { MEASUREMENTS_WRITE_SCOPE } from "@/lib/measurements/scopes";
 import { annotate } from "@/lib/logging/context";
 import { fireAndForget } from "@/lib/logging/fire-and-forget";
@@ -750,19 +751,29 @@ async function sleepListResponse(
 }
 
 /**
- * Does this body attribute any reading to `APPLE_HEALTH`?
+ * Does this body attribute a source to any reading — any source at all?
  *
- * Read off the raw body rather than the parsed result because the answer has to
- * be the same for the object arm and the array arm, and those parse against
- * different schemas further down. Anything that is not a recognisable
- * measurement shape answers false and falls through to the validation error it
- * has coming — this function decides attribution, not validity.
+ * Read off the RAW body rather than the parsed result, and that is load-bearing
+ * twice over. It has to give the same answer for the object arm and the array
+ * arm, which parse against different schemas further down; and
+ * `createMeasurementSchema.source` carries `.default("MANUAL")`, so after
+ * parsing "said MANUAL" and "said nothing" are the same value and the
+ * distinction this predicate exists to draw is already gone.
+ *
+ * v1.38.x — widened from "names APPLE_HEALTH" to "names anything". Under a
+ * scoped credential the row's source is now resolved by the server, so an
+ * explicit `MANUAL` is an assertion the route would have to override — which
+ * is the silent relabelling the refusal below refuses to do.
+ *
+ * Anything that is not a recognisable measurement shape answers false and
+ * falls through to the validation error it has coming: this function decides
+ * attribution, not validity.
  */
-function namesAppleHealthSource(body: unknown): boolean {
+function namesAnySource(body: unknown): boolean {
   const names = (entry: unknown): boolean =>
     typeof entry === "object" &&
     entry !== null &&
-    (entry as { source?: unknown }).source === "APPLE_HEALTH";
+    (entry as { source?: unknown }).source !== undefined;
   return Array.isArray(body) ? body.some(names) : names(body);
 }
 
@@ -792,16 +803,28 @@ async function postMeasurement(request: NextRequest) {
 
   if (jsonError) return jsonError;
 
-  // A scoped credential may attribute MANUAL and nothing else — the schema's
-  // own default, so only an explicit `APPLE_HEALTH` needs refusing. Checked
-  // before validation branches so the object and array arms share one answer,
-  // and refused rather than rewritten for the reason the batch route gives:
-  // relabelling a client's explicit assertion hands it rows it cannot see.
-  if (scoped && namesAppleHealthSource(body)) {
+  // A scoped credential may attribute nothing: the source of its rows is
+  // `EXTERNAL`, decided here from the credential rather than taken from the
+  // body. Checked before the validation branches so the object and array arms
+  // share one answer, and refused rather than rewritten for the reason the
+  // batch route gives: relabelling a client's explicit assertion hands it rows
+  // it did not ask for and no way to notice.
+  //
+  // v1.38.x — this used to refuse only an explicit `APPLE_HEALTH`, because the
+  // forced value was `MANUAL` and so a body naming `MANUAL` was never actually
+  // overridden. Now that bridge rows carry their own provenance, honouring
+  // such a body would defeat the point (a bridge that kept sending `MANUAL`
+  // would stay indistinguishable from a typed reading) and overriding it
+  // silently is what the paragraph above forbids. Status and `errorCode` are
+  // unchanged, so client error handling is untouched; the documented Home
+  // Assistant payload sends no `source` at all.
+  if (scoped && namesAnySource(body)) {
     annotate({ action: { name: "measurements.create.source-not-permitted" } });
-    return apiError("This credential may only attribute MANUAL readings", 422, {
-      errorCode: "measurement.create.source_not_permitted",
-    });
+    return apiError(
+      "This credential resolves the source itself; omit the field",
+      422,
+      { errorCode: "measurement.create.source_not_permitted" },
+    );
   }
 
   // Batch mode (array of measurements, e.g. combined BP + Pulse)
@@ -853,7 +876,16 @@ async function postMeasurement(request: NextRequest) {
               type: m.type as MeasurementType,
               value: m.value,
               unit: getUnitForType(m.type),
-              source: (m.source ?? "MANUAL") as MeasurementSource,
+              // v1.38.x — the array arm too, not just the single create
+              // below. This is the combined BP + Pulse path a bridge uses for
+              // a two-value reading; missing it here would leave exactly those
+              // rows attributed MANUAL and invisible to the badge and the
+              // source filter. `scoped` already implies `m.source` is
+              // undefined — the refusal above returned otherwise — so this is
+              // the resolution, not an override.
+              source: (scoped
+                ? EXTERNAL_SOURCE
+                : (m.source ?? "MANUAL")) as MeasurementSource,
               measuredAt: m.measuredAt,
               // v1.23 — encrypt the note at rest; the legacy plaintext column is
               // written null for new rows.
@@ -1008,7 +1040,13 @@ async function postMeasurement(request: NextRequest) {
         type: type as MeasurementType,
         value,
         unit: getUnitForType(type),
-        source: (source ?? "MANUAL") as MeasurementSource,
+        // v1.38.x — server-resolved under a scoped credential. `source` is
+        // necessarily the schema default here (the refusal above returned on
+        // any body that named one), so nothing a caller asserted is being
+        // discarded.
+        source: (scoped
+          ? EXTERNAL_SOURCE
+          : (source ?? "MANUAL")) as MeasurementSource,
         measuredAt,
         // v1.23 — encrypt the note at rest; legacy plaintext column nulled.
         notes: null,

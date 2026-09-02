@@ -39,6 +39,7 @@ import { z } from "zod/v4";
 
 import { prisma } from "@/lib/db";
 import { apiHandler, isScopedCredential, requireAuth } from "@/lib/api-handler";
+import { EXTERNAL_SOURCE } from "@/lib/measurements/external-source";
 import { MEASUREMENTS_WRITE_SCOPE } from "@/lib/measurements/scopes";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -277,25 +278,34 @@ async function postBatch(request: NextRequest): Promise<Response> {
     return apiError(parsed.error.issues[0]?.message ?? "Invalid batch", 422);
   }
 
-  // A scoped credential may attribute MANUAL and nothing else. Refused loudly
-  // rather than rewritten quietly: silently relabelling a client's explicit
-  // assertion hands it rows it did not ask for and no way to notice, while a
-  // 422 is fixable on the first call.
+  // A scoped credential may attribute nothing at all — the source of its rows
+  // is `EXTERNAL`, resolved from the credential below. Refused loudly rather
+  // than rewritten quietly: silently relabelling a client's explicit assertion
+  // hands it rows it did not ask for and no way to notice, while a 422 is
+  // fixable on the first call.
   //
-  // `APPLE_HEALTH` is the label that matters, and forging it is not merely
-  // mislabelling. It is half the `(userId, type, source, externalId)` dedup key,
-  // so a bridge's rows would land in the phone's namespace; it is a mergeable
-  // source, so a forged row joins the cross-source merge and can suppress a
-  // genuine one; and it is what `healthKitSyncSucceeded` reads to decide the
-  // Apple Health card may claim the phone synced.
-  if (scoped && parsed.data.entries.some((e) => e.source === "APPLE_HEALTH")) {
+  // `APPLE_HEALTH` is still the label that matters most, and forging it is not
+  // merely mislabelling. It is half the `(userId, type, source, externalId)`
+  // dedup key, so a bridge's rows would land in the phone's namespace; it is a
+  // mergeable source, so a forged row joins the cross-source merge and can
+  // suppress a genuine one; and it is what `healthKitSyncSucceeded` reads to
+  // decide the Apple Health card may claim the phone synced.
+  //
+  // v1.38.x — `MANUAL` joins it in being refused. It was permitted only
+  // because it was the value the route forced anyway, so nothing was ever
+  // overridden; now that bridge rows carry their own provenance, honouring it
+  // would defeat the point and overriding it would be the quiet relabelling
+  // the paragraph above rules out. Status and `errorCode` are unchanged.
+  if (scoped && parsed.data.entries.some((e) => e.source !== undefined)) {
     annotate({
       action: { name: "measurement.batch.ingest" },
       meta: { outcome: "source_not_permitted" },
     });
-    return apiError("This credential may only attribute MANUAL readings", 422, {
-      errorCode: "measurement.batch.source_not_permitted",
-    });
+    return apiError(
+      "This credential resolves the source itself; omit the field",
+      422,
+      { errorCode: "measurement.batch.source_not_permitted" },
+    );
   }
 
   const { entries, syncTrigger } = parsed.data;
@@ -440,12 +450,14 @@ async function postBatch(request: NextRequest): Promise<Response> {
         // v1.8.6 W6 — honour the per-entry source tag, defaulting to
         // `APPLE_HEALTH` when absent so legacy callers are unchanged.
         //
-        // A scoped credential defaults to `MANUAL` instead, and can hold no
-        // other value: the guard above already refused an explicit
-        // `APPLE_HEALTH`, so this is the only remaining arm for it. The default
-        // has to move with the credential rather than with the route, because
-        // the route serves both the phone and a third-party bridge.
-        source: scoped ? "MANUAL" : (entry.source ?? "APPLE_HEALTH"),
+        // v1.38.x — a scoped credential gets `EXTERNAL`, and can hold no other
+        // value: the guard above refused any body that named one, so nothing
+        // asserted is being discarded here. The value has to move with the
+        // credential rather than with the route, because the route serves both
+        // the phone and a third-party bridge. It also moves the dedup key to
+        // `(userId, type, EXTERNAL, externalId)`, which is the isolated
+        // namespace this source exists to give.
+        source: scoped ? EXTERNAL_SOURCE : (entry.source ?? "APPLE_HEALTH"),
         measuredAt: mapped.takenAt,
         externalId: entry.externalId,
         externalSourceVersion: entry.externalSourceVersion ?? null,
