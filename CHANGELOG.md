@@ -21,6 +21,16 @@
   uploads.** Recording a measurement, editing a medication, restoring a
   backup — anything that wrote — failed from the moment the app started
   labelling writes this way in v1.37.18. Those all work again.
+- **A gateway that refused the call reported nothing but "empty content".**
+  Some OpenAI-compatible gateways, OpenRouter among them, answer a refused
+  generation with HTTP 200 and the reason inside the body. The provider health
+  card therefore recorded status 0 and "returned empty content" whether the
+  account was out of credits, blocked by its own data policy, rate-limited, or
+  pointed at a model that was down, and no excerpt survived to tell them
+  apart. The gateway's own status and message now reach the card and the
+  fallback chain, which treats each of them exactly as it treats the same
+  status on the wire. The local-endpoint provider had the same blind spot on
+  its buffered and its streaming path and got the same treatment.
 - **The import guide link under Settings → Import went the long way round.**
   Both the CSV and the JSON card now link straight to the guide instead of
   through a redirect.
