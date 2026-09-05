@@ -289,7 +289,7 @@ describe("off-host backup under a memory budget", () => {
 
   it("would not fit that budget if the object were materialised", async () => {
     const baseline = liveHeapBytes();
-    // Exactly what the job did before, with the step `buildFullBackupJson`
+    // Exactly what the job did before, with the step the old whole-string builder took
     // takes internally spelled out: the payload graph, the JSON string it is
     // stringified into, then a whole-buffer gzip-and-encrypt pass, then a
     // single put of the finished buffer.
