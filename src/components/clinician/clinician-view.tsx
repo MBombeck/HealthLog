@@ -30,7 +30,11 @@
  * document list in `./documents-list`, the downloads in `./download-actions`.
  */
 import type { DoctorReportData } from "@/lib/doctor-report-data";
-import { makeFormatters } from "@/lib/format-locale";
+import {
+  makeFormatters,
+  type DateFormatPreference,
+  type TimeFormatPreference,
+} from "@/lib/format-locale";
 import type { Locale } from "@/lib/i18n/config";
 import type { ShareViewDocument } from "@/lib/clinician-share/share-view-data";
 import type { ReportLeafId } from "@/lib/report-selection/catalogue";
@@ -112,6 +116,15 @@ interface ClinicianViewProps {
    * aggregation behind the stats (and with the doctor-report PDF).
    */
   timezone?: string;
+  /**
+   * Issue #922 — the share OWNER's hour cycle and date order. This is the
+   * owner's record, so it is spelled the owner's way; the viewing clinician
+   * has no profile here. Both travel the same route as `timezone` above
+   * (resolved off the owner row in the page), and both are REQUIRED so a
+   * future caller cannot quietly drop the preference again.
+   */
+  timeFormat: TimeFormatPreference;
+  dateFormat: DateFormatPreference;
 }
 
 export function ClinicianView({
@@ -126,10 +139,13 @@ export function ClinicianView({
   token = "",
   locale = "en",
   timezone,
+  timeFormat,
+  dateFormat,
 }: ClinicianViewProps) {
   // Owner-tz, locale-aware date rendering (issue #490) — `makeFormatters`
   // guards the zone and falls back to Europe/Berlin on garbage/absence.
-  const fmt = makeFormatters(locale, timezone);
+  // Owner hour cycle + date order ride along (issue #922).
+  const fmt = makeFormatters(locale, timezone, timeFormat, dateFormat);
   const fmtDate = (iso: string) => fmt.date(new Date(iso));
   const fmtDateTime = (iso: string) => fmt.dateTime(new Date(iso));
   const fmtNum = (n: number) => Math.round(n * 100) / 100;

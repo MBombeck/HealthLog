@@ -31,6 +31,7 @@ import {
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { resolveShareViewLocale } from "@/lib/clinician-share/request-locale";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
+import { resolveUserFormatPreferences } from "@/lib/user-format-preferences";
 import { ClinicianView } from "@/components/clinician/clinician-view";
 import { ShareUnlockGate } from "@/components/clinician/share-unlock-gate";
 
@@ -96,10 +97,16 @@ export default async function ClinicianSharePage({
     { report, selection, unavailableLeaves, documents, documentOnly },
     locale,
     ownerTimezone,
+    // Issue #922 — the owner's hour cycle and date order, alongside their
+    // zone. The PDF at `report.pdf` already read the hour cycle off the
+    // owner row; this page read neither, so the same record printed two
+    // different spellings depending on which button the practice pressed.
+    ownerPrefs,
   ] = await Promise.all([
     loadShareViewData(context),
     resolveShareViewLocale(),
     resolveUserTimezone(context.ownerUserId),
+    resolveUserFormatPreferences(context.ownerUserId),
   ]);
   const { t } = getServerTranslator(locale);
 
@@ -116,6 +123,8 @@ export default async function ClinicianSharePage({
       token={token}
       locale={locale}
       timezone={ownerTimezone}
+      timeFormat={ownerPrefs.timeFormat}
+      dateFormat={ownerPrefs.dateFormat}
     />
   );
 }

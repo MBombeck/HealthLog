@@ -44,8 +44,8 @@ describe("parseLocaleFromAcceptLanguage", () => {
 });
 
 describe("makeFormatters", () => {
-  const deFmt = makeFormatters("de");
-  const enFmt = makeFormatters("en");
+  const deFmt = makeFormatters("de", undefined, "AUTO", "AUTO");
+  const enFmt = makeFormatters("en", undefined, "AUTO", "AUTO");
   const sample = new Date("2026-04-18T14:30:00Z"); // 16:30 Europe/Berlin (CEST)
 
   it("formats numbers with regional decimal separators", () => {
@@ -79,8 +79,8 @@ describe("makeFormatters", () => {
 
   describe("hour-cycle preference (v1.15.20)", () => {
     it("AUTO follows the locale default for time + dateTime", () => {
-      const de = makeFormatters("de", undefined, "AUTO");
-      const en = makeFormatters("en", undefined, "AUTO");
+      const de = makeFormatters("de", undefined, "AUTO", "AUTO");
+      const en = makeFormatters("en", undefined, "AUTO", "AUTO");
       expect(de.time(sample)).toBe("16:30");
       expect(en.time(sample)).toBe("04:30 PM");
       expect(de.dateTime(sample)).toBe("18.04.2026, 16:30");
@@ -88,16 +88,16 @@ describe("makeFormatters", () => {
     });
 
     it("H12 forces AM/PM regardless of locale", () => {
-      const de = makeFormatters("de", undefined, "H12");
-      const en = makeFormatters("en", undefined, "H12");
+      const de = makeFormatters("de", undefined, "H12", "AUTO");
+      const en = makeFormatters("en", undefined, "H12", "AUTO");
       expect(de.time(sample)).toContain("PM");
       expect(en.time(sample)).toBe("04:30 PM");
       expect(de.dateTime(sample)).toContain("PM");
     });
 
     it("H24 forces the 24-hour clock regardless of locale", () => {
-      const de = makeFormatters("de", undefined, "H24");
-      const en = makeFormatters("en", undefined, "H24");
+      const de = makeFormatters("de", undefined, "H24", "AUTO");
+      const en = makeFormatters("en", undefined, "H24", "AUTO");
       expect(de.time(sample)).toBe("16:30");
       expect(en.time(sample)).toBe("16:30");
       expect(en.dateTime(sample)).toBe("04/18/2026, 16:30");
@@ -105,13 +105,13 @@ describe("makeFormatters", () => {
 
     it("H24 renders midnight as 00, never 24 (h23 cycle)", () => {
       const midnight = new Date("2026-04-18T22:30:00Z"); // 00:30 Berlin CEST
-      const en = makeFormatters("en", undefined, "H24");
+      const en = makeFormatters("en", undefined, "H24", "AUTO");
       expect(en.time(midnight)).toBe("00:30");
     });
 
     it("does not affect date-only formatters", () => {
-      const auto = makeFormatters("en", undefined, "AUTO");
-      const h24 = makeFormatters("en", undefined, "H24");
+      const auto = makeFormatters("en", undefined, "AUTO", "AUTO");
+      const h24 = makeFormatters("en", undefined, "H24", "AUTO");
       expect(auto.date(sample)).toBe(h24.date(sample));
       expect(auto.dateShort(sample)).toBe(h24.dateShort(sample));
     });
@@ -119,20 +119,20 @@ describe("makeFormatters", () => {
 
   // v1.4.25 W7 — formatters accept a per-user timezone override.
   it("renders time in the user's tz when userTz is passed", () => {
-    const tokyo = makeFormatters("en", "Asia/Tokyo", "H24");
+    const tokyo = makeFormatters("en", "Asia/Tokyo", "H24", "AUTO");
     // 14:30 UTC = 23:30 Tokyo
     expect(tokyo.time(sample)).toBe("23:30");
   });
 
   it("renders time in Europe/Berlin when userTz is empty", () => {
-    const fallback = makeFormatters("en", "", "H24");
+    const fallback = makeFormatters("en", "", "H24", "AUTO");
     expect(fallback.time(sample)).toBe("16:30");
   });
 
   it("renders date in the user's tz when userTz is passed", () => {
     // 23:30 UTC on May 10 = 01:30 May 11 Tokyo
     const lateUtc = new Date("2026-05-10T23:30:00Z");
-    const tokyo = makeFormatters("en", "Asia/Tokyo");
+    const tokyo = makeFormatters("en", "Asia/Tokyo", "AUTO", "AUTO");
     expect(tokyo.date(lateUtc)).toMatch(/2026/);
     // The narrow check: day-of-month should be 11, not 10.
     expect(tokyo.date(lateUtc)).toMatch(/11/);
@@ -147,19 +147,19 @@ describe("makeFormatters", () => {
   describe("profile-timezone matrix (#490)", () => {
     // sample = 2026-04-18T14:30:00Z (see above).
     it("renders Pacific/Auckland (UTC+12, NZST after the April DST end)", () => {
-      const fmt = makeFormatters("en", "Pacific/Auckland", "H24");
+      const fmt = makeFormatters("en", "Pacific/Auckland", "H24", "AUTO");
       expect(fmt.time(sample)).toBe("02:30"); // next local day
       expect(fmt.date(sample)).toBe("04/19/2026");
     });
 
     it("renders America/New_York (west of Berlin, EDT)", () => {
-      const fmt = makeFormatters("en", "America/New_York", "H24");
+      const fmt = makeFormatters("en", "America/New_York", "H24", "AUTO");
       expect(fmt.time(sample)).toBe("10:30");
       expect(fmt.date(sample)).toBe("04/18/2026");
     });
 
     it("renders Asia/Manila (UTC+8, no DST)", () => {
-      const fmt = makeFormatters("en", "Asia/Manila", "H24");
+      const fmt = makeFormatters("en", "Asia/Manila", "H24", "AUTO");
       expect(fmt.time(sample)).toBe("22:30");
       expect(fmt.date(sample)).toBe("04/18/2026");
     });
@@ -167,7 +167,12 @@ describe("makeFormatters", () => {
     it.each([["Mars/Olympus"], ["garbage"], [""], [undefined]])(
       "poison zone %s never throws and falls back to Berlin",
       (zone) => {
-        const fmt = makeFormatters("en", zone as string | undefined, "H24");
+        const fmt = makeFormatters(
+          "en",
+          zone as string | undefined,
+          "H24",
+          "AUTO",
+        );
         expect(fmt.time(sample)).toBe("16:30");
         expect(fmt.date(sample)).toBe("04/18/2026");
         expect(fmt.dateTime(sample)).toBe("04/18/2026, 16:30");
@@ -195,7 +200,7 @@ describe("makeFormatters", () => {
     // Berlin DST pins — the zone maths must follow the IANA rules at the
     // instant, never a cached offset.
     it("renders across the Berlin 2026-03-29 spring-forward", () => {
-      const fmt = makeFormatters("de", "Europe/Berlin", "H24");
+      const fmt = makeFormatters("de", "Europe/Berlin", "H24", "AUTO");
       // 00:30 UTC = 01:30 CET (before the 02:00→03:00 jump).
       expect(fmt.time(new Date("2026-03-29T00:30:00Z"))).toBe("01:30");
       // 01:30 UTC = 03:30 CEST (the 02:xx hour does not exist).
@@ -204,7 +209,7 @@ describe("makeFormatters", () => {
     });
 
     it("renders across the Berlin 2026-10-25 fall-back (doubled hour)", () => {
-      const fmt = makeFormatters("de", "Europe/Berlin", "H24");
+      const fmt = makeFormatters("de", "Europe/Berlin", "H24", "AUTO");
       // 00:30 UTC = 02:30 CEST (first pass through the doubled hour).
       expect(fmt.time(new Date("2026-10-25T00:30:00Z"))).toBe("02:30");
       // 01:30 UTC = 02:30 CET (second pass).
@@ -231,16 +236,16 @@ describe("makeFormatters", () => {
     });
 
     it("dateShortSmart omits the year for a date in the current year", () => {
-      const de = makeFormatters("de");
-      const en = makeFormatters("en");
+      const de = makeFormatters("de", undefined, "AUTO", "AUTO");
+      const en = makeFormatters("en", undefined, "AUTO", "AUTO");
       const thisYear = new Date("2026-02-19T10:00:00Z");
       expect(de.dateShortSmart(thisYear)).toBe("19.02.");
       expect(en.dateShortSmart(thisYear)).not.toContain("2026");
     });
 
     it("dateShortSmart includes the year for a date from a prior year", () => {
-      const de = makeFormatters("de");
-      const en = makeFormatters("en");
+      const de = makeFormatters("de", undefined, "AUTO", "AUTO");
+      const en = makeFormatters("en", undefined, "AUTO", "AUTO");
       // A December-of-last-year date — the exact regression this guards.
       const lastDecember = new Date("2025-12-16T10:00:00Z");
       expect(de.dateShortSmart(lastDecember)).toBe("16.12.2025");
@@ -248,7 +253,7 @@ describe("makeFormatters", () => {
     });
 
     it("dateWithWeekdaySmart mirrors the same boundary", () => {
-      const de = makeFormatters("de");
+      const de = makeFormatters("de", undefined, "AUTO", "AUTO");
       const thisYear = new Date("2026-02-19T10:00:00Z");
       const lastDecember = new Date("2025-12-16T10:00:00Z");
       expect(de.dateWithWeekdaySmart(thisYear)).not.toContain("2026");
@@ -259,7 +264,7 @@ describe("makeFormatters", () => {
       // 2026-01-01T00:30Z is still 2025-12-31 in America/New_York (UTC-5) —
       // the profile-tz formatter must agree with what it actually prints,
       // not with a UTC or host-local read of "now"/the value.
-      const nyFmt = makeFormatters("en", "America/New_York");
+      const nyFmt = makeFormatters("en", "America/New_York", "AUTO", "AUTO");
       const newYearUtcEve = new Date("2026-01-01T00:30:00Z");
       // RIGHT_NOW (2026-07-10) is year 2026 in New York too, so a value
       // that prints as 2025 in New York must carry the year.

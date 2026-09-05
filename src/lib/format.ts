@@ -24,6 +24,7 @@
  */
 
 import { makeFormatters } from "./format-locale";
+import { readStoredDateFormat } from "./date-format";
 import { readStoredTimeFormat } from "./time-format";
 import { readStoredTimezone } from "./timezone-mirror";
 import { locales, type Locale } from "./i18n/config";
@@ -47,14 +48,18 @@ function activeLocale(): Locale {
 }
 
 function formatters() {
-  // Honour the mirrored hour-cycle preference AND the mirrored profile
-  // timezone (issue #490) so these legacy helpers render the same clock and
-  // zone as `useFormatters()` call sites. SSR reads AUTO + "" (→ Berlin) —
-  // same post-hydration caveat as `activeLocale()` above.
+  // Honour the mirrored hour-cycle preference, the mirrored profile timezone
+  // (issue #490) AND the mirrored date order (issue #922) so these legacy
+  // helpers render the same clock, zone and field order as `useFormatters()`
+  // call sites. The date mirror was the one of the three that was never read
+  // here, which is why the measurements list ignored the profile setting the
+  // entry form's `<DateField>` obeyed. SSR reads AUTO + "" (→ Berlin) — same
+  // post-hydration caveat as `activeLocale()` above.
   return makeFormatters(
     activeLocale(),
     readStoredTimezone(),
     readStoredTimeFormat(),
+    readStoredDateFormat(),
   );
 }
 

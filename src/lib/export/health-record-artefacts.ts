@@ -14,7 +14,10 @@ import { renderDoctorReportPdfBytes } from "@/lib/doctor-report-pdf-core";
 import { buildFhirDocumentBundle } from "@/lib/fhir/build-bundle";
 import type { FhirRecordInputs } from "@/lib/fhir/build-bundle";
 import type { Locale } from "@/lib/i18n/config";
-import type { TimeFormatPreference } from "@/lib/format-locale";
+import type {
+  DateFormatPreference,
+  TimeFormatPreference,
+} from "@/lib/format-locale";
 
 export interface ArtefactInputs {
   data: DoctorReportData;
@@ -26,6 +29,7 @@ export interface ArtefactInputs {
   locale: Locale;
   userTz: string;
   timeFormat: TimeFormatPreference;
+  dateFormat: DateFormatPreference;
   t: (key: string, vars?: Record<string, string | number>) => string;
 }
 
@@ -48,6 +52,7 @@ export function buildPdfBytes(input: ArtefactInputs): Uint8Array {
     locale: input.locale,
     userTz: input.userTz,
     timeFormat: input.timeFormat,
+    dateFormat: input.dateFormat,
     insuranceNumber: input.insuranceNumber,
     includeCharts: input.includeCharts,
   });

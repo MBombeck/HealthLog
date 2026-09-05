@@ -64,7 +64,7 @@ describe("formatUpdatedLabel", () => {
   // selected the "today" caption must never carry AM/PM, even for an en user
   // whose locale default is 12-hour.
   it("renders today's time without AM/PM when fed an H24 formatter", () => {
-    const fmt = makeFormatters("en", "UTC", "H24");
+    const fmt = makeFormatters("en", "UTC", "H24", "AUTO");
     const now = new Date();
     const out = formatUpdatedLabel(
       now.toISOString(),
@@ -78,7 +78,7 @@ describe("formatUpdatedLabel", () => {
   });
 
   it("renders today's time with AM/PM when fed an H12 formatter", () => {
-    const fmt = makeFormatters("en", "UTC", "H12");
+    const fmt = makeFormatters("en", "UTC", "H12", "AUTO");
     // A fixed afternoon instant so the assertion is deterministic regardless
     // of when the suite runs; bucketed as "today" via the UTC day boundary.
     const today = new Date();
@@ -118,7 +118,7 @@ describe("formatUpdatedLabel boundary-zone closure (#490)", () => {
   it("mirror empty (timeZone undefined) → Berlin boundary, not the host's", () => {
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
-    const fmt = makeFormatters("en", undefined, "H24"); // clock: Berlin fallback
+    const fmt = makeFormatters("en", undefined, "H24", "AUTO"); // clock: Berlin fallback
     const out = formatUpdatedLabel(TARGET, t, fmt.dateShort, fmt.time);
     expect(out).toBe("Updated yesterday");
   });
@@ -126,7 +126,7 @@ describe("formatUpdatedLabel boundary-zone closure (#490)", () => {
   it("poison zone → Berlin boundary AND Berlin clock, no throw", () => {
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
-    const fmt = makeFormatters("en", "Mars/Olympus", "H24"); // clock: Berlin
+    const fmt = makeFormatters("en", "Mars/Olympus", "H24", "AUTO"); // clock: Berlin
     const out = formatUpdatedLabel(
       TARGET,
       t,
@@ -141,7 +141,7 @@ describe("formatUpdatedLabel boundary-zone closure (#490)", () => {
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
     // Manila: now = 06:30 Jul 15, target = 05:00 Jul 15 → "today, 05:00".
-    const fmt = makeFormatters("en", "Asia/Manila", "H24");
+    const fmt = makeFormatters("en", "Asia/Manila", "H24", "AUTO");
     const out = formatUpdatedLabel(
       TARGET,
       t,

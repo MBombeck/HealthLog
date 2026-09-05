@@ -169,7 +169,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
       resolveUserTimezone(user.id),
       prisma.user.findUnique({
         where: { id: user.id },
-        select: { insuranceNumberEncrypted: true, timeFormat: true },
+        select: {
+          insuranceNumberEncrypted: true,
+          timeFormat: true,
+          // Issue #922 — the exported PDF is spelled the way the person
+          // who exported it reads dates, not the locale default.
+          dateFormat: true,
+        },
       }),
       // Structured records are always-available reference data (not
       // time-windowed), so they ride alongside the report rather than through
@@ -220,6 +226,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     locale,
     userTz,
     timeFormat: userRow?.timeFormat ?? "AUTO",
+    dateFormat: userRow?.dateFormat ?? "AUTO",
     t,
   };
 

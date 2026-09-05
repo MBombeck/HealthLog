@@ -23,9 +23,25 @@
  * (DSTMIG-scarred); this is the label-side half of the contract.
  */
 
-import { makeFormatters, type Formatters } from "@/lib/format-locale";
+import {
+  makeFormatters,
+  type DateFormatPreference,
+  type Formatters,
+} from "@/lib/format-locale";
 import type { Locale } from "@/lib/i18n/config";
 
-export function makeBucketLabelFormatters(locale: Locale): Formatters {
-  return makeFormatters(locale, "UTC");
+/**
+ * The UTC pin above is about WHICH DAY the label names. The date-order
+ * preference is about how that day is spelled, which is a separate
+ * question and a per-user one — issue #922: the axis kept rendering
+ * MM/DD/YYYY for a profile set to day-first, because this call passed no
+ * preference and the parameter defaulted. Chart callers pass
+ * `useDateFormatPreference()`; the hour cycle stays AUTO because these
+ * labels carry no clock.
+ */
+export function makeBucketLabelFormatters(
+  locale: Locale,
+  dateFormat: DateFormatPreference,
+): Formatters {
+  return makeFormatters(locale, "UTC", "AUTO", dateFormat);
 }

@@ -101,7 +101,7 @@ describe("timezone mirror (issue #490)", () => {
     expect(readStoredTimezone()).toBe("");
     // …and the value must never reach Intl: the formatter chain renders
     // the Berlin fallback instead of throwing.
-    const fmt = makeFormatters("en", readStoredTimezone(), "H24");
+    const fmt = makeFormatters("en", readStoredTimezone(), "H24", "AUTO");
     expect(fmt.time(new Date("2026-04-18T14:30:00Z"))).toBe("16:30");
   });
 
@@ -111,7 +111,7 @@ describe("timezone mirror (issue #490)", () => {
     // mirrors Manila until the next `/api/auth/me` fetch. That must
     // render (in the stale zone), never throw.
     store.set(STORAGE_KEY, "Asia/Manila");
-    const fmt = makeFormatters("en", readStoredTimezone(), "H24");
+    const fmt = makeFormatters("en", readStoredTimezone(), "H24", "AUTO");
     expect(fmt.time(new Date("2026-04-18T14:30:00Z"))).toBe("22:30");
   });
 

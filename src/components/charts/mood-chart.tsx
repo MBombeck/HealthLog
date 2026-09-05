@@ -20,7 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { TagChip } from "@/components/ui/tag-chip";
 import { TileHeader } from "@/components/insights/tile-header";
-import { useTranslations } from "@/lib/i18n/context";
+import { useDateFormatPreference, useTranslations } from "@/lib/i18n/context";
 import { makeBucketLabelFormatters } from "@/lib/charts/bucket-label";
 import { readStoredTimezone } from "@/lib/timezone-mirror";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
@@ -326,7 +326,13 @@ export function MoodChart({
   // labels render UTC-pinned via `makeBucketLabelFormatters` — the
   // encoded day paints verbatim in every profile zone (a profile-tz
   // formatter shifted week/month bucket labels for zones west of Berlin).
-  const tzFmt = useMemo(() => makeBucketLabelFormatters(locale), [locale]);
+  // Issue #922 — the UTC pin decides WHICH day the label names; the
+  // profile's date order decides how it is spelled. Both travel.
+  const dateFormat = useDateFormatPreference();
+  const tzFmt = useMemo(
+    () => makeBucketLabelFormatters(locale, dateFormat),
+    [locale, dateFormat],
+  );
   // The bucket BOUNDARIES follow the profile, even though the bucket LABELS
   // stay UTC-pinned (see above): a week that starts on the wrong day puts a
   // reading in the wrong bar, which is a different mistake from a label that

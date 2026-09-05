@@ -249,8 +249,18 @@ describe("doctor-report — per-section toggles", () => {
     // same `data` payload so both must be clean.
     const { t: tDe } = getServerTranslator("de");
     const { t: tEn } = getServerTranslator("en");
-    const pdfDe = renderDoctorReportPdfBytes(data, { t: tDe, locale: "de" });
-    const pdfEn = renderDoctorReportPdfBytes(data, { t: tEn, locale: "en" });
+    const pdfDe = renderDoctorReportPdfBytes(data, {
+      t: tDe,
+      locale: "de",
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
+    });
+    const pdfEn = renderDoctorReportPdfBytes(data, {
+      t: tEn,
+      locale: "en",
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
+    });
 
     expect(pdfContainsText(pdfDe, "Stimmung")).toBe(false);
     expect(pdfContainsText(pdfEn, "Mood")).toBe(false);

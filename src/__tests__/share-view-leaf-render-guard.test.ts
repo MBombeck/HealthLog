@@ -95,6 +95,8 @@ function render(
       report,
       selection: selectionFromLeaves(leaves),
       unavailableLeaves,
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
     }),
   );
 }
@@ -529,6 +531,8 @@ describe("clinician view — the machine-format downloads", () => {
         selection: selectionFromLeaves(["WEIGHT"]),
         documentOnly,
         token,
+        timeFormat: "AUTO",
+        dateFormat: "AUTO",
       }),
     );
   }

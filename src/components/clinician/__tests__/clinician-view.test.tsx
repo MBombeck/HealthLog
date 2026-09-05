@@ -66,7 +66,12 @@ function render(
   extra?: Partial<
     Pick<
       React.ComponentProps<typeof ClinicianView>,
-      "documents" | "token" | "locale" | "selection"
+      | "documents"
+      | "token"
+      | "locale"
+      | "selection"
+      | "timeFormat"
+      | "dateFormat"
     >
   >,
 ) {
@@ -78,6 +83,8 @@ function render(
       expiresAt="2026-03-01T00:00:00.000Z"
       report={report}
       selection={selectionFromLeaves(ALL_LEAF_IDS)}
+      timeFormat="AUTO"
+      dateFormat="AUTO"
       {...extra}
     />,
   );
@@ -293,5 +300,58 @@ describe("<ClinicianView>", () => {
     expect(html).not.toContain("<iframe");
     expect(html).not.toContain('<img src="/c/hls_tok/d/doc-b"');
     expect(html).toContain("Referral letter");
+  });
+});
+
+/**
+ * Issue #922 — a share link shows the OWNER's record, so it is spelled the
+ * owner's way. The page passed neither the owner's hour cycle nor their date
+ * order, while the PDF one route over already read the hour cycle off the
+ * owner row — so the same record could carry two different spellings
+ * depending on which button the practice pressed.
+ */
+describe("<ClinicianView> renders in the owner's date order", () => {
+  // 2026-03-01: day, month and year are mutually distinguishable, so the
+  // assertion reads the ORDER rather than a coincidence of equal fields.
+  const CASES = [
+    { dateFormat: "DMY" as const, expected: "01.03.2026" },
+    { dateFormat: "MDY" as const, expected: "03/01/2026" },
+    { dateFormat: "YMD" as const, expected: "2026-03-01" },
+  ];
+
+  for (const { dateFormat, expected } of CASES) {
+    it(`spells the expiry ${expected} under ${dateFormat}`, () => {
+      const { t } = getServerTranslator("en");
+      const html = renderToStaticMarkup(
+        <ClinicianView
+          t={(k, v) => t(k, v)}
+          label="Cardiology clinic"
+          expiresAt="2026-03-01T12:00:00.000Z"
+          report={makeReport()}
+          selection={selectionFromLeaves(ALL_LEAF_IDS)}
+          timezone="UTC"
+          timeFormat="AUTO"
+          dateFormat={dateFormat}
+        />,
+      );
+      expect(html).toContain(expected);
+    });
+  }
+
+  it("follows the viewer locale under AUTO", () => {
+    const { t } = getServerTranslator("en");
+    const html = renderToStaticMarkup(
+      <ClinicianView
+        t={(k, v) => t(k, v)}
+        label="Cardiology clinic"
+        expiresAt="2026-03-01T12:00:00.000Z"
+        report={makeReport()}
+        selection={selectionFromLeaves(ALL_LEAF_IDS)}
+        timezone="UTC"
+        timeFormat="AUTO"
+        dateFormat="AUTO"
+      />,
+    );
+    expect(html).toContain("03/01/2026");
   });
 });

@@ -35,7 +35,11 @@ import { TileHeader } from "@/components/insights/tile-header";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 import { computePaddedYDomain } from "@/lib/insights/chart-y-domain";
 import { Button } from "@/components/ui/button";
-import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import {
+  useDateFormatPreference,
+  useTranslations,
+  useFormatters,
+} from "@/lib/i18n/context";
 import { makeBucketLabelFormatters } from "@/lib/charts/bucket-label";
 import {
   bucketTimeSeries,
@@ -631,7 +635,13 @@ export function HealthChart({
   // encodings through a profile-tz formatter shifted week/month bucket
   // labels a day/month back for zones west of Berlin. Day-key BUCKETING
   // below still uses `userTimezone` — only labels are pinned.
-  const tzFmt = useMemo(() => makeBucketLabelFormatters(locale), [locale]);
+  // Issue #922 — the UTC pin decides WHICH day the label names; the
+  // profile's date order decides how it is spelled. Both travel.
+  const dateFormat = useDateFormatPreference();
+  const tzFmt = useMemo(
+    () => makeBucketLabelFormatters(locale, dateFormat),
+    [locale, dateFormat],
+  );
   // v1.4.25 W7b — per-row day-key formatter used to bucket measurement
   // rows by the user's local calendar day. Memoised on userTimezone so
   // the inner per-row loop reuses a single Intl.DateTimeFormat.
