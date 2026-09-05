@@ -1,4 +1,5 @@
 import { Buffer } from "node:buffer";
+import type { Readable } from "node:stream";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Prisma } from "@/generated/prisma/client";
@@ -93,6 +94,11 @@ function makeS3Store(): S3Like & { objects: Map<string, Buffer> } {
   const objects = new Map<string, Buffer>();
   return {
     objects,
+    putStream: vi.fn(async (key: string, body: Readable) => {
+      const chunks: Buffer[] = [];
+      for await (const c of body) chunks.push(Buffer.from(c as Uint8Array));
+      objects.set(key, Buffer.concat(chunks));
+    }),
     putObject: vi.fn(async (key, body) => {
       objects.set(key, Buffer.from(body));
     }),

@@ -40,6 +40,12 @@ export async function handleOffhostBackup(
       evt.addMeta("offhost_backup_total_users", report.totalUsers);
       evt.addMeta("offhost_backup_endpoint", report.config.endpoint);
       evt.addMeta("offhost_backup_bucket", report.config.bucket);
+      // The uploaded size is the one number that says whether this pass is
+      // heading back towards the wall it hit before: it tracks the record.
+      evt.addMeta(
+        "offhost_backup_largest_object_bytes",
+        report.largestObjectBytes,
+      );
       // Per-user failure detail is also emitted as warnings inside
       // runOffhostBackup; echo a structured digest for at-a-glance triage.
       if (report.failures.length > 0) {
@@ -48,14 +54,37 @@ export async function handleOffhostBackup(
           JSON.stringify(report.failures.slice(0, 10)),
         );
       }
-      // Per-user upload failures ride out as `offhost_backup_failed`: the run
-      // itself uploaded what it could, and failing the queue over one user's
-      // object would re-upload the whole cohort on every retry.
-      return jobDone({
+
+      const did = {
         offhost_backup_uploaded: report.uploaded,
         offhost_backup_failed: report.failed,
         offhost_backup_total_users: report.totalUsers,
-      });
+        offhost_backup_oversized: report.oversized,
+      };
+
+      // A run that uploaded nothing for anybody put nothing off-host, and
+      // `ok: true` about that is how a bucket stays empty while the job page
+      // reads healthy — the same rule the weekly pass already carries. Wrong
+      // credentials, a bucket that does not exist and a target that refuses
+      // the signature all land here, because they fail every account rather
+      // than one. Per-account failures still ride out as counts when SOME
+      // account got a copy: that is the fan-out rule, and retrying the whole
+      // cohort over one object would re-upload everybody's.
+      if (report.totalUsers > 0 && report.uploaded === 0) {
+        // The SDK's own words, not a stack: `runJob` puts the cause message in
+        // the reported meta, and "SignatureDoesNotMatch" is the sentence an
+        // operator can act on.
+        return jobFailed(
+          "no account could be uploaded",
+          report.failures[0]?.message,
+          did,
+        );
+      }
+
+      // Per-user upload failures ride out as `offhost_backup_failed`: the run
+      // itself uploaded what it could, and failing the queue over one user's
+      // object would re-upload the whole cohort on every retry.
+      return jobDone(did);
     } catch (err) {
       // Not configured ⇒ skip silently with a warning, not an error: most
       // self-hosts never set the S3 credentials, and a nightly failed job on

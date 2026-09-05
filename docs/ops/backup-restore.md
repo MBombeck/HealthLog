@@ -16,12 +16,20 @@ container (queue `data-backup-offhost`). Object key layout:
 
 ```
 magic   = "HLBK"           (4 bytes, ASCII)
-version = 0x01             (1 byte)
+version = 0x03             (1 byte)
 iv      = 12 random bytes  (AES-GCM nonce)
-authTag = 16 bytes         (AES-GCM tag)
-ciphertext = N bytes       (AES-256-GCM, key = BACKUP_ENCRYPTION_KEY)
-plaintext  = JSON dump (UTF-8)
+ciphertext = N bytes       (AES-256-GCM over gzip(JSON dump), key = BACKUP_ENCRYPTION_KEY)
+authTag = 16 bytes         (AES-GCM tag, trailing)
 ```
+
+Three versions exist in the wild and all three restore. `0x01` encrypted the
+JSON directly and `0x02` gzipped it first; both carry the tag in FRONT of the
+ciphertext, which is what made them impossible to write a piece at a time —
+GCM only produces the tag once the last block is in, so a leading tag means the
+whole object has to exist before its first byte can be sent. `0x03` moves the tag to the end and changes nothing else: it still
+covers every ciphertext byte, and the reader still verifies it before returning
+a single byte of plaintext. Objects already in your bucket stay readable, and
+the restore script needs no flag to tell them apart.
 
 ## Required env vars
 
@@ -34,6 +42,15 @@ plaintext  = JSON dump (UTF-8)
 | `BACKUP_S3_SECRET_KEY`  | yes      |                                                                      |
 | `BACKUP_S3_REGION`      | no       | defaults to `auto` (Cloudflare R2)                                   |
 | `BACKUP_RETENTION_DAYS` | no       | defaults to `30`                                                     |
+
+## Bucket permissions
+
+The worker needs `PutObject`, `GetObject` and `AbortMultipartUpload`. It never
+calls `DeleteObject` on a backup key, so a compromised worker cannot wipe the
+history; `AbortMultipartUpload` only reaches an upload that same worker started
+and is what clears the parts of a run that failed halfway. Without it, a failed
+upload leaves parts that are billed and do not show in a bucket listing. On
+Cloudflare R2 the **Object Read & Write** token already covers all three.
 
 ## Bucket lifecycle (recommended)
 
@@ -95,6 +112,15 @@ The script downloads the object, decrypts it, and writes the JSON dump
 to disk. Importing the JSON back into a HealthLog instance is left to
 the operator (use `prisma db seed` or a custom script).
 
+Restoring is not streamed and does not need to be. It holds the whole document,
+because the next thing anyone does with a backup is parse it as one JSON
+object, and handing back plaintext the auth tag has not yet covered would trade
+the authentication for memory. It runs on your machine rather than in the
+container, so give it room: a record of several hundred thousand measurements
+decompresses to a few hundred megabytes, and
+`NODE_OPTIONS=--max-old-space-size=2048` in front of the command is enough for
+a 445 000-measurement account.
+
 ### What a backup deliberately does not carry
 
 Every credential-shaped row is left out, and this is not an oversight to fix:
@@ -121,6 +147,52 @@ time. Plan for it rather than discovering it.
 The full per-model reasoning lives in `src/lib/export/backup-plan.ts`, where
 every excluded model carries a written verdict and a structural test refuses to
 let a new model land without one.
+
+## Container memory (the nightly off-host job)
+
+This is the part that bites, and it bit the nightly job a release after it bit
+the weekly one. The job runs inside the app process, so V8's heap limit is the
+app's heap limit, and a container capped at 1 GB gives Node a 524 MB old-space
+limit by default. A long-lived Next.js server is already holding a large share
+of that before the job starts.
+
+The uploader used to build the whole backup JSON as one string, gzipped
+that whole string, ran a whole-buffer cipher pass over the result and handed
+the finished buffer to a single `PutObject` — four full copies of the record
+alive at once. On an account of 445 000 measurements the JSON alone is 242 MB,
+and the first configured run took the container down seventeen seconds in with
+`FATAL ERROR: Reached heap limit`. Because the job shares the app process, one
+account's size restarted the instance for everybody on it.
+
+It streams now. The JSON is produced a page at a time, gzip and the cipher
+consume it as it arrives, and the object goes up as a multipart upload that
+holds two 8 MB parts. What the process holds is fixed by that pipeline's shape
+rather than by the size of the record going through it: measured on the same
+445 000-measurement account under `--max-old-space-size=450`, the old path
+died and the new one finished holding tens of megabytes, writing a 9.1 MB
+object that restores to the identical record.
+
+One ceiling remains, and it is structural rather than a memory bound: a
+multipart upload carries 10 000 parts, so 80 GB is the largest object one
+account can produce. Past it the account's backup fails with a clear refusal,
+is counted in the run's `offhost_backup_oversized` meta, and the pass carries
+on with everybody else.
+
+### Reading a failed run
+
+A nightly run that could not upload for **anybody** now fails the pg-boss job
+instead of reporting success. This is the case wrong credentials, a missing
+bucket and an unreachable endpoint all land in, and the target's own sentence
+rides out as the failure cause — `The request signature we calculated does not
+match the signature you provided`, `The specified bucket does not exist`,
+`connect ECONNREFUSED`. Check `offhost_backup_uploaded` against
+`offhost_backup_total_users`: before this change a run where every single
+upload failed still read `ok: true`, so a bucket could stay empty while the
+jobs page looked healthy.
+
+A run where SOME account got a copy still succeeds, with the rest counted in
+`offhost_backup_failed`. Failing the whole queue over one account's object
+would re-upload everybody's on every retry.
 
 ## The weekly in-database backup (`data-backup`)
 
