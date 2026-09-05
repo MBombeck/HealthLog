@@ -1,6 +1,9 @@
 # Changelog
 
-## [Unreleased]
+## [1.38.9] — 2026-09-05
+
+The date order you choose now reaches every date on screen, a plain-HTTP
+self-host can write again, and a gateway that refuses now says why.
 
 ### Fixed
 
