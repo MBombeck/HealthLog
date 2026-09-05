@@ -7,7 +7,13 @@ import type {
   CompletionParams,
   CompletionResult,
 } from "./types";
-import { buildOpenAIMessages, mapFinishReason } from "./openai-wire";
+import {
+  buildOpenAIMessages,
+  mapFinishReason,
+  raiseEmbeddedError,
+  readEmbeddedError,
+  sanitiseBodyExcerpt,
+} from "./openai-wire";
 import {
   hasLearnedJsonModeDialect,
   isResponseFormatRejection,
@@ -214,10 +220,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       // also commonly leak bearer tokens in error envelopes (proxies), so
       // strip anything that looks like a key before logging.
       const rawBody = await res.text().catch(() => "");
-      const bodyExcerpt = rawBody
-        .slice(0, 500)
-        .replace(/sk-[A-Za-z0-9_-]{8,}/g, "sk-***redacted***")
-        .replace(/Bearer\s+[A-Za-z0-9_.-]+/gi, "Bearer ***redacted***");
+      const bodyExcerpt = sanitiseBodyExcerpt(rawBody);
       // v1.28.28 (#470) — dialect self-heal. A 4xx whose body names
       // `response_format` (or an unknown parameter) means this endpoint
       // rejects the standard JSON flag: learn the no-flag dialect for the
@@ -269,6 +272,18 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       }>;
       usage?: { total_tokens?: number };
     };
+
+    // Same embedded-failure shape the OpenAI-compatible gateway tag handles:
+    // this client serves hosted gateways too (the class doc above names
+    // LiteLLM and OpenRouter), and those answer a provider-side refusal with
+    // HTTP 200 and the failure inside the body. Unconditional here — every
+    // base URL on this provider was typed by a person, there is no pinned
+    // vendor endpoint whose behaviour has to stay untouched.
+    raiseEmbeddedError(json, {
+      upstream: "local",
+      label: "local AI endpoint",
+      model: this.config.model,
+    });
 
     const content = json.choices?.[0]?.message?.content;
     if (!content) {
@@ -370,6 +385,13 @@ export class LocalOpenAICompatibleClient implements AIProvider {
         }>;
         usage?: { total_tokens?: number };
       } | null;
+      // The server ignored `stream` and answered buffered — the embedded
+      // failure can ride this body exactly as it rides the non-streaming one.
+      raiseEmbeddedError(json, {
+        upstream: "local",
+        label: "local AI endpoint",
+        model: this.config.model,
+      });
       const buffered = json?.choices?.[0]?.message?.content;
       if (!buffered) {
         const err = new Error("Local AI returned empty content");
@@ -397,6 +419,11 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     let tokensUsed: number | null = null;
     let finishReason: string | undefined;
 
+    // An SSE frame can carry the same embedded failure the buffered body
+    // carries. Remember the first one; it only matters if the stream ends
+    // without a single token, in which case it is the honest reason.
+    let streamedError: unknown = null;
+
     let idleTimer: ReturnType<typeof setTimeout> | null = null;
     const armIdle = () => {
       if (idleTimer) clearTimeout(idleTimer);
@@ -421,9 +448,11 @@ export class LocalOpenAICompatibleClient implements AIProvider {
           const payload = line.slice("data:".length).trim();
           if (!payload || payload === "[DONE]") continue;
           let chunk: {
+            error?: unknown;
             choices?: Array<{
               delta?: { content?: string };
               finish_reason?: string | null;
+              error?: unknown;
             }>;
             usage?: { total_tokens?: number };
           };
@@ -432,6 +461,9 @@ export class LocalOpenAICompatibleClient implements AIProvider {
           } catch {
             // A malformed chunk line is skipped, not fatal — keep reading.
             continue;
+          }
+          if (streamedError === null && readEmbeddedError(chunk) !== null) {
+            streamedError = chunk;
           }
           const delta = chunk.choices?.[0]?.delta?.content;
           if (delta) {
@@ -466,6 +498,13 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     }
 
     if (!content) {
+      // A stream that ended with a failure frame and no token reports the
+      // failure, not "empty content".
+      raiseEmbeddedError(streamedError, {
+        upstream: "local",
+        label: "local AI endpoint",
+        model: this.config.model,
+      });
       const err = new Error("Local AI returned empty content");
       Object.assign(err, {
         httpStatus: 0,

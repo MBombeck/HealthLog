@@ -15,6 +15,8 @@ import {
   mapFinishReason,
   parseCachedTokens,
   parseOpenAIToolCalls,
+  raiseEmbeddedError,
+  sanitiseBodyExcerpt,
   type OpenAIResponseJson,
 } from "./openai-wire";
 
@@ -179,10 +181,7 @@ export class OpenAIClient implements AIProvider {
       // surfacing as an opaque "OpenAI request failed (500)". Strip anything
       // that looks like an API key from the excerpt before logging.
       const rawBody = await res.text().catch(() => "");
-      const bodyExcerpt = rawBody
-        .slice(0, 500)
-        .replace(/sk-[A-Za-z0-9_-]{8,}/g, "sk-***redacted***")
-        .replace(/Bearer\s+[A-Za-z0-9_.-]+/gi, "Bearer ***redacted***");
+      const bodyExcerpt = sanitiseBodyExcerpt(rawBody);
       // v1.33.1 (#470) — dialect self-heal, gateway only. A 4xx whose body
       // names `response_format` (or an unknown parameter) means this endpoint
       // rejects the standard JSON flag: learn the no-flag dialect for the base
@@ -232,6 +231,30 @@ export class OpenAIClient implements AIProvider {
     }
 
     const json = (await res.json()) as OpenAIResponseJson;
+
+    // A 200 that carries the failure inside the body. OpenRouter (and every
+    // gateway that copies it) answers a provider-side refusal — no credits,
+    // a data-policy or moderation block, an upstream timeout, a model that is
+    // down, no provider matching the routing requirements — with HTTP 200 and
+    // a top-level `error` object instead of `choices`, and a generation that
+    // died mid-flight with `choices[0].error` beside `finish_reason: "error"`.
+    // Both used to fall through to the empty-content throw below, so every one
+    // of those causes collapsed into "returned empty content", status 0, no
+    // excerpt: neither the person nor the provider-health card could tell them
+    // apart. Raise the same shaped error a non-2xx reply raises so the chain
+    // classifier, the health ledger and the card all see the real status.
+    //
+    // Gated on the gateway tag because the shape is gateway-only: on
+    // `api.openai.com` — the `admin-key` and `codex` tags — a failure is
+    // always a non-2xx status, so their parsing is untouched.
+    if (this.isGateway) {
+      raiseEmbeddedError(json, {
+        upstream: "openai-compatible",
+        label: "OpenAI-compatible gateway",
+        model: this.config.model,
+      });
+    }
+
     const choice = json.choices?.[0];
     let content = choice?.message?.content;
     const toolCalls = parseOpenAIToolCalls(choice);

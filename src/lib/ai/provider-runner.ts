@@ -356,8 +356,27 @@ export function classifyErrorBody(body: unknown): string | null {
   if (lowered.includes("response_format") || lowered.includes("json_schema")) {
     return "classified:response_format_rejected";
   }
-  if (lowered.includes("insufficient_quota") || lowered.includes("billing")) {
+  if (
+    lowered.includes("insufficient_quota") ||
+    lowered.includes("billing") ||
+    // A gateway that meters prepaid credit says so in its own words rather
+    // than OpenAI's `insufficient_quota`; it is the same class of refusal.
+    lowered.includes("insufficient credits") ||
+    lowered.includes("insufficient_credits")
+  ) {
     return "classified:quota_or_billing";
+  }
+  // A routing refusal: the account's data policy / zero-retention settings, or
+  // the model's own availability, leave no provider eligible to serve the
+  // call. Distinct from quota — nothing is spent and nothing is expired; the
+  // request simply has nowhere to go.
+  if (
+    lowered.includes("data policy") ||
+    lowered.includes("data_policy") ||
+    lowered.includes("no allowed providers") ||
+    lowered.includes("no endpoints found")
+  ) {
+    return "classified:no_eligible_provider";
   }
   if (lowered.includes("invalid_api_key") || lowered.includes("unauthorized")) {
     return "classified:auth_rejected";

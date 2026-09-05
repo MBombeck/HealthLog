@@ -72,6 +72,23 @@ describe("upstream error-body classification", () => {
     );
   });
 
+  it("names a gateway's own wording for the two account-side refusals", () => {
+    // A gateway meters prepaid credit and enforces the account's data policy
+    // in its own vocabulary, not OpenAI's. Both used to land in the
+    // unclassified bucket, which is exactly the pair a person needs told
+    // apart: top the account up, or widen the routing policy.
+    expect(
+      classifyErrorBody(
+        '{"error":{"code":402,"message":"Insufficient credits"}}',
+      ),
+    ).toBe("classified:quota_or_billing");
+    expect(
+      classifyErrorBody(
+        '{"error":{"code":403,"message":"No endpoints found matching your data policy"}}',
+      ),
+    ).toBe("classified:no_eligible_provider");
+  });
+
   it("passes through absence honestly", () => {
     expect(classifyErrorBody(null)).toBeNull();
     expect(classifyErrorBody("")).toBeNull();

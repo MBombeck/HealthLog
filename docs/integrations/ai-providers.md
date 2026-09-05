@@ -197,6 +197,15 @@ JSON surfaces send the standard
 the field is detected on the first refusal and retried without it,
 so strict gateways and older local servers both work unmodified.
 
+**When the gateway refuses.** OpenRouter answers a refused generation
+with HTTP 200 and the reason inside the body, so every refusal used to
+reach the provider health card as an empty reply with no status. It now
+carries the gateway's own status and message — 402 out of credits, 403
+blocked, 429 rate-limited, 502 model down. The two account settings
+behind most refusals are an empty credit balance and a data-policy or
+zero-retention restriction that leaves no eligible provider for the
+model you picked; both are changed in the gateway account, not here.
+
 **The Local provider still works for this** and nothing about it
 changed — it speaks the same wire and honours the same base URL. Pick
 the gateway provider when the endpoint is a gateway (it says so in
