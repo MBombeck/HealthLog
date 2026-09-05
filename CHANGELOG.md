@@ -3,7 +3,8 @@
 ## [1.38.9] — 2026-09-05
 
 The date order you choose now reaches every date on screen, a plain-HTTP
-self-host can write again, and a gateway that refuses now says why.
+self-host can write again, and a gateway that refuses now says why. The first
+two came from reports by @foxbcx (#922) and @arisalthaus (#492); thank you.
 
 ### Fixed
 
