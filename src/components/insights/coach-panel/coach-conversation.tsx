@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
+import { randomId } from "@/lib/random-id";
 import { apiDelete, apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
 import type { CoachScope } from "@/lib/ai/coach/types";
 import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
@@ -528,7 +529,7 @@ export function CoachConversation({
       try {
         response = await apiFetchRaw("/api/documents/inbound", {
           method: "POST",
-          headers: { "Idempotency-Key": crypto.randomUUID() },
+          headers: { "Idempotency-Key": randomId() },
           body: form,
         });
       } catch {

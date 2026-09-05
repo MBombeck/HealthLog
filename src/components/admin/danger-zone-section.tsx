@@ -22,6 +22,7 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
 import { apiDelete } from "@/lib/api/api-fetch";
+import { randomId } from "@/lib/random-id";
 
 /**
  * The literal an admin must type to arm the wipe. Mirrors the Backups
@@ -46,7 +47,7 @@ export function DangerZoneSection() {
     mutationFn: async () => {
       // Idempotency-Key prevents a double-submit from re-running the
       // destructive transaction, matching the Backups restore path.
-      const idempotencyKey = `admin-data-wipe-${crypto.randomUUID()}`;
+      const idempotencyKey = `admin-data-wipe-${randomId()}`;
       // The server returns one count per table that actually held rows. It
       // used to return nine fixed names, which is how nobody noticed the
       // wipe had stopped covering the schema: the result line read the same

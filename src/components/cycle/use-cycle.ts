@@ -20,6 +20,7 @@ import {
   apiPost,
 } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
+import { randomId } from "@/lib/random-id";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 
 import {
@@ -225,7 +226,7 @@ export function useCycleInsights() {
 
 /** A fresh idempotency key per write attempt (matches the iOS Outbox shape). */
 function idempotencyKey(): string {
-  return crypto.randomUUID();
+  return randomId();
 }
 
 /**

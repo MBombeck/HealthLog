@@ -49,6 +49,7 @@
  *     long-lived responses ride this path with their own signals.
  */
 
+import { randomId } from "@/lib/random-id";
 import { readError } from "./read-error";
 import {
   validateResponseContext,
@@ -209,7 +210,7 @@ export function apiGet<T = unknown>(
 function withDefaultIdempotencyKey(init: RequestInit): RequestInit {
   const headers = new Headers(init.headers);
   if (!headers.has("Idempotency-Key")) {
-    headers.set("Idempotency-Key", crypto.randomUUID());
+    headers.set("Idempotency-Key", randomId());
   }
   return { ...init, headers };
 }

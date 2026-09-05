@@ -4,6 +4,7 @@ import {
   RECORD_SCOPE_STORAGE_KEY,
   setRecordScope,
 } from "@/lib/query-keys/record-scope";
+import { randomId } from "@/lib/random-id";
 
 /**
  * A browser-wide hold around a server-side record-session switch.
@@ -56,13 +57,6 @@ let storageListenerAttached = false;
 
 function notify(): void {
   for (const listener of listeners) listener();
-}
-
-function makeId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 function parseWire(value: string | null): WireTransition | null {
@@ -162,7 +156,7 @@ function ensureTransport(): void {
         // cost.
         if (!isForeignScopeWrite(transition)) return;
         publish({
-          id: makeId(),
+          id: randomId(),
           phase: "resolving",
           expectedScope,
           at: Date.now(),
@@ -249,7 +243,7 @@ export function beginRecordSessionTransition(
 ): string {
   seed();
   ensureTransport();
-  const id = makeId();
+  const id = randomId();
   publish({ id, phase: "blocking", expectedScope, at: Date.now() });
   return id;
 }
@@ -296,7 +290,7 @@ export function holdForRecordSessionReconcile(): void {
   seed();
   ensureTransport();
   if (transition.phase === "resolving") return;
-  publish({ id: makeId(), phase: "resolving", at: Date.now() });
+  publish({ id: randomId(), phase: "resolving", at: Date.now() });
 }
 
 /** Release only the `/me` response that confirms the committed record. */
@@ -310,7 +304,7 @@ export function settleRecordSessionTransition(
   ) {
     return;
   }
-  const id = transition.id ?? makeId();
+  const id = transition.id ?? randomId();
   publish({ id, phase: "ready", at: Date.now() });
 }
 
@@ -322,7 +316,7 @@ export function settleRecordSessionTransition(
  */
 export function settleRefusedRecordSessionTransition(): void {
   if (transition.phase !== "resolving") return;
-  const id = transition.id ?? makeId();
+  const id = transition.id ?? randomId();
   publish({ id, phase: "ready", at: Date.now() });
 }
 
