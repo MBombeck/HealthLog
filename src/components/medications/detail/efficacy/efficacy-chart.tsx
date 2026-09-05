@@ -25,7 +25,7 @@ import {
   ReferenceArea,
 } from "recharts";
 import { makeFormatters } from "@/lib/format-locale";
-import { useTranslations } from "@/lib/i18n/context";
+import { useDateFormatPreference, useTranslations } from "@/lib/i18n/context";
 
 export interface EfficacyChartTarget {
   label: string;
@@ -67,9 +67,13 @@ export function EfficacyChart({
   mode = "absolute",
 }: EfficacyChartProps) {
   const { locale } = useTranslations();
+  // Issue #922 — the axis ticks and the tooltip label follow the profile's
+  // date order. The hour cycle is AUTO on purpose: this formatter renders
+  // days only (`fmt.date`), never a clock.
+  const dateFormat = useDateFormatPreference();
   const fmt = useMemo(
-    () => makeFormatters(locale, timezone),
-    [locale, timezone],
+    () => makeFormatters(locale, timezone, "AUTO", dateFormat),
+    [locale, timezone, dateFormat],
   );
 
   const seriesData = useMemo(

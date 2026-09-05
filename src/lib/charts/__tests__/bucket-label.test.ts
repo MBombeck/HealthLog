@@ -33,7 +33,7 @@ describe("makeBucketLabelFormatters (#490)", () => {
     const ts = monthBucket.points[0].timestamp;
     // The bucket encodes the Berlin month start as UTC midnight.
     expect(ts).toBe(Date.UTC(2026, 6, 1));
-    const label = makeBucketLabelFormatters("en");
+    const label = makeBucketLabelFormatters("en", "AUTO");
     expect(label.monthShort(new Date(ts))).toBe("Jul");
     expect(label.date(new Date(ts))).toBe("07/01/2026");
   });
@@ -43,13 +43,13 @@ describe("makeBucketLabelFormatters (#490)", () => {
     // Jul 1 00:00 UTC = Jun 30 20:00 in New York — the exact month-label
     // slide the UTC pin exists to prevent. If this expectation ever
     // changes, the label pin above is what protects users.
-    const newYork = makeFormatters("en", "America/New_York");
+    const newYork = makeFormatters("en", "America/New_York", "AUTO", "AUTO");
     expect(newYork.monthShort(new Date(ts))).toBe("Jun");
   });
 
   it("stays byte-identical to the legacy Berlin rendering", () => {
-    const berlin = makeFormatters("en", "Europe/Berlin");
-    const label = makeBucketLabelFormatters("en");
+    const berlin = makeFormatters("en", "Europe/Berlin", "AUTO", "AUTO");
+    const label = makeBucketLabelFormatters("en", "AUTO");
     // Month bucket start (UTC midnight of a Berlin day)…
     const bucketTs = new Date(monthBucket.points[0].timestamp);
     expect(label.date(bucketTs)).toBe(berlin.date(bucketTs));
@@ -72,10 +72,10 @@ describe("makeBucketLabelFormatters (#490)", () => {
     );
     const ts = weekBucket.points[0].timestamp;
     expect(ts).toBe(Date.UTC(2026, 6, 13));
-    const label = makeBucketLabelFormatters("en");
+    const label = makeBucketLabelFormatters("en", "AUTO");
     expect(label.dateWithWeekday(new Date(ts))).toContain("Mon");
     // A New-York-tz render would name it "Sun" — the week-label slide.
-    const newYork = makeFormatters("en", "America/New_York");
+    const newYork = makeFormatters("en", "America/New_York", "AUTO", "AUTO");
     expect(newYork.dateWithWeekday(new Date(ts))).toContain("Sun");
   });
 
@@ -83,8 +83,10 @@ describe("makeBucketLabelFormatters (#490)", () => {
     // Day rows encode noon UTC; an Auckland (UTC+13 in January) profile
     // formatter would render the NEXT day. The UTC pin renders the key.
     const dayTs = new Date(Date.UTC(2026, 0, 14, 12));
-    expect(makeBucketLabelFormatters("en").date(dayTs)).toBe("01/14/2026");
-    const auckland = makeFormatters("en", "Pacific/Auckland");
+    expect(makeBucketLabelFormatters("en", "AUTO").date(dayTs)).toBe(
+      "01/14/2026",
+    );
+    const auckland = makeFormatters("en", "Pacific/Auckland", "AUTO", "AUTO");
     expect(auckland.date(dayTs)).toBe("01/15/2026");
   });
 });

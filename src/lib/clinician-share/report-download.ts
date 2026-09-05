@@ -35,9 +35,12 @@ import { annotate } from "@/lib/logging/context";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import type { DoctorReportData } from "@/lib/doctor-report-data";
 import type { ReportSelection } from "@/lib/report-selection/selection";
-import { prisma } from "@/lib/db";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
-import type { TimeFormatPreference } from "@/generated/prisma/client";
+import { resolveUserFormatPreferences } from "@/lib/user-format-preferences";
+import type {
+  DateFormatPreference,
+  TimeFormatPreference,
+} from "@/lib/format-locale";
 
 /**
  * 20 per hour per link. A practice saves the record once, maybe twice; a
@@ -61,7 +64,8 @@ export type ReportDownloadResult =
       report: DoctorReportData;
       selection: ReportSelection;
       /**
-       * The OWNER's timezone and clock preference, not the reader's.
+       * The OWNER's timezone, clock preference and date order, not the
+       * reader's.
        *
        * A reading was recorded at a moment in the owner's life, and the date
        * printed beside it has to be the date it was that day where they were.
@@ -69,9 +73,14 @@ export type ReportDownloadResult =
        * so the same reading could carry one date on screen and another in the
        * PDF a practice files. Resolved here rather than per route so the two
        * download formats cannot drift apart the way the page and the PDF did.
+       *
+       * Issue #922 — `ownerDateFormat` joined them. The field ORDER is the
+       * same class of question as the zone: it belongs to whose record this
+       * is, not to whoever opened the link.
        */
       ownerTz: string;
       ownerTimeFormat: TimeFormatPreference;
+      ownerDateFormat: DateFormatPreference;
     }
   | { ok: false; response: Response };
 
@@ -147,12 +156,9 @@ export async function resolveShareReportDownload(
     meta: { format, leafCount: view.selection.leaves.length },
   });
 
-  const [ownerTz, ownerRow] = await Promise.all([
+  const [ownerTz, ownerPrefs] = await Promise.all([
     resolveUserTimezone(context.ownerUserId),
-    prisma.user.findUnique({
-      where: { id: context.ownerUserId },
-      select: { timeFormat: true },
-    }),
+    resolveUserFormatPreferences(context.ownerUserId),
   ]);
 
   return {
@@ -160,6 +166,7 @@ export async function resolveShareReportDownload(
     report: view.report,
     selection: view.selection,
     ownerTz,
-    ownerTimeFormat: ownerRow?.timeFormat ?? "AUTO",
+    ownerTimeFormat: ownerPrefs.timeFormat,
+    ownerDateFormat: ownerPrefs.dateFormat,
   };
 }

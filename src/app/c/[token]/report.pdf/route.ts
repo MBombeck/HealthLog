@@ -42,6 +42,7 @@ export const GET = apiHandler(
       // off from the page it was downloaded from.
       userTz: resolved.ownerTz,
       timeFormat: resolved.ownerTimeFormat,
+      dateFormat: resolved.ownerDateFormat,
       insuranceNumber: null,
       includeCharts: true,
     });

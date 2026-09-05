@@ -24,6 +24,29 @@
 - **The import guide link under Settings → Import went the long way round.**
   Both the CSV and the JSON card now link straight to the guide instead of
   through a redirect.
+- **The date order you pick under Settings only reached the entry form.** A
+  reporter switched away from MM/DD/YYYY, watched the date picker follow, and
+  then found the dashboard chart axes and the measurements list still spelling
+  every date the old way. The setting now reaches every surface that renders a
+  numeric date: the health and mood chart axes and their tooltips, the
+  measurements list, the medication compliance and efficacy charts, the
+  doctor-report PDF, and the shared clinician view, which spells dates the way
+  the person who owns the record reads them rather than the way the practice
+  that opened the link does. That view also picked up the owner's 12-/24-hour
+  preference on the way; it had been ignoring that while the PDF one route
+  over already honoured it.
+
+  Textual months are deliberately unchanged. "18 Feb" versus "Feb 18" follows
+  the app's language, because the alternative is a German month name in an
+  English report.
+
+  The cause is worth naming, because it is a shape rather than an oversight:
+  the formatter took the preference as an optional argument with a default, so
+  the six places that never passed it compiled cleanly and silently rendered
+  the locale default. The argument is required now, which turned "who forgot
+  this" into a question the compiler answers, and a new check refuses a
+  numeric date rendered outside the preference unless the reason is written
+  down next to it.
 
 ## [1.38.8] — 2026-09-03
 

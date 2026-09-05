@@ -174,11 +174,24 @@ export interface Formatters {
   monthShort: (value: DateInput) => string;
 }
 
+/**
+ * Build the locale-aware formatter set.
+ *
+ * Every parameter is REQUIRED, deliberately. `timeFormat` and `dateFormat`
+ * used to default to "AUTO", and a preference parameter with a default is
+ * how "the setting works in one place" ships: issue #922 — a reporter moved
+ * the profile off MM/DD/YYYY, the entry form followed, and the chart axes
+ * and the measurements list did not, because every construction except
+ * `useFormatters()` silently took the default. A caller with nothing to
+ * pass writes "AUTO" and thereby says so. Same for `userTz`: pass the
+ * resolved profile zone, or an explicit `undefined` to accept the
+ * `DISPLAY_TIMEZONE` fallback.
+ */
 export function makeFormatters(
   locale: Locale,
-  userTz?: string,
-  timeFormat: TimeFormatPreference = "AUTO",
-  dateFormat: DateFormatPreference = "AUTO",
+  userTz: string | undefined,
+  timeFormat: TimeFormatPreference,
+  dateFormat: DateFormatPreference,
 ): Formatters {
   const intlLocale = resolveIntlLocale(locale);
   // Poison guard: an invalid IANA name would make `Intl.DateTimeFormat`

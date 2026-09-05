@@ -51,7 +51,11 @@ import { TileHeader } from "@/components/insights/tile-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import {
+  useDateFormatPreference,
+  useTranslations,
+  useFormatters,
+} from "@/lib/i18n/context";
 import { formatDateShort } from "@/lib/format";
 import { makeFormatters } from "@/lib/format-locale";
 import { cn } from "@/lib/utils";
@@ -221,9 +225,13 @@ export function MedicationComplianceChart({
   const [days, setDays] = useState<RangeDays>(30);
   // v1.4.25 W7b — tz-aware date formatter for the x-axis labels and
   // the tooltip's `dateLabel`. Same pattern as health-chart + mood-chart.
+  // Issue #922 — the axis labels and the tooltip date follow the profile's
+  // date order. The hour cycle is AUTO on purpose: this formatter renders
+  // days only (`dateShortSmart` / `date`), never a clock.
+  const dateFormat = useDateFormatPreference();
   const tzFmt = useMemo(
-    () => makeFormatters(locale, userTimezone),
-    [locale, userTimezone],
+    () => makeFormatters(locale, userTimezone, "AUTO", dateFormat),
+    [locale, userTimezone, dateFormat],
   );
 
   // v1.4.18 — three overlay toggles persisted per chart. The 7-day

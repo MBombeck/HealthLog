@@ -97,6 +97,8 @@ describe("renderDoctorReportPdfBytes", () => {
   it("returns a Uint8Array starting with the %PDF- header", () => {
     const { t } = getServerTranslator("de");
     const bytes = renderDoctorReportPdfBytes(makeData(), {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t,
       locale: "de",
       now: FIXED_NOW,
@@ -109,6 +111,8 @@ describe("renderDoctorReportPdfBytes", () => {
   it("produces a non-trivial document (> 1 KB)", () => {
     const { t } = getServerTranslator("de");
     const bytes = renderDoctorReportPdfBytes(makeData(), {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t,
       locale: "de",
       now: FIXED_NOW,
@@ -123,11 +127,15 @@ describe("renderDoctorReportPdfBytes", () => {
     // strict bytewise compare.
     const { t } = getServerTranslator("de");
     const a = renderDoctorReportPdfBytes(makeData(), {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t,
       locale: "de",
       now: FIXED_NOW,
     });
     const b = renderDoctorReportPdfBytes(makeData(), {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t,
       locale: "de",
       now: FIXED_NOW,
@@ -142,11 +150,15 @@ describe("renderDoctorReportPdfBytes", () => {
 
   it("renders both DE and EN locales without errors", () => {
     const de = renderDoctorReportPdfBytes(makeData(), {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("de").t,
       locale: "de",
       now: FIXED_NOW,
     });
     const en = renderDoctorReportPdfBytes(makeData(), {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("en").t,
       locale: "en",
       now: FIXED_NOW,
@@ -165,6 +177,8 @@ describe("renderDoctorReportPdfBytes", () => {
       bmi: null,
     });
     const bytes = renderDoctorReportPdfBytes(empty, {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("de").t,
       locale: "de",
       now: FIXED_NOW,
@@ -189,6 +203,8 @@ describe("renderDoctorReportPdfBytes", () => {
       },
     });
     const bytes = renderDoctorReportPdfBytes(data, {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("en").t,
       locale: "en",
       now: FIXED_NOW,
@@ -206,6 +222,8 @@ describe("renderDoctorReportPdfBytes", () => {
 
   it("omits the sleep vitals row when there are no sleep stats", async () => {
     const bytes = renderDoctorReportPdfBytes(makeData(), {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("en").t,
       locale: "en",
       now: FIXED_NOW,
@@ -218,6 +236,8 @@ describe("renderDoctorReportPdfBytes", () => {
 describe("buildDoctorReportPdfDocument", () => {
   it("returns a jsPDF doc with at least one page", () => {
     const doc = buildDoctorReportPdfDocument(makeData(), {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("de").t,
       locale: "de",
       now: FIXED_NOW,
@@ -256,6 +276,8 @@ describe("sanitiseForPdf", () => {
       } as unknown as DoctorReportData["glp1"],
     });
     const bytes = renderDoctorReportPdfBytes(data, {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("de").t,
       locale: "de",
       now: FIXED_NOW,
@@ -282,6 +304,8 @@ describe("doctor-report sparkline time axis", () => {
       },
     });
     const bytes = renderDoctorReportPdfBytes(data, {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("de").t,
       locale: "de",
       includeCharts: true,
@@ -308,6 +332,8 @@ describe("doctor-report pagination", () => {
       };
     }
     const doc = buildDoctorReportPdfDocument(makeData({ compliance }), {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("de").t,
       locale: "de",
       now: FIXED_NOW,
@@ -362,6 +388,8 @@ describe("doctor-report-pdf-core type-map coverage", () => {
       },
     });
     const bytes = renderDoctorReportPdfBytes(data, {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("de").t,
       locale: "de",
       now: FIXED_NOW,
@@ -387,6 +415,8 @@ describe("doctor-report-pdf-core type-map coverage", () => {
       },
     });
     const bytes = renderDoctorReportPdfBytes(data, {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("de").t,
       locale: "de",
       now: FIXED_NOW,
@@ -402,6 +432,8 @@ describe("doctor-report-pdf-core type-map coverage", () => {
   it("renders the practice name on the cover when supplied (DE)", async () => {
     const data = makeData({ practiceName: "Praxis Dr. Müller" });
     const bytes = renderDoctorReportPdfBytes(data, {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("de").t,
       locale: "de",
       now: FIXED_NOW,
@@ -414,6 +446,8 @@ describe("doctor-report-pdf-core type-map coverage", () => {
   it("renders the practice name on the cover when supplied (EN)", async () => {
     const data = makeData({ practiceName: "Family Practice Smith & Co." });
     const bytes = renderDoctorReportPdfBytes(data, {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("en").t,
       locale: "en",
       now: FIXED_NOW,
@@ -426,6 +460,8 @@ describe("doctor-report-pdf-core type-map coverage", () => {
   it("omits the practice line when practiceName is null", async () => {
     const data = makeData({ practiceName: null });
     const bytes = renderDoctorReportPdfBytes(data, {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("de").t,
       locale: "de",
       now: FIXED_NOW,
@@ -445,6 +481,8 @@ describe("doctor-report-pdf-core type-map coverage", () => {
       },
     });
     const bytes = renderDoctorReportPdfBytes(data, {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("de").t,
       locale: "de",
       now: FIXED_NOW,
@@ -472,6 +510,8 @@ describe("doctor-report-pdf-core type-map coverage", () => {
       },
     });
     const bytes = renderDoctorReportPdfBytes(data, {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("en").t,
       locale: "en",
       now: FIXED_NOW,
@@ -510,6 +550,8 @@ describe("doctor-report clinical glucose panel", () => {
     });
     expect(data.glucoseClinical.readingCount).toBeGreaterThan(0);
     const bytes = renderDoctorReportPdfBytes(data, {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("en").t,
       locale: "en",
       now: FIXED_NOW,
@@ -523,6 +565,8 @@ describe("doctor-report clinical glucose panel", () => {
   it("omits the clinical panel when there are no glucose readings", async () => {
     const data = makeData(); // empty (zero-reading) glucose panel
     const bytes = renderDoctorReportPdfBytes(data, {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("en").t,
       locale: "en",
       now: FIXED_NOW,
@@ -549,6 +593,8 @@ describe("doctor-report illness section", () => {
       ],
     });
     const bytes = renderDoctorReportPdfBytes(data, {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("en").t,
       locale: "en",
       now: FIXED_NOW,
@@ -571,6 +617,8 @@ describe("doctor-report illness section", () => {
       ],
     });
     const bytes = renderDoctorReportPdfBytes(data, {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("en").t,
       locale: "en",
       now: FIXED_NOW,
@@ -582,6 +630,8 @@ describe("doctor-report illness section", () => {
 
   it("omits the section entirely when there are no episodes", async () => {
     const bytes = renderDoctorReportPdfBytes(makeData(), {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("en").t,
       locale: "en",
       now: FIXED_NOW,
@@ -611,7 +661,13 @@ describe("doctor-report emergency first page", () => {
   it("prints the emergency sheet on page one when emergency data is present", async () => {
     const { t } = getServerTranslator("en");
     const data = makeData({ emergency: EMERGENCY });
-    const options = { t, locale: "en" as const, now: FIXED_NOW };
+    const options = {
+      t,
+      locale: "en" as const,
+      now: FIXED_NOW,
+      timeFormat: "AUTO" as const,
+      dateFormat: "AUTO" as const,
+    };
     const text = await extractText(renderDoctorReportPdfBytes(data, options));
     expect(text).toContain("Emergency information");
     expect(text).toContain("O negative");
@@ -626,7 +682,13 @@ describe("doctor-report emergency first page", () => {
   it("withholds the emergency page when the leaf was not admitted (payload null)", async () => {
     const { t } = getServerTranslator("en");
     const data = makeData({ emergency: null });
-    const options = { t, locale: "en" as const, now: FIXED_NOW };
+    const options = {
+      t,
+      locale: "en" as const,
+      now: FIXED_NOW,
+      timeFormat: "AUTO" as const,
+      dateFormat: "AUTO" as const,
+    };
     const text = await extractText(renderDoctorReportPdfBytes(data, options));
     expect(text).not.toContain("Emergency information");
     // No emergency page, no extra page break: back to the two-page baseline.
@@ -647,6 +709,8 @@ describe("extracted doctor-report section boundaries", () => {
       },
     });
     const bytes = renderDoctorReportPdfBytes(data, {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
       t: getServerTranslator("en").t,
       locale: "en",
       now: FIXED_NOW,
@@ -663,6 +727,8 @@ describe("extracted doctor-report section boundaries", () => {
     const { t } = getServerTranslator("en");
     const text = await extractText(
       renderDoctorReportPdfBytes(makeData(), {
+        timeFormat: "AUTO",
+        dateFormat: "AUTO",
         t,
         locale: "en",
         now: FIXED_NOW,
@@ -683,7 +749,13 @@ describe("extracted doctor-report section boundaries", () => {
           wellnessScores: [],
           cycle: null,
         }),
-        { t, locale: "en", now: FIXED_NOW },
+        {
+          timeFormat: "AUTO",
+          dateFormat: "AUTO",
+          t,
+          locale: "en",
+          now: FIXED_NOW,
+        },
       ),
     );
     expect(text).not.toContain(t("doctorReport.complianceTitle"));
@@ -704,7 +776,13 @@ describe("extracted doctor-report section boundaries", () => {
     }
     const { t } = getServerTranslator("en");
     const data = makeData({ compliance });
-    const options = { t, locale: "en" as const, now: FIXED_NOW };
+    const options = {
+      t,
+      locale: "en" as const,
+      now: FIXED_NOW,
+      timeFormat: "AUTO" as const,
+      dateFormat: "AUTO" as const,
+    };
     const doc = buildDoctorReportPdfDocument(data, options);
     const text = await extractText(renderDoctorReportPdfBytes(data, options));
     const footerCount =
@@ -717,7 +795,13 @@ describe("extracted doctor-report section boundaries", () => {
   it("preserves the baseline section order and exact page count", async () => {
     const { t } = getServerTranslator("en");
     const data = makeData();
-    const options = { t, locale: "en" as const, now: FIXED_NOW };
+    const options = {
+      t,
+      locale: "en" as const,
+      now: FIXED_NOW,
+      timeFormat: "AUTO" as const,
+      dateFormat: "AUTO" as const,
+    };
     const text = await extractText(renderDoctorReportPdfBytes(data, options));
     const orderedHeadings = [
       t("doctorReport.title"),
@@ -739,5 +823,54 @@ describe("extracted doctor-report section boundaries", () => {
     expect(buildDoctorReportPdfDocument(data, options).getNumberOfPages()).toBe(
       2,
     );
+  });
+});
+
+/**
+ * Issue #922 — the report is the artefact a person hands to someone else, so
+ * it has to be spelled the way they read dates. `dateFormat` used to default
+ * to AUTO in the render options, and the share-link route that had already
+ * learned to pass the owner's HOUR CYCLE still let the field order fall to
+ * the locale. Same fixed instant, three preferences, three orders.
+ */
+describe("doctor report — the user's date order", () => {
+  // `period.end` is 2026-05-03: day, month and year are all distinguishable
+  // from one another, so the assertion reads the ORDER and not a coincidence.
+  const CASES = [
+    { dateFormat: "DMY" as const, expected: "03.05.2026" },
+    { dateFormat: "MDY" as const, expected: "05/03/2026" },
+    { dateFormat: "YMD" as const, expected: "2026-05-03" },
+  ];
+
+  for (const { dateFormat, expected } of CASES) {
+    it(`renders the report period as ${expected} under ${dateFormat}`, async () => {
+      const { t } = getServerTranslator("en");
+      const text = await extractText(
+        renderDoctorReportPdfBytes(makeData(), {
+          t,
+          locale: "en",
+          now: FIXED_NOW,
+          userTz: "UTC",
+          timeFormat: "AUTO",
+          dateFormat,
+        }),
+      );
+      expect(text).toContain(expected);
+    });
+  }
+
+  it("follows the locale under AUTO", async () => {
+    const { t } = getServerTranslator("en");
+    const text = await extractText(
+      renderDoctorReportPdfBytes(makeData(), {
+        t,
+        locale: "en",
+        now: FIXED_NOW,
+        userTz: "UTC",
+        timeFormat: "AUTO",
+        dateFormat: "AUTO",
+      }),
+    );
+    expect(text).toContain("05/03/2026");
   });
 });

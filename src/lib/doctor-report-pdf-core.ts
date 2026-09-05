@@ -23,6 +23,7 @@ import { getUnitForType } from "./validations/measurement";
 import {
   makeFormatters,
   DISPLAY_TIMEZONE,
+  type DateFormatPreference,
   type TimeFormatPreference,
 } from "./format-locale";
 import type { Locale } from "./i18n/config";
@@ -148,10 +149,18 @@ export interface DoctorReportRenderOptions {
   /**
    * v1.25.4 — the user's hour-cycle preference. Threaded into the formatters
    * so the footer "generated at" timestamp (and any other clock the report
-   * prints) honours H12 / H24 rather than falling to the locale default. When
-   * omitted it stays AUTO (locale default), matching the legacy contract.
+   * prints) honours H12 / H24 rather than falling to the locale default.
+   *
+   * Issue #922 — both preferences are REQUIRED. They used to default to
+   * AUTO here, which reads as harmless and is not: a report is exactly the
+   * artefact a person hands to someone else, and "the caller forgot" and
+   * "the user chose the locale default" have to be different states or
+   * nobody ever finds the first one. A caller with genuinely no user in
+   * hand passes "AUTO" and says so at the call site.
    */
-  timeFormat?: TimeFormatPreference;
+  timeFormat: TimeFormatPreference;
+  /** The user's date-order preference (AUTO / DMY / MDY / YMD). */
+  dateFormat: DateFormatPreference;
   /**
    * v1.7.0 — decrypted KVNR (German insurance number). Printed on the
    * cover when present; the column is encrypted at rest, so the route
@@ -217,11 +226,12 @@ export function buildDoctorReportPdfDocument(
     locale,
     now = new Date(),
     userTz,
-    timeFormat = "AUTO",
+    timeFormat,
+    dateFormat,
     insuranceNumber = null,
     includeCharts = true,
   } = options;
-  const formatters = makeFormatters(locale, userTz, timeFormat);
+  const formatters = makeFormatters(locale, userTz, timeFormat, dateFormat);
   const num = (value: number, decimals = 1) =>
     formatters.number(value, decimals);
   const fmtDate = (iso: string) => formatters.date(iso);

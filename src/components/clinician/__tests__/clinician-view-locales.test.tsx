@@ -239,6 +239,8 @@ describe("<ClinicianView> resolves every label in every locale", () => {
           report: FULL_RECORD,
           selection: selectionFromLeaves(ALL_LEAF_IDS),
           locale,
+          timeFormat: "AUTO",
+          dateFormat: "AUTO",
         }),
       );
       // Strip the tags, so the `data-leaf` enum lists and the class names go
