@@ -8,10 +8,9 @@ import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/lib/i18n/context";
-import { INTEGRATION_DOCS_BASE } from "@/components/settings/integrations/setup-guide-link";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { ImportCardShell } from "./import-card-shell";
-import { MAX_PASTE_CHARS } from "./constants";
+import { IMPORT_GUIDE_URL, MAX_PASTE_CHARS } from "./constants";
 import {
   EXAMPLE_IMPORT_DOWNLOAD_HREF,
   parseImportJson,
@@ -170,7 +169,7 @@ export function JsonImportCard() {
         {/* The import guide lives on the external docs site — the app
             itself serves no /docs tree, so an internal link 404s. */}
         <a
-          href={`${INTEGRATION_DOCS_BASE}/data-import`}
+          href={IMPORT_GUIDE_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="text-primary underline underline-offset-2"

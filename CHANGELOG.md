@@ -1,5 +1,30 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- **On a self-host served over plain HTTP, picking a file to upload did
+  nothing at all.** No document appeared, no progress bar, no error — the
+  file picker closed and the page sat there, and the only way to get an
+  upload through was to reach the app over HTTPS. Browsers withhold a
+  handful of APIs from pages served over plain HTTP, and one of them is the
+  call the upload used to label each transfer so a retry could not store the
+  same file twice. That call is not a security measure here and nothing in
+  an upload needs it: the file travels the same way either way, and the
+  encryption happens on the server. It is now built from a source that plain
+  HTTP does allow, so uploads work over HTTP on a LAN, a VPN or Tailscale
+  exactly as they do over HTTPS. Passkeys, web push and installing the app
+  to a home screen still need HTTPS; browsers withhold those outright and no
+  application can hand them back.
+- **The same missing call broke every save on a plain-HTTP host, not only
+  uploads.** Recording a measurement, editing a medication, restoring a
+  backup — anything that wrote — failed from the moment the app started
+  labelling writes this way in v1.37.18. Those all work again.
+- **The import guide link under Settings → Import went the long way round.**
+  Both the CSV and the JSON card now link straight to the guide instead of
+  through a redirect.
+
 ## [1.38.8] — 2026-09-03
 
 The heart-rate-variability tile now works for accounts whose HRV comes

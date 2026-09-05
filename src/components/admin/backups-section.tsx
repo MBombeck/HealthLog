@@ -47,6 +47,7 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { ListRow } from "@/components/ui/list-row";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
+import { randomId } from "@/lib/random-id";
 import type { BackupRow, BackupsList } from "@/types/backups";
 import type { BackupScheduleStatus } from "@/lib/jobs/backup-schedule-status";
 import type {
@@ -781,7 +782,7 @@ export function BackupsSection() {
       // Idempotency-Key prevents a double-click from re-running the
       // destructive transaction. Include the row id so two different
       // backups can both be restored independently in the same minute.
-      const idempotencyKey = `restore-${row.id}-${crypto.randomUUID()}`;
+      const idempotencyKey = `restore-${row.id}-${randomId()}`;
       return apiPost<{ restored: true; skipped?: RestoreSkipSummary }>(
         `/api/admin/backups/${row.id}/restore`,
         { confirm: "RESTORE" },

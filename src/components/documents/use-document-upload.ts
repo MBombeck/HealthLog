@@ -23,6 +23,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { useTranslations } from "@/lib/i18n/context";
+import { randomId } from "@/lib/random-id";
 import { invalidateKeys, queryKeys } from "@/lib/query-keys";
 import {
   parseUploadResponse,
@@ -103,8 +104,14 @@ async function downscaleImage(file: File): Promise<File> {
   }
 }
 
-/** One multipart POST via XHR, reporting upload progress. */
-function uploadViaXhr(
+/**
+ * One multipart POST via XHR, reporting upload progress.
+ *
+ * Exported for the unit test: this function mints the `Idempotency-Key`,
+ * and it did so with `crypto.randomUUID()`, which a plain-HTTP origin does
+ * not expose. The test drives it with that property absent.
+ */
+export function uploadViaXhr(
   file: File,
   options: EnqueueOptions,
   onProgress: (fraction: number) => void,
@@ -114,7 +121,7 @@ function uploadViaXhr(
     xhr.open("POST", "/api/documents/inbound");
     // Retry-safe by construction: the server honours Idempotency-Key, so a
     // network blip that DID land server-side cannot double-store on retry.
-    xhr.setRequestHeader("Idempotency-Key", crypto.randomUUID());
+    xhr.setRequestHeader("Idempotency-Key", randomId());
     xhr.upload.addEventListener("progress", (event) => {
       if (event.lengthComputable && event.total > 0) {
         onProgress(event.loaded / event.total);
@@ -263,7 +270,7 @@ export function useDocumentUpload(
       if (files.length === 0) return;
       const fresh: UploadQueueItem[] = [];
       for (const file of files) {
-        const localId = crypto.randomUUID();
+        const localId = randomId();
         // Client pre-flight against the server's configured cap: an obvious
         // giant (a CD image) fails instantly and locally — friendly reason,
         // no wasted transfer. The server re-enforces regardless.
