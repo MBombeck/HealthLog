@@ -67,7 +67,7 @@
     "@prisma/client": "^7.8.0",
     "@simplewebauthn/browser": "^13.3.0",
     "@simplewebauthn/server": "^13.3.3",
-    "@tanstack/react-query": "5.101.4",
+    "@tanstack/react-query": "5.102.8",
     "@tanstack/react-virtual": "^3.14.5",
     "@types/sax": "^1.2.7",
     "class-variance-authority": "^0.7.1",
