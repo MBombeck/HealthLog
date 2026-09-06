@@ -17,13 +17,42 @@ const dbState: {
     ipAddress: string | null;
     createdAt: Date;
   }>;
-  apiTokens: Array<{ tokenHash: string; revoked: boolean }>;
+  apiTokens: Array<{
+    tokenHash: string;
+    revoked: boolean;
+    expiresAt: Date | null;
+  }>;
 } = { refreshTokens: [], apiTokens: [] };
 
 let issuedCounter = 0;
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    /**
+     * Stands in for the one raw statement in this module: the access-token
+     * sunset, `SET expires_at = LEAST(expires_at, $1) WHERE token_hash = $2`.
+     * The parameters arrive in that order. This mock reproduces the minimum,
+     * nothing more — the statement itself is exercised against a real
+     * PostgreSQL in `tests/integration/refresh-rotation-access-sunset.test.ts`.
+     */
+    $executeRaw: vi.fn(
+      async (
+        _sql: TemplateStringsArray,
+        sunsetIso: string,
+        tokenHash: string,
+      ) => {
+        const sunsetAt = new Date(sunsetIso);
+        let count = 0;
+        for (const row of dbState.apiTokens) {
+          if (row.tokenHash !== tokenHash || row.revoked) continue;
+          if (!row.expiresAt || row.expiresAt.getTime() > sunsetAt.getTime()) {
+            row.expiresAt = sunsetAt;
+          }
+          count++;
+        }
+        return count;
+      },
+    ),
     refreshToken: {
       create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
         const row = {
@@ -111,13 +140,17 @@ vi.mock("@/lib/auth/issue-token", () => ({
     async (opts: { userId: string; expiresInDays?: number }) => {
       issuedCounter++;
       const token = `hlk_token_${issuedCounter}`;
+      const expiresAt = new Date(
+        Date.now() + (opts.expiresInDays ?? 1) * 86400000,
+      );
       dbState.apiTokens.push({
         tokenHash: `hash:${token}`,
         revoked: false,
+        expiresAt,
       });
       return {
         token,
-        expiresAt: new Date(Date.now() + (opts.expiresInDays ?? 1) * 86400000),
+        expiresAt,
         tokenId: `t_${issuedCounter}`,
         name: "test",
       };
@@ -130,6 +163,7 @@ vi.mock("@/lib/auth/hmac", () => ({
 }));
 
 import {
+  ACCESS_TOKEN_SUNSET_MS,
   issueAccessAndRefresh,
   rotateRefreshToken,
   revokeRefreshToken,
@@ -178,7 +212,13 @@ describe("issueAccessAndRefresh", () => {
 });
 
 describe("rotateRefreshToken", () => {
-  it("rotates: marks old used, issues new pair, revokes old access token", async () => {
+  // The predecessor of this test asserted the opposite — that rotation flips
+  // the old access token to `revoked` on the spot. That instant revoke is the
+  // defect: requests already on the wire came back 401 `revoked`, which sends
+  // a client into a second rotation with the refresh token it just consumed
+  // and costs it the whole family. The token still dies; it dies of expiry, a
+  // few seconds later.
+  it("rotates: marks old used, issues new pair, sunsets old access token", async () => {
     const initial = await issueAccessAndRefresh({
       userId: "u1",
       policy: NATIVE_POLICY,
@@ -199,9 +239,12 @@ describe("rotateRefreshToken", () => {
     const oldRow = dbState.refreshTokens[0];
     expect(oldRow.usedAt).not.toBeNull();
     expect(oldRow.replacedById).not.toBeNull();
-    expect(
-      dbState.apiTokens.find((a) => a.tokenHash === oldHash)?.revoked,
-    ).toBe(true);
+    const oldAccess = dbState.apiTokens.find((a) => a.tokenHash === oldHash);
+    expect(oldAccess?.revoked).toBe(false);
+    expect(oldAccess?.expiresAt?.getTime()).toBeLessThanOrEqual(
+      Date.now() + ACCESS_TOKEN_SUNSET_MS,
+    );
+    expect(oldAccess?.expiresAt?.getTime()).toBeGreaterThan(Date.now());
     expect(dbState.refreshTokens).toHaveLength(2);
   });
 
